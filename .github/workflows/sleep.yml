@@ -1,18 +1,18 @@
-name: Sleep on Pull Request
+# .github/workflows/sleep-on-merge.yml
+name: Sleep on Merge
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  pull_request_target:
+    types: [closed]
 
 jobs:
   sleep-job:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Sleep for 5 minutes
+      - name: Sleep for 30 seconds
         run: |
-          echo "Sleeping for 5 minutes..."
-          sleep 300
-          echo "Waking up after 5 minutes."
+          sleep 30
