@@ -1,0 +1,18 @@
+name: Sleep on Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sleep-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Sleep for 5 minutes
+        run: |
+          echo "Sleeping for 5 minutes..."
+          sleep 300
+          echo "Waking up after 5 minutes."
