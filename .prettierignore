@@ -1,0 +1,8 @@
+**/build/
+**/dist/
+**/types/
+**/node_modules/
+**/ponder-env.d.ts
+
+
+/.nx/cache

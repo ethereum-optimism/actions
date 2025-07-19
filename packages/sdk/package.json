@@ -1,0 +1,47 @@
+{
+  "name": "@eth-optimism/verbs-sdk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ethereum-optimism/verbs.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://github.com/ethereum-optimism/verbs/tree/main/packages/sdk#readme",
+  "bugs": {
+    "url": "https://github.com/ethereum-optimism/verbs/issues"
+  },
+  "type": "module",
+  "version": "0.0.2",
+  "description": "TypeScript SDK for Verbs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/*",
+    "src/*"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && resolve-tspaths",
+    "clean": "rm -rf dist types tsconfig.tsbuildinfo",
+    "docs": "typedoc",
+    "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
+    "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --loglevel=warn",
+    "test": "echo \"No tests yet\"",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "keywords": [
+    "verbs",
+    "typescript",
+    "sdk"
+  ],
+  "author": "Optimism PBC",
+  "license": "MIT",
+  "dependencies": {
+    "@privy-io/server-auth": "latest",
+    "viem": "^2.24.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
