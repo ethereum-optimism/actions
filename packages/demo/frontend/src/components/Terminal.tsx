@@ -424,12 +424,12 @@ ${walletList}`,
                       line.type === 'error'
                         ? 'terminal-error'
                         : line.type === 'success'
-                        ? 'terminal-success'
-                        : line.type === 'warning'
-                        ? 'terminal-warning'
-                        : line.type === 'input'
-                        ? 'text-terminal-muted'
-                        : 'terminal-output'
+                          ? 'terminal-success'
+                          : line.type === 'warning'
+                            ? 'terminal-warning'
+                            : line.type === 'input'
+                              ? 'text-terminal-muted'
+                              : 'terminal-output'
                     }`
               }
               style={
