@@ -33,6 +33,7 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "globals": "^15.0.0",
+    "nx": "^21.3.2",
     "prettier": "^3.0.0",
     "resolve-tspaths": "^0.8.18",
     "tsx": "^4.0.0"
