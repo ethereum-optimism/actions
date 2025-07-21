@@ -6,7 +6,7 @@ export async function verbsMiddleware(c: Context, next: Next) {
   try {
     getVerbs()
     await next()
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Verbs SDK not initialized' }, 500)
   }
 }

@@ -33,12 +33,14 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@eth-optimism/utils-app": "^0.0.6",
     "@eth-optimism/verbs-sdk": "workspace:*",
     "@hono/node-server": "^1.14.0",
     "commander": "^13.1.0",
     "dotenv": "^16.4.5",
     "envalid": "^8.1.0",
-    "hono": "^4.5.0"
+    "hono": "^4.5.0",
+    "zod": "^4.0.5"
   },
   "devDependencies": {
     "@types/node": "^20.19.8",
