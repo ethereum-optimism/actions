@@ -95,6 +95,24 @@ The SDK follows a provider pattern for wallet integration:
 ### Provider Pattern
 The SDK uses a provider pattern for wallet integrations. New wallet providers implement the `WalletProvider` interface and are registered in the `createWalletProvider` factory method in `verbs.ts:30-39`.
 
+## CI/CD Configuration
+
+### CircleCI
+This repository uses CircleCI for continuous integration, mirroring the ecosystem repo setup:
+
+- **Configuration**: `.circleci/config.yml`
+- **Jobs**: 
+  - `check` - Runs build, typecheck, and lint on all pushes
+  - `docker-build` & `docker-publish` - Builds and publishes Docker images for backend/frontend on main branch
+- **Docker Images**: 
+  - Backend: `packages/demo/backend/Dockerfile`
+  - Frontend: `packages/demo/frontend/Dockerfile` (nginx-based for static assets)
+
+### Docker Build Process
+- Uses multi-stage builds with pnpm workspace support
+- SDK is built first as dependency for demo applications
+- Production images are optimized for deployment
+
 ## Important Notes
 
 - Node.js >=18 required (specified in root package.json engines)

@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../../tsconfig.base.json",
   "include": ["src"],
   "compilerOptions": {
     "rootDir": "src",
@@ -8,7 +8,7 @@
       "@/*": ["./src/*"]
     },
     "target": "es2021",
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "strict": true,
     "composite": true,
     "outDir": "dist",

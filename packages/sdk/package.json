@@ -42,6 +42,8 @@
     "viem": "^2.24.1"
   },
   "devDependencies": {
+    "eslint": "^9.31.0",
+    "prettier": "^3.0.0",
     "typescript": "^5.2.2"
   }
 }
