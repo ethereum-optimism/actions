@@ -35,7 +35,7 @@ export class PrivyWalletProvider implements WalletProvider {
       })
 
       return new Wallet(wallet.id, wallet.address as Address, this.chainId)
-    } catch (error) {
+    } catch {
       throw new Error(`Failed to create wallet for user ${userId}`)
     }
   }
@@ -52,7 +52,7 @@ export class PrivyWalletProvider implements WalletProvider {
       const wallet = await this.privy.walletApi.getWallet({ id: userId })
 
       return new Wallet(wallet.id, wallet.address as Address, this.chainId)
-    } catch (error) {
+    } catch {
       return null
     }
   }
@@ -75,7 +75,7 @@ export class PrivyWalletProvider implements WalletProvider {
         (wallet) =>
           new Wallet(wallet.id, wallet.address as Address, this.chainId),
       )
-    } catch (error) {
+    } catch {
       throw new Error('Failed to retrieve wallets')
     }
   }
