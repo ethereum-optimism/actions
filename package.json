@@ -15,6 +15,7 @@
     "packages/*",
     "packages/demo/*"
   ],
+  "nx": {},
   "scripts": {
     "build": "pnpm -r build",
     "clean": "pnpm -r clean",
