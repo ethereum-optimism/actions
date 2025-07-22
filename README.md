@@ -1,7 +1,7 @@
 # Verbs
 
 Verbs SDK and demo applications for the Optimism ecosystem
-
+.
 ## Structure
 
 This monorepo contains the following packages:
