@@ -4,6 +4,7 @@ import type {
   GetAllWalletsResponse,
 } from '@eth-optimism/verbs-sdk'
 import VerbsLogo from './VerbsLogo'
+import { verbsApi } from '../api/verbsApi'
 
 interface TerminalLine {
   id: string
@@ -114,38 +115,11 @@ const Terminal = () => {
   const createWallet = async (
     userId: string,
   ): Promise<CreateWalletResponse> => {
-    const response = await fetch(`http://localhost:3000/wallet/${userId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Failed to create wallet')
-    }
-
-    const data = await response.json()
-    return data
+    return verbsApi.createWallet(userId)
   }
 
   const getAllWallets = async (): Promise<GetAllWalletsResponse> => {
-    // @TODO abstract the url here
-    const response = await fetch('http://localhost:3000/wallets', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Failed to fetch wallets')
-    }
-
-    const data = await response.json()
-    return data
+    return verbsApi.getAllWallets()
   }
 
   const processCommand = (command: string) => {

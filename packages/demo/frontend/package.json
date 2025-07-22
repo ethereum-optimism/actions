@@ -18,7 +18,8 @@
   "dependencies": {
     "@eth-optimism/verbs-sdk": "workspace:*",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "zod": "^4.0.5"
   },
   "devDependencies": {
     "@types/react": "^18",
