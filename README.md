@@ -20,14 +20,15 @@ pnpm install
 
 ## Demo
 
-Run the backend:
+1. Run the backend [setup steps](./packages/demo/backend/README.md).
+2. Run the backend:
 
 ```bash
 cd packages/demo/backend
 pnpm install && pnpm dev
 ```
 
-Open another terminal and run the frontend:
+3. Open another terminal and run the frontend:
 
 ```bash
 cd packages/demo/frontend
