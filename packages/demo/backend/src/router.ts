@@ -1,4 +1,7 @@
+import { readFileSync } from 'fs'
 import { Hono } from 'hono'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 
 import { WalletController } from './controllers/wallet.js'
 
@@ -6,8 +9,31 @@ export const router = new Hono()
 
 const walletController = new WalletController()
 
+// Get package.json path relative to this file
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const packageJsonPath = join(__dirname, '../package.json')
+
 router.get('/', (c) => {
   return c.text('OK')
+})
+
+router.get('/version', (c) => {
+  try {
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'))
+    return c.json({
+      name: packageJson.name,
+      version: packageJson.version,
+      description: packageJson.description,
+    })
+  } catch (error) {
+    return c.json(
+      {
+        error: `Unable to read version info: ${error instanceof Error ? error.message : String(error)}`,
+      },
+      500,
+    )
+  }
 })
 
 router.get('/wallets', walletController.getAllWallets)
