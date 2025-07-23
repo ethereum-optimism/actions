@@ -9,18 +9,14 @@ import type { Wallet as WalletInterface } from './types/wallet.js'
 export class Wallet implements WalletInterface {
   id: string
   address: Address
-  chainType: number
 
   /**
    * Create a new wallet instance
-   * @param id - Unique wallet identifier
    * @param address - Blockchain address
-   * @param chainType - Chain type identifier
    */
-  constructor(id: string, address: Address, chainType: number) {
-    this.id = id
+  constructor(address: Address) {
+    this.id = '' // Will be determined after creation
     this.address = address
-    this.chainType = chainType
   }
 
   /**

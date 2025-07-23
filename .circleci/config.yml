@@ -31,6 +31,9 @@ jobs:
       - run:
           name: Run Linters
           command: pnpm lint
+      - run:
+          name: Run Tests
+          command: pnpm test
 
   docker-build:
     environment:

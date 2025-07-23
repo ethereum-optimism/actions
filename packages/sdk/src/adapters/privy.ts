@@ -10,7 +10,6 @@ import { Wallet } from '../wallet.js'
  */
 export class PrivyWalletProvider implements WalletProvider {
   private privy: PrivyClient
-  private chainId: number = 130 // TODO: make configurable
 
   /**
    * Create a new Privy wallet provider
@@ -34,7 +33,9 @@ export class PrivyWalletProvider implements WalletProvider {
         chainType: 'ethereum',
       })
 
-      return new Wallet(wallet.id, wallet.address as Address, this.chainId)
+      const walletInstance = new Wallet(wallet.address as Address)
+      walletInstance.id = wallet.id
+      return walletInstance
     } catch {
       throw new Error(`Failed to create wallet for user ${userId}`)
     }
@@ -51,7 +52,9 @@ export class PrivyWalletProvider implements WalletProvider {
       // TODO: Implement proper user-to-wallet lookup
       const wallet = await this.privy.walletApi.getWallet({ id: userId })
 
-      return new Wallet(wallet.id, wallet.address as Address, this.chainId)
+      const walletInstance = new Wallet(wallet.address as Address)
+      walletInstance.id = wallet.id
+      return walletInstance
     } catch {
       return null
     }
@@ -68,13 +71,13 @@ export class PrivyWalletProvider implements WalletProvider {
       const response = await this.privy.walletApi.getWallets({
         limit: options?.limit,
         cursor: options?.cursor,
-        chainType: options?.chainType,
       })
 
-      return response.data.map(
-        (wallet) =>
-          new Wallet(wallet.id, wallet.address as Address, this.chainId),
-      )
+      return response.data.map((wallet) => {
+        const walletInstance = new Wallet(wallet.address as Address)
+        walletInstance.id = wallet.id
+        return walletInstance
+      })
     } catch {
       throw new Error('Failed to retrieve wallets')
     }
