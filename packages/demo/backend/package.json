@@ -30,7 +30,8 @@
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --loglevel=warn",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "typecheck": "tsc"
+    "test": "vitest --run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@eth-optimism/utils-app": "^0.0.6",
@@ -44,7 +45,9 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.8",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "undici": "^6.0.0",
+    "vitest": "^1.6.1"
   },
   "peerDependencies": {
     "pino": "^9.6.0",
