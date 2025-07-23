@@ -9,12 +9,8 @@ import type { Address } from 'viem'
  * Wallet data returned by API endpoints
  */
 export interface WalletData {
-  /** Wallet ID */
-  id: string
   /** Wallet address */
   address: Address
-  /** Chain type */
-  chainType: number
 }
 
 /**

@@ -27,7 +27,7 @@
     "docs": "typedoc",
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --loglevel=warn",
-    "test": "echo \"No tests yet\"",
+    "test": "vitest --run",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "keywords": [
@@ -44,6 +44,7 @@
   "devDependencies": {
     "eslint": "^9.31.0",
     "prettier": "^3.0.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^1.6.1"
   }
 }

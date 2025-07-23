@@ -34,8 +34,6 @@ export interface Wallet extends WalletVerbs {
   id: string
   /** Wallet address */
   address: Address
-  /** Chain type */
-  chainType: number
 }
 
 /**
@@ -47,8 +45,6 @@ export interface GetAllWalletsOptions {
   limit?: number
   /** Cursor for pagination */
   cursor?: string
-  /** Filter by chain type */
-  chainType?: 'ethereum' | 'solana'
 }
 
 /**

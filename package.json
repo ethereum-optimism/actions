@@ -21,6 +21,7 @@
     "clean": "pnpm -r clean",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
+    "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {

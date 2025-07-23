@@ -31,6 +31,15 @@ jobs:
       - run:
           name: Run Linters
           command: pnpm lint
+      - run:
+          name: Run SDK Tests
+          command: cd packages/sdk && pnpm test
+      - run:
+          name: Run Frontend Tests
+          command: cd packages/demo/frontend && pnpm test
+      - run:
+          name: Run Backend Tests
+          command: cd packages/demo/backend && pnpm test
 
   docker-build:
     environment:
