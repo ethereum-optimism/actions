@@ -1,8 +1,11 @@
 import { PrivyClient } from '@privy-io/server-auth'
 import type { Address } from 'viem'
 
-import type { GetAllWalletsOptions, WalletProvider } from '../types/wallet.js'
-import { Wallet } from '../wallet.js'
+import type {
+  GetAllWalletsOptions,
+  WalletProvider,
+} from '../../types/wallet.js'
+import { Wallet } from '../index.js'
 
 /**
  * Privy wallet provider implementation
@@ -33,8 +36,8 @@ export class PrivyWalletProvider implements WalletProvider {
         chainType: 'ethereum',
       })
 
-      const walletInstance = new Wallet(wallet.address as Address)
-      walletInstance.id = wallet.id
+      const walletInstance = new Wallet(wallet.id)
+      walletInstance.address = wallet.address as Address
       return walletInstance
     } catch {
       throw new Error(`Failed to create wallet for user ${userId}`)
@@ -52,8 +55,8 @@ export class PrivyWalletProvider implements WalletProvider {
       // TODO: Implement proper user-to-wallet lookup
       const wallet = await this.privy.walletApi.getWallet({ id: userId })
 
-      const walletInstance = new Wallet(wallet.address as Address)
-      walletInstance.id = wallet.id
+      const walletInstance = new Wallet(wallet.id)
+      walletInstance.address = wallet.address as Address
       return walletInstance
     } catch {
       return null
@@ -74,8 +77,8 @@ export class PrivyWalletProvider implements WalletProvider {
       })
 
       return response.data.map((wallet) => {
-        const walletInstance = new Wallet(wallet.address as Address)
-        walletInstance.id = wallet.id
+        const walletInstance = new Wallet(wallet.id)
+        walletInstance.address = wallet.address as Address
         return walletInstance
       })
     } catch {

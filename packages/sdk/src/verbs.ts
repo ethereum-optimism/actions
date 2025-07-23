@@ -1,7 +1,7 @@
-import { PrivyWalletProvider } from './adapters/privy.js'
 import type { VerbsConfig, VerbsInterface } from './types/verbs.js'
 import type { GetAllWalletsOptions, WalletProvider } from './types/wallet.js'
-import type { Wallet } from './wallet.js'
+import type { Wallet } from './wallet/index.js'
+import { PrivyWalletProvider } from './wallet/providers/privy.js'
 
 /**
  * Main Verbs SDK class

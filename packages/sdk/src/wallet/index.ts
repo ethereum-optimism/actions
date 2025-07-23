@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
 
-import type { Wallet as WalletInterface } from './types/wallet.js'
+import type { Wallet as WalletInterface } from '../types/wallet.js'
 
 /**
  * Wallet implementation
@@ -12,11 +12,11 @@ export class Wallet implements WalletInterface {
 
   /**
    * Create a new wallet instance
-   * @param address - Blockchain address
+   * @param id - Unique wallet identifier
    */
-  constructor(address: Address) {
-    this.id = '' // Will be determined after creation
-    this.address = address
+  constructor(id: string) {
+    this.id = id
+    this.address = '0x' as Address // Will be determined after creation
   }
 
   /**
