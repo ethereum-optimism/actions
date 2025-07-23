@@ -1,6 +1,6 @@
 # verbs-sdk
 
-Verbs is an SDK of abstractions and adapters for building applications on the OP stack.
+Verbs is an SDK of abstractions and adapters for building applications on the OP stack
 
 ## Installation
 
