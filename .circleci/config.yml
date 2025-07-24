@@ -152,6 +152,46 @@ jobs:
             IMAGE_BASE="<<parameters.registry>>/<<parameters.repo>>/<<parameters.docker_name>>"
             DOCKER_TAGS=$(echo -ne <<parameters.docker_tags>> | sed "s/,/\n/g" | sed "s/[^a-zA-Z0-9\n]/-/g" | sed -e "s|^|${IMAGE_BASE}:|")
             echo -ne $DOCKER_TAGS | tr ' ' '\n' | xargs -L1 docker push
+  publish-to-npm:
+    docker:
+      - image: cimg/node:20.11
+    parameters:
+      prepare-snapshot:
+        type: boolean
+        default: false
+    steps:
+      - setup
+      - run:
+          name: Build projects
+          environment:
+            NPM_TOKEN: nada
+          command: pnpm nx run-many --target=build
+      - run:
+          name: Check NPM Token
+          command: |
+            if [ -z "${NPM_TOKEN}" ]; then
+              echo "NPM_TOKEN is not set. Please set it in CircleCI project settings."
+              exit 1
+            fi
+      - run:
+          name: Configure NPM Token and Registry
+          command: |
+            npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+
+      - run:
+          name: Verify NPM Token
+          command: npm whoami
+
+      - when:
+          condition:
+            equal: [<< parameters.prepare-snapshot >>, true]
+          steps:
+            - prepare-snapshot
+
+      - utils/changesets:
+          createGithubReleases: false
+          publish: 'pnpm release:publish'
+          version: 'pnpm release:version'
 
 workflows:
   check-workflow:
@@ -178,24 +218,3 @@ workflows:
             - oplabs-gcr
           requires:
             - verbs-backend-docker-build
-
-  build-and-publish-frontend:
-    when:
-      and:
-        - equal: [<<pipeline.git.branch>>, main]
-    jobs:
-      - docker-build:
-          name: verbs-frontend-docker-build
-          docker_file: ./packages/demo/frontend/Dockerfile
-          docker_name: verbs-frontend
-          docker_tags: <<pipeline.git.revision>>,<<pipeline.git.branch>>,latest
-          docker_context: .
-          docker_target: production
-      - docker-publish:
-          name: verbs-frontend-docker-publish
-          docker_name: verbs-frontend
-          docker_tags: <<pipeline.git.revision>>,<<pipeline.git.branch>>,latest
-          context:
-            - oplabs-gcr
-          requires:
-            - verbs-frontend-docker-build
