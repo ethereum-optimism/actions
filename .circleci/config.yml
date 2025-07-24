@@ -243,13 +243,13 @@ workflows:
       - docker-build:
           name: verbs-backend-docker-build
           docker_file: ./Dockerfile
-          docker_name: verbs-backend
+          docker_name: ecosystem-verbs-backend
           docker_tags: <<pipeline.git.revision>>,<<pipeline.git.branch>>,latest
           docker_context: .
-          docker_target: production
+          docker_target: verbs-service
       - docker-publish:
           name: verbs-backend-docker-publish
-          docker_name: verbs-backend
+          docker_name: ecosystem-verbs-backend
           docker_tags: <<pipeline.git.revision>>,<<pipeline.git.branch>>,latest
           context:
             - oplabs-gcr
