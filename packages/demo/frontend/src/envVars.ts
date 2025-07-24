@@ -6,7 +6,7 @@ const envVarSchema = z.object({
     .url()
     .default(
       import.meta.env.MODE === 'production'
-        ? 'https://verbs-service.primary.web.dev.oplabs.cloud'
+        ? 'https://dev-verbs-service.optimism.io/'
         : 'http://localhost:3000',
     )
     .describe('Base URL for the verbs service API'),

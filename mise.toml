@@ -1,0 +1,10 @@
+[tools]
+node = "20.11"
+
+[hooks]
+# Enabling corepack will install `pnpm`
+postinstall = "npx corepack enable"
+
+[settings]
+# Needs to be enabled for hooks to work
+experimental = true

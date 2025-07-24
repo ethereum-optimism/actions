@@ -4,6 +4,14 @@ A terminal-style web interface for interacting with verbs-service endpoints.
 
 ## Quick Setup
 
+Create a `.env` file from the example:
+
+```bash
+cp .env.example .env
+```
+
+and update variables if necessary.
+
 ```bash
 # Install dependencies
 pnpm install
