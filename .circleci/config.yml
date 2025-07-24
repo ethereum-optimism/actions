@@ -132,19 +132,14 @@ jobs:
           command: |
             DOCKER_LABELS=$(echo -ne <<parameters.docker_tags>> | sed "s/,/\n/g" | sed "s/[^a-zA-Z0-9\n]/-/g")
             echo -ne $DOCKER_LABELS | tr ' ' '\n' | xargs -I {} docker load -i /tmp/docker_images/<<parameters.docker_name>>_{}.tar
-      - run:
-          name: Setup gcloud CLI
-          command: |
-            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-            sudo apt-get update && sudo apt-get install google-cloud-cli
-      - run:
-          name: Authenticate with service account
-          command: |
-            if [[ -n "${GOOGLE_SERVICE_ACCOUNT_KEY}" ]]; then
-              echo "${GOOGLE_SERVICE_ACCOUNT_KEY}" | base64 --decode > /tmp/gcp-key.json
-              gcloud auth activate-service-account --key-file /tmp/gcp-key.json
-            fi
+      - gcp-oidc-authenticate
+      # Below is CircleCI recommended way of specifying nameservers on an Ubuntu box:
+      # https://support.circleci.com/hc/en-us/articles/7323511028251-How-to-set-custom-DNS-on-Ubuntu-based-images-using-netplan
+      - run: sudo sed -i '13 i \ \ \ \ \ \ \ \ \ \ \ \ nameservers:' /etc/netplan/50-cloud-init.yaml
+      - run: sudo sed -i '14 i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ addresses:' /etc/netplan/50-cloud-init.yaml
+      - run: sudo sed -i "s/addresses:/ addresses":" [8.8.8.8, 8.8.4.4] /g" /etc/netplan/50-cloud-init.yaml
+      - run: cat /etc/netplan/50-cloud-init.yaml
+      - run: sudo netplan apply
       - run:
           name: Publish
           command: |
@@ -152,6 +147,47 @@ jobs:
             IMAGE_BASE="<<parameters.registry>>/<<parameters.repo>>/<<parameters.docker_name>>"
             DOCKER_TAGS=$(echo -ne <<parameters.docker_tags>> | sed "s/,/\n/g" | sed "s/[^a-zA-Z0-9\n]/-/g" | sed -e "s|^|${IMAGE_BASE}:|")
             echo -ne $DOCKER_TAGS | tr ' ' '\n' | xargs -L1 docker push
+
+  publish-to-npm:
+    docker:
+      - image: cimg/node:20.11
+    parameters:
+      prepare-snapshot:
+        type: boolean
+        default: false
+    steps:
+      - setup
+      - run:
+          name: Build projects
+          environment:
+            NPM_TOKEN: nada
+          command: pnpm nx run-many --target=build
+      - run:
+          name: Check NPM Token
+          command: |
+            if [ -z "${NPM_TOKEN}" ]; then
+              echo "NPM_TOKEN is not set. Please set it in CircleCI project settings."
+              exit 1
+            fi
+      - run:
+          name: Configure NPM Token and Registry
+          command: |
+            npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+
+      - run:
+          name: Verify NPM Token
+          command: npm whoami
+
+      - when:
+          condition:
+            equal: [<< parameters.prepare-snapshot >>, true]
+          steps:
+            - prepare-snapshot
+
+      - utils/changesets:
+          createGithubReleases: false
+          publish: 'pnpm release:publish'
+          version: 'pnpm release:version'
 
 workflows:
   check-workflow:
@@ -178,24 +214,3 @@ workflows:
             - oplabs-gcr
           requires:
             - verbs-backend-docker-build
-
-  build-and-publish-frontend:
-    when:
-      and:
-        - equal: [<<pipeline.git.branch>>, main]
-    jobs:
-      - docker-build:
-          name: verbs-frontend-docker-build
-          docker_file: ./packages/demo/frontend/Dockerfile
-          docker_name: verbs-frontend
-          docker_tags: <<pipeline.git.revision>>,<<pipeline.git.branch>>,latest
-          docker_context: .
-          docker_target: production
-      - docker-publish:
-          name: verbs-frontend-docker-publish
-          docker_name: verbs-frontend
-          docker_tags: <<pipeline.git.revision>>,<<pipeline.git.branch>>,latest
-          context:
-            - oplabs-gcr
-          requires:
-            - verbs-frontend-docker-build
