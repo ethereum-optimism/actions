@@ -242,7 +242,7 @@ workflows:
     jobs:
       - docker-build:
           name: verbs-backend-docker-build
-          docker_file: ./packages/demo/backend/Dockerfile
+          docker_file: ./packages/Dockerfile
           docker_name: verbs-backend
           docker_tags: <<pipeline.git.revision>>,<<pipeline.git.branch>>,latest
           docker_context: .
