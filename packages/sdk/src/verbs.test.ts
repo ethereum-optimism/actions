@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { Verbs } from './verbs.js'
 
+// Helper for system tests that make real network requests
+const systemTest = () => process.env.SYSTEM_TEST === 'true'
+
 describe('Verbs SDK - System Tests', () => {
   describe('Morpho Lend Provider Integration', () => {
-    // Note: This is a system test that makes real network requests
+    // Note: These are system tests that make real network requests
     // Run with: SYSTEM_TEST=true pnpm test src/verbs.test.ts
-    // or manually comment out the skip to run locally
-    it.skip('should fetch real market info from Morpho on Unichain', async () => {
+    it.runIf(systemTest())('should fetch real market info from Morpho on Unichain', async () => {
       // Create Verbs instance with Morpho lending configured
       const verbs = new Verbs({
         chainId: 130, // Unichain
@@ -75,7 +77,7 @@ describe('Verbs SDK - System Tests', () => {
       })
     }, 30000) // 30 second timeout for network request
 
-    it.skip('should handle non-existent market gracefully', async () => {
+    it.runIf(systemTest())('should handle non-existent market gracefully', async () => {
       const verbs = new Verbs({
         chainId: 130,
         rpcUrl: 'https://rpc.unichain.org',
