@@ -34,7 +34,7 @@ export interface VerbsConfig {
   /** Wallet provider configuration */
   wallet: WalletConfig
   /** Lending provider configuration (optional) */
-  lending?: LendConfig
+  lend?: LendConfig
   /** Chain ID for blockchain interactions */
   chainId?: number
   /** RPC URL for blockchain interactions */

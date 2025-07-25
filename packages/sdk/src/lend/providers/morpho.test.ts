@@ -1,9 +1,24 @@
 import { type Address, createPublicClient, http, type PublicClient } from 'viem'
-import { mainnet } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MorphoLendConfig } from '../../types/lend.js'
 import { LendProviderMorpho } from './morpho.js'
+
+// Mock chain config for Unichain
+const unichain = {
+  id: 130,
+  name: 'Unichain',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.unichain.org'] },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Unichain Explorer',
+      url: 'https://unichain.blockscout.com',
+    },
+  },
+}
 
 // Mock the Morpho SDK modules
 vi.mock('@morpho-org/blue-sdk', () => ({
@@ -32,19 +47,16 @@ describe('LendProviderMorpho', () => {
   beforeEach(() => {
     mockConfig = {
       type: 'morpho',
-      morphoAddress: '0x1234567890123456789012345678901234567890' as Address,
-      bundlerAddress: '0x0987654321098765432109876543210987654321' as Address,
       defaultSlippage: 50,
     }
 
     mockPublicClient = createPublicClient({
-      chain: mainnet,
+      chain: unichain,
       transport: http(),
     })
 
     provider = new LendProviderMorpho(
       mockConfig,
-      1,
       mockPublicClient as unknown as PublicClient,
     )
   })
@@ -61,56 +73,27 @@ describe('LendProviderMorpho', () => {
       }
       const providerWithDefaults = new LendProviderMorpho(
         configWithoutSlippage,
-        1,
         mockPublicClient as unknown as PublicClient,
       )
       expect(providerWithDefaults).toBeInstanceOf(LendProviderMorpho)
     })
   })
 
-  describe('getAvailableMarkets', () => {
-    it('should return available markets', async () => {
-      const markets = await provider.getAvailableMarkets()
-      expect(Array.isArray(markets)).toBe(true)
-      expect(markets.length).toBeGreaterThan(0)
+  describe('withdraw', () => {
+    it('should throw error for unimplemented withdraw functionality', async () => {
+      const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address // USDC
+      const amount = BigInt('1000000000') // 1000 USDC
+      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
-      const market = markets[0]
-      expect(market).toHaveProperty('id')
-      expect(market).toHaveProperty('name')
-      expect(market).toHaveProperty('loanToken')
-      expect(market).toHaveProperty('collateralToken')
-      expect(market).toHaveProperty('supplyApy')
-      expect(market).toHaveProperty('utilization')
-      expect(market).toHaveProperty('liquidity')
-    })
-
-    it('should handle errors gracefully', async () => {
-      // Mock a provider that throws an error
-      const failingProvider = new LendProviderMorpho(
-        mockConfig,
-        1,
-        mockPublicClient as unknown as PublicClient,
-      )
-
-      // Override the private method to simulate an error
-      ;(
-        failingProvider as unknown as {
-          fetchMarketConfigs: () => Promise<unknown>
-        }
-      ).fetchMarketConfigs = vi
-        .fn()
-        .mockRejectedValue(new Error('Network error'))
-
-      await expect(failingProvider.getAvailableMarkets()).rejects.toThrow(
-        'Failed to fetch available markets',
+      await expect(provider.withdraw(asset, amount, marketId)).rejects.toThrow(
+        'Withdraw functionality not yet implemented',
       )
     })
   })
 
   describe('getMarketInfo', () => {
     it('should return detailed market information', async () => {
-      const marketId =
-        '0x1111111111111111111111111111111111111111111111111111111111111111'
+      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
       const marketInfo = await provider.getMarketInfo(marketId)
 
@@ -143,10 +126,9 @@ describe('LendProviderMorpho', () => {
 
   describe('lend', () => {
     it('should successfully create a lending transaction', async () => {
-      const asset = '0xA0b86a33E6441C8C6bD63aFfaE0E30E2495B5CE0' as Address // USDC
+      const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address // USDC
       const amount = BigInt('1000000000') // 1000 USDC
-      const marketId =
-        '0x1111111111111111111111111111111111111111111111111111111111111111'
+      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
       const lendTransaction = await provider.lend(asset, amount, marketId)
 
@@ -161,7 +143,7 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should find best market when marketId not provided', async () => {
-      const asset = '0xA0b86a33E6441C8C6bD63aFfaE0E30E2495B5CE0' as Address // USDC
+      const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address // USDC
       const amount = BigInt('1000000000') // 1000 USDC
 
       const lendTransaction = await provider.lend(asset, amount)
@@ -180,10 +162,9 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should use custom slippage when provided', async () => {
-      const asset = '0xA0b86a33E6441C8C6bD63aFfaE0E30E2495B5CE0' as Address
+      const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address
       const amount = BigInt('1000000000')
-      const marketId =
-        '0x1111111111111111111111111111111111111111111111111111111111111111'
+      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
       const customSlippage = 100 // 1%
 
       const lendTransaction = await provider.lend(asset, amount, marketId, {
@@ -196,7 +177,7 @@ describe('LendProviderMorpho', () => {
 
   describe('findBestMarketForAsset', () => {
     it('should find market with highest APY', async () => {
-      const asset = '0xA0b86a33E6441C8C6bD63aFfaE0E30E2495B5CE0' as Address
+      const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address
 
       // Access private method for testing
       const findBestMarket = (
@@ -222,46 +203,6 @@ describe('LendProviderMorpho', () => {
       await expect(findBestMarket(asset)).rejects.toThrow(
         `No markets available for asset ${asset}`,
       )
-    })
-  })
-
-  describe('calculateSupplyApy', () => {
-    it('should calculate supply APY correctly', () => {
-      const mockMarket = {
-        borrowRate: BigInt('50000000000000000'), // 5% in wei
-        utilization: 0.8, // 80%
-      }
-
-      const calculateSupplyApy = (
-        provider as unknown as {
-          calculateSupplyApy: (market: {
-            borrowRate: bigint
-            utilization: number
-          }) => number
-        }
-      ).calculateSupplyApy.bind(provider)
-      const apy = calculateSupplyApy(mockMarket)
-
-      expect(apy).toBeCloseTo(0.036) // 5% * 0.8 * 0.9 = 3.6%
-    })
-
-    it('should handle zero borrow rate', () => {
-      const mockMarket = {
-        borrowRate: BigInt('0'),
-        utilization: 0.8,
-      }
-
-      const calculateSupplyApy = (
-        provider as unknown as {
-          calculateSupplyApy: (market: {
-            borrowRate: bigint
-            utilization: number
-          }) => number
-        }
-      ).calculateSupplyApy.bind(provider)
-      const apy = calculateSupplyApy(mockMarket)
-
-      expect(apy).toBe(0)
     })
   })
 })

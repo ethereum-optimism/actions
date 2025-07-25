@@ -7,18 +7,16 @@ import { LendProviderMorpho } from './providers/morpho.js'
  * Create a lending provider based on configuration
  * @description Factory function for creating lending provider instances
  * @param config - Lending provider configuration
- * @param chainId - Ethereum chain ID
  * @param publicClient - Viem public client for blockchain interactions
  * @returns Lending provider instance
  */
 export function createLendProvider(
   config: LendConfig,
-  chainId: number,
   publicClient: PublicClient,
 ): LendProvider {
   switch (config.type) {
     case 'morpho':
-      return new LendProviderMorpho(config, chainId, publicClient)
+      return new LendProviderMorpho(config, publicClient)
     default:
       throw new Error(`Unsupported lending provider type`)
   }

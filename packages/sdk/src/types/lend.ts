@@ -21,17 +21,26 @@ export interface LendProvider {
   ): Promise<LendTransaction>
 
   /**
-   * Get available markets for lending
-   * @returns Promise resolving to array of available markets
-   */
-  getAvailableMarkets(): Promise<LendMarket[]>
-
-  /**
    * Get detailed market information
    * @param marketId - Market identifier
    * @returns Promise resolving to market information
    */
   getMarketInfo(marketId: string): Promise<LendMarketInfo>
+
+  /**
+   * Withdraw/redeem assets from a market
+   * @param asset - Asset token address to withdraw
+   * @param amount - Amount to withdraw (in wei)
+   * @param marketId - Optional specific market ID
+   * @param options - Optional withdrawal configuration
+   * @returns Promise resolving to withdrawal transaction details
+   */
+  withdraw(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction>
 }
 
 /**
@@ -125,10 +134,6 @@ export type LendConfig = MorphoLendConfig
 export interface MorphoLendConfig {
   /** Lending provider type */
   type: 'morpho'
-  /** Morpho protocol address */
-  morphoAddress: Address
-  /** Bundler address for transaction bundling */
-  bundlerAddress: Address
   /** Default slippage tolerance (basis points) */
   defaultSlippage?: number
 }

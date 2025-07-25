@@ -8,11 +8,28 @@ import type { GetAllWalletsOptions, WalletProvider } from './types/wallet.js'
 import type { Wallet } from './wallet/index.js'
 import { WalletProviderPrivy } from './wallet/providers/privy.js'
 
+// Unichain configuration
+const unichain = {
+  id: 130,
+  name: 'Unichain',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.unichain.org'] },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Unichain Explorer',
+      url: 'https://unichain.blockscout.com',
+    },
+  },
+}
+
 /**
  * Main Verbs SDK class
  * @description Core implementation of the Verbs SDK
  */
 export class Verbs implements VerbsInterface {
+  // TODO Move to wallet provider
   createWallet!: (userId: string) => Promise<Wallet>
   getWallet!: (userId: string) => Promise<Wallet | null>
   getAllWallets!: (options?: GetAllWalletsOptions) => Promise<Wallet[]>
@@ -22,18 +39,15 @@ export class Verbs implements VerbsInterface {
 
   constructor(config: VerbsConfig) {
     // Create lending provider if configured
-    if (config.lending) {
-      const chainId = config.chainId || 1 // Default to mainnet
-      const chain = chainId === 10 ? optimism : mainnet
+    if (config.lend) {
+      const chainId = config.chainId || 130 // Default to Unichain
+      const chain =
+        chainId === 10 ? optimism : chainId === 130 ? unichain : mainnet
       const publicClient = createPublicClient({
         chain,
         transport: http(config.rpcUrl),
       }) as PublicClient
-      this.lendProvider = createLendProvider(
-        config.lending,
-        chainId,
-        publicClient,
-      )
+      this.lendProvider = createLendProvider(config.lend, publicClient)
     }
 
     this.walletProvider = this.createWalletProvider(config)

@@ -1,7 +1,7 @@
+import type { IToken } from '@morpho-org/blue-sdk'
 import type { Address, PublicClient } from 'viem'
 
 import type {
-  LendMarket,
   LendMarketInfo,
   LendOptions,
   LendProvider,
@@ -9,60 +9,80 @@ import type {
   MorphoLendConfig,
 } from '../../types/lend.js'
 
-// Mock types for Morpho SDK compatibility
-interface MockMarketConfig {
+// Extended market config type for internal use
+interface MarketConfig {
   id: string
-  loanToken: {
-    address: Address
-    symbol: string
-    decimals: number
-  }
-  collateralToken: {
-    address: Address
-    symbol: string
-    decimals: number
-  }
+  loanToken: IToken & { address: Address }
+  collateralToken: IToken & { address: Address }
   oracle: Address
   irm: Address
-  lltv: number
+  lltv: bigint
 }
 
-interface MockMarket {
-  utilization: number
-  liquidity: bigint
-  borrowRate: bigint
-  totalSupply: bigint
-  totalBorrow: bigint
-  supplyRate: bigint
-  accrueInterest: () => MockMarket
-}
+/**
+ * Supported markets on Unichain for Morpho lending
+ * @description Static configuration of supported markets for initial launch
+ */
+const SUPPORTED_MARKETS: MarketConfig[] = [
+  {
+    // Gauntlet USDC vault market - primary supported market
+    id: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
+    loanToken: {
+      address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address, // USDC on Unichain (common address)
+      symbol: 'USDC',
+      decimals: 6n,
+      name: 'USD Coin',
+    },
+    collateralToken: {
+      address: '0x4200000000000000000000000000000000000006' as Address, // WETH on Unichain (standard L2 address)
+      symbol: 'WETH',
+      decimals: 18n,
+      name: 'Wrapped Ether',
+    },
+    oracle: '0x0000000000000000000000000000000000000000' as Address, // Placeholder - to be updated
+    irm: '0x0000000000000000000000000000000000000000' as Address, // Placeholder - to be updated
+    lltv: BigInt(0.8 * 1e18), // 80% LLTV
+  },
+]
+
+/**
+ * Supported networks for Morpho lending
+ * @description Networks where Morpho is deployed and supported
+ */
+const SUPPORTED_NETWORKS = {
+  UNICHAIN: {
+    chainId: 130,
+    name: 'Unichain',
+    morphoAddress: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as Address,
+    bundlerAddress: '0x23055618898e202386e6c13955a58D3C68200BFB' as Address,
+  },
+} as const
 
 /**
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
 export class LendProviderMorpho implements LendProvider {
+  /** Morpho protocol address for Unichain */
   private morphoAddress: Address
+  /** Bundler address for transaction bundling on Unichain */
   private bundlerAddress: Address
   private defaultSlippage: number
-  private chainId: number
   private publicClient: PublicClient
 
   /**
    * Create a new Morpho lending provider
    * @param config - Morpho lending configuration
-   * @param chainId - Ethereum chain ID (e.g., 1 for mainnet, 10 for OP Mainnet)
    * @param publicClient - Viem public client for blockchain interactions
    */
-  constructor(
-    config: MorphoLendConfig,
-    chainId: number,
-    publicClient: PublicClient,
-  ) {
-    this.morphoAddress = config.morphoAddress
-    this.bundlerAddress = config.bundlerAddress
+  constructor(config: MorphoLendConfig, publicClient: PublicClient) {
+    // Use Unichain as the default network for now
+    // TODO: In the future, could determine network from publicClient
+    const network = SUPPORTED_NETWORKS.UNICHAIN
+
+    this.morphoAddress = network.morphoAddress
+    this.bundlerAddress = network.bundlerAddress
     this.defaultSlippage = config.defaultSlippage || 50 // 0.5% default
-    this.chainId = chainId
     this.publicClient = publicClient
   }
 
@@ -118,51 +138,31 @@ export class LendProviderMorpho implements LendProvider {
   }
 
   /**
-   * Get available markets for lending
-   * @description Retrieves all available Morpho markets for lending
-   * @returns Promise resolving to array of available markets
+   * Withdraw assets from a Morpho market
+   * @description Withdraws assets from a Morpho market using Blue_Withdraw operation
+   * @param asset - Asset token address to withdraw
+   * @param amount - Amount to withdraw (in wei)
+   * @param marketId - Optional specific market ID
+   * @param options - Optional withdrawal configuration
+   * @returns Promise resolving to withdrawal transaction details
    */
-  async getAvailableMarkets(): Promise<LendMarket[]> {
-    try {
-      // 1. Fetch market configurations from Morpho
-      const marketConfigs = await this.fetchMarketConfigs()
+  async withdraw(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction> {
+    // TODO: Implement withdrawal functionality
+    // This would involve:
+    // 1. Find suitable market if marketId not provided
+    // 2. Check user's position and available balance
+    // 3. Create withdrawal transaction data
+    // 4. Return transaction details for wallet execution
 
-      // 2. Process each market to get current data
-      const markets: LendMarket[] = []
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _unused = { asset, amount, marketId, options }
 
-      for (const config of marketConfigs) {
-        try {
-          // Mock market data
-          const mockMarket = this.createMockMarket()
-          const accruedMarket = mockMarket.accrueInterest()
-
-          // Calculate APY and utilization
-          const utilization = accruedMarket.utilization
-          const supplyApy = this.calculateSupplyApy(accruedMarket)
-          const liquidity = accruedMarket.liquidity
-
-          markets.push({
-            id: config.id,
-            name: `${config.loanToken.symbol}/${config.collateralToken.symbol} Market`,
-            loanToken: config.loanToken.address,
-            collateralToken: config.collateralToken.address,
-            supplyApy,
-            utilization,
-            liquidity,
-          })
-        } catch {
-          // Skip markets that fail to fetch
-        }
-      }
-
-      return markets
-    } catch (error) {
-      throw new Error(
-        `Failed to fetch available markets: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      )
-    }
+    throw new Error('Withdraw functionality not yet implemented')
   }
 
   /**
@@ -181,31 +181,26 @@ export class LendProviderMorpho implements LendProvider {
         throw new Error(`Market ${marketId} not found`)
       }
 
-      // 2. Fetch current market state (mock)
-      const mockMarket = this.createMockMarket()
-      const accruedMarket = mockMarket.accrueInterest()
-
-      // 3. Calculate rates and utilization
-      const utilization = accruedMarket.utilization
-      const supplyApy = this.calculateSupplyApy(accruedMarket)
-      const liquidity = accruedMarket.liquidity
+      // 2. Return market information with static mock data
+      // TODO: In the future, this would fetch live market data from Morpho Blue SDK
+      const currentTimestamp = Math.floor(Date.now() / 1000)
 
       return {
         id: marketId,
         name: `${config.loanToken.symbol}/${config.collateralToken.symbol} Market`,
         loanToken: config.loanToken.address,
         collateralToken: config.collateralToken.address,
-        supplyApy,
-        utilization,
-        liquidity,
+        supplyApy: 0.04, // 4% APY - static mock data
+        utilization: 0.75, // 75% utilization - static mock data
+        liquidity: BigInt('1250000000000000000000'), // 1250 ETH - static mock data
         oracle: config.oracle,
         irm: config.irm,
-        lltv: config.lltv,
-        totalSupply: accruedMarket.totalSupply,
-        totalBorrow: accruedMarket.totalBorrow,
-        supplyRate: accruedMarket.supplyRate,
-        borrowRate: accruedMarket.borrowRate,
-        lastUpdate: Math.floor(Date.now() / 1000),
+        lltv: Number(config.lltv) / 1e18, // Convert from BigInt to decimal
+        totalSupply: BigInt('5000000000000000000000'), // 5000 ETH - static mock data
+        totalBorrow: BigInt('3750000000000000000000'), // 3750 ETH - static mock data
+        supplyRate: BigInt(Math.floor(0.04 * 1e18)), // 4% APY in wei format
+        borrowRate: BigInt(Math.floor(0.05 * 1e18)), // 5% APY in wei format
+        lastUpdate: currentTimestamp,
       }
     } catch (error) {
       throw new Error(
@@ -222,73 +217,28 @@ export class LendProviderMorpho implements LendProvider {
    * @returns Promise resolving to market ID
    */
   private async findBestMarketForAsset(asset: Address): Promise<string> {
-    const markets = await this.getAvailableMarkets()
-    const assetMarkets = markets.filter((market) => market.loanToken === asset)
+    // Filter supported markets by asset
+    const assetMarkets = SUPPORTED_MARKETS.filter(
+      (market) => market.loanToken.address === asset,
+    )
 
     if (assetMarkets.length === 0) {
       throw new Error(`No markets available for asset ${asset}`)
     }
 
-    // Return market with highest APY
-    return assetMarkets.reduce((best, current) =>
-      current.supplyApy > best.supplyApy ? current : best,
-    ).id
+    // For now, return the first (and likely only) supported market for the asset
+    // TODO: In the future, this could compare APYs from live market data
+    return assetMarkets[0].id
   }
 
   /**
-   * Fetch market configurations from Morpho
-   * @returns Promise resolving to array of market configurations
+   * Fetch market configurations from static supported markets
+   * @returns Promise resolving to array of supported market configurations
    */
-  private async fetchMarketConfigs(): Promise<MockMarketConfig[]> {
-    // TODO: Implement actual market config fetching
-    // This would typically fetch from Morpho's subgraph or registry
-
-    // Placeholder implementation with common markets
-    return [
-      {
-        id: '0x' + '1'.repeat(64),
-        loanToken: {
-          address: '0xA0b86a33E6441C8C6bD63aFfaE0E30E2495B5CE0' as Address,
-          symbol: 'USDC',
-          decimals: 6,
-        },
-        collateralToken: {
-          address: '0x4200000000000000000000000000000000000006' as Address,
-          symbol: 'WETH',
-          decimals: 18,
-        },
-        oracle: ('0x' + '2'.repeat(40)) as Address,
-        irm: ('0x' + '3'.repeat(40)) as Address,
-        lltv: 0.8,
-      },
-    ] as MockMarketConfig[]
-  }
-
-  /**
-   * Calculate supply APY for a market
-   * @param market - Accrued market instance
-   * @returns Supply APY as decimal (0.05 = 5%)
-   */
-  private calculateSupplyApy(market: MockMarket): number {
-    // TODO: Implement actual APY calculation using market rates
-    // This is a simplified calculation
-    const borrowRate = Number(market.borrowRate || 0n) / 1e18
-    const utilization = market.utilization
-    return borrowRate * utilization * 0.9 // 90% of borrow rate goes to suppliers
-  }
-
-  private createMockMarket(): MockMarket {
-    return {
-      utilization: 0.75,
-      liquidity: BigInt('1000000000000000000000'), // 1000 ETH
-      borrowRate: BigInt('50000000000000000'), // 5% APY
-      totalSupply: BigInt('5000000000000000000000'), // 5000 ETH
-      totalBorrow: BigInt('3750000000000000000000'), // 3750 ETH
-      supplyRate: BigInt('40000000000000000'), // 4% APY
-      accrueInterest: () => {
-        // Mock accrued interest - in real implementation this would update rates
-        return this.createMockMarket()
-      },
-    }
+  private async fetchMarketConfigs(): Promise<MarketConfig[]> {
+    // Return statically configured supported markets for Unichain
+    // TODO: In the future, this could be enhanced to fetch live market data
+    // from Morpho's subgraph or registry for additional validation
+    return SUPPORTED_MARKETS
   }
 }

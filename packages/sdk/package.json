@@ -38,6 +38,8 @@
   "author": "Optimism PBC",
   "license": "MIT",
   "dependencies": {
+    "@morpho-org/blue-sdk": "^4.5.1",
+    "@morpho-org/blue-sdk-viem": "^3.1.1",
     "@privy-io/server-auth": "latest",
     "viem": "^2.24.1"
   },
