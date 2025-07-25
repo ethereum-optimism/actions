@@ -14,7 +14,7 @@ const unichain = {
   name: 'Unichain',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://rpc.unichain.org'] },
+    default: { http: ['https://mainnet.unichain.org/'] },
   },
   blockExplorers: {
     default: {

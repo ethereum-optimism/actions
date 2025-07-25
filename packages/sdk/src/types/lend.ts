@@ -21,9 +21,23 @@ export interface LendProvider {
   ): Promise<LendTransaction>
 
   /**
-   * Get detailed market information
+   * Get detailed vault information
+   * @param vaultAddress - Vault address
+   * @returns Promise resolving to vault information
+   */
+  getVaultInfo(vaultAddress: Address): Promise<LendVaultInfo>
+
+  /**
+   * Get list of available vaults
+   * @returns Promise resolving to array of vault information
+   */
+  getVaults(): Promise<LendVaultInfo[]>
+
+  /**
+   * Get detailed market information (deprecated - use getVaultInfo)
    * @param marketId - Market identifier
    * @returns Promise resolving to market information
+   * @deprecated Use getVaultInfo instead
    */
   getMarketInfo(marketId: string): Promise<LendMarketInfo>
 
@@ -109,6 +123,37 @@ export interface LendMarketInfo extends LendMarket {
   supplyRate: bigint
   /** Borrow rate */
   borrowRate: bigint
+  /** Last update timestamp */
+  lastUpdate: number
+}
+
+/**
+ * Lending vault information
+ * @description Information about a Morpho vault
+ */
+export interface LendVaultInfo {
+  /** Vault address */
+  address: Address
+  /** Vault name */
+  name: string
+  /** Asset token address */
+  asset: Address
+  /** Total assets under management */
+  totalAssets: bigint
+  /** Total shares issued */
+  totalShares: bigint
+  /** Current APY */
+  apy: number
+  /** Vault owner address */
+  owner: Address
+  /** Vault curator address */
+  curator: Address
+  /** Fee percentage (in basis points) */
+  fee: number
+  /** Available deposit capacity */
+  depositCapacity: bigint
+  /** Available withdrawal capacity */
+  withdrawalCapacity: bigint
   /** Last update timestamp */
   lastUpdate: number
 }

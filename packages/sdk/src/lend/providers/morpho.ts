@@ -1,5 +1,5 @@
 import type { IToken, MarketId } from '@morpho-org/blue-sdk'
-import { fetchMarket } from '@morpho-org/blue-sdk-viem'
+import { fetchMarket, fetchVault } from '@morpho-org/blue-sdk-viem'
 import { Time } from '@morpho-org/morpho-ts'
 import type { Address, PublicClient } from 'viem'
 
@@ -8,10 +8,18 @@ import type {
   LendOptions,
   LendProvider,
   LendTransaction,
+  LendVaultInfo,
   MorphoLendConfig,
 } from '../../types/lend.js'
 
-// Extended market config type for internal use
+// Extended vault config type for internal use
+interface VaultConfig {
+  address: Address
+  name: string
+  asset: IToken & { address: Address }
+}
+
+// Extended market config type for internal use (deprecated - for backward compatibility)
 interface MarketConfig {
   id: string
   loanToken: IToken & { address: Address }
@@ -19,24 +27,19 @@ interface MarketConfig {
 }
 
 /**
- * Supported markets on Unichain for Morpho lending
- * @description Static configuration of supported markets for initial launch
+ * Supported vaults on Unichain for Morpho lending
+ * @description Static configuration of supported vaults for initial launch
  */
-const SUPPORTED_MARKETS: MarketConfig[] = [
+const SUPPORTED_VAULTS: VaultConfig[] = [
   {
-    // Gauntlet USDC vault market - primary supported market
-    id: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
-    loanToken: {
-      address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address, // USDC on Unichain (common address)
+    // Gauntlet USDC vault - primary supported vault
+    address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
+    name: 'Gauntlet USDC',
+    asset: {
+      address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address, // USDC on Unichain
       symbol: 'USDC',
       decimals: 6n,
       name: 'USD Coin',
-    },
-    collateralToken: {
-      address: '0x4200000000000000000000000000000000000006' as Address, // WETH on Unichain (standard L2 address)
-      symbol: 'WETH',
-      decimals: 18n,
-      name: 'Wrapped Ether',
     },
   },
 ]
@@ -171,10 +174,81 @@ export class LendProviderMorpho implements LendProvider {
   }
 
   /**
-   * Get detailed market information
+   * Get detailed vault information
+   * @description Retrieves comprehensive information about a specific vault
+   * @param vaultAddress - Vault address
+   * @returns Promise resolving to detailed vault information
+   */
+  async getVaultInfo(vaultAddress: Address): Promise<LendVaultInfo> {
+    try {
+      // 1. Fetch vault configuration for validation
+      const vaultConfigs = await this.fetchVaultConfigs()
+      const config = vaultConfigs.find((c) => c.address === vaultAddress)
+
+      if (!config) {
+        throw new Error(`Vault ${vaultAddress} not found`)
+      }
+
+      // 2. Fetch live vault data from Morpho SDK
+      // Try fetchVault first (simpler), fallback to fetchAccrualVault if needed
+      const vault = await fetchVault(vaultAddress, this.publicClient)
+
+      // 3. Convert Morpho SDK data to our interface format
+      const currentTimestampSeconds = Math.floor(Date.now() / 1000)
+
+      // For basic vault, we don't have APY calculation - would need AccrualVault for that
+      const apy = 0 // Placeholder - AccrualVault would be needed for APY
+
+      return {
+        address: vaultAddress,
+        name: config.name,
+        asset: config.asset.address,
+        totalAssets: vault.totalAssets,
+        totalShares: vault.totalSupply,
+        apy,
+        owner: vault.owner,
+        curator: vault.curator,
+        fee: Number(vault.fee) / 1e18, // Convert from WAD to decimal percentage
+        depositCapacity: vault.totalAssets, // Placeholder - would need actual capacity logic
+        withdrawalCapacity: vault.totalAssets, // Placeholder - would need actual capacity logic
+        lastUpdate: currentTimestampSeconds,
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to get vault info for ${vaultAddress}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
+  }
+
+  /**
+   * Get list of available vaults
+   * @description Retrieves information about all supported vaults
+   * @returns Promise resolving to array of vault information
+   */
+  async getVaults(): Promise<LendVaultInfo[]> {
+    try {
+      const vaultConfigs = await this.fetchVaultConfigs()
+      const vaultInfoPromises = vaultConfigs.map((config) =>
+        this.getVaultInfo(config.address),
+      )
+      return await Promise.all(vaultInfoPromises)
+    } catch (error) {
+      throw new Error(
+        `Failed to get vaults: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
+  }
+
+  /**
+   * Get detailed market information (deprecated - use getVaultInfo)
    * @description Retrieves comprehensive information about a specific market
    * @param marketId - Market identifier
    * @returns Promise resolving to detailed market information
+   * @deprecated Use getVaultInfo instead
    */
   async getMarketInfo(marketId: string): Promise<LendMarketInfo> {
     try {
@@ -228,33 +302,60 @@ export class LendProviderMorpho implements LendProvider {
   }
 
   /**
-   * Find the best market for a given asset
+   * Find the best vault for a given asset
    * @param asset - Asset token address
-   * @returns Promise resolving to market ID
+   * @returns Promise resolving to vault address
    */
-  private async findBestMarketForAsset(asset: Address): Promise<string> {
-    // Filter supported markets by asset
-    const assetMarkets = SUPPORTED_MARKETS.filter(
-      (market) => market.loanToken.address === asset,
+  private async findBestVaultForAsset(asset: Address): Promise<Address> {
+    // Filter supported vaults by asset
+    const assetVaults = SUPPORTED_VAULTS.filter(
+      (vault) => vault.asset.address === asset,
     )
 
-    if (assetMarkets.length === 0) {
-      throw new Error(`No markets available for asset ${asset}`)
+    if (assetVaults.length === 0) {
+      throw new Error(`No vaults available for asset ${asset}`)
     }
 
-    // For now, return the first (and likely only) supported market for the asset
-    // TODO: In the future, this could compare APYs from live market data
-    return assetMarkets[0].id
+    // For now, return the first (and likely only) supported vault for the asset
+    // TODO: In the future, this could compare APYs from live vault data
+    return assetVaults[0].address
   }
 
   /**
-   * Fetch market configurations from static supported markets
+   * Find the best market for a given asset (deprecated)
+   * @param asset - Asset token address
+   * @returns Promise resolving to market ID
+   * @deprecated Use findBestVaultForAsset instead
+   */
+  private async findBestMarketForAsset(asset: Address): Promise<string> {
+    // For backward compatibility, find a vault and return its address as string
+    const vaultAddress = await this.findBestVaultForAsset(asset)
+    return vaultAddress
+  }
+
+  /**
+   * Fetch vault configurations from static supported vaults
+   * @returns Promise resolving to array of supported vault configurations
+   */
+  private async fetchVaultConfigs(): Promise<VaultConfig[]> {
+    // Return statically configured supported vaults for Unichain
+    // TODO: In the future, this could be enhanced to fetch live vault data
+    // from Morpho's API or subgraph for additional validation
+    return SUPPORTED_VAULTS
+  }
+
+  /**
+   * Fetch market configurations from static supported markets (deprecated)
    * @returns Promise resolving to array of supported market configurations
+   * @deprecated Use fetchVaultConfigs instead
    */
   private async fetchMarketConfigs(): Promise<MarketConfig[]> {
-    // Return statically configured supported markets for Unichain
-    // TODO: In the future, this could be enhanced to fetch live market data
-    // from Morpho's subgraph or registry for additional validation
-    return SUPPORTED_MARKETS
+    // For backward compatibility, convert vaults to market-like objects
+    const vaultConfigs = await this.fetchVaultConfigs()
+    return vaultConfigs.map((vault) => ({
+      id: vault.address,
+      loanToken: vault.asset,
+      collateralToken: vault.asset, // Not applicable for vaults
+    }))
   }
 }
