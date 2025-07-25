@@ -1,3 +1,8 @@
+import { createPublicClient, http, type PublicClient } from 'viem'
+import { mainnet, optimism } from 'viem/chains'
+
+import { createLendProvider } from './lend/index.js'
+import type { LendProvider } from './types/lend.js'
 import type { VerbsConfig, VerbsInterface } from './types/verbs.js'
 import type { GetAllWalletsOptions, WalletProvider } from './types/wallet.js'
 import type { Wallet } from './wallet/index.js'
@@ -13,8 +18,24 @@ export class Verbs implements VerbsInterface {
   getAllWallets!: (options?: GetAllWalletsOptions) => Promise<Wallet[]>
 
   private walletProvider: WalletProvider
+  private lendProvider?: LendProvider
 
   constructor(config: VerbsConfig) {
+    // Create lending provider if configured
+    if (config.lending) {
+      const chainId = config.chainId || 1 // Default to mainnet
+      const chain = chainId === 10 ? optimism : mainnet
+      const publicClient = createPublicClient({
+        chain,
+        transport: http(config.rpcUrl),
+      }) as PublicClient
+      this.lendProvider = createLendProvider(
+        config.lending,
+        chainId,
+        publicClient,
+      )
+    }
+
     this.walletProvider = this.createWalletProvider(config)
 
     // Delegate wallet methods to wallet provider
@@ -32,7 +53,11 @@ export class Verbs implements VerbsInterface {
 
     switch (wallet.type) {
       case 'privy':
-        return new PrivyWalletProvider(wallet.appId, wallet.appSecret)
+        return new PrivyWalletProvider(
+          wallet.appId,
+          wallet.appSecret,
+          this.lendProvider,
+        )
       default:
         throw new Error(`Unsupported wallet provider type: ${wallet.type}`)
     }

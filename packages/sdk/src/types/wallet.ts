@@ -1,5 +1,7 @@
 import type { Address } from 'viem'
 
+import type { LendOptions, LendProvider, LendTransaction } from './lend.js'
+
 /**
  * Wallet provider interface
  * @description Interface for wallet provider implementations
@@ -34,6 +36,12 @@ export interface Wallet extends WalletVerbs {
   id: string
   /** Wallet address */
   address: Address
+  /**
+   * Set lending provider
+   * @description Updates the lending provider for this wallet
+   * @param lendProvider - Lending provider instance
+   */
+  setLendProvider(lendProvider: LendProvider): void
 }
 
 /**
@@ -57,4 +65,18 @@ export type WalletVerbs = {
    * @returns Promise resolving to wallet balance in wei
    */
   getBalance(): Promise<bigint>
+  /**
+   * Lend assets to a lending market
+   * @param asset - Asset token address to lend
+   * @param amount - Amount to lend (in wei)
+   * @param marketId - Optional specific market ID
+   * @param options - Optional lending configuration
+   * @returns Promise resolving to lending transaction details
+   */
+  lend(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction>
 }

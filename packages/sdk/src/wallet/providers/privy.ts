@@ -1,6 +1,7 @@
 import { PrivyClient } from '@privy-io/server-auth'
 import type { Address } from 'viem'
 
+import type { LendProvider } from '../../types/lend.js'
 import type {
   GetAllWalletsOptions,
   WalletProvider,
@@ -13,14 +14,17 @@ import { Wallet } from '../index.js'
  */
 export class PrivyWalletProvider implements WalletProvider {
   private privy: PrivyClient
+  private lendProvider?: LendProvider
 
   /**
    * Create a new Privy wallet provider
    * @param appId - Privy application ID
    * @param appSecret - Privy application secret
+   * @param lendProvider - Optional lending provider for wallet operations
    */
-  constructor(appId: string, appSecret: string) {
+  constructor(appId: string, appSecret: string, lendProvider?: LendProvider) {
     this.privy = new PrivyClient(appId, appSecret)
+    this.lendProvider = lendProvider
   }
 
   /**
@@ -36,7 +40,7 @@ export class PrivyWalletProvider implements WalletProvider {
         chainType: 'ethereum',
       })
 
-      const walletInstance = new Wallet(wallet.id)
+      const walletInstance = new Wallet(wallet.id, this.lendProvider)
       walletInstance.address = wallet.address as Address
       return walletInstance
     } catch {
@@ -55,7 +59,7 @@ export class PrivyWalletProvider implements WalletProvider {
       // TODO: Implement proper user-to-wallet lookup
       const wallet = await this.privy.walletApi.getWallet({ id: userId })
 
-      const walletInstance = new Wallet(wallet.id)
+      const walletInstance = new Wallet(wallet.id, this.lendProvider)
       walletInstance.address = wallet.address as Address
       return walletInstance
     } catch {

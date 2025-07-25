@@ -1,9 +1,17 @@
+export { createLendProvider, MorphoLendProvider } from './lend/index.js'
 export type {
   CreateWalletResponse,
   ErrorResponse,
   GetAllWalletsOptions,
   GetAllWalletsResponse,
   GetWalletResponse,
+  LendConfig,
+  LendMarket,
+  LendMarketInfo,
+  LendOptions,
+  LendProvider,
+  LendTransaction,
+  MorphoLendConfig,
   PrivyWalletConfig,
   VerbsConfig,
   VerbsInterface,
