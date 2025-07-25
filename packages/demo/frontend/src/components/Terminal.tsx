@@ -410,10 +410,13 @@ ${walletList}`,
                 line.id === 'welcome-ascii'
                   ? {
                       fontFamily:
-                        'JetBrains Mono, Monaco, Menlo, Consolas, monospace',
+                        'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
                       color: '#b8bb26',
                       whiteSpace: 'pre',
-                      lineHeight: '1.2',
+                      lineHeight: '1.0',
+                      letterSpacing: '0',
+                      fontVariantLigatures: 'none',
+                      fontFeatureSettings: '"liga" 0',
                       margin: 0,
                       padding: 0,
                       border: 'none',
