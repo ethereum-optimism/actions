@@ -91,6 +91,23 @@ describe('LendProviderMorpho', () => {
     })
   })
 
+  describe('supportedNetworkIds', () => {
+    it('should return array of supported network chain IDs', () => {
+      const networkIds = provider.supportedNetworkIds()
+
+      expect(Array.isArray(networkIds)).toBe(true)
+      expect(networkIds).toContain(130) // Unichain
+      expect(networkIds.length).toBeGreaterThan(0)
+    })
+
+    it('should return unique network IDs', () => {
+      const networkIds = provider.supportedNetworkIds()
+      const uniqueIds = [...new Set(networkIds)]
+
+      expect(networkIds.length).toBe(uniqueIds.length)
+    })
+  })
+
   describe('getMarketInfo', () => {
     it('should return detailed market information', async () => {
       const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault

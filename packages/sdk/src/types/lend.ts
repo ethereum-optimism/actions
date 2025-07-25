@@ -41,6 +41,13 @@ export interface LendProvider {
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction>
+
+  /**
+   * Get supported network IDs
+   * @description Returns an array of chain IDs that this provider supports
+   * @returns Array of supported network chain IDs
+   */
+  supportedNetworkIds(): number[]
 }
 
 /**

@@ -166,6 +166,15 @@ export class LendProviderMorpho implements LendProvider {
   }
 
   /**
+   * Get supported network IDs
+   * @description Returns an array of chain IDs that this provider supports
+   * @returns Array of supported network chain IDs
+   */
+  supportedNetworkIds(): number[] {
+    return Object.values(SUPPORTED_NETWORKS).map((network) => network.chainId)
+  }
+
+  /**
    * Get detailed market information
    * @description Retrieves comprehensive information about a specific market
    * @param marketId - Market identifier
