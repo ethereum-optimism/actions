@@ -49,7 +49,10 @@ module.exports = {
     // TypeScript rules
     '@typescript-eslint/consistent-type-imports': 'error',
     '@typescript-eslint/member-ordering': 'warn',
-    '@typescript-eslint/no-unused-vars': 'error',
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      { varsIgnorePattern: '_', argsIgnorePattern: '_' },
+    ],
     '@typescript-eslint/ban-ts-comment': [
       'error',
       {

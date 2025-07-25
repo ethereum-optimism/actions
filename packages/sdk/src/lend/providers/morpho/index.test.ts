@@ -1,6 +1,6 @@
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import { type Address, createPublicClient, http, type PublicClient } from 'viem'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MorphoLendConfig } from '../../../types/lend.js'
 import { LendProviderMorpho } from './index.js'
@@ -136,19 +136,26 @@ describe('LendProviderMorpho', () => {
       vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as any)
 
       // Mock the fetch API for rewards
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          data: {
-            vaultByAddress: {
-              state: {
-                rewards: [],
-                allocation: [],
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({
+            data: {
+              vaultByAddress: {
+                state: {
+                  rewards: [],
+                  allocation: [],
+                },
               },
             },
-          },
-        }),
-      } as any)
+          }),
+        } as any),
+      )
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
     })
 
     it('should successfully create a lending transaction', async () => {

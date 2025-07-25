@@ -71,15 +71,17 @@ describe('Morpho API Integration', () => {
 
   it('should handle API errors gracefully', async () => {
     // Mock fetch to simulate network error
-    const originalFetch = global.fetch
-    global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new Error('Network error')),
+    )
 
     try {
       const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
       expect(vaultData).toBeNull()
     } finally {
       // Restore original fetch
-      global.fetch = originalFetch
+      vi.unstubAllGlobals()
     }
   })
 

@@ -1,4 +1,6 @@
+export * from './chain.js'
 export * from './lend.js'
 export * from './service.js'
+export * from './token.js'
 export * from './verbs.js'
 export * from './wallet.js'

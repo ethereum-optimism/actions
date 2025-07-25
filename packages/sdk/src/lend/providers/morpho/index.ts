@@ -120,7 +120,7 @@ export class LendProviderMorpho extends LendProvider {
     options?: LendOptions,
   ): Promise<LendTransaction> {
     // TODO: Implement withdrawal functionality
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const _unused = { asset, amount, marketId, options }
     throw new Error('Withdraw functionality not yet implemented')
   }
@@ -160,7 +160,7 @@ export class LendProviderMorpho extends LendProvider {
    */
   async getMarketInfo(marketId: string): Promise<LendMarketInfo> {
     // This method is deprecated and should not be used
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const _unused = { marketId }
     throw new Error(
       'getMarketInfo is deprecated. Use getVault instead with vault address.',
