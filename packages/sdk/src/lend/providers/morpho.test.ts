@@ -1,3 +1,4 @@
+import { fetchMarket } from '@morpho-org/blue-sdk-viem'
 import { type Address, createPublicClient, http, type PublicClient } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -21,15 +22,13 @@ const unichain = {
 }
 
 // Mock the Morpho SDK modules
-vi.mock('@morpho-org/blue-sdk', () => ({
-  Market: {
-    fetch: vi.fn(),
-  },
+vi.mock('@morpho-org/blue-sdk-viem', () => ({
+  fetchMarket: vi.fn(),
 }))
 
-vi.mock('@morpho-org/blue-sdk-viem', () => ({
-  MarketConfig: {
-    fetch: vi.fn(),
+vi.mock('@morpho-org/morpho-ts', () => ({
+  Time: {
+    timestamp: vi.fn(() => BigInt(Math.floor(Date.now() / 1000))),
   },
 }))
 
@@ -112,6 +111,27 @@ describe('LendProviderMorpho', () => {
     it('should return detailed market information', async () => {
       const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
+      // Mock the accrued market data that Market.fetch returns
+      const mockAccruedMarket = {
+        supplyApy: BigInt(5e16), // 5% APY in WAD format
+        borrowApy: BigInt(7e16), // 7% APY in WAD format
+        utilization: BigInt(8e17), // 80% utilization in WAD format
+        liquidity: BigInt(1000000e6), // 1M USDC liquidity
+        totalSupplyAssets: BigInt(5000000e6), // 5M USDC supplied
+        totalBorrowAssets: BigInt(4000000e6), // 4M USDC borrowed
+        accrueInterest: vi.fn().mockReturnThis(),
+      }
+
+      // Mock fetchMarket to return a market that has accrueInterest method and params
+      vi.mocked(fetchMarket).mockResolvedValue({
+        params: {
+          oracle: '0x1111111111111111111111111111111111111111' as Address,
+          irm: '0x2222222222222222222222222222222222222222' as Address,
+          lltv: BigInt(8e17), // 80% LLTV in BigInt format
+        },
+        accrueInterest: vi.fn().mockReturnValue(mockAccruedMarket),
+      } as any)
+
       const marketInfo = await provider.getMarketInfo(marketId)
 
       expect(marketInfo).toHaveProperty('id', marketId)
@@ -129,6 +149,10 @@ describe('LendProviderMorpho', () => {
       expect(marketInfo).toHaveProperty('supplyRate')
       expect(marketInfo).toHaveProperty('borrowRate')
       expect(marketInfo).toHaveProperty('lastUpdate')
+
+      // Verify APY values are correctly converted from WAD format
+      expect(marketInfo.supplyApy).toBeCloseTo(0.05, 2) // 5%
+      expect(marketInfo.utilization).toBeCloseTo(0.8, 2) // 80%
     })
 
     it('should handle market not found error', async () => {
@@ -147,6 +171,26 @@ describe('LendProviderMorpho', () => {
       const amount = BigInt('1000000000') // 1000 USDC
       const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
+      // Mock the market data for getMarketInfo
+      const mockAccruedMarket = {
+        supplyApy: BigInt(5e16), // 5% APY in WAD format
+        borrowApy: BigInt(7e16), // 7% APY in WAD format
+        utilization: BigInt(8e17), // 80% utilization in WAD format
+        liquidity: BigInt(1000000e6), // 1M USDC liquidity
+        totalSupplyAssets: BigInt(5000000e6), // 5M USDC supplied
+        totalBorrowAssets: BigInt(4000000e6), // 4M USDC borrowed
+        accrueInterest: vi.fn().mockReturnThis(),
+      }
+
+      vi.mocked(fetchMarket).mockResolvedValue({
+        params: {
+          oracle: '0x1111111111111111111111111111111111111111' as Address,
+          irm: '0x2222222222222222222222222222222222222222' as Address,
+          lltv: BigInt(8e17), // 80% LLTV in BigInt format
+        },
+        accrueInterest: vi.fn().mockReturnValue(mockAccruedMarket),
+      } as any)
+
       const lendTransaction = await provider.lend(asset, amount, marketId)
 
       expect(lendTransaction).toHaveProperty('hash')
@@ -162,6 +206,26 @@ describe('LendProviderMorpho', () => {
     it('should find best market when marketId not provided', async () => {
       const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address // USDC
       const amount = BigInt('1000000000') // 1000 USDC
+
+      // Mock the market data for getMarketInfo
+      const mockAccruedMarket = {
+        supplyApy: BigInt(5e16), // 5% APY in WAD format
+        borrowApy: BigInt(7e16), // 7% APY in WAD format
+        utilization: BigInt(8e17), // 80% utilization in WAD format
+        liquidity: BigInt(1000000e6), // 1M USDC liquidity
+        totalSupplyAssets: BigInt(5000000e6), // 5M USDC supplied
+        totalBorrowAssets: BigInt(4000000e6), // 4M USDC borrowed
+        accrueInterest: vi.fn().mockReturnThis(),
+      }
+
+      vi.mocked(fetchMarket).mockResolvedValue({
+        params: {
+          oracle: '0x1111111111111111111111111111111111111111' as Address,
+          irm: '0x2222222222222222222222222222222222222222' as Address,
+          lltv: BigInt(8e17), // 80% LLTV in BigInt format
+        },
+        accrueInterest: vi.fn().mockReturnValue(mockAccruedMarket),
+      } as any)
 
       const lendTransaction = await provider.lend(asset, amount)
 
@@ -183,6 +247,26 @@ describe('LendProviderMorpho', () => {
       const amount = BigInt('1000000000')
       const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
       const customSlippage = 100 // 1%
+
+      // Mock the market data for getMarketInfo
+      const mockAccruedMarket = {
+        supplyApy: BigInt(5e16), // 5% APY in WAD format
+        borrowApy: BigInt(7e16), // 7% APY in WAD format
+        utilization: BigInt(8e17), // 80% utilization in WAD format
+        liquidity: BigInt(1000000e6), // 1M USDC liquidity
+        totalSupplyAssets: BigInt(5000000e6), // 5M USDC supplied
+        totalBorrowAssets: BigInt(4000000e6), // 4M USDC borrowed
+        accrueInterest: vi.fn().mockReturnThis(),
+      }
+
+      vi.mocked(fetchMarket).mockResolvedValue({
+        params: {
+          oracle: '0x1111111111111111111111111111111111111111' as Address,
+          irm: '0x2222222222222222222222222222222222222222' as Address,
+          lltv: BigInt(8e17), // 80% LLTV in BigInt format
+        },
+        accrueInterest: vi.fn().mockReturnValue(mockAccruedMarket),
+      } as any)
 
       const lendTransaction = await provider.lend(asset, amount, marketId, {
         slippage: customSlippage,

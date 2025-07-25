@@ -1,4 +1,6 @@
-import type { IToken } from '@morpho-org/blue-sdk'
+import type { IToken, MarketId } from '@morpho-org/blue-sdk'
+import { fetchMarket } from '@morpho-org/blue-sdk-viem'
+import { Time } from '@morpho-org/morpho-ts'
 import type { Address, PublicClient } from 'viem'
 
 import type {
@@ -14,9 +16,6 @@ interface MarketConfig {
   id: string
   loanToken: IToken & { address: Address }
   collateralToken: IToken & { address: Address }
-  oracle: Address
-  irm: Address
-  lltv: bigint
 }
 
 /**
@@ -39,9 +38,6 @@ const SUPPORTED_MARKETS: MarketConfig[] = [
       decimals: 18n,
       name: 'Wrapped Ether',
     },
-    oracle: '0x0000000000000000000000000000000000000000' as Address, // Placeholder - to be updated
-    irm: '0x0000000000000000000000000000000000000000' as Address, // Placeholder - to be updated
-    lltv: BigInt(0.8 * 1e18), // 80% LLTV
   },
 ]
 
@@ -182,7 +178,7 @@ export class LendProviderMorpho implements LendProvider {
    */
   async getMarketInfo(marketId: string): Promise<LendMarketInfo> {
     try {
-      // 1. Fetch market configuration (mock)
+      // 1. Fetch market configuration for validation
       const marketConfigs = await this.fetchMarketConfigs()
       const config = marketConfigs.find((c) => c.id === marketId)
 
@@ -190,26 +186,37 @@ export class LendProviderMorpho implements LendProvider {
         throw new Error(`Market ${marketId} not found`)
       }
 
-      // 2. Return market information with static mock data
-      // TODO: In the future, this would fetch live market data from Morpho Blue SDK
-      const currentTimestamp = Math.floor(Date.now() / 1000)
+      // 2. Fetch live market data from Morpho SDK
+      const market = await fetchMarket(marketId as MarketId, this.publicClient)
+
+      // 3. Accrue interest to get current values
+      const currentTimestamp = Time.timestamp()
+      const accruedMarket = market.accrueInterest(currentTimestamp)
+
+      // 4. Convert Morpho SDK data to our interface format
+      const currentTimestampSeconds = Math.floor(Date.now() / 1000)
+
+      // Convert WAD-scaled values to decimal percentages
+      const supplyApy = Number(accruedMarket.supplyApy) / 1e18
+      const borrowApy = Number(accruedMarket.borrowApy) / 1e18
+      const utilization = Number(accruedMarket.utilization) / 1e18
 
       return {
         id: marketId,
         name: `${config.loanToken.symbol}/${config.collateralToken.symbol} Market`,
         loanToken: config.loanToken.address,
         collateralToken: config.collateralToken.address,
-        supplyApy: 0.04, // 4% APY - static mock data
-        utilization: 0.75, // 75% utilization - static mock data
-        liquidity: BigInt('1250000000000000000000'), // 1250 ETH - static mock data
-        oracle: config.oracle,
-        irm: config.irm,
-        lltv: Number(config.lltv) / 1e18, // Convert from BigInt to decimal
-        totalSupply: BigInt('5000000000000000000000'), // 5000 ETH - static mock data
-        totalBorrow: BigInt('3750000000000000000000'), // 3750 ETH - static mock data
-        supplyRate: BigInt(Math.floor(0.04 * 1e18)), // 4% APY in wei format
-        borrowRate: BigInt(Math.floor(0.05 * 1e18)), // 5% APY in wei format
-        lastUpdate: currentTimestamp,
+        supplyApy,
+        utilization,
+        liquidity: accruedMarket.liquidity,
+        oracle: market.params.oracle,
+        irm: market.params.irm,
+        lltv: Number(market.params.lltv) / 1e18, // Convert from BigInt to decimal
+        totalSupply: accruedMarket.totalSupplyAssets,
+        totalBorrow: accruedMarket.totalBorrowAssets,
+        supplyRate: BigInt(Math.floor(supplyApy * 1e18)), // Convert back to BigInt for interface
+        borrowRate: BigInt(Math.floor(borrowApy * 1e18)), // Convert back to BigInt for interface
+        lastUpdate: currentTimestampSeconds,
       }
     } catch (error) {
       throw new Error(

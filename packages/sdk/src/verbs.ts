@@ -76,6 +76,17 @@ export class Verbs implements VerbsInterface {
         throw new Error(`Unsupported wallet provider type: ${wallet.type}`)
     }
   }
+
+  /**
+   * Get the lend provider instance
+   * @returns LendProvider instance if configured, undefined otherwise
+   */
+  get lend(): LendProvider {
+    if (!this.lendProvider) {
+      throw new Error('Lend provider not configured')
+    }
+    return this.lendProvider
+  }
 }
 
 /**
