@@ -41,7 +41,7 @@ interface MockMarket {
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
-export class MorphoLendProvider implements LendProvider {
+export class LendProviderMorpho implements LendProvider {
   private morphoAddress: Address
   private bundlerAddress: Address
   private defaultSlippage: number

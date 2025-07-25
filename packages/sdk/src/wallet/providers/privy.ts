@@ -12,7 +12,7 @@ import { Wallet } from '../index.js'
  * Privy wallet provider implementation
  * @description Wallet provider implementation using Privy service
  */
-export class PrivyWalletProvider implements WalletProvider {
+export class WalletProviderPrivy implements WalletProvider {
   private privy: PrivyClient
   private lendProvider?: LendProvider
 

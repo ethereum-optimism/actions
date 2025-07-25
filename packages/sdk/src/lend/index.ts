@@ -1,7 +1,7 @@
 import type { PublicClient } from 'viem'
 
 import type { LendConfig, LendProvider } from '../types/lend.js'
-import { MorphoLendProvider } from './providers/morpho.js'
+import { LendProviderMorpho } from './providers/morpho.js'
 
 /**
  * Create a lending provider based on configuration
@@ -18,10 +18,10 @@ export function createLendProvider(
 ): LendProvider {
   switch (config.type) {
     case 'morpho':
-      return new MorphoLendProvider(config, chainId, publicClient)
+      return new LendProviderMorpho(config, chainId, publicClient)
     default:
       throw new Error(`Unsupported lending provider type`)
   }
 }
 
-export { MorphoLendProvider } from './providers/morpho.js'
+export { LendProviderMorpho } from './providers/morpho.js'

@@ -3,7 +3,7 @@ import { mainnet } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MorphoLendConfig } from '../../types/lend.js'
-import { MorphoLendProvider } from './morpho.js'
+import { LendProviderMorpho } from './morpho.js'
 
 // Mock the Morpho SDK modules
 vi.mock('@morpho-org/blue-sdk', () => ({
@@ -24,8 +24,8 @@ vi.mock('@morpho-org/bundler-sdk-viem', () => ({
   encodeBundle: vi.fn(),
 }))
 
-describe('MorphoLendProvider', () => {
-  let provider: MorphoLendProvider
+describe('LendProviderMorpho', () => {
+  let provider: LendProviderMorpho
   let mockConfig: MorphoLendConfig
   let mockPublicClient: ReturnType<typeof createPublicClient>
 
@@ -42,7 +42,7 @@ describe('MorphoLendProvider', () => {
       transport: http(),
     })
 
-    provider = new MorphoLendProvider(
+    provider = new LendProviderMorpho(
       mockConfig,
       1,
       mockPublicClient as unknown as PublicClient,
@@ -51,7 +51,7 @@ describe('MorphoLendProvider', () => {
 
   describe('constructor', () => {
     it('should initialize with provided config', () => {
-      expect(provider).toBeInstanceOf(MorphoLendProvider)
+      expect(provider).toBeInstanceOf(LendProviderMorpho)
     })
 
     it('should use default slippage when not provided', () => {
@@ -59,12 +59,12 @@ describe('MorphoLendProvider', () => {
         ...mockConfig,
         defaultSlippage: undefined,
       }
-      const providerWithDefaults = new MorphoLendProvider(
+      const providerWithDefaults = new LendProviderMorpho(
         configWithoutSlippage,
         1,
         mockPublicClient as unknown as PublicClient,
       )
-      expect(providerWithDefaults).toBeInstanceOf(MorphoLendProvider)
+      expect(providerWithDefaults).toBeInstanceOf(LendProviderMorpho)
     })
   })
 
@@ -86,7 +86,7 @@ describe('MorphoLendProvider', () => {
 
     it('should handle errors gracefully', async () => {
       // Mock a provider that throws an error
-      const failingProvider = new MorphoLendProvider(
+      const failingProvider = new LendProviderMorpho(
         mockConfig,
         1,
         mockPublicClient as unknown as PublicClient,

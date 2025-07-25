@@ -6,7 +6,7 @@ import type { LendProvider } from './types/lend.js'
 import type { VerbsConfig, VerbsInterface } from './types/verbs.js'
 import type { GetAllWalletsOptions, WalletProvider } from './types/wallet.js'
 import type { Wallet } from './wallet/index.js'
-import { PrivyWalletProvider } from './wallet/providers/privy.js'
+import { WalletProviderPrivy } from './wallet/providers/privy.js'
 
 /**
  * Main Verbs SDK class
@@ -53,7 +53,7 @@ export class Verbs implements VerbsInterface {
 
     switch (wallet.type) {
       case 'privy':
-        return new PrivyWalletProvider(
+        return new WalletProviderPrivy(
           wallet.appId,
           wallet.appSecret,
           this.lendProvider,
