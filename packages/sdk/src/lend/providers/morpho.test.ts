@@ -82,8 +82,7 @@ describe('LendProviderMorpho', () => {
     it('should throw error for unimplemented withdraw functionality', async () => {
       const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address // USDC
       const amount = BigInt('1000000000') // 1000 USDC
-      const marketId =
-        '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
+      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
       await expect(provider.withdraw(asset, amount, marketId)).rejects.toThrow(
         'Withdraw functionality not yet implemented',
@@ -170,8 +169,7 @@ describe('LendProviderMorpho', () => {
     it('should successfully create a lending transaction', async () => {
       const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address // USDC
       const amount = BigInt('1000000000') // 1000 USDC
-      const marketId =
-        '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
+      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
       // Mock the market data for getMarketInfo
       const mockAccruedMarket = {
@@ -247,8 +245,7 @@ describe('LendProviderMorpho', () => {
     it('should use custom slippage when provided', async () => {
       const asset = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address
       const amount = BigInt('1000000000')
-      const marketId =
-        '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
+      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
       const customSlippage = 100 // 1%
 
       // Mock the market data for getMarketInfo
