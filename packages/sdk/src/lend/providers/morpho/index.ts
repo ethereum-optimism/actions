@@ -1,12 +1,12 @@
 import type { Address, PublicClient } from 'viem'
 
-import type {
-  LendMarketInfo,
-  LendOptions,
+import {
+  type LendMarketInfo,
+  type LendOptions,
   LendProvider,
-  LendTransaction,
-  LendVaultInfo,
-  MorphoLendConfig,
+  type LendTransaction,
+  type LendVaultInfo,
+  type MorphoLendConfig,
 } from '../../../types/lend.js'
 import {
   findBestVaultForAsset,
@@ -22,7 +22,6 @@ export const SUPPORTED_NETWORKS = {
     chainId: 130,
     name: 'Unichain',
     morphoAddress: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as Address,
-    bundlerAddress: '0x23055618898e202386e6c13955a58D3C68200BFB' as Address,
   },
 } as const
 
@@ -30,11 +29,11 @@ export const SUPPORTED_NETWORKS = {
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
-export class LendProviderMorpho implements LendProvider {
-  /** Morpho protocol address for Unichain */
+export class LendProviderMorpho extends LendProvider {
+  protected readonly SUPPORTED_NETWORKS = SUPPORTED_NETWORKS
+
+  /** TODO: refactor. for now, this only supports Unichain */
   private morphoAddress: Address
-  /** Bundler address for transaction bundling on Unichain */
-  private bundlerAddress: Address
   private defaultSlippage: number
   private publicClient: PublicClient
 
@@ -44,11 +43,12 @@ export class LendProviderMorpho implements LendProvider {
    * @param publicClient - Viem public client for blockchain interactions
    */
   constructor(config: MorphoLendConfig, publicClient: PublicClient) {
+    super()
+
     // Use Unichain as the default network for now
     const network = SUPPORTED_NETWORKS.UNICHAIN
 
     this.morphoAddress = network.morphoAddress
-    this.bundlerAddress = network.bundlerAddress
     this.defaultSlippage = config.defaultSlippage || 50 // 0.5% default
     this.publicClient = publicClient
   }
@@ -123,15 +123,6 @@ export class LendProviderMorpho implements LendProvider {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _unused = { asset, amount, marketId, options }
     throw new Error('Withdraw functionality not yet implemented')
-  }
-
-  /**
-   * Get supported network IDs
-   * @description Returns an array of chain IDs that this provider supports
-   * @returns Array of supported network chain IDs
-   */
-  supportedNetworkIds(): number[] {
-    return Object.values(SUPPORTED_NETWORKS).map((network) => network.chainId)
   }
 
   /**

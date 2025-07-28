@@ -63,31 +63,3 @@ export function getTokenAddress(
   const token = SUPPORTED_TOKENS[symbol]
   return token?.addresses[chainId] || null
 }
-
-/**
- * Categorize reward token for APY breakdown
- * @param address Token address
- * @param chainId Chain ID
- * @returns Reward category: 'usdc', 'morpho', or 'other'
- */
-export function categorizeRewardToken(
-  address: Address,
-  chainId: number,
-): 'usdc' | 'morpho' | 'other' {
-  // Primary categorization by chain ID for rewards
-  if (chainId === 1) {
-    return 'morpho' // Ethereum-based rewards are MORPHO rewards
-  } else if (chainId === 130) {
-    return 'usdc' // Unichain-based rewards are USDC rewards
-  }
-
-  // Fallback to token address lookup
-  const tokenSymbol = findTokenByAddress(address, chainId)
-  if (tokenSymbol === 'USDC') {
-    return 'usdc'
-  } else if (tokenSymbol === 'MORPHO') {
-    return 'morpho'
-  }
-
-  return 'other'
-}

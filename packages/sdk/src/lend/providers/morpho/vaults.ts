@@ -3,7 +3,7 @@ import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import type { Address, PublicClient } from 'viem'
 
 import {
-  categorizeRewardToken,
+  findTokenByAddress,
   getTokenAddress,
   SUPPORTED_TOKENS,
 } from '../../../supported/tokens.js'
@@ -231,6 +231,34 @@ async function fetchVaultConfigs(): Promise<VaultConfig[]> {
   // TODO: In the future, this could be enhanced to fetch live vault data
   // from Morpho's API or subgraph for additional validation
   return SUPPORTED_VAULTS
+}
+
+/**
+ * Categorize reward token for APY breakdown
+ * @param address Token address
+ * @param chainId Chain ID
+ * @returns Reward category: 'usdc', 'morpho', or 'other'
+ */
+function categorizeRewardToken(
+  address: Address,
+  chainId: number,
+): 'usdc' | 'morpho' | 'other' {
+  // Primary categorization by chain ID for rewards
+  if (chainId === 1) {
+    return 'morpho' // Ethereum-based rewards are MORPHO rewards
+  } else if (chainId === 130) {
+    return 'usdc' // Unichain-based rewards are USDC rewards
+  }
+
+  // Fallback to token address lookup
+  const tokenSymbol = findTokenByAddress(address, chainId)
+  if (tokenSymbol === 'USDC') {
+    return 'usdc'
+  } else if (tokenSymbol === 'MORPHO') {
+    return 'morpho'
+  }
+
+  return 'other'
 }
 
 /**

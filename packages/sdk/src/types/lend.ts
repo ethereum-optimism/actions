@@ -1,10 +1,23 @@
 import type { Address } from 'viem'
 
 /**
- * Lending provider interface
- * @description Interface for lending provider implementations
+ * Lending provider abstract class
+ * @description Base class for lending provider implementations
  */
-export interface LendProvider {
+export abstract class LendProvider {
+  /**
+   * Supported networks configuration
+   * @description Must be implemented by concrete providers
+   */
+  protected abstract readonly SUPPORTED_NETWORKS: Record<
+    string,
+    {
+      chainId: number
+      name: string
+      [key: string]: any
+    }
+  >
+
   /**
    * Lend/supply assets to a market
    * @param asset - Asset token address to lend
@@ -13,7 +26,7 @@ export interface LendProvider {
    * @param options - Optional lending configuration
    * @returns Promise resolving to lending transaction details
    */
-  lend(
+  abstract lend(
     asset: Address,
     amount: bigint,
     marketId?: string,
@@ -25,13 +38,13 @@ export interface LendProvider {
    * @param vaultAddress - Vault address
    * @returns Promise resolving to vault information
    */
-  getVault(vaultAddress: Address): Promise<LendVaultInfo>
+  abstract getVault(vaultAddress: Address): Promise<LendVaultInfo>
 
   /**
    * Get list of available vaults
    * @returns Promise resolving to array of vault information
    */
-  getVaults(): Promise<LendVaultInfo[]>
+  abstract getVaults(): Promise<LendVaultInfo[]>
 
   /**
    * Withdraw/redeem assets from a market
@@ -41,7 +54,7 @@ export interface LendProvider {
    * @param options - Optional withdrawal configuration
    * @returns Promise resolving to withdrawal transaction details
    */
-  withdraw(
+  abstract withdraw(
     asset: Address,
     amount: bigint,
     marketId?: string,
@@ -53,7 +66,11 @@ export interface LendProvider {
    * @description Returns an array of chain IDs that this provider supports
    * @returns Array of supported network chain IDs
    */
-  supportedNetworkIds(): number[]
+  supportedNetworkIds(): number[] {
+    return Object.values(this.SUPPORTED_NETWORKS).map(
+      (network) => network.chainId,
+    )
+  }
 }
 
 /**
