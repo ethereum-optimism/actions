@@ -1,4 +1,5 @@
 import type { IToken, MarketId } from '@morpho-org/blue-sdk'
+import type { AccrualPosition } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault, fetchMarket } from '@morpho-org/blue-sdk-viem'
 import { Time } from '@morpho-org/morpho-ts'
 import type { Address, PublicClient } from 'viem'
@@ -76,7 +77,6 @@ export class LendProviderMorpho implements LendProvider {
    */
   constructor(config: MorphoLendConfig, publicClient: PublicClient) {
     // Use Unichain as the default network for now
-    // TODO: In the future, could determine network from publicClient
     const network = SUPPORTED_NETWORKS.UNICHAIN
 
     this.morphoAddress = network.morphoAddress
@@ -146,21 +146,14 @@ export class LendProviderMorpho implements LendProvider {
    * @returns Promise resolving to withdrawal transaction details
    */
   async withdraw(
-    asset: Address,
-    amount: bigint,
-    marketId?: string,
-    options?: LendOptions,
+    _asset: Address,
+    _amount: bigint,
+    _marketId?: string,
+    _options?: LendOptions,
   ): Promise<LendTransaction> {
     // TODO: Implement withdrawal functionality
-    // This would involve:
-    // 1. Find suitable market if marketId not provided
-    // 2. Check user's position and available balance
-    // 3. Create withdrawal transaction data
-    // 4. Return transaction details for wallet execution
-
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _unused = { asset, amount, marketId, options }
-
+    const _unused = { _asset, _amount, _marketId, _options }
     throw new Error('Withdraw functionality not yet implemented')
   }
 
@@ -195,20 +188,63 @@ export class LendProviderMorpho implements LendProvider {
       // 3. Convert Morpho SDK data to our interface format
       const currentTimestampSeconds = Math.floor(Date.now() / 1000)
 
-      // Calculate APY - work around the Morpho SDK bug with allocations.values().reduce
+      // Calculate APY - work around the Morpho SDK bug with allocations
       let apy = 0
+
       try {
-        // Try the SDK APY calculation first
-        if (vault.apy !== undefined) {
-          apy = Number(vault.apy) / 1e18
+        if (vault.totalAssets === 0n) {
+          apy = 0
+        } else {
+          // Convert allocations Map to array and calculate weighted APY
+          const allocationsArray = Array.from(vault.allocations.values())
+
+          const totalWeightedApy = allocationsArray.reduce(
+            (total, allocation) => {
+              const position: AccrualPosition = allocation.position
+              const market = position.market
+
+              if (market && position.supplyShares > 0n) {
+                // eslint-disable-next-line no-console
+                console.log('\n=== MARKET APY INVESTIGATION ===')
+                // eslint-disable-next-line no-console
+                console.log(
+                  'market.getAvgSupplyApy():',
+                  `${((Number(market.getAvgSupplyApy()) / 1e18) * 100).toFixed(2)}%`,
+                )
+
+                // Get current supply assets and market APY
+                const supplyAssets = position.supplyAssets
+                const marketSupplyApy = market.supplyApy || 0n
+
+                // Calculate weighted APY for this allocation
+                return total + marketSupplyApy * supplyAssets
+              }
+              return total
+            },
+            0n,
+          )
+
+          // Calculate base APY (before fees)
+          const baseApyBigInt = totalWeightedApy / vault.totalAssets
+          const baseApy = Number(baseApyBigInt) / 1e18
+
+          // Apply vault fee (fee is in WAD format, 1e18 = 100%)
+          const vaultFeeRate = Number(vault.fee) / 1e18
+          apy = baseApy * (1 - vaultFeeRate)
         }
-      } catch {
-        // Expected error: allocations.values().reduce bug in Morpho SDK
-        // Use fallback APY for now
-        // TODO: Implement proper APY calculation by fetching individual market APYs
-        // or integrate with Morpho's GraphQL API
-        apy = 0.0827 // 8.27% as shown on the website
+      } catch (calculationError) {
+        // If manual calculation fails, log error and return 0
+        // eslint-disable-next-line no-console
+        console.error(
+          'Failed to calculate vault APY manually:',
+          calculationError,
+        )
+        apy = 0
       }
+
+      // Note: This APY does not include additional rewards (e.g., token incentives)
+      // which may be distributed separately. The Morpho UI shows "APY + Rewards - Fees"
+      // but the SDK only provides the base lending APY.
 
       return {
         address: vaultAddress,
