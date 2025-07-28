@@ -77,6 +77,39 @@ describe('Verbs SDK - System Tests', () => {
     ) // 30 second timeout for network request
 
     it.runIf(systemTest())(
+      'should fetch vault info with enhanced rewards data',
+      async () => {
+        const verbs = new Verbs({
+          chainId: 130,
+          rpcUrl: 'https://mainnet.unichain.org/',
+          lend: {
+            type: 'morpho',
+            defaultSlippage: 50,
+          },
+          wallet: {
+            type: 'privy',
+            appId: 'test-app-id',
+            appSecret: 'test-app-secret',
+          },
+        })
+
+        const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
+        const vaultInfo = await verbs.lend.getVaultInfo(vaultAddress)
+
+        expect(vaultInfo).toBeDefined()
+        expect(vaultInfo.address).toBe(vaultAddress)
+        expect(vaultInfo.name).toBe('Gauntlet USDC')
+        expect(typeof vaultInfo.apy).toBe('number')
+        expect(typeof vaultInfo.totalAssets).toBe('bigint')
+        expect(typeof vaultInfo.fee).toBe('number')
+
+        // Enhanced APY should be higher than base APY due to rewards
+        expect(vaultInfo.apy).toBeGreaterThan(0.03) // Should be > 3% with rewards
+      },
+      30000,
+    ) // 30 second timeout for network request
+
+    it.runIf(systemTest())(
       'should handle non-existent vault gracefully',
       async () => {
         const verbs = new Verbs({

@@ -1,5 +1,6 @@
 export { createLendProvider, LendProviderMorpho } from './lend/index.js'
 export type {
+  ApyBreakdown,
   CreateWalletResponse,
   ErrorResponse,
   GetAllWalletsOptions,

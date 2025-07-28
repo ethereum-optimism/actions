@@ -128,6 +128,27 @@ export interface LendMarketInfo extends LendMarket {
 }
 
 /**
+ * APY breakdown for detailed display
+ * @description Breakdown of APY components following Morpho's official methodology
+ */
+export interface ApyBreakdown {
+  /** Native APY from market lending (before fees) */
+  nativeApy: number
+  /** Total rewards APR from all sources */
+  totalRewardsApr: number
+  /** USDC rewards APR */
+  usdcRewardsApr?: number
+  /** MORPHO token rewards APR */
+  morphoRewardsApr?: number
+  /** Other rewards APR */
+  otherRewardsApr?: number
+  /** Performance/management fee rate */
+  performanceFee: number
+  /** Net APY after all components and fees */
+  netApy: number
+}
+
+/**
  * Lending vault information
  * @description Information about a Morpho vault
  */
@@ -142,8 +163,10 @@ export interface LendVaultInfo {
   totalAssets: bigint
   /** Total shares issued */
   totalShares: bigint
-  /** Current APY */
+  /** Current APY (net APY after rewards and fees) */
   apy: number
+  /** Detailed APY breakdown */
+  apyBreakdown: ApyBreakdown
   /** Vault owner address */
   owner: Address
   /** Vault curator address */
