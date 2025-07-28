@@ -40,7 +40,7 @@ export class LendProviderMorpho extends LendProvider {
   /**
    * Create a new Morpho lending provider
    * @param config - Morpho lending configuration
-   * @param publicClient - Viem public client for blockchain interactions
+   * @param publicClient - Viem public client for blockchain interactions // TODO: remove this
    */
   constructor(config: MorphoLendConfig, publicClient: PublicClient) {
     super()
