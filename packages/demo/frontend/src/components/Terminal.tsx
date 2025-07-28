@@ -5,7 +5,6 @@ import type {
 } from '@eth-optimism/verbs-sdk'
 import VerbsLogo from './VerbsLogo'
 import { verbsApi } from '../api/verbsApi'
-import figlet from 'figlet'
 
 interface TerminalLine {
   id: string
@@ -61,25 +60,13 @@ const Terminal = () => {
   // Initialize with welcome message and run help command
   useEffect(() => {
     const initializeTerminal = async () => {
-      // Generate VERBS ASCII art using figlet with fallback to original
-      let verbsAscii: string
-      try {
-        verbsAscii = figlet.textSync('VERBS', {
-          font: 'Standard',
-          horizontalLayout: 'default',
-          verticalLayout: 'default',
-        })
-      } catch (error) {
-        console.warn('Figlet failed, using fallback ASCII:', error)
-        // Fallback to original ASCII art
-        verbsAscii = `
+      const verbsAscii = `
 ██╗   ██╗ ███████╗ ██████╗  ██████╗  ███████╗
 ██║   ██║ ██╔════╝ ██╔══██╗ ██╔══██╗ ██╔════╝
 ██║   ██║ █████╗   ██████╔╝ ██████╔╝ ███████╗
 ╚██╗ ██╔╝ ██╔══╝   ██╔══██╗ ██╔══██╗ ╚════██║
  ╚████╔╝  ███████╗ ██║  ██║ ██████╔╝ ███████║
   ╚═══╝   ╚══════╝ ╚═╝  ╚═╝ ╚═════╝  ╚══════╝`
-      }
 
       const welcomeLines: TerminalLine[] = [
         {
