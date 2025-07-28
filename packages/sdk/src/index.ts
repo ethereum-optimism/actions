@@ -11,6 +11,7 @@ export type {
   LendOptions,
   LendProvider,
   LendTransaction,
+  LendVaultInfo,
   MorphoLendConfig,
   PrivyWalletConfig,
   VerbsConfig,

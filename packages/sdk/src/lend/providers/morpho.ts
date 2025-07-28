@@ -1,5 +1,4 @@
-import type { IToken, MarketId } from '@morpho-org/blue-sdk'
-import type { AccrualPosition } from '@morpho-org/blue-sdk'
+import type { AccrualPosition, IToken, MarketId } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault, fetchMarket } from '@morpho-org/blue-sdk-viem'
 import { Time } from '@morpho-org/morpho-ts'
 import type { Address, PublicClient } from 'viem'

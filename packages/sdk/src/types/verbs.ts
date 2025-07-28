@@ -1,4 +1,4 @@
-import type { LendConfig } from './lend.js'
+import type { LendConfig, LendProvider } from './lend.js'
 import type { GetAllWalletsOptions, Wallet } from './wallet.js'
 
 /**
@@ -6,6 +6,11 @@ import type { GetAllWalletsOptions, Wallet } from './wallet.js'
  * @description Main interface for interacting with the Verbs SDK
  */
 export interface VerbsInterface {
+  /**
+   * Get the lend provider instance
+   * @returns LendProvider instance if configured
+   */
+  readonly lend: LendProvider
   /**
    * Create a new wallet
    * @param userId - User identifier for the wallet
