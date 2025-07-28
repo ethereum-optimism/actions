@@ -25,21 +25,13 @@ export interface LendProvider {
    * @param vaultAddress - Vault address
    * @returns Promise resolving to vault information
    */
-  getVaultInfo(vaultAddress: Address): Promise<LendVaultInfo>
+  getVault(vaultAddress: Address): Promise<LendVaultInfo>
 
   /**
    * Get list of available vaults
    * @returns Promise resolving to array of vault information
    */
   getVaults(): Promise<LendVaultInfo[]>
-
-  /**
-   * Get detailed market information (deprecated - use getVaultInfo)
-   * @param marketId - Market identifier
-   * @returns Promise resolving to market information
-   * @deprecated Use getVaultInfo instead
-   */
-  getMarketInfo(marketId: string): Promise<LendMarketInfo>
 
   /**
    * Withdraw/redeem assets from a market

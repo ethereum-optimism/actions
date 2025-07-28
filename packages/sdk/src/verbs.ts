@@ -37,17 +37,6 @@ export class Verbs implements VerbsInterface {
   private walletProvider: WalletProvider
   private lendProvider?: LendProvider
 
-  /**
-   * Get the lend provider instance
-   * @returns LendProvider instance if configured, undefined otherwise
-   */
-  get lend(): LendProvider {
-    if (!this.lendProvider) {
-      throw new Error('Lend provider not configured')
-    }
-    return this.lendProvider
-  }
-
   constructor(config: VerbsConfig) {
     // Create lending provider if configured
     if (config.lend) {
@@ -71,6 +60,17 @@ export class Verbs implements VerbsInterface {
     this.getAllWallets = this.walletProvider.getAllWallets.bind(
       this.walletProvider,
     )
+  }
+
+  /**
+   * Get the lend provider instance
+   * @returns LendProvider instance if configured, undefined otherwise
+   */
+  get lend(): LendProvider {
+    if (!this.lendProvider) {
+      throw new Error('Lend provider not configured')
+    }
+    return this.lendProvider
   }
 
   private createWalletProvider(config: VerbsConfig): WalletProvider {

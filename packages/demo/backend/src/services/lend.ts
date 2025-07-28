@@ -11,19 +11,25 @@ export async function getVaults(): Promise<LendVaultInfo[]> {
     const vaults = await verbs.lend.getVaults()
     return vaults
   } catch (error) {
-    throw new Error(`Failed to fetch vaults: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    throw new Error(
+      `Failed to fetch vaults: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    )
   }
 }
 
 /**
  * Get detailed information about a specific vault
  */
-export async function getVault(vaultAddress: `0x${string}`): Promise<LendVaultInfo> {
+export async function getVault(
+  vaultAddress: `0x${string}`,
+): Promise<LendVaultInfo> {
   try {
     const verbs = getVerbs()
-    const vaultInfo = await verbs.lend.getVaultInfo(vaultAddress)
+    const vaultInfo = await verbs.lend.getVault(vaultAddress)
     return vaultInfo
   } catch (error) {
-    throw new Error(`Failed to fetch vault info: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    throw new Error(
+      `Failed to fetch vault info: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    )
   }
 }

@@ -328,6 +328,7 @@ describe('HTTP API Integration', () => {
       expect(vault).toHaveProperty('address')
       expect(vault).toHaveProperty('name')
       expect(vault).toHaveProperty('apy')
+      expect(vault).toHaveProperty('apyBreakdown')
       expect(vault).toHaveProperty('asset')
       expect(vault).toHaveProperty('totalAssets')
       expect(vault).toHaveProperty('totalShares')
@@ -337,6 +338,12 @@ describe('HTTP API Integration', () => {
       expect(vault).toHaveProperty('depositCapacity')
       expect(vault).toHaveProperty('withdrawalCapacity')
       expect(vault).toHaveProperty('lastUpdate')
+
+      // Validate APY breakdown structure
+      expect(vault.apyBreakdown).toHaveProperty('nativeApy')
+      expect(vault.apyBreakdown).toHaveProperty('totalRewardsApr')
+      expect(vault.apyBreakdown).toHaveProperty('performanceFee')
+      expect(vault.apyBreakdown).toHaveProperty('netApy')
 
       expect(vault.address).toBe(vaultAddress)
       expect(vault.name).toBe('Gauntlet USDC')
@@ -353,7 +360,9 @@ describe('HTTP API Integration', () => {
 
     it('should handle vault not found', async () => {
       const invalidVaultAddress = '0x1234567890123456789012345678901234567890'
-      const response = await request(`${baseUrl}/lend/vault/${invalidVaultAddress}`)
+      const response = await request(
+        `${baseUrl}/lend/vault/${invalidVaultAddress}`,
+      )
 
       expect(response.statusCode).toBe(500)
       const data = (await response.body.json()) as any

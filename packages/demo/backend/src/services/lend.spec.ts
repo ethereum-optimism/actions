@@ -9,7 +9,7 @@ vi.mock('../config/verbs.js', () => ({
 
 const mockLendProvider = {
   getVaults: vi.fn(),
-  getVaultInfo: vi.fn(),
+  getVault: vi.fn(),
 }
 
 const mockVerbs = {
@@ -27,14 +27,16 @@ describe('Lend Service', () => {
     it('should return vaults from the lend provider', async () => {
       const mockVaults = [
         {
-          address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as `0x${string}`,
+          address:
+            '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as `0x${string}`,
           name: 'Gauntlet USDC',
           asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
           apy: 0.03,
           totalAssets: BigInt('1000000'),
           totalShares: BigInt('1000000'),
           owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0' as `0x${string}`,
-          curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585' as `0x${string}`,
+          curator:
+            '0x9E33faAE38ff641094fa68c65c2cE600b3410585' as `0x${string}`,
           fee: 0.1,
           depositCapacity: BigInt('10000000'),
           withdrawalCapacity: BigInt('10000000'),
@@ -55,7 +57,7 @@ describe('Lend Service', () => {
       mockLendProvider.getVaults.mockRejectedValue(error)
 
       await expect(lendService.getVaults()).rejects.toThrow(
-        'Failed to fetch vaults: Lend provider error'
+        'Failed to fetch vaults: Lend provider error',
       )
     })
 
@@ -63,13 +65,14 @@ describe('Lend Service', () => {
       mockLendProvider.getVaults.mockRejectedValue('Unknown error')
 
       await expect(lendService.getVaults()).rejects.toThrow(
-        'Failed to fetch vaults: Unknown error'
+        'Failed to fetch vaults: Unknown error',
       )
     })
   })
 
   describe('getVault', () => {
-    const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as `0x${string}`
+    const vaultAddress =
+      '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as `0x${string}`
 
     it('should return vault info from the lend provider', async () => {
       const mockVaultInfo = {
@@ -87,28 +90,28 @@ describe('Lend Service', () => {
         lastUpdate: 1234567890,
       }
 
-      mockLendProvider.getVaultInfo.mockResolvedValue(mockVaultInfo)
+      mockLendProvider.getVault.mockResolvedValue(mockVaultInfo)
 
       const result = await lendService.getVault(vaultAddress)
 
       expect(result).toEqual(mockVaultInfo)
-      expect(mockLendProvider.getVaultInfo).toHaveBeenCalledWith(vaultAddress)
+      expect(mockLendProvider.getVault).toHaveBeenCalledWith(vaultAddress)
     })
 
     it('should throw error when lend provider fails', async () => {
       const error = new Error('Vault not found')
-      mockLendProvider.getVaultInfo.mockRejectedValue(error)
+      mockLendProvider.getVault.mockRejectedValue(error)
 
       await expect(lendService.getVault(vaultAddress)).rejects.toThrow(
-        'Failed to fetch vault info: Vault not found'
+        'Failed to fetch vault info: Vault not found',
       )
     })
 
     it('should handle unknown errors', async () => {
-      mockLendProvider.getVaultInfo.mockRejectedValue('Unknown error')
+      mockLendProvider.getVault.mockRejectedValue('Unknown error')
 
       await expect(lendService.getVault(vaultAddress)).rejects.toThrow(
-        'Failed to fetch vault info: Unknown error'
+        'Failed to fetch vault info: Unknown error',
       )
     })
   })

@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
+import { externalTest } from './utils/test.js'
 import { Verbs } from './verbs.js'
-
-// Helper for system tests that make real network requests
-const systemTest = () => process.env.SYSTEM_TEST === 'true'
 
 describe('Verbs SDK - System Tests', () => {
   describe('Morpho Lend Provider Integration', () => {
-    // Note: These are system tests that make real network requests
-    // Run with: SYSTEM_TEST=true pnpm test src/verbs.test.ts
-    it.runIf(systemTest())(
+    // Note: These are external tests that make real network requests
+    // Run with: EXTERNAL_TEST=true pnpm test src/verbs.test.ts
+    it.runIf(externalTest())(
       'should fetch real vault info from Morpho on Unichain',
       async () => {
         // Create Verbs instance with Morpho lending configured
@@ -31,7 +29,7 @@ describe('Verbs SDK - System Tests', () => {
         const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
 
         // This will make an actual network request to fetch vault data
-        const vaultInfo = await verbs.lend.getVaultInfo(vaultAddress)
+        const vaultInfo = await verbs.lend.getVault(vaultAddress)
 
         // Verify the vault info structure
         expect(vaultInfo).toHaveProperty('address', vaultAddress)
@@ -76,7 +74,7 @@ describe('Verbs SDK - System Tests', () => {
       30000,
     ) // 30 second timeout for network request
 
-    it.runIf(systemTest())(
+    it.runIf(externalTest())(
       'should fetch vault info with enhanced rewards data',
       async () => {
         const verbs = new Verbs({
@@ -94,7 +92,7 @@ describe('Verbs SDK - System Tests', () => {
         })
 
         const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
-        const vaultInfo = await verbs.lend.getVaultInfo(vaultAddress)
+        const vaultInfo = await verbs.lend.getVault(vaultAddress)
 
         expect(vaultInfo).toBeDefined()
         expect(vaultInfo.address).toBe(vaultAddress)
@@ -109,7 +107,7 @@ describe('Verbs SDK - System Tests', () => {
       30000,
     ) // 30 second timeout for network request
 
-    it.runIf(systemTest())(
+    it.runIf(externalTest())(
       'should handle non-existent vault gracefully',
       async () => {
         const verbs = new Verbs({
@@ -128,9 +126,9 @@ describe('Verbs SDK - System Tests', () => {
 
         const invalidVaultAddress = '0x0000000000000000000000000000000000000000'
 
-        await expect(
-          verbs.lend.getVaultInfo(invalidVaultAddress),
-        ).rejects.toThrow(`Vault ${invalidVaultAddress} not found`)
+        await expect(verbs.lend.getVault(invalidVaultAddress)).rejects.toThrow(
+          `Vault ${invalidVaultAddress} not found`,
+        )
       },
     )
 
@@ -155,7 +153,7 @@ describe('Verbs SDK - System Tests', () => {
       expect(networkIds).toContain(130) // Unichain
     })
 
-    it.runIf(systemTest())('should get list of vaults', async () => {
+    it.runIf(externalTest())('should get list of vaults', async () => {
       const verbs = new Verbs({
         chainId: 130,
         rpcUrl: 'https://mainnet.unichain.org/',

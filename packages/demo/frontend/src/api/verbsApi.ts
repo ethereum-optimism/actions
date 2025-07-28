@@ -59,6 +59,42 @@ class VerbsApiClient {
       method: 'GET',
     })
   }
+
+  async getVaults(): Promise<{ vaults: Array<{ address: string; name: string; apy: number; asset: string }> }> {
+    return this.request<{ vaults: Array<{ address: string; name: string; apy: number; asset: string }> }>('/lend/vaults', {
+      method: 'GET',
+    })
+  }
+
+  async getVault(vaultAddress: string): Promise<{
+    vault: {
+      address: string
+      name: string
+      asset: string
+      apy: number
+      apyBreakdown: {
+        nativeApy: number
+        totalRewardsApr: number
+        usdcRewardsApr?: number
+        morphoRewardsApr?: number
+        otherRewardsApr?: number
+        performanceFee: number
+        netApy: number
+      }
+      totalAssets: string
+      totalShares: string
+      fee: number
+      owner: string
+      curator: string
+      depositCapacity: string
+      withdrawalCapacity: string
+      lastUpdate: number
+    }
+  }> {
+    return this.request(`/lend/vault/${vaultAddress}`, {
+      method: 'GET',
+    })
+  }
 }
 
 export const verbsApi = new VerbsApiClient()
