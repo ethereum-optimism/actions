@@ -3,11 +3,13 @@ import { Hono } from 'hono'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
+import { LendController } from './controllers/lend.js'
 import { WalletController } from './controllers/wallet.js'
 
 export const router = new Hono()
 
 const walletController = new WalletController()
+const lendController = new LendController()
 
 // Get package.json path relative to this file
 const __filename = fileURLToPath(import.meta.url)
@@ -39,3 +41,7 @@ router.get('/version', (c) => {
 router.get('/wallets', walletController.getAllWallets)
 router.post('/wallet/:userId', walletController.createWallet)
 router.get('/wallet/:userId', walletController.getWallet)
+
+// Lend endpoints
+router.get('/lend/vaults', lendController.getVaults)
+router.get('/lend/vault/:vaultAddress', lendController.getVault)

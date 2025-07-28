@@ -15,6 +15,11 @@ export function createVerbsConfig(): VerbsConfig {
       appId: env.PRIVY_APP_ID,
       appSecret: env.PRIVY_APP_SECRET,
     },
+    lend: {
+      type: 'morpho',
+    },
+    chainId: 130, // Unichain
+    rpcUrl: 'https://mainnet.unichain.org/',
   }
 }
 
