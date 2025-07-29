@@ -442,10 +442,10 @@ ${vaultOptions}
       
       // APY breakdown values
       const nativeApyValue = vault.apyBreakdown ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%` : 'N/A'
-      const usdcRewardsValue = vault.apyBreakdown && vault.apyBreakdown.usdcRewardsApr !== undefined 
-        ? `${(vault.apyBreakdown.usdcRewardsApr * 100).toFixed(2)}%` : 'N/A'
-      const morphoRewardsValue = vault.apyBreakdown && vault.apyBreakdown.morphoRewardsApr !== undefined
-        ? `${(vault.apyBreakdown.morphoRewardsApr * 100).toFixed(2)}%` : 'N/A'
+      const usdcRewardsValue = vault.apyBreakdown && vault.apyBreakdown.usdc !== undefined 
+        ? `${(vault.apyBreakdown.usdc * 100).toFixed(2)}%` : 'N/A'
+      const morphoRewardsValue = vault.apyBreakdown && vault.apyBreakdown.morpho !== undefined
+        ? `${(vault.apyBreakdown.morpho * 100).toFixed(2)}%` : 'N/A'
       const feeImpactValue = vault.apyBreakdown ? `${((vault.apyBreakdown.nativeApy * vault.apyBreakdown.performanceFee) * 100).toFixed(2)}%` : 'N/A'
 
       const vaultInfoTable = `

@@ -145,12 +145,10 @@ export interface ApyBreakdown {
   nativeApy: number
   /** Total rewards APR from all sources */
   totalRewardsApr: number
-  /** USDC rewards APR */
-  usdcRewardsApr?: number
-  /** MORPHO token rewards APR */
-  morphoRewardsApr?: number
-  /** Other rewards APR */
-  otherRewardsApr?: number
+  /** Individual token rewards APRs (dynamically populated) */
+  usdc?: number
+  morpho?: number
+  other?: number
   /** Performance/management fee rate */
   performanceFee: number
   /** Net APY after all components and fees */

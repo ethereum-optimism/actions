@@ -1,11 +1,16 @@
 import type { Address } from 'viem'
 
-const GRAPHQL_ENDPOINT = 'https://api.morpho.org/graphql'
+import type { SUPPORTED_TOKENS } from '../../../supported/tokens.js'
 
-export interface RewardsBreakdown {
-  usdcRewardsApr: number
-  morphoRewardsApr: number
-  otherRewardsApr: number
+const MORPHO_API_ENDPOINT = 'https://api.morpho.org/graphql'
+
+// Create dynamic type based on supported tokens
+type SupportedTokenRewards = {
+  [K in keyof typeof SUPPORTED_TOKENS as Lowercase<K>]: number
+}
+
+export interface RewardsBreakdown extends SupportedTokenRewards {
+  other: number
   totalRewardsApr: number
 }
 
@@ -61,7 +66,7 @@ export async function fetchRewards(vaultAddress: Address): Promise<any | null> {
   }
 
   try {
-    const response = await fetch(GRAPHQL_ENDPOINT, {
+    const response = await fetch(MORPHO_API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

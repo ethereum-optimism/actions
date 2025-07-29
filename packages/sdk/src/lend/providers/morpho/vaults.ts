@@ -47,12 +47,18 @@ export async function fetchAndCalculateRewards(
   const vaultData = await fetchRewards(vaultAddress)
 
   if (!vaultData) {
-    return {
-      usdcRewardsApr: 0,
-      morphoRewardsApr: 0,
-      otherRewardsApr: 0,
+    // Initialize empty rewards object with all supported tokens + other
+    const emptyRewards: Record<string, number> = {
+      other: 0,
       totalRewardsApr: 0,
     }
+
+    // Add all supported tokens (lowercase) to the rewards object
+    Object.keys(SUPPORTED_TOKENS).forEach((tokenSymbol) => {
+      emptyRewards[tokenSymbol.toLowerCase()] = 0
+    })
+
+    return emptyRewards as unknown as RewardsBreakdown
   }
 
   return calculateRewardsBreakdown(vaultData)
@@ -144,12 +150,9 @@ export async function getVaultInfo(
 
     const apyBreakdown: ApyBreakdown = {
       nativeApy: baseApyBeforeFees, // Native APY from market lending (before fees)
-      totalRewardsApr: rewardsBreakdown.totalRewardsApr,
-      usdcRewardsApr: rewardsBreakdown.usdcRewardsApr,
-      morphoRewardsApr: rewardsBreakdown.morphoRewardsApr,
-      otherRewardsApr: rewardsBreakdown.otherRewardsApr,
       performanceFee: performanceFee,
       netApy: netApy,
+      ...rewardsBreakdown, // Spread all dynamic reward properties
     }
 
     // 7. Return comprehensive vault information
@@ -237,25 +240,13 @@ async function fetchVaultConfigs(): Promise<VaultConfig[]> {
  * Categorize reward token for APY breakdown
  * @param address Token address
  * @param chainId Chain ID
- * @returns Reward category: 'usdc', 'morpho', or 'other'
+ * @returns Token symbol in lowercase or 'other' if not supported
  */
-function categorizeRewardToken(
-  address: Address,
-  chainId: number,
-): 'usdc' | 'morpho' | 'other' {
-  // Primary categorization by chain ID for rewards
-  if (chainId === 1) {
-    return 'morpho' // Ethereum-based rewards are MORPHO rewards
-  } else if (chainId === 130) {
-    return 'usdc' // Unichain-based rewards are USDC rewards
-  }
-
-  // Fallback to token address lookup
+function categorizeRewardToken(address: Address, chainId: number): string {
+  // Dynamic token address lookup
   const tokenSymbol = findTokenByAddress(address, chainId)
-  if (tokenSymbol === 'USDC') {
-    return 'usdc'
-  } else if (tokenSymbol === 'MORPHO') {
-    return 'morpho'
+  if (tokenSymbol) {
+    return tokenSymbol.toLowerCase()
   }
 
   return 'other'
@@ -267,9 +258,15 @@ function categorizeRewardToken(
  * @returns Detailed rewards breakdown
  */
 export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
-  let usdcRewardsApr = 0
-  let morphoRewardsApr = 0
-  let otherRewardsApr = 0
+  // Initialize rewards object with all supported tokens + other
+  const rewardsByCategory: Record<string, number> = {
+    other: 0,
+  }
+
+  // Add all supported tokens (lowercase) to the rewards object
+  Object.keys(SUPPORTED_TOKENS).forEach((tokenSymbol) => {
+    rewardsByCategory[tokenSymbol.toLowerCase()] = 0
+  })
 
   // Calculate vault-level rewards
   if (apiVault.state?.rewards && apiVault.state.rewards.length > 0) {
@@ -279,13 +276,7 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
       const chainId = reward.asset.chain?.id || 130 // Default to Unichain
 
       const category = categorizeRewardToken(assetAddress, chainId)
-      if (category === 'usdc') {
-        usdcRewardsApr += rewardApr
-      } else if (category === 'morpho') {
-        morphoRewardsApr += rewardApr
-      } else {
-        otherRewardsApr += rewardApr
-      }
+      rewardsByCategory[category] += rewardApr
     })
   }
 
@@ -315,24 +306,21 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
           const chainId = reward.asset.chain?.id || 130 // Default to Unichain
 
           const category = categorizeRewardToken(assetAddress, chainId)
-          if (category === 'usdc') {
-            usdcRewardsApr += weightedRewardApr
-          } else if (category === 'morpho') {
-            morphoRewardsApr += weightedRewardApr
-          } else {
-            otherRewardsApr += weightedRewardApr
-          }
+          rewardsByCategory[category] += weightedRewardApr
         })
       }
     })
   }
 
-  const totalRewardsApr = usdcRewardsApr + morphoRewardsApr + otherRewardsApr
+  // Calculate total rewards APR
+  const totalRewardsApr = Object.values(rewardsByCategory).reduce(
+    (total, apr) => total + apr,
+    0,
+  )
 
+  // Return dynamic rewards breakdown
   return {
-    usdcRewardsApr,
-    morphoRewardsApr,
-    otherRewardsApr,
+    ...rewardsByCategory,
     totalRewardsApr,
-  }
+  } as RewardsBreakdown
 }

@@ -157,9 +157,9 @@ describe('Vault Utilities', () => {
       const result = calculateRewardsBreakdown(apiVault)
 
       expect(result).toEqual({
-        usdcRewardsApr: 0,
-        morphoRewardsApr: 0,
-        otherRewardsApr: 0,
+        usdc: 0,
+        morpho: 0,
+        other: 0,
         totalRewardsApr: 0,
       })
     })
@@ -191,9 +191,9 @@ describe('Vault Utilities', () => {
 
       const result = calculateRewardsBreakdown(apiVault)
 
-      expect(result.usdcRewardsApr).toBeCloseTo(0.03, 4)
-      expect(result.morphoRewardsApr).toBeCloseTo(0.015, 4)
-      expect(result.otherRewardsApr).toBe(0)
+      expect(result.usdc).toBeCloseTo(0.03, 4)
+      expect(result.morpho).toBeCloseTo(0.015, 4)
+      expect(result.other).toBe(0)
       expect(result.totalRewardsApr).toBeCloseTo(0.045, 4)
     })
 
@@ -245,9 +245,9 @@ describe('Vault Utilities', () => {
       // Expected calculation:
       // USDC: 2% * (600k / 1M) = 1.2%
       // MORPHO: 5% * (400k / 1M) = 2%
-      expect(result.usdcRewardsApr).toBeCloseTo(0.012, 4)
-      expect(result.morphoRewardsApr).toBeCloseTo(0.02, 4)
-      expect(result.otherRewardsApr).toBe(0)
+      expect(result.usdc).toBeCloseTo(0.012, 4)
+      expect(result.morpho).toBeCloseTo(0.02, 4)
+      expect(result.other).toBe(0)
       expect(result.totalRewardsApr).toBeCloseTo(0.032, 4)
     })
 
@@ -287,8 +287,8 @@ describe('Vault Utilities', () => {
 
       const result = calculateRewardsBreakdown(apiVault)
 
-      expect(result.usdcRewardsApr).toBeCloseTo(0.01, 4) // Vault-level
-      expect(result.morphoRewardsApr).toBeCloseTo(0.015, 4) // Market-level (100% weight)
+      expect(result.usdc).toBeCloseTo(0.01, 4) // Vault-level
+      expect(result.morpho).toBeCloseTo(0.015, 4) // Market-level (100% weight)
       expect(result.totalRewardsApr).toBeCloseTo(0.025, 4)
     })
 
@@ -311,9 +311,9 @@ describe('Vault Utilities', () => {
 
       const result = calculateRewardsBreakdown(apiVault)
 
-      expect(result.usdcRewardsApr).toBe(0)
-      expect(result.morphoRewardsApr).toBe(0)
-      expect(result.otherRewardsApr).toBeCloseTo(0.005, 4)
+      expect(result.usdc).toBe(0)
+      expect(result.morpho).toBe(0)
+      expect(result.other).toBeCloseTo(0.005, 4)
       expect(result.totalRewardsApr).toBeCloseTo(0.005, 4)
     })
 
@@ -346,7 +346,7 @@ describe('Vault Utilities', () => {
       const result = calculateRewardsBreakdown(apiVault)
 
       // Should be zero because total supply is zero (weight = 0)
-      expect(result.usdcRewardsApr).toBe(0)
+      expect(result.usdc).toBe(0)
       expect(result.totalRewardsApr).toBe(0)
     })
   })

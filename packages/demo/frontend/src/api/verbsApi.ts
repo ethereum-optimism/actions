@@ -75,9 +75,9 @@ class VerbsApiClient {
       apyBreakdown: {
         nativeApy: number
         totalRewardsApr: number
-        usdcRewardsApr?: number
-        morphoRewardsApr?: number
-        otherRewardsApr?: number
+        usdc?: number
+        morpho?: number
+        other?: number
         performanceFee: number
         netApy: number
       }
