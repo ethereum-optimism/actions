@@ -57,8 +57,6 @@ vi.mock('./config/verbs.js', () => ({
             owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
             curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585',
             fee: 0.1,
-            depositCapacity: BigInt('100000000000000'),
-            withdrawalCapacity: BigInt('16199575764995'),
             lastUpdate: 1234567890,
           },
         ]),
@@ -75,8 +73,6 @@ vi.mock('./config/verbs.js', () => ({
             owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
             curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585',
             fee: 0.1,
-            depositCapacity: BigInt('100000000000000'),
-            withdrawalCapacity: BigInt('16199575764995'),
             lastUpdate: 1234567890,
           })
         }
@@ -335,8 +331,6 @@ describe('HTTP API Integration', () => {
       expect(vault).toHaveProperty('fee')
       expect(vault).toHaveProperty('owner')
       expect(vault).toHaveProperty('curator')
-      expect(vault).toHaveProperty('depositCapacity')
-      expect(vault).toHaveProperty('withdrawalCapacity')
       expect(vault).toHaveProperty('lastUpdate')
 
       // Validate APY breakdown structure

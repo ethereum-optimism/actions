@@ -38,8 +38,6 @@ describe('Lend Service', () => {
           curator:
             '0x9E33faAE38ff641094fa68c65c2cE600b3410585' as `0x${string}`,
           fee: 0.1,
-          depositCapacity: BigInt('10000000'),
-          withdrawalCapacity: BigInt('10000000'),
           lastUpdate: 1234567890,
         },
       ]
@@ -85,8 +83,6 @@ describe('Lend Service', () => {
         owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0' as `0x${string}`,
         curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585' as `0x${string}`,
         fee: 0.1,
-        depositCapacity: BigInt('10000000'),
-        withdrawalCapacity: BigInt('10000000'),
         lastUpdate: 1234567890,
       }
 

@@ -55,8 +55,6 @@ export class LendController {
           fee: vaultInfo.fee,
           owner: vaultInfo.owner,
           curator: vaultInfo.curator,
-          depositCapacity: vaultInfo.depositCapacity.toString(),
-          withdrawalCapacity: vaultInfo.withdrawalCapacity.toString(),
           lastUpdate: vaultInfo.lastUpdate,
         },
       })

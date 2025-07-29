@@ -86,8 +86,6 @@ class VerbsApiClient {
       fee: number
       owner: string
       curator: string
-      depositCapacity: string
-      withdrawalCapacity: string
       lastUpdate: number
     }
   }> {
