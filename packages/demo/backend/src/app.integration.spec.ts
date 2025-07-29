@@ -61,13 +61,22 @@ vi.mock('./config/verbs.js', () => ({
           },
         ]),
       ),
-      getVaultInfo: vi.fn((vaultAddress: string) => {
+      getVault: vi.fn((vaultAddress: string) => {
         if (vaultAddress === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
           return Promise.resolve({
             address: vaultAddress,
             name: 'Gauntlet USDC',
             asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
             apy: 0.03,
+            apyBreakdown: {
+              nativeApy: 0.025,
+              totalRewardsApr: 0.01,
+              usdc: 0.005,
+              morpho: 0.005,
+              other: 0,
+              performanceFee: 0.1,
+              netApy: 0.0325,
+            },
             totalAssets: BigInt('16199575764995'),
             totalShares: BigInt('16199575764995'),
             owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
