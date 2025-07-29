@@ -109,10 +109,6 @@ export interface LendVaultInfo {
   curator: Address
   /** Fee percentage (in basis points) */
   fee: number
-  /** Available deposit capacity */
-  depositCapacity: bigint
-  /** Available withdrawal capacity */
-  withdrawalCapacity: bigint
   /** Last update timestamp */
   lastUpdate: number
 }

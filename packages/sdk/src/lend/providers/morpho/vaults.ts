@@ -117,9 +117,8 @@ export async function getVaultInfo(
   publicClient: PublicClient,
 ): Promise<LendVaultInfo> {
   try {
-    // 1. Fetch vault configuration for validation
-    const vaultConfigs = await fetchVaultConfigs()
-    const config = vaultConfigs.find((c) => c.address === vaultAddress)
+    // 1. Find vault configuration for validation
+    const config = SUPPORTED_VAULTS.find((c) => c.address === vaultAddress)
 
     if (!config) {
       throw new Error(`Vault ${vaultAddress} not found`)
@@ -128,28 +127,11 @@ export async function getVaultInfo(
     // 2. Fetch live vault data from Morpho SDK
     const vault = await fetchAccrualVault(vaultAddress, publicClient)
 
-    // 3. Calculate base APY from SDK data (before fees)
-    const baseApyAfterFees = calculateBaseApy(vault)
-    const performanceFee = Number(vault.fee) / 1e18
-    const baseApyBeforeFees = baseApyAfterFees / (1 - performanceFee) // Reverse the fee application to get before-fees APY
-
-    // 4. Fetch rewards data from API
+    // 3. Fetch rewards data from API
     const rewardsBreakdown = await fetchAndCalculateRewards(vaultAddress)
 
-    // 5. Calculate net APY following simplified methodology
-    // Net APY = Native APY + Rewards APRs - (Performance Fee × Native APY)
-    const performanceFeeImpact = baseApyBeforeFees * performanceFee
-    const netApy =
-      baseApyBeforeFees +
-      rewardsBreakdown.totalRewardsApr -
-      performanceFeeImpact
-
-    const apyBreakdown: ApyBreakdown = {
-      nativeApy: baseApyBeforeFees, // Native APY from market lending (before fees)
-      performanceFee: performanceFee,
-      netApy: netApy,
-      ...rewardsBreakdown, // Spread all dynamic reward properties
-    }
+    // 4. Calculate APY breakdown
+    const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
 
     // 7. Return comprehensive vault information
     const currentTimestampSeconds = Math.floor(Date.now() / 1000)
@@ -164,9 +146,7 @@ export async function getVaultInfo(
       apyBreakdown: apyBreakdown, // Detailed breakdown
       owner: vault.owner,
       curator: vault.curator,
-      fee: performanceFee,
-      depositCapacity: vault.totalAssets,
-      withdrawalCapacity: vault.totalAssets,
+      fee: apyBreakdown.performanceFee,
       lastUpdate: currentTimestampSeconds,
     }
   } catch (error) {
@@ -187,8 +167,7 @@ export async function getVaults(
   publicClient: PublicClient,
 ): Promise<LendVaultInfo[]> {
   try {
-    const vaultConfigs = await fetchVaultConfigs()
-    const vaultInfoPromises = vaultConfigs.map((config) =>
+    const vaultInfoPromises = SUPPORTED_VAULTS.map((config) =>
       getVaultInfo(config.address, publicClient),
     )
     return await Promise.all(vaultInfoPromises)
@@ -216,20 +195,37 @@ export async function findBestVaultForAsset(asset: Address): Promise<Address> {
     throw new Error(`No vaults available for asset ${asset}`)
   }
 
-  // For now, return the first (and likely only) supported vault for the asset
-  // TODO: In the future, this could compare APYs from live vault data
+  // For now, return the first (and only) supported vault for the asset
   return assetVaults[0].address
 }
 
 /**
- * Fetch vault configurations from static supported vaults
- * @returns Promise resolving to array of supported vault configurations
+ * Calculate APY breakdown from vault data and rewards
+ * @param vault - Vault data from Morpho SDK
+ * @param rewardsBreakdown - Rewards breakdown from API
+ * @returns Complete APY breakdown
  */
-async function fetchVaultConfigs(): Promise<VaultConfig[]> {
-  // Return statically configured supported vaults for Unichain
-  // TODO: In the future, this could be enhanced to fetch live vault data
-  // from Morpho's API or subgraph for additional validation
-  return SUPPORTED_VAULTS
+export function calculateApyBreakdown(
+  vault: any,
+  rewardsBreakdown: RewardsBreakdown,
+): ApyBreakdown {
+  // 1. Calculate base APY from SDK data (before fees)
+  const baseApyAfterFees = calculateBaseApy(vault)
+  const performanceFee = Number(vault.fee) / 1e18
+  const baseApyBeforeFees = baseApyAfterFees / (1 - performanceFee) // Reverse the fee application to get before-fees APY
+
+  // 2. Calculate net APY following simplified methodology
+  // Net APY = Native APY + Rewards APRs - (Performance Fee × Native APY)
+  const performanceFeeImpact = baseApyBeforeFees * performanceFee
+  const netApy =
+    baseApyBeforeFees + rewardsBreakdown.totalRewardsApr - performanceFeeImpact
+
+  return {
+    nativeApy: baseApyBeforeFees, // Native APY from market lending (before fees)
+    performanceFee: performanceFee,
+    netApy: netApy,
+    ...rewardsBreakdown, // Spread all dynamic reward properties
+  }
 }
 
 /**

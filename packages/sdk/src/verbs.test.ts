@@ -41,8 +41,6 @@ describe('Verbs SDK - System Tests', () => {
         expect(vaultInfo).toHaveProperty('owner')
         expect(vaultInfo).toHaveProperty('curator')
         expect(vaultInfo).toHaveProperty('fee')
-        expect(vaultInfo).toHaveProperty('depositCapacity')
-        expect(vaultInfo).toHaveProperty('withdrawalCapacity')
         expect(vaultInfo).toHaveProperty('lastUpdate')
 
         // Verify the data types
@@ -50,8 +48,6 @@ describe('Verbs SDK - System Tests', () => {
         expect(typeof vaultInfo.fee).toBe('number')
         expect(typeof vaultInfo.totalAssets).toBe('bigint')
         expect(typeof vaultInfo.totalShares).toBe('bigint')
-        expect(typeof vaultInfo.depositCapacity).toBe('bigint')
-        expect(typeof vaultInfo.withdrawalCapacity).toBe('bigint')
 
         // Verify reasonable values
         expect(vaultInfo.apy).toBeGreaterThanOrEqual(0)
