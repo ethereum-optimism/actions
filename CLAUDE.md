@@ -61,7 +61,7 @@ The SDK follows a provider pattern for wallet integration:
 - **Core Classes**:
   - `Verbs` - Main SDK class implementing `VerbsInterface`
   - `Wallet` - Wallet implementation with balance and transaction methods
-  - `PrivyWalletProvider` - Privy integration adapter
+  - `WalletProviderPrivy` - Privy integration adapter
 
 - **Configuration**: Uses `VerbsConfig` with wallet provider settings (currently supports Privy)
 - **Dependencies**: Built on viem for Ethereum interaction, Privy for wallet management

@@ -54,6 +54,22 @@ if (wallet) {
 }
 ```
 
+## Testing
+
+Run unit tests:
+
+```bash
+pnpm test
+```
+
+Run tests including external tests (those that make real network requests):
+
+```bash
+EXTERNAL_TEST=true pnpm test
+```
+
+External tests are used for integration testing with live APIs and services. They are disabled by default to avoid unnecessary network requests during regular development.
+
 ## Documentation
 
 Generate API documentation:

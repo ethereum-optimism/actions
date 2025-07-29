@@ -13,22 +13,34 @@ interface TerminalLine {
   timestamp: Date
 }
 
+interface VaultData {
+  address: string
+  name: string
+  apy: number  
+  asset: string
+}
+
 interface PendingPrompt {
-  type: 'userId'
+  type: 'userId' | 'lendProvider' | 'lendVault'
   message: string
+  data?: VaultData[]
 }
 
 const HELP_CONTENT = `Available commands:
+
+Console commands:
   help          - Show this help message
   clear         - Clear the terminal
-  wallet create - Create a new wallet
-  wallet list   - List all wallets
   status        - Show system status
   exit          - Exit terminal
 
-Verbs (coming soon):
+Wallet commands:
+  wallet create - Create a new wallet
+  wallet list   - List all wallets
+  wallet lend   - Lend to Morpho vaults
+
+Future verbs (coming soon):
   fund          - Onramp to stables
-  lend          - Open Morpho loan
   borrow        - Borrow via Morpho
   repay         - Repay Morpho loan
   swap          - Trade via Uniswap
@@ -59,57 +71,63 @@ const Terminal = () => {
 
   // Initialize with welcome message and run help command
   useEffect(() => {
-    const welcomeLines: TerminalLine[] = [
-      {
-        id: 'welcome-ascii',
-        type: 'success',
-        content: `
+    const initializeTerminal = async () => {
+      const verbsAscii = `
 ██╗   ██╗ ███████╗ ██████╗  ██████╗  ███████╗
 ██║   ██║ ██╔════╝ ██╔══██╗ ██╔══██╗ ██╔════╝
 ██║   ██║ █████╗   ██████╔╝ ██████╔╝ ███████╗
 ╚██╗ ██╔╝ ██╔══╝   ██╔══██╗ ██╔══██╗ ╚════██║
  ╚████╔╝  ███████╗ ██║  ██║ ██████╔╝ ███████║
-  ╚═══╝   ╚══════╝ ╚═╝  ╚═╝ ╚═════╝  ╚══════╝`,
-        timestamp: new Date(),
-      },
-      {
-        id: 'welcome-7',
-        type: 'output',
-        content: '',
-        timestamp: new Date(),
-      },
-      {
-        id: 'welcome-8',
-        type: 'output',
-        content: '   Verbs library for the OP Stack',
-        timestamp: new Date(),
-      },
-      {
-        id: 'welcome-9',
-        type: 'output',
-        content: '',
-        timestamp: new Date(),
-      },
-      {
-        id: 'help-cmd',
-        type: 'input',
-        content: 'verbs: $ help',
-        timestamp: new Date(),
-      },
-      {
-        id: 'help-output',
-        type: 'output',
-        content: HELP_CONTENT,
-        timestamp: new Date(),
-      },
-      {
-        id: 'help-end',
-        type: 'output',
-        content: '',
-        timestamp: new Date(),
-      },
-    ]
-    setLines(welcomeLines)
+  ╚═══╝   ╚══════╝ ╚═╝  ╚═╝ ╚═════╝  ╚══════╝`
+
+      const welcomeLines: TerminalLine[] = [
+        {
+          id: 'welcome-ascii',
+          type: 'success',
+          content: verbsAscii,
+          timestamp: new Date(),
+        },
+        {
+          id: 'welcome-7',
+          type: 'output',
+          content: '',
+          timestamp: new Date(),
+        },
+        {
+          id: 'welcome-8',
+          type: 'output',
+          content: '   Verbs library for the OP Stack',
+          timestamp: new Date(),
+        },
+        {
+          id: 'welcome-9',
+          type: 'output',
+          content: '',
+          timestamp: new Date(),
+        },
+        {
+          id: 'help-cmd',
+          type: 'input',
+          content: 'verbs: $ help',
+          timestamp: new Date(),
+        },
+        {
+          id: 'help-output',
+          type: 'output',
+          content: HELP_CONTENT,
+          timestamp: new Date(),
+        },
+        {
+          id: 'help-end',
+          type: 'output',
+          content: '',
+          timestamp: new Date(),
+        },
+      ]
+      setLines(welcomeLines)
+    }
+
+    initializeTerminal()
   }, [])
 
   const createWallet = async (
@@ -130,6 +148,12 @@ const Terminal = () => {
     if (pendingPrompt) {
       if (pendingPrompt.type === 'userId') {
         handleWalletCreation(trimmed)
+        return
+      } else if (pendingPrompt.type === 'lendProvider') {
+        handleLendProviderSelection()
+        return
+      } else if (pendingPrompt.type === 'lendVault') {
+        handleLendVaultSelection(pendingPrompt.data || [])
         return
       }
     }
@@ -172,6 +196,26 @@ const Terminal = () => {
         setLines((prev) => [...prev, commandLine])
         handleWalletList()
         return
+      case 'wallet lend': {
+        setLines((prev) => [...prev, commandLine])
+        // Show provider selection immediately
+        const providerSelectionLine: TerminalLine = {
+          id: `provider-selection-${Date.now()}`,
+          type: 'output',
+          content: `Select a Lend provider:
+
+> Morpho
+
+[Enter] to select`,
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev, providerSelectionLine])
+        setPendingPrompt({
+          type: 'lendProvider',
+          message: '',
+        })
+        return
+      }
       case 'status':
         response = {
           id: responseId,
@@ -192,7 +236,6 @@ Active Wallets: 0`,
         }
         break
       case 'fund':
-      case 'lend':
       case 'borrow':
       case 'repay':
       case 'swap':
@@ -313,7 +356,164 @@ ${walletList}`,
     }
   }
 
+  const handleLendProviderSelection = async () => {
+    const loadingLine: TerminalLine = {
+      id: `loading-${Date.now()}`,
+      type: 'output',
+      content: 'Loading vaults...',
+      timestamp: new Date(),
+    }
+
+    setLines((prev) => [...prev, loadingLine])
+    setPendingPrompt(null)
+
+    try {
+      const result = await verbsApi.getVaults()
+      
+      if (result.vaults.length === 0) {
+        const emptyLine: TerminalLine = {
+          id: `empty-${Date.now()}`,
+          type: 'error',
+          content: 'No vaults available.',
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev.slice(0, -1), emptyLine])
+        return
+      }
+
+      const vaultOptions = result.vaults
+        .map((vault, index) => `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`)
+        .join('\n')
+
+      const vaultSelectionLine: TerminalLine = {
+        id: `vault-selection-${Date.now()}`,
+        type: 'output',
+        content: `Select a Lend vault:
+
+${vaultOptions}
+
+[Enter] to select`,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
+      setPendingPrompt({
+        type: 'lendVault',
+        message: '',
+        data: result.vaults,
+      })
+
+    } catch (error) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to load vaults: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
+  const handleLendVaultSelection = async (vaults: VaultData[]) => {
+    // Always select the first vault (default)
+    const selectedVault = vaults[0]
+
+    const loadingLine: TerminalLine = {
+      id: `loading-${Date.now()}`,
+      type: 'output',
+      content: 'Loading vault information...',
+      timestamp: new Date(),
+    }
+
+    setLines((prev) => [...prev, loadingLine])
+    setPendingPrompt(null)
+
+    try {
+      const result = await verbsApi.getVault(selectedVault.address)
+      const vault = result.vault
+
+      const nameValue = vault.name
+      const netApyValue = `${(vault.apy * 100).toFixed(2)}%`
+      const totalAssetsValue = `$${(parseFloat(vault.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      const feeValue = `${(vault.fee * 100).toFixed(1)}%`
+      const managerValue = 'Gauntlet'
+      
+      // APY breakdown values
+      const nativeApyValue = vault.apyBreakdown ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%` : 'N/A'
+      const usdcRewardsValue = vault.apyBreakdown && vault.apyBreakdown.usdc !== undefined 
+        ? `${(vault.apyBreakdown.usdc * 100).toFixed(2)}%` : 'N/A'
+      const morphoRewardsValue = vault.apyBreakdown && vault.apyBreakdown.morpho !== undefined
+        ? `${(vault.apyBreakdown.morpho * 100).toFixed(2)}%` : 'N/A'
+      const feeImpactValue = vault.apyBreakdown ? `${((vault.apyBreakdown.nativeApy * vault.apyBreakdown.performanceFee) * 100).toFixed(2)}%` : 'N/A'
+
+      const vaultInfoTable = `
+┌────────────────────────────────────────────────────────────┐
+│                      VAULT INFORMATION                     │
+├────────────────────────────────────────────────────────────┤
+│ Name:              ${nameValue.padEnd(39)} │
+│ Net APY:           ${netApyValue.padEnd(39)} │
+│                                                            │
+│ APY BREAKDOWN:                                             │
+│   Native APY:      ${nativeApyValue.padEnd(39)} │
+│   USDC Rewards:    ${usdcRewardsValue.padEnd(39)} │
+│   MORPHO Rewards:  ${morphoRewardsValue.padEnd(39)} │
+│   Performance Fee: ${feeImpactValue.padEnd(39)} │
+│                                                            │
+│ Total Assets:      ${totalAssetsValue.padEnd(39)} │
+│ Management Fee:    ${feeValue.padEnd(39)} │
+│ Manager:           ${managerValue.padEnd(39)} │
+└────────────────────────────────────────────────────────────┘
+
+Wallet Balance: $0
+
+You must use "wallet fund" before lending to this market.`
+
+      const vaultInfoLine: TerminalLine = {
+        id: `vault-info-${Date.now()}`,
+        type: 'success',
+        content: vaultInfoTable,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
+
+    } catch (error) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to load vault information: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle special keys for lend prompts
+    if (pendingPrompt && (pendingPrompt.type === 'lendProvider' || pendingPrompt.type === 'lendVault')) {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        if (pendingPrompt.type === 'lendProvider') {
+          handleLendProviderSelection()
+        } else if (pendingPrompt.type === 'lendVault') {
+          handleLendVaultSelection(pendingPrompt.data || [])
+        }
+        return
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setPendingPrompt(null)
+        setCurrentInput('')
+        return
+      }
+      // Prevent other input for lend prompts
+      e.preventDefault()
+      return
+    }
+
     if (e.key === 'Enter') {
       processCommand(currentInput)
       setCurrentInput('')
@@ -410,10 +610,13 @@ ${walletList}`,
                 line.id === 'welcome-ascii'
                   ? {
                       fontFamily:
-                        'JetBrains Mono, Monaco, Menlo, Consolas, monospace',
+                        'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
                       color: '#b8bb26',
                       whiteSpace: 'pre',
-                      lineHeight: '1.2',
+                      lineHeight: '1.0',
+                      letterSpacing: '0',
+                      fontVariantLigatures: 'none',
+                      fontFeatureSettings: '"liga" 0',
                       margin: 0,
                       padding: 0,
                       border: 'none',

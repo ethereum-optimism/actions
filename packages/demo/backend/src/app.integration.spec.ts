@@ -44,6 +44,50 @@ vi.mock('./config/verbs.js', () => ({
         },
       ]),
     ),
+    lend: {
+      getVaults: vi.fn(() =>
+        Promise.resolve([
+          {
+            address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
+            name: 'Gauntlet USDC',
+            asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            apy: 0.03,
+            totalAssets: BigInt('16199575764995'),
+            totalShares: BigInt('16199575764995'),
+            owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
+            curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585',
+            fee: 0.1,
+            lastUpdate: 1234567890,
+          },
+        ]),
+      ),
+      getVault: vi.fn((vaultAddress: string) => {
+        if (vaultAddress === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
+          return Promise.resolve({
+            address: vaultAddress,
+            name: 'Gauntlet USDC',
+            asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            apy: 0.03,
+            apyBreakdown: {
+              nativeApy: 0.025,
+              totalRewardsApr: 0.01,
+              usdc: 0.005,
+              morpho: 0.005,
+              other: 0,
+              performanceFee: 0.1,
+              netApy: 0.0325,
+            },
+            totalAssets: BigInt('16199575764995'),
+            totalShares: BigInt('16199575764995'),
+            owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
+            curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585',
+            fee: 0.1,
+            lastUpdate: 1234567890,
+          })
+        }
+        throw new Error('Vault not found')
+      }),
+    },
   })),
 }))
 
@@ -252,6 +296,84 @@ describe('HTTP API Integration', () => {
 
       // Should either be 400 (bad request) or the endpoint should handle it gracefully
       expect([400, 404].includes(response.statusCode)).toBe(true)
+    })
+  })
+
+  describe('Lend endpoints', () => {
+    it('should get all vaults', async () => {
+      const response = await request(`${baseUrl}/lend/vaults`)
+
+      expect(response.statusCode).toBe(200)
+      const data = (await response.body.json()) as any
+
+      expect(data).toHaveProperty('vaults')
+      expect(Array.isArray(data.vaults)).toBe(true)
+      expect(data.vaults.length).toBeGreaterThan(0)
+
+      // Check vault structure
+      const vault = data.vaults[0]
+      expect(vault).toHaveProperty('address')
+      expect(vault).toHaveProperty('name')
+      expect(vault).toHaveProperty('apy')
+      expect(vault).toHaveProperty('asset')
+      expect(vault.address).toBe('0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9')
+      expect(vault.name).toBe('Gauntlet USDC')
+      expect(typeof vault.apy).toBe('number')
+    })
+
+    it('should get specific vault info', async () => {
+      const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
+      const response = await request(`${baseUrl}/lend/vault/${vaultAddress}`)
+
+      expect(response.statusCode).toBe(200)
+      const data = (await response.body.json()) as any
+
+      expect(data).toHaveProperty('vault')
+      const vault = data.vault
+      expect(vault).toHaveProperty('address')
+      expect(vault).toHaveProperty('name')
+      expect(vault).toHaveProperty('apy')
+      expect(vault).toHaveProperty('apyBreakdown')
+      expect(vault).toHaveProperty('asset')
+      expect(vault).toHaveProperty('totalAssets')
+      expect(vault).toHaveProperty('totalShares')
+      expect(vault).toHaveProperty('fee')
+      expect(vault).toHaveProperty('owner')
+      expect(vault).toHaveProperty('curator')
+      expect(vault).toHaveProperty('lastUpdate')
+
+      // Validate APY breakdown structure
+      expect(vault.apyBreakdown).toHaveProperty('nativeApy')
+      expect(vault.apyBreakdown).toHaveProperty('totalRewardsApr')
+      expect(vault.apyBreakdown).toHaveProperty('performanceFee')
+      expect(vault.apyBreakdown).toHaveProperty('netApy')
+
+      expect(vault.address).toBe(vaultAddress)
+      expect(vault.name).toBe('Gauntlet USDC')
+      expect(typeof vault.apy).toBe('number')
+      expect(typeof vault.totalAssets).toBe('string') // BigInt serialized as string
+      expect(typeof vault.fee).toBe('number')
+    })
+
+    it('should return 400 for missing vault address', async () => {
+      const response = await request(`${baseUrl}/lend/vault/`)
+
+      expect(response.statusCode).toBe(404) // Will be 404 since route doesn't match
+    })
+
+    it('should handle vault not found', async () => {
+      const invalidVaultAddress = '0x1234567890123456789012345678901234567890'
+      const response = await request(
+        `${baseUrl}/lend/vault/${invalidVaultAddress}`,
+      )
+
+      expect(response.statusCode).toBe(500)
+      const data = (await response.body.json()) as any
+
+      expect(data).toHaveProperty('error')
+      expect(data.error).toBe('Failed to get vault info')
+      expect(data).toHaveProperty('message')
+      expect(data.message).toContain('Vault not found')
     })
   })
 })

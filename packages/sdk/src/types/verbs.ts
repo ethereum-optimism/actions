@@ -1,3 +1,4 @@
+import type { LendConfig, LendProvider } from './lend.js'
 import type { GetAllWalletsOptions, Wallet } from './wallet.js'
 
 /**
@@ -5,6 +6,11 @@ import type { GetAllWalletsOptions, Wallet } from './wallet.js'
  * @description Main interface for interacting with the Verbs SDK
  */
 export interface VerbsInterface {
+  /**
+   * Get the lend provider instance
+   * @returns LendProvider instance if configured
+   */
+  readonly lend: LendProvider
   /**
    * Create a new wallet
    * @param userId - User identifier for the wallet
@@ -32,6 +38,12 @@ export interface VerbsInterface {
 export interface VerbsConfig {
   /** Wallet provider configuration */
   wallet: WalletConfig
+  /** Lending provider configuration (optional) */
+  lend?: LendConfig
+  /** Chain ID for blockchain interactions */
+  chainId?: number
+  /** RPC URL for blockchain interactions */
+  rpcUrl?: string
 }
 
 /**

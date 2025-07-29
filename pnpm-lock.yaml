@@ -172,6 +172,15 @@ importers:
 
   packages/sdk:
     dependencies:
+      '@morpho-org/blue-sdk':
+        specifier: ^4.5.1
+        version: 4.5.1(@morpho-org/morpho-ts@2.4.1)
+      '@morpho-org/blue-sdk-viem':
+        specifier: ^3.1.1
+        version: 3.1.1(@morpho-org/blue-sdk@4.5.1(@morpho-org/morpho-ts@2.4.1))(@morpho-org/morpho-ts@2.4.1)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
+      '@morpho-org/morpho-ts':
+        specifier: ^2.4.1
+        version: 2.4.1
       '@privy-io/server-auth':
         specifier: latest
         version: 1.28.6(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
@@ -1358,6 +1367,21 @@ packages:
   '@jridgewell/trace-mapping@0.3.29':
     resolution: {integrity: sha512-uw6guiW/gcAGPDhLmd77/6lW8QLeiV5RUTsAX46Db6oLhGaVj4lhnPwb184s1bkc8kdVg/+h988dro8GRDpmYQ==}
 
+  '@morpho-org/blue-sdk-viem@3.1.1':
+    resolution: {integrity: sha512-lWeZSJ00SQCJ14WfQ+4mgL1jrG7OWnX+b7KHO1zrEhA3Y9IdqZeuEYqtPvDEXumbLvVb0rVRr0x/MzvHFvz8+g==}
+    peerDependencies:
+      '@morpho-org/blue-sdk': ^3.0.9
+      '@morpho-org/morpho-ts': ^2.3.0
+      viem: ^2.0.0
+
+  '@morpho-org/blue-sdk@4.5.1':
+    resolution: {integrity: sha512-DSLBTwMEI52WVCZC78B+GA2PXFNsnwLeb6irk/kn9Y3aa1LhmnKGETHjEUjd/83iDaep1nFnmcwsZw3RLqzB3Q==}
+    peerDependencies:
+      '@morpho-org/morpho-ts': ^2.4.1
+
+  '@morpho-org/morpho-ts@2.4.1':
+    resolution: {integrity: sha512-teZWzQ8+YrufGKTBRRso8Y+S11RjbQf+HJ+CUYUhUFelyHV3xCCaOVzxwu23sIHyzR0dX4erK6nGXBmr9uGtDQ==}
+
   '@napi-rs/wasm-runtime@0.2.4':
     resolution: {integrity: sha512-9zESzOO5aDByvhIAsOy9TbpZ0Ur2AJbUI7UT73kcUTS2mxAMHOBaa1st/jAymNoCtvrit99kkzT1FZuXVcgfIQ==}
 
@@ -1684,6 +1708,15 @@ packages:
 
   '@types/json5@0.0.29':
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
+
+  '@types/lodash.isplainobject@4.0.9':
+    resolution: {integrity: sha512-QC8nKcap5hRrbtIaPRjUMlcXXnLeayqQZPSaWJDx3xeuN17+2PW5wkmEJ4+lZgNnQRlSPzxjTYKCfV1uTnPaEg==}
+
+  '@types/lodash.mergewith@4.6.9':
+    resolution: {integrity: sha512-fgkoCAOF47K7sxrQ7Mlud2TH023itugZs2bUg8h/KzT+BnZNrR2jAOmaokbLunHNnobXVWOezAeNn/lZqwxkcw==}
+
+  '@types/lodash@4.17.20':
+    resolution: {integrity: sha512-H3MHACvFUEiujabxhaI/ImO6gUrd8oOurg7LQtS7mbwIXA/cUqWrvBsaeJ23aZEPk1TAYkurjfMbSELfoCXlGA==}
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
@@ -3107,8 +3140,14 @@ packages:
   lodash.debounce@4.0.8:
     resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
 
+  lodash.isplainobject@4.0.6:
+    resolution: {integrity: sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==}
+
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
+
+  lodash.mergewith@4.6.2:
+    resolution: {integrity: sha512-GK3g5RPZWTRSeLSpgP8Xhra+pnjBC56q9FZYe1d5RN3TJ35dbkGy3YqBSMbyCrlbi+CM9Z3Jk5yTL7RCsqboyQ==}
 
   lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
@@ -5474,6 +5513,23 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.4
 
+  '@morpho-org/blue-sdk-viem@3.1.1(@morpho-org/blue-sdk@4.5.1(@morpho-org/morpho-ts@2.4.1))(@morpho-org/morpho-ts@2.4.1)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))':
+    dependencies:
+      '@morpho-org/blue-sdk': 4.5.1(@morpho-org/morpho-ts@2.4.1)
+      '@morpho-org/morpho-ts': 2.4.1
+      viem: 2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5)
+
+  '@morpho-org/blue-sdk@4.5.1(@morpho-org/morpho-ts@2.4.1)':
+    dependencies:
+      '@morpho-org/morpho-ts': 2.4.1
+      '@noble/hashes': 1.8.0
+      '@types/lodash.isplainobject': 4.0.9
+      '@types/lodash.mergewith': 4.6.9
+      lodash.isplainobject: 4.0.6
+      lodash.mergewith: 4.6.2
+
+  '@morpho-org/morpho-ts@2.4.1': {}
+
   '@napi-rs/wasm-runtime@0.2.4':
     dependencies:
       '@emnapi/core': 1.4.5
@@ -5847,6 +5903,16 @@ snapshots:
   '@types/json-schema@7.0.15': {}
 
   '@types/json5@0.0.29': {}
+
+  '@types/lodash.isplainobject@4.0.9':
+    dependencies:
+      '@types/lodash': 4.17.20
+
+  '@types/lodash.mergewith@4.6.9':
+    dependencies:
+      '@types/lodash': 4.17.20
+
+  '@types/lodash@4.17.20': {}
 
   '@types/node@12.20.55': {}
 
@@ -7565,7 +7631,11 @@ snapshots:
 
   lodash.debounce@4.0.8: {}
 
+  lodash.isplainobject@4.0.6: {}
+
   lodash.merge@4.6.2: {}
+
+  lodash.mergewith@4.6.2: {}
 
   lodash@4.17.21: {}
 
