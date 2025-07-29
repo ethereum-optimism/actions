@@ -10,7 +10,7 @@ export interface TokenInfo {
 export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
   USDC: {
     symbol: 'USDC',
-    name: 'USD Coin',
+    name: 'USDC',
     decimals: 6,
     addresses: {
       1: '0xA0b86a33E6416eFB1e57D696bDc080e07a4aE3d1', // Ethereum

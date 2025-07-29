@@ -1,13 +1,13 @@
 import type { Address, PublicClient } from 'viem'
 
-import {
-  type LendMarketInfo,
-  type LendOptions,
-  LendProvider,
-  type LendTransaction,
-  type LendVaultInfo,
-  type MorphoLendConfig,
+import type {
+  LendMarketInfo,
+  LendOptions,
+  LendTransaction,
+  LendVaultInfo,
+  MorphoLendConfig,
 } from '../../../types/lend.js'
+import { LendProvider } from '../../provider.js'
 import {
   findBestVaultForAsset,
   getVaultInfo as getVaultInfoHelper,

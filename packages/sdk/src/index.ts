@@ -1,4 +1,4 @@
-export { createLendProvider, LendProviderMorpho } from './lend/index.js'
+export { LendProvider, LendProviderMorpho } from './lend/index.js'
 export type {
   ApyBreakdown,
   CreateWalletResponse,
@@ -10,7 +10,6 @@ export type {
   LendMarket,
   LendMarketInfo,
   LendOptions,
-  LendProvider,
   LendTransaction,
   LendVaultInfo,
   MorphoLendConfig,

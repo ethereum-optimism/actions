@@ -21,7 +21,9 @@ describe('Morpho API Integration', () => {
 
       expect(vaultData).toBeDefined()
       expect(vaultData).not.toBeNull()
-      expect(vaultData.address).toBe(GAUNTLET_USDC_VAULT.toLowerCase())
+      expect(vaultData.address.toLowerCase()).toBe(
+        GAUNTLET_USDC_VAULT.toLowerCase(),
+      )
       expect(vaultData.state).toBeDefined()
     },
     30000,

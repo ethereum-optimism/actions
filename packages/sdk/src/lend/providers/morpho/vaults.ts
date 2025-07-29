@@ -2,11 +2,7 @@ import type { AccrualPosition, IToken } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import type { Address, PublicClient } from 'viem'
 
-import {
-  findTokenByAddress,
-  getTokenAddress,
-  SUPPORTED_TOKENS,
-} from '../../../supported/tokens.js'
+import { getTokenAddress, SUPPORTED_TOKENS } from '../../../supported/tokens.js'
 import type { ApyBreakdown, LendVaultInfo } from '../../../types/lend.js'
 import { fetchRewards, type RewardsBreakdown } from './api.js'
 
@@ -133,9 +129,9 @@ export async function getVaultInfo(
     const vault = await fetchAccrualVault(vaultAddress, publicClient)
 
     // 3. Calculate base APY from SDK data (before fees)
-    const baseApyBeforeFees =
-      calculateBaseApy(vault) / (1 - Number(vault.fee) / 1e18) // Reverse the fee application to get before-fees APY
+    const baseApyAfterFees = calculateBaseApy(vault)
     const performanceFee = Number(vault.fee) / 1e18
+    const baseApyBeforeFees = baseApyAfterFees / (1 - performanceFee) // Reverse the fee application to get before-fees APY
 
     // 4. Fetch rewards data from API
     const rewardsBreakdown = await fetchAndCalculateRewards(vaultAddress)
@@ -237,22 +233,6 @@ async function fetchVaultConfigs(): Promise<VaultConfig[]> {
 }
 
 /**
- * Categorize reward token for APY breakdown
- * @param address Token address
- * @param chainId Chain ID
- * @returns Token symbol in lowercase or 'other' if not supported
- */
-function categorizeRewardToken(address: Address, chainId: number): string {
-  // Dynamic token address lookup
-  const tokenSymbol = findTokenByAddress(address, chainId)
-  if (tokenSymbol) {
-    return tokenSymbol.toLowerCase()
-  }
-
-  return 'other'
-}
-
-/**
  * Calculate detailed rewards breakdown from vault and market allocations
  * @param apiVault - Vault data from GraphQL API
  * @returns Detailed rewards breakdown
@@ -272,11 +252,17 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
   if (apiVault.state?.rewards && apiVault.state.rewards.length > 0) {
     apiVault.state.rewards.forEach((reward: any) => {
       const rewardApr = reward.supplyApr || 0
-      const assetAddress = reward.asset.address
-      const chainId = reward.asset.chain?.id || 130 // Default to Unichain
+      const assetSymbol = reward.asset.symbol
 
-      const category = categorizeRewardToken(assetAddress, chainId)
-      rewardsByCategory[category] += rewardApr
+      // Use the symbol from API response for categorization
+      const category = assetSymbol ? assetSymbol.toLowerCase() : 'other'
+
+      // Add to appropriate category if supported, otherwise to 'other'
+      if (category in rewardsByCategory) {
+        rewardsByCategory[category] += rewardApr
+      } else {
+        rewardsByCategory.other += rewardApr
+      }
     })
   }
 
@@ -302,11 +288,17 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
         allocation.market.state.rewards.forEach((reward: any) => {
           const rewardApr = reward.supplyApr || 0
           const weightedRewardApr = rewardApr * weight
-          const assetAddress = reward.asset.address
-          const chainId = reward.asset.chain?.id || 130 // Default to Unichain
+          const assetSymbol = reward.asset.symbol
 
-          const category = categorizeRewardToken(assetAddress, chainId)
-          rewardsByCategory[category] += weightedRewardApr
+          // Use the symbol from API response for categorization
+          const category = assetSymbol ? assetSymbol.toLowerCase() : 'other'
+
+          // Add to appropriate category if supported, otherwise to 'other'
+          if (category in rewardsByCategory) {
+            rewardsByCategory[category] += weightedRewardApr
+          } else {
+            rewardsByCategory.other += weightedRewardApr
+          }
         })
       }
     })

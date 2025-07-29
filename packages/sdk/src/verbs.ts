@@ -1,7 +1,7 @@
 import { createPublicClient, http, type PublicClient } from 'viem'
 import { mainnet, optimism } from 'viem/chains'
 
-import { createLendProvider } from './lend/index.js'
+import { LendProviderMorpho } from './lend/index.js'
 import type { LendProvider } from './types/lend.js'
 import type { VerbsConfig, VerbsInterface } from './types/verbs.js'
 import type { GetAllWalletsOptions, WalletProvider } from './types/wallet.js'
@@ -47,7 +47,13 @@ export class Verbs implements VerbsInterface {
         chain,
         transport: http(config.rpcUrl),
       }) as PublicClient
-      this.lendProvider = createLendProvider(config.lend, publicClient)
+      if (config.lend.type === 'morpho') {
+        this.lendProvider = new LendProviderMorpho(config.lend, publicClient)
+      } else {
+        throw new Error(
+          `Unsupported lending provider type: ${config.lend.type}`,
+        )
+      }
     }
 
     this.walletProvider = this.createWalletProvider(config)

@@ -25,17 +25,23 @@ export async function fetchRewards(vaultAddress: Address): Promise<any | null> {
       query VaultByAddress($address: String!, $chainId: Int) {
         vaultByAddress(address: $address, chainId: $chainId) {
           address
+          id
           state {
             rewards {
               asset {
                 address
                 name
+                symbol
+                chain {
+                  id
+                }
               }
               amountPerSuppliedToken
               supplyApr
             }
             allocation {
               market {
+                id
                 uniqueKey
                 state {
                   rewards {
@@ -43,6 +49,7 @@ export async function fetchRewards(vaultAddress: Address): Promise<any | null> {
                     amountPerSuppliedToken
                     asset {
                       address
+                      symbol
                       chain {
                         id
                       }

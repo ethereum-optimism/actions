@@ -173,6 +173,7 @@ describe('Vault Utilities', () => {
               asset: {
                 address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
                 name: 'USDC',
+                symbol: 'USDC',
                 chain: { id: 130 }, // Unichain = USDC rewards
               },
             },
@@ -181,6 +182,7 @@ describe('Vault Utilities', () => {
               asset: {
                 address: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
                 name: 'MORPHO',
+                symbol: 'MORPHO',
                 chain: { id: 1 }, // Ethereum = MORPHO rewards
               },
             },
@@ -212,6 +214,7 @@ describe('Vault Utilities', () => {
                       supplyApr: 0.02, // 2% reward
                       asset: {
                         address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+                        symbol: 'USDC',
                         chain: { id: 130 }, // USDC reward
                       },
                     },
@@ -229,6 +232,7 @@ describe('Vault Utilities', () => {
                       supplyApr: 0.05, // 5% reward
                       asset: {
                         address: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
+                        symbol: 'MORPHO',
                         chain: { id: 1 }, // MORPHO reward
                       },
                     },
@@ -259,6 +263,7 @@ describe('Vault Utilities', () => {
               supplyApr: 0.01, // 1% vault-level USDC reward
               asset: {
                 address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+                symbol: 'USDC',
                 chain: { id: 130 },
               },
             },
@@ -274,6 +279,7 @@ describe('Vault Utilities', () => {
                       supplyApr: 0.015, // 1.5% market-level MORPHO reward
                       asset: {
                         address: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
+                        symbol: 'MORPHO',
                         chain: { id: 1 },
                       },
                     },
@@ -301,6 +307,7 @@ describe('Vault Utilities', () => {
               asset: {
                 address: '0x1234567890123456789012345678901234567890',
                 name: 'UNKNOWN',
+                symbol: 'UNKNOWN',
                 chain: { id: 42 }, // Unknown chain
               },
             },
@@ -332,6 +339,7 @@ describe('Vault Utilities', () => {
                       supplyApr: 0.1, // High reward but no weight
                       asset: {
                         address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+                        symbol: 'USDC',
                         chain: { id: 130 },
                       },
                     },
