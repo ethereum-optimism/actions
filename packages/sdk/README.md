@@ -54,7 +54,28 @@ if (wallet) {
 }
 ```
 
-## Testing
+## Development
+
+### Prerequisites
+
+For running supersim integration tests, you'll need:
+
+1. **Supersim** - Local multi-chain development environment ([GitHub](https://github.com/ethereum-optimism/supersim))
+   ```bash
+   # macOS/Linux
+   brew install ethereum-optimism/tap/supersim
+   
+   # Or download from releases
+   # https://github.com/ethereum-optimism/supersim/releases
+   ```
+
+2. **Foundry** - Required by supersim
+   ```bash
+   curl -L https://foundry.paradigm.xyz | bash
+   foundryup
+   ```
+
+### Testing
 
 Run unit tests:
 
@@ -68,7 +89,23 @@ Run tests including external tests (those that make real network requests):
 EXTERNAL_TEST=true pnpm test
 ```
 
-External tests are used for integration testing with live APIs and services. They are disabled by default to avoid unnecessary network requests during regular development.
+Run tests including supersim integration tests:
+
+```bash
+SUPERSIM_TEST=true pnpm test
+```
+
+Run supersim tests with verbose output:
+
+```bash
+SUPERSIM_TEST=true VERBOSE=true pnpm test
+```
+
+External tests are used for integration testing with live APIs and services. Supersim tests require supersim to be installed and create local forked networks. Both are disabled by default.
+
+#### Supersim Integration Tests
+
+Some tests use supersim for local forked network testing. They automatically start/stop supersim, fund test wallets, and test transaction execution.
 
 ## Documentation
 

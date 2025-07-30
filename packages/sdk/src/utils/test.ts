@@ -2,6 +2,12 @@
  * Test utilities for the Verbs SDK
  */
 
+import type { ChildProcess } from 'child_process'
+import { spawn } from 'child_process'
+import type { Chain, PublicClient } from 'viem'
+import { createPublicClient, createWalletClient, http, parseEther } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+
 /**
  * Helper function to check if external tests should run
  * External tests make real network requests and are only run when EXTERNAL_TEST=true
@@ -16,3 +22,241 @@
  * ```
  */
 export const externalTest = () => process.env.EXTERNAL_TEST === 'true'
+
+/**
+ * Helper function to check if supersim tests should run
+ * Supersim tests require supersim to be installed and are only run when SUPERSIM_TEST=true
+ * 
+ * Usage:
+ * ```typescript
+ * import { supersimTest } from '../utils/test.js'
+ * 
+ * describe.runIf(supersimTest())('Supersim Integration', () => {
+ *   // Tests that require supersim
+ * })
+ * ```
+ */
+export const supersimTest = () => process.env.SUPERSIM_TEST === 'true'
+
+/**
+ * Configuration for supersim test setup
+ */
+export interface SupersimConfig {
+  /** L1 port (default: 8546) */
+  l1Port?: number
+  /** L2 starting port (default: 9546) */
+  l2StartingPort?: number
+  /** Chains to fork (default: ['unichain']) */
+  chains?: string[]
+  /** Enable verbose logging (default: false) */
+  verbose?: boolean
+}
+
+/**
+ * Start supersim with forked chains
+ *
+ * Prerequisites:
+ * - supersim must be installed (brew install ethereum-optimism/tap/supersim)
+ * - foundry must be installed (curl -L https://foundry.paradigm.xyz | bash)
+ * @param config - Supersim configuration
+ * @returns Promise that resolves with the supersim process when ready
+ * @throws Error if supersim is not available
+ */
+export async function startSupersim(
+  config: SupersimConfig = {},
+): Promise<ChildProcess> {
+  const {
+    l1Port = 8546,
+    l2StartingPort = 9546,
+    chains = ['unichain'],
+    verbose = process.env.VERBOSE === 'true',
+  } = config
+
+  console.log(`Starting supersim with forked chains: ${chains.join(', ')}...`)
+  if (verbose) {
+    console.log('Verbose mode enabled - supersim logs will be displayed')
+  }
+
+  // Start supersim with forked chains on custom ports to avoid conflicts
+  const supersimProcess = spawn(
+    'supersim',
+    [
+      'fork',
+      '--chains',
+      ...chains,
+      '--l1.port',
+      l1Port.toString(),
+      '--l2.starting.port',
+      l2StartingPort.toString(),
+    ],
+    {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  )
+
+  // Handle case where supersim command is not found
+  supersimProcess.on('error', (error) => {
+    if ((error as any).code === 'ENOENT') {
+      throw new Error(
+        'supersim command not found. Please install supersim:\n' +
+          '  macOS/Linux: brew install ethereum-optimism/tap/supersim\n' +
+          '  Or download from: https://github.com/ethereum-optimism/supersim/releases',
+      )
+    }
+    throw error
+  })
+
+  // Wait for supersim to be ready
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error('Supersim failed to start within 30 seconds'))
+    }, 30000)
+
+    // Log supersim output and wait for ready message
+    supersimProcess?.stdout?.on('data', (data) => {
+      const output = data.toString()
+      if (verbose) {
+        console.log(`[supersim stdout]: ${output}`)
+      }
+
+      if (output.includes('supersim is ready')) {
+        clearTimeout(timeout)
+        console.log('Supersim is ready!')
+        resolve()
+      }
+    })
+
+    supersimProcess?.stderr?.on('data', (data) => {
+      const errorOutput = data.toString()
+      if (verbose) {
+        console.error(`[supersim stderr]: ${errorOutput}`)
+      }
+    })
+
+    supersimProcess?.on('error', (err) => {
+      clearTimeout(timeout)
+      reject(err)
+    })
+  })
+
+  return supersimProcess
+}
+
+/**
+ * Stop supersim process
+ * @param supersimProcess - The supersim process to stop
+ */
+export async function stopSupersim(
+  supersimProcess: ChildProcess,
+): Promise<void> {
+  console.log('Stopping supersim...')
+  if (supersimProcess) {
+    supersimProcess.kill()
+    // Wait for process to exit
+    await new Promise((resolve) => {
+      supersimProcess?.on('exit', resolve)
+    })
+  }
+  console.log('Supersim stopped')
+}
+
+/**
+ * Configuration for wallet funding
+ */
+export interface FundWalletConfig {
+  /** RPC URL for the chain */
+  rpcUrl: string
+  /** Chain configuration */
+  chain: Chain
+  /** Target wallet address to fund */
+  targetAddress: `0x${string}`
+  /** Amount to fund in ETH (default: '10') */
+  amount?: string
+  /** Funder private key (default: second anvil account) */
+  funderPrivateKey?: `0x${string}`
+}
+
+/**
+ * Fund a wallet with ETH using a funder account
+ * @param config - Wallet funding configuration
+ * @returns Promise that resolves when funding is complete
+ */
+export async function fundWallet(config: FundWalletConfig): Promise<void> {
+  const {
+    rpcUrl,
+    chain,
+    targetAddress,
+    amount = '10',
+    funderPrivateKey = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d', // Second anvil account
+  } = config
+
+  console.log('Funding test wallet...')
+
+  // Create public client for waiting for transaction receipt
+  const publicClient = createPublicClient({
+    chain,
+    transport: http(rpcUrl),
+  })
+
+  // Create funder account and wallet client
+  const funderAccount = privateKeyToAccount(funderPrivateKey)
+  const funderClient = createWalletClient({
+    account: funderAccount,
+    chain,
+    transport: http(rpcUrl),
+  }) as any // Type assertion to avoid viem version compatibility issue
+
+  // Send funding transaction
+  const fundingTx = await funderClient.sendTransaction({
+    to: targetAddress,
+    value: parseEther(amount),
+  })
+
+  // Wait for transaction confirmation
+  await publicClient.waitForTransactionReceipt({ hash: fundingTx })
+  console.log(`Test wallet funded with ${amount} ETH at ${targetAddress}`)
+}
+
+/**
+ * Create a test setup for supersim with funded wallet
+ * @param config - Combined configuration for supersim and wallet funding
+ * @returns Promise that resolves with supersim process, public client, and test account
+ */
+export async function setupSupersimTest(config: {
+  supersim?: SupersimConfig
+  wallet: Omit<FundWalletConfig, 'targetAddress'> & {
+    testPrivateKey?: `0x${string}`
+  }
+}): Promise<{
+  supersimProcess: ChildProcess
+  publicClient: PublicClient
+  testAccount: ReturnType<typeof privateKeyToAccount>
+}> {
+  const testPrivateKey =
+    config.wallet.testPrivateKey ||
+    ('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as const) // First anvil account
+
+  // Start supersim
+  const supersimProcess = await startSupersim(config.supersim)
+
+  // Setup viem clients
+  const publicClient = createPublicClient({
+    chain: config.wallet.chain,
+    transport: http(config.wallet.rpcUrl),
+  })
+
+  // Create test account
+  const testAccount = privateKeyToAccount(testPrivateKey)
+
+  // Fund the test wallet
+  await fundWallet({
+    ...config.wallet,
+    targetAddress: testAccount.address,
+  })
+
+  return {
+    supersimProcess,
+    publicClient,
+    testAccount,
+  }
+}

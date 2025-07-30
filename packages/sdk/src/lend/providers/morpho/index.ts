@@ -1,7 +1,6 @@
 import type { Address, PublicClient } from 'viem'
 
 import type {
-  LendMarketInfo,
   LendOptions,
   LendTransaction,
   LendVaultInfo,
@@ -150,20 +149,5 @@ export class LendProviderMorpho extends LendProvider {
    */
   async getVaultInfo(vaultAddress: Address): Promise<LendVaultInfo> {
     return this.getVault(vaultAddress)
-  }
-
-  /**
-   * Get detailed market information (deprecated - use getVault)
-   * @param marketId - Market identifier
-   * @returns Promise resolving to market information
-   * @deprecated Use getVault instead
-   */
-  async getMarketInfo(marketId: string): Promise<LendMarketInfo> {
-    // This method is deprecated and should not be used
-
-    const _unused = { marketId }
-    throw new Error(
-      'getMarketInfo is deprecated. Use getVault instead with vault address.',
-    )
   }
 }
