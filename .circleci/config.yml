@@ -116,9 +116,7 @@ jobs:
             $HOME/.foundry/bin/anvil --version
       - run:
           name: Run Supersim Tests
-          environment:
-            SUPERSIM_TEST: true
-          command: cd packages/sdk && pnpm test
+          command: cd packages/sdk && pnpm test:supersim
 
   docker-build:
     environment:

@@ -27,7 +27,8 @@
     "docs": "typedoc",
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --loglevel=warn",
-    "test": "vitest --run",
+    "test": "vitest --run --project unit",
+    "test:supersim": "vitest --run --project supersim",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "keywords": [

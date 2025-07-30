@@ -6,7 +6,6 @@ import type { VerbsInterface } from '../../../types/verbs.js'
 import {
   setupSupersimTest,
   stopSupersim,
-  supersimTest,
 } from '../../../utils/test.js'
 import { initVerbs } from '../../../verbs.js'
 import { SUPPORTED_VAULTS } from './vaults.js'
@@ -16,7 +15,7 @@ const TEST_VAULT = SUPPORTED_VAULTS[0]
 const USDC_ADDRESS = TEST_VAULT.asset.address
 const TEST_VAULT_ADDRESS = TEST_VAULT.address
 
-describe.runIf(supersimTest())('Morpho Lend', () => {
+describe('Morpho Lend', () => {
   let supersimProcess: any
   let publicClient: any
   let testAccount: any
