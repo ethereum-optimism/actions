@@ -1,6 +1,11 @@
 import type { Address } from 'viem'
 
-import type { LendOptions, LendProvider, LendTransaction } from './lend.js'
+import type {
+  LendOptions,
+  LendProvider,
+  LendTransaction,
+} from '@/types/lend.js'
+import type { TokenBalance } from '@/types/token.js'
 
 /**
  * Wallet provider interface
@@ -61,10 +66,10 @@ export interface GetAllWalletsOptions {
  */
 export type WalletVerbs = {
   /**
-   * Get wallet balance
-   * @returns Promise resolving to wallet balance in wei
+   * Get asset balances aggregated across all supported chains
+   * @returns Promise resolving to array of asset balances
    */
-  getBalance(): Promise<bigint>
+  getBalance(): Promise<TokenBalance[]>
   /**
    * Lend assets to a lending market
    * @param asset - Asset token address to lend

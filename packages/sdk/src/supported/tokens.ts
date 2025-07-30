@@ -1,10 +1,13 @@
 import type { Address } from 'viem'
+import { mainnet, unichain } from 'viem/chains'
+
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 export interface TokenInfo {
   symbol: string
   name: string
   decimals: number
-  addresses: Record<number, Address> // chainId -> address
+  addresses: Partial<Record<SupportedChainId, Address>> // chainId -> address
 }
 
 export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
@@ -13,8 +16,8 @@ export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
     name: 'USDC',
     decimals: 6,
     addresses: {
-      1: '0xA0b86a33E6416eFB1e57D696bDc080e07a4aE3d1', // Ethereum
-      130: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // Unichain
+      [mainnet.id]: '0xA0b86a33E6416eFB1e57D696bDc080e07a4aE3d1',
+      [unichain.id]: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     },
   },
   MORPHO: {
@@ -22,8 +25,8 @@ export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
     name: 'Morpho Token',
     decimals: 18,
     addresses: {
-      1: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2', // Ethereum
-      130: '0x078D782b760474a361dDA0AF3839290b0EF57AD6', // Unichain
+      [mainnet.id]: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
+      [unichain.id]: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
     },
   },
 }
@@ -36,7 +39,7 @@ export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
  */
 export function findTokenByAddress(
   address: Address,
-  chainId: number,
+  chainId: SupportedChainId,
 ): string | null {
   const normalizedAddress = address.toLowerCase()
 
@@ -58,7 +61,7 @@ export function findTokenByAddress(
  */
 export function getTokenAddress(
   symbol: string,
-  chainId: number,
+  chainId: SupportedChainId,
 ): Address | null {
   const token = SUPPORTED_TOKENS[symbol]
   return token?.addresses[chainId] || null

@@ -1,28 +1,16 @@
 import { createPublicClient, http, type PublicClient } from 'viem'
-import { mainnet, optimism } from 'viem/chains'
+import { mainnet, optimism, unichain } from 'viem/chains'
 
-import { LendProviderMorpho } from './lend/index.js'
-import type { LendProvider } from './types/lend.js'
-import type { VerbsConfig, VerbsInterface } from './types/verbs.js'
-import type { GetAllWalletsOptions, WalletProvider } from './types/wallet.js'
-import type { Wallet } from './wallet/index.js'
-import { WalletProviderPrivy } from './wallet/providers/privy.js'
-
-// Unichain configuration
-const unichain = {
-  id: 130,
-  name: 'Unichain',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: {
-    default: { http: ['https://mainnet.unichain.org/'] },
-  },
-  blockExplorers: {
-    default: {
-      name: 'Unichain Explorer',
-      url: 'https://unichain.blockscout.com',
-    },
-  },
-}
+import { LendProviderMorpho } from '@/lend/index.js'
+import { ChainManager } from '@/services/ChainManager.js'
+import type { LendProvider } from '@/types/lend.js'
+import type { VerbsConfig, VerbsInterface } from '@/types/verbs.js'
+import type {
+  GetAllWalletsOptions,
+  Wallet,
+  WalletProvider,
+} from '@/types/wallet.js'
+import { WalletProviderPrivy } from '@/wallet/providers/privy.js'
 
 /**
  * Main Verbs SDK class
@@ -35,9 +23,16 @@ export class Verbs implements VerbsInterface {
   getAllWallets!: (options?: GetAllWalletsOptions) => Promise<Wallet[]>
 
   private walletProvider: WalletProvider
+  private chainManager: ChainManager
   private lendProvider?: LendProvider
 
   constructor(config: VerbsConfig) {
+    this.chainManager = new ChainManager([
+      {
+        chainId: unichain.id,
+        rpcUrl: unichain.rpcUrls.default.http[0],
+      },
+    ])
     // Create lending provider if configured
     if (config.lend) {
       const chainId = config.chainId || 130 // Default to Unichain
@@ -87,6 +82,7 @@ export class Verbs implements VerbsInterface {
         return new WalletProviderPrivy(
           wallet.appId,
           wallet.appSecret,
+          this.chainManager,
           this.lendProvider,
         )
       default:

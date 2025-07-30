@@ -1,11 +1,15 @@
-import type { Address } from 'viem'
+import { type Address } from 'viem'
 
+import type { ChainManager } from '@/services/ChainManager.js'
+import { fetchBalance } from '@/services/tokenBalance.js'
+import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type {
   LendOptions,
   LendProvider,
   LendTransaction,
-} from '../types/lend.js'
-import type { Wallet as WalletInterface } from '../types/wallet.js'
+} from '@/types/lend.js'
+import type { TokenBalance } from '@/types/token.js'
+import type { Wallet as WalletInterface } from '@/types/wallet.js'
 
 /**
  * Wallet implementation
@@ -13,27 +17,47 @@ import type { Wallet as WalletInterface } from '../types/wallet.js'
  */
 export class Wallet implements WalletInterface {
   id: string
-  address: Address
   private lendProvider?: LendProvider
+  address!: Address
+  private initialized: boolean = false
+  private chainManager: ChainManager
 
   /**
    * Create a new wallet instance
    * @param id - Unique wallet identifier
    * @param lendProvider - Optional lending provider for wallet operations
    */
-  constructor(id: string, lendProvider?: LendProvider) {
+  constructor(
+    id: string,
+    chainManager: ChainManager,
+    lendProvider?: LendProvider,
+  ) {
     this.id = id
-    this.address = '0x' as Address // Will be determined after creation
+    this.chainManager = chainManager
     this.lendProvider = lendProvider
   }
 
+  init(address: Address) {
+    this.address = address
+    this.initialized = true
+  }
+
   /**
-   * Get wallet balance
-   * @description Retrieve the current balance of the wallet
-   * @returns Promise resolving to balance in wei
+   * Get asset balances across all supported chains
+   * @returns Promise resolving to array of asset balances
    */
-  async getBalance(): Promise<bigint> {
-    return 0n // TODO: placeholder
+  async getBalance(): Promise<TokenBalance[]> {
+    if (!this.initialized) {
+      throw new Error('Wallet not initialized')
+    }
+
+    const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
+      async (token) => {
+        return fetchBalance(this.chainManager, this.address, token)
+      },
+    )
+
+    return Promise.all(tokenBalancePromises)
   }
 
   /**

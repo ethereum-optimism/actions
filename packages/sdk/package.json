@@ -38,6 +38,7 @@
   "author": "Optimism PBC",
   "license": "MIT",
   "dependencies": {
+    "@eth-optimism/viem": "^0.4.13",
     "@morpho-org/blue-sdk": "^4.5.1",
     "@morpho-org/blue-sdk-viem": "^3.1.1",
     "@morpho-org/morpho-ts": "^2.4.1",
@@ -45,6 +46,7 @@
     "viem": "^2.24.1"
   },
   "devDependencies": {
+    "@types/node": "^18",
     "eslint": "^9.31.0",
     "prettier": "^3.0.0",
     "typescript": "^5.2.2",
