@@ -69,13 +69,11 @@ export async function startSupersim(
     l1Port = 8546,
     l2StartingPort = 9546,
     chains = ['unichain'],
-    verbose = process.env.VERBOSE === 'true',
+    verbose = true, // Always verbose for supersim tests
   } = config
 
   console.log(`Starting supersim with forked chains: ${chains.join(', ')}...`)
-  if (verbose) {
-    console.log('Verbose mode enabled - supersim logs will be displayed')
-  }
+  console.log('Verbose mode enabled - supersim logs will be displayed')
 
   // Start supersim with forked chains on custom ports to avoid conflicts
   const supersimProcess = spawn(

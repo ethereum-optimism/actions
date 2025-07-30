@@ -1,4 +1,6 @@
 import type { Address, PublicClient } from 'viem'
+import { encodeFunctionData, erc20Abi } from 'viem'
+import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 
 import type {
   LendOptions,
@@ -54,10 +56,10 @@ export class LendProviderMorpho extends LendProvider {
 
   /**
    * Lend assets to a Morpho market
-   * @description Supplies assets to a Morpho market using Blue_Supply operation
+   * @description Supplies assets to a Morpho market using MetaMorpho deposit operation
    * @param asset - Asset token address to lend
    * @param amount - Amount to lend (in wei)
-   * @param marketId - Optional specific market ID
+   * @param marketId - Optional specific market ID (vault address)
    * @param options - Optional lending configuration
    * @returns Promise resolving to lending transaction details
    */
@@ -75,24 +77,43 @@ export class LendProviderMorpho extends LendProvider {
       // 2. Get vault information for APY
       const vaultInfo = await this.getVault(selectedVaultAddress)
 
-      // 3. Create transaction data (mock implementation)
-      const transactionData = {
-        to: this.morphoAddress,
-        data: '0x' + Math.random().toString(16).substring(2, 66), // Mock transaction data
-        value: '0x0',
-        slippage: options?.slippage || this.defaultSlippage,
-      }
+      // 3. Generate real call data for Morpho deposit
+      const receiver = options?.receiver || '0x0000000000000000000000000000000000000000' // Will be replaced by actual user address
+      const depositCallData = MetaMorphoAction.deposit(amount, receiver)
 
-      // 4. Return transaction details (actual execution will be handled by wallet)
+      // 4. Create approval transaction data for USDC if needed
+      const approvalCallData = encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'approve',
+        args: [selectedVaultAddress, amount],
+      })
+
+      // 5. Return transaction details with real call data
       const currentTimestamp = Math.floor(Date.now() / 1000)
 
       return {
-        hash: JSON.stringify(transactionData).slice(0, 66), // Use first 66 chars as placeholder hash
+        hash: `morpho-lend-${Date.now()}`, // Placeholder hash
         amount,
         asset,
         marketId: selectedVaultAddress,
         apy: vaultInfo.apy,
         timestamp: currentTimestamp,
+        // Add transaction data for wallet execution
+        transactionData: {
+          // Approval transaction (if needed)
+          approval: {
+            to: asset,
+            data: approvalCallData,
+            value: '0x0',
+          },
+          // Deposit transaction
+          deposit: {
+            to: selectedVaultAddress,
+            data: depositCallData,
+            value: '0x0',
+          },
+        },
+        slippage: options?.slippage || this.defaultSlippage,
       }
     } catch (error) {
       throw new Error(
