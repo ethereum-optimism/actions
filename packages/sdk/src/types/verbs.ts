@@ -1,3 +1,5 @@
+import type { ChainManager } from '@/services/ChainManager.js'
+
 import type { LendConfig, LendProvider } from './lend.js'
 import type { GetAllWalletsOptions, Wallet } from './wallet.js'
 
@@ -11,6 +13,11 @@ export interface VerbsInterface {
    * @returns LendProvider instance if configured
    */
   readonly lend: LendProvider
+  /**
+   * Get the chain manager instance
+   * @returns ChainManager instance for multi-chain operations
+   */
+  readonly chainManager: ChainManager
   /**
    * Create a new wallet
    * @param userId - User identifier for the wallet

@@ -1,10 +1,10 @@
-import { erc20Abi, createWalletClient, http, parseUnits, decodeEventLog } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import { createWalletClient, erc20Abi, http, parseUnits } from 'viem'
 import { unichain } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import type { VerbsInterface } from '../../../types/verbs.js'
 import { setupSupersimTest, stopSupersim, supersimTest } from '../../../utils/test.js'
-import { LendProviderMorpho } from './index.js'
+import { initVerbs } from '../../../verbs.js'
 import { SUPPORTED_VAULTS } from './vaults.js'
 
 // Use the first supported vault (Gauntlet USDC)
@@ -17,7 +17,8 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
   let publicClient: any
   let testAccount: any
   let walletClient: any
-  let morphoProvider: LendProviderMorpho
+  let verbs: VerbsInterface
+  let testWallet: any
 
   beforeAll(async () => {
     // Set up supersim with funded wallet using helper
@@ -45,8 +46,26 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
       transport: http('http://127.0.0.1:9546'),
     }) as any
 
-    // Initialize Morpho provider
-    morphoProvider = new LendProviderMorpho({ type: 'morpho' }, publicClient)
+    // Initialize Verbs SDK with Morpho lending
+    verbs = initVerbs({
+      wallet: {
+        type: 'privy',
+        appId: 'test-app-id',
+        appSecret: 'test-app-secret',
+      },
+      lend: {
+        type: 'morpho',
+        defaultSlippage: 50,
+      },
+      chainId: unichain.id,
+      rpcUrl: 'http://127.0.0.1:9546',
+    })
+    
+    // For testing, create a wallet directly with the Verbs instance
+    // In real app, wallet.lend() would be available after createWallet()
+    const { Wallet } = await import('../../../wallet/index.js')
+    testWallet = new Wallet('test-wallet', verbs)
+    testWallet.init(testAccount.address)
   }, 30000)
 
   afterAll(async () => {
@@ -71,7 +90,7 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
     console.log(
       `Testing with vault: ${TEST_VAULT.name} (${TEST_VAULT_ADDRESS})`,
     )
-    const vaultInfo = await morphoProvider.getVault(TEST_VAULT_ADDRESS)
+    const vaultInfo = await verbs.lend.getVault(TEST_VAULT_ADDRESS)
     console.log(`Vault info: ${vaultInfo.name} - APY: ${vaultInfo.apy}%`)
 
     // Check USDC balance (wrapped in try-catch as USDC might not be at expected address on fork)
@@ -92,23 +111,18 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
       usdcBalance = 1000000n // Mock 1 USDC for testing
     }
 
-    const lendAmount = 1000000n // 1 USDC (6 decimals)
-
-    console.log('Preparing lend transaction with real Morpho call data...')
-    // Call lend with asset (USDC), amount, vault address, and receiver
-    const lendTx = await morphoProvider.lend(
-      USDC_ADDRESS,
-      lendAmount,
-      TEST_VAULT_ADDRESS,
-      {
-        receiver: testAccount.address,
-        slippage: 50, // 0.5%
-      },
-    )
+    console.log('Testing human-readable lend API...')
+    
+    // Test the new human-readable API: lend(1, 'usdc')
+    const lendTx = await testWallet.lend(1, 'usdc', TEST_VAULT_ADDRESS, {
+      slippage: 50, // 0.5%
+    })
+    
+    const expectedAmount = 1000000n // 1 USDC (6 decimals)
 
     // Validate lend transaction structure
     expect(lendTx).toBeDefined()
-    expect(lendTx.amount).toBe(lendAmount)
+    expect(lendTx.amount).toBe(expectedAmount)
     expect(lendTx.asset).toBe(USDC_ADDRESS)
     expect(lendTx.marketId).toBe(TEST_VAULT_ADDRESS)
     expect(lendTx.apy).toBeGreaterThan(0)
@@ -117,12 +131,14 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
     expect(lendTx.transactionData?.deposit).toBeDefined()
     expect(lendTx.transactionData?.approval).toBeDefined()
 
-    console.log('✅ Lend transaction details from provider:', {
-      amount: lendTx.amount,
+    console.log('✅ Verbs-initialized wallet.lend(1, "usdc") details:', {
+      humanAmount: '1 USDC',
+      parsedAmount: lendTx.amount,
       asset: lendTx.asset,
       marketId: lendTx.marketId,
       apy: lendTx.apy,
       slippage: lendTx.slippage,
+      receiver: testAccount.address,
       hasApprovalData: !!lendTx.transactionData?.approval,
       hasDepositData: !!lendTx.transactionData?.deposit,
     })
@@ -152,7 +168,7 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
         address: approvalTx.to,
         abi: erc20Abi,
         functionName: 'approve',
-        args: [TEST_VAULT_ADDRESS, lendAmount],
+        args: [TEST_VAULT_ADDRESS, expectedAmount],
       })
       
       console.log('✅ Approval transaction simulation successful')
@@ -211,4 +227,42 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
     console.log('✅ Real call data generation working!')
     console.log('✅ Transaction signing and sending confirmed!')
   }, 60000)
+
+  it('should handle different human-readable amounts', async () => {
+    console.log('Testing various human-readable amounts...')
+    
+    // Test fractional amounts
+    const tx1 = await testWallet.lend(0.5, 'usdc', TEST_VAULT_ADDRESS)
+    expect(tx1.amount).toBe(500000n) // 0.5 USDC = 500,000 smallest units
+    console.log('✅ 0.5 USDC = 500000 wei')
+    
+    // Test large amounts
+    const tx2 = await testWallet.lend(1000, 'usdc', TEST_VAULT_ADDRESS)
+    expect(tx2.amount).toBe(1000000000n) // 1000 USDC = 1,000,000,000 smallest units
+    console.log('✅ 1000 USDC = 1000000000 wei')
+    
+    // Test using address instead of symbol
+    const tx3 = await testWallet.lend(1, USDC_ADDRESS, TEST_VAULT_ADDRESS)
+    expect(tx3.amount).toBe(1000000n) // 1 USDC = 1,000,000 smallest units
+    expect(tx3.asset).toBe(USDC_ADDRESS)
+    console.log('✅ Address-based asset resolution working')
+    
+    console.log('✅ All human-readable amount formats validated!')
+  }, 30000)
+
+  it('should validate input parameters', async () => {
+    console.log('Testing input validation...')
+    
+    // Test invalid amount
+    await expect(testWallet.lend(0, 'usdc')).rejects.toThrow('Amount must be greater than 0')
+    await expect(testWallet.lend(-1, 'usdc')).rejects.toThrow('Amount must be greater than 0')
+    
+    // Test invalid asset symbol
+    await expect(testWallet.lend(1, 'invalid')).rejects.toThrow('Unsupported asset symbol: invalid')
+    
+    // Test invalid address format
+    await expect(testWallet.lend(1, 'not-an-address')).rejects.toThrow('Unsupported asset symbol')
+    
+    console.log('✅ Input validation working correctly!')
+  }, 30000)
 })

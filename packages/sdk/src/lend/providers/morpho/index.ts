@@ -1,6 +1,6 @@
+import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 import type { Address, PublicClient } from 'viem'
 import { encodeFunctionData, erc20Abi } from 'viem'
-import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 
 import type {
   LendOptions,
@@ -78,7 +78,10 @@ export class LendProviderMorpho extends LendProvider {
       const vaultInfo = await this.getVault(selectedVaultAddress)
 
       // 3. Generate real call data for Morpho deposit
-      const receiver = options?.receiver || '0x0000000000000000000000000000000000000000' // Will be replaced by actual user address
+      const receiver = options?.receiver
+      if (!receiver) {
+        throw new Error('Receiver address is required for Morpho deposit operation')
+      }
       const depositCallData = MetaMorphoAction.deposit(amount, receiver)
 
       // 4. Create approval transaction data for USDC if needed

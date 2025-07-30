@@ -2,10 +2,10 @@ import type { Address } from 'viem'
 
 import type {
   LendOptions,
-  LendProvider,
   LendTransaction,
 } from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
+import type { AssetIdentifier } from '@/utils/assets.js'
 
 /**
  * Wallet provider interface
@@ -41,12 +41,6 @@ export interface Wallet extends WalletVerbs {
   id: string
   /** Wallet address */
   address: Address
-  /**
-   * Set lending provider
-   * @description Updates the lending provider for this wallet
-   * @param lendProvider - Lending provider instance
-   */
-  setLendProvider(lendProvider: LendProvider): void
 }
 
 /**
@@ -72,15 +66,15 @@ export type WalletVerbs = {
   getBalance(): Promise<TokenBalance[]>
   /**
    * Lend assets to a lending market
-   * @param asset - Asset token address to lend
-   * @param amount - Amount to lend (in wei)
-   * @param marketId - Optional specific market ID
+   * @param amount - Human-readable amount to lend (e.g. 1.5)
+   * @param asset - Asset symbol (e.g. 'usdc') or token address
+   * @param marketId - Optional specific market ID or vault name
    * @param options - Optional lending configuration
    * @returns Promise resolving to lending transaction details
    */
   lend(
-    asset: Address,
-    amount: bigint,
+    amount: number,
+    asset: AssetIdentifier,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction>

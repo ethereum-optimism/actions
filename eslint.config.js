@@ -91,8 +91,10 @@ module.exports = {
     '**/build/**/*',
     '**/dist/**/*',
     'dist',
+    'dist/',
     '**/typechain/**/*',
     'node_modules/**',
+    'node_modules/',
     'lib/**',
   ]
 }
