@@ -10,7 +10,7 @@
   }
   body {
     @apply bg-terminal-bg text-terminal-text font-mono;
-    @apply m-0 p-0 overflow-hidden;
+    @apply m-0 p-0;
     @apply selection:bg-terminal-muted selection:text-terminal-bg;
   }
 

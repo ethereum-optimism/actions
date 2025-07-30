@@ -21,6 +21,8 @@
     "@eth-optimism/verbs-sdk": "workspace:*",
     "react": "^18",
     "react-dom": "^18",
+    "react-router": "7",
+    "react-router-dom": "7",
     "zod": "^4.0.5"
   },
   "devDependencies": {
