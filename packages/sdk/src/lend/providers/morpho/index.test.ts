@@ -25,6 +25,9 @@ const unichain = {
 vi.mock('@morpho-org/blue-sdk-viem', () => ({
   fetchMarket: vi.fn(),
   fetchAccrualVault: vi.fn(),
+  MetaMorphoAction: {
+    deposit: vi.fn(() => '0x1234567890abcdef'), // Mock deposit function to return mock calldata
+  },
 }))
 
 vi.mock('@morpho-org/morpho-ts', () => ({
