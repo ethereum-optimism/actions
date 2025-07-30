@@ -93,6 +93,21 @@ class VerbsApiClient {
       method: 'GET',
     })
   }
+
+  async getWalletBalance(userId: string): Promise<{
+    balance: Array<{
+      symbol: string
+      totalBalance: string
+      chainBalances: Array<{
+        chainId: number
+        balance: string
+      }>
+    }>
+  }> {
+    return this.request(`/wallet/${userId}/balance`, {
+      method: 'GET',
+    })
+  }
 }
 
 export const verbsApi = new VerbsApiClient()

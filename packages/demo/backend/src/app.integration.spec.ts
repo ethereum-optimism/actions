@@ -16,7 +16,11 @@ vi.mock('./config/verbs.js', () => ({
       Promise.resolve({
         id: `wallet-${userId}`,
         address: `0x${userId.padEnd(40, '0')}`,
-        getBalance: () => Promise.resolve(0n),
+        getBalance: () =>
+          Promise.resolve([
+            { symbol: 'USDC', balance: 1000000n },
+            { symbol: 'MORPHO', balance: 500000n },
+          ]),
       }),
     ),
     getWallet: vi.fn((userId: string) => {
@@ -27,7 +31,11 @@ vi.mock('./config/verbs.js', () => ({
       return Promise.resolve({
         id: `wallet-${userId}`,
         address: `0x${userId.padEnd(40, '0')}`,
-        getBalance: () => Promise.resolve(0n),
+        getBalance: () =>
+          Promise.resolve([
+            { symbol: 'USDC', balance: 1000000n },
+            { symbol: 'MORPHO', balance: 500000n },
+          ]),
       })
     }),
     getAllWallets: vi.fn(() =>
@@ -35,12 +43,20 @@ vi.mock('./config/verbs.js', () => ({
         {
           id: 'wallet-1',
           address: '0x1111111111111111111111111111111111111111',
-          getBalance: () => Promise.resolve(0n),
+          getBalance: () =>
+            Promise.resolve([
+              { symbol: 'USDC', balance: 1000000n },
+              { symbol: 'MORPHO', balance: 500000n },
+            ]),
         },
         {
           id: 'wallet-2',
           address: '0x2222222222222222222222222222222222222222',
-          getBalance: () => Promise.resolve(0n),
+          getBalance: () =>
+            Promise.resolve([
+              { symbol: 'USDC', balance: 2000000n },
+              { symbol: 'MORPHO', balance: 750000n },
+            ]),
         },
       ]),
     ),
@@ -50,7 +66,7 @@ vi.mock('./config/verbs.js', () => ({
           {
             address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
             name: 'Gauntlet USDC',
-            asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            asset: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
             apy: 0.03,
             totalAssets: BigInt('16199575764995'),
             totalShares: BigInt('16199575764995'),
@@ -66,7 +82,7 @@ vi.mock('./config/verbs.js', () => ({
           return Promise.resolve({
             address: vaultAddress,
             name: 'Gauntlet USDC',
-            asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            asset: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
             apy: 0.03,
             apyBreakdown: {
               nativeApy: 0.025,
@@ -258,6 +274,35 @@ describe('HTTP API Integration', () => {
       // We're just testing that the endpoint handles query parameters without error
       expect(data).toHaveProperty('wallets')
       expect(data).toHaveProperty('count')
+    })
+
+    it('should get wallet balance', async () => {
+      const response = await request(`${baseUrl}/wallet/${testUserId}/balance`)
+
+      expect(response.statusCode).toBe(200)
+      const data = (await response.body.json()) as any
+
+      expect(data).toEqual({
+        balance: [
+          { symbol: 'USDC', balance: '1000000' },
+          { symbol: 'MORPHO', balance: '500000' },
+        ],
+      })
+    })
+
+    it('should return error for balance of non-existent wallet', async () => {
+      const nonExistentUserId = `non-existent-balance-${Date.now()}`
+      const response = await request(
+        `${baseUrl}/wallet/${nonExistentUserId}/balance`,
+      )
+
+      expect(response.statusCode).toBe(500)
+      const data = (await response.body.json()) as any
+
+      expect(data).toEqual({
+        error: 'Failed to get balance',
+        message: 'Wallet not found',
+      })
     })
   })
 

@@ -206,4 +206,60 @@ describe('Wallet Service', () => {
       expect(mockVerbs.createWallet).not.toHaveBeenCalled()
     })
   })
+
+  describe('getBalance', () => {
+    it('should return balance when wallet exists', async () => {
+      const userId = 'test-user'
+      const mockWallet = {
+        id: 'wallet-123',
+        address: '0x1234567890123456789012345678901234567890',
+        getBalance: vi.fn().mockResolvedValue([
+          { symbol: 'USDC', balance: 1000000n },
+          { symbol: 'MORPHO', balance: 500000n },
+        ]),
+      }
+
+      mockVerbs.getWallet.mockResolvedValue(mockWallet)
+
+      const result = await walletService.getBalance(userId)
+
+      expect(mockVerbs.getWallet).toHaveBeenCalledWith(userId)
+      expect(mockWallet.getBalance).toHaveBeenCalled()
+      expect(result).toEqual([
+        { symbol: 'USDC', balance: 1000000n },
+        { symbol: 'MORPHO', balance: 500000n },
+      ])
+    })
+
+    it('should throw error when wallet not found', async () => {
+      const userId = 'non-existent-user'
+
+      mockVerbs.getWallet.mockResolvedValue(null)
+
+      await expect(walletService.getBalance(userId)).rejects.toThrow(
+        'Wallet not found',
+      )
+
+      expect(mockVerbs.getWallet).toHaveBeenCalledWith(userId)
+    })
+
+    it('should handle balance retrieval errors', async () => {
+      const userId = 'test-user'
+      const balanceError = new Error('Balance retrieval failed')
+      const mockWallet = {
+        id: 'wallet-123',
+        address: '0x1234567890123456789012345678901234567890',
+        getBalance: vi.fn().mockRejectedValue(balanceError),
+      }
+
+      mockVerbs.getWallet.mockResolvedValue(mockWallet)
+
+      await expect(walletService.getBalance(userId)).rejects.toThrow(
+        'Balance retrieval failed',
+      )
+
+      expect(mockVerbs.getWallet).toHaveBeenCalledWith(userId)
+      expect(mockWallet.getBalance).toHaveBeenCalled()
+    })
+  })
 })

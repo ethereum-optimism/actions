@@ -11,6 +11,8 @@ import type { Address } from 'viem'
 export interface WalletData {
   /** Wallet address */
   address: Address
+  /** ID of the wallet */
+  id: string
 }
 
 /**
