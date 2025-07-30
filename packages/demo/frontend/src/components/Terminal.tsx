@@ -16,7 +16,7 @@ interface TerminalLine {
 interface VaultData {
   address: string
   name: string
-  apy: number  
+  apy: number
   asset: string
 }
 
@@ -26,8 +26,7 @@ interface PendingPrompt {
   data?: VaultData[]
 }
 
-const HELP_CONTENT = `Available commands:
-
+const HELP_CONTENT = `
 Console commands:
   help          - Show this help message
   clear         - Clear the terminal
@@ -73,13 +72,14 @@ const Terminal = () => {
   useEffect(() => {
     const initializeTerminal = async () => {
       const verbsAscii = `
-██╗   ██╗ ███████╗ ██████╗  ██████╗  ███████╗
-██║   ██║ ██╔════╝ ██╔══██╗ ██╔══██╗ ██╔════╝
-██║   ██║ █████╗   ██████╔╝ ██████╔╝ ███████╗
-╚██╗ ██╔╝ ██╔══╝   ██╔══██╗ ██╔══██╗ ╚════██║
- ╚████╔╝  ███████╗ ██║  ██║ ██████╔╝ ███████║
-  ╚═══╝   ╚══════╝ ╚═╝  ╚═╝ ╚═════╝  ╚══════╝`
-
+█████   █████                    █████
+░░███   ░░███                    ░░███
+ ░███    ░███   ██████  ████████  ░███████   █████
+ ░███    ░███  ███░░███░░███░░███ ░███░░███ ███░░
+ ░░███   ███  ░███████  ░███ ░░░  ░███ ░███░░█████
+  ░░░█████░   ░███░░░   ░███      ░███ ░███ ░░░░███
+    ░░███     ░░██████  █████     ████████  ██████
+     ░░░       ░░░░░░  ░░░░░     ░░░░░░░░  ░░░░░░`
       const welcomeLines: TerminalLine[] = [
         {
           id: 'welcome-ascii',
@@ -369,7 +369,7 @@ ${walletList}`,
 
     try {
       const result = await verbsApi.getVaults()
-      
+
       if (result.vaults.length === 0) {
         const emptyLine: TerminalLine = {
           id: `empty-${Date.now()}`,
@@ -382,7 +382,10 @@ ${walletList}`,
       }
 
       const vaultOptions = result.vaults
-        .map((vault, index) => `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`)
+        .map(
+          (vault, index) =>
+            `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
+        )
         .join('\n')
 
       const vaultSelectionLine: TerminalLine = {
@@ -402,7 +405,6 @@ ${vaultOptions}
         message: '',
         data: result.vaults,
       })
-
     } catch (error) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
@@ -439,32 +441,40 @@ ${vaultOptions}
       const totalAssetsValue = `$${(parseFloat(vault.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       const feeValue = `${(vault.fee * 100).toFixed(1)}%`
       const managerValue = 'Gauntlet'
-      
+
       // APY breakdown values
-      const nativeApyValue = vault.apyBreakdown ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%` : 'N/A'
-      const usdcRewardsValue = vault.apyBreakdown && vault.apyBreakdown.usdc !== undefined 
-        ? `${(vault.apyBreakdown.usdc * 100).toFixed(2)}%` : 'N/A'
-      const morphoRewardsValue = vault.apyBreakdown && vault.apyBreakdown.morpho !== undefined
-        ? `${(vault.apyBreakdown.morpho * 100).toFixed(2)}%` : 'N/A'
-      const feeImpactValue = vault.apyBreakdown ? `${((vault.apyBreakdown.nativeApy * vault.apyBreakdown.performanceFee) * 100).toFixed(2)}%` : 'N/A'
+      const nativeApyValue = vault.apyBreakdown
+        ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%`
+        : 'N/A'
+      const usdcRewardsValue =
+        vault.apyBreakdown && vault.apyBreakdown.usdc !== undefined
+          ? `${(vault.apyBreakdown.usdc * 100).toFixed(2)}%`
+          : 'N/A'
+      const morphoRewardsValue =
+        vault.apyBreakdown && vault.apyBreakdown.morpho !== undefined
+          ? `${(vault.apyBreakdown.morpho * 100).toFixed(2)}%`
+          : 'N/A'
+      const feeImpactValue = vault.apyBreakdown
+        ? `${(vault.apyBreakdown.nativeApy * vault.apyBreakdown.performanceFee * 100).toFixed(2)}%`
+        : 'N/A'
 
       const vaultInfoTable = `
-┌────────────────────────────────────────────────────────────┐
-│                      VAULT INFORMATION                     │
-├────────────────────────────────────────────────────────────┤
-│ Name:              ${nameValue.padEnd(39)} │
-│ Net APY:           ${netApyValue.padEnd(39)} │
-│                                                            │
-│ APY BREAKDOWN:                                             │
-│   Native APY:      ${nativeApyValue.padEnd(39)} │
-│   USDC Rewards:    ${usdcRewardsValue.padEnd(39)} │
-│   MORPHO Rewards:  ${morphoRewardsValue.padEnd(39)} │
-│   Performance Fee: ${feeImpactValue.padEnd(39)} │
-│                                                            │
-│ Total Assets:      ${totalAssetsValue.padEnd(39)} │
-│ Management Fee:    ${feeValue.padEnd(39)} │
-│ Manager:           ${managerValue.padEnd(39)} │
-└────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│          VAULT INFORMATION               │
+├──────────────────────────────────────────┤
+│ Name:              ${nameValue.padEnd(21)} │
+│ Net APY:           ${netApyValue.padEnd(21)} │
+│                                          │
+│ APY BREAKDOWN:                           │
+│   Native APY:      ${nativeApyValue.padEnd(21)} │
+│   USDC Rewards:    ${usdcRewardsValue.padEnd(21)} │
+│   MORPHO Rewards:  ${morphoRewardsValue.padEnd(21)} │
+│   Performance Fee: ${feeImpactValue.padEnd(21)} │
+│                                          │
+│ Total Assets:      ${totalAssetsValue.padEnd(21)} │
+│ Management Fee:    ${feeValue.padEnd(21)} │
+│ Manager:           ${managerValue.padEnd(21)} │
+└──────────────────────────────────────────┘
 
 Wallet Balance: $0
 
@@ -478,7 +488,6 @@ You must use "wallet fund" before lending to this market.`
       }
 
       setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
-
     } catch (error) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
@@ -494,7 +503,11 @@ You must use "wallet fund" before lending to this market.`
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Handle special keys for lend prompts
-    if (pendingPrompt && (pendingPrompt.type === 'lendProvider' || pendingPrompt.type === 'lendVault')) {
+    if (
+      pendingPrompt &&
+      (pendingPrompt.type === 'lendProvider' ||
+        pendingPrompt.type === 'lendVault')
+    ) {
       if (e.key === 'Enter') {
         e.preventDefault()
         if (pendingPrompt.type === 'lendProvider') {
@@ -613,7 +626,7 @@ You must use "wallet fund" before lending to this market.`
                         'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
                       color: '#b8bb26',
                       whiteSpace: 'pre',
-                      lineHeight: '1.0',
+                      lineHeight: '0.7',
                       letterSpacing: '0',
                       fontVariantLigatures: 'none',
                       fontFeatureSettings: '"liga" 0',
