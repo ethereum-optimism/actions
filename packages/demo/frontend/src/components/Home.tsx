@@ -28,7 +28,7 @@ function Home() {
         <div className="text-center py-20">
           <div>
               <div className="mt-40 mb-8">
-                <div className="font-mono mb-4 text-lg md:text-xl lg:text-2xl" style={{color: 'rgb(184, 187, 38)'}}>
+                <div className="font-mono mb-4 text-lg md:text-xl lg:text-2xl" style={{color: 'rgb(184, 187, 38)', lineHeight: 0.7}}>
                   <pre>{`
 ██╗   ██╗███████╗██████╗ ██████╗ ███████╗
 ██║   ██║██╔════╝██╔══██╗██╔══██╗██╔════╝
