@@ -91,7 +91,7 @@ jobs:
           name: Install supersim
           command: |
             # Install supersim for integration tests
-            curl -L https://github.com/ethereum-optimism/supersim/releases/download/v1.1.2/supersim-v1.1.2-linux-amd64.tar.gz | tar -xz
+            curl -L https://github.com/ethereum-optimism/supersim/releases/download/0.1.0-alpha.58/supersim_Linux_x86_64.tar.gz | tar -xz
             sudo mv supersim /usr/local/bin/
             supersim --version
       - run:
