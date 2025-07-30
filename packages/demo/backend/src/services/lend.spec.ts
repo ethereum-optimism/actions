@@ -30,7 +30,7 @@ describe('Lend Service', () => {
           address:
             '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as `0x${string}`,
           name: 'Gauntlet USDC',
-          asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
+          asset: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842' as `0x${string}`,
           apy: 0.03,
           totalAssets: BigInt('1000000'),
           totalShares: BigInt('1000000'),
@@ -76,7 +76,7 @@ describe('Lend Service', () => {
       const mockVaultInfo = {
         address: vaultAddress,
         name: 'Gauntlet USDC',
-        asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
+        asset: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842' as `0x${string}`,
         apy: 0.03,
         totalAssets: BigInt('1000000'),
         totalShares: BigInt('1000000'),

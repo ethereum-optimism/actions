@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { mainnet, unichain } from 'viem/chains'
+import { base, mainnet, unichain } from 'viem/chains'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 
@@ -16,8 +16,8 @@ export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
     name: 'USDC',
     decimals: 6,
     addresses: {
-      [mainnet.id]: '0xA0b86a33E6416eFB1e57D696bDc080e07a4aE3d1',
-      [unichain.id]: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      [mainnet.id]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      [unichain.id]: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
     },
   },
   MORPHO: {
@@ -26,7 +26,7 @@ export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
     decimals: 18,
     addresses: {
       [mainnet.id]: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
-      [unichain.id]: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
+      [base.id]: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
     },
   },
 }
