@@ -98,12 +98,20 @@ jobs:
           name: Install foundry
           command: |
             # Install foundry (anvil required by supersim)
-            curl -L https://foundry.paradigm.xyz | bash
-            # Manually add foundry to PATH since shell detection fails in CI
+            # Download and install foundryup manually since auto-detection fails in CI
+            curl -L https://foundry.paradigm.xyz | bash || true
+            # Ensure foundry directory exists
+            mkdir -p $HOME/.foundry/bin
+            # Manually add to PATH
             export PATH="$HOME/.foundry/bin:$PATH"
             echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> $BASH_ENV
-            # Run foundryup with explicit PATH
-            $HOME/.foundry/bin/foundryup
+            # Check if foundryup was installed, if not install manually
+            if [ ! -f "$HOME/.foundry/bin/foundryup" ]; then
+              echo "Installing foundryup manually..."
+              curl -L https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/install | bash
+            fi
+            # Run foundryup to install the actual tools
+            SHELL=/bin/bash $HOME/.foundry/bin/foundryup
             # Verify anvil is available
             $HOME/.foundry/bin/anvil --version
       - run:
