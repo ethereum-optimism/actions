@@ -7,6 +7,7 @@ import type { Context } from 'hono'
 import { z } from 'zod'
 
 import * as walletService from '../services/wallet.js'
+import { serializeBigInt } from '../utils/serializers.js'
 
 const userIdSchema = z.object({
   userId: z.string().min(1, 'User ID is required').trim(),
@@ -105,6 +106,7 @@ export class WalletController {
       return c.json({
         wallets: wallets.map((wallet) => ({
           address: wallet.address,
+          id: wallet.id,
         })),
         count: wallets.length,
       } satisfies GetAllWalletsResponse)
@@ -112,6 +114,26 @@ export class WalletController {
       return c.json(
         {
           error: 'Failed to get wallets',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500,
+      )
+    }
+  }
+
+  async getBalance(c: Context) {
+    try {
+      const validation = validateUserParams(c)
+      if (validation.error) return validation.error
+
+      const { userId } = validation.data
+      const balance = await walletService.getBalance(userId)
+
+      return c.json({ balance: serializeBigInt(balance) })
+    } catch (error) {
+      return c.json(
+        {
+          error: 'Failed to get balance',
           message: error instanceof Error ? error.message : 'Unknown error',
         },
         500,
