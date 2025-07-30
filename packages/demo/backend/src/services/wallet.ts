@@ -1,5 +1,6 @@
 import type {
   GetAllWalletsOptions,
+  TokenBalance,
   WalletInterface,
 } from '@eth-optimism/verbs-sdk'
 
@@ -32,4 +33,12 @@ export async function getOrCreateWallet(
     wallet = await createWallet(userId)
   }
   return wallet
+}
+
+export async function getBalance(userId: string): Promise<TokenBalance[]> {
+  const wallet = await getWallet(userId)
+  if (!wallet) {
+    throw new Error('Wallet not found')
+  }
+  return wallet.getBalance()
 }

@@ -69,14 +69,9 @@ describe('Wallet', () => {
           ],
         },
         {
-          totalBalance: 1000000n,
+          totalBalance: 0n,
           symbol: 'MORPHO',
-          chainBalances: [
-            {
-              balance: 1000000n,
-              chainId: 130,
-            },
-          ],
+          chainBalances: [],
         },
       ])
     })
