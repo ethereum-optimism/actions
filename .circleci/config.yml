@@ -99,12 +99,13 @@ jobs:
           command: |
             # Install foundry (anvil required by supersim)
             curl -L https://foundry.paradigm.xyz | bash
+            # Manually add foundry to PATH since shell detection fails in CI
             export PATH="$HOME/.foundry/bin:$PATH"
             echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> $BASH_ENV
-            source $BASH_ENV
-            foundryup
+            # Run foundryup with explicit PATH
+            $HOME/.foundry/bin/foundryup
             # Verify anvil is available
-            anvil --version
+            $HOME/.foundry/bin/anvil --version
       - run:
           name: Run Supersim Tests
           environment:
