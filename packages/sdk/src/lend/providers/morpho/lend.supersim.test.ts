@@ -3,10 +3,7 @@ import { unichain } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { VerbsInterface } from '../../../types/verbs.js'
-import {
-  setupSupersimTest,
-  stopSupersim,
-} from '../../../utils/test.js'
+import { setupSupersimTest, stopSupersim } from '../../../utils/test.js'
 import { initVerbs } from '../../../verbs.js'
 import { SUPPORTED_VAULTS } from './vaults.js'
 
