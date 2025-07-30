@@ -19,11 +19,7 @@ export class WalletProviderPrivy implements WalletProvider {
    * @param appSecret - Privy application secret
    * @param verbs - Verbs instance for accessing configured providers
    */
-  constructor(
-    appId: string,
-    appSecret: string,
-    verbs: VerbsInterface,
-  ) {
+  constructor(appId: string, appSecret: string, verbs: VerbsInterface) {
     this.privy = new PrivyClient(appId, appSecret)
     this.verbs = verbs
   }

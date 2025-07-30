@@ -26,11 +26,11 @@ export const externalTest = () => process.env.EXTERNAL_TEST === 'true'
 /**
  * Helper function to check if supersim tests should run
  * Supersim tests require supersim to be installed and are only run when SUPERSIM_TEST=true
- * 
+ *
  * Usage:
  * ```typescript
  * import { supersimTest } from '../utils/test.js'
- * 
+ *
  * describe.runIf(supersimTest())('Supersim Integration', () => {
  *   // Tests that require supersim
  * })

@@ -3,7 +3,11 @@ import { unichain } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { VerbsInterface } from '../../../types/verbs.js'
-import { setupSupersimTest, stopSupersim, supersimTest } from '../../../utils/test.js'
+import {
+  setupSupersimTest,
+  stopSupersim,
+  supersimTest,
+} from '../../../utils/test.js'
 import { initVerbs } from '../../../verbs.js'
 import { SUPPORTED_VAULTS } from './vaults.js'
 
@@ -60,7 +64,7 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
       chainId: unichain.id,
       rpcUrl: 'http://127.0.0.1:9546',
     })
-    
+
     // For testing, create a wallet directly with the Verbs instance
     // In real app, wallet.lend() would be available after createWallet()
     const { Wallet } = await import('../../../wallet/index.js')
@@ -112,12 +116,12 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
     }
 
     console.log('Testing human-readable lend API...')
-    
+
     // Test the new human-readable API: lend(1, 'usdc')
     const lendTx = await testWallet.lend(1, 'usdc', TEST_VAULT_ADDRESS, {
       slippage: 50, // 0.5%
     })
-    
+
     const expectedAmount = 1000000n // 1 USDC (6 decimals)
 
     // Validate lend transaction structure
@@ -147,7 +151,7 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
     expect(lendTx.transactionData?.approval?.to).toBe(USDC_ADDRESS)
     expect(lendTx.transactionData?.approval?.data).toMatch(/^0x[0-9a-fA-F]+$/)
     expect(lendTx.transactionData?.approval?.value).toBe('0x0')
-    
+
     expect(lendTx.transactionData?.deposit?.to).toBe(TEST_VAULT_ADDRESS)
     expect(lendTx.transactionData?.deposit?.data).toMatch(/^0x[0-9a-fA-F]+$/)
     expect(lendTx.transactionData?.deposit?.value).toBe('0x0')
@@ -156,12 +160,12 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
 
     // Test actual transaction sending with approval call data
     console.log('Testing approval transaction...')
-    
+
     try {
       // Note: This will likely fail on forked networks without actual USDC,
       // but we can test the transaction structure and gas estimation
       const approvalTx = lendTx.transactionData!.approval!
-      
+
       // Simulate the approval transaction to test gas estimation
       const { request: approvalRequest } = await publicClient.simulateContract({
         account: testAccount.address,
@@ -170,34 +174,36 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
         functionName: 'approve',
         args: [TEST_VAULT_ADDRESS, expectedAmount],
       })
-      
+
       console.log('✅ Approval transaction simulation successful')
       expect(approvalRequest).toBeDefined()
       expect(approvalRequest.address).toBe(USDC_ADDRESS)
-      
     } catch (error) {
-      console.log('ⓘ Approval simulation failed (expected on forked network):', (error as Error).message)
+      console.log(
+        'ⓘ Approval simulation failed (expected on forked network):',
+        (error as Error).message,
+      )
       // This is expected on forked networks without real USDC contract
     }
 
     // Test deposit transaction structure
     console.log('Testing deposit transaction structure...')
     const depositTx = lendTx.transactionData!.deposit!
-    
+
     expect(depositTx.to).toBe(TEST_VAULT_ADDRESS)
     expect(depositTx.data.length).toBeGreaterThan(10) // Should have encoded function data
     expect(depositTx.data.startsWith('0x')).toBe(true)
-    
+
     // The deposit call data should include the deposit function selector
     // deposit(uint256,address) has selector 0x6e553f65
     expect(depositTx.data.startsWith('0x6e553f65')).toBe(true)
-    
+
     console.log('✅ Deposit transaction structure validation passed!')
-    
+
     // Test a simple ETH transaction to verify our wallet setup works
     console.log('Testing wallet transaction capabilities...')
     const morphoAddress = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb'
-    
+
     const testTxHash = await walletClient.sendTransaction({
       to: morphoAddress,
       value: parseUnits('0.001', 18), // 0.001 ETH
@@ -207,9 +213,9 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
 
     // Wait for transaction confirmation
     console.log('Waiting for transaction confirmation...')
-    const receipt = await publicClient.waitForTransactionReceipt({ 
+    const receipt = await publicClient.waitForTransactionReceipt({
       hash: testTxHash,
-      timeout: 30000
+      timeout: 30000,
     })
 
     expect(receipt).toBeDefined()
@@ -218,7 +224,7 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
 
     console.log(`Transaction confirmed in block ${receipt.blockNumber}`)
     console.log(`Gas used: ${receipt.gasUsed}`)
-    
+
     // Verify the transaction was successful
     expect(receipt.blockNumber).toBeGreaterThan(0)
     expect(receipt.gasUsed).toBeGreaterThan(0)
@@ -230,39 +236,47 @@ describe.runIf(supersimTest())('Morpho Lend', () => {
 
   it('should handle different human-readable amounts', async () => {
     console.log('Testing various human-readable amounts...')
-    
+
     // Test fractional amounts
     const tx1 = await testWallet.lend(0.5, 'usdc', TEST_VAULT_ADDRESS)
     expect(tx1.amount).toBe(500000n) // 0.5 USDC = 500,000 smallest units
     console.log('✅ 0.5 USDC = 500000 wei')
-    
+
     // Test large amounts
     const tx2 = await testWallet.lend(1000, 'usdc', TEST_VAULT_ADDRESS)
     expect(tx2.amount).toBe(1000000000n) // 1000 USDC = 1,000,000,000 smallest units
     console.log('✅ 1000 USDC = 1000000000 wei')
-    
+
     // Test using address instead of symbol
     const tx3 = await testWallet.lend(1, USDC_ADDRESS, TEST_VAULT_ADDRESS)
     expect(tx3.amount).toBe(1000000n) // 1 USDC = 1,000,000 smallest units
     expect(tx3.asset).toBe(USDC_ADDRESS)
     console.log('✅ Address-based asset resolution working')
-    
+
     console.log('✅ All human-readable amount formats validated!')
   }, 30000)
 
   it('should validate input parameters', async () => {
     console.log('Testing input validation...')
-    
+
     // Test invalid amount
-    await expect(testWallet.lend(0, 'usdc')).rejects.toThrow('Amount must be greater than 0')
-    await expect(testWallet.lend(-1, 'usdc')).rejects.toThrow('Amount must be greater than 0')
-    
+    await expect(testWallet.lend(0, 'usdc')).rejects.toThrow(
+      'Amount must be greater than 0',
+    )
+    await expect(testWallet.lend(-1, 'usdc')).rejects.toThrow(
+      'Amount must be greater than 0',
+    )
+
     // Test invalid asset symbol
-    await expect(testWallet.lend(1, 'invalid')).rejects.toThrow('Unsupported asset symbol: invalid')
-    
+    await expect(testWallet.lend(1, 'invalid')).rejects.toThrow(
+      'Unsupported asset symbol: invalid',
+    )
+
     // Test invalid address format
-    await expect(testWallet.lend(1, 'not-an-address')).rejects.toThrow('Unsupported asset symbol')
-    
+    await expect(testWallet.lend(1, 'not-an-address')).rejects.toThrow(
+      'Unsupported asset symbol',
+    )
+
     console.log('✅ Input validation working correctly!')
   }, 30000)
 })

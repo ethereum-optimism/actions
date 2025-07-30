@@ -1,9 +1,6 @@
 import type { Address } from 'viem'
 
-import type {
-  LendOptions,
-  LendTransaction,
-} from '@/types/lend.js'
+import type { LendOptions, LendTransaction } from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
 import type { AssetIdentifier } from '@/utils/assets.js'
 

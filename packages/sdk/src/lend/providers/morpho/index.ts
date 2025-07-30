@@ -80,7 +80,9 @@ export class LendProviderMorpho extends LendProvider {
       // 3. Generate real call data for Morpho deposit
       const receiver = options?.receiver
       if (!receiver) {
-        throw new Error('Receiver address is required for Morpho deposit operation')
+        throw new Error(
+          'Receiver address is required for Morpho deposit operation',
+        )
       }
       const depositCallData = MetaMorphoAction.deposit(amount, receiver)
 

@@ -18,11 +18,21 @@ describe('Wallet', () => {
 
   // Mock Verbs instance
   const mockVerbs: VerbsInterface = {
-    get chainManager() { return chainManager },
-    get lend(): LendProvider { throw new Error('Lend provider not configured') },
-    createWallet: async () => { throw new Error('Not implemented') },
-    getWallet: async () => { throw new Error('Not implemented') },
-    getAllWallets: async () => { throw new Error('Not implemented') },
+    get chainManager() {
+      return chainManager
+    },
+    get lend(): LendProvider {
+      throw new Error('Lend provider not configured')
+    },
+    createWallet: async () => {
+      throw new Error('Not implemented')
+    },
+    getWallet: async () => {
+      throw new Error('Not implemented')
+    },
+    getAllWallets: async () => {
+      throw new Error('Not implemented')
+    },
   } as VerbsInterface
 
   describe('constructor', () => {

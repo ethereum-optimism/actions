@@ -3,14 +3,11 @@ import { unichain } from 'viem/chains'
 
 import { fetchBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type {
-  LendOptions,
-  LendTransaction,
-} from '@/types/lend.js'
+import type { LendOptions, LendTransaction } from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
 import type { VerbsInterface } from '@/types/verbs.js'
 import type { Wallet as WalletInterface } from '@/types/wallet.js'
-import { type AssetIdentifier,parseLendParams } from '@/utils/assets.js'
+import { type AssetIdentifier, parseLendParams } from '@/utils/assets.js'
 
 /**
  * Wallet implementation
@@ -75,7 +72,7 @@ export class Wallet implements WalletInterface {
     if (!this.initialized) {
       throw new Error('Wallet not initialized')
     }
-    
+
     // Parse human-readable inputs
     // TODO: Get actual chain ID from wallet context, for now using Unichain
     const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
@@ -90,7 +87,9 @@ export class Wallet implements WalletInterface {
       receiver: options?.receiver || this.address,
     }
 
-    console.log(`Lending ${amount} ${resolvedAsset.symbol} (${parsedAmount} wei) from wallet ${this.address}`)
+    console.log(
+      `Lending ${amount} ${resolvedAsset.symbol} (${parsedAmount} wei) from wallet ${this.address}`,
+    )
 
     // Delegate to the lend provider configured in Verbs
     // TODO: In a real implementation, this would:
@@ -98,6 +97,11 @@ export class Wallet implements WalletInterface {
     // 2. Approve the lending protocol to spend the asset if needed
     // 3. Execute the lending transaction through the wallet's signing capabilities
 
-    return this.verbs.lend.lend(resolvedAsset.address, parsedAmount, marketId, lendOptions)
+    return this.verbs.lend.lend(
+      resolvedAsset.address,
+      parsedAmount,
+      marketId,
+      lendOptions,
+    )
   }
 }
