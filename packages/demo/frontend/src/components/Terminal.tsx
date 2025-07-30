@@ -240,6 +240,11 @@ Active Wallets: 0`,
       case 'repay':
       case 'swap':
       case 'earn':
+      case 'wallet fund':
+      case 'wallet borrow':
+      case 'wallet repay':
+      case 'wallet swap':
+      case 'wallet earn':
         response = {
           id: responseId,
           type: 'error',
@@ -476,9 +481,7 @@ ${vaultOptions}
 │ Manager:           ${managerValue.padEnd(21)} │
 └──────────────────────────────────────────┘
 
-Wallet Balance: $0
-
-You must use "wallet fund" before lending to this market.`
+Select a wallet:`
 
       const vaultInfoLine: TerminalLine = {
         id: `vault-info-${Date.now()}`,
@@ -626,7 +629,7 @@ You must use "wallet fund" before lending to this market.`
                         'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
                       color: '#b8bb26',
                       whiteSpace: 'pre',
-                      lineHeight: '0.7',
+                      lineHeight: '0.75',
                       letterSpacing: '0',
                       fontVariantLigatures: 'none',
                       fontFeatureSettings: '"liga" 0',
