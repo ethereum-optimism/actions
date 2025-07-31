@@ -57,8 +57,12 @@ describe('Morpho Lend', () => {
         type: 'morpho',
         defaultSlippage: 50,
       },
-      chainId: unichain.id,
-      rpcUrl: 'http://127.0.0.1:9546',
+      chains: [
+        {
+          chainId: unichain.id,
+          rpcUrl: 'http://127.0.0.1:9546',
+        },
+      ],
     })
 
     // For testing, create a wallet directly with the Verbs instance

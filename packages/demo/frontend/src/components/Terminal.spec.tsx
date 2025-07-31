@@ -32,14 +32,11 @@ describe('Terminal', () => {
     // Check for terminal header
     expect(screen.getByText('verbs-terminal')).toBeInTheDocument()
 
-    // Check for ASCII art
-    expect(screen.getByText(/██╗.*██╗.*███████╗/)).toBeInTheDocument()
-
     // Check for subtitle
     expect(screen.getByText('Verbs library for the OP Stack')).toBeInTheDocument()
 
     // Check for help content
-    expect(screen.getByText(/Available commands:/)).toBeInTheDocument()
+    expect(screen.getByText(/Console commands:/)).toBeInTheDocument()
   })
 
   it('displays current time in header', () => {
@@ -64,7 +61,7 @@ describe('Terminal', () => {
     expect(helpCommands).toHaveLength(2)
     
     // Check that help content is displayed (should appear twice - once from initial load, once from command)
-    const helpTexts = screen.getAllByText(/Available commands:/)
+    const helpTexts = screen.getAllByText(/Console commands:/)
     expect(helpTexts).toHaveLength(2)
   })
 

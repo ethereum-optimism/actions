@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
-  WalletData
+  WalletData,
 } from '@eth-optimism/verbs-sdk'
 import VerbsLogo from './VerbsLogo'
 import { verbsApi } from '../api/verbsApi'
@@ -22,7 +22,12 @@ interface VaultData {
 }
 
 interface PendingPrompt {
-  type: 'userId' | 'lendProvider' | 'lendVault' | 'walletSelection' | 'walletFundSelection'
+  type:
+    | 'userId'
+    | 'lendProvider'
+    | 'lendVault'
+    | 'walletSelection'
+    | 'walletFundSelection'
   message: string
   data?: VaultData[] | WalletData[]
 }
@@ -156,13 +161,19 @@ const Terminal = () => {
         handleLendProviderSelection()
         return
       } else if (pendingPrompt.type === 'lendVault') {
-        handleLendVaultSelection(pendingPrompt.data as VaultData[] || [])
+        handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
         return
       } else if (pendingPrompt.type === 'walletSelection') {
-        handleWalletSelection(parseInt(trimmed), pendingPrompt.data as WalletData[] || [])
+        handleWalletSelection(
+          parseInt(trimmed),
+          (pendingPrompt.data as WalletData[]) || [],
+        )
         return
       } else if (pendingPrompt.type === 'walletFundSelection') {
-        handleWalletFundSelection(parseInt(trimmed), pendingPrompt.data as WalletData[] || [])
+        handleWalletFundSelection(
+          parseInt(trimmed),
+          (pendingPrompt.data as WalletData[]) || [],
+        )
         return
       }
     }
@@ -259,7 +270,6 @@ Active Wallets: 0`,
       case 'repay':
       case 'swap':
       case 'earn':
-      case 'wallet fund':
       case 'wallet borrow':
       case 'wallet repay':
       case 'wallet swap':
@@ -523,7 +533,10 @@ Select a wallet:`
     }
   }
 
-  const handleWalletSelection = async (selection: number, wallets: WalletData[]) => {
+  const handleWalletSelection = async (
+    selection: number,
+    wallets: WalletData[],
+  ) => {
     setPendingPrompt(null)
 
     if (isNaN(selection) || selection < 1 || selection > wallets.length) {
@@ -538,7 +551,7 @@ Select a wallet:`
     }
 
     const selectedWallet = wallets[selection - 1]
-    
+
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
       type: 'output',
@@ -550,10 +563,13 @@ Select a wallet:`
 
     try {
       const result = await verbsApi.getWalletBalance(selectedWallet.id)
-      
-      const balanceText = result.balance.length > 0 
-        ? result.balance.map(token => `${token.symbol}: ${token.totalBalance}`).join('\n')
-        : 'No tokens found'
+
+      const balanceText =
+        result.balance.length > 0
+          ? result.balance
+              .map((token) => `${token.symbol}: ${token.totalBalance}`)
+              .join('\n')
+          : 'No tokens found'
 
       const successLine: TerminalLine = {
         id: `success-${Date.now()}`,
@@ -587,7 +603,7 @@ Select a wallet:`
 
     try {
       const result = await getAllWallets()
-      
+
       if (result.wallets.length === 0) {
         const emptyLine: TerminalLine = {
           id: `empty-${Date.now()}`,
@@ -614,7 +630,7 @@ Select a wallet:`
       setPendingPrompt({
         type: 'walletSelection',
         message: '',
-        data: result.wallets.map(w => ({ id: w.id, address: w.address }))
+        data: result.wallets.map((w) => ({ id: w.id, address: w.address })),
       })
     } catch (error) {
       const errorLine: TerminalLine = {
@@ -641,7 +657,7 @@ Select a wallet:`
 
     try {
       const result = await getAllWallets()
-      
+
       if (result.wallets.length === 0) {
         const emptyLine: TerminalLine = {
           id: `empty-${Date.now()}`,
@@ -668,7 +684,7 @@ Select a wallet:`
       setPendingPrompt({
         type: 'walletFundSelection',
         message: '',
-        data: result.wallets.map(w => ({ id: w.id, address: w.address }))
+        data: result.wallets.map((w) => ({ id: w.id, address: w.address })),
       })
     } catch (error) {
       const errorLine: TerminalLine = {
@@ -683,7 +699,10 @@ Select a wallet:`
     }
   }
 
-  const handleWalletFundSelection = async (selection: number, wallets: WalletData[]) => {
+  const handleWalletFundSelection = async (
+    selection: number,
+    wallets: WalletData[],
+  ) => {
     setPendingPrompt(null)
 
     if (isNaN(selection) || selection < 1 || selection > wallets.length) {
@@ -698,7 +717,7 @@ Select a wallet:`
     }
 
     const selectedWallet = wallets[selection - 1]
-    
+
     const fundingLine: TerminalLine = {
       id: `funding-${Date.now()}`,
       type: 'output',
@@ -722,10 +741,13 @@ Select a wallet:`
 
       // Then fetch and show the balance
       const result = await verbsApi.getWalletBalance(selectedWallet.id)
-      
-      const balanceText = result.balance.length > 0 
-        ? result.balance.map(token => `${token.symbol}: ${token.totalBalance}`).join('\n')
-        : 'No tokens found'
+
+      const balanceText =
+        result.balance.length > 0
+          ? result.balance
+              .map((token) => `${token.symbol}: ${token.totalBalance}`)
+              .join('\n')
+          : 'No tokens found'
 
       const balanceSuccessLine: TerminalLine = {
         id: `balance-success-${Date.now()}`,
@@ -734,7 +756,6 @@ Select a wallet:`
         timestamp: new Date(),
       }
       setLines((prev) => [...prev, balanceSuccessLine])
-
     } catch (error) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
@@ -760,7 +781,7 @@ Select a wallet:`
         if (pendingPrompt.type === 'lendProvider') {
           handleLendProviderSelection()
         } else if (pendingPrompt.type === 'lendVault') {
-          handleLendVaultSelection(pendingPrompt.data as VaultData[] || [])
+          handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
         }
         return
       } else if (e.key === 'Escape') {

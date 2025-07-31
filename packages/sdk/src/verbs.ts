@@ -27,15 +27,7 @@ export class Verbs implements VerbsInterface {
   private lendProvider?: LendProvider
 
   constructor(config: VerbsConfig) {
-<<<<<<< HEAD
-    this._chainManager = new ChainManager([
-      {
-        chainId: unichain.id,
-        rpcUrl: unichain.rpcUrls.default.http[0],
-      },
-    ])
-=======
-    this.chainManager = new ChainManager(
+    this._chainManager = new ChainManager(
       config.chains || [
         {
           chainId: unichain.id,
@@ -43,7 +35,6 @@ export class Verbs implements VerbsInterface {
         },
       ],
     )
->>>>>>> a6e924fc5bf10533d17b8cee4f9c4c36a4cfb29f
     // Create lending provider if configured
     if (config.lend) {
       // TODO: delete this code and just have the lend use the ChainManager
