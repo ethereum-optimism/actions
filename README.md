@@ -20,15 +20,29 @@ pnpm install
 
 ## Demo
 
-1. Run the backend [setup steps](./packages/demo/backend/README.md).
-2. Run the backend:
+1. Start a local blockchain (Unichain fork recommended):
+
+```bash
+anvil --fork-url https://sepolia.unichain.org
+```
+
+2. In a new terminal, deploy and fund the faucet contract:
+
+```bash
+cd packages/demo/contracts
+pnpm deploy:fund:faucet
+```
+
+3. Run the backend [setup steps](./packages/demo/backend/README.md).
+
+4. Run the backend:
 
 ```bash
 cd packages/demo/backend
 pnpm install && pnpm dev
 ```
 
-3. Open another terminal and run the frontend:
+5. Open another terminal and run the frontend:
 
 ```bash
 cd packages/demo/frontend
