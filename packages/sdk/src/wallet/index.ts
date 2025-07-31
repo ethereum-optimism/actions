@@ -138,7 +138,10 @@ export class Wallet implements WalletInterface {
    * @returns Promise resolving to signed transaction
    * @throws Error if wallet is not initialized or no wallet provider is configured
    */
-  async signOnly(transactionData: TransactionData): Promise<string> {
+  async signOnly(
+    transactionData: TransactionData,
+    nonce?: number,
+  ): Promise<string> {
     if (!this.initialized) {
       throw new Error('Wallet not initialized')
     }
@@ -149,7 +152,7 @@ export class Wallet implements WalletInterface {
       )
     }
 
-    return (this.walletProvider as any).signOnly(this.id, transactionData)
+    return (this.walletProvider as any).signOnly(this.id, transactionData, nonce)
   }
 
   /**

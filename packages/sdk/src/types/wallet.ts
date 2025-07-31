@@ -95,9 +95,10 @@ export type WalletVerbs = {
   /**
    * Sign a transaction without sending it
    * @param transactionData - Transaction data to sign
+   * @param nonce - Optional nonce for the transaction
    * @returns Promise resolving to signed transaction
    */
-  signOnly(transactionData: TransactionData): Promise<string>
+  signOnly(transactionData: TransactionData, nonce?: number): Promise<string>
   /**
    * Send a signed transaction
    * @param signedTransaction - Signed transaction to send

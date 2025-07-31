@@ -181,6 +181,12 @@ describe('Morpho Lend', () => {
     expect(lendTx.transactionData?.deposit?.data).toMatch(/^0x[0-9a-fA-F]+$/)
     expect(lendTx.transactionData?.deposit?.value).toBe('0x0')
 
+    // Get the current nonce for the wallet
+    const currentNonce = await publicClient.getTransactionCount({
+      address: TEST_WALLET_ADDRESS,
+    })
+    console.log(`Current nonce: ${currentNonce}`)
+
     // Test signing the approval transaction using wallet.signOnly()
     try {
       const approvalTx = lendTx.transactionData!.approval!
@@ -194,7 +200,7 @@ describe('Morpho Lend', () => {
       })
       console.log(`Estimated gas for approval: ${gasEstimate}`)
 
-      const signedApproval = await testWallet!.signOnly(approvalTx)
+      const signedApproval = await testWallet!.signOnly(approvalTx, currentNonce)
       console.log(`Signed approval tx`)
       expect(signedApproval).toBeDefined()
 
@@ -228,7 +234,8 @@ describe('Morpho Lend', () => {
 
     // Test signing the deposit transaction using wallet.signOnly()
     try {
-      const signedDeposit = await testWallet!.signOnly(depositTx)
+      // Use incremented nonce for the deposit transaction
+      const signedDeposit = await testWallet!.signOnly(depositTx, currentNonce + 1)
       console.log(`Signed deposit tx`)
       expect(signedDeposit).toBeDefined()
 

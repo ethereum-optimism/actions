@@ -133,19 +133,28 @@ export class WalletProviderPrivy implements WalletProvider {
   async signOnly(
     walletId: string,
     transactionData: TransactionData,
+    nonce?: number,
   ): Promise<string> {
     try {
+      const txParams: any = {
+        to: transactionData.to,
+        data: transactionData.data as `0x${string}`,
+        value: transactionData.value as `0x${string}`,
+        chainId: 130, // Unichain
+        // Add gas parameters for supersim compatibility (EIP-1559)
+        gasLimit: '0x186A0', // 100000 gas limit (increased for safety)
+        maxFeePerGas: '0x5D21DBA00', // 25 gwei max fee
+        maxPriorityFeePerGas: '0x77359400', // 2 gwei priority fee
+      }
+
+      // Add nonce if provided
+      if (nonce !== undefined) {
+        txParams.nonce = `0x${nonce.toString(16)}`
+      }
+
       const response = await this.privy.walletApi.ethereum.signTransaction({
         walletId,
-        transaction: {
-          to: transactionData.to,
-          data: transactionData.data as `0x${string}`,
-          value: transactionData.value as `0x${string}`,
-          chainId: 130, // Unichain
-          // Add gas parameters for supersim compatibility
-          gasLimit: '0x15F90', // 90000 gas limit (enough for ERC20 approve/deposit)
-          gasPrice: '0x3B9ACA00', // 1 gwei
-        },
+        transaction: txParams,
       })
 
       return response.signedTransaction
