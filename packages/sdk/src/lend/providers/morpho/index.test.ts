@@ -81,7 +81,7 @@ describe('LendProviderMorpho', () => {
 
   describe('withdraw', () => {
     it('should throw error for unimplemented withdraw functionality', async () => {
-      const asset = '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842' as Address // USDC
+      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address // USDC
       const amount = BigInt('1000000000') // 1000 USDC
       const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
@@ -159,7 +159,7 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should successfully create a lending transaction', async () => {
-      const asset = '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842' as Address // USDC
+      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address // USDC
       const amount = BigInt('1000000000') // 1000 USDC
       const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
@@ -176,7 +176,7 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should find best market when marketId not provided', async () => {
-      const asset = '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842' as Address // USDC
+      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address // USDC
       const amount = BigInt('1000000000') // 1000 USDC
 
       // Mock the market data for getMarketInfo
@@ -197,7 +197,7 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should use custom slippage when provided', async () => {
-      const asset = '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842' as Address
+      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address
       const amount = BigInt('1000000000')
       const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
       const customSlippage = 100 // 1%

@@ -3,6 +3,7 @@ import {
   type VerbsConfig,
   type VerbsInterface,
 } from '@eth-optimism/verbs-sdk'
+import { unichain } from 'viem/chains'
 
 import { env } from './env.js'
 
@@ -18,8 +19,12 @@ export function createVerbsConfig(): VerbsConfig {
     lend: {
       type: 'morpho',
     },
-    chainId: 130, // Unichain
-    rpcUrl: 'https://mainnet.unichain.org/',
+    chains: [
+      {
+        chainId: unichain.id,
+        rpcUrl: env.RPC_URL,
+      },
+    ],
   }
 }
 

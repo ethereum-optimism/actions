@@ -24,7 +24,7 @@ describe('TokenBalance', () => {
       name: 'USD Coin',
       decimals: 6,
       addresses: {
-        [unichain.id]: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
+        [unichain.id]: '0x078d782b760474a361dda0af3839290b0ef57ad6',
       },
     }
   })

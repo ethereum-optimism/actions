@@ -42,6 +42,7 @@ router.get('/wallets', walletController.getAllWallets)
 router.post('/wallet/:userId', walletController.createWallet)
 router.get('/wallet/:userId', walletController.getWallet)
 router.get('/wallet/:userId/balance', walletController.getBalance)
+router.post('/wallet/:userId/fund', walletController.fundWallet)
 
 // Lend endpoints
 router.get('/lend/vaults', lendController.getVaults)
