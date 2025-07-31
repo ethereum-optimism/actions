@@ -64,6 +64,19 @@ export abstract class LendProvider {
   abstract getVaults(): Promise<LendVaultInfo[]>
 
   /**
+   * Get vault balance for a specific wallet address
+   * @param vaultAddress - Vault address
+   * @param walletAddress - User wallet address to check balance for
+   * @returns Promise resolving to vault balance information
+   */
+  abstract getVaultBalance(vaultAddress: Address, walletAddress: Address): Promise<{
+    balance: bigint
+    balanceFormatted: string
+    shares: bigint
+    sharesFormatted: string
+  }>
+
+  /**
    * Withdraw/redeem assets from a market
    * @param asset - Asset token address to withdraw
    * @param amount - Amount to withdraw (in wei)

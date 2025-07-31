@@ -1,4 +1,5 @@
 import type { ChildProcess } from 'child_process'
+import { config } from 'dotenv'
 import {
   erc20Abi,
   formatEther,
@@ -9,6 +10,9 @@ import {
 import { privateKeyToAccount } from 'viem/accounts'
 import { unichain } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+// Load test environment variables
+config({ path: '.env.test' })
 
 import type { VerbsInterface } from '../../../types/verbs.js'
 import { setupSupersimTest, stopSupersim } from '../../../utils/test.js'
@@ -27,6 +31,7 @@ describe('Morpho Lend', () => {
   let testAccount: ReturnType<typeof privateKeyToAccount>
   let verbs: VerbsInterface
   let testWallet: Wallet
+  const TEST_WALLET_ID: string = 'v6c9zr6cjoo91qlopwzo9nhl'
 
   beforeAll(async () => {
     // Set up supersim with funded wallet using helper
@@ -40,6 +45,8 @@ describe('Morpho Lend', () => {
         rpcUrl: 'http://127.0.0.1:9546',
         chain: unichain,
         amount: '10',
+        fundUsdc: true, // Request USDC funding for vault testing
+        usdcAmount: '1000',
       },
     })
 
@@ -51,8 +58,8 @@ describe('Morpho Lend', () => {
     verbs = initVerbs({
       wallet: {
         type: 'privy',
-        appId: 'test-app-id',
-        appSecret: 'test-app-secret',
+        appId: process.env.PRIVY_APP_ID || 'test-app-id',
+        appSecret: process.env.PRIVY_APP_SECRET || 'test-app-secret',
       },
       lend: {
         type: 'morpho',
@@ -68,7 +75,16 @@ describe('Morpho Lend', () => {
 
     // For testing, create a wallet directly with the Verbs instance
     // In real app, wallet.lend() would be available after createWallet()
-    testWallet = new Wallet('test-wallet', verbs)
+    // Create a wallet provider instance to enable signing (with real Privy credentials if available)
+    const { WalletProviderPrivy } = await import(
+      '../../../wallet/providers/privy.js'
+    )
+    const walletProvider = new WalletProviderPrivy(
+      process.env.PRIVY_APP_ID || 'test-app-id',
+      process.env.PRIVY_APP_SECRET || 'test-app-secret',
+      verbs,
+    )
+    testWallet = new Wallet(TEST_WALLET_ID, verbs, walletProvider)
     testWallet.init(testAccount.address)
   }, 30000)
 
@@ -85,9 +101,7 @@ describe('Morpho Lend', () => {
     const balance = await publicClient.getBalance({
       address: testAccount.address,
     })
-    const ethBalance = formatEther(balance)
     expect(balance).toBeGreaterThan(0n)
-    console.log(`Test wallet balance: ${ethBalance} ETH`)
   })
 
   it('should execute lend operation with real Morpho transactions', async () => {
@@ -108,12 +122,16 @@ describe('Morpho Lend', () => {
         args: [testAccount.address],
       })
       const usdcBalanceFormatted = formatUnits(usdcBalance, 6)
-      console.log(`Test wallet USDC balance: ${usdcBalanceFormatted} USDC`)
+      console.log(`USDC balance: ${usdcBalanceFormatted}`)
     } catch {
       throw new Error('USDC balance not found')
     }
 
-    console.log('Testing human-readable lend API...')
+    // Check vault balance before deposit
+    const vaultBalanceBefore = await verbs.lend.getVaultBalance(
+      TEST_VAULT_ADDRESS,
+      testAccount.address,
+    )
 
     // Test the new human-readable API: lend(1, 'usdc')
     const lendTx = await testWallet.lend(1, 'usdc', TEST_VAULT_ADDRESS, {
@@ -134,17 +152,7 @@ describe('Morpho Lend', () => {
     expect(lendTx.transactionData?.approval).toBeDefined()
 
     const lendAmountFormatted = formatUnits(lendTx.amount, 6)
-    console.log('✅ Verbs-initialized wallet.lend(1, "usdc") details:', {
-      humanAmount: `${lendAmountFormatted} USDC`,
-      parsedAmount: lendTx.amount,
-      asset: lendTx.asset,
-      marketId: lendTx.marketId,
-      apy: lendTx.apy,
-      slippage: lendTx.slippage,
-      receiver: testAccount.address,
-      hasApprovalData: !!lendTx.transactionData?.approval,
-      hasDepositData: !!lendTx.transactionData?.deposit,
-    })
+    console.log(`Lend: ${lendAmountFormatted} USDC, APY: ${lendTx.apy}%`)
 
     // Validate transaction data structure
     expect(lendTx.transactionData?.approval?.to).toBe(USDC_ADDRESS)
@@ -155,30 +163,18 @@ describe('Morpho Lend', () => {
     expect(lendTx.transactionData?.deposit?.data).toMatch(/^0x[0-9a-fA-F]+$/)
     expect(lendTx.transactionData?.deposit?.value).toBe('0x0')
 
-    console.log('✅ All transaction data validation passed!')
-
     // Test signing the approval transaction using wallet.sign()
-    console.log('Testing wallet.sign() with approval transaction...')
-
     try {
       const approvalTx = lendTx.transactionData!.approval!
-      console.log('Approval transaction data:', approvalTx)
-
-      // Test the wallet.sign() method with approval transaction
       const approvalTxHash = await testWallet.sign(approvalTx)
-      console.log(`✅ Approval transaction signed: ${approvalTxHash}`)
+      console.log(`Approval signed: ${approvalTxHash}`)
       expect(approvalTxHash).toBeDefined()
       expect(approvalTxHash).toMatch(/^0x[0-9a-fA-F]{64}$/) // Valid tx hash format
     } catch (error) {
-      console.log(
-        'ⓘ Approval signing failed (expected on test network):',
-        (error as Error).message,
-      )
-      // This might fail on test networks, but we can still validate the structure
+      console.log(`Approval signing failed: ${(error as Error).message}`)
     }
 
     // Test deposit transaction structure
-    console.log('Testing deposit transaction structure...')
     const depositTx = lendTx.transactionData!.deposit!
 
     expect(depositTx.to).toBe(TEST_VAULT_ADDRESS)
@@ -189,48 +185,40 @@ describe('Morpho Lend', () => {
     // deposit(uint256,address) has selector 0x6e553f65
     expect(depositTx.data.startsWith('0x6e553f65')).toBe(true)
 
-    console.log('✅ Deposit transaction structure validation passed!')
-
     // Test signing the deposit transaction using wallet.sign()
-    console.log('Testing wallet.sign() with deposit transaction...')
-
     try {
-      console.log('Deposit transaction data:', depositTx)
-
-      // Test the wallet.sign() method with deposit transaction
       const depositTxHash = await testWallet.sign(depositTx)
-      console.log(`✅ Deposit transaction signed: ${depositTxHash}`)
+      console.log(`Deposit signed: ${depositTxHash}`)
       expect(depositTxHash).toBeDefined()
       expect(depositTxHash).toMatch(/^0x[0-9a-fA-F]{64}$/) // Valid tx hash format
-
-      console.log('✅ All Morpho lend operations validated successfully!')
-      console.log('✅ Real call data generation working!')
-      console.log('✅ Wallet signing capability confirmed!')
     } catch (error) {
-      console.log(
-        'ⓘ Deposit signing failed (expected on test network):',
-        (error as Error).message,
-      )
-      console.log('✅ Wallet.sign() method structure validated!')
+      console.log(`Deposit signing failed: ${(error as Error).message}`)
     }
+
+    // Check vault balance after deposit attempts
+    const vaultBalanceAfter = await verbs.lend.getVaultBalance(
+      TEST_VAULT_ADDRESS,
+      testAccount.address,
+    )
+
+    // Verify that balance is the same (since transactions weren't actually executed)
+    expect(vaultBalanceAfter.balance).toBe(vaultBalanceBefore.balance)
+    expect(vaultBalanceAfter.shares).toBe(vaultBalanceBefore.shares)
+    console.log('Vault balance unchanged (transactions not executed)')
   }, 60000)
 
   it('should handle different human-readable amounts', async () => {
-    console.log('Testing various human-readable amounts...')
-
     // Test fractional amounts
     const tx1 = await testWallet.lend(0.5, 'usdc', TEST_VAULT_ADDRESS)
     const expectedAmount1 = parseUnits('0.5', 6) // 0.5 USDC
     const tx1AmountFormatted = formatUnits(tx1.amount, 6)
     expect(tx1.amount).toBe(expectedAmount1)
-    console.log(`✅ 0.5 USDC = ${tx1AmountFormatted} USDC`)
 
     // Test large amounts
     const tx2 = await testWallet.lend(1000, 'usdc', TEST_VAULT_ADDRESS)
     const expectedAmount2 = parseUnits('1000', 6) // 1000 USDC
     const tx2AmountFormatted = formatUnits(tx2.amount, 6)
     expect(tx2.amount).toBe(expectedAmount2)
-    console.log(`✅ 1000 USDC = ${tx2AmountFormatted} USDC`)
 
     // Test using address instead of symbol
     const tx3 = await testWallet.lend(1, USDC_ADDRESS, TEST_VAULT_ADDRESS)
@@ -238,14 +226,9 @@ describe('Morpho Lend', () => {
     const tx3AmountFormatted = formatUnits(tx3.amount, 6)
     expect(tx3.amount).toBe(expectedAmount3)
     expect(tx3.asset).toBe(USDC_ADDRESS)
-    console.log(`✅ Address-based asset resolution: ${tx3AmountFormatted} USDC`)
-
-    console.log('✅ All human-readable amount formats validated!')
   }, 30000)
 
   it('should validate input parameters', async () => {
-    console.log('Testing input validation...')
-
     // Test invalid amount
     await expect(testWallet.lend(0, 'usdc')).rejects.toThrow(
       'Amount must be greater than 0',
@@ -263,7 +246,5 @@ describe('Morpho Lend', () => {
     await expect(testWallet.lend(1, 'not-an-address')).rejects.toThrow(
       'Unsupported asset symbol',
     )
-
-    console.log('✅ Input validation working correctly!')
   }, 30000)
 })

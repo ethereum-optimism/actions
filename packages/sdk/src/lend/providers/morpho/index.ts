@@ -1,6 +1,6 @@
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 import type { Address, PublicClient } from 'viem'
-import { encodeFunctionData, erc20Abi } from 'viem'
+import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import type {
   LendOptions,
@@ -175,5 +175,61 @@ export class LendProviderMorpho extends LendProvider {
    */
   async getVaultInfo(vaultAddress: Address): Promise<LendVaultInfo> {
     return this.getVault(vaultAddress)
+  }
+
+  /**
+   * Get vault balance for a specific wallet address
+   * @param vaultAddress - MetaMorpho vault address
+   * @param walletAddress - User wallet address to check balance for
+   * @returns Promise resolving to vault balance information
+   */
+  async getVaultBalance(vaultAddress: Address, walletAddress: Address): Promise<{
+    balance: bigint
+    balanceFormatted: string
+    shares: bigint
+    sharesFormatted: string
+  }> {
+    try {
+      // Get user's vault token balance (shares in the vault)
+      const shares = await this.publicClient.readContract({
+        address: vaultAddress,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [walletAddress],
+      })
+
+      // Convert shares to underlying asset balance using convertToAssets
+      const balance = await this.publicClient.readContract({
+        address: vaultAddress,
+        abi: [
+          {
+            name: 'convertToAssets',
+            type: 'function',
+            stateMutability: 'view',
+            inputs: [{ name: 'shares', type: 'uint256' }],
+            outputs: [{ name: '', type: 'uint256' }],
+          },
+        ],
+        functionName: 'convertToAssets',
+        args: [shares],
+      })
+
+      // Format the balances (USDC has 6 decimals)
+      const balanceFormatted = formatUnits(balance, 6)
+      const sharesFormatted = formatUnits(shares, 18) // Vault shares typically have 18 decimals
+
+      return {
+        balance,
+        balanceFormatted,
+        shares,
+        sharesFormatted,
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to get vault balance for ${walletAddress} in vault ${vaultAddress}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
   }
 }
