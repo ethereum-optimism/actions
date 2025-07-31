@@ -1,0 +1,16 @@
+procs:
+  supersim:
+    cwd: .
+    shell: pnpm dev:supersim
+  supersim-chain-901:
+    cwd: supersim-logs
+    shell: pnpm wait-port http://:8420/ready && tail -f anvil-130.log
+  frontend:
+    cwd: packages/demo/frontend
+    shell: pnpm dev
+  backend:
+    cwd: packages/demo/backend
+    shell: pnpm dev
+  deploy-contracts:
+    cwd: packages/demo/contracts
+    shell: pnpm wait-port http://:8420/ready && pnpm deploy:fund:faucet

@@ -1,5 +1,5 @@
 import { createPublicClient, http, type PublicClient } from 'viem'
-import { mainnet, optimism, unichain } from 'viem/chains'
+import { mainnet, unichain } from 'viem/chains'
 
 import { LendProviderMorpho } from '@/lend/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
@@ -27,20 +27,34 @@ export class Verbs implements VerbsInterface {
   private lendProvider?: LendProvider
 
   constructor(config: VerbsConfig) {
+<<<<<<< HEAD
     this._chainManager = new ChainManager([
       {
         chainId: unichain.id,
         rpcUrl: unichain.rpcUrls.default.http[0],
       },
     ])
+=======
+    this.chainManager = new ChainManager(
+      config.chains || [
+        {
+          chainId: unichain.id,
+          rpcUrl: unichain.rpcUrls.default.http[0],
+        },
+      ],
+    )
+>>>>>>> a6e924fc5bf10533d17b8cee4f9c4c36a4cfb29f
     // Create lending provider if configured
     if (config.lend) {
-      const chainId = config.chainId || 130 // Default to Unichain
-      const chain =
-        chainId === 10 ? optimism : chainId === 130 ? unichain : mainnet
+      // TODO: delete this code and just have the lend use the ChainManager
+      const configChain = config.chains?.[0]
+      const chainId = configChain?.chainId || 130 // Default to Unichain
+      const chain = chainId === 130 ? unichain : mainnet
       const publicClient = createPublicClient({
         chain,
-        transport: http(config.rpcUrl),
+        transport: http(
+          configChain?.rpcUrl || unichain.rpcUrls.default.http[0],
+        ),
       }) as PublicClient
       if (config.lend.type === 'morpho') {
         this.lendProvider = new LendProviderMorpho(config.lend, publicClient)

@@ -17,7 +17,7 @@ export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
     decimals: 6,
     addresses: {
       [mainnet.id]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-      [unichain.id]: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
+      [unichain.id]: '0x078d782b760474a361dda0af3839290b0ef57ad6',
     },
   },
   MORPHO: {

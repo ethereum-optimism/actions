@@ -1,0 +1,24 @@
+{
+  "name": "@eth-optimism/verbs-demo-contracts",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "clean": "rm -rf build types tsconfig.tsbuildinfo",
+    "compile": "forge compile",
+    "build": "forge build",
+    "deploy:faucet": "forge script script/Deploy.s.sol --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast",
+    "impersonate:whale": "cast rpc anvil_impersonateAccount 0x5752e57DcfA070e3822d69498185B706c293C792 --rpc-url http://localhost:9545",
+    "fund:faucet": "pnpm impersonate:whale && forge script script/Fund.s.sol --rpc-url http://localhost:9545 --broadcast --unlocked 0x5752e57DcfA070e3822d69498185B706c293C792 --sender 0x5752e57DcfA070e3822d69498185B706c293C792",
+    "deploy:fund:faucet": "pnpm deploy:faucet && pnpm fund:faucet",
+    "test": "forge install && forge test",
+    "lint": "solhint {src,script,test}/**/*.sol && forge fmt --check src test scripts",
+    "lint:fix": "solhint --fix --quiet --noPrompt {src,script,test}/**/*.sol && forge fmt src test script"
+  },
+  "devDependencies": {
+    "solhint": "^4.1.1"
+  },
+  "dependencies": {
+    "solc": "^0.8.26"
+  }
+}
