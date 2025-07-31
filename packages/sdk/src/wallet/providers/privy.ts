@@ -1,7 +1,8 @@
 import { PrivyClient } from '@privy-io/server-auth'
-import { getAddress } from 'viem'
+import { getAddress, type Hash } from 'viem'
 
 import { Wallet } from '@/index.js'
+import type { TransactionData } from '@/types/lend.js'
 import type { VerbsInterface } from '@/types/verbs.js'
 import type { GetAllWalletsOptions, WalletProvider } from '@/types/wallet.js'
 
@@ -37,7 +38,7 @@ export class WalletProviderPrivy implements WalletProvider {
         chainType: 'ethereum',
       })
 
-      const walletInstance = new Wallet(wallet.id, this.verbs)
+      const walletInstance = new Wallet(wallet.id, this.verbs, this)
       walletInstance.init(getAddress(wallet.address))
       return walletInstance
     } catch {
@@ -56,7 +57,7 @@ export class WalletProviderPrivy implements WalletProvider {
       // TODO: Implement proper user-to-wallet lookup
       const wallet = await this.privy.walletApi.getWallet({ id: userId })
 
-      const walletInstance = new Wallet(wallet.id, this.verbs)
+      const walletInstance = new Wallet(wallet.id, this.verbs, this)
       walletInstance.init(getAddress(wallet.address))
       return walletInstance
     } catch {
@@ -78,12 +79,49 @@ export class WalletProviderPrivy implements WalletProvider {
       })
 
       return response.data.map((wallet) => {
-        const walletInstance = new Wallet(wallet.id, this.verbs)
+        const walletInstance = new Wallet(wallet.id, this.verbs, this)
         walletInstance.init(getAddress(wallet.address))
         return walletInstance
       })
     } catch {
       throw new Error('Failed to retrieve wallets')
+    }
+  }
+
+  /**
+   * Sign and send a transaction using Privy
+   * @description Signs and sends a transaction using Privy's wallet API
+   * @param walletId - Wallet ID to use for signing
+   * @param transactionData - Transaction data to sign and send
+   * @returns Promise resolving to transaction hash
+   * @throws Error if transaction signing fails
+   */
+  async signTransaction(
+    walletId: string,
+    transactionData: TransactionData,
+  ): Promise<Hash> {
+    try {
+      // Convert hex value to number for Privy API
+      const valueNum = parseInt(transactionData.value.replace('0x', ''), 16)
+
+      const response = await this.privy.walletApi.ethereum.sendTransaction({
+        walletId,
+        caip2: 'eip155:130', // Unichain
+        transaction: {
+          to: transactionData.to,
+          data: transactionData.data as `0x${string}`,
+          value: valueNum,
+          chainId: 130, // Unichain
+        },
+      })
+
+      return response.hash as Hash
+    } catch (error) {
+      throw new Error(
+        `Failed to sign transaction for wallet ${walletId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
     }
   }
 }

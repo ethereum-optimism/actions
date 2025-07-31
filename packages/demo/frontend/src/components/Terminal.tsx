@@ -584,10 +584,10 @@ Select a wallet:`
               ...wallet,
               usdcBalance
             }
-          } catch (error) {
+          } catch {
             return {
               ...wallet,
-              usdcBalance: 0
+              usdcBalance: 0,
             }
           }
         })

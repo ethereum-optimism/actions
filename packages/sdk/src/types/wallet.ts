@@ -1,6 +1,10 @@
-import type { Address } from 'viem'
+import type { Address, Hash } from 'viem'
 
-import type { LendOptions, LendTransaction } from '@/types/lend.js'
+import type {
+  LendOptions,
+  LendTransaction,
+  TransactionData,
+} from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
 import type { AssetIdentifier } from '@/utils/assets.js'
 
@@ -27,6 +31,16 @@ export interface WalletProvider {
    * @returns Promise resolving to array of wallets
    */
   getAllWallets(options?: GetAllWalletsOptions): Promise<Wallet[]>
+  /**
+   * Sign and send a transaction
+   * @param walletId - Wallet ID to use for signing
+   * @param transactionData - Transaction data to sign and send
+   * @returns Promise resolving to transaction hash
+   */
+  signTransaction(
+    walletId: string,
+    transactionData: TransactionData,
+  ): Promise<Hash>
 }
 
 /**
@@ -75,4 +89,10 @@ export type WalletVerbs = {
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction>
+  /**
+   * Sign and send a transaction
+   * @param transactionData - Transaction data to sign and send
+   * @returns Promise resolving to transaction hash
+   */
+  sign(transactionData: TransactionData): Promise<Hash>
 }

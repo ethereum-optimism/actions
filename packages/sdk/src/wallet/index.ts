@@ -1,9 +1,13 @@
-import { type Address } from 'viem'
+import { type Address, type Hash } from 'viem'
 import { unichain } from 'viem/chains'
 
 import { fetchBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { LendOptions, LendTransaction } from '@/types/lend.js'
+import type {
+  LendOptions,
+  LendTransaction,
+  TransactionData,
+} from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
 import type { VerbsInterface } from '@/types/verbs.js'
 import type { Wallet as WalletInterface } from '@/types/wallet.js'
@@ -18,15 +22,17 @@ export class Wallet implements WalletInterface {
   address!: Address
   private initialized: boolean = false
   private verbs: VerbsInterface
+  private walletProvider: any // Store reference to wallet provider for signing
 
   /**
    * Create a new wallet instance
    * @param id - Unique wallet identifier
    * @param verbs - Verbs instance to access configured providers and chain manager
    */
-  constructor(id: string, verbs: VerbsInterface) {
+  constructor(id: string, verbs: VerbsInterface, walletProvider?: any) {
     this.id = id
     this.verbs = verbs
+    this.walletProvider = walletProvider
   }
 
   init(address: Address) {
@@ -103,5 +109,28 @@ export class Wallet implements WalletInterface {
       marketId,
       lendOptions,
     )
+  }
+
+  /**
+   * Sign and send a transaction
+   * @description Signs and sends a transaction using the configured wallet provider
+   * @param transactionData - Transaction data to sign and send
+   * @returns Promise resolving to transaction hash
+   * @throws Error if wallet is not initialized or no wallet provider is configured
+   */
+  async sign(transactionData: TransactionData): Promise<Hash> {
+    if (!this.initialized) {
+      throw new Error('Wallet not initialized')
+    }
+
+    if (!this.walletProvider || !this.walletProvider.signTransaction) {
+      throw new Error('Wallet provider does not support transaction signing')
+    }
+
+    console.log(
+      `Signing transaction to ${transactionData.to} with value ${transactionData.value} from wallet ${this.address}`,
+    )
+
+    return this.walletProvider.signTransaction(this.id, transactionData)
   }
 }
