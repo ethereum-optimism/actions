@@ -9,6 +9,19 @@ import { createPublicClient, createWalletClient, http, parseEther } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 /**
+ * Standard anvil/foundry test accounts with predictable private keys
+ * These are the default accounts created by anvil and are safe to use in tests
+ */
+export const ANVIL_ACCOUNTS = {
+  /** Account #0 - Default primary test account */
+  ACCOUNT_0: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as const,
+  /** Account #1 - Secondary test account, commonly used as funder */
+  ACCOUNT_1: '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as const,
+  /** Account #2 - Third test account */
+  ACCOUNT_2: '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a' as const,
+} as const
+
+/**
  * Helper function to check if external tests should run
  * External tests make real network requests and are only run when EXTERNAL_TEST=true
  *
@@ -89,6 +102,7 @@ export async function startSupersim(
     ],
     {
       stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true, // Create new process group so we can kill all children
     },
   )
 
@@ -141,18 +155,42 @@ export async function startSupersim(
 }
 
 /**
- * Stop supersim process
+ * Stop supersim process and all child processes gracefully
  * @param supersimProcess - The supersim process to stop
  */
 export async function stopSupersim(
   supersimProcess: ChildProcess,
 ): Promise<void> {
   console.log('Stopping supersim...')
-  if (supersimProcess) {
-    supersimProcess.kill()
-    // Wait for process to exit
+  if (supersimProcess && supersimProcess.pid) {
+    try {
+      // Kill the entire process group (negative PID kills the group)
+      process.kill(-supersimProcess.pid, 'SIGTERM')
+    } catch {
+      // Fallback to killing just the main process
+      supersimProcess.kill('SIGTERM')
+    }
+    
+    // Wait for process to exit with timeout
     await new Promise((resolve) => {
-      supersimProcess?.on('exit', resolve)
+      const timeout = setTimeout(() => {
+        // Force kill if still running after timeout
+        try {
+          if (supersimProcess.pid && !supersimProcess.killed) {
+            process.kill(-supersimProcess.pid, 'SIGKILL')
+          }
+        } catch {
+          if (!supersimProcess.killed) {
+            supersimProcess.kill('SIGKILL')
+          }
+        }
+        resolve(undefined)
+      }, 10000) // 10 second timeout for graceful shutdown
+
+      supersimProcess?.on('exit', () => {
+        clearTimeout(timeout)
+        resolve(undefined)
+      })
     })
   }
   console.log('Supersim stopped')
@@ -170,7 +208,7 @@ export interface FundWalletConfig {
   targetAddress: `0x${string}`
   /** Amount to fund in ETH (default: '10') */
   amount?: string
-  /** Funder private key (default: second anvil account) */
+  /** Funder private key (default: ANVIL_ACCOUNTS.ACCOUNT_1) */
   funderPrivateKey?: `0x${string}`
 }
 
@@ -185,7 +223,7 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
     chain,
     targetAddress,
     amount = '10',
-    funderPrivateKey = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d', // Second anvil account
+    funderPrivateKey = ANVIL_ACCOUNTS.ACCOUNT_1, // Use anvil account #1 as default funder
   } = config
 
   console.log('Funding test wallet...')
@@ -232,7 +270,7 @@ export async function setupSupersimTest(config: {
 }> {
   const testPrivateKey =
     config.wallet.testPrivateKey ||
-    ('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as const) // First anvil account
+    ANVIL_ACCOUNTS.ACCOUNT_0 // Use anvil account #0 as default test account
 
   // Start supersim
   const supersimProcess = await startSupersim(config.supersim)

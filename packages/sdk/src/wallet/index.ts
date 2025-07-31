@@ -123,7 +123,7 @@ export class Wallet implements WalletInterface {
       throw new Error('Wallet not initialized')
     }
 
-    if (!this.walletProvider || !this.walletProvider.signTransaction) {
+    if (!this.walletProvider || !this.walletProvider.sign) {
       throw new Error('Wallet provider does not support transaction signing')
     }
 
@@ -131,6 +131,6 @@ export class Wallet implements WalletInterface {
       `Signing transaction to ${transactionData.to} with value ${transactionData.value} from wallet ${this.address}`,
     )
 
-    return this.walletProvider.signTransaction(this.id, transactionData)
+    return this.walletProvider.sign(this.id, transactionData)
   }
 }

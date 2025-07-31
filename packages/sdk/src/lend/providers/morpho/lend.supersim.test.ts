@@ -1,10 +1,19 @@
-import { erc20Abi, formatEther, formatUnits, parseUnits } from 'viem'
+import type { ChildProcess } from 'child_process'
+import {
+  erc20Abi,
+  formatEther,
+  formatUnits,
+  parseUnits,
+  type PublicClient,
+} from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import { unichain } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { VerbsInterface } from '../../../types/verbs.js'
 import { setupSupersimTest, stopSupersim } from '../../../utils/test.js'
 import { initVerbs } from '../../../verbs.js'
+import { Wallet } from '../../../wallet/index.js'
 import { SUPPORTED_VAULTS } from './vaults.js'
 
 // Use the first supported vault (Gauntlet USDC)
@@ -13,11 +22,11 @@ const USDC_ADDRESS = TEST_VAULT.asset.address
 const TEST_VAULT_ADDRESS = TEST_VAULT.address
 
 describe('Morpho Lend', () => {
-  let supersimProcess: any
-  let publicClient: any
-  let testAccount: any
+  let supersimProcess: ChildProcess
+  let publicClient: PublicClient
+  let testAccount: ReturnType<typeof privateKeyToAccount>
   let verbs: VerbsInterface
-  let testWallet: any
+  let testWallet: Wallet
 
   beforeAll(async () => {
     // Set up supersim with funded wallet using helper
@@ -59,7 +68,6 @@ describe('Morpho Lend', () => {
 
     // For testing, create a wallet directly with the Verbs instance
     // In real app, wallet.lend() would be available after createWallet()
-    const { Wallet } = await import('../../../wallet/index.js')
     testWallet = new Wallet('test-wallet', verbs)
     testWallet.init(testAccount.address)
   }, 30000)
@@ -102,11 +110,7 @@ describe('Morpho Lend', () => {
       const usdcBalanceFormatted = formatUnits(usdcBalance, 6)
       console.log(`Test wallet USDC balance: ${usdcBalanceFormatted} USDC`)
     } catch {
-      console.log(
-        `Note: Could not read USDC balance at ${USDC_ADDRESS} - contract might not exist on fork`,
-      )
-      console.log('Continuing with test using mock USDC balance...')
-      usdcBalance = parseUnits('1', 6) // Mock 1 USDC for testing
+      throw new Error('USDC balance not found')
     }
 
     console.log('Testing human-readable lend API...')

@@ -37,7 +37,7 @@ export interface WalletProvider {
    * @param transactionData - Transaction data to sign and send
    * @returns Promise resolving to transaction hash
    */
-  signTransaction(
+  sign(
     walletId: string,
     transactionData: TransactionData,
   ): Promise<Hash>

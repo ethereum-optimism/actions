@@ -96,7 +96,7 @@ export class WalletProviderPrivy implements WalletProvider {
    * @returns Promise resolving to transaction hash
    * @throws Error if transaction signing fails
    */
-  async signTransaction(
+  async sign(
     walletId: string,
     transactionData: TransactionData,
   ): Promise<Hash> {
