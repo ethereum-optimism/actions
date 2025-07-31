@@ -183,7 +183,10 @@ export class LendProviderMorpho extends LendProvider {
    * @param walletAddress - User wallet address to check balance for
    * @returns Promise resolving to vault balance information
    */
-  async getVaultBalance(vaultAddress: Address, walletAddress: Address): Promise<{
+  async getVaultBalance(
+    vaultAddress: Address,
+    walletAddress: Address,
+  ): Promise<{
     balance: bigint
     balanceFormatted: string
     shares: bigint

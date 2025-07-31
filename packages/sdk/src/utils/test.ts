@@ -14,11 +14,14 @@ import { privateKeyToAccount } from 'viem/accounts'
  */
 export const ANVIL_ACCOUNTS = {
   /** Account #0 - Default primary test account */
-  ACCOUNT_0: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as const,
+  ACCOUNT_0:
+    '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as const,
   /** Account #1 - Secondary test account, commonly used as funder */
-  ACCOUNT_1: '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as const,
+  ACCOUNT_1:
+    '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as const,
   /** Account #2 - Third test account */
-  ACCOUNT_2: '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a' as const,
+  ACCOUNT_2:
+    '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a' as const,
 } as const
 
 /**
@@ -170,7 +173,7 @@ export async function stopSupersim(
       // Fallback to killing just the main process
       supersimProcess.kill('SIGTERM')
     }
-    
+
     // Wait for process to exit with timeout
     await new Promise((resolve) => {
       const timeout = setTimeout(() => {
@@ -261,33 +264,37 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
   // Fund with USDC if requested using whale impersonation
   if (fundUsdc) {
     try {
-      console.log(`Attempting to fund ${usdcAmount} USDC using whale impersonation...`)
-      
+      console.log(
+        `Attempting to fund ${usdcAmount} USDC using whale impersonation...`,
+      )
+
       // USDC whale address with large balance
       const usdcWhale = '0x5752e57DcfA070e3822d69498185B706c293C792'
-      
+
       // Impersonate the whale account
       console.log(`Impersonating whale account: ${usdcWhale}`)
       await publicClient.request({
         method: 'anvil_impersonateAccount' as any,
         params: [usdcWhale],
       })
-      
+
       // USDC contract address on Unichain (from vault config)
       const usdcAddress = '0x078d782b760474a361dda0af3839290b0ef57ad6'
-      
+
       // Create whale wallet client (for impersonated account, we use the address directly)
       const whaleClient = createWalletClient({
         account: usdcWhale as `0x${string}`,
         chain,
         transport: http(rpcUrl),
       })
-      
+
       // Transfer USDC from whale to target
       const usdcAmountWei = BigInt(parseFloat(usdcAmount) * 1e6) // USDC has 6 decimals
-      
-      console.log(`Transferring ${usdcAmount} USDC (${usdcAmountWei} units) from whale to ${targetAddress}`)
-      
+
+      console.log(
+        `Transferring ${usdcAmount} USDC (${usdcAmountWei} units) from whale to ${targetAddress}`,
+      )
+
       const transferTx = await whaleClient.writeContract({
         address: usdcAddress as `0x${string}`,
         abi: [
@@ -297,27 +304,30 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
             stateMutability: 'nonpayable',
             inputs: [
               { name: 'to', type: 'address' },
-              { name: 'amount', type: 'uint256' }
+              { name: 'amount', type: 'uint256' },
             ],
-            outputs: [{ name: '', type: 'bool' }]
-          }
+            outputs: [{ name: '', type: 'bool' }],
+          },
         ],
         functionName: 'transfer',
         args: [targetAddress, usdcAmountWei],
       })
-      
+
       // Wait for transaction confirmation
       await publicClient.waitForTransactionReceipt({ hash: transferTx })
-      console.log(`✅ Successfully funded ${usdcAmount} USDC to ${targetAddress}`)
-      
+      console.log(
+        `✅ Successfully funded ${usdcAmount} USDC to ${targetAddress}`,
+      )
+
       // Stop impersonating the account
       await publicClient.request({
         method: 'anvil_stopImpersonatingAccount' as any,
         params: [usdcWhale],
       })
-      
     } catch (error) {
-      console.log(`❌ Failed to fund USDC: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.log(
+        `❌ Failed to fund USDC: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
       console.log(`   This may cause lending tests to fail if USDC is required`)
     }
   }
@@ -332,6 +342,7 @@ export async function setupSupersimTest(config: {
   supersim?: SupersimConfig
   wallet: Omit<FundWalletConfig, 'targetAddress'> & {
     testPrivateKey?: `0x${string}`
+    address?: `0x${string}` // Optional custom address to fund instead of test account
   }
 }): Promise<{
   supersimProcess: ChildProcess
@@ -339,8 +350,7 @@ export async function setupSupersimTest(config: {
   testAccount: ReturnType<typeof privateKeyToAccount>
 }> {
   const testPrivateKey =
-    config.wallet.testPrivateKey ||
-    ANVIL_ACCOUNTS.ACCOUNT_0 // Use anvil account #0 as default test account
+    config.wallet.testPrivateKey || ANVIL_ACCOUNTS.ACCOUNT_0 // Use anvil account #0 as default test account
 
   // Start supersim
   const supersimProcess = await startSupersim(config.supersim)
@@ -354,10 +364,11 @@ export async function setupSupersimTest(config: {
   // Create test account
   const testAccount = privateKeyToAccount(testPrivateKey)
 
-  // Fund the test wallet
+  // Fund the wallet - use custom address if provided, otherwise use test account
+  const targetAddress = config.wallet.address || testAccount.address
   await fundWallet({
     ...config.wallet,
-    targetAddress: testAccount.address,
+    targetAddress,
   })
 
   return {

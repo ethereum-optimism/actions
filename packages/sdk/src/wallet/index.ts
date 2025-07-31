@@ -1,4 +1,4 @@
-import { type Address, type Hash } from 'viem'
+import { type Address, encodeFunctionData, erc20Abi, type Hash } from 'viem'
 import { unichain } from 'viem/chains'
 
 import { fetchBalance } from '@/services/tokenBalance.js'
@@ -11,7 +11,12 @@ import type {
 import type { TokenBalance } from '@/types/token.js'
 import type { VerbsInterface } from '@/types/verbs.js'
 import type { Wallet as WalletInterface } from '@/types/wallet.js'
-import { type AssetIdentifier, parseLendParams } from '@/utils/assets.js'
+import {
+  type AssetIdentifier,
+  parseAssetAmount,
+  parseLendParams,
+  resolveAsset,
+} from '@/utils/assets.js'
 
 /**
  * Wallet implementation
@@ -93,10 +98,6 @@ export class Wallet implements WalletInterface {
       receiver: options?.receiver || this.address,
     }
 
-    console.log(
-      `Lending ${amount} ${resolvedAsset.symbol} (${parsedAmount} wei) from wallet ${this.address}`,
-    )
-
     // Delegate to the lend provider configured in Verbs
     // TODO: In a real implementation, this would:
     // 1. Check wallet balance for the asset
@@ -127,10 +128,108 @@ export class Wallet implements WalletInterface {
       throw new Error('Wallet provider does not support transaction signing')
     }
 
-    console.log(
-      `Signing transaction to ${transactionData.to} with value ${transactionData.value} from wallet ${this.address}`,
-    )
-
     return this.walletProvider.sign(this.id, transactionData)
+  }
+
+  /**
+   * Sign a transaction without sending it
+   * @description Signs a transaction using the configured wallet provider but doesn't send it
+   * @param transactionData - Transaction data to sign
+   * @returns Promise resolving to signed transaction
+   * @throws Error if wallet is not initialized or no wallet provider is configured
+   */
+  async signOnly(transactionData: TransactionData): Promise<string> {
+    if (!this.initialized) {
+      throw new Error('Wallet not initialized')
+    }
+
+    if (!this.walletProvider || !(this.walletProvider as any).signOnly) {
+      throw new Error(
+        'Wallet provider does not support transaction signing only',
+      )
+    }
+
+    return (this.walletProvider as any).signOnly(this.id, transactionData)
+  }
+
+  /**
+   * Send a signed transaction
+   * @description Sends a pre-signed transaction to the network
+   * @param signedTransaction - Signed transaction to send
+   * @param publicClient - Viem public client to send the transaction
+   * @returns Promise resolving to transaction hash
+   */
+  async send(signedTransaction: string, publicClient: any): Promise<Hash> {
+    try {
+      const hash = await publicClient.sendRawTransaction({
+        serializedTransaction: signedTransaction as `0x${string}`,
+      })
+      return hash
+    } catch (error) {
+      throw new Error(
+        `Failed to send transaction: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
+  }
+
+  /**
+   * Transfer tokens to another address
+   * @description Transfers ETH or ERC20 tokens to a recipient address
+   * @param amount - Human-readable amount to transfer (e.g. 1.5)
+   * @param asset - Asset symbol (e.g. 'usdc', 'eth') or token address
+   * @param recipientAddress - Address to transfer to
+   * @returns Promise resolving to transaction data
+   * @throws Error if wallet is not initialized or asset is not supported
+   */
+  async transfer(
+    amount: number,
+    asset: AssetIdentifier,
+    recipientAddress: Address,
+  ): Promise<TransactionData> {
+    if (!this.initialized) {
+      throw new Error('Wallet not initialized')
+    }
+
+    if (!recipientAddress) {
+      throw new Error('Recipient address is required')
+    }
+
+    // Validate amount
+    if (amount <= 0) {
+      throw new Error('Amount must be greater than 0')
+    }
+
+    // TODO: Get actual chain ID from wallet context, for now using Unichain
+    const chainId = unichain.id
+
+    // Handle ETH transfers
+    if (asset.toLowerCase() === 'eth') {
+      const parsedAmount = parseAssetAmount(amount, 18) // ETH has 18 decimals
+
+      return {
+        to: recipientAddress,
+        value: `0x${parsedAmount.toString(16)}`,
+        data: '0x',
+      }
+    }
+
+    // Handle ERC20 token transfers
+    const resolvedAsset = resolveAsset(asset, chainId)
+    const parsedAmount = parseAssetAmount(amount, resolvedAsset.decimals)
+
+    // Encode ERC20 transfer function call
+    const transferData = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [recipientAddress, parsedAmount],
+    })
+
+    return {
+      to: resolvedAsset.address,
+      value: '0x0',
+      data: transferData,
+    }
   }
 }
