@@ -22,7 +22,7 @@ interface VaultData {
 }
 
 interface PendingPrompt {
-  type: 'userId' | 'lendProvider' | 'lendVault' | 'walletSelection'
+  type: 'userId' | 'lendProvider' | 'lendVault' | 'walletSelection' | 'walletFundSelection'
   message: string
   data?: VaultData[] | WalletData[]
 }
@@ -40,6 +40,7 @@ Wallet commands:
   wallet list    - List all wallets
   wallet lend    - Lend to Morpho vaults
   wallet balance - Show balance of wallet
+  wallet fund    - Fund wallet
 
 Future verbs (coming soon):
   fund          - Onramp to stables
@@ -160,6 +161,9 @@ const Terminal = () => {
       } else if (pendingPrompt.type === 'walletSelection') {
         handleWalletSelection(parseInt(trimmed), pendingPrompt.data as WalletData[] || [])
         return
+      } else if (pendingPrompt.type === 'walletFundSelection') {
+        handleWalletFundSelection(parseInt(trimmed), pendingPrompt.data as WalletData[] || [])
+        return
       }
     }
 
@@ -204,6 +208,11 @@ const Terminal = () => {
       case 'wallet balance': {
         setLines((prev) => [...prev, commandLine])
         handleWalletBalanceList()
+        return
+      }
+      case 'wallet fund': {
+        setLines((prev) => [...prev, commandLine])
+        handleWalletFundList()
         return
       }
       case 'wallet lend': {
@@ -600,6 +609,125 @@ You must use "wallet fund" before lending to this market.`
         id: `error-${Date.now()}`,
         type: 'error',
         content: `Failed to load wallets: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
+  const handleWalletFundList = async () => {
+    const loadingLine: TerminalLine = {
+      id: `loading-${Date.now()}`,
+      type: 'output',
+      content: 'Loading wallets...',
+      timestamp: new Date(),
+    }
+
+    setLines((prev) => [...prev, loadingLine])
+
+    try {
+      const result = await getAllWallets()
+      
+      if (result.wallets.length === 0) {
+        const emptyLine: TerminalLine = {
+          id: `empty-${Date.now()}`,
+          type: 'error',
+          content: 'No wallets available. Create one with "wallet create".',
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev.slice(0, -1), emptyLine])
+        return
+      }
+
+      const walletOptions = result.wallets
+        .map((wallet, index) => `${index + 1}. ${wallet.address}`)
+        .join('\n')
+
+      const walletSelectionLine: TerminalLine = {
+        id: `wallets-${Date.now()}`,
+        type: 'output',
+        content: `Select a wallet to fund:\n\n${walletOptions}\n\nEnter wallet number:`,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev.slice(0, -1), walletSelectionLine])
+      setPendingPrompt({
+        type: 'walletFundSelection',
+        message: '',
+        data: result.wallets.map(w => ({ id: w.id, address: w.address }))
+      })
+    } catch (error) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to load wallets: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
+  const handleWalletFundSelection = async (selection: number, wallets: WalletData[]) => {
+    setPendingPrompt(null)
+
+    if (isNaN(selection) || selection < 1 || selection > wallets.length) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Invalid selection. Please enter a number between 1 and ${wallets.length}.`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    const selectedWallet = wallets[selection - 1]
+    
+    const fundingLine: TerminalLine = {
+      id: `funding-${Date.now()}`,
+      type: 'output',
+      content: 'Funding wallet with tokens...',
+      timestamp: new Date(),
+    }
+
+    setLines((prev) => [...prev, fundingLine])
+
+    try {
+      // First fund the wallet
+      await verbsApi.fundWallet(selectedWallet.id)
+
+      const fundSuccessLine: TerminalLine = {
+        id: `fund-success-${Date.now()}`,
+        type: 'success',
+        content: 'Wallet funded successfully! Fetching updated balance...',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), fundSuccessLine])
+
+      // Then fetch and show the balance
+      const result = await verbsApi.getWalletBalance(selectedWallet.id)
+      
+      const balanceText = result.balance.length > 0 
+        ? result.balance.map(token => `${token.symbol}: ${token.totalBalance}`).join('\n')
+        : 'No tokens found'
+
+      const balanceSuccessLine: TerminalLine = {
+        id: `balance-success-${Date.now()}`,
+        type: 'success',
+        content: `Updated wallet balance for ${selectedWallet.address}:\n\n${balanceText}`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, balanceSuccessLine])
+
+    } catch (error) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to fund wallet: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
         timestamp: new Date(),

@@ -12,8 +12,6 @@ describe('Verbs SDK - System Tests', () => {
       async () => {
         // Create Verbs instance with Morpho lending configured
         const verbs = new Verbs({
-          chainId: 130, // Unichain
-          rpcUrl: 'https://mainnet.unichain.org/',
           lend: {
             type: 'morpho',
             defaultSlippage: 50,
@@ -74,8 +72,6 @@ describe('Verbs SDK - System Tests', () => {
       'should fetch vault info with enhanced rewards data',
       async () => {
         const verbs = new Verbs({
-          chainId: 130,
-          rpcUrl: 'https://mainnet.unichain.org/',
           lend: {
             type: 'morpho',
             defaultSlippage: 50,
@@ -107,8 +103,6 @@ describe('Verbs SDK - System Tests', () => {
       'should handle non-existent vault gracefully',
       async () => {
         const verbs = new Verbs({
-          chainId: 130,
-          rpcUrl: 'https://mainnet.unichain.org/',
           lend: {
             type: 'morpho',
             defaultSlippage: 50,
@@ -130,8 +124,6 @@ describe('Verbs SDK - System Tests', () => {
 
     it('should list supported network IDs', async () => {
       const verbs = new Verbs({
-        chainId: 130,
-        rpcUrl: 'https://rpc.unichain.org',
         lend: {
           type: 'morpho',
           defaultSlippage: 50,
@@ -151,8 +143,6 @@ describe('Verbs SDK - System Tests', () => {
 
     it.runIf(externalTest())('should get list of vaults', async () => {
       const verbs = new Verbs({
-        chainId: 130,
-        rpcUrl: 'https://mainnet.unichain.org/',
         lend: {
           type: 'morpho',
           defaultSlippage: 50,

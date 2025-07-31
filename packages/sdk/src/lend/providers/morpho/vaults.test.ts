@@ -171,7 +171,7 @@ describe('Vault Utilities', () => {
             {
               supplyApr: 0.03, // 3% USDC rewards
               asset: {
-                address: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
+                address: '0x078d782b760474a361dda0af3839290b0ef57ad6',
                 name: 'USDC',
                 symbol: 'USDC',
                 chain: { id: 130 }, // Unichain = USDC rewards
@@ -213,7 +213,7 @@ describe('Vault Utilities', () => {
                     {
                       supplyApr: 0.02, // 2% reward
                       asset: {
-                        address: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
+                        address: '0x078d782b760474a361dda0af3839290b0ef57ad6',
                         symbol: 'USDC',
                         chain: { id: 130 }, // USDC reward
                       },

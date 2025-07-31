@@ -19,6 +19,8 @@
   "scripts": {
     "build": "pnpm -r build",
     "clean": "pnpm -r clean",
+    "dev": "mprocs --config mprocs.yml",
+    "dev:supersim": "pnpm supersim fork --chains unichain --logs.directory supersim-logs",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
     "test": "pnpm -r test",
@@ -36,10 +38,13 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "globals": "^15.0.0",
+    "mprocs": "^0.7.2",
     "nx": "^21.3.2",
     "prettier": "^3.0.0",
     "resolve-tspaths": "^0.8.18",
-    "tsx": "^4.0.0"
+    "supersim": "^0.1.0-alpha.58",
+    "tsx": "^4.0.0",
+    "wait-port": "^1.1.0"
   },
   "engines": {
     "node": ">=18"

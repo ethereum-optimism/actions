@@ -3,8 +3,16 @@ import type {
   GetAllWalletsResponse,
   GetWalletResponse,
 } from '@eth-optimism/verbs-sdk'
+import { unichain } from '@eth-optimism/viem/chains'
 import type { Context } from 'hono'
+import type { Address, Hex } from 'viem'
+import { createPublicClient, createWalletClient, http } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { writeContract } from 'viem/actions'
 import { z } from 'zod'
+
+import { faucetAbi } from '@/abis/faucet.js'
+import { env } from '@/config/env.js'
 
 import * as walletService from '../services/wallet.js'
 import { serializeBigInt } from '../utils/serializers.js'
@@ -134,6 +142,53 @@ export class WalletController {
       return c.json(
         {
           error: 'Failed to get balance',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500,
+      )
+    }
+  }
+
+  async fundWallet(c: Context) {
+    try {
+      const validation = validateUserParams(c)
+      if (validation.error) return validation.error
+
+      const { userId } = validation.data
+      const faucetAdminWalletClient = createWalletClient({
+        chain: unichain,
+        transport: http(env.RPC_URL),
+        account: privateKeyToAccount(env.FAUCET_ADMIN_PRIVATE_KEY as Hex),
+      })
+
+      const publicClient = createPublicClient({
+        chain: unichain,
+        transport: http(env.RPC_URL),
+      })
+
+      const wallet = await walletService.getWallet(userId)
+      if (!wallet) {
+        return c.json({ error: 'Wallet not found' }, 404)
+      }
+
+      // TODO:make this an env var
+      const usdcAddress = '0x078D782b760474a361dDA0AF3839290b0EF57AD6'
+
+      const dripHash = await writeContract(faucetAdminWalletClient, {
+        account: faucetAdminWalletClient.account,
+        address: env.FAUCET_ADDRESS as Address,
+        abi: faucetAbi,
+        functionName: 'dripERC20',
+        // TODO: amount is hardcoded to 1000, we could also allow for a user to input the amount
+        args: [wallet.address, 1000n, usdcAddress as Address],
+      })
+      await publicClient.waitForTransactionReceipt({ hash: dripHash })
+
+      return c.json({ success: true })
+    } catch (error) {
+      return c.json(
+        {
+          error: 'Failed to fund wallet',
           message: error instanceof Error ? error.message : 'Unknown error',
         },
         500,

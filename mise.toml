@@ -1,6 +1,19 @@
 [tools]
 node = "20.11"
 
+# Foundry dependencies
+# Foundry is a special case because it supplies multiple binaries at the same
+# GitHub release, so we need to use the aliasing trick to get mise to not error
+# The git ref here should be on the `stable` branch.
+forge = "nightly-0dd4d3153764f4706c2c9857675e42dec64155a7"
+cast = "nightly-0dd4d3153764f4706c2c9857675e42dec64155a7"
+anvil = "nightly-0dd4d3153764f4706c2c9857675e42dec64155a7"
+
+[alias]
+forge = "ubi:foundry-rs/foundry[exe=forge]"
+cast = "ubi:foundry-rs/foundry[exe=cast]"
+anvil = "ubi:foundry-rs/foundry[exe=anvil]"
+
 [hooks]
 # Enabling corepack will install `pnpm`
 postinstall = "npx corepack enable"

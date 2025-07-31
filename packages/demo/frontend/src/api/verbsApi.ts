@@ -108,6 +108,12 @@ class VerbsApiClient {
       method: 'GET',
     })
   }
+
+  async fundWallet(userId: string): Promise<{ message: string }> {
+    return this.request(`/wallet/${userId}/fund`, {
+      method: 'POST',
+    })
+  }
 }
 
 export const verbsApi = new VerbsApiClient()
