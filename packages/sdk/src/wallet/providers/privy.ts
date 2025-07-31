@@ -101,16 +101,13 @@ export class WalletProviderPrivy implements WalletProvider {
     transactionData: TransactionData,
   ): Promise<Hash> {
     try {
-      // Convert hex value to number for Privy API
-      const valueNum = parseInt(transactionData.value.replace('0x', ''), 16)
-
       const response = await this.privy.walletApi.ethereum.sendTransaction({
         walletId,
         caip2: 'eip155:130', // Unichain
         transaction: {
           to: transactionData.to,
           data: transactionData.data as `0x${string}`,
-          value: valueNum,
+          value: Number(transactionData.value),
           chainId: 130, // Unichain
         },
       })
