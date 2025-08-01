@@ -216,4 +216,63 @@ ${wallet.address}`,
       )
     }
   }
+
+  async sendTokens(c: Context) {
+    try {
+      const { walletId, amount, recipientAddress } = await c.req.json()
+
+      // Validate required parameters
+      if (!walletId || typeof walletId !== 'string') {
+        return c.json(
+          {
+            error: 'Invalid parameters',
+            message: 'walletId is required and must be a string',
+          },
+          400,
+        )
+      }
+
+      if (!amount || typeof amount !== 'number' || amount <= 0) {
+        return c.json(
+          {
+            error: 'Invalid parameters',
+            message: 'amount is required and must be a positive number',
+          },
+          400,
+        )
+      }
+
+      if (!recipientAddress || typeof recipientAddress !== 'string') {
+        return c.json(
+          {
+            error: 'Invalid parameters',
+            message: 'recipientAddress is required and must be a string',
+          },
+          400,
+        )
+      }
+
+      const transactionData = await walletService.sendTokens(
+        walletId,
+        amount,
+        recipientAddress as Address,
+      )
+
+      return c.json({
+        transaction: {
+          to: transactionData.to,
+          value: transactionData.value,
+          data: transactionData.data,
+        },
+      })
+    } catch (error) {
+      return c.json(
+        {
+          error: 'Failed to send tokens',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500,
+      )
+    }
+  }
 }

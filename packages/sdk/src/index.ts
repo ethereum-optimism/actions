@@ -16,6 +16,7 @@ export type {
   MorphoLendConfig,
   PrivyWalletConfig,
   TokenBalance,
+  TransactionData,
   VerbsConfig,
   VerbsInterface,
   WalletConfig,

@@ -107,13 +107,13 @@ export type WalletVerbs = {
    */
   send(signedTransaction: string, publicClient: any): Promise<Hash>
   /**
-   * Transfer tokens to another address
-   * @param amount - Human-readable amount to transfer (e.g. 1.5)
+   * Send tokens to another address
+   * @param amount - Human-readable amount to send (e.g. 1.5)
    * @param asset - Asset symbol (e.g. 'usdc', 'eth') or token address
-   * @param recipientAddress - Address to transfer to
+   * @param recipientAddress - Address to send to
    * @returns Promise resolving to transaction data
    */
-  transfer(
+  sendTokens(
     amount: number,
     asset: AssetIdentifier,
     recipientAddress: Address,

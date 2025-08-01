@@ -29,8 +29,11 @@ interface PendingPrompt {
     | 'walletSelection'
     | 'walletFundSelection'
     | 'walletLendSelection'
+    | 'walletSendSelection'
+    | 'walletSendAmount'
+    | 'walletSendRecipient'
   message: string
-  data?: VaultData[] | WalletData[]
+  data?: VaultData[] | WalletData[] | { selectedWallet: WalletData; balance: number; amount?: number }
 }
 
 const HELP_CONTENT = `
@@ -46,6 +49,7 @@ Wallet commands:
   wallet lend    - Lend to Morpho vaults
   wallet balance - Show balance of wallet
   wallet fund    - Fund wallet
+  wallet send    - Send USDC to another address
 
 Future verbs (coming soon):
   fund          - Onramp to stables
@@ -188,6 +192,24 @@ const Terminal = () => {
           (pendingPrompt.data as WalletData[]) || [],
         )
         return
+      } else if (pendingPrompt.type === 'walletSendSelection') {
+        handleWalletSendSelection(
+          parseInt(trimmed),
+          (pendingPrompt.data as WalletData[]) || [],
+        )
+        return
+      } else if (pendingPrompt.type === 'walletSendAmount') {
+        handleWalletSendAmount(
+          parseFloat(trimmed),
+          pendingPrompt.data as { selectedWallet: WalletData; balance: number },
+        )
+        return
+      } else if (pendingPrompt.type === 'walletSendRecipient') {
+        handleWalletSendRecipient(
+          trimmed,
+          pendingPrompt.data as { selectedWallet: WalletData; balance: number; amount: number },
+        )
+        return
       }
     }
 
@@ -237,6 +259,11 @@ const Terminal = () => {
       case 'wallet fund': {
         setLines((prev) => [...prev, commandLine])
         handleWalletFundList()
+        return
+      }
+      case 'wallet send': {
+        setLines((prev) => [...prev, commandLine])
+        handleWalletSendList()
         return
       }
       case 'wallet lend': {
@@ -835,6 +862,253 @@ Select a wallet:`
         content: `Failed to load wallets: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
+  const handleWalletSendList = async () => {
+    const loadingLine: TerminalLine = {
+      id: `loading-${Date.now()}`,
+      type: 'output',
+      content: 'Loading wallets...',
+      timestamp: new Date(),
+    }
+
+    setLines((prev) => [...prev, loadingLine])
+
+    try {
+      const result = await getAllWallets()
+
+      if (result.wallets.length === 0) {
+        const emptyLine: TerminalLine = {
+          id: `empty-${Date.now()}`,
+          type: 'error',
+          content: 'No wallets available. Create one with "wallet create".',
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev.slice(0, -1), emptyLine])
+        return
+      }
+
+      // Get balances for all wallets
+      const walletsWithBalances = await Promise.all(
+        result.wallets.map(async (wallet) => {
+          try {
+            const balanceResult = await verbsApi.getWalletBalance(wallet.id)
+            const usdcToken = balanceResult.balance.find(token => token.symbol === 'USDC')
+            const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) : 0
+            return {
+              ...wallet,
+              usdcBalance
+            }
+          } catch {
+            return {
+              ...wallet,
+              usdcBalance: 0,
+            }
+          }
+        })
+      )
+
+      // Filter wallets with USDC > 0 and sort by balance (highest first)
+      const walletsWithUSDC = walletsWithBalances
+        .filter(wallet => wallet.usdcBalance > 0)
+        .sort((a, b) => b.usdcBalance - a.usdcBalance)
+
+      if (walletsWithUSDC.length === 0) {
+        const noBalanceLine: TerminalLine = {
+          id: `no-balance-${Date.now()}`,
+          type: 'error',
+          content: 'No wallets have a USDC balance. Fund a wallet first.',
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev.slice(0, -1), noBalanceLine])
+        return
+      }
+
+      // Create wallet options list
+      const walletOptions = walletsWithUSDC
+        .map((wallet, index) => 
+          `${index + 1}. ${shortenAddress(wallet.address)} - ${wallet.usdcBalance} USDC`
+        )
+        .join('\\n')
+
+      const walletSelectionLine: TerminalLine = {
+        id: `wallet-send-selection-${Date.now()}`,
+        type: 'output',
+        content: `Select wallet to send from:\\n\\n${walletOptions}\\n\\nEnter wallet number:`,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev.slice(0, -1), walletSelectionLine])
+      setPendingPrompt({
+        type: 'walletSendSelection',
+        message: '',
+        data: walletsWithUSDC.map((w) => ({ id: w.id, address: w.address })),
+      })
+    } catch (error) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to load wallets: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
+  const handleWalletSendSelection = async (
+    selection: number,
+    wallets: WalletData[],
+  ) => {
+    setPendingPrompt(null)
+
+    if (isNaN(selection) || selection < 1 || selection > wallets.length) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Invalid selection. Please enter a number between 1 and ${wallets.length}.`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    const selectedWallet = wallets[selection - 1]
+
+    const loadingLine: TerminalLine = {
+      id: `loading-${Date.now()}`,
+      type: 'output',
+      content: 'Loading wallet balance...',
+      timestamp: new Date(),
+    }
+
+    setLines((prev) => [...prev, loadingLine])
+
+    try {
+      const result = await verbsApi.getWalletBalance(selectedWallet.id)
+      const usdcToken = result.balance.find(token => token.symbol === 'USDC')
+      const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) : 0
+
+      const balanceInfoLine: TerminalLine = {
+        id: `balance-info-${Date.now()}`,
+        type: 'success',
+        content: `Wallet ${shortenAddress(selectedWallet.address)} has ${usdcBalance} USDC available.\\n\\nEnter amount to send:`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), balanceInfoLine])
+
+      setPendingPrompt({
+        type: 'walletSendAmount',
+        message: '',
+        data: { selectedWallet, balance: usdcBalance },
+      })
+    } catch (error) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to fetch wallet balance: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
+  const handleWalletSendAmount = async (
+    amount: number,
+    data: { selectedWallet: WalletData; balance: number },
+  ) => {
+    setPendingPrompt(null)
+
+    if (isNaN(amount) || amount <= 0) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: 'Invalid amount. Please enter a positive number.',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    if (amount > data.balance) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Insufficient balance. Available: ${data.balance} USDC`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    const amountConfirmLine: TerminalLine = {
+      id: `amount-confirm-${Date.now()}`,
+      type: 'output',
+      content: `Sending ${amount} USDC from ${shortenAddress(data.selectedWallet.address)}.\\n\\nEnter recipient address:`,
+      timestamp: new Date(),
+    }
+    setLines((prev) => [...prev, amountConfirmLine])
+
+    setPendingPrompt({
+      type: 'walletSendRecipient',
+      message: '',
+      data: { ...data, amount },
+    })
+  }
+
+  const handleWalletSendRecipient = async (
+    recipientAddress: string,
+    data: { selectedWallet: WalletData; balance: number; amount: number },
+  ) => {
+    setPendingPrompt(null)
+
+    // Basic address validation
+    if (!recipientAddress || !recipientAddress.startsWith('0x') || recipientAddress.length !== 42) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: 'Invalid address. Please enter a valid Ethereum address (0x...).',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    const sendingLine: TerminalLine = {
+      id: `sending-${Date.now()}`,
+      type: 'output',
+      content: `Sending ${data.amount} USDC to ${shortenAddress(recipientAddress)}...`,
+      timestamp: new Date(),
+    }
+
+    setLines((prev) => [...prev, sendingLine])
+
+    try {
+      const result = await verbsApi.sendTokens(
+        data.selectedWallet.id,
+        data.amount,
+        recipientAddress,
+      )
+
+      const successLine: TerminalLine = {
+        id: `send-success-${Date.now()}`,
+        type: 'success',
+        content: `Transaction created successfully!\\n\\nTo: ${result.transaction.to}\\nValue: ${result.transaction.value}\\nData: ${result.transaction.data.slice(0, 20)}...\\n\\nTransaction ready to be signed and sent.`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), successLine])
+    } catch (error) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), errorLine])

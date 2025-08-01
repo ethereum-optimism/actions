@@ -1,8 +1,10 @@
 import type {
   GetAllWalletsOptions,
   TokenBalance,
+  TransactionData,
   WalletInterface,
 } from '@eth-optimism/verbs-sdk'
+import type { Address } from 'viem'
 
 import { getVerbs } from '../config/verbs.js'
 
@@ -41,4 +43,17 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
     throw new Error('Wallet not found')
   }
   return wallet.getBalance()
+}
+
+export async function sendTokens(
+  walletId: string,
+  amount: number,
+  recipientAddress: Address,
+): Promise<TransactionData> {
+  const wallet = await getWallet(walletId)
+  if (!wallet) {
+    throw new Error('Wallet not found')
+  }
+
+  return wallet.sendTokens(amount, 'usdc', recipientAddress)
 }

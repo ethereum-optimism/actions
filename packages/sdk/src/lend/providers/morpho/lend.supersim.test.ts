@@ -200,7 +200,10 @@ describe('Morpho Lend', () => {
       })
       console.log(`Estimated gas for approval: ${gasEstimate}`)
 
-      const signedApproval = await testWallet!.signOnly(approvalTx, currentNonce)
+      const signedApproval = await testWallet!.signOnly(
+        approvalTx,
+        currentNonce,
+      )
       console.log(`Signed approval tx`)
       expect(signedApproval).toBeDefined()
 
@@ -235,7 +238,10 @@ describe('Morpho Lend', () => {
     // Test signing the deposit transaction using wallet.signOnly()
     try {
       // Use incremented nonce for the deposit transaction
-      const signedDeposit = await testWallet!.signOnly(depositTx, currentNonce + 1)
+      const signedDeposit = await testWallet!.signOnly(
+        depositTx,
+        currentNonce + 1,
+      )
       console.log(`Signed deposit tx`)
       expect(signedDeposit).toBeDefined()
 

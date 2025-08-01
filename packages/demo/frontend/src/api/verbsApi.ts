@@ -114,6 +114,27 @@ class VerbsApiClient {
       method: 'POST',
     })
   }
+
+  async sendTokens(
+    walletId: string,
+    amount: number,
+    recipientAddress: string,
+  ): Promise<{
+    transaction: {
+      to: string
+      value: string
+      data: string
+    }
+  }> {
+    return this.request('/wallet/send', {
+      method: 'POST',
+      body: JSON.stringify({
+        walletId,
+        amount,
+        recipientAddress,
+      }),
+    })
+  }
 }
 
 export const verbsApi = new VerbsApiClient()
