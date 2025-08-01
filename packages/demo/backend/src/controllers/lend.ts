@@ -13,6 +13,13 @@ export class LendController {
           name: vault.name,
           apy: vault.apy,
           asset: vault.asset,
+          apyBreakdown: vault.apyBreakdown,
+          totalAssets: vault.totalAssets.toString(),
+          totalShares: vault.totalShares.toString(),
+          fee: vault.fee,
+          owner: vault.owner,
+          curator: vault.curator,
+          lastUpdate: vault.lastUpdate,
         })),
       })
     } catch (error) {

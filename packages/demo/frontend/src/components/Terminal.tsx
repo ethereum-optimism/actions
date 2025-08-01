@@ -19,6 +19,21 @@ interface VaultData {
   name: string
   apy: number
   asset: string
+  apyBreakdown: {
+    nativeApy: number
+    totalRewardsApr: number
+    usdc?: number
+    morpho?: number
+    other?: number
+    performanceFee: number
+    netApy: number
+  }
+  totalAssets: string
+  totalShares: string
+  fee: number
+  owner: string
+  curator: string
+  lastUpdate: number
 }
 
 interface PendingPrompt {
@@ -348,47 +363,37 @@ User ID: ${result.userId}`,
 
 
 
-  const handleLendVaultSelection = async (vaults: VaultData[]) => {
+  const handleLendVaultSelection = (vaults: VaultData[]) => {
     // Always select the first vault (default)
     const selectedVault = vaults[0]
-
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
-      type: 'output',
-      content: 'Loading vault information...',
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, loadingLine])
     setPendingPrompt(null)
 
-    try {
-      const result = await verbsApi.getVault(selectedVault.address)
-      const vault = result.vault
+    // Use the vault data we already have instead of making another API call
+    const vault = selectedVault
 
-      const nameValue = vault.name
-      const netApyValue = `${(vault.apy * 100).toFixed(2)}%`
-      const totalAssetsValue = `$${(parseFloat(vault.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      const feeValue = `${(vault.fee * 100).toFixed(1)}%`
-      const managerValue = 'Gauntlet'
+    const nameValue = vault.name
+    const netApyValue = `${(vault.apy * 100).toFixed(2)}%`
+    const totalAssetsValue = `$${(parseFloat(vault.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    const feeValue = `${(vault.fee * 100).toFixed(1)}%`
+    const managerValue = 'Gauntlet'
 
-      // APY breakdown values
-      const nativeApyValue = vault.apyBreakdown
-        ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%`
+    // APY breakdown values
+    const nativeApyValue = vault.apyBreakdown
+      ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%`
+      : 'N/A'
+    const usdcRewardsValue =
+      vault.apyBreakdown && vault.apyBreakdown.usdc !== undefined
+        ? `${(vault.apyBreakdown.usdc * 100).toFixed(2)}%`
         : 'N/A'
-      const usdcRewardsValue =
-        vault.apyBreakdown && vault.apyBreakdown.usdc !== undefined
-          ? `${(vault.apyBreakdown.usdc * 100).toFixed(2)}%`
-          : 'N/A'
-      const morphoRewardsValue =
-        vault.apyBreakdown && vault.apyBreakdown.morpho !== undefined
-          ? `${(vault.apyBreakdown.morpho * 100).toFixed(2)}%`
-          : 'N/A'
-      const feeImpactValue = vault.apyBreakdown
-        ? `${(vault.apyBreakdown.nativeApy * vault.apyBreakdown.performanceFee * 100).toFixed(2)}%`
+    const morphoRewardsValue =
+      vault.apyBreakdown && vault.apyBreakdown.morpho !== undefined
+        ? `${(vault.apyBreakdown.morpho * 100).toFixed(2)}%`
         : 'N/A'
+    const feeImpactValue = vault.apyBreakdown
+      ? `${(vault.apyBreakdown.nativeApy * vault.apyBreakdown.performanceFee * 100).toFixed(2)}%`
+      : 'N/A'
 
-      const vaultInfoTable = `
+    const vaultInfoTable = `
 ┌──────────────────────────────────────────┐
 │          VAULT INFORMATION               │
 ├──────────────────────────────────────────┤
@@ -406,34 +411,23 @@ User ID: ${result.userId}`,
 │ Manager:           ${managerValue.padEnd(21)} │
 └──────────────────────────────────────────┘`
 
-      const vaultInfoLine: TerminalLine = {
-        id: `vault-info-${Date.now()}`,
-        type: 'success',
-        content: vaultInfoTable,
-        timestamp: new Date(),
-      }
-
-      setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
-
-      // Show final success message since we already have the selected wallet
-      const successLine: TerminalLine = {
-        id: `lend-success-${Date.now()}`,
-        type: 'success',
-        content: `Selected vault ${vault.name} for wallet ${shortenAddress(selectedWallet!.address)}. Lending functionality coming soon!`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, successLine])
-    } catch (error) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Failed to load vault information: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    const vaultInfoLine: TerminalLine = {
+      id: `vault-info-${Date.now()}`,
+      type: 'success',
+      content: vaultInfoTable,
+      timestamp: new Date(),
     }
+
+    setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
+
+    // Show final success message since we already have the selected wallet
+    const successLine: TerminalLine = {
+      id: `lend-success-${Date.now()}`,
+      type: 'success',
+      content: `Selected vault ${vault.name} for wallet ${shortenAddress(selectedWallet!.address)}. Lending functionality coming soon!`,
+      timestamp: new Date(),
+    }
+    setLines((prev) => [...prev, successLine])
   }
 
   const handleWalletSelect = async () => {
