@@ -24,7 +24,31 @@ pnpm install
 
 ### Setup
 
-// TODO: add step to copy .env.example files, fetch, and set Privy keys
+1. **Init env vars**
+
+   Copy all example environment files to create local configuration:
+
+   ```bash
+   cp packages/demo/backend/.env.example packages/demo/backend/.env
+   cp packages/demo/frontend/.env.example packages/demo/frontend/.env
+   cp packages/sdk/.env.test.local.example packages/sdk/.env.test.local
+   ```
+
+2. **Configure Providers**
+
+   Create a Privy account at [privy.io](https://privy.io) and update the environment files:
+
+   ```bash
+   # Edit packages/demo/backend/.env
+   PRIVY_APP_ID=your_privy_app_id_here
+   PRIVY_APP_SECRET=your_privy_app_secret_here
+
+   # Optionally, for SDK tests: Edit packages/sdk/.env.test.local
+   PRIVY_APP_ID=your_privy_app_id_here
+   PRIVY_APP_SECRET=your_privy_app_secret_here
+   ```
+
+   The remaining environment variables are pre-configured for local development.
 
 ### Quick Start (Recommended)
 
