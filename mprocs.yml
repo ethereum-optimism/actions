@@ -1,7 +1,10 @@
 procs:
+  sdk:
+    cwd: packages/sdk
+    shell: pnpm build
   supersim:
     cwd: .
-    shell: pnpm dev:supersim
+    shell: rm -f ./latest-faucet-deployment.json && pnpm dev:supersim
   supersim-chain-901:
     cwd: supersim-logs
     shell: pnpm wait-port http://:8420/ready && tail -f anvil-130.log
@@ -10,7 +13,7 @@ procs:
     shell: pnpm dev
   backend:
     cwd: packages/demo/backend
-    shell: pnpm dev
+    shell: pnpm wait-port http://:8420/ready && while [ ! -f ../../../latest-faucet-deployment.json ]; do sleep 1; done && pnpm dev:local
   deploy-contracts:
     cwd: packages/demo/contracts
-    shell: pnpm wait-port http://:8420/ready && pnpm deploy:fund:faucet
+    shell: pnpm wait-port http://:8420/ready && pnpm deploy:impersonate:fund:faucet

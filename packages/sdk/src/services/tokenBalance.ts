@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { erc20Abi } from 'viem'
+import { erc20Abi, formatEther, formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -7,9 +7,40 @@ import { getTokenAddress, type TokenInfo } from '@/supported/tokens.js'
 import type { TokenBalance } from '@/types/token.js'
 
 /**
+ * Fetch ETH balance across all supported chains
+ * @param chainManager - The chain manager
+ * @param walletAddress - The wallet address
+ * @returns Promise resolving to array of ETH balances
+ */
+export async function fetchETHBalance(
+  chainManager: ChainManager,
+  walletAddress: Address,
+): Promise<TokenBalance> {
+  const supportedChains = chainManager.getSupportedChains()
+  const chainBalancePromises = supportedChains.map(async (chainId) => {
+    const publicClient = chainManager.getPublicClient(chainId)
+    const balance = await publicClient.getBalance({
+      address: walletAddress,
+    })
+    return { chainId, balance, formattedBalance: formatEther(balance) }
+  })
+  const chainBalances = await Promise.all(chainBalancePromises)
+  const totalBalance = chainBalances.reduce(
+    (total, { balance }) => total + balance,
+    0n,
+  )
+  return {
+    symbol: 'ETH',
+    totalBalance,
+    totalFormattedBalance: formatEther(totalBalance),
+    chainBalances,
+  }
+}
+
+/**
  * Fetch total balance for this token across all supported chains
  */
-export async function fetchBalance(
+export async function fetchERC20Balance(
   chainManager: ChainManager,
   walletAddress: Address,
   token: TokenInfo,
@@ -20,13 +51,17 @@ export async function fetchBalance(
   )
 
   const chainBalancePromises = chainsWithToken.map(async (chainId) => {
-    const balance = await fetchBalanceForChain(
+    const balance = await fetchERC20BalanceForChain(
       token,
       chainId,
       walletAddress,
       chainManager,
     )
-    return { chainId, balance }
+    return {
+      chainId,
+      balance,
+      formattedBalance: formatUnits(balance, token.decimals),
+    }
   })
 
   const chainBalances = await Promise.all(chainBalancePromises)
@@ -38,6 +73,7 @@ export async function fetchBalance(
   return {
     symbol: token.symbol,
     totalBalance,
+    totalFormattedBalance: formatUnits(totalBalance, token.decimals),
     chainBalances,
   }
 }
@@ -45,7 +81,7 @@ export async function fetchBalance(
 /**
  * Fetch balance for this token on a specific chain
  */
-async function fetchBalanceForChain(
+async function fetchERC20BalanceForChain(
   token: TokenInfo,
   chainId: SupportedChainId,
   walletAddress: Address,

@@ -7,6 +7,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 export interface MockChainManagerConfig {
   supportedChains: SupportedChainId[]
   defaultBalance: bigint
+  defaultETHBalance: bigint
 }
 
 /**
@@ -26,6 +27,7 @@ export class MockChainManager {
     this.config = {
       supportedChains: config?.supportedChains ?? [unichain.id],
       defaultBalance: config?.defaultBalance ?? 1000000n,
+      defaultETHBalance: config?.defaultETHBalance ?? 1000000000n,
     }
 
     this.publicClients = this.createMockPublicClients()
@@ -47,6 +49,15 @@ export class MockChainManager {
       })
   }
 
+  reset(): void {
+    vi.clearAllMocks()
+    this.publicClients.forEach((client) => {
+      vi.mocked(client.readContract).mockResolvedValue(
+        this.config.defaultBalance,
+      )
+    })
+  }
+
   private createMockPublicClients(): Map<SupportedChainId, PublicClient> {
     const clients = new Map<SupportedChainId, PublicClient>()
 
@@ -65,14 +76,5 @@ export class MockChainManager {
     }
 
     return clients
-  }
-
-  reset(): void {
-    vi.clearAllMocks()
-    this.publicClients.forEach((client) => {
-      vi.mocked(client.readContract).mockResolvedValue(
-        this.config.defaultBalance,
-      )
-    })
   }
 }

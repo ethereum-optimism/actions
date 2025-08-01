@@ -12,6 +12,8 @@ This monorepo contains the following packages:
 
 - [`packages/demo/backend`](./packages/demo/backend) - A hono service demonstrating the Verbs SDK in a backend environment.
 
+- [`packages/demo/contracts`](./packages/demo/contracts) - Demo smart contracts including a Faucet contract with deployment and funding scripts for local development.
+
 ## Setup
 
 ```bash
@@ -20,41 +22,26 @@ pnpm install
 
 ## Demo
 
-1. Start a local blockchain (Unichain fork recommended):
+### Setup
+
+// TODO: add step to copy .env.example files, fetch, and set Privy keys
+
+### Quick Start (Recommended)
+
+While each component of the repo can be run independently, start the complete demo environment in one command:
 
 ```bash
-anvil --fork-url https://sepolia.unichain.org
+pnpm dev
 ```
 
-2. In a new terminal, deploy and fund the faucet contract:
+This uses `mprocs` to orchestrate multiple processes:
 
-```bash
-cd packages/demo/contracts
-pnpm deploy:fund:faucet
-```
+- **Supersim**: Starts a local Ethereum L2 development environment
+- **Contract Deployment**: Deploys and funds the demo faucet contract
+- **Backend**: Starts the Verbs SDK backend service
+- **Frontend**: Starts the React web application
 
-3. Run the backend [setup steps](./packages/demo/backend/README.md).
-
-4. Run the backend:
-
-```bash
-cd packages/demo/backend
-pnpm install && pnpm dev
-```
-
-5. Open another terminal and run the frontend:
-
-```bash
-cd packages/demo/frontend
-pnpm install && pnpm dev
-```
-
-## Development
-
-```bash
-pnpm build        # Build all packages (includes type checking)
-pnpm lint         # Lint all packages
-```
+The demo will be available at `http://localhost:5173` once all services are running.
 
 ## License
 

@@ -1,10 +1,11 @@
 import { type Address, encodeFunctionData, erc20Abi, type Hash } from 'viem'
 import { unichain } from 'viem/chains'
 
-import { fetchBalance } from '@/services/tokenBalance.js'
+import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type {
   LendOptions,
+  LendProvider,
   LendTransaction,
   TransactionData,
 } from '@/types/lend.js'
@@ -25,6 +26,7 @@ import {
 export class Wallet implements WalletInterface {
   id: string
   address!: Address
+  private lendProvider?: LendProvider
   private initialized: boolean = false
   private verbs: VerbsInterface
   private walletProvider: any // Store reference to wallet provider for signing
@@ -56,12 +58,15 @@ export class Wallet implements WalletInterface {
 
     const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
       async (token) => {
-        // Access ChainManager through Verbs
-        return fetchBalance(this.verbs.chainManager, this.address, token)
+        return fetchERC20Balance(this.verbs.chainManager, this.address, token)
       },
     )
+    const ethBalancePromise = fetchETHBalance(
+      this.verbs.chainManager,
+      this.address,
+    )
 
-    return Promise.all(tokenBalancePromises)
+    return Promise.all([ethBalancePromise, ...tokenBalancePromises])
   }
 
   /**
