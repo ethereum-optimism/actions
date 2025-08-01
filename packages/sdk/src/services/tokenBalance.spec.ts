@@ -6,7 +6,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { TokenInfo } from '@/supported/tokens.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 
-import { fetchBalance } from './tokenBalance.js'
+import { fetchERC20Balance, fetchETHBalance } from './tokenBalance.js'
 
 describe('TokenBalance', () => {
   let chainManager: ChainManager
@@ -31,15 +31,21 @@ describe('TokenBalance', () => {
 
   describe('fetchBalance', () => {
     it('should fetch token balance across supported chains', async () => {
-      const balance = await fetchBalance(chainManager, walletAddress, mockToken)
+      const balance = await fetchERC20Balance(
+        chainManager,
+        walletAddress,
+        mockToken,
+      )
 
       expect(balance).toEqual({
         symbol: 'USDC',
         totalBalance: 1000000n,
+        totalFormattedBalance: '1',
         chainBalances: [
           {
             chainId: unichain.id,
             balance: 1000000n,
+            formattedBalance: '1',
           },
         ],
       })
@@ -55,7 +61,7 @@ describe('TokenBalance', () => {
         } as any,
       }
 
-      const balance = await fetchBalance(
+      const balance = await fetchERC20Balance(
         chainManager,
         walletAddress,
         unsupportedToken,
@@ -64,7 +70,27 @@ describe('TokenBalance', () => {
       expect(balance).toEqual({
         symbol: 'UNSUPPORTED',
         totalBalance: 0n,
+        totalFormattedBalance: '0',
         chainBalances: [],
+      })
+    })
+  })
+
+  describe('fetchETHBalance', () => {
+    it('should fetch ETH balance across supported chains', async () => {
+      const balance = await fetchETHBalance(chainManager, walletAddress)
+
+      expect(balance).toEqual({
+        symbol: 'ETH',
+        totalBalance: 1000000000n,
+        totalFormattedBalance: '0.000000001',
+        chainBalances: [
+          {
+            chainId: unichain.id,
+            balance: 1000000000n,
+            formattedBalance: '0.000000001',
+          },
+        ],
       })
     })
   })
