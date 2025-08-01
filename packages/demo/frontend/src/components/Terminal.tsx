@@ -26,12 +26,10 @@ interface PendingPrompt {
     | 'userId'
     | 'lendProvider'
     | 'lendVault'
-    | 'walletSelection'
-    | 'walletFundSelection'
-    | 'walletLendSelection'
     | 'walletSendSelection'
     | 'walletSendAmount'
     | 'walletSendRecipient'
+    | 'walletSelectSelection'
   message: string
   data?: VaultData[] | WalletData[] | { selectedWallet: WalletData; balance: number; amount?: number }
 }
@@ -45,10 +43,10 @@ Console commands:
 
 Wallet commands:
   wallet create  - Create a new wallet
-  wallet list    - List all wallets
+  wallet select  - Select a wallet to use for commands
   wallet lend    - Lend to Morpho vaults
-  wallet balance - Show balance of wallet
-  wallet fund    - Fund wallet
+  wallet balance - Show balance of selected wallet
+  wallet fund    - Fund selected wallet
   wallet send    - Send USDC to another address
 
 Future verbs (coming soon):
@@ -64,6 +62,7 @@ const Terminal = () => {
   const [commandHistory, setCommandHistory] = useState<string[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
+  const [selectedWallet, setSelectedWallet] = useState<WalletData | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
 
@@ -174,24 +173,6 @@ const Terminal = () => {
       } else if (pendingPrompt.type === 'lendVault') {
         handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
         return
-      } else if (pendingPrompt.type === 'walletSelection') {
-        handleWalletSelection(
-          parseInt(trimmed),
-          (pendingPrompt.data as WalletData[]) || [],
-        )
-        return
-      } else if (pendingPrompt.type === 'walletFundSelection') {
-        handleWalletFundSelection(
-          parseInt(trimmed),
-          (pendingPrompt.data as WalletData[]) || [],
-        )
-        return
-      } else if (pendingPrompt.type === 'walletLendSelection') {
-        handleWalletLendSelectionChoice(
-          parseInt(trimmed),
-          (pendingPrompt.data as WalletData[]) || [],
-        )
-        return
       } else if (pendingPrompt.type === 'walletSendSelection') {
         handleWalletSendSelection(
           parseInt(trimmed),
@@ -208,6 +189,12 @@ const Terminal = () => {
         handleWalletSendRecipient(
           trimmed,
           pendingPrompt.data as { selectedWallet: WalletData; balance: number; amount: number },
+        )
+        return
+      } else if (pendingPrompt.type === 'walletSelectSelection') {
+        handleWalletSelectSelection(
+          parseInt(trimmed),
+          (pendingPrompt.data as WalletData[]) || [],
         )
         return
       }
@@ -247,18 +234,18 @@ const Terminal = () => {
         })
         setLines((prev) => [...prev, commandLine])
         return
-      case 'wallet list':
+      case 'wallet select':
         setLines((prev) => [...prev, commandLine])
-        handleWalletList()
+        handleWalletSelect()
         return
       case 'wallet balance': {
         setLines((prev) => [...prev, commandLine])
-        handleWalletBalanceList()
+        handleWalletBalance()
         return
       }
       case 'wallet fund': {
         setLines((prev) => [...prev, commandLine])
-        handleWalletFundList()
+        handleWalletFund()
         return
       }
       case 'wallet send': {
@@ -268,22 +255,7 @@ const Terminal = () => {
       }
       case 'wallet lend': {
         setLines((prev) => [...prev, commandLine])
-        // Show provider selection immediately
-        const providerSelectionLine: TerminalLine = {
-          id: `provider-selection-${Date.now()}`,
-          type: 'output',
-          content: `Select a Lend provider:
-
-> Morpho
-
-[Enter] to select`,
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev, providerSelectionLine])
-        setPendingPrompt({
-          type: 'lendProvider',
-          message: '',
-        })
+        handleWalletLend()
         return
       }
       case 'status':
@@ -378,57 +350,6 @@ User ID: ${result.userId}`,
     }
   }
 
-  const handleWalletList = async () => {
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
-      type: 'output',
-      content: 'Fetching wallets...',
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, loadingLine])
-
-    try {
-      const result = await getAllWallets()
-
-      if (result.wallets.length === 0) {
-        const emptyLine: TerminalLine = {
-          id: `empty-${Date.now()}`,
-          type: 'output',
-          content: 'No wallets found. Create one with "wallet create".',
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), emptyLine])
-        return
-      }
-
-      const walletList = result.wallets
-        .map((wallet, index) => `${index + 1}. ${wallet.address}`)
-        .join('\n')
-
-      const successLine: TerminalLine = {
-        id: `success-${Date.now()}`,
-        type: 'success',
-        content: `Found ${result.count} wallet(s):
-
-${walletList}`,
-        timestamp: new Date(),
-      }
-
-      setLines((prev) => [...prev.slice(0, -1), successLine])
-    } catch (error) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Failed to fetch wallets: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-        timestamp: new Date(),
-      }
-
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
-    }
-  }
 
   const handleLendProviderSelection = async () => {
     const loadingLine: TerminalLine = {
@@ -548,9 +469,7 @@ ${vaultOptions}
 │ Total Assets:      ${totalAssetsValue.padEnd(21)} │
 │ Management Fee:    ${feeValue.padEnd(21)} │
 │ Manager:           ${managerValue.padEnd(21)} │
-└──────────────────────────────────────────┘
-
-Select a wallet:`
+└──────────────────────────────────────────┘`
 
       const vaultInfoLine: TerminalLine = {
         id: `vault-info-${Date.now()}`,
@@ -561,16 +480,14 @@ Select a wallet:`
 
       setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
 
-      // Now load wallet balances
-      const loadingBalancesLine: TerminalLine = {
-        id: `loading-balances-${Date.now()}`,
-        type: 'output',
-        content: 'Loading wallet balances...',
+      // Show final success message since we already have the selected wallet
+      const successLine: TerminalLine = {
+        id: `lend-success-${Date.now()}`,
+        type: 'success',
+        content: `Selected vault ${vault.name} for wallet ${shortenAddress(selectedWallet!.address)}. Lending functionality coming soon!`,
         timestamp: new Date(),
       }
-
-      setLines((prev) => [...prev, loadingBalancesLine])
-      handleWalletLendSelection()
+      setLines((prev) => [...prev, successLine])
     } catch (error) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
@@ -584,12 +501,20 @@ Select a wallet:`
     }
   }
 
-  const handleWalletLendSelection = async () => {
+  const handleWalletSelect = async () => {
+    const loadingLine: TerminalLine = {
+      id: `loading-${Date.now()}`,
+      type: 'output',
+      content: 'Loading wallets...',
+      timestamp: new Date(),
+    }
+
+    setLines((prev) => [...prev, loadingLine])
+
     try {
-      // Get all wallets
-      const walletsResult = await getAllWallets()
-      
-      if (walletsResult.wallets.length === 0) {
+      const result = await getAllWallets()
+
+      if (result.wallets.length === 0) {
         const emptyLine: TerminalLine = {
           id: `empty-${Date.now()}`,
           type: 'error',
@@ -600,67 +525,33 @@ Select a wallet:`
         return
       }
 
-      // Get balances for all wallets
-      const walletsWithBalances = await Promise.all(
-        walletsResult.wallets.map(async (wallet) => {
-          try {
-            const balanceResult = await verbsApi.getWalletBalance(wallet.id)
-            const usdcToken = balanceResult.balance.find(token => token.symbol === 'USDC')
-            const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) : 0
-            return {
-              ...wallet,
-              usdcBalance
-            }
-          } catch {
-            return {
-              ...wallet,
-              usdcBalance: 0,
-            }
-          }
+      const walletOptions = result.wallets
+        .map((wallet, index) => {
+          const num = index + 1
+          const numStr = num < 10 ? ` ${num}` : `${num}`
+          const addressDisplay = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
+          return `${numStr}. ${addressDisplay}${selectedWallet?.id === wallet.id ? ' (selected)' : ''}`
         })
-      )
-
-      // Filter wallets with USDC > 0 and sort by balance (highest first)
-      const walletsWithUSDC = walletsWithBalances
-        .filter(wallet => wallet.usdcBalance > 0)
-        .sort((a, b) => b.usdcBalance - a.usdcBalance)
-
-      if (walletsWithUSDC.length === 0) {
-        const noBalanceLine: TerminalLine = {
-          id: `no-balance-${Date.now()}`,
-          type: 'error',
-          content: 'No wallets have a USDC balance',
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), noBalanceLine])
-        return
-      }
-
-      // Create wallet options list
-      const walletOptions = walletsWithUSDC
-        .map((wallet, index) => 
-          `${index + 1}. ${shortenAddress(wallet.address)} - ${wallet.usdcBalance} USDC`
-        )
         .join('\n')
 
       const walletSelectionLine: TerminalLine = {
-        id: `wallet-lend-selection-${Date.now()}`,
+        id: `wallet-select-${Date.now()}`,
         type: 'output',
-        content: `${walletOptions}\n\nEnter wallet number:`,
+        content: `Select a wallet:\n\n${walletOptions}\n\nEnter wallet number:`,
         timestamp: new Date(),
       }
 
       setLines((prev) => [...prev.slice(0, -1), walletSelectionLine])
       setPendingPrompt({
-        type: 'walletLendSelection',
+        type: 'walletSelectSelection',
         message: '',
-        data: walletsWithUSDC.map((w) => ({ id: w.id, address: w.address })),
+        data: result.wallets,
       })
     } catch (error) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
-        content: `Failed to load wallet balances: ${
+        content: `Failed to load wallets: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
         timestamp: new Date(),
@@ -669,7 +560,7 @@ Select a wallet:`
     }
   }
 
-  const handleWalletLendSelectionChoice = async (
+  const handleWalletSelectSelection = async (
     selection: number,
     wallets: WalletData[],
   ) => {
@@ -686,35 +577,29 @@ Select a wallet:`
       return
     }
 
-    const selectedWallet = wallets[selection - 1]
+    const selectedWalletData = wallets[selection - 1]
+    setSelectedWallet(selectedWalletData)
 
     const successLine: TerminalLine = {
-      id: `lend-success-${Date.now()}`,
+      id: `select-success-${Date.now()}`,
       type: 'success',
-      content: `Selected wallet ${shortenAddress(selectedWallet.address)} for lending. Lending functionality coming soon!`,
+      content: `Wallet selected:\n${selectedWalletData.address}`,
       timestamp: new Date(),
     }
     setLines((prev) => [...prev, successLine])
   }
 
-  const handleWalletSelection = async (
-    selection: number,
-    wallets: WalletData[],
-  ) => {
-    setPendingPrompt(null)
-
-    if (isNaN(selection) || selection < 1 || selection > wallets.length) {
+  const handleWalletBalance = async () => {
+    if (!selectedWallet) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
-        content: `Invalid selection. Please enter a number between 1 and ${wallets.length}.`,
+        content: 'No wallet selected. Use "wallet select" to choose a wallet first.',
         timestamp: new Date(),
       }
       setLines((prev) => [...prev, errorLine])
       return
     }
-
-    const selectedWallet = wallets[selection - 1]
 
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
@@ -733,12 +618,14 @@ Select a wallet:`
         (token) => token.symbol === 'ETH' || token.symbol === 'USDC'
       )
 
-      const balanceText =
-        filteredBalances.length > 0
-          ? filteredBalances
-              .map((token) => `${token.symbol}: ${token.totalBalance}`)
-              .join('\n')
-          : 'No ETH or USDC balances found'
+      // Ensure both ETH and USDC are shown, even if not in response
+      const ethBalance = filteredBalances.find(token => token.symbol === 'ETH')
+      const usdcBalance = filteredBalances.find(token => token.symbol === 'USDC')
+      
+      const balanceText = [
+        `ETH: ${ethBalance ? ethBalance.totalBalance : '0'}`,
+        `USDC: ${usdcBalance ? usdcBalance.totalBalance : '0'}`
+      ].join('\n')
 
       const successLine: TerminalLine = {
         id: `success-${Date.now()}`,
@@ -760,111 +647,129 @@ Select a wallet:`
     }
   }
 
-  const handleWalletBalanceList = async () => {
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
+  const handleWalletFund = async () => {
+    if (!selectedWallet) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: 'No wallet selected. Use "wallet select" to choose a wallet first.',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    const fundingLine: TerminalLine = {
+      id: `funding-${Date.now()}`,
       type: 'output',
-      content: 'Loading wallets...',
+      content: 'Funding wallet with tokens...',
       timestamp: new Date(),
     }
 
-    setLines((prev) => [...prev, loadingLine])
+    setLines((prev) => [...prev, fundingLine])
 
     try {
-      const result = await getAllWallets()
+      // First fund the wallet
+      await verbsApi.fundWallet(selectedWallet.id)
 
-      if (result.wallets.length === 0) {
-        const emptyLine: TerminalLine = {
-          id: `empty-${Date.now()}`,
-          type: 'error',
-          content: 'No wallets available.',
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), emptyLine])
-        return
-      }
-
-      const walletOptions = result.wallets
-        .map((wallet, index) => `${index + 1}. ${wallet.address}`)
-        .join('\n')
-
-      const walletSelectionLine: TerminalLine = {
-        id: `wallets-${Date.now()}`,
-        type: 'output',
-        content: `Select a wallet:\n\n${walletOptions}\n\nEnter wallet number:`,
+      const fundSuccessLine: TerminalLine = {
+        id: `fund-success-${Date.now()}`,
+        type: 'success',
+        content: 'Wallet funded successfully! Fetching updated balance...',
         timestamp: new Date(),
       }
+      setLines((prev) => [...prev.slice(0, -1), fundSuccessLine])
 
-      setLines((prev) => [...prev.slice(0, -1), walletSelectionLine])
-      setPendingPrompt({
-        type: 'walletSelection',
-        message: '',
-        data: result.wallets.map((w) => ({ id: w.id, address: w.address })),
-      })
+      // Then fetch and show the balance
+      const result = await verbsApi.getWalletBalance(selectedWallet.id)
+
+      // Filter to show only ETH and USDC, exclude MORPHO
+      const filteredBalances = result.balance.filter(
+        (token) => token.symbol === 'ETH' || token.symbol === 'USDC'
+      )
+
+      // Ensure both ETH and USDC are shown, even if not in response
+      const ethBalance = filteredBalances.find(token => token.symbol === 'ETH')
+      const usdcBalance = filteredBalances.find(token => token.symbol === 'USDC')
+      
+      const balanceText = [
+        `ETH: ${ethBalance ? ethBalance.totalBalance : '0'}`,
+        `USDC: ${usdcBalance ? usdcBalance.totalBalance : '0'}`
+      ].join('\n')
+
+      const balanceSuccessLine: TerminalLine = {
+        id: `balance-success-${Date.now()}`,
+        type: 'success',
+        content: `Updated wallet balance for ${selectedWallet.address}:\n\n${balanceText}`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, balanceSuccessLine])
     } catch (error) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
-        content: `Failed to load wallets: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        content: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), errorLine])
     }
   }
 
-  const handleWalletFundList = async () => {
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
-      type: 'output',
-      content: 'Loading wallets...',
-      timestamp: new Date(),
+  const handleWalletLend = async () => {
+    if (!selectedWallet) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: 'No wallet selected. Use "wallet select" to choose a wallet first.',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
     }
 
-    setLines((prev) => [...prev, loadingLine])
-
+    // Check if selected wallet has USDC balance before proceeding
     try {
-      const result = await getAllWallets()
+      const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id)
+      const usdcToken = balanceResult.balance.find(token => token.symbol === 'USDC')
+      const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) : 0
 
-      if (result.wallets.length === 0) {
-        const emptyLine: TerminalLine = {
-          id: `empty-${Date.now()}`,
+      if (usdcBalance <= 0) {
+        const noBalanceLine: TerminalLine = {
+          id: `no-balance-${Date.now()}`,
           type: 'error',
-          content: 'No wallets available. Create one with "wallet create".',
+          content: 'Selected wallet has no USDC balance. Fund the wallet first.',
           timestamp: new Date(),
         }
-        setLines((prev) => [...prev.slice(0, -1), emptyLine])
+        setLines((prev) => [...prev, noBalanceLine])
         return
       }
 
-      const walletOptions = result.wallets
-        .map((wallet, index) => `${index + 1}. ${wallet.address}`)
-        .join('\n')
-
-      const walletSelectionLine: TerminalLine = {
-        id: `wallets-${Date.now()}`,
+      // Show provider selection immediately
+      const providerSelectionLine: TerminalLine = {
+        id: `provider-selection-${Date.now()}`,
         type: 'output',
-        content: `Select a wallet to fund:\n\n${walletOptions}\n\nEnter wallet number:`,
+        content: `Select a Lend provider:
+
+> Morpho
+
+[Enter] to select`,
         timestamp: new Date(),
       }
-
-      setLines((prev) => [...prev.slice(0, -1), walletSelectionLine])
+      setLines((prev) => [...prev, providerSelectionLine])
       setPendingPrompt({
-        type: 'walletFundSelection',
+        type: 'lendProvider',
         message: '',
-        data: result.wallets.map((w) => ({ id: w.id, address: w.address })),
       })
     } catch (error) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
-        content: `Failed to load wallets: ${
+        content: `Failed to check wallet balance: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
         timestamp: new Date(),
       }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
+      setLines((prev) => [...prev, errorLine])
     }
   }
 
@@ -930,15 +835,18 @@ Select a wallet:`
 
       // Create wallet options list
       const walletOptions = walletsWithUSDC
-        .map((wallet, index) => 
-          `${index + 1}. ${shortenAddress(wallet.address)} - ${wallet.usdcBalance} USDC`
-        )
-        .join('\\n')
+        .map((wallet, index) => {
+          const num = index + 1
+          const numStr = num < 10 ? ` ${num}` : `${num}`
+          const addressDisplay = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
+          return `${numStr}. ${addressDisplay} - ${wallet.usdcBalance} USDC`
+        })
+        .join('\n')
 
       const walletSelectionLine: TerminalLine = {
         id: `wallet-send-selection-${Date.now()}`,
         type: 'output',
-        content: `Select wallet to send from:\\n\\n${walletOptions}\\n\\nEnter wallet number:`,
+        content: `Select wallet to send from:\n\n${walletOptions}\n\nEnter wallet number:`,
         timestamp: new Date(),
       }
 
@@ -997,7 +905,7 @@ Select a wallet:`
       const balanceInfoLine: TerminalLine = {
         id: `balance-info-${Date.now()}`,
         type: 'success',
-        content: `Wallet ${shortenAddress(selectedWallet.address)} has ${usdcBalance} USDC available.\\n\\nEnter amount to send:`,
+        content: `Wallet ${shortenAddress(selectedWallet.address)} has ${usdcBalance} USDC available.\n\nEnter amount to send:`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), balanceInfoLine])
@@ -1051,7 +959,7 @@ Select a wallet:`
     const amountConfirmLine: TerminalLine = {
       id: `amount-confirm-${Date.now()}`,
       type: 'output',
-      content: `Sending ${amount} USDC from ${shortenAddress(data.selectedWallet.address)}.\\n\\nEnter recipient address:`,
+      content: `Sending ${amount} USDC from ${shortenAddress(data.selectedWallet.address)}.\n\nEnter recipient address:`,
       timestamp: new Date(),
     }
     setLines((prev) => [...prev, amountConfirmLine])
@@ -1100,7 +1008,7 @@ Select a wallet:`
       const successLine: TerminalLine = {
         id: `send-success-${Date.now()}`,
         type: 'success',
-        content: `Transaction created successfully!\\n\\nTo: ${result.transaction.to}\\nValue: ${result.transaction.value}\\nData: ${result.transaction.data.slice(0, 20)}...\\n\\nTransaction ready to be signed and sent.`,
+        content: `Transaction created successfully!\n\nTo: ${result.transaction.to}\nValue: ${result.transaction.value}\nData: ${result.transaction.data.slice(0, 20)}...\n\nTransaction ready to be signed and sent.`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), successLine])
@@ -1115,78 +1023,6 @@ Select a wallet:`
     }
   }
 
-  const handleWalletFundSelection = async (
-    selection: number,
-    wallets: WalletData[],
-  ) => {
-    setPendingPrompt(null)
-
-    if (isNaN(selection) || selection < 1 || selection > wallets.length) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Invalid selection. Please enter a number between 1 and ${wallets.length}.`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, errorLine])
-      return
-    }
-
-    const selectedWallet = wallets[selection - 1]
-
-    const fundingLine: TerminalLine = {
-      id: `funding-${Date.now()}`,
-      type: 'output',
-      content: 'Funding wallet with tokens...',
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, fundingLine])
-
-    try {
-      // First fund the wallet
-      await verbsApi.fundWallet(selectedWallet.id)
-
-      const fundSuccessLine: TerminalLine = {
-        id: `fund-success-${Date.now()}`,
-        type: 'success',
-        content: 'Wallet funded successfully! Fetching updated balance...',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), fundSuccessLine])
-
-      // Then fetch and show the balance
-      const result = await verbsApi.getWalletBalance(selectedWallet.id)
-
-      // Filter to show only ETH and USDC, exclude MORPHO
-      const filteredBalances = result.balance.filter(
-        (token) => token.symbol === 'ETH' || token.symbol === 'USDC'
-      )
-
-      const balanceText =
-        filteredBalances.length > 0
-          ? filteredBalances
-              .map((token) => `${token.symbol}: ${token.totalBalance}`)
-              .join('\n')
-          : 'No ETH or USDC balances found'
-
-      const balanceSuccessLine: TerminalLine = {
-        id: `balance-success-${Date.now()}`,
-        type: 'success',
-        content: `Updated wallet balance for ${selectedWallet.address}:\n\n${balanceText}`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, balanceSuccessLine])
-    } catch (error) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
-    }
-  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Handle special keys for lend prompts
@@ -1332,7 +1168,12 @@ Select a wallet:`
         {/* Current Input Line */}
         <div className="terminal-line">
           <span className="terminal-prompt">
-            {pendingPrompt ? pendingPrompt.message : 'verbs: $'}
+            {pendingPrompt 
+              ? pendingPrompt.message 
+              : selectedWallet 
+                ? `verbs (${shortenAddress(selectedWallet.address)}): $`
+                : 'verbs: $'
+            }
           </span>
           <div className="flex-1 flex items-center">
             <input
