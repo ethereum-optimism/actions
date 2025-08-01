@@ -88,32 +88,16 @@ jobs:
     steps:
       - setup
       - run:
-          name: Install supersim
+          name: Verify mise tools installation
           command: |
-            # Install supersim for integration tests
-            curl -L https://github.com/ethereum-optimism/supersim/releases/download/0.1.0-alpha.58/supersim_Linux_x86_64.tar.gz | tar -xz
-            sudo mv supersim /usr/local/bin/
+            # Verify foundry tools are available
+            which forge
+            forge --version
+            which anvil
+            anvil --version
+            # Verify supersim is available
+            which supersim
             supersim --version
-      - run:
-          name: Install foundry
-          command: |
-            # Install foundry (anvil required by supersim)
-            # Download and install foundryup manually since auto-detection fails in CI
-            curl -L https://foundry.paradigm.xyz | bash || true
-            # Ensure foundry directory exists
-            mkdir -p $HOME/.foundry/bin
-            # Manually add to PATH
-            export PATH="$HOME/.foundry/bin:$PATH"
-            echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> $BASH_ENV
-            # Check if foundryup was installed, if not install manually
-            if [ ! -f "$HOME/.foundry/bin/foundryup" ]; then
-              echo "Installing foundryup manually..."
-              curl -L https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/install | bash
-            fi
-            # Run foundryup to install the actual tools
-            SHELL=/bin/bash $HOME/.foundry/bin/foundryup
-            # Verify anvil is available
-            $HOME/.foundry/bin/anvil --version
       - run:
           name: Run Supersim Tests
           command: cd packages/sdk && pnpm test:supersim
@@ -270,7 +254,7 @@ workflows:
   check-workflow:
     jobs:
       - check
-      # - supersim-tests
+      - supersim-tests
 
   build-and-publish-backend:
     when:

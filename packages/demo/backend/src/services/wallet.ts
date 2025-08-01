@@ -5,6 +5,7 @@ import type {
   WalletInterface,
 } from '@eth-optimism/verbs-sdk'
 import type { Address } from 'viem'
+import { formatUnits } from 'viem'
 
 import { getVerbs } from '../config/verbs.js'
 
@@ -68,17 +69,20 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
               `[WALLET_SERVICE] Found vault balance: ${vault.name} = ${vaultBalance.balanceFormatted}`,
             )
 
-            // Create a TokenBalance-like object for the vault
+            // Create a TokenBalance object for the vault
+            const formattedBalance = formatUnits(vaultBalance.balance, 6) // Assuming 6 decimals for vault shares
             return {
               symbol: `${vault.name}`,
               totalBalance: vaultBalance.balance,
+              totalFormattedBalance: formattedBalance,
               chainBalances: [
                 {
                   chainId: 130 as const, // Unichain
                   balance: vaultBalance.balance,
+                  formattedBalance: formattedBalance,
                 },
               ],
-            }
+            } as TokenBalance
           }
           return null
         } catch (error) {
