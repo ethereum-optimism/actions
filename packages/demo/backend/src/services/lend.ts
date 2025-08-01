@@ -198,9 +198,16 @@ export async function executeLendTransaction(
     
     let depositHash: `0x${string}` = '0x0'
 
+    // Get current nonce for sequential transaction management
+    let currentNonce = await publicClient.getTransactionCount({
+      address: wallet.address,
+      blockTag: 'pending'
+    })
+    console.log(`[LEND_SERVICE] Starting nonce: ${currentNonce}`)
+
     // Execute approval transaction if needed
     if (lendTransaction.transactionData.approval) {
-      console.log('[LEND_SERVICE] Executing approval transaction...')
+      console.log(`[LEND_SERVICE] Executing approval transaction with nonce ${currentNonce}...`)
       try {
         const approvalSignedTx = await wallet.sign(lendTransaction.transactionData.approval)
         const approvalHash = await wallet.send(approvalSignedTx, publicClient)
@@ -209,6 +216,10 @@ export async function executeLendTransaction(
         // Wait for approval to be mined before proceeding
         await publicClient.waitForTransactionReceipt({ hash: approvalHash })
         console.log('[LEND_SERVICE] Approval transaction confirmed')
+        
+        // Increment nonce for next transaction
+        currentNonce++
+        console.log(`[LEND_SERVICE] Next nonce for deposit: ${currentNonce}`)
       } catch (error) {
         console.error('[LEND_SERVICE] Approval transaction failed:', error)
         throw new Error(`Approval transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -216,7 +227,7 @@ export async function executeLendTransaction(
     }
 
     // Execute deposit transaction
-    console.log('[LEND_SERVICE] Executing deposit transaction...')
+    console.log(`[LEND_SERVICE] Executing deposit transaction with nonce ${currentNonce}...`)
     try {
       const depositSignedTx = await wallet.sign(lendTransaction.transactionData.deposit)
       depositHash = await wallet.send(depositSignedTx, publicClient)

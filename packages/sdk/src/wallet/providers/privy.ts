@@ -155,8 +155,14 @@ export class WalletProviderPrivy implements WalletProvider {
       // Get current gas price and fee data
       const feeData = await publicClient.estimateFeesPerGas()
       
+      // Get current nonce for the wallet - Privy seems to not be handling this automatically
+      const nonce = await publicClient.getTransactionCount({
+        address: wallet.address,
+        blockTag: 'pending' // Use pending to get the next nonce including any pending txs
+      })
+      
       // According to Privy docs: if you provide ANY gas parameters, you must provide ALL of them
-      // So we'll provide a complete set of gas parameters
+      // Since Privy isn't handling nonce automatically, we'll provide it explicitly
       const txParams: any = {
         to: transactionData.to,
         data: transactionData.data as `0x${string}`,
@@ -166,10 +172,10 @@ export class WalletProviderPrivy implements WalletProvider {
         gasLimit: `0x${gasLimit.toString(16)}`,
         maxFeePerGas: `0x${(feeData.maxFeePerGas || BigInt(1000000000)).toString(16)}`, // fallback to 1 gwei
         maxPriorityFeePerGas: `0x${(feeData.maxPriorityFeePerGas || BigInt(100000000)).toString(16)}`, // fallback to 0.1 gwei
-        // Do NOT set nonce - let Privy handle it automatically
+        nonce: `0x${nonce.toString(16)}`, // Explicitly provide the correct nonce
       }
 
-      console.log(`[PRIVY_PROVIDER] Complete gas params - Type: ${txParams.type}, Limit: ${gasLimit}, MaxFee: ${feeData.maxFeePerGas || 'fallback'}, Priority: ${feeData.maxPriorityFeePerGas || 'fallback'}`)
+      console.log(`[PRIVY_PROVIDER] Complete tx params - Type: ${txParams.type}, Nonce: ${nonce}, Limit: ${gasLimit}, MaxFee: ${feeData.maxFeePerGas || 'fallback'}, Priority: ${feeData.maxPriorityFeePerGas || 'fallback'}`)
 
       const response = await this.privy.walletApi.ethereum.signTransaction({
         walletId,
