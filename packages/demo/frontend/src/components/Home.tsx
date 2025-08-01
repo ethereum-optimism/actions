@@ -73,9 +73,8 @@ function Home() {
                 color: '#d1d5db',
               }}
             >
-              Perform <span className="font-semibold">DeFi</span> actions in
-              your application with lightweight, composable, and type-safe
-              modules.
+              Perform <span className="font-semibold">DeFi</span> actions with
+              lightweight, composable, and type-safe modules.
             </h1>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">

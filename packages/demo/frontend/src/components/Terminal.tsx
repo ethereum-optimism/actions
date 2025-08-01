@@ -1437,26 +1437,42 @@ ${vaultOptions}
       className="w-full h-full flex flex-col bg-terminal-bg shadow-terminal-inner cursor-text"
       onClick={handleClick}
     >
-      {/* Terminal Header */}
-      <div className="flex items-center justify-between p-4 border-b border-terminal-border bg-terminal-secondary">
-        <div
-          className="flex items-center gap-2 cursor-pointer"
-          onClick={() => (window.location.href = '/')}
-        >
-          <VerbsLogo />
-          <div className="text-terminal-muted text-sm hover:text-terminal-accent transition-colors">
-            verbs-terminal
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <a href="/home" className="cursor-pointer">
+              <VerbsLogo />
+            </a>
+            <a
+              href="https://github.com/ethereum-optimism/verbs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 px-2 py-2 text-sm text-gray-300 hover:text-white transition-colors duration-200"
+            >
+              <span>GitHub</span>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </a>
           </div>
         </div>
-        <div className="text-terminal-dim text-xs">
-          {new Date().toLocaleTimeString()}
-        </div>
-      </div>
+      </header>
 
       {/* Terminal Content */}
       <div
         ref={terminalRef}
-        className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-terminal-border scrollbar-track-transparent"
+        className="flex-1 overflow-y-auto p-4 pt-20 space-y-1 scrollbar-thin scrollbar-thumb-terminal-border scrollbar-track-transparent"
       >
         {lines.map((line) => (
           <div
