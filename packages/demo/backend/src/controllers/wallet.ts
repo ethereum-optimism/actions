@@ -155,6 +155,22 @@ export class WalletController {
       if (validation.error) return validation.error
 
       const { userId } = validation.data
+
+      // Check if we're running against supersim locally
+      const isLocalSupersim = env.RPC_URL === 'http://127.0.0.1:9545'
+      console.log(env.RPC_URL)
+
+      if (!isLocalSupersim) {
+        return c.json(
+          {
+            error:
+              'Wallet fund is coming soon. For now, manually send USDC or ETH to a wallet.',
+            message:
+              'Funding is only available in local development with supersim',
+          },
+          400,
+        )
+      }
       const faucetAdminWalletClient = createWalletClient({
         chain: unichain,
         transport: http(env.RPC_URL),

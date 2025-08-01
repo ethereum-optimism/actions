@@ -907,9 +907,7 @@ Select a wallet:`
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
-        content: `Failed to fund wallet: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        content: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), errorLine])

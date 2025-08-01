@@ -65,7 +65,6 @@ function Home() {
       <main className="max-w-7xl mx-auto px-6">
         <div className="text-center py-20">
           <div>
-
             <h1
               className="text-4xl md:text-5xl font-normal mb-6 leading-tight"
               style={{
@@ -80,9 +79,14 @@ function Home() {
             </h1>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <button className="bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-200">
+              <a
+                href="https://github.com/ethereum-optimism/verbs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-200 inline-block text-center"
+              >
                 Docs
-              </button>
+              </a>
               <a
                 href="/"
                 className="border border-gray-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 inline-block text-center"
@@ -148,74 +152,85 @@ function Home() {
             >
               <pre className="text-sm leading-relaxed font-mono">
                 <code style={{ color: '#e8e3d3' }}>
-                  {`// 1. Import modules
-`}
                   <span
                     style={{ color: 'rgba(184, 187, 38, 0.9)' }}
                   >{`import`}</span>
                   {` { `}
-                  <span
-                    style={{ color: '#4db6ac' }}
-                  >{`createPublicClient`}</span>
+                  <span style={{ color: '#4db6ac' }}>{`Verbs`}</span>
                   {`, `}
-                  <span style={{ color: '#4db6ac' }}>{`http`}</span>
+                  <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
                   {` } `}
                   <span
                     style={{ color: 'rgba(184, 187, 38, 0.9)' }}
                   >{`from`}</span>
                   {` `}
-                  <span style={{ color: '#ff8a65' }}>{`'viem'`}</span>
-                  {`
-`}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                  >{`import`}</span>
-                  {` { `}
-                  <span style={{ color: '#4db6ac' }}>{`mainnet`}</span>
-                  {` } `}
-                  <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                  >{`from`}</span>
-                  {` `}
-                  <span style={{ color: '#ff8a65' }}>{`'viem/chains'`}</span>
+                    style={{ color: '#ff8a65' }}
+                  >{`'@eth-optimism/verbs-sdk'`}</span>
                   {`
 
-// 2. Set up your client with desired chain & transport
+`}
+                  <span
+                    style={{ color: 'rgb(98, 114, 164)' }}
+                  >{`// gas sponsored smart wallets`}</span>
+                  {`
 `}
                   <span
                     style={{ color: 'rgba(184, 187, 38, 0.9)' }}
                   >{`const`}</span>
                   {` `}
-                  <span style={{ color: '#4db6ac' }}>{`client`}</span>
-                  {` = `}
-                  <span
-                    style={{ color: '#4db6ac' }}
-                  >{`createPublicClient`}</span>
-                  {`({
-  chain: `}
-                  <span style={{ color: '#4db6ac' }}>{`mainnet`}</span>
-                  {`,
-  transport: `}
-                  <span style={{ color: '#4db6ac' }}>{`http`}</span>
-                  {`(),
-})
-
-// 3. Consume an action!
-`}
-                  <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                  >{`const`}</span>
-                  {` `}
-                  <span style={{ color: '#4db6ac' }}>{`blockNumber`}</span>
+                  <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
                   {` = `}
                   <span
                     style={{ color: 'rgba(184, 187, 38, 0.9)' }}
                   >{`await`}</span>
                   {` `}
-                  <span style={{ color: '#4db6ac' }}>{`client`}</span>
+                  <span style={{ color: '#4db6ac' }}>{`Verbs`}</span>
                   {`.`}
-                  <span style={{ color: '#4db6ac' }}>{`getBlockNumber`}</span>
-                  {`()`}
+                  <span style={{ color: '#4db6ac' }}>{`createWallet`}</span>
+                  {`(`}
+                  <span
+                    style={{ color: '#ff8a65' }}
+                  >{`'user@example.com'`}</span>
+                  {`)
+
+`}
+                  <span
+                    style={{ color: 'rgb(98, 114, 164)' }}
+                  >{`// onramp to stables`}</span>
+                  {`
+`}
+                  <span
+                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                  >{`await`}</span>
+                  {` `}
+                  <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                  {`.`}
+                  <span style={{ color: '#4db6ac' }}>{`fund`}</span>
+                  {`(`}
+                  <span style={{ color: '#ce9178' }}>{`100`}</span>
+                  {`, `}
+                  <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                  {`)
+
+`}
+                  <span
+                    style={{ color: 'rgb(98, 114, 164)' }}
+                  >{`// earn DeFi yield`}</span>
+                  {`
+`}
+                  <span
+                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                  >{`await`}</span>
+                  {` `}
+                  <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                  {`.`}
+                  <span style={{ color: '#4db6ac' }}>{`lend`}</span>
+                  {`(`}
+                  <span style={{ color: '#ce9178' }}>{`100`}</span>
+                  {`, `}
+                  <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                  {`)`}
                 </code>
               </pre>
             </div>
@@ -248,66 +263,6 @@ function Home() {
               </div>
               <h3 className="font-semibold mb-2 text-white">Fund</h3>
               <p className="text-gray-300 text-sm">Onramp to stables</p>
-            </div>
-            <div className="text-center">
-              <div className="mb-3 flex justify-center">
-                <svg
-                  className="w-8 h-8"
-                  style={{ color: 'rgb(184, 187, 38)' }}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M7 16l-4-4m0 0l4-4m-4 4h18M3 20h18M3 4h18"
-                  />
-                </svg>
-              </div>
-              <h3 className="font-semibold mb-2 text-white">Borrow</h3>
-              <p className="text-gray-300 text-sm">Borrow via Morpho</p>
-            </div>
-            <div className="text-center">
-              <div className="mb-3 flex justify-center">
-                <svg
-                  className="w-8 h-8"
-                  style={{ color: 'rgb(184, 187, 38)' }}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                  />
-                </svg>
-              </div>
-              <h3 className="font-semibold mb-2 text-white">Repay</h3>
-              <p className="text-gray-300 text-sm">Repay Morpho loan</p>
-            </div>
-            <div className="text-center">
-              <div className="mb-3 flex justify-center">
-                <svg
-                  className="w-8 h-8"
-                  style={{ color: 'rgb(184, 187, 38)' }}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-                  />
-                </svg>
-              </div>
-              <h3 className="font-semibold mb-2 text-white">Swap</h3>
-              <p className="text-gray-300 text-sm">Trade via Uniswap</p>
             </div>
             <div className="text-center">
               <div className="mb-3 flex justify-center">
@@ -362,12 +317,72 @@ function Home() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={1.5}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                  />
+                </svg>
+              </div>
+              <h3 className="font-semibold mb-2 text-white">Swap</h3>
+              <p className="text-gray-300 text-sm">Trade via Uniswap</p>
+            </div>
+            <div className="text-center">
+              <div className="mb-3 flex justify-center">
+                <svg
+                  className="w-8 h-8"
+                  style={{ color: 'rgb(184, 187, 38)' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M7 16l-4-4m0 0l4-4m-4 4h18M3 20h18M3 4h18"
+                  />
+                </svg>
+              </div>
+              <h3 className="font-semibold mb-2 text-white">Borrow</h3>
+              <p className="text-gray-300 text-sm">Borrow via Morpho</p>
+            </div>
+            <div className="text-center">
+              <div className="mb-3 flex justify-center">
+                <svg
+                  className="w-8 h-8"
+                  style={{ color: 'rgb(184, 187, 38)' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
                   />
                 </svg>
               </div>
               <h3 className="font-semibold mb-2 text-white">Wallet</h3>
-              <p className="text-gray-300 text-sm">Create new wallet</p>
+              <p className="text-gray-300 text-sm">Create smart wallets</p>
+            </div>
+            <div className="text-center">
+              <div className="mb-3 flex justify-center">
+                <svg
+                  className="w-8 h-8"
+                  style={{ color: 'rgb(184, 187, 38)' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
+                </svg>
+              </div>
+              <h3 className="font-semibold mb-2 text-white">Gas Paymaster</h3>
+              <p className="text-gray-300 text-sm">Sponsor transactions</p>
             </div>
             <div className="text-center">
               <div className="mb-3 flex justify-center">
@@ -386,8 +401,8 @@ function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="font-semibold mb-2 text-white">List Wallets</h3>
-              <p className="text-gray-300 text-sm">List all wallets</p>
+              <h3 className="font-semibold mb-2 text-white">Fullstack SDK</h3>
+              <p className="text-gray-300 text-sm">Front to back</p>
             </div>
           </div>
         </div>
@@ -396,7 +411,7 @@ function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-8 text-center text-gray-400 text-sm">
         <div className="max-w-7xl mx-auto px-6">
-          <p>© 2025 verbs. MIT License.</p>
+          <p>© 2025 Verbs by Optimism. Open source. MIT License.</p>
         </div>
       </footer>
     </div>
