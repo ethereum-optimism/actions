@@ -158,13 +158,18 @@ export class WalletController {
 
       // Check if we're running against supersim locally
       const isLocalSupersim = env.RPC_URL === 'http://127.0.0.1:9545'
-      console.log(env.RPC_URL)
 
       if (!isLocalSupersim) {
+        const wallet = await walletService.getWallet(userId)
+        if (!wallet) {
+          return c.json({ error: 'Wallet not found' }, 404)
+        }
+
         return c.json(
           {
-            error:
-              'Wallet fund is coming soon. For now, manually send USDC or ETH to a wallet.',
+            error: `Wallet fund is coming soon. For now, manually send USDC or ETH to this wallet:
+
+${wallet.address}`,
             message:
               'Funding is only available in local development with supersim',
           },
