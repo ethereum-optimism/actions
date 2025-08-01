@@ -701,12 +701,17 @@ Select a wallet:`
     try {
       const result = await verbsApi.getWalletBalance(selectedWallet.id)
 
+      // Filter to show only ETH and USDC, exclude MORPHO
+      const filteredBalances = result.balance.filter(
+        (token) => token.symbol === 'ETH' || token.symbol === 'USDC'
+      )
+
       const balanceText =
-        result.balance.length > 0
-          ? result.balance
+        filteredBalances.length > 0
+          ? filteredBalances
               .map((token) => `${token.symbol}: ${token.totalBalance}`)
               .join('\n')
-          : 'No tokens found'
+          : 'No ETH or USDC balances found'
 
       const successLine: TerminalLine = {
         id: `success-${Date.now()}`,
@@ -879,12 +884,17 @@ Select a wallet:`
       // Then fetch and show the balance
       const result = await verbsApi.getWalletBalance(selectedWallet.id)
 
+      // Filter to show only ETH and USDC, exclude MORPHO
+      const filteredBalances = result.balance.filter(
+        (token) => token.symbol === 'ETH' || token.symbol === 'USDC'
+      )
+
       const balanceText =
-        result.balance.length > 0
-          ? result.balance
+        filteredBalances.length > 0
+          ? filteredBalances
               .map((token) => `${token.symbol}: ${token.totalBalance}`)
               .join('\n')
-          : 'No tokens found'
+          : 'No ETH or USDC balances found'
 
       const balanceSuccessLine: TerminalLine = {
         id: `balance-success-${Date.now()}`,

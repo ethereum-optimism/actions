@@ -51,6 +51,21 @@ export abstract class LendProvider {
   ): Promise<LendTransaction>
 
   /**
+   * Deposit assets to a market (alias for lend)
+   * @param asset - Asset token address to deposit
+   * @param amount - Amount to deposit (in wei)
+   * @param marketId - Optional specific market ID
+   * @param options - Optional deposit configuration
+   * @returns Promise resolving to deposit transaction details
+   */
+  abstract deposit(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction>
+
+  /**
    * Get detailed vault information
    * @param vaultAddress - Vault address
    * @returns Promise resolving to vault information

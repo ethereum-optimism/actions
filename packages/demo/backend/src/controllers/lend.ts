@@ -68,4 +68,60 @@ export class LendController {
       )
     }
   }
+
+  async deposit(c: Context) {
+    try {
+      const { walletId, amount, token } = await c.req.json()
+
+      if (!walletId || !amount || !token) {
+        return c.json(
+          {
+            error: 'Missing required parameters: walletId, amount, token',
+          },
+          400,
+        )
+      }
+
+      if (typeof amount !== 'number' || amount <= 0) {
+        return c.json(
+          {
+            error: 'Amount must be a positive number',
+          },
+          400,
+        )
+      }
+
+      if (typeof token !== 'string') {
+        return c.json(
+          {
+            error: 'Token must be a string',
+          },
+          400,
+        )
+      }
+
+      const lendTransaction = await lendService.deposit(walletId, amount, token)
+
+      return c.json({
+        transaction: {
+          hash: lendTransaction.hash,
+          amount: lendTransaction.amount.toString(),
+          asset: lendTransaction.asset,
+          marketId: lendTransaction.marketId,
+          apy: lendTransaction.apy,
+          timestamp: lendTransaction.timestamp,
+          slippage: lendTransaction.slippage,
+          transactionData: lendTransaction.transactionData,
+        },
+      })
+    } catch (error) {
+      return c.json(
+        {
+          error: 'Failed to deposit',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500,
+      )
+    }
+  }
 }

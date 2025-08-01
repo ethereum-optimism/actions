@@ -104,7 +104,7 @@ export class Wallet implements WalletInterface {
     // 2. Approve the lending protocol to spend the asset if needed
     // 3. Execute the lending transaction through the wallet's signing capabilities
 
-    return this.verbs.lend.lend(
+    return this.verbs.lend.deposit(
       resolvedAsset.address,
       parsedAmount,
       marketId,

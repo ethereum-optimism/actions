@@ -130,6 +130,24 @@ export class LendProviderMorpho extends LendProvider {
   }
 
   /**
+   * Deposit assets to a Morpho market (alias for lend)
+   * @description Supplies assets to a Morpho market using MetaMorpho deposit operation
+   * @param asset - Asset token address to deposit
+   * @param amount - Amount to deposit (in wei)
+   * @param marketId - Optional specific market ID (vault address)
+   * @param options - Optional deposit configuration
+   * @returns Promise resolving to deposit transaction details
+   */
+  async deposit(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction> {
+    return this.lend(asset, amount, marketId, options)
+  }
+
+  /**
    * Withdraw assets from a Morpho market
    * @description Withdraws assets from a Morpho market using Blue_Withdraw operation
    * @param asset - Asset token address to withdraw
