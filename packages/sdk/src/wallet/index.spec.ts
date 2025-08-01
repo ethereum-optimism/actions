@@ -80,24 +80,26 @@ describe('Wallet', () => {
 
       expect(balance).toEqual([
         {
-          totalBalance: 1000000000n,
+          totalBalance: 1000000n,
           symbol: 'ETH',
-          totalFormattedBalance: '0.000000001',
+          totalFormattedBalance: '0.000000000001',
           chainBalances: [
             {
-              balance: 1000000000n,
+              balance: 1000000n,
               chainId: 130,
-              formattedBalance: '0.000000001',
+              formattedBalance: '0.000000000001',
             },
           ],
         },
         {
           totalBalance: 1000000n,
           symbol: 'ETH',
+          totalFormattedBalance: '0.000000000001',
           chainBalances: [
             {
               balance: 1000000n,
               chainId: 130,
+              formattedBalance: '0.000000000001',
             },
           ],
         },
