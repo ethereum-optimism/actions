@@ -22,9 +22,9 @@ interface VaultData {
 }
 
 interface PendingPrompt {
-  type: 'userId' | 'lendProvider' | 'lendVault' | 'walletSelection' | 'walletFundSelection'
+  type: 'userId' | 'lendProvider' | 'lendVault' | 'walletSelection' | 'walletFundSelection' | 'tokenSelection'
   message: string
-  data?: VaultData[] | WalletData[]
+  data?: VaultData[] | WalletData[] | { selectedWallet: WalletData }
 }
 
 const HELP_CONTENT = `Available commands:
@@ -163,6 +163,9 @@ const Terminal = () => {
         return
       } else if (pendingPrompt.type === 'walletFundSelection') {
         handleWalletFundSelection(parseInt(trimmed), pendingPrompt.data as WalletData[] || [])
+        return
+      } else if (pendingPrompt.type === 'tokenSelection') {
+        handleTokenSelection(parseInt(trimmed), pendingPrompt.data as { selectedWallet: WalletData })
         return
       }
     }
@@ -540,7 +543,7 @@ You must use "wallet fund" before lending to this market.`
       const result = await verbsApi.getWalletBalance(selectedWallet.id)
       
       const balanceText = result.balance.length > 0 
-        ? result.balance.map(token => `${token.symbol}: ${token.totalBalance}`).join('\n')
+        ? result.balance.map(token => `${token.symbol}: ${token.totalFormattedBalance}`).join('\n')
         : 'No tokens found'
 
       const successLine: TerminalLine = {
@@ -687,23 +690,56 @@ You must use "wallet fund" before lending to this market.`
 
     const selectedWallet = wallets[selection - 1]
     
+    // Show token selection
+    const tokenSelectionLine: TerminalLine = {
+      id: `token-selection-${Date.now()}`,
+      type: 'output',
+      content: `Select token to fund wallet with:\n\n1. ETH\n2. USDC\n\nEnter token number:`,
+      timestamp: new Date(),
+    }
+
+    setLines((prev) => [...prev, tokenSelectionLine])
+    setPendingPrompt({
+      type: 'tokenSelection',
+      message: '',
+      data: { selectedWallet }
+    })
+  }
+
+  const handleTokenSelection = async (selection: number, data: { selectedWallet: WalletData }) => {
+    setPendingPrompt(null)
+
+    if (isNaN(selection) || selection < 1 || selection > 2) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Invalid selection. Please enter 1 for ETH or 2 for USDC.`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    const { selectedWallet } = data
+    const tokenType = selection === 1 ? 'ETH' : 'USDC'
+    
     const fundingLine: TerminalLine = {
       id: `funding-${Date.now()}`,
       type: 'output',
-      content: 'Funding wallet with tokens...',
+      content: `Funding wallet with ${tokenType}...`,
       timestamp: new Date(),
     }
 
     setLines((prev) => [...prev, fundingLine])
 
     try {
-      // First fund the wallet
-      await verbsApi.fundWallet(selectedWallet.id)
+      // Fund the wallet with selected token
+      const { amount } = await verbsApi.fundWallet(selectedWallet.id, tokenType)
 
       const fundSuccessLine: TerminalLine = {
         id: `fund-success-${Date.now()}`,
         type: 'success',
-        content: 'Wallet funded successfully! Fetching updated balance...',
+        content: `Wallet funded with ${amount} ${tokenType} successfully! Fetching updated balance...`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), fundSuccessLine])
@@ -712,7 +748,7 @@ You must use "wallet fund" before lending to this market.`
       const result = await verbsApi.getWalletBalance(selectedWallet.id)
       
       const balanceText = result.balance.length > 0 
-        ? result.balance.map(token => `${token.symbol}: ${token.totalBalance}`).join('\n')
+        ? result.balance.map(token => `${token.symbol}: ${token.totalFormattedBalance}`).join('\n')
         : 'No tokens found'
 
       const balanceSuccessLine: TerminalLine = {

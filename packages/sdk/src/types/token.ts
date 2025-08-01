@@ -6,8 +6,10 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 export interface TokenBalance {
   symbol: string
   totalBalance: bigint
+  totalFormattedBalance: string
   chainBalances: Array<{
     chainId: SupportedChainId
     balance: bigint
+    formattedBalance: string
   }>
 }

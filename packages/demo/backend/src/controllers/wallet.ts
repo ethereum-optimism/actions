@@ -6,7 +6,13 @@ import type {
 import { unichain } from '@eth-optimism/viem/chains'
 import type { Context } from 'hono'
 import type { Address, Hex } from 'viem'
-import { createPublicClient, createWalletClient, http } from 'viem'
+import {
+  createPublicClient,
+  createWalletClient,
+  formatEther,
+  formatUnits,
+  http,
+} from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { writeContract } from 'viem/actions'
 import { z } from 'zod'
@@ -155,6 +161,11 @@ export class WalletController {
       if (validation.error) return validation.error
 
       const { userId } = validation.data
+
+      // Parse request body for token type
+      const body = await c.req.json().catch(() => ({}))
+      const tokenType = body.tokenType || 'USDC'
+
       const faucetAdminWalletClient = createWalletClient({
         chain: unichain,
         transport: http(env.RPC_URL),
@@ -171,20 +182,45 @@ export class WalletController {
         return c.json({ error: 'Wallet not found' }, 404)
       }
 
-      // TODO:make this an env var
-      const usdcAddress = '0x078D782b760474a361dDA0AF3839290b0EF57AD6'
+      let dripHash: `0x${string}`
+      let amount: bigint
+      let formattedAmount: string
 
-      const dripHash = await writeContract(faucetAdminWalletClient, {
-        account: faucetAdminWalletClient.account,
-        address: env.FAUCET_ADDRESS as Address,
-        abi: faucetAbi,
-        functionName: 'dripERC20',
-        // TODO: amount is hardcoded to 1000, we could also allow for a user to input the amount
-        args: [wallet.address, 1000n, usdcAddress as Address],
-      })
+      if (tokenType === 'ETH') {
+        // TODO: we could also allow for a user to input the amount
+        amount = 100000000000000000n
+        formattedAmount = formatEther(amount)
+        // Call dripETH - amount is hardcoded to 1 ETH (1e18 wei)
+        dripHash = await writeContract(faucetAdminWalletClient, {
+          account: faucetAdminWalletClient.account,
+          address: env.FAUCET_ADDRESS as Address,
+          abi: faucetAbi,
+          functionName: 'dripETH',
+          args: [wallet.address, amount], // 0.1 ETH
+        })
+      } else {
+        // TODO: we could also allow for a user to input the amount
+        amount = 1000000000n
+        formattedAmount = formatUnits(amount, 6)
+        // Call dripERC20 for USDC - TODO: make this an env var
+        const usdcAddress = '0x078D782b760474a361dDA0AF3839290b0EF57AD6'
+        dripHash = await writeContract(faucetAdminWalletClient, {
+          account: faucetAdminWalletClient.account,
+          address: env.FAUCET_ADDRESS as Address,
+          abi: faucetAbi,
+          functionName: 'dripERC20',
+          args: [wallet.address, amount, usdcAddress as Address], // 1000 USDC
+        })
+      }
+
       await publicClient.waitForTransactionReceipt({ hash: dripHash })
 
-      return c.json({ success: true })
+      return c.json({
+        success: true,
+        tokenType,
+        to: wallet.address,
+        amount: formattedAmount,
+      })
     } catch (error) {
       return c.json(
         {

@@ -98,9 +98,11 @@ class VerbsApiClient {
     balance: Array<{
       symbol: string
       totalBalance: string
+      totalFormattedBalance: string
       chainBalances: Array<{
         chainId: number
         balance: string
+        formattedBalance: string
       }>
     }>
   }> {
@@ -109,9 +111,10 @@ class VerbsApiClient {
     })
   }
 
-  async fundWallet(userId: string): Promise<{ message: string }> {
+  async fundWallet(userId: string, tokenType: string = 'USDC'): Promise<{ success: boolean, tokenType: string, to: string, amount: bigint }> {
     return this.request(`/wallet/${userId}/fund`, {
       method: 'POST',
+      body: JSON.stringify({ tokenType }),
     })
   }
 }

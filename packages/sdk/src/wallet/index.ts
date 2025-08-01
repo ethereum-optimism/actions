@@ -1,7 +1,7 @@
 import { type Address } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import { fetchBalance } from '@/services/tokenBalance.js'
+import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type {
   LendOptions,
@@ -17,8 +17,8 @@ import type { Wallet as WalletInterface } from '@/types/wallet.js'
  */
 export class Wallet implements WalletInterface {
   id: string
-  private lendProvider?: LendProvider
   address!: Address
+  private lendProvider?: LendProvider
   private initialized: boolean = false
   private chainManager: ChainManager
 
@@ -53,11 +53,12 @@ export class Wallet implements WalletInterface {
 
     const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
       async (token) => {
-        return fetchBalance(this.chainManager, this.address, token)
+        return fetchERC20Balance(this.chainManager, this.address, token)
       },
     )
+    const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
 
-    return Promise.all(tokenBalancePromises)
+    return Promise.all([ethBalancePromise, ...tokenBalancePromises])
   }
 
   /**
