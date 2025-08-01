@@ -170,12 +170,14 @@ describe('LendProviderMorpho', () => {
         receiver: '0x1234567890123456789012345678901234567890' as Address,
       })
 
-      expect(lendTransaction).toHaveProperty('hash')
       expect(lendTransaction).toHaveProperty('amount', amount)
       expect(lendTransaction).toHaveProperty('asset', asset)
       expect(lendTransaction).toHaveProperty('marketId', marketId)
       expect(lendTransaction).toHaveProperty('apy')
       expect(lendTransaction).toHaveProperty('timestamp')
+      expect(lendTransaction).toHaveProperty('transactionData')
+      expect(lendTransaction.transactionData).toHaveProperty('approval')
+      expect(lendTransaction.transactionData).toHaveProperty('deposit')
       expect(typeof lendTransaction.apy).toBe('number')
       expect(lendTransaction.apy).toBeGreaterThan(0)
     })
