@@ -164,7 +164,7 @@ export class WalletController {
       const body = await c.req.json().catch(() => ({}))
       const tokenType = body.tokenType || 'USDC'
 
-      // Check if we're running against supersim locally
+      // TODO: Find a better way to do this
       const isLocalSupersim = env.RPC_URL === 'http://127.0.0.1:9545'
 
       if (!isLocalSupersim) {
