@@ -113,4 +113,20 @@ contract FaucetTest is Test {
         assertTrue(success);
         assertEq(address(faucet).balance, initialBalance + amount);
     }
+
+    function testWithdrawERC20() public {
+        uint256 amount = 100e18;
+        uint256 initialBalance = token.balanceOf(admin);
+
+        vm.prank(admin);
+        faucet.withdrawERC20(admin, amount, address(token));
+
+        assertEq(token.balanceOf(admin), initialBalance + amount);
+    }
+
+    function testOnlyAdminCanWithdrawERC20() public {
+        vm.prank(user);
+        vm.expectRevert("Faucet: function can only be called by admin");
+        faucet.withdrawERC20(user, 100e18, address(token));
+    }
 }

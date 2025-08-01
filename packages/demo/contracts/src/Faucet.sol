@@ -50,6 +50,15 @@ contract Faucet {
         require(success, "Faucet: Failed to execute ETH transfer during withdrawal");
     }
 
+    /// @notice Allows the admin to withdraw ERC20 tokens.
+    /// @param _recipient Address to receive the funds.
+    /// @param _amount    Amount of ERC20 tokens to withdraw.
+    /// @param _token     Address of the ERC20 token.
+    function withdrawERC20(address _recipient, uint256 _amount, address _token) public privileged {
+        bool success = IERC20(_token).transfer(_recipient, _amount);
+        require(success, "Faucet: Failed to execute ERC20 transfer during withdrawal");
+    }
+
     /// @notice Drips ETH to a recipient account.
     /// @param _recipient Address to receive the funds.
     /// @param _amount    Amount of ETH in wei to drip.

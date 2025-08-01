@@ -29,6 +29,7 @@
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --loglevel=warn",
     "dev": "tsx src/index.ts",
+    "dev:local": "LOCAL_DEV=true pnpm dev",
     "start": "node dist/index.js",
     "test": "vitest --run",
     "typecheck": "tsc --noEmit"
