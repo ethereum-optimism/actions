@@ -88,6 +88,10 @@ const Terminal = () => {
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
   const [selectedWallet, setSelectedWallet] = useState<WalletData | null>(null)
+  const [screenWidth, setScreenWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  )
+  const [currentWalletList, setCurrentWalletList] = useState<WalletData[] | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
 
@@ -126,6 +130,90 @@ const Terminal = () => {
       inputRef.current.focus()
     }
   }, [])
+
+  // Track screen width changes
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Update wallet list display when screen size changes
+  useEffect(() => {
+    if (currentWalletList && pendingPrompt?.type === 'walletSelectSelection') {
+      // Find the wallet selection line and update it
+      setLines((prev) => {
+        const walletSelectIndex = prev.findIndex((line) =>
+          line.content.includes('Select a wallet:')
+        )
+        
+        if (walletSelectIndex !== -1) {
+          const formatWalletColumns = (wallets: WalletData[]) => {
+            const lines: string[] = []
+            const totalWallets = wallets.length
+            
+            // Responsive column logic: 1 on mobile, 2 on tablet, 3 on desktop
+            const isMobile = screenWidth < 480
+            const isTablet = screenWidth >= 480 && screenWidth < 768
+            
+            const numColumns = isMobile ? 1 : isTablet ? 2 : 3
+            const walletsPerColumn = Math.ceil(totalWallets / numColumns)
+            const columnWidth = isMobile ? 0 : isTablet ? 25 : 33 // Tighter spacing for 2 cols
+
+            for (let row = 0; row < walletsPerColumn; row++) {
+              let line = ''
+
+              for (let col = 0; col < numColumns; col++) {
+                const walletIndex = col * walletsPerColumn + row
+
+                if (walletIndex < totalWallets) {
+                  const wallet = wallets[walletIndex]
+                  const num = walletIndex + 1
+                  const numStr = num < 10 ? ` ${num}` : `${num}`
+                  const addressDisplay = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
+                  const selected =
+                    selectedWallet?.id === wallet.id ? ' (selected)' : ''
+                  const columnText = `${numStr}. ${addressDisplay}${selected}`
+
+                  // Add column text and pad for next column (except last column)
+                  if (col < numColumns - 1) {
+                    line += columnText.padEnd(columnWidth)
+                  } else {
+                    line += columnText
+                  }
+                }
+              }
+
+              // Only add non-empty lines
+              if (line.trim()) {
+                lines.push(line)
+              }
+            }
+
+            return lines.join('\n')
+          }
+
+          const walletOptions = formatWalletColumns(currentWalletList)
+          
+          const updatedLine = {
+            ...prev[walletSelectIndex],
+            content: `Select a wallet:\n\n${walletOptions}\n\nEnter wallet number:`
+          }
+          
+          return [
+            ...prev.slice(0, walletSelectIndex),
+            updatedLine,
+            ...prev.slice(walletSelectIndex + 1)
+          ]
+        }
+        
+        return prev
+      })
+    }
+  }, [screenWidth, currentWalletList, pendingPrompt, selectedWallet])
 
   // Keep terminal scrolled to bottom
   useEffect(() => {
@@ -646,19 +734,24 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
         return
       }
 
-      // Format wallets in columns of 10 each
+      // Format wallets in responsive columns
       const formatWalletColumns = (wallets: WalletData[]) => {
         const lines: string[] = []
-        const maxPerColumn = 10
         const totalWallets = wallets.length
-        const numColumns = Math.ceil(totalWallets / maxPerColumn)
-        const columnWidth = 30 // Width for each column
+        
+        // Responsive column logic: 1 on mobile, 2 on tablet, 3 on desktop
+        const isMobile = screenWidth < 480
+        const isTablet = screenWidth >= 480 && screenWidth < 768
+        
+        const numColumns = isMobile ? 1 : isTablet ? 2 : 3
+        const walletsPerColumn = Math.ceil(totalWallets / numColumns)
+        const columnWidth = isMobile ? 0 : isTablet ? 25 : 33 // Tighter spacing for 2 cols
 
-        for (let row = 0; row < maxPerColumn; row++) {
+        for (let row = 0; row < walletsPerColumn; row++) {
           let line = ''
 
           for (let col = 0; col < numColumns; col++) {
-            const walletIndex = col * maxPerColumn + row
+            const walletIndex = col * walletsPerColumn + row
 
             if (walletIndex < totalWallets) {
               const wallet = wallets[walletIndex]
@@ -697,6 +790,7 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
       }
 
       setLines((prev) => [...prev.slice(0, -1), walletSelectionLine])
+      setCurrentWalletList(result.wallets)
       setPendingPrompt({
         type: 'walletSelectSelection',
         message: '',
@@ -720,6 +814,7 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
     wallets: WalletData[],
   ) => {
     setPendingPrompt(null)
+    setCurrentWalletList(null)
 
     if (isNaN(selection) || selection < 1 || selection > wallets.length) {
       const errorLine: TerminalLine = {
