@@ -454,14 +454,47 @@ User ID: ${result.userId}`,
         return
       }
 
-      const walletOptions = result.wallets
-        .map((wallet, index) => {
-          const num = index + 1
-          const numStr = num < 10 ? ` ${num}` : `${num}`
-          const addressDisplay = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
-          return `${numStr}. ${addressDisplay}${selectedWallet?.id === wallet.id ? ' (selected)' : ''}`
-        })
-        .join('\n')
+      // Format wallets in columns of 10 each
+      const formatWalletColumns = (wallets: any[]) => {
+        const lines: string[] = []
+        const maxPerColumn = 10
+        const totalWallets = wallets.length
+        const numColumns = Math.ceil(totalWallets / maxPerColumn)
+        const columnWidth = 30 // Width for each column
+        
+        for (let row = 0; row < maxPerColumn; row++) {
+          let line = ''
+          
+          for (let col = 0; col < numColumns; col++) {
+            const walletIndex = col * maxPerColumn + row
+            
+            if (walletIndex < totalWallets) {
+              const wallet = wallets[walletIndex]
+              const num = walletIndex + 1
+              const numStr = num < 10 ? ` ${num}` : `${num}`
+              const addressDisplay = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
+              const selected = selectedWallet?.id === wallet.id ? ' (selected)' : ''
+              const columnText = `${numStr}. ${addressDisplay}${selected}`
+              
+              // Add column text and pad for next column (except last column)
+              if (col < numColumns - 1) {
+                line += columnText.padEnd(columnWidth)
+              } else {
+                line += columnText
+              }
+            }
+          }
+          
+          // Only add non-empty lines
+          if (line.trim()) {
+            lines.push(line)
+          }
+        }
+        
+        return lines.join('\n')
+      }
+      
+      const walletOptions = formatWalletColumns(result.wallets)
 
       const walletSelectionLine: TerminalLine = {
         id: `wallet-select-${Date.now()}`,
