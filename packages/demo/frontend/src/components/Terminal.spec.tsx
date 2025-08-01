@@ -29,22 +29,14 @@ describe('Terminal', () => {
   it('renders terminal with welcome message', async () => {
     render(<Terminal />)
 
-    // Check for terminal header
-    expect(screen.getByText('verbs-terminal')).toBeInTheDocument()
+    // Check for GitHub link in NavBar
+    expect(screen.getByText('GitHub')).toBeInTheDocument()
 
     // Check for subtitle
     expect(screen.getByText('Verbs library for the OP Stack')).toBeInTheDocument()
 
     // Check for help content
     expect(screen.getByText(/Console commands:/)).toBeInTheDocument()
-  })
-
-  it('displays current time in header', () => {
-    render(<Terminal />)
-
-    // Check that there's a time display (will match format like "10:30:45 AM")
-    const timeElement = screen.getByText(/\d{1,2}:\d{2}:\d{2}/)
-    expect(timeElement).toBeInTheDocument()
   })
 
   it('handles help command', async () => {

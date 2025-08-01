@@ -8,7 +8,7 @@ describe('App', () => {
   it('renders terminal component', () => {
     render(<App />)
 
-    expect(screen.getByText('verbs-terminal')).toBeInTheDocument()
+    expect(screen.getByText('GitHub')).toBeInTheDocument()
     expect(
       screen.getByText('Verbs library for the OP Stack'),
     ).toBeInTheDocument()
