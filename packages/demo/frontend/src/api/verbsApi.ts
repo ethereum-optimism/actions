@@ -155,6 +155,46 @@ class VerbsApiClient {
       }),
     })
   }
+
+  async getVaultBalance(vaultAddress: string, walletId: string): Promise<{
+    balance: string
+    balanceFormatted: string
+    shares: string
+    sharesFormatted: string
+  }> {
+    return this.request(`/lend/vault/${vaultAddress}/balance/${walletId}`, {
+      method: 'GET',
+    })
+  }
+
+  async lendDeposit(walletId: string, amount: number, token: string): Promise<{
+    transaction: {
+      hash: string
+      amount: string
+      asset: string
+      marketId: string
+      apy: number
+      timestamp: number
+      slippage: number
+      transactionData: {
+        approval?: {
+          to: string
+          data: string
+          value: string
+        }
+        deposit: {
+          to: string
+          data: string
+          value: string
+        }
+      }
+    }
+  }> {
+    return this.request('/lend/deposit', {
+      method: 'POST',
+      body: JSON.stringify({ walletId, amount, token }),
+    })
+  }
 }
 
 export const verbsApi = new VerbsApiClient()

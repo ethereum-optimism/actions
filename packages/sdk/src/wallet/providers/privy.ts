@@ -133,24 +133,43 @@ export class WalletProviderPrivy implements WalletProvider {
   async signOnly(
     walletId: string,
     transactionData: TransactionData,
-    nonce?: number,
   ): Promise<string> {
     try {
+      // Get wallet to determine the from address for gas estimation
+      const wallet = await this.getWallet(walletId)
+      if (!wallet) {
+        throw new Error(`Wallet not found: ${walletId}`)
+      }
+
+      // Get public client for gas estimation
+      const publicClient = this.verbs.chainManager.getPublicClient(130) // Unichain
+      
+      // Estimate gas limit
+      const gasLimit = await publicClient.estimateGas({
+        account: wallet.address,
+        to: transactionData.to,
+        data: transactionData.data as `0x${string}`,
+        value: BigInt(transactionData.value),
+      })
+
+      // Get current gas price and fee data
+      const feeData = await publicClient.estimateFeesPerGas()
+      
+      // According to Privy docs: if you provide ANY gas parameters, you must provide ALL of them
+      // So we'll provide a complete set of gas parameters
       const txParams: any = {
         to: transactionData.to,
         data: transactionData.data as `0x${string}`,
         value: transactionData.value as `0x${string}`,
         chainId: 130, // Unichain
-        // Add gas parameters for supersim compatibility (EIP-1559)
-        gasLimit: '0x186A0', // 100000 gas limit (increased for safety)
-        maxFeePerGas: '0x5D21DBA00', // 25 gwei max fee
-        maxPriorityFeePerGas: '0x77359400', // 2 gwei priority fee
+        type: 2, // EIP-1559
+        gasLimit: `0x${gasLimit.toString(16)}`,
+        maxFeePerGas: `0x${(feeData.maxFeePerGas || BigInt(1000000000)).toString(16)}`, // fallback to 1 gwei
+        maxPriorityFeePerGas: `0x${(feeData.maxPriorityFeePerGas || BigInt(100000000)).toString(16)}`, // fallback to 0.1 gwei
+        // Do NOT set nonce - let Privy handle it automatically
       }
 
-      // Add nonce if provided
-      if (nonce !== undefined) {
-        txParams.nonce = `0x${nonce.toString(16)}`
-      }
+      console.log(`[PRIVY_PROVIDER] Complete gas params - Type: ${txParams.type}, Limit: ${gasLimit}, MaxFee: ${feeData.maxFeePerGas || 'fallback'}, Priority: ${feeData.maxPriorityFeePerGas || 'fallback'}`)
 
       const response = await this.privy.walletApi.ethereum.signTransaction({
         walletId,

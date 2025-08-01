@@ -40,12 +40,20 @@ interface PendingPrompt {
   type:
     | 'userId'
     | 'lendVault'
+    | 'lendAmount'
     | 'walletSendSelection'
     | 'walletSendAmount'
     | 'walletSendRecipient'
     | 'walletSelectSelection'
   message: string
-  data?: VaultData[] | WalletData[] | { selectedWallet: WalletData; balance: number; amount?: number }
+  data?: VaultData[] | WalletData[] | { 
+    selectedWallet?: WalletData
+    selectedVault?: VaultData
+    walletBalance?: number
+    vaultBalance?: string
+    balance?: number
+    amount?: number
+  }
 }
 
 const HELP_CONTENT = `
@@ -182,6 +190,9 @@ const Terminal = () => {
         return
       } else if (pendingPrompt.type === 'lendVault') {
         handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
+        return
+      } else if (pendingPrompt.type === 'lendAmount') {
+        handleLendAmountSubmission(parseFloat(trimmed))
         return
       } else if (pendingPrompt.type === 'walletSendSelection') {
         handleWalletSendSelection(
@@ -366,37 +377,40 @@ User ID: ${result.userId}`,
 
 
 
-  const handleLendVaultSelection = (vaults: VaultData[]) => {
+  const handleLendVaultSelection = async (vaults: VaultData[]) => {
     // Always select the first vault (default)
     const selectedVault = vaults[0]
     setPendingPrompt(null)
 
-    // Use the vault data we already have instead of making another API call
-    const vault = selectedVault
+    console.log('[FRONTEND] Selected vault:', selectedVault.name, selectedVault.address)
 
-    const nameValue = vault.name
-    const netApyValue = `${(vault.apy * 100).toFixed(2)}%`
-    const totalAssetsValue = `$${(parseFloat(vault.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    const feeValue = `${(vault.fee * 100).toFixed(1)}%`
-    const managerValue = 'Gauntlet'
+    try {
+      // Use the vault data we already have to show vault information
+      const vault = selectedVault
 
-    // APY breakdown values
-    const nativeApyValue = vault.apyBreakdown
-      ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%`
-      : 'N/A'
-    const usdcRewardsValue =
-      vault.apyBreakdown && vault.apyBreakdown.usdc !== undefined
-        ? `${(vault.apyBreakdown.usdc * 100).toFixed(2)}%`
+      const nameValue = vault.name
+      const netApyValue = `${(vault.apy * 100).toFixed(2)}%`
+      const totalAssetsValue = `$${(parseFloat(vault.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      const feeValue = `${(vault.fee * 100).toFixed(1)}%`
+      const managerValue = 'Gauntlet'
+
+      // APY breakdown values
+      const nativeApyValue = vault.apyBreakdown
+        ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%`
         : 'N/A'
-    const morphoRewardsValue =
-      vault.apyBreakdown && vault.apyBreakdown.morpho !== undefined
-        ? `${(vault.apyBreakdown.morpho * 100).toFixed(2)}%`
+      const usdcRewardsValue =
+        vault.apyBreakdown && vault.apyBreakdown.usdc !== undefined
+          ? `${(vault.apyBreakdown.usdc * 100).toFixed(2)}%`
+          : 'N/A'
+      const morphoRewardsValue =
+        vault.apyBreakdown && vault.apyBreakdown.morpho !== undefined
+          ? `${(vault.apyBreakdown.morpho * 100).toFixed(2)}%`
+          : 'N/A'
+      const feeImpactValue = vault.apyBreakdown
+        ? `${(vault.apyBreakdown.nativeApy * vault.apyBreakdown.performanceFee * 100).toFixed(2)}%`
         : 'N/A'
-    const feeImpactValue = vault.apyBreakdown
-      ? `${(vault.apyBreakdown.nativeApy * vault.apyBreakdown.performanceFee * 100).toFixed(2)}%`
-      : 'N/A'
 
-    const vaultInfoTable = `
+      const vaultInfoTable = `
 ┌──────────────────────────────────────────┐
 │          VAULT INFORMATION               │
 ├──────────────────────────────────────────┤
@@ -414,23 +428,140 @@ User ID: ${result.userId}`,
 │ Manager:           ${managerValue.padEnd(21)} │
 └──────────────────────────────────────────┘`
 
-    const vaultInfoLine: TerminalLine = {
-      id: `vault-info-${Date.now()}`,
-      type: 'success',
-      content: vaultInfoTable,
-      timestamp: new Date(),
+      const vaultInfoLine: TerminalLine = {
+        id: `vault-info-${Date.now()}`,
+        type: 'success',
+        content: vaultInfoTable,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
+
+      // Get wallet USDC balance
+      const walletBalanceResult = await verbsApi.getWalletBalance(selectedWallet!.id)
+      const usdcToken = walletBalanceResult.balance.find(token => token.symbol === 'USDC')
+      const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) / 1e6 : 0 // Convert from micro-USDC
+
+      console.log('[FRONTEND] Wallet USDC balance:', usdcBalance)
+
+      // Get vault balance for this wallet
+      const vaultBalanceResult = await verbsApi.getVaultBalance(selectedVault.address, selectedWallet!.id)
+      
+      console.log('[FRONTEND] Vault balance:', vaultBalanceResult.balanceFormatted)
+
+      // Show balances and ask for lend amount
+      const balancesDisplay = `
+Wallet Balance:
+USDC: ${usdcBalance}
+
+Vault Balance:
+${selectedVault.name}: ${vaultBalanceResult.balanceFormatted}
+
+How much would you like to lend?`
+
+      const balancesLine: TerminalLine = {
+        id: `balances-${Date.now()}`,
+        type: 'output',
+        content: balancesDisplay,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev, balancesLine])
+      
+      // Set up prompt for lend amount
+      setPendingPrompt({
+        type: 'lendAmount',
+        message: '',
+        data: {
+          selectedWallet: selectedWallet!,
+          selectedVault: selectedVault,
+          walletBalance: usdcBalance,
+          vaultBalance: vaultBalanceResult.balanceFormatted,
+          balance: usdcBalance, // For compatibility
+        },
+      })
+    } catch (error) {
+      console.error('[FRONTEND] Error getting balances:', error)
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to get balances: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
+  const handleLendAmountSubmission = async (amount: number) => {
+    const promptData = pendingPrompt?.data as {
+      selectedWallet: WalletData
+      selectedVault: VaultData
+      walletBalance: number
+      vaultBalance: string
+    }
+    
+    setPendingPrompt(null)
+
+    console.log('[FRONTEND] Lend amount submitted:', amount)
+
+    if (isNaN(amount) || amount <= 0) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: 'Please enter a valid positive number.',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
     }
 
-    setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
+    if (amount > promptData.walletBalance) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Insufficient balance. You have ${promptData.walletBalance} USDC available.`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
 
-    // Show final success message since we already have the selected wallet
-    const successLine: TerminalLine = {
-      id: `lend-success-${Date.now()}`,
-      type: 'success',
-      content: `Selected vault ${vault.name} for wallet ${shortenAddress(selectedWallet!.address)}. Lending functionality coming soon!`,
+    // Show processing message
+    const processingLine: TerminalLine = {
+      id: `processing-${Date.now()}`,
+      type: 'output',
+      content: `Processing lending transaction: ${amount} USDC to ${promptData.selectedVault.name}...`,
       timestamp: new Date(),
     }
-    setLines((prev) => [...prev, successLine])
+    setLines((prev) => [...prev, processingLine])
+
+    try {
+      console.log('[FRONTEND] Calling lendDeposit API')
+      const result = await verbsApi.lendDeposit(promptData.selectedWallet.id, amount, 'usdc')
+      
+      console.log('[FRONTEND] Lend deposit successful:', result.transaction.hash)
+
+      const successLine: TerminalLine = {
+        id: `lend-success-${Date.now()}`,
+        type: 'success',
+        content: `✅ Successfully lent ${amount} USDC to ${promptData.selectedVault.name}!
+
+Vault:  ${promptData.selectedVault.name}
+Amount: ${amount} USDC
+Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), successLine])
+    } catch (error) {
+      console.error('[FRONTEND] Lending failed:', error)
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to lend: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
   }
 
   const handleWalletSelect = async () => {

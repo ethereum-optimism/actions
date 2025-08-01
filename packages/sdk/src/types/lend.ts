@@ -20,8 +20,8 @@ export interface TransactionData {
  * @description Result of a lending operation
  */
 export interface LendTransaction {
-  /** Transaction hash */
-  hash: string
+  /** Transaction hash (set after execution) */
+  hash?: string
   /** Amount lent */
   amount: bigint
   /** Asset address */

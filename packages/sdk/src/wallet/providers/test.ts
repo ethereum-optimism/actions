@@ -95,4 +95,31 @@ export class WalletProviderTest implements WalletProvider {
       )
     }
   }
+
+  /**
+   * Sign a transaction without sending it
+   */
+  async signOnly(
+    _walletId: string,
+    transactionData: TransactionData,
+  ): Promise<string> {
+    try {
+      // Sign transaction using viem wallet client
+      const txParams: any = {
+        to: transactionData.to as Address,
+        data: transactionData.data as `0x${string}`,
+        value: BigInt(transactionData.value),
+      }
+
+      const signedTx = await this.walletClient.signTransaction(txParams)
+
+      return signedTx
+    } catch (error) {
+      throw new Error(
+        `Failed to sign transaction: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
+  }
 }

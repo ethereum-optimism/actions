@@ -48,4 +48,5 @@ router.post('/wallet/send', walletController.sendTokens)
 // Lend endpoints
 router.get('/lend/vaults', lendController.getVaults)
 router.get('/lend/vault/:vaultAddress', lendController.getVault)
+router.get('/lend/vault/:vaultAddress/balance/:walletId', lendController.getVaultBalance)
 router.post('/lend/deposit', lendController.deposit)

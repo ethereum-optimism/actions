@@ -97,15 +97,13 @@ export class LendProviderMorpho extends LendProvider {
       const currentTimestamp = Math.floor(Date.now() / 1000)
 
       return {
-        hash: `morpho-lend-${Date.now()}`, // Placeholder hash
         amount,
         asset,
         marketId: selectedVaultAddress,
         apy: vaultInfo.apy,
         timestamp: currentTimestamp,
-        // Add transaction data for wallet execution
         transactionData: {
-          // Approval transaction (if needed)
+          // Approval transaction
           approval: {
             to: asset,
             data: approvalCallData,

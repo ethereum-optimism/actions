@@ -76,11 +76,51 @@ export class LendController {
     }
   }
 
+  async getVaultBalance(c: Context) {
+    try {
+      const { vaultAddress, walletId } = c.req.param()
+
+      if (!vaultAddress || !walletId) {
+        return c.json(
+          {
+            error: 'Vault address and wallet ID are required',
+          },
+          400,
+        )
+      }
+
+      const vaultBalance = await lendService.getVaultBalance(
+        vaultAddress as `0x${string}`,
+        walletId,
+      )
+
+      return c.json({
+        balance: vaultBalance.balance.toString(),
+        balanceFormatted: vaultBalance.balanceFormatted,
+        shares: vaultBalance.shares.toString(),
+        sharesFormatted: vaultBalance.sharesFormatted,
+      })
+    } catch (error) {
+      return c.json(
+        {
+          error: 'Failed to get vault balance',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500,
+      )
+    }
+  }
+
   async deposit(c: Context) {
     try {
       const { walletId, amount, token } = await c.req.json()
 
+      console.log(
+        `[LEND] Starting deposit for wallet ${walletId}, amount ${amount}, token ${token}`,
+      )
+
       if (!walletId || !amount || !token) {
+        console.log('[LEND] Missing required parameters')
         return c.json(
           {
             error: 'Missing required parameters: walletId, amount, token',
@@ -90,6 +130,7 @@ export class LendController {
       }
 
       if (typeof amount !== 'number' || amount <= 0) {
+        console.log(`[LEND] Invalid amount: ${amount}`)
         return c.json(
           {
             error: 'Amount must be a positive number',
@@ -99,6 +140,7 @@ export class LendController {
       }
 
       if (typeof token !== 'string') {
+        console.log(`[LEND] Invalid token type: ${typeof token}`)
         return c.json(
           {
             error: 'Token must be a string',
@@ -107,21 +149,28 @@ export class LendController {
         )
       }
 
+      console.log('[LEND] Calling lendService.deposit')
       const lendTransaction = await lendService.deposit(walletId, amount, token)
+      console.log(`[LEND] Lend transaction prepared, executing on-chain...`)
+
+      // Execute the actual transactions using wallet.sign() and wallet.send()
+      const result = await lendService.executeLendTransaction(walletId, lendTransaction)
+      console.log(`[LEND] Deposit successful, hash: ${result.hash}`)
 
       return c.json({
         transaction: {
-          hash: lendTransaction.hash,
-          amount: lendTransaction.amount.toString(),
-          asset: lendTransaction.asset,
-          marketId: lendTransaction.marketId,
-          apy: lendTransaction.apy,
-          timestamp: lendTransaction.timestamp,
-          slippage: lendTransaction.slippage,
-          transactionData: lendTransaction.transactionData,
+          hash: result.hash,
+          amount: result.amount.toString(),
+          asset: result.asset,
+          marketId: result.marketId,
+          apy: result.apy,
+          timestamp: result.timestamp,
+          slippage: result.slippage,
+          transactionData: result.transactionData,
         },
       })
     } catch (error) {
+      console.error('[LEND] Deposit failed:', error)
       return c.json(
         {
           error: 'Failed to deposit',
