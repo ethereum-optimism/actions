@@ -42,7 +42,68 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
   if (!wallet) {
     throw new Error('Wallet not found')
   }
-  return wallet.getBalance()
+
+  // Get regular token balances
+  const tokenBalances = await wallet.getBalance()
+
+  // Get vault balances and add them to the response
+  const verbs = getVerbs()
+  try {
+    const vaults = await verbs.lend.getVaults()
+    console.log(
+      `[WALLET_SERVICE] Found ${vaults.length} vaults to check balances for`,
+    )
+
+    const vaultBalances = await Promise.all(
+      vaults.map(async (vault) => {
+        try {
+          const vaultBalance = await verbs.lend.getVaultBalance(
+            vault.address,
+            wallet.address,
+          )
+
+          // Only include vaults with non-zero balances
+          if (vaultBalance.balance > 0n) {
+            console.log(
+              `[WALLET_SERVICE] Found vault balance: ${vault.name} = ${vaultBalance.balanceFormatted}`,
+            )
+
+            // Create a TokenBalance-like object for the vault
+            return {
+              symbol: `${vault.name}`,
+              totalBalance: vaultBalance.balance,
+              chainBalances: [
+                {
+                  chainId: 130 as const, // Unichain
+                  balance: vaultBalance.balance,
+                },
+              ],
+            }
+          }
+          return null
+        } catch (error) {
+          console.log(
+            `[WALLET_SERVICE] Error checking vault ${vault.name}: ${error}`,
+          )
+          return null
+        }
+      }),
+    )
+
+    // Filter out null values and add vault balances to token balances
+    const validVaultBalances = vaultBalances.filter(
+      (balance): balance is NonNullable<typeof balance> => balance !== null,
+    )
+    console.log(
+      `[WALLET_SERVICE] Found ${validVaultBalances.length} non-zero vault balances`,
+    )
+
+    return [...tokenBalances, ...validVaultBalances]
+  } catch (error) {
+    console.error('[WALLET_SERVICE] Error fetching vault balances:', error)
+    // Return just token balances if vault balance fetching fails
+    return tokenBalances
+  }
 }
 
 export async function sendTokens(

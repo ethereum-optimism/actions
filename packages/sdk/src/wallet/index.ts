@@ -147,9 +147,7 @@ export class Wallet implements WalletInterface {
    * @returns Promise resolving to signed transaction
    * @throws Error if wallet is not initialized or no wallet provider is configured
    */
-  async sign(
-    transactionData: TransactionData,
-  ): Promise<`0x${string}`> {
+  async sign(transactionData: TransactionData): Promise<`0x${string}`> {
     if (!this.initialized) {
       throw new Error('Wallet not initialized')
     }

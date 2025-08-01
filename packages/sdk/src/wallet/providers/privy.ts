@@ -143,7 +143,7 @@ export class WalletProviderPrivy implements WalletProvider {
 
       // Get public client for gas estimation
       const publicClient = this.verbs.chainManager.getPublicClient(130) // Unichain
-      
+
       // Estimate gas limit
       const gasLimit = await publicClient.estimateGas({
         account: wallet.address,
@@ -154,15 +154,14 @@ export class WalletProviderPrivy implements WalletProvider {
 
       // Get current gas price and fee data
       const feeData = await publicClient.estimateFeesPerGas()
-      
-      // Get current nonce for the wallet - Privy seems to not be handling this automatically
+
+      // Get current nonce for the wallet - manual management since Privy isn't handling it properly
       const nonce = await publicClient.getTransactionCount({
         address: wallet.address,
-        blockTag: 'pending' // Use pending to get the next nonce including any pending txs
+        blockTag: 'pending', // Use pending to get the next nonce including any pending txs
       })
-      
+
       // According to Privy docs: if you provide ANY gas parameters, you must provide ALL of them
-      // Since Privy isn't handling nonce automatically, we'll provide it explicitly
       const txParams: any = {
         to: transactionData.to,
         data: transactionData.data as `0x${string}`,
@@ -175,7 +174,9 @@ export class WalletProviderPrivy implements WalletProvider {
         nonce: `0x${nonce.toString(16)}`, // Explicitly provide the correct nonce
       }
 
-      console.log(`[PRIVY_PROVIDER] Complete tx params - Type: ${txParams.type}, Nonce: ${nonce}, Limit: ${gasLimit}, MaxFee: ${feeData.maxFeePerGas || 'fallback'}, Priority: ${feeData.maxPriorityFeePerGas || 'fallback'}`)
+      console.log(
+        `[PRIVY_PROVIDER] Complete tx params - Type: ${txParams.type}, Nonce: ${nonce}, Limit: ${gasLimit}, MaxFee: ${feeData.maxFeePerGas || 'fallback'}, Priority: ${feeData.maxPriorityFeePerGas || 'fallback'}`,
+      )
 
       const response = await this.privy.walletApi.ethereum.signTransaction({
         walletId,

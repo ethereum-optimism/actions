@@ -154,7 +154,10 @@ export class LendController {
       console.log(`[LEND] Lend transaction prepared, executing on-chain...`)
 
       // Execute the actual transactions using wallet.sign() and wallet.send()
-      const result = await lendService.executeLendTransaction(walletId, lendTransaction)
+      const result = await lendService.executeLendTransaction(
+        walletId,
+        lendTransaction,
+      )
       console.log(`[LEND] Deposit successful, hash: ${result.hash}`)
 
       return c.json({

@@ -47,8 +47,10 @@ export async function getVaultBalance(
   sharesFormatted: string
 }> {
   try {
-    console.log(`[LEND_SERVICE] Getting vault balance for vault ${vaultAddress}, wallet ${walletId}`)
-    
+    console.log(
+      `[LEND_SERVICE] Getting vault balance for vault ${vaultAddress}, wallet ${walletId}`,
+    )
+
     const verbs = getVerbs()
 
     // Get wallet by user ID
@@ -58,13 +60,20 @@ export async function getVaultBalance(
       throw new Error(`Wallet not found for user ID: ${walletId}`)
     }
 
-    console.log(`[LEND_SERVICE] Found wallet ${wallet.address}, calling verbs.lend.getVaultBalance`)
-    
+    console.log(
+      `[LEND_SERVICE] Found wallet ${wallet.address}, calling verbs.lend.getVaultBalance`,
+    )
+
     // Get vault balance using the lend provider
-    const vaultBalance = await verbs.lend.getVaultBalance(vaultAddress, wallet.address)
-    
-    console.log(`[LEND_SERVICE] Vault balance: ${vaultBalance.balanceFormatted}`)
-    
+    const vaultBalance = await verbs.lend.getVaultBalance(
+      vaultAddress,
+      wallet.address,
+    )
+
+    console.log(
+      `[LEND_SERVICE] Vault balance: ${vaultBalance.balanceFormatted}`,
+    )
+
     return vaultBalance
   } catch (error) {
     console.error(`[LEND_SERVICE] Failed to get vault balance:`, error)
@@ -85,8 +94,10 @@ export async function deposit(
   token: string,
 ): Promise<LendTransaction> {
   try {
-    console.log(`[LEND_SERVICE] Starting deposit for wallet ${walletId}, amount ${amount}, token ${token}`)
-    
+    console.log(
+      `[LEND_SERVICE] Starting deposit for wallet ${walletId}, amount ${amount}, token ${token}`,
+    )
+
     const verbs = getVerbs()
 
     // Get wallet by user ID
@@ -96,7 +107,9 @@ export async function deposit(
       throw new Error(`Wallet not found for user ID: ${walletId}`)
     }
 
-    console.log(`[LEND_SERVICE] Found wallet ${wallet.address}, calling wallet.lend`)
+    console.log(
+      `[LEND_SERVICE] Found wallet ${wallet.address}, calling wallet.lend`,
+    )
 
     // Execute the deposit transaction using wallet.lend()
     // The wallet.lend() method handles token resolution, amount parsing, and decimal conversion
@@ -105,7 +118,9 @@ export async function deposit(
       token.toLowerCase(), // Pass token symbol as string
     )
 
-    console.log(`[LEND_SERVICE] Lend transaction completed: ${lendTransaction.hash}`)
+    console.log(
+      `[LEND_SERVICE] Lend transaction completed: ${lendTransaction.hash}`,
+    )
 
     return lendTransaction
   } catch (error) {
@@ -126,8 +141,10 @@ export async function executeLendTransaction(
   lendTransaction: LendTransaction,
 ): Promise<LendTransaction> {
   try {
-    console.log(`[LEND_SERVICE] Executing lend transaction for wallet ${walletId}`)
-    
+    console.log(
+      `[LEND_SERVICE] Executing lend transaction for wallet ${walletId}`,
+    )
+
     const verbs = getVerbs()
 
     // Get wallet by user ID
@@ -145,17 +162,19 @@ export async function executeLendTransaction(
 
     // Get public client for sending transactions
     const publicClient = verbs.chainManager.getPublicClient(130) // Unichain
-    
+
     // Check wallet ETH balance for gas fees
     console.log('[LEND_SERVICE] Checking wallet ETH balance for gas fees...')
     const ethBalance = await publicClient.getBalance({
       address: wallet.address,
     })
-    console.log(`[LEND_SERVICE] Wallet ETH balance: ${ethBalance} wei (${ethBalance / BigInt(10**18)} ETH)`)
-    
+    console.log(
+      `[LEND_SERVICE] Wallet ETH balance: ${ethBalance} wei (${ethBalance / BigInt(10 ** 18)} ETH)`,
+    )
+
     // Estimate gas for both transactions
     let totalGasEstimate = BigInt(0)
-    
+
     if (lendTransaction.transactionData.approval) {
       try {
         const approvalGas = await publicClient.estimateGas({
@@ -170,7 +189,7 @@ export async function executeLendTransaction(
         console.log(`[LEND_SERVICE] Failed to estimate approval gas: ${error}`)
       }
     }
-    
+
     try {
       const depositGas = await publicClient.estimateGas({
         account: wallet.address,
@@ -183,53 +202,70 @@ export async function executeLendTransaction(
     } catch (error) {
       console.log(`[LEND_SERVICE] Failed to estimate deposit gas: ${error}`)
     }
-    
+
     // Get current gas price
     const gasPrice = await publicClient.getGasPrice()
     const estimatedGasCost = totalGasEstimate * gasPrice
-    console.log(`[LEND_SERVICE] Total estimated gas cost: ${estimatedGasCost} wei (${estimatedGasCost / BigInt(10**18)} ETH)`)
-    
+    console.log(
+      `[LEND_SERVICE] Total estimated gas cost: ${estimatedGasCost} wei (${estimatedGasCost / BigInt(10 ** 18)} ETH)`,
+    )
+
     if (ethBalance < estimatedGasCost) {
       const shortfall = estimatedGasCost - ethBalance
       throw new Error(
-        `Insufficient ETH for gas fees. Need ${estimatedGasCost / BigInt(10**18)} ETH, but wallet only has ${ethBalance / BigInt(10**18)} ETH. Shortfall: ${shortfall / BigInt(10**18)} ETH`
+        `Insufficient ETH for gas fees. Need ${estimatedGasCost / BigInt(10 ** 18)} ETH, but wallet only has ${ethBalance / BigInt(10 ** 18)} ETH. Shortfall: ${shortfall / BigInt(10 ** 18)} ETH`,
       )
     }
-    
+
     let depositHash: `0x${string}` = '0x0'
 
-    // Get current nonce for sequential transaction management
+    // Get current nonce and manage it manually for sequential transactions
     let currentNonce = await publicClient.getTransactionCount({
       address: wallet.address,
-      blockTag: 'pending'
+      blockTag: 'pending',
     })
-    console.log(`[LEND_SERVICE] Starting nonce: ${currentNonce}`)
+    console.log(`[LEND_SERVICE] Starting with nonce: ${currentNonce}`)
 
     // Execute approval transaction if needed
     if (lendTransaction.transactionData.approval) {
-      console.log(`[LEND_SERVICE] Executing approval transaction with nonce ${currentNonce}...`)
+      console.log(
+        `[LEND_SERVICE] Executing approval transaction with explicit nonce ${currentNonce}...`,
+      )
       try {
-        const approvalSignedTx = await wallet.sign(lendTransaction.transactionData.approval)
+        const approvalSignedTx = await wallet.sign(
+          lendTransaction.transactionData.approval,
+        )
         const approvalHash = await wallet.send(approvalSignedTx, publicClient)
         console.log(`[LEND_SERVICE] Approval transaction sent: ${approvalHash}`)
-        
-        // Wait for approval to be mined before proceeding
+
+        // Wait for approval to be confirmed before proceeding
+        console.log(
+          '[LEND_SERVICE] Waiting for approval confirmation before deposit...',
+        )
         await publicClient.waitForTransactionReceipt({ hash: approvalHash })
         console.log('[LEND_SERVICE] Approval transaction confirmed')
-        
-        // Increment nonce for next transaction
+
+        // Increment nonce for the next transaction
         currentNonce++
-        console.log(`[LEND_SERVICE] Next nonce for deposit: ${currentNonce}`)
+        console.log(
+          `[LEND_SERVICE] Incremented nonce to ${currentNonce} for deposit transaction`,
+        )
       } catch (error) {
         console.error('[LEND_SERVICE] Approval transaction failed:', error)
-        throw new Error(`Approval transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        throw new Error(
+          `Approval transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        )
       }
     }
 
-    // Execute deposit transaction
-    console.log(`[LEND_SERVICE] Executing deposit transaction with nonce ${currentNonce}...`)
+    // Execute deposit transaction with incremented nonce
+    console.log(
+      `[LEND_SERVICE] Executing deposit transaction (current nonce should be ${currentNonce})...`,
+    )
     try {
-      const depositSignedTx = await wallet.sign(lendTransaction.transactionData.deposit)
+      const depositSignedTx = await wallet.sign(
+        lendTransaction.transactionData.deposit,
+      )
       depositHash = await wallet.send(depositSignedTx, publicClient)
       console.log(`[LEND_SERVICE] Deposit transaction sent: ${depositHash}`)
 
@@ -238,7 +274,9 @@ export async function executeLendTransaction(
       console.log('[LEND_SERVICE] Deposit transaction confirmed')
     } catch (error) {
       console.error('[LEND_SERVICE] Deposit transaction failed:', error)
-      throw new Error(`Deposit transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Deposit transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
 
     // Return the transaction with the real hash
@@ -247,7 +285,9 @@ export async function executeLendTransaction(
       hash: depositHash,
     }
 
-    console.log(`[LEND_SERVICE] Lend execution completed successfully: ${result.hash}`)
+    console.log(
+      `[LEND_SERVICE] Lend execution completed successfully: ${result.hash}`,
+    )
     return result
   } catch (error) {
     console.error(`[LEND_SERVICE] Failed to execute lend transaction:`, error)

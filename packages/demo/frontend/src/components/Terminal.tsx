@@ -87,6 +87,29 @@ const Terminal = () => {
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
 
+  // Function to render content with clickable links
+  const renderContentWithLinks = (content: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g
+    const parts = content.split(urlRegex)
+    
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+          >
+            {part}
+          </a>
+        )
+      }
+      return part
+    })
+  }
+
   // Helper function to shorten wallet addresses
   const shortenAddress = (address: string): string => {
     if (address.length <= 10) return address
@@ -713,9 +736,9 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
       try {
         const result = await verbsApi.getWalletBalance(selectedWalletData.id)
 
-        // Filter to show only ETH and USDC, exclude MORPHO
+        // Show ETH, USDC, and any vault balances
         const filteredBalances = result.balance.filter(
-          (token) => token.symbol === 'ETH' || token.symbol === 'USDC'
+          (token) => token.symbol === 'ETH' || token.symbol === 'USDC' || token.symbol.includes('Gauntlet') || token.symbol.includes('Vault')
         )
 
         // Ensure both ETH and USDC are shown, even if not in response
@@ -743,10 +766,26 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
           return `${wholePart}.${trimmedFractional}`
         }
         
-        const balanceText = [
+        // Separate vault balances from token balances
+        const vaultBalances = filteredBalances.filter(token => 
+          token.symbol !== 'ETH' && token.symbol !== 'USDC'
+        )
+        
+        const balanceLines = [
           `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
           `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`
-        ].join('\n')
+        ]
+        
+        // Add vault balances if any exist
+        if (vaultBalances.length > 0) {
+          balanceLines.push('') // Empty line separator
+          balanceLines.push('Vault Positions:')
+          vaultBalances.forEach(vault => {
+            balanceLines.push(`${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`) // Assume 6 decimals for vault shares
+          })
+        }
+        
+        const balanceText = balanceLines.join('\n')
 
         const balanceLine: TerminalLine = {
           id: `balance-${Date.now()}`,
@@ -786,9 +825,9 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
     try {
       const result = await verbsApi.getWalletBalance(selectedWallet.id)
 
-      // Filter to show only ETH and USDC, exclude MORPHO
+      // Show ETH, USDC, and any vault balances
       const filteredBalances = result.balance.filter(
-        (token) => token.symbol === 'ETH' || token.symbol === 'USDC'
+        (token) => token.symbol === 'ETH' || token.symbol === 'USDC' || token.symbol.includes('Gauntlet') || token.symbol.includes('Vault')
       )
 
       // Ensure both ETH and USDC are shown, even if not in response
@@ -816,10 +855,26 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
         return `${wholePart}.${trimmedFractional}`
       }
       
-      const balanceText = [
+      // Separate vault balances from token balances
+      const vaultBalances = filteredBalances.filter(token => 
+        token.symbol !== 'ETH' && token.symbol !== 'USDC'
+      )
+      
+      const balanceLines = [
         `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
         `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`
-      ].join('\n')
+      ]
+      
+      // Add vault balances if any exist
+      if (vaultBalances.length > 0) {
+        balanceLines.push('') // Empty line separator
+        balanceLines.push('Vault Positions:')
+        vaultBalances.forEach(vault => {
+          balanceLines.push(`${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`) // Assume 6 decimals for vault shares
+        })
+      }
+      
+      const balanceText = balanceLines.join('\n')
 
       const successLine: TerminalLine = {
         id: `success-${Date.now()}`,
@@ -877,19 +932,56 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
       // Then fetch and show the balance
       const result = await verbsApi.getWalletBalance(selectedWallet.id)
 
-      // Filter to show only ETH and USDC, exclude MORPHO
+      // Show ETH, USDC, and any vault balances
       const filteredBalances = result.balance.filter(
-        (token) => token.symbol === 'ETH' || token.symbol === 'USDC'
+        (token) => token.symbol === 'ETH' || token.symbol === 'USDC' || token.symbol.includes('Gauntlet') || token.symbol.includes('Vault')
       )
 
       // Ensure both ETH and USDC are shown, even if not in response
       const ethBalance = filteredBalances.find(token => token.symbol === 'ETH')
       const usdcBalance = filteredBalances.find(token => token.symbol === 'USDC')
       
-      const balanceText = [
-        `ETH: ${ethBalance ? ethBalance.totalBalance : '0'}`,
-        `USDC: ${usdcBalance ? usdcBalance.totalBalance : '0'}`
-      ].join('\n')
+      // Format balances to human readable format (for fund wallet display)
+      const formatBalance = (balance: string, decimals: number): string => {
+        const balanceBigInt = BigInt(balance)
+        const divisor = BigInt(10 ** decimals)
+        const wholePart = balanceBigInt / divisor
+        const fractionalPart = balanceBigInt % divisor
+        
+        if (fractionalPart === 0n) {
+          return wholePart.toString()
+        }
+        
+        const fractionalStr = fractionalPart.toString().padStart(decimals, '0')
+        const trimmedFractional = fractionalStr.replace(/0+$/, '')
+        
+        if (trimmedFractional === '') {
+          return wholePart.toString()
+        }
+        
+        return `${wholePart}.${trimmedFractional}`
+      }
+      
+      // Separate vault balances from token balances
+      const vaultBalances = filteredBalances.filter(token => 
+        token.symbol !== 'ETH' && token.symbol !== 'USDC'
+      )
+      
+      const balanceLines = [
+        `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
+        `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`
+      ]
+      
+      // Add vault balances if any exist
+      if (vaultBalances.length > 0) {
+        balanceLines.push('') // Empty line separator
+        balanceLines.push('Vault Positions:')
+        vaultBalances.forEach(vault => {
+          balanceLines.push(`${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`) // Assume 6 decimals for vault shares
+        })
+      }
+      
+      const balanceText = balanceLines.join('\n')
 
       const balanceSuccessLine: TerminalLine = {
         id: `balance-success-${Date.now()}`,
@@ -1282,6 +1374,19 @@ ${vaultOptions}
       return
     }
 
+    // Handle ESC key for lend amount prompt
+    if (
+      pendingPrompt &&
+      pendingPrompt.type === 'lendAmount'
+    ) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setPendingPrompt(null)
+        setCurrentInput('')
+        return
+      }
+    }
+
     if (e.key === 'Enter') {
       processCommand(currentInput)
       setCurrentInput('')
@@ -1392,7 +1497,7 @@ ${vaultOptions}
                   : {}
               }
             >
-              {line.content}
+              {renderContentWithLinks(line.content)}
             </div>
           </div>
         ))}
