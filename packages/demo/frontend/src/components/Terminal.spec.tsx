@@ -116,26 +116,26 @@ describe('Terminal', () => {
     ).toBeInTheDocument()
   })
 
-  it('handles wallet list command', async () => {
+  it('handles wallet select command', async () => {
     const user = userEvent.setup()
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
     
-    await user.type(input, 'wallet list')
+    await user.type(input, 'wallet select')
     await user.keyboard('{Enter}')
 
     // Check that command was executed
-    expect(screen.getByText('verbs: $ wallet list')).toBeInTheDocument()
+    expect(screen.getByText('verbs: $ wallet select')).toBeInTheDocument()
     
     // Wait for API call to complete
     await waitFor(() => {
-      expect(screen.getByText(/Found 2 wallet/)).toBeInTheDocument()
+      expect(screen.getByText(/Select a wallet:/)).toBeInTheDocument()
     })
 
-    // Check that wallet addresses are displayed
+    // Check that wallet addresses are displayed in shortened format
     expect(
-      screen.getByText(/0x1234567890123456789012345678901234567890/)
+      screen.getByText(/0x1234...7890/)
     ).toBeInTheDocument()
   })
 

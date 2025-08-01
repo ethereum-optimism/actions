@@ -11,6 +11,16 @@ export interface TokenInfo {
 }
 
 export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
+  ETH: {
+    symbol: 'ETH',
+    name: 'Ethereum',
+    decimals: 18,
+    addresses: {
+      [mainnet.id]: '0x0000000000000000000000000000000000000000',
+      [unichain.id]: '0x0000000000000000000000000000000000000000',
+      [base.id]: '0x0000000000000000000000000000000000000000',
+    },
+  },
   USDC: {
     symbol: 'USDC',
     name: 'USDC',

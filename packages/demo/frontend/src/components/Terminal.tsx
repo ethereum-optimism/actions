@@ -24,7 +24,6 @@ interface VaultData {
 interface PendingPrompt {
   type:
     | 'userId'
-    | 'lendProvider'
     | 'lendVault'
     | 'walletSendSelection'
     | 'walletSendAmount'
@@ -166,9 +165,6 @@ const Terminal = () => {
     if (pendingPrompt) {
       if (pendingPrompt.type === 'userId') {
         handleWalletCreation(trimmed)
-        return
-      } else if (pendingPrompt.type === 'lendProvider') {
-        handleLendProviderSelection()
         return
       } else if (pendingPrompt.type === 'lendVault') {
         handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
@@ -351,67 +347,6 @@ User ID: ${result.userId}`,
   }
 
 
-  const handleLendProviderSelection = async () => {
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
-      type: 'output',
-      content: 'Loading vaults...',
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, loadingLine])
-    setPendingPrompt(null)
-
-    try {
-      const result = await verbsApi.getVaults()
-
-      if (result.vaults.length === 0) {
-        const emptyLine: TerminalLine = {
-          id: `empty-${Date.now()}`,
-          type: 'error',
-          content: 'No vaults available.',
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), emptyLine])
-        return
-      }
-
-      const vaultOptions = result.vaults
-        .map(
-          (vault, index) =>
-            `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
-        )
-        .join('\n')
-
-      const vaultSelectionLine: TerminalLine = {
-        id: `vault-selection-${Date.now()}`,
-        type: 'output',
-        content: `Select a Lend vault:
-
-${vaultOptions}
-
-[Enter] to select`,
-        timestamp: new Date(),
-      }
-
-      setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
-      setPendingPrompt({
-        type: 'lendVault',
-        message: '',
-        data: result.vaults,
-      })
-    } catch (error) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Failed to load vaults: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
-    }
-  }
 
   const handleLendVaultSelection = async (vaults: VaultData[]) => {
     // Always select the first vault (default)
@@ -580,13 +515,90 @@ ${vaultOptions}
     const selectedWalletData = wallets[selection - 1]
     setSelectedWallet(selectedWalletData)
 
-    const successLine: TerminalLine = {
-      id: `select-success-${Date.now()}`,
-      type: 'success',
-      content: `Wallet selected:\n${selectedWalletData.address}`,
-      timestamp: new Date(),
-    }
-    setLines((prev) => [...prev, successLine])
+    // Clear the wallet selection list and replace with just the success message
+    setLines((prev) => {
+      // Find the index of the "Select a wallet:" line and remove everything from there
+      const selectWalletIndex = prev.findIndex(line => 
+        line.content.includes('Select a wallet:')
+      )
+      
+      if (selectWalletIndex !== -1) {
+        // Keep everything before the wallet selection list
+        const beforeSelection = prev.slice(0, selectWalletIndex)
+        
+        // Add just the success message
+        const successLine: TerminalLine = {
+          id: `select-success-${Date.now()}`,
+          type: 'success',
+          content: `Wallet selected:\n${selectedWalletData.address}`,
+          timestamp: new Date(),
+        }
+        
+        return [...beforeSelection, successLine]
+      }
+      
+      // Fallback: just add the success line if we can't find the selection
+      const successLine: TerminalLine = {
+        id: `select-success-${Date.now()}`,
+        type: 'success',
+        content: `Wallet selected:\n${selectedWalletData.address}`,
+        timestamp: new Date(),
+      }
+      return [...prev, successLine]
+    })
+
+    // Automatically fetch and display balance for the selected wallet
+    setTimeout(async () => {
+      try {
+        const result = await verbsApi.getWalletBalance(selectedWalletData.id)
+
+        // Filter to show only ETH and USDC, exclude MORPHO
+        const filteredBalances = result.balance.filter(
+          (token) => token.symbol === 'ETH' || token.symbol === 'USDC'
+        )
+
+        // Ensure both ETH and USDC are shown, even if not in response
+        const ethBalance = filteredBalances.find(token => token.symbol === 'ETH')
+        const usdcBalance = filteredBalances.find(token => token.symbol === 'USDC')
+        
+        // Format balances to human readable format
+        const formatBalance = (balance: string, decimals: number): string => {
+          const balanceBigInt = BigInt(balance)
+          const divisor = BigInt(10 ** decimals)
+          const wholePart = balanceBigInt / divisor
+          const fractionalPart = balanceBigInt % divisor
+          
+          if (fractionalPart === 0n) {
+            return wholePart.toString()
+          }
+          
+          const fractionalStr = fractionalPart.toString().padStart(decimals, '0')
+          const trimmedFractional = fractionalStr.replace(/0+$/, '')
+          
+          if (trimmedFractional === '') {
+            return wholePart.toString()
+          }
+          
+          return `${wholePart}.${trimmedFractional}`
+        }
+        
+        const balanceText = [
+          `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
+          `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`
+        ].join('\n')
+
+        const balanceLine: TerminalLine = {
+          id: `balance-${Date.now()}`,
+          type: 'output',
+          content: `\n${balanceText}`,
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev, balanceLine])
+      } catch (error) {
+        // Silently fail balance fetch to not interrupt wallet selection flow
+        console.error('Failed to fetch balance after wallet selection:', error)
+      }
+    }, 100)
   }
 
   const handleWalletBalance = async () => {
@@ -622,9 +634,30 @@ ${vaultOptions}
       const ethBalance = filteredBalances.find(token => token.symbol === 'ETH')
       const usdcBalance = filteredBalances.find(token => token.symbol === 'USDC')
       
+      // Format balances to human readable format
+      const formatBalance = (balance: string, decimals: number): string => {
+        const balanceBigInt = BigInt(balance)
+        const divisor = BigInt(10 ** decimals)
+        const wholePart = balanceBigInt / divisor
+        const fractionalPart = balanceBigInt % divisor
+        
+        if (fractionalPart === 0n) {
+          return wholePart.toString()
+        }
+        
+        const fractionalStr = fractionalPart.toString().padStart(decimals, '0')
+        const trimmedFractional = fractionalStr.replace(/0+$/, '')
+        
+        if (trimmedFractional === '') {
+          return wholePart.toString()
+        }
+        
+        return `${wholePart}.${trimmedFractional}`
+      }
+      
       const balanceText = [
-        `ETH: ${ethBalance ? ethBalance.totalBalance : '0'}`,
-        `USDC: ${usdcBalance ? usdcBalance.totalBalance : '0'}`
+        `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
+        `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`
       ].join('\n')
 
       const successLine: TerminalLine = {
@@ -744,22 +777,65 @@ ${vaultOptions}
         return
       }
 
-      // Show provider selection immediately
-      const providerSelectionLine: TerminalLine = {
-        id: `provider-selection-${Date.now()}`,
+      // Skip provider selection and go directly to vault selection
+      const loadingLine: TerminalLine = {
+        id: `loading-${Date.now()}`,
         type: 'output',
-        content: `Select a Lend provider:
-
-> Morpho
-
-[Enter] to select`,
+        content: 'Loading vaults...',
         timestamp: new Date(),
       }
-      setLines((prev) => [...prev, providerSelectionLine])
-      setPendingPrompt({
-        type: 'lendProvider',
-        message: '',
-      })
+      setLines((prev) => [...prev, loadingLine])
+
+      try {
+        const result = await verbsApi.getVaults()
+
+        if (result.vaults.length === 0) {
+          const emptyLine: TerminalLine = {
+            id: `empty-${Date.now()}`,
+            type: 'error',
+            content: 'No vaults available.',
+            timestamp: new Date(),
+          }
+          setLines((prev) => [...prev.slice(0, -1), emptyLine])
+          return
+        }
+
+        const vaultOptions = result.vaults
+          .map(
+            (vault, index) =>
+              `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
+          )
+          .join('\n')
+
+        const vaultSelectionLine: TerminalLine = {
+          id: `vault-selection-${Date.now()}`,
+          type: 'output',
+          content: `Select a Lending vault:
+
+${vaultOptions}
+
+[Enter] to select, [↑/↓] to navigate`,
+          timestamp: new Date(),
+        }
+
+        setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
+        setPendingPrompt({
+          type: 'lendVault',
+          message: '',
+          data: result.vaults,
+        })
+      } catch (vaultError) {
+        const errorLine: TerminalLine = {
+          id: `error-${Date.now()}`,
+          type: 'error',
+          content: `Failed to load vaults: ${
+            vaultError instanceof Error ? vaultError.message : 'Unknown error'
+          }`,
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev.slice(0, -1), errorLine])
+        return
+      }
     } catch (error) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
@@ -1028,16 +1104,11 @@ ${vaultOptions}
     // Handle special keys for lend prompts
     if (
       pendingPrompt &&
-      (pendingPrompt.type === 'lendProvider' ||
-        pendingPrompt.type === 'lendVault')
+      pendingPrompt.type === 'lendVault'
     ) {
       if (e.key === 'Enter') {
         e.preventDefault()
-        if (pendingPrompt.type === 'lendProvider') {
-          handleLendProviderSelection()
-        } else if (pendingPrompt.type === 'lendVault') {
-          handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
-        }
+        handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
         return
       } else if (e.key === 'Escape') {
         e.preventDefault()
