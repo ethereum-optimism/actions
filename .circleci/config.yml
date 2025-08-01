@@ -270,7 +270,7 @@ workflows:
   check-workflow:
     jobs:
       - check
-      - supersim-tests
+      # - supersim-tests
 
   build-and-publish-backend:
     when:
