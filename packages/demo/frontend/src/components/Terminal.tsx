@@ -56,15 +56,14 @@ Console commands:
   exit          - Exit terminal
 
 Wallet commands:
-  wallet create  - Create a new wallet
-  wallet select  - Select a wallet to use for commands
-  wallet lend    - Lend to Morpho vaults
-  wallet balance - Show balance of selected wallet
-  wallet fund    - Fund selected wallet
-  wallet send    - Send USDC to another address
+  wallet create - Create a new wallet
+  wallet select - Select a wallet to use for commands
+         fund    - Fund selected wallet
+         balance - Show balance of selected wallet
+         lend    - Lend to Morpho vaults
+         send    - Send USDC to another address
 
 Future verbs (coming soon):
-  fund          - Onramp to stables
   borrow        - Borrow via Morpho
   repay         - Repay Morpho loan
   swap          - Trade via Uniswap
@@ -246,25 +245,30 @@ const Terminal = () => {
         setLines((prev) => [...prev, commandLine])
         return
       case 'wallet select':
+      case 'select':
         setLines((prev) => [...prev, commandLine])
         handleWalletSelect()
         return
-      case 'wallet balance': {
+      case 'wallet balance':
+      case 'balance': {
         setLines((prev) => [...prev, commandLine])
         handleWalletBalance()
         return
       }
-      case 'wallet fund': {
+      case 'wallet fund':
+      case 'fund': {
         setLines((prev) => [...prev, commandLine])
         handleWalletFund()
         return
       }
-      case 'wallet send': {
+      case 'wallet send':
+      case 'send': {
         setLines((prev) => [...prev, commandLine])
         handleWalletSendList()
         return
       }
-      case 'wallet lend': {
+      case 'wallet lend':
+      case 'lend': {
         setLines((prev) => [...prev, commandLine])
         handleWalletLend()
         return
@@ -288,7 +292,6 @@ Active Wallets: 0`,
           timestamp: new Date(),
         }
         break
-      case 'fund':
       case 'borrow':
       case 'repay':
       case 'swap':
@@ -455,7 +458,7 @@ User ID: ${result.userId}`,
       }
 
       // Format wallets in columns of 10 each
-      const formatWalletColumns = (wallets: any[]) => {
+      const formatWalletColumns = (wallets: WalletData[]) => {
         const lines: string[] = []
         const maxPerColumn = 10
         const totalWallets = wallets.length

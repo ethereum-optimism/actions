@@ -81,6 +81,16 @@ describe('Wallet', () => {
       expect(balance).toEqual([
         {
           totalBalance: 1000000n,
+          symbol: 'ETH',
+          chainBalances: [
+            {
+              balance: 1000000n,
+              chainId: 130,
+            },
+          ],
+        },
+        {
+          totalBalance: 1000000n,
           symbol: 'USDC',
           chainBalances: [
             {

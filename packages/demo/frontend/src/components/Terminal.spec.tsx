@@ -199,7 +199,7 @@ describe('Terminal', () => {
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
-    const comingSoonCommands = ['fund', 'lend', 'borrow', 'repay', 'swap', 'earn']
+    const comingSoonCommands = ['borrow', 'repay', 'swap', 'earn']
     
     for (const command of comingSoonCommands) {
       await user.clear(input)

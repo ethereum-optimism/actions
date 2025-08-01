@@ -56,6 +56,9 @@ export class MockChainManager {
         readContract: vi.fn().mockImplementation(() => {
           return Promise.resolve(this.config.defaultBalance)
         }),
+        getBalance: vi.fn().mockImplementation(() => {
+          return Promise.resolve(this.config.defaultBalance)
+        }),
       } as any
 
       clients.set(chainId, mockClient)
