@@ -7,8 +7,8 @@ function App() {
     <Router>
       <div className="w-full h-screen bg-terminal-bg">
         <Routes>
-          <Route path="/" element={<Terminal />} />
-          <Route path="/home" element={<Home />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/demo" element={<Terminal />} />
         </Routes>
       </div>
     </Router>

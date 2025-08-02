@@ -1,4 +1,5 @@
 export { LendProvider, LendProviderMorpho } from './lend/index.js'
+export { getTokenAddress, SUPPORTED_TOKENS } from './supported/tokens.js'
 export type {
   ApyBreakdown,
   CreateWalletResponse,
@@ -15,6 +16,7 @@ export type {
   MorphoLendConfig,
   PrivyWalletConfig,
   TokenBalance,
+  TransactionData,
   VerbsConfig,
   VerbsInterface,
   WalletConfig,

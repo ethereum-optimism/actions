@@ -36,7 +36,7 @@ class VerbsApiClient {
 
       try {
         const errorData = await response.json()
-        errorMessage = errorData.message || errorMessage
+        errorMessage = errorData.error || errorData.message || errorMessage
       } catch {
         // If JSON parsing fails, use the default error message
       }
@@ -60,8 +60,28 @@ class VerbsApiClient {
     })
   }
 
-  async getVaults(): Promise<{ vaults: Array<{ address: string; name: string; apy: number; asset: string }> }> {
-    return this.request<{ vaults: Array<{ address: string; name: string; apy: number; asset: string }> }>('/lend/vaults', {
+  async getVaults(): Promise<{ vaults: Array<{ 
+    address: string; 
+    name: string; 
+    apy: number; 
+    asset: string;
+    apyBreakdown: {
+      nativeApy: number
+      totalRewardsApr: number
+      usdc?: number
+      morpho?: number
+      other?: number
+      performanceFee: number
+      netApy: number
+    }
+    totalAssets: string
+    totalShares: string
+    fee: number
+    owner: string
+    curator: string
+    lastUpdate: number
+  }> }> {
+    return this.request('/lend/vaults', {
       method: 'GET',
     })
   }
@@ -115,6 +135,67 @@ class VerbsApiClient {
     return this.request(`/wallet/${userId}/fund`, {
       method: 'POST',
       body: JSON.stringify({ tokenType }),
+    })
+  }
+
+  async sendTokens(
+    walletId: string,
+    amount: number,
+    recipientAddress: string,
+  ): Promise<{
+    transaction: {
+      to: string
+      value: string
+      data: string
+    }
+  }> {
+    return this.request('/wallet/send', {
+      method: 'POST',
+      body: JSON.stringify({
+        walletId,
+        amount,
+        recipientAddress,
+      }),
+    })
+  }
+
+  async getVaultBalance(vaultAddress: string, walletId: string): Promise<{
+    balance: string
+    balanceFormatted: string
+    shares: string
+    sharesFormatted: string
+  }> {
+    return this.request(`/lend/vault/${vaultAddress}/balance/${walletId}`, {
+      method: 'GET',
+    })
+  }
+
+  async lendDeposit(walletId: string, amount: number, token: string): Promise<{
+    transaction: {
+      hash: string
+      amount: string
+      asset: string
+      marketId: string
+      apy: number
+      timestamp: number
+      slippage: number
+      transactionData: {
+        approval?: {
+          to: string
+          data: string
+          value: string
+        }
+        deposit: {
+          to: string
+          data: string
+          value: string
+        }
+      }
+    }
+  }> {
+    return this.request('/lend/deposit', {
+      method: 'POST',
+      body: JSON.stringify({ walletId, amount, token }),
     })
   }
 }

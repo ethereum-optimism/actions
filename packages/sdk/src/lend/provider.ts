@@ -51,6 +51,21 @@ export abstract class LendProvider {
   ): Promise<LendTransaction>
 
   /**
+   * Deposit assets to a market (alias for lend)
+   * @param asset - Asset token address to deposit
+   * @param amount - Amount to deposit (in wei)
+   * @param marketId - Optional specific market ID
+   * @param options - Optional deposit configuration
+   * @returns Promise resolving to deposit transaction details
+   */
+  abstract deposit(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction>
+
+  /**
    * Get detailed vault information
    * @param vaultAddress - Vault address
    * @returns Promise resolving to vault information
@@ -62,6 +77,22 @@ export abstract class LendProvider {
    * @returns Promise resolving to array of vault information
    */
   abstract getVaults(): Promise<LendVaultInfo[]>
+
+  /**
+   * Get vault balance for a specific wallet address
+   * @param vaultAddress - Vault address
+   * @param walletAddress - User wallet address to check balance for
+   * @returns Promise resolving to vault balance information
+   */
+  abstract getVaultBalance(
+    vaultAddress: Address,
+    walletAddress: Address,
+  ): Promise<{
+    balance: bigint
+    balanceFormatted: string
+    shares: bigint
+    sharesFormatted: string
+  }>
 
   /**
    * Withdraw/redeem assets from a market

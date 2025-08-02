@@ -1,14 +1,27 @@
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
 
 export { LendProvider } from '../lend/provider.js'
+
+/**
+ * Transaction data for execution
+ * @description Raw transaction data for wallet execution
+ */
+export interface TransactionData {
+  /** Target contract address */
+  to: Address
+  /** Encoded function call data */
+  data: Hex
+  /** ETH value to send */
+  value: string
+}
 
 /**
  * Lending transaction result
  * @description Result of a lending operation
  */
 export interface LendTransaction {
-  /** Transaction hash */
-  hash: string
+  /** Transaction hash (set after execution) */
+  hash?: string
   /** Amount lent */
   amount: bigint
   /** Asset address */
@@ -19,6 +32,15 @@ export interface LendTransaction {
   apy: number
   /** Transaction timestamp */
   timestamp: number
+  /** Transaction data for execution (optional) */
+  transactionData?: {
+    /** Approval transaction (if needed) */
+    approval?: TransactionData
+    /** Main deposit transaction */
+    deposit: TransactionData
+  }
+  /** Slippage tolerance used */
+  slippage?: number
 }
 
 /**
@@ -126,6 +148,8 @@ export interface LendOptions {
   gasLimit?: bigint
   /** Gas price override */
   gasPrice?: bigint
+  /** Receiver address for shares (defaults to sender) */
+  receiver?: Address //TODO remove and enforce from wallet
 }
 
 /**

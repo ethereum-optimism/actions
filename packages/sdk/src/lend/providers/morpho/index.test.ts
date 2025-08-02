@@ -25,6 +25,9 @@ const unichain = {
 vi.mock('@morpho-org/blue-sdk-viem', () => ({
   fetchMarket: vi.fn(),
   fetchAccrualVault: vi.fn(),
+  MetaMorphoAction: {
+    deposit: vi.fn(() => '0x1234567890abcdef'), // Mock deposit function to return mock calldata
+  },
 }))
 
 vi.mock('@morpho-org/morpho-ts', () => ({
@@ -163,14 +166,18 @@ describe('LendProviderMorpho', () => {
       const amount = BigInt('1000000000') // 1000 USDC
       const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
 
-      const lendTransaction = await provider.lend(asset, amount, marketId)
+      const lendTransaction = await provider.lend(asset, amount, marketId, {
+        receiver: '0x1234567890123456789012345678901234567890' as Address,
+      })
 
-      expect(lendTransaction).toHaveProperty('hash')
       expect(lendTransaction).toHaveProperty('amount', amount)
       expect(lendTransaction).toHaveProperty('asset', asset)
       expect(lendTransaction).toHaveProperty('marketId', marketId)
       expect(lendTransaction).toHaveProperty('apy')
       expect(lendTransaction).toHaveProperty('timestamp')
+      expect(lendTransaction).toHaveProperty('transactionData')
+      expect(lendTransaction.transactionData).toHaveProperty('approval')
+      expect(lendTransaction.transactionData).toHaveProperty('deposit')
       expect(typeof lendTransaction.apy).toBe('number')
       expect(lendTransaction.apy).toBeGreaterThan(0)
     })
@@ -181,7 +188,9 @@ describe('LendProviderMorpho', () => {
 
       // Mock the market data for getMarketInfo
 
-      const lendTransaction = await provider.lend(asset, amount)
+      const lendTransaction = await provider.lend(asset, amount, undefined, {
+        receiver: '0x1234567890123456789012345678901234567890' as Address,
+      })
 
       expect(lendTransaction).toHaveProperty('marketId')
       expect(lendTransaction.marketId).toBeTruthy()
@@ -206,6 +215,7 @@ describe('LendProviderMorpho', () => {
 
       const lendTransaction = await provider.lend(asset, amount, marketId, {
         slippage: customSlippage,
+        receiver: '0x1234567890123456789012345678901234567890' as Address,
       })
 
       expect(lendTransaction).toHaveProperty('amount', amount)

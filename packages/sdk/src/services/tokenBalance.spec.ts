@@ -82,13 +82,13 @@ describe('TokenBalance', () => {
 
       expect(balance).toEqual({
         symbol: 'ETH',
-        totalBalance: 1000000000n,
-        totalFormattedBalance: '0.000000001',
+        totalBalance: 1000000n,
+        totalFormattedBalance: '0.000000000001',
         chainBalances: [
           {
             chainId: unichain.id,
-            balance: 1000000000n,
-            formattedBalance: '0.000000001',
+            balance: 1000000n,
+            formattedBalance: '0.000000000001',
           },
         ],
       })

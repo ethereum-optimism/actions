@@ -23,11 +23,11 @@ export class Verbs implements VerbsInterface {
   getAllWallets!: (options?: GetAllWalletsOptions) => Promise<Wallet[]>
 
   private walletProvider: WalletProvider
-  private chainManager: ChainManager
+  private _chainManager: ChainManager
   private lendProvider?: LendProvider
 
   constructor(config: VerbsConfig) {
-    this.chainManager = new ChainManager(
+    this._chainManager = new ChainManager(
       config.chains || [
         {
           chainId: unichain.id,
@@ -79,6 +79,14 @@ export class Verbs implements VerbsInterface {
     return this.lendProvider
   }
 
+  /**
+   * Get the chain manager instance
+   * @returns ChainManager instance for multi-chain operations
+   */
+  get chainManager(): ChainManager {
+    return this._chainManager
+  }
+
   private createWalletProvider(config: VerbsConfig): WalletProvider {
     const { wallet } = config
 
@@ -87,8 +95,7 @@ export class Verbs implements VerbsInterface {
         return new WalletProviderPrivy(
           wallet.appId,
           wallet.appSecret,
-          this.chainManager,
-          this.lendProvider,
+          this, // Pass Verbs instance so wallets can access configured providers
         )
       default:
         throw new Error(`Unsupported wallet provider type: ${wallet.type}`)

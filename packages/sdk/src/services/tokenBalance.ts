@@ -94,6 +94,14 @@ async function fetchERC20BalanceForChain(
 
   const publicClient = chainManager.getPublicClient(chainId)
 
+  // Handle native ETH balance
+  if (token.symbol === 'ETH') {
+    return publicClient.getBalance({
+      address: walletAddress,
+    })
+  }
+
+  // Handle ERC20 token balance
   return publicClient.readContract({
     address: tokenAddress,
     abi: erc20Abi,

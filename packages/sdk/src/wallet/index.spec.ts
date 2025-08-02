@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
+import type { LendProvider } from '@/types/lend.js'
+import type { VerbsInterface } from '@/types/verbs.js'
 import { Wallet } from '@/wallet/index.js'
 
 describe('Wallet', () => {
@@ -14,9 +16,28 @@ describe('Wallet', () => {
     defaultBalance: 1000000n,
   }) as any
 
+  // Mock Verbs instance
+  const mockVerbs: VerbsInterface = {
+    get chainManager() {
+      return chainManager
+    },
+    get lend(): LendProvider {
+      throw new Error('Lend provider not configured')
+    },
+    createWallet: async () => {
+      throw new Error('Not implemented')
+    },
+    getWallet: async () => {
+      throw new Error('Not implemented')
+    },
+    getAllWallets: async () => {
+      throw new Error('Not implemented')
+    },
+  } as VerbsInterface
+
   describe('constructor', () => {
     it('should create a wallet instance with correct properties', () => {
-      const wallet = new Wallet(mockId, chainManager)
+      const wallet = new Wallet(mockId, mockVerbs)
       wallet.init(mockAddress)
 
       expect(wallet.id).toBe(mockId)
@@ -27,7 +48,7 @@ describe('Wallet', () => {
       const ids = ['wallet-1', 'wallet-2', 'test-id-123']
 
       ids.forEach((id) => {
-        const wallet = new Wallet(id, chainManager)
+        const wallet = new Wallet(id, mockVerbs)
         expect(wallet.id).toBe(id)
       })
     })
@@ -42,7 +63,7 @@ describe('Wallet', () => {
       ]
 
       addresses.forEach((address) => {
-        const wallet = new Wallet(mockId, chainManager)
+        const wallet = new Wallet(mockId, mockVerbs)
         wallet.init(address)
         expect(wallet.address).toBe(address)
         expect(wallet.id).toBe(mockId)
@@ -52,21 +73,33 @@ describe('Wallet', () => {
 
   describe('getBalance', () => {
     it('should return token balances', async () => {
-      const wallet = new Wallet(mockId, chainManager)
+      const wallet = new Wallet(mockId, mockVerbs)
       wallet.init(mockAddress)
 
       const balance = await wallet.getBalance()
 
       expect(balance).toEqual([
         {
-          totalBalance: 1000000000n,
+          totalBalance: 1000000n,
           symbol: 'ETH',
-          totalFormattedBalance: '0.000000001',
+          totalFormattedBalance: '0.000000000001',
           chainBalances: [
             {
-              balance: 1000000000n,
+              balance: 1000000n,
               chainId: 130,
-              formattedBalance: '0.000000001',
+              formattedBalance: '0.000000000001',
+            },
+          ],
+        },
+        {
+          totalBalance: 1000000n,
+          symbol: 'ETH',
+          totalFormattedBalance: '0.000000000001',
+          chainBalances: [
+            {
+              balance: 1000000n,
+              chainId: 130,
+              formattedBalance: '0.000000000001',
             },
           ],
         },
@@ -92,7 +125,7 @@ describe('Wallet', () => {
     })
 
     it('should throw an error if the wallet is not initialized', async () => {
-      const wallet = new Wallet(mockId, chainManager)
+      const wallet = new Wallet(mockId, mockVerbs)
       await expect(wallet.getBalance()).rejects.toThrow(
         'Wallet not initialized',
       )
@@ -101,14 +134,14 @@ describe('Wallet', () => {
 
   describe('edge cases', () => {
     it('should handle empty string id', () => {
-      const wallet = new Wallet('', chainManager)
+      const wallet = new Wallet('', mockVerbs)
       expect(wallet.id).toBe('')
       expect(wallet.address).toBeUndefined()
     })
 
     it('should handle very long wallet id', () => {
       const longId = 'a'.repeat(1000)
-      const wallet = new Wallet(longId, chainManager)
+      const wallet = new Wallet(longId, mockVerbs)
       expect(wallet.id).toBe(longId)
       expect(wallet.id.length).toBe(1000)
     })
@@ -116,7 +149,7 @@ describe('Wallet', () => {
 
   describe('immutability', () => {
     it('should maintain property values after creation', () => {
-      const wallet = new Wallet(mockId, chainManager)
+      const wallet = new Wallet(mockId, mockVerbs)
       wallet.address = mockAddress
 
       const originalId = wallet.id

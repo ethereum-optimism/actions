@@ -22,47 +22,50 @@ pnpm install
 
 ## Demo
 
+### Setup
+
+1. **Init env vars**
+
+   Copy all example environment files to create local configuration:
+
+   ```bash
+   cp packages/demo/backend/.env.example packages/demo/backend/.env
+   cp packages/demo/frontend/.env.example packages/demo/frontend/.env
+   cp packages/sdk/.env.test.local.example packages/sdk/.env.test.local
+   ```
+
+2. **Configure Providers**
+
+   Create a Privy account at [privy.io](https://privy.io) and update the environment files:
+
+   ```bash
+   # Edit packages/demo/backend/.env
+   PRIVY_APP_ID=your_privy_app_id_here
+   PRIVY_APP_SECRET=your_privy_app_secret_here
+
+   # Optionally, for SDK tests: Edit packages/sdk/.env.test.local
+   PRIVY_APP_ID=your_privy_app_id_here
+   PRIVY_APP_SECRET=your_privy_app_secret_here
+   ```
+
+   The remaining environment variables are pre-configured for local development.
+
 ### Quick Start (Recommended)
 
-Start the complete demo environment in one command:
+While each component of the repo can be run independently, start the complete demo environment in one command:
 
 ```bash
 pnpm dev
 ```
 
 This uses `mprocs` to orchestrate multiple processes:
+
 - **Supersim**: Starts a local Ethereum L2 development environment
 - **Contract Deployment**: Deploys and funds the demo faucet contract
 - **Backend**: Starts the Verbs SDK backend service
 - **Frontend**: Starts the React web application
 
 The demo will be available at `http://localhost:5173` once all services are running.
-
-### Manual Setup (Alternative)
-
-If you prefer to run services individually:
-
-1. Run the backend [setup steps](./packages/demo/backend/README.md).
-2. Run the backend:
-
-```bash
-cd packages/demo/backend
-pnpm install && pnpm dev
-```
-
-3. Open another terminal and run the frontend:
-
-```bash
-cd packages/demo/frontend
-pnpm install && pnpm dev
-```
-
-## Development
-
-```bash
-pnpm build        # Build all packages (includes type checking)
-pnpm lint         # Lint all packages
-```
 
 ## License
 

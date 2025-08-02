@@ -29,25 +29,14 @@ describe('Terminal', () => {
   it('renders terminal with welcome message', async () => {
     render(<Terminal />)
 
-    // Check for terminal header
-    expect(screen.getByText('verbs-terminal')).toBeInTheDocument()
-
-    // Check for ASCII art
-    expect(screen.getByText(/██╗.*██╗.*███████╗/)).toBeInTheDocument()
+    // Check for GitHub link in NavBar
+    expect(screen.getByText('GitHub')).toBeInTheDocument()
 
     // Check for subtitle
     expect(screen.getByText('Verbs library for the OP Stack')).toBeInTheDocument()
 
     // Check for help content
-    expect(screen.getByText(/Available commands:/)).toBeInTheDocument()
-  })
-
-  it('displays current time in header', () => {
-    render(<Terminal />)
-
-    // Check that there's a time display (will match format like "10:30:45 AM")
-    const timeElement = screen.getByText(/\d{1,2}:\d{2}:\d{2}/)
-    expect(timeElement).toBeInTheDocument()
+    expect(screen.getByText(/Console commands:/)).toBeInTheDocument()
   })
 
   it('handles help command', async () => {
@@ -64,7 +53,7 @@ describe('Terminal', () => {
     expect(helpCommands).toHaveLength(2)
     
     // Check that help content is displayed (should appear twice - once from initial load, once from command)
-    const helpTexts = screen.getAllByText(/Available commands:/)
+    const helpTexts = screen.getAllByText(/Console commands:/)
     expect(helpTexts).toHaveLength(2)
   })
 
@@ -119,26 +108,26 @@ describe('Terminal', () => {
     ).toBeInTheDocument()
   })
 
-  it('handles wallet list command', async () => {
+  it('handles wallet select command', async () => {
     const user = userEvent.setup()
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
     
-    await user.type(input, 'wallet list')
+    await user.type(input, 'wallet select')
     await user.keyboard('{Enter}')
 
     // Check that command was executed
-    expect(screen.getByText('verbs: $ wallet list')).toBeInTheDocument()
+    expect(screen.getByText('verbs: $ wallet select')).toBeInTheDocument()
     
     // Wait for API call to complete
     await waitFor(() => {
-      expect(screen.getByText(/Found 2 wallet/)).toBeInTheDocument()
+      expect(screen.getByText(/Select a wallet:/)).toBeInTheDocument()
     })
 
-    // Check that wallet addresses are displayed
+    // Check that wallet addresses are displayed in shortened format
     expect(
-      screen.getByText(/0x1234567890123456789012345678901234567890/)
+      screen.getByText(/0x1234...7890/)
     ).toBeInTheDocument()
   })
 
@@ -202,7 +191,7 @@ describe('Terminal', () => {
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
-    const comingSoonCommands = ['fund', 'lend', 'borrow', 'repay', 'swap', 'earn']
+    const comingSoonCommands = ['borrow', 'repay', 'swap', 'earn']
     
     for (const command of comingSoonCommands) {
       await user.clear(input)

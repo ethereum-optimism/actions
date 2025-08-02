@@ -159,6 +159,7 @@ describe('Vault Utilities', () => {
       expect(result).toEqual({
         usdc: 0,
         morpho: 0,
+        eth: 0,
         other: 0,
         totalRewardsApr: 0,
       })

@@ -55,16 +55,14 @@ describe('Lend Service', () => {
       mockLendProvider.getVaults.mockRejectedValue(error)
 
       await expect(lendService.getVaults()).rejects.toThrow(
-        'Failed to fetch vaults: Lend provider error',
+        'Lend provider error',
       )
     })
 
     it('should handle unknown errors', async () => {
       mockLendProvider.getVaults.mockRejectedValue('Unknown error')
 
-      await expect(lendService.getVaults()).rejects.toThrow(
-        'Failed to fetch vaults: Unknown error',
-      )
+      await expect(lendService.getVaults()).rejects.toThrow('Unknown error')
     })
   })
 
@@ -99,7 +97,7 @@ describe('Lend Service', () => {
       mockLendProvider.getVault.mockRejectedValue(error)
 
       await expect(lendService.getVault(vaultAddress)).rejects.toThrow(
-        'Failed to fetch vault info: Vault not found',
+        'Vault not found',
       )
     })
 
@@ -107,7 +105,7 @@ describe('Lend Service', () => {
       mockLendProvider.getVault.mockRejectedValue('Unknown error')
 
       await expect(lendService.getVault(vaultAddress)).rejects.toThrow(
-        'Failed to fetch vault info: Unknown error',
+        'Unknown error',
       )
     })
   })

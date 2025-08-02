@@ -27,7 +27,8 @@
     "docs": "typedoc",
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --loglevel=warn",
-    "test": "vitest --run",
+    "test": "vitest --run --project unit",
+    "test:supersim": "vitest --run --project supersim",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "keywords": [
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@types/node": "^18",
+    "dotenv": "^16.4.5",
     "eslint": "^9.31.0",
     "prettier": "^3.0.0",
     "typescript": "^5.2.2",

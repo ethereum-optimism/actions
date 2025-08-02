@@ -5,16 +5,14 @@ import App from './App'
 
 // TODO Add basic system tests
 describe('App', () => {
-  it('renders terminal component', () => {
+  it('renders home component at root', () => {
     render(<App />)
 
-    expect(screen.getByText('verbs-terminal')).toBeInTheDocument()
-    expect(
-      screen.getByText('Verbs library for the OP Stack'),
-    ).toBeInTheDocument()
-    const appContainer = screen
-      .getByRole('textbox')
-      .closest('.w-full.h-screen.bg-terminal-bg')
+    expect(screen.getByText('GitHub')).toBeInTheDocument()
+    // Home page should have the Docs and Demo buttons
+    expect(screen.getByText('Docs')).toBeInTheDocument()
+    expect(screen.getByText('Demo')).toBeInTheDocument()
+    const appContainer = document.querySelector('.w-full.h-screen.bg-terminal-bg')
     expect(appContainer).toBeInTheDocument()
   })
 })

@@ -1,7 +1,8 @@
+import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 import type { Address, PublicClient } from 'viem'
+import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import type {
-  LendMarketInfo,
   LendOptions,
   LendTransaction,
   LendVaultInfo,
@@ -55,10 +56,10 @@ export class LendProviderMorpho extends LendProvider {
 
   /**
    * Lend assets to a Morpho market
-   * @description Supplies assets to a Morpho market using Blue_Supply operation
+   * @description Supplies assets to a Morpho market using MetaMorpho deposit operation
    * @param asset - Asset token address to lend
    * @param amount - Amount to lend (in wei)
-   * @param marketId - Optional specific market ID
+   * @param marketId - Optional specific market ID (vault address)
    * @param options - Optional lending configuration
    * @returns Promise resolving to lending transaction details
    */
@@ -76,24 +77,46 @@ export class LendProviderMorpho extends LendProvider {
       // 2. Get vault information for APY
       const vaultInfo = await this.getVault(selectedVaultAddress)
 
-      // 3. Create transaction data (mock implementation)
-      const transactionData = {
-        to: this.morphoAddress,
-        data: '0x' + Math.random().toString(16).substring(2, 66), // Mock transaction data
-        value: '0x0',
-        slippage: options?.slippage || this.defaultSlippage,
+      // 3. Generate real call data for Morpho deposit
+      const receiver = options?.receiver
+      if (!receiver) {
+        throw new Error(
+          'Receiver address is required for Morpho deposit operation',
+        )
       }
+      const depositCallData = MetaMorphoAction.deposit(amount, receiver)
 
-      // 4. Return transaction details (actual execution will be handled by wallet)
+      // 4. Create approval transaction data for USDC if needed
+      const approvalCallData = encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'approve',
+        args: [selectedVaultAddress, amount],
+      })
+
+      // 5. Return transaction details with real call data
       const currentTimestamp = Math.floor(Date.now() / 1000)
 
       return {
-        hash: JSON.stringify(transactionData).slice(0, 66), // Use first 66 chars as placeholder hash
         amount,
         asset,
         marketId: selectedVaultAddress,
         apy: vaultInfo.apy,
         timestamp: currentTimestamp,
+        transactionData: {
+          // Approval transaction
+          approval: {
+            to: asset,
+            data: approvalCallData,
+            value: '0x0',
+          },
+          // Deposit transaction
+          deposit: {
+            to: selectedVaultAddress,
+            data: depositCallData,
+            value: '0x0',
+          },
+        },
+        slippage: options?.slippage || this.defaultSlippage,
       }
     } catch (error) {
       throw new Error(
@@ -102,6 +125,24 @@ export class LendProviderMorpho extends LendProvider {
         }`,
       )
     }
+  }
+
+  /**
+   * Deposit assets to a Morpho market (alias for lend)
+   * @description Supplies assets to a Morpho market using MetaMorpho deposit operation
+   * @param asset - Asset token address to deposit
+   * @param amount - Amount to deposit (in wei)
+   * @param marketId - Optional specific market ID (vault address)
+   * @param options - Optional deposit configuration
+   * @returns Promise resolving to deposit transaction details
+   */
+  async deposit(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction> {
+    return this.lend(asset, amount, marketId, options)
   }
 
   /**
@@ -153,17 +194,61 @@ export class LendProviderMorpho extends LendProvider {
   }
 
   /**
-   * Get detailed market information (deprecated - use getVault)
-   * @param marketId - Market identifier
-   * @returns Promise resolving to market information
-   * @deprecated Use getVault instead
+   * Get vault balance for a specific wallet address
+   * @param vaultAddress - MetaMorpho vault address
+   * @param walletAddress - User wallet address to check balance for
+   * @returns Promise resolving to vault balance information
    */
-  async getMarketInfo(marketId: string): Promise<LendMarketInfo> {
-    // This method is deprecated and should not be used
+  async getVaultBalance(
+    vaultAddress: Address,
+    walletAddress: Address,
+  ): Promise<{
+    balance: bigint
+    balanceFormatted: string
+    shares: bigint
+    sharesFormatted: string
+  }> {
+    try {
+      // Get user's vault token balance (shares in the vault)
+      const shares = await this.publicClient.readContract({
+        address: vaultAddress,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [walletAddress],
+      })
 
-    const _unused = { marketId }
-    throw new Error(
-      'getMarketInfo is deprecated. Use getVault instead with vault address.',
-    )
+      // Convert shares to underlying asset balance using convertToAssets
+      const balance = await this.publicClient.readContract({
+        address: vaultAddress,
+        abi: [
+          {
+            name: 'convertToAssets',
+            type: 'function',
+            stateMutability: 'view',
+            inputs: [{ name: 'shares', type: 'uint256' }],
+            outputs: [{ name: '', type: 'uint256' }],
+          },
+        ],
+        functionName: 'convertToAssets',
+        args: [shares],
+      })
+
+      // Format the balances (USDC has 6 decimals)
+      const balanceFormatted = formatUnits(balance, 6)
+      const sharesFormatted = formatUnits(shares, 18) // Vault shares typically have 18 decimals
+
+      return {
+        balance,
+        balanceFormatted,
+        shares,
+        sharesFormatted,
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to get vault balance for ${walletAddress} in vault ${vaultAddress}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
   }
 }

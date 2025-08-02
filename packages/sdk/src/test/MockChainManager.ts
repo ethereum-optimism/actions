@@ -49,6 +49,15 @@ export class MockChainManager {
       })
   }
 
+  reset(): void {
+    vi.clearAllMocks()
+    this.publicClients.forEach((client) => {
+      vi.mocked(client.readContract).mockResolvedValue(
+        this.config.defaultBalance,
+      )
+    })
+  }
+
   private createMockPublicClients(): Map<SupportedChainId, PublicClient> {
     const clients = new Map<SupportedChainId, PublicClient>()
 
@@ -59,7 +68,7 @@ export class MockChainManager {
           return Promise.resolve(this.config.defaultBalance)
         }),
         getBalance: vi.fn().mockImplementation(() => {
-          return Promise.resolve(this.config.defaultETHBalance)
+          return Promise.resolve(this.config.defaultBalance)
         }),
       } as any
 
@@ -67,14 +76,5 @@ export class MockChainManager {
     }
 
     return clients
-  }
-
-  reset(): void {
-    vi.clearAllMocks()
-    this.publicClients.forEach((client) => {
-      vi.mocked(client.readContract).mockResolvedValue(
-        this.config.defaultBalance,
-      )
-    })
   }
 }
