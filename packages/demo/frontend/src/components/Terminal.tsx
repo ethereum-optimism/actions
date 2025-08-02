@@ -54,7 +54,6 @@ interface PendingPrompt {
         selectedWallet?: WalletData
         selectedVault?: VaultData
         walletBalance?: number
-        vaultBalance?: string
         balance?: number
         amount?: number
       }
@@ -122,6 +121,72 @@ const Terminal = () => {
   const shortenAddress = (address: string): string => {
     if (address.length <= 10) return address
     return `${address.slice(0, 6)}..${address.slice(-4)}`
+  }
+
+  // DRY function to format balance strings
+  const formatBalance = (balance: string, decimals: number): string => {
+    const balanceBigInt = BigInt(balance)
+    const divisor = BigInt(10 ** decimals)
+    const wholePart = balanceBigInt / divisor
+    const fractionalPart = balanceBigInt % divisor
+
+    if (fractionalPart === 0n) {
+      return wholePart.toString()
+    }
+
+    const fractionalStr = fractionalPart.toString().padStart(decimals, '0')
+    const trimmedFractional = fractionalStr.replace(/0+$/, '')
+
+    if (trimmedFractional === '') {
+      return wholePart.toString()
+    }
+
+    return `${wholePart}.${trimmedFractional}`
+  }
+
+  // DRY function to display wallet balance with loading state
+  const displayWalletBalance = async (walletId: string, showVaultPositions: boolean = true): Promise<string> => {
+    const result = await verbsApi.getWalletBalance(walletId)
+
+    // Show ETH, USDC, and any vault balances
+    const filteredBalances = result.balance.filter(
+      (token) =>
+        token.symbol === 'ETH' ||
+        token.symbol === 'USDC' ||
+        token.symbol.includes('Gauntlet') ||
+        token.symbol.includes('Vault'),
+    )
+
+    // Ensure both ETH and USDC are shown, even if not in response
+    const ethBalance = filteredBalances.find(
+      (token) => token.symbol === 'ETH',
+    )
+    const usdcBalance = filteredBalances.find(
+      (token) => token.symbol === 'USDC',
+    )
+
+    // Separate vault balances from token balances
+    const vaultBalances = filteredBalances.filter(
+      (token) => token.symbol !== 'ETH' && token.symbol !== 'USDC',
+    )
+
+    const balanceLines = [
+      `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
+      `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`,
+    ]
+
+    // Add vault balances if any exist and showVaultPositions is true
+    if (showVaultPositions && vaultBalances.length > 0) {
+      balanceLines.push('') // Empty line separator
+      balanceLines.push('Vault Positions:')
+      vaultBalances.forEach((vault) => {
+        balanceLines.push(
+          `${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`,
+        ) // Assume 6 decimals for vault shares
+      })
+    }
+
+    return balanceLines.join('\n')
   }
 
   // Focus input on mount and keep it focused
@@ -564,7 +629,19 @@ User ID: ${result.userId}`,
 
       setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
 
-      // Get wallet USDC balance
+      // Show loading state for balance
+      const loadingBalanceLine: TerminalLine = {
+        id: `loading-balance-${Date.now()}`,
+        type: 'output',
+        content: 'Loading balance...',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, loadingBalanceLine])
+
+      // Get wallet balance using DRY function
+      const walletBalanceText = await displayWalletBalance(selectedWallet!.id, true)
+
+      // Get USDC balance for validation
       const walletBalanceResult = await verbsApi.getWalletBalance(
         selectedWallet!.id,
       )
@@ -577,24 +654,9 @@ User ID: ${result.userId}`,
 
       console.log('[FRONTEND] Wallet USDC balance:', usdcBalance)
 
-      // Get vault balance for this wallet
-      const vaultBalanceResult = await verbsApi.getVaultBalance(
-        selectedVault.address,
-        selectedWallet!.id,
-      )
-
-      console.log(
-        '[FRONTEND] Vault balance:',
-        vaultBalanceResult.balanceFormatted,
-      )
-
       // Show balances and ask for lend amount
-      const balancesDisplay = `
-Wallet Balance:
-USDC: ${usdcBalance}
-
-Vault Balance:
-${selectedVault.name}: ${vaultBalanceResult.balanceFormatted}
+      const balancesDisplay = `Wallet Balance:
+${walletBalanceText}
 
 How much would you like to lend?`
 
@@ -605,7 +667,7 @@ How much would you like to lend?`
         timestamp: new Date(),
       }
 
-      setLines((prev) => [...prev, balancesLine])
+      setLines((prev) => [...prev.slice(0, -1), balancesLine]) // Replace loading message
 
       // Set up prompt for lend amount
       setPendingPrompt({
@@ -615,7 +677,6 @@ How much would you like to lend?`
           selectedWallet: selectedWallet!,
           selectedVault: selectedVault,
           walletBalance: usdcBalance,
-          vaultBalance: vaultBalanceResult.balanceFormatted,
           balance: usdcBalance, // For compatibility
         },
       })
@@ -636,7 +697,6 @@ How much would you like to lend?`
       selectedWallet: WalletData
       selectedVault: VaultData
       walletBalance: number
-      vaultBalance: string
     }
 
     setPendingPrompt(null)
@@ -864,71 +924,17 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
 
     // Automatically fetch and display balance for the selected wallet
     setTimeout(async () => {
+      // Add loading message
+      const loadingLine: TerminalLine = {
+        id: `loading-balance-${Date.now()}`,
+        type: 'output',
+        content: 'Loading balance...',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, loadingLine])
+
       try {
-        const result = await verbsApi.getWalletBalance(selectedWalletData.id)
-
-        // Show ETH, USDC, and any vault balances
-        const filteredBalances = result.balance.filter(
-          (token) =>
-            token.symbol === 'ETH' ||
-            token.symbol === 'USDC' ||
-            token.symbol.includes('Gauntlet') ||
-            token.symbol.includes('Vault'),
-        )
-
-        // Ensure both ETH and USDC are shown, even if not in response
-        const ethBalance = filteredBalances.find(
-          (token) => token.symbol === 'ETH',
-        )
-        const usdcBalance = filteredBalances.find(
-          (token) => token.symbol === 'USDC',
-        )
-
-        // Format balances to human readable format
-        const formatBalance = (balance: string, decimals: number): string => {
-          const balanceBigInt = BigInt(balance)
-          const divisor = BigInt(10 ** decimals)
-          const wholePart = balanceBigInt / divisor
-          const fractionalPart = balanceBigInt % divisor
-
-          if (fractionalPart === 0n) {
-            return wholePart.toString()
-          }
-
-          const fractionalStr = fractionalPart
-            .toString()
-            .padStart(decimals, '0')
-          const trimmedFractional = fractionalStr.replace(/0+$/, '')
-
-          if (trimmedFractional === '') {
-            return wholePart.toString()
-          }
-
-          return `${wholePart}.${trimmedFractional}`
-        }
-
-        // Separate vault balances from token balances
-        const vaultBalances = filteredBalances.filter(
-          (token) => token.symbol !== 'ETH' && token.symbol !== 'USDC',
-        )
-
-        const balanceLines = [
-          `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
-          `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`,
-        ]
-
-        // Add vault balances if any exist
-        if (vaultBalances.length > 0) {
-          balanceLines.push('') // Empty line separator
-          balanceLines.push('Vault Positions:')
-          vaultBalances.forEach((vault) => {
-            balanceLines.push(
-              `${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`,
-            ) // Assume 6 decimals for vault shares
-          })
-        }
-
-        const balanceText = balanceLines.join('\n')
+        const balanceText = await displayWalletBalance(selectedWalletData.id, true)
 
         const balanceLine: TerminalLine = {
           id: `balance-${Date.now()}`,
@@ -936,10 +942,16 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
           content: `\n${balanceText}`,
           timestamp: new Date(),
         }
-        setLines((prev) => [...prev, balanceLine])
-      } catch (error) {
-        // Silently fail balance fetch to not interrupt wallet selection flow
-        console.error('Failed to fetch balance after wallet selection:', error)
+        setLines((prev) => [...prev.slice(0, -1), balanceLine]) // Replace loading message
+      } catch {
+        // Replace loading message with error
+        const errorLine: TerminalLine = {
+          id: `balance-error-${Date.now()}`,
+          type: 'error',
+          content: 'Failed to load balance',
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev.slice(0, -1), errorLine])
       }
     }, 100)
   }
@@ -967,68 +979,7 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
     setLines((prev) => [...prev, loadingLine])
 
     try {
-      const result = await verbsApi.getWalletBalance(selectedWallet.id)
-
-      // Show ETH, USDC, and any vault balances
-      const filteredBalances = result.balance.filter(
-        (token) =>
-          token.symbol === 'ETH' ||
-          token.symbol === 'USDC' ||
-          token.symbol.includes('Gauntlet') ||
-          token.symbol.includes('Vault'),
-      )
-
-      // Ensure both ETH and USDC are shown, even if not in response
-      const ethBalance = filteredBalances.find(
-        (token) => token.symbol === 'ETH',
-      )
-      const usdcBalance = filteredBalances.find(
-        (token) => token.symbol === 'USDC',
-      )
-
-      // Format balances to human readable format
-      const formatBalance = (balance: string, decimals: number): string => {
-        const balanceBigInt = BigInt(balance)
-        const divisor = BigInt(10 ** decimals)
-        const wholePart = balanceBigInt / divisor
-        const fractionalPart = balanceBigInt % divisor
-
-        if (fractionalPart === 0n) {
-          return wholePart.toString()
-        }
-
-        const fractionalStr = fractionalPart.toString().padStart(decimals, '0')
-        const trimmedFractional = fractionalStr.replace(/0+$/, '')
-
-        if (trimmedFractional === '') {
-          return wholePart.toString()
-        }
-
-        return `${wholePart}.${trimmedFractional}`
-      }
-
-      // Separate vault balances from token balances
-      const vaultBalances = filteredBalances.filter(
-        (token) => token.symbol !== 'ETH' && token.symbol !== 'USDC',
-      )
-
-      const balanceLines = [
-        `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
-        `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`,
-      ]
-
-      // Add vault balances if any exist
-      if (vaultBalances.length > 0) {
-        balanceLines.push('') // Empty line separator
-        balanceLines.push('Vault Positions:')
-        vaultBalances.forEach((vault) => {
-          balanceLines.push(
-            `${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`,
-          ) // Assume 6 decimals for vault shares
-        })
-      }
-
-      const balanceText = balanceLines.join('\n')
+      const balanceText = await displayWalletBalance(selectedWallet.id, true)
 
       const successLine: TerminalLine = {
         id: `success-${Date.now()}`,
@@ -1120,69 +1071,8 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
       }
       setLines((prev) => [...prev.slice(0, -1), fundSuccessLine])
 
-      // Then fetch and show the balance
-      const result = await verbsApi.getWalletBalance(selectedWallet.id)
-
-      // Show ETH, USDC, and any vault balances
-      const filteredBalances = result.balance.filter(
-        (token) =>
-          token.symbol === 'ETH' ||
-          token.symbol === 'USDC' ||
-          token.symbol.includes('Gauntlet') ||
-          token.symbol.includes('Vault'),
-      )
-
-      // Ensure both ETH and USDC are shown, even if not in response
-      const ethBalance = filteredBalances.find(
-        (token) => token.symbol === 'ETH',
-      )
-      const usdcBalance = filteredBalances.find(
-        (token) => token.symbol === 'USDC',
-      )
-
-      // Format balances to human readable format (for fund wallet display)
-      const formatBalance = (balance: string, decimals: number): string => {
-        const balanceBigInt = BigInt(balance)
-        const divisor = BigInt(10 ** decimals)
-        const wholePart = balanceBigInt / divisor
-        const fractionalPart = balanceBigInt % divisor
-
-        if (fractionalPart === 0n) {
-          return wholePart.toString()
-        }
-
-        const fractionalStr = fractionalPart.toString().padStart(decimals, '0')
-        const trimmedFractional = fractionalStr.replace(/0+$/, '')
-
-        if (trimmedFractional === '') {
-          return wholePart.toString()
-        }
-
-        return `${wholePart}.${trimmedFractional}`
-      }
-
-      // Separate vault balances from token balances
-      const vaultBalances = filteredBalances.filter(
-        (token) => token.symbol !== 'ETH' && token.symbol !== 'USDC',
-      )
-
-      const balanceLines = [
-        `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
-        `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`,
-      ]
-
-      // Add vault balances if any exist
-      if (vaultBalances.length > 0) {
-        balanceLines.push('') // Empty line separator
-        balanceLines.push('Vault Positions:')
-        vaultBalances.forEach((vault) => {
-          balanceLines.push(
-            `${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`,
-          ) // Assume 6 decimals for vault shares
-        })
-      }
-
-      const balanceText = balanceLines.join('\n')
+      // Then fetch and show the balance using DRY function
+      const balanceText = await displayWalletBalance(selectedWallet.id, true)
 
       const balanceSuccessLine: TerminalLine = {
         id: `balance-success-${Date.now()}`,
