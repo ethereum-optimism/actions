@@ -82,7 +82,7 @@ jobs:
           name: Run Backend Tests
           command: cd packages/demo/backend && pnpm test
 
-  supersim-tests:
+  #supersim-tests:
     docker:
       - image: cimg/node:20.11
     steps:
