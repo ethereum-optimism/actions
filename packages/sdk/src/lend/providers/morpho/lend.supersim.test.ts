@@ -1,13 +1,6 @@
 import type { ChildProcess } from 'child_process'
 import { config } from 'dotenv'
-import {
-  type Address,
-  erc20Abi,
-  formatEther,
-  formatUnits,
-  parseUnits,
-  type PublicClient,
-} from 'viem'
+import { type Address, erc20Abi, parseUnits, type PublicClient } from 'viem'
 import type { privateKeyToAccount } from 'viem/accounts'
 import { unichain } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -115,7 +108,7 @@ describe('Morpho Lend', () => {
 
   it('should execute lend operation with real Morpho transactions', async () => {
     // First, verify the vault exists
-    const vaultInfo = await verbs.lend.getVault(TEST_VAULT_ADDRESS)
+    await verbs.lend.getVault(TEST_VAULT_ADDRESS)
 
     // Check balances
     await publicClient.getBalance({
@@ -123,9 +116,8 @@ describe('Morpho Lend', () => {
     })
 
     // Check USDC balance
-    let usdcBalance = 0n
     try {
-      usdcBalance = await publicClient.readContract({
+      await publicClient.readContract({
         address: USDC_ADDRESS,
         abi: erc20Abi,
         functionName: 'balanceOf',
@@ -178,7 +170,7 @@ describe('Morpho Lend', () => {
       const approvalTx = lendTx.transactionData!.approval!
 
       // First, estimate gas for approval transaction on supersim
-      const gasEstimate = await publicClient.estimateGas({
+      await publicClient.estimateGas({
         account: TEST_WALLET_ADDRESS,
         to: approvalTx.to as `0x${string}`,
         data: approvalTx.data as `0x${string}`,
@@ -197,10 +189,8 @@ describe('Morpho Lend', () => {
 
       // Wait for approval to be mined
       await publicClient.waitForTransactionReceipt({ hash: approvalTxHash })
-    } catch (error) {
-      console.log(
-        `Approval signing/sending failed: ${(error as Error).message}`,
-      )
+    } catch {
+      // This is expected if Privy wallet doesn't have gas on the right network
     }
 
     // Test deposit transaction structure
@@ -225,8 +215,8 @@ describe('Morpho Lend', () => {
 
       // Wait for deposit to be mined
       await publicClient.waitForTransactionReceipt({ hash: depositTxHash })
-    } catch (error) {
-      console.log(`Deposit signing/sending failed: ${(error as Error).message}`)
+    } catch {
+      // This is expected if Privy wallet doesn't have gas on the right network
     }
 
     // Check vault balance after deposit attempts
