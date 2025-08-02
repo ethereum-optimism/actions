@@ -85,12 +85,7 @@ export class Wallet implements WalletInterface {
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    console.log(
-      `[SDK_WALLET] Starting lend: ${amount} ${asset} for wallet ${this.address}`,
-    )
-
     if (!this.initialized) {
-      console.log('[SDK_WALLET] Error: Wallet not initialized')
       throw new Error('Wallet not initialized')
     }
 
@@ -108,13 +103,6 @@ export class Wallet implements WalletInterface {
       receiver: options?.receiver || this.address,
     }
 
-    // Delegate to the lend provider configured in Verbs
-    // TODO: In a real implementation, this would:
-    // 1. Check wallet balance for the asset
-    // 2. Approve the lending protocol to spend the asset if needed
-    // 3. Execute the lending transaction through the wallet's signing capabilities
-
-    console.log('[SDK_WALLET] Calling verbs.lend.deposit')
     const result = await this.verbs.lend.deposit(
       resolvedAsset.address,
       parsedAmount,
@@ -122,7 +110,6 @@ export class Wallet implements WalletInterface {
       lendOptions,
     )
 
-    console.log(`[SDK_WALLET] Lend completed successfully: ${result.hash}`)
     return result
   }
 

@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
 
 export { LendProvider } from '../lend/provider.js'
 
@@ -10,7 +10,7 @@ export interface TransactionData {
   /** Target contract address */
   to: Address
   /** Encoded function call data */
-  data: string
+  data: Hex
   /** ETH value to send */
   value: string
 }

@@ -92,7 +92,6 @@ describe('Morpho Lend', () => {
     testWallet = wallet
 
     // Verify the address matches what we expect
-    console.log(`Privy wallet address: ${testWallet!.address}`)
     expect(testWallet!.address.toLowerCase()).toBe(
       TEST_WALLET_ADDRESS.toLowerCase(),
     )
@@ -111,24 +110,17 @@ describe('Morpho Lend', () => {
     const balance = await publicClient.getBalance({
       address: TEST_WALLET_ADDRESS,
     })
-    const ethBalance = formatEther(balance)
     expect(balance).toBeGreaterThan(0n)
-    console.log(`Privy wallet ETH: ${ethBalance}`)
   })
 
   it('should execute lend operation with real Morpho transactions', async () => {
     // First, verify the vault exists
-    console.log(
-      `Testing with vault: ${TEST_VAULT.name} (${TEST_VAULT_ADDRESS})`,
-    )
     const vaultInfo = await verbs.lend.getVault(TEST_VAULT_ADDRESS)
-    console.log(`Vault info: ${vaultInfo.name} - APY: ${vaultInfo.apy}%`)
 
     // Check balances
-    const ethBalance = await publicClient.getBalance({
+    await publicClient.getBalance({
       address: TEST_WALLET_ADDRESS,
     })
-    console.log(`ETH: ${formatEther(ethBalance)}`)
 
     // Check USDC balance
     let usdcBalance = 0n
@@ -139,8 +131,6 @@ describe('Morpho Lend', () => {
         functionName: 'balanceOf',
         args: [TEST_WALLET_ADDRESS],
       })
-      const usdcBalanceFormatted = formatUnits(usdcBalance, 6)
-      console.log(`USDC: ${usdcBalanceFormatted}`)
     } catch {
       throw new Error('USDC balance not found')
     }
@@ -169,9 +159,6 @@ describe('Morpho Lend', () => {
     expect(lendTx.transactionData?.deposit).toBeDefined()
     expect(lendTx.transactionData?.approval).toBeDefined()
 
-    const lendAmountFormatted = formatUnits(lendTx.amount, 6)
-    console.log(`Lend: ${lendAmountFormatted} USDC, APY: ${lendTx.apy}%`)
-
     // Validate transaction data structure
     expect(lendTx.transactionData?.approval?.to).toBe(USDC_ADDRESS)
     expect(lendTx.transactionData?.approval?.data).toMatch(/^0x[0-9a-fA-F]+$/)
@@ -182,10 +169,9 @@ describe('Morpho Lend', () => {
     expect(lendTx.transactionData?.deposit?.value).toBe('0x0')
 
     // Get the current nonce for the wallet
-    const currentNonce = await publicClient.getTransactionCount({
+    await publicClient.getTransactionCount({
       address: TEST_WALLET_ADDRESS,
     })
-    console.log(`Current nonce: ${currentNonce}`)
 
     // Test signing the approval transaction using wallet.sign()
     try {
@@ -198,10 +184,8 @@ describe('Morpho Lend', () => {
         data: approvalTx.data as `0x${string}`,
         value: BigInt(approvalTx.value),
       })
-      console.log(`Estimated gas for approval: ${gasEstimate}`)
 
       const signedApproval = await testWallet!.sign(approvalTx)
-      console.log(`Signed approval tx`)
       expect(signedApproval).toBeDefined()
 
       // Send the signed transaction to supersim
@@ -209,7 +193,6 @@ describe('Morpho Lend', () => {
         signedApproval,
         publicClient,
       )
-      console.log(`Approval tx sent: ${approvalTxHash}`)
       expect(approvalTxHash).toMatch(/^0x[0-9a-fA-F]{64}$/) // Valid tx hash format
 
       // Wait for approval to be mined
@@ -218,7 +201,6 @@ describe('Morpho Lend', () => {
       console.log(
         `Approval signing/sending failed: ${(error as Error).message}`,
       )
-      // This is expected if Privy wallet doesn't have gas on the right network
     }
 
     // Test deposit transaction structure
@@ -235,19 +217,16 @@ describe('Morpho Lend', () => {
     // Test signing the deposit transaction using wallet.sign()
     try {
       const signedDeposit = await testWallet!.sign(depositTx)
-      console.log(`Signed deposit tx`)
       expect(signedDeposit).toBeDefined()
 
       // Send the signed transaction to supersim
       const depositTxHash = await testWallet!.send(signedDeposit, publicClient)
-      console.log(`Deposit tx sent: ${depositTxHash}`)
       expect(depositTxHash).toMatch(/^0x[0-9a-fA-F]{64}$/) // Valid tx hash format
 
       // Wait for deposit to be mined
       await publicClient.waitForTransactionReceipt({ hash: depositTxHash })
     } catch (error) {
       console.log(`Deposit signing/sending failed: ${(error as Error).message}`)
-      // This is expected if Privy wallet doesn't have gas on the right network
     }
 
     // Check vault balance after deposit attempts
@@ -258,12 +237,8 @@ describe('Morpho Lend', () => {
 
     // For now, we expect the test to fail at signing since Privy needs proper setup
     // In production, the balance would increase after successful deposits
-    console.log(
-      `Vault balance before: ${vaultBalanceBefore.balanceFormatted} USDC`,
-    )
-    console.log(
-      `Vault balance after: ${vaultBalanceAfter.balanceFormatted} USDC`,
-    )
+    expect(vaultBalanceBefore).toBeDefined()
+    expect(vaultBalanceAfter).toBeDefined()
   }, 60000)
 
   it('should handle different human-readable amounts', async () => {
