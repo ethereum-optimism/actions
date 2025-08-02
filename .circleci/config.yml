@@ -82,26 +82,6 @@ jobs:
           name: Run Backend Tests
           command: cd packages/demo/backend && pnpm test
 
-  #supersim-tests:
-    docker:
-      - image: cimg/node:20.11
-    steps:
-      - setup
-      - run:
-          name: Verify mise tools installation
-          command: |
-            # Verify foundry tools are available
-            which forge
-            forge --version
-            which anvil
-            anvil --version
-            # Verify supersim is available
-            which supersim
-            supersim --version
-      - run:
-          name: Run Supersim Tests
-          command: cd packages/sdk && pnpm test:supersim
-
   docker-build:
     environment:
       DOCKER_BUILDKIT: 1
