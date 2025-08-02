@@ -59,7 +59,7 @@ function Home() {
                 Docs
               </a>
               <a
-                href="/"
+                href="/demo"
                 className="border border-gray-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 inline-block text-center"
               >
                 Demo
