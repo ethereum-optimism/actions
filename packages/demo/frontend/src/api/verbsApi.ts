@@ -141,6 +141,7 @@ class VerbsApiClient {
   async sendTokens(
     walletId: string,
     amount: number,
+    asset: string,
     recipientAddress: string,
   ): Promise<{
     transaction: {
@@ -149,13 +150,18 @@ class VerbsApiClient {
       data: string
     }
   }> {
+    const requestBody = {
+      walletId,
+      amount,
+      asset,
+      recipientAddress,
+    }
+    
+    console.log('API sendTokens - Making request to /wallet/send with body:', requestBody)
+    
     return this.request('/wallet/send', {
       method: 'POST',
-      body: JSON.stringify({
-        walletId,
-        amount,
-        recipientAddress,
-      }),
+      body: JSON.stringify(requestBody),
     })
   }
 

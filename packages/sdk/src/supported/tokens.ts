@@ -39,6 +39,15 @@ export const SUPPORTED_TOKENS: Record<string, TokenInfo> = {
       [base.id]: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
     },
   },
+  // Morpho Vault Tokens
+  VAULT_USDC: {
+    symbol: 'vUSDC',
+    name: 'Gauntlet USDC Vault Token',
+    decimals: 18, // ERC-4626 vault tokens typically have 18 decimals
+    addresses: {
+      [unichain.id]: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9', // Gauntlet USDC vault address
+    },
+  },
 }
 
 /**

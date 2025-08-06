@@ -184,6 +184,7 @@ Funding is only available in local development with supersim`)
 export async function sendTokens(
   walletId: string,
   amount: number,
+  asset: string,
   recipientAddress: Address,
 ): Promise<TransactionData> {
   const wallet = await getWallet(walletId)
@@ -191,5 +192,5 @@ export async function sendTokens(
     throw new Error('Wallet not found')
   }
 
-  return wallet.sendTokens(amount, 'usdc', recipientAddress)
+  return wallet.sendTokens(amount, asset, recipientAddress)
 }

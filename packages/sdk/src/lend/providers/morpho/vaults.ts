@@ -33,6 +33,30 @@ export const SUPPORTED_VAULTS: VaultConfig[] = [
 ]
 
 /**
+ * Get vault configuration by vault address
+ * @param vaultAddress - Vault address
+ * @returns Vault configuration or null if not found
+ */
+export function getVaultByAddress(vaultAddress: Address): VaultConfig | null {
+  return (
+    SUPPORTED_VAULTS.find(
+      (vault) => vault.address.toLowerCase() === vaultAddress.toLowerCase(),
+    ) || null
+  )
+}
+
+/**
+ * Check if an address is a supported vault token
+ * @param address - Token address to check
+ * @returns True if address is a supported vault token
+ */
+export function isVaultToken(address: Address): boolean {
+  return SUPPORTED_VAULTS.some(
+    (vault) => vault.address.toLowerCase() === address.toLowerCase(),
+  )
+}
+
+/**
  * Fetch and calculate rewards breakdown from Morpho GraphQL API
  * @param vaultAddress - Vault address
  * @returns Promise resolving to rewards breakdown

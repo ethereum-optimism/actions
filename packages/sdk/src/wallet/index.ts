@@ -1,6 +1,7 @@
 import { type Address, encodeFunctionData, erc20Abi, type Hash } from 'viem'
 import { unichain } from 'viem/chains'
 
+import { isVaultToken } from '@/lend/providers/morpho/vaults.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type {
@@ -216,6 +217,28 @@ export class Wallet implements WalletInterface {
         to: recipientAddress,
         value: `0x${parsedAmount.toString(16)}`,
         data: '0x',
+      }
+    }
+
+    // Handle vault token transfers (by address)
+    if (
+      typeof asset === 'string' &&
+      asset.startsWith('0x') &&
+      isVaultToken(asset as Address)
+    ) {
+      // Asset is a vault token address
+      const parsedAmount = parseAssetAmount(amount, 18) // Vault tokens have 18 decimals
+
+      const transferData = encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [recipientAddress, parsedAmount],
+      })
+
+      return {
+        to: asset as Address,
+        value: '0x0',
+        data: transferData,
       }
     }
 

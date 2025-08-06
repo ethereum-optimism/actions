@@ -30,6 +30,7 @@ const SendTokensRequestSchema = z.object({
   body: z.object({
     walletId: z.string().min(1, 'walletId is required'),
     amount: z.number().positive('amount must be positive'),
+    asset: z.string().min(1, 'asset is required'),
     recipientAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid recipient address format'),
@@ -205,12 +206,13 @@ export class WalletController {
       if (!validation.success) return validation.response
 
       const {
-        body: { walletId, amount, recipientAddress },
+        body: { walletId, amount, asset, recipientAddress },
       } = validation.data
 
       const transactionData = await walletService.sendTokens(
         walletId,
         amount,
+        asset,
         recipientAddress as Address,
       )
 
