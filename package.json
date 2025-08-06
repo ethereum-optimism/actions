@@ -42,7 +42,7 @@
     "nx": "^21.3.2",
     "prettier": "^3.0.0",
     "resolve-tspaths": "^0.8.18",
-    "supersim": "^0.1.0-alpha.58",
+    "supersim": "^0.1.0-alpha.59",
     "tsx": "^4.0.0",
     "wait-port": "^1.1.0"
   },
