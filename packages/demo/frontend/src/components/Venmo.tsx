@@ -41,6 +41,7 @@ function Venmo() {
       }
 
       const selectedWallet = wallets[0] // Use first wallet
+      console.log('selectedWallet', selectedWallet.address)
 
       // Get wallet balance
       const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id)
@@ -72,6 +73,7 @@ function Venmo() {
       }
 
       const selectedWallet = wallets[0] // Use first wallet
+      console.log('funding wallet', selectedWallet.address)
 
       // Check USDC balance
       const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id)
@@ -202,16 +204,28 @@ function Venmo() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header - Venmo inspired */}
-      <div className="bg-blue-500 text-white pt-12 pb-24 relative">
+      <div className="bg-blue-500 text-white pt-12 pb-24 relative rounded-b-3xl">
         <div className="max-w-sm mx-auto px-6">
           <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-xl font-semibold">Kevin</h1>
-              <p className="text-blue-100 text-sm">@kevin</p>
+            <div className="flex items-center">
+              <div>
+                <div className="flex items-center">
+                  <h1 className="text-xl font-semibold">Kevin</h1>
+                  <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <p className="text-blue-100 text-sm">@kevin</p>
+              </div>
             </div>
             <div className="flex space-x-2">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -235,18 +249,36 @@ function Venmo() {
       <div className="max-w-sm mx-auto px-6 -mt-16 relative z-10">
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
               </svg>
             </div>
-            <p className="font-semibold text-blue-500">Start Building</p>
+            <p className="font-semibold text-blue-500">Create Group</p>
           </div>
           <div className="bg-white rounded-xl p-4 text-center shadow-sm">
             <div className="flex -space-x-2 justify-center mb-3">
-              <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-              <div className="w-8 h-8 bg-blue-400 rounded-full"></div>
-              <div className="w-8 h-8 bg-green-400 rounded-full"></div>
+              <div className="w-8 h-8 rounded-full overflow-hidden">
+                <img 
+                  src="/possum.png" 
+                  alt="User 1" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="w-8 h-8 rounded-full overflow-hidden">
+                <img 
+                  src="/phoenix.png" 
+                  alt="User 2" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="w-8 h-8 rounded-full overflow-hidden">
+                <img 
+                  src="/gerbel1.png" 
+                  alt="User 3" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
             <p className="font-semibold text-blue-500">420+ Friends</p>
           </div>
@@ -294,7 +326,7 @@ function Venmo() {
               <span className="text-white font-bold text-lg">V</span>
             </div>
             <div>
-              <p className="font-semibold text-gray-900">DeFi Verbs</p>
+              <p className="font-semibold text-gray-900">Earn More</p>
               <p className="text-gray-500 text-sm">Lend, swap, earn yield</p>
             </div>
           </div>
@@ -304,7 +336,7 @@ function Venmo() {
               <span className="text-white font-bold text-lg">T</span>
             </div>
             <div>
-              <p className="font-semibold text-gray-900">Type Safety</p>
+              <p className="font-semibold text-gray-900">Send Money</p>
               <p className="text-gray-500 text-sm">Full TypeScript support</p>
             </div>
           </div>
