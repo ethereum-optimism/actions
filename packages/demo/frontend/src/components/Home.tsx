@@ -66,8 +66,13 @@ function Home() {
               </a>
               <a
                 href="/revolut"
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 inline-block text-center"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 inline-block text-center flex items-center justify-center gap-3"
               >
+                <img 
+                  src="https://cdn.brandfetch.io/idkTaHd18D/w/400/h/400/theme/dark/icon.png?c=1bxid64Mup7aczewSAYMX&t=1697548241418"
+                  alt="Revolut"
+                  className="w-6 h-6"
+                />
                 Revolut Demo
               </a>
             </div>
