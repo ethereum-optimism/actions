@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { verbsApi } from '../api/verbsApi'
-import type { WalletData } from '@eth-optimism/verbs-sdk'
 
 interface VaultData {
   address: string
@@ -27,8 +26,10 @@ interface VaultData {
 function Venmo() {
   const [isEarning, setIsEarning] = useState(false)
   const [walletBalance, setWalletBalance] = useState('0.00')
+  const [isLoading, setIsLoading] = useState(false)
 
   const updateWalletBalance = async () => {
+    setIsLoading(true)
     try {
       // Get all wallets to find the first one
       const walletsResult = await verbsApi.getAllWallets()
@@ -43,20 +44,24 @@ function Venmo() {
 
       // Get wallet balance
       const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id)
-      const usdcToken = balanceResult.balance.find(
-        (token) => token.symbol === 'USDC',
+      const usdcToken = balanceResult.balance.filter(
+        (token) => token.symbol.toLowerCase().includes('usdc'),
       )
-      const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) / 1e6 : 0
+      // sum the total balance of all usdc tokens
+      const usdcBalance = usdcToken.reduce((acc, token) => acc + parseFloat(token.totalBalance) / 1e6, 0)
 
       // Format balance to 2 decimal places
       setWalletBalance(usdcBalance.toFixed(2))
     } catch (error) {
       console.error('Failed to fetch wallet balance:', error)
       setWalletBalance('0.00')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleFundWallet = async () => {
+  const handleFundWalletWithUSDC = async () => {
+    setIsLoading(true)
     try {
       // Get all wallets to find the first one
       const walletsResult = await verbsApi.getAllWallets()
@@ -84,13 +89,48 @@ function Venmo() {
       }
     } catch (error) {
       console.error('Failed to fund wallet:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleFundWalletWithETH = async () => {
+    setIsLoading(true)
+    try {
+      // Get all wallets to find the first one
+      const walletsResult = await verbsApi.getAllWallets()
+      const wallets = walletsResult.wallets
+
+      if (!wallets || wallets.length === 0) {
+        return // No wallets to fund
+      }
+
+      const selectedWallet = wallets[0] // Use first wallet
+
+      // Check ETH balance
+      const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id)
+      const ethToken = balanceResult.balance.find(
+        (token) => token.symbol === 'ETH',
+      )
+      const ethBalance = ethToken ? parseFloat(ethToken.totalBalance) / 1e18 : 0
+
+      if (ethBalance <= 0) {
+        // Fund wallet with ETH
+        await verbsApi.fundWallet(selectedWallet.id, 'ETH')
+        console.log('Wallet funded with ETH')
+      }
+    } catch (error) {
+      console.error('Failed to fund wallet:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   useEffect(() => {
     const initializeWallet = async () => {
       await updateWalletBalance()
-      await handleFundWallet()
+      await handleFundWalletWithUSDC()
+      await handleFundWalletWithETH()
     }
     initializeWallet()
   }, [])
@@ -220,8 +260,11 @@ function Venmo() {
             </div>
             
             <div className="mb-6">
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-gray-900 flex items-center">
                 <span className="text-2xl text-gray-600">${walletBalance}</span>
+                {isLoading && (
+                  <div className="ml-3 animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400"></div>
+                )}
               </div>
             </div>
             <button 
