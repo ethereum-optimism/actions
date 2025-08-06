@@ -91,10 +91,11 @@ function Venmo() {
 
       // Check USDC balance
       const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id)
-      const usdcToken = balanceResult.balance.find(
-        (token) => token.symbol === 'USDC',
+      const usdcToken = balanceResult.balance.filter(
+        (token) => token.symbol.toLowerCase().includes('usdc'),
       )
-      const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) / 1e6 : 0
+      // sum the total balance of all usdc tokens
+      const usdcBalance = usdcToken.reduce((acc, token) => acc + parseFloat(token.totalBalance) / 1e6, 0)
 
       if (usdcBalance <= 0) {
         // Fund wallet with USDC
