@@ -70,6 +70,26 @@ function Home() {
               >
                 Revolut Demo
               </a>
+              <a
+                href="/venmo"
+                className="bg-gradient-to-r text-white px-8 py-3 rounded-lg font-medium inline-block text-center flex items-center justify-center gap-2"
+                style={{
+                  background: 'linear-gradient(135deg, #008CFF 0%, #0078E7 50%, #006BD6 100%)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #0078E7 0%, #006BD6 50%, #0056B3 100%)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #008CFF 0%, #0078E7 50%, #006BD6 100%)'
+                }}
+              >
+                <img 
+                  src="/venmologo.png" 
+                  alt="Venmo" 
+                  className="w-5 h-5"
+                />
+                Venmo Demo
+              </a>
             </div>
           </div>
         </div>
