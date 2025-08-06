@@ -22,6 +22,16 @@ class VerbsApiClient {
     options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
+    
+    console.log('=== API REQUEST START ===')
+    console.log('URL:', url)
+    console.log('Method:', options.method || 'GET')
+    console.log('Headers:', {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    })
+    console.log('Body:', options.body)
+    console.log('=== API REQUEST END ===')
 
     const response = await fetch(url, {
       headers: {
@@ -31,20 +41,29 @@ class VerbsApiClient {
       ...options,
     })
 
+    console.log('=== API RESPONSE START ===')
+    console.log('Status:', response.status)
+    console.log('Status Text:', response.statusText)
+    console.log('Response OK:', response.ok)
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`
 
       try {
         const errorData = await response.json()
+        console.log('Error Response Data:', errorData)
         errorMessage = errorData.error || errorData.message || errorMessage
       } catch {
         // If JSON parsing fails, use the default error message
       }
 
+      console.log('=== API RESPONSE END (ERROR) ===')
       throw new VerbsApiError(errorMessage, response.status)
     }
 
     const data = await response.json()
+    console.log('Success Response Data:', data)
+    console.log('=== API RESPONSE END (SUCCESS) ===')
     return data
   }
 

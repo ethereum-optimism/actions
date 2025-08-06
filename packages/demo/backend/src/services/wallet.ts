@@ -187,10 +187,22 @@ export async function sendTokens(
   asset: string,
   recipientAddress: Address,
 ): Promise<TransactionData> {
+  console.log('=== WALLET SERVICE sendTokens START ===')
+  console.log('Parameters:', { walletId, amount, asset, recipientAddress })
+  
   const wallet = await getWallet(walletId)
   if (!wallet) {
+    console.log('Wallet not found for walletId:', walletId)
     throw new Error('Wallet not found')
   }
 
-  return wallet.sendTokens(amount, asset, recipientAddress)
+  console.log('Found wallet:', wallet.address)
+  console.log('Calling wallet.sendTokens...')
+  
+  const result = await wallet.sendTokens(amount, asset, recipientAddress)
+  
+  console.log('Wallet.sendTokens result:', result)
+  console.log('=== WALLET SERVICE sendTokens END ===')
+  
+  return result
 }

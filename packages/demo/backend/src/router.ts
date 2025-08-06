@@ -39,8 +39,26 @@ router.get('/version', (c) => {
 })
 
 router.get('/wallets', walletController.getAllWallets)
-router.post('/wallet/send', walletController.sendTokens)
-router.post('/wallet/:userId', walletController.createWallet)
+
+// Add route-level logging for POST /wallet/send
+router.post('/wallet/send', async (c, next) => {
+  console.log('=== ROUTER: POST /wallet/send matched ===')
+  console.log('Method:', c.req.method)
+  console.log('URL:', c.req.url)
+  console.log('Path:', c.req.path)
+  return walletController.sendTokens(c)
+})
+
+// Add route-level logging for POST /wallet/:userId
+router.post('/wallet/:userId', async (c, next) => {
+  console.log('=== ROUTER: POST /wallet/:userId matched ===')
+  console.log('Method:', c.req.method)
+  console.log('URL:', c.req.url)
+  console.log('Path:', c.req.path)
+  console.log('UserID param:', c.req.param('userId'))
+  return walletController.createWallet(c)
+})
+
 router.get('/wallet/:userId', walletController.getWallet)
 router.get('/wallet/:userId/balance', walletController.getBalance)
 router.post('/wallet/:userId/fund', walletController.fundWallet)

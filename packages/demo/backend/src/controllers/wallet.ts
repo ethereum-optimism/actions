@@ -53,19 +53,39 @@ export class WalletController {
    */
   async createWallet(c: Context) {
     try {
+      console.log('=== WALLET CONTROLLER createWallet START ===')
+      console.log('Method:', c.req.method)
+      console.log('URL:', c.req.url)
+      console.log('Path:', c.req.path)
+      console.log('Params:', c.req.param())
+      
       const validation = await validateRequest(c, UserIdParamSchema)
-      if (!validation.success) return validation.response
+      if (!validation.success) {
+        console.log('Validation failed:', validation.response)
+        return validation.response
+      }
 
       const {
         params: { userId },
       } = validation.data
+      
+      console.log('Creating wallet for userId:', userId)
       const wallet = await walletService.createWallet(userId)
 
-      return c.json({
+      const response = {
         address: wallet.address,
         userId,
-      } satisfies CreateWalletResponse)
+      } satisfies CreateWalletResponse
+      
+      console.log('Sending createWallet response:', response)
+      console.log('=== WALLET CONTROLLER createWallet END ===')
+
+      return c.json(response)
     } catch (error) {
+      console.log('=== WALLET CONTROLLER createWallet ERROR ===')
+      console.log('Error:', error)
+      console.log('=== WALLET CONTROLLER createWallet ERROR END ===')
+      
       return c.json(
         {
           error: 'Failed to create wallet',
@@ -202,12 +222,26 @@ export class WalletController {
    */
   async sendTokens(c: Context) {
     try {
-      const validation = await validateRequest(c, SendTokensRequestSchema)
-      if (!validation.success) return validation.response
+      console.log('=== WALLET CONTROLLER sendTokens START ===')
+      console.log('Method:', c.req.method)
+      console.log('URL:', c.req.url)
+      console.log('Path:', c.req.path)
+      console.log('Raw Body:', await c.req.text())
+      
+      // Reset the request body for validation
+      const clonedRequest = c.req.clone()
+      
+      const validation = await validateRequest(clonedRequest, SendTokensRequestSchema)
+      if (!validation.success) {
+        console.log('Validation failed:', validation.response)
+        return validation.response
+      }
 
       const {
         body: { walletId, amount, asset, recipientAddress },
       } = validation.data
+      
+      console.log('Validated request data:', { walletId, amount, asset, recipientAddress })
 
       const transactionData = await walletService.sendTokens(
         walletId,
@@ -215,15 +249,27 @@ export class WalletController {
         asset,
         recipientAddress as Address,
       )
+      
+      console.log('Transaction data from service:', transactionData)
 
-      return c.json({
+      const response = {
         transaction: {
           to: transactionData.to,
           value: transactionData.value,
           data: transactionData.data,
         },
-      })
+      }
+      
+      console.log('Sending response:', response)
+      console.log('=== WALLET CONTROLLER sendTokens END ===')
+      
+      return c.json(response)
     } catch (error) {
+      console.log('=== WALLET CONTROLLER sendTokens ERROR ===')
+      console.log('Error:', error)
+      console.log('Error message:', error instanceof Error ? error.message : 'Unknown error')
+      console.log('=== WALLET CONTROLLER sendTokens ERROR END ===')
+      
       return c.json(
         {
           error: 'Failed to send tokens',
