@@ -119,10 +119,8 @@ function Venmo() {
 
   useEffect(() => {
     const initializeWallet = async () => {
-      await Promise.all([
-        handleFundWalletWithUSDC(),
-        handleFundWalletWithETH(),
-      ])
+      await handleFundWalletWithUSDC()
+      await handleFundWalletWithETH()
       // Final balance update after funding
       await updateWalletBalance()
       // Hide loading spinner after initial setup is complete
