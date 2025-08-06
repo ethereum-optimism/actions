@@ -347,39 +347,6 @@ function Venmo() {
           </div>
         </div>
 
-        {/* Features List */}
-        <div className="space-y-3 mb-6">
-          <div className="bg-white rounded-xl p-4 shadow-sm flex items-center">
-            <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mr-4">
-              <span className="text-white font-bold text-lg">W</span>
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Smart Wallets</p>
-              <p className="text-gray-500 text-sm">Gas sponsored transactions</p>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 shadow-sm flex items-center">
-            <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center mr-4">
-              <span className="text-white font-bold text-lg">V</span>
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Earn More</p>
-              <p className="text-gray-500 text-sm">Lend, swap, earn yield</p>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 shadow-sm flex items-center">
-            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mr-4">
-              <span className="text-white font-bold text-lg">T</span>
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Send Money</p>
-              <p className="text-gray-500 text-sm">Full TypeScript support</p>
-            </div>
-          </div>
-        </div>
-
         {/* Bottom Navigation */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-2 sm:hidden">
           <div className="flex justify-around">
