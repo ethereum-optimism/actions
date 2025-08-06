@@ -29,7 +29,7 @@ contract ImpersonateFund is Script {
         address usdc = vm.envOr("ERC20_ADDRESS", address(0x078D782b760474a361dDA0AF3839290b0EF57AD6));
         // Read faucet address from env var or deployment file, fallback to default
         address faucetAddress = readFaucetAddress();
-        uint256 amount = vm.envOr("AMOUNT", uint256(1000e6));
+        uint256 amount = vm.envOr("AMOUNT", uint256(1000e7));
         vm.startBroadcast(msg.sender);
         IERC20(usdc).transfer(faucetAddress, amount);
         console.log("Funded faucet with %s tokens", amount);
