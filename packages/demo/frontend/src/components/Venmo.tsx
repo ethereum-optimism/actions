@@ -27,6 +27,23 @@ function Venmo() {
   const [isEarning, setIsEarning] = useState(false)
   const [walletBalance, setWalletBalance] = useState('0.00')
   const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [vaultApy, setVaultApy] = useState('0.0')
+
+  const fetchVaultApy = async () => {
+    try {
+      const vaultsResult = await verbsApi.getVaults()
+      
+      if (vaultsResult.vaults.length > 0) {
+        // Get APY from first vault (same logic as handleEarn and Terminal.tsx)
+        const firstVault = vaultsResult.vaults[0]
+        const apyPercentage = (firstVault.apy * 100).toFixed(1)
+        setVaultApy(apyPercentage)
+      }
+    } catch (error) {
+      console.error('Failed to fetch vault APY:', error)
+      setVaultApy('0.0')
+    }
+  }
 
   const updateWalletBalance = async () => {
     try {
@@ -121,6 +138,7 @@ function Venmo() {
     const initializeWallet = async () => {
       await handleFundWalletWithUSDC()
       await handleFundWalletWithETH()
+      await fetchVaultApy()
       // Final balance update after funding
       await updateWalletBalance()
       // Hide loading spinner after initial setup is complete
