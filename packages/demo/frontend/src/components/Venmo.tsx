@@ -82,8 +82,6 @@ function Venmo() {
         // Fund wallet with USDC
         await verbsApi.fundWallet(selectedWallet.id)
         console.log('Wallet funded with USDC')
-        // Update balance after funding
-        await updateWalletBalance()
       }
     } catch (error) {
       console.error('Failed to fund wallet:', error)
@@ -121,8 +119,10 @@ function Venmo() {
 
   useEffect(() => {
     const initializeWallet = async () => {
-      await handleFundWalletWithUSDC()
-      await handleFundWalletWithETH()
+      await Promise.all([
+        handleFundWalletWithUSDC(),
+        handleFundWalletWithETH(),
+      ])
       // Final balance update after funding
       await updateWalletBalance()
       // Hide loading spinner after initial setup is complete
