@@ -26,10 +26,9 @@ interface VaultData {
 function Venmo() {
   const [isEarning, setIsEarning] = useState(false)
   const [walletBalance, setWalletBalance] = useState('0.00')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
 
   const updateWalletBalance = async () => {
-    setIsLoading(true)
     try {
       // Get all wallets to find the first one
       const walletsResult = await verbsApi.getAllWallets()
@@ -55,13 +54,10 @@ function Venmo() {
     } catch (error) {
       console.error('Failed to fetch wallet balance:', error)
       setWalletBalance('0.00')
-    } finally {
-      setIsLoading(false)
     }
   }
 
   const handleFundWalletWithUSDC = async () => {
-    setIsLoading(true)
     try {
       // Get all wallets to find the first one
       const walletsResult = await verbsApi.getAllWallets()
@@ -89,13 +85,10 @@ function Venmo() {
       }
     } catch (error) {
       console.error('Failed to fund wallet:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
   const handleFundWalletWithETH = async () => {
-    setIsLoading(true)
     try {
       // Get all wallets to find the first one
       const walletsResult = await verbsApi.getAllWallets()
@@ -121,16 +114,17 @@ function Venmo() {
       }
     } catch (error) {
       console.error('Failed to fund wallet:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
   useEffect(() => {
     const initializeWallet = async () => {
-      await updateWalletBalance()
       await handleFundWalletWithUSDC()
       await handleFundWalletWithETH()
+      // Final balance update after funding
+      await updateWalletBalance()
+      // Hide loading spinner after initial setup is complete
+      setIsInitialLoading(false)
     }
     initializeWallet()
   }, [])
@@ -261,10 +255,7 @@ function Venmo() {
             
             <div className="mb-6">
               <div className="text-3xl font-bold text-gray-900 flex items-center">
-                <span className="text-2xl text-gray-600">${walletBalance}</span>
-                {isLoading && (
-                  <div className="ml-3 animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400"></div>
-                )}
+                {isInitialLoading ? <div className="ml-3 animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400"></div> : <span className="text-2xl text-gray-600">${walletBalance}</span>}
               </div>
             </div>
             <button 
