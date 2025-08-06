@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Terminal from './components/Terminal'
 import Home from './components/Home'
 import Revolut from './components/Revolut'
-import Venmo from './components/Venmo'
 
 function App() {
   return (
@@ -12,7 +11,6 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/demo" element={<Terminal />} />
           <Route path="/revolut" element={<Revolut />} />
-          <Route path="/venmo" element={<Venmo />} />
         </Routes>
       </div>
     </Router>
