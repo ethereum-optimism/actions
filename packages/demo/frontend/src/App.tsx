@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Terminal from './components/Terminal'
 import Home from './components/Home'
 import Revolut from './components/Revolut'
+import Venmo from './components/Venmo'
 
 function App() {
   return (
