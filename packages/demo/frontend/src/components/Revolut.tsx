@@ -16,7 +16,7 @@ interface Transaction {
 
 
 
-type ViewType = 'home' | 'accounts' | 'personal-usd' | 'apy-info' | 'lending'
+type ViewType = 'home' | 'accounts' | 'personal-usd' | 'apy-info' | 'lending' | 'position-detail'
 
 const Revolut = () => {
   // State management
@@ -30,7 +30,16 @@ const Revolut = () => {
   const [morphoApy, setMorphoApy] = useState<number | null>(null)
   const [lendingAmount, setLendingAmount] = useState('')
   const [lendingStep, setLendingStep] = useState<'amount' | 'confirm' | 'processing' | 'success'>('amount')
+  const [wasPositionAddition, setWasPositionAddition] = useState<boolean>(false)
   const [lastTxHash, setLastTxHash] = useState<string>('')
+  const [selectedPosition, setSelectedPosition] = useState<{
+    id: string
+    amount: number
+    apy: number
+    protocol: string
+    date: Date
+    txHash: string
+  } | null>(null)
   const [lendingPositions, setLendingPositions] = useState<Array<{
     id: string
     amount: number
@@ -195,6 +204,20 @@ const Revolut = () => {
   const handleEnableHigherApy = () => {
     setCurrentView('lending')
     setLendingStep('amount')
+    setWasPositionAddition(false)
+  }
+
+  const handlePositionClick = (position: {
+    id: string
+    amount: number
+    apy: number
+    protocol: string
+    date: Date
+    txHash: string
+  }) => {
+    console.log('Position clicked:', position)
+    setSelectedPosition(position)
+    setCurrentView('position-detail')
   }
 
   const handleLendingAmountSubmit = async () => {
@@ -233,19 +256,43 @@ const Revolut = () => {
         cefiSavings: prev.cefiSavings - amount
       }))
 
-      // Add to lending positions with real transaction data
-      const newPosition = {
-        id: `pos-${Date.now()}`,
-        amount: amount,
-        apy: morphoApy || 5.25,
-        protocol: 'Morpho',
-        date: new Date(),
-        txHash: realTxHash
-      }
-      setLendingPositions(prev => [...prev, newPosition])
+      // Check if there's already a Morpho position to update
+      setLendingPositions(prev => {
+        const existingMorphoIndex = prev.findIndex(pos => pos.protocol === 'Morpho')
+        
+        if (existingMorphoIndex >= 0) {
+          // Update existing position
+          const updatedPositions = [...prev]
+          const existingPosition = updatedPositions[existingMorphoIndex]
+          updatedPositions[existingMorphoIndex] = {
+            ...existingPosition,
+            amount: existingPosition.amount + amount, // Add to existing amount
+            apy: morphoApy || existingPosition.apy, // Update APY if available
+            txHash: realTxHash, // Update with latest transaction hash
+            date: existingPosition.date // Keep original start date
+          }
+          return updatedPositions
+        } else {
+          // Create new position if none exists
+          const newPosition = {
+            id: `pos-${Date.now()}`,
+            amount: amount,
+            apy: morphoApy || 5.25,
+            protocol: 'Morpho',
+            date: new Date(),
+            txHash: realTxHash
+          }
+          return [...prev, newPosition]
+        }
+      })
 
+      // Check if this was an addition to existing position
+      const wasAddition = lendingPositions.some(pos => pos.protocol === 'Morpho')
+      setWasPositionAddition(wasAddition)
+      
       setLendingStep('success')
       console.log(`✅ Real transaction completed! Hash: ${realTxHash}`)
+      console.log(wasAddition ? 'Added to existing Morpho position' : 'Created new Morpho position')
     } catch (error) {
       console.error('Real lending transaction failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -502,10 +549,7 @@ const Revolut = () => {
                     <div 
                       key={position.id} 
                       className="bg-white/10 backdrop-blur-sm rounded-lg p-4 cursor-pointer hover:bg-white/15 transition-colors"
-                      onClick={() => {
-                        navigator.clipboard.writeText(position.txHash)
-                        alert(`Transaction hash copied to clipboard!\n${position.txHash}`)
-                      }}
+                      onClick={() => handlePositionClick(position)}
                     >
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
@@ -526,7 +570,7 @@ const Revolut = () => {
                         <div className="text-right">
                           <div className="font-medium">${position.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                           <div className="text-xs text-green-400">+${(position.amount * position.apy / 100 / 365).toFixed(2)}/day</div>
-                          <div className="text-xs text-purple-400 mt-1">Tap for tx details</div>
+                          <div className="text-xs text-purple-400 mt-1">Tap for details</div>
                         </div>
                       </div>
                     </div>
@@ -665,6 +709,119 @@ const Revolut = () => {
            </div>
          )}
 
+         {currentView === 'position-detail' && selectedPosition && (
+           <div className="p-4">
+             <div className="flex items-center mb-6">
+               <button onClick={() => setCurrentView('personal-usd')} className="text-white mr-4">
+                 ←
+               </button>
+               <h1 className="text-xl font-medium">High Interest Savings</h1>
+             </div>
+
+             {/* Position Overview */}
+             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 mb-6">
+               <div className="flex items-center mb-4">
+                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mr-4">
+                   <span className="text-white font-bold text-lg">M</span>
+                 </div>
+                 <div>
+                   <h2 className="text-xl font-semibold">Morpho Protocol</h2>
+                   <p className="text-purple-200 text-sm">Decentralized lending</p>
+                 </div>
+               </div>
+
+               <div className="space-y-4">
+                 <div className="flex justify-between items-center">
+                   <span className="text-purple-200">Principal Amount</span>
+                   <span className="text-xl font-semibold">${selectedPosition.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                 </div>
+                 
+                 <div className="flex justify-between items-center">
+                   <span className="text-purple-200">Current APY</span>
+                   <span className="text-xl font-semibold text-green-400">{selectedPosition.apy.toFixed(2)}%</span>
+                 </div>
+                 
+                 <div className="flex justify-between items-center">
+                   <span className="text-purple-200">Daily Earnings</span>
+                   <span className="text-lg font-medium text-green-400">
+                     +${(selectedPosition.amount * selectedPosition.apy / 100 / 365).toFixed(2)}
+                   </span>
+                 </div>
+                 
+                 <div className="flex justify-between items-center">
+                   <span className="text-purple-200">Started</span>
+                   <span className="text-white">
+                     {selectedPosition.date.toLocaleDateString('en-US', { 
+                       month: 'long', 
+                       day: 'numeric',
+                       year: 'numeric'
+                     })}
+                   </span>
+                 </div>
+                 
+                 <hr className="border-white/20" />
+                 
+                 {/* Estimated Yield */}
+                 <div className="bg-green-500/10 rounded-lg p-4">
+                   <h3 className="font-semibold mb-2 text-green-400">Projected Annual Yield</h3>
+                   <div className="text-2xl font-bold text-green-400">
+                     +${(selectedPosition.amount * selectedPosition.apy / 100).toFixed(2)}
+                   </div>
+                   <p className="text-sm text-green-300 mt-1">Based on current APY</p>
+                 </div>
+               </div>
+             </div>
+
+             {/* Transaction Details */}
+             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 mb-6">
+               <h3 className="font-semibold mb-4">Transaction Details</h3>
+               <div className="space-y-3">
+                 <div className="flex justify-between">
+                   <span className="text-purple-200">Transaction Hash</span>
+                   <button 
+                     onClick={() => {
+                       navigator.clipboard.writeText(selectedPosition.txHash)
+                       alert('Transaction hash copied!')
+                     }}
+                     className="text-blue-400 underline text-sm break-all max-w-[200px] text-right"
+                   >
+                     {selectedPosition.txHash.slice(0, 8)}...{selectedPosition.txHash.slice(-8)}
+                   </button>
+                 </div>
+                 <div className="flex justify-between">
+                   <span className="text-purple-200">Status</span>
+                   <span className="text-green-400 font-medium">Active</span>
+                 </div>
+                 <div className="flex justify-between">
+                   <span className="text-purple-200">Protocol</span>
+                   <span className="text-white">{selectedPosition.protocol}</span>
+                 </div>
+               </div>
+             </div>
+
+             {/* Add More Funds */}
+             <div className="space-y-4">
+                               <button
+                  onClick={() => {
+                    setCurrentView('lending')
+                    setLendingStep('amount')
+                    setWasPositionAddition(false)
+                  }}
+                  className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-4 rounded-lg font-semibold text-lg"
+                >
+                  Add More Funds
+                </button>
+               
+               <button
+                 onClick={() => setCurrentView('personal-usd')}
+                 className="w-full bg-white/20 backdrop-blur-sm text-white py-4 rounded-lg font-semibold"
+               >
+                 Back to Account
+               </button>
+             </div>
+           </div>
+         )}
+
          {currentView === 'lending' && (
            <div className="p-4">
              <div className="flex items-center mb-6">
@@ -780,19 +937,23 @@ const Revolut = () => {
                    <span className="text-white text-2xl">✓</span>
                  </div>
                  <h2 className="text-xl font-semibold mb-2">Success!</h2>
-                 <p className="text-purple-200 mb-6">
-                   Successfully moved ${parseFloat(lendingAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC to High Interest Savings
-                 </p>
+                                 <p className="text-purple-200 mb-6">
+                  {wasPositionAddition 
+                    ? `Successfully added $${parseFloat(lendingAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC to your High Interest Savings position`
+                    : `Successfully moved $${parseFloat(lendingAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC to High Interest Savings`
+                  }
+                </p>
                  <div className="bg-black/20 rounded p-3 mb-6 text-sm">
                    <div className="text-purple-200">Transaction Hash:</div>
                    <div className="font-mono text-xs break-all">{lastTxHash}</div>
                  </div>
                  <button
                    onClick={() => {
-                     setCurrentView('home')
-                     setLendingStep('amount')
-                     setLendingAmount('')
-                     setLastTxHash('')
+                                         setCurrentView('home')
+                    setLendingStep('amount')
+                    setLendingAmount('')
+                    setLastTxHash('')
+                    setWasPositionAddition(false)
                    }}
                    className="bg-gradient-to-r from-green-500 to-blue-500 text-white py-4 px-8 rounded-lg font-semibold"
                  >
