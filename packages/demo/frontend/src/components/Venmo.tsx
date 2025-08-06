@@ -84,6 +84,7 @@ function Venmo() {
   }
 
   const handleFundWalletWithUSDC = async () => {
+    console.log('funding wallet with usdc')
     try {
       // Get all wallets to find the first one
       const walletsResult = await verbsApi.getAllWallets()
@@ -115,6 +116,7 @@ function Venmo() {
   }
 
   const handleFundWalletWithETH = async () => {
+    console.log('funding wallet with eth')
     try {
       // Get all wallets to find the first one
       const walletsResult = await verbsApi.getAllWallets()
