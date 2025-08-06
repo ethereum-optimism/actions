@@ -166,42 +166,18 @@ export async function getVaultInfo(
 export async function getVaults(
   publicClient: PublicClient,
 ): Promise<LendVaultInfo[]> {
-  // try {
-  //   const vaultInfoPromises = SUPPORTED_VAULTS.map((config) =>
-  //     getVaultInfo(config.address, publicClient),
-  //   )
-  //   return await Promise.all(vaultInfoPromises)
-  // } catch (error) {
-  //   throw new Error(
-  //     `Failed to get vaults: ${
-  //       error instanceof Error ? error.message : 'Unknown error'
-  //     }`,
-  //   )
-  // }
-  return [
-    {
-      address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
-      name: 'Gauntlet USDC',
-      asset: '0x078d782b760474a361dda0af3839290b0ef57ad6',
-      totalAssets: 14834459115539n,
-      totalShares: 14742944091268546990053987n,
-      apy: 0.08893498352188824,
-      apyBreakdown: {
-        nativeApy: 0.04947043150140469,
-        performanceFee: 0.1,
-        netApy: 0.08893498352188824,
-        other: 0,
-        eth: 0,
-        usdc: 0.03234388576530273,
-        morpho: 0.012067709405321286,
-        totalRewardsApr: 0.04441159517062401
-      },
-      owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
-      curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585',
-      fee: 0.1,
-      lastUpdate: 1754488541
-    }
-  ]
+  try {
+    const vaultInfoPromises = SUPPORTED_VAULTS.map((config) =>
+      getVaultInfo(config.address, publicClient),
+    )
+    return await Promise.all(vaultInfoPromises)
+  } catch (error) {
+    throw new Error(
+      `Failed to get vaults: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+    )
+  }
 }
 
 /**

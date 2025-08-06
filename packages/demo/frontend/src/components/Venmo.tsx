@@ -182,8 +182,6 @@ function Venmo() {
         return
       }
 
-      const selectedVault = vaultsResult.vaults[0] // Auto-select first vault
-
       // Use 50% of balance or minimum $10, whichever is higher
       const lendAmount = usdcBalance
       
@@ -193,13 +191,11 @@ function Venmo() {
       }
 
       // Perform the lend operation
-      const lendResult = await verbsApi.lendDeposit(
+      await verbsApi.lendDeposit(
         selectedWallet.id,
         lendAmount,
         'usdc',
       )
-
-      alert(`Successfully lent $${lendAmount.toFixed(2)} USDC to ${selectedVault.name}!\nTransaction: ${lendResult.transaction.hash}`)
       
       // Update balance after successful earn
       await updateWalletBalance()
