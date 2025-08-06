@@ -1223,7 +1223,7 @@ ${vaultOptions}
 
       // Get balances for all wallets
       const walletsWithBalances = await Promise.all(
-        result.wallets.map(async (wallet) => {
+        result.wallets.map(async (wallet: WalletData) => {
           try {
             const balanceResult = await verbsApi.getWalletBalance(wallet.id)
             const usdcToken = balanceResult.balance.find(
@@ -1247,8 +1247,8 @@ ${vaultOptions}
 
       // Filter wallets with USDC > 0 and sort by balance (highest first)
       const walletsWithUSDC = walletsWithBalances
-        .filter((wallet) => wallet.usdcBalance > 0)
-        .sort((a, b) => b.usdcBalance - a.usdcBalance)
+        .filter((wallet: any) => wallet.usdcBalance > 0)
+        .sort((a: any, b: any) => b.usdcBalance - a.usdcBalance)
 
       if (walletsWithUSDC.length === 0) {
         const noBalanceLine: TerminalLine = {
@@ -1263,7 +1263,7 @@ ${vaultOptions}
 
       // Create wallet options list
       const walletOptions = walletsWithUSDC
-        .map((wallet, index) => {
+        .map((wallet: any, index: number) => {
           const num = index + 1
           const numStr = num < 10 ? ` ${num}` : `${num}`
           const addressDisplay = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
@@ -1282,7 +1282,7 @@ ${vaultOptions}
       setPendingPrompt({
         type: 'walletSendSelection',
         message: '',
-        data: walletsWithUSDC.map((w) => ({ id: w.id, address: w.address })),
+        data: walletsWithUSDC.map((w: any) => ({ id: w.id, address: w.address })),
       })
     } catch (error) {
       const errorLine: TerminalLine = {
