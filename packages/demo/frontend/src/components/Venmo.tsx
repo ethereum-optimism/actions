@@ -279,15 +279,29 @@ function Venmo() {
         </div>
 
         {/* Main Balance Card */}
-        <div className="bg-white rounded-xl shadow-sm mb-6">
+        <div className={`bg-white rounded-xl mb-6 transition-all duration-500 ${
+          isEarning 
+            ? 'shadow-xl ring-2 ring-blue-500/20 shadow-blue-500/10 scale-[1.02]' 
+            : 'shadow-sm'
+        }`}>
           <div className="p-6 border-b border-gray-100">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Balance</h2>
+              {isEarning && (
+                <div className="text-right">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">APY</div>
+                  <div className="text-sm font-bold text-green-600">{vaultApy}%</div>
+                </div>
+              )}
             </div>
             
             <div className="mb-6">
-              <div className="text-3xl font-bold text-gray-900 flex items-center">
-                {isInitialLoading ? <div className="ml-3 animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400"></div> : <span className="text-2xl text-gray-600">${walletBalance}</span>}
+              <div className="text-3xl font-bold text-gray-900 flex items-center justify-start h-12">
+                {isInitialLoading ? (
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                ) : (
+                  <span className="text-2xl text-gray-600">${walletBalance}</span>
+                )}
               </div>
             </div>
             <button 
