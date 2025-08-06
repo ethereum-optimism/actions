@@ -54,8 +54,8 @@ importers:
         specifier: ^0.8.18
         version: 0.8.23(typescript@5.8.3)
       supersim:
-        specifier: ^0.1.0-alpha.58
-        version: 0.1.0-alpha.58
+        specifier: ^0.1.0-alpha.59
+        version: 0.1.0-alpha.59
       tsx:
         specifier: ^4.0.0
         version: 4.20.3
@@ -4228,8 +4228,8 @@ packages:
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
 
-  supersim@0.1.0-alpha.58:
-    resolution: {integrity: sha512-8YHo3j5AvhwDQNWuQvGnN12DBOV1pZYNl2XNM1IMgLydhe3oj9eaWay4F/ZSaSUOJiNPdAv9kDijepXeEAh+6A==}
+  supersim@0.1.0-alpha.59:
+    resolution: {integrity: sha512-HbMTWn02kTP6+uFv8VZX3ALiPFHgG9/uukt34YRYy+h2kTyie5lZ5skbPPvf7NPRtHjsrlsv/NdZygnABImZ6Q==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -9130,7 +9130,7 @@ snapshots:
       pirates: 4.0.7
       ts-interface-checker: 0.1.13
 
-  supersim@0.1.0-alpha.58:
+  supersim@0.1.0-alpha.59:
     dependencies:
       follow-redirects: 1.15.9
     transitivePeerDependencies:
