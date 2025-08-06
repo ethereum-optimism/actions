@@ -62,7 +62,13 @@ function Home() {
                 href="/demo"
                 className="border border-gray-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 inline-block text-center"
               >
-                Demo
+                Terminal Demo
+              </a>
+              <a
+                href="/revolut"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 inline-block text-center"
+              >
+                Revolut Demo
               </a>
             </div>
           </div>
