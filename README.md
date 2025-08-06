@@ -67,6 +67,8 @@ This uses `mprocs` to orchestrate multiple processes:
 
 The demo will be available at `http://localhost:5173` once all services are running.
 
+Use the `develop` branch for breaking changes.
+
 ## License
 
 MIT
