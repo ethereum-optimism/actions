@@ -71,13 +71,13 @@ Wallet commands:
   wallet select - Select a wallet to use for commands
          fund    - Fund selected wallet
          balance - Show balance of selected wallet
-         lend    - Lend to Morpho vaults
-         send    - Send USDC to another address
+         lend    - Lend and earn
+         send    - Send to another address
 
 Future verbs (coming soon):
-  borrow        - Borrow via Morpho
-  repay         - Repay Morpho loan
-  swap          - Trade via Uniswap
+  borrow        - Borrow assets
+  repay         - Repay a loan
+  swap          - Trade tokens
   earn          - Earn DeFi yield`
 
 const Terminal = () => {
