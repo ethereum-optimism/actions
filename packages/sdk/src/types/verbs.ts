@@ -56,7 +56,7 @@ export interface VerbsConfig {
  * Wallet provider configuration
  * @description Configuration for wallet providers
  */
-export type WalletConfig = PrivyWalletConfig
+export type WalletConfig = PrivyWalletConfig | DynamicWalletConfig
 
 /**
  * Privy wallet provider configuration
@@ -69,4 +69,11 @@ export interface PrivyWalletConfig {
   appId: string
   /** Privy app secret */
   appSecret: string
+}
+
+export interface DynamicWalletConfig {
+  /** Wallet provider type */
+  type: 'dynamic'
+  /** Dynamic auth token */
+  authToken: string
 }

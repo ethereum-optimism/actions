@@ -150,7 +150,7 @@ export class Wallet implements WalletInterface {
       )
     }
 
-    return (this.walletProvider as any).signOnly(
+    return this.walletProvider.sign(
       this.id,
       transactionData,
     ) as `0x${string}`

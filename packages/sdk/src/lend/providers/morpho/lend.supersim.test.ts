@@ -57,7 +57,7 @@ describe('Morpho Lend', () => {
     _testAccount = setup.testAccount
 
     // Initialize Verbs SDK with Morpho lending
-    verbs = initVerbs({
+    verbs = await initVerbs({
       wallet: {
         type: 'privy',
         appId: process.env.PRIVY_APP_ID || 'test-app-id',

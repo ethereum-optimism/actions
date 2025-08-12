@@ -30,7 +30,7 @@ class VerbsApp extends App {
 
   protected async preMain(): Promise<void> {
     // Initialize Verbs SDK once at startup
-    initializeVerbs()
+    await initializeVerbs()
   }
 
   protected async main(): Promise<void> {

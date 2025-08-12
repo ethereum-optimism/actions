@@ -12,9 +12,8 @@ let verbsInstance: VerbsInterface
 export function createVerbsConfig(): VerbsConfig {
   return {
     wallet: {
-      type: 'privy',
-      appId: env.PRIVY_APP_ID,
-      appSecret: env.PRIVY_APP_SECRET,
+      type: 'dynamic',
+      authToken: env.DYNAMIC_AUTH_TOKEN,
     },
     lend: {
       type: 'morpho',
@@ -28,9 +27,9 @@ export function createVerbsConfig(): VerbsConfig {
   }
 }
 
-export function initializeVerbs(config?: VerbsConfig): void {
+export async function initializeVerbs(config?: VerbsConfig): Promise<void> {
   const verbsConfig = config || createVerbsConfig()
-  verbsInstance = initVerbs(verbsConfig)
+  verbsInstance = await initVerbs(verbsConfig)
 }
 
 export function getVerbs(): VerbsInterface {

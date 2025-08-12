@@ -44,6 +44,7 @@ export const env = cleanEnv(process.env, {
   PORT: port({ default: 3000 }),
   PRIVY_APP_ID: str({ devDefault: 'dummy' }),
   PRIVY_APP_SECRET: str({ devDefault: 'dummy' }),
+  DYNAMIC_AUTH_TOKEN: str({ devDefault: 'dummy' }),
   LOCAL_DEV: bool({ default: false }),
   RPC_URL: str({ default: 'http://127.0.0.1:9545' }),
   FAUCET_ADMIN_PRIVATE_KEY: str({

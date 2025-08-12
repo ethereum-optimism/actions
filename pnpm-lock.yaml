@@ -206,6 +206,9 @@ importers:
 
   packages/sdk:
     dependencies:
+      '@dynamic-labs-wallet/node-evm':
+        specifier: ^0.0.131
+        version: 0.0.131(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
       '@eth-optimism/viem':
         specifier: ^0.4.13
         version: 0.4.13(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
@@ -843,6 +846,23 @@ packages:
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
 
+  '@dynamic-labs-wallet/core@0.0.131':
+    resolution: {integrity: sha512-N4U9k0W7Rd8hNACGriY4FzQd+3VYi/WQNsB+QcMcY9nSrlLsKe0k84H4n4TBP4GeWegsrVuofxDA6aw0H3WqXA==}
+
+  '@dynamic-labs-wallet/node-evm@0.0.131':
+    resolution: {integrity: sha512-odisZhI5G8bn4B2+oon4U6p07BOohRFBTQEnZ+2mMvhB0x94WQQyhfyByCY1MCt23g9gUy3amPsZXkBtYgxQOQ==}
+    peerDependencies:
+      viem: ^2.22.1
+
+  '@dynamic-labs-wallet/node@0.0.131':
+    resolution: {integrity: sha512-MllMO17DiuzhHwkDMWX3KLDPOvLYSG/MXeU+cGKYPM5YsaaCLnlscQbVMHFzx9JnBK3YqdNTsJZ8IcMnRkWpdA==}
+
+  '@dynamic-labs/logger@4.25.10':
+    resolution: {integrity: sha512-byYwUL1kHxbenNh0K4BH84gKQwWfR73iQYOrT6XdadH627xtjHT0D2GjL9hk9GCxGVw5orhj/3JGv7KCAdeBRg==}
+
+  '@dynamic-labs/sdk-api-core@0.0.746':
+    resolution: {integrity: sha512-g7wjVlFFbBeDlF1barWhK6obTXSrUwzsheeoEOaj4r/XshuE78BltGWfjO6wjJILlV5yFeHNhpQhuE+IohUByA==}
+
   '@emnapi/core@1.4.5':
     resolution: {integrity: sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q==}
 
@@ -1443,6 +1463,10 @@ packages:
 
   '@noble/curves@1.9.4':
     resolution: {integrity: sha512-2bKONnuM53lINoDrSmK8qP8W271ms7pygDhZt4SiLOoLwBtoHqeCFi6RG42V8zd3mLHuJFhU/Bmaqo4nX0/kBw==}
+    engines: {node: ^14.21.3 || >=16}
+
+  '@noble/hashes@1.7.1':
+    resolution: {integrity: sha512-B8XBPsn4vT/KJAGqDzbwztd+6Yte3P4V7iafm24bxgDe/mlRuK6xmWPuCNrKt2vDafZ8MfJLlchDG/vYafQEjQ==}
     engines: {node: ^14.21.3 || >=16}
 
   '@noble/hashes@1.8.0':
@@ -2085,6 +2109,9 @@ packages:
 
   axios@1.10.0:
     resolution: {integrity: sha512-/1xYAC4MP/HEG+3duIhFr4ZQXR4sQXOIe+o6sdqzeykGLx6Upp/1p8MHqhINOvGeP7xyNHe7tsiJByc4SSVUxw==}
+
+  axios@1.9.0:
+    resolution: {integrity: sha512-re4CqKTJaURpzbLHtIi6XpDv20/CnpXOtjRY5/CU32L8gU8ek9UIivcfvSWvmKEngmVbrUtPpdDwWDWL7DNHvg==}
 
   babel-plugin-const-enum@1.2.0:
     resolution: {integrity: sha512-o1m/6iyyFnp9MRsK1dHF3bneqyf3AlM2q3A/YbgQr2pCat6B6XJVDv2TXqzfY2RYUi4mak6WAksSBPlyYGx9dg==}
@@ -4455,6 +4482,10 @@ packages:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
     hasBin: true
 
+  uuid@11.1.0:
+    resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
+    hasBin: true
+
   uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
     hasBin: true
@@ -5488,6 +5519,36 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
+  '@dynamic-labs-wallet/core@0.0.131':
+    dependencies:
+      '@dynamic-labs/sdk-api-core': 0.0.746
+      axios: 1.9.0
+      uuid: 11.1.0
+    transitivePeerDependencies:
+      - debug
+
+  '@dynamic-labs-wallet/node-evm@0.0.131(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))':
+    dependencies:
+      '@dynamic-labs-wallet/node': 0.0.131
+      viem: 2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5)
+    transitivePeerDependencies:
+      - debug
+
+  '@dynamic-labs-wallet/node@0.0.131':
+    dependencies:
+      '@dynamic-labs-wallet/core': 0.0.131
+      '@dynamic-labs/logger': 4.25.10
+      '@noble/hashes': 1.7.1
+      uuid: 11.1.0
+    transitivePeerDependencies:
+      - debug
+
+  '@dynamic-labs/logger@4.25.10':
+    dependencies:
+      eventemitter3: 5.0.1
+
+  '@dynamic-labs/sdk-api-core@0.0.746': {}
+
   '@emnapi/core@1.4.5':
     dependencies:
       '@emnapi/wasi-threads': 1.0.4
@@ -5878,6 +5939,8 @@ snapshots:
   '@noble/curves@1.9.4':
     dependencies:
       '@noble/hashes': 1.8.0
+
+  '@noble/hashes@1.7.1': {}
 
   '@noble/hashes@1.8.0': {}
 
@@ -6628,6 +6691,14 @@ snapshots:
       possible-typed-array-names: 1.1.0
 
   axios@1.10.0:
+    dependencies:
+      follow-redirects: 1.15.9
+      form-data: 4.0.4
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+
+  axios@1.9.0:
     dependencies:
       follow-redirects: 1.15.9
       form-data: 4.0.4
@@ -9399,6 +9470,8 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   uuid@10.0.0: {}
+
+  uuid@11.1.0: {}
 
   uuid@8.3.2: {}
 

@@ -14,6 +14,11 @@ import type { AssetIdentifier } from '@/utils/assets.js'
  */
 export interface WalletProvider {
   /**
+   * Initialize the wallet provider
+   */
+  init?(): Promise<void>
+
+  /**
    * Create a new wallet
    * @param userId - User identifier for the wallet
    * @returns Promise resolving to new wallet instance

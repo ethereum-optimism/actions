@@ -10,6 +10,7 @@ import type {
   Wallet,
   WalletProvider,
 } from '@/types/wallet.js'
+import { Dynamic } from '@/wallet/providers/dynamic.js'
 import { WalletProviderPrivy } from '@/wallet/providers/privy.js'
 
 /**
@@ -68,6 +69,12 @@ export class Verbs implements VerbsInterface {
     )
   }
 
+  async init() {
+    if (this.walletProvider.init) {
+      await this.walletProvider.init()
+    }
+  }
+
   /**
    * Get the lend provider instance
    * @returns LendProvider instance if configured, undefined otherwise
@@ -97,8 +104,13 @@ export class Verbs implements VerbsInterface {
           wallet.appSecret,
           this, // Pass Verbs instance so wallets can access configured providers
         )
+      case 'dynamic':
+        return new Dynamic(
+          wallet.authToken,
+          this, // Pass Verbs instance so wallets can access configured providers
+        )
       default:
-        throw new Error(`Unsupported wallet provider type: ${wallet.type}`)
+        throw new Error(`Unsupported wallet provider type`)
     }
   }
 }
@@ -109,6 +121,8 @@ export class Verbs implements VerbsInterface {
  * @param config - SDK configuration
  * @returns Initialized Verbs SDK instance
  */
-export function initVerbs(config: VerbsConfig): VerbsInterface {
-  return new Verbs(config)
+export async function initVerbs(config: VerbsConfig): Promise<VerbsInterface> {
+  const verbs = new Verbs(config)
+  await verbs.init()
+  return verbs
 }
