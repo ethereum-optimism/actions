@@ -1,5 +1,6 @@
-import type { Address, Hash } from 'viem'
+import type { Address, Hash, Hex, Quantity } from 'viem'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   LendOptions,
   LendTransaction,
@@ -37,36 +38,17 @@ export interface WalletProvider {
    * @param transactionData - Transaction data to sign and send
    * @returns Promise resolving to transaction hash
    */
-  sign(walletId: string, transactionData: TransactionData): Promise<Hash>
 }
 
 /**
  * Wallet interface
  * @description Core wallet interface with blockchain properties and verbs
  */
-export interface Wallet extends WalletVerbs {
-  /** Wallet ID */
-  id: string
+export interface Wallet {
   /** Wallet address */
   address: Address
-}
-
-/**
- * Options for getting all wallets
- * @description Parameters for filtering and paginating wallet results
- */
-export interface GetAllWalletsOptions {
-  /** Maximum number of wallets to return */
-  limit?: number
-  /** Cursor for pagination */
-  cursor?: string
-}
-
-/**
- * Wallet verbs/actions
- * @description Available actions that can be performed on a wallet
- */
-export type WalletVerbs = {
+  /** Wallet owner addresses */
+  ownerAddresses: Address[]
   /**
    * Get asset balances aggregated across all supported chains
    * @returns Promise resolving to array of asset balances
@@ -87,18 +69,6 @@ export type WalletVerbs = {
     options?: LendOptions,
   ): Promise<LendTransaction>
   /**
-   * Sign and send a transaction
-   * @param transactionData - Transaction data to sign and send
-   * @returns Promise resolving to transaction hash
-   */
-  signAndSend(transactionData: TransactionData): Promise<Hash>
-  /**
-   * Sign a transaction without sending it
-   * @param transactionData - Transaction data to sign
-   * @returns Promise resolving to signed transaction
-   */
-  sign(transactionData: TransactionData): Promise<`0x${string}`>
-  /**
    * Send a signed transaction
    * @param signedTransaction - Signed transaction to send
    * @param publicClient - Viem public client to send the transaction
@@ -117,4 +87,49 @@ export type WalletVerbs = {
     asset: AssetIdentifier,
     recipientAddress: Address,
   ): Promise<TransactionData>
+  execute(transactionData: TransactionData): Hash
+  getTxParams(
+    transactionData: TransactionData,
+    chainId: SupportedChainId,
+    ownerIndex?: number,
+  ): Promise<{
+    /** The address the transaction is sent from. Must be hexadecimal formatted. */
+    from?: Hex
+    /** Destination address of the transaction. */
+    to?: Hex
+    /** The nonce to be used for the transaction (hexadecimal or number). */
+    nonce?: Quantity
+    /** (optional) The chain ID of network your transaction will  be sent on. */
+    chainId?: Quantity
+    /** (optional) Data to send to the receiving address, especially when calling smart contracts. Must be hexadecimal formatted. */
+    data?: Hex
+    /** (optional) The value (in wei) be sent with the transaction (hexadecimal or number). */
+    value?: Quantity
+    /** (optional) The EIP-2718 transction type (e.g. `2` for EIP-1559 transactions). */
+    type?: 0 | 1 | 2
+    /** (optional) The max units of gas that can be used by this transaction (hexadecimal or number). */
+    gasLimit?: Quantity
+    /** (optional) The price (in wei) per unit of gas for this transaction (hexadecimal or number), for use in non EIP-1559 transactions (type 0 or 1). */
+    gasPrice?: Quantity
+    /** (optional) The maxFeePerGas (hexadecimal or number) to be used in this transaction, for use in EIP-1559 (type 2) transactions. */
+    maxFeePerGas?: Quantity
+    /** (optional) The maxPriorityFeePerGas (hexadecimal or number) to be used in this transaction, for use in EIP-1559 (type 2) transactions. */
+    maxPriorityFeePerGas?: Quantity
+  }>
+  estimateGas(
+    transactionData: TransactionData,
+    chainId: SupportedChainId,
+    ownerIndex?: number,
+  ): Promise<bigint>
+}
+
+/**
+ * Options for getting all wallets
+ * @description Parameters for filtering and paginating wallet results
+ */
+export interface GetAllWalletsOptions {
+  /** Maximum number of wallets to return */
+  limit?: number
+  /** Cursor for pagination */
+  cursor?: string
 }

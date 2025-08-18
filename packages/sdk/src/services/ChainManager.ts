@@ -18,6 +18,32 @@ export class ChainManager {
   }
 
   /**
+   * Get public client for a specific chain
+   */
+  getPublicClient(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): PublicClient {
+    const client = this.publicClients.get(chainId)
+    if (!client) {
+      throw new Error(`No public client configured for chain ID: ${chainId}`)
+    }
+    return client
+  }
+
+  getRpcUrl(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): string {
+    const chainConfig = this.chainConfigs.find((c) => c.chainId === chainId)
+    if (!chainConfig) {
+      throw new Error(`No chain config found for chain ID: ${chainId}`)
+    }
+    return chainConfig.rpcUrl
+  }
+
+  /**
+   * Get supported chain IDs
+   */
+  getSupportedChains() {
+    return this.chainConfigs.map((c) => c.chainId)
+  }
+
+  /**
    * Create public clients for all configured chains
    */
   private createPublicClients(
@@ -47,23 +73,5 @@ export class ChainManager {
     }
 
     return clients
-  }
-
-  /**
-   * Get public client for a specific chain
-   */
-  getPublicClient(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): PublicClient {
-    const client = this.publicClients.get(chainId)
-    if (!client) {
-      throw new Error(`No public client configured for chain ID: ${chainId}`)
-    }
-    return client
-  }
-
-  /**
-   * Get supported chain IDs
-   */
-  getSupportedChains() {
-    return this.chainConfigs.map((c) => c.chainId)
   }
 }

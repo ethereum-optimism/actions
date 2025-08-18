@@ -1,6 +1,10 @@
-import { type Address, encodeFunctionData, erc20Abi, type Hash } from 'viem'
+import type { Address, Hash, Hex, PublicClient, Quantity } from 'viem'
+import { encodeFunctionData, erc20Abi } from 'viem'
 import { unichain } from 'viem/chains'
 
+import { smartWalletAbi } from '@/abis/smartWallet.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type {
@@ -10,7 +14,6 @@ import type {
   TransactionData,
 } from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
-import type { VerbsInterface } from '@/types/verbs.js'
 import type { Wallet as WalletInterface } from '@/types/wallet.js'
 import {
   type AssetIdentifier,
@@ -24,27 +27,26 @@ import {
  * @description Concrete implementation of the Wallet interface
  */
 export class Wallet implements WalletInterface {
-  id: string
-  address!: Address
-  private lendProvider?: LendProvider
-  private initialized: boolean = false
-  private verbs: VerbsInterface
-  private walletProvider: any // Store reference to wallet provider for signing
+  public ownerAddresses: Address[]
+  public address: Address
+  private lendProvider: LendProvider
+  private chainManager: ChainManager
 
   /**
    * Create a new wallet instance
    * @param id - Unique wallet identifier
    * @param verbs - Verbs instance to access configured providers and chain manager
    */
-  constructor(id: string, verbs: VerbsInterface, walletProvider?: any) {
-    this.id = id
-    this.verbs = verbs
-    this.walletProvider = walletProvider
-  }
-
-  init(address: Address) {
+  constructor(
+    address: Address,
+    ownerAddresses: Address[],
+    chainManager: ChainManager,
+    lendProvider: LendProvider,
+  ) {
     this.address = address
-    this.initialized = true
+    this.ownerAddresses = ownerAddresses
+    this.chainManager = chainManager
+    this.lendProvider = lendProvider
   }
 
   /**
@@ -52,19 +54,12 @@ export class Wallet implements WalletInterface {
    * @returns Promise resolving to array of asset balances
    */
   async getBalance(): Promise<TokenBalance[]> {
-    if (!this.initialized) {
-      throw new Error('Wallet not initialized')
-    }
-
     const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
       async (token) => {
-        return fetchERC20Balance(this.verbs.chainManager, this.address, token)
+        return fetchERC20Balance(this.chainManager, this.address, token)
       },
     )
-    const ethBalancePromise = fetchETHBalance(
-      this.verbs.chainManager,
-      this.address,
-    )
+    const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
 
     return Promise.all([ethBalancePromise, ...tokenBalancePromises])
   }
@@ -85,10 +80,6 @@ export class Wallet implements WalletInterface {
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    if (!this.initialized) {
-      throw new Error('Wallet not initialized')
-    }
-
     // Parse human-readable inputs
     // TODO: Get actual chain ID from wallet context, for now using Unichain
     const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
@@ -103,7 +94,7 @@ export class Wallet implements WalletInterface {
       receiver: options?.receiver || this.address,
     }
 
-    const result = await this.verbs.lend.deposit(
+    const result = await this.lendProvider.deposit(
       resolvedAsset.address,
       parsedAmount,
       marketId,
@@ -113,47 +104,89 @@ export class Wallet implements WalletInterface {
     return result
   }
 
-  /**
-   * Sign and send a transaction
-   * @description Signs and sends a transaction using the configured wallet provider
-   * @param transactionData - Transaction data to sign and send
-   * @returns Promise resolving to transaction hash
-   * @throws Error if wallet is not initialized or no wallet provider is configured
-   */
-  async signAndSend(transactionData: TransactionData): Promise<Hash> {
-    if (!this.initialized) {
-      throw new Error('Wallet not initialized')
-    }
-
-    if (!this.walletProvider || !this.walletProvider.sign) {
-      throw new Error('Wallet provider does not support transaction signing')
-    }
-
-    return this.walletProvider.sign(this.id, transactionData)
+  execute(transactionData: TransactionData): Hash {
+    return encodeFunctionData({
+      abi: smartWalletAbi,
+      functionName: 'execute',
+      args: [transactionData.to, transactionData.value, transactionData.data],
+    })
   }
 
-  /**
-   * Sign a transaction without sending it
-   * @description Signs a transaction using the configured wallet provider but doesn't send it
-   * @param transactionData - Transaction data to sign
-   * @returns Promise resolving to signed transaction
-   * @throws Error if wallet is not initialized or no wallet provider is configured
-   */
-  async sign(transactionData: TransactionData): Promise<`0x${string}`> {
-    if (!this.initialized) {
-      throw new Error('Wallet not initialized')
-    }
+  async getTxParams(
+    transactionData: TransactionData,
+    chainId: SupportedChainId,
+    ownerIndex: number = 0,
+  ): Promise<{
+    /** The address the transaction is sent from. Must be hexadecimal formatted. */
+    from?: Hex
+    /** Destination address of the transaction. */
+    to?: Hex
+    /** The nonce to be used for the transaction (hexadecimal or number). */
+    nonce?: Quantity
+    /** (optional) The chain ID of network your transaction will  be sent on. */
+    chainId?: Quantity
+    /** (optional) Data to send to the receiving address, especially when calling smart contracts. Must be hexadecimal formatted. */
+    data?: Hex
+    /** (optional) The value (in wei) be sent with the transaction (hexadecimal or number). */
+    value?: Quantity
+    /** (optional) The EIP-2718 transction type (e.g. `2` for EIP-1559 transactions). */
+    type?: 0 | 1 | 2
+    /** (optional) The max units of gas that can be used by this transaction (hexadecimal or number). */
+    gasLimit?: Quantity
+    /** (optional) The price (in wei) per unit of gas for this transaction (hexadecimal or number), for use in non EIP-1559 transactions (type 0 or 1). */
+    gasPrice?: Quantity
+    /** (optional) The maxFeePerGas (hexadecimal or number) to be used in this transaction, for use in EIP-1559 (type 2) transactions. */
+    maxFeePerGas?: Quantity
+    /** (optional) The maxPriorityFeePerGas (hexadecimal or number) to be used in this transaction, for use in EIP-1559 (type 2) transactions. */
+    maxPriorityFeePerGas?: Quantity
+  }> {
+    const executeCallData = this.execute(transactionData)
 
-    if (!this.walletProvider || !(this.walletProvider as any).signOnly) {
-      throw new Error(
-        'Wallet provider does not support transaction signing only',
-      )
-    }
+    const publicClient = this.chainManager.getPublicClient(chainId)
 
-    return (this.walletProvider as any).signOnly(
-      this.id,
-      transactionData,
-    ) as `0x${string}`
+    // Estimate gas limit
+    const gasLimit = await publicClient.estimateGas({
+      account: this.ownerAddresses[ownerIndex],
+      to: this.address,
+      data: executeCallData,
+      value: BigInt(transactionData.value),
+    })
+
+    // Get current gas price and fee data
+    const feeData = await publicClient.estimateFeesPerGas()
+
+    // Get current nonce for the wallet - manual management since Privy isn't handling it properly
+    const nonce = await publicClient.getTransactionCount({
+      address: this.ownerAddresses[ownerIndex],
+      blockTag: 'pending', // Use pending to get the next nonce including any pending txs
+    })
+
+    return {
+      to: this.address,
+      data: executeCallData,
+      value: transactionData.value as `0x${string}`,
+      chainId: `0x${chainId.toString(16)}`,
+      type: 2, // EIP-1559
+      gasLimit: `0x${gasLimit.toString(16)}`,
+      maxFeePerGas: `0x${(feeData.maxFeePerGas || BigInt(1000000000)).toString(16)}`, // fallback to 1 gwei
+      maxPriorityFeePerGas: `0x${(feeData.maxPriorityFeePerGas || BigInt(100000000)).toString(16)}`, // fallback to 0.1 gwei
+      nonce: `0x${nonce.toString(16)}`, // Explicitly provide the correct nonce
+    }
+  }
+
+  async estimateGas(
+    transactionData: TransactionData,
+    chainId: SupportedChainId,
+    ownerIndex: number = 0,
+  ): Promise<bigint> {
+    const executeCallData = this.execute(transactionData)
+    const publicClient = this.chainManager.getPublicClient(chainId)
+    return publicClient.estimateGas({
+      account: this.ownerAddresses[ownerIndex],
+      to: this.address,
+      data: executeCallData,
+      value: BigInt(transactionData.value),
+    })
   }
 
   /**
@@ -163,7 +196,10 @@ export class Wallet implements WalletInterface {
    * @param publicClient - Viem public client to send the transaction
    * @returns Promise resolving to transaction hash
    */
-  async send(signedTransaction: string, publicClient: any): Promise<Hash> {
+  async send(
+    signedTransaction: string,
+    publicClient: PublicClient,
+  ): Promise<Hash> {
     try {
       const hash = await publicClient.sendRawTransaction({
         serializedTransaction: signedTransaction as `0x${string}`,
@@ -192,10 +228,6 @@ export class Wallet implements WalletInterface {
     asset: AssetIdentifier,
     recipientAddress: Address,
   ): Promise<TransactionData> {
-    if (!this.initialized) {
-      throw new Error('Wallet not initialized')
-    }
-
     if (!recipientAddress) {
       throw new Error('Recipient address is required')
     }

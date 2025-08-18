@@ -29,19 +29,18 @@ describe('Wallet Service', () => {
 
       mockVerbs.createWallet.mockResolvedValue(mockWallet)
 
-      const result = await walletService.createWallet(userId)
+      const result = await walletService.createWallet()
 
       expect(mockVerbs.createWallet).toHaveBeenCalledWith(userId)
       expect(result).toEqual(mockWallet)
     })
 
     it('should handle wallet creation errors', async () => {
-      const userId = 'test-user'
       const error = new Error('Wallet creation failed')
 
       mockVerbs.createWallet.mockRejectedValue(error)
 
-      await expect(walletService.createWallet(userId)).rejects.toThrow(
+      await expect(walletService.createWallet()).rejects.toThrow(
         'Wallet creation failed',
       )
     })
@@ -140,70 +139,6 @@ describe('Wallet Service', () => {
       await expect(walletService.getAllWallets()).rejects.toThrow(
         'Failed to get all wallets',
       )
-    })
-  })
-
-  describe('getOrCreateWallet', () => {
-    it('should return existing wallet if found', async () => {
-      const userId = 'test-user'
-      const existingWallet = {
-        id: 'wallet-123',
-        address: '0x1234567890123456789012345678901234567890',
-      }
-
-      mockVerbs.getWallet.mockResolvedValue(existingWallet)
-
-      const result = await walletService.getOrCreateWallet(userId)
-
-      expect(mockVerbs.getWallet).toHaveBeenCalledWith(userId)
-      expect(mockVerbs.createWallet).not.toHaveBeenCalled()
-      expect(result).toEqual(existingWallet)
-    })
-
-    it('should create new wallet if not found', async () => {
-      const userId = 'new-user'
-      const newWallet = {
-        id: 'wallet-456',
-        address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-      }
-
-      mockVerbs.getWallet.mockResolvedValue(null)
-      mockVerbs.createWallet.mockResolvedValue(newWallet)
-
-      const result = await walletService.getOrCreateWallet(userId)
-
-      expect(mockVerbs.getWallet).toHaveBeenCalledWith(userId)
-      expect(mockVerbs.createWallet).toHaveBeenCalledWith(userId)
-      expect(result).toEqual(newWallet)
-    })
-
-    it('should handle creation failure after wallet not found', async () => {
-      const userId = 'new-user'
-      const createError = new Error('Wallet creation failed')
-
-      mockVerbs.getWallet.mockResolvedValue(null)
-      mockVerbs.createWallet.mockRejectedValue(createError)
-
-      await expect(walletService.getOrCreateWallet(userId)).rejects.toThrow(
-        'Wallet creation failed',
-      )
-
-      expect(mockVerbs.getWallet).toHaveBeenCalledWith(userId)
-      expect(mockVerbs.createWallet).toHaveBeenCalledWith(userId)
-    })
-
-    it('should handle get wallet failure', async () => {
-      const userId = 'test-user'
-      const getError = new Error('Failed to get wallet')
-
-      mockVerbs.getWallet.mockRejectedValue(getError)
-
-      await expect(walletService.getOrCreateWallet(userId)).rejects.toThrow(
-        'Failed to get wallet',
-      )
-
-      expect(mockVerbs.getWallet).toHaveBeenCalledWith(userId)
-      expect(mockVerbs.createWallet).not.toHaveBeenCalled()
     })
   })
 

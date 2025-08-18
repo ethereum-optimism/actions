@@ -1,8 +1,10 @@
+import type { Address, Hash } from 'viem'
+
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { ChainConfig } from '@/types/chain.js'
 
 import type { LendConfig, LendProvider } from './lend.js'
-import type { GetAllWalletsOptions, Wallet } from './wallet.js'
+import type { Wallet } from './wallet.js'
 
 /**
  * Core Verbs SDK interface
@@ -21,22 +23,26 @@ export interface VerbsInterface {
   readonly chainManager: ChainManager
   /**
    * Create a new wallet
-   * @param userId - User identifier for the wallet
+   * @param ownerAddresses - User identifier for the wallet
    * @returns Promise resolving to new wallet instance
    */
-  createWallet(userId: string): Promise<Wallet>
-  /**
-   * Get wallet by user ID
-   * @param userId - User identifier
-   * @returns Promise resolving to wallet or null if not found
-   */
-  getWallet(userId: string): Promise<Wallet | null>
+  createWallet(
+    ownerAddresses: Address[],
+    nonce?: bigint,
+  ): Promise<Array<{ chainId: number; address: Address }>>
   /**
    * Get all wallets
    * @param options - Optional parameters for filtering and pagination
    * @returns Promise resolving to array of wallets
    */
-  getAllWallets(options?: GetAllWalletsOptions): Promise<Wallet[]>
+  // getAllWallets(options?: GetAllWalletsOptions): Promise<Wallet[]>
+  /**
+   * Get the smart wallet address for an owner address
+   * @param ownerAddress - Owner address
+   * @param chainId - Chain ID
+   * @returns Promise resolving to smart wallet address
+   */
+  getWallet(ownerAddresses: Address[], nonce?: bigint): Promise<Wallet>
 }
 
 /**
@@ -50,6 +56,8 @@ export interface VerbsConfig {
   lend?: LendConfig
   /** Chains to use for the SDK */
   chains?: ChainConfig[]
+  /** Private key for the wallet */
+  privateKey?: Hash
 }
 
 /**

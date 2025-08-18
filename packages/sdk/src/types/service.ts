@@ -30,7 +30,9 @@ export interface GetAllWalletsResponse {
  */
 export interface CreateWalletResponse {
   /** Wallet address */
-  address: Address
+  privyAddress: string
+  /** Smart wallet address */
+  smartWalletAddress: string
   /** User ID */
   userId: string
 }

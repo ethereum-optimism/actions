@@ -6,6 +6,7 @@ import type {
 } from '@eth-optimism/verbs-sdk'
 import NavBar from './NavBar'
 import { verbsApi } from '../api/verbsApi'
+import type { Address } from 'viem'
 
 interface TerminalLine {
   id: string
@@ -90,7 +91,7 @@ const Terminal = () => {
   const [screenWidth, setScreenWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200
   )
-  const [currentWalletList, setCurrentWalletList] = useState<WalletData[] | null>(null)
+  const [currentWalletList, setCurrentWalletList] = useState<GetAllWalletsResponse['wallets'] | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
 
@@ -216,7 +217,7 @@ const Terminal = () => {
         )
         
         if (walletSelectIndex !== -1) {
-          const formatWalletColumns = (wallets: WalletData[]) => {
+          const formatWalletColumns = (wallets: GetAllWalletsResponse['wallets']) => {
             const lines: string[] = []
             const totalWallets = wallets.length
             
@@ -545,7 +546,8 @@ Active Wallets: 0`,
         id: `success-${Date.now()}`,
         type: 'success',
         content: `Wallet created successfully!
-Address: ${result.address}
+Privy Address: ${result.privyAddress}
+Smart Wallet Address: ${result.smartWalletAddress}
 User ID: ${result.userId}`,
         timestamp: new Date(),
       }
@@ -782,6 +784,7 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
 
     try {
       const result = await getAllWallets()
+      console.log(result)
 
       if (result.wallets.length === 0) {
         const emptyLine: TerminalLine = {
@@ -795,9 +798,10 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
       }
 
       // Format wallets in responsive columns
-      const formatWalletColumns = (wallets: WalletData[]) => {
+      const formatWalletColumns = (wallets: GetAllWalletsResponse['wallets']) => {
         const lines: string[] = []
         const totalWallets = wallets.length
+        console.log('inside formatWalletColumns', wallets)
         
         // Responsive column logic: 1 on mobile, 2 on tablet, 3 on desktop
         const isMobile = screenWidth < 480
@@ -857,6 +861,7 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
         data: result.wallets,
       })
     } catch (error) {
+      console.log(error)
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
@@ -1282,9 +1287,10 @@ ${vaultOptions}
       setPendingPrompt({
         type: 'walletSendSelection',
         message: '',
-        data: walletsWithUSDC.map((w) => ({ id: w.id, address: w.address })),
+        data: walletsWithUSDC.map((w) => ({ id: w.id, address: w.address as Address })),
       })
     } catch (error) {
+      console.log(error)
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',

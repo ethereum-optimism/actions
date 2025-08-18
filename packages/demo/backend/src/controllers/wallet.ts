@@ -58,13 +58,16 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
-      const wallet = await walletService.createWallet(userId)
+      const { privyAddress, smartWalletAddress } =
+        await walletService.createWallet()
 
       return c.json({
-        address: wallet.address,
+        privyAddress,
+        smartWalletAddress,
         userId,
       } satisfies CreateWalletResponse)
     } catch (error) {
+      console.error(error)
       return c.json(
         {
           error: 'Failed to create wallet',
@@ -86,7 +89,7 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
-      const wallet = await walletService.getWallet(userId)
+      const { wallet } = await walletService.getWallet(userId)
 
       if (!wallet) {
         return c.json(
@@ -127,9 +130,9 @@ export class WalletController {
       const wallets = await walletService.getAllWallets({ limit, cursor })
 
       return c.json({
-        wallets: wallets.map((wallet) => ({
-          address: wallet.address,
-          id: wallet.id,
+        wallets: wallets.map(({ privyWallet }) => ({
+          address: privyWallet.address as Address,
+          id: privyWallet.id,
         })),
         count: wallets.length,
       } satisfies GetAllWalletsResponse)

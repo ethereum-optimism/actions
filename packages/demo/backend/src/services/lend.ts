@@ -1,7 +1,15 @@
-import type { LendTransaction, LendVaultInfo } from '@eth-optimism/verbs-sdk'
-import type { Address } from 'viem'
+import type {
+  LendTransaction,
+  LendVaultInfo,
+  SupportedChainId,
+  WalletInterface,
+} from '@eth-optimism/verbs-sdk'
+import { PrivyClient } from '@privy-io/server-auth'
+import { env } from 'process'
+import type { Address, PublicClient } from 'viem'
 
 import { getVerbs } from '../config/verbs.js'
+import { getWallet } from './wallet.js'
 
 interface VaultBalanceResult {
   balance: bigint
@@ -39,7 +47,7 @@ export async function getVaultBalance(
   walletId: string,
 ): Promise<VaultBalanceResult> {
   const verbs = getVerbs()
-  const wallet = await verbs.getWallet(walletId)
+  const { wallet } = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
@@ -87,8 +95,7 @@ export async function deposit(
   amount: number,
   token: string,
 ): Promise<LendTransaction> {
-  const verbs = getVerbs()
-  const wallet = await verbs.getWallet(walletId)
+  const { wallet } = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
@@ -102,7 +109,7 @@ export async function executeLendTransaction(
   lendTransaction: LendTransaction,
 ): Promise<LendTransaction> {
   const verbs = getVerbs()
-  const wallet = await verbs.getWallet(walletId)
+  const { wallet } = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
@@ -113,7 +120,9 @@ export async function executeLendTransaction(
   }
 
   const publicClient = verbs.chainManager.getPublicClient(130)
-  const ethBalance = await publicClient.getBalance({ address: wallet.address })
+  const ethBalance = await publicClient.getBalance({
+    address: wallet.ownerAddresses[0],
+  })
 
   const gasEstimate = await estimateGasCost(
     publicClient,
@@ -128,14 +137,16 @@ export async function executeLendTransaction(
   let depositHash: Address = '0x0'
 
   if (lendTransaction.transactionData.approval) {
-    const approvalSignedTx = await wallet.sign(
+    const approvalSignedTx = await signOnly(
+      walletId,
       lendTransaction.transactionData.approval,
     )
     const approvalHash = await wallet.send(approvalSignedTx, publicClient)
     await publicClient.waitForTransactionReceipt({ hash: approvalHash })
   }
 
-  const depositSignedTx = await wallet.sign(
+  const depositSignedTx = await signOnly(
+    walletId,
     lendTransaction.transactionData.deposit,
   )
   depositHash = await wallet.send(depositSignedTx, publicClient)
@@ -144,22 +155,52 @@ export async function executeLendTransaction(
   return { ...lendTransaction, hash: depositHash }
 }
 
+async function signOnly(
+  walletId: string,
+  transactionData: NonNullable<LendTransaction['transactionData']>['deposit'],
+): Promise<string> {
+  try {
+    // Get wallet to determine the from address for gas estimation
+    const { wallet } = await getWallet(walletId)
+    if (!wallet) {
+      throw new Error(`Wallet not found: ${walletId}`)
+    }
+    const txParams = await wallet.getTxParams(transactionData, 130)
+
+    console.log(
+      `[PRIVY_PROVIDER] Complete tx params - Type: ${txParams.type}, Nonce: ${txParams.nonce}, Limit: ${txParams.gasLimit}, MaxFee: ${txParams.maxFeePerGas || 'fallback'}, Priority: ${txParams.maxPriorityFeePerGas || 'fallback'}`,
+    )
+
+    const privy = new PrivyClient(env.PRIVY_APP_ID!, env.PRIVY_APP_SECRET!)
+    const response = await privy.walletApi.ethereum.signTransaction({
+      walletId,
+      transaction: txParams,
+    })
+    console.log('Signed transaction', response.signedTransaction)
+    return response.signedTransaction
+  } catch (error) {
+    console.error('Error signing transaction', error)
+    throw new Error(
+      `Failed to sign transaction for wallet ${walletId}: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+    )
+  }
+}
+
 async function estimateGasCost(
-  publicClient: { estimateGas: Function; getGasPrice: Function },
-  wallet: { address: Address },
+  publicClient: PublicClient,
+  wallet: WalletInterface,
   lendTransaction: LendTransaction,
 ): Promise<bigint> {
   let totalGasEstimate = BigInt(0)
 
   if (lendTransaction.transactionData?.approval) {
     try {
-      const approvalGas = await publicClient.estimateGas({
-        account: wallet.address,
-        to: lendTransaction.transactionData.approval.to,
-        data: lendTransaction.transactionData.approval.data,
-        value: BigInt(lendTransaction.transactionData.approval.value),
-      })
-      totalGasEstimate += approvalGas
+      totalGasEstimate += await wallet.estimateGas(
+        lendTransaction.transactionData.approval,
+        publicClient.chain!.id as SupportedChainId,
+      )
     } catch {
       // Gas estimation failed, continue
     }
@@ -167,13 +208,10 @@ async function estimateGasCost(
 
   if (lendTransaction.transactionData?.deposit) {
     try {
-      const depositGas = await publicClient.estimateGas({
-        account: wallet.address,
-        to: lendTransaction.transactionData.deposit.to,
-        data: lendTransaction.transactionData.deposit.data,
-        value: BigInt(lendTransaction.transactionData.deposit.value),
-      })
-      totalGasEstimate += depositGas
+      totalGasEstimate += await wallet.estimateGas(
+        lendTransaction.transactionData.deposit,
+        publicClient.chain!.id as SupportedChainId,
+      )
     } catch {
       // Gas estimation failed, continue
     }
