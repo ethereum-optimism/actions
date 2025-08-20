@@ -14,7 +14,6 @@ import type {
   TransactionData,
 } from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
-import type { Wallet as WalletInterface } from '@/types/wallet.js'
 import {
   type AssetIdentifier,
   parseAssetAmount,
@@ -26,7 +25,7 @@ import {
  * Wallet implementation
  * @description Concrete implementation of the Wallet interface
  */
-export class Wallet implements WalletInterface {
+export class SmartWallet {
   public ownerAddresses: Address[]
   public address: Address
   private lendProvider: LendProvider

@@ -1,13 +1,13 @@
 import {
   initVerbs,
+  type Verbs,
   type VerbsConfig,
-  type VerbsInterface,
 } from '@eth-optimism/verbs-sdk'
 import { unichain } from 'viem/chains'
 
 import { env } from './env.js'
 
-let verbsInstance: VerbsInterface
+let verbsInstance: Verbs
 
 export function createVerbsConfig(): VerbsConfig {
   return {
@@ -34,7 +34,7 @@ export function initializeVerbs(config?: VerbsConfig): void {
   verbsInstance = initVerbs(verbsConfig)
 }
 
-export function getVerbs(): VerbsInterface {
+export function getVerbs() {
   if (!verbsInstance) {
     throw new Error('Verbs SDK not initialized. Call initializeVerbs() first.')
   }

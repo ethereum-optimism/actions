@@ -38,7 +38,7 @@ export async function createWallet(): Promise<{
     chainType: 'ethereum',
   })
   const verbs = getVerbs()
-  const addresses = await verbs.createWallet([getAddress(wallet.address)])
+  const addresses = await verbs.wallet.smartWallet!.createWallet([getAddress(wallet.address)])
   return { privyAddress: wallet.address, smartWalletAddress: addresses[0].address }
 }
 
@@ -52,7 +52,7 @@ export async function getWallet(userId: string): Promise<{
     throw new Error('Wallet not found')
   }
   const verbs = getVerbs()
-  const wallet = await verbs.getWallet(
+  const wallet = await verbs.wallet.smartWallet!.getWallet(
     [getAddress(privyWallet.address)],
   )
   return { privyWallet, wallet }

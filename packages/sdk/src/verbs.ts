@@ -1,34 +1,25 @@
-import { chainById } from '@eth-optimism/viem/chains'
-import type { Address, Hash, PublicClient } from 'viem'
-import {
-  createPublicClient,
-  createWalletClient,
-  encodeAbiParameters,
-  http,
-  parseEventLogs,
-} from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import type { PublicClient } from 'viem'
+import { createPublicClient, http } from 'viem'
 import { mainnet, unichain } from 'viem/chains'
 
-import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
-import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import { LendProviderMorpho } from '@/lend/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
-import type { VerbsConfig, VerbsInterface } from '@/types/verbs.js'
-import type { Wallet as WalletInterface } from '@/types/wallet.js'
-import { Wallet } from '@/wallet/index.js'
+import type { VerbsConfig } from '@/types/verbs.js'
+
+import { WalletNamespace } from './wallet/WalletNamespace.js'
 
 /**
  * Main Verbs SDK class
  * @description Core implementation of the Verbs SDK
  */
-export class Verbs implements VerbsInterface {
+export class Verbs {
+  public readonly wallet: WalletNamespace
   private _chainManager: ChainManager
   private lendProvider?: LendProvider
-  private privateKey?: Hash
 
   constructor(config: VerbsConfig) {
+    this.wallet = new WalletNamespace()
     this._chainManager = new ChainManager(
       config.chains || [
         {
@@ -37,7 +28,6 @@ export class Verbs implements VerbsInterface {
         },
       ],
     )
-    this.privateKey = config.privateKey
     // Create lending provider if configured
     if (config.lend) {
       // TODO: delete this code and just have the lend use the ChainManager
@@ -58,76 +48,6 @@ export class Verbs implements VerbsInterface {
         )
       }
     }
-  }
-
-  async createWallet(
-    ownerAddresses: Address[],
-    nonce?: bigint,
-  ): Promise<Array<{ chainId: number; address: Address }>> {
-    // deploy the wallet on each chain in the chain manager
-    const deployments = await Promise.all(
-      this._chainManager.getSupportedChains().map(async (chainId) => {
-        const walletClient = createWalletClient({
-          chain: chainById[chainId],
-          transport: http(this._chainManager.getRpcUrl(chainId)),
-          account: privateKeyToAccount(this.privateKey!),
-        })
-        const encodedOwners = ownerAddresses.map((ownerAddress) =>
-          encodeAbiParameters([{ type: 'address' }], [ownerAddress]),
-        )
-        const tx = await walletClient.writeContract({
-          abi: smartWalletFactoryAbi,
-          address: smartWalletFactoryAddress,
-          functionName: 'createAccount',
-          args: [encodedOwners, nonce || 0n],
-        })
-        const publicClient = this._chainManager.getPublicClient(chainId)
-        const receipt = await publicClient.waitForTransactionReceipt({
-          hash: tx,
-        })
-        if (!receipt.status) {
-          throw new Error('Wallet deployment failed')
-        }
-        // parse logs
-        const logs = parseEventLogs({
-          abi: smartWalletFactoryAbi,
-          eventName: 'AccountCreated',
-          logs: receipt.logs,
-        })
-        return {
-          chainId,
-          address: logs[0].args.account,
-        }
-      }),
-    )
-    return deployments
-  }
-
-  async getWallet(
-    initialOwnerAddresses: Address[],
-    nonce?: bigint,
-    currentOwnerAddresses?: Address[],
-  ): Promise<WalletInterface> {
-    // Factory is the same accross all chains, so we can use the first chain to get the wallet address
-    const publicClient = this._chainManager.getPublicClient(
-      this._chainManager.getSupportedChains()[0],
-    )
-    const encodedOwners = initialOwnerAddresses.map((ownerAddress) =>
-      encodeAbiParameters([{ type: 'address' }], [ownerAddress]),
-    )
-    const smartWalletAddress = await publicClient.readContract({
-      abi: smartWalletFactoryAbi,
-      address: smartWalletFactoryAddress,
-      functionName: 'getAddress',
-      args: [encodedOwners, nonce || 0n],
-    })
-    const owners = currentOwnerAddresses || initialOwnerAddresses
-    return new Wallet(
-      smartWalletAddress,
-      owners,
-      this._chainManager,
-      this.lendProvider!,
-    )
   }
 
   /**
@@ -156,6 +76,22 @@ export class Verbs implements VerbsInterface {
  * @param config - SDK configuration
  * @returns Initialized Verbs SDK instance
  */
-export function initVerbs(config: VerbsConfig): VerbsInterface {
-  return new Verbs(config)
+export function initVerbs(config: VerbsConfig) {
+  const verbs = new Verbs(config)
+  if (config.wallet) {
+    verbs.wallet.withPrivy(
+      config.wallet.appId,
+      config.wallet.appSecret,
+      verbs.chainManager,
+    )
+  }
+  if (config.privateKey) {
+    verbs.wallet.withSmartWallet(
+      verbs.chainManager,
+      config.privateKey,
+      verbs.lend,
+    )
+  }
+
+  return verbs
 }
