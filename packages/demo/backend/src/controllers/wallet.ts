@@ -7,228 +7,169 @@ import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
 
+import { errorResponse, notFoundResponse } from '../helpers/request.js'
 import { validateRequest } from '../helpers/validation.js'
 import * as walletService from '../services/wallet.js'
 import { serializeBigInt } from '../utils/serializers.js'
 
-const UserIdParamSchema = z.object({
+const userIdSchema = z.object({
   params: z.object({
     userId: z.string().min(1, 'User ID is required').trim(),
   }),
 })
 
-const FundWalletRequestSchema = z.object({
-  params: z.object({
-    userId: z.string().min(1, 'User ID is required').trim(),
-  }),
-  body: z.object({
-    tokenType: z.enum(['ETH', 'USDC']).optional().default('USDC'),
-  }),
-})
-
-const SendTokensRequestSchema = z.object({
-  body: z.object({
-    walletId: z.string().min(1, 'walletId is required'),
-    amount: z.number().positive('amount must be positive'),
-    recipientAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid recipient address format'),
-  }),
-})
-
-const GetAllWalletsQuerySchema = z.object({
-  query: z.object({
-    limit: z
-      .string()
-      .optional()
-      .transform((val) => (val ? parseInt(val, 10) : undefined)),
-    cursor: z.string().optional(),
-  }),
-})
-
+/**
+ * Wallet controller for handling wallet-related API endpoints
+ */
 export class WalletController {
   /**
    * POST - Create a new wallet for a user
    */
-  async createWallet(c: Context) {
-    try {
-      const validation = await validateRequest(c, UserIdParamSchema)
-      if (!validation.success) return validation.response
+  async createWallet(c: Context): Promise<Response> {
+    const validation = await validateRequest(c, userIdSchema)
+    if (!validation.success) return validation.response
 
+    try {
       const {
         params: { userId },
       } = validation.data
       const wallet = await walletService.createWallet(userId)
-
       return c.json({
         address: wallet.address,
         userId,
       } satisfies CreateWalletResponse)
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to create wallet',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to create wallet', error)
     }
   }
 
   /**
    * GET - Retrieve wallet information by user ID
    */
-  async getWallet(c: Context) {
-    try {
-      const validation = await validateRequest(c, UserIdParamSchema)
-      if (!validation.success) return validation.response
+  async getWallet(c: Context): Promise<Response> {
+    const validation = await validateRequest(c, userIdSchema)
+    if (!validation.success) return validation.response
 
+    try {
       const {
         params: { userId },
       } = validation.data
       const wallet = await walletService.getWallet(userId)
 
-      if (!wallet) {
-        return c.json(
-          {
-            error: 'Wallet not found',
-            message: `No wallet found for user ${userId}`,
-          },
-          404,
-        )
-      }
-
+      if (!wallet) return notFoundResponse(c, 'Wallet', `user ${userId}`)
       return c.json({
         address: wallet.address,
         userId,
       } satisfies GetWalletResponse)
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get wallet',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to get wallet', error)
     }
   }
 
   /**
    * GET - Retrieve all wallets with optional pagination
    */
-  async getAllWallets(c: Context) {
-    try {
-      const validation = await validateRequest(c, GetAllWalletsQuerySchema)
-      if (!validation.success) return validation.response
+  async getAllWallets(c: Context): Promise<Response> {
+    const schema = z.object({
+      query: z.object({
+        limit: z
+          .string()
+          .optional()
+          .transform((val) => (val ? parseInt(val, 10) : undefined)),
+        cursor: z.string().optional(),
+      }),
+    })
 
+    const validation = await validateRequest(c, schema)
+    if (!validation.success) return validation.response
+
+    try {
       const {
         query: { limit, cursor },
       } = validation.data
       const wallets = await walletService.getAllWallets({ limit, cursor })
 
       return c.json({
-        wallets: wallets.map((wallet) => ({
-          address: wallet.address,
-          id: wallet.id,
-        })),
+        wallets: wallets.map(({ address, id }) => ({ address, id })),
         count: wallets.length,
       } satisfies GetAllWalletsResponse)
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get wallets',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to get wallets', error)
     }
   }
 
   /**
    * GET - Get wallet balance by user ID
    */
-  async getBalance(c: Context) {
-    try {
-      const validation = await validateRequest(c, UserIdParamSchema)
-      if (!validation.success) return validation.response
+  async getBalance(c: Context): Promise<Response> {
+    const validation = await validateRequest(c, userIdSchema)
+    if (!validation.success) return validation.response
 
+    try {
       const {
         params: { userId },
       } = validation.data
       const balance = await walletService.getBalance(userId)
-
       return c.json({ balance: serializeBigInt(balance) })
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get balance',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to get balance', error)
     }
   }
 
   /**
    * POST - Fund a wallet with test tokens (ETH or USDC)
    */
-  async fundWallet(c: Context) {
-    try {
-      const validation = await validateRequest(c, FundWalletRequestSchema)
-      if (!validation.success) return validation.response
+  async fundWallet(c: Context): Promise<Response> {
+    const schema = userIdSchema.extend({
+      body: z.object({
+        tokenType: z.enum(['ETH', 'USDC']).optional().default('USDC'),
+      }),
+    })
 
+    const validation = await validateRequest(c, schema)
+    if (!validation.success) return validation.response
+
+    try {
       const {
         params: { userId },
         body: { tokenType },
       } = validation.data
-
-      const result = await walletService.fundWallet(userId, tokenType)
-
-      return c.json(result)
+      return c.json(await walletService.fundWallet(userId, tokenType))
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to fund wallet',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to fund wallet', error)
     }
   }
 
   /**
    * POST - Send tokens from wallet to recipient address
    */
-  async sendTokens(c: Context) {
-    try {
-      const validation = await validateRequest(c, SendTokensRequestSchema)
-      if (!validation.success) return validation.response
+  async sendTokens(c: Context): Promise<Response> {
+    const schema = z.object({
+      body: z.object({
+        walletId: z.string().min(1, 'walletId is required'),
+        amount: z.number().positive('amount must be positive'),
+        recipientAddress: z
+          .string()
+          .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid recipient address format'),
+      }),
+    })
 
+    const validation = await validateRequest(c, schema)
+    if (!validation.success) return validation.response
+
+    try {
       const {
         body: { walletId, amount, recipientAddress },
       } = validation.data
-
-      const transactionData = await walletService.sendTokens(
+      const { to, value, data } = await walletService.sendTokens(
         walletId,
         amount,
         recipientAddress as Address,
       )
 
-      return c.json({
-        transaction: {
-          to: transactionData.to,
-          value: transactionData.value,
-          data: transactionData.data,
-        },
-      })
+      return c.json({ transaction: { to, value, data } })
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to send tokens',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to send tokens', error)
     }
   }
 }
