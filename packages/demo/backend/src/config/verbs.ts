@@ -20,5 +20,5 @@ const config: VerbsConfig = {
   ],
 }
 
-// Initialize once at module load for optimal runtime performance
+// Initialize once at module load
 export const verbs = new Verbs(config)

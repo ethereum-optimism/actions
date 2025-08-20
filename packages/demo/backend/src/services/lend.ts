@@ -24,60 +24,42 @@ interface FormattedVaultResponse {
   lastUpdate: number
 }
 
-export async function getVaults(): Promise<LendVaultInfo[]> {
-  return await verbs.lend.getVaults()
-}
+export const getVaults = (): Promise<LendVaultInfo[]> => verbs.lend.getVaults()
 
-export async function getVault(vaultAddress: Address): Promise<LendVaultInfo> {
-  return await verbs.lend.getVault(vaultAddress)
-}
+export const getVault = (vaultAddress: Address): Promise<LendVaultInfo> =>
+  verbs.lend.getVault(vaultAddress)
 
 export async function getVaultBalance(
   vaultAddress: Address,
   walletId: string,
 ): Promise<VaultBalanceResult> {
   const wallet = await verbs.getWallet(walletId)
-
-  if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${walletId}`)
-  }
-
-  return await verbs.lend.getVaultBalance(vaultAddress, wallet.address)
+  if (!wallet) throw new Error(`Wallet not found for user ID: ${walletId}`)
+  return verbs.lend.getVaultBalance(vaultAddress, wallet.address)
 }
 
-export async function formatVaultResponse(
+export const formatVaultResponse = (
   vault: LendVaultInfo,
-): Promise<FormattedVaultResponse> {
-  return {
-    address: vault.address,
-    name: vault.name,
-    apy: vault.apy,
-    asset: vault.asset,
-    apyBreakdown: vault.apyBreakdown,
-    totalAssets: vault.totalAssets.toString(),
-    totalShares: vault.totalShares.toString(),
-    fee: vault.fee,
-    owner: vault.owner,
-    curator: vault.curator,
-    lastUpdate: vault.lastUpdate,
-  }
-}
+): FormattedVaultResponse => ({
+  address: vault.address,
+  name: vault.name,
+  apy: vault.apy,
+  asset: vault.asset,
+  apyBreakdown: vault.apyBreakdown,
+  totalAssets: vault.totalAssets.toString(),
+  totalShares: vault.totalShares.toString(),
+  fee: vault.fee,
+  owner: vault.owner,
+  curator: vault.curator,
+  lastUpdate: vault.lastUpdate,
+})
 
-export async function formatVaultBalanceResponse(
-  balance: VaultBalanceResult,
-): Promise<{
-  balance: string
-  balanceFormatted: string
-  shares: string
-  sharesFormatted: string
-}> {
-  return {
-    balance: balance.balance.toString(),
-    balanceFormatted: balance.balanceFormatted,
-    shares: balance.shares.toString(),
-    sharesFormatted: balance.sharesFormatted,
-  }
-}
+export const formatVaultBalanceResponse = (balance: VaultBalanceResult) => ({
+  balance: balance.balance.toString(),
+  balanceFormatted: balance.balanceFormatted,
+  shares: balance.shares.toString(),
+  sharesFormatted: balance.sharesFormatted,
+})
 
 export async function deposit(
   walletId: string,
@@ -85,43 +67,32 @@ export async function deposit(
   token: string,
 ): Promise<LendTransaction> {
   const wallet = await verbs.getWallet(walletId)
-
-  if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${walletId}`)
-  }
-
-  return await wallet.lend(amount, token.toLowerCase())
+  if (!wallet) throw new Error(`Wallet not found for user ID: ${walletId}`)
+  return wallet.lend(amount, token.toLowerCase())
 }
 
+// TODO: This is a temporary function
+// We will refactor and consolidate most of this logic in the sdk.
 export async function executeLendTransaction(
   walletId: string,
   lendTransaction: LendTransaction,
 ): Promise<LendTransaction> {
   const wallet = await verbs.getWallet(walletId)
-
-  if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${walletId}`)
-  }
-
-  if (!lendTransaction.transactionData) {
+  if (!wallet) throw new Error(`Wallet not found for user ID: ${walletId}`)
+  if (!lendTransaction.transactionData)
     throw new Error('No transaction data available for execution')
-  }
 
   const publicClient = verbs.chainManager.getPublicClient(130)
   const ethBalance = await publicClient.getBalance({ address: wallet.address })
-
   const gasEstimate = await estimateGasCost(
     publicClient,
     wallet,
     lendTransaction,
   )
 
-  if (ethBalance < gasEstimate) {
-    throw new Error('Insufficient ETH for gas fees')
-  }
+  if (ethBalance < gasEstimate) throw new Error('Insufficient ETH for gas fees')
 
-  let depositHash: Address = '0x0'
-
+  // Handle approval transaction if needed
   if (lendTransaction.transactionData.approval) {
     const approvalSignedTx = await wallet.sign(
       lendTransaction.transactionData.approval,
@@ -130,29 +101,34 @@ export async function executeLendTransaction(
     await publicClient.waitForTransactionReceipt({ hash: approvalHash })
   }
 
+  // Execute deposit transaction
   const depositSignedTx = await wallet.sign(
     lendTransaction.transactionData.deposit,
   )
-  depositHash = await wallet.send(depositSignedTx, publicClient)
+  const depositHash = await wallet.send(depositSignedTx, publicClient)
   await publicClient.waitForTransactionReceipt({ hash: depositHash })
 
   return { ...lendTransaction, hash: depositHash }
 }
 
+// TODO: This is a temporary function
+// We will refactor and consolidate most of this logic in the sdk.
 async function estimateGasCost(
   publicClient: { estimateGas: Function; getGasPrice: Function },
   wallet: { address: Address },
   lendTransaction: LendTransaction,
 ): Promise<bigint> {
-  let totalGasEstimate = BigInt(0)
+  let totalGasEstimate = 0n
+  const { transactionData } = lendTransaction
 
-  if (lendTransaction.transactionData?.approval) {
+  // Estimate approval gas if needed
+  if (transactionData?.approval) {
     try {
       const approvalGas = await publicClient.estimateGas({
         account: wallet.address,
-        to: lendTransaction.transactionData.approval.to,
-        data: lendTransaction.transactionData.approval.data,
-        value: BigInt(lendTransaction.transactionData.approval.value),
+        to: transactionData.approval.to,
+        data: transactionData.approval.data,
+        value: BigInt(transactionData.approval.value),
       })
       totalGasEstimate += approvalGas
     } catch {
@@ -160,13 +136,14 @@ async function estimateGasCost(
     }
   }
 
-  if (lendTransaction.transactionData?.deposit) {
+  // Estimate deposit gas
+  if (transactionData?.deposit) {
     try {
       const depositGas = await publicClient.estimateGas({
         account: wallet.address,
-        to: lendTransaction.transactionData.deposit.to,
-        data: lendTransaction.transactionData.deposit.data,
-        value: BigInt(lendTransaction.transactionData.deposit.value),
+        to: transactionData.deposit.to,
+        data: transactionData.deposit.data,
+        value: BigInt(transactionData.deposit.value),
       })
       totalGasEstimate += depositGas
     } catch {

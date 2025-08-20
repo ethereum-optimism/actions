@@ -7,6 +7,7 @@ import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
 
+import { verbs } from '../config/verbs.js'
 import { errorResponse, notFoundResponse } from '../helpers/request.js'
 import { validateRequest } from '../helpers/validation.js'
 import * as walletService from '../services/wallet.js'
@@ -33,7 +34,7 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
-      const wallet = await walletService.createWallet(userId)
+      const wallet = await verbs.createWallet(userId)
       return c.json({
         address: wallet.address,
         userId,
@@ -54,7 +55,7 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
-      const wallet = await walletService.getWallet(userId)
+      const wallet = await verbs.getWallet(userId)
 
       if (!wallet) return notFoundResponse(c, 'Wallet', `user ${userId}`)
       return c.json({
@@ -87,7 +88,7 @@ export class WalletController {
       const {
         query: { limit, cursor },
       } = validation.data
-      const wallets = await walletService.getAllWallets({ limit, cursor })
+      const wallets = await verbs.getAllWallets({ limit, cursor })
 
       return c.json({
         wallets: wallets.map(({ address, id }) => ({ address, id })),
