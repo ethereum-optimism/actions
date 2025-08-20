@@ -19,24 +19,21 @@ import { writeContract } from 'viem/actions'
 import { faucetAbi } from '@/abis/faucet.js'
 import { env } from '@/config/env.js'
 
-import { getVerbs } from '../config/verbs.js'
+import { verbs } from '../config/verbs.js'
 
 export async function createWallet(userId: string): Promise<WalletInterface> {
-  const verbs = getVerbs()
   return await verbs.createWallet(userId)
 }
 
 export async function getWallet(
   userId: string,
 ): Promise<WalletInterface | null> {
-  const verbs = getVerbs()
   return await verbs.getWallet(userId)
 }
 
 export async function getAllWallets(
   options?: GetAllWalletsOptions,
 ): Promise<WalletInterface[]> {
-  const verbs = getVerbs()
   return await verbs.getAllWallets(options)
 }
 
@@ -60,7 +57,6 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
   const tokenBalances = await wallet.getBalance()
 
   // Get vault balances and add them to the response
-  const verbs = getVerbs()
   try {
     const vaults = await verbs.lend.getVaults()
 

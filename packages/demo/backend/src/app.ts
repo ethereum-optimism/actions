@@ -5,8 +5,6 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
 import { env } from '@/config/env.js'
-import { initializeVerbs } from '@/config/verbs.js'
-import { verbsMiddleware } from '@/middleware/verbs.js'
 import { router } from '@/router.js'
 
 class VerbsApp extends App {
@@ -28,11 +26,6 @@ class VerbsApp extends App {
     ]
   }
 
-  protected async preMain(): Promise<void> {
-    // Initialize Verbs SDK once at startup
-    initializeVerbs()
-  }
-
   protected async main(): Promise<void> {
     const app = new Hono()
 
@@ -51,8 +44,6 @@ class VerbsApp extends App {
       }),
     )
 
-    // Apply Verbs middleware (initialization already happened at startup)
-    app.use('*', verbsMiddleware)
     app.route('/', router)
 
     this.logger.info('starting verbs service on port %s', this.options.port)

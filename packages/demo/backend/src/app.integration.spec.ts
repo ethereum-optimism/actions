@@ -4,14 +4,12 @@ import { cors } from 'hono/cors'
 import { request } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { verbsMiddleware } from './middleware/verbs.js'
 import { router } from './router.js'
 
 // Mock the Verbs configuration to avoid external dependencies
 // TODO Determine if we want to maintain this mock or have the SDK export tests implementations
 vi.mock('./config/verbs.js', () => ({
-  initializeVerbs: vi.fn(),
-  getVerbs: vi.fn(() => ({
+  verbs: {
     createWallet: vi.fn((userId: string) =>
       Promise.resolve({
         id: `wallet-${userId}`,
@@ -104,7 +102,7 @@ vi.mock('./config/verbs.js', () => ({
         throw new Error('Vault not found')
       }),
     },
-  })),
+  },
 }))
 
 describe('HTTP API Integration', () => {
@@ -131,7 +129,6 @@ describe('HTTP API Integration', () => {
       }),
     )
 
-    app.use('*', verbsMiddleware)
     app.route('/', router)
 
     server = serve({

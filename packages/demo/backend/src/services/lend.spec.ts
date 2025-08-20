@@ -4,7 +4,7 @@ import * as lendService from './lend.js'
 
 // Mock the verbs config module
 vi.mock('../config/verbs.js', () => ({
-  getVerbs: vi.fn(),
+  verbs: {},
 }))
 
 const mockLendProvider = {
@@ -19,8 +19,8 @@ const mockVerbs = {
 describe('Lend Service', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
-    const { getVerbs } = await import('../config/verbs.js')
-    vi.mocked(getVerbs).mockReturnValue(mockVerbs as any)
+    const { verbs } = await import('../config/verbs.js')
+    Object.assign(verbs, mockVerbs)
   })
 
   describe('getVaults', () => {

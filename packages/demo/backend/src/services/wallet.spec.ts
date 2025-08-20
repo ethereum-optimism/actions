@@ -2,21 +2,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as walletService from './wallet.js'
 
-// Mock the Verbs SDK
-const mockVerbs = {
-  createWallet: vi.fn(),
-  getWallet: vi.fn(),
-  getAllWallets: vi.fn(),
-}
-
-// Mock the getVerbs function
+// Mock the verbs object before imports
 vi.mock('../config/verbs.js', () => ({
-  getVerbs: () => mockVerbs,
+  verbs: {
+    createWallet: vi.fn(),
+    getWallet: vi.fn(),
+    getAllWallets: vi.fn(),
+  },
 }))
 
 describe('Wallet Service', () => {
-  beforeEach(() => {
+  let mockVerbs: any
+
+  beforeEach(async () => {
     vi.clearAllMocks()
+    const { verbs } = await import('../config/verbs.js')
+    mockVerbs = verbs
   })
 
   describe('createWallet', () => {

@@ -1,7 +1,7 @@
 import type { LendTransaction, LendVaultInfo } from '@eth-optimism/verbs-sdk'
 import type { Address } from 'viem'
 
-import { getVerbs } from '../config/verbs.js'
+import { verbs } from '../config/verbs.js'
 
 interface VaultBalanceResult {
   balance: bigint
@@ -25,12 +25,10 @@ interface FormattedVaultResponse {
 }
 
 export async function getVaults(): Promise<LendVaultInfo[]> {
-  const verbs = getVerbs()
   return await verbs.lend.getVaults()
 }
 
 export async function getVault(vaultAddress: Address): Promise<LendVaultInfo> {
-  const verbs = getVerbs()
   return await verbs.lend.getVault(vaultAddress)
 }
 
@@ -38,7 +36,6 @@ export async function getVaultBalance(
   vaultAddress: Address,
   walletId: string,
 ): Promise<VaultBalanceResult> {
-  const verbs = getVerbs()
   const wallet = await verbs.getWallet(walletId)
 
   if (!wallet) {
@@ -87,7 +84,6 @@ export async function deposit(
   amount: number,
   token: string,
 ): Promise<LendTransaction> {
-  const verbs = getVerbs()
   const wallet = await verbs.getWallet(walletId)
 
   if (!wallet) {
@@ -101,7 +97,6 @@ export async function executeLendTransaction(
   walletId: string,
   lendTransaction: LendTransaction,
 ): Promise<LendTransaction> {
-  const verbs = getVerbs()
   const wallet = await verbs.getWallet(walletId)
 
   if (!wallet) {
