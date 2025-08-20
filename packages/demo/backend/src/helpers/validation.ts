@@ -27,20 +27,15 @@ export async function validateRequest<T>(
 
     const validation = schema.safeParse(requestData)
 
-    if (!validation.success) {
-      return {
-        success: false,
-        response: c.json(
-          {
-            error: 'Invalid request',
-            details: validation.error.issues,
-          },
-          400,
-        ),
-      }
-    }
+    if (validation.success) return { success: true, data: validation.data }
 
-    return { success: true, data: validation.data }
+    return {
+      success: false,
+      response: c.json(
+        { error: 'Invalid request', details: validation.error.issues },
+        400,
+      ),
+    }
   } catch (error) {
     return {
       success: false,
