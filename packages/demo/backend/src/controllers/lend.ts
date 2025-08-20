@@ -2,39 +2,18 @@ import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
 
+import { errorResponse } from '../helpers/request.js'
 import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
 
-const DepositRequestSchema = z.object({
-  body: z.object({
-    walletId: z.string().min(1, 'walletId is required'),
-    amount: z.number().positive('amount must be positive'),
-    token: z.string().min(1, 'token is required'),
-  }),
-})
-
-const VaultAddressParamSchema = z.object({
-  params: z.object({
-    vaultAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
-  }),
-})
-
-const VaultBalanceParamsSchema = z.object({
-  params: z.object({
-    vaultAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
-    walletId: z.string().min(1, 'walletId is required'),
-  }),
-})
-
+/**
+ * Lend controller for handling lending-related API endpoints
+ */
 export class LendController {
   /**
    * GET - Retrieve all available lending vaults
    */
-  async getVaults(c: Context) {
+  async getVaults(c: Context): Promise<Response> {
     try {
       const vaults = await lendService.getVaults()
       const formattedVaults = await Promise.all(
@@ -42,24 +21,26 @@ export class LendController {
       )
       return c.json({ vaults: formattedVaults })
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get vaults',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to get vaults', error)
     }
   }
 
   /**
    * GET - Retrieve specific vault information by address
    */
-  async getVault(c: Context) {
-    try {
-      const validation = await validateRequest(c, VaultAddressParamSchema)
-      if (!validation.success) return validation.response
+  async getVault(c: Context): Promise<Response> {
+    const schema = z.object({
+      params: z.object({
+        vaultAddress: z
+          .string()
+          .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
+      }),
+    })
 
+    const validation = await validateRequest(c, schema)
+    if (!validation.success) return validation.response
+
+    try {
       const {
         params: { vaultAddress },
       } = validation.data
@@ -67,24 +48,27 @@ export class LendController {
       const formattedVault = await lendService.formatVaultResponse(vaultInfo)
       return c.json({ vault: formattedVault })
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get vault info',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to get vault info', error)
     }
   }
 
   /**
    * GET - Get vault balance for a specific wallet
    */
-  async getVaultBalance(c: Context) {
-    try {
-      const validation = await validateRequest(c, VaultBalanceParamsSchema)
-      if (!validation.success) return validation.response
+  async getVaultBalance(c: Context): Promise<Response> {
+    const schema = z.object({
+      params: z.object({
+        vaultAddress: z
+          .string()
+          .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
+        walletId: z.string().min(1, 'walletId is required'),
+      }),
+    })
 
+    const validation = await validateRequest(c, schema)
+    if (!validation.success) return validation.response
+
+    try {
       const {
         params: { vaultAddress, walletId },
       } = validation.data
@@ -96,24 +80,26 @@ export class LendController {
         await lendService.formatVaultBalanceResponse(balance)
       return c.json(formattedBalance)
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get vault balance',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to get vault balance', error)
     }
   }
 
   /**
    * POST - Deposit tokens into a lending vault
    */
-  async deposit(c: Context) {
-    try {
-      const validation = await validateRequest(c, DepositRequestSchema)
-      if (!validation.success) return validation.response
+  async deposit(c: Context): Promise<Response> {
+    const schema = z.object({
+      body: z.object({
+        walletId: z.string().min(1, 'walletId is required'),
+        amount: z.number().positive('amount must be positive'),
+        token: z.string().min(1, 'token is required'),
+      }),
+    })
 
+    const validation = await validateRequest(c, schema)
+    if (!validation.success) return validation.response
+
+    try {
       const {
         body: { walletId, amount, token },
       } = validation.data
@@ -125,24 +111,12 @@ export class LendController {
 
       return c.json({
         transaction: {
-          hash: result.hash,
+          ...result,
           amount: result.amount.toString(),
-          asset: result.asset,
-          marketId: result.marketId,
-          apy: result.apy,
-          timestamp: result.timestamp,
-          slippage: result.slippage,
-          transactionData: result.transactionData,
         },
       })
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to deposit',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to deposit', error)
     }
   }
 }
