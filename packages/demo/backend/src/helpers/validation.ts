@@ -16,14 +16,7 @@ export async function validateRequest<T>(
   try {
     const params = c.req.param()
     const query = c.req.query()
-    let body = {}
-
-    // This will throw if empty
-    try {
-      body = await c.req.json()
-    } catch {
-      // Empty object if no body
-    }
+    const body = await c.req.json().catch(() => ({}))
 
     const requestData: RequestData = {}
     const schemaShape = (schema as z.ZodObject<z.ZodRawShape>).shape || {}
