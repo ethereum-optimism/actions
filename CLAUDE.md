@@ -113,6 +113,74 @@ This repository uses CircleCI for continuous integration, mirroring the ecosyste
 - SDK is built first as dependency for demo applications
 - Production images are optimized for deployment
 
+## Code Best Practices
+
+Follow these best practices when writing or modifying code in this repository:
+
+### Code Quality
+- Single-purpose, small functions
+- DRY - abstract common/duplicate code
+- Reduce verbosity, use single-line statements when concise
+- Early returns and guard clauses to reduce nesting
+- Consistent error handling patterns
+- Pure functions where possible
+- Remove console.log statements
+
+### TypeScript
+- Add all missing type annotations
+- Avoid `any` - use specific types or `unknown`
+- Prefer interfaces over type aliases for objects
+- Use discriminated unions for state
+- Leverage type inference only when obvious
+- Strict null checks
+- Proper return type annotations
+- Generic types where appropriate
+
+### Documentation
+- TypeDoc comments for classes and functions
+- Minimal inline comments (only for complex logic or "why")
+- No obvious comments on self-explanatory code
+
+### Modern JavaScript/TypeScript
+- Prefer `const` over `let`, never `var`
+- Destructuring for cleaner code
+- Optional chaining (`?.`) and nullish coalescing (`??`)
+- Template literals over string concatenation
+- Array methods over loops when cleaner
+- Async/await over promise chains
+
+### Performance & Safety
+- Input validation at boundaries
+- Proper async error handling
+- Cleanup resources (listeners, subscriptions)
+- Avoid magic numbers/strings - use constants
+
+## Testing Strategy
+
+When writing or modifying code, follow this testing approach:
+
+### Testing Priority
+1. **SDK (`packages/sdk/`)** - Highest priority
+   - Unit and system tests for all core functionality
+   - Test wallet integration patterns
+   - Test provider implementations
+   - Mock external dependencies (viem, Privy)
+
+2. **Backend (`packages/demo/backend/`)** - Medium priority  
+   - Basic coverage for services and controllers
+   - Integration tests for API endpoints
+   - Test error handling and validation
+
+3. **Frontend (`packages/demo/frontend/`)** - Minimal priority
+   - Only bare minimum testing required
+   - Focus on critical user flows if any
+
+### Test Implementation
+- Use existing test patterns and frameworks in each package
+- Ensure tests run with `pnpm test` in each package
+- Tests should be fast and reliable
+- Mock external services and API calls
+
 ## Important Notes
 
 - Node.js >=18 required (specified in root package.json engines)
