@@ -16,11 +16,6 @@ Initialize the SDK with your wallet provider configuration:
 import { initVerbs } from '@eth-optimism/verbs-sdk'
 
 const verbs = initVerbs({
-  wallet: {
-    type: 'privy',
-    appId: 'your-privy-app-id',
-    appSecret: 'your-privy-app-secret',
-  },
   // MORE COMING SOON
 })
 ```
@@ -61,10 +56,11 @@ if (wallet) {
 For running supersim integration tests, you'll need:
 
 1. **Supersim** - Local multi-chain development environment ([GitHub](https://github.com/ethereum-optimism/supersim))
+
    ```bash
    # macOS/Linux
    brew install ethereum-optimism/tap/supersim
-   
+
    # Or download from releases
    # https://github.com/ethereum-optimism/supersim/releases
    ```

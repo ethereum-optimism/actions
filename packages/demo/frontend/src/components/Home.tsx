@@ -498,67 +498,6 @@ function Home() {
                     <code style={{ color: '#e8e3d3' }}>
                       <span
                         style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                      >{`import`}</span>
-                      {` { `}
-                      <span style={{ color: '#4db6ac' }}>{`initVerbs`}</span>
-                      {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`VerbsConfig`}</span>
-                      {` } `}
-                      <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                      >{`from`}</span>
-                      {` `}
-                      <span
-                        style={{ color: '#ff8a65' }}
-                      >{`'@eth-optimism/verbs-sdk'`}</span>
-                      {`
-`}
-                      <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                      >{`import`}</span>
-                      {` { `}
-                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
-                      {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
-                      {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
-                      {` } `}
-                      <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                      >{`from`}</span>
-                      {` `}
-                      <span
-                        style={{ color: '#ff8a65' }}
-                      >{`'@eth-optimism/verbs-sdk/assets'`}</span>
-                      {`
-`}
-                      <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                      >{`import`}</span>
-                      {` { `}
-                      <span style={{ color: '#4db6ac' }}>{`unichain`}</span>
-                      {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`optimism`}</span>
-                      {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`base`}</span>
-                      {` } `}
-                      <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                      >{`from`}</span>
-                      {` `}
-                      <span
-                        style={{ color: '#ff8a65' }}
-                      >{`'viem/chains'`}</span>
-                      {`
-
-`}
-                      <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
-                      >{`// Complete configuration with all available options`}</span>
-                      {`
-`}
-                      <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
                       >{`const`}</span>
                       {` `}
                       <span style={{ color: '#4db6ac' }}>{`config`}</span>
@@ -566,18 +505,17 @@ function Home() {
                       <span style={{ color: '#4db6ac' }}>{`VerbsConfig`}</span>
                       {` = {
   `}
-                      <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
-                      >{`// Wallet Provider`}</span>
-                      {`
-  `}
                       <span style={{ color: '#9cdcfe' }}>{`wallet`}</span>
                       {`: {
     `}
                       <span style={{ color: '#9cdcfe' }}>{`type`}</span>
                       {`: `}
                       <span style={{ color: '#ff8a65' }}>{`'privy'`}</span>
-                      {`,
+                      {`, `}
+                      <span
+                        style={{ color: 'rgb(98, 114, 164)' }}
+                      >{`// Wallet Provider`}</span>
+                      {`
     `}
                       <span style={{ color: '#9cdcfe' }}>{`appId`}</span>
                       {`: `}
@@ -593,12 +531,19 @@ function Home() {
                       >{`'your-privy-app-secret'`}</span>
                       {`
   },
-
   `}
+                      <span style={{ color: '#9cdcfe' }}>{`gas`}</span>
+                      {`: {
+    `}
+                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
+                      {`: `}
+                      <span style={{ color: '#ff8a65' }}>{`'privy'`}</span>
+                      {`, `}
                       <span
                         style={{ color: 'rgb(98, 114, 164)' }}
-                      >{`// Lending Provider`}</span>
+                      >{`// Gas Provider`}</span>
                       {`
+  },
   `}
                       <span style={{ color: '#9cdcfe' }}>{`lend`}</span>
                       {`: {
@@ -606,25 +551,89 @@ function Home() {
                       <span style={{ color: '#9cdcfe' }}>{`type`}</span>
                       {`: `}
                       <span style={{ color: '#ff8a65' }}>{`'morpho'`}</span>
-                      {`,
+                      {`, `}
+                      <span
+                        style={{ color: 'rgb(98, 114, 164)' }}
+                      >{`// Lend Provider`}</span>
+                      {`
     `}
                       <span
                         style={{ color: '#9cdcfe' }}
-                      >{`assetsAllowlist`}</span>
+                      >{`assetAllowlist`}</span>
                       {`: [`}
                       <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
                       {`, `}
                       <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
                       {`, `}
                       <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
-                      {`]
+                      {`],
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`assetBlocklist`}</span>
+                      {`: [`}
+                      <span style={{ color: '#4db6ac' }}>{`USDT`}</span>
+                      {`],
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`marketAllowlist`}</span>
+                      {`: [`}
+                      <span style={{ color: '#ff8a65' }}>{`0x123...`}</span>
+                      {`],
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`marketBlocklist`}</span>
+                      {`: [`}
+                      <span style={{ color: '#ff8a65' }}>{`0xabc...`}</span>
+                      {`],
   },
-
   `}
+                      <span style={{ color: '#9cdcfe' }}>{`borrow`}</span>
+                      {`: {
+    `}
+                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
+                      {`: `}
+                      <span style={{ color: '#ff8a65' }}>{`'morpho'`}</span>
+                      {`, `}
                       <span
                         style={{ color: 'rgb(98, 114, 164)' }}
-                      >{`// Swap Provider`}</span>
+                      >{`// Borrow Provider`}</span>
                       {`
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`assetAllowlist`}</span>
+                      {`: [`}
+                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      {`, `}
+                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      {`, `}
+                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      {`],
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`assetBlocklist`}</span>
+                      {`: [`}
+                      <span style={{ color: '#4db6ac' }}>{`USDT`}</span>
+                      {`],
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`marketAllowlist`}</span>
+                      {`: [`}
+                      <span style={{ color: '#ff8a65' }}>{`0x123...`}</span>
+                      {`],
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`marketBlocklist`}</span>
+                      {`: [`}
+                      <span style={{ color: '#ff8a65' }}>{`0xabc...`}</span>
+                      {`],
+  },
   `}
                       <span style={{ color: '#9cdcfe' }}>{`swap`}</span>
                       {`: {
@@ -632,7 +641,11 @@ function Home() {
                       <span style={{ color: '#9cdcfe' }}>{`type`}</span>
                       {`: `}
                       <span style={{ color: '#ff8a65' }}>{`'uniswap'`}</span>
-                      {`,
+                      {`, `}
+                      <span
+                        style={{ color: 'rgb(98, 114, 164)' }}
+                      >{`// Swap Provider`}</span>
+                      {`
     `}
                       <span
                         style={{ color: '#9cdcfe' }}
@@ -643,7 +656,18 @@ function Home() {
     `}
                       <span
                         style={{ color: '#9cdcfe' }}
-                      >{`pairAllowlist`}</span>
+                      >{`assetAllowList`}</span>
+                      {`: [`}
+                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      {`, `}
+                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      {`, `}
+                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      {`]
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`marketAllowlist`}</span>
                       {`: [
       { `}
                       <span style={{ color: '#9cdcfe' }}>{`from`}</span>
@@ -657,6 +681,15 @@ function Home() {
       { `}
                       <span style={{ color: '#9cdcfe' }}>{`from`}</span>
                       {`: `}
+                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      {`, `}
+                      <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                      {`: `}
+                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      {` },
+      { `}
+                      <span style={{ color: '#9cdcfe' }}>{`from`}</span>
+                      {`: `}
                       <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
                       {`, `}
                       <span style={{ color: '#9cdcfe' }}>{`to`}</span>
@@ -666,15 +699,56 @@ function Home() {
       { `}
                       <span style={{ color: '#9cdcfe' }}>{`from`}</span>
                       {`: `}
+                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      {`, `}
+                      <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                      {`: `}
+                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      {` }
+    ],
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`marketBlocklist`}</span>
+                      {`: [
+      { `}
+                      <span style={{ color: '#9cdcfe' }}>{`from`}</span>
+                      {`: `}
+                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      {`, `}
+                      <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                      {`: `}
+                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      {` },
+      { `}
+                      <span style={{ color: '#9cdcfe' }}>{`from`}</span>
+                      {`: `}
                       <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
                       {`, `}
                       <span style={{ color: '#9cdcfe' }}>{`to`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
-                      {` }
-    ]
+                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      {` },
+    ],
   },
-
+  `}
+                      <span style={{ color: '#9cdcfe' }}>{`price`}</span>
+                      {`: {
+    `}
+                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
+                      {`: `}
+                      <span style={{ color: '#ff8a65' }}>{`'coingecko'`}</span>
+                      {`, `}
+                      <span
+                        style={{ color: 'rgb(98, 114, 164)' }}
+                      >{`// Price provider`}</span>
+                      {`
+    `}
+                      <span style={{ color: '#9cdcfe' }}>{`apiKey`}</span>
+                      {`: `}
+                      <span style={{ color: '#ff8a65' }}>{`'...'`}</span>
+                      {`,
+  }
   `}
                       <span
                         style={{ color: 'rgb(98, 114, 164)' }}
@@ -693,25 +767,7 @@ function Home() {
                       <span style={{ color: '#4db6ac' }}>{`base`}</span>
                       {`
   ]
-}
-
-`}
-                      <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
-                      >{`// Initialize the SDK`}</span>
-                      {`
-`}
-                      <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
-                      >{`const`}</span>
-                      {` `}
-                      <span style={{ color: '#4db6ac' }}>{`verbs`}</span>
-                      {` = `}
-                      <span style={{ color: '#4db6ac' }}>{`initVerbs`}</span>
-                      {`(`}
-                      <span style={{ color: '#4db6ac' }}>{`config`}</span>
-                      {`)
-`}
+}`}
                     </code>
                   </pre>
                 </div>
