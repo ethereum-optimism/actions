@@ -58,12 +58,10 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
-      const { privyAddress, smartWalletAddress } =
-        await walletService.createWallet()
+      const { walletAddress } = await walletService.createWallet()
 
       return c.json({
-        privyAddress,
-        smartWalletAddress,
+        walletAddress,
         userId,
       } satisfies CreateWalletResponse)
     } catch (error) {

@@ -1,8 +1,12 @@
-import type { Address, Hex, Quantity } from 'viem'
+import { type Address, type Hash,type PublicClient,  type Hex, type Quantity, encodeFunctionData, encodeAbiParameters, http, createWalletClient } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 
 import type { PrivyWalletProvider } from './providers/privy.js'
+import { SupportedChainId } from '@/constants/supportedChains.js'
+import { smartWalletAbi } from '@/abis/smartWallet.js'
+import { unichain } from 'viem/chains'
+import { privateKeyToAccount } from 'viem/accounts'
 
 /**
  * Privy wallet implementation
@@ -30,6 +34,31 @@ export class PrivyWallet {
     this.walletId = walletId
     this.address = address
   }
+
+  /**
+   * Send a signed transaction
+   * @description Sends a pre-signed transaction to the network
+   * @param signedTransaction - Signed transaction to send
+   * @param publicClient - Viem public client to send the transaction
+   * @returns Promise resolving to transaction hash
+   */
+    async send(
+        signedTransaction: string,
+        publicClient: PublicClient,
+      ): Promise<Hash> {
+        try {
+          const hash = await publicClient.sendRawTransaction({
+            serializedTransaction: signedTransaction as `0x${string}`,
+          })
+          return hash
+        } catch (error) {
+          throw new Error(
+            `Failed to send transaction: ${
+              error instanceof Error ? error.message : 'Unknown error'
+            }`,
+          )
+        }
+      }
 
   /**
    * Sign a transaction without sending it
@@ -82,5 +111,55 @@ export class PrivyWallet {
         }`,
       )
     }
+  }
+
+  async authorize7702(chainId: SupportedChainId, contract: Address) {
+    const authorization = await this.privyProvider.privy.walletApi.ethereum.sign7702Authorization({
+        walletId: this.walletId,
+        contract,
+        chainId,
+    });
+    console.log('Authorization signed: %s', authorization)
+    
+    const initializeData = encodeFunctionData({
+        abi: smartWalletAbi,
+        functionName: 'initialize',
+        args: [[encodeAbiParameters([{ type: 'address' }], [this.address])]],
+      })
+      const publicClient = this.chainManager.getPublicClient(chainId);
+
+      const nonce = await publicClient.getTransactionCount({
+        address: this.address,
+        blockTag: 'pending', // Use pending to get the next nonce including any pending txs
+      })
+      const walletClient = createWalletClient({
+        chain: unichain,
+        transport: http('http://127.0.0.1:9545'),
+        account: privateKeyToAccount('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'),
+      })
+      const hash = await walletClient.sendTransaction({
+        // account: this.address,
+        to: this.address,
+        data: initializeData,
+        authorizationList: [{...authorization, address: authorization.contract, chainId: Number(authorization.chainId), nonce: Number(authorization.nonce)}],
+        value: 0n,
+      })
+    // const tx = {
+    //     from: this.address,
+    //     to:   this.address,
+    //     data: initializeData,
+    //     authorizationList: [authorization],
+    //     chainId,
+    //     nonce,
+    //   };
+    //   const response = await this.privyProvider.privy.walletApi.ethereum.signTransaction({
+    //     walletId: this.walletId,
+    //     transaction: tx,
+    //   });
+      console.log('delegated smart wallet hash', hash);
+      // const hash = await this.send(response.signedTransaction, publicClient);
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      console.log('delegated smart wallet receipt', receipt);
+      return hash;
   }
 }

@@ -78,27 +78,11 @@ export class SmartWalletProvider {
   }
 
   async getWallet(
-    initialOwnerAddresses: Address[],
-    nonce?: bigint,
-    currentOwnerAddresses?: Address[],
+    eoaAddress: Address
   ): Promise<SmartWallet> {
-    // Factory is the same accross all chains, so we can use the first chain to get the wallet address
-    const publicClient = this.chainManager.getPublicClient(
-      this.chainManager.getSupportedChains()[0],
-    )
-    const encodedOwners = initialOwnerAddresses.map((ownerAddress) =>
-      encodeAbiParameters([{ type: 'address' }], [ownerAddress]),
-    )
-    const smartWalletAddress = await publicClient.readContract({
-      abi: smartWalletFactoryAbi,
-      address: smartWalletFactoryAddress,
-      functionName: 'getAddress',
-      args: [encodedOwners, nonce || 0n],
-    })
-    const owners = currentOwnerAddresses || initialOwnerAddresses
     return new SmartWallet(
-      smartWalletAddress,
-      owners,
+      eoaAddress,
+      [eoaAddress],
       this.chainManager,
       this.lendProvider,
     )

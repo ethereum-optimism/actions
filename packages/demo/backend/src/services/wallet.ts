@@ -23,14 +23,14 @@ import { env } from '@/config/env.js'
 
 import { getVerbs } from '../config/verbs.js'
 
-export async function createWallet(): Promise<{
-  privyAddress: string
-  smartWalletAddress: string
-}> {
+export async function createWallet() {
   const verbs = getVerbs()
   const privyWallet = await verbs.wallet.privy!.createWallet()
-  const smartWallet = await verbs.wallet.smartWallet!.createWallet([getAddress(privyWallet.address)])
-  return { privyAddress: privyWallet.address, smartWalletAddress: smartWallet.address }
+  // fund the privy wallet with ETH
+  await fundWallet(privyWallet.walletId, 'ETH')
+  console.log('delegating privy wallet to smart wallet')
+  await privyWallet.authorize7702(unichain.id, env.SMART_WALLET_IMPL_ADDRESS as Address);
+  return { walletAddress: privyWallet.address }
 }
 
 export async function getWallet(userId: string): Promise<{
@@ -49,7 +49,7 @@ export async function getWallet(userId: string): Promise<{
     throw new Error('Wallet not found')
   }
   const wallet = await verbs.wallet.smartWallet.getWallet(
-    [getAddress(privyWallet.address)],
+    getAddress(privyWallet.address),
   )
   return { privyWallet, wallet }
 }
@@ -70,7 +70,7 @@ export async function getAllWallets(
         if (!verbs.wallet.smartWallet) {
           throw new Error('Smart wallet not configured')
         }
-        return { privyWallet: wallet, wallet: await verbs.wallet.smartWallet.getWallet([getAddress(wallet.address)]) }
+        return { privyWallet: wallet, wallet: await verbs.wallet.smartWallet.getWallet(getAddress(wallet.address)) }
       }),
     )
   } catch {

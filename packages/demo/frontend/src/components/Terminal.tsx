@@ -546,8 +546,7 @@ Active Wallets: 0`,
         id: `success-${Date.now()}`,
         type: 'success',
         content: `Wallet created successfully!
-Privy Address: ${result.privyAddress}
-Smart Wallet Address: ${result.smartWalletAddress}
+Wallet Address: ${result.walletAddress}
 User ID: ${result.userId}`,
         timestamp: new Date(),
       }

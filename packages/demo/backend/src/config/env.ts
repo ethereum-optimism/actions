@@ -57,4 +57,7 @@ export const env = cleanEnv(process.env, {
   FAUCET_ADDRESS: str({
     default: getFaucetAddressDefault(),
   }),
+  SMART_WALLET_IMPL_ADDRESS: str({
+    default: '0x000100abaad02f1cfc8bbe32bd5a564817339e72',
+  }),
 })
