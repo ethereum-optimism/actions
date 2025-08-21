@@ -1,14 +1,11 @@
 import type {
   GetAllWalletsOptions,
+  PrivyWallet,
+  SmartWallet,
   TokenBalance,
   TransactionData,
-  WalletInterface,
 } from '@eth-optimism/verbs-sdk'
 import { unichain } from '@eth-optimism/viem/chains'
-import {
-  PrivyClient,
-  type WalletApiWalletResponseType,
-} from '@privy-io/server-auth'
 import type { Address, Hex } from 'viem'
 import {
   createPublicClient,
@@ -30,29 +27,28 @@ export async function createWallet(): Promise<{
   privyAddress: string
   smartWalletAddress: string
 }> {
-  /**
-   * 
-   */
-  const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
-  const wallet = await privy.walletApi.createWallet({
-    chainType: 'ethereum',
-  })
   const verbs = getVerbs()
-  const addresses = await verbs.wallet.smartWallet!.createWallet([getAddress(wallet.address)])
-  return { privyAddress: wallet.address, smartWalletAddress: addresses[0].address }
+  const privyWallet = await verbs.wallet.privy!.createWallet()
+  const smartWallet = await verbs.wallet.smartWallet!.createWallet([getAddress(privyWallet.address)])
+  return { privyAddress: privyWallet.address, smartWalletAddress: smartWallet.address }
 }
 
 export async function getWallet(userId: string): Promise<{
-  privyWallet: WalletApiWalletResponseType
-  wallet: WalletInterface
+  privyWallet: PrivyWallet
+  wallet: SmartWallet
 }> {
-  const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
-  const privyWallet = await privy.walletApi.getWallet({ id: userId })
+  const verbs = getVerbs()
+  if (!verbs.wallet.privy) {
+    throw new Error('Privy wallet not configured')
+  }
+  if (!verbs.wallet.smartWallet) {
+    throw new Error('Smart wallet not configured')
+  }
+  const privyWallet = await verbs.wallet.privy.getWallet(userId)
   if (!privyWallet) {
     throw new Error('Wallet not found')
   }
-  const verbs = getVerbs()
-  const wallet = await verbs.wallet.smartWallet!.getWallet(
+  const wallet = await verbs.wallet.smartWallet.getWallet(
     [getAddress(privyWallet.address)],
   )
   return { privyWallet, wallet }
@@ -61,18 +57,20 @@ export async function getWallet(userId: string): Promise<{
 export async function getAllWallets(
   options?: GetAllWalletsOptions,
 ): Promise<
-  Array<{ privyWallet: WalletApiWalletResponseType; wallet: WalletInterface }>
+  Array<{ privyWallet: PrivyWallet; wallet: SmartWallet }>
 > {
   try {
-    const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
-    const response = await privy.walletApi.getWallets({
-      limit: options?.limit,
-      cursor: options?.cursor,
-    })
-
+    const verbs = getVerbs()
+    if (!verbs.wallet.privy) {
+      throw new Error('Privy wallet not configured')
+    }
+    const privyWallets = await verbs.wallet.privy.getAllWallets(options)
     return Promise.all(
-      response.data.map((wallet) => {
-        return getWallet(wallet.id)
+      privyWallets.map(async (wallet) => {
+        if (!verbs.wallet.smartWallet) {
+          throw new Error('Smart wallet not configured')
+        }
+        return { privyWallet: wallet, wallet: await verbs.wallet.smartWallet.getWallet([getAddress(wallet.address)]) }
       }),
     )
   } catch {

@@ -132,7 +132,7 @@ export class WalletController {
       return c.json({
         wallets: wallets.map(({ privyWallet }) => ({
           address: privyWallet.address as Address,
-          id: privyWallet.id,
+          id: privyWallet.walletId,
         })),
         count: wallets.length,
       } satisfies GetAllWalletsResponse)

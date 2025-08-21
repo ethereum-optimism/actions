@@ -1,11 +1,9 @@
 import type {
   LendTransaction,
   LendVaultInfo,
+  SmartWallet,
   SupportedChainId,
-  WalletInterface,
 } from '@eth-optimism/verbs-sdk'
-import { PrivyClient } from '@privy-io/server-auth'
-import { env } from 'process'
 import type { Address, PublicClient } from 'viem'
 
 import { getVerbs } from '../config/verbs.js'
@@ -109,7 +107,7 @@ export async function executeLendTransaction(
   lendTransaction: LendTransaction,
 ): Promise<LendTransaction> {
   const verbs = getVerbs()
-  const { wallet } = await getWallet(walletId)
+  const { wallet, privyWallet } = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
@@ -121,7 +119,7 @@ export async function executeLendTransaction(
 
   const publicClient = verbs.chainManager.getPublicClient(130)
   const ethBalance = await publicClient.getBalance({
-    address: wallet.ownerAddresses[0],
+    address: privyWallet.address,
   })
 
   const gasEstimate = await estimateGasCost(
@@ -161,7 +159,7 @@ async function signOnly(
 ): Promise<string> {
   try {
     // Get wallet to determine the from address for gas estimation
-    const { wallet } = await getWallet(walletId)
+    const { wallet, privyWallet } = await getWallet(walletId)
     if (!wallet) {
       throw new Error(`Wallet not found: ${walletId}`)
     }
@@ -171,13 +169,9 @@ async function signOnly(
       `[PRIVY_PROVIDER] Complete tx params - Type: ${txParams.type}, Nonce: ${txParams.nonce}, Limit: ${txParams.gasLimit}, MaxFee: ${txParams.maxFeePerGas || 'fallback'}, Priority: ${txParams.maxPriorityFeePerGas || 'fallback'}`,
     )
 
-    const privy = new PrivyClient(env.PRIVY_APP_ID!, env.PRIVY_APP_SECRET!)
-    const response = await privy.walletApi.ethereum.signTransaction({
-      walletId,
-      transaction: txParams,
-    })
-    console.log('Signed transaction', response.signedTransaction)
-    return response.signedTransaction
+    const signedTransaction = await privyWallet.signOnly(txParams)
+    console.log('Signed transaction', signedTransaction)
+    return signedTransaction
   } catch (error) {
     console.error('Error signing transaction', error)
     throw new Error(
@@ -190,7 +184,7 @@ async function signOnly(
 
 async function estimateGasCost(
   publicClient: PublicClient,
-  wallet: WalletInterface,
+  wallet: SmartWallet,
   lendTransaction: LendTransaction,
 ): Promise<bigint> {
   let totalGasEstimate = BigInt(0)

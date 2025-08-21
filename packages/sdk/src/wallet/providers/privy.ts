@@ -27,11 +27,10 @@ export class PrivyWalletProvider {
   /**
    * Create new wallet via Privy
    * @description Creates a new wallet using Privy's wallet API
-   * @param userId - User identifier for the wallet
    * @returns Promise resolving to new wallet instance
    * @throws Error if wallet creation fails
    */
-  async createWallet(userId: string): Promise<PrivyWallet> {
+  async createWallet(): Promise<PrivyWallet> {
     try {
       const wallet = await this.privy.walletApi.createWallet({
         chainType: 'ethereum',
@@ -45,7 +44,7 @@ export class PrivyWalletProvider {
       )
       return walletInstance
     } catch {
-      throw new Error(`Failed to create wallet for user ${userId}`)
+      throw new Error(`Failed to create wallet`)
     }
   }
 

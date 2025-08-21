@@ -10,7 +10,6 @@ import { privateKeyToAccount } from 'viem/accounts'
 
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
-import type { WalletInterface } from '@/index.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import { SmartWallet } from '@/wallet/SmartWallet.js'
@@ -33,7 +32,7 @@ export class SmartWalletProvider {
   async createWallet(
     ownerAddresses: Address[],
     nonce?: bigint,
-  ): Promise<Array<{ chainId: number; address: Address }>> {
+  ): Promise<SmartWallet> {
     // deploy the wallet on each chain in the chain manager
     const deployments = await Promise.all(
       this.chainManager.getSupportedChains().map(async (chainId) => {
@@ -70,14 +69,19 @@ export class SmartWalletProvider {
         }
       }),
     )
-    return deployments
+    return new SmartWallet(
+      deployments[0].address,
+      ownerAddresses,
+      this.chainManager,
+      this.lendProvider,
+    )
   }
 
   async getWallet(
     initialOwnerAddresses: Address[],
     nonce?: bigint,
     currentOwnerAddresses?: Address[],
-  ): Promise<WalletInterface> {
+  ): Promise<SmartWallet> {
     // Factory is the same accross all chains, so we can use the first chain to get the wallet address
     const publicClient = this.chainManager.getPublicClient(
       this.chainManager.getSupportedChains()[0],

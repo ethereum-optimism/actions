@@ -26,4 +26,5 @@ export type {
   WalletProvider,
 } from './types/index.js'
 export { initVerbs, Verbs } from './verbs.js'
+export { PrivyWallet } from './wallet/PrivyWallet.js'
 export { SmartWallet } from './wallet/SmartWallet.js'
