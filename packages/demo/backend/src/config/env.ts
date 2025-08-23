@@ -57,4 +57,5 @@ export const env = cleanEnv(process.env, {
   FAUCET_ADDRESS: str({
     default: getFaucetAddressDefault(),
   }),
+  BUNDLER_URL: str({ default: 'https://sepolia.bundler.privy.io' }),
 })

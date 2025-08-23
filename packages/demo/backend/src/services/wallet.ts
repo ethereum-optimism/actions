@@ -29,7 +29,7 @@ export async function createWallet(): Promise<{
 }> {
   const verbs = getVerbs()
   const privyWallet = await verbs.wallet.privy!.createWallet()
-  const smartWallet = await verbs.wallet.smartWallet!.createWallet([getAddress(privyWallet.address)])
+  const smartWallet = await verbs.wallet.smartWallet!.createWallet([getAddress(privyWallet.address)], env.BUNDLER_URL)
   return { privyAddress: privyWallet.address, smartWalletAddress: smartWallet.address }
 }
 
@@ -50,6 +50,7 @@ export async function getWallet(userId: string): Promise<{
   }
   const wallet = await verbs.wallet.smartWallet.getWallet(
     [getAddress(privyWallet.address)],
+    env.BUNDLER_URL,
   )
   return { privyWallet, wallet }
 }
@@ -70,7 +71,7 @@ export async function getAllWallets(
         if (!verbs.wallet.smartWallet) {
           throw new Error('Smart wallet not configured')
         }
-        return { privyWallet: wallet, wallet: await verbs.wallet.smartWallet.getWallet([getAddress(wallet.address)]) }
+        return { privyWallet: wallet, wallet: await verbs.wallet.smartWallet.getWallet([getAddress(wallet.address)], env.BUNDLER_URL) }
       }),
     )
   } catch {

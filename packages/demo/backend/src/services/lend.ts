@@ -8,6 +8,7 @@ import type { Address, PublicClient } from 'viem'
 
 import { getVerbs } from '../config/verbs.js'
 import { getWallet } from './wallet.js'
+import { PrivyClient } from '@privy-io/server-auth'
 
 interface VaultBalanceResult {
   balance: bigint
@@ -92,6 +93,7 @@ export async function deposit(
   walletId: string,
   amount: number,
   token: string,
+  chainId: SupportedChainId,
 ): Promise<LendTransaction> {
   const { wallet } = await getWallet(walletId)
 
@@ -99,12 +101,14 @@ export async function deposit(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return await wallet.lend(amount, token.toLowerCase())
+  return await wallet.lend(amount, token.toLowerCase(), chainId)
 }
 
 export async function executeLendTransaction(
   walletId: string,
   lendTransaction: LendTransaction,
+  chainId: SupportedChainId,
+  privyClient: PrivyClient,
 ): Promise<LendTransaction> {
   const verbs = getVerbs()
   const { wallet, privyWallet } = await getWallet(walletId)
@@ -117,38 +121,38 @@ export async function executeLendTransaction(
     throw new Error('No transaction data available for execution')
   }
 
-  const publicClient = verbs.chainManager.getPublicClient(130)
-  const ethBalance = await publicClient.getBalance({
-    address: privyWallet.address,
-  })
+  const publicClient = verbs.chainManager.getPublicClient(chainId)
+  // const ethBalance = await publicClient.getBalance({
+  //   address: privyWallet.address,
+  // })
 
-  const gasEstimate = await estimateGasCost(
-    publicClient,
-    wallet,
-    lendTransaction,
-  )
+  // const gasEstimate = await estimateGasCost(
+  //   publicClient,
+  //   wallet,
+  //   lendTransaction,
+  // )
 
-  if (ethBalance < gasEstimate) {
-    throw new Error('Insufficient ETH for gas fees')
-  }
+  // if (ethBalance < gasEstimate) {
+  //   throw new Error('Insufficient ETH for gas fees')
+  // }
 
   let depositHash: Address = '0x0'
 
   if (lendTransaction.transactionData.approval) {
-    const approvalSignedTx = await signOnly(
-      walletId,
-      lendTransaction.transactionData.approval,
-    )
-    const approvalHash = await wallet.send(approvalSignedTx, publicClient)
-    await publicClient.waitForTransactionReceipt({ hash: approvalHash })
+    // const approvalSignedTx = await signOnly(
+    //   walletId,
+    //   lendTransaction.transactionData.approval,
+    // )
+    await wallet.send(lendTransaction.transactionData.approval, chainId, privyClient as any, walletId)
+    // await publicClient.waitForTransactionReceipt({ hash: approvalHash })
   }
 
-  const depositSignedTx = await signOnly(
-    walletId,
-    lendTransaction.transactionData.deposit,
-  )
-  depositHash = await wallet.send(depositSignedTx, publicClient)
-  await publicClient.waitForTransactionReceipt({ hash: depositHash })
+  // const depositSignedTx = await signOnly(
+  //   walletId,
+  //   lendTransaction.transactionData.deposit,
+  // )
+  depositHash = await wallet.send(lendTransaction.transactionData.deposit, chainId, privyClient as any, walletId)
+  // await publicClient.waitForTransactionReceipt({ hash: depositHash })
 
   return { ...lendTransaction, hash: depositHash }
 }

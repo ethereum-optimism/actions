@@ -18,7 +18,7 @@ interface TerminalLine {
 interface VaultData {
   address: string
   name: string
-  apy: number
+  apy: number  
   asset: string
   apyBreakdown: {
     nativeApy: number
@@ -756,7 +756,7 @@ How much would you like to lend?`
 
 Vault:  ${promptData.selectedVault.name}
 Amount: ${amount} USDC
-Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
+Tx:     https://base-sepolia.blockscout.com/op/${result.transaction.hash || 'pending'}`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), successLine])
@@ -907,9 +907,9 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
         const beforeSelection = prev.slice(0, selectWalletIndex)
 
         // Add just the success message
-        const successLine: TerminalLine = {
+      const successLine: TerminalLine = {
           id: `select-success-${Date.now()}`,
-          type: 'success',
+        type: 'success',
           content: `Wallet selected:\n${selectedWalletData.address}`,
           timestamp: new Date(),
         }
@@ -1131,62 +1131,62 @@ Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
       }
 
       // Skip provider selection and go directly to vault selection
-      const loadingLine: TerminalLine = {
-        id: `loading-${Date.now()}`,
-        type: 'output',
-        content: 'Loading vaults...',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, loadingLine])
+    const loadingLine: TerminalLine = {
+      id: `loading-${Date.now()}`,
+      type: 'output',
+      content: 'Loading vaults...',
+      timestamp: new Date(),
+    }
+    setLines((prev) => [...prev, loadingLine])
 
-      try {
-        const result = await verbsApi.getVaults()
-
-        if (result.vaults.length === 0) {
-          const emptyLine: TerminalLine = {
-            id: `empty-${Date.now()}`,
-            type: 'error',
-            content: 'No vaults available.',
-            timestamp: new Date(),
-          }
-          setLines((prev) => [...prev.slice(0, -1), emptyLine])
-          return
+    try {
+      const result = await verbsApi.getVaults()
+      
+      if (result.vaults.length === 0) {
+        const emptyLine: TerminalLine = {
+          id: `empty-${Date.now()}`,
+          type: 'error',
+          content: 'No vaults available.',
+          timestamp: new Date(),
         }
+        setLines((prev) => [...prev.slice(0, -1), emptyLine])
+        return
+      }
 
-        const vaultOptions = result.vaults
+      const vaultOptions = result.vaults
           .map(
             (vault, index) =>
               `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
           )
-          .join('\n')
+        .join('\n')
 
-        const vaultSelectionLine: TerminalLine = {
-          id: `vault-selection-${Date.now()}`,
-          type: 'output',
+      const vaultSelectionLine: TerminalLine = {
+        id: `vault-selection-${Date.now()}`,
+        type: 'output',
           content: `Select a Lending vault:
 
 ${vaultOptions}
 
 [Enter] to select, [↑/↓] to navigate`,
-          timestamp: new Date(),
-        }
+        timestamp: new Date(),
+      }
 
-        setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
-        setPendingPrompt({
-          type: 'lendVault',
-          message: '',
-          data: result.vaults,
-        })
+      setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
+      setPendingPrompt({
+        type: 'lendVault',
+        message: '',
+        data: result.vaults,
+      })
       } catch (vaultError) {
-        const errorLine: TerminalLine = {
-          id: `error-${Date.now()}`,
-          type: 'error',
-          content: `Failed to load vaults: ${
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to load vaults: ${
             vaultError instanceof Error ? vaultError.message : 'Unknown error'
-          }`,
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), errorLine])
+        }`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
         return
       }
     } catch (error) {
@@ -1321,7 +1321,7 @@ ${vaultOptions}
     }
 
     const selectedWallet = wallets[selection - 1]
-
+    
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
       type: 'output',
@@ -1373,7 +1373,7 @@ ${vaultOptions}
         id: `error-${Date.now()}`,
         type: 'error',
         content: 'Invalid amount. Please enter a positive number.',
-        timestamp: new Date(),
+      timestamp: new Date(),
       }
       setLines((prev) => [...prev, errorLine])
       return
@@ -1382,25 +1382,25 @@ ${vaultOptions}
     if (amount > data.balance) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
-        type: 'error',
+          type: 'error',
         content: `Insufficient balance. Available: ${data.balance} USDC`,
-        timestamp: new Date(),
-      }
+          timestamp: new Date(),
+        }
       setLines((prev) => [...prev, errorLine])
-      return
-    }
+        return
+      }
 
     const amountConfirmLine: TerminalLine = {
       id: `amount-confirm-${Date.now()}`,
-      type: 'output',
+        type: 'output',
       content: `Sending ${amount} USDC from ${shortenAddress(data.selectedWallet.address)}.\n\nEnter recipient address:`,
-      timestamp: new Date(),
-    }
+        timestamp: new Date(),
+      }
     setLines((prev) => [...prev, amountConfirmLine])
 
-    setPendingPrompt({
+      setPendingPrompt({
       type: 'walletSendRecipient',
-      message: '',
+        message: '',
       data: { ...data, amount },
     })
   }

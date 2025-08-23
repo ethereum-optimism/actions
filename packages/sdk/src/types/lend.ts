@@ -12,7 +12,7 @@ export interface TransactionData {
   /** Encoded function call data */
   data: Hex
   /** ETH value to send */
-  value: string
+  value: bigint
 }
 
 /**
