@@ -1,4 +1,4 @@
-import type { Address, Hash } from 'viem'
+import type { Address } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { ChainConfig } from '@/types/chain.js'

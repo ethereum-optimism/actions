@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
-import { encodeAbiParameters } from 'viem'
-import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
+import { pad } from 'viem'
+import { type WebAuthnAccount } from 'viem/account-abstraction'
 
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
@@ -24,59 +24,59 @@ export class SmartWalletProvider {
   }
 
   async createWallet(
-    ownerAddresses: Address[],
+    owners: Array<Address | WebAuthnAccount>,
     nonce?: bigint,
   ): Promise<SmartWallet> {
-    // deploy the wallet on each chain in the chain manager
-    const deployments = await Promise.all(
-      this.chainManager.getSupportedChains().map(async (chainId) => {
-        const publicClient = this.chainManager.getPublicClient(chainId)
-        const smartAccount = await toCoinbaseSmartAccount({
-          client: publicClient,
-          owners: ownerAddresses,
-          nonce,
-          // viem only supports the factory deployed by cb. if we wanted
-          // our own factory at some point we would need to work with them
-          // to update this to allow for other factories
-          version: '1.1',
-        })
-        return smartAccount
-      }),
-    )
     return new SmartWallet(
-      deployments[0].address,
-      ownerAddresses,
+      owners,
       this.chainManager,
       this.lendProvider,
       this.paymasterAndBundlerUrl,
+      undefined,
+      undefined,
+      nonce,
     )
   }
 
-  async getWallet(
-    initialOwnerAddresses: Address[],
-    nonce?: bigint,
-    currentOwnerAddresses?: Address[],
-  ): Promise<SmartWallet> {
+  async getSmartWalletAddress(params: {
+    owners: Array<Address | WebAuthnAccount>
+    nonce?: bigint
+  }) {
+    const { owners, nonce = 0n } = params
+    const owners_bytes = owners.map((owner) => {
+      if (typeof owner === 'string') return pad(owner)
+      if (owner.type === 'webAuthn') return owner.publicKey
+      throw new Error('invalid owner type')
+    })
+
     // Factory is the same accross all chains, so we can use the first chain to get the wallet address
     const publicClient = this.chainManager.getPublicClient(
       this.chainManager.getSupportedChains()[0],
-    )
-    const encodedOwners = initialOwnerAddresses.map((ownerAddress) =>
-      encodeAbiParameters([{ type: 'address' }], [ownerAddress]),
     )
     const smartWalletAddress = await publicClient.readContract({
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
       functionName: 'getAddress',
-      args: [encodedOwners, nonce || 0n],
+      args: [owners_bytes, nonce],
     })
-    const owners = currentOwnerAddresses || initialOwnerAddresses
+    return smartWalletAddress
+  }
+
+  async getWallet(params: {
+    walletAddress: Address
+    owner: Address | WebAuthnAccount
+    ownerIndex?: number
+    nonce?: bigint
+  }): Promise<SmartWallet> {
+    const { walletAddress, owner, ownerIndex, nonce } = params
     return new SmartWallet(
-      smartWalletAddress,
-      owners,
+      [owner],
       this.chainManager,
       this.lendProvider,
       this.paymasterAndBundlerUrl,
+      walletAddress,
+      ownerIndex,
+      nonce,
     )
   }
 }

@@ -1,6 +1,13 @@
 import type { PrivyClient } from '@privy-io/server-auth'
-import type { Address, Hash, Hex, Quantity } from 'viem'
-import { createPublicClient, encodeFunctionData, erc20Abi, http } from 'viem'
+import type { Address, Hash, Hex, LocalAccount, Quantity } from 'viem'
+import {
+  createPublicClient,
+  encodeFunctionData,
+  erc20Abi,
+  http,
+  pad,
+} from 'viem'
+import type { WebAuthnAccount } from 'viem/account-abstraction'
 import {
   createBundlerClient,
   toCoinbaseSmartAccount,
@@ -9,6 +16,8 @@ import { toAccount } from 'viem/accounts'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { smartWalletAbi } from '@/abis/smartWallet.js'
+import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
+import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
@@ -32,11 +41,13 @@ import {
  * @description Concrete implementation of the Wallet interface
  */
 export class SmartWallet {
-  public ownerAddresses: Address[]
-  public address: Address
+  public owners: Array<Address | WebAuthnAccount>
+  public ownerIndex?: number
+  public deploymentAddress?: Address
   private lendProvider: LendProvider
   private chainManager: ChainManager
   private bundlerUrl: string
+  private nonce?: bigint
 
   /**
    * Create a new wallet instance
@@ -44,31 +55,55 @@ export class SmartWallet {
    * @param verbs - Verbs instance to access configured providers and chain manager
    */
   constructor(
-    address: Address,
-    ownerAddresses: Address[],
+    owners: Array<Address | WebAuthnAccount>,
     chainManager: ChainManager,
     lendProvider: LendProvider,
     bundlerUrl: string,
+    deploymentAddress?: Address,
+    ownerIndex?: number,
+    nonce?: bigint,
   ) {
-    this.address = address
-    this.ownerAddresses = ownerAddresses
+    this.owners = owners
+    this.ownerIndex = ownerIndex
+    this.deploymentAddress = deploymentAddress
     this.chainManager = chainManager
     this.lendProvider = lendProvider
     this.bundlerUrl = bundlerUrl
+    this.nonce = nonce
+  }
+
+  async getAddress() {
+    if (this.deploymentAddress) return this.deploymentAddress
+
+    const owners_bytes = this.owners.map((owner) => {
+      if (typeof owner === 'string') return pad(owner)
+      if (owner.type === 'webAuthn') return owner.publicKey
+      throw new Error('invalid owner type')
+    })
+
+    // Factory is the same accross all chains, so we can use the first chain to get the wallet address
+    const publicClient = this.chainManager.getPublicClient(
+      this.chainManager.getSupportedChains()[0],
+    )
+    const smartWalletAddress = await publicClient.readContract({
+      abi: smartWalletFactoryAbi,
+      address: smartWalletFactoryAddress,
+      functionName: 'getAddress',
+      args: [owners_bytes, this.nonce || 0n],
+    })
+    return smartWalletAddress
   }
 
   async getCoinbaseSmartAccount(
     chainId: SupportedChainId,
-    privyAccount: any,
-    nonce?: bigint,
+    privyAccount: LocalAccount,
   ): Promise<ReturnType<typeof toCoinbaseSmartAccount>> {
     return toCoinbaseSmartAccount({
-      client: createPublicClient({
-        chain: baseSepolia,
-        transport: http(this.bundlerUrl),
-      }),
+      address: this.deploymentAddress,
+      ownerIndex: this.ownerIndex,
+      client: this.chainManager.getPublicClient(chainId),
       owners: [privyAccount],
-      nonce,
+      nonce: this.nonce,
       version: '1.1',
     })
   }
@@ -78,13 +113,13 @@ export class SmartWallet {
    * @returns Promise resolving to array of asset balances
    */
   async getBalance(): Promise<TokenBalance[]> {
-    console.log('getting balance for address', this.address)
+    const address = await this.getAddress()
     const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
       async (token) => {
-        return fetchERC20Balance(this.chainManager, this.address, token)
+        return fetchERC20Balance(this.chainManager, address, token)
       },
     )
-    const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
+    const ethBalancePromise = fetchETHBalance(this.chainManager, address)
 
     return Promise.all([ethBalancePromise, ...tokenBalancePromises])
   }
@@ -113,11 +148,12 @@ export class SmartWallet {
       asset,
       chainId,
     )
+    const address = await this.getAddress()
 
     // Set receiver to wallet address if not specified
     const lendOptions: LendOptions = {
       ...options,
-      receiver: options?.receiver || this.address,
+      receiver: options?.receiver || address,
     }
 
     const result = await this.lendProvider.deposit(
@@ -141,7 +177,6 @@ export class SmartWallet {
   async getTxParams(
     transactionData: TransactionData,
     chainId: SupportedChainId,
-    ownerIndex: number = 0,
   ): Promise<{
     /** The address the transaction is sent from. Must be hexadecimal formatted. */
     from?: Hex
@@ -169,11 +204,11 @@ export class SmartWallet {
     const executeCallData = this.execute(transactionData)
 
     const publicClient = this.chainManager.getPublicClient(chainId)
+    const address = await this.getAddress()
 
     // Estimate gas limit
     const gasLimit = await publicClient.estimateGas({
-      account: this.ownerAddresses[ownerIndex],
-      to: this.address,
+      to: address,
       data: executeCallData,
       value: BigInt(transactionData.value),
     })
@@ -182,13 +217,13 @@ export class SmartWallet {
     const feeData = await publicClient.estimateFeesPerGas()
 
     // Get current nonce for the wallet - manual management since Privy isn't handling it properly
-    const nonce = await publicClient.getTransactionCount({
-      address: this.ownerAddresses[ownerIndex],
-      blockTag: 'pending', // Use pending to get the next nonce including any pending txs
-    })
+    // const nonce = await publicClient.getTransactionCount({
+    //   address: this.ownerAddresses[ownerIndex],
+    //   blockTag: 'pending', // Use pending to get the next nonce including any pending txs
+    // })
 
     return {
-      to: this.address,
+      to: address,
       data: executeCallData,
       value: transactionData.value.toString(16) as `0x${string}`,
       chainId: `0x${chainId.toString(16)}`,
@@ -196,20 +231,19 @@ export class SmartWallet {
       gasLimit: `0x${gasLimit.toString(16)}`,
       maxFeePerGas: `0x${(feeData.maxFeePerGas || BigInt(1000000000)).toString(16)}`, // fallback to 1 gwei
       maxPriorityFeePerGas: `0x${(feeData.maxPriorityFeePerGas || BigInt(100000000)).toString(16)}`, // fallback to 0.1 gwei
-      nonce: `0x${nonce.toString(16)}`, // Explicitly provide the correct nonce
+      // nonce: `0x${nonce.toString(16)}`, // Explicitly provide the correct nonce
     }
   }
 
   async estimateGas(
     transactionData: TransactionData,
     chainId: SupportedChainId,
-    ownerIndex: number = 0,
   ): Promise<bigint> {
     const executeCallData = this.execute(transactionData)
     const publicClient = this.chainManager.getPublicClient(chainId)
+    const address = await this.getAddress()
     return publicClient.estimateGas({
-      account: this.ownerAddresses[ownerIndex],
-      to: this.address,
+      to: address,
       data: executeCallData,
       value: BigInt(transactionData.value),
     })

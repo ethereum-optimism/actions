@@ -100,9 +100,10 @@ export class WalletController {
           404,
         )
       }
+      const walletAddress = await wallet.getAddress()
 
       return c.json({
-        address: wallet.address,
+        address: walletAddress,
         userId,
       } satisfies GetWalletResponse)
     } catch (error) {

@@ -32,9 +32,10 @@ export async function createWallet(): Promise<{
   const smartWallet = await verbs.wallet.smartWallet!.createWallet([
     getAddress(privyWallet.address),
   ])
+  const smartWalletAddress = await smartWallet.getAddress()
   return {
     privyAddress: privyWallet.address,
-    smartWalletAddress: smartWallet.address,
+    smartWalletAddress,
   }
 }
 
@@ -53,9 +54,13 @@ export async function getWallet(userId: string): Promise<{
   if (!privyWallet) {
     throw new Error('Wallet not found')
   }
-  const wallet = await verbs.wallet.smartWallet.getWallet([
-    getAddress(privyWallet.address),
-  ])
+  const walletAddress = await verbs.wallet.smartWallet.getSmartWalletAddress({
+    owners: [getAddress(privyWallet.address)],
+  })
+  const wallet = await verbs.wallet.smartWallet.getWallet({
+    walletAddress,
+    owner: getAddress(privyWallet.address),
+  })
   return { privyWallet, wallet }
 }
 
@@ -73,11 +78,16 @@ export async function getAllWallets(
         if (!verbs.wallet.smartWallet) {
           throw new Error('Smart wallet not configured')
         }
+        const walletAddress =
+          await verbs.wallet.smartWallet.getSmartWalletAddress({
+            owners: [getAddress(wallet.address)],
+          })
         return {
           privyWallet: wallet,
-          wallet: await verbs.wallet.smartWallet.getWallet([
-            getAddress(wallet.address),
-          ]),
+          wallet: await verbs.wallet.smartWallet.getWallet({
+            walletAddress,
+            owner: getAddress(wallet.address),
+          }),
         }
       }),
     )
@@ -106,9 +116,10 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
     const vaultBalances = await Promise.all(
       vaults.map(async (vault) => {
         try {
+          const walletAddress = await wallet.getAddress()
           const vaultBalance = await verbs.lend.getVaultBalance(
             vault.address,
-            wallet.address,
+            walletAddress,
           )
 
           // Only include vaults with non-zero balances
@@ -165,11 +176,12 @@ export async function fundWallet(
   if (!wallet) {
     throw new Error('Wallet not found')
   }
+  const walletAddress = await wallet.getAddress()
 
   if (!isLocalSupersim) {
     throw new Error(`Wallet fund is coming soon. For now, manually send USDC or ETH to this wallet:
 
-${wallet.address}
+${walletAddress}
 
 Funding is only available in local development with supersim`)
   }
@@ -198,7 +210,7 @@ Funding is only available in local development with supersim`)
       address: env.FAUCET_ADDRESS as Address,
       abi: faucetAbi,
       functionName: 'dripETH',
-      args: [wallet.address, amount],
+      args: [walletAddress, amount],
     })
     privyDripHash = await writeContract(faucetAdminWalletClient, {
       account: faucetAdminWalletClient.account,
@@ -216,7 +228,7 @@ Funding is only available in local development with supersim`)
       address: env.FAUCET_ADDRESS as Address,
       abi: faucetAbi,
       functionName: 'dripERC20',
-      args: [wallet.address, amount, usdcAddress as Address],
+      args: [walletAddress, amount, usdcAddress as Address],
     })
   }
 
@@ -232,7 +244,7 @@ Funding is only available in local development with supersim`)
   return {
     success: true,
     tokenType,
-    to: wallet.address,
+    to: walletAddress,
     privyAddress: privyWallet.address,
     amount: formattedAmount,
   }

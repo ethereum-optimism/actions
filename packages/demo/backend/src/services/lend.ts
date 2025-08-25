@@ -51,7 +51,8 @@ export async function getVaultBalance(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return await verbs.lend.getVaultBalance(vaultAddress, wallet.address)
+  const walletAddress = await wallet.getAddress()
+  return await verbs.lend.getVaultBalance(vaultAddress, walletAddress)
 }
 
 export async function formatVaultResponse(
@@ -119,45 +120,21 @@ export async function executeLendTransaction(
     throw new Error('No transaction data available for execution')
   }
 
-  // const ethBalance = await publicClient.getBalance({
-  //   address: privyWallet.address,
-  // })
-
-  // const gasEstimate = await estimateGasCost(
-  //   publicClient,
-  //   wallet,
-  //   lendTransaction,
-  // )
-
-  // if (ethBalance < gasEstimate) {
-  //   throw new Error('Insufficient ETH for gas fees')
-  // }
-
   if (lendTransaction.transactionData.approval) {
-    // const approvalSignedTx = await signOnly(
-    //   walletId,
-    //   lendTransaction.transactionData.approval,
-    // )
     await wallet.send(
       lendTransaction.transactionData.approval,
       chainId,
       privyClient as any,
       walletId,
     )
-    // await publicClient.waitForTransactionReceipt({ hash: approvalHash })
   }
 
-  // const depositSignedTx = await signOnly(
-  //   walletId,
-  //   lendTransaction.transactionData.deposit,
-  // )
   const depositHash = await wallet.send(
     lendTransaction.transactionData.deposit,
     chainId,
     privyClient as any,
     walletId,
   )
-  // await publicClient.waitForTransactionReceipt({ hash: depositHash })
 
   return { ...lendTransaction, hash: depositHash }
 }
