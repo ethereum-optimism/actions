@@ -8,11 +8,25 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import { SmartWallet } from '@/wallet/SmartWallet.js'
 
+/**
+ * Smart Wallet Provider
+ * @description Factory for creating and managing Smart Wallet instances.
+ * Handles wallet address prediction, creation, and retrieval using ERC-4337 account abstraction.
+ */
 export class SmartWalletProvider {
+  /** Manages supported blockchain networks */
   private chainManager: ChainManager
+  /** URL for ERC-4337 bundler and paymaster services */
   private paymasterAndBundlerUrl: string
+  /** Provider for lending market operations */
   private lendProvider: LendProvider
 
+  /**
+   * Initialize the Smart Wallet Provider
+   * @param chainManager - Manages supported blockchain networks
+   * @param paymasterAndBundlerUrl - URL for ERC-4337 bundler and paymaster services
+   * @param lendProvider - Provider for lending market operations
+   */
   constructor(
     chainManager: ChainManager,
     paymasterAndBundlerUrl: string,
@@ -23,11 +37,21 @@ export class SmartWalletProvider {
     this.lendProvider = lendProvider
   }
 
-  async createWallet(
-    owners: Array<Address | WebAuthnAccount>,
-    signer: LocalAccount,
-    nonce?: bigint,
-  ): Promise<SmartWallet> {
+  /**
+   * Create a new smart wallet instance
+   * @description Creates a new smart wallet that will be deployed on first transaction.
+   * The wallet address is deterministically calculated from owners and nonce.
+   * @param owners - Array of wallet owners (addresses or WebAuthn public keys)
+   * @param signer - Local account used for signing transactions
+   * @param nonce - Optional nonce for address generation (defaults to 0)
+   * @returns Promise resolving to a new SmartWallet instance
+   */
+  async createWallet(params: {
+    owners: Array<Address | WebAuthnAccount>
+    signer: LocalAccount
+    nonce?: bigint
+  }): Promise<SmartWallet> {
+    const { owners, signer, nonce } = params
     return new SmartWallet(
       owners,
       signer,
@@ -40,7 +64,15 @@ export class SmartWalletProvider {
     )
   }
 
-  async getSmartWalletAddress(params: {
+  /**
+   * Get the predicted smart wallet address
+   * @description Calculates the deterministic address where a smart wallet would be deployed
+   * given the specified owners and nonce. Uses CREATE2 for address prediction.
+   * @param params.owners - Array of wallet owners (addresses or WebAuthn public keys)
+   * @param params.nonce - Nonce for address generation (defaults to 0)
+   * @returns Promise resolving to the predicted wallet address
+   */
+  async getAddress(params: {
     owners: Array<Address | WebAuthnAccount>
     nonce?: bigint
   }) {

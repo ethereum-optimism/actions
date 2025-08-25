@@ -11,7 +11,7 @@ import {
   createBundlerClient,
   toCoinbaseSmartAccount,
 } from 'viem/account-abstraction'
-import { baseSepolia, unichain } from 'viem/chains'
+import { unichain } from 'viem/chains'
 
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
@@ -34,23 +34,38 @@ import {
 } from '@/utils/assets.js'
 
 /**
- * Wallet implementation
- * @description Concrete implementation of the Wallet interface
+ * Smart Wallet Implementation
+ * @description ERC-4337 compatible smart wallet that uses Coinbase Smart Account (https://github.com/coinbase/smart-wallet/blob/main/src/CoinbaseSmartWallet.sol).
+ * Supports multi-owner wallets, gasless transactions via paymasters, and cross-chain operations.
  */
 export class SmartWallet {
+  /** Array of wallet owners (Ethereum addresses or WebAuthn public keys) */
   private owners: Array<Address | WebAuthnAccount>
+  /** Local account used for signing transactions and UserOperations */
   private signer: LocalAccount
+  /** Index of the signer in the owners array (defaults to 0 if not specified) */
   private ownerIndex?: number
+  /** Known deployment address of the wallet (if already deployed) */
   private deploymentAddress?: Address
+  /** Provider for lending market operations */
   private lendProvider: LendProvider
+  /** Manages supported blockchain networks and RPC clients */
   private chainManager: ChainManager
+  /** URL for ERC-4337 bundler and paymaster services */
   private bundlerUrl: string
+  /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
 
   /**
-   * Create a new wallet instance
-   * @param id - Unique wallet identifier
-   * @param verbs - Verbs instance to access configured providers and chain manager
+   * Create a Smart Wallet instance
+   * @param owners - Array of wallet owners (addresses or WebAuthn accounts)
+   * @param signer - Local account for signing transactions
+   * @param chainManager - Network management service
+   * @param lendProvider - Lending operations provider
+   * @param bundlerUrl - ERC-4337 bundler service URL
+   * @param deploymentAddress - Known wallet address (if already deployed)
+   * @param ownerIndex - Index of signer in owners array
+   * @param nonce - Nonce for address generation
    */
   constructor(
     owners: Array<Address | WebAuthnAccount>,
@@ -72,6 +87,12 @@ export class SmartWallet {
     this.nonce = nonce
   }
 
+  /**
+   * Get the smart wallet address
+   * @description Returns the deployment address if known, otherwise calculates the deterministic
+   * address using CREATE2 based on owners and nonce.
+   * @returns Promise resolving to the wallet address
+   */
   async getAddress() {
     if (this.deploymentAddress) return this.deploymentAddress
 
@@ -94,6 +115,12 @@ export class SmartWallet {
     return smartWalletAddress
   }
 
+  /**
+   * Create a Coinbase Smart Account instance
+   * @description Converts this wallet into a viem-compatible smart account for ERC-4337 operations.
+   * @param chainId - Target blockchain network ID
+   * @returns Coinbase Smart Account instance configured for the specified chain
+   */
   async getCoinbaseSmartAccount(
     chainId: SupportedChainId,
   ): ReturnType<typeof toCoinbaseSmartAccount> {
@@ -109,7 +136,8 @@ export class SmartWallet {
 
   /**
    * Get asset balances across all supported chains
-   * @returns Promise resolving to array of asset balances
+   * @description Fetches ETH and ERC20 token balances for this wallet across all supported networks.
+   * @returns Promise resolving to array of token balances with chain breakdown
    */
   async getBalance(): Promise<TokenBalance[]> {
     const address = await this.getAddress()
@@ -166,11 +194,13 @@ export class SmartWallet {
   }
 
   /**
-   * Send a signed transaction
-   * @description Sends a pre-signed transaction to the network
-   * @param signedTransaction - Signed transaction to send
-   * @param publicClient - Viem public client to send the transaction
-   * @returns Promise resolving to transaction hash
+   * Send a transaction via ERC-4337
+   * @description Executes a transaction using the smart wallet with automatic gas sponsorship.
+   * The transaction is sent as a UserOperation through the bundler service.
+   * @param transactionData - Transaction details (to, value, data)
+   * @param chainId - Target blockchain network ID
+   * @returns Promise resolving to UserOperation hash
+   * @throws Error if transaction fails or validation errors occur
    */
   async send(
     transactionData: TransactionData,
@@ -179,14 +209,14 @@ export class SmartWallet {
     try {
       const account = await this.getCoinbaseSmartAccount(chainId)
       const client = createPublicClient({
-        chain: baseSepolia,
+        chain: this.chainManager.getChain(chainId),
         transport: http(this.bundlerUrl),
       })
       const bundlerClient = createBundlerClient({
         account,
         client,
         transport: http(this.bundlerUrl),
-        chain: baseSepolia,
+        chain: this.chainManager.getChain(chainId),
       })
       const calls = [transactionData]
       const hash = await bundlerClient.sendUserOperation({

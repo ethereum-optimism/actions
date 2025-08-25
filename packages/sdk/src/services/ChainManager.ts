@@ -1,5 +1,5 @@
 import { chainById } from '@eth-optimism/viem/chains'
-import { createPublicClient, http, type PublicClient } from 'viem'
+import { type Chain, createPublicClient, http, type PublicClient } from 'viem'
 
 import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainConfig } from '@/types/chain.js'
@@ -34,6 +34,10 @@ export class ChainManager {
       throw new Error(`No chain config found for chain ID: ${chainId}`)
     }
     return chainConfig.rpcUrl
+  }
+
+  getChain(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): Chain {
+    return chainById[chainId]
   }
 
   /**

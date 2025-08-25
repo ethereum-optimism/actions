@@ -32,6 +32,14 @@ export class PrivyWallet {
     this.address = address
   }
 
+  /**
+   * Create a LocalAccount signer from this Privy wallet
+   * @description Converts the Privy wallet into a viem-compatible LocalAccount that can sign
+   * messages and transactions. The returned account uses Privy's signing infrastructure
+   * under the hood while providing a standard viem interface.
+   * @returns Promise resolving to a LocalAccount configured for signing operations
+   * @throws Error if wallet retrieval fails or signing operations are not supported
+   */
   async signer(): Promise<LocalAccount> {
     const privy = this.privyProvider.privy
     const walletId = this.walletId
