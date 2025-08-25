@@ -70,6 +70,7 @@ export class Wallet implements WalletInterface {
   }
 
   /**
+   * TODO: this should be refactored and bound to the lend provider directly
    * Lend assets to a lending market
    * @description Lends assets using the configured lending provider with human-readable amounts
    * @param amount - Human-readable amount to lend (e.g. 1.5)

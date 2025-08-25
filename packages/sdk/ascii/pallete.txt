@@ -1,0 +1,24 @@
+  Shades:      ░  ▒  ▓  █                ░▒▓█
+  Horiz 1/8:   ▁  ▂  ▃  ▄  ▅  ▆  ▇  █   ▁▂▃▄▅▆▇█
+  Vert 1/8:    ▏  ▎  ▍  ▌  ▋  ▊  ▉  █   ▏▎▍▌▋▊▉█
+  Halves:      ▀  ▄  ▌  ▐                 ▀▄▌▐
+
+  Quadrants:   ▘  ▝  ▖  ▗  ▚  ▞  ▙  ▛  ▜  ▟
+
+  Overline:    ‾  ▔
+  Underline:   _  ▁
+  Macron:      ¯
+
+  Horizontal: ─  ━  ┄  ┅  ┈  ┉  ▬  ▭
+	Vertical:   │  ┃  ┆  ┇  ┊  ┋  ▮
+	Corners:    ┌  ┐  └  ┘  ├  ┤  ┬  ┴  ┼
+  Rounded:    ╭  ╮  ╰  ╯
+	Double:     ╔  ╗  ╚  ╝  ╠  ╣  ╦  ╩  ╬
+
+  Horizontal:
+  Vertical:    ┃
+
+  Geometric shapes:
+  Squares:     ■  □  ▪  ▫  ◼  ◻
+  Triangles:   ▲  ▼  ◀  ▶  △  ▽  ◁  ▷
+  Circles:     ●  ○  ◉  ◌  ◍  ◎  ⬤
