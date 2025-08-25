@@ -3,7 +3,6 @@ import type {
   LendVaultInfo,
   SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
-import type { PrivyClient } from '@privy-io/server-auth'
 import type { Address } from 'viem'
 
 import { getVerbs } from '../config/verbs.js'
@@ -108,7 +107,6 @@ export async function executeLendTransaction(
   walletId: string,
   lendTransaction: LendTransaction,
   chainId: SupportedChainId,
-  privyClient: PrivyClient,
 ): Promise<LendTransaction> {
   const { wallet } = await getWallet(walletId)
 
@@ -121,19 +119,12 @@ export async function executeLendTransaction(
   }
 
   if (lendTransaction.transactionData.approval) {
-    await wallet.send(
-      lendTransaction.transactionData.approval,
-      chainId,
-      privyClient as any,
-      walletId,
-    )
+    await wallet.send(lendTransaction.transactionData.approval, chainId)
   }
 
   const depositHash = await wallet.send(
     lendTransaction.transactionData.deposit,
     chainId,
-    privyClient as any,
-    walletId,
   )
 
   return { ...lendTransaction, hash: depositHash }

@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import type { Address, LocalAccount } from 'viem'
 import { pad } from 'viem'
 import { type WebAuthnAccount } from 'viem/account-abstraction'
 
@@ -25,10 +25,12 @@ export class SmartWalletProvider {
 
   async createWallet(
     owners: Array<Address | WebAuthnAccount>,
+    signer: LocalAccount,
     nonce?: bigint,
   ): Promise<SmartWallet> {
     return new SmartWallet(
       owners,
+      signer,
       this.chainManager,
       this.lendProvider,
       this.paymasterAndBundlerUrl,
@@ -64,13 +66,14 @@ export class SmartWalletProvider {
 
   async getWallet(params: {
     walletAddress: Address
-    owner: Address | WebAuthnAccount
+    signer: LocalAccount
     ownerIndex?: number
     nonce?: bigint
   }): Promise<SmartWallet> {
-    const { walletAddress, owner, ownerIndex, nonce } = params
+    const { walletAddress, signer, ownerIndex, nonce } = params
     return new SmartWallet(
-      [owner],
+      [signer.address],
+      signer,
       this.chainManager,
       this.lendProvider,
       this.paymasterAndBundlerUrl,

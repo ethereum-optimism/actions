@@ -1,4 +1,3 @@
-import type { PrivyClient } from '@privy-io/server-auth'
 import type { Address, Hash, LocalAccount } from 'viem'
 import {
   createPublicClient,
@@ -12,7 +11,6 @@ import {
   createBundlerClient,
   toCoinbaseSmartAccount,
 } from 'viem/account-abstraction'
-import { toAccount } from 'viem/accounts'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
@@ -40,9 +38,10 @@ import {
  * @description Concrete implementation of the Wallet interface
  */
 export class SmartWallet {
-  public owners: Array<Address | WebAuthnAccount>
-  public ownerIndex?: number
-  public deploymentAddress?: Address
+  private owners: Array<Address | WebAuthnAccount>
+  private signer: LocalAccount
+  private ownerIndex?: number
+  private deploymentAddress?: Address
   private lendProvider: LendProvider
   private chainManager: ChainManager
   private bundlerUrl: string
@@ -55,6 +54,7 @@ export class SmartWallet {
    */
   constructor(
     owners: Array<Address | WebAuthnAccount>,
+    signer: LocalAccount,
     chainManager: ChainManager,
     lendProvider: LendProvider,
     bundlerUrl: string,
@@ -63,6 +63,7 @@ export class SmartWallet {
     nonce?: bigint,
   ) {
     this.owners = owners
+    this.signer = signer
     this.ownerIndex = ownerIndex
     this.deploymentAddress = deploymentAddress
     this.chainManager = chainManager
@@ -95,13 +96,12 @@ export class SmartWallet {
 
   async getCoinbaseSmartAccount(
     chainId: SupportedChainId,
-    privyAccount: LocalAccount,
-  ): Promise<ReturnType<typeof toCoinbaseSmartAccount>> {
+  ): ReturnType<typeof toCoinbaseSmartAccount> {
     return toCoinbaseSmartAccount({
       address: this.deploymentAddress,
       ownerIndex: this.ownerIndex,
       client: this.chainManager.getPublicClient(chainId),
-      owners: [privyAccount],
+      owners: [this.signer],
       nonce: this.nonce,
       version: '1.1',
     })
@@ -175,40 +175,9 @@ export class SmartWallet {
   async send(
     transactionData: TransactionData,
     chainId: SupportedChainId,
-    privyClient: PrivyClient,
-    privyWalletId: string,
   ): Promise<Hash> {
     try {
-      const privyWallet = await privyClient.walletApi.getWallet({
-        id: privyWalletId,
-      })
-      const signerAddress = privyWallet.address
-      const privyAccount = toAccount({
-        address: signerAddress as Address,
-        async signMessage({ message }) {
-          const signed = await privyClient.walletApi.ethereum.signMessage({
-            walletId: privyWalletId,
-            message: message.toString(),
-          })
-          return signed.signature as Hash
-        },
-        async sign(parameters) {
-          const signed = await privyClient.walletApi.ethereum.secp256k1Sign({
-            walletId: privyWalletId,
-            hash: parameters.hash,
-          })
-          return signed.signature as Hash
-        },
-        async signTransaction() {
-          // Implement if needed
-          throw new Error('Not implemented')
-        },
-        async signTypedData() {
-          // Implement if needed
-          throw new Error('Not implemented')
-        },
-      })
-      const account = await this.getCoinbaseSmartAccount(chainId, privyAccount)
+      const account = await this.getCoinbaseSmartAccount(chainId)
       const client = createPublicClient({
         chain: baseSepolia,
         transport: http(this.bundlerUrl),
@@ -220,32 +189,26 @@ export class SmartWallet {
         chain: baseSepolia,
       })
       // Pads the preVerificationGas (or any other gas limits you might want) to ensure your UserOperation lands onchain
-      account.userOperation = {
-        estimateGas: async (userOperation) => {
-          try {
-            const estimate = await bundlerClient.estimateUserOperationGas(
-              userOperation as any,
-            )
-            console.log('estimate succeeded', estimate)
-            // adjust preVerification upward
-            estimate.preVerificationGas = estimate.preVerificationGas * 2n
-            // return estimate;
-            return {
-              ...estimate,
-              preVerificationGas: estimate.preVerificationGas * 2n,
-              verificationGasLimit: estimate.verificationGasLimit * 2n, // Most important for AA23
-              callGasLimit: estimate.callGasLimit * 2n,
-            }
-          } catch (error) {
-            console.error('Failed to estimate gas:', error)
-            return {
-              preVerificationGas: 200000n,
-              verificationGasLimit: 800000n, // High limit for complex validation
-              callGasLimit: 200000n,
-            }
-          }
-        },
-      }
+      // account.userOperation = {
+      //   estimateGas: async (userOperation) => {
+      //     try {
+      //       const estimate = await bundlerClient.estimateUserOperationGas(
+      //         userOperation,
+      //       )
+      //       // adjust preVerification upward
+      //       estimate.preVerificationGas = estimate.preVerificationGas * 2n
+      //       return {
+      //         ...estimate,
+      //         preVerificationGas: estimate.preVerificationGas * 2n,
+      //         verificationGasLimit: estimate.verificationGasLimit * 2n,
+      //         callGasLimit: estimate.callGasLimit * 2n,
+      //       }
+      //     } catch (error) {
+      //       console.error('Failed to estimate gas:', error)
+      //       throw error
+      //     }
+      //   },
+      // }
       const calls = [transactionData]
       const hash = await bundlerClient.sendUserOperation({
         account,

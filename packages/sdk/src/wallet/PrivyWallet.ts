@@ -1,4 +1,5 @@
-import type { Address, Hex, Quantity } from 'viem'
+import type { Address, Hash, Hex, LocalAccount, Quantity } from 'viem'
+import { toAccount } from 'viem/accounts'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 
@@ -29,6 +30,41 @@ export class PrivyWallet {
     this.chainManager = chainManager
     this.walletId = walletId
     this.address = address
+  }
+
+  async signer(): Promise<LocalAccount> {
+    const privy = this.privyProvider.privy
+    const walletId = this.walletId
+    const privyWallet = await privy.walletApi.getWallet({
+      id: walletId,
+    })
+    const signerAddress = privyWallet.address
+
+    return toAccount({
+      address: signerAddress as Address,
+      async signMessage({ message }) {
+        const signed = await privy.walletApi.ethereum.signMessage({
+          walletId,
+          message: message.toString(),
+        })
+        return signed.signature as Hash
+      },
+      async sign(parameters) {
+        const signed = await privy.walletApi.ethereum.secp256k1Sign({
+          walletId,
+          hash: parameters.hash,
+        })
+        return signed.signature as Hash
+      },
+      async signTransaction() {
+        // Implement if needed
+        throw new Error('Not implemented')
+      },
+      async signTypedData() {
+        // Implement if needed
+        throw new Error('Not implemented')
+      },
+    })
   }
 
   /**

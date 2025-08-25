@@ -29,9 +29,11 @@ export async function createWallet(): Promise<{
 }> {
   const verbs = getVerbs()
   const privyWallet = await verbs.wallet.privy!.createWallet()
-  const smartWallet = await verbs.wallet.smartWallet!.createWallet([
-    getAddress(privyWallet.address),
-  ])
+  const signer = await privyWallet.signer()
+  const smartWallet = await verbs.wallet.smartWallet!.createWallet(
+    [getAddress(privyWallet.address)],
+    signer,
+  )
   const smartWalletAddress = await smartWallet.getAddress()
   return {
     privyAddress: privyWallet.address,
@@ -54,12 +56,13 @@ export async function getWallet(userId: string): Promise<{
   if (!privyWallet) {
     throw new Error('Wallet not found')
   }
+  const signer = await privyWallet.signer()
   const walletAddress = await verbs.wallet.smartWallet.getSmartWalletAddress({
     owners: [getAddress(privyWallet.address)],
   })
   const wallet = await verbs.wallet.smartWallet.getWallet({
     walletAddress,
-    owner: getAddress(privyWallet.address),
+    signer,
   })
   return { privyWallet, wallet }
 }
@@ -74,19 +77,20 @@ export async function getAllWallets(
     }
     const privyWallets = await verbs.wallet.privy.getAllWallets(options)
     return Promise.all(
-      privyWallets.map(async (wallet) => {
+      privyWallets.map(async (privyWallet) => {
         if (!verbs.wallet.smartWallet) {
           throw new Error('Smart wallet not configured')
         }
         const walletAddress =
           await verbs.wallet.smartWallet.getSmartWalletAddress({
-            owners: [getAddress(wallet.address)],
+            owners: [getAddress(privyWallet.address)],
           })
+        const signer = await privyWallet.signer()
         return {
-          privyWallet: wallet,
+          privyWallet,
           wallet: await verbs.wallet.smartWallet.getWallet({
             walletAddress,
-            owner: getAddress(wallet.address),
+            signer,
           }),
         }
       }),
