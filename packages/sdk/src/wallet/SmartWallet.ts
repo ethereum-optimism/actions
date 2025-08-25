@@ -1,5 +1,5 @@
 import type { PrivyClient } from '@privy-io/server-auth'
-import type { Address, Hash, Hex, LocalAccount, Quantity } from 'viem'
+import type { Address, Hash, LocalAccount } from 'viem'
 import {
   createPublicClient,
   encodeFunctionData,
@@ -15,7 +15,6 @@ import {
 import { toAccount } from 'viem/accounts'
 import { baseSepolia, unichain } from 'viem/chains'
 
-import { smartWalletAbi } from '@/abis/smartWallet.js'
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -166,89 +165,6 @@ export class SmartWallet {
     return result
   }
 
-  execute(transactionData: TransactionData): Hash {
-    return encodeFunctionData({
-      abi: smartWalletAbi,
-      functionName: 'execute',
-      args: [transactionData.to, transactionData.value, transactionData.data],
-    })
-  }
-
-  async getTxParams(
-    transactionData: TransactionData,
-    chainId: SupportedChainId,
-  ): Promise<{
-    /** The address the transaction is sent from. Must be hexadecimal formatted. */
-    from?: Hex
-    /** Destination address of the transaction. */
-    to?: Hex
-    /** The nonce to be used for the transaction (hexadecimal or number). */
-    nonce?: Quantity
-    /** (optional) The chain ID of network your transaction will  be sent on. */
-    chainId?: Quantity
-    /** (optional) Data to send to the receiving address, especially when calling smart contracts. Must be hexadecimal formatted. */
-    data?: Hex
-    /** (optional) The value (in wei) be sent with the transaction (hexadecimal or number). */
-    value?: Quantity
-    /** (optional) The EIP-2718 transction type (e.g. `2` for EIP-1559 transactions). */
-    type?: 0 | 1 | 2
-    /** (optional) The max units of gas that can be used by this transaction (hexadecimal or number). */
-    gasLimit?: Quantity
-    /** (optional) The price (in wei) per unit of gas for this transaction (hexadecimal or number), for use in non EIP-1559 transactions (type 0 or 1). */
-    gasPrice?: Quantity
-    /** (optional) The maxFeePerGas (hexadecimal or number) to be used in this transaction, for use in EIP-1559 (type 2) transactions. */
-    maxFeePerGas?: Quantity
-    /** (optional) The maxPriorityFeePerGas (hexadecimal or number) to be used in this transaction, for use in EIP-1559 (type 2) transactions. */
-    maxPriorityFeePerGas?: Quantity
-  }> {
-    const executeCallData = this.execute(transactionData)
-
-    const publicClient = this.chainManager.getPublicClient(chainId)
-    const address = await this.getAddress()
-
-    // Estimate gas limit
-    const gasLimit = await publicClient.estimateGas({
-      to: address,
-      data: executeCallData,
-      value: BigInt(transactionData.value),
-    })
-
-    // Get current gas price and fee data
-    const feeData = await publicClient.estimateFeesPerGas()
-
-    // Get current nonce for the wallet - manual management since Privy isn't handling it properly
-    // const nonce = await publicClient.getTransactionCount({
-    //   address: this.ownerAddresses[ownerIndex],
-    //   blockTag: 'pending', // Use pending to get the next nonce including any pending txs
-    // })
-
-    return {
-      to: address,
-      data: executeCallData,
-      value: transactionData.value.toString(16) as `0x${string}`,
-      chainId: `0x${chainId.toString(16)}`,
-      type: 2, // EIP-1559
-      gasLimit: `0x${gasLimit.toString(16)}`,
-      maxFeePerGas: `0x${(feeData.maxFeePerGas || BigInt(1000000000)).toString(16)}`, // fallback to 1 gwei
-      maxPriorityFeePerGas: `0x${(feeData.maxPriorityFeePerGas || BigInt(100000000)).toString(16)}`, // fallback to 0.1 gwei
-      // nonce: `0x${nonce.toString(16)}`, // Explicitly provide the correct nonce
-    }
-  }
-
-  async estimateGas(
-    transactionData: TransactionData,
-    chainId: SupportedChainId,
-  ): Promise<bigint> {
-    const executeCallData = this.execute(transactionData)
-    const publicClient = this.chainManager.getPublicClient(chainId)
-    const address = await this.getAddress()
-    return publicClient.estimateGas({
-      to: address,
-      data: executeCallData,
-      value: BigInt(transactionData.value),
-    })
-  }
-
   /**
    * Send a signed transaction
    * @description Sends a pre-signed transaction to the network
@@ -267,7 +183,6 @@ export class SmartWallet {
         id: privyWalletId,
       })
       const signerAddress = privyWallet.address
-      console.log('Signer:', signerAddress)
       const privyAccount = toAccount({
         address: signerAddress as Address,
         async signMessage({ message }) {
@@ -332,64 +247,6 @@ export class SmartWallet {
         },
       }
       const calls = [transactionData]
-      // const userOperation = await bundlerClient.prepareUserOperation({
-      //   account,
-      //   calls,
-      //   paymaster: true,
-      // })
-      // const address = await account.getAddress()
-      // console.log('account address', address)
-      // console.log('this address', this.address)
-      // const userOpHash = getUserOperationHash({
-      //   chainId,
-      //   entryPointAddress: account.entryPoint.address,
-      //   entryPointVersion: account.entryPoint.version,
-      //   userOperation: {...userOperation, sender: address},
-      // })
-      // console.log("UserOperation being signed:", JSON.stringify(userOperation, null, 2))
-      // console.log("UserOp hash:", userOpHash)
-      // console.log("Signing initCode?", !!userOperation.initCode)
-      // console.log("initCode", userOperation.initCode)
-      // console.log("Signing callData?", !!userOperation.callData)
-      // console.log("Signing callData?", !!userOperation.callData)
-      // console.log('entry point version', account.entryPoint.version)
-      // console.log('entry point address', account.entryPoint.address)
-
-      // console.log("Expected owner:", "0x62F5E6630F48077a8C96CA6BD5Dc561aB163465C");
-      // console.log('owner addresses', this.ownerAddresses)
-      // const signedMessage = await privyClient.walletApi.ethereum.signMessage({ walletId: privyWalletId, message: userOpHash })
-      // const signedMessage = await privyClient.walletApi.ethereum.secp256k1Sign({ walletId: privyWalletId, hash: userOpHash })
-
-      // const recoveredAddress = await recoverAddress({
-      //   hash: userOpHash,
-      //   signature: signedMessage.signature as Hash // raw signature without wrapper
-      // });
-
-      // console.log("Recovered address:", recoveredAddress);
-      // console.log("Expected owner:", "0x62F5E6630F48077a8C96CA6BD5Dc561aB163465C");
-      // const signatureData = processSignature(signedMessage.signature as Hash)
-
-      // You need to wrap it in SignatureWrapper format
-      // const signature = encodeAbiParameters(
-      //   [{
-      //     type: 'tuple',
-      //     components: [
-      //       { name: 'ownerIndex', type: 'uint8' },
-      //       { name: 'signatureData', type: 'bytes' }
-      //     ]
-      //   }],
-      //   [{ ownerIndex: 0, signatureData: signedMessage.signature as Hash }]
-      // );
-      // const userOp = await bundlerClient.sendUserOperation({
-      //   account,
-      //   calls,
-      //   signature: signedMessage.signature as Hash,
-      //   paymaster: true
-      // });
-      // const hash = await bundlerClient.sendUserOperation({
-      //   ...userOperation,
-      //   // signature,
-      // })
       const hash = await bundlerClient.sendUserOperation({
         account,
         calls,
