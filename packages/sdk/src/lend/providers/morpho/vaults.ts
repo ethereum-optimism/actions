@@ -128,7 +128,15 @@ export async function getVaultInfo(
     const vault = await fetchAccrualVault(vaultAddress, publicClient)
 
     // 3. Fetch rewards data from API
-    const rewardsBreakdown = await fetchAndCalculateRewards(vaultAddress)
+    const rewardsBreakdown = await fetchAndCalculateRewards(vaultAddress).catch(
+      (error) => {
+        console.error('Failed to fetch rewards data:', error)
+        return {
+          other: 0,
+          totalRewardsApr: 0,
+        }
+      },
+    )
 
     // 4. Calculate APY breakdown
     const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
