@@ -188,27 +188,6 @@ export class SmartWallet {
         transport: http(this.bundlerUrl),
         chain: baseSepolia,
       })
-      // Pads the preVerificationGas (or any other gas limits you might want) to ensure your UserOperation lands onchain
-      // account.userOperation = {
-      //   estimateGas: async (userOperation) => {
-      //     try {
-      //       const estimate = await bundlerClient.estimateUserOperationGas(
-      //         userOperation,
-      //       )
-      //       // adjust preVerification upward
-      //       estimate.preVerificationGas = estimate.preVerificationGas * 2n
-      //       return {
-      //         ...estimate,
-      //         preVerificationGas: estimate.preVerificationGas * 2n,
-      //         verificationGasLimit: estimate.verificationGasLimit * 2n,
-      //         callGasLimit: estimate.callGasLimit * 2n,
-      //       }
-      //     } catch (error) {
-      //       console.error('Failed to estimate gas:', error)
-      //       throw error
-      //     }
-      //   },
-      // }
       const calls = [transactionData]
       const hash = await bundlerClient.sendUserOperation({
         account,
