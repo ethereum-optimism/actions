@@ -64,13 +64,21 @@ export class SmartWalletProvider {
     return smartWalletAddress
   }
 
-  async getWallet(params: {
+  /**
+   * Get an existing smart wallet instance
+   * @description Creates a SmartWallet instance for an already deployed wallet.
+   * Use this when you know the wallet address and want to interact with it.
+   * @param params.walletAddress - Address of the deployed smart wallet
+   * @param params.signer - Local account used for signing transactions
+   * @param params.ownerIndex - Index of the signer in the wallet's owner list (defaults to 0)
+   * @returns SmartWallet instance
+   */
+  getWallet(params: {
     walletAddress: Address
     signer: LocalAccount
     ownerIndex?: number
-    nonce?: bigint
-  }): Promise<SmartWallet> {
-    const { walletAddress, signer, ownerIndex, nonce } = params
+  }): SmartWallet {
+    const { walletAddress, signer, ownerIndex } = params
     return new SmartWallet(
       [signer.address],
       signer,
@@ -79,7 +87,6 @@ export class SmartWalletProvider {
       this.paymasterAndBundlerUrl,
       walletAddress,
       ownerIndex,
-      nonce,
     )
   }
 }

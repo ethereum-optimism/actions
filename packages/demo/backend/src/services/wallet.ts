@@ -60,7 +60,7 @@ export async function getWallet(userId: string): Promise<{
   const walletAddress = await verbs.wallet.smartWallet.getSmartWalletAddress({
     owners: [getAddress(privyWallet.address)],
   })
-  const wallet = await verbs.wallet.smartWallet.getWallet({
+  const wallet = verbs.wallet.smartWallet.getWallet({
     walletAddress,
     signer,
   })
@@ -88,7 +88,7 @@ export async function getAllWallets(
         const signer = await privyWallet.signer()
         return {
           privyWallet,
-          wallet: await verbs.wallet.smartWallet.getWallet({
+          wallet: verbs.wallet.smartWallet.getWallet({
             walletAddress,
             signer,
           }),
