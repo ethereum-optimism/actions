@@ -69,17 +69,17 @@ export class Verbs {
  */
 export function initVerbs(config: VerbsConfig) {
   const verbs = new Verbs(config)
-  if (config.wallet) {
+  if (config.privyConfig) {
     verbs.wallet.withPrivy(
-      config.wallet.appId,
-      config.wallet.appSecret,
+      config.privyConfig.appId,
+      config.privyConfig.appSecret,
       verbs.chainManager,
     )
   }
-  if (config.bundlerUrl) {
+  if (config.smartWalletConfig) {
     verbs.wallet.withSmartWallet(
       verbs.chainManager,
-      config.bundlerUrl,
+      config.smartWalletConfig.bundlerUrl,
       verbs.lend,
     )
   }

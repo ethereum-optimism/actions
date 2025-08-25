@@ -174,7 +174,7 @@ export async function fundWallet(
   amount: string
 }> {
   // TODO: do this a better way
-  const isLocalSupersim = env.RPC_URL === 'http://127.0.0.1:9545'
+  const isLocalSupersim = env.LOCAL_DEV
 
   const { wallet, privyWallet } = await getWallet(userId)
   if (!wallet) {
@@ -192,13 +192,13 @@ Funding is only available in local development with supersim`)
 
   const faucetAdminWalletClient = createWalletClient({
     chain: unichain,
-    transport: http(env.RPC_URL),
+    transport: http(env.UNICHAIN_RPC_URL),
     account: privateKeyToAccount(env.FAUCET_ADMIN_PRIVATE_KEY as Hex),
   })
 
   const publicClient = createPublicClient({
     chain: unichain,
-    transport: http(env.RPC_URL),
+    transport: http(env.UNICHAIN_RPC_URL),
   })
 
   let dripHash: `0x${string}`

@@ -16,7 +16,7 @@ describe('Verbs SDK - System Tests', () => {
             type: 'morpho',
             defaultSlippage: 50,
           },
-          wallet: {
+          privyConfig: {
             type: 'privy',
             appId: 'test-app-id',
             appSecret: 'test-app-secret',
@@ -76,7 +76,7 @@ describe('Verbs SDK - System Tests', () => {
             type: 'morpho',
             defaultSlippage: 50,
           },
-          wallet: {
+          privyConfig: {
             type: 'privy',
             appId: 'test-app-id',
             appSecret: 'test-app-secret',
@@ -107,7 +107,7 @@ describe('Verbs SDK - System Tests', () => {
             type: 'morpho',
             defaultSlippage: 50,
           },
-          wallet: {
+          privyConfig: {
             type: 'privy',
             appId: 'test-app-id',
             appSecret: 'test-app-secret',
@@ -128,7 +128,7 @@ describe('Verbs SDK - System Tests', () => {
           type: 'morpho',
           defaultSlippage: 50,
         },
-        wallet: {
+        privyConfig: {
           type: 'privy',
           appId: 'test-app-id',
           appSecret: 'test-app-secret',
@@ -147,7 +147,7 @@ describe('Verbs SDK - System Tests', () => {
           type: 'morpho',
           defaultSlippage: 50,
         },
-        wallet: {
+        privyConfig: {
           type: 'privy',
           appId: 'test-app-id',
           appSecret: 'test-app-secret',

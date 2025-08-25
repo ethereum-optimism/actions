@@ -11,7 +11,7 @@ let verbsInstance: Verbs
 
 export function createVerbsConfig(): VerbsConfig {
   return {
-    wallet: {
+    privyConfig: {
       type: 'privy',
       appId: env.PRIVY_APP_ID,
       appSecret: env.PRIVY_APP_SECRET,
@@ -22,15 +22,16 @@ export function createVerbsConfig(): VerbsConfig {
     chains: [
       {
         chainId: unichain.id,
-        rpcUrl: unichain.rpcUrls.default.http[0],
-        // rpcUrl: env.RPC_URL,
+        rpcUrl: env.UNICHAIN_RPC_URL || unichain.rpcUrls.default.http[0],
       },
       {
         chainId: baseSepolia.id,
-        rpcUrl: env.RPC_URL,
+        rpcUrl: env.BASE_SEPOLIA_RPC_URL || baseSepolia.rpcUrls.default.http[0],
       },
     ],
-    bundlerUrl: env.BUNDLER_URL,
+    smartWalletConfig: {
+      bundlerUrl: env.BUNDLER_URL,
+    },
   }
 }
 

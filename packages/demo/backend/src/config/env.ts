@@ -45,7 +45,8 @@ export const env = cleanEnv(process.env, {
   PRIVY_APP_ID: str({ devDefault: 'dummy' }),
   PRIVY_APP_SECRET: str({ devDefault: 'dummy' }),
   LOCAL_DEV: bool({ default: false }),
-  RPC_URL: str({ default: 'http://127.0.0.1:9545' }),
+  BASE_SEPOLIA_RPC_URL: str({ default: undefined }),
+  UNICHAIN_RPC_URL: str({ default: undefined }),
   FAUCET_ADMIN_PRIVATE_KEY: str({
     default:
       '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
