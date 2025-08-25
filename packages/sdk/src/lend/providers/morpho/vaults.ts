@@ -16,15 +16,26 @@ export interface VaultConfig {
 }
 
 /**
- * Supported vaults on Unichain for Morpho lending
+ * Supported vaults for Morpho lending
  */
 export const SUPPORTED_VAULTS: VaultConfig[] = [
   {
-    // Gauntlet USDC vault - primary supported vault
+    // Gauntlet USDC vault on Unichain
     address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
-    name: 'Gauntlet USDC',
+    name: 'Gauntlet USDC (Unichain)',
     asset: {
       address: getTokenAddress('USDC', 130)!, // USDC on Unichain
+      symbol: SUPPORTED_TOKENS.USDC.symbol,
+      decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
+      name: SUPPORTED_TOKENS.USDC.name,
+    },
+  },
+  {
+    // USDC vault on Base Sepolia
+    address: '0x99067e5D73b1d6F1b5856E59209e12F5a0f86DED' as Address,
+    name: 'USDC Vault (Base Sepolia)',
+    asset: {
+      address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as Address, // USDC on Base Sepolia
       symbol: SUPPORTED_TOKENS.USDC.symbol,
       decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
       name: SUPPORTED_TOKENS.USDC.name,

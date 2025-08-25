@@ -112,7 +112,7 @@ export async function executeLendTransaction(
     throw new Error('No transaction data available for execution')
   }
 
-  const publicClient = verbs.chainManager.getPublicClient(130)
+  const publicClient = verbs.chainManager.getPublicClient(84532) // Base Sepolia
   const ethBalance = await publicClient.getBalance({ address: wallet.address })
 
   const gasEstimate = await estimateGasCost(

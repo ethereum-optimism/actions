@@ -103,12 +103,12 @@ export class WalletProviderPrivy implements WalletProvider {
     try {
       const response = await this.privy.walletApi.ethereum.sendTransaction({
         walletId,
-        caip2: 'eip155:130', // Unichain
+        caip2: 'eip155:84532', // Base Sepolia
         transaction: {
           to: transactionData.to,
           data: transactionData.data as `0x${string}`,
           value: Number(transactionData.value),
-          chainId: 130, // Unichain
+          chainId: 84532, // Base Sepolia
         },
       })
 
@@ -142,7 +142,7 @@ export class WalletProviderPrivy implements WalletProvider {
       }
 
       // Get public client for gas estimation
-      const publicClient = this.verbs.chainManager.getPublicClient(130) // Unichain
+      const publicClient = this.verbs.chainManager.getPublicClient(84532) // Base Sepolia
 
       // Estimate gas limit
       const gasLimit = await publicClient.estimateGas({

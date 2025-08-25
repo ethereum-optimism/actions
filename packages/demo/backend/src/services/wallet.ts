@@ -4,7 +4,7 @@ import type {
   TransactionData,
   WalletInterface,
 } from '@eth-optimism/verbs-sdk'
-import { unichain } from '@eth-optimism/viem/chains'
+import { baseSepolia, unichain } from '@eth-optimism/viem/chains'
 import type { Address, Hex } from 'viem'
 import {
   createPublicClient,
@@ -82,7 +82,7 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
               totalFormattedBalance: formattedBalance,
               chainBalances: [
                 {
-                  chainId: 130 as const, // Unichain
+                  chainId: 84532 as const, // Base Sepolia
                   balance: vaultBalance.balance,
                   formattedBalance: formattedBalance,
                 },

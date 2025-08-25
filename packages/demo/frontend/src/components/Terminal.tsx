@@ -754,7 +754,7 @@ How much would you like to lend?`
 
 Vault:  ${promptData.selectedVault.name}
 Amount: ${amount} USDC
-Tx:     https://uniscan.xyz/tx/${result.transaction.hash || 'pending'}`,
+Tx:     https://base-sepolia.blockscout.com/tx/${result.transaction.hash || 'pending'}`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), successLine])

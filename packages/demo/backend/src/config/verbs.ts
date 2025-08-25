@@ -3,7 +3,7 @@ import {
   type VerbsConfig,
   type VerbsInterface,
 } from '@eth-optimism/verbs-sdk'
-import { unichain } from 'viem/chains'
+import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
 
@@ -22,7 +22,11 @@ export function createVerbsConfig(): VerbsConfig {
     chains: [
       {
         chainId: unichain.id,
-        rpcUrl: env.RPC_URL,
+        rpcUrl: unichain.rpcUrls.default.http[0],
+      },
+      {
+        chainId: baseSepolia.id,
+        rpcUrl: baseSepolia.rpcUrls.default.http[0],
       },
     ],
   }

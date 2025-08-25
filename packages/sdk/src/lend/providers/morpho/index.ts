@@ -24,6 +24,11 @@ export const SUPPORTED_NETWORKS = {
     name: 'Unichain',
     morphoAddress: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as Address,
   },
+  BASE_SEPOLIA: {
+    chainId: 84532,
+    name: 'Base Sepolia',
+    morphoAddress: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as Address, // Using same address as Morpho typically uses same deployment address
+  },
 } as const
 
 /**
@@ -46,8 +51,8 @@ export class LendProviderMorpho extends LendProvider {
   constructor(config: MorphoLendConfig, publicClient: PublicClient) {
     super()
 
-    // Use Unichain as the default network for now
-    const network = SUPPORTED_NETWORKS.UNICHAIN
+    // Use Base Sepolia as the default network for testing
+    const network = SUPPORTED_NETWORKS.BASE_SEPOLIA
 
     this.morphoAddress = network.morphoAddress
     this.defaultSlippage = config.defaultSlippage || 50 // 0.5% default
