@@ -1,5 +1,11 @@
-import type { Address, Hash, Hex, PublicClient, Quantity } from 'viem'
-import { bytesToHex, createPublicClient, encodeAbiParameters, encodeFunctionData, encodePacked, erc20Abi, http, parseSignature, recoverAddress, size } from 'viem'
+import type { PrivyClient } from '@privy-io/server-auth'
+import type { Address, Hash, Hex, Quantity } from 'viem'
+import { createPublicClient, encodeFunctionData, erc20Abi, http } from 'viem'
+import {
+  createBundlerClient,
+  toCoinbaseSmartAccount,
+} from 'viem/account-abstraction'
+import { toAccount } from 'viem/accounts'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { smartWalletAbi } from '@/abis/smartWallet.js'
@@ -20,18 +26,6 @@ import {
   parseLendParams,
   resolveAsset,
 } from '@/utils/assets.js'
-import { createBundlerClient, getUserOperationHash, toCoinbaseSmartAccount } from 'viem/account-abstraction'
-import { PrivyClient } from '@privy-io/server-auth'
-import { toAccount } from 'viem/accounts'
-
-const processSignature = (signature: Hash) => {
-  if (size(signature) !== 65) return signature
-  const parsedSig = parseSignature(signature)
-  return encodePacked(
-    ['bytes32', 'bytes32', 'uint8'],
-    [parsedSig.r, parsedSig.s, parsedSig.yParity === 0 ? 27 : 28]
-  )
-}
 
 /**
  * Wallet implementation
@@ -63,7 +57,11 @@ export class SmartWallet {
     this.bundlerUrl = bundlerUrl
   }
 
-  async getCoinbaseSmartAccount(chainId: SupportedChainId, privyAccount: any, nonce?: bigint): Promise<ReturnType<typeof toCoinbaseSmartAccount>> {
+  async getCoinbaseSmartAccount(
+    chainId: SupportedChainId,
+    privyAccount: any,
+    nonce?: bigint,
+  ): Promise<ReturnType<typeof toCoinbaseSmartAccount>> {
     return toCoinbaseSmartAccount({
       client: createPublicClient({
         chain: baseSepolia,
@@ -231,22 +229,24 @@ export class SmartWallet {
     privyWalletId: string,
   ): Promise<Hash> {
     try {
-      const privyWallet = await privyClient.walletApi.getWallet({id: privyWalletId});
-      const signerAddress = privyWallet.address;
-      console.log("Signer:", signerAddress);
+      const privyWallet = await privyClient.walletApi.getWallet({
+        id: privyWalletId,
+      })
+      const signerAddress = privyWallet.address
+      console.log('Signer:', signerAddress)
       const privyAccount = toAccount({
         address: signerAddress as Address,
         async signMessage({ message }) {
-          const signed = await privyClient.walletApi.ethereum.signMessage({ 
-            walletId: privyWalletId, 
-            message: message.toString()
+          const signed = await privyClient.walletApi.ethereum.signMessage({
+            walletId: privyWalletId,
+            message: message.toString(),
           })
           return signed.signature as Hash
         },
         async sign(parameters) {
-          const signed = await privyClient.walletApi.ethereum.secp256k1Sign({ 
-            walletId: privyWalletId, 
-            hash: parameters.hash 
+          const signed = await privyClient.walletApi.ethereum.secp256k1Sign({
+            walletId: privyWalletId,
+            hash: parameters.hash,
           })
           return signed.signature as Hash
         },
@@ -255,9 +255,9 @@ export class SmartWallet {
           throw new Error('Not implemented')
         },
         async signTypedData() {
-          // Implement if needed  
+          // Implement if needed
           throw new Error('Not implemented')
-        }
+        },
       })
       const account = await this.getCoinbaseSmartAccount(chainId, privyAccount)
       const client = createPublicClient({
@@ -269,32 +269,34 @@ export class SmartWallet {
         client,
         transport: http(this.bundlerUrl),
         chain: baseSepolia,
-      });
+      })
       // Pads the preVerificationGas (or any other gas limits you might want) to ensure your UserOperation lands onchain
       account.userOperation = {
         estimateGas: async (userOperation) => {
           try {
-          const estimate = await bundlerClient.estimateUserOperationGas(userOperation as any);
-          console.log('estimate succeeded', estimate)
-          // adjust preVerification upward 
-          estimate.preVerificationGas = estimate.preVerificationGas * 2n;
-          // return estimate;
-          return {
-            ...estimate,
-            preVerificationGas: estimate.preVerificationGas * 2n,
-            verificationGasLimit: estimate.verificationGasLimit * 2n, // Most important for AA23
-            callGasLimit: estimate.callGasLimit * 2n,
-            };
+            const estimate = await bundlerClient.estimateUserOperationGas(
+              userOperation as any,
+            )
+            console.log('estimate succeeded', estimate)
+            // adjust preVerification upward
+            estimate.preVerificationGas = estimate.preVerificationGas * 2n
+            // return estimate;
+            return {
+              ...estimate,
+              preVerificationGas: estimate.preVerificationGas * 2n,
+              verificationGasLimit: estimate.verificationGasLimit * 2n, // Most important for AA23
+              callGasLimit: estimate.callGasLimit * 2n,
+            }
           } catch (error) {
             console.error('Failed to estimate gas:', error)
             return {
               preVerificationGas: 200000n,
               verificationGasLimit: 800000n, // High limit for complex validation
               callGasLimit: 200000n,
-            };
+            }
           }
         },
-      };
+      }
       const calls = [transactionData]
       // const userOperation = await bundlerClient.prepareUserOperation({
       //   account,
@@ -305,8 +307,8 @@ export class SmartWallet {
       // console.log('account address', address)
       // console.log('this address', this.address)
       // const userOpHash = getUserOperationHash({
-      //   chainId,                               
-      //   entryPointAddress: account.entryPoint.address,  
+      //   chainId,
+      //   entryPointAddress: account.entryPoint.address,
       //   entryPointVersion: account.entryPoint.version,
       //   userOperation: {...userOperation, sender: address},
       // })
@@ -328,15 +330,15 @@ export class SmartWallet {
       //   hash: userOpHash,
       //   signature: signedMessage.signature as Hash // raw signature without wrapper
       // });
-      
+
       // console.log("Recovered address:", recoveredAddress);
       // console.log("Expected owner:", "0x62F5E6630F48077a8C96CA6BD5Dc561aB163465C");
       // const signatureData = processSignature(signedMessage.signature as Hash)
 
       // You need to wrap it in SignatureWrapper format
       // const signature = encodeAbiParameters(
-      //   [{ 
-      //     type: 'tuple', 
+      //   [{
+      //     type: 'tuple',
       //     components: [
       //       { name: 'ownerIndex', type: 'uint8' },
       //       { name: 'signatureData', type: 'bytes' }
@@ -357,14 +359,16 @@ export class SmartWallet {
       const hash = await bundlerClient.sendUserOperation({
         account,
         calls,
-        paymaster: true
-      });
+        paymaster: true,
+      })
       const receipt = await bundlerClient.waitForUserOperationReceipt({
         hash,
-      });
-    
-      console.log("✅ Transaction successfully sponsored!");
-      console.log(`⛽ View sponsored UserOperation on blockscout: https://base-sepolia.blockscout.com/op/${receipt.userOpHash}`);
+      })
+
+      console.log('✅ Transaction successfully sponsored!')
+      console.log(
+        `⛽ View sponsored UserOperation on blockscout: https://base-sepolia.blockscout.com/op/${receipt.userOpHash}`,
+      )
       return hash
     } catch (error) {
       throw new Error(

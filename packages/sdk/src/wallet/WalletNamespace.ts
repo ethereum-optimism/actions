@@ -1,5 +1,3 @@
-import type { Hash } from 'viem'
-
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import { PrivyWalletProvider } from '@/wallet/providers/privy.js'
@@ -17,12 +15,12 @@ export class WalletNamespace {
 
   withSmartWallet(
     chainManager: ChainManager,
-    deployerPrivateKey: Hash,
+    bundlerUrl: string,
     lendProvider: LendProvider,
   ) {
     this.smartWallet = new SmartWalletProvider(
       chainManager,
-      deployerPrivateKey,
+      bundlerUrl,
       lendProvider,
     )
     return this

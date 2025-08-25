@@ -1,6 +1,9 @@
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import type { Address, PublicClient } from 'viem'
+import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
+import { baseSepolia } from 'viem/chains'
+
+import type { ChainManager } from '@/services/ChainManager.js'
 
 import type {
   LendOptions,
@@ -15,8 +18,6 @@ import {
   getVaults as getVaultsHelper,
   SUPPORTED_VAULTS,
 } from './vaults.js'
-import { baseSepolia } from 'viem/chains'
-import { ChainManager } from '@/services/ChainManager.js'
 
 /**
  * Supported networks for Morpho lending
@@ -211,11 +212,15 @@ export class LendProviderMorpho extends LendProvider {
     sharesFormatted: string
   }> {
     try {
-      const vaultConfig = SUPPORTED_VAULTS.find(v => v.address.toLowerCase() === vaultAddress.toLowerCase())
+      const vaultConfig = SUPPORTED_VAULTS.find(
+        (v) => v.address.toLowerCase() === vaultAddress.toLowerCase(),
+      )
       if (!vaultConfig) {
         throw new Error(`Vault ${vaultAddress} not found`)
       }
-      const publicClient = this.chainManager.getPublicClient(vaultConfig.chainId)
+      const publicClient = this.chainManager.getPublicClient(
+        vaultConfig.chainId,
+      )
       // Get user's vault token balance (shares in the vault)
       const shares = await publicClient.readContract({
         address: vaultAddress,

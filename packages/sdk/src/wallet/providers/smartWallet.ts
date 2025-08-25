@@ -1,20 +1,12 @@
-import { chainById } from '@eth-optimism/viem/chains'
-import type { Address, Hash } from 'viem'
-import {
-  createWalletClient,
-  encodeAbiParameters,
-  http,
-  parseEventLogs,
-} from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import type { Address } from 'viem'
+import { encodeAbiParameters } from 'viem'
+import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import { SmartWallet } from '@/wallet/SmartWallet.js'
-import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
-import { SupportedChainId } from '@/constants/supportedChains.js'
 
 export class SmartWalletProvider {
   private chainManager: ChainManager
@@ -33,14 +25,13 @@ export class SmartWalletProvider {
 
   async createWallet(
     ownerAddresses: Address[],
-    bundlerUrl: string,
     nonce?: bigint,
   ): Promise<SmartWallet> {
     // deploy the wallet on each chain in the chain manager
     const deployments = await Promise.all(
       this.chainManager.getSupportedChains().map(async (chainId) => {
         const publicClient = this.chainManager.getPublicClient(chainId)
-         const smartAccount = await toCoinbaseSmartAccount({
+        const smartAccount = await toCoinbaseSmartAccount({
           client: publicClient,
           owners: ownerAddresses,
           nonce,
@@ -48,8 +39,8 @@ export class SmartWalletProvider {
           // our own factory at some point we would need to work with them
           // to update this to allow for other factories
           version: '1.1',
-         })
-         return smartAccount
+        })
+        return smartAccount
       }),
     )
     return new SmartWallet(
@@ -57,13 +48,12 @@ export class SmartWalletProvider {
       ownerAddresses,
       this.chainManager,
       this.lendProvider,
-      bundlerUrl,
+      this.paymasterAndBundlerUrl,
     )
   }
 
   async getWallet(
     initialOwnerAddresses: Address[],
-    bundlerUrl: string,
     nonce?: bigint,
     currentOwnerAddresses?: Address[],
   ): Promise<SmartWallet> {
@@ -86,7 +76,7 @@ export class SmartWalletProvider {
       owners,
       this.chainManager,
       this.lendProvider,
-      bundlerUrl,
+      this.paymasterAndBundlerUrl,
     )
   }
 }

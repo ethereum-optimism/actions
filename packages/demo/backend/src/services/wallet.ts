@@ -29,8 +29,13 @@ export async function createWallet(): Promise<{
 }> {
   const verbs = getVerbs()
   const privyWallet = await verbs.wallet.privy!.createWallet()
-  const smartWallet = await verbs.wallet.smartWallet!.createWallet([getAddress(privyWallet.address)], env.BUNDLER_URL)
-  return { privyAddress: privyWallet.address, smartWalletAddress: smartWallet.address }
+  const smartWallet = await verbs.wallet.smartWallet!.createWallet([
+    getAddress(privyWallet.address),
+  ])
+  return {
+    privyAddress: privyWallet.address,
+    smartWalletAddress: smartWallet.address,
+  }
 }
 
 export async function getWallet(userId: string): Promise<{
@@ -48,18 +53,15 @@ export async function getWallet(userId: string): Promise<{
   if (!privyWallet) {
     throw new Error('Wallet not found')
   }
-  const wallet = await verbs.wallet.smartWallet.getWallet(
-    [getAddress(privyWallet.address)],
-    env.BUNDLER_URL,
-  )
+  const wallet = await verbs.wallet.smartWallet.getWallet([
+    getAddress(privyWallet.address),
+  ])
   return { privyWallet, wallet }
 }
 
 export async function getAllWallets(
   options?: GetAllWalletsOptions,
-): Promise<
-  Array<{ privyWallet: PrivyWallet; wallet: SmartWallet }>
-> {
+): Promise<Array<{ privyWallet: PrivyWallet; wallet: SmartWallet }>> {
   try {
     const verbs = getVerbs()
     if (!verbs.wallet.privy) {
@@ -71,7 +73,12 @@ export async function getAllWallets(
         if (!verbs.wallet.smartWallet) {
           throw new Error('Smart wallet not configured')
         }
-        return { privyWallet: wallet, wallet: await verbs.wallet.smartWallet.getWallet([getAddress(wallet.address)], env.BUNDLER_URL) }
+        return {
+          privyWallet: wallet,
+          wallet: await verbs.wallet.smartWallet.getWallet([
+            getAddress(wallet.address),
+          ]),
+        }
       }),
     )
   } catch {

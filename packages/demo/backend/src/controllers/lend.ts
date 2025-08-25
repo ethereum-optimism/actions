@@ -1,12 +1,13 @@
+import { PrivyClient } from '@privy-io/server-auth'
 import type { Context } from 'hono'
 import type { Address } from 'viem'
+import { baseSepolia } from 'viem/chains'
 import { z } from 'zod'
+
+import { env } from '@/config/env.js'
 
 import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
-import { PrivyClient } from '@privy-io/server-auth'
-import { env } from '@/config/env.js'
-import { baseSepolia } from 'viem/chains'
 
 const DepositRequestSchema = z.object({
   body: z.object({
@@ -120,8 +121,16 @@ export class LendController {
       const {
         body: { walletId, amount, token },
       } = validation.data
-      const privyClient = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
-      const lendTransaction = await lendService.deposit(walletId, amount, token, baseSepolia.id)
+      const privyClient = new PrivyClient(
+        env.PRIVY_APP_ID,
+        env.PRIVY_APP_SECRET,
+      )
+      const lendTransaction = await lendService.deposit(
+        walletId,
+        amount,
+        token,
+        baseSepolia.id,
+      )
       const result = await lendService.executeLendTransaction(
         walletId,
         lendTransaction,

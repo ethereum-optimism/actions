@@ -56,8 +56,8 @@ export interface VerbsConfig {
   lend?: LendConfig
   /** Chains to use for the SDK */
   chains?: ChainConfig[]
-  /** Private key for the wallet */
-  privateKey?: Hash
+  /** Bundler URL for the wallet */
+  bundlerUrl?: string
 }
 
 /**

@@ -1,6 +1,4 @@
-import type { PublicClient } from 'viem'
-import { createPublicClient, http } from 'viem'
-import { mainnet, unichain } from 'viem/chains'
+import { unichain } from 'viem/chains'
 
 import { LendProviderMorpho } from '@/lend/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
@@ -31,7 +29,10 @@ export class Verbs {
     // Create lending provider if configured
     if (config.lend) {
       if (config.lend.type === 'morpho') {
-        this.lendProvider = new LendProviderMorpho(config.lend, this.chainManager)
+        this.lendProvider = new LendProviderMorpho(
+          config.lend,
+          this.chainManager,
+        )
       } else {
         throw new Error(
           `Unsupported lending provider type: ${config.lend.type}`,
@@ -75,10 +76,10 @@ export function initVerbs(config: VerbsConfig) {
       verbs.chainManager,
     )
   }
-  if (config.privateKey) {
+  if (config.bundlerUrl) {
     verbs.wallet.withSmartWallet(
       verbs.chainManager,
-      config.privateKey,
+      config.bundlerUrl,
       verbs.lend,
     )
   }

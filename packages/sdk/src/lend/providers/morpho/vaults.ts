@@ -1,13 +1,14 @@
 import type { AccrualPosition, IToken } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
-import type { Address, PublicClient } from 'viem'
+import type { Address } from 'viem'
+import { baseSepolia } from 'viem/chains'
+
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 
 import { getTokenAddress, SUPPORTED_TOKENS } from '../../../supported/tokens.js'
 import type { ApyBreakdown, LendVaultInfo } from '../../../types/lend.js'
 import { fetchRewards, type RewardsBreakdown } from './api.js'
-import { baseSepolia, unichain } from 'viem/chains'
-import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { ChainManager } from '@/services/ChainManager.js'
 
 /**
  * Vault configuration type
@@ -45,7 +46,7 @@ export const SUPPORTED_VAULTS: VaultConfig[] = [
       decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
       name: SUPPORTED_TOKENS.USDC.name,
     },
-  }
+  },
 ]
 
 /**
@@ -143,7 +144,10 @@ export async function getVaultInfo(
     console.log('Vault config found', config)
 
     // 2. Fetch live vault data from Morpho SDK
-    const vault = await fetchAccrualVault(vaultAddress, chainManager.getPublicClient(config.chainId)).catch((error) => {
+    const vault = await fetchAccrualVault(
+      vaultAddress,
+      chainManager.getPublicClient(config.chainId),
+    ).catch((error) => {
       console.error('Failed to fetch vault info:', error)
       return {
         totalAssets: 0n,
@@ -154,13 +158,15 @@ export async function getVaultInfo(
     })
 
     // 3. Fetch rewards data from API
-    const rewardsBreakdown = await fetchAndCalculateRewards(vaultAddress).catch((error) => {
-      console.error('Failed to fetch rewards data:', error)
-      return {
-        other: 0,
-        totalRewardsApr: 0,
-      }
-    })
+    const rewardsBreakdown = await fetchAndCalculateRewards(vaultAddress).catch(
+      (error) => {
+        console.error('Failed to fetch rewards data:', error)
+        return {
+          other: 0,
+          totalRewardsApr: 0,
+        }
+      },
+    )
 
     // 4. Calculate APY breakdown
     const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
@@ -183,11 +189,11 @@ export async function getVaultInfo(
     }
   } catch (error) {
     console.error('Failed to get vault info:', error)
-      throw new Error(
-        `Failed to get vault info for ${vaultAddress}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      )
+    throw new Error(
+      `Failed to get vault info for ${vaultAddress}: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+    )
   }
 }
 

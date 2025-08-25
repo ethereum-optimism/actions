@@ -30,7 +30,7 @@ export function createVerbsConfig(): VerbsConfig {
         rpcUrl: env.RPC_URL,
       },
     ],
-    privateKey: env.PRIVATE_KEY as `0x${string}`,
+    bundlerUrl: env.BUNDLER_URL,
   }
 }
 
