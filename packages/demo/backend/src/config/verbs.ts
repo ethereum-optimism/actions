@@ -27,11 +27,10 @@ export function createVerbsConfig(): VerbsConfig {
       {
         chainId: baseSepolia.id,
         rpcUrl: env.BASE_SEPOLIA_RPC_URL || baseSepolia.rpcUrls.default.http[0],
+        bundlerUrl: env.BUNDLER_URL,
       },
     ],
-    smartWalletConfig: {
-      bundlerUrl: env.BUNDLER_URL,
-    },
+    enableSmartWallets: true,
   }
 }
 

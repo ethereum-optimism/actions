@@ -1,16 +1,7 @@
 import type { Address, Hash, LocalAccount } from 'viem'
-import {
-  createPublicClient,
-  encodeFunctionData,
-  erc20Abi,
-  http,
-  pad,
-} from 'viem'
+import { encodeFunctionData, erc20Abi, pad } from 'viem'
 import type { WebAuthnAccount } from 'viem/account-abstraction'
-import {
-  createBundlerClient,
-  toCoinbaseSmartAccount,
-} from 'viem/account-abstraction'
+import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 import { unichain } from 'viem/chains'
 
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
@@ -51,8 +42,6 @@ export class SmartWallet {
   private lendProvider: LendProvider
   /** Manages supported blockchain networks and RPC clients */
   private chainManager: ChainManager
-  /** URL for ERC-4337 bundler and paymaster services */
-  private bundlerUrl: string
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
 
@@ -72,7 +61,6 @@ export class SmartWallet {
     signer: LocalAccount,
     chainManager: ChainManager,
     lendProvider: LendProvider,
-    bundlerUrl: string,
     deploymentAddress?: Address,
     ownerIndex?: number,
     nonce?: bigint,
@@ -83,7 +71,6 @@ export class SmartWallet {
     this.deploymentAddress = deploymentAddress
     this.chainManager = chainManager
     this.lendProvider = lendProvider
-    this.bundlerUrl = bundlerUrl
     this.nonce = nonce
   }
 
@@ -208,16 +195,7 @@ export class SmartWallet {
   ): Promise<Hash> {
     try {
       const account = await this.getCoinbaseSmartAccount(chainId)
-      const client = createPublicClient({
-        chain: this.chainManager.getChain(chainId),
-        transport: http(this.bundlerUrl),
-      })
-      const bundlerClient = createBundlerClient({
-        account,
-        client,
-        transport: http(this.bundlerUrl),
-        chain: this.chainManager.getChain(chainId),
-      })
+      const bundlerClient = this.chainManager.getBundlerClient(chainId, account)
       const calls = [transactionData]
       const hash = await bundlerClient.sendUserOperation({
         account,

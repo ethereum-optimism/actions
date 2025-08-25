@@ -1,5 +1,7 @@
 import { chainById } from '@eth-optimism/viem/chains'
 import { type Chain, createPublicClient, http, type PublicClient } from 'viem'
+import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
+import { createBundlerClient } from 'viem/account-abstraction'
 
 import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainConfig } from '@/types/chain.js'
@@ -28,12 +30,42 @@ export class ChainManager {
     return client
   }
 
+  getBundlerClient(
+    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
+    account: SmartAccount,
+  ): BundlerClient {
+    const bundlerUrl = this.getBundlerUrl(chainId)
+    if (!bundlerUrl) {
+      throw new Error(`No bundler URL configured for chain ID: ${chainId}`)
+    }
+    const client = createPublicClient({
+      chain: this.getChain(chainId),
+      transport: http(bundlerUrl),
+    })
+    return createBundlerClient({
+      account,
+      client,
+      transport: http(bundlerUrl),
+      chain: this.getChain(chainId),
+    })
+  }
+
   getRpcUrl(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): string {
     const chainConfig = this.chainConfigs.find((c) => c.chainId === chainId)
     if (!chainConfig) {
       throw new Error(`No chain config found for chain ID: ${chainId}`)
     }
     return chainConfig.rpcUrl
+  }
+
+  getBundlerUrl(
+    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
+  ): string | undefined {
+    const chainConfig = this.chainConfigs.find((c) => c.chainId === chainId)
+    if (!chainConfig) {
+      throw new Error(`No chain config found for chain ID: ${chainId}`)
+    }
+    return chainConfig.bundlerUrl
   }
 
   getChain(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): Chain {

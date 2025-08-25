@@ -52,8 +52,8 @@ export interface VerbsInterface {
 export interface VerbsConfig {
   /** Wallet provider configuration */
   privyConfig?: PrivyWalletConfig
-  /** Smart wallet provider configuration */
-  smartWalletConfig?: SmartWalletConfig
+  /** Enable smart wallets */
+  enableSmartWallets?: boolean
   /** Lending provider configuration (optional) */
   lend?: LendConfig
   /** Chains to use for the SDK */
@@ -77,13 +77,4 @@ export interface PrivyWalletConfig {
   appId: string
   /** Privy app secret */
   appSecret: string
-}
-
-/**
- * Smart wallet provider configuration
- * @description Configuration for smart wallet provider
- */
-export interface SmartWalletConfig {
-  /** Bundler URL for the smart wallet */
-  bundlerUrl: string
 }

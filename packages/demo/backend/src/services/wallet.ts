@@ -81,10 +81,9 @@ export async function getAllWallets(
         if (!verbs.wallet.smartWallet) {
           throw new Error('Smart wallet not configured')
         }
-        const walletAddress =
-          await verbs.wallet.smartWallet.getAddress({
-            owners: [getAddress(privyWallet.address)],
-          })
+        const walletAddress = await verbs.wallet.smartWallet.getAddress({
+          owners: [getAddress(privyWallet.address)],
+        })
         const signer = await privyWallet.signer()
         return {
           privyWallet,

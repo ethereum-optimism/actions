@@ -16,8 +16,6 @@ import { SmartWallet } from '@/wallet/SmartWallet.js'
 export class SmartWalletProvider {
   /** Manages supported blockchain networks */
   private chainManager: ChainManager
-  /** URL for ERC-4337 bundler and paymaster services */
-  private paymasterAndBundlerUrl: string
   /** Provider for lending market operations */
   private lendProvider: LendProvider
 
@@ -27,13 +25,8 @@ export class SmartWalletProvider {
    * @param paymasterAndBundlerUrl - URL for ERC-4337 bundler and paymaster services
    * @param lendProvider - Provider for lending market operations
    */
-  constructor(
-    chainManager: ChainManager,
-    paymasterAndBundlerUrl: string,
-    lendProvider: LendProvider,
-  ) {
+  constructor(chainManager: ChainManager, lendProvider: LendProvider) {
     this.chainManager = chainManager
-    this.paymasterAndBundlerUrl = paymasterAndBundlerUrl
     this.lendProvider = lendProvider
   }
 
@@ -57,7 +50,6 @@ export class SmartWalletProvider {
       signer,
       this.chainManager,
       this.lendProvider,
-      this.paymasterAndBundlerUrl,
       undefined,
       undefined,
       nonce,
@@ -116,7 +108,6 @@ export class SmartWalletProvider {
       signer,
       this.chainManager,
       this.lendProvider,
-      this.paymasterAndBundlerUrl,
       walletAddress,
       ownerIndex,
     )

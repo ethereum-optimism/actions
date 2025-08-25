@@ -76,12 +76,8 @@ export function initVerbs(config: VerbsConfig) {
       verbs.chainManager,
     )
   }
-  if (config.smartWalletConfig) {
-    verbs.wallet.withSmartWallet(
-      verbs.chainManager,
-      config.smartWalletConfig.bundlerUrl,
-      verbs.lend,
-    )
+  if (config.enableSmartWallets) {
+    verbs.wallet.withSmartWallet(verbs.chainManager, verbs.lend)
   }
 
   return verbs

@@ -13,16 +13,8 @@ export class WalletNamespace {
     return this
   }
 
-  withSmartWallet(
-    chainManager: ChainManager,
-    bundlerUrl: string,
-    lendProvider: LendProvider,
-  ) {
-    this.smartWallet = new SmartWalletProvider(
-      chainManager,
-      bundlerUrl,
-      lendProvider,
-    )
+  withSmartWallet(chainManager: ChainManager, lendProvider: LendProvider) {
+    this.smartWallet = new SmartWalletProvider(chainManager, lendProvider)
     return this
   }
 }
