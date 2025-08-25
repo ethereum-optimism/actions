@@ -149,19 +149,16 @@ export class WalletProviderPrivy implements WalletProvider {
         sponsor: true,
       }
 
-      // Check if rpc method exists on walletApi
+      // Check if rpc method exists on walletApi for gas sponsorship
       if ('rpc' in this.privy.walletApi && typeof this.privy.walletApi.rpc === 'function') {
-        console.log('[PRIVY] Using RPC method with gas sponsorship')
         const response = await (this.privy.walletApi as any).rpc({
           walletId,
           ...rpcPayload,
         })
-        console.log('[PRIVY] RPC response:', JSON.stringify(response, null, 2))
         return response.data.hash as Hash
       }
 
       // Fallback to regular sendTransaction if rpc method not available
-      console.log('[PRIVY] Using regular sendTransaction method (no gas sponsorship)')
       const response = await this.privy.walletApi.ethereum.sendTransaction({
         walletId,
         caip2: 'eip155:84532', // Base Sepolia
@@ -235,9 +232,6 @@ export class WalletProviderPrivy implements WalletProvider {
         nonce: `0x${nonce.toString(16)}`, // Explicitly provide the correct nonce
       }
 
-      console.log(
-        `[PRIVY_PROVIDER] Complete tx params - Type: ${txParams.type}, Nonce: ${nonce}, Limit: ${gasLimit}, MaxFee: ${feeData.maxFeePerGas || 'fallback'}, Priority: ${feeData.maxPriorityFeePerGas || 'fallback'}`,
-      )
 
       const response = await this.privy.walletApi.ethereum.signTransaction({
         walletId,

@@ -121,27 +121,22 @@ export async function executeLendTransaction(
     lendTransaction,
   )
 
-  console.log(`[LEND] Gas check - ETH balance: ${ethBalance}, Gas estimate: ${gasEstimate}`)
-  
-  // Skip gas check for gas sponsorship testing
+  // Skip gas check when using gas sponsorship
   // TODO: Add proper gas sponsorship detection
   if (ethBalance < gasEstimate) {
-    console.log('[LEND] Insufficient ETH detected, but proceeding with gas sponsorship attempt')
+    // Proceed with gas sponsorship - Privy will handle gas fees
     // throw new Error('Insufficient ETH for gas fees')
   }
 
   let depositHash: Address = '0x0'
 
   if (lendTransaction.transactionData.approval) {
-    console.log('[LEND] Sending approval transaction with potential gas sponsorship')
     const approvalHash = await wallet.signAndSend(
       lendTransaction.transactionData.approval,
     )
-    console.log('[LEND] Approval transaction hash:', approvalHash)
     await publicClient.waitForTransactionReceipt({ hash: approvalHash })
   }
 
-  console.log('[LEND] Sending deposit transaction with potential gas sponsorship')
   depositHash = await wallet.signAndSend(
     lendTransaction.transactionData.deposit,
   )
