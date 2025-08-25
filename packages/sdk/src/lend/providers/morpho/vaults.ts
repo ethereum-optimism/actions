@@ -1,8 +1,10 @@
 import type { AccrualPosition, IToken } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
-import type { Address, PublicClient } from 'viem'
+import type { Address } from 'viem'
 
-import { getTokenAddress, SUPPORTED_TOKENS } from '../../../supported/tokens.js'
+import type { SupportedChainId } from '../../../constants/supportedChains.js'
+import type { ChainManager } from '../../../services/ChainManager.js'
+import { SUPPORTED_TOKENS } from '../../../supported/tokens.js'
 import type { ApyBreakdown, LendVaultInfo } from '../../../types/lend.js'
 import { fetchRewards, type RewardsBreakdown } from './api.js'
 
@@ -13,23 +15,24 @@ export interface VaultConfig {
   address: Address
   name: string
   asset: IToken & { address: Address }
+  chainId: SupportedChainId
 }
 
 /**
  * Supported vaults for Morpho lending
  */
 export const SUPPORTED_VAULTS: VaultConfig[] = [
-  {
-    // Gauntlet USDC vault on Unichain
-    address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
-    name: 'Gauntlet USDC (Unichain)',
-    asset: {
-      address: getTokenAddress('USDC', 130)!, // USDC on Unichain
-      symbol: SUPPORTED_TOKENS.USDC.symbol,
-      decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
-      name: SUPPORTED_TOKENS.USDC.name,
-    },
-  },
+  // {
+  //   // Gauntlet USDC vault on Unichain
+  //   address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
+  //   name: 'Gauntlet USDC (Unichain)',
+  //   asset: {
+  //     address: getTokenAddress('USDC', 130)!, // USDC on Unichain
+  //     symbol: SUPPORTED_TOKENS.USDC.symbol,
+  //     decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
+  //     name: SUPPORTED_TOKENS.USDC.name,
+  //   },
+  // },
   {
     // USDC vault on Base Sepolia
     address: '0x99067e5D73b1d6F1b5856E59209e12F5a0f86DED' as Address,
@@ -40,6 +43,7 @@ export const SUPPORTED_VAULTS: VaultConfig[] = [
       decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
       name: SUPPORTED_TOKENS.USDC.name,
     },
+    chainId: 84532 as SupportedChainId, // Base Sepolia
   },
 ]
 
@@ -120,12 +124,12 @@ export function calculateBaseApy(vault: any): number {
 /**
  * Get detailed vault information with enhanced rewards data
  * @param vaultAddress - Vault address
- * @param publicClient - Viem public client
+ * @param chainManager - Chain manager for multi-chain support
  * @returns Promise resolving to detailed vault information
  */
 export async function getVaultInfo(
   vaultAddress: Address,
-  publicClient: PublicClient,
+  chainManager: ChainManager,
 ): Promise<LendVaultInfo> {
   try {
     // 1. Find vault configuration for validation
@@ -136,7 +140,18 @@ export async function getVaultInfo(
     }
 
     // 2. Fetch live vault data from Morpho SDK
-    const vault = await fetchAccrualVault(vaultAddress, publicClient)
+    const vault = await fetchAccrualVault(
+      vaultAddress,
+      chainManager.getPublicClient(config.chainId),
+    ).catch((error) => {
+      console.error('Failed to fetch vault info:', error)
+      return {
+        totalAssets: 0n,
+        totalSupply: 0n,
+        owner: '0x' as Address,
+        curator: '0x' as Address,
+      }
+    })
 
     // 3. Fetch rewards data from API
     const rewardsBreakdown = await fetchAndCalculateRewards(vaultAddress).catch(
@@ -179,15 +194,15 @@ export async function getVaultInfo(
 
 /**
  * Get list of available vaults
- * @param publicClient - Viem public client
+ * @param chainManager - Chain manager for multi-chain support
  * @returns Promise resolving to array of vault information
  */
 export async function getVaults(
-  publicClient: PublicClient,
+  chainManager: ChainManager,
 ): Promise<LendVaultInfo[]> {
   try {
     const vaultInfoPromises = SUPPORTED_VAULTS.map((config) =>
-      getVaultInfo(config.address, publicClient),
+      getVaultInfo(config.address, chainManager),
     )
     return await Promise.all(vaultInfoPromises)
   } catch (error) {

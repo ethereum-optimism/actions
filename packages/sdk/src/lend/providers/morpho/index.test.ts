@@ -58,9 +58,14 @@ describe('LendProviderMorpho', () => {
       transport: http(),
     })
 
+    const mockChainManager = {
+      getPublicClient: () => mockPublicClient,
+    } as any
+
     provider = new LendProviderMorpho(
       mockConfig,
       mockPublicClient as unknown as PublicClient,
+      mockChainManager,
     )
   })
 
@@ -74,9 +79,14 @@ describe('LendProviderMorpho', () => {
         ...mockConfig,
         defaultSlippage: undefined,
       }
+      const mockChainManager = {
+        getPublicClient: () => mockPublicClient,
+      } as any
+
       const providerWithDefaults = new LendProviderMorpho(
         configWithoutSlippage,
         mockPublicClient as unknown as PublicClient,
+        mockChainManager,
       )
       expect(providerWithDefaults).toBeInstanceOf(LendProviderMorpho)
     })

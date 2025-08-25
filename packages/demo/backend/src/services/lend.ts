@@ -121,24 +121,30 @@ export async function executeLendTransaction(
     lendTransaction,
   )
 
+  console.log(`[LEND] Gas check - ETH balance: ${ethBalance}, Gas estimate: ${gasEstimate}`)
+  
+  // Skip gas check for gas sponsorship testing
+  // TODO: Add proper gas sponsorship detection
   if (ethBalance < gasEstimate) {
-    throw new Error('Insufficient ETH for gas fees')
+    console.log('[LEND] Insufficient ETH detected, but proceeding with gas sponsorship attempt')
+    // throw new Error('Insufficient ETH for gas fees')
   }
 
   let depositHash: Address = '0x0'
 
   if (lendTransaction.transactionData.approval) {
-    const approvalSignedTx = await wallet.sign(
+    console.log('[LEND] Sending approval transaction with potential gas sponsorship')
+    const approvalHash = await wallet.signAndSend(
       lendTransaction.transactionData.approval,
     )
-    const approvalHash = await wallet.send(approvalSignedTx, publicClient)
+    console.log('[LEND] Approval transaction hash:', approvalHash)
     await publicClient.waitForTransactionReceipt({ hash: approvalHash })
   }
 
-  const depositSignedTx = await wallet.sign(
+  console.log('[LEND] Sending deposit transaction with potential gas sponsorship')
+  depositHash = await wallet.signAndSend(
     lendTransaction.transactionData.deposit,
   )
-  depositHash = await wallet.send(depositSignedTx, publicClient)
   await publicClient.waitForTransactionReceipt({ hash: depositHash })
 
   return { ...lendTransaction, hash: depositHash }

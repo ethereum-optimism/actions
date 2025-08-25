@@ -4,7 +4,7 @@ import type {
   TransactionData,
   WalletInterface,
 } from '@eth-optimism/verbs-sdk'
-import { baseSepolia, unichain } from '@eth-optimism/viem/chains'
+import { unichain } from '@eth-optimism/viem/chains'
 import type { Address, Hex } from 'viem'
 import {
   createPublicClient,

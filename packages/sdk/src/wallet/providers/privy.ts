@@ -123,6 +123,67 @@ export class WalletProviderPrivy implements WalletProvider {
   }
 
   /**
+   * Sign and send a transaction with gas sponsorship support
+   * @description Signs and sends a transaction using Privy's RPC API with gas sponsorship
+   * @param walletId - Wallet identifier
+   * @param transactionData - Transaction data to sign and send
+   * @returns Promise resolving to transaction hash
+   * @throws Error if transaction signing fails
+   */
+  async signAndSend(
+    walletId: string,
+    transactionData: TransactionData,
+  ): Promise<Hash> {
+    try {
+      // Try using the rpc method directly for gas sponsorship
+      const rpcPayload = {
+        method: 'eth_sendTransaction',
+        caip2: 'eip155:84532',
+        params: {
+          transaction: {
+            to: transactionData.to,
+            data: transactionData.data,
+            value: transactionData.value,
+          },
+        },
+        sponsor: true,
+      }
+
+      // Check if rpc method exists on walletApi
+      if ('rpc' in this.privy.walletApi && typeof this.privy.walletApi.rpc === 'function') {
+        console.log('[PRIVY] Using RPC method with gas sponsorship')
+        const response = await (this.privy.walletApi as any).rpc({
+          walletId,
+          ...rpcPayload,
+        })
+        console.log('[PRIVY] RPC response:', JSON.stringify(response, null, 2))
+        return response.data.hash as Hash
+      }
+
+      // Fallback to regular sendTransaction if rpc method not available
+      console.log('[PRIVY] Using regular sendTransaction method (no gas sponsorship)')
+      const response = await this.privy.walletApi.ethereum.sendTransaction({
+        walletId,
+        caip2: 'eip155:84532', // Base Sepolia
+        transaction: {
+          to: transactionData.to,
+          data: transactionData.data as `0x${string}`,
+          value: Number(transactionData.value),
+          chainId: 84532, // Base Sepolia
+        },
+      })
+
+      return response.hash as Hash
+    } catch (error) {
+      throw new Error(
+        `Failed to sign and send transaction for wallet ${walletId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
+  }
+
+  /**
    * Sign a transaction without sending it
    * @description Signs a transaction using Privy's wallet API but doesn't send it
    * @param walletId - Wallet ID to use for signing
@@ -166,7 +227,7 @@ export class WalletProviderPrivy implements WalletProvider {
         to: transactionData.to,
         data: transactionData.data as `0x${string}`,
         value: transactionData.value as `0x${string}`,
-        chainId: 130, // Unichain
+        chainId: 84532, // Base Sepolia
         type: 2, // EIP-1559
         gasLimit: `0x${gasLimit.toString(16)}`,
         maxFeePerGas: `0x${(feeData.maxFeePerGas || BigInt(1000000000)).toString(16)}`, // fallback to 1 gwei

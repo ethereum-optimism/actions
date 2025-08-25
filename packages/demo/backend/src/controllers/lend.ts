@@ -42,6 +42,7 @@ export class LendController {
       )
       return c.json({ vaults: formattedVaults })
     } catch (error) {
+      console.error('[LendController.getVaults] Error:', error)
       return c.json(
         {
           error: 'Failed to get vaults',
@@ -67,6 +68,7 @@ export class LendController {
       const formattedVault = await lendService.formatVaultResponse(vaultInfo)
       return c.json({ vault: formattedVault })
     } catch (error) {
+      console.error('[LendController.getVault] Error:', error)
       return c.json(
         {
           error: 'Failed to get vault info',
@@ -96,6 +98,7 @@ export class LendController {
         await lendService.formatVaultBalanceResponse(balance)
       return c.json(formattedBalance)
     } catch (error) {
+      console.error('[LendController.getVaultBalance] Error:', error)
       return c.json(
         {
           error: 'Failed to get vault balance',
@@ -136,6 +139,7 @@ export class LendController {
         },
       })
     } catch (error) {
+      console.error('[LendController.deposit] Error:', error)
       return c.json(
         {
           error: 'Failed to deposit',

@@ -1,5 +1,4 @@
 import { type Address, encodeFunctionData, erc20Abi, type Hash } from 'viem'
-import { unichain } from 'viem/chains'
 
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
@@ -90,11 +89,11 @@ export class Wallet implements WalletInterface {
     }
 
     // Parse human-readable inputs
-    // TODO: Get actual chain ID from wallet context, for now using Unichain
+    // TODO: Get actual chain ID from wallet context, for now using Base Sepolia
     const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
       amount,
       asset,
-      unichain.id,
+      84532, // Base Sepolia
     )
 
     // Set receiver to wallet address if not specified
@@ -125,11 +124,11 @@ export class Wallet implements WalletInterface {
       throw new Error('Wallet not initialized')
     }
 
-    if (!this.walletProvider || !this.walletProvider.sign) {
-      throw new Error('Wallet provider does not support transaction signing')
+    if (!this.walletProvider || !(this.walletProvider as any).signAndSend) {
+      throw new Error('Wallet provider does not support signAndSend')
     }
 
-    return this.walletProvider.sign(this.id, transactionData)
+    return (this.walletProvider as any).signAndSend(this.id, transactionData)
   }
 
   /**
@@ -205,8 +204,8 @@ export class Wallet implements WalletInterface {
       throw new Error('Amount must be greater than 0')
     }
 
-    // TODO: Get actual chain ID from wallet context, for now using Unichain
-    const chainId = unichain.id
+    // TODO: Get actual chain ID from wallet context, for now using Base Sepolia
+    const chainId = 84532 // Base Sepolia
 
     // Handle ETH transfers
     if (asset.toLowerCase() === 'eth') {

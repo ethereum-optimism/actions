@@ -65,6 +65,7 @@ export class WalletController {
         userId,
       } satisfies CreateWalletResponse)
     } catch (error) {
+      console.error('[WalletController.createWallet] Error:', error)
       return c.json(
         {
           error: 'Failed to create wallet',
@@ -103,6 +104,7 @@ export class WalletController {
         userId,
       } satisfies GetWalletResponse)
     } catch (error) {
+      console.error('[WalletController.getWallet] Error:', error)
       return c.json(
         {
           error: 'Failed to get wallet',
@@ -134,6 +136,7 @@ export class WalletController {
         count: wallets.length,
       } satisfies GetAllWalletsResponse)
     } catch (error) {
+      console.error('[WalletController.getAllWallets] Error:', error)
       return c.json(
         {
           error: 'Failed to get wallets',
@@ -159,6 +162,7 @@ export class WalletController {
 
       return c.json({ balance: serializeBigInt(balance) })
     } catch (error) {
+      console.error('[WalletController.getBalance] Error:', error)
       return c.json(
         {
           error: 'Failed to get balance',
@@ -186,6 +190,7 @@ export class WalletController {
 
       return c.json(result)
     } catch (error) {
+      console.error('[WalletController.fundWallet] Error:', error)
       return c.json(
         {
           error: 'Failed to fund wallet',
@@ -222,6 +227,7 @@ export class WalletController {
         },
       })
     } catch (error) {
+      console.error('[WalletController.sendTokens] Error:', error)
       return c.json(
         {
           error: 'Failed to send tokens',
