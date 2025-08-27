@@ -4,6 +4,8 @@ import { getAddress } from 'viem'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
 import { EmbeddedWalletProvider } from '@/wallet/providers/base/EmbeddedWalletProvider.js'
 
+// TODO: rename file to PrivyEmbeddedWalletProvider.ts
+
 /**
  * Options for getting all wallets
  * @description Parameters for filtering and paginating wallet results
