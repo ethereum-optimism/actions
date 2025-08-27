@@ -1,11 +1,12 @@
+import type { Context } from 'hono'
+import type { Address } from 'viem'
+import { z } from 'zod'
+
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
   GetWalletResponse,
-} from '@eth-optimism/verbs-sdk'
-import type { Context } from 'hono'
-import type { Address } from 'viem'
-import { z } from 'zod'
+} from '@/types/service.js'
 
 import { validateRequest } from '../helpers/validation.js'
 import * as walletService from '../services/wallet.js'
@@ -107,6 +108,7 @@ export class WalletController {
         userId,
       } satisfies GetWalletResponse)
     } catch (error) {
+      console.error(error)
       return c.json(
         {
           error: 'Failed to get wallet',
@@ -129,15 +131,19 @@ export class WalletController {
         query: { limit, cursor },
       } = validation.data
       const wallets = await walletService.getAllWallets({ limit, cursor })
+      const walletsData = await Promise.all(
+        wallets.map(async ({ wallet, id }) => ({
+          address: await wallet.getAddress(),
+          id,
+        })),
+      )
 
       return c.json({
-        wallets: wallets.map(({ privyWallet }) => ({
-          address: privyWallet.address as Address,
-          id: privyWallet.walletId,
-        })),
+        wallets: walletsData,
         count: wallets.length,
       } satisfies GetAllWalletsResponse)
     } catch (error) {
+      console.error(error)
       return c.json(
         {
           error: 'Failed to get wallets',

@@ -6,14 +6,15 @@ import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
-import { SmartWallet } from '@/wallet/SmartWallet.js'
+import { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
+import { DefaultSmartWallet } from '@/wallet/SmartWallet.js'
 
 /**
  * Smart Wallet Provider
  * @description Factory for creating and managing Smart Wallet instances.
  * Handles wallet address prediction, creation, and retrieval using ERC-4337 account abstraction.
  */
-export class SmartWalletProvider {
+export class DefaultSmartWalletProvider extends SmartWalletProvider {
   /** Manages supported blockchain networks */
   private chainManager: ChainManager
   /** Provider for lending market operations */
@@ -26,6 +27,7 @@ export class SmartWalletProvider {
    * @param lendProvider - Provider for lending market operations
    */
   constructor(chainManager: ChainManager, lendProvider: LendProvider) {
+    super()
     this.chainManager = chainManager
     this.lendProvider = lendProvider
   }
@@ -43,9 +45,9 @@ export class SmartWalletProvider {
     owners: Array<Address | WebAuthnAccount>
     signer: LocalAccount
     nonce?: bigint
-  }): Promise<SmartWallet> {
+  }): Promise<DefaultSmartWallet> {
     const { owners, signer, nonce } = params
-    return new SmartWallet(
+    return new DefaultSmartWallet(
       owners,
       signer,
       this.chainManager,
@@ -64,7 +66,7 @@ export class SmartWalletProvider {
    * @param params.nonce - Nonce for address generation (defaults to 0)
    * @returns Promise resolving to the predicted wallet address
    */
-  async getAddress(params: {
+  async getWalletAddress(params: {
     owners: Array<Address | WebAuthnAccount>
     nonce?: bigint
   }) {
@@ -101,9 +103,9 @@ export class SmartWalletProvider {
     walletAddress: Address
     signer: LocalAccount
     ownerIndex?: number
-  }): SmartWallet {
+  }): DefaultSmartWallet {
     const { walletAddress, signer, ownerIndex } = params
-    return new SmartWallet(
+    return new DefaultSmartWallet(
       [signer.address],
       signer,
       this.chainManager,

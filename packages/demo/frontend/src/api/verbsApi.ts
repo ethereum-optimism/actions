@@ -1,7 +1,7 @@
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
-} from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/verbs-service'
 import { env } from '../envVars'
 
 class VerbsApiError extends Error {

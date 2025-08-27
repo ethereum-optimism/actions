@@ -23,19 +23,20 @@ import {
   parseLendParams,
   resolveAsset,
 } from '@/utils/assets.js'
+import { SmartWallet } from '@/wallet/base/SmartWallet.js'
 
 /**
  * Smart Wallet Implementation
  * @description ERC-4337 compatible smart wallet that uses Coinbase Smart Account (https://github.com/coinbase/smart-wallet/blob/main/src/CoinbaseSmartWallet.sol).
  * Supports multi-owner wallets, gasless transactions via paymasters, and cross-chain operations.
  */
-export class SmartWallet {
+export class DefaultSmartWallet extends SmartWallet {
   /** Array of wallet owners (Ethereum addresses or WebAuthn public keys) */
   private owners: Array<Address | WebAuthnAccount>
   /** Local account used for signing transactions and UserOperations */
-  private signer: LocalAccount
+  private _signer: LocalAccount
   /** Index of the signer in the owners array (defaults to 0 if not specified) */
-  private ownerIndex?: number
+  private signerOwnerIndex?: number
   /** Known deployment address of the wallet (if already deployed) */
   private deploymentAddress?: Address
   /** Provider for lending market operations */
@@ -62,16 +63,21 @@ export class SmartWallet {
     chainManager: ChainManager,
     lendProvider: LendProvider,
     deploymentAddress?: Address,
-    ownerIndex?: number,
+    signerOwnerIndex?: number,
     nonce?: bigint,
   ) {
+    super()
     this.owners = owners
-    this.signer = signer
-    this.ownerIndex = ownerIndex
+    this._signer = signer
+    this.signerOwnerIndex = signerOwnerIndex
     this.deploymentAddress = deploymentAddress
     this.chainManager = chainManager
     this.lendProvider = lendProvider
     this.nonce = nonce
+  }
+
+  get signer(): LocalAccount {
+    return this._signer
   }
 
   /**
@@ -113,7 +119,7 @@ export class SmartWallet {
   ): ReturnType<typeof toCoinbaseSmartAccount> {
     return toCoinbaseSmartAccount({
       address: this.deploymentAddress,
-      ownerIndex: this.ownerIndex,
+      ownerIndex: this.signerOwnerIndex,
       client: this.chainManager.getPublicClient(chainId),
       owners: [this.signer],
       nonce: this.nonce,

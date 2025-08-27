@@ -2,14 +2,25 @@ import { PrivyClient } from '@privy-io/server-auth'
 import { getAddress } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { GetAllWalletsOptions } from '@/types/wallet.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
+import { EmbeddedWalletProvider } from '@/wallet/providers/base/EmbeddedWalletProvider.js'
+
+/**
+ * Options for getting all wallets
+ * @description Parameters for filtering and paginating wallet results
+ */
+export interface PrivyProviderGetAllWalletsOptions {
+  /** Maximum number of wallets to return */
+  limit?: number
+  /** Cursor for pagination */
+  cursor?: string
+}
 
 /**
  * Privy wallet provider implementation
  * @description Wallet provider implementation using Privy service
  */
-export class PrivyWalletProvider {
+export class PrivyEmbeddedWalletProvider extends EmbeddedWalletProvider {
   public privy: PrivyClient
   private chainManager: ChainManager
 
@@ -20,6 +31,7 @@ export class PrivyWalletProvider {
    * @param verbs - Verbs instance for accessing configured providers
    */
   constructor(appId: string, appSecret: string, chainManager: ChainManager) {
+    super()
     this.privy = new PrivyClient(appId, appSecret)
     this.chainManager = chainManager
   }
@@ -49,15 +61,16 @@ export class PrivyWalletProvider {
   }
 
   /**
-   * Get wallet by user ID via Privy
+   * Get wallet by wallet ID via Privy
    * @description Retrieves wallet information from Privy service
-   * @param userId - User identifier
-   * @returns Promise resolving to wallet or null if not found
+   * @param params - Parameters containing walletId
+   * @returns Promise resolving to wallet
    */
-  async getWallet(userId: string): Promise<PrivyWallet | null> {
+  async getWallet(params: { walletId: string }): Promise<PrivyWallet> {
     try {
-      // TODO: Implement proper user-to-wallet lookup
-      const wallet = await this.privy.walletApi.getWallet({ id: userId })
+      const wallet = await this.privy.walletApi.getWallet({
+        id: params.walletId,
+      })
 
       const walletInstance = new PrivyWallet(
         this,
@@ -67,7 +80,7 @@ export class PrivyWalletProvider {
       )
       return walletInstance
     } catch {
-      return null
+      throw new Error(`Failed to get wallet with id: ${params.walletId}`)
     }
   }
 
@@ -77,7 +90,9 @@ export class PrivyWalletProvider {
    * @param options - Optional parameters for filtering and pagination
    * @returns Promise resolving to array of wallets
    */
-  async getAllWallets(options?: GetAllWalletsOptions): Promise<PrivyWallet[]> {
+  async getAllWallets(
+    options?: PrivyProviderGetAllWalletsOptions,
+  ): Promise<PrivyWallet[]> {
     try {
       const response = await this.privy.walletApi.getWallets({
         limit: options?.limit,

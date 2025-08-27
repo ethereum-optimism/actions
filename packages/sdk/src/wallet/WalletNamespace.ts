@@ -1,20 +1,39 @@
-import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProvider } from '@/types/lend.js'
-import { PrivyWalletProvider } from '@/wallet/providers/privy.js'
-import { SmartWalletProvider } from '@/wallet/providers/smartWallet.js'
+import type { Address } from 'viem'
+import type { WebAuthnAccount } from 'viem/account-abstraction'
 
-// Wallet namespace that holds all providers
+import type { WalletProvider } from '@/wallet/WalletProvider.js'
+
+/**
+ * Wallet namespace that provides unified wallet operations
+ * @description Provides access to wallet functionality through a single provider interface
+ */
 export class WalletNamespace {
-  public privy?: PrivyWalletProvider
-  public smartWallet?: SmartWalletProvider
+  private provider: WalletProvider
 
-  withPrivy(appId: string, appSecret: string, chainManager: ChainManager) {
-    this.privy = new PrivyWalletProvider(appId, appSecret, chainManager)
-    return this
+  constructor(provider: WalletProvider) {
+    this.provider = provider
   }
 
-  withSmartWallet(chainManager: ChainManager, lendProvider: LendProvider) {
-    this.smartWallet = new SmartWalletProvider(chainManager, lendProvider)
-    return this
+  get embeddedWalletProvider() {
+    return this.provider.embeddedWalletProvider
+  }
+
+  get smartWalletProvider() {
+    return this.provider.smartWalletProvider
+  }
+
+  // Convenience methods that delegate to the provider
+  async createWallet() {
+    return this.provider.createWallet()
+  }
+
+  async getWallet(params: {
+    walletId: string
+    owners?: Array<Address | WebAuthnAccount>
+    signerOwnerIndex?: number
+    walletAddress?: Address
+    nonce?: bigint
+  }) {
+    return this.provider.getWallet(params)
   }
 }

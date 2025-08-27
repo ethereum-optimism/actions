@@ -5,7 +5,12 @@ import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
 
+import type { EmbeddedWalletProvider } from './wallet/providers/base/EmbeddedWalletProvider.js'
+import type { SmartWalletProvider } from './wallet/providers/base/SmartWalletProvider.js'
+import { DefaultSmartWalletProvider } from './wallet/providers/DefaultSmartWalletProvider.js'
+import { PrivyEmbeddedWalletProvider } from './wallet/providers/privy.js'
 import { WalletNamespace } from './wallet/WalletNamespace.js'
+import { WalletProvider } from './wallet/WalletProvider.js'
 
 /**
  * Main Verbs SDK class
@@ -15,9 +20,10 @@ export class Verbs {
   public readonly wallet: WalletNamespace
   private _chainManager: ChainManager
   private lendProvider?: LendProvider
+  private embeddedWalletProvider: EmbeddedWalletProvider
+  private smartWalletProvider: SmartWalletProvider
 
   constructor(config: VerbsConfig) {
-    this.wallet = new WalletNamespace()
     this._chainManager = new ChainManager(
       config.chains || [
         {
@@ -26,6 +32,7 @@ export class Verbs {
         },
       ],
     )
+
     // Create lending provider if configured
     if (config.lend) {
       if (config.lend.type === 'morpho') {
@@ -39,6 +46,39 @@ export class Verbs {
         )
       }
     }
+
+    if (config.wallet.embeddedWalletConfig.provider.type === 'privy') {
+      this.embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+        config.wallet.embeddedWalletConfig.provider.appId,
+        config.wallet.embeddedWalletConfig.provider.appSecret,
+        this.chainManager,
+      )
+    } else {
+      throw new Error(
+        `Unsupported embedded wallet provider: ${config.wallet.embeddedWalletConfig.provider.type}`,
+      )
+    }
+
+    if (
+      !config.wallet.smartWalletConfig ||
+      config.wallet.smartWalletConfig.provider.type === 'default'
+    ) {
+      this.smartWalletProvider = new DefaultSmartWalletProvider(
+        this.chainManager,
+        this.lend,
+      )
+    } else {
+      throw new Error(
+        `Unsupported smart wallet provider: ${config.wallet.smartWalletConfig.provider.type}`,
+      )
+    }
+
+    // Create unified wallet provider
+    const walletProvider = new WalletProvider(
+      this.embeddedWalletProvider,
+      this.smartWalletProvider,
+    )
+    this.wallet = new WalletNamespace(walletProvider)
   }
 
   /**
@@ -59,26 +99,4 @@ export class Verbs {
   get chainManager(): ChainManager {
     return this._chainManager
   }
-}
-
-/**
- * Initialize Verbs SDK
- * @description Factory function to create a new Verbs SDK instance
- * @param config - SDK configuration
- * @returns Initialized Verbs SDK instance
- */
-export function initVerbs(config: VerbsConfig) {
-  const verbs = new Verbs(config)
-  if (config.privyConfig) {
-    verbs.wallet.withPrivy(
-      config.privyConfig.appId,
-      config.privyConfig.appSecret,
-      verbs.chainManager,
-    )
-  }
-  if (config.enableSmartWallets) {
-    verbs.wallet.withSmartWallet(verbs.chainManager, verbs.lend)
-  }
-
-  return verbs
 }

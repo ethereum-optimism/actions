@@ -1,59 +1,14 @@
-import type { Address } from 'viem'
-
-import type { ChainManager } from '@/services/ChainManager.js'
 import type { ChainConfig } from '@/types/chain.js'
 
-import type { LendConfig, LendProvider } from './lend.js'
-import type { Wallet } from './wallet.js'
-
-/**
- * Core Verbs SDK interface
- * @description Main interface for interacting with the Verbs SDK
- */
-export interface VerbsInterface {
-  /**
-   * Get the lend provider instance
-   * @returns LendProvider instance if configured
-   */
-  readonly lend: LendProvider
-  /**
-   * Get the chain manager instance
-   * @returns ChainManager instance for multi-chain operations
-   */
-  readonly chainManager: ChainManager
-  /**
-   * Create a new wallet
-   * @param ownerAddresses - User identifier for the wallet
-   * @returns Promise resolving to new wallet instance
-   */
-  createWallet(
-    ownerAddresses: Address[],
-    nonce?: bigint,
-  ): Promise<Array<{ chainId: number; address: Address }>>
-  /**
-   * Get all wallets
-   * @param options - Optional parameters for filtering and pagination
-   * @returns Promise resolving to array of wallets
-   */
-  // getAllWallets(options?: GetAllWalletsOptions): Promise<Wallet[]>
-  /**
-   * Get the smart wallet address for an owner address
-   * @param ownerAddress - Owner address
-   * @param chainId - Chain ID
-   * @returns Promise resolving to smart wallet address
-   */
-  getWallet(ownerAddresses: Address[], nonce?: bigint): Promise<Wallet>
-}
+import type { LendConfig } from './lend.js'
 
 /**
  * Verbs SDK configuration
  * @description Configuration object for initializing the Verbs SDK
  */
 export interface VerbsConfig {
-  /** Wallet provider configuration */
-  privyConfig?: PrivyWalletConfig
-  /** Enable smart wallets */
-  enableSmartWallets?: boolean
+  /** Wallet configuration */
+  wallet: WalletConfig
   /** Lending provider configuration (optional) */
   lend?: LendConfig
   /** Chains to use for the SDK */
@@ -61,17 +16,57 @@ export interface VerbsConfig {
 }
 
 /**
- * Wallet provider configuration
+ * Wallet configuration
  * @description Configuration for wallet providers
  */
-export type WalletConfig = PrivyWalletConfig
+export type WalletConfig = {
+  /** Embedded wallet configuration */
+  embeddedWalletConfig: EmbeddedWalletConfig
+  /** Smart wallet configuration for ERC-4337 infrastructure */
+  smartWalletConfig: SmartWalletConfig
+}
 
 /**
- * Privy wallet provider configuration
- * @description Configuration specific to Privy wallet provider
+ * Embedded wallet configuration
+ * @description Configuration for embedded wallets / signers
  */
-export interface PrivyWalletConfig {
-  /** Wallet provider type */
+export interface EmbeddedWalletConfig {
+  /** Wallet provider for account creation, management, and signing */
+  provider: EmbeddedWalletProviderConfig
+}
+
+/**
+ * Smart Wallet configuration
+ * @description Configuration for ERC-4337 smart wallets.
+ */
+export interface SmartWalletConfig {
+  /** Wallet provider for smart wallet management */
+  provider: SmartWalletProvider
+}
+
+/**
+ * Smart wallet provider configurations
+ * @description Union type supporting multiple wallet provider implementations
+ */
+export type SmartWalletProvider = DefaultSmartWalletProvider
+
+/**
+ * Default smart wallet provider configuration
+ * @description Built-in provider smart wallet provider.
+ */
+export interface DefaultSmartWalletProvider {
+  type: 'default'
+}
+
+/**
+ * Embedded wallet provider configurations
+ * @description Union type supporting multiple embedded wallet providers
+ */
+export type EmbeddedWalletProviderConfig = PrivyEmbeddedWalletProviderConfig
+
+/** Privy embedded wallet provider configuration */
+export interface PrivyEmbeddedWalletProviderConfig {
+  /** Embedded wallet provider type */
   type: 'privy'
   /** Privy app ID */
   appId: string

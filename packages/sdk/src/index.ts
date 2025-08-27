@@ -3,11 +3,6 @@ export { LendProvider, LendProviderMorpho } from './lend/index.js'
 export { getTokenAddress, SUPPORTED_TOKENS } from './supported/tokens.js'
 export type {
   ApyBreakdown,
-  CreateWalletResponse,
-  ErrorResponse,
-  GetAllWalletsOptions,
-  GetAllWalletsResponse,
-  GetWalletResponse,
   LendConfig,
   LendMarket,
   LendMarketInfo,
@@ -15,16 +10,16 @@ export type {
   LendTransaction,
   LendVaultInfo,
   MorphoLendConfig,
-  PrivyWalletConfig,
   TokenBalance,
   TransactionData,
   VerbsConfig,
-  VerbsInterface,
   WalletConfig,
-  WalletData,
-  Wallet as WalletInterface,
-  WalletProvider,
 } from './types/index.js'
-export { initVerbs, Verbs } from './verbs.js'
+export { Verbs } from './verbs.js'
+export { SmartWallet } from './wallet/base/SmartWallet.js'
 export { PrivyWallet } from './wallet/PrivyWallet.js'
-export { SmartWallet } from './wallet/SmartWallet.js'
+export { SmartWalletProvider } from './wallet/providers/base/SmartWalletProvider.js'
+export {
+  PrivyEmbeddedWalletProvider,
+  type PrivyProviderGetAllWalletsOptions,
+} from './wallet/providers/privy.js'

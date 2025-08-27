@@ -1,8 +1,4 @@
-import {
-  initVerbs,
-  type Verbs,
-  type VerbsConfig,
-} from '@eth-optimism/verbs-sdk'
+import { Verbs, type VerbsConfig } from '@eth-optimism/verbs-sdk'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
@@ -11,10 +7,19 @@ let verbsInstance: Verbs
 
 export function createVerbsConfig(): VerbsConfig {
   return {
-    privyConfig: {
-      type: 'privy',
-      appId: env.PRIVY_APP_ID,
-      appSecret: env.PRIVY_APP_SECRET,
+    wallet: {
+      embeddedWalletConfig: {
+        provider: {
+          type: 'privy',
+          appId: env.PRIVY_APP_ID,
+          appSecret: env.PRIVY_APP_SECRET,
+        },
+      },
+      smartWalletConfig: {
+        provider: {
+          type: 'default',
+        },
+      },
     },
     lend: {
       type: 'morpho',
@@ -30,13 +35,12 @@ export function createVerbsConfig(): VerbsConfig {
         bundlerUrl: env.BASE_SEPOLIA_BUNDER_URL,
       },
     ],
-    enableSmartWallets: true,
   }
 }
 
 export function initializeVerbs(config?: VerbsConfig): void {
   const verbsConfig = config || createVerbsConfig()
-  verbsInstance = initVerbs(verbsConfig)
+  verbsInstance = new Verbs(verbsConfig)
 }
 
 export function getVerbs() {

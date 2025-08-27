@@ -133,6 +133,9 @@ importers:
       '@eth-optimism/verbs-sdk':
         specifier: workspace:*
         version: link:../../sdk
+      '@eth-optimism/verbs-service':
+        specifier: workspace:*
+        version: link:../backend
       react:
         specifier: ^18
         version: 18.3.1

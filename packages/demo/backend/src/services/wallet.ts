@@ -1,7 +1,8 @@
 import type {
-  GetAllWalletsOptions,
-  PrivyWallet,
+  PrivyEmbeddedWalletProvider,
+  PrivyProviderGetAllWalletsOptions as GetAllWalletsOptions,
   SmartWallet,
+  SmartWalletProvider,
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/verbs-sdk'
@@ -12,7 +13,6 @@ import {
   createWalletClient,
   formatEther,
   formatUnits,
-  getAddress,
   http,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -28,69 +28,49 @@ export async function createWallet(): Promise<{
   smartWalletAddress: string
 }> {
   const verbs = getVerbs()
-  const privyWallet = await verbs.wallet.privy!.createWallet()
-  const signer = await privyWallet.signer()
-  const smartWallet = await verbs.wallet.smartWallet!.createWallet({
-    owners: [getAddress(privyWallet.address)],
-    signer,
-  })
-  const smartWalletAddress = await smartWallet.getAddress()
+  const wallet = await verbs.wallet.createWallet()
+  const smartWalletAddress = await wallet.getAddress()
   return {
-    privyAddress: privyWallet.address,
+    privyAddress: wallet.signer.address,
     smartWalletAddress,
   }
 }
 
 export async function getWallet(userId: string): Promise<{
-  privyWallet: PrivyWallet
   wallet: SmartWallet
 }> {
   const verbs = getVerbs()
-  if (!verbs.wallet.privy) {
-    throw new Error('Privy wallet not configured')
-  }
-  if (!verbs.wallet.smartWallet) {
-    throw new Error('Smart wallet not configured')
-  }
-  const privyWallet = await verbs.wallet.privy.getWallet(userId)
-  if (!privyWallet) {
-    throw new Error('Wallet not found')
-  }
-  const signer = await privyWallet.signer()
-  const walletAddress = await verbs.wallet.smartWallet.getAddress({
-    owners: [getAddress(privyWallet.address)],
+  const wallet = await verbs.wallet.getWallet({
+    walletId: userId,
   })
-  const wallet = verbs.wallet.smartWallet.getWallet({
-    walletAddress,
-    signer,
-  })
-  return { privyWallet, wallet }
+  return { wallet }
 }
 
 export async function getAllWallets(
   options?: GetAllWalletsOptions,
-): Promise<Array<{ privyWallet: PrivyWallet; wallet: SmartWallet }>> {
+): Promise<Array<{ wallet: SmartWallet; id: string }>> {
   try {
     const verbs = getVerbs()
-    if (!verbs.wallet.privy) {
-      throw new Error('Privy wallet not configured')
-    }
-    const privyWallets = await verbs.wallet.privy.getAllWallets(options)
+    const privyWallets = await (
+      verbs.wallet.embeddedWalletProvider as PrivyEmbeddedWalletProvider
+    ).getAllWallets(options)
     return Promise.all(
       privyWallets.map(async (privyWallet) => {
-        if (!verbs.wallet.smartWallet) {
-          throw new Error('Smart wallet not configured')
-        }
-        const walletAddress = await verbs.wallet.smartWallet.getAddress({
-          owners: [getAddress(privyWallet.address)],
-        })
+        const walletAddress =
+          await verbs.wallet.smartWalletProvider.getWalletAddress({
+            owners: [privyWallet.address],
+          })
         const signer = await privyWallet.signer()
+        const wallet = await (
+          verbs.wallet.smartWalletProvider as SmartWalletProvider
+        ).getWallet({
+          walletAddress,
+          signer,
+          ownerIndex: 0,
+        })
         return {
-          privyWallet,
-          wallet: verbs.wallet.smartWallet.getWallet({
-            walletAddress,
-            signer,
-          }),
+          wallet,
+          id: privyWallet.walletId,
         }
       }),
     )
@@ -101,9 +81,6 @@ export async function getAllWallets(
 
 export async function getBalance(userId: string): Promise<TokenBalance[]> {
   const { wallet } = await getWallet(userId)
-  if (!wallet) {
-    throw new Error('Wallet not found')
-  }
 
   // Get regular token balances
   const tokenBalances = await wallet.getBalance().catch((error) => {
@@ -175,7 +152,7 @@ export async function fundWallet(
   // TODO: do this a better way
   const isLocalSupersim = env.LOCAL_DEV
 
-  const { wallet, privyWallet } = await getWallet(userId)
+  const { wallet } = await getWallet(userId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
@@ -220,7 +197,7 @@ Funding is only available in local development with supersim`)
       address: env.FAUCET_ADDRESS as Address,
       abi: faucetAbi,
       functionName: 'dripETH',
-      args: [privyWallet.address as `0x${string}`, amount],
+      args: [wallet.signer.address as `0x${string}`, amount],
     })
   } else {
     amount = 1000000000n // 1000 USDC
@@ -248,7 +225,7 @@ Funding is only available in local development with supersim`)
     success: true,
     tokenType,
     to: walletAddress,
-    privyAddress: privyWallet.address,
+    privyAddress: wallet.signer.address,
     amount: formattedAmount,
   }
 }

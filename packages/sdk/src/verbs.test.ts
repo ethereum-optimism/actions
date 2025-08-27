@@ -16,10 +16,19 @@ describe('Verbs SDK - System Tests', () => {
             type: 'morpho',
             defaultSlippage: 50,
           },
-          privyConfig: {
-            type: 'privy',
-            appId: 'test-app-id',
-            appSecret: 'test-app-secret',
+          wallet: {
+            embeddedWalletConfig: {
+              provider: {
+                type: 'privy',
+                appId: 'test-app-id',
+                appSecret: 'test-app-secret',
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
           },
         })
 
@@ -76,10 +85,19 @@ describe('Verbs SDK - System Tests', () => {
             type: 'morpho',
             defaultSlippage: 50,
           },
-          privyConfig: {
-            type: 'privy',
-            appId: 'test-app-id',
-            appSecret: 'test-app-secret',
+          wallet: {
+            embeddedWalletConfig: {
+              provider: {
+                type: 'privy',
+                appId: 'test-app-id',
+                appSecret: 'test-app-secret',
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
           },
         })
 
@@ -107,10 +125,19 @@ describe('Verbs SDK - System Tests', () => {
             type: 'morpho',
             defaultSlippage: 50,
           },
-          privyConfig: {
-            type: 'privy',
-            appId: 'test-app-id',
-            appSecret: 'test-app-secret',
+          wallet: {
+            embeddedWalletConfig: {
+              provider: {
+                type: 'privy',
+                appId: 'test-app-id',
+                appSecret: 'test-app-secret',
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
           },
         })
 
@@ -128,10 +155,19 @@ describe('Verbs SDK - System Tests', () => {
           type: 'morpho',
           defaultSlippage: 50,
         },
-        privyConfig: {
-          type: 'privy',
-          appId: 'test-app-id',
-          appSecret: 'test-app-secret',
+        wallet: {
+          embeddedWalletConfig: {
+            provider: {
+              type: 'privy',
+              appId: 'test-app-id',
+              appSecret: 'test-app-secret',
+            },
+          },
+          smartWalletConfig: {
+            provider: {
+              type: 'default',
+            },
+          },
         },
       })
 
@@ -147,10 +183,19 @@ describe('Verbs SDK - System Tests', () => {
           type: 'morpho',
           defaultSlippage: 50,
         },
-        privyConfig: {
-          type: 'privy',
-          appId: 'test-app-id',
-          appSecret: 'test-app-secret',
+        wallet: {
+          embeddedWalletConfig: {
+            provider: {
+              type: 'privy',
+              appId: 'test-app-id',
+              appSecret: 'test-app-secret',
+            },
+          },
+          smartWalletConfig: {
+            provider: {
+              type: 'default',
+            },
+          },
         },
       })
 

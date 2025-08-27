@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@eth-optimism/verbs-sdk": "workspace:*",
+    "@eth-optimism/verbs-service": "workspace:*",
     "react": "^18",
     "react-dom": "^18",
     "react-router": "7",

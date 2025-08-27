@@ -3,7 +3,7 @@ import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
   WalletData,
-} from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/verbs-service'
 import NavBar from './NavBar'
 import { verbsApi } from '../api/verbsApi'
 import type { Address } from 'viem'
