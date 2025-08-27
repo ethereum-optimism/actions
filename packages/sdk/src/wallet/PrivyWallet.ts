@@ -1,10 +1,8 @@
+import type { PrivyClient } from '@privy-io/server-auth'
 import type { Address, Hash, LocalAccount } from 'viem'
 import { toAccount } from 'viem/accounts'
 
-import type { ChainManager } from '@/services/ChainManager.js'
 import { EmbeddedWallet } from '@/wallet/base/EmbeddedWallet.js'
-
-import type { PrivyEmbeddedWalletProvider } from './providers/privy.js'
 
 /**
  * Privy wallet implementation
@@ -12,23 +10,16 @@ import type { PrivyEmbeddedWalletProvider } from './providers/privy.js'
  */
 export class PrivyWallet extends EmbeddedWallet {
   public walletId: string
-  private privyProvider: PrivyEmbeddedWalletProvider
-  private chainManager: ChainManager
+  private privyClient: PrivyClient
   /**
    * Create a new Privy wallet provider
    * @param appId - Privy application ID
    * @param appSecret - Privy application secret
    * @param verbs - Verbs instance for accessing configured providers
    */
-  constructor(
-    privyProvider: PrivyEmbeddedWalletProvider,
-    chainManager: ChainManager,
-    walletId: string,
-    address: Address,
-  ) {
+  constructor(privyClient: PrivyClient, walletId: string, address: Address) {
     super(address)
-    this.privyProvider = privyProvider
-    this.chainManager = chainManager
+    this.privyClient = privyClient
     this.walletId = walletId
   }
 
@@ -41,7 +32,7 @@ export class PrivyWallet extends EmbeddedWallet {
    * @throws Error if wallet retrieval fails or signing operations are not supported
    */
   async signer(): Promise<LocalAccount> {
-    const privy = this.privyProvider.privy
+    const privy = this.privyClient
     const walletId = this.walletId
     const privyWallet = await privy.walletApi.getWallet({
       id: walletId,

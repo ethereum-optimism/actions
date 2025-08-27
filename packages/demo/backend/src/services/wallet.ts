@@ -61,7 +61,7 @@ export async function getAllWallets(
             owners: [privyWallet.address],
           })
         const signer = await privyWallet.signer()
-        const wallet = await (
+        const wallet = (
           verbs.wallet.smartWalletProvider as SmartWalletProvider
         ).getWallet({
           walletAddress,

@@ -1,3 +1,5 @@
+import type { PrivyClient } from '@privy-io/server-auth'
+
 import type { ChainConfig } from '@/types/chain.js'
 
 import type { LendConfig } from './lend.js'
@@ -68,8 +70,6 @@ export type EmbeddedWalletProviderConfig = PrivyEmbeddedWalletProviderConfig
 export interface PrivyEmbeddedWalletProviderConfig {
   /** Embedded wallet provider type */
   type: 'privy'
-  /** Privy app ID */
-  appId: string
-  /** Privy app secret */
-  appSecret: string
+  /** Privy client instance */
+  privyClient: PrivyClient
 }

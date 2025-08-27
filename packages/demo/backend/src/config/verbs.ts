@@ -1,4 +1,5 @@
 import { Verbs, type VerbsConfig } from '@eth-optimism/verbs-sdk'
+import { PrivyClient } from '@privy-io/server-auth'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
@@ -11,8 +12,7 @@ export function createVerbsConfig(): VerbsConfig {
       embeddedWalletConfig: {
         provider: {
           type: 'privy',
-          appId: env.PRIVY_APP_ID,
-          appSecret: env.PRIVY_APP_SECRET,
+          privyClient: new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET),
         },
       },
       smartWalletConfig: {

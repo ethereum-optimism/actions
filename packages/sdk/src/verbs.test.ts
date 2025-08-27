@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { createMockPrivyClient } from './test/MockPrivyClient.js'
 import { externalTest } from './utils/test.js'
 import { Verbs } from './verbs.js'
 
@@ -20,8 +21,10 @@ describe('Verbs SDK - System Tests', () => {
             embeddedWalletConfig: {
               provider: {
                 type: 'privy',
-                appId: 'test-app-id',
-                appSecret: 'test-app-secret',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
               },
             },
             smartWalletConfig: {
@@ -89,8 +92,10 @@ describe('Verbs SDK - System Tests', () => {
             embeddedWalletConfig: {
               provider: {
                 type: 'privy',
-                appId: 'test-app-id',
-                appSecret: 'test-app-secret',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
               },
             },
             smartWalletConfig: {
@@ -129,8 +134,10 @@ describe('Verbs SDK - System Tests', () => {
             embeddedWalletConfig: {
               provider: {
                 type: 'privy',
-                appId: 'test-app-id',
-                appSecret: 'test-app-secret',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
               },
             },
             smartWalletConfig: {
@@ -159,8 +166,10 @@ describe('Verbs SDK - System Tests', () => {
           embeddedWalletConfig: {
             provider: {
               type: 'privy',
-              appId: 'test-app-id',
-              appSecret: 'test-app-secret',
+              privyClient: createMockPrivyClient(
+                'test-app-id',
+                'test-app-secret',
+              ),
             },
           },
           smartWalletConfig: {
@@ -187,8 +196,10 @@ describe('Verbs SDK - System Tests', () => {
           embeddedWalletConfig: {
             provider: {
               type: 'privy',
-              appId: 'test-app-id',
-              appSecret: 'test-app-secret',
+              privyClient: createMockPrivyClient(
+                'test-app-id',
+                'test-app-secret',
+              ),
             },
           },
           smartWalletConfig: {

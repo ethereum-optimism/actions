@@ -13,6 +13,8 @@ export abstract class SmartWallet {
   abstract signer: LocalAccount
   abstract getAddress(): Promise<Address>
   abstract getBalance(): Promise<TokenBalance[]>
+  // TODO: add addSigner method
+  // TODO: add removeSigner method
   abstract send(
     transactionData: TransactionData,
     chainId: SupportedChainId,

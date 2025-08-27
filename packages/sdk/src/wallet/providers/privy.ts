@@ -1,7 +1,6 @@
-import { PrivyClient } from '@privy-io/server-auth'
+import type { PrivyClient } from '@privy-io/server-auth'
 import { getAddress } from 'viem'
 
-import type { ChainManager } from '@/services/ChainManager.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
 import { EmbeddedWalletProvider } from '@/wallet/providers/base/EmbeddedWalletProvider.js'
 
@@ -22,18 +21,14 @@ export interface PrivyProviderGetAllWalletsOptions {
  */
 export class PrivyEmbeddedWalletProvider extends EmbeddedWalletProvider {
   public privy: PrivyClient
-  private chainManager: ChainManager
 
   /**
    * Create a new Privy wallet provider
-   * @param appId - Privy application ID
-   * @param appSecret - Privy application secret
-   * @param verbs - Verbs instance for accessing configured providers
+   * @param privyClient - Privy client instance
    */
-  constructor(appId: string, appSecret: string, chainManager: ChainManager) {
+  constructor(privyClient: PrivyClient) {
     super()
-    this.privy = new PrivyClient(appId, appSecret)
-    this.chainManager = chainManager
+    this.privy = privyClient
   }
 
   /**
@@ -49,8 +44,7 @@ export class PrivyEmbeddedWalletProvider extends EmbeddedWalletProvider {
       })
 
       const walletInstance = new PrivyWallet(
-        this,
-        this.chainManager,
+        this.privy,
         wallet.id,
         getAddress(wallet.address),
       )
@@ -73,8 +67,7 @@ export class PrivyEmbeddedWalletProvider extends EmbeddedWalletProvider {
       })
 
       const walletInstance = new PrivyWallet(
-        this,
-        this.chainManager,
+        this.privy,
         wallet.id,
         getAddress(wallet.address),
       )
@@ -101,8 +94,7 @@ export class PrivyEmbeddedWalletProvider extends EmbeddedWalletProvider {
 
       return response.data.map((wallet) => {
         const walletInstance = new PrivyWallet(
-          this,
-          this.chainManager,
+          this.privy,
           wallet.id,
           getAddress(wallet.address),
         )
