@@ -29,8 +29,7 @@
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --loglevel=warn",
     "test": "vitest --run --project unit",
     "test:supersim": "vitest --run --project supersim",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "find-vault": "tsx scripts/find-vault.ts"
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "keywords": [
     "verbs",
