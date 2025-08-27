@@ -28,7 +28,7 @@ export async function createWallet(): Promise<{
   smartWalletAddress: string
 }> {
   const verbs = getVerbs()
-  const wallet = await verbs.wallet.createWallet()
+  const wallet = await verbs.wallet.createWalletWithEmbeddedSigner()
   const smartWalletAddress = await wallet.getAddress()
   return {
     privyAddress: wallet.signer.address,
@@ -40,7 +40,7 @@ export async function getWallet(userId: string): Promise<{
   wallet: SmartWallet
 }> {
   const verbs = getVerbs()
-  const wallet = await verbs.wallet.getWallet({
+  const wallet = await verbs.wallet.getSmartWalletWithEmbeddedSigner({
     walletId: userId,
   })
   return { wallet }
