@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
+import { serializeBigInt } from '../utils/serializers.js'
 
 const DepositRequestSchema = z.object({
   body: z.object({
@@ -133,13 +134,13 @@ export class LendController {
       return c.json({
         transaction: {
           hash: result.hash,
-          // amount: result.amount.toString(),
-          // asset: result.asset,
-          // marketId: result.marketId,
-          // apy: result.apy,
-          // timestamp: result.timestamp,
-          // slippage: result.slippage,
-          // transactionData: result.transactionData,
+          amount: result.amount.toString(),
+          asset: result.asset,
+          marketId: result.marketId,
+          apy: result.apy,
+          timestamp: result.timestamp,
+          slippage: result.slippage,
+          transactionData: serializeBigInt(result.transactionData),
         },
       })
     } catch (error) {
