@@ -6,6 +6,8 @@ import { createBundlerClient } from 'viem/account-abstraction'
 import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainConfig } from '@/types/chain.js'
 
+// TODO: Add better documentation for this class once design is finalized
+
 /**
  * Chain Manager Service
  * @description Manages public clients and chain infrastructure for the Verbs SDK

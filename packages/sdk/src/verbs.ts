@@ -20,8 +20,8 @@ export class Verbs {
   public readonly wallet: WalletNamespace
   private _chainManager: ChainManager
   private lendProvider?: LendProvider
-  private embeddedWalletProvider: EmbeddedWalletProvider
-  private smartWalletProvider: SmartWalletProvider
+  private embeddedWalletProvider!: EmbeddedWalletProvider
+  private smartWalletProvider!: SmartWalletProvider
 
   constructor(config: VerbsConfig) {
     this._chainManager = new ChainManager(
@@ -47,36 +47,7 @@ export class Verbs {
       }
     }
 
-    if (config.wallet.embeddedWalletConfig.provider.type === 'privy') {
-      this.embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
-        config.wallet.embeddedWalletConfig.provider.privyClient,
-      )
-    } else {
-      throw new Error(
-        `Unsupported embedded wallet provider: ${config.wallet.embeddedWalletConfig.provider.type}`,
-      )
-    }
-
-    if (
-      !config.wallet.smartWalletConfig ||
-      config.wallet.smartWalletConfig.provider.type === 'default'
-    ) {
-      this.smartWalletProvider = new DefaultSmartWalletProvider(
-        this.chainManager,
-        this.lend,
-      )
-    } else {
-      throw new Error(
-        `Unsupported smart wallet provider: ${config.wallet.smartWalletConfig.provider.type}`,
-      )
-    }
-
-    // Create unified wallet provider
-    const walletProvider = new WalletProvider(
-      this.embeddedWalletProvider,
-      this.smartWalletProvider,
-    )
-    this.wallet = new WalletNamespace(walletProvider)
+    this.wallet = this.createWalletNamespace(config.wallet)
   }
 
   /**
@@ -96,5 +67,53 @@ export class Verbs {
    */
   get chainManager(): ChainManager {
     return this._chainManager
+  }
+
+  /**
+   * Create the wallet provider instance
+   * @param config - Wallet configuration
+   * @returns WalletProvider instance
+   */
+  private createWalletProvider(config: VerbsConfig['wallet']) {
+    if (config.embeddedWalletConfig.provider.type === 'privy') {
+      this.embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+        config.embeddedWalletConfig.provider.privyClient,
+      )
+    } else {
+      throw new Error(
+        `Unsupported embedded wallet provider: ${config.embeddedWalletConfig.provider.type}`,
+      )
+    }
+
+    if (
+      !config.smartWalletConfig ||
+      config.smartWalletConfig.provider.type === 'default'
+    ) {
+      this.smartWalletProvider = new DefaultSmartWalletProvider(
+        this.chainManager,
+        this.lend,
+      )
+    } else {
+      throw new Error(
+        `Unsupported smart wallet provider: ${config.smartWalletConfig.provider.type}`,
+      )
+    }
+
+    const walletProvider = new WalletProvider(
+      this.embeddedWalletProvider,
+      this.smartWalletProvider,
+    )
+
+    return walletProvider
+  }
+
+  /**
+   * Create the wallet namespace instance
+   * @param config - Wallet configuration
+   * @returns WalletNamespace instance
+   */
+  private createWalletNamespace(config: VerbsConfig['wallet']) {
+    const walletProvider = this.createWalletProvider(config)
+    return new WalletNamespace(walletProvider)
   }
 }

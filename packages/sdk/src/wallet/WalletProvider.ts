@@ -98,7 +98,7 @@ export class WalletProvider {
   /**
    * Get an existing smart wallet using embedded wallet as signer
    * @description Retrieves an embedded wallet by walletId and uses it as the signer to get
-   * the corresponding smart wallet. This is useful when you have 
+   * the corresponding smart wallet. This is useful when you have
    * an embedded wallet ID and want to access the associated smart wallet functionality.
    * @dev If neither walletAddress nor deploymentOwners is provided,
    * defaults to using the embedded wallet as the single owner.
@@ -122,12 +122,13 @@ export class WalletProvider {
       throw new Error('Embedded wallet not found')
     }
     const signer = await embeddedWallet.signer()
-    
+
     // If neither walletAddress nor deploymentOwners provided, default to embedded wallet as single owner
-    const finalDeploymentOwners = deploymentOwners || (walletAddress ? undefined : [embeddedWallet.address])
-    
-    return this.getSmartWallet( {
-        signer,
+    const finalDeploymentOwners =
+      deploymentOwners || (walletAddress ? undefined : [embeddedWallet.address])
+
+    return this.getSmartWallet({
+      signer,
       ...params,
       deploymentOwners: finalDeploymentOwners,
     })
@@ -173,17 +174,17 @@ export class WalletProvider {
     } = params
 
     if (!walletAddressParam && !deploymentOwners) {
-        try {
-      throw new Error(
-        'Either walletAddress or deploymentOwners array must be provided to locate the smart wallet',
-      )
-    } catch (error) {
-      console.error(error)
-      throw new Error(
-        'Either walletAddress or deploymentOwners array must be provided to locate the smart wallet',
-      )
+      try {
+        throw new Error(
+          'Either walletAddress or deploymentOwners array must be provided to locate the smart wallet',
+        )
+      } catch (error) {
+        console.error(error)
+        throw new Error(
+          'Either walletAddress or deploymentOwners array must be provided to locate the smart wallet',
+        )
+      }
     }
-}
 
     const ownerIndex = signerOwnerIndex ?? 0
 

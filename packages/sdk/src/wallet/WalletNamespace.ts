@@ -86,7 +86,7 @@ export class WalletNamespace {
    * Get an existing smart wallet using embedded wallet as signer
    * @description Retrieves an embedded wallet by walletId and uses it as the signer to get
    * the corresponding smart wallet. If neither walletAddress nor deploymentOwners is provided,
-   * defaults to using the embedded wallet as the single owner. This is useful when you have 
+   * defaults to using the embedded wallet as the single owner. This is useful when you have
    * an embedded wallet ID and want to access the associated smart wallet functionality.
    * @param params - Wallet retrieval parameters
    * @param params.walletId - ID of the embedded wallet to use as signer
