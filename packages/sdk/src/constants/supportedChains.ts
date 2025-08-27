@@ -4,7 +4,6 @@ export const SUPPORTED_CHAIN_IDS = [
   mainnet.id,
   unichain.id,
   base.id,
-  901,
   baseSepolia.id,
 ] as const
 
