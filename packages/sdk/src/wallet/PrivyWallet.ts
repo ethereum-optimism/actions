@@ -56,11 +56,11 @@ export class PrivyWallet extends EmbeddedWallet {
         return signed.signature as Hash
       },
       async signTransaction() {
-        // Implement if needed
+        // TODO: Implement
         throw new Error('Not implemented')
       },
       async signTypedData() {
-        // Implement if needed
+        // TODO: Implement
         throw new Error('Not implemented')
       },
     })

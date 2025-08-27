@@ -76,6 +76,12 @@ export class DefaultSmartWallet extends SmartWallet {
     this.nonce = nonce
   }
 
+  /**
+   * Get the signer account for this smart wallet
+   * @description Returns the LocalAccount instance used for signing transactions and UserOperations.
+   * This signer is used to authorize operations on behalf of the smart wallet.
+   * @returns The LocalAccount signer configured for this smart wallet
+   */
   get signer(): LocalAccount {
     return this._signer
   }
@@ -162,7 +168,6 @@ export class DefaultSmartWallet extends SmartWallet {
     options?: LendOptions,
   ): Promise<LendTransaction> {
     // Parse human-readable inputs
-    // TODO: Get actual chain ID from wallet context, for now using Unichain
     const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
       amount,
       asset,
@@ -208,14 +213,10 @@ export class DefaultSmartWallet extends SmartWallet {
         calls,
         paymaster: true,
       })
-      const receipt = await bundlerClient.waitForUserOperationReceipt({
+      await bundlerClient.waitForUserOperationReceipt({
         hash,
       })
 
-      console.log('✅ Transaction successfully sponsored!')
-      console.log(
-        `⛽ View sponsored UserOperation on blockscout: https://base-sepolia.blockscout.com/op/${receipt.userOpHash}`,
-      )
       return hash
     } catch (error) {
       throw new Error(
