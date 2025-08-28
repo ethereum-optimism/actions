@@ -1,25 +1,12 @@
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
-import { type Address, createPublicClient, http, type PublicClient } from 'viem'
+import { type Address } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { ChainManager } from '@/services/ChainManager.js'
+import { MockChainManager } from '@/test/MockChainManager.js'
 
 import type { MorphoLendConfig } from '../../../types/lend.js'
 import { LendProviderMorpho } from './index.js'
-
-// Mock chain config for Unichain
-const unichain = {
-  id: 130,
-  name: 'Unichain',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: {
-    default: { http: ['https://rpc.unichain.org'] },
-  },
-  blockExplorers: {
-    default: {
-      name: 'Unichain Explorer',
-      url: 'https://unichain.blockscout.com',
-    },
-  },
-}
 
 // Mock the Morpho SDK modules
 vi.mock('@morpho-org/blue-sdk-viem', () => ({
@@ -45,7 +32,7 @@ vi.mock('@morpho-org/bundler-sdk-viem', () => ({
 describe('LendProviderMorpho', () => {
   let provider: LendProviderMorpho
   let mockConfig: MorphoLendConfig
-  let mockPublicClient: ReturnType<typeof createPublicClient>
+  let mockChainManager: ChainManager
 
   beforeEach(() => {
     mockConfig = {
@@ -53,15 +40,9 @@ describe('LendProviderMorpho', () => {
       defaultSlippage: 50,
     }
 
-    mockPublicClient = createPublicClient({
-      chain: unichain,
-      transport: http(),
-    })
+    mockChainManager = new MockChainManager() as unknown as ChainManager
 
-    provider = new LendProviderMorpho(
-      mockConfig,
-      mockPublicClient as unknown as PublicClient,
-    )
+    provider = new LendProviderMorpho(mockConfig, mockChainManager)
   })
 
   describe('constructor', () => {
@@ -76,7 +57,7 @@ describe('LendProviderMorpho', () => {
       }
       const providerWithDefaults = new LendProviderMorpho(
         configWithoutSlippage,
-        mockPublicClient as unknown as PublicClient,
+        mockChainManager,
       )
       expect(providerWithDefaults).toBeInstanceOf(LendProviderMorpho)
     })

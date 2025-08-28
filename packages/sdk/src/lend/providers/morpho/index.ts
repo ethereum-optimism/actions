@@ -1,6 +1,9 @@
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import type { Address, PublicClient } from 'viem'
+import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
+import { baseSepolia } from 'viem/chains'
+
+import type { ChainManager } from '@/services/ChainManager.js'
 
 import type {
   LendOptions,
@@ -13,6 +16,7 @@ import {
   findBestVaultForAsset,
   getVaultInfo as getVaultInfoHelper,
   getVaults as getVaultsHelper,
+  SUPPORTED_VAULTS,
 } from './vaults.js'
 
 /**
@@ -24,6 +28,11 @@ export const SUPPORTED_NETWORKS = {
     name: 'Unichain',
     morphoAddress: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as Address,
   },
+  BASE_SEPOLIA: {
+    chainId: baseSepolia.id,
+    name: 'Base Sepolia',
+    morphoAddress: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  },
 } as const
 
 /**
@@ -33,25 +42,18 @@ export const SUPPORTED_NETWORKS = {
 export class LendProviderMorpho extends LendProvider {
   protected readonly SUPPORTED_NETWORKS = SUPPORTED_NETWORKS
 
-  /** TODO: refactor. for now, this only supports Unichain */
-  private morphoAddress: Address
   private defaultSlippage: number
-  private publicClient: PublicClient
+  private chainManager: ChainManager
 
   /**
    * Create a new Morpho lending provider
    * @param config - Morpho lending configuration
    * @param publicClient - Viem public client for blockchain interactions // TODO: remove this
    */
-  constructor(config: MorphoLendConfig, publicClient: PublicClient) {
+  constructor(config: MorphoLendConfig, chainManager: ChainManager) {
     super()
-
-    // Use Unichain as the default network for now
-    const network = SUPPORTED_NETWORKS.UNICHAIN
-
-    this.morphoAddress = network.morphoAddress
+    this.chainManager = chainManager
     this.defaultSlippage = config.defaultSlippage || 50 // 0.5% default
-    this.publicClient = publicClient
   }
 
   /**
@@ -107,13 +109,13 @@ export class LendProviderMorpho extends LendProvider {
           approval: {
             to: asset,
             data: approvalCallData,
-            value: '0x0',
+            value: 0n,
           },
           // Deposit transaction
           deposit: {
             to: selectedVaultAddress,
             data: depositCallData,
-            value: '0x0',
+            value: 0n,
           },
         },
         slippage: options?.slippage || this.defaultSlippage,
@@ -172,7 +174,7 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to vault information
    */
   async getVault(vaultAddress: Address): Promise<LendVaultInfo> {
-    return getVaultInfoHelper(vaultAddress, this.publicClient)
+    return getVaultInfoHelper(vaultAddress, this.chainManager)
   }
 
   /**
@@ -180,7 +182,7 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to array of vault information
    */
   async getVaults(): Promise<LendVaultInfo[]> {
-    return getVaultsHelper(this.publicClient)
+    return getVaultsHelper(this.chainManager)
   }
 
   /**
@@ -209,8 +211,17 @@ export class LendProviderMorpho extends LendProvider {
     sharesFormatted: string
   }> {
     try {
+      const vaultConfig = SUPPORTED_VAULTS.find(
+        (v) => v.address.toLowerCase() === vaultAddress.toLowerCase(),
+      )
+      if (!vaultConfig) {
+        throw new Error(`Vault ${vaultAddress} not found`)
+      }
+      const publicClient = this.chainManager.getPublicClient(
+        vaultConfig.chainId,
+      )
       // Get user's vault token balance (shares in the vault)
-      const shares = await this.publicClient.readContract({
+      const shares = await publicClient.readContract({
         address: vaultAddress,
         abi: erc20Abi,
         functionName: 'balanceOf',
@@ -218,7 +229,7 @@ export class LendProviderMorpho extends LendProvider {
       })
 
       // Convert shares to underlying asset balance using convertToAssets
-      const balance = await this.publicClient.readContract({
+      const balance = await publicClient.readContract({
         address: vaultAddress,
         abi: [
           {

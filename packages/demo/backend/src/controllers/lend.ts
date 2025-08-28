@@ -1,9 +1,11 @@
 import type { Context } from 'hono'
 import type { Address } from 'viem'
+import { baseSepolia } from 'viem/chains'
 import { z } from 'zod'
 
 import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
+import { serializeBigInt } from '../utils/serializers.js'
 
 const DepositRequestSchema = z.object({
   body: z.object({
@@ -117,10 +119,16 @@ export class LendController {
       const {
         body: { walletId, amount, token },
       } = validation.data
-      const lendTransaction = await lendService.deposit(walletId, amount, token)
+      const lendTransaction = await lendService.deposit(
+        walletId,
+        amount,
+        token,
+        baseSepolia.id,
+      )
       const result = await lendService.executeLendTransaction(
         walletId,
         lendTransaction,
+        baseSepolia.id,
       )
 
       return c.json({
@@ -132,10 +140,11 @@ export class LendController {
           apy: result.apy,
           timestamp: result.timestamp,
           slippage: result.slippage,
-          transactionData: result.transactionData,
+          transactionData: serializeBigInt(result.transactionData),
         },
       })
     } catch (error) {
+      console.error('Failed to deposit', error)
       return c.json(
         {
           error: 'Failed to deposit',

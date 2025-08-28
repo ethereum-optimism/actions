@@ -1,7 +1,12 @@
-import type { LendTransaction, LendVaultInfo } from '@eth-optimism/verbs-sdk'
+import type {
+  LendTransaction,
+  LendVaultInfo,
+  SupportedChainId,
+} from '@eth-optimism/verbs-sdk'
 import type { Address } from 'viem'
 
 import { getVerbs } from '../config/verbs.js'
+import { getWallet } from './wallet.js'
 
 interface VaultBalanceResult {
   balance: bigint
@@ -39,13 +44,14 @@ export async function getVaultBalance(
   walletId: string,
 ): Promise<VaultBalanceResult> {
   const verbs = getVerbs()
-  const wallet = await verbs.getWallet(walletId)
+  const { wallet } = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return await verbs.lend.getVaultBalance(vaultAddress, wallet.address)
+  const walletAddress = await wallet.getAddress()
+  return await verbs.lend.getVaultBalance(vaultAddress, walletAddress)
 }
 
 export async function formatVaultResponse(
@@ -86,23 +92,23 @@ export async function deposit(
   walletId: string,
   amount: number,
   token: string,
+  chainId: SupportedChainId,
 ): Promise<LendTransaction> {
-  const verbs = getVerbs()
-  const wallet = await verbs.getWallet(walletId)
+  const { wallet } = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return await wallet.lend(amount, token.toLowerCase())
+  return await wallet.lend(amount, token.toLowerCase(), chainId)
 }
 
 export async function executeLendTransaction(
   walletId: string,
   lendTransaction: LendTransaction,
+  chainId: SupportedChainId,
 ): Promise<LendTransaction> {
-  const verbs = getVerbs()
-  const wallet = await verbs.getWallet(walletId)
+  const { wallet } = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
@@ -112,73 +118,14 @@ export async function executeLendTransaction(
     throw new Error('No transaction data available for execution')
   }
 
-  const publicClient = verbs.chainManager.getPublicClient(130)
-  const ethBalance = await publicClient.getBalance({ address: wallet.address })
-
-  const gasEstimate = await estimateGasCost(
-    publicClient,
-    wallet,
-    lendTransaction,
-  )
-
-  if (ethBalance < gasEstimate) {
-    throw new Error('Insufficient ETH for gas fees')
-  }
-
-  let depositHash: Address = '0x0'
-
   if (lendTransaction.transactionData.approval) {
-    const approvalSignedTx = await wallet.sign(
-      lendTransaction.transactionData.approval,
-    )
-    const approvalHash = await wallet.send(approvalSignedTx, publicClient)
-    await publicClient.waitForTransactionReceipt({ hash: approvalHash })
+    await wallet.send(lendTransaction.transactionData.approval, chainId)
   }
 
-  const depositSignedTx = await wallet.sign(
+  const depositHash = await wallet.send(
     lendTransaction.transactionData.deposit,
+    chainId,
   )
-  depositHash = await wallet.send(depositSignedTx, publicClient)
-  await publicClient.waitForTransactionReceipt({ hash: depositHash })
 
   return { ...lendTransaction, hash: depositHash }
-}
-
-async function estimateGasCost(
-  publicClient: { estimateGas: Function; getGasPrice: Function },
-  wallet: { address: Address },
-  lendTransaction: LendTransaction,
-): Promise<bigint> {
-  let totalGasEstimate = BigInt(0)
-
-  if (lendTransaction.transactionData?.approval) {
-    try {
-      const approvalGas = await publicClient.estimateGas({
-        account: wallet.address,
-        to: lendTransaction.transactionData.approval.to,
-        data: lendTransaction.transactionData.approval.data,
-        value: BigInt(lendTransaction.transactionData.approval.value),
-      })
-      totalGasEstimate += approvalGas
-    } catch {
-      // Gas estimation failed, continue
-    }
-  }
-
-  if (lendTransaction.transactionData?.deposit) {
-    try {
-      const depositGas = await publicClient.estimateGas({
-        account: wallet.address,
-        to: lendTransaction.transactionData.deposit.to,
-        data: lendTransaction.transactionData.deposit.data,
-        value: BigInt(lendTransaction.transactionData.deposit.value),
-      })
-      totalGasEstimate += depositGas
-    } catch {
-      // Gas estimation failed, continue
-    }
-  }
-
-  const gasPrice = await publicClient.getGasPrice()
-  return totalGasEstimate * gasPrice
 }

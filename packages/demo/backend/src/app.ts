@@ -84,4 +84,5 @@ class VerbsApp extends App {
   }
 }
 
+export * from '@/types/index.js'
 export { VerbsApp }

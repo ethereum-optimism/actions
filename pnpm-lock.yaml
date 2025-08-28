@@ -77,6 +77,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.14.0
         version: 1.17.1(hono@4.8.5)
+      '@privy-io/server-auth':
+        specifier: ^1.31.1
+        version: 1.31.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
       commander:
         specifier: ^13.1.0
         version: 13.1.0
@@ -130,6 +133,9 @@ importers:
       '@eth-optimism/verbs-sdk':
         specifier: workspace:*
         version: link:../../sdk
+      '@eth-optimism/verbs-service':
+        specifier: workspace:*
+        version: link:../backend
       react:
         specifier: ^18
         version: 18.3.1
@@ -219,8 +225,8 @@ importers:
         specifier: ^2.4.1
         version: 2.4.1
       '@privy-io/server-auth':
-        specifier: latest
-        version: 1.28.6(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
+        specifier: '>=1.28.0'
+        version: 1.31.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
       viem:
         specifier: ^2.24.1
         version: 2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5)
@@ -237,6 +243,9 @@ importers:
       prettier:
         specifier: ^3.0.0
         version: 3.6.2
+      tsx:
+        specifier: ^4.7.1
+        version: 4.20.3
       typescript:
         specifier: ^5.2.2
         version: 5.8.3
@@ -1547,15 +1556,14 @@ packages:
     resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
     engines: {node: '>=12'}
 
-  '@privy-io/api-base@1.5.2':
-    resolution: {integrity: sha512-0eJBoQNmCSsWSWhzEVSU8WqPm7bgeN6VaAmqeXvjk8Ni0jM8nyTYjmRAqiCSs3mRzsnlQVchkGR6lsMTHkHKbw==}
-    engines: {node: '>=18.0.0', npm: '>=8.0.0'}
+  '@privy-io/api-base@1.6.0':
+    resolution: {integrity: sha512-ftlqjFw0Ww7Xn6Ad/1kEUsXRfKqNdmJYKat4ryJl2uPh60QXXlPfnf4y17dDFHJlnVb7qY10cCvKVz5ev5gAeg==}
 
-  '@privy-io/public-api@2.39.2':
-    resolution: {integrity: sha512-olT2xyrVdmgcxxy4g5v/u1qm6poDz3VNRuUcu45aiCP0DfAiseFVxKOKHpXP6xpA1m3z+45HL6lv2mJuYNP67w==}
+  '@privy-io/public-api@2.43.1':
+    resolution: {integrity: sha512-zhGBTghZiwnqdA4YvrXXM7fsz3fWUltSkxNdnQTqKGb/IfV8aZ14ryuWvD4v5oPJGtqVcwKRfdDmW8TMPGZHog==}
 
-  '@privy-io/server-auth@1.28.6':
-    resolution: {integrity: sha512-Czx6LTMj81FymrSrrkoTaC5QEJhlBp94sWCyIBCS0SpQd76C7Y7KQffcMB+g70xjVGsD187Qc5iskHp6GfMJ7g==}
+  '@privy-io/server-auth@1.31.1':
+    resolution: {integrity: sha512-w0DT0VZCPcXa/Mxqzo7fhXoInX5i4J5BgvzjNsdtMuovgR790kMx/9+K/rSlgtQ/25/B7oDjoIk/f8kd5Ps6mA==}
     peerDependencies:
       ethers: ^6
       viem: ^2.24.1
@@ -6006,13 +6014,13 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@privy-io/api-base@1.5.2':
+  '@privy-io/api-base@1.6.0':
     dependencies:
       zod: 3.25.76
 
-  '@privy-io/public-api@2.39.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)':
+  '@privy-io/public-api@2.43.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)':
     dependencies:
-      '@privy-io/api-base': 1.5.2
+      '@privy-io/api-base': 1.6.0
       bs58: 5.0.0
       libphonenumber-js: 1.12.10
       viem: 2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -6022,13 +6030,14 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@privy-io/server-auth@1.28.6(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))':
+  '@privy-io/server-auth@1.31.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))':
     dependencies:
       '@hpke/chacha20poly1305': 1.6.3
       '@hpke/core': 1.7.3
       '@noble/curves': 1.9.4
       '@noble/hashes': 1.8.0
-      '@privy-io/public-api': 2.39.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@privy-io/public-api': 2.43.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@scure/base': 1.2.6
       '@solana/web3.js': 1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
       canonicalize: 2.1.0
       dotenv: 16.6.1

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { createMockPrivyClient } from './test/MockPrivyClient.js'
 import { externalTest } from './utils/test.js'
 import { Verbs } from './verbs.js'
 
@@ -17,9 +18,20 @@ describe('Verbs SDK - System Tests', () => {
             defaultSlippage: 50,
           },
           wallet: {
-            type: 'privy',
-            appId: 'test-app-id',
-            appSecret: 'test-app-secret',
+            embeddedWalletConfig: {
+              provider: {
+                type: 'privy',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
           },
         })
 
@@ -77,9 +89,20 @@ describe('Verbs SDK - System Tests', () => {
             defaultSlippage: 50,
           },
           wallet: {
-            type: 'privy',
-            appId: 'test-app-id',
-            appSecret: 'test-app-secret',
+            embeddedWalletConfig: {
+              provider: {
+                type: 'privy',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
           },
         })
 
@@ -108,9 +131,20 @@ describe('Verbs SDK - System Tests', () => {
             defaultSlippage: 50,
           },
           wallet: {
-            type: 'privy',
-            appId: 'test-app-id',
-            appSecret: 'test-app-secret',
+            embeddedWalletConfig: {
+              provider: {
+                type: 'privy',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
           },
         })
 
@@ -129,9 +163,20 @@ describe('Verbs SDK - System Tests', () => {
           defaultSlippage: 50,
         },
         wallet: {
-          type: 'privy',
-          appId: 'test-app-id',
-          appSecret: 'test-app-secret',
+          embeddedWalletConfig: {
+            provider: {
+              type: 'privy',
+              privyClient: createMockPrivyClient(
+                'test-app-id',
+                'test-app-secret',
+              ),
+            },
+          },
+          smartWalletConfig: {
+            provider: {
+              type: 'default',
+            },
+          },
         },
       })
 
@@ -148,9 +193,20 @@ describe('Verbs SDK - System Tests', () => {
           defaultSlippage: 50,
         },
         wallet: {
-          type: 'privy',
-          appId: 'test-app-id',
-          appSecret: 'test-app-secret',
+          embeddedWalletConfig: {
+            provider: {
+              type: 'privy',
+              privyClient: createMockPrivyClient(
+                'test-app-id',
+                'test-app-secret',
+              ),
+            },
+          },
+          smartWalletConfig: {
+            provider: {
+              type: 'default',
+            },
+          },
         },
       })
 

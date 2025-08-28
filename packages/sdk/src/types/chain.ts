@@ -9,4 +9,6 @@ export interface ChainConfig {
   chainId: (typeof SUPPORTED_CHAIN_IDS)[number]
   /** RPC URL for the chain */
   rpcUrl: string
+  /** Bundler URL for the chain */
+  bundlerUrl?: string
 }
