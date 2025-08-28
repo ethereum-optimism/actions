@@ -175,6 +175,7 @@ export async function getVaultInfo(
     const currentTimestampSeconds = Math.floor(Date.now() / 1000)
 
     return {
+      chainId: config.chainId,
       address: vaultAddress,
       name: config.name,
       asset: config.asset.address,

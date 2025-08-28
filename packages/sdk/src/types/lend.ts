@@ -111,6 +111,8 @@ export interface ApyBreakdown {
  * @description Information about a Morpho vault
  */
 export interface LendVaultInfo {
+  /** Chain ID */
+  chainId: number
   /** Vault address */
   address: Address
   /** Vault name */

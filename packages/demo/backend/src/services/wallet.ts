@@ -115,7 +115,7 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
               totalFormattedBalance: formattedBalance,
               chainBalances: [
                 {
-                  chainId: 130 as const, // Unichain
+                  chainId: vaultBalance.chainId,
                   balance: vaultBalance.balance,
                   formattedBalance: formattedBalance,
                 },
