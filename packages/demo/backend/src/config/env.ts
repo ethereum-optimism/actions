@@ -54,5 +54,5 @@ export const env = cleanEnv(process.env, {
   FAUCET_ADDRESS: str({
     default: getFaucetAddressDefault(),
   }),
-  BASE_SEPOLIA_BUNDER_URL: str(),
+  BASE_SEPOLIA_BUNDER_URL: str({ default: undefined }),
 })
