@@ -4,13 +4,12 @@ import { LendProviderMorpho } from '@/lend/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
-
-import type { EmbeddedWalletProvider } from './wallet/providers/base/EmbeddedWalletProvider.js'
-import type { SmartWalletProvider } from './wallet/providers/base/SmartWalletProvider.js'
-import { DefaultSmartWalletProvider } from './wallet/providers/DefaultSmartWalletProvider.js'
-import { PrivyEmbeddedWalletProvider } from './wallet/providers/privy.js'
-import { WalletNamespace } from './wallet/WalletNamespace.js'
-import { WalletProvider } from './wallet/WalletProvider.js'
+import type { EmbeddedWalletProvider } from '@/wallet/providers/base/EmbeddedWalletProvider.js'
+import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
+import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
+import { PrivyEmbeddedWalletProvider } from '@/wallet/providers/PrivyEmbeddedWalletProvider.js'
+import { WalletNamespace } from '@/wallet/WalletNamespace.js'
+import { WalletProvider } from '@/wallet/WalletProvider.js'
 
 /**
  * Main Verbs SDK class

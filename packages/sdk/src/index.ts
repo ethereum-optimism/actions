@@ -22,4 +22,4 @@ export { SmartWalletProvider } from './wallet/providers/base/SmartWalletProvider
 export {
   PrivyEmbeddedWalletProvider,
   type PrivyProviderGetAllWalletsOptions,
-} from './wallet/providers/privy.js'
+} from './wallet/providers/PrivyEmbeddedWalletProvider.js'
