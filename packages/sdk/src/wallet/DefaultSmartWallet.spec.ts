@@ -8,8 +8,9 @@ import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
+import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider, TransactionData } from '@/types/lend.js'
+import type { TransactionData } from '@/types/lend.js'
 import { DefaultSmartWallet } from '@/wallet/DefaultSmartWallet.js'
 
 vi.mock('viem/account-abstraction', () => ({
@@ -25,9 +26,7 @@ const mockSigner: LocalAccount = {
 const mockChainManager = new MockChainManager({
   supportedChains: [baseSepolia.id, unichain.id],
 }) as unknown as ChainManager
-const mockLendProvider: LendProvider = {
-  deposit: vi.fn().mockResolvedValue({ hash: '0xabc' }),
-} as unknown as LendProvider
+const mockLendProvider = createMockLendProvider()
 
 // Test suite
 describe('DefaultSmartWallet', () => {
