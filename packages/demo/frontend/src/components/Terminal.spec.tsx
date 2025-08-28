@@ -9,7 +9,8 @@ vi.mock('../api/verbsApi', () => ({
   verbsApi: {
     createWallet: vi.fn(() =>
       Promise.resolve({
-        address: '0x1234567890123456789012345678901234567890',
+        privyAddress: '0x1234567890123456789012345678901234567890',
+        smartWalletAddress: '0x1234567890123456789012345678901234567890',
         userId: 'test-user',
       })
     ),
