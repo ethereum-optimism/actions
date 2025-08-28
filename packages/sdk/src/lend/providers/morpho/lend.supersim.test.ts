@@ -1,271 +1,283 @@
-// import type { ChildProcess } from 'child_process'
-// import { config } from 'dotenv'
-// import { type Address, erc20Abi, parseUnits, type PublicClient } from 'viem'
-// import type { privateKeyToAccount } from 'viem/accounts'
-// import { unichain } from 'viem/chains'
-// import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+// load env variables
+import 'dotenv/config'
 
-// import type { VerbsInterface } from '../../../types/verbs.js'
-// import type { Wallet } from '../../../types/wallet.js'
-// import {
-//   ANVIL_ACCOUNTS,
-//   setupSupersimTest,
-//   stopSupersim,
-// } from '../../../utils/test.js'
-// import { initVerbs } from '../../../verbs.js'
-// import { SUPPORTED_VAULTS } from './vaults.js'
+import { PrivyClient } from '@privy-io/server-auth'
+import type { ChildProcess } from 'child_process'
+import { config } from 'dotenv'
+import { type Address, erc20Abi, parseUnits, type PublicClient } from 'viem'
+import type { privateKeyToAccount } from 'viem/accounts'
+import { unichain } from 'viem/chains'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-// // Load test environment variables
-// config({ path: '.env.test.local' })
+import { Verbs } from '@/verbs.js'
+import type { PrivyWallet } from '@/wallet/PrivyWallet.js'
 
-// // Use the first supported vault (Gauntlet USDC)
-// const TEST_VAULT = SUPPORTED_VAULTS[0]
-// const USDC_ADDRESS = TEST_VAULT.asset.address
-// const TEST_VAULT_ADDRESS = TEST_VAULT.address
-// const TEST_WALLET_ID = 'v6c9zr6cjoo91qlopwzo9nhl'
-// const TEST_WALLET_ADDRESS =
-//   '0x55B05e38597D4365C59A6847f51849B30C381bA2' as Address
+import { setupSupersimTest, stopSupersim } from '../../../utils/test.js'
+import { SUPPORTED_VAULTS } from './vaults.js'
 
-// describe('Morpho Lend', () => {
-//   let supersimProcess: ChildProcess
-//   let publicClient: PublicClient
-//   let _testAccount: ReturnType<typeof privateKeyToAccount>
-//   let verbs: VerbsInterface
-//   let testWallet: Wallet | null
+// Load test environment variables
+config({ path: '.env.test.local' })
 
-//   beforeAll(async () => {
-//     // Set up supersim with funded wallet using helper
-//     const setup = await setupSupersimTest({
-//       supersim: {
-//         chains: ['unichain'],
-//         l1Port: 8546,
-//         l2StartingPort: 9546,
-//       },
-//       wallet: {
-//         rpcUrl: 'http://127.0.0.1:9546',
-//         chain: unichain,
-//         amount: '10',
-//         fundUsdc: true, // Request USDC funding for vault testing
-//         usdcAmount: '1000',
-//         // Fund the Privy wallet address
-//         address: TEST_WALLET_ADDRESS,
-//       },
-//     })
+// Use the first supported vault (Gauntlet USDC)
+const TEST_VAULT = SUPPORTED_VAULTS[0]
+const USDC_ADDRESS = TEST_VAULT.asset.address
+const TEST_VAULT_ADDRESS = TEST_VAULT.address
+const TEST_WALLET_ID = 'v6c9zr6cjoo91qlopwzo9nhl'
+const TEST_WALLET_ADDRESS =
+  '0x55B05e38597D4365C59A6847f51849B30C381bA2' as Address
 
-//     supersimProcess = setup.supersimProcess
-//     publicClient = setup.publicClient
-//     _testAccount = setup.testAccount
+describe('Morpho Lend', () => {
+  let supersimProcess: ChildProcess
+  let publicClient: PublicClient
+  let _testAccount: ReturnType<typeof privateKeyToAccount>
+  let verbs: Verbs
+  let testWallet: PrivyWallet | null
 
-//     // Initialize Verbs SDK with Morpho lending
-//     verbs = initVerbs({
-//       wallet: {
-//         type: 'privy',
-//         appId: process.env.PRIVY_APP_ID || 'test-app-id',
-//         appSecret: process.env.PRIVY_APP_SECRET || 'test-app-secret',
-//       },
-//       lend: {
-//         type: 'morpho',
-//         defaultSlippage: 50,
-//       },
-//       chains: [
-//         {
-//           chainId: unichain.id,
-//           rpcUrl: 'http://127.0.0.1:9546',
-//         },
-//       ],
-//     })
+  beforeAll(async () => {
+    // Set up supersim with funded wallet using helper
+    const setup = await setupSupersimTest({
+      supersim: {
+        chains: ['unichain'],
+        l1Port: 8546,
+        l2StartingPort: 9546,
+      },
+      wallet: {
+        rpcUrl: 'http://127.0.0.1:9546',
+        chain: unichain,
+        amount: '10',
+        fundUsdc: true, // Request USDC funding for vault testing
+        usdcAmount: '1000',
+        // Fund the Privy wallet address
+        address: TEST_WALLET_ADDRESS,
+      },
+    })
 
-//     // Use Privy to get the wallet
-//     const wallet = await verbs.getWallet(TEST_WALLET_ID)
+    supersimProcess = setup.supersimProcess
+    publicClient = setup.publicClient
+    _testAccount = setup.testAccount
+    const privyClient = new PrivyClient(
+      process.env.PRIVY_APP_ID || 'test-app-id',
+      process.env.PRIVY_APP_SECRET || 'test-app-secret',
+    )
 
-//     if (!wallet) {
-//       throw new Error(`Wallet ${TEST_WALLET_ID} not found in Privy`)
-//     }
+    // Initialize Verbs SDK with Morpho lending
+    verbs = new Verbs({
+      wallet: {
+        embeddedWalletConfig: {
+          provider: {
+            type: 'privy',
+            privyClient,
+          },
+        },
+        smartWalletConfig: {
+          provider: {
+            type: 'default',
+          },
+        },
+      },
+      lend: {
+        type: 'morpho',
+        defaultSlippage: 50,
+      },
+      chains: [
+        {
+          chainId: unichain.id,
+          rpcUrl: 'http://127.0.0.1:9546',
+        },
+      ],
+    })
 
-//     testWallet = wallet
+    // Use Privy to get the wallet
+    testWallet = (await verbs.wallet.getEmbeddedWallet({
+      walletId: TEST_WALLET_ID,
+    })) as PrivyWallet
 
-//     // Verify the address matches what we expect
-//     expect(testWallet!.address.toLowerCase()).toBe(
-//       TEST_WALLET_ADDRESS.toLowerCase(),
-//     )
-//   }, 60000)
+    if (!testWallet) {
+      throw new Error(`Wallet ${TEST_WALLET_ID} not found in Privy`)
+    }
 
-//   afterAll(async () => {
-//     await stopSupersim(supersimProcess)
-//   })
+    // Verify the address matches what we expect
+    expect(testWallet.address.toLowerCase()).toBe(
+      TEST_WALLET_ADDRESS.toLowerCase(),
+    )
+  }, 60000)
 
-//   it('should connect to forked Unichain', async () => {
-//     // Check that we can connect and get the chain ID
-//     const chainId = await publicClient.getChainId()
-//     expect(chainId).toBe(130) // Unichain chain ID
+  afterAll(async () => {
+    await stopSupersim(supersimProcess)
+  })
 
-//     // Check that our Privy wallet has ETH
-//     const balance = await publicClient.getBalance({
-//       address: TEST_WALLET_ADDRESS,
-//     })
-//     expect(balance).toBeGreaterThan(0n)
-//   })
+  it('should connect to forked Unichain', async () => {
+    // Check that we can connect and get the chain ID
+    const chainId = await publicClient.getChainId()
+    expect(chainId).toBe(130) // Unichain chain ID
 
-//   it('should execute lend operation with real Morpho transactions', async () => {
-//     // First, verify the vault exists
-//     await verbs.lend.getVault(TEST_VAULT_ADDRESS)
+    // Check that our Privy wallet has ETH
+    const balance = await publicClient.getBalance({
+      address: TEST_WALLET_ADDRESS,
+    })
+    expect(balance).toBeGreaterThan(0n)
+  })
 
-//     // Check balances
-//     await publicClient.getBalance({
-//       address: TEST_WALLET_ADDRESS,
-//     })
+  it('should execute lend operation with real Morpho transactions', async () => {
+    // First, verify the vault exists
+    await verbs.lend.getVault(TEST_VAULT_ADDRESS)
 
-//     // Check USDC balance
-//     try {
-//       await publicClient.readContract({
-//         address: USDC_ADDRESS,
-//         abi: erc20Abi,
-//         functionName: 'balanceOf',
-//         args: [TEST_WALLET_ADDRESS],
-//       })
-//     } catch {
-//       throw new Error('USDC balance not found')
-//     }
+    // Check balances
+    await publicClient.getBalance({
+      address: TEST_WALLET_ADDRESS,
+    })
 
-//     // Check vault balance before deposit
-//     const vaultBalanceBefore = await verbs.lend.getVaultBalance(
-//       TEST_VAULT_ADDRESS,
-//       TEST_WALLET_ADDRESS,
-//     )
+    // Check USDC balance
+    try {
+      await publicClient.readContract({
+        address: USDC_ADDRESS,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [TEST_WALLET_ADDRESS],
+      })
+    } catch {
+      throw new Error('USDC balance not found')
+    }
 
-//     // Test the new human-readable API: lend(1, 'usdc')
-//     const lendTx = await testWallet!.lend(1, 'usdc', TEST_VAULT_ADDRESS, {
-//       slippage: 50, // 0.5%
-//     })
+    // Check vault balance before deposit
+    const vaultBalanceBefore = await verbs.lend.getVaultBalance(
+      TEST_VAULT_ADDRESS,
+      TEST_WALLET_ADDRESS,
+    )
 
-//     const expectedAmount = parseUnits('1', 6) // 1 USDC (6 decimals)
+    // Test the new human-readable API: lend(1, 'usdc')
+    const lendTx = await testWallet!.lend(1, 'usdc', TEST_VAULT_ADDRESS, {
+      slippage: 50, // 0.5%
+    })
 
-//     // Validate lend transaction structure
-//     expect(lendTx).toBeDefined()
-//     expect(lendTx.amount).toBe(expectedAmount)
-//     expect(lendTx.asset).toBe(USDC_ADDRESS)
-//     expect(lendTx.marketId).toBe(TEST_VAULT_ADDRESS)
-//     expect(lendTx.apy).toBeGreaterThan(0)
-//     expect(lendTx.slippage).toBe(50)
-//     expect(lendTx.transactionData).toBeDefined()
-//     expect(lendTx.transactionData?.deposit).toBeDefined()
-//     expect(lendTx.transactionData?.approval).toBeDefined()
+    const expectedAmount = parseUnits('1', 6) // 1 USDC (6 decimals)
 
-//     // Validate transaction data structure
-//     expect(lendTx.transactionData?.approval?.to).toBe(USDC_ADDRESS)
-//     expect(lendTx.transactionData?.approval?.data).toMatch(/^0x[0-9a-fA-F]+$/)
-//     expect(lendTx.transactionData?.approval?.value).toBe('0x0')
+    // Validate lend transaction structure
+    expect(lendTx).toBeDefined()
+    expect(lendTx.amount).toBe(expectedAmount)
+    expect(lendTx.asset).toBe(USDC_ADDRESS)
+    expect(lendTx.marketId).toBe(TEST_VAULT_ADDRESS)
+    expect(lendTx.apy).toBeGreaterThan(0)
+    expect(lendTx.slippage).toBe(50)
+    expect(lendTx.transactionData).toBeDefined()
+    expect(lendTx.transactionData?.deposit).toBeDefined()
+    expect(lendTx.transactionData?.approval).toBeDefined()
 
-//     expect(lendTx.transactionData?.deposit?.to).toBe(TEST_VAULT_ADDRESS)
-//     expect(lendTx.transactionData?.deposit?.data).toMatch(/^0x[0-9a-fA-F]+$/)
-//     expect(lendTx.transactionData?.deposit?.value).toBe('0x0')
+    // Validate transaction data structure
+    expect(lendTx.transactionData?.approval?.to).toBe(USDC_ADDRESS)
+    expect(lendTx.transactionData?.approval?.data).toMatch(/^0x[0-9a-fA-F]+$/)
+    expect(lendTx.transactionData?.approval?.value).toBe(0n)
 
-//     // Get the current nonce for the wallet
-//     await publicClient.getTransactionCount({
-//       address: TEST_WALLET_ADDRESS,
-//     })
+    expect(lendTx.transactionData?.deposit?.to).toBe(TEST_VAULT_ADDRESS)
+    expect(lendTx.transactionData?.deposit?.data).toMatch(/^0x[0-9a-fA-F]+$/)
+    expect(lendTx.transactionData?.deposit?.value).toBe(0n)
 
-//     // Test signing the approval transaction using wallet.sign()
-//     try {
-//       const approvalTx = lendTx.transactionData!.approval!
+    // Get the current nonce for the wallet
+    await publicClient.getTransactionCount({
+      address: TEST_WALLET_ADDRESS,
+    })
 
-//       // First, estimate gas for approval transaction on supersim
-//       await publicClient.estimateGas({
-//         account: TEST_WALLET_ADDRESS,
-//         to: approvalTx.to as `0x${string}`,
-//         data: approvalTx.data as `0x${string}`,
-//         value: BigInt(approvalTx.value),
-//       })
+    // Test signing the approval transaction using wallet.sign()
+    try {
+      const approvalTx = lendTx.transactionData!.approval!
 
-//       const signedApproval = await testWallet!.sign(approvalTx)
-//       expect(signedApproval).toBeDefined()
+      // First, estimate gas for approval transaction on supersim
+      await publicClient.estimateGas({
+        account: TEST_WALLET_ADDRESS,
+        to: approvalTx.to as `0x${string}`,
+        data: approvalTx.data as `0x${string}`,
+        value: BigInt(approvalTx.value),
+      })
 
-//       // Send the signed transaction to supersim
-//       const approvalTxHash = await testWallet!.send(
-//         signedApproval,
-//         publicClient,
-//       )
-//       expect(approvalTxHash).toMatch(/^0x[0-9a-fA-F]{64}$/) // Valid tx hash format
+      const signedApproval = await testWallet!.sign(approvalTx)
+      expect(signedApproval).toBeDefined()
 
-//       // Wait for approval to be mined
-//       await publicClient.waitForTransactionReceipt({ hash: approvalTxHash })
-//     } catch {
-//       // This is expected if Privy wallet doesn't have gas on the right network
-//     }
+      // Send the signed transaction to supersim
+      const approvalTxHash = await testWallet!.send(
+        signedApproval,
+        publicClient,
+      )
+      expect(approvalTxHash).toMatch(/^0x[0-9a-fA-F]{64}$/) // Valid tx hash format
 
-//     // Test deposit transaction structure
-//     const depositTx = lendTx.transactionData!.deposit!
+      // Wait for approval to be mined
+      await publicClient.waitForTransactionReceipt({ hash: approvalTxHash })
+    } catch {
+      // This is expected if Privy wallet doesn't have gas on the right network
+    }
 
-//     expect(depositTx.to).toBe(TEST_VAULT_ADDRESS)
-//     expect(depositTx.data.length).toBeGreaterThan(10) // Should have encoded function data
-//     expect(depositTx.data.startsWith('0x')).toBe(true)
+    // Test deposit transaction structure
+    const depositTx = lendTx.transactionData!.deposit!
 
-//     // The deposit call data should include the deposit function selector
-//     // deposit(uint256,address) has selector 0x6e553f65
-//     expect(depositTx.data.startsWith('0x6e553f65')).toBe(true)
+    expect(depositTx.to).toBe(TEST_VAULT_ADDRESS)
+    expect(depositTx.data.length).toBeGreaterThan(10) // Should have encoded function data
+    expect(depositTx.data.startsWith('0x')).toBe(true)
 
-//     // Test signing the deposit transaction using wallet.sign()
-//     try {
-//       const signedDeposit = await testWallet!.sign(depositTx)
-//       expect(signedDeposit).toBeDefined()
+    // The deposit call data should include the deposit function selector
+    // deposit(uint256,address) has selector 0x6e553f65
+    expect(depositTx.data.startsWith('0x6e553f65')).toBe(true)
 
-//       // Send the signed transaction to supersim
-//       const depositTxHash = await testWallet!.send(signedDeposit, publicClient)
-//       expect(depositTxHash).toMatch(/^0x[0-9a-fA-F]{64}$/) // Valid tx hash format
+    // Test signing the deposit transaction using wallet.sign()
+    try {
+      const signedDeposit = await testWallet!.sign(depositTx)
+      expect(signedDeposit).toBeDefined()
 
-//       // Wait for deposit to be mined
-//       await publicClient.waitForTransactionReceipt({ hash: depositTxHash })
-//     } catch {
-//       // This is expected if Privy wallet doesn't have gas on the right network
-//     }
+      // Send the signed transaction to supersim
+      const depositTxHash = await testWallet!.send(signedDeposit, publicClient)
+      expect(depositTxHash).toMatch(/^0x[0-9a-fA-F]{64}$/) // Valid tx hash format
 
-//     // Check vault balance after deposit attempts
-//     const vaultBalanceAfter = await verbs.lend.getVaultBalance(
-//       TEST_VAULT_ADDRESS,
-//       TEST_WALLET_ADDRESS,
-//     )
+      // Wait for deposit to be mined
+      await publicClient.waitForTransactionReceipt({ hash: depositTxHash })
+    } catch {
+      // This is expected if Privy wallet doesn't have gas on the right network
+    }
 
-//     // For now, we expect the test to fail at signing since Privy needs proper setup
-//     // In production, the balance would increase after successful deposits
-//     expect(vaultBalanceBefore).toBeDefined()
-//     expect(vaultBalanceAfter).toBeDefined()
-//   }, 60000)
+    // Check vault balance after deposit attempts
+    const vaultBalanceAfter = await verbs.lend.getVaultBalance(
+      TEST_VAULT_ADDRESS,
+      TEST_WALLET_ADDRESS,
+    )
 
-//   it('should handle different human-readable amounts', async () => {
-//     // Test fractional amounts
-//     const tx1 = await testWallet!.lend(0.5, 'usdc', TEST_VAULT_ADDRESS)
-//     const expectedAmount1 = parseUnits('0.5', 6) // 0.5 USDC
-//     expect(tx1.amount).toBe(expectedAmount1)
+    // For now, we expect the test to fail at signing since Privy needs proper setup
+    // In production, the balance would increase after successful deposits
+    expect(vaultBalanceBefore).toBeDefined()
+    expect(vaultBalanceAfter).toBeDefined()
+  }, 60000)
 
-//     // Test large amounts
-//     const tx2 = await testWallet!.lend(1000, 'usdc', TEST_VAULT_ADDRESS)
-//     const expectedAmount2 = parseUnits('1000', 6) // 1000 USDC
-//     expect(tx2.amount).toBe(expectedAmount2)
+  it('should handle different human-readable amounts', async () => {
+    // Test fractional amounts
+    const tx1 = await testWallet!.lend(0.5, 'usdc', TEST_VAULT_ADDRESS)
+    const expectedAmount1 = parseUnits('0.5', 6) // 0.5 USDC
+    expect(tx1.amount).toBe(expectedAmount1)
 
-//     // Test using address instead of symbol
-//     const tx3 = await testWallet!.lend(1, USDC_ADDRESS, TEST_VAULT_ADDRESS)
-//     const expectedAmount3 = parseUnits('1', 6) // 1 USDC
-//     expect(tx3.amount).toBe(expectedAmount3)
-//     expect(tx3.asset).toBe(USDC_ADDRESS)
-//   }, 30000)
+    // Test large amounts
+    const tx2 = await testWallet!.lend(1000, 'usdc', TEST_VAULT_ADDRESS)
+    const expectedAmount2 = parseUnits('1000', 6) // 1000 USDC
+    expect(tx2.amount).toBe(expectedAmount2)
 
-//   it('should validate input parameters', async () => {
-//     // Test invalid amount
-//     await expect(testWallet!.lend(0, 'usdc')).rejects.toThrow(
-//       'Amount must be greater than 0',
-//     )
-//     await expect(testWallet!.lend(-1, 'usdc')).rejects.toThrow(
-//       'Amount must be greater than 0',
-//     )
+    // Test using address instead of symbol
+    const tx3 = await testWallet!.lend(1, USDC_ADDRESS, TEST_VAULT_ADDRESS)
+    const expectedAmount3 = parseUnits('1', 6) // 1 USDC
+    expect(tx3.amount).toBe(expectedAmount3)
+    expect(tx3.asset).toBe(USDC_ADDRESS)
+  }, 30000)
 
-//     // Test invalid asset symbol
-//     await expect(testWallet!.lend(1, 'invalid')).rejects.toThrow(
-//       'Unsupported asset symbol: invalid',
-//     )
+  it('should validate input parameters', async () => {
+    // Test invalid amount
+    await expect(testWallet!.lend(0, 'usdc')).rejects.toThrow(
+      'Amount must be greater than 0',
+    )
+    await expect(testWallet!.lend(-1, 'usdc')).rejects.toThrow(
+      'Amount must be greater than 0',
+    )
 
-//     // Test invalid address format
-//     await expect(testWallet!.lend(1, 'not-an-address')).rejects.toThrow(
-//       'Unsupported asset symbol',
-//     )
-//   }, 30000)
-// })
+    // Test invalid asset symbol
+    await expect(testWallet!.lend(1, 'invalid')).rejects.toThrow(
+      'Unsupported asset symbol: invalid',
+    )
+
+    // Test invalid address format
+    await expect(testWallet!.lend(1, 'not-an-address')).rejects.toThrow(
+      'Unsupported asset symbol',
+    )
+  }, 30000)
+})

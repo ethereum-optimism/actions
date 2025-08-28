@@ -78,6 +78,8 @@ export class Verbs {
     if (config.embeddedWalletConfig.provider.type === 'privy') {
       this.embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
         config.embeddedWalletConfig.provider.privyClient,
+        this._chainManager,
+        this.lendProvider!,
       )
     } else {
       throw new Error(
