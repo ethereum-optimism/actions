@@ -12,10 +12,13 @@ import { router } from './router.js'
 vi.mock('./config/verbs.js', () => ({
   initializeVerbs: vi.fn(),
   getVerbs: vi.fn(() => ({
-    createWallet: vi.fn((userId: string) =>
+    wallet:{ createWalletWithEmbeddedSigner: vi.fn(() =>
       Promise.resolve({
-        id: `wallet-${userId}`,
-        address: `0x${userId.padEnd(40, '0')}`,
+        id: `wallet-1`,
+        signer: {
+          address: `0x1111111111111111111111111111111111111111`,
+        },
+        getAddress: () => Promise.resolve(`0x1111111111111111111111111111111111111111`),
         getBalance: () =>
           Promise.resolve([
             { symbol: 'USDC', balance: 1000000n },
@@ -23,14 +26,14 @@ vi.mock('./config/verbs.js', () => ({
           ]),
       }),
     ),
-    getWallet: vi.fn((userId: string) => {
+    getSmartWalletWithEmbeddedSigner: vi.fn(({walletId: userId}: {walletId: string}) => {
       // Simulate some users existing and others not
       if (userId.includes('non-existent')) {
         return Promise.resolve(null)
       }
       return Promise.resolve({
         id: `wallet-${userId}`,
-        address: `0x${userId.padEnd(40, '0')}`,
+        getAddress: () => Promise.resolve(`0x${userId.padEnd(40, '0')}`),
         getBalance: () =>
           Promise.resolve([
             { symbol: 'USDC', balance: 1000000n },
@@ -38,6 +41,20 @@ vi.mock('./config/verbs.js', () => ({
           ]),
       })
     }),
+    smartWalletProvider: {
+      getWalletAddress: vi.fn(({owners}: {owners: string[]}) => {
+        return Promise.resolve(owners[0])
+      }),
+      getWallet: vi.fn(({walletAddress, signer, ownerIndex}: {walletAddress: string, signer: string, ownerIndex: number}) => {
+        return ({
+          address: walletAddress,
+          getAddress: () => Promise.resolve(walletAddress),
+          signer,
+          ownerIndex,
+        })
+      }),
+    },
+    embeddedWalletProvider: {
     getAllWallets: vi.fn(() =>
       Promise.resolve([
         {
@@ -48,6 +65,9 @@ vi.mock('./config/verbs.js', () => ({
               { symbol: 'USDC', balance: 1000000n },
               { symbol: 'MORPHO', balance: 500000n },
             ]),
+          signer: vi.fn().mockResolvedValue({
+            address: '0x1111111111111111111111111111111111111111',
+          }),
         },
         {
           id: 'wallet-2',
@@ -57,9 +77,13 @@ vi.mock('./config/verbs.js', () => ({
               { symbol: 'USDC', balance: 2000000n },
               { symbol: 'MORPHO', balance: 750000n },
             ]),
+          signer: vi.fn().mockResolvedValue({
+            address: '0x2222222222222222222222222222222222222222',
+          }),
         },
       ]),
-    ),
+    )},
+  },
     lend: {
       getVaults: vi.fn(() =>
         Promise.resolve([
@@ -186,11 +210,12 @@ describe('HTTP API Integration', () => {
 
       expect(response.statusCode).toBe(200)
       const data = (await response.body.json()) as any
-
-      expect(data).toHaveProperty('address')
+      expect(data).toHaveProperty('privyAddress')
+      expect(data).toHaveProperty('smartWalletAddress')
       expect(data).toHaveProperty('userId')
       expect(data.userId).toBe(testUserId)
-      expect(data.address).toMatch(/^0x[a-zA-Z0-9\-]{1,}$/) // Basic address format validation
+      expect(data.smartWalletAddress).toMatch(/^0x[a-zA-Z0-9\-]{1,}$/) 
+      expect(data.privyAddress).toMatch(/^0x[a-zA-Z0-9\-]{1,}$/) 
     })
 
     it('should get an existing wallet', async () => {
