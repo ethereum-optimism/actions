@@ -60,7 +60,9 @@ export async function getAllWallets(
           await verbs.wallet.smartWalletProvider.getWalletAddress({
             owners: [privyWallet.address],
           })
+        console.log('walletAddress', walletAddress)
         const signer = await privyWallet.signer()
+        console.log('signer', signer)
         const wallet = (
           verbs.wallet.smartWalletProvider as SmartWalletProvider
         ).getWallet({
@@ -68,6 +70,7 @@ export async function getAllWallets(
           signer,
           ownerIndex: 0,
         })
+        console.log('wallet', wallet)
         return {
           wallet,
           id: privyWallet.walletId,
@@ -75,12 +78,15 @@ export async function getAllWallets(
       }),
     )
   } catch {
-    throw new Error('Failed to retrieve wallets')
+    throw new Error('Failed to get all wallets')
   }
 }
 
 export async function getBalance(userId: string): Promise<TokenBalance[]> {
   const { wallet } = await getWallet(userId)
+  if (!wallet) {
+    throw new Error('Wallet not found')
+  }
 
   // Get regular token balances
   const tokenBalances = await wallet.getBalance().catch((error) => {
