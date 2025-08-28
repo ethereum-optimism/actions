@@ -1,6 +1,8 @@
 import type { PrivyClient } from '@privy-io/server-auth'
 import type { Address } from 'viem'
 
+import { getRandomAddress } from '@/test/utils.js'
+
 /**
  * Mock Privy Client for testing
  * @description Provides a mock implementation of PrivyClient for testing purposes
@@ -18,8 +20,7 @@ export class MockPrivyClient {
     return {
       createWallet: async (params: { chainType: string }) => {
         const walletId = `mock-wallet-${++this.walletCounter}`
-        const address =
-          `0x${walletId.replace(/[^0-9]/g, '').padEnd(40, '0')}` as Address
+        const address = getRandomAddress()
 
         const wallet = new MockWallet(walletId, address)
         this.mockWallets.set(walletId, wallet)
