@@ -6,8 +6,8 @@ import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
+import { DefaultSmartWallet } from '@/wallet/DefaultSmartWallet.js'
 import { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
-import { DefaultSmartWallet } from '@/wallet/SmartWallet.js'
 
 /**
  * Smart Wallet Provider
