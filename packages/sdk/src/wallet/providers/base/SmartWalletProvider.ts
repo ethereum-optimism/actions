@@ -5,7 +5,7 @@ import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
 
 /**
  * Base smart wallet provider interface
- * @description Abstract interface for smart wallet providers (Native, etc.)
+ * @description Abstract interface for smart wallet providers.
  */
 export abstract class SmartWalletProvider {
   /**
