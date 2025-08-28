@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
+import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider } from '@/types/lend.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
 
 vi.mock('viem/accounts', async () => ({
@@ -20,9 +20,7 @@ const mockPrivyClient = createMockPrivyClient('test-app-id', 'test-app-secret')
 const mockChainManager = new MockChainManager({
   supportedChains: [130], // Unichain
 }) as unknown as ChainManager
-const mockLendProvider: LendProvider = {
-  deposit: vi.fn().mockResolvedValue({ hash: '0xabc' }),
-} as unknown as LendProvider
+const mockLendProvider = createMockLendProvider()
 const mockLocalAccount = {
   address: mockAddress,
   signMessage: vi.fn(),
