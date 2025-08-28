@@ -209,6 +209,7 @@ export class LendProviderMorpho extends LendProvider {
     balanceFormatted: string
     shares: bigint
     sharesFormatted: string
+    chainId: number
   }> {
     try {
       const vaultConfig = SUPPORTED_VAULTS.find(
@@ -253,6 +254,7 @@ export class LendProviderMorpho extends LendProvider {
         balanceFormatted,
         shares,
         sharesFormatted,
+        chainId: vaultConfig.chainId,
       }
     } catch (error) {
       throw new Error(

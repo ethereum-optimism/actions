@@ -3,7 +3,9 @@ import type {
   LendVaultInfo,
   SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
+import { chainById } from '@eth-optimism/viem/chains'
 import type { Address } from 'viem'
+import { baseSepolia } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
 import { getWallet } from './wallet.js'
@@ -16,6 +18,7 @@ interface VaultBalanceResult {
 }
 
 interface FormattedVaultResponse {
+  chainId: number
   address: Address
   name: string
   apy: number
@@ -27,6 +30,17 @@ interface FormattedVaultResponse {
   owner: Address
   curator: Address
   lastUpdate: number
+}
+
+async function getBlockExplorerUrl(chainId: SupportedChainId): Promise<string> {
+  const chain = chainById[chainId]
+  if (!chain) {
+    throw new Error(`Chain not found for chainId: ${chainId}`)
+  }
+  if (chain.id === baseSepolia.id) {
+    return `https://base-sepolia.blockscout.com/op`
+  }
+  return chain.blockExplorers?.default.url || ''
 }
 
 export async function getVaults(): Promise<LendVaultInfo[]> {
@@ -58,6 +72,7 @@ export async function formatVaultResponse(
   vault: LendVaultInfo,
 ): Promise<FormattedVaultResponse> {
   return {
+    chainId: vault.chainId,
     address: vault.address,
     name: vault.name,
     apy: vault.apy,
@@ -107,7 +122,7 @@ export async function executeLendTransaction(
   walletId: string,
   lendTransaction: LendTransaction,
   chainId: SupportedChainId,
-): Promise<LendTransaction> {
+): Promise<LendTransaction & { blockExplorerUrl: string }> {
   const { wallet } = await getWallet(walletId)
 
   if (!wallet) {
@@ -127,5 +142,9 @@ export async function executeLendTransaction(
     chainId,
   )
 
-  return { ...lendTransaction, hash: depositHash }
+  return {
+    ...lendTransaction,
+    hash: depositHash,
+    blockExplorerUrl: await getBlockExplorerUrl(chainId),
+  }
 }

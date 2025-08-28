@@ -136,6 +136,9 @@ importers:
       '@eth-optimism/verbs-service':
         specifier: workspace:*
         version: link:../backend
+      '@eth-optimism/viem':
+        specifier: ^0.4.13
+        version: 0.4.13(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
       react:
         specifier: ^18
         version: 18.3.1
