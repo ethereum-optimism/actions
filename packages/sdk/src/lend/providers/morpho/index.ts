@@ -42,7 +42,6 @@ export const SUPPORTED_NETWORKS = {
 export class LendProviderMorpho extends LendProvider {
   protected readonly SUPPORTED_NETWORKS = SUPPORTED_NETWORKS
 
-  /** TODO: refactor. for now, this only supports Unichain */
   private defaultSlippage: number
   private chainManager: ChainManager
 
