@@ -85,7 +85,17 @@ export class PrivyWallet extends EmbeddedWallet {
     })
   }
 
-  // TODO: Decide whether any of the methods below this commentare needed. This is tech debt from the POC.
+  // ⚠️  WARNING: TECH DEBT BELOW ⚠️
+  // =====================================
+  // The methods below this comment are legacy tech debt from the POC
+  // and will most likely be REMOVED in a future refactor.
+  // 
+  // DO NOT rely on these methods in production code!
+  // DO NOT extend or modify these methods!
+  // 
+  // If you need this functionality, please discuss with the team
+  // before using or building upon these methods.
+  // =====================================
 
   /**
    * Lend assets to a lending market
