@@ -1,5 +1,11 @@
-import { type Address, type LocalAccount } from 'viem'
-import { toAccount } from 'viem/accounts'
+import { createViemAccount } from '@privy-io/server-auth/viem'
+import {
+  type Address,
+  createWalletClient,
+  type LocalAccount,
+  type WalletClient,
+} from 'viem'
+import { unichain } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -9,10 +15,22 @@ import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
 
+vi.mock('viem', async () => ({
+  // @ts-ignore - importActual returns unknown
+  ...(await vi.importActual('viem')),
+  createWalletClient: vi.fn(),
+}))
+
 vi.mock('viem/accounts', async () => ({
   // @ts-ignore - importActual returns unknown
   ...(await vi.importActual('viem/accounts')),
   toAccount: vi.fn(),
+}))
+
+vi.mock('@privy-io/server-auth/viem', async () => ({
+  // @ts-ignore - importActual returns unknown
+  ...(await vi.importActual('@privy-io/server-auth/viem')),
+  createViemAccount: vi.fn(),
 }))
 
 const mockAddress = getRandomAddress()
@@ -60,12 +78,11 @@ describe('PrivyWallet', () => {
     expect(wallet.address).toBe(createdWallet.address)
   })
 
-  it('should create a signer with correct configuration', async () => {
+  it('should create an account with correct configuration', async () => {
     // Create a wallet using the mock client first
     const createdWallet = await mockPrivyClient.walletApi.createWallet({
       chainType: 'ethereum',
     })
-
     const wallet = new PrivyWallet(
       mockPrivyClient,
       createdWallet.id,
@@ -73,18 +90,42 @@ describe('PrivyWallet', () => {
       mockChainManager,
       mockLendProvider,
     )
+    vi.mocked(createViemAccount).mockResolvedValue(mockLocalAccount)
 
-    vi.mocked(toAccount).mockReturnValue(mockLocalAccount)
+    const account = await wallet.account()
 
-    const signer = await wallet.signer()
-
-    expect(toAccount).toHaveBeenCalledWith({
+    expect(createViemAccount).toHaveBeenCalledWith({
+      walletId: createdWallet.id,
       address: createdWallet.address,
-      signMessage: expect.any(Function),
-      sign: expect.any(Function),
-      signTransaction: expect.any(Function),
-      signTypedData: expect.any(Function),
+      privy: mockPrivyClient,
     })
-    expect(signer).toBe(mockLocalAccount)
+    expect(account).toBe(mockLocalAccount)
+  })
+
+  it('should create a wallet client with correct configuration', async () => {
+    const createdWallet = await mockPrivyClient.walletApi.createWallet({
+      chainType: 'ethereum',
+    })
+    const wallet = new PrivyWallet(
+      mockPrivyClient,
+      createdWallet.id,
+      createdWallet.address as Address,
+      mockChainManager,
+      mockLendProvider,
+    )
+    const mockWalletClient = {
+      account: mockLocalAccount,
+      address: createdWallet.address as Address,
+    } as unknown as WalletClient
+    vi.mocked(createViemAccount).mockResolvedValue(mockLocalAccount)
+    vi.mocked(createWalletClient).mockResolvedValue(mockWalletClient)
+
+    const walletClient = await wallet.walletClient(unichain.id)
+
+    expect(createWalletClient).toHaveBeenCalledOnce()
+    const callArgs = vi.mocked(createWalletClient).mock.calls[0][0]
+    expect(callArgs.account).toBe(mockLocalAccount)
+    expect(callArgs.chain).toBe(mockChainManager.getChain(unichain.id))
+    expect(walletClient).toBe(mockWalletClient)
   })
 })

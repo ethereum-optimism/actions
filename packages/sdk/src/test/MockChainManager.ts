@@ -1,9 +1,13 @@
-import type { PublicClient } from 'viem'
+import { chainById } from '@eth-optimism/viem/chains'
+import type { Chain, PublicClient } from 'viem'
 import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { unichain } from 'viem/chains'
 import { type MockedFunction, vi } from 'vitest'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type {
+  SUPPORTED_CHAIN_IDS,
+  SupportedChainId,
+} from '@/constants/supportedChains.js'
 
 export interface MockChainManagerConfig {
   supportedChains: SupportedChainId[]
@@ -73,6 +77,14 @@ export class MockChainManager {
         this.config.defaultBalance,
       )
     })
+  }
+
+  getChain(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): Chain {
+    return chainById[chainId]
+  }
+
+  getRpcUrl(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): string {
+    return this.getChain(chainId).rpcUrls.default.http[0]
   }
 
   private createMockBundlerClients(): Map<SupportedChainId, BundlerClient> {

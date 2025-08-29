@@ -122,21 +122,21 @@ describe('WalletNamespace', () => {
 
     // Create an embedded wallet to use as signer
     const embeddedWallet = await embeddedWalletProvider.createWallet()
-    const signer = await embeddedWallet.signer()
+    const account = await embeddedWallet.account()
     const owners = [getRandomAddress(), embeddedWallet.address]
     const nonce = BigInt(123)
 
     const smartWallet = await walletNamespace.createSmartWallet({
       owners,
-      signer,
+      signer: account,
       nonce,
     })
 
     expect(smartWallet).toBeInstanceOf(DefaultSmartWallet)
-    expect(smartWallet.signer).toBe(signer)
+    expect(smartWallet.signer).toBe(account)
     expect(createSmartWalletSpy).toHaveBeenCalledWith({
       owners,
-      signer,
+      signer: account,
       nonce,
     })
   })
@@ -307,12 +307,12 @@ describe('WalletNamespace', () => {
     const walletNamespace = new WalletNamespace(walletProvider)
 
     const embeddedWallet = await embeddedWalletProvider.createWallet()
-    const signer = await embeddedWallet.signer()
+    const account = await embeddedWallet.account()
     const deploymentOwners = [embeddedWallet.address, getRandomAddress()]
     const signerOwnerIndex = 0
     const nonce = BigInt(789)
     const params = {
-      signer,
+      signer: account,
       deploymentOwners,
       signerOwnerIndex,
       nonce,
@@ -345,11 +345,11 @@ describe('WalletNamespace', () => {
     const walletNamespace = new WalletNamespace(walletProvider)
 
     const embeddedWallet = await embeddedWalletProvider.createWallet()
-    const signer = await embeddedWallet.signer()
+    const account = await embeddedWallet.account()
 
     await expect(
       walletNamespace.getSmartWallet({
-        signer,
+        signer: account,
         // Missing both walletAddress and deploymentOwners
       }),
     ).rejects.toThrow(
