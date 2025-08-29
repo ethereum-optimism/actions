@@ -124,14 +124,14 @@ describe('Wallet Service', () => {
         {
           walletId: 'wallet-1',
           address: '0x1234567890123456789012345678901234567890',
-          signer: vi.fn().mockResolvedValue({
+          account: vi.fn().mockResolvedValue({
             address: '0x1234567890123456789012345678901234567890',
           }),
         },
         {
           walletId: 'wallet-2',
           address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-          signer: vi.fn().mockResolvedValue({
+          account: vi.fn().mockResolvedValue({
             address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
           }),
         },
@@ -173,7 +173,7 @@ describe('Wallet Service', () => {
         {
           walletId: 'wallet-1',
           address: '0x1234567890123456789012345678901234567890',
-          signer: vi.fn().mockResolvedValue({
+          account: vi.fn().mockResolvedValue({
             address: '0x1234567890123456789012345678901234567890',
           }),
         },

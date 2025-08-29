@@ -1,4 +1,6 @@
-import type { Address, LocalAccount } from 'viem'
+import type { Address, LocalAccount, WalletClient } from 'viem'
+
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 /**
  * Base embedded wallet class
@@ -18,10 +20,20 @@ export abstract class EmbeddedWallet {
   }
 
   /**
-   * Get a signer for this embedded wallet
+   * Get an account for this embedded wallet
    * @description Returns a LocalAccount that can be used to sign transactions and messages.
-   * This is typically used as the signer for smart wallet operations.
+   * This can be used as the account for smart wallet operations if the embedded wallet is an
+   * owner on the smart wallet.
    * @returns Promise resolving to a LocalAccount configured for signing operations
    */
-  abstract signer(): Promise<LocalAccount>
+  abstract account(): Promise<LocalAccount>
+
+  /**
+   * Get a wallet client for this embedded wallet
+   * @description Returns a WalletClient that can be used to send transactions and interact
+   * with smart contracts.
+   * @param chainId - The chain ID to create the wallet client for
+   * @returns Promise resolving to a WalletClient configured for the specified chain
+   */
+  abstract walletClient(chainId: SupportedChainId): Promise<WalletClient>
 }
