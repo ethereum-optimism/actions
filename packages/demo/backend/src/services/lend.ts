@@ -40,7 +40,7 @@ async function getBlockExplorerUrl(chainId: SupportedChainId): Promise<string> {
   if (chain.id === baseSepolia.id) {
     return `https://base-sepolia.blockscout.com/op`
   }
-  return chain.blockExplorers?.default.url || ''
+  return `${chain.blockExplorers?.default.url}/tx` || ''
 }
 
 export async function getVaults(): Promise<LendVaultInfo[]> {

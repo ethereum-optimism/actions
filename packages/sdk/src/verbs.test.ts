@@ -1,3 +1,4 @@
+import { unichain } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
 import { createMockPrivyClient } from './test/MockPrivyClient.js'
@@ -13,6 +14,12 @@ describe('Verbs SDK - System Tests', () => {
       async () => {
         // Create Verbs instance with Morpho lending configured
         const verbs = new Verbs({
+          chains: [
+            {
+              chainId: unichain.id,
+              rpcUrl: unichain.rpcUrls.default.http[0],
+            },
+          ],
           lend: {
             type: 'morpho',
             defaultSlippage: 50,
@@ -84,6 +91,12 @@ describe('Verbs SDK - System Tests', () => {
       'should fetch vault info with enhanced rewards data',
       async () => {
         const verbs = new Verbs({
+          chains: [
+            {
+              chainId: unichain.id,
+              rpcUrl: unichain.rpcUrls.default.http[0],
+            },
+          ],
           lend: {
             type: 'morpho',
             defaultSlippage: 50,
@@ -126,6 +139,12 @@ describe('Verbs SDK - System Tests', () => {
       'should handle non-existent vault gracefully',
       async () => {
         const verbs = new Verbs({
+          chains: [
+            {
+              chainId: unichain.id,
+              rpcUrl: unichain.rpcUrls.default.http[0],
+            },
+          ],
           lend: {
             type: 'morpho',
             defaultSlippage: 50,
@@ -158,6 +177,12 @@ describe('Verbs SDK - System Tests', () => {
 
     it('should list supported network IDs', async () => {
       const verbs = new Verbs({
+        chains: [
+          {
+            chainId: unichain.id,
+            rpcUrl: unichain.rpcUrls.default.http[0],
+          },
+        ],
         lend: {
           type: 'morpho',
           defaultSlippage: 50,
@@ -188,6 +213,12 @@ describe('Verbs SDK - System Tests', () => {
 
     it.runIf(externalTest())('should get list of vaults', async () => {
       const verbs = new Verbs({
+        chains: [
+          {
+            chainId: unichain.id,
+            rpcUrl: unichain.rpcUrls.default.http[0],
+          },
+        ],
         lend: {
           type: 'morpho',
           defaultSlippage: 50,

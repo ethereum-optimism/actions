@@ -632,22 +632,22 @@ User ID: ${result.userId}`,
         : 'N/A'
 
       const vaultInfoTable = `
-┌──────────────────────────────────────────┐
-│          VAULT INFORMATION               │
-├──────────────────────────────────────────┤
-│ Name:              ${nameValue.padEnd(21)} │
-│ Net APY:           ${netApyValue.padEnd(21)} │
-│                                          │
-│ APY BREAKDOWN:                           │
-│   Native APY:      ${nativeApyValue.padEnd(21)} │
-│   USDC Rewards:    ${usdcRewardsValue.padEnd(21)} │
-│   MORPHO Rewards:  ${morphoRewardsValue.padEnd(21)} │
-│   Performance Fee: ${feeImpactValue.padEnd(21)} │
-│                                          │
-│ Total Assets:      ${totalAssetsValue.padEnd(21)} │
-│ Management Fee:    ${feeValue.padEnd(21)} │
-│ Manager:           ${managerValue.padEnd(21)} │
-└──────────────────────────────────────────┘`
+┌─────────────────────────────────────────────────────────────┐
+│                     VAULT INFORMATION                       │
+├─────────────────────────────────────────────────────────────┤
+│ Name:              ${nameValue.padEnd(40)} │
+│ Net APY:           ${netApyValue.padEnd(40)} │
+│                                                             │
+│ APY BREAKDOWN:                                              │
+│   Native APY:      ${nativeApyValue.padEnd(40)} │
+│   USDC Rewards:    ${usdcRewardsValue.padEnd(40)} │
+│   MORPHO Rewards:  ${morphoRewardsValue.padEnd(40)} │
+│   Performance Fee: ${feeImpactValue.padEnd(40)} │
+│                                                             │
+│ Total Assets:      ${totalAssetsValue.padEnd(40)} │
+│ Management Fee:    ${feeValue.padEnd(40)} │
+│ Manager:           ${managerValue.padEnd(40)} │
+└─────────────────────────────────────────────────────────────┘`
 
       const vaultInfoLine: TerminalLine = {
         id: `vault-info-${Date.now()}`,

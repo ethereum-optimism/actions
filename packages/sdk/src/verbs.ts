@@ -1,5 +1,3 @@
-import { unichain } from 'viem/chains'
-
 import { LendProviderMorpho } from '@/lend/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
@@ -23,14 +21,7 @@ export class Verbs {
   private smartWalletProvider!: SmartWalletProvider
 
   constructor(config: VerbsConfig) {
-    this._chainManager = new ChainManager(
-      config.chains || [
-        {
-          chainId: unichain.id,
-          rpcUrl: unichain.rpcUrls.default.http[0],
-        },
-      ],
-    )
+    this._chainManager = new ChainManager(config.chains)
 
     // Create lending provider if configured
     if (config.lend) {
