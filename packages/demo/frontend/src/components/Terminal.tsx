@@ -5,6 +5,7 @@ import type {
   WalletData,
 } from '@eth-optimism/verbs-service'
 import NavBar from './NavBar'
+import { AuthButton } from './AuthButton'
 import { verbsApi } from '../api/verbsApi'
 import type { Address } from 'viem'
 
@@ -1540,7 +1541,7 @@ ${vaultOptions}
       className="w-full h-full flex flex-col bg-terminal-bg shadow-terminal-inner cursor-text"
       onClick={handleClick}
     >
-      <NavBar fullWidth />
+      <NavBar fullWidth rightElement={<AuthButton />} />
 
       {/* Terminal Content */}
       <div
