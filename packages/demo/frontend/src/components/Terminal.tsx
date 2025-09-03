@@ -7,7 +7,7 @@ import type {
   WalletData,
 } from '@eth-optimism/verbs-service'
 import NavBar from './NavBar'
-import { AuthButton } from './AuthButton'
+import { ClerkAuthButton } from './ClerkAuthButton'
 import { verbsApi } from '../api/verbsApi'
 import type { Address } from 'viem'
 
@@ -1598,7 +1598,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       className="w-full h-full flex flex-col bg-terminal-bg shadow-terminal-inner cursor-text"
       onClick={handleClick}
     >
-      <NavBar fullWidth rightElement={<AuthButton />} />
+      <NavBar fullWidth rightElement={<ClerkAuthButton />} />
 
       {/* Terminal Content */}
       <div
