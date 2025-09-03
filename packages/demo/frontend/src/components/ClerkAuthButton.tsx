@@ -1,12 +1,10 @@
 import { useAuth, useUser, SignInButton, SignOutButton } from '@clerk/clerk-react'
-import { usePrivy } from '@privy-io/react-auth'
 
 export function ClerkAuthButton() {
   const { isLoaded: clerkLoaded, isSignedIn } = useAuth()
   const { user } = useUser()
-  const { ready: privyReady } = usePrivy()
 
-  if (!clerkLoaded || !privyReady) {
+  if (!clerkLoaded) {
     return (
       <button className="px-4 py-2 text-terminal-green border border-terminal-green opacity-50 cursor-not-allowed">
         Loading...
@@ -21,7 +19,21 @@ export function ClerkAuthButton() {
           {user?.primaryEmailAddress?.emailAddress || user?.id || 'Connected'}
         </span>
         <SignOutButton>
-          <button className="px-4 py-2 text-terminal-green border border-terminal-green hover:bg-terminal-green hover:text-terminal-bg transition-colors">
+          <button 
+            className="px-4 py-2 border border-terminal-green transition-colors" 
+            style={{
+              color: '#B8BB26',
+              backgroundColor: 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#B8BB26'
+              e.currentTarget.style.color = '#1D2021'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+              e.currentTarget.style.color = '#B8BB26'
+            }}
+          >
             Logout
           </button>
         </SignOutButton>
@@ -31,7 +43,21 @@ export function ClerkAuthButton() {
 
   return (
     <SignInButton mode="modal">
-      <button className="px-4 py-2 text-terminal-green border border-terminal-green hover:bg-terminal-green hover:text-terminal-bg transition-colors">
+      <button 
+        className="px-4 py-2 border border-terminal-green transition-colors"
+        style={{
+          color: '#B8BB26',
+          backgroundColor: 'transparent',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#B8BB26'
+          e.currentTarget.style.color = '#1D2021'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent'
+          e.currentTarget.style.color = '#B8BB26'
+        }}
+      >
         Login
       </button>
     </SignInButton>
