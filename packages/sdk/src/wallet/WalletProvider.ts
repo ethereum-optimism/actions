@@ -77,7 +77,7 @@ export class WalletProvider {
   ): Promise<SmartWallet> {
     const { owners: ownersParam, embeddedWalletIndex, nonce } = params || {}
     const embeddedWallet = await this.embeddedWalletProvider.createWallet()
-    const signer = await embeddedWallet.signer()
+    const account = await embeddedWallet.account()
 
     let owners: Array<Address | WebAuthnAccount>
     if (ownersParam) {
@@ -90,7 +90,7 @@ export class WalletProvider {
 
     return this.smartWalletProvider.createWallet({
       owners,
-      signer,
+      signer: account,
       nonce,
     })
   }
@@ -121,14 +121,14 @@ export class WalletProvider {
     if (!embeddedWallet) {
       throw new Error('Embedded wallet not found')
     }
-    const signer = await embeddedWallet.signer()
+    const account = await embeddedWallet.account()
 
     // If neither walletAddress nor deploymentOwners provided, default to embedded wallet as single owner
     const finalDeploymentOwners =
       deploymentOwners || (walletAddress ? undefined : [embeddedWallet.address])
 
     return this.getSmartWallet({
-      signer,
+      signer: account,
       ...params,
       deploymentOwners: finalDeploymentOwners,
     })

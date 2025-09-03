@@ -60,12 +60,12 @@ export async function getAllWallets(
           await verbs.wallet.smartWalletProvider.getWalletAddress({
             owners: [privyWallet.address],
           })
-        const signer = await privyWallet.signer()
+        const account = await privyWallet.account()
         const wallet = (
           verbs.wallet.smartWalletProvider as SmartWalletProvider
         ).getWallet({
           walletAddress,
-          signer,
+          signer: account,
           ownerIndex: 0,
         })
         return {
@@ -115,7 +115,7 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
               totalFormattedBalance: formattedBalance,
               chainBalances: [
                 {
-                  chainId: 130 as const, // Unichain
+                  chainId: vaultBalance.chainId,
                   balance: vaultBalance.balance,
                   formattedBalance: formattedBalance,
                 },

@@ -41,7 +41,7 @@ export const SUPPORTED_VAULTS: VaultConfig[] = [
   {
     address: '0x99067e5D73b1d6F1b5856E59209e12F5a0f86DED',
     chainId: baseSepolia.id,
-    name: 'MetaMorpho USDC Vault',
+    name: 'MetaMorpho USDC Vault (Base Sepolia)',
     asset: {
       address: getTokenAddress('USDC', baseSepolia.id)!, // USDC on Unichain
       symbol: SUPPORTED_TOKENS.USDC.symbol,
@@ -175,6 +175,7 @@ export async function getVaultInfo(
     const currentTimestampSeconds = Math.floor(Date.now() / 1000)
 
     return {
+      chainId: config.chainId,
       address: vaultAddress,
       name: config.name,
       asset: config.asset.address,

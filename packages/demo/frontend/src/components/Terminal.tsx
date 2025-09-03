@@ -1,3 +1,5 @@
+import { chainById } from '@eth-optimism/viem/chains'
+
 import { useState, useEffect, useRef } from 'react'
 import type {
   CreateWalletResponse,
@@ -17,6 +19,7 @@ interface TerminalLine {
 }
 
 interface VaultData {
+  chainId: number
   address: string
   name: string
   apy: number  
@@ -95,6 +98,7 @@ const Terminal = () => {
   const [currentWalletList, setCurrentWalletList] = useState<GetAllWalletsResponse['wallets'] | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
+  const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
 
   // Function to render content with clickable links
   const renderContentWithLinks = (content: string) => {
@@ -149,43 +153,66 @@ const Terminal = () => {
   // DRY function to display wallet balance with loading state
   const displayWalletBalance = async (walletId: string, showVaultPositions: boolean = true): Promise<string> => {
     const result = await verbsApi.getWalletBalance(walletId)
+    console.log('result', result)
 
-    // Show ETH, USDC, and any vault balances
-    const filteredBalances = result.balance.filter(
-      (token) =>
-        token.symbol === 'ETH' ||
-        token.symbol === 'USDC' ||
-        token.symbol.includes('Gauntlet') ||
-        token.symbol.includes('Vault'),
-    )
-
-    // Ensure both ETH and USDC are shown, even if not in response
-    const ethBalance = filteredBalances.find(
-      (token) => token.symbol === 'ETH',
-    )
-    const usdcBalance = filteredBalances.find(
-      (token) => token.symbol === 'USDC',
-    )
-
-    // Separate vault balances from token balances
-    const vaultBalances = filteredBalances.filter(
-      (token) => token.symbol !== 'ETH' && token.symbol !== 'USDC',
-    )
-
-    const balanceLines = [
-      `ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
-      `USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`,
-    ]
-
-    // Add vault balances if any exist and showVaultPositions is true
-    if (showVaultPositions && vaultBalances.length > 0) {
-      balanceLines.push('') // Empty line separator
-      balanceLines.push('Vault Positions:')
-      vaultBalances.forEach((vault) => {
-        balanceLines.push(
-          `${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`,
-        ) // Assume 6 decimals for vault shares
+    const balancesByChain = result.balance.reduce((acc, token) => {
+      token.chainBalances.forEach(({ chainId, balance, formattedBalance }) => {
+        if (!acc[chainId]) {
+          acc[chainId] = []
+        }
+        acc[chainId].push({
+          ...token,
+          totalBalance: balance,
+          totalFormattedBalance: formattedBalance,
+        })
       })
+      return acc
+    }, {} as Record<number, typeof result.balance>)
+
+    const balanceLines: string[] = []
+
+    // Iterate over each chain and format balances
+    for (const [chainId, tokens] of Object.entries(balancesByChain)) {
+      balanceLines.push(`Chain: ${chainById[Number(chainId)].name}`)
+
+      // Show ETH, USDC, and any vault balances
+      const filteredBalances = tokens.filter(
+        (token) =>
+          token.symbol === 'ETH' ||
+          token.symbol === 'USDC' ||
+          token.symbol.includes('Gauntlet') ||
+          token.symbol.includes('Vault'),
+      )
+
+      // Ensure both ETH and USDC are shown, even if not in response
+      const ethBalance = filteredBalances.find(
+        (token) => token.symbol === 'ETH',
+      )
+      const usdcBalance = filteredBalances.find(
+        (token) => token.symbol === 'USDC',
+      )
+
+      // Separate vault balances from token balances
+      const vaultBalances = filteredBalances.filter(
+        (token) => token.symbol !== 'ETH' && token.symbol !== 'USDC',
+      )
+
+      balanceLines.push(
+        `  ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
+        `  USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`,
+      )
+
+      // Add vault balances if any exist and showVaultPositions is true
+      if (showVaultPositions && vaultBalances.length > 0) {
+        balanceLines.push('  Vault Positions:')
+        vaultBalances.forEach((vault) => {
+          balanceLines.push(
+            `    ${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`,
+          ) // Assume 6 decimals for vault shares
+        })
+      }
+
+      balanceLines.push('') // Add a blank line between chains
     }
 
     return balanceLines.join('\n')
@@ -569,8 +596,8 @@ User ID: ${result.userId}`,
   }
 
   const handleLendVaultSelection = async (vaults: VaultData[]) => {
-    // Always select the first vault (default)
-    const selectedVault = vaults[0]
+    // Use the selectedVaultIndex to select the vault
+    const selectedVault = vaults[selectedVaultIndex]
     setPendingPrompt(null)
 
     console.log(
@@ -606,22 +633,22 @@ User ID: ${result.userId}`,
         : 'N/A'
 
       const vaultInfoTable = `
-┌──────────────────────────────────────────┐
-│          VAULT INFORMATION               │
-├──────────────────────────────────────────┤
-│ Name:              ${nameValue.padEnd(21)} │
-│ Net APY:           ${netApyValue.padEnd(21)} │
-│                                          │
-│ APY BREAKDOWN:                           │
-│   Native APY:      ${nativeApyValue.padEnd(21)} │
-│   USDC Rewards:    ${usdcRewardsValue.padEnd(21)} │
-│   MORPHO Rewards:  ${morphoRewardsValue.padEnd(21)} │
-│   Performance Fee: ${feeImpactValue.padEnd(21)} │
-│                                          │
-│ Total Assets:      ${totalAssetsValue.padEnd(21)} │
-│ Management Fee:    ${feeValue.padEnd(21)} │
-│ Manager:           ${managerValue.padEnd(21)} │
-└──────────────────────────────────────────┘`
+┌─────────────────────────────────────────────────────────────┐
+│                     VAULT INFORMATION                       │
+├─────────────────────────────────────────────────────────────┤
+│ Name:              ${nameValue.padEnd(40)} │
+│ Net APY:           ${netApyValue.padEnd(40)} │
+│                                                             │
+│ APY BREAKDOWN:                                              │
+│   Native APY:      ${nativeApyValue.padEnd(40)} │
+│   USDC Rewards:    ${usdcRewardsValue.padEnd(40)} │
+│   MORPHO Rewards:  ${morphoRewardsValue.padEnd(40)} │
+│   Performance Fee: ${feeImpactValue.padEnd(40)} │
+│                                                             │
+│ Total Assets:      ${totalAssetsValue.padEnd(40)} │
+│ Management Fee:    ${feeValue.padEnd(40)} │
+│ Manager:           ${managerValue.padEnd(40)} │
+└─────────────────────────────────────────────────────────────┘`
 
       const vaultInfoLine: TerminalLine = {
         id: `vault-info-${Date.now()}`,
@@ -743,6 +770,7 @@ How much would you like to lend?`
         promptData.selectedWallet.id,
         amount,
         'usdc',
+        promptData.selectedVault.chainId,
       )
 
       console.log(
@@ -757,7 +785,7 @@ How much would you like to lend?`
 
 Vault:  ${promptData.selectedVault.name}
 Amount: ${amount} USDC
-Tx:     https://base-sepolia.blockscout.com/op/${result.transaction.hash || 'pending'}`,
+Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), successLine])
@@ -1164,11 +1192,7 @@ Tx:     https://base-sepolia.blockscout.com/op/${result.transaction.hash || 'pen
       const vaultSelectionLine: TerminalLine = {
         id: `vault-selection-${Date.now()}`,
         type: 'output',
-          content: `Select a Lending vault:
-
-${vaultOptions}
-
-[Enter] to select, [↑/↓] to navigate`,
+          content: `Select a Lending vault:\n\n${vaultOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
         timestamp: new Date(),
       }
 
@@ -1470,6 +1494,18 @@ ${vaultOptions}
         e.preventDefault()
         handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
         return
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedVaultIndex((prevIndex) =>
+          prevIndex > 0 ? prevIndex - 1 : (pendingPrompt.data as VaultData[]).length - 1
+        )
+        return
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedVaultIndex((prevIndex) =>
+          prevIndex < (pendingPrompt.data as VaultData[]).length - 1 ? prevIndex + 1 : 0
+        )
+        return
       } else if (e.key === 'Escape') {
         e.preventDefault()
         setPendingPrompt(null)
@@ -1535,6 +1571,27 @@ ${vaultOptions}
       inputRef.current.focus()
     }
   }
+
+  // Update the vault selection display to reflect the current selection
+  useEffect(() => {
+    if (pendingPrompt?.type === 'lendVault') {
+      const vaults = pendingPrompt.data as VaultData[]
+      const vaultOptions = vaults
+        .map((vault, index) =>
+          `${index === selectedVaultIndex ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`
+        )
+        .join('\n')
+
+      const vaultSelectionLine: TerminalLine = {
+        id: `vault-selection-${Date.now()}`,
+        type: 'output',
+        content: `Select a Lending vault:\n\n${vaultOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
+    }
+  }, [selectedVaultIndex, pendingPrompt])
 
   return (
     <div

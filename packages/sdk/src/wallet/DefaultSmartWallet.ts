@@ -52,7 +52,6 @@ export class DefaultSmartWallet extends SmartWallet {
    * @param signer - Local account for signing transactions
    * @param chainManager - Network management service
    * @param lendProvider - Lending operations provider
-   * @param bundlerUrl - ERC-4337 bundler service URL
    * @param deploymentAddress - Known wallet address (if already deployed)
    * @param ownerIndex - Index of signer in owners array
    * @param nonce - Nonce for address generation
@@ -189,6 +188,41 @@ export class DefaultSmartWallet extends SmartWallet {
     )
 
     return result
+  }
+
+  /**
+   * Send a batch of transactions using this smart wallet
+   * @description Executes a batch of transactions through the smart wallet, handling gas sponsorship
+   * and ERC-4337 UserOperation creation automatically.
+   * @param transactionData - The transaction data to execute
+   * @param chainId - Target blockchain chain ID
+   * @returns Promise resolving to the transaction hash
+   */
+  async sendBatch(
+    transactionData: TransactionData[],
+    chainId: SupportedChainId,
+  ): Promise<Hash> {
+    const account = await this.getCoinbaseSmartAccount(chainId)
+    const bundlerClient = this.chainManager.getBundlerClient(chainId, account)
+    try {
+      const calls = transactionData
+      const hash = await bundlerClient.sendUserOperation({
+        account,
+        calls,
+        paymaster: true,
+      })
+      await bundlerClient.waitForUserOperationReceipt({
+        hash,
+      })
+
+      return hash
+    } catch (error) {
+      throw new Error(
+        `Failed to send transaction: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
   }
 
   /**

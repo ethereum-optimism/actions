@@ -79,7 +79,7 @@ vi.mock('./config/verbs.js', () => ({
                   { symbol: 'USDC', balance: 1000000n },
                   { symbol: 'MORPHO', balance: 500000n },
                 ]),
-              signer: vi.fn().mockResolvedValue({
+              account: vi.fn().mockResolvedValue({
                 address: '0x1111111111111111111111111111111111111111',
               }),
             },
@@ -91,7 +91,7 @@ vi.mock('./config/verbs.js', () => ({
                   { symbol: 'USDC', balance: 2000000n },
                   { symbol: 'MORPHO', balance: 750000n },
                 ]),
-              signer: vi.fn().mockResolvedValue({
+              account: vi.fn().mockResolvedValue({
                 address: '0x2222222222222222222222222222222222222222',
               }),
             },

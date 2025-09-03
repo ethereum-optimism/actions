@@ -1,8 +1,19 @@
 import type { PrivyClient } from '@privy-io/server-auth'
-import type { Address, Hash, LocalAccount } from 'viem'
-import { toAccount } from 'viem/accounts'
+import {
+  createViemAccount,
+  type GetViemAccountInputType,
+} from '@privy-io/server-auth/viem'
+import {
+  type Address,
+  createWalletClient,
+  type Hash,
+  http,
+  type LocalAccount,
+  type WalletClient,
+} from 'viem'
 import { unichain } from 'viem/chains'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   LendOptions,
@@ -43,45 +54,38 @@ export class PrivyWallet extends EmbeddedWallet {
   }
 
   /**
-   * Create a LocalAccount signer from this Privy wallet
+   * Create a LocalAccount from this Privy wallet
    * @description Converts the Privy wallet into a viem-compatible LocalAccount that can sign
    * messages and transactions. The returned account uses Privy's signing infrastructure
    * under the hood while providing a standard viem interface.
    * @returns Promise resolving to a LocalAccount configured for signing operations
    * @throws Error if wallet retrieval fails or signing operations are not supported
    */
-  async signer(): Promise<LocalAccount> {
-    const privy = this.privyClient
-    const walletId = this.walletId
-    const privyWallet = await privy.walletApi.getWallet({
-      id: walletId,
+  async account(): Promise<LocalAccount> {
+    const account = await createViemAccount({
+      walletId: this.walletId,
+      address: this.address,
+      // TODO: Fix this type error
+      privy: this.privyClient as unknown as GetViemAccountInputType['privy'],
     })
-    const signerAddress = privyWallet.address
+    return account
+  }
 
-    return toAccount({
-      address: signerAddress as Address,
-      async signMessage({ message }) {
-        const signed = await privy.walletApi.ethereum.signMessage({
-          walletId,
-          message: message.toString(),
-        })
-        return signed.signature as Hash
-      },
-      async sign(parameters) {
-        const signed = await privy.walletApi.ethereum.secp256k1Sign({
-          walletId,
-          hash: parameters.hash,
-        })
-        return signed.signature as Hash
-      },
-      async signTransaction() {
-        // TODO: Implement
-        throw new Error('Not implemented')
-      },
-      async signTypedData() {
-        // TODO: Implement
-        throw new Error('Not implemented')
-      },
+  /**
+   * Create a WalletClient for this Privy wallet
+   * @description Creates a viem-compatible WalletClient configured with this wallet's account
+   * and the specified chain. The returned client can be used to send transactions and interact
+   * with smart contracts using Privy's signing infrastructure under the hood.
+   * @param chainId - The chain ID to create the wallet client for
+   * @returns Promise resolving to a WalletClient configured for the specified chain
+   * @throws Error if chain is not supported or wallet client creation fails
+   */
+  async walletClient(chainId: SupportedChainId): Promise<WalletClient> {
+    const account = await this.account()
+    return createWalletClient({
+      account,
+      chain: this.chainManager.getChain(chainId),
+      transport: http(this.chainManager.getRpcUrl(chainId)),
     })
   }
 

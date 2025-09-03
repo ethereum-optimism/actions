@@ -1,6 +1,6 @@
+import type { SupportedChainId } from '@eth-optimism/verbs-sdk'
 import type { Context } from 'hono'
 import type { Address } from 'viem'
-import { baseSepolia } from 'viem/chains'
 import { z } from 'zod'
 
 import { validateRequest } from '../helpers/validation.js'
@@ -12,6 +12,7 @@ const DepositRequestSchema = z.object({
     walletId: z.string().min(1, 'walletId is required'),
     amount: z.number().positive('amount must be positive'),
     token: z.string().min(1, 'token is required'),
+    chainId: z.number().min(1, 'chainId is required'),
   }),
 })
 
@@ -117,22 +118,23 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        body: { walletId, amount, token },
+        body: { walletId, amount, token, chainId },
       } = validation.data
       const lendTransaction = await lendService.deposit(
         walletId,
         amount,
         token,
-        baseSepolia.id,
+        chainId as SupportedChainId,
       )
       const result = await lendService.executeLendTransaction(
         walletId,
         lendTransaction,
-        baseSepolia.id,
+        chainId as SupportedChainId,
       )
 
       return c.json({
         transaction: {
+          blockExplorerUrl: result.blockExplorerUrl,
           hash: result.hash,
           amount: result.amount.toString(),
           asset: result.asset,
