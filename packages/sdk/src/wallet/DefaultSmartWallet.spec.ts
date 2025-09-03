@@ -163,6 +163,64 @@ describe('DefaultSmartWallet', () => {
     expect(result).toBe('0xTransactionHash')
   })
 
+  it('should send a batch of transactions via ERC-4337', async () => {
+    const wallet = new DefaultSmartWallet(
+      mockOwners,
+      mockSigner,
+      mockChainManager,
+      mockLendProvider,
+    )
+    const chainId = unichain.id
+    const recipientAddress = getRandomAddress()
+    const recipientAddress2 = getRandomAddress()
+    const value = BigInt(1000)
+    const value2 = BigInt(2000)
+    const data = '0x123'
+    const data2 = '0x456'
+    const transactionData: TransactionData[] = [
+      {
+        to: recipientAddress,
+        value,
+        data,
+      },
+      {
+        to: recipientAddress2,
+        value: value2,
+        data: data2,
+      },
+    ]
+    const mockAccount = {
+      address: '0x123',
+      client: mockChainManager.getPublicClient(baseSepolia.id),
+      owners: [mockSigner],
+      nonce: BigInt(0),
+    } as any
+    vi.mocked(toCoinbaseSmartAccount).mockResolvedValue(mockAccount)
+    const bundlerClient = mockChainManager.getBundlerClient(
+      chainId,
+      mockAccount,
+    )
+    vi.mocked(bundlerClient.sendUserOperation).mockResolvedValue(
+      '0xTransactionHash',
+    )
+
+    const result = await wallet.sendBatch(transactionData, chainId)
+
+    expect(mockChainManager.getBundlerClient).toHaveBeenCalledWith(
+      chainId,
+      mockAccount,
+    )
+    expect(bundlerClient.sendUserOperation).toHaveBeenCalledWith({
+      account: mockAccount,
+      calls: transactionData,
+      paymaster: true,
+    })
+    expect(bundlerClient.waitForUserOperationReceipt).toHaveBeenCalledWith({
+      hash: '0xTransactionHash',
+    })
+    expect(result).toBe('0xTransactionHash')
+  })
+
   it('should lend assets', async () => {
     const wallet = new DefaultSmartWallet(
       mockOwners,

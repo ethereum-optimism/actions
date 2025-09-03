@@ -136,14 +136,15 @@ export async function executeLendTransaction(
     throw new Error('No transaction data available for execution')
   }
 
-  if (lendTransaction.transactionData.approval) {
-    await wallet.send(lendTransaction.transactionData.approval, chainId)
-  }
-
-  const depositHash = await wallet.send(
-    lendTransaction.transactionData.deposit,
-    chainId,
-  )
+  const depositHash = lendTransaction.transactionData.approval
+    ? await wallet.sendBatch(
+        [
+          lendTransaction.transactionData.approval,
+          lendTransaction.transactionData.deposit,
+        ],
+        chainId,
+      )
+    : await wallet.send(lendTransaction.transactionData.deposit, chainId)
 
   return {
     ...lendTransaction,
