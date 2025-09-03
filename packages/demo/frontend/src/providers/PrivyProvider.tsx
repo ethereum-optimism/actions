@@ -1,6 +1,6 @@
 'use client'
 import { PrivyProvider as Privy } from '@privy-io/react-auth'
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 const appId = import.meta.env.VITE_PRIVY_APP_ID
 
