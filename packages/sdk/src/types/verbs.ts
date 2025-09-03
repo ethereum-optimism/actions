@@ -14,7 +14,7 @@ export interface VerbsConfig {
   /** Lending provider configuration (optional) */
   lend?: LendConfig
   /** Chains to use for the SDK */
-  chains?: ChainConfig[]
+  chains: ChainConfig[]
 }
 
 /**

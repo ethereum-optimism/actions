@@ -52,7 +52,6 @@ export class DefaultSmartWallet extends SmartWallet {
    * @param signer - Local account for signing transactions
    * @param chainManager - Network management service
    * @param lendProvider - Lending operations provider
-   * @param bundlerUrl - ERC-4337 bundler service URL
    * @param deploymentAddress - Known wallet address (if already deployed)
    * @param ownerIndex - Index of signer in owners array
    * @param nonce - Nonce for address generation

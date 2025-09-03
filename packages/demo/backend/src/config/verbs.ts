@@ -28,11 +28,19 @@ export function createVerbsConfig(): VerbsConfig {
       {
         chainId: unichain.id,
         rpcUrl: env.UNICHAIN_RPC_URL || unichain.rpcUrls.default.http[0],
+        bundler: {
+          type: 'pimlico',
+          url: env.UNICHAIN_BUNDLER_URL,
+          sponsorshipPolicyId: env.UNICHAIN_BUNDLER_SPONSORSHIP_POLICY,
+        },
       },
       {
         chainId: baseSepolia.id,
         rpcUrl: env.BASE_SEPOLIA_RPC_URL || baseSepolia.rpcUrls.default.http[0],
-        bundlerUrl: env.BASE_SEPOLIA_BUNDER_URL,
+        bundler: {
+          type: 'simple',
+          url: env.BASE_SEPOLIA_BUNDER_URL,
+        },
       },
     ],
   }
