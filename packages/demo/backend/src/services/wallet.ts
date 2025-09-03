@@ -23,12 +23,14 @@ import { env } from '@/config/env.js'
 
 import { getVerbs } from '../config/verbs.js'
 
-export async function createWallet(): Promise<{
+export async function createWallet(_userId?: string): Promise<{
   privyAddress: string
   smartWalletAddress: string
 }> {
   const verbs = getVerbs()
+
   const wallet = await verbs.wallet.createWalletWithEmbeddedSigner()
+
   const smartWalletAddress = await wallet.getAddress()
   return {
     privyAddress: wallet.signer.address,

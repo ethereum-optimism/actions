@@ -1,17 +1,10 @@
 import { useAuth, useUser, SignInButton, SignOutButton } from '@clerk/clerk-react'
 import { usePrivy } from '@privy-io/react-auth'
-import { useEffect } from 'react'
 
 export function ClerkAuthButton() {
   const { isLoaded: clerkLoaded, isSignedIn } = useAuth()
   const { user } = useUser()
-  const { ready: privyReady, authenticated: privyAuthenticated, loginWithCustomAuth } = usePrivy()
-
-  useEffect(() => {
-    if (isSignedIn && privyReady && !privyAuthenticated) {
-      loginWithCustomAuth()
-    }
-  }, [isSignedIn, privyReady, privyAuthenticated, loginWithCustomAuth])
+  const { ready: privyReady } = usePrivy()
 
   if (!clerkLoaded || !privyReady) {
     return (

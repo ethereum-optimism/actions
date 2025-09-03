@@ -13,12 +13,13 @@ if (!appId) {
 export function PrivyProvider({ children }: { children: ReactNode }) {
   const { getToken } = useAuth()
 
-  const getExternalJwt = useCallback(async () => {
-    const token = await getToken()
-    if (!token) {
-      throw new Error('No Clerk JWT token available')
+  const getCustomAccessToken = useCallback(async () => {
+    try {
+      const token = await getToken()
+      return token || undefined
+    } catch {
+      return undefined
     }
-    return token
   }, [getToken])
 
   return (
@@ -34,7 +35,7 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
         },
         customAuth: {
           enabled: true,
-          getExternalJwt,
+          getCustomAccessToken,
           isLoading: false,
         },
       }}
