@@ -23,32 +23,70 @@ import { env } from '@/config/env.js'
 
 import { getVerbs } from '../config/verbs.js'
 
-export async function createWallet(userId?: string): Promise<{
+export async function createWallet(
+  userId?: string, 
+  authToken?: string,
+  privyAuthKey?: string
+): Promise<{
   privyAddress: string
   smartWalletAddress: string
   userId?: string
 }> {
+  console.log('🏗️  WalletService: createWallet called with:', {
+    userId,
+    hasAuthToken: !!authToken,
+    hasPrivyAuthKey: !!privyAuthKey
+  })
+
+  if (!userId) {
+    console.log('❌ WalletService: User ID is required')
+    throw new Error('User ID is required for wallet creation')
+  }
+
+  // TODO: Use privyAuthKey to create user-owned wallet via authenticated signers
+  // This requires the Privy JWKS integration to be configured first
+  // For now, continue with server wallet creation until JWKS setup is complete
+  
+  console.log('⚙️  WalletService: Getting Verbs instance...')
   const verbs = getVerbs()
-
-  // For now, create the wallet without specifying ID
-  // The Verbs SDK needs to be updated to support user-specific wallet creation
+  
+  console.log('🔨 WalletService: Creating wallet with embedded signer...')
   const wallet = await verbs.wallet.createWalletWithEmbeddedSigner()
-
+  
+  console.log('📍 WalletService: Getting wallet address...')
   const smartWalletAddress = await wallet.getAddress()
+  
+  console.log('✅ WalletService: Wallet created successfully:', {
+    privyAddress: wallet.signer.address,
+    smartWalletAddress,
+    userId
+  })
+  
   return {
     privyAddress: wallet.signer.address,
     smartWalletAddress,
-    userId, // Return the userId so frontend knows which user this wallet belongs to
+    userId,
   }
 }
 
 export async function getWallet(userId: string): Promise<{
   wallet: SmartWallet
 }> {
+  console.log('🔍 WalletService: getWallet called for userId:', userId)
+  
   const verbs = getVerbs()
+  
+  console.log('🔎 WalletService: Attempting to get wallet with walletId:', userId)
   const wallet = await verbs.wallet.getSmartWalletWithEmbeddedSigner({
     walletId: userId,
   })
+  
+  if (wallet) {
+    console.log('✅ WalletService: Wallet found successfully')
+  } else {
+    console.log('❌ WalletService: No wallet found')
+  }
+  
   return { wallet }
 }
 

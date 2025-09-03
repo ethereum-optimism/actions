@@ -102,7 +102,7 @@ const Terminal = () => {
   const terminalRef = useRef<HTMLDivElement>(null)
   
   // Clerk auth hooks
-  const { isSignedIn, isLoaded } = useAuth()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
   const { openSignIn } = useClerk()
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
@@ -121,9 +121,9 @@ const Terminal = () => {
             const existingWallet = await verbsApi.getWallet(userId)
             walletAddress = existingWallet.address
           } catch {
-            // If wallet doesn't exist, create it
+            // If wallet doesn't exist, create it using our auth-enabled function
             try {
-              const result = await verbsApi.createWallet(userId)
+              const result = await createWallet(userId)
               walletAddress = result.smartWalletAddress
             } catch (error) {
               console.error('Failed to create wallet:', error)
@@ -434,7 +434,16 @@ const Terminal = () => {
   const createWallet = async (
     userId: string,
   ): Promise<CreateWalletResponse> => {
-    return verbsApi.createWallet(userId)
+    console.log('🏗️  Terminal: Creating wallet for userId:', userId)
+    
+    // Get auth token from Clerk
+    const authToken = await getToken()
+    console.log('🎫 Terminal: Got auth token:', !!authToken)
+    if (authToken) {
+      console.log('🔑 Terminal: Token preview:', authToken.substring(0, 50) + '...')
+    }
+    
+    return verbsApi.createWallet(userId, authToken || undefined)
   }
 
   const getAllWallets = async (): Promise<GetAllWalletsResponse> => {

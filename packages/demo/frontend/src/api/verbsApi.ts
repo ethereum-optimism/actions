@@ -22,6 +22,12 @@ class VerbsApiClient {
     options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
+    
+    console.log('🌐 VerbsApi: Making request:', {
+      method: options.method || 'GET',
+      url,
+      hasAuth: !!options.headers?.['Authorization']
+    })
 
     const response = await fetch(url, {
       headers: {
@@ -29,6 +35,12 @@ class VerbsApiClient {
         ...options.headers,
       },
       ...options,
+    })
+
+    console.log('📡 VerbsApi: Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      url
     })
 
     if (!response.ok) {
@@ -48,9 +60,15 @@ class VerbsApiClient {
     return data
   }
 
-  async createWallet(userId: string): Promise<CreateWalletResponse> {
+  async createWallet(userId: string, authToken?: string): Promise<CreateWalletResponse> {
+    const headers: Record<string, string> = {}
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+    
     return this.request<CreateWalletResponse>(`/wallet/${userId}`, {
       method: 'POST',
+      headers,
     })
   }
 
