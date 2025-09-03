@@ -5,7 +5,7 @@ import type {
 } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
 import type { Address } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { baseSepolia, unichain } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
 import { getWallet } from './wallet.js'
@@ -36,6 +36,9 @@ async function getBlockExplorerUrl(chainId: SupportedChainId): Promise<string> {
   const chain = chainById[chainId]
   if (!chain) {
     throw new Error(`Chain not found for chainId: ${chainId}`)
+  }
+  if (chain.id === unichain.id) {
+    return 'https://unichain.blockscout.com/op'
   }
   if (chain.id === baseSepolia.id) {
     return `https://base-sepolia.blockscout.com/op`
