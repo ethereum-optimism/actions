@@ -191,6 +191,41 @@ export class DefaultSmartWallet extends SmartWallet {
   }
 
   /**
+   * Send a batch of transactions using this smart wallet
+   * @description Executes a batch of transactions through the smart wallet, handling gas sponsorship
+   * and ERC-4337 UserOperation creation automatically.
+   * @param transactionData - The transaction data to execute
+   * @param chainId - Target blockchain chain ID
+   * @returns Promise resolving to the transaction hash
+   */
+  async sendBatch(
+    transactionData: TransactionData[],
+    chainId: SupportedChainId,
+  ): Promise<Hash> {
+    const account = await this.getCoinbaseSmartAccount(chainId)
+    const bundlerClient = this.chainManager.getBundlerClient(chainId, account)
+    try {
+      const calls = transactionData
+      const hash = await bundlerClient.sendUserOperation({
+        account,
+        calls,
+        paymaster: true,
+      })
+      await bundlerClient.waitForUserOperationReceipt({
+        hash,
+      })
+
+      return hash
+    } catch (error) {
+      throw new Error(
+        `Failed to send transaction: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
+  }
+
+  /**
    * Send a transaction via ERC-4337
    * @description Executes a transaction using the smart wallet with automatic gas sponsorship.
    * The transaction is sent as a UserOperation through the bundler service.

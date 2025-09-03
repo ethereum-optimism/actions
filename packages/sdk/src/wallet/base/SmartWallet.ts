@@ -49,6 +49,18 @@ export abstract class SmartWallet {
   ): Promise<Hash>
 
   /**
+   * Send a batch of transactions using this smart wallet
+   * @description Executes a batch of transactions through the smart wallet, handling gas sponsorship
+   * and ERC-4337 UserOperation creation automatically.
+   * @param transactionData - The transaction data to execute
+   * @param chainId
+   */
+  abstract sendBatch(
+    transactionData: TransactionData[],
+    chainId: SupportedChainId,
+  ): Promise<Hash>
+
+  /**
    * Lend tokens to a lending protocol
    * @description Deposits tokens into a lending market to earn yield.
    * Handles token approvals, market selection, and transaction execution.
