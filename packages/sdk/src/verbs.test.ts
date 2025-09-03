@@ -17,7 +17,6 @@ describe('Verbs SDK - System Tests', () => {
           chains: [
             {
               chainId: unichain.id,
-              rpcUrl: unichain.rpcUrls.default.http[0],
             },
           ],
           lend: {
@@ -94,7 +93,6 @@ describe('Verbs SDK - System Tests', () => {
           chains: [
             {
               chainId: unichain.id,
-              rpcUrl: unichain.rpcUrls.default.http[0],
             },
           ],
           lend: {
@@ -142,7 +140,6 @@ describe('Verbs SDK - System Tests', () => {
           chains: [
             {
               chainId: unichain.id,
-              rpcUrl: unichain.rpcUrls.default.http[0],
             },
           ],
           lend: {
@@ -180,7 +177,6 @@ describe('Verbs SDK - System Tests', () => {
         chains: [
           {
             chainId: unichain.id,
-            rpcUrl: unichain.rpcUrls.default.http[0],
           },
         ],
         lend: {
@@ -216,7 +212,6 @@ describe('Verbs SDK - System Tests', () => {
         chains: [
           {
             chainId: unichain.id,
-            rpcUrl: unichain.rpcUrls.default.http[0],
           },
         ],
         lend: {

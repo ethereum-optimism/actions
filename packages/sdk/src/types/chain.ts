@@ -8,7 +8,7 @@ export interface ChainConfig {
   /** Chain ID */
   chainId: (typeof SUPPORTED_CHAIN_IDS)[number]
   /** RPC URL for the chain */
-  rpcUrl: string
+  rpcUrls?: string[]
   /** Bundler configuration */
   bundler?: BundlerConfig
 }

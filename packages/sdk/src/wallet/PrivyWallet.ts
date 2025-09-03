@@ -6,6 +6,7 @@ import {
 import {
   type Address,
   createWalletClient,
+  fallback,
   type Hash,
   http,
   type LocalAccount,
@@ -82,10 +83,13 @@ export class PrivyWallet extends EmbeddedWallet {
    */
   async walletClient(chainId: SupportedChainId): Promise<WalletClient> {
     const account = await this.account()
+    const rpcUrls = this.chainManager.getRpcUrls(chainId)
     return createWalletClient({
       account,
       chain: this.chainManager.getChain(chainId),
-      transport: http(this.chainManager.getRpcUrl(chainId)),
+      transport: rpcUrls?.length
+        ? fallback(rpcUrls.map((rpcUrl) => http(rpcUrl)))
+        : http(),
     })
   }
 
