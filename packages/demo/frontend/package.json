@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.31.8",
+    "@clerk/clerk-react": "^5.46.0",
     "@eth-optimism/verbs-sdk": "workspace:*",
     "@eth-optimism/verbs-service": "workspace:*",
     "@eth-optimism/viem": "^0.4.13",
