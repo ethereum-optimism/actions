@@ -82,7 +82,7 @@ describe('Morpho Lend', () => {
       chains: [
         {
           chainId: unichain.id,
-          rpcUrl: 'http://127.0.0.1:9546',
+          rpcUrls: ['http://127.0.0.1:9546'],
         },
       ],
     })

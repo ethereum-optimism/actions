@@ -2,7 +2,13 @@ import { chainById } from '@eth-optimism/viem/chains'
 import type { SmartAccountClient } from 'permissionless/clients'
 import { createSmartAccountClient } from 'permissionless/clients'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
-import { type Chain, createPublicClient, http, type PublicClient } from 'viem'
+import {
+  type Chain,
+  createPublicClient,
+  fallback,
+  http,
+  type PublicClient,
+} from 'viem'
 import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { createBundlerClient } from 'viem/account-abstraction'
 
@@ -88,9 +94,11 @@ export class ChainManager {
    * @returns RPC URL as a string
    * @throws Error if no chain config is found for the chain ID
    */
-  getRpcUrl(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): string {
+  getRpcUrls(
+    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
+  ): string[] | undefined {
     const chainConfig = this.getChainConfig(chainId)
-    return chainConfig.rpcUrl
+    return chainConfig.rpcUrls
   }
 
   /**
@@ -152,7 +160,9 @@ export class ChainManager {
       }
       const client = createPublicClient({
         chain,
-        transport: http(chainConfig.rpcUrl),
+        transport: chainConfig.rpcUrls?.length
+          ? fallback(chainConfig.rpcUrls.map((rpcUrl) => http(rpcUrl)))
+          : http(),
       })
 
       clients.set(chainConfig.chainId, client)

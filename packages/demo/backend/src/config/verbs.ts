@@ -27,7 +27,7 @@ export function createVerbsConfig(): VerbsConfig {
     chains: [
       {
         chainId: unichain.id,
-        rpcUrl: env.UNICHAIN_RPC_URL || unichain.rpcUrls.default.http[0],
+        rpcUrls: env.UNICHAIN_RPC_URL ? [env.UNICHAIN_RPC_URL] : undefined,
         bundler: {
           type: 'pimlico',
           url: env.UNICHAIN_BUNDLER_URL,
@@ -36,7 +36,9 @@ export function createVerbsConfig(): VerbsConfig {
       },
       {
         chainId: baseSepolia.id,
-        rpcUrl: env.BASE_SEPOLIA_RPC_URL || baseSepolia.rpcUrls.default.http[0],
+        rpcUrls: env.BASE_SEPOLIA_RPC_URL
+          ? [env.BASE_SEPOLIA_RPC_URL]
+          : undefined,
         bundler: {
           type: 'simple',
           url: env.BASE_SEPOLIA_BUNDER_URL,
