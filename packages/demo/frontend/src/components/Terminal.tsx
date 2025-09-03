@@ -1,6 +1,7 @@
 import { chainById } from '@eth-optimism/viem/chains'
 
 import { useState, useEffect, useRef } from 'react'
+import { useAuth, useUser, useClerk } from '@clerk/clerk-react'
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
@@ -72,6 +73,7 @@ Console commands:
   exit          - Exit terminal
 
 Wallet commands:
+  wallet auth   - Authenticate and auto-select your wallet
   wallet create - Create a new wallet
   wallet select - Select a wallet to use for commands
          fund    - Fund selected wallet
@@ -98,7 +100,58 @@ const Terminal = () => {
   const [currentWalletList, setCurrentWalletList] = useState<GetAllWalletsResponse['wallets'] | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
+  
+  // Clerk auth hooks
+  const { isSignedIn, isLoaded } = useAuth()
+  const { user } = useUser()
+  const { openSignIn } = useClerk()
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
+
+  // Auto-select wallet when user is signed in
+  useEffect(() => {
+    const autoSelectWallet = async () => {
+      if (isSignedIn && isLoaded && user?.id && !selectedWallet) {
+        const userId = user.id
+        
+        try {
+          let walletAddress: string
+          
+          // Try to get existing wallet first
+          try {
+            const existingWallet = await verbsApi.getWallet(userId)
+            walletAddress = existingWallet.address
+          } catch {
+            // If wallet doesn't exist, create it
+            try {
+              const result = await verbsApi.createWallet(userId)
+              walletAddress = result.smartWalletAddress
+            } catch (error) {
+              console.error('Failed to create wallet:', error)
+              return
+            }
+          }
+
+          setSelectedWallet({
+            id: userId,
+            address: walletAddress,
+          })
+
+          // Add a success message to the terminal
+          const welcomeLine: TerminalLine = {
+            id: `welcome-${Date.now()}`,
+            type: 'success',
+            content: `Welcome back ${user?.primaryEmailAddress?.emailAddress || user?.id}!\nWallet auto-selected: ${walletAddress}`,
+            timestamp: new Date(),
+          }
+          setLines((prev) => [...prev, welcomeLine])
+        } catch (error) {
+          console.error('Failed to auto-select wallet:', error)
+        }
+      }
+    }
+
+    autoSelectWallet()
+  }, [isSignedIn, isLoaded, user?.id, selectedWallet]) // Only re-run when auth state changes
 
   // Function to render content with clickable links
   const renderContentWithLinks = (content: string) => {
@@ -467,6 +520,10 @@ const Terminal = () => {
       case 'clear':
         setLines([])
         return
+      case 'wallet auth':
+        setLines((prev) => [...prev, commandLine])
+        handleWalletAuth()
+        return
       case 'wallet create':
         setPendingPrompt({
           type: 'userId',
@@ -795,6 +852,111 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         id: `error-${Date.now()}`,
         type: 'error',
         content: `Failed to lend: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
+  const handleWalletAuth = async () => {
+    if (!isLoaded) {
+      const loadingLine: TerminalLine = {
+        id: `auth-loading-${Date.now()}`,
+        type: 'output',
+        content: 'Loading authentication...',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, loadingLine])
+      return
+    }
+
+    if (!isSignedIn) {
+      const signingInLine: TerminalLine = {
+        id: `auth-signin-${Date.now()}`,
+        type: 'output',
+        content: 'Opening sign-in modal...',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, signingInLine])
+      
+      // Open the Clerk sign-in modal
+      openSignIn({
+        afterSignInUrl: '/demo',
+        afterSignUpUrl: '/demo',
+      })
+      return
+    }
+
+    // User is already authenticated
+    const userId = user?.id
+    if (!userId) {
+      const errorLine: TerminalLine = {
+        id: `auth-error-${Date.now()}`,
+        type: 'error',
+        content: 'Error: Unable to get user information',
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    // Check if wallet is already selected for this user
+    if (selectedWallet?.id === userId) {
+      const alreadyAuthLine: TerminalLine = {
+        id: `auth-already-${Date.now()}`,
+        type: 'success',
+        content: `You're already signed in as ${user?.primaryEmailAddress?.emailAddress || user?.id}\nWallet selected: ${selectedWallet.address}`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev, alreadyAuthLine])
+      return
+    }
+
+    // User is authenticated but wallet not selected/created yet
+    const loadingLine: TerminalLine = {
+      id: `auth-wallet-loading-${Date.now()}`,
+      type: 'output',
+      content: 'Setting up your wallet...',
+      timestamp: new Date(),
+    }
+    setLines((prev) => [...prev, loadingLine])
+
+    try {
+      let walletAddress: string
+      
+      // Try to get existing wallet first
+      try {
+        const existingWallet = await verbsApi.getWallet(userId)
+        walletAddress = existingWallet.address
+      } catch {
+        // If wallet doesn't exist, create it
+        try {
+          const result = await createWallet(userId)
+          walletAddress = result.smartWalletAddress
+        } catch (error) {
+          throw new Error('Unable to create or find wallet for user')
+        }
+      }
+
+      setSelectedWallet({
+        id: userId,
+        address: walletAddress,
+      })
+
+      const successLine: TerminalLine = {
+        id: `auth-success-${Date.now()}`,
+        type: 'success',
+        content: `✓ Signed in as ${user?.primaryEmailAddress?.emailAddress || user?.id}\n✓ Wallet selected: ${walletAddress}`,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev.slice(0, -1), successLine])
+
+    } catch (error) {
+      const errorLine: TerminalLine = {
+        id: `auth-error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to set up wallet: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), errorLine])

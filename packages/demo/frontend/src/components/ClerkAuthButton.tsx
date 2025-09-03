@@ -18,7 +18,7 @@ export function ClerkAuthButton() {
         <span className="text-terminal-green">
           {user?.primaryEmailAddress?.emailAddress || user?.id || 'Connected'}
         </span>
-        <SignOutButton>
+        <SignOutButton redirectUrl="/demo">
           <button 
             className="px-4 py-2 border border-terminal-green transition-colors" 
             style={{

@@ -23,18 +23,22 @@ import { env } from '@/config/env.js'
 
 import { getVerbs } from '../config/verbs.js'
 
-export async function createWallet(_userId?: string): Promise<{
+export async function createWallet(userId?: string): Promise<{
   privyAddress: string
   smartWalletAddress: string
+  userId?: string
 }> {
   const verbs = getVerbs()
 
+  // For now, create the wallet without specifying ID
+  // The Verbs SDK needs to be updated to support user-specific wallet creation
   const wallet = await verbs.wallet.createWalletWithEmbeddedSigner()
 
   const smartWalletAddress = await wallet.getAddress()
   return {
     privyAddress: wallet.signer.address,
     smartWalletAddress,
+    userId, // Return the userId so frontend knows which user this wallet belongs to
   }
 }
 

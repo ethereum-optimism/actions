@@ -54,6 +54,12 @@ class VerbsApiClient {
     })
   }
 
+  async getWallet(userId: string): Promise<{ address: string; userId: string }> {
+    return this.request<{ address: string; userId: string }>(`/wallet/${userId}`, {
+      method: 'GET',
+    })
+  }
+
   async getAllWallets(): Promise<GetAllWalletsResponse> {
     return this.request<GetAllWalletsResponse>('/wallets', {
       method: 'GET',
