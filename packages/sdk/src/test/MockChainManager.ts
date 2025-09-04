@@ -83,8 +83,8 @@ export class MockChainManager {
     return chainById[chainId]
   }
 
-  getRpcUrl(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): string {
-    return this.getChain(chainId).rpcUrls.default.http[0]
+  getRpcUrls(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): string[] {
+    return this.getChain(chainId).rpcUrls.default.http as string[]
   }
 
   private createMockBundlerClients(): Map<SupportedChainId, BundlerClient> {
