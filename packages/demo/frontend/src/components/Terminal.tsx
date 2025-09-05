@@ -2,6 +2,7 @@ import { chainById } from '@eth-optimism/viem/chains'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth, useUser, useClerk } from '@clerk/clerk-react'
+import { useWallets, usePrivy } from '@privy-io/react-auth'
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
@@ -105,34 +106,40 @@ const Terminal = () => {
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
   const { openSignIn } = useClerk()
+  
+  // Privy wallet hooks
+  const { wallets } = useWallets()
+  const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy()
+  
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
 
-  // Auto-select wallet when user is signed in
+  // Log Privy authentication status for debugging
+  useEffect(() => {
+    if (privyReady) {
+      console.log('🔗 Terminal: Privy authentication status:', {
+        privyReady,
+        privyAuthenticated,
+        clerkSignedIn: isSignedIn,
+        walletsCount: wallets.length
+      })
+    }
+  }, [privyReady, privyAuthenticated, isSignedIn, wallets.length])
+
+  // Auto-select wallet when Privy is authenticated and has wallets
   useEffect(() => {
     const autoSelectWallet = async () => {
-      if (isSignedIn && isLoaded && user?.id && !selectedWallet) {
-        const userId = user.id
+      if (isSignedIn && privyAuthenticated && wallets.length > 0 && !selectedWallet) {
+        console.log('👤 Terminal: Auto-selecting wallet for authenticated user')
+        console.log('🔗 Terminal: Available Privy wallets:', wallets.length)
         
-        try {
-          let walletAddress: string
-          
-          // Try to get existing wallet first
-          try {
-            const existingWallet = await verbsApi.getWallet(userId)
-            walletAddress = existingWallet.address
-          } catch {
-            // If wallet doesn't exist, create it using our auth-enabled function
-            try {
-              const result = await createWallet(userId)
-              walletAddress = result.smartWalletAddress
-            } catch (error) {
-              console.error('Failed to create wallet:', error)
-              return
-            }
-          }
+        // Use the first available embedded wallet
+        const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy')
+        if (embeddedWallet) {
+          const walletAddress = embeddedWallet.address
+          console.log('✅ Terminal: Found Privy embedded wallet:', walletAddress)
 
           setSelectedWallet({
-            id: userId,
+            id: user?.id || 'unknown',
             address: walletAddress,
           })
 
@@ -144,14 +151,14 @@ const Terminal = () => {
             timestamp: new Date(),
           }
           setLines((prev) => [...prev, welcomeLine])
-        } catch (error) {
-          console.error('Failed to auto-select wallet:', error)
+        } else {
+          console.log('ℹ️  Terminal: No embedded wallet found')
         }
       }
     }
 
     autoSelectWallet()
-  }, [isSignedIn, isLoaded, user?.id, selectedWallet]) // Only re-run when auth state changes
+  }, [isSignedIn, privyAuthenticated, wallets.length, selectedWallet, user])
 
   // Function to render content with clickable links
   const renderContentWithLinks = (content: string) => {
