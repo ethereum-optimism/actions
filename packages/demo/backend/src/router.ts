@@ -38,6 +38,9 @@ router.get('/version', (c) => {
   }
 })
 
+// Example authenticated endpoint:
+// router.post('/wallet/:userId', authMiddleware, walletController.createWallet)
+
 router.get('/wallets', walletController.getAllWallets)
 router.post('/wallet/:userId', walletController.createWallet)
 router.get('/wallet/:userId', walletController.getWallet)

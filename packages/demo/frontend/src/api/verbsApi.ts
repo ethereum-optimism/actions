@@ -48,21 +48,9 @@ class VerbsApiClient {
     return data
   }
 
-  async createWallet(userId: string, authToken?: string): Promise<CreateWalletResponse> {
-    const headers: Record<string, string> = {}
-    if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`
-    }
-    
+  async createWallet(userId: string): Promise<CreateWalletResponse> {
     return this.request<CreateWalletResponse>(`/wallet/${userId}`, {
       method: 'POST',
-      headers,
-    })
-  }
-
-  async getWallet(userId: string): Promise<{ address: string; userId: string }> {
-    return this.request<{ address: string; userId: string }>(`/wallet/${userId}`, {
-      method: 'GET',
     })
   }
 
