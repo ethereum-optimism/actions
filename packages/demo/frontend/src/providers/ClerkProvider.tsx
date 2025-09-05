@@ -11,8 +11,8 @@ export function ClerkProvider({ children }: { children: ReactNode }) {
   return (
     <Clerk 
       publishableKey={publishableKey || ''} 
-      afterSignInUrl="/demo"
-      afterSignUpUrl="/demo"
+      signInFallbackRedirectUrl="/demo"
+      signUpFallbackRedirectUrl="/demo"
       afterSignOutUrl="/demo"
       appearance={{
         variables: {
