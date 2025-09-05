@@ -63,7 +63,7 @@ describe('Morpho Lend', () => {
     // Initialize Verbs SDK with Morpho lending
     verbs = new Verbs({
       wallet: {
-        embeddedWalletConfig: {
+        hostedWalletConfig: {
           provider: {
             type: 'privy',
             privyClient,
@@ -82,13 +82,13 @@ describe('Morpho Lend', () => {
       chains: [
         {
           chainId: unichain.id,
-          rpcUrl: 'http://127.0.0.1:9546',
+          rpcUrls: ['http://127.0.0.1:9546'],
         },
       ],
     })
 
     // Use Privy to get the wallet
-    testWallet = (await verbs.wallet.getEmbeddedWallet({
+    testWallet = (await verbs.wallet.getHostedWallet({
       walletId: TEST_WALLET_ID,
     })) as PrivyWallet
 

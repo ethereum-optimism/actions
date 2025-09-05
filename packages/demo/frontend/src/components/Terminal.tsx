@@ -661,6 +661,24 @@ User ID: ${result.userId}`,
         timestamp: new Date(),
       }
 
+      // Auto-select the newly created wallet
+      try {
+        const all = await getAllWallets()
+        const created = all.wallets.find(
+          (w) =>
+            w.address.toLowerCase() ===
+              (result.smartWalletAddress || '').toLowerCase() ||
+            w.address.toLowerCase() === (result.privyAddress || '').toLowerCase(),
+        )
+
+        const walletToSelect = created || all.wallets[all.wallets.length - 1]
+        if (walletToSelect) {
+          setSelectedWallet(walletToSelect)
+        }
+      } catch {
+        // ignore selection errors silently
+      }
+
       setLines((prev) => [...prev.slice(0, -1), successLine])
     } catch (error) {
       const errorLine: TerminalLine = {

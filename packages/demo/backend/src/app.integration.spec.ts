@@ -13,7 +13,7 @@ vi.mock('./config/verbs.js', () => ({
   initializeVerbs: vi.fn(),
   getVerbs: vi.fn(() => ({
     wallet: {
-      createWalletWithEmbeddedSigner: vi.fn(() =>
+      createWalletWithHostedSigner: vi.fn(() =>
         Promise.resolve({
           id: `wallet-1`,
           signer: {
@@ -28,7 +28,7 @@ vi.mock('./config/verbs.js', () => ({
             ]),
         }),
       ),
-      getSmartWalletWithEmbeddedSigner: vi.fn(
+      getSmartWalletWithHostedSigner: vi.fn(
         ({ walletId: userId }: { walletId: string }) => {
           // Simulate some users existing and others not
           if (userId.includes('non-existent')) {
@@ -68,7 +68,7 @@ vi.mock('./config/verbs.js', () => ({
           },
         ),
       },
-      embeddedWalletProvider: {
+      hostedWalletProvider: {
         getAllWallets: vi.fn(() =>
           Promise.resolve([
             {

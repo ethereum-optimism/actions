@@ -44,7 +44,7 @@ describe('ChainManager', () => {
     mockChainConfigs = [
       {
         chainId: unichain.id,
-        rpcUrl: 'https://rpc.unichain.org',
+        rpcUrls: ['https://rpc.unichain.org'],
       },
     ]
     chainManager = new ChainManager(mockChainConfigs)
@@ -70,8 +70,8 @@ describe('ChainManager', () => {
 
     it('should throw error if multiple chains configured with the same chain ID', () => {
       const multiChainConfigs: ChainConfig[] = [
-        { chainId: unichain.id, rpcUrl: 'https://sepolia.unichain.org' },
-        { chainId: unichain.id, rpcUrl: 'https://another.rpc' },
+        { chainId: unichain.id, rpcUrls: ['https://sepolia.unichain.org'] },
+        { chainId: unichain.id, rpcUrls: ['https://another.rpc'] },
       ]
       expect(() => new ChainManager(multiChainConfigs)).toThrow(
         `Public client already configured for chain ID: ${unichain.id}`,
@@ -120,7 +120,7 @@ describe('ChainManager', () => {
       const configs: ChainConfig[] = [
         {
           chainId: unichain.id,
-          rpcUrl: 'https://rpc.unichain.org',
+          rpcUrls: ['https://rpc.unichain.org'],
           bundler: bundlerConfig,
         },
       ]
@@ -158,7 +158,7 @@ describe('ChainManager', () => {
       const configs: ChainConfig[] = [
         {
           chainId: unichain.id,
-          rpcUrl: 'https://rpc.unichain.org',
+          rpcUrls: ['https://rpc.unichain.org'],
           bundler: {
             type: 'pimlico',
             url: 'https://pimlico.example',
@@ -188,7 +188,7 @@ describe('ChainManager', () => {
       const configs: ChainConfig[] = [
         {
           chainId: unichain.id,
-          rpcUrl: 'https://rpc.unichain.org',
+          rpcUrls: ['https://rpc.unichain.org'],
           bundler: {
             type: 'simple',
             url: 'https://bundler.example',
@@ -215,7 +215,7 @@ describe('ChainManager', () => {
       const configs: ChainConfig[] = [
         {
           chainId: unichain.id,
-          rpcUrl: 'https://rpc.unichain.org',
+          rpcUrls: ['https://rpc.unichain.org'],
         },
       ]
 
@@ -230,7 +230,7 @@ describe('ChainManager', () => {
       const configs: ChainConfig[] = [
         {
           chainId: unichain.id,
-          rpcUrl: 'https://rpc.unichain.org',
+          rpcUrls: ['https://rpc.unichain.org'],
           bundler: {
             type: 'simple',
             url: '',

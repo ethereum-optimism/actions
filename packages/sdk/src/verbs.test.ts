@@ -17,7 +17,6 @@ describe('Verbs SDK - System Tests', () => {
           chains: [
             {
               chainId: unichain.id,
-              rpcUrl: unichain.rpcUrls.default.http[0],
             },
           ],
           lend: {
@@ -25,7 +24,7 @@ describe('Verbs SDK - System Tests', () => {
             defaultSlippage: 50,
           },
           wallet: {
-            embeddedWalletConfig: {
+            hostedWalletConfig: {
               provider: {
                 type: 'privy',
                 privyClient: createMockPrivyClient(
@@ -94,7 +93,6 @@ describe('Verbs SDK - System Tests', () => {
           chains: [
             {
               chainId: unichain.id,
-              rpcUrl: unichain.rpcUrls.default.http[0],
             },
           ],
           lend: {
@@ -102,7 +100,7 @@ describe('Verbs SDK - System Tests', () => {
             defaultSlippage: 50,
           },
           wallet: {
-            embeddedWalletConfig: {
+            hostedWalletConfig: {
               provider: {
                 type: 'privy',
                 privyClient: createMockPrivyClient(
@@ -142,7 +140,6 @@ describe('Verbs SDK - System Tests', () => {
           chains: [
             {
               chainId: unichain.id,
-              rpcUrl: unichain.rpcUrls.default.http[0],
             },
           ],
           lend: {
@@ -150,7 +147,7 @@ describe('Verbs SDK - System Tests', () => {
             defaultSlippage: 50,
           },
           wallet: {
-            embeddedWalletConfig: {
+            hostedWalletConfig: {
               provider: {
                 type: 'privy',
                 privyClient: createMockPrivyClient(
@@ -180,7 +177,6 @@ describe('Verbs SDK - System Tests', () => {
         chains: [
           {
             chainId: unichain.id,
-            rpcUrl: unichain.rpcUrls.default.http[0],
           },
         ],
         lend: {
@@ -188,7 +184,7 @@ describe('Verbs SDK - System Tests', () => {
           defaultSlippage: 50,
         },
         wallet: {
-          embeddedWalletConfig: {
+          hostedWalletConfig: {
             provider: {
               type: 'privy',
               privyClient: createMockPrivyClient(
@@ -216,7 +212,6 @@ describe('Verbs SDK - System Tests', () => {
         chains: [
           {
             chainId: unichain.id,
-            rpcUrl: unichain.rpcUrls.default.http[0],
           },
         ],
         lend: {
@@ -224,7 +219,7 @@ describe('Verbs SDK - System Tests', () => {
           defaultSlippage: 50,
         },
         wallet: {
-          embeddedWalletConfig: {
+          hostedWalletConfig: {
             provider: {
               type: 'privy',
               privyClient: createMockPrivyClient(
