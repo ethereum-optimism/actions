@@ -53,13 +53,12 @@ export class WalletController {
    */
   async createWallet(c: Context) {
     try {
-      const auth = c.get('auth')
-      const userId = auth?.userId || c.req.param('userId')
+      const validation = await validateRequest(c, UserIdParamSchema)
+      if (!validation.success) return validation.response
 
-      if (!userId) {
-        return c.json({ error: 'User ID required' }, 400)
-      }
-
+      const {
+        params: { userId },
+      } = validation.data
       const { privyAddress, smartWalletAddress } =
         await walletService.createWallet()
 
@@ -69,7 +68,7 @@ export class WalletController {
         userId,
       } satisfies CreateWalletResponse)
     } catch (error) {
-      console.error('❌ WalletController: Failed to create wallet:', error)
+      console.error(error)
       return c.json(
         {
           error: 'Failed to create wallet',
