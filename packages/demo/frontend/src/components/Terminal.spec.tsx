@@ -4,6 +4,26 @@ import { describe, expect, it, vi } from 'vitest'
 
 import Terminal from './Terminal'
 
+// Mock Clerk hooks
+vi.mock('@clerk/clerk-react', () => ({
+  useAuth: vi.fn(() => ({
+    isSignedIn: false,
+    getToken: vi.fn(() => Promise.resolve(null)),
+  })),
+  useUser: vi.fn(() => ({
+    user: null,
+  })),
+}))
+
+// Mock Privy hooks
+vi.mock('@privy-io/react-auth', () => ({
+  useWallets: vi.fn(() => ({ wallets: [] })),
+  usePrivy: vi.fn(() => ({
+    authenticated: false,
+    ready: true,
+  })),
+}))
+
 // Mock the verbsApi
 vi.mock('../api/verbsApi', () => ({
   verbsApi: {
