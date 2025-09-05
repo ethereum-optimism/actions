@@ -3,10 +3,10 @@ import type { WebAuthnAccount } from 'viem/account-abstraction'
 
 import type {
   CreateSmartWalletOptions,
-  createWalletWithHostedSignerOptions,
+  CreateWalletWithHostedWalletSignerOptions,
   getHostedWalletOptions,
   GetSmartWalletOptions,
-  getSmartWalletWithHostedSignerOptions,
+  GetSmartWalletWithHostedWalletSignerOptions,
 } from '@/types/wallet.js'
 import type { HostedWallet } from '@/wallet/base/HostedWallet.js'
 import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
@@ -23,15 +23,6 @@ export class WalletProvider {
     public readonly hostedWalletProvider: HostedWalletProvider,
     public readonly smartWalletProvider: SmartWalletProvider,
   ) {}
-
-  /**
-   * Create a new hosted wallet
-   * @description Creates only a hosted wallet using the configured hosted wallet provider.
-   * @returns Promise resolving to the created hosted wallet instance
-   */
-  async createHostedWallet(): Promise<HostedWallet> {
-    return this.hostedWalletProvider.createWallet()
-  }
 
   /**
    * Create a new smart wallet
@@ -66,11 +57,10 @@ export class WalletProvider {
    * @param params.nonce - Optional nonce for smart wallet address generation (defaults to 0)
    * @returns Promise resolving to the created smart wallet instance
    */
-  async createWalletWithHostedSigner(
-    params?: createWalletWithHostedSignerOptions,
+  async createWalletWithHostedWalletSigner(
+    params: CreateWalletWithHostedWalletSignerOptions,
   ): Promise<SmartWallet> {
-    const { owners: ownersParam, hostedWalletIndex, nonce } = params || {}
-    const hostedWallet = await this.hostedWalletProvider.createWallet()
+    const { owners: ownersParam, hostedWalletIndex, nonce, hostedWallet } = params || {}
     const account = await hostedWallet.account()
 
     let owners: Array<Address | WebAuthnAccount>
@@ -106,17 +96,25 @@ export class WalletProvider {
    * @returns Promise resolving to the smart wallet instance with hosted wallet as signer
    * @throws Error if hosted wallet is not found
    */
-  async getSmartWalletWithHostedSigner(
-    params: getSmartWalletWithHostedSignerOptions,
+  async getSmartWalletWithHostedWalletSigner(
+    params: GetSmartWalletWithHostedWalletSignerOptions,
   ) {
-    const { walletId, deploymentOwners, walletAddress } = params
-    const hostedWallet = await this.hostedWalletProvider.getWallet({
-      walletId,
-    })
-    if (!hostedWallet) {
-      throw new Error('Hosted wallet not found')
-    }
+    const { deploymentOwners, walletAddress: walletAddressParam, hostedWallet, nonce } = params
     const account = await hostedWallet.account()
+
+    let walletAddress = walletAddressParam
+    if (!walletAddress) {
+      if (!deploymentOwners) {
+        throw new Error('Deployment owners must be provided when wallet address is not provided')
+      }
+      walletAddress = await this.smartWalletProvider.getWalletAddress({
+        owners: deploymentOwners!,
+        nonce,
+      })
+    }
+
+    // TODO: check if wallet is deployed and consider if we should require a chain id for this function.
+
 
     // If neither walletAddress nor deploymentOwners provided, default to hosted wallet as single owner
     const finalDeploymentOwners =

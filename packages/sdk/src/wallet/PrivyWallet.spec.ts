@@ -58,7 +58,6 @@ describe('PrivyWallet', () => {
       createdWallet.id,
       createdWallet.address as Address,
       mockChainManager,
-      mockLendProvider,
     )
     expect(wallet.walletId).toBe(createdWallet.id)
   })
@@ -73,7 +72,6 @@ describe('PrivyWallet', () => {
       createdWallet.id,
       createdWallet.address as Address,
       mockChainManager,
-      mockLendProvider,
     )
     expect(wallet.address).toBe(createdWallet.address)
   })
@@ -88,7 +86,6 @@ describe('PrivyWallet', () => {
       createdWallet.id,
       createdWallet.address as Address,
       mockChainManager,
-      mockLendProvider,
     )
     vi.mocked(createViemAccount).mockResolvedValue(mockLocalAccount)
 
@@ -111,7 +108,6 @@ describe('PrivyWallet', () => {
       createdWallet.id,
       createdWallet.address as Address,
       mockChainManager,
-      mockLendProvider,
     )
     const mockWalletClient = {
       account: mockLocalAccount,

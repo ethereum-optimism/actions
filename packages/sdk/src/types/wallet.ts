@@ -1,6 +1,8 @@
 import type { Address, LocalAccount } from 'viem'
 import type { WebAuthnAccount } from 'viem/account-abstraction'
 
+import type { HostedWallet } from '@/wallet/base/HostedWallet.js'
+
 /**
  * Options for creating a smart wallet
  * @description Parameters for creating a new smart wallet with specified owners and signer
@@ -15,7 +17,8 @@ export type CreateSmartWalletOptions = {
  * Options for creating a wallet with hosted signer
  * @description Parameters for creating both hosted and smart wallets, with hosted wallet automatically added as signer
  */
-export type createWalletWithHostedSignerOptions = {
+export type CreateWalletWithHostedWalletSignerOptions = {
+  hostedWallet: HostedWallet
   owners?: Array<Address | WebAuthnAccount>
   hostedWalletIndex?: number
   nonce?: bigint
@@ -34,11 +37,12 @@ export type GetSmartWalletOptions = {
 }
 
 /**
- * Options for retrieving a hosted wallet
- * @description Parameters for getting an existing hosted wallet
+ * Options for converting a hosted wallet to a Verbs wallet
+ * @description Parameters for converting a hosted wallet to a Verbs wallet
  */
-export type getHostedWalletOptions = {
+export type HostedWalletToVerbsWalletOptions = {
   walletId: string
+  address: string
 }
 
 /**
@@ -46,8 +50,10 @@ export type getHostedWalletOptions = {
  * @description Parameters for getting an existing smart wallet using a hosted wallet as signer.
  * If neither walletAddress nor deploymentOwners is provided, defaults to using the hosted wallet as single owner.
  */
-export type getSmartWalletWithHostedSignerOptions = Omit<
-  GetSmartWalletOptions,
-  'signer'
-> &
-  getHostedWalletOptions
+export type GetSmartWalletWithHostedWalletSignerOptions = {
+  hostedWallet: HostedWallet
+  deploymentOwners?: Array<Address | WebAuthnAccount>
+  signerOwnerIndex?: number
+  walletAddress?: Address
+  nonce?: bigint
+}
