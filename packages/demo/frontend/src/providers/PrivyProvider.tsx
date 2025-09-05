@@ -19,10 +19,8 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
           getCustomAccessToken: async () => {
             try {
               const token = await getToken()
-              console.log('🎫 PrivyProvider: Retrieved Clerk token for Privy auth')
               return token
             } catch (error) {
-              console.error('❌ PrivyProvider: Failed to get Clerk token:', error)
               return null
             }
           },

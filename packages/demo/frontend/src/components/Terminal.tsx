@@ -114,17 +114,6 @@ const Terminal = () => {
 
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
 
-  // Log Privy authentication status for debugging
-  useEffect(() => {
-    if (privyReady) {
-      console.log('🔗 Terminal: Privy authentication status:', {
-        privyReady,
-        privyAuthenticated,
-        clerkSignedIn: isSignedIn,
-        walletsCount: wallets.length,
-      })
-    }
-  }, [privyReady, privyAuthenticated, isSignedIn, wallets.length])
 
   // Auto-select wallet when Privy is authenticated and has wallets
   useEffect(() => {
@@ -135,19 +124,12 @@ const Terminal = () => {
         wallets.length > 0 &&
         !selectedWallet
       ) {
-        console.log('👤 Terminal: Auto-selecting wallet for authenticated user')
-        console.log('🔗 Terminal: Available Privy wallets:', wallets.length)
-
         // Use the first available embedded wallet
         const embeddedWallet = wallets.find(
           (wallet) => wallet.walletClientType === 'privy',
         )
         if (embeddedWallet) {
           const walletAddress = embeddedWallet.address
-          console.log(
-            '✅ Terminal: Found Privy embedded wallet:',
-            walletAddress,
-          )
 
           setSelectedWallet({
             id: user?.id || 'unknown',
@@ -158,12 +140,10 @@ const Terminal = () => {
           const welcomeLine: TerminalLine = {
             id: `welcome-${Date.now()}`,
             type: 'success',
-            content: `Welcome back ${user?.primaryEmailAddress?.emailAddress || user?.id}!\nWallet auto-selected: ${walletAddress}\n⚠️  Wallet commands do not yet work with authenticated wallets!\nUse 'wallet select' instead`,
+            content: `Welcome back ${user?.primaryEmailAddress?.emailAddress || user?.id}!\nWallet auto-selected: ${walletAddress}\n⚠️  Wallet commands do not yet work with authenticated wallets!\nSelect another wallet instead`,
             timestamp: new Date(),
           }
           setLines((prev) => [...prev, welcomeLine])
-        } else {
-          console.log('ℹ️  Terminal: No embedded wallet found')
         }
       }
     }
@@ -237,21 +217,10 @@ const Terminal = () => {
         throw new Error('Privy wallet not found')
       }
 
-      // Use the actual wallet address for the API call
-      console.log(
-        '🔗 Using Privy wallet address for balance:',
-        privyWallet.address,
-      )
-
-      // Since the backend getWalletBalance expects a userId but we have a wallet address,
-      // we need to modify this to work with Privy wallets
-      // For now, let's try using the address directly
       try {
-        // Use the new address-based balance API for Privy wallets
-        result = await verbsApi.getWalletBalanceByAddress(privyWallet.address)
-        console.log('✅ Got balance for Privy wallet via address API')
+        // TODO: this will fail
+        result = await verbsApi.getWalletBalance(walletId)
       } catch (error) {
-        console.warn('Could not get balance via address API:', error)
         // Return a default empty balance structure for Privy wallets
         result = { balance: [] }
       }
@@ -260,7 +229,6 @@ const Terminal = () => {
       result = await verbsApi.getWalletBalance(walletId)
     }
 
-    console.log('result', result)
 
     const balancesByChain = result.balance.reduce(
       (acc, token) => {
@@ -495,17 +463,8 @@ const Terminal = () => {
   const createWallet = async (
     userId: string,
   ): Promise<CreateWalletResponse> => {
-    console.log('🏗️  Terminal: Creating wallet for userId:', userId)
-
     // Get auth token from Clerk
     const authToken = await getToken()
-    console.log('🎫 Terminal: Got auth token:', !!authToken)
-    if (authToken) {
-      console.log(
-        '🔑 Terminal: Token preview:',
-        authToken.substring(0, 50) + '...',
-      )
-    }
 
     return verbsApi.createWallet(userId, authToken || undefined)
   }
@@ -961,7 +920,6 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       ) => {
         const lines: string[] = []
         const totalWallets = wallets.length
-        console.log('inside formatWalletColumns', wallets)
 
         // Responsive column logic: 1 on mobile, 2 on tablet, 3 on desktop
         const isMobile = screenWidth < 480

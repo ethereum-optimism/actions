@@ -22,12 +22,6 @@ class VerbsApiClient {
     options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
-    
-    console.log('🌐 VerbsApi: Making request:', {
-      method: options.method || 'GET',
-      url,
-      hasAuth: !!options.headers?.['Authorization']
-    })
 
     const response = await fetch(url, {
       headers: {
@@ -35,12 +29,6 @@ class VerbsApiClient {
         ...options.headers,
       },
       ...options,
-    })
-
-    console.log('📡 VerbsApi: Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      url
     })
 
     if (!response.ok) {

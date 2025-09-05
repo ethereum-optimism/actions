@@ -52,20 +52,11 @@ export class WalletController {
    * POST - Create a new wallet for a user
    */
   async createWallet(c: Context) {
-    console.log('💼 WalletController: createWallet called')
-    
     try {
       const auth = c.get('auth')
       const userId = auth?.userId || c.req.param('userId')
-      
-      console.log('👤 WalletController: Auth context:', {
-        userId,
-        hasAuth: !!auth,
-        hasPrivyAuthKey: !!auth?.privyAuthKey
-      })
 
       if (!userId) {
-        console.log('❌ WalletController: No user ID provided')
         return c.json({ error: 'User ID required' }, 400)
       }
 
@@ -74,20 +65,8 @@ export class WalletController {
       const authToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : undefined
       const privyAuthKey = auth?.privyAuthKey
 
-      console.log('🔧 WalletController: Calling wallet service with:', {
-        userId,
-        hasAuthToken: !!authToken,
-        hasPrivyAuthKey: !!privyAuthKey
-      })
-
       const { privyAddress, smartWalletAddress } =
         await walletService.createWallet(userId, authToken, privyAuthKey)
-
-      console.log('✅ WalletController: Wallet created successfully:', {
-        privyAddress,
-        smartWalletAddress,
-        userId
-      })
 
       return c.json({
         privyAddress,
