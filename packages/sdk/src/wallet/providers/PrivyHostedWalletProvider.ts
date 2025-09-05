@@ -4,7 +4,7 @@ import { getAddress } from 'viem'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
-import { EmbeddedWalletProvider } from '@/wallet/providers/base/EmbeddedWalletProvider.js'
+import { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
 
 /**
  * Options for getting all wallets
@@ -21,7 +21,7 @@ export interface PrivyProviderGetAllWalletsOptions {
  * Privy wallet provider implementation
  * @description Wallet provider implementation using Privy service
  */
-export class PrivyEmbeddedWalletProvider extends EmbeddedWalletProvider {
+export class PrivyHostedWalletProvider extends HostedWalletProvider {
   public privy: PrivyClient
   private chainManager: ChainManager
   private lendProvider: LendProvider

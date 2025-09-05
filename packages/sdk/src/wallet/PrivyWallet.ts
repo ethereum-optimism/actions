@@ -23,13 +23,13 @@ import type {
   TransactionData,
 } from '@/types/lend.js'
 import { type AssetIdentifier, parseLendParams } from '@/utils/assets.js'
-import { EmbeddedWallet } from '@/wallet/base/EmbeddedWallet.js'
+import { HostedWallet } from '@/wallet/base/HostedWallet.js'
 
 /**
  * Privy wallet implementation
  * @description Wallet implementation using Privy service
  */
-export class PrivyWallet extends EmbeddedWallet {
+export class PrivyWallet extends HostedWallet {
   public walletId: string
   private privyClient: PrivyClient
   private chainManager: ChainManager

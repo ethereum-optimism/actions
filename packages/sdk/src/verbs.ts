@@ -2,10 +2,10 @@ import { LendProviderMorpho } from '@/lend/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
-import type { EmbeddedWalletProvider } from '@/wallet/providers/base/EmbeddedWalletProvider.js'
+import type { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
-import { PrivyEmbeddedWalletProvider } from '@/wallet/providers/PrivyEmbeddedWalletProvider.js'
+import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
 import { WalletNamespace } from '@/wallet/WalletNamespace.js'
 import { WalletProvider } from '@/wallet/WalletProvider.js'
 
@@ -17,7 +17,7 @@ export class Verbs {
   public readonly wallet: WalletNamespace
   private _chainManager: ChainManager
   private lendProvider?: LendProvider
-  private embeddedWalletProvider!: EmbeddedWalletProvider
+  private hostedWalletProvider!: HostedWalletProvider
   private smartWalletProvider!: SmartWalletProvider
 
   constructor(config: VerbsConfig) {
@@ -65,15 +65,15 @@ export class Verbs {
    * @returns WalletProvider instance
    */
   private createWalletProvider(config: VerbsConfig['wallet']) {
-    if (config.embeddedWalletConfig.provider.type === 'privy') {
-      this.embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
-        config.embeddedWalletConfig.provider.privyClient,
+    if (config.hostedWalletConfig.provider.type === 'privy') {
+      this.hostedWalletProvider = new PrivyHostedWalletProvider(
+        config.hostedWalletConfig.provider.privyClient,
         this._chainManager,
         this.lendProvider!,
       )
     } else {
       throw new Error(
-        `Unsupported embedded wallet provider: ${config.embeddedWalletConfig.provider.type}`,
+        `Unsupported hosted wallet provider: ${config.hostedWalletConfig.provider.type}`,
       )
     }
 
@@ -92,7 +92,7 @@ export class Verbs {
     }
 
     const walletProvider = new WalletProvider(
-      this.embeddedWalletProvider,
+      this.hostedWalletProvider,
       this.smartWalletProvider,
     )
 

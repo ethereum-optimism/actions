@@ -10,7 +10,7 @@ import { getRandomAddress } from '@/test/utils.js'
 import { DefaultSmartWallet } from '@/wallet/DefaultSmartWallet.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
-import { PrivyEmbeddedWalletProvider } from '@/wallet/providers/PrivyEmbeddedWalletProvider.js'
+import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
 import { WalletNamespace } from '@/wallet/WalletNamespace.js'
 import { WalletProvider } from '@/wallet/WalletProvider.js'
 
@@ -20,12 +20,12 @@ const mockChainManager = new MockChainManager({
 const mockLendProvider = createMockLendProvider()
 
 describe('WalletNamespace', () => {
-  it('should provide access to embedded wallet provider', () => {
+  it('should provide access to hosted wallet provider', () => {
     const mockPrivyClient = createMockPrivyClient(
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -35,12 +35,12 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
     const walletNamespace = new WalletNamespace(walletProvider)
 
-    expect(walletNamespace.embeddedWalletProvider).toBe(embeddedWalletProvider)
+    expect(walletNamespace.hostedWalletProvider).toBe(hostedWalletProvider)
   })
 
   it('should provide access to smart wallet provider', () => {
@@ -48,7 +48,7 @@ describe('WalletNamespace', () => {
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -58,7 +58,7 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
     const walletNamespace = new WalletNamespace(walletProvider)
@@ -66,12 +66,12 @@ describe('WalletNamespace', () => {
     expect(walletNamespace.smartWalletProvider).toBe(smartWalletProvider)
   })
 
-  it('should create an embedded wallet via namespace', async () => {
+  it('should create a hosted wallet via namespace', async () => {
     const mockPrivyClient = createMockPrivyClient(
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -81,22 +81,19 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
-    const createEmbeddedWalletSpy = vi.spyOn(
-      walletProvider,
-      'createEmbeddedWallet',
-    )
+    const createHostedWalletSpy = vi.spyOn(walletProvider, 'createHostedWallet')
     const walletNamespace = new WalletNamespace(walletProvider)
 
     const wallet: PrivyWallet =
-      (await walletNamespace.createEmbeddedWallet()) as PrivyWallet
+      (await walletNamespace.createHostedWallet()) as PrivyWallet
 
     expect(wallet).toBeInstanceOf(PrivyWallet)
     expect(wallet.walletId).toMatch(/^mock-wallet-\d+$/)
     expect(isAddress(wallet.address)).toBe(true)
-    expect(createEmbeddedWalletSpy).toHaveBeenCalledOnce()
+    expect(createHostedWalletSpy).toHaveBeenCalledOnce()
   })
 
   it('should create a smart wallet with provided signer and owners', async () => {
@@ -104,7 +101,7 @@ describe('WalletNamespace', () => {
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -114,16 +111,16 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
     const createSmartWalletSpy = vi.spyOn(walletProvider, 'createSmartWallet')
     const walletNamespace = new WalletNamespace(walletProvider)
 
-    // Create an embedded wallet to use as signer
-    const embeddedWallet = await embeddedWalletProvider.createWallet()
-    const account = await embeddedWallet.account()
-    const owners = [getRandomAddress(), embeddedWallet.address]
+    // Create a hosted wallet to use as signer
+    const hostedWallet = await hostedWalletProvider.createWallet()
+    const account = await hostedWallet.account()
+    const owners = [getRandomAddress(), hostedWallet.address]
     const nonce = BigInt(123)
 
     const smartWallet = await walletNamespace.createSmartWallet({
@@ -141,12 +138,12 @@ describe('WalletNamespace', () => {
     })
   })
 
-  it('should create a wallet with embedded signer (default owners)', async () => {
+  it('should create a wallet with hosted signer (default owners)', async () => {
     const mockPrivyClient = createMockPrivyClient(
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -156,27 +153,27 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
-    const createWalletWithEmbeddedSignerSpy = vi.spyOn(
+    const createWalletWithHostedSignerSpy = vi.spyOn(
       walletProvider,
-      'createWalletWithEmbeddedSigner',
+      'createWalletWithHostedSigner',
     )
     const walletNamespace = new WalletNamespace(walletProvider)
 
-    const smartWallet = await walletNamespace.createWalletWithEmbeddedSigner()
+    const smartWallet = await walletNamespace.createWalletWithHostedSigner()
 
     expect(smartWallet).toBeInstanceOf(DefaultSmartWallet)
-    expect(createWalletWithEmbeddedSignerSpy).toHaveBeenCalledWith(undefined)
+    expect(createWalletWithHostedSignerSpy).toHaveBeenCalledWith(undefined)
   })
 
-  it('should create a wallet with embedded signer and additional owners', async () => {
+  it('should create a wallet with hosted signer and additional owners', async () => {
     const mockPrivyClient = createMockPrivyClient(
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -186,37 +183,37 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
-    const createWalletWithEmbeddedSignerSpy = vi.spyOn(
+    const createWalletWithHostedSignerSpy = vi.spyOn(
       walletProvider,
-      'createWalletWithEmbeddedSigner',
+      'createWalletWithHostedSigner',
     )
     const walletNamespace = new WalletNamespace(walletProvider)
 
     const additionalOwners = [getRandomAddress(), getRandomAddress()]
-    const embeddedWalletIndex = 1
+    const hostedWalletIndex = 1
     const nonce = BigInt(456)
     const params = {
       owners: additionalOwners,
-      embeddedWalletIndex,
+      hostedWalletIndex,
       nonce,
     }
 
     const smartWallet =
-      await walletNamespace.createWalletWithEmbeddedSigner(params)
+      await walletNamespace.createWalletWithHostedSigner(params)
 
     expect(smartWallet).toBeInstanceOf(DefaultSmartWallet)
-    expect(createWalletWithEmbeddedSignerSpy).toHaveBeenCalledWith(params)
+    expect(createWalletWithHostedSignerSpy).toHaveBeenCalledWith(params)
   })
 
-  it('should get an embedded wallet by ID', async () => {
+  it('should get a hosted wallet by ID', async () => {
     const mockPrivyClient = createMockPrivyClient(
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -226,30 +223,30 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
-    const getEmbeddedWalletSpy = vi.spyOn(walletProvider, 'getEmbeddedWallet')
+    const getHostedWalletSpy = vi.spyOn(walletProvider, 'getHostedWallet')
     const walletNamespace = new WalletNamespace(walletProvider)
 
-    const createdWallet = await embeddedWalletProvider.createWallet()
+    const createdWallet = await hostedWalletProvider.createWallet()
     const walletId = createdWallet.walletId
 
-    const wallet: PrivyWallet = (await walletNamespace.getEmbeddedWallet({
+    const wallet: PrivyWallet = (await walletNamespace.getHostedWallet({
       walletId,
     })) as PrivyWallet
 
     expect(wallet).toBeInstanceOf(PrivyWallet)
     expect(wallet.walletId).toBe(walletId)
-    expect(getEmbeddedWalletSpy).toHaveBeenCalledWith({ walletId })
+    expect(getHostedWalletSpy).toHaveBeenCalledWith({ walletId })
   })
 
-  it('should get a smart wallet with embedded signer', async () => {
+  it('should get a smart wallet with hosted signer', async () => {
     const mockPrivyClient = createMockPrivyClient(
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -259,18 +256,18 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
-    const getSmartWalletWithEmbeddedSignerSpy = vi.spyOn(
+    const getSmartWalletWithHostedSignerSpy = vi.spyOn(
       walletProvider,
-      'getSmartWalletWithEmbeddedSigner',
+      'getSmartWalletWithHostedSigner',
     )
     const walletNamespace = new WalletNamespace(walletProvider)
 
-    const embeddedWallet = await embeddedWalletProvider.createWallet()
-    const walletId = embeddedWallet.walletId
-    const deploymentOwners = [embeddedWallet.address]
+    const hostedWallet = await hostedWalletProvider.createWallet()
+    const walletId = hostedWallet.walletId
+    const deploymentOwners = [hostedWallet.address]
     const signerOwnerIndex = 0
     const params = {
       walletId,
@@ -279,10 +276,10 @@ describe('WalletNamespace', () => {
     }
 
     const smartWallet =
-      await walletNamespace.getSmartWalletWithEmbeddedSigner(params)
+      await walletNamespace.getSmartWalletWithHostedSigner(params)
 
     expect(smartWallet).toBeInstanceOf(DefaultSmartWallet)
-    expect(getSmartWalletWithEmbeddedSignerSpy).toHaveBeenCalledWith(params)
+    expect(getSmartWalletWithHostedSignerSpy).toHaveBeenCalledWith(params)
   })
 
   it('should get a smart wallet with provided signer', async () => {
@@ -290,7 +287,7 @@ describe('WalletNamespace', () => {
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -300,15 +297,15 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
     const getSmartWalletSpy = vi.spyOn(walletProvider, 'getSmartWallet')
     const walletNamespace = new WalletNamespace(walletProvider)
 
-    const embeddedWallet = await embeddedWalletProvider.createWallet()
-    const account = await embeddedWallet.account()
-    const deploymentOwners = [embeddedWallet.address, getRandomAddress()]
+    const hostedWallet = await hostedWalletProvider.createWallet()
+    const account = await hostedWallet.account()
+    const deploymentOwners = [hostedWallet.address, getRandomAddress()]
     const signerOwnerIndex = 0
     const nonce = BigInt(789)
     const params = {
@@ -329,7 +326,7 @@ describe('WalletNamespace', () => {
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -339,13 +336,13 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
     const walletNamespace = new WalletNamespace(walletProvider)
 
-    const embeddedWallet = await embeddedWalletProvider.createWallet()
-    const account = await embeddedWallet.account()
+    const hostedWallet = await hostedWalletProvider.createWallet()
+    const account = await hostedWallet.account()
 
     await expect(
       walletNamespace.getSmartWallet({
@@ -357,12 +354,12 @@ describe('WalletNamespace', () => {
     )
   })
 
-  it('should throw error when embedded wallet is not found', async () => {
+  it('should throw error when hosted wallet is not found', async () => {
     const mockPrivyClient = createMockPrivyClient(
       'test-app-id',
       'test-app-secret',
     )
-    const embeddedWalletProvider = new PrivyEmbeddedWalletProvider(
+    const hostedWalletProvider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -372,7 +369,7 @@ describe('WalletNamespace', () => {
       mockLendProvider,
     )
     const walletProvider = new WalletProvider(
-      embeddedWalletProvider,
+      hostedWalletProvider,
       smartWalletProvider,
     )
     const walletNamespace = new WalletNamespace(walletProvider)
@@ -380,7 +377,7 @@ describe('WalletNamespace', () => {
     const invalidWalletId = 'invalid-wallet-id'
 
     await expect(
-      walletNamespace.getSmartWalletWithEmbeddedSigner({
+      walletNamespace.getSmartWalletWithHostedSigner({
         walletId: invalidWalletId,
       }),
     ).rejects.toThrow('Failed to get wallet with id: invalid-wallet-id')

@@ -1,6 +1,6 @@
-export type { SupportedChainId } from './constants/supportedChains.js'
-export { LendProvider, LendProviderMorpho } from './lend/index.js'
-export { getTokenAddress, SUPPORTED_TOKENS } from './supported/tokens.js'
+export type { SupportedChainId } from '@/constants/supportedChains.js'
+export { LendProvider, LendProviderMorpho } from '@/lend/index.js'
+export { getTokenAddress, SUPPORTED_TOKENS } from '@/supported/tokens.js'
 export type {
   ApyBreakdown,
   LendConfig,
@@ -14,12 +14,12 @@ export type {
   TransactionData,
   VerbsConfig,
   WalletConfig,
-} from './types/index.js'
-export { Verbs } from './verbs.js'
-export { SmartWallet } from './wallet/base/SmartWallet.js'
-export { PrivyWallet } from './wallet/PrivyWallet.js'
-export { SmartWalletProvider } from './wallet/providers/base/SmartWalletProvider.js'
+} from '@/types/index.js'
+export { Verbs } from '@/verbs.js'
+export { SmartWallet } from '@/wallet/base/SmartWallet.js'
+export { PrivyWallet } from '@/wallet/PrivyWallet.js'
+export { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 export {
-  PrivyEmbeddedWalletProvider,
+  PrivyHostedWalletProvider,
   type PrivyProviderGetAllWalletsOptions,
-} from './wallet/providers/PrivyEmbeddedWalletProvider.js'
+} from '@/wallet/providers/PrivyHostedWalletProvider.js'

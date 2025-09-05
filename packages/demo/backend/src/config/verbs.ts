@@ -9,7 +9,7 @@ let verbsInstance: Verbs
 export function createVerbsConfig(): VerbsConfig {
   return {
     wallet: {
-      embeddedWalletConfig: {
+      hostedWalletConfig: {
         provider: {
           type: 'privy',
           privyClient: new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET),
