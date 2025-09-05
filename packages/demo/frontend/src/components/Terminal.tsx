@@ -24,7 +24,7 @@ interface VaultData {
   chainId: number
   address: string
   name: string
-  apy: number  
+  apy: number
   asset: string
   apyBreakdown: {
     nativeApy: number
@@ -74,7 +74,6 @@ Console commands:
   exit          - Exit terminal
 
 Wallet commands:
-  wallet auth   - Authenticate and auto-select your wallet
   wallet create - Create a new wallet
   wallet select - Select a wallet to use for commands
          fund    - Fund selected wallet
@@ -96,21 +95,23 @@ const Terminal = () => {
   const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
   const [selectedWallet, setSelectedWallet] = useState<WalletData | null>(null)
   const [screenWidth, setScreenWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1200
+    typeof window !== 'undefined' ? window.innerWidth : 1200,
   )
-  const [currentWalletList, setCurrentWalletList] = useState<GetAllWalletsResponse['wallets'] | null>(null)
+  const [currentWalletList, setCurrentWalletList] = useState<
+    GetAllWalletsResponse['wallets'] | null
+  >(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
-  
+
   // Clerk auth hooks
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
   const { openSignIn } = useClerk()
-  
+
   // Privy wallet hooks
   const { wallets } = useWallets()
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy()
-  
+
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
 
   // Log Privy authentication status for debugging
@@ -120,7 +121,7 @@ const Terminal = () => {
         privyReady,
         privyAuthenticated,
         clerkSignedIn: isSignedIn,
-        walletsCount: wallets.length
+        walletsCount: wallets.length,
       })
     }
   }, [privyReady, privyAuthenticated, isSignedIn, wallets.length])
@@ -128,15 +129,25 @@ const Terminal = () => {
   // Auto-select wallet when Privy is authenticated and has wallets
   useEffect(() => {
     const autoSelectWallet = async () => {
-      if (isSignedIn && privyAuthenticated && wallets.length > 0 && !selectedWallet) {
+      if (
+        isSignedIn &&
+        privyAuthenticated &&
+        wallets.length > 0 &&
+        !selectedWallet
+      ) {
         console.log('👤 Terminal: Auto-selecting wallet for authenticated user')
         console.log('🔗 Terminal: Available Privy wallets:', wallets.length)
-        
+
         // Use the first available embedded wallet
-        const embeddedWallet = wallets.find(wallet => wallet.walletClientType === 'privy')
+        const embeddedWallet = wallets.find(
+          (wallet) => wallet.walletClientType === 'privy',
+        )
         if (embeddedWallet) {
           const walletAddress = embeddedWallet.address
-          console.log('✅ Terminal: Found Privy embedded wallet:', walletAddress)
+          console.log(
+            '✅ Terminal: Found Privy embedded wallet:',
+            walletAddress,
+          )
 
           setSelectedWallet({
             id: user?.id || 'unknown',
@@ -147,7 +158,7 @@ const Terminal = () => {
           const welcomeLine: TerminalLine = {
             id: `welcome-${Date.now()}`,
             type: 'success',
-            content: `Welcome back ${user?.primaryEmailAddress?.emailAddress || user?.id}!\nWallet auto-selected: ${walletAddress}`,
+            content: `Welcome back ${user?.primaryEmailAddress?.emailAddress || user?.id}!\nWallet auto-selected: ${walletAddress}\n⚠️  Wallet commands do not yet work with authenticated wallets!\nUse 'wallet select' instead`,
             timestamp: new Date(),
           }
           setLines((prev) => [...prev, welcomeLine])
@@ -211,23 +222,64 @@ const Terminal = () => {
   }
 
   // DRY function to display wallet balance with loading state
-  const displayWalletBalance = async (walletId: string, showVaultPositions: boolean = true): Promise<string> => {
-    const result = await verbsApi.getWalletBalance(walletId)
+  const displayWalletBalance = async (
+    walletId: string,
+    showVaultPositions: boolean = true,
+  ): Promise<string> => {
+    // Check if this is a Privy authenticated wallet (Clerk user ID format)
+    const isPrivyWallet = walletId.startsWith('user_') && privyAuthenticated
+
+    let result
+    if (isPrivyWallet) {
+      // For Privy wallets, we need to get the balance using the wallet address instead of user ID
+      const privyWallet = wallets.find((w) => w.walletClientType === 'privy')
+      if (!privyWallet) {
+        throw new Error('Privy wallet not found')
+      }
+
+      // Use the actual wallet address for the API call
+      console.log(
+        '🔗 Using Privy wallet address for balance:',
+        privyWallet.address,
+      )
+
+      // Since the backend getWalletBalance expects a userId but we have a wallet address,
+      // we need to modify this to work with Privy wallets
+      // For now, let's try using the address directly
+      try {
+        // Use the new address-based balance API for Privy wallets
+        result = await verbsApi.getWalletBalanceByAddress(privyWallet.address)
+        console.log('✅ Got balance for Privy wallet via address API')
+      } catch (error) {
+        console.warn('Could not get balance via address API:', error)
+        // Return a default empty balance structure for Privy wallets
+        result = { balance: [] }
+      }
+    } else {
+      // For manual/backend wallets, use the original API call
+      result = await verbsApi.getWalletBalance(walletId)
+    }
+
     console.log('result', result)
 
-    const balancesByChain = result.balance.reduce((acc, token) => {
-      token.chainBalances.forEach(({ chainId, balance, formattedBalance }) => {
-        if (!acc[chainId]) {
-          acc[chainId] = []
-        }
-        acc[chainId].push({
-          ...token,
-          totalBalance: balance,
-          totalFormattedBalance: formattedBalance,
-        })
-      })
-      return acc
-    }, {} as Record<number, typeof result.balance>)
+    const balancesByChain = result.balance.reduce(
+      (acc, token) => {
+        token.chainBalances.forEach(
+          ({ chainId, balance, formattedBalance }) => {
+            if (!acc[chainId]) {
+              acc[chainId] = []
+            }
+            acc[chainId].push({
+              ...token,
+              totalBalance: balance,
+              totalFormattedBalance: formattedBalance,
+            })
+          },
+        )
+        return acc
+      },
+      {} as Record<number, typeof result.balance>,
+    )
 
     const balanceLines: string[] = []
 
@@ -301,18 +353,20 @@ const Terminal = () => {
       // Find the wallet selection line and update it
       setLines((prev) => {
         const walletSelectIndex = prev.findIndex((line) =>
-          line.content.includes('Select a wallet:')
+          line.content.includes('Select a wallet:'),
         )
-        
+
         if (walletSelectIndex !== -1) {
-          const formatWalletColumns = (wallets: GetAllWalletsResponse['wallets']) => {
+          const formatWalletColumns = (
+            wallets: GetAllWalletsResponse['wallets'],
+          ) => {
             const lines: string[] = []
             const totalWallets = wallets.length
-            
+
             // Responsive column logic: 1 on mobile, 2 on tablet, 3 on desktop
             const isMobile = screenWidth < 480
             const isTablet = screenWidth >= 480 && screenWidth < 768
-            
+
             const numColumns = isMobile ? 1 : isTablet ? 2 : 3
             const walletsPerColumn = Math.ceil(totalWallets / numColumns)
             const columnWidth = isMobile ? 0 : isTablet ? 25 : 33 // Tighter spacing for 2 cols
@@ -351,19 +405,19 @@ const Terminal = () => {
           }
 
           const walletOptions = formatWalletColumns(currentWalletList)
-          
+
           const updatedLine = {
             ...prev[walletSelectIndex],
-            content: `Select a wallet:\n\n${walletOptions}\n\nEnter wallet number:`
+            content: `Select a wallet:\n\n${walletOptions}\n\nEnter wallet number:`,
           }
-          
+
           return [
             ...prev.slice(0, walletSelectIndex),
             updatedLine,
-            ...prev.slice(walletSelectIndex + 1)
+            ...prev.slice(walletSelectIndex + 1),
           ]
         }
-        
+
         return prev
       })
     }
@@ -442,14 +496,17 @@ const Terminal = () => {
     userId: string,
   ): Promise<CreateWalletResponse> => {
     console.log('🏗️  Terminal: Creating wallet for userId:', userId)
-    
+
     // Get auth token from Clerk
     const authToken = await getToken()
     console.log('🎫 Terminal: Got auth token:', !!authToken)
     if (authToken) {
-      console.log('🔑 Terminal: Token preview:', authToken.substring(0, 50) + '...')
+      console.log(
+        '🔑 Terminal: Token preview:',
+        authToken.substring(0, 50) + '...',
+      )
     }
-    
+
     return verbsApi.createWallet(userId, authToken || undefined)
   }
 
@@ -535,10 +592,6 @@ const Terminal = () => {
         break
       case 'clear':
         setLines([])
-        return
-      case 'wallet auth':
-        setLines((prev) => [...prev, commandLine])
-        handleWalletAuth()
         return
       case 'wallet create':
         setPendingPrompt({
@@ -742,7 +795,10 @@ User ID: ${result.userId}`,
       setLines((prev) => [...prev, loadingBalanceLine])
 
       // Get wallet balance using DRY function
-      const walletBalanceText = await displayWalletBalance(selectedWallet!.id, true)
+      const walletBalanceText = await displayWalletBalance(
+        selectedWallet!.id,
+        true,
+      )
 
       // Get USDC balance for validation
       const walletBalanceResult = await verbsApi.getWalletBalance(
@@ -874,111 +930,6 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     }
   }
 
-  const handleWalletAuth = async () => {
-    if (!isLoaded) {
-      const loadingLine: TerminalLine = {
-        id: `auth-loading-${Date.now()}`,
-        type: 'output',
-        content: 'Loading authentication...',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, loadingLine])
-      return
-    }
-
-    if (!isSignedIn) {
-      const signingInLine: TerminalLine = {
-        id: `auth-signin-${Date.now()}`,
-        type: 'output',
-        content: 'Opening sign-in modal...',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, signingInLine])
-      
-      // Open the Clerk sign-in modal
-      openSignIn({
-        afterSignInUrl: '/demo',
-        afterSignUpUrl: '/demo',
-      })
-      return
-    }
-
-    // User is already authenticated
-    const userId = user?.id
-    if (!userId) {
-      const errorLine: TerminalLine = {
-        id: `auth-error-${Date.now()}`,
-        type: 'error',
-        content: 'Error: Unable to get user information',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, errorLine])
-      return
-    }
-
-    // Check if wallet is already selected for this user
-    if (selectedWallet?.id === userId) {
-      const alreadyAuthLine: TerminalLine = {
-        id: `auth-already-${Date.now()}`,
-        type: 'success',
-        content: `You're already signed in as ${user?.primaryEmailAddress?.emailAddress || user?.id}\nWallet selected: ${selectedWallet.address}`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, alreadyAuthLine])
-      return
-    }
-
-    // User is authenticated but wallet not selected/created yet
-    const loadingLine: TerminalLine = {
-      id: `auth-wallet-loading-${Date.now()}`,
-      type: 'output',
-      content: 'Setting up your wallet...',
-      timestamp: new Date(),
-    }
-    setLines((prev) => [...prev, loadingLine])
-
-    try {
-      let walletAddress: string
-      
-      // Try to get existing wallet first
-      try {
-        const existingWallet = await verbsApi.getWallet(userId)
-        walletAddress = existingWallet.address
-      } catch {
-        // If wallet doesn't exist, create it
-        try {
-          const result = await createWallet(userId)
-          walletAddress = result.smartWalletAddress
-        } catch (error) {
-          throw new Error('Unable to create or find wallet for user')
-        }
-      }
-
-      setSelectedWallet({
-        id: userId,
-        address: walletAddress,
-      })
-
-      const successLine: TerminalLine = {
-        id: `auth-success-${Date.now()}`,
-        type: 'success',
-        content: `✓ Signed in as ${user?.primaryEmailAddress?.emailAddress || user?.id}\n✓ Wallet selected: ${walletAddress}`,
-        timestamp: new Date(),
-      }
-
-      setLines((prev) => [...prev.slice(0, -1), successLine])
-
-    } catch (error) {
-      const errorLine: TerminalLine = {
-        id: `auth-error-${Date.now()}`,
-        type: 'error',
-        content: `Failed to set up wallet: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
-    }
-  }
-
   const handleWalletSelect = async () => {
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
@@ -1005,15 +956,17 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       }
 
       // Format wallets in responsive columns
-      const formatWalletColumns = (wallets: GetAllWalletsResponse['wallets']) => {
+      const formatWalletColumns = (
+        wallets: GetAllWalletsResponse['wallets'],
+      ) => {
         const lines: string[] = []
         const totalWallets = wallets.length
         console.log('inside formatWalletColumns', wallets)
-        
+
         // Responsive column logic: 1 on mobile, 2 on tablet, 3 on desktop
         const isMobile = screenWidth < 480
         const isTablet = screenWidth >= 480 && screenWidth < 768
-        
+
         const numColumns = isMobile ? 1 : isTablet ? 2 : 3
         const walletsPerColumn = Math.ceil(totalWallets / numColumns)
         const columnWidth = isMobile ? 0 : isTablet ? 25 : 33 // Tighter spacing for 2 cols
@@ -1114,9 +1067,9 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         const beforeSelection = prev.slice(0, selectWalletIndex)
 
         // Add just the success message
-      const successLine: TerminalLine = {
+        const successLine: TerminalLine = {
           id: `select-success-${Date.now()}`,
-        type: 'success',
+          type: 'success',
           content: `Wallet selected:\n${selectedWalletData.address}`,
           timestamp: new Date(),
         }
@@ -1146,7 +1099,10 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       setLines((prev) => [...prev, loadingLine])
 
       try {
-        const balanceText = await displayWalletBalance(selectedWalletData.id, true)
+        const balanceText = await displayWalletBalance(
+          selectedWalletData.id,
+          true,
+        )
 
         const balanceLine: TerminalLine = {
           id: `balance-${Date.now()}`,
@@ -1338,58 +1294,58 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       }
 
       // Skip provider selection and go directly to vault selection
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
-      type: 'output',
-      content: 'Loading vaults...',
-      timestamp: new Date(),
-    }
-    setLines((prev) => [...prev, loadingLine])
-
-    try {
-      const result = await verbsApi.getVaults()
-      
-      if (result.vaults.length === 0) {
-        const emptyLine: TerminalLine = {
-          id: `empty-${Date.now()}`,
-          type: 'error',
-          content: 'No vaults available.',
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), emptyLine])
-        return
+      const loadingLine: TerminalLine = {
+        id: `loading-${Date.now()}`,
+        type: 'output',
+        content: 'Loading vaults...',
+        timestamp: new Date(),
       }
+      setLines((prev) => [...prev, loadingLine])
 
-      const vaultOptions = result.vaults
+      try {
+        const result = await verbsApi.getVaults()
+
+        if (result.vaults.length === 0) {
+          const emptyLine: TerminalLine = {
+            id: `empty-${Date.now()}`,
+            type: 'error',
+            content: 'No vaults available.',
+            timestamp: new Date(),
+          }
+          setLines((prev) => [...prev.slice(0, -1), emptyLine])
+          return
+        }
+
+        const vaultOptions = result.vaults
           .map(
             (vault, index) =>
               `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
           )
-        .join('\n')
+          .join('\n')
 
-      const vaultSelectionLine: TerminalLine = {
-        id: `vault-selection-${Date.now()}`,
-        type: 'output',
+        const vaultSelectionLine: TerminalLine = {
+          id: `vault-selection-${Date.now()}`,
+          type: 'output',
           content: `Select a Lending vault:\n\n${vaultOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
-        timestamp: new Date(),
-      }
+          timestamp: new Date(),
+        }
 
-      setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
-      setPendingPrompt({
-        type: 'lendVault',
-        message: '',
-        data: result.vaults,
-      })
+        setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
+        setPendingPrompt({
+          type: 'lendVault',
+          message: '',
+          data: result.vaults,
+        })
       } catch (vaultError) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Failed to load vaults: ${
+        const errorLine: TerminalLine = {
+          id: `error-${Date.now()}`,
+          type: 'error',
+          content: `Failed to load vaults: ${
             vaultError instanceof Error ? vaultError.message : 'Unknown error'
-        }`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
+          }`,
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev.slice(0, -1), errorLine])
         return
       }
     } catch (error) {
@@ -1490,7 +1446,10 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       setPendingPrompt({
         type: 'walletSendSelection',
         message: '',
-        data: walletsWithUSDC.map((w) => ({ id: w.id, address: w.address as Address })),
+        data: walletsWithUSDC.map((w) => ({
+          id: w.id,
+          address: w.address as Address,
+        })),
       })
     } catch (error) {
       console.log(error)
@@ -1524,7 +1483,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     }
 
     const selectedWallet = wallets[selection - 1]
-    
+
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
       type: 'output',
@@ -1576,7 +1535,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         id: `error-${Date.now()}`,
         type: 'error',
         content: 'Invalid amount. Please enter a positive number.',
-      timestamp: new Date(),
+        timestamp: new Date(),
       }
       setLines((prev) => [...prev, errorLine])
       return
@@ -1585,25 +1544,25 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     if (amount > data.balance) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
-          type: 'error',
+        type: 'error',
         content: `Insufficient balance. Available: ${data.balance} USDC`,
-          timestamp: new Date(),
-        }
-      setLines((prev) => [...prev, errorLine])
-        return
+        timestamp: new Date(),
       }
+      setLines((prev) => [...prev, errorLine])
+      return
+    }
 
     const amountConfirmLine: TerminalLine = {
       id: `amount-confirm-${Date.now()}`,
-        type: 'output',
+      type: 'output',
       content: `Sending ${amount} USDC from ${shortenAddress(data.selectedWallet.address)}.\n\nEnter recipient address:`,
-        timestamp: new Date(),
-      }
+      timestamp: new Date(),
+    }
     setLines((prev) => [...prev, amountConfirmLine])
 
-      setPendingPrompt({
+    setPendingPrompt({
       type: 'walletSendRecipient',
-        message: '',
+      message: '',
       data: { ...data, amount },
     })
   }
@@ -1675,13 +1634,17 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
         setSelectedVaultIndex((prevIndex) =>
-          prevIndex > 0 ? prevIndex - 1 : (pendingPrompt.data as VaultData[]).length - 1
+          prevIndex > 0
+            ? prevIndex - 1
+            : (pendingPrompt.data as VaultData[]).length - 1,
         )
         return
       } else if (e.key === 'ArrowDown') {
         e.preventDefault()
         setSelectedVaultIndex((prevIndex) =>
-          prevIndex < (pendingPrompt.data as VaultData[]).length - 1 ? prevIndex + 1 : 0
+          prevIndex < (pendingPrompt.data as VaultData[]).length - 1
+            ? prevIndex + 1
+            : 0,
         )
         return
       } else if (e.key === 'Escape') {
@@ -1755,8 +1718,9 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     if (pendingPrompt?.type === 'lendVault') {
       const vaults = pendingPrompt.data as VaultData[]
       const vaultOptions = vaults
-        .map((vault, index) =>
-          `${index === selectedVaultIndex ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`
+        .map(
+          (vault, index) =>
+            `${index === selectedVaultIndex ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
         )
         .join('\n')
 
