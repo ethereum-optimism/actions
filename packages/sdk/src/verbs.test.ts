@@ -24,7 +24,7 @@ describe('Verbs SDK - System Tests', () => {
             defaultSlippage: 50,
           },
           wallet: {
-            embeddedWalletConfig: {
+            hostedWalletConfig: {
               provider: {
                 type: 'privy',
                 privyClient: createMockPrivyClient(
@@ -100,7 +100,7 @@ describe('Verbs SDK - System Tests', () => {
             defaultSlippage: 50,
           },
           wallet: {
-            embeddedWalletConfig: {
+            hostedWalletConfig: {
               provider: {
                 type: 'privy',
                 privyClient: createMockPrivyClient(
@@ -147,7 +147,7 @@ describe('Verbs SDK - System Tests', () => {
             defaultSlippage: 50,
           },
           wallet: {
-            embeddedWalletConfig: {
+            hostedWalletConfig: {
               provider: {
                 type: 'privy',
                 privyClient: createMockPrivyClient(
@@ -184,7 +184,7 @@ describe('Verbs SDK - System Tests', () => {
           defaultSlippage: 50,
         },
         wallet: {
-          embeddedWalletConfig: {
+          hostedWalletConfig: {
             provider: {
               type: 'privy',
               privyClient: createMockPrivyClient(
@@ -219,7 +219,7 @@ describe('Verbs SDK - System Tests', () => {
           defaultSlippage: 50,
         },
         wallet: {
-          embeddedWalletConfig: {
+          hostedWalletConfig: {
             provider: {
               type: 'privy',
               privyClient: createMockPrivyClient(

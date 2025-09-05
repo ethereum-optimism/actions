@@ -1,5 +1,5 @@
 import type {
-  PrivyEmbeddedWalletProvider,
+  PrivyHostedWalletProvider,
   PrivyProviderGetAllWalletsOptions as GetAllWalletsOptions,
   SmartWallet,
   SmartWalletProvider,
@@ -28,7 +28,7 @@ export async function createWallet(): Promise<{
   smartWalletAddress: string
 }> {
   const verbs = getVerbs()
-  const wallet = await verbs.wallet.createWalletWithEmbeddedSigner()
+  const wallet = await verbs.wallet.createWalletWithHostedSigner()
   const smartWalletAddress = await wallet.getAddress()
   return {
     privyAddress: wallet.signer.address,
@@ -40,7 +40,7 @@ export async function getWallet(userId: string): Promise<{
   wallet: SmartWallet
 }> {
   const verbs = getVerbs()
-  const wallet = await verbs.wallet.getSmartWalletWithEmbeddedSigner({
+  const wallet = await verbs.wallet.getSmartWalletWithHostedSigner({
     walletId: userId,
   })
   return { wallet }
@@ -52,7 +52,7 @@ export async function getAllWallets(
   try {
     const verbs = getVerbs()
     const privyWallets = await (
-      verbs.wallet.embeddedWalletProvider as PrivyEmbeddedWalletProvider
+      verbs.wallet.hostedWalletProvider as PrivyHostedWalletProvider
     ).getAllWallets(options)
     return Promise.all(
       privyWallets.map(async (privyWallet) => {

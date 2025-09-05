@@ -7,21 +7,21 @@ import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
-import { PrivyEmbeddedWalletProvider } from '@/wallet/providers/PrivyEmbeddedWalletProvider.js'
+import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
 
 const mockChainManager = new MockChainManager({
   supportedChains: [unichain.id],
 }) as unknown as ChainManager
 const mockLendProvider = createMockLendProvider()
 
-describe('PrivyEmbeddedWalletProvider', () => {
+describe('PrivyHostedWalletProvider', () => {
   it('should create a wallet via Privy API', async () => {
     const mockPrivyClient = createMockPrivyClient(
       'test-app-id',
       'test-app-secret',
     )
     const createWalletSpy = vi.spyOn(mockPrivyClient.walletApi, 'createWallet')
-    const provider = new PrivyEmbeddedWalletProvider(
+    const provider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -43,7 +43,7 @@ describe('PrivyEmbeddedWalletProvider', () => {
       'test-app-secret',
     )
     const getWalletSpy = vi.spyOn(mockPrivyClient.walletApi, 'getWallet')
-    const provider = new PrivyEmbeddedWalletProvider(
+    const provider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -68,7 +68,7 @@ describe('PrivyEmbeddedWalletProvider', () => {
       'test-app-secret',
     )
     const getWalletsSpy = vi.spyOn(mockPrivyClient.walletApi, 'getWallets')
-    const provider = new PrivyEmbeddedWalletProvider(
+    const provider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -93,7 +93,7 @@ describe('PrivyEmbeddedWalletProvider', () => {
 
     const getWalletsSpy = vi.spyOn(mockPrivyClient.walletApi, 'getWallets')
 
-    const provider = new PrivyEmbeddedWalletProvider(
+    const provider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,
@@ -113,7 +113,7 @@ describe('PrivyEmbeddedWalletProvider', () => {
       'test-app-id',
       'test-app-secret',
     )
-    const provider = new PrivyEmbeddedWalletProvider(
+    const provider = new PrivyHostedWalletProvider(
       mockPrivyClient,
       mockChainManager,
       mockLendProvider,

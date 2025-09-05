@@ -12,12 +12,12 @@ export type CreateSmartWalletOptions = {
 }
 
 /**
- * Options for creating a wallet with embedded signer
- * @description Parameters for creating both embedded and smart wallets, with embedded wallet automatically added as signer
+ * Options for creating a wallet with hosted signer
+ * @description Parameters for creating both hosted and smart wallets, with hosted wallet automatically added as signer
  */
-export type CreateWalletWithEmbeddedSignerOptions = {
+export type createWalletWithHostedSignerOptions = {
   owners?: Array<Address | WebAuthnAccount>
-  embeddedWalletIndex?: number
+  hostedWalletIndex?: number
   nonce?: bigint
 }
 
@@ -34,20 +34,20 @@ export type GetSmartWalletOptions = {
 }
 
 /**
- * Options for retrieving an embedded wallet
- * @description Parameters for getting an existing embedded wallet
+ * Options for retrieving a hosted wallet
+ * @description Parameters for getting an existing hosted wallet
  */
-export type GetEmbeddedWalletOptions = {
+export type getHostedWalletOptions = {
   walletId: string
 }
 
 /**
- * Options for retrieving a smart wallet with embedded wallet signer
- * @description Parameters for getting an existing smart wallet using an embedded wallet as signer.
- * If neither walletAddress nor deploymentOwners is provided, defaults to using the embedded wallet as single owner.
+ * Options for retrieving a smart wallet with hosted wallet signer
+ * @description Parameters for getting an existing smart wallet using a hosted wallet as signer.
+ * If neither walletAddress nor deploymentOwners is provided, defaults to using the hosted wallet as single owner.
  */
-export type GetSmartWalletWithEmbeddedSignerOptions = Omit<
+export type getSmartWalletWithHostedSignerOptions = Omit<
   GetSmartWalletOptions,
   'signer'
 > &
-  GetEmbeddedWalletOptions
+  getHostedWalletOptions

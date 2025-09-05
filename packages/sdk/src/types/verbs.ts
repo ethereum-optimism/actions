@@ -22,19 +22,19 @@ export interface VerbsConfig {
  * @description Configuration for wallet providers
  */
 export type WalletConfig = {
-  /** Embedded wallet configuration */
-  embeddedWalletConfig: EmbeddedWalletConfig
+  /** Hosted wallet configuration */
+  hostedWalletConfig: HostedWalletConfig
   /** Smart wallet configuration for ERC-4337 infrastructure */
   smartWalletConfig: SmartWalletConfig
 }
 
 /**
- * Embedded wallet configuration
- * @description Configuration for embedded wallets / signers
+ * Hosted wallet configuration
+ * @description Configuration for hosted wallets / signers
  */
-export interface EmbeddedWalletConfig {
+export interface HostedWalletConfig {
   /** Wallet provider for account creation, management, and signing */
-  provider: EmbeddedWalletProviderConfig
+  provider: HostedWalletProviderConfig
 }
 
 /**
@@ -61,14 +61,14 @@ export interface DefaultSmartWalletProvider {
 }
 
 /**
- * Embedded wallet provider configurations
- * @description Union type supporting multiple embedded wallet providers
+ * Hosted wallet provider configurations
+ * @description Union type supporting multiple hosted wallet providers
  */
-export type EmbeddedWalletProviderConfig = PrivyEmbeddedWalletProviderConfig
+export type HostedWalletProviderConfig = PrivyHostedWalletProviderConfig
 
-/** Privy embedded wallet provider configuration */
-export interface PrivyEmbeddedWalletProviderConfig {
-  /** Embedded wallet provider type */
+/** Privy hosted wallet provider configuration */
+export interface PrivyHostedWalletProviderConfig {
+  /** Hosted wallet provider type */
   type: 'privy'
   /** Privy client instance */
   privyClient: PrivyClient
