@@ -60,13 +60,8 @@ export class WalletController {
         return c.json({ error: 'User ID required' }, 400)
       }
 
-      // Extract JWT token and Privy auth key from auth context
-      const authHeader = c.req.header('Authorization')
-      const authToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : undefined
-      const privyAuthKey = auth?.privyAuthKey
-
       const { privyAddress, smartWalletAddress } =
-        await walletService.createWallet(userId, authToken, privyAuthKey)
+        await walletService.createWallet()
 
       return c.json({
         privyAddress,

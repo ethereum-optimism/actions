@@ -1,7 +1,7 @@
 import { chainById } from '@eth-optimism/viem/chains'
 
 import { useState, useEffect, useRef } from 'react'
-import { useAuth, useUser, useClerk } from '@clerk/clerk-react'
+import { useAuth, useUser } from '@clerk/clerk-react'
 import { useWallets, usePrivy } from '@privy-io/react-auth'
 import type {
   CreateWalletResponse,
@@ -104,13 +104,12 @@ const Terminal = () => {
   const terminalRef = useRef<HTMLDivElement>(null)
 
   // Clerk auth hooks
-  const { isSignedIn, isLoaded, getToken } = useAuth()
+  const { isSignedIn, getToken } = useAuth()
   const { user } = useUser()
-  const { openSignIn } = useClerk()
 
   // Privy wallet hooks
   const { wallets } = useWallets()
-  const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy()
+  const { authenticated: privyAuthenticated } = usePrivy()
 
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
 
@@ -133,7 +132,7 @@ const Terminal = () => {
 
           setSelectedWallet({
             id: user?.id || 'unknown',
-            address: walletAddress,
+            address: walletAddress as `0x${string}`,
           })
 
           // Add a success message to the terminal
@@ -220,7 +219,7 @@ const Terminal = () => {
       try {
         // TODO: this will fail
         result = await verbsApi.getWalletBalance(walletId)
-      } catch (error) {
+      } catch {
         // Return a default empty balance structure for Privy wallets
         result = { balance: [] }
       }

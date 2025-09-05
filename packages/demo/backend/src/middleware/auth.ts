@@ -22,7 +22,11 @@ export async function authMiddleware(c: Context, next: Next) {
     const verifiedToken = await verifyToken(token, {
       secretKey: env.CLERK_SECRET_KEY,
       // Accept both the publishable key and localhost origins for development
-      authorizedParties: [env.CLERK_PUBLISHABLE_KEY, 'http://localhost:5173', 'localhost:5173'],
+      authorizedParties: [
+        env.CLERK_PUBLISHABLE_KEY,
+        'http://localhost:5173',
+        'localhost:5173',
+      ],
     })
 
     if (!verifiedToken) {
@@ -55,10 +59,10 @@ export async function authMiddleware(c: Context, next: Next) {
         const authKeyData = await authKeyResponse.json()
         authContext.privyAuthKey = authKeyData.authorizationKey
       }
-    } catch (error) {
+    } catch {
       // Silently continue without Privy auth key if request fails
     }
-    
+
     c.set('auth', authContext)
     await next()
   } catch (error) {

@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react'
 import { PrivyProvider as BasePrivyProvider } from '@privy-io/react-auth'
-import { useAuth, useUser } from '@clerk/clerk-react'
+import { useAuth } from '@clerk/clerk-react'
 import { env } from '../envVars'
 
 // Use Privy for wallet connection while Clerk handles authentication
 export function PrivyProvider({ children }: { children: ReactNode }) {
   const { getToken } = useAuth()
-  const { user } = useUser()
 
   return (
     <BasePrivyProvider
@@ -16,16 +15,14 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
         loginMethods: ['email', 'wallet'],
         customAuth: {
           enabled: true,
-          getCustomAccessToken: async () => {
+          isLoading: false,
+          getCustomAccessToken: async (): Promise<string | undefined> => {
             try {
               const token = await getToken()
-              return token
-            } catch (error) {
-              return null
+              return token || undefined
+            } catch {
+              return undefined
             }
-          },
-          isAuthenticatedInCustomAuthSystem: () => {
-            return !!user?.id
           },
         },
         // Configure appearance
@@ -38,11 +35,6 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
           requireUserPasswordOnCreate: false,
-        },
-        externalWallets: {
-          coinbaseWallet: { connectionOptions: 'all' },
-          metamask: { connectionOptions: 'all' },
-          walletConnect: { connectionOptions: 'all' },
         },
       }}
     >
