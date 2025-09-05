@@ -104,7 +104,7 @@ const Terminal = () => {
   const terminalRef = useRef<HTMLDivElement>(null)
 
   // Clerk auth hooks
-  const { isSignedIn, getToken } = useAuth()
+  const { isSignedIn } = useAuth()
   const { user } = useUser()
 
   // Privy wallet hooks
@@ -462,10 +462,7 @@ const Terminal = () => {
   const createWallet = async (
     userId: string,
   ): Promise<CreateWalletResponse> => {
-    // Get auth token from Clerk
-    const authToken = await getToken()
-
-    return verbsApi.createWallet(userId, authToken || undefined)
+    return verbsApi.createWallet(userId)
   }
 
   const getAllWallets = async (): Promise<GetAllWalletsResponse> => {
