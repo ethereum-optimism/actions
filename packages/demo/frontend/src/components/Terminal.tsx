@@ -469,6 +469,27 @@ const Terminal = () => {
     return verbsApi.getAllWallets()
   }
 
+  // Helper function to check if the currently selected wallet is an auto-selected authenticated wallet
+  const isAuthenticatedAutoWallet = (): boolean => {
+    return !!(
+      isSignedIn &&
+      selectedWallet &&
+      user?.id &&
+      selectedWallet.id === user.id
+    )
+  }
+
+  // Helper function to show auth wallet error message
+  const showAuthWalletError = () => {
+    const errorLine: TerminalLine = {
+      id: `auth-error-${Date.now()}`,
+      type: 'error',
+      content: '⚠️  Wallet commands do not yet work with authenticated wallets!\nSelect another wallet instead',
+      timestamp: new Date(),
+    }
+    setLines((prev) => [...prev, errorLine])
+  }
+
   const processCommand = (command: string) => {
     const trimmed = command.trim()
     if (!trimmed) return
@@ -575,6 +596,11 @@ const Terminal = () => {
       case 'wallet send':
       case 'send': {
         setLines((prev) => [...prev, commandLine])
+        // Check if authenticated auto-wallet is selected
+        if (isAuthenticatedAutoWallet()) {
+          showAuthWalletError()
+          return
+        }
         handleWalletSendList()
         return
       }
@@ -1109,6 +1135,12 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       return
     }
 
+    // Check if this is an authenticated auto-selected wallet
+    if (isAuthenticatedAutoWallet()) {
+      showAuthWalletError()
+      return
+    }
+
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
       type: 'output',
@@ -1151,6 +1183,12 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         timestamp: new Date(),
       }
       setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    // Check if this is an authenticated auto-selected wallet
+    if (isAuthenticatedAutoWallet()) {
+      showAuthWalletError()
       return
     }
 
@@ -1242,6 +1280,12 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         timestamp: new Date(),
       }
       setLines((prev) => [...prev, errorLine])
+      return
+    }
+
+    // Check if this is an authenticated auto-selected wallet
+    if (isAuthenticatedAutoWallet()) {
+      showAuthWalletError()
       return
     }
 
@@ -1455,6 +1499,12 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     }
 
     const selectedWallet = wallets[selection - 1]
+
+    // Check if the selected wallet is an authenticated auto-selected wallet
+    if (isSignedIn && user?.id && selectedWallet.id === user.id) {
+      showAuthWalletError()
+      return
+    }
 
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
