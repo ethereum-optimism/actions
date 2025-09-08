@@ -55,14 +55,15 @@ export async function createWallet(): Promise<{
   }
 }
 
-export async function getWallet(userId: string): Promise<{
-  wallet: SmartWallet
-}> {
+export async function getWallet(userId: string): Promise<SmartWallet | null> {
   const verbs = getVerbs()
   const privyClient = getPrivyClient()
   const privyWallet = await privyClient.walletApi.getWallet({
     id: userId,
-  })
+  }).catch(() => null)
+  if (!privyWallet) {
+    return privyWallet
+  }
   const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
     walletId: privyWallet.id,
     address: privyWallet.address,
@@ -71,7 +72,7 @@ export async function getWallet(userId: string): Promise<{
     signer: verbsPrivyWallet.signer,
     deploymentOwners: [getAddress(privyWallet.address)],
   })
-  return { wallet }
+  return wallet
 }
 
 export async function getAllWallets(
@@ -103,7 +104,7 @@ export async function getAllWallets(
 }
 
 export async function getBalance(userId: string): Promise<TokenBalance[]> {
-  const { wallet } = await getWallet(userId)
+  const wallet = await getWallet(userId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
@@ -178,7 +179,7 @@ export async function fundWallet(
   // TODO: do this a better way
   const isLocalSupersim = env.LOCAL_DEV
 
-  const { wallet } = await getWallet(userId)
+  const wallet = await getWallet(userId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
@@ -261,7 +262,7 @@ export async function sendTokens(
   amount: number,
   recipientAddress: Address,
 ): Promise<TransactionData> {
-  const { wallet } = await getWallet(walletId)
+  const wallet = await getWallet(walletId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }

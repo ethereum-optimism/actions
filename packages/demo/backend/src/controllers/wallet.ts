@@ -90,7 +90,7 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
-      const { wallet } = await walletService.getWallet(userId)
+      const wallet = await walletService.getWallet(userId)
 
       if (!wallet) {
         return c.json(
@@ -166,6 +166,7 @@ export class WalletController {
 
       return c.json({ balance: serializeBigInt(balance) })
     } catch (error) {
+      console.error(error)
       return c.json(
         {
           error: 'Failed to get balance',

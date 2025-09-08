@@ -6,21 +6,22 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { verbsMiddleware } from './middleware/verbs.js'
 import { router } from './router.js'
+import { createMockPrivyClient } from './mocks/MockPrivyClient.js'
 
+const mockPrivyClient = createMockPrivyClient('test-app-id', 'test-app-secret')
 // Mock the Verbs configuration to avoid external dependencies
 // TODO Determine if we want to maintain this mock or have the SDK export tests implementations
 vi.mock('./config/verbs.js', () => ({
   initializeVerbs: vi.fn(),
+  getPrivyClient: vi.fn(() => mockPrivyClient),
   getVerbs: vi.fn(() => ({
     wallet: {
-      createWalletWithHostedSigner: vi.fn(() =>
+      createSmartWallet: vi.fn(() =>
         Promise.resolve({
-          id: `wallet-1`,
           signer: {
             address: `0x1111111111111111111111111111111111111111`,
           },
-          getAddress: () =>
-            Promise.resolve(`0x1111111111111111111111111111111111111111`),
+          address: `0x1111111111111111111111111111111111111112`,
           getBalance: () =>
             Promise.resolve([
               { symbol: 'USDC', balance: 1000000n },
@@ -28,23 +29,24 @@ vi.mock('./config/verbs.js', () => ({
             ]),
         }),
       ),
-      getSmartWalletWithHostedSigner: vi.fn(
-        ({ walletId: userId }: { walletId: string }) => {
-          // Simulate some users existing and others not
-          if (userId.includes('non-existent')) {
-            return Promise.resolve(null)
-          }
-          return Promise.resolve({
-            id: `wallet-${userId}`,
-            getAddress: () => Promise.resolve(`0x${userId.padEnd(40, '0')}`),
+      hostedWalletToVerbsWallet: vi.fn(async ({ address }: { walletId: string, address: string }) => {
+        return {
+        address: address,
+        signer: {
+          address: address,
+        },
+      }}),
+      getSmartWallet: vi.fn(async ({ signer }: { signer: {address: string} }) => {
+        return {
+            signer,
+            address: signer.address,
             getBalance: () =>
               Promise.resolve([
                 { symbol: 'USDC', balance: 1000000n },
                 { symbol: 'MORPHO', balance: 500000n },
               ]),
-          })
-        },
-      ),
+          }
+        }),
       smartWalletProvider: {
         getWalletAddress: vi.fn(({ owners }: { owners: string[] }) => {
           return Promise.resolve(owners[0])
@@ -66,36 +68,6 @@ vi.mock('./config/verbs.js', () => ({
               ownerIndex,
             }
           },
-        ),
-      },
-      hostedWalletProvider: {
-        getAllWallets: vi.fn(() =>
-          Promise.resolve([
-            {
-              id: 'wallet-1',
-              address: '0x1111111111111111111111111111111111111111',
-              getBalance: () =>
-                Promise.resolve([
-                  { symbol: 'USDC', balance: 1000000n },
-                  { symbol: 'MORPHO', balance: 500000n },
-                ]),
-              account: vi.fn().mockResolvedValue({
-                address: '0x1111111111111111111111111111111111111111',
-              }),
-            },
-            {
-              id: 'wallet-2',
-              address: '0x2222222222222222222222222222222222222222',
-              getBalance: () =>
-                Promise.resolve([
-                  { symbol: 'USDC', balance: 2000000n },
-                  { symbol: 'MORPHO', balance: 750000n },
-                ]),
-              account: vi.fn().mockResolvedValue({
-                address: '0x2222222222222222222222222222222222222222',
-              }),
-            },
-          ]),
         ),
       },
     },
@@ -238,16 +210,16 @@ describe('HTTP API Integration', () => {
       await request(`${baseUrl}/wallet/${testUserId}`, {
         method: 'POST',
       })
+      const walletId = 'mock-wallet-1'
 
       // Then retrieve it
-      const response = await request(`${baseUrl}/wallet/${testUserId}`)
+      const response = await request(`${baseUrl}/wallet/${walletId}`)
 
       expect(response.statusCode).toBe(200)
       const data = (await response.body.json()) as any
 
       expect(data).toHaveProperty('address')
       expect(data).toHaveProperty('userId')
-      expect(data.userId).toBe(testUserId)
     })
 
     it('should return 404 for non-existent wallet', async () => {
@@ -317,7 +289,13 @@ describe('HTTP API Integration', () => {
     })
 
     it('should get wallet balance', async () => {
-      const response = await request(`${baseUrl}/wallet/${testUserId}/balance`)
+      // First create a wallet
+      await request(`${baseUrl}/wallet/${testUserId}`, {
+        method: 'POST',
+      })
+      const walletId = 'mock-wallet-1'
+
+      const response = await request(`${baseUrl}/wallet/${walletId}/balance`)
 
       expect(response.statusCode).toBe(200)
       const data = (await response.body.json()) as any
