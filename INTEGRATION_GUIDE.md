@@ -319,11 +319,8 @@ const verbs = new Verbs({
   ],
 })
 
-// 2. Create or retrieve a wallet
-const wallet = await verbs.wallet.getWallet('user@example.com')
-if (!wallet) {
-  wallet = await verbs.wallet.createWallet('user@example.com')
-}
+// 2. Create a wallet for the user
+const wallet = await verbs.wallet.createWalletWithHostedSigner()
 
 // 3. Lend USDC to earn yield
 const lendResult = await wallet.lend(
@@ -334,6 +331,26 @@ const lendResult = await wallet.lend(
 
 console.log(`Lending transaction: ${lendResult.hash}`)
 console.log(`APY: ${lendResult.apy}%`)
+```
+
+### Retrieving an Existing Wallet
+
+If you need to retrieve an existing wallet for a user:
+
+```typescript
+// Retrieve an existing wallet by wallet ID
+const existingWallet = await verbs.wallet.getSmartWalletWithHostedSigner({
+  walletId: 'user-wallet-id', // This would be stored from previous wallet creation
+})
+
+// Use the wallet for lending
+const lendResult = await existingWallet.lend(
+  50, // Amount in human-readable format
+  'usdc', // Asset identifier
+  unichain.id // Chain ID
+)
+
+console.log(`Lending transaction: ${lendResult.hash}`)
 ```
 
 ## Core Concepts
@@ -708,10 +725,9 @@ app.post('/api/lend', async (req, res) => {
   try {
     const { userId, amount, asset, chainId } = req.body
     
-    const wallet = await verbs.wallet.getWallet(userId)
-    if (!wallet) {
-      return res.status(404).json({ error: 'Wallet not found' })
-    }
+    const wallet = await verbs.wallet.getSmartWalletWithHostedSigner({
+      walletId: userId
+    })
     
     const result = await wallet.lend(amount, asset, chainId)
     
@@ -820,7 +836,7 @@ describe('Lending Integration', () => {
       ],
     })
 
-    const wallet = await verbs.wallet.createWallet('test-user')
+    const wallet = await verbs.wallet.createWalletWithHostedSigner()
     const result = await wallet.lend(10, 'usdc', 84532)
     
     expect(result.amount).toBe(10n * 10n ** 6n) // 10 USDC in wei
@@ -837,11 +853,16 @@ describe('Lending Integration', () => {
 #### 1. "Wallet not found" errors
 
 ```typescript
-// Always check if wallet exists before operations
-const wallet = await verbs.wallet.getWallet(userId)
-if (!wallet) {
-  // Create wallet if it doesn't exist
-  wallet = await verbs.wallet.createWallet(userId)
+// Retrieve existing wallet or create new one
+try {
+  const wallet = await verbs.wallet.getSmartWalletWithHostedSigner({
+    walletId: userId
+  })
+  // Use wallet for operations
+} catch (error) {
+  // Wallet doesn't exist, create a new one
+  const wallet = await verbs.wallet.createWalletWithHostedSigner()
+  // Store the walletId for future retrieval
 }
 ```
 
