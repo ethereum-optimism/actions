@@ -316,7 +316,6 @@ export class DefaultSmartWallet extends SmartWallet {
         this._address = await this.getAddress()
       } catch (error) {
         throw new Error('Failed to initialize smart wallet', { cause: error })
-        throw error
       }
     })()
     return this._initPromise

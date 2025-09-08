@@ -87,7 +87,11 @@ export class PrivyWallet extends VerbsWallet {
   private async initialize() {
     if (this._initPromise) return this._initPromise
     this._initPromise = (async () => {
+      try {
       this.signer = await this.createAccount()
+      } catch (error) {
+        throw new Error('Failed to initialize Privy wallet', { cause: error })
+      }
     })()
     return this._initPromise
   }
