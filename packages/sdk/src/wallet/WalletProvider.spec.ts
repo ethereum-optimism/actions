@@ -42,21 +42,21 @@ describe('WalletProvider', () => {
       walletId: 'mock-wallet-1',
       address: getRandomAddress(),
     })) as PrivyWallet
-    const account = hostedWallet.account
+    const signer = hostedWallet.signer
     const owners = [getRandomAddress(), hostedWallet.address]
     const nonce = BigInt(123)
 
     const smartWallet = await walletProvider.createSmartWallet({
       owners,
-      signer: account,
+      signer,
       nonce,
     })
 
     expect(smartWallet).toBeInstanceOf(DefaultSmartWallet)
-    expect(smartWallet.account).toBe(account)
+    expect(smartWallet.signer).toBe(signer)
     expect(createWalletSpy).toHaveBeenCalledWith({
       owners,
-      signer: account,
+      signer,
       nonce,
     })
   })
@@ -88,13 +88,13 @@ describe('WalletProvider', () => {
       walletId: 'mock-wallet-1',
       address: getRandomAddress(),
     })) as PrivyWallet
-    const account = hostedWallet.account
+    const signer = hostedWallet.signer
     const deploymentOwners = [hostedWallet.address, getRandomAddress()]
     const signerOwnerIndex = 0
     const nonce = BigInt(789)
 
     const smartWallet = await walletProvider.getSmartWallet({
-      signer: account,
+      signer,
       deploymentOwners,
       signerOwnerIndex,
       nonce,
@@ -107,7 +107,7 @@ describe('WalletProvider', () => {
     })
     expect(getWalletSpy).toHaveBeenCalledWith({
       walletAddress: mockWalletAddress,
-      signer: account,
+      signer,
       ownerIndex: signerOwnerIndex,
     })
   })
@@ -134,11 +134,11 @@ describe('WalletProvider', () => {
       walletId: 'mock-wallet-1',
       address: getRandomAddress(),
     })) as PrivyWallet
-    const account = hostedWallet.account
+    const signer = hostedWallet.signer
 
     await expect(
       walletProvider.getSmartWallet({
-        signer: account,
+        signer,
         // Missing both walletAddress and deploymentOwners
       }),
     ).rejects.toThrow(

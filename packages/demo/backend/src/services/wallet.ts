@@ -46,11 +46,11 @@ export async function createWallet(): Promise<{
   })
   const wallet = await verbs.wallet.createSmartWallet({
     owners: [verbsPrivyWallet.address],
-    signer: verbsPrivyWallet.account,
+    signer: verbsPrivyWallet.signer,
   })
   const smartWalletAddress = wallet.address
   return {
-    privyAddress: wallet.account.address,
+    privyAddress: wallet.signer.address,
     smartWalletAddress,
   }
 }
@@ -68,7 +68,7 @@ export async function getWallet(userId: string): Promise<{
     address: privyWallet.address,
   })
   const wallet = await verbs.wallet.getSmartWallet({
-    signer: verbsPrivyWallet.account,
+    signer: verbsPrivyWallet.signer,
     deploymentOwners: [getAddress(privyWallet.address)],
   })
   return { wallet }
@@ -88,7 +88,7 @@ export async function getAllWallets(
           address: privyWallet.address,
         })
         const wallet = await verbs.wallet.getSmartWallet({
-          signer: verbsPrivyWallet.account,
+          signer: verbsPrivyWallet.signer,
           deploymentOwners: [getAddress(privyWallet.address)],
         })
         return {
@@ -223,7 +223,7 @@ Funding is only available in local development with supersim`)
       address: env.FAUCET_ADDRESS as Address,
       abi: faucetAbi,
       functionName: 'dripETH',
-      args: [wallet.account.address as `0x${string}`, amount],
+      args: [wallet.signer.address as `0x${string}`, amount],
     })
   } else {
     amount = 1000000000n // 1000 USDC
@@ -251,7 +251,7 @@ Funding is only available in local development with supersim`)
     success: true,
     tokenType,
     to: walletAddress,
-    privyAddress: wallet.account.address,
+    privyAddress: wallet.signer.address,
     amount: formattedAmount,
   }
 }

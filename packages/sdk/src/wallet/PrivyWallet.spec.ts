@@ -82,7 +82,7 @@ describe('PrivyWallet', () => {
       address: createdWallet.address,
       privy: mockPrivyClient,
     })
-    expect(wallet.account).toBe(mockLocalAccount)
+    expect(wallet.signer).toBe(mockLocalAccount)
   })
 
   it('should create a wallet client with correct configuration', async () => {

@@ -36,7 +36,7 @@ describe('DefaultSmartWalletProvider', () => {
     })
 
     expect(wallet).toBeInstanceOf(DefaultSmartWallet)
-    expect(wallet.account).toBe(mockSigner)
+    expect(wallet.signer).toBe(mockSigner)
   })
 
   it('should get wallet address with correct contract call', async () => {
@@ -138,7 +138,7 @@ describe('DefaultSmartWalletProvider', () => {
     })
 
     expect(wallet).toBeInstanceOf(DefaultSmartWallet)
-    expect(wallet.account).toBe(mockSigner)
+    expect(wallet.signer).toBe(mockSigner)
     expect(wallet.address).toBe(walletAddress)
   })
 })

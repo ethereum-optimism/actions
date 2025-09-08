@@ -39,7 +39,7 @@ describe('DefaultSmartWallet', () => {
   it('should return the correct signer', async () => {
     const wallet = await createAndInitDefaultSmartWallet()
 
-    expect(wallet.account).toEqual(mockSigner)
+    expect(wallet.signer).toEqual(mockSigner)
   })
 
   it('should get the wallet address', async () => {
@@ -87,7 +87,7 @@ describe('DefaultSmartWallet', () => {
       address: deploymentAddress,
       ownerIndex: signerOwnerIndex,
       client: mockChainManager.getPublicClient(chainId),
-      owners: [wallet.account],
+      owners: [wallet.signer],
       nonce: nonce,
       version: '1.1',
     })

@@ -22,7 +22,7 @@ import { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
  */
 export class PrivyWallet extends VerbsWallet {
   public walletId: string
-  public account!: LocalAccount
+  public signer!: LocalAccount
   public readonly address: Address
   private privyClient: PrivyClient
   private chainManager: ChainManager
@@ -76,7 +76,7 @@ export class PrivyWallet extends VerbsWallet {
   async walletClient(chainId: SupportedChainId): Promise<WalletClient> {
     const rpcUrls = this.chainManager.getRpcUrls(chainId)
     return createWalletClient({
-      account: this.account,
+      account: this.signer,
       chain: this.chainManager.getChain(chainId),
       transport: rpcUrls?.length
         ? fallback(rpcUrls.map((rpcUrl) => http(rpcUrl)))
@@ -87,7 +87,7 @@ export class PrivyWallet extends VerbsWallet {
   private async initialize() {
     if (this._initPromise) return this._initPromise
     this._initPromise = (async () => {
-      this.account = await this.createAccount()
+      this.signer = await this.createAccount()
     })()
     return this._initPromise
   }

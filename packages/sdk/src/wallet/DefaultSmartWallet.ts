@@ -32,7 +32,7 @@ import { SmartWallet } from '@/wallet/base/SmartWallet.js'
  */
 export class DefaultSmartWallet extends SmartWallet {
   /** Local account used for signing transactions and UserOperations */
-  public readonly account: LocalAccount
+  public readonly signer: LocalAccount
   /** Address of the smart wallet */
   private _address!: Address
   /** Array of wallet owners (Ethereum addresses or WebAuthn public keys) */
@@ -71,7 +71,7 @@ export class DefaultSmartWallet extends SmartWallet {
   ) {
     super()
     this.owners = owners
-    this.account = signer
+    this.signer = signer
     this.signerOwnerIndex = signerOwnerIndex
     this.deploymentAddress = deploymentAddress
     this.chainManager = chainManager
@@ -121,7 +121,7 @@ export class DefaultSmartWallet extends SmartWallet {
       address: this.deploymentAddress,
       ownerIndex: this.signerOwnerIndex,
       client: this.chainManager.getPublicClient(chainId),
-      owners: [this.account],
+      owners: [this.signer],
       nonce: this.nonce,
       version: '1.1',
     })

@@ -15,13 +15,13 @@ export abstract class VerbsWallet {
    */
   public abstract readonly address: Address
   /**
-   * Get an account for this verbs wallet
+   * Get a signer for this verbs wallet
    * @description Returns a LocalAccount that can be used to sign transactions and messages.
-   * This can be used as the account for smart wallet operations if the verbs wallet is an
+   * This can be used as the signer for smart wallet operations if the signer is an
    * owner on the smart wallet.
    * @returns Promise resolving to a LocalAccount configured for signing operations
    */
-  public abstract readonly account: LocalAccount
+  public abstract readonly signer: LocalAccount
 
   /**
    * Get a wallet client for this verbs wallet
