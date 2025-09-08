@@ -5,8 +5,8 @@ import { request } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { verbsMiddleware } from './middleware/verbs.js'
-import { router } from './router.js'
 import { createMockPrivyClient } from './mocks/MockPrivyClient.js'
+import { router } from './router.js'
 
 const mockPrivyClient = createMockPrivyClient('test-app-id', 'test-app-secret')
 // Mock the Verbs configuration to avoid external dependencies
@@ -29,15 +29,19 @@ vi.mock('./config/verbs.js', () => ({
             ]),
         }),
       ),
-      hostedWalletToVerbsWallet: vi.fn(async ({ address }: { walletId: string, address: string }) => {
-        return {
-        address: address,
-        signer: {
-          address: address,
+      hostedWalletToVerbsWallet: vi.fn(
+        async ({ address }: { walletId: string; address: string }) => {
+          return {
+            address: address,
+            signer: {
+              address: address,
+            },
+          }
         },
-      }}),
-      getSmartWallet: vi.fn(async ({ signer }: { signer: {address: string} }) => {
-        return {
+      ),
+      getSmartWallet: vi.fn(
+        async ({ signer }: { signer: { address: string } }) => {
+          return {
             signer,
             address: signer.address,
             getBalance: () =>
@@ -46,7 +50,8 @@ vi.mock('./config/verbs.js', () => ({
                 { symbol: 'MORPHO', balance: 500000n },
               ]),
           }
-        }),
+        },
+      ),
       smartWalletProvider: {
         getWalletAddress: vi.fn(({ owners }: { owners: string[] }) => {
           return Promise.resolve(owners[0])

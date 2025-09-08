@@ -61,7 +61,7 @@ export async function getVaultBalance(
   walletId: string,
 ): Promise<VaultBalanceResult> {
   const verbs = getVerbs()
-  const { wallet } = await getWallet(walletId)
+  const wallet = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
@@ -111,7 +111,7 @@ export async function deposit(
   token: string,
   chainId: SupportedChainId,
 ): Promise<LendTransaction> {
-  const { wallet } = await getWallet(walletId)
+  const wallet = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
@@ -125,7 +125,7 @@ export async function executeLendTransaction(
   lendTransaction: LendTransaction,
   chainId: SupportedChainId,
 ): Promise<LendTransaction & { blockExplorerUrl: string }> {
-  const { wallet } = await getWallet(walletId)
+  const wallet = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)

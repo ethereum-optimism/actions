@@ -58,9 +58,11 @@ export async function createWallet(): Promise<{
 export async function getWallet(userId: string): Promise<SmartWallet | null> {
   const verbs = getVerbs()
   const privyClient = getPrivyClient()
-  const privyWallet = await privyClient.walletApi.getWallet({
-    id: userId,
-  }).catch(() => null)
+  const privyWallet = await privyClient.walletApi
+    .getWallet({
+      id: userId,
+    })
+    .catch(() => null)
   if (!privyWallet) {
     return privyWallet
   }
