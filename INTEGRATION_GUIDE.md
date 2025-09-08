@@ -18,13 +18,83 @@ A comprehensive guide for integrating the Verbs SDK's lending functionality into
 
 ## Overview
 
-The Verbs SDK enables developers to integrate DeFi lending functionality with minimal complexity. The "lend" verb specifically focuses on yield-generating operations through the Morpho protocol, providing:
+The Verbs SDK enables developers to integrate DeFi lending functionality with minimal complexity. The "lend" verb specifically focuses on yield-generating operations initially through the Morpho protocol, providing:
 
 - **Gas-sponsored smart wallets** - ERC-4337 compatible wallets with paymaster support
 - **Morpho integration** - Access to high-yield lending markets
 - **Multi-chain support** - Works on Unichain and Base Sepolia (more chains coming)
 - **Type safety** - Full TypeScript support with comprehensive type definitions
 - **Flexible architecture** - Modular design allowing custom wallet providers
+
+### Integration Architecture
+
+The following diagram illustrates how the Verbs SDK integrates into your fintech application workflow:
+
+```
+┌─────────────────────┐
+│   Your Fintech App  │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│     Verbs SDK       │
+│  ┌───────────────┐  │
+│  │ Authentication│──┼──────────┐
+│  │   (Privy)     │  │          │
+│  └───────────────┘  │          │
+│  ┌───────────────┐  │          │
+│  │ Wallet Mgmt   │──┼──────┐   │
+│  │ (Smart Wallet)│  │      │   │
+│  └───────────────┘  │      │   │
+│  ┌───────────────┐  │      │   │
+│  │ DeFi Ops      │──┼──┐   │   │
+│  │ (Morpho Lend) │  │  │   │   │
+│  └───────────────┘  │  │   │   │
+└─────────────────────┘  │   │   │
+                         │   │   │
+        ┌────────────────┘   │   │
+        │                    │   │
+        ▼                    ▼   ▼
+┌─────────────┐    ┌─────────────────────┐
+│   Morpho    │    │     External        │
+│  Protocol   │    │     Services        │
+│             │    │                     │
+│ • Lending   │    │ ┌─────────────────┐ │
+│   Markets   │    │ │  Privy API      │ │
+│ • Vaults    │    │ │ • User Mgmt     │ │
+│ • APY Calc  │    │ │ • Wallet Mgmt   │ │
+└─────────────┘    │ └─────────────────┘ │
+                   │ ┌─────────────────┐ │
+                   │ │ Pimlico Bundler │ │
+                   │ │ • Gas Sponsor   │ │
+                   │ │ • ERC-4337 AA   │ │
+                   │ └─────────────────┘ │
+                   │ ┌─────────────────┐ │
+                   │ │ Blockchain RPC  │ │
+                   │ │ • Unichain      │ │
+                   │ │ • Base Sepolia  │ │
+                   │ └─────────────────┘ │
+                   └─────────────────────┘
+
+Data Flow:
+1. Your App → Verbs SDK (Simple API calls)
+2. Verbs SDK → External Services (Complex integrations)
+3. Results flow back through the same path
+```
+
+**Integration Flow Explanation**:
+
+1. **Your Application Layer**: Your fintech app interfaces with the Verbs SDK through simple, type-safe APIs
+2. **Verbs SDK Core**: Acts as the orchestration layer, handling authentication, wallet management, and DeFi operations
+3. **External Service Dependencies**: The SDK coordinates with multiple external services seamlessly
+4. **Blockchain Interaction**: All blockchain operations are abstracted away from your application code
+
+**Key Benefits of This Architecture**:
+
+- **Simplified Integration**: Your app only needs to integrate with the Verbs SDK, not multiple external services
+- **Abstracted Complexity**: Blockchain interactions, gas management, and protocol specifics are handled internally
+- **Modular Design**: Each component can be customized or replaced as needed
+- **Production Ready**: Built-in error handling, retry logic, and monitoring capabilities
 
 ### Supported Networks
 
