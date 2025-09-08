@@ -43,16 +43,15 @@ describe('DefaultSmartWallet', () => {
   })
 
   it('should get the wallet address', async () => {
-    const owners = [getRandomAddress(), getRandomAddress()]
-    const wallet = await createAndInitDefaultSmartWallet({ owners })
-
-    const mockAddress = getRandomAddress()
+    const mockDeploymentAddress = getRandomAddress()
     const publicClient = vi.mocked(
       mockChainManager.getPublicClient(baseSepolia.id),
     )
-    publicClient.readContract = vi.fn().mockResolvedValue(mockAddress)
+    publicClient.readContract = vi.fn().mockResolvedValue(mockDeploymentAddress)
+    const owners = [getRandomAddress(), getRandomAddress()]
+    const wallet = await createAndInitDefaultSmartWallet({ owners })
 
-    expect(wallet.address).toBe(mockAddress)
+    expect(wallet.address).toBe(mockDeploymentAddress)
     expect(publicClient.readContract).toHaveBeenCalledWith({
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
@@ -230,7 +229,7 @@ async function createAndInitDefaultSmartWallet(
     signer = mockSigner,
     chainManager = mockChainManager,
     lendProvider = mockLendProvider,
-    deploymentAddress = getRandomAddress(),
+    deploymentAddress,
     signerOwnerIndex,
     nonce,
   } = params

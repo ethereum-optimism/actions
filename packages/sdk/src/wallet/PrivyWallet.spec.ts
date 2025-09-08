@@ -53,7 +53,10 @@ describe('PrivyWallet', () => {
       chainType: 'ethereum',
     })
 
-    const wallet = await createAndInitPrivyWallet()
+    const wallet = await createAndInitPrivyWallet({
+      address: getAddress(createdWallet.address),
+      walletId: createdWallet.id,
+    })
 
     expect(wallet.walletId).toBe(createdWallet.id)
   })
@@ -63,7 +66,10 @@ describe('PrivyWallet', () => {
       chainType: 'ethereum',
     })
 
-    const wallet = await createAndInitPrivyWallet()
+    const wallet = await createAndInitPrivyWallet({
+      address: getAddress(createdWallet.address),
+      walletId: createdWallet.id,
+    })
 
     expect(wallet.address).toBe(createdWallet.address)
   })
@@ -73,9 +79,11 @@ describe('PrivyWallet', () => {
     const createdWallet = await mockPrivyClient.walletApi.createWallet({
       chainType: 'ethereum',
     })
-    const wallet = await createAndInitPrivyWallet()
-
     vi.mocked(createViemAccount).mockResolvedValue(mockLocalAccount)
+    const wallet = await createAndInitPrivyWallet({
+      address: getAddress(createdWallet.address),
+      walletId: createdWallet.id,
+    })
 
     expect(createViemAccount).toHaveBeenCalledWith({
       walletId: createdWallet.id,
