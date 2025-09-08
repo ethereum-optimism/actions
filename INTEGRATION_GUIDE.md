@@ -5,6 +5,7 @@ A comprehensive guide for integrating the Verbs SDK's lending functionality into
 ## Table of Contents
 
 - [Overview](#overview)
+- [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
@@ -33,6 +34,163 @@ The Verbs SDK enables developers to integrate DeFi lending functionality with mi
 ### Supported Assets
 
 - **USDC** - Primary stablecoin for lending operations
+
+## Prerequisites
+
+Before integrating the Verbs SDK into your fintech application, ensure you have the following infrastructure and accounts set up. These are essential for the SDK's core functionality including wallet management, gas sponsorship, and DeFi operations.
+
+### Required External Services
+
+#### 1. Privy Account (Required)
+
+**Purpose**: User authentication and hosted wallet management
+
+**Setup Steps**:
+1. Visit [privy.io](https://privy.io) and create an account
+2. Create a new application in your Privy dashboard
+3. Obtain your **App ID** and **App Secret** from the dashboard
+4. Configure allowed origins and redirect URLs for your application
+
+**What you'll need**:
+- `PRIVY_APP_ID` - Your application's public identifier
+- `PRIVY_APP_SECRET` - Your application's secret key (keep secure)
+
+**Cost**: Privy offers a generous free tier for development and testing
+
+#### 2. Pimlico Bundler Service (Required for Gas Sponsorship)
+
+**Purpose**: ERC-4337 bundler service for gasless transactions and smart wallet operations
+
+**Setup Steps**:
+1. Visit [pimlico.io](https://pimlico.io) and create an account
+2. Generate an API key from your dashboard
+3. Set up sponsorship policies for your supported networks
+4. Configure spending limits and rules for gas sponsorship
+
+**What you'll need**:
+- Pimlico API key (embedded in bundler URL)
+- Sponsorship Policy IDs for each network you plan to support
+- Bundler URLs for supported networks:
+  - **Unichain**: `https://api.pimlico.io/v2/1301/rpc?apikey=YOUR_API_KEY`
+  - **Base Sepolia**: `https://api.pimlico.io/v2/84532/rpc?apikey=YOUR_API_KEY`
+
+**Cost**: Pay-per-transaction model with free development tier
+
+### Technical Infrastructure Requirements
+
+#### Node.js Environment
+- **Node.js 18+** - Required for running the SDK
+- **Package Manager**: npm, yarn, or pnpm
+- **TypeScript Support**: Recommended for type safety
+
+#### Network Access
+- **Outbound HTTPS**: Required for API calls to external services
+- **WebSocket Support**: Optional, for real-time blockchain data
+- **CORS Configuration**: If building web applications
+
+#### Development Tools (Optional but Recommended)
+- **Foundry**: For local blockchain development and testing
+- **Supersim**: For multi-chain local development environment
+
+### Blockchain Infrastructure
+
+#### RPC Endpoints (Optional)
+While the SDK provides default RPC endpoints, you may want to use your own for better reliability and rate limits:
+
+**Recommended Providers**:
+- **Alchemy** - Enterprise-grade blockchain APIs
+- **Infura** - Reliable Ethereum infrastructure
+- **QuickNode** - High-performance blockchain endpoints
+
+**Setup**:
+```bash
+# Optional - Custom RPC URLs
+UNICHAIN_RPC_URL=https://your-rpc-provider.com/unichain
+BASE_SEPOLIA_RPC_URL=https://your-rpc-provider.com/base-sepolia
+```
+
+### Security Considerations
+
+#### Environment Variables Management
+- Use a secure environment variable management system
+- Never commit API keys or secrets to version control
+- Implement proper secret rotation policies
+- Use different API keys for development, staging, and production
+
+#### Network Security
+- Implement rate limiting for your API endpoints
+- Use HTTPS for all external communications
+- Consider implementing API key rotation
+- Monitor for unusual transaction patterns
+
+#### Wallet Security
+- Understand that the SDK manages smart wallets on behalf of users
+- Implement proper user authentication before wallet operations
+- Consider implementing transaction limits and approval workflows
+- Monitor wallet activities for suspicious behavior
+
+### Testing Infrastructure
+
+#### Testnet Requirements
+For development and testing, you'll need:
+- **Base Sepolia ETH** - For gas fees during testing
+- **Base Sepolia USDC** - For testing lending operations
+- Access to testnet faucets for obtaining test tokens
+
+#### Local Development (Optional)
+- **Supersim** - For local multi-chain testing
+- **Foundry** - For smart contract interactions
+
+### Compliance and Regulatory Considerations
+
+#### Know Your Customer (KYC)
+- Consider implementing KYC/AML procedures
+- Understand regulatory requirements in your jurisdiction
+- Plan for compliance reporting and audit trails
+
+#### Financial Regulations
+- Understand DeFi lending regulations in your operating regions
+- Consider implementing transaction monitoring
+- Plan for regulatory reporting requirements
+
+### Monitoring and Observability
+
+#### Recommended Tools
+- **Application Performance Monitoring** (APM) tools
+- **Blockchain transaction monitoring** services
+- **Error tracking** and alerting systems
+- **Usage analytics** for understanding user behavior
+
+#### Key Metrics to Track
+- Transaction success/failure rates
+- Gas usage and costs
+- API response times and error rates
+- User wallet creation and activity
+
+### Pre-Integration Checklist
+
+Before starting your Verbs SDK integration, ensure you have:
+
+- [ ] **Privy account** set up with App ID and App Secret
+- [ ] **Pimlico account** configured with API keys and sponsorship policies
+- [ ] **Development environment** with Node.js 18+ installed
+- [ ] **Environment variable management** system in place
+- [ ] **Security policies** defined for API key management
+- [ ] **Testing strategy** planned for both testnet and mainnet
+- [ ] **Monitoring and logging** infrastructure ready
+- [ ] **Compliance requirements** understood and planned for
+
+### Estimated Setup Time
+
+- **Basic setup** (Privy + Pimlico): 1-2 hours
+- **Full infrastructure** (including monitoring, security): 1-2 days
+- **Production-ready setup** (including compliance, monitoring): 1-2 weeks
+
+### Support and Resources
+
+- **Privy Documentation**: [docs.privy.io](https://docs.privy.io)
+- **Pimlico Documentation**: [docs.pimlico.io](https://docs.pimlico.io)
+- **Verbs SDK Issues**: [GitHub Issues](https://github.com/ethereum-optimism/verbs/issues)
 
 ## Installation
 
@@ -121,7 +279,7 @@ The SDK uses ERC-4337 compatible smart wallets that provide:
 
 ### Lend Provider
 
-The lending functionality is abstracted through the `LendProvider` interface, with Morpho as the primary implementation:
+The lending functionality is abstracted through the `LendProvider` interface, with Morpho as the initial implementation:
 
 ```typescript
 // Access the lend provider directly
