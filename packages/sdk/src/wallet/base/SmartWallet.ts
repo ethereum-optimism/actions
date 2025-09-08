@@ -16,7 +16,7 @@ import { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
  */
 export abstract class SmartWallet extends VerbsWallet {
   async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {
-    throw new Error('walletClient is not supported on DefaultSmartWallet')
+    throw new Error('walletClient is not supported on SmartWallet')
   }
 
   /**
