@@ -98,9 +98,10 @@ Data Flow:
 
 ### Supported Networks
 
-- **Unichain (Chain ID: 130)** - Primary production network
+- **Unichain (Chain ID: 1301)** - Primary production network
 - **Base Sepolia (Chain ID: 84532)** - Testnet for development
-
+- **Base (Chain ID: 8453)** - Base mainnet production network
+- **Mainnet (Chain ID: 1)** - Ethereum Mainnet production network 
 ### Supported Assets
 
 - **USDC** - Primary stablecoin for lending operations
@@ -312,7 +313,7 @@ const verbs = new Verbs({
   },
   chains: [
     {
-      chainId: unichain.id, // 130 for Unichain
+      chainId: unichain.id, // 1301 for Unichain
       bundler: {
         type: 'pimlico',
         url: process.env.UNICHAIN_BUNDLER_URL!,
