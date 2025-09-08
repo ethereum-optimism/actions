@@ -104,6 +104,9 @@ Data Flow:
 ### Supported Assets
 
 - **USDC** - Primary stablecoin for lending operations
+- **ETH** - Native Ethereum token
+- **MORPHO** - Morpho governance token
+- Additional tokens supported through Morpho vaults
 
 ## Prerequisites
 
@@ -281,7 +284,7 @@ npm install viem @privy-io/server-auth
 Here's a minimal example to get started with lending:
 
 ```typescript
-import { Verbs } from '@eth-optimism/verbs-sdk'
+import { Verbs, PimlicoBundlerConfig } from '@eth-optimism/verbs-sdk'
 import { PrivyClient } from '@privy-io/server-auth'
 import { unichain } from 'viem/chains'
 
@@ -309,12 +312,12 @@ const verbs = new Verbs({
   },
   chains: [
     {
-      chainId: unichain.id,
+      chainId: unichain.id, // 130 for Unichain
       bundler: {
         type: 'pimlico',
         url: process.env.UNICHAIN_BUNDLER_URL!,
         sponsorshipPolicyId: process.env.UNICHAIN_BUNDLER_SPONSORSHIP_POLICY,
-      },
+      } as PimlicoBundlerConfig,
     },
   ],
 })
@@ -393,50 +396,95 @@ PRIVY_APP_ID=your_privy_app_id_here
 PRIVY_APP_SECRET=your_privy_app_secret_here
 
 # Required - Bundler Configuration (for gas sponsorship)
+MAINNET_BUNDLER_URL=https://api.pimlico.io/v2/1/rpc?apikey=YOUR_API_KEY
+MAINNET_BUNDLER_SPONSORSHIP_POLICY=your_mainnet_sponsorship_policy_id
 UNICHAIN_BUNDLER_URL=https://api.pimlico.io/v2/1301/rpc?apikey=YOUR_API_KEY
 UNICHAIN_BUNDLER_SPONSORSHIP_POLICY=your_sponsorship_policy_id
+BASE_BUNDLER_URL=https://api.pimlico.io/v2/8453/rpc?apikey=YOUR_API_KEY
+BASE_BUNDLER_SPONSORSHIP_POLICY=your_base_sponsorship_policy_id
+BASE_SEPOLIA_BUNDLER_URL=https://api.pimlico.io/v2/84532/rpc?apikey=YOUR_API_KEY
+BASE_SEPOLIA_BUNDLER_SPONSORSHIP_POLICY=your_base_sepolia_sponsorship_policy_id
 
 # Optional - Custom RPC URLs
+MAINNET_RPC_URL=https://mainnet.infura.io/v3/YOUR_INFURA_KEY
 UNICHAIN_RPC_URL=https://sepolia.unichain.org
+BASE_RPC_URL=https://mainnet.base.org
 BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
 ```
 
 ### VerbsConfig Interface
 
 ```typescript
+import type { SupportedChainId } from '@eth-optimism/verbs-sdk'
+
 interface VerbsConfig {
+  /** Wallet configuration */
   wallet: WalletConfig
+  /** Lending provider configuration (optional) */
   lend?: LendConfig
+  /** Chains to use for the SDK */
   chains: ChainConfig[]
 }
 
 interface WalletConfig {
-  hostedWalletConfig: {
-    provider: {
-      type: 'privy'
-      privyClient: PrivyClient
-    }
-  }
-  smartWalletConfig: {
-    provider: {
-      type: 'default'
-    }
-  }
+  /** Hosted wallet configuration */
+  hostedWalletConfig: HostedWalletConfig
+  /** Smart wallet configuration for ERC-4337 infrastructure */
+  smartWalletConfig: SmartWalletConfig
+}
+
+interface HostedWalletConfig {
+  /** Wallet provider for account creation, management, and signing */
+  provider: HostedWalletProviderConfig
+}
+
+interface HostedWalletProviderConfig {
+  /** Hosted wallet provider type */
+  type: 'privy'
+  /** Privy client instance */
+  privyClient: PrivyClient
+}
+
+interface SmartWalletConfig {
+  /** Wallet provider for smart wallet management */
+  provider: SmartWalletProvider
+}
+
+interface SmartWalletProvider {
+  /** Smart wallet provider type */
+  type: 'default'
 }
 
 interface LendConfig {
+  /** Lending provider type */
   type: 'morpho'
-  defaultSlippage?: number // Basis points (50 = 0.5%)
+  /** Default slippage tolerance (basis points) */
+  defaultSlippage?: number // 50 = 0.5%
 }
 
 interface ChainConfig {
-  chainId: number
+  /** Chain ID */
+  chainId: SupportedChainId
+  /** RPC URL for the chain */
   rpcUrls?: string[]
-  bundler?: {
-    type: 'pimlico' | 'simple'
-    url: string
-    sponsorshipPolicyId?: string
-  }
+  /** Bundler configuration */
+  bundler?: BundlerConfig
+}
+
+type BundlerConfig = PimlicoBundlerConfig | SimpleBundlerConfig
+
+interface BaseBundlerConfig {
+  /** The URL of the bundler service */
+  url: string
+}
+
+interface PimlicoBundlerConfig extends BaseBundlerConfig {
+  type: 'pimlico'
+  sponsorshipPolicyId?: string
+}
+
+interface SimpleBundlerConfig extends BaseBundlerConfig {
+  type: 'simple'
 }
 ```
 
@@ -711,14 +759,52 @@ interface ApyBreakdown {
 
 ```typescript
 import express from 'express'
-import { Verbs } from '@eth-optimism/verbs-sdk'
+import { Verbs, PimlicoBundlerConfig, SimpleBundlerConfig } from '@eth-optimism/verbs-sdk'
 import { PrivyClient } from '@privy-io/server-auth'
 
 const app = express()
 app.use(express.json())
 
 const verbs = new Verbs({
-  // ... configuration
+  wallet: {
+    hostedWalletConfig: {
+      provider: {
+        type: 'privy',
+        privyClient: new PrivyClient(
+          process.env.PRIVY_APP_ID!,
+          process.env.PRIVY_APP_SECRET!
+        ),
+      },
+    },
+    smartWalletConfig: {
+      provider: {
+        type: 'default',
+      },
+    },
+  },
+  lend: {
+    type: 'morpho',
+    defaultSlippage: 50, // 0.5% slippage tolerance
+  },
+  chains: [
+    {
+      chainId: 130, // Unichain
+      rpcUrls: [process.env.UNICHAIN_RPC_URL || 'https://sepolia.unichain.org'],
+      bundler: {
+        type: 'pimlico',
+        url: process.env.UNICHAIN_BUNDLER_URL!,
+        sponsorshipPolicyId: process.env.UNICHAIN_BUNDLER_SPONSORSHIP_POLICY,
+      } as PimlicoBundlerConfig,
+    },
+    {
+      chainId: 84532, // Base Sepolia
+      rpcUrls: [process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org'],
+      bundler: {
+        type: 'simple',
+        url: process.env.BASE_SEPOLIA_BUNDLER_URL!,
+      } as SimpleBundlerConfig,
+    },
+  ],
 })
 
 app.post('/api/lend', async (req, res) => {
@@ -807,12 +893,11 @@ function LendingComponent({ userId }: { userId: string }) {
 
 ```typescript
 import { describe, it, expect } from 'vitest'
-import { Verbs } from '@eth-optimism/verbs-sdk'
+import { Verbs, SimpleBundlerConfig } from '@eth-optimism/verbs-sdk'
 
 describe('Lending Integration', () => {
   it('should lend USDC successfully', async () => {
     const verbs = new Verbs({
-      // Test configuration
       wallet: {
         hostedWalletConfig: {
           provider: {
@@ -828,10 +913,15 @@ describe('Lending Integration', () => {
       },
       lend: {
         type: 'morpho',
+        defaultSlippage: 50, // 0.5% slippage tolerance
       },
       chains: [
         {
           chainId: 84532, // Base Sepolia for testing
+          bundler: {
+            type: 'simple',
+            url: 'https://api.pimlico.io/v2/84532/rpc?apikey=YOUR_API_KEY',
+          } as SimpleBundlerConfig,
         },
       ],
     })
