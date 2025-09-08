@@ -63,10 +63,10 @@ export class WalletNamespace {
    * @param params.address - Ethereum address of the hosted wallet
    * @returns Promise resolving to the Verbs wallet instance
    */
-  async toVerbsWallet(
+  async hostedWalletToVerbsWallet(
     params: HostedWalletToVerbsWalletOptions,
   ): Promise<VerbsWallet> {
-    return this.provider.toVerbsWallet(params)
+    return this.provider.hostedWalletToVerbsWallet(params)
   }
 
   /**

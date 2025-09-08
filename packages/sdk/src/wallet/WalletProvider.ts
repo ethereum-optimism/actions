@@ -54,7 +54,7 @@ export class WalletProvider {
     })
   }
 
-  async toVerbsWallet(
+  async hostedWalletToVerbsWallet(
     params: HostedWalletToVerbsWalletOptions,
   ): Promise<VerbsWallet> {
     return this.hostedWalletProvider.toVerbsWallet(params)

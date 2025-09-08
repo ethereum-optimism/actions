@@ -40,7 +40,7 @@ export async function createWallet(): Promise<{
   const privyWallet = await privyClient.walletApi.createWallet({
     chainType: 'ethereum',
   })
-  const verbsPrivyWallet = await verbs.wallet.toVerbsWallet({
+  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
     walletId: privyWallet.id,
     address: privyWallet.address,
   })
@@ -63,7 +63,7 @@ export async function getWallet(userId: string): Promise<{
   const privyWallet = await privyClient.walletApi.getWallet({
     id: userId,
   })
-  const verbsPrivyWallet = await verbs.wallet.toVerbsWallet({
+  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
     walletId: privyWallet.id,
     address: privyWallet.address,
   })
@@ -83,7 +83,7 @@ export async function getAllWallets(
     const response = await privyClient.walletApi.getWallets(options)
     return Promise.all(
       response.data.map(async (privyWallet) => {
-        const verbsPrivyWallet = await verbs.wallet.toVerbsWallet({
+        const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
           walletId: privyWallet.id,
           address: privyWallet.address,
         })
