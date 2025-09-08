@@ -268,7 +268,7 @@ Before starting your Verbs SDK integration, ensure you have:
 ## Installation
 
 ```bash
-npm install @eth-optimism/verbs-sdk
+npm install @eth-optimism/verbs-sdk@^0.0.2
 ```
 
 ### Peer Dependencies
@@ -344,6 +344,10 @@ If you need to retrieve an existing wallet for a user:
 // Retrieve an existing wallet by wallet ID
 const existingWallet = await verbs.wallet.getSmartWalletWithHostedSigner({
   walletId: 'user-wallet-id', // This would be stored from previous wallet creation
+  // Optional: specify deployment owners if different from default
+  // deploymentOwners: ['0x...'], // Array of original wallet owners
+  // Optional: specify which owner index the hosted wallet is
+  // signerOwnerIndex: 0, // Default is 0
 })
 
 // Use the wallet for lending
@@ -573,19 +577,18 @@ if (lendResult.transactionData) {
 Implement custom wallet providers for different authentication systems:
 
 ```typescript
-import { HostedWalletProvider } from '@eth-optimism/verbs-sdk'
+import { HostedWalletProvider, HostedWallet } from '@eth-optimism/verbs-sdk'
 
 class CustomWalletProvider extends HostedWalletProvider {
-  async createWallet(userId: string): Promise<HostedWallet> {
+  async createWallet(): Promise<HostedWallet> {
     // Your custom wallet creation logic
+    // Return a HostedWallet instance
   }
-  
-  async getWallet(userId: string): Promise<HostedWallet | null> {
+
+  async getWallet(params: { walletId: string }): Promise<HostedWallet> {
     // Your custom wallet retrieval logic
-  }
-  
-  async getAllWallets(): Promise<HostedWallet[]> {
-    // Your custom wallet listing logic
+    // Use params.walletId to retrieve the wallet
+    // Throw an error if wallet not found
   }
 }
 ```
@@ -893,6 +896,7 @@ function LendingComponent({ userId }: { userId: string }) {
 
 ```typescript
 import { describe, it, expect } from 'vitest'
+import { baseSepolia } from 'viem/chains'
 import { Verbs, SimpleBundlerConfig } from '@eth-optimism/verbs-sdk'
 
 describe('Lending Integration', () => {
@@ -927,9 +931,9 @@ describe('Lending Integration', () => {
     })
 
     const wallet = await verbs.wallet.createWalletWithHostedSigner()
-    const result = await wallet.lend(10, 'usdc', 84532)
-    
-    expect(result.amount).toBe(10n * 10n ** 6n) // 10 USDC in wei
+    const result = await wallet.lend(10, 'usdc', baseSepolia.id)
+
+    expect(result.amount).toBe(10000000n) // 10 USDC in wei (10 * 10^6)
     expect(result.apy).toBeGreaterThan(0)
     expect(result.hash).toBeDefined()
   })
