@@ -67,8 +67,7 @@ export async function getVaultBalance(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  const walletAddress = await wallet.getAddress()
-  return await verbs.lend.getVaultBalance(vaultAddress, walletAddress)
+  return await verbs.lend.getVaultBalance(vaultAddress, wallet.address)
 }
 
 export async function formatVaultResponse(

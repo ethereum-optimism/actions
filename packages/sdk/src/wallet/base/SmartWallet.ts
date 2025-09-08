@@ -1,4 +1,4 @@
-import type { Address, Hash, LocalAccount } from 'viem'
+import type { Address, Hash, WalletClient } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
@@ -8,22 +8,16 @@ import type {
 } from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
 import type { AssetIdentifier } from '@/utils/assets.js'
+import { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
 
 /**
  * Base smart wallet class
  * @description Abstract base class for smart wallet implementations (ERC-4337 compatible wallets).
  */
-export abstract class SmartWallet {
-  /** The LocalAccount used for signing transactions on behalf of this smart wallet */
-  abstract signer: LocalAccount
-
-  /**
-   * Get the smart wallet's address
-   * @description Returns the deployed or predicted address of this smart wallet contract.
-   * For undeployed wallets, this returns the deterministic CREATE2 address.
-   * @returns Promise resolving to the wallet's Ethereum address
-   */
-  abstract getAddress(): Promise<Address>
+export abstract class SmartWallet extends VerbsWallet {
+  async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {
+    throw new Error('walletClient is not supported on DefaultSmartWallet')
+  }
 
   /**
    * Get all token balances for this wallet

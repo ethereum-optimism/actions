@@ -31,10 +31,12 @@ import { SmartWallet } from '@/wallet/base/SmartWallet.js'
  * Supports multi-owner wallets, gasless transactions via paymasters, and cross-chain operations.
  */
 export class DefaultSmartWallet extends SmartWallet {
+  /** Local account used for signing transactions and UserOperations */
+  public readonly account: LocalAccount
+  /** Address of the smart wallet */
+  private _address!: Address
   /** Array of wallet owners (Ethereum addresses or WebAuthn public keys) */
   private owners: Array<Address | WebAuthnAccount>
-  /** Local account used for signing transactions and UserOperations */
-  private _signer: LocalAccount
   /** Index of the signer in the owners array (defaults to 0 if not specified) */
   private signerOwnerIndex?: number
   /** Known deployment address of the wallet (if already deployed) */
@@ -67,7 +69,7 @@ export class DefaultSmartWallet extends SmartWallet {
   ) {
     super()
     this.owners = owners
-    this._signer = signer
+    this.account = signer
     this.signerOwnerIndex = signerOwnerIndex
     this.deploymentAddress = deploymentAddress
     this.chainManager = chainManager
@@ -75,42 +77,15 @@ export class DefaultSmartWallet extends SmartWallet {
     this.nonce = nonce
   }
 
-  /**
-   * Get the signer account for this smart wallet
-   * @description Returns the LocalAccount instance used for signing transactions and UserOperations.
-   * This signer is used to authorize operations on behalf of the smart wallet.
-   * @returns The LocalAccount signer configured for this smart wallet
-   */
-  get signer(): LocalAccount {
-    return this._signer
+  get address() {
+    if (!this._address) {
+      throw new Error('Smart wallet not initialized')
+    }
+    return this._address
   }
 
-  /**
-   * Get the smart wallet address
-   * @description Returns the deployment address if known, otherwise calculates the deterministic
-   * address using CREATE2 based on owners and nonce.
-   * @returns Promise resolving to the wallet address
-   */
-  async getAddress() {
-    if (this.deploymentAddress) return this.deploymentAddress
-
-    const owners_bytes = this.owners.map((owner) => {
-      if (typeof owner === 'string') return pad(owner)
-      if (owner.type === 'webAuthn') return owner.publicKey
-      throw new Error('invalid owner type')
-    })
-
-    // Factory is the same accross all chains, so we can use the first chain to get the wallet address
-    const publicClient = this.chainManager.getPublicClient(
-      this.chainManager.getSupportedChains()[0],
-    )
-    const smartWalletAddress = await publicClient.readContract({
-      abi: smartWalletFactoryAbi,
-      address: smartWalletFactoryAddress,
-      functionName: 'getAddress',
-      args: [owners_bytes, this.nonce || 0n],
-    })
-    return smartWalletAddress
+  async init() {
+    this._address = await this.getAddress()
   }
 
   /**
@@ -126,7 +101,7 @@ export class DefaultSmartWallet extends SmartWallet {
       address: this.deploymentAddress,
       ownerIndex: this.signerOwnerIndex,
       client: this.chainManager.getPublicClient(chainId),
-      owners: [this.signer],
+      owners: [this.account],
       nonce: this.nonce,
       version: '1.1',
     })
@@ -138,13 +113,12 @@ export class DefaultSmartWallet extends SmartWallet {
    * @returns Promise resolving to array of token balances with chain breakdown
    */
   async getBalance(): Promise<TokenBalance[]> {
-    const address = await this.getAddress()
     const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
       async (token) => {
-        return fetchERC20Balance(this.chainManager, address, token)
+        return fetchERC20Balance(this.chainManager, this.address, token)
       },
     )
-    const ethBalancePromise = fetchETHBalance(this.chainManager, address)
+    const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
 
     return Promise.all([ethBalancePromise, ...tokenBalancePromises])
   }
@@ -172,12 +146,11 @@ export class DefaultSmartWallet extends SmartWallet {
       asset,
       chainId,
     )
-    const address = await this.getAddress()
 
     // Set receiver to wallet address if not specified
     const lendOptions: LendOptions = {
       ...options,
-      receiver: options?.receiver || address,
+      receiver: options?.receiver || this.address,
     }
 
     const result = await this.lendProvider.deposit(
@@ -314,5 +287,33 @@ export class DefaultSmartWallet extends SmartWallet {
       value: 0n,
       data: transferData,
     }
+  }
+
+  /**
+   * Get the smart wallet address
+   * @description Returns the deployment address if known, otherwise calculates the deterministic
+   * address using CREATE2 based on owners and nonce.
+   * @returns Promise resolving to the wallet address
+   */
+  private async getAddress() {
+    if (this.deploymentAddress) return this.deploymentAddress
+
+    const owners_bytes = this.owners.map((owner) => {
+      if (typeof owner === 'string') return pad(owner)
+      if (owner.type === 'webAuthn') return owner.publicKey
+      throw new Error('invalid owner type')
+    })
+
+    // Factory is the same accross all chains, so we can use the first chain to get the wallet address
+    const publicClient = this.chainManager.getPublicClient(
+      this.chainManager.getSupportedChains()[0],
+    )
+    const smartWalletAddress = await publicClient.readContract({
+      abi: smartWalletFactoryAbi,
+      address: smartWalletFactoryAddress,
+      functionName: 'getAddress',
+      args: [owners_bytes, this.nonce || 0n],
+    })
+    return smartWalletAddress
   }
 }

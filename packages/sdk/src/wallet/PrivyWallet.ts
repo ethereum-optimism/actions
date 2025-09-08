@@ -14,14 +14,16 @@ import {
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { HostedWallet } from '@/wallet/base/HostedWallet.js'
+import { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
 
 /**
  * Privy wallet implementation
  * @description Wallet implementation using Privy service
  */
-export class PrivyWallet extends HostedWallet {
+export class PrivyWallet extends VerbsWallet {
   public walletId: string
+  public account!: LocalAccount
+  public readonly address: Address
   private privyClient: PrivyClient
   private chainManager: ChainManager
 
@@ -37,28 +39,15 @@ export class PrivyWallet extends HostedWallet {
     address: Address,
     chainManager: ChainManager,
   ) {
-    super(address)
+    super()
     this.privyClient = privyClient
     this.walletId = walletId
     this.chainManager = chainManager
+    this.address = address
   }
 
-  /**
-   * Create a LocalAccount from this Privy wallet
-   * @description Converts the Privy wallet into a viem-compatible LocalAccount that can sign
-   * messages and transactions. The returned account uses Privy's signing infrastructure
-   * under the hood while providing a standard viem interface.
-   * @returns Promise resolving to a LocalAccount configured for signing operations
-   * @throws Error if wallet retrieval fails or signing operations are not supported
-   */
-  async account(): Promise<LocalAccount> {
-    const account = await createViemAccount({
-      walletId: this.walletId,
-      address: this.address,
-      // TODO: Fix this type error
-      privy: this.privyClient as unknown as GetViemAccountInputType['privy'],
-    })
-    return account
+  async init() {
+    this.account = await this.createAccount()
   }
 
   /**
@@ -71,14 +60,31 @@ export class PrivyWallet extends HostedWallet {
    * @throws Error if chain is not supported or wallet client creation fails
    */
   async walletClient(chainId: SupportedChainId): Promise<WalletClient> {
-    const account = await this.account()
     const rpcUrls = this.chainManager.getRpcUrls(chainId)
     return createWalletClient({
-      account,
+      account: this.account,
       chain: this.chainManager.getChain(chainId),
       transport: rpcUrls?.length
         ? fallback(rpcUrls.map((rpcUrl) => http(rpcUrl)))
         : http(),
     })
+  }
+
+  /**
+   * Create a LocalAccount from this Privy wallet
+   * @description Converts the Privy wallet into a viem-compatible LocalAccount that can sign
+   * messages and transactions. The returned account uses Privy's signing infrastructure
+   * under the hood while providing a standard viem interface.
+   * @returns Promise resolving to a LocalAccount configured for signing operations
+   * @throws Error if wallet retrieval fails or signing operations are not supported
+   */
+  private async createAccount(): Promise<LocalAccount> {
+    const account = await createViemAccount({
+      walletId: this.walletId,
+      address: this.address,
+      // TODO: Fix this type error
+      privy: this.privyClient as unknown as GetViemAccountInputType['privy'],
+    })
+    return account
   }
 }
