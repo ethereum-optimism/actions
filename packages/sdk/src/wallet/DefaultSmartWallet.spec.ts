@@ -234,7 +234,7 @@ async function createAndInitDefaultSmartWallet(
     signerOwnerIndex,
     nonce,
   } = params
-  const wallet = new DefaultSmartWallet(
+  return DefaultSmartWallet.create({
     owners,
     signer,
     chainManager,
@@ -242,7 +242,5 @@ async function createAndInitDefaultSmartWallet(
     deploymentAddress,
     signerOwnerIndex,
     nonce,
-  )
-  await wallet.init()
-  return wallet
+  })
 }

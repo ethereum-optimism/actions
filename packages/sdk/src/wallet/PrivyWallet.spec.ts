@@ -125,12 +125,10 @@ async function createAndInitPrivyWallet(
   const createdWallet = await privyClient.walletApi.createWallet({
     chainType: 'ethereum',
   })
-  const privyWallet = new PrivyWallet(
+  return PrivyWallet.create({
     privyClient,
-    walletId ?? createdWallet.id,
-    address ?? getAddress(createdWallet.address),
+    walletId: walletId ?? createdWallet.id,
+    address: address ?? getAddress(createdWallet.address),
     chainManager,
-  )
-  await privyWallet.init()
-  return privyWallet
+  })
 }

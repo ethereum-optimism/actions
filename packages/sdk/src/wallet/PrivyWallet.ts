@@ -26,6 +26,8 @@ export class PrivyWallet extends VerbsWallet {
   public readonly address: Address
   private privyClient: PrivyClient
   private chainManager: ChainManager
+  /** Promise to initialize the wallet */
+  private _initPromise?: Promise<void>
 
   /**
    * Create a new Privy wallet provider
@@ -33,7 +35,7 @@ export class PrivyWallet extends VerbsWallet {
    * @param appSecret - Privy application secret
    * @param verbs - Verbs instance for accessing configured providers
    */
-  constructor(
+  private constructor(
     privyClient: PrivyClient,
     walletId: string,
     address: Address,
@@ -46,8 +48,20 @@ export class PrivyWallet extends VerbsWallet {
     this.address = address
   }
 
-  async init() {
-    this.account = await this.createAccount()
+  static async create(params: {
+    privyClient: PrivyClient
+    walletId: string
+    address: Address
+    chainManager: ChainManager
+  }): Promise<PrivyWallet> {
+    const wallet = new PrivyWallet(
+      params.privyClient,
+      params.walletId,
+      params.address,
+      params.chainManager,
+    )
+    await wallet.initialize()
+    return wallet
   }
 
   /**
@@ -68,6 +82,14 @@ export class PrivyWallet extends VerbsWallet {
         ? fallback(rpcUrls.map((rpcUrl) => http(rpcUrl)))
         : http(),
     })
+  }
+
+  private async initialize() {
+    if (this._initPromise) return this._initPromise
+    this._initPromise = (async () => {
+      this.account = await this.createAccount()
+    })()
+    return this._initPromise
   }
 
   /**

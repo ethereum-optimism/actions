@@ -26,13 +26,11 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider {
   async toVerbsWallet(
     params: HostedWalletToVerbsWalletOptions,
   ): Promise<VerbsWallet> {
-    const wallet = new PrivyWallet(
-      this.privyClient,
-      params.walletId,
-      getAddress(params.address),
-      this.chainManager,
-    )
-    await wallet.init()
-    return wallet
+    return PrivyWallet.create({
+      privyClient: this.privyClient,
+      walletId: params.walletId,
+      address: getAddress(params.address),
+      chainManager: this.chainManager,
+    })
   }
 }

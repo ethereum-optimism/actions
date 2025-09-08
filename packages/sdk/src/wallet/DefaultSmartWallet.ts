@@ -47,6 +47,8 @@ export class DefaultSmartWallet extends SmartWallet {
   private chainManager: ChainManager
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
+  /** Promise to initialize the wallet */
+  private _initPromise?: Promise<void>
 
   /**
    * Create a Smart Wallet instance
@@ -58,7 +60,7 @@ export class DefaultSmartWallet extends SmartWallet {
    * @param ownerIndex - Index of signer in owners array
    * @param nonce - Nonce for address generation
    */
-  constructor(
+  private constructor(
     owners: Array<Address | WebAuthnAccount>,
     signer: LocalAccount,
     chainManager: ChainManager,
@@ -84,8 +86,26 @@ export class DefaultSmartWallet extends SmartWallet {
     return this._address
   }
 
-  async init() {
-    this._address = await this.getAddress()
+  static async create(params: {
+    owners: Array<Address | WebAuthnAccount>
+    signer: LocalAccount
+    chainManager: ChainManager
+    lendProvider: LendProvider
+    deploymentAddress?: Address
+    signerOwnerIndex?: number
+    nonce?: bigint
+  }): Promise<DefaultSmartWallet> {
+    const wallet = new DefaultSmartWallet(
+      params.owners,
+      params.signer,
+      params.chainManager,
+      params.lendProvider,
+      params.deploymentAddress,
+      params.signerOwnerIndex,
+      params.nonce,
+    )
+    await wallet.initialize()
+    return wallet
   }
 
   /**
@@ -287,6 +307,19 @@ export class DefaultSmartWallet extends SmartWallet {
       value: 0n,
       data: transferData,
     }
+  }
+
+  private async initialize() {
+    if (this._initPromise) return this._initPromise
+    this._initPromise = (async () => {
+      try {
+        this._address = await this.getAddress()
+      } catch (error) {
+        throw new Error('Failed to initialize smart wallet', { cause: error })
+        throw error
+      }
+    })()
+    return this._initPromise
   }
 
   /**
