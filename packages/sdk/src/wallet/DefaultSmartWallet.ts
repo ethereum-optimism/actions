@@ -336,7 +336,7 @@ export class DefaultSmartWallet extends SmartWallet {
       throw new Error('invalid owner type')
     })
 
-    // Factory is the same accross all chains, so we can use the first chain to get the wallet address
+    // Factory is the same across all chains, so we can use the first chain to get the wallet address
     const publicClient = this.chainManager.getPublicClient(
       this.chainManager.getSupportedChains()[0],
     )
