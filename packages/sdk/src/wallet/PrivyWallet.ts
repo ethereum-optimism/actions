@@ -25,7 +25,6 @@ export class PrivyWallet extends Wallet {
   public signer!: LocalAccount
   public readonly address: Address
   private privyClient: PrivyClient
-  private chainManager: ChainManager
 
   /**
    * Create a new Privy wallet provider
@@ -39,10 +38,9 @@ export class PrivyWallet extends Wallet {
     address: Address,
     chainManager: ChainManager,
   ) {
-    super()
+    super(chainManager)
     this.privyClient = privyClient
     this.walletId = walletId
-    this.chainManager = chainManager
     this.address = address
   }
 
