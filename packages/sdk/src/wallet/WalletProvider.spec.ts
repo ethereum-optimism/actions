@@ -6,7 +6,7 @@ import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
-import { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
+import { Wallet } from '@/wallet/base/Wallet.js'
 import { DefaultSmartWallet } from '@/wallet/DefaultSmartWallet.js'
 import type { PrivyWallet } from '@/wallet/PrivyWallet.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
@@ -183,7 +183,7 @@ describe('WalletProvider', () => {
         walletId: privyWallet.id,
         address: privyWallet.address,
       })
-      expect(hostedWallet).toBeInstanceOf(VerbsWallet)
+      expect(hostedWallet).toBeInstanceOf(Wallet)
       expect(hostedWallet.signer.address).toBe(privyWallet.address)
       expect(hostedWallet.address).toBe(privyWallet.address)
     })

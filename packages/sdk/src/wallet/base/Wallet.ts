@@ -7,7 +7,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
  * @description Abstract base class for verbs wallet implementations.
  * Provides a standard interface for verbs wallets.
  */
-export abstract class VerbsWallet {
+export abstract class Wallet {
   /** Promise to initialize the wallet */
   private initPromise?: Promise<void>
   /**

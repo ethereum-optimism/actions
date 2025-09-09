@@ -1,5 +1,5 @@
 import type { HostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
-import type { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
+import type { Wallet } from '@/wallet/base/Wallet.js'
 
 /**
  * Base hosted wallet provider class
@@ -18,5 +18,5 @@ export abstract class HostedWalletProvider {
    */
   abstract toVerbsWallet(
     params: HostedWalletToVerbsWalletOptions,
-  ): Promise<VerbsWallet>
+  ): Promise<Wallet>
 }

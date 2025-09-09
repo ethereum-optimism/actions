@@ -3,7 +3,7 @@ import { getAddress } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { HostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
-import type { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
+import type { Wallet } from '@/wallet/base/Wallet.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
 import { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
 
@@ -25,7 +25,7 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider {
 
   async toVerbsWallet(
     params: HostedWalletToVerbsWalletOptions,
-  ): Promise<VerbsWallet> {
+  ): Promise<Wallet> {
     return PrivyWallet.create({
       privyClient: this.privyClient,
       walletId: params.walletId,

@@ -2,12 +2,12 @@ import type { PrivyClient } from '@privy-io/server-auth'
 import { unichain } from 'viem/chains'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { VerbsWallet } from '@/index.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
+import { Wallet } from '@/wallet/base/Wallet.js'
 import { DefaultSmartWallet } from '@/wallet/DefaultSmartWallet.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
 import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
@@ -240,7 +240,7 @@ describe('WalletNamespace', () => {
         walletId: privyWallet.id,
         address: privyWallet.address,
       })
-      expect(verbsWallet).toBeInstanceOf(VerbsWallet)
+      expect(verbsWallet).toBeInstanceOf(Wallet)
       expect(verbsWallet.signer.address).toBe(hostedWallet.signer.address)
       expect(verbsWallet.address).toBe(hostedWallet.address)
     })

@@ -6,7 +6,7 @@ import type {
   HostedWalletToVerbsWalletOptions,
 } from '@/types/wallet.js'
 import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
-import type { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
+import type { Wallet } from '@/wallet/base/Wallet.js'
 import type { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 
@@ -56,7 +56,7 @@ export class WalletProvider {
 
   async hostedWalletToVerbsWallet(
     params: HostedWalletToVerbsWalletOptions,
-  ): Promise<VerbsWallet> {
+  ): Promise<Wallet> {
     return this.hostedWalletProvider.toVerbsWallet(params)
   }
 

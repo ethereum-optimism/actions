@@ -8,13 +8,13 @@ import type {
 } from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
 import type { AssetIdentifier } from '@/utils/assets.js'
-import { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
+import { Wallet } from '@/wallet/base/Wallet.js'
 
 /**
  * Base smart wallet class
  * @description Abstract base class for smart wallet implementations (ERC-4337 compatible wallets).
  */
-export abstract class SmartWallet extends VerbsWallet {
+export abstract class SmartWallet extends Wallet {
   async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {
     throw new Error('walletClient is not supported on SmartWallet')
   }

@@ -14,13 +14,13 @@ import {
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { VerbsWallet } from '@/wallet/base/VerbsWallet.js'
+import { Wallet } from '@/wallet/base/Wallet.js'
 
 /**
  * Privy wallet implementation
  * @description Wallet implementation using Privy service
  */
-export class PrivyWallet extends VerbsWallet {
+export class PrivyWallet extends Wallet {
   public walletId: string
   public signer!: LocalAccount
   public readonly address: Address
