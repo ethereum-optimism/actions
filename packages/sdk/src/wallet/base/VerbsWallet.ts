@@ -8,6 +8,8 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
  * Provides a standard interface for verbs wallets.
  */
 export abstract class VerbsWallet {
+  /** Promise to initialize the wallet */
+  private initPromise?: Promise<void>
   /**
    * Get the address of this verbs wallet
    * @description Returns the address of the verbs wallet.
@@ -22,6 +24,51 @@ export abstract class VerbsWallet {
    * @returns Promise resolving to a LocalAccount configured for signing operations
    */
   public abstract readonly signer: LocalAccount
+
+  /**
+   * Perform subclass-specific one-time initialization
+   * @description Hook for concrete wallet implementations to perform their
+   * required setup (e.g., compute and cache address, create signer/account,
+   * warm caches). This method is invoked by {@link initialize} and should not
+   * be called directly by consumers.
+   *
+   * Implementations should set all internal state required for public methods
+   * to operate safely after initialization completes, and should throw on
+   * failure so {@link initialize} can surface the error to callers.
+   *
+   * Note: This hook is expected to be idempotent in effect when called via
+   * {@link initialize}, which guarantees concurrency-safety and ensures it is
+   * executed at most once per instance.
+   * @returns Promise that resolves when initialization work is complete
+   */
+  protected async performInitialization(): Promise<void> {}
+
+  /**
+   * Initialize the wallet (idempotent and concurrency-safe)
+   * @description Public-facing initialization entrypoint used internally by
+   * factories/providers and defensively by public methods. If initialization is
+   * already in-flight or completed, subsequent calls will await the same
+   * promise, preventing duplicate work and race conditions.
+   *
+   * On failure, the stored promise is cleared so callers may retry
+   * initialization later.
+   * @returns Promise that resolves once the wallet is fully initialized
+   * @throws Error wrapping the underlying failure cause from
+   * {@link performInitialization}
+   */
+  protected async initialize() {
+    if (this.initPromise) return this.initPromise
+    this.initPromise = (async () => {
+      try {
+        await this.performInitialization()
+      } catch (error) {
+        // Clear cached promise to allow retry after a failure
+        this.initPromise = undefined
+        throw new Error('Failed to initialize wallet', { cause: error })
+      }
+    })()
+    return this.initPromise
+  }
 
   /**
    * Get a wallet client for this verbs wallet

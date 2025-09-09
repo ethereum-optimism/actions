@@ -26,8 +26,6 @@ export class PrivyWallet extends VerbsWallet {
   public readonly address: Address
   private privyClient: PrivyClient
   private chainManager: ChainManager
-  /** Promise to initialize the wallet */
-  private _initPromise?: Promise<void>
 
   /**
    * Create a new Privy wallet provider
@@ -84,16 +82,8 @@ export class PrivyWallet extends VerbsWallet {
     })
   }
 
-  private async initialize() {
-    if (this._initPromise) return this._initPromise
-    this._initPromise = (async () => {
-      try {
-        this.signer = await this.createAccount()
-      } catch (error) {
-        throw new Error('Failed to initialize Privy wallet', { cause: error })
-      }
-    })()
-    return this._initPromise
+  protected async performInitialization() {
+    this.signer = await this.createAccount()
   }
 
   /**
