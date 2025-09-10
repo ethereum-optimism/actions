@@ -61,13 +61,13 @@ export async function getMarket(
 
 export async function getMarketBalance(
   vaultAddress: Address,
-  walletId: string,
+  walletAddress: Address,
 ): Promise<MarketBalanceResult> {
   const verbs = getVerbs()
-  const wallet = await getWallet(walletId)
+  const wallet = await getWallet(walletAddress)
 
   if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${walletId}`)
+    throw new Error(`Wallet not found for user ID: ${walletAddress}`)
   }
 
   return verbs.lend.getMarketBalance(vaultAddress, wallet.address)
@@ -109,15 +109,15 @@ export async function formatMarketBalanceResponse(
 }
 
 export async function deposit(
-  walletId: string,
+  walletAddress: Address,
   amount: number,
   tokenAddress: Address,
   chainId: SupportedChainId,
 ): Promise<LendTransaction> {
-  const wallet = await getWallet(walletId)
+  const wallet = await getWallet(walletAddress)
 
   if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${walletId}`)
+    throw new Error(`Wallet not found for user ID: ${walletAddress}`)
   }
 
   if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
@@ -130,14 +130,14 @@ export async function deposit(
 }
 
 export async function executeLendTransaction(
-  walletId: string,
+  walletAddress: Address,
   lendTransaction: LendTransaction,
   chainId: SupportedChainId,
 ): Promise<LendTransaction & { blockExplorerUrl: string }> {
-  const wallet = await getWallet(walletId)
+  const wallet = await getWallet(walletAddress)
 
   if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${walletId}`)
+    throw new Error(`Wallet not found for user ID: ${walletAddress}`)
   }
 
   if (!lendTransaction.transactionData) {

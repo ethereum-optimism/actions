@@ -1,3 +1,4 @@
+import type { WalletProperties } from '@dynamic-labs-wallet/node'
 import type { Address, LocalAccount } from 'viem'
 import type { WebAuthnAccount } from 'viem/account-abstraction'
 
@@ -30,4 +31,10 @@ export type GetSmartWalletOptions = {
 export type HostedWalletToVerbsWalletOptions = {
   walletId: string
   address: string
+}
+
+export type DynamicHostedWalletToVerbsWalletOptions = {
+  address: Address
+  password?: string
+  keyShares?: WalletProperties['externalServerKeyShares']
 }

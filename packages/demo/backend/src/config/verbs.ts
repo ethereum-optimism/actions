@@ -1,22 +1,20 @@
+import { DynamicEvmWalletClient } from '@dynamic-labs-wallet/node-evm'
 import { Verbs, type VerbsConfig } from '@eth-optimism/verbs-sdk'
 import { PrivyClient } from '@privy-io/server-auth'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
 
-let verbsInstance: Verbs<'privy'>
+let verbsInstance: Verbs<'dynamic'>
 
-export function createVerbsConfig(): VerbsConfig<'privy'> {
+export function createVerbsConfig(): VerbsConfig<'dynamic'> {
   return {
     wallet: {
       hostedWalletConfig: {
         provider: {
-          type: 'privy',
+          type: 'dynamic',
           config: {
-            privyClient: new PrivyClient(
-              env.PRIVY_APP_ID,
-              env.PRIVY_APP_SECRET,
-            ),
+            dynamicClient: getDynamicClient(),
           },
         },
       },
@@ -55,7 +53,7 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
   }
 }
 
-export function initializeVerbs(config?: VerbsConfig<'privy'>): void {
+export function initializeVerbs(config?: VerbsConfig<'dynamic'>): void {
   const verbsConfig = config || createVerbsConfig()
   verbsInstance = new Verbs(verbsConfig)
 }
@@ -69,4 +67,11 @@ export function getVerbs() {
 
 export function getPrivyClient() {
   return new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
+}
+
+export function getDynamicClient() {
+  return new DynamicEvmWalletClient({
+    authToken: env.DYNAMIC_AUTH_TOKEN,
+    environmentId: env.DYNAMIC_ENVIRONMENT_ID,
+  })
 }

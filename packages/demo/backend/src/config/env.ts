@@ -59,4 +59,6 @@ export const env = cleanEnv(process.env, {
   BASE_SEPOLIA_BUNDER_URL: str({ devDefault: 'dummy' }),
   UNICHAIN_BUNDLER_URL: str({ devDefault: 'dummy' }),
   UNICHAIN_BUNDLER_SPONSORSHIP_POLICY: str({ devDefault: 'dummy' }),
+  DYNAMIC_AUTH_TOKEN: str({ devDefault: 'dummy' }),
+  DYNAMIC_ENVIRONMENT_ID: str({ devDefault: 'dummy' }),
 })

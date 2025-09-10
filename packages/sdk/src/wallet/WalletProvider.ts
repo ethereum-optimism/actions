@@ -16,7 +16,7 @@ import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletPro
  * Provides a unified interface for all wallet operations while supporting pluggable providers.
  */
 export class WalletProvider<
-  H extends HostedWalletProvider,
+  H extends HostedWalletProvider<any>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   constructor(

@@ -37,6 +37,8 @@
   },
   "dependencies": {
     "@clerk/backend": "^2.12.0",
+    "@dynamic-labs-wallet/node": "^0.0.158",
+    "@dynamic-labs-wallet/node-evm": "^0.0.158",
     "@eth-optimism/utils-app": "^0.0.6",
     "@eth-optimism/verbs-sdk": "workspace:*",
     "@eth-optimism/viem": "^0.4.13",

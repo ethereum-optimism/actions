@@ -29,12 +29,10 @@ export interface GetAllWalletsResponse {
  * Response from POST /wallet/:userId endpoint
  */
 export interface CreateWalletResponse {
-  /** Wallet address */
-  privyAddress: string
+  /** Signer Wallet address */
+  signerAddress: string
   /** Smart wallet address */
   smartWalletAddress: string
-  /** User ID */
-  userId: string
 }
 
 /**

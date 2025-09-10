@@ -42,17 +42,17 @@ router.get('/version', (c) => {
 // router.post('/wallet/:userId', authMiddleware, walletController.createWallet)
 
 router.get('/wallets', walletController.getAllWallets)
-router.post('/wallet/:userId', walletController.createWallet)
+router.post('/wallet', walletController.createWallet)
 router.get('/wallet/:userId', walletController.getWallet)
-router.get('/wallet/:userId/balance', walletController.getBalance)
-router.post('/wallet/:userId/fund', walletController.fundWallet)
+router.get('/wallet/:walletAddress/balance', walletController.getBalance)
+router.post('/wallet/:walletAddress/fund', walletController.fundWallet)
 router.post('/wallet/send', walletController.sendTokens)
 
 // Lend endpoints
 router.get('/lend/markets', lendController.getMarkets)
 router.get('/lend/market/:chainId/:marketId', lendController.getMarket)
 router.get(
-  '/lend/market/:vaultAddress/balance/:walletId',
+  '/lend/market/:vaultAddress/balance/:walletAddress',
   lendController.getMarketBalance,
 )
 router.post('/lend/deposit', lendController.deposit)

@@ -9,7 +9,10 @@ import { serializeBigInt } from '../utils/serializers.js'
 
 const DepositRequestSchema = z.object({
   body: z.object({
-    walletId: z.string().min(1, 'walletId is required'),
+    walletAddress: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address format')
+      .trim(),
     amount: z.number().positive('amount must be positive'),
     tokenAddress: z
       .string()
@@ -23,7 +26,10 @@ const MarketBalanceParamsSchema = z.object({
     vaultAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
-    walletId: z.string().min(1, 'walletId is required'),
+    walletAddress: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address format')
+      .trim(),
   }),
 })
 
@@ -93,11 +99,11 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        params: { vaultAddress, walletId },
+        params: { vaultAddress, walletAddress },
       } = validation.data
       const balance = await lendService.getMarketBalance(
         vaultAddress as Address,
-        walletId,
+        walletAddress as Address,
       )
       const formattedBalance =
         await lendService.formatMarketBalanceResponse(balance)
@@ -122,16 +128,16 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        body: { walletId, amount, tokenAddress, chainId },
+        body: { walletAddress, amount, tokenAddress, chainId },
       } = validation.data
       const lendTransaction = await lendService.deposit(
-        walletId,
+        walletAddress as Address,
         amount,
         tokenAddress as Address,
         chainId as SupportedChainId,
       )
       const result = await lendService.executeLendTransaction(
-        walletId,
+        walletAddress as Address,
         lendTransaction,
         chainId as SupportedChainId,
       )

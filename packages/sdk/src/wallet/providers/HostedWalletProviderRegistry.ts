@@ -1,4 +1,6 @@
+import { DynamicHostedWalletProvider } from '@/wallet/providers/DynamicHostedWalletProvider.js'
 import type {
+  DynamicOptions,
   HostedProviderFactory,
   HostedProviderType,
   PrivyOptions,
@@ -19,6 +21,18 @@ export class HostedWalletProviderRegistry {
       },
       create({ chainManager }, options) {
         return new PrivyHostedWalletProvider(options.privyClient, chainManager)
+      },
+    })
+    this.register<'dynamic'>({
+      type: 'dynamic',
+      validateOptions(options): options is DynamicOptions {
+        return Boolean((options as DynamicOptions)?.dynamicClient)
+      },
+      create({ chainManager }, options) {
+        return new DynamicHostedWalletProvider(
+          options.dynamicClient,
+          chainManager,
+        )
       },
     })
   }

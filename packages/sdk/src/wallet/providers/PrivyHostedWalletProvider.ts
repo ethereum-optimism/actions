@@ -11,7 +11,7 @@ import { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvid
  * Privy wallet provider implementation
  * @description Wallet provider implementation using Privy service
  */
-export class PrivyHostedWalletProvider extends HostedWalletProvider {
+export class PrivyHostedWalletProvider extends HostedWalletProvider<HostedWalletToVerbsWalletOptions> {
   /**
    * Create a new Privy wallet provider
    * @param privyClient - Privy client instance

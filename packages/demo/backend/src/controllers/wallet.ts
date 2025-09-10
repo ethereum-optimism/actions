@@ -1,5 +1,6 @@
 import type { Context } from 'hono'
 import type { Address } from 'viem'
+import { getAddress } from 'viem'
 import { z } from 'zod'
 
 import type {
@@ -12,21 +13,30 @@ import { validateRequest } from '../helpers/validation.js'
 import * as walletService from '../services/wallet.js'
 import { serializeBigInt } from '../utils/serializers.js'
 
-const UserIdParamSchema = z.object({
+const WalletAddressParamSchema = z.object({
   params: z.object({
-    userId: z.string().min(1, 'User ID is required').trim(),
+    walletAddress: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address format')
+      .trim(),
   }),
 })
 
 const FundWalletRequestSchema = z.object({
   params: z.object({
-    userId: z.string().min(1, 'User ID is required').trim(),
+    walletAddress: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address format')
+      .trim(),
   }),
 })
 
 const SendTokensRequestSchema = z.object({
   body: z.object({
-    walletId: z.string().min(1, 'walletId is required'),
+    walletAddress: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address format')
+      .trim(),
     amount: z.number().positive('amount must be positive'),
     recipientAddress: z
       .string()
@@ -50,19 +60,12 @@ export class WalletController {
    */
   async createWallet(c: Context) {
     try {
-      const validation = await validateRequest(c, UserIdParamSchema)
-      if (!validation.success) return validation.response
-
-      const {
-        params: { userId },
-      } = validation.data
-      const { privyAddress, smartWalletAddress } =
+      const { signerAddress, smartWalletAddress } =
         await walletService.createWallet()
 
       return c.json({
-        privyAddress,
+        signerAddress,
         smartWalletAddress,
-        userId,
       } satisfies CreateWalletResponse)
     } catch (error) {
       console.error(error)
@@ -81,19 +84,19 @@ export class WalletController {
    */
   async getWallet(c: Context) {
     try {
-      const validation = await validateRequest(c, UserIdParamSchema)
+      const validation = await validateRequest(c, WalletAddressParamSchema)
       if (!validation.success) return validation.response
 
       const {
-        params: { userId },
+        params: { walletAddress },
       } = validation.data
-      const wallet = await walletService.getWallet(userId)
+      const wallet = await walletService.getWallet(getAddress(walletAddress))
 
       if (!wallet) {
         return c.json(
           {
             error: 'Wallet not found',
-            message: `No wallet found for user ${userId}`,
+            message: `No wallet found for user ${walletAddress}`,
           },
           404,
         )
@@ -101,7 +104,7 @@ export class WalletController {
 
       return c.json({
         address: wallet.address,
-        userId,
+        userId: walletAddress,
       } satisfies GetWalletResponse)
     } catch (error) {
       console.error(error)
@@ -153,13 +156,13 @@ export class WalletController {
    */
   async getBalance(c: Context) {
     try {
-      const validation = await validateRequest(c, UserIdParamSchema)
+      const validation = await validateRequest(c, WalletAddressParamSchema)
       if (!validation.success) return validation.response
 
       const {
-        params: { userId },
+        params: { walletAddress },
       } = validation.data
-      const balance = await walletService.getBalance(userId)
+      const balance = await walletService.getBalance(getAddress(walletAddress))
 
       return c.json({ balance: serializeBigInt(balance) })
     } catch (error) {
@@ -183,10 +186,10 @@ export class WalletController {
       if (!validation.success) return validation.response
 
       const {
-        params: { userId },
+        params: { walletAddress },
       } = validation.data
 
-      const result = await walletService.fundWallet(userId)
+      const result = await walletService.fundWallet(getAddress(walletAddress))
 
       return c.json(result)
     } catch (error) {
@@ -209,11 +212,11 @@ export class WalletController {
       if (!validation.success) return validation.response
 
       const {
-        body: { walletId, amount, recipientAddress },
+        body: { walletAddress, amount, recipientAddress },
       } = validation.data
 
       const transactionData = await walletService.sendTokens(
-        walletId,
+        getAddress(walletAddress),
         amount,
         recipientAddress as Address,
       )

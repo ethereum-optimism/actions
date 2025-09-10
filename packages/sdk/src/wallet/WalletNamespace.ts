@@ -15,7 +15,7 @@ import type { SmartWalletProvider } from './providers/base/SmartWalletProvider.j
  * @description Provides access to wallet functionality through a single provider interface
  */
 export class WalletNamespace<
-  H extends HostedWalletProvider = HostedWalletProvider,
+  H extends HostedWalletProvider<any> = HostedWalletProvider<any>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   private provider: WalletProvider<H, S>
@@ -70,7 +70,7 @@ export class WalletNamespace<
    * @returns Promise resolving to the Verbs wallet instance
    */
   async hostedWalletToVerbsWallet(
-    params: HostedWalletToVerbsWalletOptions,
+    params: any,
   ): Promise<Wallet> {
     return this.provider.hostedWalletToVerbsWallet(params)
   }

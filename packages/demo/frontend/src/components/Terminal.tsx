@@ -201,33 +201,12 @@ const Terminal = () => {
 
   // DRY function to display wallet balance with loading state
   const displayWalletBalance = async (
-    walletId: string,
+    walletAddress: Address,
     showVaultPositions: boolean = true,
-  ): Promise<string> => {
-    // Check if this is a Privy authenticated wallet (Clerk user ID format)
-    const isPrivyWallet = walletId.startsWith('user_') && privyAuthenticated
-
-    let result
-    if (isPrivyWallet) {
-      // For Privy wallets, we need to get the balance using the wallet address instead of user ID
-      const privyWallet = wallets.find((w) => w.walletClientType === 'privy')
-      if (!privyWallet) {
-        throw new Error('Privy wallet not found')
-      }
-
-      try {
-        // TODO: this will fail
-        result = await verbsApi.getWalletBalance(walletId)
-      } catch {
-        // Return a default empty balance structure for Privy wallets
-        result = { balance: [] }
-      }
-    } else {
+  ): Promise<string> => {    
       // For manual/backend wallets, use the original API call
-      result = await verbsApi.getWalletBalance(walletId)
-    }
-
-
+    const result = await verbsApi.getWalletBalance(walletAddress)
+    
     const balancesByChain = result.balance.reduce(
       (acc, token) => {
         token.chainBalances.forEach(
@@ -463,10 +442,8 @@ const Terminal = () => {
     initializeTerminal()
   }, [])
 
-  const createWallet = async (
-    userId: string,
-  ): Promise<CreateWalletResponse> => {
-    return verbsApi.createWallet(userId)
+  const createWallet = async (): Promise<CreateWalletResponse> => {
+    return verbsApi.createWallet()
   }
 
   const getAllWallets = async (): Promise<GetAllWalletsResponse> => {
@@ -673,15 +650,14 @@ Active Wallets: 0`,
     setPendingPrompt(null)
 
     try {
-      const result = await createWallet(userId)
+      const result = await createWallet()
 
       const successLine: TerminalLine = {
         id: `success-${Date.now()}`,
         type: 'success',
         content: `Wallet created successfully!
-Privy Address: ${result.privyAddress}
-Smart Wallet Address: ${result.smartWalletAddress}
-User ID: ${result.userId}`,
+Dynamic Address: ${result.signerAddress}
+Smart Wallet Address: ${result.smartWalletAddress}`,
         timestamp: new Date(),
       }
 
@@ -692,7 +668,7 @@ User ID: ${result.userId}`,
           (w) =>
             w.address.toLowerCase() ===
               (result.smartWalletAddress || '').toLowerCase() ||
-            w.address.toLowerCase() === (result.privyAddress || '').toLowerCase(),
+            w.address.toLowerCase() === (result.signerAddress || '').toLowerCase(),
         )
 
         const walletToSelect = created || all.wallets[all.wallets.length - 1]
@@ -794,13 +770,13 @@ User ID: ${result.userId}`,
 
       // Get wallet balance using DRY function
       const walletBalanceText = await displayWalletBalance(
-        selectedWallet!.id,
+        selectedWallet!.address,
         true,
       )
 
       // Get single-chain token balance for the vault's asset (e.g., USDC on the vault's chain)
       const walletBalanceResult = await verbsApi.getWalletBalance(
-        selectedWallet!.id,
+        selectedWallet!.address,
       )
       const chainToken = walletBalanceResult.balance
         .flatMap((t) => t.chainBalances.map((cb) => ({ ...cb })))
@@ -899,7 +875,7 @@ How much would you like to lend?`
     try {
       console.log('[FRONTEND] Calling lendDeposit API')
       const result = await verbsApi.lendDeposit(
-        promptData.selectedWallet.id,
+        promptData.selectedWallet.address,
         amount,
         promptData.selectedVault.asset as Address,
         promptData.selectedVault.chainId,
@@ -1102,7 +1078,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
 
       try {
         const balanceText = await displayWalletBalance(
-          selectedWalletData.id,
+          selectedWalletData.address,
           true,
         )
 
@@ -1155,7 +1131,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     setLines((prev) => [...prev, loadingLine])
 
     try {
-      const balanceText = await displayWalletBalance(selectedWallet.id, true)
+      const balanceText = await displayWalletBalance(selectedWallet.address, true)
 
       const successLine: TerminalLine = {
         id: `success-${Date.now()}`,
@@ -1208,7 +1184,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     setLines((prev) => [...prev, fundingInfo])
 
     try {
-      const { amount } = await verbsApi.fundWallet(selectedWallet.id)
+      const { amount } = await verbsApi.fundWallet(selectedWallet.address)
 
       const fundSuccessLine: TerminalLine = {
         id: `fund-success-${Date.now()}`,
@@ -1218,7 +1194,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       }
       setLines((prev) => [...prev, fundSuccessLine])
 
-      const balanceText = await displayWalletBalance(selectedWallet.id, true)
+      const balanceText = await displayWalletBalance(selectedWallet.address, true)
       const balanceSuccessLine: TerminalLine = {
         id: `balance-success-${Date.now()}`,
         type: 'success',
@@ -1258,7 +1234,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
 
     // Check if selected wallet has USDC balance before proceeding
     try {
-      const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id)
+      const balanceResult = await verbsApi.getWalletBalance(selectedWallet.address)
       const usdcTokens = balanceResult.balance.filter(
         (token) => token.symbol === 'USDC' || token.symbol === 'USDC_DEMO',
       )
@@ -1372,7 +1348,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       const walletsWithBalances = await Promise.all(
         result.wallets.map(async (wallet) => {
           try {
-            const balanceResult = await verbsApi.getWalletBalance(wallet.id)
+            const balanceResult = await verbsApi.getWalletBalance(wallet.address)
             const usdcToken = balanceResult.balance.find(
               (token) => token.symbol === 'USDC',
             )
@@ -1483,7 +1459,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     setLines((prev) => [...prev, loadingLine])
 
     try {
-      const result = await verbsApi.getWalletBalance(selectedWallet.id)
+      const result = await verbsApi.getWalletBalance(selectedWallet.address)
       const usdcToken = result.balance.find((token) => token.symbol === 'USDC')
       const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) : 0
 
@@ -1590,7 +1566,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
 
     try {
       const result = await verbsApi.sendTokens(
-        data.selectedWallet.id,
+        data.selectedWallet.address,
         data.amount,
         recipientAddress,
       )

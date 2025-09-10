@@ -47,7 +47,9 @@
     "viem": "^2.24.1"
   },
   "peerDependencies": {
-    "@privy-io/server-auth": ">=1.28.0"
+    "@privy-io/server-auth": ">=1.28.0",
+    "@dynamic-labs-wallet/node": ">=0.0.158",
+    "@dynamic-labs-wallet/node-evm": ">=0.0.158"
   },
   "devDependencies": {
     "@types/node": "^18",

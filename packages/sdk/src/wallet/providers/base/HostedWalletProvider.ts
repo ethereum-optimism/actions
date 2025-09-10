@@ -1,5 +1,4 @@
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { HostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
 import type { Wallet } from '@/wallet/base/Wallet.js'
 
 /**
@@ -8,7 +7,7 @@ import type { Wallet } from '@/wallet/base/Wallet.js'
  * Provides a standard interface for creating and retrieving hosted wallets that can be used
  * as signers for smart wallets or standalone wallet functionality.
  */
-export abstract class HostedWalletProvider {
+export abstract class HostedWalletProvider<THostedWalletOptions> {
   protected chainManager: ChainManager
 
   protected constructor(chainManager: ChainManager) {
@@ -22,7 +21,5 @@ export abstract class HostedWalletProvider {
    * @param params.address - Ethereum address of the hosted wallet
    * @returns Promise resolving to the Verbs wallet instance
    */
-  abstract toVerbsWallet(
-    params: HostedWalletToVerbsWalletOptions,
-  ): Promise<Wallet>
+  abstract toVerbsWallet(params: THostedWalletOptions): Promise<Wallet>
 }

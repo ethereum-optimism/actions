@@ -68,6 +68,12 @@ importers:
       '@clerk/backend':
         specifier: ^2.12.0
         version: 2.12.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@dynamic-labs-wallet/node':
+        specifier: ^0.0.158
+        version: 0.0.158
+      '@dynamic-labs-wallet/node-evm':
+        specifier: ^0.0.158
+        version: 0.0.158(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
       '@eth-optimism/utils-app':
         specifier: ^0.0.6
         version: 0.0.6(@hono/node-server@1.17.1(hono@4.9.6))(commander@13.1.0)(hono@4.9.6)(pino-pretty@13.0.0)(pino@9.7.0)(prom-client@15.1.3)
@@ -224,6 +230,12 @@ importers:
 
   packages/sdk:
     dependencies:
+      '@dynamic-labs-wallet/node':
+        specifier: '>=0.0.158'
+        version: 0.0.158
+      '@dynamic-labs-wallet/node-evm':
+        specifier: '>=0.0.158'
+        version: 0.0.158(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
       '@eth-optimism/viem':
         specifier: ^0.4.13
         version: 0.4.13(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
@@ -899,6 +911,23 @@ packages:
   '@csstools/css-tokenizer@3.0.4':
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
+
+  '@dynamic-labs-wallet/core@0.0.158':
+    resolution: {integrity: sha512-58hzBtBS1SDwDinWuRFMAKrVokjgXbqbfpPAi5WVl8DbhashBnlea5h4IDAUt1FCiT1XSOs0/VSUXCd+BkaXQA==}
+
+  '@dynamic-labs-wallet/node-evm@0.0.158':
+    resolution: {integrity: sha512-l7qjo8WBXFd2gxbKjbt6KxP6H3DTdDzuMcF8CixxyQJM/jSm42Ad3w+LQdezhZT3S0Sm70A8mua5FfCS89lkNg==}
+    peerDependencies:
+      viem: ^2.22.1
+
+  '@dynamic-labs-wallet/node@0.0.158':
+    resolution: {integrity: sha512-DmNVYpNVpglAlxIyJv87BRK/KD4roxTznPB1vw7tbLf2VYaWnDRE5xXjIbUpGWzVBxkvWrTUEUOQhLks+OLS+Q==}
+
+  '@dynamic-labs/logger@4.31.1':
+    resolution: {integrity: sha512-8Lu9BLj8fnTiZwE9vBRaNW/Po8+3705uriEuM1oSxkm3syTLC4vN8p2RACm9BSq7Ixb2FZn00jkGh9xogXNMuQ==}
+
+  '@dynamic-labs/sdk-api-core@0.0.764':
+    resolution: {integrity: sha512-79JptJTTClLc9qhioThtwMuzTHJ+mrj8sTEglb7Mcx3lJub9YbXqNdzS9mLRxZsr2et3aqqpzymXdUBzSEaMng==}
 
   '@emnapi/core@1.4.5':
     resolution: {integrity: sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q==}
@@ -2682,6 +2711,9 @@ packages:
 
   axios@1.10.0:
     resolution: {integrity: sha512-/1xYAC4MP/HEG+3duIhFr4ZQXR4sQXOIe+o6sdqzeykGLx6Upp/1p8MHqhINOvGeP7xyNHe7tsiJByc4SSVUxw==}
+
+  axios@1.9.0:
+    resolution: {integrity: sha512-re4CqKTJaURpzbLHtIi6XpDv20/CnpXOtjRY5/CU32L8gU8ek9UIivcfvSWvmKEngmVbrUtPpdDwWDWL7DNHvg==}
 
   babel-plugin-const-enum@1.2.0:
     resolution: {integrity: sha512-o1m/6iyyFnp9MRsK1dHF3bneqyf3AlM2q3A/YbgQr2pCat6B6XJVDv2TXqzfY2RYUi4mak6WAksSBPlyYGx9dg==}
@@ -5596,6 +5628,10 @@ packages:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
     hasBin: true
 
+  uuid@11.1.0:
+    resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
+    hasBin: true
+
   uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
     hasBin: true
@@ -6807,6 +6843,36 @@ snapshots:
       '@csstools/css-tokenizer': 3.0.4
 
   '@csstools/css-tokenizer@3.0.4': {}
+
+  '@dynamic-labs-wallet/core@0.0.158':
+    dependencies:
+      '@dynamic-labs/sdk-api-core': 0.0.764
+      axios: 1.9.0
+      uuid: 11.1.0
+    transitivePeerDependencies:
+      - debug
+
+  '@dynamic-labs-wallet/node-evm@0.0.158(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))':
+    dependencies:
+      '@dynamic-labs-wallet/node': 0.0.158
+      viem: 2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5)
+    transitivePeerDependencies:
+      - debug
+
+  '@dynamic-labs-wallet/node@0.0.158':
+    dependencies:
+      '@dynamic-labs-wallet/core': 0.0.158
+      '@dynamic-labs/logger': 4.31.1
+      '@noble/hashes': 1.7.1
+      uuid: 11.1.0
+    transitivePeerDependencies:
+      - debug
+
+  '@dynamic-labs/logger@4.31.1':
+    dependencies:
+      eventemitter3: 5.0.1
+
+  '@dynamic-labs/sdk-api-core@0.0.764': {}
 
   '@emnapi/core@1.4.5':
     dependencies:
@@ -9660,6 +9726,14 @@ snapshots:
       possible-typed-array-names: 1.1.0
 
   axios@1.10.0:
+    dependencies:
+      follow-redirects: 1.15.9
+      form-data: 4.0.4
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+
+  axios@1.9.0:
     dependencies:
       follow-redirects: 1.15.9
       form-data: 4.0.4
@@ -12985,6 +13059,8 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   uuid@10.0.0: {}
+
+  uuid@11.1.0: {}
 
   uuid@8.3.2: {}
 

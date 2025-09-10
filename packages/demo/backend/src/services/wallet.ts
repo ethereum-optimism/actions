@@ -1,3 +1,6 @@
+import type { WalletProperties } from '@dynamic-labs-wallet/node'
+import { ThresholdSignatureScheme } from '@dynamic-labs-wallet/node'
+import { DynamicEvmWalletClient } from '@dynamic-labs-wallet/node-evm'
 import type {
   SmartWallet,
   TokenBalance,
@@ -9,7 +12,7 @@ import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
-import { getPrivyClient, getVerbs } from '@/config/verbs.js'
+import { getDynamicClient, getVerbs } from '@/config/verbs.js'
 
 /**
  * Options for getting all wallets
@@ -23,71 +26,71 @@ export interface GetAllWalletsOptions {
 }
 
 export async function createWallet(): Promise<{
-  privyAddress: string
+  signerAddress: string
   smartWalletAddress: string
 }> {
   const verbs = getVerbs()
-  const privyClient = getPrivyClient()
-  const privyWallet = await privyClient.walletApi.createWallet({
-    chainType: 'ethereum',
+  const evmClient = getDynamicClient()
+  const wallet = await evmClient.createWalletAccount({
+    thresholdSignatureScheme: ThresholdSignatureScheme.TWO_OF_TWO,
+    backUpToClientShareService: false,
   })
-  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
-    walletId: privyWallet.id,
-    address: privyWallet.address,
+  const verbsDynamicWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+    address: wallet.accountAddress,
   })
-  const wallet = await verbs.wallet.createSmartWallet({
-    owners: [verbsPrivyWallet.address],
-    signer: verbsPrivyWallet.signer,
+  const smartWallet = await verbs.wallet.createSmartWallet({
+    owners: [verbsDynamicWallet.address],
+    signer: verbsDynamicWallet.signer,
   })
-  const smartWalletAddress = wallet.address
+  const smartWalletAddress = smartWallet.address
   return {
-    privyAddress: wallet.signer.address,
+    signerAddress: smartWallet.signer.address,
     smartWalletAddress,
   }
 }
 
-export async function getWallet(userId: string): Promise<SmartWallet | null> {
+export async function getWallet(address: Address): Promise<SmartWallet | null> {
   const verbs = getVerbs()
-  const privyClient = getPrivyClient()
-  const privyWallet = await privyClient.walletApi
+  const evmClient = getDynamicClient()
+  const dynamicWallet = await evmClient
     .getWallet({
-      id: userId,
+      accountAddress: address,
     })
     .catch(() => null)
-  if (!privyWallet) {
-    return privyWallet
+  if (!dynamicWallet) {
+    return dynamicWallet
   }
-  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
-    walletId: privyWallet.id,
-    address: privyWallet.address,
+  const verbsDynamicWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+    address: dynamicWallet.accountAddress,
   })
   const wallet = await verbs.wallet.getSmartWallet({
-    signer: verbsPrivyWallet.signer,
-    deploymentOwners: [getAddress(privyWallet.address)],
+    signer: verbsDynamicWallet.signer,
+    deploymentOwners: [getAddress(verbsDynamicWallet.address)],
   })
   return wallet
 }
 
 export async function getAllWallets(
-  options?: GetAllWalletsOptions,
+  _options?: GetAllWalletsOptions,
 ): Promise<Array<{ wallet: SmartWallet; id: string }>> {
   try {
     const verbs = getVerbs()
-    const privyClient = getPrivyClient()
-    const response = await privyClient.walletApi.getWallets(options)
+    const evmClient = await authenticatedDynamicEvmClient()
+    const wallets = await evmClient.getEvmWallets()
     return Promise.all(
-      response.data.map(async (privyWallet) => {
-        const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
-          walletId: privyWallet.id,
-          address: privyWallet.address,
-        })
+      wallets.map(async (dynamicWallet: WalletProperties) => {
+        const verbsDynamicWallet = await verbs.wallet.hostedWalletToVerbsWallet(
+          {
+            address: dynamicWallet.accountAddress,
+          },
+        )
         const wallet = await verbs.wallet.getSmartWallet({
-          signer: verbsPrivyWallet.signer,
-          deploymentOwners: [getAddress(privyWallet.address)],
+          signer: verbsDynamicWallet.signer,
+          deploymentOwners: [getAddress(verbsDynamicWallet.address)],
         })
         return {
           wallet,
-          id: privyWallet.id,
+          id: dynamicWallet.accountAddress,
         }
       }),
     )
@@ -96,8 +99,10 @@ export async function getAllWallets(
   }
 }
 
-export async function getBalance(userId: string): Promise<TokenBalance[]> {
-  const wallet = await getWallet(userId)
+export async function getBalance(
+  walletAddress: Address,
+): Promise<TokenBalance[]> {
+  const wallet = await getWallet(walletAddress)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
@@ -160,16 +165,15 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
   }
 }
 
-export async function fundWallet(userId: string): Promise<{
+export async function fundWallet(walletAddress: Address): Promise<{
   success: boolean
   to: string
   amount: string
 }> {
-  const wallet = await getWallet(userId)
+  const wallet = await getWallet(walletAddress)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
-  const walletAddress = wallet.address
 
   const amountInDecimals = BigInt(Math.floor(parseFloat('100') * 1000000))
 
@@ -195,7 +199,7 @@ export async function fundWallet(userId: string): Promise<{
 }
 
 export async function sendTokens(
-  walletId: string,
+  walletId: Address,
   amount: number,
   recipientAddress: Address,
 ): Promise<TransactionData> {
@@ -205,4 +209,13 @@ export async function sendTokens(
   }
 
   return wallet.sendTokens(amount, 'usdc', recipientAddress)
+}
+
+export const authenticatedDynamicEvmClient = async () => {
+  const client = new DynamicEvmWalletClient({
+    authToken: process.env.DYNAMIC_AUTH_TOKEN!,
+    environmentId: process.env.DYNAMIC_ENVIRONMENT_ID!,
+  })
+  await client.authenticateApiToken(process.env.DYNAMIC_AUTH_TOKEN!)
+  return client
 }
