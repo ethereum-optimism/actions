@@ -16,8 +16,8 @@ import { WalletProvider } from '@/wallet/WalletProvider.js'
  */
 export class Verbs {
   public readonly wallet: WalletNamespace
-  public readonly lend?: LendReadOperations
   private _chainManager: ChainManager
+  private _lend?: LendReadOperations
   private lendProvider?: LendProvider
   private hostedWalletProvider!: HostedWalletProvider
   private smartWalletProvider!: SmartWalletProvider
@@ -32,9 +32,9 @@ export class Verbs {
           config.lend,
           this.chainManager,
         )
-        
+
         // Bind read-only operations to verbs
-        this.lend = bindLendProviderToVerbs(this.lendProvider)
+        this._lend = bindLendProviderToVerbs(this.lendProvider)
       } else {
         throw new Error(
           `Unsupported lending provider type: ${config.lend.type}`,
@@ -43,6 +43,22 @@ export class Verbs {
     }
 
     this.wallet = this.createWalletNamespace(config.wallet)
+  }
+
+  /**
+   * Get lend operations interface
+   * @description Access to lending operations like markets and vault information.
+   * Throws an error if no lend provider is configured in VerbsConfig.
+   * @returns LendReadOperations interface for lending operations
+   * @throws Error if lend provider not configured
+   */
+  get lend(): LendReadOperations {
+    if (!this._lend) {
+      throw new Error(
+        'Lend provider not configured. Please add lend configuration to VerbsConfig.',
+      )
+    }
+    return this._lend
   }
 
   /**

@@ -33,6 +33,9 @@ import { SmartWallet } from '@/wallet/base/SmartWallet.js'
  * Supports multi-owner wallets, gasless transactions via paymasters, and cross-chain operations.
  */
 export class DefaultSmartWallet extends SmartWallet {
+  /** Lend namespace with all lending operations */
+  public lend: WalletLendOperations
+
   /** Array of wallet owners (Ethereum addresses or WebAuthn public keys) */
   private owners: Array<Address | WebAuthnAccount>
   /** Local account used for signing transactions and UserOperations */
@@ -47,8 +50,6 @@ export class DefaultSmartWallet extends SmartWallet {
   private chainManager: ChainManager
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
-  /** Lend namespace with all lending operations */
-  public lend: WalletLendOperations
 
   /**
    * Create a Smart Wallet instance
@@ -77,11 +78,10 @@ export class DefaultSmartWallet extends SmartWallet {
     this.chainManager = chainManager
     this.lendProvider = lendProvider
     this.nonce = nonce
-    
+
     // Bind lend operations to wallet
     this.lend = bindLendProviderToWallet(lendProvider, this)
   }
-
 
   /**
    * Get the signer account for this smart wallet
@@ -158,47 +158,6 @@ export class DefaultSmartWallet extends SmartWallet {
   }
 
   /**
-   * Lend assets to a lending market
-   * @description Lends assets using the configured lending provider with human-readable amounts
-   * @param amount - Human-readable amount to lend (e.g. 1.5)
-   * @param asset - Asset symbol (e.g. 'usdc') or token address
-   * @param marketId - Optional specific market ID or vault name
-   * @param options - Optional lending configuration
-   * @returns Promise resolving to lending transaction details
-   * @throws Error if no lending provider is configured
-   */
-  async lend(
-    amount: number,
-    asset: AssetIdentifier,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    // Parse human-readable inputs
-    const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
-      amount,
-      asset,
-      chainId,
-    )
-    const address = await this.getAddress()
-
-    // Set receiver to wallet address if not specified
-    const lendOptions: LendOptions = {
-      ...options,
-      receiver: options?.receiver || address,
-    }
-
-    const result = await this.lendProvider.deposit(
-      resolvedAsset.address,
-      parsedAmount,
-      marketId,
-      lendOptions,
-    )
-
-    return result
-  }
-
-  /**
    * Send a batch of transactions using this smart wallet
    * @description Executes a batch of transactions through the smart wallet, handling gas sponsorship
    * and ERC-4337 UserOperation creation automatically.
@@ -267,6 +226,50 @@ export class DefaultSmartWallet extends SmartWallet {
         }`,
       )
     }
+  }
+
+  /**
+   * TODO this will be replaced with lend.execute()
+   * Lend assets to a lending market
+   * @description Lends assets using the configured lending provider with human-readable amounts
+   * @param amount - Human-readable amount to lend (e.g. 1.5)
+   * @param asset - Asset symbol (e.g. 'usdc') or token address
+   * @param chainId - Target blockchain chain ID
+   * @param marketId - Optional specific market ID or vault name
+   * @param options - Optional lending configuration
+   * @returns Promise resolving to lending transaction details
+   * @throws Error if no lending provider is configured
+   * @todo Replace this with lend.execute()
+   */
+  async lendExecute(
+    amount: number,
+    asset: AssetIdentifier,
+    chainId: SupportedChainId,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction> {
+    // Parse human-readable inputs
+    const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
+      amount,
+      asset,
+      chainId,
+    )
+    const address = await this.getAddress()
+
+    // Set receiver to wallet address if not specified
+    const lendOptions: LendOptions = {
+      ...options,
+      receiver: options?.receiver || address,
+    }
+
+    const result = await this.lendProvider.deposit(
+      resolvedAsset.address,
+      parsedAmount,
+      marketId,
+      lendOptions,
+    )
+
+    return result
   }
 
   /**

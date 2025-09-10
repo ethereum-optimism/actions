@@ -202,7 +202,6 @@ describe('Verbs SDK - System Tests', () => {
       })
 
       const networkIds = verbs.lend.supportedNetworkIds()
-
       expect(Array.isArray(networkIds)).toBe(true)
       expect(networkIds).toContain(130) // Unichain
     })
@@ -236,7 +235,7 @@ describe('Verbs SDK - System Tests', () => {
         },
       })
 
-      const vaults = await verbs.lend.getVaults()
+      const vaults = await verbs.lend.getMarkets()
 
       expect(Array.isArray(vaults)).toBe(true)
       expect(vaults.length).toBeGreaterThan(0)
@@ -247,6 +246,38 @@ describe('Verbs SDK - System Tests', () => {
       expect(firstVault).toHaveProperty('name')
       expect(firstVault).toHaveProperty('apy')
       expect(typeof firstVault.apy).toBe('number')
+    })
+  })
+
+  describe('Lend Configuration Error Handling', () => {
+    it('should throw clear error when trying to create Verbs without lend configuration', () => {
+      // Creating Verbs instance without lend configuration should throw during construction
+      // because wallet providers depend on lend provider
+      expect(() => {
+        new Verbs({
+          chains: [
+            {
+              chainId: unichain.id,
+            },
+          ],
+          wallet: {
+            hostedWalletConfig: {
+              provider: {
+                type: 'privy',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
+          },
+        })
+      }).toThrow('Lend provider not configured')
     })
   })
 })

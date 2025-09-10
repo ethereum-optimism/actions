@@ -13,6 +13,8 @@ import type {
  */
 export class MockLendProvider {
   public deposit = vi.fn()
+  public getMarkets = vi.fn()
+  public supportedNetworkIds = vi.fn()
 
   constructor(config?: {
     defaultHash?: string
@@ -50,6 +52,14 @@ export class MockLendProvider {
         }
       },
     )
+
+    this.getMarkets.mockImplementation(async () => {
+      return []
+    })
+
+    this.supportedNetworkIds.mockImplementation(() => {
+      return [130]
+    })
   }
 
   reset(): void {

@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 
 import type { LendProvider } from '@/lend/provider.js'
-import type { LendReadOperations, LendWriteOperations, WalletLendOperations } from '@/types/lend.js'
+import type { WalletLendOperations } from '@/types/lend.js'
 
 /**
  * Bind a lend provider to a wallet instance with full operations
@@ -11,7 +11,7 @@ import type { LendReadOperations, LendWriteOperations, WalletLendOperations } fr
  */
 export function bindLendProviderToWallet(
   provider: LendProvider,
-  wallet: { getAddress: () => Promise<Address> }
+  _wallet: { getAddress: () => Promise<Address> },
 ): WalletLendOperations {
   return {
     /**
@@ -20,24 +20,29 @@ export function bindLendProviderToWallet(
      */
     getMarkets: () => provider.getMarkets(),
 
+    /**
+     * Get list of supported network IDs
+     */
+    supportedNetworkIds: () => provider.supportedNetworkIds(),
+
     // TODO: Implement these methods
-    getVault: (vaultAddress) => {
+    getVault: (_vaultAddress) => {
       throw new Error('Not implemented')
     },
 
-    getVaultBalance: (vaultAddress, walletAddress) => {
+    getVaultBalance: (_vaultAddress, _walletAddress) => {
       throw new Error('Not implemented')
     },
 
-    lend: async (asset, amount, marketId, options) => {
+    lend: async (_asset, _amount, _marketId, _options) => {
       throw new Error('Not implemented')
     },
 
-    deposit: async (asset, amount, marketId, options) => {
+    deposit: async (_asset, _amount, _marketId, _options) => {
       throw new Error('Not implemented')
     },
 
-    withdraw: async (asset, amount, marketId, options) => {
+    withdraw: async (_asset, _amount, _marketId, _options) => {
       throw new Error('Not implemented')
     },
   }

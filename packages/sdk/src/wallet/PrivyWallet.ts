@@ -106,8 +106,9 @@ export class PrivyWallet extends HostedWallet {
   // =====================================
 
   /**
-   * Lend assets to a lending market
+   * Execute a lending operation (legacy method)
    * @description Lends assets using the configured lending provider with human-readable amounts
+   * TODO: This will eventually become lend.execute()
    * @param amount - Human-readable amount to lend (e.g. 1.5)
    * @param asset - Asset symbol (e.g. 'usdc') or token address
    * @param marketId - Optional specific market ID or vault name
@@ -115,7 +116,7 @@ export class PrivyWallet extends HostedWallet {
    * @returns Promise resolving to lending transaction details
    * @throws Error if no lending provider is configured
    */
-  async lend(
+  async lendExecute(
     amount: number,
     asset: AssetIdentifier,
     marketId?: string,

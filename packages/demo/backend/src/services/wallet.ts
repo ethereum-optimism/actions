@@ -94,6 +94,9 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
   // Get vault balances and add them to the response
   const verbs = getVerbs()
   try {
+    if (!verbs.lend) {
+      throw new Error('Lend provider not configured')
+    }
     const vaults = await verbs.lend.getMarkets()
 
     const vaultBalances = await Promise.all(

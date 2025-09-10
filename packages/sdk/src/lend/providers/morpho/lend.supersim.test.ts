@@ -146,9 +146,14 @@ describe('Morpho Lend', () => {
     )
 
     // Test the new human-readable API: lend(1, 'usdc')
-    const lendTx = await testWallet!.lend(1, 'usdc', TEST_VAULT_ADDRESS, {
-      slippage: 50, // 0.5%
-    })
+    const lendTx = await testWallet!.lendExecute(
+      1,
+      'usdc',
+      TEST_VAULT_ADDRESS,
+      {
+        slippage: 50, // 0.5%
+      },
+    )
 
     const expectedAmount = parseUnits('1', 6) // 1 USDC (6 decimals)
 
@@ -245,17 +250,21 @@ describe('Morpho Lend', () => {
 
   it('should handle different human-readable amounts', async () => {
     // Test fractional amounts
-    const tx1 = await testWallet!.lend(0.5, 'usdc', TEST_VAULT_ADDRESS)
+    const tx1 = await testWallet!.lendExecute(0.5, 'usdc', TEST_VAULT_ADDRESS)
     const expectedAmount1 = parseUnits('0.5', 6) // 0.5 USDC
     expect(tx1.amount).toBe(expectedAmount1)
 
     // Test large amounts
-    const tx2 = await testWallet!.lend(1000, 'usdc', TEST_VAULT_ADDRESS)
+    const tx2 = await testWallet!.lendExecute(1000, 'usdc', TEST_VAULT_ADDRESS)
     const expectedAmount2 = parseUnits('1000', 6) // 1000 USDC
     expect(tx2.amount).toBe(expectedAmount2)
 
     // Test using address instead of symbol
-    const tx3 = await testWallet!.lend(1, USDC_ADDRESS, TEST_VAULT_ADDRESS)
+    const tx3 = await testWallet!.lendExecute(
+      1,
+      USDC_ADDRESS,
+      TEST_VAULT_ADDRESS,
+    )
     const expectedAmount3 = parseUnits('1', 6) // 1 USDC
     expect(tx3.amount).toBe(expectedAmount3)
     expect(tx3.asset).toBe(USDC_ADDRESS)
@@ -263,20 +272,20 @@ describe('Morpho Lend', () => {
 
   it('should validate input parameters', async () => {
     // Test invalid amount
-    await expect(testWallet!.lend(0, 'usdc')).rejects.toThrow(
+    await expect(testWallet!.lendExecute(0, 'usdc')).rejects.toThrow(
       'Amount must be greater than 0',
     )
-    await expect(testWallet!.lend(-1, 'usdc')).rejects.toThrow(
+    await expect(testWallet!.lendExecute(-1, 'usdc')).rejects.toThrow(
       'Amount must be greater than 0',
     )
 
     // Test invalid asset symbol
-    await expect(testWallet!.lend(1, 'invalid')).rejects.toThrow(
+    await expect(testWallet!.lendExecute(1, 'invalid')).rejects.toThrow(
       'Unsupported asset symbol: invalid',
     )
 
     // Test invalid address format
-    await expect(testWallet!.lend(1, 'not-an-address')).rejects.toThrow(
+    await expect(testWallet!.lendExecute(1, 'not-an-address')).rejects.toThrow(
       'Unsupported asset symbol',
     )
   }, 30000)

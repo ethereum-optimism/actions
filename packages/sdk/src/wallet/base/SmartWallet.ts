@@ -1,12 +1,7 @@
 import type { Address, Hash, LocalAccount } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type {
-  LendOptions,
-  LendTransaction,
-  TransactionData,
-  WalletLendOperations,
-} from '@/types/lend.js'
+import type { TransactionData, WalletLendOperations } from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
 import type { AssetIdentifier } from '@/utils/assets.js'
 
@@ -17,7 +12,7 @@ import type { AssetIdentifier } from '@/utils/assets.js'
 export abstract class SmartWallet {
   /** The LocalAccount used for signing transactions on behalf of this smart wallet */
   abstract signer: LocalAccount
-  
+
   /** Lend namespace with all lending operations */
   abstract lend: WalletLendOperations
 
@@ -63,7 +58,6 @@ export abstract class SmartWallet {
     transactionData: TransactionData[],
     chainId: SupportedChainId,
   ): Promise<Hash>
-
 
   /**
    * Send tokens to another address

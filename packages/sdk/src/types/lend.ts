@@ -191,6 +191,8 @@ export interface LendReadOperations {
     sharesFormatted: string
     chainId: number
   }>
+  /** Get list of supported network IDs */
+  supportedNetworkIds(): number[]
 }
 
 /**
@@ -225,4 +227,6 @@ export interface LendWriteOperations {
  * Full lend operations available on wallet.lend
  * @description Interface combining both read and write lending operations
  */
-export interface WalletLendOperations extends LendReadOperations, LendWriteOperations {}
+export interface WalletLendOperations
+  extends LendReadOperations,
+    LendWriteOperations {}
