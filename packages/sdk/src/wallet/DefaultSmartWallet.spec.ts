@@ -191,13 +191,9 @@ describe('DefaultSmartWallet', () => {
   })
 
   it('should have lend namespace with bound methods', async () => {
-    const wallet = new DefaultSmartWallet(
-      mockOwners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
-      '0x123',
-    )
+    const wallet = await createAndInitDefaultSmartWallet({
+      deploymentAddress: '0x123' as Address,
+    })
 
     // Test that lend namespace exists and is properly bound
     expect(wallet.lend).toBeDefined()
@@ -215,13 +211,9 @@ describe('DefaultSmartWallet', () => {
   })
 
   it('should lend assets using lendExecute method', async () => {
-    const wallet = new DefaultSmartWallet(
-      mockOwners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
-      '0x123',
-    )
+    const wallet = await createAndInitDefaultSmartWallet({
+      deploymentAddress: '0x123' as Address,
+    })
 
     const result = await wallet.lendExecute(
       100,

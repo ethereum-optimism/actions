@@ -128,23 +128,6 @@ export class DefaultSmartWallet extends SmartWallet {
   }
 
   /**
-   * Get asset balances across all supported chains
-   * @description Fetches ETH and ERC20 token balances for this wallet across all supported networks.
-   * @returns Promise resolving to array of token balances with chain breakdown
-   */
-  async getBalance(): Promise<TokenBalance[]> {
-    const address = await this.getAddress()
-    const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
-      async (token) => {
-        return fetchERC20Balance(this.chainManager, address, token)
-      },
-    )
-    const ethBalancePromise = fetchETHBalance(this.chainManager, address)
-
-    return Promise.all([ethBalancePromise, ...tokenBalancePromises])
-  }
-
-  /**
    * TODO this will be replaced with lend.execute()
    * Lend assets to a lending market
    * @description Lends assets using the configured lending provider with human-readable amounts

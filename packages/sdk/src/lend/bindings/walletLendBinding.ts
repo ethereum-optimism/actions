@@ -11,7 +11,7 @@ import type { WalletLendOperations } from '@/types/lend.js'
  */
 export function bindLendProviderToWallet(
   provider: LendProvider,
-  _wallet: { getAddress: () => Promise<Address> },
+  _wallet: { address: Address } | { getAddress: () => Promise<Address> },
 ): WalletLendOperations {
   return {
     /**

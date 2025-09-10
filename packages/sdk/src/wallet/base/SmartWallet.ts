@@ -2,7 +2,6 @@ import type { Address, Hash, WalletClient } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { TransactionData, WalletLendOperations } from '@/types/lend.js'
-import type { TokenBalance } from '@/types/token.js'
 import type { AssetIdentifier } from '@/utils/assets.js'
 import { Wallet } from '@/wallet/base/Wallet.js'
 

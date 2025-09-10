@@ -80,57 +80,9 @@ export class PrivyWallet extends Wallet {
     })
   }
 
-  // ⚠️  WARNING: TECH DEBT BELOW ⚠️
-  // =====================================
-  // The methods below this comment are legacy tech debt from the POC
-  // and will most likely be REMOVED in a future refactor.
-  //
-  // DO NOT rely on these methods in production code!
-  // DO NOT extend or modify these methods!
-  //
-  // If you need this functionality, please discuss with the team
-  // before using or building upon these methods.
-  // =====================================
-
   /**
-   * Execute a lending operation (legacy method)
-   * @description Lends assets using the configured lending provider with human-readable amounts
-   * TODO: This will eventually become lend.execute()
-   * @param amount - Human-readable amount to lend (e.g. 1.5)
-   * @param asset - Asset symbol (e.g. 'usdc') or token address
-   * @param marketId - Optional specific market ID or vault name
-   * @param options - Optional lending configuration
-   * @returns Promise resolving to lending transaction details
-   * @throws Error if no lending provider is configured
+   * Initialize the PrivyWallet by creating the signer account
    */
-  async lendExecute(
-    amount: number,
-    asset: AssetIdentifier,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    // Parse human-readable inputs
-    // TODO: Get actual chain ID from wallet context, for now using Unichain
-    const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
-      amount,
-      asset,
-      unichain.id,
-    )
-
-    // Set receiver to wallet address if not specified
-    const lendOptions: LendOptions = {
-      ...options,
-      receiver: options?.receiver || this.address,
-    }
-
-    const result = await this.lendProvider.deposit(
-      resolvedAsset.address,
-      parsedAmount,
-      marketId,
-      lendOptions,
-    )
-
-    return result
   protected async performInitialization() {
     this.signer = await this.createAccount()
   }
