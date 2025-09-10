@@ -1,7 +1,9 @@
+import type { PrivyClient } from '@privy-io/server-auth'
 import { createViemAccount } from '@privy-io/server-auth/viem'
 import {
   type Address,
   createWalletClient,
+  getAddress,
   type LocalAccount,
   type WalletClient,
 } from 'viem'
@@ -10,7 +12,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
@@ -38,7 +39,6 @@ const mockPrivyClient = createMockPrivyClient('test-app-id', 'test-app-secret')
 const mockChainManager = new MockChainManager({
   supportedChains: [130], // Unichain
 }) as unknown as ChainManager
-const mockLendProvider = createMockLendProvider()
 const mockLocalAccount = {
   address: mockAddress,
   signMessage: vi.fn(),
@@ -53,13 +53,11 @@ describe('PrivyWallet', () => {
       chainType: 'ethereum',
     })
 
-    const wallet = new PrivyWallet(
-      mockPrivyClient,
-      createdWallet.id,
-      createdWallet.address as Address,
-      mockChainManager,
-      mockLendProvider,
-    )
+    const wallet = await createAndInitPrivyWallet({
+      address: getAddress(createdWallet.address),
+      walletId: createdWallet.id,
+    })
+
     expect(wallet.walletId).toBe(createdWallet.id)
   })
 
@@ -68,13 +66,11 @@ describe('PrivyWallet', () => {
       chainType: 'ethereum',
     })
 
-    const wallet = new PrivyWallet(
-      mockPrivyClient,
-      createdWallet.id,
-      createdWallet.address as Address,
-      mockChainManager,
-      mockLendProvider,
-    )
+    const wallet = await createAndInitPrivyWallet({
+      address: getAddress(createdWallet.address),
+      walletId: createdWallet.id,
+    })
+
     expect(wallet.address).toBe(createdWallet.address)
   })
 
@@ -83,36 +79,26 @@ describe('PrivyWallet', () => {
     const createdWallet = await mockPrivyClient.walletApi.createWallet({
       chainType: 'ethereum',
     })
-    const wallet = new PrivyWallet(
-      mockPrivyClient,
-      createdWallet.id,
-      createdWallet.address as Address,
-      mockChainManager,
-      mockLendProvider,
-    )
     vi.mocked(createViemAccount).mockResolvedValue(mockLocalAccount)
-
-    const account = await wallet.account()
+    const wallet = await createAndInitPrivyWallet({
+      address: getAddress(createdWallet.address),
+      walletId: createdWallet.id,
+    })
 
     expect(createViemAccount).toHaveBeenCalledWith({
       walletId: createdWallet.id,
       address: createdWallet.address,
       privy: mockPrivyClient,
     })
-    expect(account).toBe(mockLocalAccount)
+    expect(wallet.signer).toBe(mockLocalAccount)
   })
 
   it('should create a wallet client with correct configuration', async () => {
     const createdWallet = await mockPrivyClient.walletApi.createWallet({
       chainType: 'ethereum',
     })
-    const wallet = new PrivyWallet(
-      mockPrivyClient,
-      createdWallet.id,
-      createdWallet.address as Address,
-      mockChainManager,
-      mockLendProvider,
-    )
+    const wallet = await createAndInitPrivyWallet()
+
     const mockWalletClient = {
       account: mockLocalAccount,
       address: createdWallet.address as Address,
@@ -129,3 +115,28 @@ describe('PrivyWallet', () => {
     expect(walletClient).toBe(mockWalletClient)
   })
 })
+
+async function createAndInitPrivyWallet(
+  params: {
+    privyClient?: PrivyClient
+    walletId?: string
+    address?: Address
+    chainManager?: ChainManager
+  } = {},
+) {
+  const {
+    privyClient = mockPrivyClient,
+    walletId,
+    address,
+    chainManager = mockChainManager,
+  } = params
+  const createdWallet = await privyClient.walletApi.createWallet({
+    chainType: 'ethereum',
+  })
+  return PrivyWallet.create({
+    privyClient,
+    walletId: walletId ?? createdWallet.id,
+    address: address ?? getAddress(createdWallet.address),
+    chainManager,
+  })
+}

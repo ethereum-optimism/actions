@@ -38,7 +38,7 @@ export abstract class SmartWalletProvider {
     walletAddress: Address
     signer: LocalAccount
     ownerIndex?: number
-  }): SmartWallet
+  }): Promise<SmartWallet>
 
   /**
    * Get the predicted smart wallet address

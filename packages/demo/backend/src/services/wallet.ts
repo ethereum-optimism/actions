@@ -1,8 +1,5 @@
 import type {
-  PrivyHostedWalletProvider,
-  PrivyProviderGetAllWalletsOptions as GetAllWalletsOptions,
   SmartWallet,
-  SmartWalletProvider,
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/verbs-sdk'
@@ -13,6 +10,7 @@ import {
   createWalletClient,
   formatEther,
   formatUnits,
+  getAddress,
   http,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -20,30 +18,63 @@ import { writeContract } from 'viem/actions'
 
 import { faucetAbi } from '@/abis/faucet.js'
 import { env } from '@/config/env.js'
+import { getPrivyClient, getVerbs } from '@/config/verbs.js'
 
-import { getVerbs } from '../config/verbs.js'
+/**
+ * Options for getting all wallets
+ * @description Parameters for filtering and paginating wallet results
+ */
+export interface GetAllWalletsOptions {
+  /** Maximum number of wallets to return */
+  limit?: number
+  /** Cursor for pagination */
+  cursor?: string
+}
 
 export async function createWallet(): Promise<{
   privyAddress: string
   smartWalletAddress: string
 }> {
   const verbs = getVerbs()
-  const wallet = await verbs.wallet.createWalletWithHostedSigner()
-  const smartWalletAddress = await wallet.getAddress()
+  const privyClient = getPrivyClient()
+  const privyWallet = await privyClient.walletApi.createWallet({
+    chainType: 'ethereum',
+  })
+  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+    walletId: privyWallet.id,
+    address: privyWallet.address,
+  })
+  const wallet = await verbs.wallet.createSmartWallet({
+    owners: [verbsPrivyWallet.address],
+    signer: verbsPrivyWallet.signer,
+  })
+  const smartWalletAddress = wallet.address
   return {
     privyAddress: wallet.signer.address,
     smartWalletAddress,
   }
 }
 
-export async function getWallet(userId: string): Promise<{
-  wallet: SmartWallet
-}> {
+export async function getWallet(userId: string): Promise<SmartWallet | null> {
   const verbs = getVerbs()
-  const wallet = await verbs.wallet.getSmartWalletWithHostedSigner({
-    walletId: userId,
+  const privyClient = getPrivyClient()
+  const privyWallet = await privyClient.walletApi
+    .getWallet({
+      id: userId,
+    })
+    .catch(() => null)
+  if (!privyWallet) {
+    return privyWallet
+  }
+  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+    walletId: privyWallet.id,
+    address: privyWallet.address,
   })
-  return { wallet }
+  const wallet = await verbs.wallet.getSmartWallet({
+    signer: verbsPrivyWallet.signer,
+    deploymentOwners: [getAddress(privyWallet.address)],
+  })
+  return wallet
 }
 
 export async function getAllWallets(
@@ -51,26 +82,21 @@ export async function getAllWallets(
 ): Promise<Array<{ wallet: SmartWallet; id: string }>> {
   try {
     const verbs = getVerbs()
-    const privyWallets = await (
-      verbs.wallet.hostedWalletProvider as PrivyHostedWalletProvider
-    ).getAllWallets(options)
+    const privyClient = getPrivyClient()
+    const response = await privyClient.walletApi.getWallets(options)
     return Promise.all(
-      privyWallets.map(async (privyWallet) => {
-        const walletAddress =
-          await verbs.wallet.smartWalletProvider.getWalletAddress({
-            owners: [privyWallet.address],
-          })
-        const account = await privyWallet.account()
-        const wallet = (
-          verbs.wallet.smartWalletProvider as SmartWalletProvider
-        ).getWallet({
-          walletAddress,
-          signer: account,
-          ownerIndex: 0,
+      response.data.map(async (privyWallet) => {
+        const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+          walletId: privyWallet.id,
+          address: privyWallet.address,
+        })
+        const wallet = await verbs.wallet.getSmartWallet({
+          signer: verbsPrivyWallet.signer,
+          deploymentOwners: [getAddress(privyWallet.address)],
         })
         return {
           wallet,
-          id: privyWallet.walletId,
+          id: privyWallet.id,
         }
       }),
     )
@@ -80,7 +106,7 @@ export async function getAllWallets(
 }
 
 export async function getBalance(userId: string): Promise<TokenBalance[]> {
-  const { wallet } = await getWallet(userId)
+  const wallet = await getWallet(userId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
@@ -99,7 +125,7 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
     const vaultBalances = await Promise.all(
       vaults.map(async (vault) => {
         try {
-          const walletAddress = await wallet.getAddress()
+          const walletAddress = wallet.address
           const vaultBalance = await verbs.lend.getVaultBalance(
             vault.address,
             walletAddress,
@@ -155,11 +181,11 @@ export async function fundWallet(
   // TODO: do this a better way
   const isLocalSupersim = env.LOCAL_DEV
 
-  const { wallet } = await getWallet(userId)
+  const wallet = await getWallet(userId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
-  const walletAddress = await wallet.getAddress()
+  const walletAddress = wallet.address
 
   if (!isLocalSupersim) {
     throw new Error(`Wallet fund is coming soon. For now, manually send USDC or ETH to this wallet:
@@ -238,7 +264,7 @@ export async function sendTokens(
   amount: number,
   recipientAddress: Address,
 ): Promise<TransactionData> {
-  const { wallet } = await getWallet(walletId)
+  const wallet = await getWallet(walletId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }

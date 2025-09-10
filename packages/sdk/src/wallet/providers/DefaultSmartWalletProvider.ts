@@ -47,15 +47,13 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
     nonce?: bigint
   }): Promise<DefaultSmartWallet> {
     const { owners, signer, nonce } = params
-    return new DefaultSmartWallet(
+    return DefaultSmartWallet.create({
       owners,
       signer,
-      this.chainManager,
-      this.lendProvider,
-      undefined,
-      undefined,
+      chainManager: this.chainManager,
+      lendProvider: this.lendProvider,
       nonce,
-    )
+    })
   }
 
   /**
@@ -99,19 +97,19 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    * @param params.ownerIndex - Index of the signer in the wallet's owner list (defaults to 0)
    * @returns SmartWallet instance
    */
-  getWallet(params: {
+  async getWallet(params: {
     walletAddress: Address
     signer: LocalAccount
     ownerIndex?: number
-  }): DefaultSmartWallet {
+  }): Promise<DefaultSmartWallet> {
     const { walletAddress, signer, ownerIndex } = params
-    return new DefaultSmartWallet(
-      [signer.address],
+    return DefaultSmartWallet.create({
+      owners: [signer.address],
       signer,
-      this.chainManager,
-      this.lendProvider,
-      walletAddress,
-      ownerIndex,
-    )
+      chainManager: this.chainManager,
+      lendProvider: this.lendProvider,
+      deploymentAddress: walletAddress,
+      signerOwnerIndex: ownerIndex,
+    })
   }
 }

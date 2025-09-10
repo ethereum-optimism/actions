@@ -10,7 +10,7 @@ import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { TransactionData } from '@/types/lend.js'
+import type { LendProvider, TransactionData } from '@/types/lend.js'
 import { DefaultSmartWallet } from '@/wallet/DefaultSmartWallet.js'
 
 vi.mock('viem/account-abstraction', () => ({
@@ -30,43 +30,28 @@ const mockLendProvider = createMockLendProvider()
 
 // Test suite
 describe('DefaultSmartWallet', () => {
-  it('should create a smart wallet instance', () => {
-    const wallet = new DefaultSmartWallet(
-      mockOwners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
-    )
+  it('should create a smart wallet instance', async () => {
+    const wallet = await createAndInitDefaultSmartWallet()
+
     expect(wallet).toBeInstanceOf(DefaultSmartWallet)
   })
 
-  it('should return the correct signer', () => {
-    const wallet = new DefaultSmartWallet(
-      mockOwners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
-    )
+  it('should return the correct signer', async () => {
+    const wallet = await createAndInitDefaultSmartWallet()
+
     expect(wallet.signer).toEqual(mockSigner)
   })
 
   it('should get the wallet address', async () => {
-    const owners = [getRandomAddress(), getRandomAddress()]
-    const wallet = new DefaultSmartWallet(
-      owners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
-    )
-    const mockAddress = getRandomAddress()
+    const mockDeploymentAddress = getRandomAddress()
     const publicClient = vi.mocked(
       mockChainManager.getPublicClient(baseSepolia.id),
     )
-    publicClient.readContract = vi.fn().mockResolvedValue(mockAddress)
+    publicClient.readContract = vi.fn().mockResolvedValue(mockDeploymentAddress)
+    const owners = [getRandomAddress(), getRandomAddress()]
+    const wallet = await createAndInitDefaultSmartWallet({ owners })
 
-    const address = await wallet.getAddress()
-
-    expect(address).toBe(mockAddress)
+    expect(wallet.address).toBe(mockDeploymentAddress)
     expect(publicClient.readContract).toHaveBeenCalledWith({
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
@@ -77,30 +62,22 @@ describe('DefaultSmartWallet', () => {
 
   it('should return the deployment address', async () => {
     const deploymentAddress = getRandomAddress()
-    const wallet = new DefaultSmartWallet(
-      mockOwners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
-      deploymentAddress,
-    )
-    const address = await wallet.getAddress()
-    expect(address).toBe(deploymentAddress)
+
+    const wallet = await createAndInitDefaultSmartWallet({ deploymentAddress })
+
+    expect(wallet.address).toBe(deploymentAddress)
   })
 
   it('should call toCoinbaseSmartAccount with correct arguments', async () => {
     const deploymentAddress = getRandomAddress()
     const signerOwnerIndex = 1
     const nonce = BigInt(123)
-    const wallet = new DefaultSmartWallet(
-      mockOwners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
+    const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress,
       signerOwnerIndex,
       nonce,
-    )
+    })
+
     const chainId = unichain.id
     await wallet.getCoinbaseSmartAccount(chainId)
 
@@ -116,12 +93,8 @@ describe('DefaultSmartWallet', () => {
   })
 
   it('should send a transaction via ERC-4337', async () => {
-    const wallet = new DefaultSmartWallet(
-      mockOwners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
-    )
+    const wallet = await createAndInitDefaultSmartWallet()
+
     const chainId = unichain.id
     const recipientAddress = getRandomAddress()
     const value = BigInt(1000)
@@ -164,12 +137,8 @@ describe('DefaultSmartWallet', () => {
   })
 
   it('should send a batch of transactions via ERC-4337', async () => {
-    const wallet = new DefaultSmartWallet(
-      mockOwners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
-    )
+    const wallet = await createAndInitDefaultSmartWallet()
+
     const chainId = unichain.id
     const recipientAddress = getRandomAddress()
     const recipientAddress2 = getRandomAddress()
@@ -222,17 +191,14 @@ describe('DefaultSmartWallet', () => {
   })
 
   it('should lend assets', async () => {
-    const wallet = new DefaultSmartWallet(
-      mockOwners,
-      mockSigner,
-      mockChainManager,
-      mockLendProvider,
-      '0x123',
-    )
+    const wallet = await createAndInitDefaultSmartWallet({
+      deploymentAddress: '0x123',
+    })
+
     const amount = 1.5
     const asset = 'USDC'
     const chainId = unichain.id
-    const marketId = '0x123'
+    const marketId = '0x456'
     const result = await wallet.lend(amount, asset, chainId, marketId)
 
     expect(mockLendProvider.deposit).toHaveBeenCalledWith(
@@ -246,3 +212,34 @@ describe('DefaultSmartWallet', () => {
     expect(result.hash).toBe('0xabc')
   })
 })
+
+async function createAndInitDefaultSmartWallet(
+  params: {
+    owners?: Address[]
+    signer?: LocalAccount
+    chainManager?: ChainManager
+    lendProvider?: LendProvider
+    deploymentAddress?: Address
+    signerOwnerIndex?: number
+    nonce?: bigint
+  } = {},
+) {
+  const {
+    owners = mockOwners,
+    signer = mockSigner,
+    chainManager = mockChainManager,
+    lendProvider = mockLendProvider,
+    deploymentAddress,
+    signerOwnerIndex,
+    nonce,
+  } = params
+  return DefaultSmartWallet.create({
+    owners,
+    signer,
+    chainManager,
+    lendProvider,
+    deploymentAddress,
+    signerOwnerIndex,
+    nonce,
+  })
+}

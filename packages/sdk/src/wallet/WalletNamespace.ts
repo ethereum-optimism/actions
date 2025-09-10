@@ -1,12 +1,10 @@
 import type {
   CreateSmartWalletOptions,
-  createWalletWithHostedSignerOptions,
-  getHostedWalletOptions,
   GetSmartWalletOptions,
-  getSmartWalletWithHostedSignerOptions,
+  HostedWalletToVerbsWalletOptions,
 } from '@/types/wallet.js'
-import type { HostedWallet } from '@/wallet/base/HostedWallet.js'
 import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
+import type { Wallet } from '@/wallet/base/Wallet.js'
 import type { WalletProvider } from '@/wallet/WalletProvider.js'
 
 /**
@@ -41,15 +39,6 @@ export class WalletNamespace {
   }
 
   /**
-   * Create a new hosted wallet
-   * @description Creates only a hosted wallet using the configured hosted wallet provider.
-   * @returns Promise resolving to the created hosted wallet instance
-   */
-  async createHostedWallet(): Promise<HostedWallet> {
-    return this.provider.createHostedWallet()
-  }
-
-  /**
    * Create a new smart wallet
    * @description Creates only a smart wallet using the configured smart wallet provider.
    * This is useful when you already have a signer and want to create a smart wallet without
@@ -67,52 +56,17 @@ export class WalletNamespace {
   }
 
   /**
-   * Create a new smart wallet with hosted wallet as signer
-   * @description Creates both a hosted wallet and a smart wallet, with the hosted wallet
-   * automatically added as one of the owners/signers of the smart wallet.
-   * @param params - Optional wallet creation parameters
-   * @param params.owners - Optional array of additional owners for the smart wallet. The hosted wallet will be added to this array at the specified index.
-   * @param params.hostedWalletIndex - Optional index where the hosted wallet should be inserted in the owners array. If not specified, hosted wallet is added to the end of the array.
-   * @param params.nonce - Optional nonce for smart wallet address generation (defaults to 0)
-   * @returns Promise resolving to the created smart wallet instance
+   * Convert a hosted wallet to a Verbs wallet
+   * @description Converts a hosted wallet to a Verbs wallet instance.
+   * @param params - Parameters for converting a hosted wallet to a Verbs wallet
+   * @param params.walletId - Unique identifier for the hosted wallet
+   * @param params.address - Ethereum address of the hosted wallet
+   * @returns Promise resolving to the Verbs wallet instance
    */
-  async createWalletWithHostedSigner(
-    params?: createWalletWithHostedSignerOptions,
-  ): Promise<SmartWallet> {
-    return this.provider.createWalletWithHostedSigner(params)
-  }
-
-  /**
-   * Get an existing smart wallet using hosted wallet as signer
-   * @description Retrieves a hosted wallet by walletId and uses it as the signer to get
-   * the corresponding smart wallet. If neither walletAddress nor deploymentOwners is provided,
-   * defaults to using the hosted wallet as the single owner. This is useful when you have
-   * a hosted wallet ID and want to access the associated smart wallet functionality.
-   * @param params - Wallet retrieval parameters
-   * @param params.walletId - ID of the hosted wallet to use as signer
-   * @param params.deploymentOwners - Optional array of original deployment owners for smart wallet address calculation. If not provided and walletAddress is also not provided, defaults to using the hosted wallet as single owner.
-   * @param params.signerOwnerIndex - Current index of the signer in the smart wallet's current owners array (used for transaction signing). Defaults to 0 if not specified. This may differ from the original deployment index if owners have been modified.
-   * @param params.walletAddress - Optional explicit smart wallet address (skips address calculation)
-   * @param params.nonce - Optional nonce used during smart wallet creation
-   * @returns Promise resolving to the smart wallet instance with hosted wallet as signer
-   * @throws Error if hosted wallet is not found
-   */
-  async getSmartWalletWithHostedSigner(
-    params: getSmartWalletWithHostedSignerOptions,
-  ) {
-    return this.provider.getSmartWalletWithHostedSigner(params)
-  }
-
-  /**
-   * Get an existing hosted wallet
-   * @description Retrieves a hosted wallet by walletId. This is useful when you have a hosted wallet ID and
-   * want to access the associated hosted wallet functionality.
-   * @param params - Wallet retrieval parameters
-   * @param params.walletId - ID of the hosted wallet to retrieve
-   * @returns Promise resolving to the hosted wallet instance
-   */
-  async getHostedWallet(params: getHostedWalletOptions) {
-    return this.provider.getHostedWallet(params)
+  async hostedWalletToVerbsWallet(
+    params: HostedWalletToVerbsWalletOptions,
+  ): Promise<Wallet> {
+    return this.provider.hostedWalletToVerbsWallet(params)
   }
 
   /**
