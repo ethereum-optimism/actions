@@ -18,7 +18,7 @@ export function bindLendProviderToWallet(
      * Get list of available lending markets
      * TODO: In future, filter by wallet's assets
      */
-    markets: () => provider.markets(),
+    getMarkets: () => provider.getMarkets(),
 
     // TODO: Implement these methods
     getVault: (vaultAddress) => {

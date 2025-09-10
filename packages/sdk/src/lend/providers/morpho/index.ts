@@ -181,7 +181,7 @@ export class LendProviderMorpho extends LendProvider {
    * Get list of available lending markets
    * @returns Promise resolving to array of market information
    */
-  async markets(): Promise<LendVaultInfo[]> {
+  async getMarkets(): Promise<LendVaultInfo[]> {
     return getVaultsHelper(this.chainManager)
   }
 

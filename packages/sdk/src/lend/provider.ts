@@ -76,7 +76,7 @@ export abstract class LendProvider {
    * Get list of available lending markets
    * @returns Promise resolving to array of market information
    */
-  abstract markets(): Promise<LendVaultInfo[]>
+  abstract getMarkets(): Promise<LendVaultInfo[]>
 
   /**
    * Get vault balance for a specific wallet address

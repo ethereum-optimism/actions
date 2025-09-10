@@ -11,7 +11,7 @@ export function bindLendProviderToVerbs(provider: LendProvider): LendReadOperati
     /**
      * Get list of available lending markets
      */
-    markets: () => provider.markets(),
+    getMarkets: () => provider.getMarkets(),
 
     // TODO: Implement these methods
     getVault: (vaultAddress) => {

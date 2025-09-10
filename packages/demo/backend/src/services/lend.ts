@@ -48,7 +48,7 @@ async function getBlockExplorerUrl(chainId: SupportedChainId): Promise<string> {
 
 export async function getVaults(): Promise<LendVaultInfo[]> {
   const verbs = getVerbs()
-  return await verbs.lend.markets()
+  return await verbs.lend.getMarkets()
 }
 
 export async function getVault(vaultAddress: Address): Promise<LendVaultInfo> {
