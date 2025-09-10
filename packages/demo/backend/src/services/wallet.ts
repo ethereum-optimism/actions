@@ -1,8 +1,10 @@
 import type {
-  GetAllWalletsOptions,
+  PrivyHostedWalletProvider,
+  PrivyProviderGetAllWalletsOptions as GetAllWalletsOptions,
+  SmartWallet,
+  SmartWalletProvider,
   TokenBalance,
   TransactionData,
-  WalletInterface,
 } from '@eth-optimism/verbs-sdk'
 import { unichain } from '@eth-optimism/viem/chains'
 import type { Address, Hex } from 'viem'
@@ -21,43 +23,73 @@ import { env } from '@/config/env.js'
 
 import { getVerbs } from '../config/verbs.js'
 
-export async function createWallet(userId: string): Promise<WalletInterface> {
+export async function createWallet(): Promise<{
+  privyAddress: string
+  smartWalletAddress: string
+}> {
   const verbs = getVerbs()
-  return await verbs.createWallet(userId)
+  const wallet = await verbs.wallet.createWalletWithHostedSigner()
+  const smartWalletAddress = await wallet.getAddress()
+  return {
+    privyAddress: wallet.signer.address,
+    smartWalletAddress,
+  }
 }
 
-export async function getWallet(
-  userId: string,
-): Promise<WalletInterface | null> {
+export async function getWallet(userId: string): Promise<{
+  wallet: SmartWallet
+}> {
   const verbs = getVerbs()
-  return await verbs.getWallet(userId)
+  const wallet = await verbs.wallet.getSmartWalletWithHostedSigner({
+    walletId: userId,
+  })
+  return { wallet }
 }
 
 export async function getAllWallets(
   options?: GetAllWalletsOptions,
-): Promise<WalletInterface[]> {
-  const verbs = getVerbs()
-  return await verbs.getAllWallets(options)
-}
-
-export async function getOrCreateWallet(
-  userId: string,
-): Promise<WalletInterface> {
-  let wallet = await getWallet(userId)
-  if (!wallet) {
-    wallet = await createWallet(userId)
+): Promise<Array<{ wallet: SmartWallet; id: string }>> {
+  try {
+    const verbs = getVerbs()
+    const privyWallets = await (
+      verbs.wallet.hostedWalletProvider as PrivyHostedWalletProvider
+    ).getAllWallets(options)
+    return Promise.all(
+      privyWallets.map(async (privyWallet) => {
+        const walletAddress =
+          await verbs.wallet.smartWalletProvider.getWalletAddress({
+            owners: [privyWallet.address],
+          })
+        const account = await privyWallet.account()
+        const wallet = (
+          verbs.wallet.smartWalletProvider as SmartWalletProvider
+        ).getWallet({
+          walletAddress,
+          signer: account,
+          ownerIndex: 0,
+        })
+        return {
+          wallet,
+          id: privyWallet.walletId,
+        }
+      }),
+    )
+  } catch {
+    throw new Error('Failed to get all wallets')
   }
-  return wallet
 }
 
 export async function getBalance(userId: string): Promise<TokenBalance[]> {
-  const wallet = await getWallet(userId)
+  const { wallet } = await getWallet(userId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
 
   // Get regular token balances
-  const tokenBalances = await wallet.getBalance()
+  const tokenBalances = await wallet.getBalance().catch((error) => {
+    console.error(error)
+    throw error
+  })
 
   // Get vault balances and add them to the response
   const verbs = getVerbs()
@@ -67,9 +99,10 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
     const vaultBalances = await Promise.all(
       vaults.map(async (vault) => {
         try {
+          const walletAddress = await wallet.getAddress()
           const vaultBalance = await verbs.lend.getVaultBalance(
             vault.address,
-            wallet.address,
+            walletAddress,
           )
 
           // Only include vaults with non-zero balances
@@ -82,7 +115,7 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
               totalFormattedBalance: formattedBalance,
               chainBalances: [
                 {
-                  chainId: 130 as const, // Unichain
+                  chainId: vaultBalance.chainId,
                   balance: vaultBalance.balance,
                   formattedBalance: formattedBalance,
                 },
@@ -90,7 +123,8 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
             } as TokenBalance
           }
           return null
-        } catch {
+        } catch (error) {
+          console.error(error)
           return null
         }
       }),
@@ -115,36 +149,39 @@ export async function fundWallet(
   success: boolean
   tokenType: string
   to: string
+  privyAddress: string
   amount: string
 }> {
   // TODO: do this a better way
-  const isLocalSupersim = env.RPC_URL === 'http://127.0.0.1:9545'
+  const isLocalSupersim = env.LOCAL_DEV
 
-  const wallet = await getWallet(userId)
+  const { wallet } = await getWallet(userId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
+  const walletAddress = await wallet.getAddress()
 
   if (!isLocalSupersim) {
     throw new Error(`Wallet fund is coming soon. For now, manually send USDC or ETH to this wallet:
 
-${wallet.address}
+${walletAddress}
 
 Funding is only available in local development with supersim`)
   }
 
   const faucetAdminWalletClient = createWalletClient({
     chain: unichain,
-    transport: http(env.RPC_URL),
+    transport: http(env.UNICHAIN_RPC_URL),
     account: privateKeyToAccount(env.FAUCET_ADMIN_PRIVATE_KEY as Hex),
   })
 
   const publicClient = createPublicClient({
     chain: unichain,
-    transport: http(env.RPC_URL),
+    transport: http(env.UNICHAIN_RPC_URL),
   })
 
   let dripHash: `0x${string}`
+  let privyDripHash: `0x${string}` | undefined
   let amount: bigint
   let formattedAmount: string
 
@@ -156,7 +193,14 @@ Funding is only available in local development with supersim`)
       address: env.FAUCET_ADDRESS as Address,
       abi: faucetAbi,
       functionName: 'dripETH',
-      args: [wallet.address, amount],
+      args: [walletAddress, amount],
+    })
+    privyDripHash = await writeContract(faucetAdminWalletClient, {
+      account: faucetAdminWalletClient.account,
+      address: env.FAUCET_ADDRESS as Address,
+      abi: faucetAbi,
+      functionName: 'dripETH',
+      args: [wallet.signer.address as `0x${string}`, amount],
     })
   } else {
     amount = 1000000000n // 1000 USDC
@@ -167,16 +211,24 @@ Funding is only available in local development with supersim`)
       address: env.FAUCET_ADDRESS as Address,
       abi: faucetAbi,
       functionName: 'dripERC20',
-      args: [wallet.address, amount, usdcAddress as Address],
+      args: [walletAddress, amount, usdcAddress as Address],
     })
   }
 
-  await publicClient.waitForTransactionReceipt({ hash: dripHash })
+  await publicClient.waitForTransactionReceipt({
+    hash: dripHash,
+  })
+  if (privyDripHash) {
+    await publicClient.waitForTransactionReceipt({
+      hash: privyDripHash,
+    })
+  }
 
   return {
     success: true,
     tokenType,
-    to: wallet.address,
+    to: walletAddress,
+    privyAddress: wallet.signer.address,
     amount: formattedAmount,
   }
 }
@@ -186,7 +238,7 @@ export async function sendTokens(
   amount: number,
   recipientAddress: Address,
 ): Promise<TransactionData> {
-  const wallet = await getWallet(walletId)
+  const { wallet } = await getWallet(walletId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }

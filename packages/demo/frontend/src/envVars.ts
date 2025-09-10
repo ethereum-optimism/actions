@@ -10,6 +10,10 @@ const envVarSchema = z.object({
         : 'http://localhost:3000',
     )
     .describe('Base URL for the verbs service API'),
+  VITE_PRIVY_APP_ID: z
+    .string()
+    .default('dummy-privy-app-id')
+    .describe('Privy App ID for wallet connection'),
 })
 
 export const env = envVarSchema.parse(import.meta.env)

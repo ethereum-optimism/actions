@@ -1,54 +1,35 @@
-import { createPublicClient, http, type PublicClient } from 'viem'
-import { mainnet, unichain } from 'viem/chains'
-
 import { LendProviderMorpho } from '@/lend/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
-import type { VerbsConfig, VerbsInterface } from '@/types/verbs.js'
-import type {
-  GetAllWalletsOptions,
-  Wallet,
-  WalletProvider,
-} from '@/types/wallet.js'
-import { WalletProviderPrivy } from '@/wallet/providers/privy.js'
+import type { VerbsConfig } from '@/types/verbs.js'
+import type { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
+import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
+import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
+import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
+import { WalletNamespace } from '@/wallet/WalletNamespace.js'
+import { WalletProvider } from '@/wallet/WalletProvider.js'
 
 /**
  * Main Verbs SDK class
  * @description Core implementation of the Verbs SDK
  */
-export class Verbs implements VerbsInterface {
-  // TODO Move to wallet provider
-  createWallet!: (userId: string) => Promise<Wallet>
-  getWallet!: (userId: string) => Promise<Wallet | null>
-  getAllWallets!: (options?: GetAllWalletsOptions) => Promise<Wallet[]>
-
-  private walletProvider: WalletProvider
+export class Verbs {
+  public readonly wallet: WalletNamespace
   private _chainManager: ChainManager
   private lendProvider?: LendProvider
+  private hostedWalletProvider!: HostedWalletProvider
+  private smartWalletProvider!: SmartWalletProvider
 
   constructor(config: VerbsConfig) {
-    this._chainManager = new ChainManager(
-      config.chains || [
-        {
-          chainId: unichain.id,
-          rpcUrl: unichain.rpcUrls.default.http[0],
-        },
-      ],
-    )
+    this._chainManager = new ChainManager(config.chains)
+
     // Create lending provider if configured
     if (config.lend) {
-      // TODO: delete this code and just have the lend use the ChainManager
-      const configChain = config.chains?.[0]
-      const chainId = configChain?.chainId || 130 // Default to Unichain
-      const chain = chainId === 130 ? unichain : mainnet
-      const publicClient = createPublicClient({
-        chain,
-        transport: http(
-          configChain?.rpcUrl || unichain.rpcUrls.default.http[0],
-        ),
-      }) as PublicClient
       if (config.lend.type === 'morpho') {
-        this.lendProvider = new LendProviderMorpho(config.lend, publicClient)
+        this.lendProvider = new LendProviderMorpho(
+          config.lend,
+          this.chainManager,
+        )
       } else {
         throw new Error(
           `Unsupported lending provider type: ${config.lend.type}`,
@@ -56,16 +37,7 @@ export class Verbs implements VerbsInterface {
       }
     }
 
-    this.walletProvider = this.createWalletProvider(config)
-
-    // Delegate wallet methods to wallet provider
-    this.createWallet = this.walletProvider.createWallet.bind(
-      this.walletProvider,
-    )
-    this.getWallet = this.walletProvider.getWallet.bind(this.walletProvider)
-    this.getAllWallets = this.walletProvider.getAllWallets.bind(
-      this.walletProvider,
-    )
+    this.wallet = this.createWalletNamespace(config.wallet)
   }
 
   /**
@@ -87,28 +59,53 @@ export class Verbs implements VerbsInterface {
     return this._chainManager
   }
 
-  private createWalletProvider(config: VerbsConfig): WalletProvider {
-    const { wallet } = config
-
-    switch (wallet.type) {
-      case 'privy':
-        return new WalletProviderPrivy(
-          wallet.appId,
-          wallet.appSecret,
-          this, // Pass Verbs instance so wallets can access configured providers
-        )
-      default:
-        throw new Error(`Unsupported wallet provider type: ${wallet.type}`)
+  /**
+   * Create the wallet provider instance
+   * @param config - Wallet configuration
+   * @returns WalletProvider instance
+   */
+  private createWalletProvider(config: VerbsConfig['wallet']) {
+    if (config.hostedWalletConfig.provider.type === 'privy') {
+      this.hostedWalletProvider = new PrivyHostedWalletProvider(
+        config.hostedWalletConfig.provider.privyClient,
+        this._chainManager,
+        this.lendProvider!,
+      )
+    } else {
+      throw new Error(
+        `Unsupported hosted wallet provider: ${config.hostedWalletConfig.provider.type}`,
+      )
     }
-  }
-}
 
-/**
- * Initialize Verbs SDK
- * @description Factory function to create a new Verbs SDK instance
- * @param config - SDK configuration
- * @returns Initialized Verbs SDK instance
- */
-export function initVerbs(config: VerbsConfig): VerbsInterface {
-  return new Verbs(config)
+    if (
+      !config.smartWalletConfig ||
+      config.smartWalletConfig.provider.type === 'default'
+    ) {
+      this.smartWalletProvider = new DefaultSmartWalletProvider(
+        this.chainManager,
+        this.lend,
+      )
+    } else {
+      throw new Error(
+        `Unsupported smart wallet provider: ${config.smartWalletConfig.provider.type}`,
+      )
+    }
+
+    const walletProvider = new WalletProvider(
+      this.hostedWalletProvider,
+      this.smartWalletProvider,
+    )
+
+    return walletProvider
+  }
+
+  /**
+   * Create the wallet namespace instance
+   * @param config - Wallet configuration
+   * @returns WalletNamespace instance
+   */
+  private createWalletNamespace(config: VerbsConfig['wallet']) {
+    const walletProvider = this.createWalletProvider(config)
+    return new WalletNamespace(walletProvider)
+  }
 }

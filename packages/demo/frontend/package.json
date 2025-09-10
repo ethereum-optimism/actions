@@ -18,7 +18,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.46.0",
     "@eth-optimism/verbs-sdk": "workspace:*",
+    "@eth-optimism/verbs-service": "workspace:*",
+    "@eth-optimism/viem": "^0.4.13",
+    "@privy-io/react-auth": "^2.24.0",
     "react": "^18",
     "react-dom": "^18",
     "react-router": "7",

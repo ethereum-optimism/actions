@@ -1,5 +1,7 @@
+import { unichain } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
+import { createMockPrivyClient } from './test/MockPrivyClient.js'
 import { externalTest } from './utils/test.js'
 import { Verbs } from './verbs.js'
 
@@ -12,14 +14,30 @@ describe('Verbs SDK - System Tests', () => {
       async () => {
         // Create Verbs instance with Morpho lending configured
         const verbs = new Verbs({
+          chains: [
+            {
+              chainId: unichain.id,
+            },
+          ],
           lend: {
             type: 'morpho',
             defaultSlippage: 50,
           },
           wallet: {
-            type: 'privy',
-            appId: 'test-app-id',
-            appSecret: 'test-app-secret',
+            hostedWalletConfig: {
+              provider: {
+                type: 'privy',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
           },
         })
 
@@ -72,14 +90,30 @@ describe('Verbs SDK - System Tests', () => {
       'should fetch vault info with enhanced rewards data',
       async () => {
         const verbs = new Verbs({
+          chains: [
+            {
+              chainId: unichain.id,
+            },
+          ],
           lend: {
             type: 'morpho',
             defaultSlippage: 50,
           },
           wallet: {
-            type: 'privy',
-            appId: 'test-app-id',
-            appSecret: 'test-app-secret',
+            hostedWalletConfig: {
+              provider: {
+                type: 'privy',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
           },
         })
 
@@ -103,14 +137,30 @@ describe('Verbs SDK - System Tests', () => {
       'should handle non-existent vault gracefully',
       async () => {
         const verbs = new Verbs({
+          chains: [
+            {
+              chainId: unichain.id,
+            },
+          ],
           lend: {
             type: 'morpho',
             defaultSlippage: 50,
           },
           wallet: {
-            type: 'privy',
-            appId: 'test-app-id',
-            appSecret: 'test-app-secret',
+            hostedWalletConfig: {
+              provider: {
+                type: 'privy',
+                privyClient: createMockPrivyClient(
+                  'test-app-id',
+                  'test-app-secret',
+                ),
+              },
+            },
+            smartWalletConfig: {
+              provider: {
+                type: 'default',
+              },
+            },
           },
         })
 
@@ -124,14 +174,30 @@ describe('Verbs SDK - System Tests', () => {
 
     it('should list supported network IDs', async () => {
       const verbs = new Verbs({
+        chains: [
+          {
+            chainId: unichain.id,
+          },
+        ],
         lend: {
           type: 'morpho',
           defaultSlippage: 50,
         },
         wallet: {
-          type: 'privy',
-          appId: 'test-app-id',
-          appSecret: 'test-app-secret',
+          hostedWalletConfig: {
+            provider: {
+              type: 'privy',
+              privyClient: createMockPrivyClient(
+                'test-app-id',
+                'test-app-secret',
+              ),
+            },
+          },
+          smartWalletConfig: {
+            provider: {
+              type: 'default',
+            },
+          },
         },
       })
 
@@ -143,14 +209,30 @@ describe('Verbs SDK - System Tests', () => {
 
     it.runIf(externalTest())('should get list of vaults', async () => {
       const verbs = new Verbs({
+        chains: [
+          {
+            chainId: unichain.id,
+          },
+        ],
         lend: {
           type: 'morpho',
           defaultSlippage: 50,
         },
         wallet: {
-          type: 'privy',
-          appId: 'test-app-id',
-          appSecret: 'test-app-secret',
+          hostedWalletConfig: {
+            provider: {
+              type: 'privy',
+              privyClient: createMockPrivyClient(
+                'test-app-id',
+                'test-app-secret',
+              ),
+            },
+          },
+          smartWalletConfig: {
+            provider: {
+              type: 'default',
+            },
+          },
         },
       })
 

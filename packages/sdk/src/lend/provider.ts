@@ -92,6 +92,7 @@ export abstract class LendProvider {
     balanceFormatted: string
     shares: bigint
     sharesFormatted: string
+    chainId: number
   }>
 
   /**

@@ -1,3 +1,7 @@
+// load env variables
+import 'dotenv/config'
+
+import { PrivyClient } from '@privy-io/server-auth'
 import type { ChildProcess } from 'child_process'
 import { config } from 'dotenv'
 import { type Address, erc20Abi, parseUnits, type PublicClient } from 'viem'
@@ -5,14 +9,10 @@ import type { privateKeyToAccount } from 'viem/accounts'
 import { unichain } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import type { VerbsInterface } from '../../../types/verbs.js'
-import type { Wallet } from '../../../types/wallet.js'
-import {
-  ANVIL_ACCOUNTS,
-  setupSupersimTest,
-  stopSupersim,
-} from '../../../utils/test.js'
-import { initVerbs } from '../../../verbs.js'
+import { Verbs } from '@/verbs.js'
+import type { PrivyWallet } from '@/wallet/PrivyWallet.js'
+
+import { setupSupersimTest, stopSupersim } from '../../../utils/test.js'
 import { SUPPORTED_VAULTS } from './vaults.js'
 
 // Load test environment variables
@@ -30,8 +30,8 @@ describe('Morpho Lend', () => {
   let supersimProcess: ChildProcess
   let publicClient: PublicClient
   let _testAccount: ReturnType<typeof privateKeyToAccount>
-  let verbs: VerbsInterface
-  let testWallet: Wallet | null
+  let verbs: Verbs
+  let testWallet: PrivyWallet | null
 
   beforeAll(async () => {
     // Set up supersim with funded wallet using helper
@@ -55,13 +55,25 @@ describe('Morpho Lend', () => {
     supersimProcess = setup.supersimProcess
     publicClient = setup.publicClient
     _testAccount = setup.testAccount
+    const privyClient = new PrivyClient(
+      process.env.PRIVY_APP_ID || 'test-app-id',
+      process.env.PRIVY_APP_SECRET || 'test-app-secret',
+    )
 
     // Initialize Verbs SDK with Morpho lending
-    verbs = initVerbs({
+    verbs = new Verbs({
       wallet: {
-        type: 'privy',
-        appId: process.env.PRIVY_APP_ID || 'test-app-id',
-        appSecret: process.env.PRIVY_APP_SECRET || 'test-app-secret',
+        hostedWalletConfig: {
+          provider: {
+            type: 'privy',
+            privyClient,
+          },
+        },
+        smartWalletConfig: {
+          provider: {
+            type: 'default',
+          },
+        },
       },
       lend: {
         type: 'morpho',
@@ -70,22 +82,22 @@ describe('Morpho Lend', () => {
       chains: [
         {
           chainId: unichain.id,
-          rpcUrl: 'http://127.0.0.1:9546',
+          rpcUrls: ['http://127.0.0.1:9546'],
         },
       ],
     })
 
     // Use Privy to get the wallet
-    const wallet = await verbs.getWallet(TEST_WALLET_ID)
+    testWallet = (await verbs.wallet.getHostedWallet({
+      walletId: TEST_WALLET_ID,
+    })) as PrivyWallet
 
-    if (!wallet) {
+    if (!testWallet) {
       throw new Error(`Wallet ${TEST_WALLET_ID} not found in Privy`)
     }
 
-    testWallet = wallet
-
     // Verify the address matches what we expect
-    expect(testWallet!.address.toLowerCase()).toBe(
+    expect(testWallet.address.toLowerCase()).toBe(
       TEST_WALLET_ADDRESS.toLowerCase(),
     )
   }, 60000)
@@ -154,11 +166,11 @@ describe('Morpho Lend', () => {
     // Validate transaction data structure
     expect(lendTx.transactionData?.approval?.to).toBe(USDC_ADDRESS)
     expect(lendTx.transactionData?.approval?.data).toMatch(/^0x[0-9a-fA-F]+$/)
-    expect(lendTx.transactionData?.approval?.value).toBe('0x0')
+    expect(lendTx.transactionData?.approval?.value).toBe(0n)
 
     expect(lendTx.transactionData?.deposit?.to).toBe(TEST_VAULT_ADDRESS)
     expect(lendTx.transactionData?.deposit?.data).toMatch(/^0x[0-9a-fA-F]+$/)
-    expect(lendTx.transactionData?.deposit?.value).toBe('0x0')
+    expect(lendTx.transactionData?.deposit?.value).toBe(0n)
 
     // Get the current nonce for the wallet
     await publicClient.getTransactionCount({

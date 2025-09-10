@@ -1,7 +1,7 @@
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
-} from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/verbs-service'
 import { env } from '../envVars'
 
 class VerbsApiError extends Error {
@@ -61,6 +61,7 @@ class VerbsApiClient {
   }
 
   async getVaults(): Promise<{ vaults: Array<{ 
+    chainId: number;
     address: string; 
     name: string; 
     apy: number; 
@@ -170,8 +171,9 @@ class VerbsApiClient {
     })
   }
 
-  async lendDeposit(walletId: string, amount: number, token: string): Promise<{
+  async lendDeposit(walletId: string, amount: number, token: string, chainId: number): Promise<{
     transaction: {
+      blockExplorerUrl: string
       hash: string
       amount: string
       asset: string
@@ -195,7 +197,7 @@ class VerbsApiClient {
   }> {
     return this.request('/lend/deposit', {
       method: 'POST',
-      body: JSON.stringify({ walletId, amount, token }),
+      body: JSON.stringify({ walletId, amount, token, chainId }),
     })
   }
 }

@@ -35,14 +35,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/backend": "^2.12.0",
     "@eth-optimism/utils-app": "^0.0.6",
     "@eth-optimism/verbs-sdk": "workspace:*",
     "@eth-optimism/viem": "^0.4.13",
     "@hono/node-server": "^1.14.0",
+    "@privy-io/server-auth": "^1.31.1",
     "commander": "^13.1.0",
     "dotenv": "^16.4.5",
     "envalid": "^8.1.0",
-    "hono": "^4.5.0",
+    "hono": "^4.9.6",
     "viem": "^2.24.1",
     "zod": "^4.0.5"
   },
