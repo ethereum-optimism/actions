@@ -194,11 +194,11 @@ export interface LendReadOperations {
 }
 
 /**
- * Full lend operations available on wallet.lend
- * @description Interface for all lending operations including write operations
+ * Write operations for lending
+ * @description Interface for write operations that modify lending positions
  */
-export interface WalletLendOperations extends LendReadOperations {
-  /** Lend assets to a market */
+export interface LendWriteOperations {
+  /** TODO: will be renamed execute(). Lend assets to a market */
   lend(
     asset: Address,
     amount: bigint,
@@ -220,3 +220,9 @@ export interface WalletLendOperations extends LendReadOperations {
     options?: LendOptions,
   ): Promise<LendTransaction>
 }
+
+/**
+ * Full lend operations available on wallet.lend
+ * @description Interface combining both read and write lending operations
+ */
+export interface WalletLendOperations extends LendReadOperations, LendWriteOperations {}

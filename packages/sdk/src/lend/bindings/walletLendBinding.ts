@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 
 import type { LendProvider } from '@/lend/provider.js'
-import type { WalletLendOperations } from '@/types/lend.js'
+import type { LendReadOperations, LendWriteOperations, WalletLendOperations } from '@/types/lend.js'
 
 /**
  * Bind a lend provider to a wallet instance with full operations
