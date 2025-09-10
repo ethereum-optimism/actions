@@ -7,6 +7,7 @@ import { unichain } from 'viem/chains'
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { bindLendProviderToWallet } from '@/lend/bindings/walletLendBinding.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
@@ -15,6 +16,7 @@ import type {
   LendProvider,
   LendTransaction,
   TransactionData,
+  WalletLendOperations,
 } from '@/types/lend.js'
 import type { TokenBalance } from '@/types/token.js'
 import {
@@ -45,6 +47,8 @@ export class DefaultSmartWallet extends SmartWallet {
   private chainManager: ChainManager
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
+  /** Lend namespace with all lending operations */
+  public lend: WalletLendOperations
 
   /**
    * Create a Smart Wallet instance
@@ -73,7 +77,11 @@ export class DefaultSmartWallet extends SmartWallet {
     this.chainManager = chainManager
     this.lendProvider = lendProvider
     this.nonce = nonce
+    
+    // Bind lend operations to wallet
+    this.lend = bindLendProviderToWallet(lendProvider, this)
   }
+
 
   /**
    * Get the signer account for this smart wallet

@@ -170,3 +170,53 @@ export interface MorphoLendConfig {
   /** Default slippage tolerance (basis points) */
   defaultSlippage?: number
 }
+
+/**
+ * Read-only lend operations available on verbs.lend
+ * @description Interface for read-only lending operations
+ */
+export interface LendReadOperations {
+  /** Get list of available lending markets */
+  markets(): Promise<LendVaultInfo[]>
+  /** Get detailed information for a specific market */
+  getVault(vaultAddress: Address): Promise<LendVaultInfo>
+  /** Get vault balance for a specific wallet */
+  getVaultBalance(
+    vaultAddress: Address,
+    walletAddress: Address,
+  ): Promise<{
+    balance: bigint
+    balanceFormatted: string
+    shares: bigint
+    sharesFormatted: string
+    chainId: number
+  }>
+}
+
+/**
+ * Full lend operations available on wallet.lend
+ * @description Interface for all lending operations including write operations
+ */
+export interface WalletLendOperations extends LendReadOperations {
+  /** Lend assets to a market */
+  lend(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction>
+  /** Deposit assets (alias for lend) */
+  deposit(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction>
+  /** Withdraw assets from a market */
+  withdraw(
+    asset: Address,
+    amount: bigint,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction>
+}

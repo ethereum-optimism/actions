@@ -178,10 +178,10 @@ export class LendProviderMorpho extends LendProvider {
   }
 
   /**
-   * Get list of available vaults
-   * @returns Promise resolving to array of vault information
+   * Get list of available lending markets
+   * @returns Promise resolving to array of market information
    */
-  async getVaults(): Promise<LendVaultInfo[]> {
+  async markets(): Promise<LendVaultInfo[]> {
     return getVaultsHelper(this.chainManager)
   }
 

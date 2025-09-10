@@ -1,6 +1,7 @@
+import { bindLendProviderToVerbs } from '@/lend/bindings/verbsLendBinding.js'
 import { LendProviderMorpho } from '@/lend/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { LendProvider } from '@/types/lend.js'
+import type { LendProvider, LendReadOperations } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
 import type { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
@@ -15,6 +16,7 @@ import { WalletProvider } from '@/wallet/WalletProvider.js'
  */
 export class Verbs {
   public readonly wallet: WalletNamespace
+  public readonly lend?: LendReadOperations
   private _chainManager: ChainManager
   private lendProvider?: LendProvider
   private hostedWalletProvider!: HostedWalletProvider
@@ -30,6 +32,9 @@ export class Verbs {
           config.lend,
           this.chainManager,
         )
+        
+        // Bind read-only operations to verbs
+        this.lend = bindLendProviderToVerbs(this.lendProvider)
       } else {
         throw new Error(
           `Unsupported lending provider type: ${config.lend.type}`,
@@ -41,10 +46,11 @@ export class Verbs {
   }
 
   /**
-   * Get the lend provider instance
-   * @returns LendProvider instance if configured, undefined otherwise
+   * Get the lend provider instance (internal use)
+   * @returns LendProvider instance if configured
+   * @internal
    */
-  get lend(): LendProvider {
+  get lendProviderInstance(): LendProvider {
     if (!this.lendProvider) {
       throw new Error('Lend provider not configured')
     }
@@ -83,7 +89,7 @@ export class Verbs {
     ) {
       this.smartWalletProvider = new DefaultSmartWalletProvider(
         this.chainManager,
-        this.lend,
+        this.lendProviderInstance,
       )
     } else {
       throw new Error(

@@ -100,7 +100,7 @@ vi.mock('./config/verbs.js', () => ({
       },
     },
     lend: {
-      getVaults: vi.fn(() =>
+      markets: vi.fn(() =>
         Promise.resolve([
           {
             address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
