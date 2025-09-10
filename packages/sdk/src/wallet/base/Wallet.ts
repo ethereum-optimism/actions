@@ -1,6 +1,10 @@
 import type { Address, LocalAccount, WalletClient } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { ChainManager } from '@/services/ChainManager.js'
+import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
+import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
+import type { TokenBalance } from '@/types/token.js'
 
 /**
  * Base verbs wallet class
@@ -8,8 +12,11 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
  * Provides a standard interface for verbs wallets.
  */
 export abstract class Wallet {
+  /** Manages supported blockchain networks and RPC clients */
+  protected chainManager: ChainManager
   /** Promise to initialize the wallet */
   private initPromise?: Promise<void>
+
   /**
    * Get the address of this verbs wallet
    * @description Returns the address of the verbs wallet.
@@ -24,6 +31,30 @@ export abstract class Wallet {
    * @returns Promise resolving to a LocalAccount configured for signing operations
    */
   public abstract readonly signer: LocalAccount
+
+  /**
+   * Create a new wallet
+   * @param chainManager - Chain manager for the wallet
+   */
+  protected constructor(chainManager: ChainManager) {
+    this.chainManager = chainManager
+  }
+
+  /**
+   * Get asset balances across all supported chains
+   * @description Fetches ETH and ERC20 token balances for this wallet across all supported networks.
+   * @returns Promise resolving to array of token balances with chain breakdown
+   */
+  async getBalance(): Promise<TokenBalance[]> {
+    const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
+      async (token) => {
+        return fetchERC20Balance(this.chainManager, this.address, token)
+      },
+    )
+    const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
+
+    return Promise.all([ethBalancePromise, ...tokenBalancePromises])
+  }
 
   /**
    * Perform subclass-specific one-time initialization

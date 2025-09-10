@@ -8,15 +8,12 @@ import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type {
   LendOptions,
   LendProvider,
   LendTransaction,
   TransactionData,
 } from '@/types/lend.js'
-import type { TokenBalance } from '@/types/token.js'
 import {
   type AssetIdentifier,
   parseAssetAmount,
@@ -43,8 +40,6 @@ export class DefaultSmartWallet extends SmartWallet {
   private deploymentAddress?: Address
   /** Provider for lending market operations */
   private lendProvider: LendProvider
-  /** Manages supported blockchain networks and RPC clients */
-  private chainManager: ChainManager
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
 
@@ -67,12 +62,11 @@ export class DefaultSmartWallet extends SmartWallet {
     signerOwnerIndex?: number,
     nonce?: bigint,
   ) {
-    super()
+    super(chainManager)
     this.owners = owners
     this.signer = signer
     this.signerOwnerIndex = signerOwnerIndex
     this.deploymentAddress = deploymentAddress
-    this.chainManager = chainManager
     this.lendProvider = lendProvider
     this.nonce = nonce
   }
@@ -123,22 +117,6 @@ export class DefaultSmartWallet extends SmartWallet {
       nonce: this.nonce,
       version: '1.1',
     })
-  }
-
-  /**
-   * Get asset balances across all supported chains
-   * @description Fetches ETH and ERC20 token balances for this wallet across all supported networks.
-   * @returns Promise resolving to array of token balances with chain breakdown
-   */
-  async getBalance(): Promise<TokenBalance[]> {
-    const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
-      async (token) => {
-        return fetchERC20Balance(this.chainManager, this.address, token)
-      },
-    )
-    const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
-
-    return Promise.all([ethBalancePromise, ...tokenBalancePromises])
   }
 
   /**

@@ -6,7 +6,6 @@ import type {
   LendTransaction,
   TransactionData,
 } from '@/types/lend.js'
-import type { TokenBalance } from '@/types/token.js'
 import type { AssetIdentifier } from '@/utils/assets.js'
 import { Wallet } from '@/wallet/base/Wallet.js'
 
@@ -18,13 +17,6 @@ export abstract class SmartWallet extends Wallet {
   async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {
     throw new Error('walletClient is not supported on SmartWallet')
   }
-
-  /**
-   * Get all token balances for this wallet
-   * @description Retrieves balances for all supported tokens held by this smart wallet.
-   * @returns Promise resolving to an array of token balances with amounts and metadata
-   */
-  abstract getBalance(): Promise<TokenBalance[]>
 
   // TODO: add addSigner method
   // TODO: add removeSigner method
