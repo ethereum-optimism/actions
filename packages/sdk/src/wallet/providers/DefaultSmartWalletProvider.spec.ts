@@ -131,7 +131,7 @@ describe('DefaultSmartWalletProvider', () => {
     const walletAddress = getRandomAddress()
     const ownerIndex = 2
 
-    const wallet = provider.getWallet({
+    const wallet = await provider.getWallet({
       walletAddress,
       signer: mockSigner,
       ownerIndex,
@@ -139,7 +139,6 @@ describe('DefaultSmartWalletProvider', () => {
 
     expect(wallet).toBeInstanceOf(DefaultSmartWallet)
     expect(wallet.signer).toBe(mockSigner)
-    const actualWalletAddress = await wallet.getAddress()
-    expect(actualWalletAddress).toBe(walletAddress)
+    expect(wallet.address).toBe(walletAddress)
   })
 })

@@ -17,9 +17,7 @@ export type {
 } from '@/types/index.js'
 export { Verbs } from '@/verbs.js'
 export { SmartWallet } from '@/wallet/base/SmartWallet.js'
+export { Wallet } from '@/wallet/base/Wallet.js'
 export { PrivyWallet } from '@/wallet/PrivyWallet.js'
 export { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
-export {
-  PrivyHostedWalletProvider,
-  type PrivyProviderGetAllWalletsOptions,
-} from '@/wallet/providers/PrivyHostedWalletProvider.js'
+export { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'

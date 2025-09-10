@@ -90,7 +90,7 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
-      const { wallet } = await walletService.getWallet(userId)
+      const wallet = await walletService.getWallet(userId)
 
       if (!wallet) {
         return c.json(
@@ -101,10 +101,9 @@ export class WalletController {
           404,
         )
       }
-      const walletAddress = await wallet.getAddress()
 
       return c.json({
-        address: walletAddress,
+        address: wallet.address,
         userId,
       } satisfies GetWalletResponse)
     } catch (error) {
@@ -131,12 +130,10 @@ export class WalletController {
         query: { limit, cursor },
       } = validation.data
       const wallets = await walletService.getAllWallets({ limit, cursor })
-      const walletsData = await Promise.all(
-        wallets.map(async ({ wallet, id }) => ({
-          address: await wallet.getAddress(),
-          id,
-        })),
-      )
+      const walletsData = wallets.map(({ wallet, id }) => ({
+        address: wallet.address,
+        id,
+      }))
 
       return c.json({
         wallets: walletsData,
@@ -169,6 +166,7 @@ export class WalletController {
 
       return c.json({ balance: serializeBigInt(balance) })
     } catch (error) {
+      console.error(error)
       return c.json(
         {
           error: 'Failed to get balance',

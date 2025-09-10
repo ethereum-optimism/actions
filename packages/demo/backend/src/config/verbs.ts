@@ -59,3 +59,7 @@ export function getVerbs() {
   }
   return verbsInstance
 }
+
+export function getPrivyClient() {
+  return new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
+}

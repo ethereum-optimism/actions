@@ -1,4 +1,5 @@
-import type { HostedWallet } from '@/wallet/base/HostedWallet.js'
+import type { HostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
+import type { Wallet } from '@/wallet/base/Wallet.js'
 
 /**
  * Base hosted wallet provider class
@@ -8,21 +9,14 @@ import type { HostedWallet } from '@/wallet/base/HostedWallet.js'
  */
 export abstract class HostedWalletProvider {
   /**
-   * Create a new hosted wallet
-   * @description Creates a new hosted wallet instance using the provider's infrastructure.
-   * The wallet will be ready to use for signing transactions and messages.
-   * @returns Promise resolving to a new hosted wallet instance
-   */
-  abstract createWallet(): Promise<HostedWallet>
-
-  /**
-   * Get an existing hosted wallet by ID
-   * @description Retrieves an existing hosted wallet using its unique identifier.
-   * The wallet must have been previously created through this provider.
-   * @param params - Wallet retrieval parameters
+   * Convert a hosted wallet to a Verbs wallet
+   * @description Converts a hosted wallet to a Verbs wallet instance.
+   * @param params - Parameters for converting a hosted wallet to a Verbs wallet
    * @param params.walletId - Unique identifier for the hosted wallet
-   * @returns Promise resolving to the existing hosted wallet instance
-   * @throws Error if wallet with the specified ID is not found
+   * @param params.address - Ethereum address of the hosted wallet
+   * @returns Promise resolving to the Verbs wallet instance
    */
-  abstract getWallet(params: { walletId: string }): Promise<HostedWallet>
+  abstract toVerbsWallet(
+    params: HostedWalletToVerbsWalletOptions,
+  ): Promise<Wallet>
 }

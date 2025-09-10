@@ -1,128 +1,64 @@
-import { isAddress } from 'viem'
+import { getAddress } from 'viem'
 import { unichain } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
+import { getRandomAddress } from '@/test/utils.js'
+import { Wallet } from '@/wallet/base/Wallet.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
 import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
 
-const mockChainManager = new MockChainManager({
-  supportedChains: [unichain.id],
-}) as unknown as ChainManager
-const mockLendProvider = createMockLendProvider()
-
 describe('PrivyHostedWalletProvider', () => {
-  it('should create a wallet via Privy API', async () => {
-    const mockPrivyClient = createMockPrivyClient(
-      'test-app-id',
-      'test-app-secret',
-    )
-    const createWalletSpy = vi.spyOn(mockPrivyClient.walletApi, 'createWallet')
-    const provider = new PrivyHostedWalletProvider(
-      mockPrivyClient,
-      mockChainManager,
-      mockLendProvider,
-    )
+  const mockChainManager = new MockChainManager({
+    supportedChains: [unichain.id],
+  }) as unknown as ChainManager
 
-    const wallet = await provider.createWallet()
+  it('toVerbsWallet creates a VerbsWallet with correct address and signer', async () => {
+    const privy = createMockPrivyClient('app', 'secret')
+    const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
 
-    expect(wallet).toBeInstanceOf(PrivyWallet)
-    expect(wallet.walletId).toMatch(/^mock-wallet-\d+$/)
-    expect(isAddress(wallet.address)).toBe(true)
-    expect(createWalletSpy).toHaveBeenCalledWith({
+    const hostedWallet = await privy.walletApi.createWallet({
       chainType: 'ethereum',
     })
+
+    const verbsWallet = await provider.toVerbsWallet({
+      walletId: hostedWallet.id,
+      address: hostedWallet.address,
+    })
+
+    expect(verbsWallet).toBeInstanceOf(Wallet)
+    expect(verbsWallet.address).toBe(hostedWallet.address)
+    expect(verbsWallet.signer.address).toBe(hostedWallet.address)
   })
 
-  it('should get wallet by ID via Privy API', async () => {
-    const mockPrivyClient = createMockPrivyClient(
-      'test-app-id',
-      'test-app-secret',
-    )
-    const getWalletSpy = vi.spyOn(mockPrivyClient.walletApi, 'getWallet')
-    const provider = new PrivyHostedWalletProvider(
-      mockPrivyClient,
-      mockChainManager,
-      mockLendProvider,
-    )
+  it('forwards params to PrivyWallet.create', async () => {
+    const privy = createMockPrivyClient('app', 'secret')
+    const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
+    const spy = vi.spyOn(PrivyWallet, 'create')
 
-    const createdWallet = await mockPrivyClient.walletApi.createWallet({
-      chainType: 'ethereum',
-    })
-    const wallet = await provider.getWallet({ walletId: createdWallet.id })
+    const id = 'mock-wallet-123'
+    const addr = getRandomAddress().toLowerCase()
 
-    expect(wallet).toBeInstanceOf(PrivyWallet)
-    expect(wallet.walletId).toBe(createdWallet.id)
-    expect(wallet.address).toBe(createdWallet.address)
-    expect(getWalletSpy).toHaveBeenCalledWith({
-      id: createdWallet.id,
-    })
+    await provider.toVerbsWallet({ walletId: id, address: addr })
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        privyClient: privy,
+        walletId: id,
+        address: getAddress(addr),
+        chainManager: mockChainManager,
+      }),
+    )
   })
 
-  it('should get all wallets via Privy API', async () => {
-    const mockPrivyClient = createMockPrivyClient(
-      'test-app-id',
-      'test-app-secret',
-    )
-    const getWalletsSpy = vi.spyOn(mockPrivyClient.walletApi, 'getWallets')
-    const provider = new PrivyHostedWalletProvider(
-      mockPrivyClient,
-      mockChainManager,
-      mockLendProvider,
-    )
+  it('throws on invalid address', async () => {
+    const privy = createMockPrivyClient('app', 'secret')
+    const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
 
-    await mockPrivyClient.walletApi.createWallet({ chainType: 'ethereum' })
-    const wallets = await provider.getAllWallets()
-
-    expect(Array.isArray(wallets)).toBe(true)
-    expect(wallets.length).toBe(1)
-    expect(getWalletsSpy).toHaveBeenCalledWith({
-      limit: undefined,
-      cursor: undefined,
-    })
-  })
-
-  it('should get all wallets with options via Privy API', async () => {
-    const mockPrivyClient = createMockPrivyClient(
-      'test-app-id',
-      'test-app-secret',
-    )
-
-    const getWalletsSpy = vi.spyOn(mockPrivyClient.walletApi, 'getWallets')
-
-    const provider = new PrivyHostedWalletProvider(
-      mockPrivyClient,
-      mockChainManager,
-      mockLendProvider,
-    )
-    const options = { limit: 10, cursor: 'test-cursor' }
-
-    await provider.getAllWallets(options)
-
-    expect(getWalletsSpy).toHaveBeenCalledWith({
-      limit: 10,
-      cursor: 'test-cursor',
-    })
-  })
-
-  it('should throw error when getting wallet fails', async () => {
-    const mockPrivyClient = createMockPrivyClient(
-      'test-app-id',
-      'test-app-secret',
-    )
-    const provider = new PrivyHostedWalletProvider(
-      mockPrivyClient,
-      mockChainManager,
-      mockLendProvider,
-    )
-    const walletId = 'invalid-wallet-id'
-
-    // This will naturally fail since the wallet doesn't exist
-    await expect(provider.getWallet({ walletId })).rejects.toThrow(
-      `Failed to get wallet with id: ${walletId}`,
-    )
+    await expect(
+      provider.toVerbsWallet({ walletId: 'id', address: '0x123' }),
+    ).rejects.toBeTruthy()
   })
 })

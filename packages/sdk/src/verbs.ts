@@ -16,14 +16,14 @@ import { WalletProvider } from '@/wallet/WalletProvider.js'
  */
 export class Verbs {
   public readonly wallet: WalletNamespace
-  private _chainManager: ChainManager
   private _lend?: LendReadOperations
+  private chainManager: ChainManager
   private lendProvider?: LendProvider
   private hostedWalletProvider!: HostedWalletProvider
   private smartWalletProvider!: SmartWalletProvider
 
   constructor(config: VerbsConfig) {
-    this._chainManager = new ChainManager(config.chains)
+    this.chainManager = new ChainManager(config.chains)
 
     // Create lending provider if configured
     if (config.lend) {
@@ -74,14 +74,6 @@ export class Verbs {
   }
 
   /**
-   * Get the chain manager instance
-   * @returns ChainManager instance for multi-chain operations
-   */
-  get chainManager(): ChainManager {
-    return this._chainManager
-  }
-
-  /**
    * Create the wallet provider instance
    * @param config - Wallet configuration
    * @returns WalletProvider instance
@@ -90,8 +82,7 @@ export class Verbs {
     if (config.hostedWalletConfig.provider.type === 'privy') {
       this.hostedWalletProvider = new PrivyHostedWalletProvider(
         config.hostedWalletConfig.provider.privyClient,
-        this._chainManager,
-        this.lendProvider!,
+        this.chainManager,
       )
     } else {
       throw new Error(
