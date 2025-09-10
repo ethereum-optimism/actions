@@ -1,6 +1,5 @@
-import type { PrivyClient } from '@privy-io/server-auth'
-
 import type { ChainConfig } from '@/types/chain.js'
+import type { HostedProviderUnion } from '@/wallet/providers/hostedProvider.types.js'
 
 import type { LendConfig } from './lend.js'
 
@@ -34,7 +33,7 @@ export type WalletConfig = {
  */
 export interface HostedWalletConfig {
   /** Wallet provider for account creation, management, and signing */
-  provider: HostedWalletProviderConfig
+  provider: HostedProviderUnion
 }
 
 /**
@@ -58,18 +57,4 @@ export type SmartWalletProvider = DefaultSmartWalletProvider
  */
 export interface DefaultSmartWalletProvider {
   type: 'default'
-}
-
-/**
- * Hosted wallet provider configurations
- * @description Union type supporting multiple hosted wallet providers
- */
-export type HostedWalletProviderConfig = PrivyHostedWalletProviderConfig
-
-/** Privy hosted wallet provider configuration */
-export interface PrivyHostedWalletProviderConfig {
-  /** Hosted wallet provider type */
-  type: 'privy'
-  /** Privy client instance */
-  privyClient: PrivyClient
 }
