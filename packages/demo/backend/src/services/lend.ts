@@ -48,17 +48,11 @@ async function getBlockExplorerUrl(chainId: SupportedChainId): Promise<string> {
 
 export async function getVaults(): Promise<LendVaultInfo[]> {
   const verbs = getVerbs()
-  if (!verbs.lend) {
-    throw new Error('Lend provider not configured')
-  }
   return await verbs.lend.getMarkets()
 }
 
 export async function getVault(vaultAddress: Address): Promise<LendVaultInfo> {
   const verbs = getVerbs()
-  if (!verbs.lend) {
-    throw new Error('Lend provider not configured')
-  }
   return await verbs.lend.getVault(vaultAddress)
 }
 
@@ -74,9 +68,6 @@ export async function getVaultBalance(
   }
 
   const walletAddress = await wallet.getAddress()
-  if (!verbs.lend) {
-    throw new Error('Lend provider not configured')
-  }
   return await verbs.lend.getVaultBalance(vaultAddress, walletAddress)
 }
 
