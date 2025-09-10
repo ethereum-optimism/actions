@@ -158,6 +158,50 @@ export class DefaultSmartWallet extends SmartWallet {
   }
 
   /**
+   * TODO this will be replaced with lend.execute()
+   * Lend assets to a lending market
+   * @description Lends assets using the configured lending provider with human-readable amounts
+   * @param amount - Human-readable amount to lend (e.g. 1.5)
+   * @param asset - Asset symbol (e.g. 'usdc') or token address
+   * @param chainId - Target blockchain chain ID
+   * @param marketId - Optional specific market ID or vault name
+   * @param options - Optional lending configuration
+   * @returns Promise resolving to lending transaction details
+   * @throws Error if no lending provider is configured
+   * @todo Replace this with lend.execute()
+   */
+  async lendExecute(
+    amount: number,
+    asset: AssetIdentifier,
+    chainId: SupportedChainId,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction> {
+    // Parse human-readable inputs
+    const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
+      amount,
+      asset,
+      chainId,
+    )
+    const address = await this.getAddress()
+
+    // Set receiver to wallet address if not specified
+    const lendOptions: LendOptions = {
+      ...options,
+      receiver: options?.receiver || address,
+    }
+
+    const result = await this.lendProvider.deposit(
+      resolvedAsset.address,
+      parsedAmount,
+      marketId,
+      lendOptions,
+    )
+
+    return result
+  }
+
+  /**
    * Send a batch of transactions using this smart wallet
    * @description Executes a batch of transactions through the smart wallet, handling gas sponsorship
    * and ERC-4337 UserOperation creation automatically.
@@ -226,50 +270,6 @@ export class DefaultSmartWallet extends SmartWallet {
         }`,
       )
     }
-  }
-
-  /**
-   * TODO this will be replaced with lend.execute()
-   * Lend assets to a lending market
-   * @description Lends assets using the configured lending provider with human-readable amounts
-   * @param amount - Human-readable amount to lend (e.g. 1.5)
-   * @param asset - Asset symbol (e.g. 'usdc') or token address
-   * @param chainId - Target blockchain chain ID
-   * @param marketId - Optional specific market ID or vault name
-   * @param options - Optional lending configuration
-   * @returns Promise resolving to lending transaction details
-   * @throws Error if no lending provider is configured
-   * @todo Replace this with lend.execute()
-   */
-  async lendExecute(
-    amount: number,
-    asset: AssetIdentifier,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    // Parse human-readable inputs
-    const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
-      amount,
-      asset,
-      chainId,
-    )
-    const address = await this.getAddress()
-
-    // Set receiver to wallet address if not specified
-    const lendOptions: LendOptions = {
-      ...options,
-      receiver: options?.receiver || address,
-    }
-
-    const result = await this.lendProvider.deposit(
-      resolvedAsset.address,
-      parsedAmount,
-      marketId,
-      lendOptions,
-    )
-
-    return result
   }
 
   /**
