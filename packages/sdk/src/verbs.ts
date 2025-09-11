@@ -6,7 +6,7 @@ import type { VerbsConfig } from '@/types/verbs.js'
 import type { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
-import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
+import { HostedWalletProviderRegistry } from '@/wallet/providers/HostedWalletProviderRegistry.js'
 import { WalletNamespace } from '@/wallet/WalletNamespace.js'
 import { WalletProvider } from '@/wallet/WalletProvider.js'
 
@@ -21,9 +21,11 @@ export class Verbs {
   private lendProvider?: LendProvider
   private hostedWalletProvider!: HostedWalletProvider
   private smartWalletProvider!: SmartWalletProvider
+  private hostedWalletProviderRegistry: HostedWalletProviderRegistry
 
   constructor(config: VerbsConfig) {
     this.chainManager = new ChainManager(config.chains)
+    this.hostedWalletProviderRegistry = new HostedWalletProviderRegistry()
 
     // Create lending provider if configured
     if (config.lend) {
@@ -79,16 +81,19 @@ export class Verbs {
    * @returns WalletProvider instance
    */
   private createWalletProvider(config: VerbsConfig['wallet']) {
-    if (config.hostedWalletConfig.provider.type === 'privy') {
-      this.hostedWalletProvider = new PrivyHostedWalletProvider(
-        config.hostedWalletConfig.provider.privyClient,
-        this.chainManager,
-      )
-    } else {
+    const hostedWalletProviderConfig = config.hostedWalletConfig.provider
+    const factory = this.hostedWalletProviderRegistry.getFactory(
+      hostedWalletProviderConfig.type,
+    )
+    if (!factory.validateOptions(hostedWalletProviderConfig.config)) {
       throw new Error(
-        `Unsupported hosted wallet provider: ${config.hostedWalletConfig.provider.type}`,
+        `Invalid options for hosted wallet provider: ${hostedWalletProviderConfig.type}`,
       )
     }
+    this.hostedWalletProvider = factory.create(
+      { chainManager: this.chainManager },
+      hostedWalletProviderConfig.config,
+    )
 
     if (
       !config.smartWalletConfig ||

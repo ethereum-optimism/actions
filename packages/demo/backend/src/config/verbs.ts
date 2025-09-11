@@ -12,7 +12,12 @@ export function createVerbsConfig(): VerbsConfig {
       hostedWalletConfig: {
         provider: {
           type: 'privy',
-          privyClient: new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET),
+          config: {
+            privyClient: new PrivyClient(
+              env.PRIVY_APP_ID,
+              env.PRIVY_APP_SECRET,
+            ),
+          },
         },
       },
       smartWalletConfig: {
