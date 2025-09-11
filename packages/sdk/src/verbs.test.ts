@@ -274,10 +274,12 @@ describe('Verbs SDK - System Tests', () => {
             hostedWalletConfig: {
               provider: {
                 type: 'privy',
-                privyClient: createMockPrivyClient(
-                  'test-app-id',
-                  'test-app-secret',
-                ),
+                config: {
+                  privyClient: createMockPrivyClient(
+                    'test-app-id',
+                    'test-app-secret',
+                  ),
+                },
               },
             },
             smartWalletConfig: {
