@@ -20,7 +20,6 @@ export function bindLendProviderToVerbs(
      */
     supportedNetworkIds: () => provider.supportedNetworkIds(),
 
-    // TODO: Implement these methods
     getVault: (_vaultAddress) => {
       throw new Error('Not implemented')
     },

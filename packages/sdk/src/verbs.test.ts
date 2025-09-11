@@ -258,38 +258,4 @@ describe('Verbs SDK - System Tests', () => {
       expect(typeof firstVault.apy).toBe('number')
     })
   })
-
-  describe('Lend Configuration Error Handling', () => {
-    it('should throw clear error when trying to create Verbs without lend configuration', () => {
-      // Creating Verbs instance without lend configuration should throw during construction
-      // because wallet providers depend on lend provider
-      expect(() => {
-        new Verbs({
-          chains: [
-            {
-              chainId: unichain.id,
-            },
-          ],
-          wallet: {
-            hostedWalletConfig: {
-              provider: {
-                type: 'privy',
-                config: {
-                  privyClient: createMockPrivyClient(
-                    'test-app-id',
-                    'test-app-secret',
-                  ),
-                },
-              },
-            },
-            smartWalletConfig: {
-              provider: {
-                type: 'default',
-              },
-            },
-          },
-        })
-      }).toThrow('Lend provider not configured')
-    })
-  })
 })

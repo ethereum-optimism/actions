@@ -16,7 +16,6 @@ export function bindLendProviderToWallet(
   return {
     /**
      * Get list of available lending markets
-     * TODO: In future, filter by wallet's assets
      */
     getMarkets: () => provider.getMarkets(),
 
@@ -25,7 +24,6 @@ export function bindLendProviderToWallet(
      */
     supportedNetworkIds: () => provider.supportedNetworkIds(),
 
-    // TODO: Implement these methods
     getVault: (_vaultAddress) => {
       throw new Error('Not implemented')
     },

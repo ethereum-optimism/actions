@@ -128,8 +128,8 @@ export class DefaultSmartWallet extends SmartWallet {
   }
 
   /**
-   * TODO this will be replaced with lend.execute()
    * Lend assets to a lending market
+   * this will be replaced with lend.execute()
    * @description Lends assets using the configured lending provider with human-readable amounts
    * @param amount - Human-readable amount to lend (e.g. 1.5)
    * @param asset - Asset symbol (e.g. 'usdc') or token address

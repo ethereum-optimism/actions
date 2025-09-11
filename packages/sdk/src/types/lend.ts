@@ -200,7 +200,7 @@ export interface LendReadOperations {
  * @description Interface for write operations that modify lending positions
  */
 export interface LendWriteOperations {
-  /** TODO: will be renamed execute(). Lend assets to a market */
+  /** will be renamed execute(). Lend assets to a market */
   lend(
     asset: Address,
     amount: bigint,
