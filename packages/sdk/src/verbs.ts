@@ -6,22 +6,26 @@ import type { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletP
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
 import { HostedWalletProviderRegistry } from '@/wallet/providers/HostedWalletProviderRegistry.js'
-import { WalletNamespace } from '@/wallet/WalletNamespace.js'
+import {
+  type Config,
+  createWalletNameSpace,
+  type WalletNamespaceFor,
+} from '@/wallet/WalletNamespace.js'
 import { WalletProvider } from '@/wallet/WalletProvider.js'
 
 /**
  * Main Verbs SDK class
  * @description Core implementation of the Verbs SDK
  */
-export class Verbs {
-  public readonly wallet: WalletNamespace
+export class Verbs<T extends Config> {
+  public readonly wallet: WalletNamespaceFor<T>
   private chainManager: ChainManager
   private lendProvider?: LendProvider
   private hostedWalletProvider!: HostedWalletProvider
   private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry
 
-  constructor(config: VerbsConfig) {
+  constructor(config: VerbsConfig, configType: T) {
     this.chainManager = new ChainManager(config.chains)
     this.hostedWalletProviderRegistry = new HostedWalletProviderRegistry()
 
@@ -39,7 +43,7 @@ export class Verbs {
       }
     }
 
-    this.wallet = this.createWalletNamespace(config.wallet)
+    this.wallet = this.createWalletNamespace(config.wallet, configType)
   }
 
   /**
@@ -100,8 +104,11 @@ export class Verbs {
    * @param config - Wallet configuration
    * @returns WalletNamespace instance
    */
-  private createWalletNamespace(config: VerbsConfig['wallet']) {
-    const walletProvider = this.createWalletProvider(config)
-    return new WalletNamespace(walletProvider)
+  private createWalletNamespace(
+    verbsWalletConfig: VerbsConfig['wallet'],
+    config: T,
+  ) {
+    const walletProvider = this.createWalletProvider(verbsWalletConfig)
+    return createWalletNameSpace(walletProvider, config)
   }
 }

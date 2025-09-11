@@ -48,6 +48,7 @@ export async function createWallet(): Promise<{
     owners: [verbsPrivyWallet.address],
     signer: verbsPrivyWallet.signer,
   })
+  wallet.specialMorphoMethod()
   const smartWalletAddress = wallet.address
   return {
     privyAddress: wallet.signer.address,

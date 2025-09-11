@@ -4,7 +4,7 @@ import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
 
-let verbsInstance: Verbs
+let verbsInstance: Verbs<{type: 'morpho'}>
 
 export function createVerbsConfig(): VerbsConfig {
   return {
@@ -55,7 +55,7 @@ export function createVerbsConfig(): VerbsConfig {
 
 export function initializeVerbs(config?: VerbsConfig): void {
   const verbsConfig = config || createVerbsConfig()
-  verbsInstance = new Verbs(verbsConfig)
+  verbsInstance = new Verbs(verbsConfig, { type: 'morpho' } as const)
 }
 
 export function getVerbs() {

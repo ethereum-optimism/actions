@@ -1,90 +1,84 @@
+import type { SmartWallet } from '@/index.js'
 import type {
   CreateSmartWalletOptions,
   GetSmartWalletOptions,
   HostedWalletToVerbsWalletOptions,
 } from '@/types/wallet.js'
-import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
 import type { Wallet } from '@/wallet/base/Wallet.js'
+import type { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
+import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 import type { WalletProvider } from '@/wallet/WalletProvider.js'
 
-/**
- * Wallet namespace that provides unified wallet operations
- * @description Provides access to wallet functionality through a single provider interface
- */
-export class WalletNamespace {
-  private provider: WalletProvider
+import type { DefaultSmartWallet } from './DefaultSmartWallet.js'
+import type { MorphoSmartWallet } from './MorphoSmartWallet.js'
 
-  constructor(provider: WalletProvider) {
-    this.provider = provider
-  }
+export type Config = {
+  type: 'morpho' | 'default'
+}
 
-  /**
-   * Get direct access to the hosted wallet provider
-   * @description Provides direct access to the underlying hosted wallet provider when
-   * advanced functionality beyond the unified interface is needed
-   * @returns The configured hosted wallet provider instance
-   */
-  get hostedWalletProvider() {
-    return this.provider.hostedWalletProvider
-  }
+interface MorphoConfig extends Config {
+  type: 'morpho'
+}
 
-  /**
-   * Get direct access to the smart wallet provider
-   * @description Provides direct access to the underlying smart wallet provider when
-   * advanced functionality beyond the unified interface is needed
-   * @returns The configured smart wallet provider instance
-   */
-  get smartWalletProvider() {
-    return this.provider.smartWalletProvider
-  }
+export interface DefaultConfig extends Config {
+  type: 'default'
+}
 
-  /**
-   * Create a new smart wallet
-   * @description Creates only a smart wallet using the configured smart wallet provider.
-   * This is useful when you already have a signer and want to create a smart wallet without
-   * creating a hosted wallet. You must provide your own signer and owners array.
-   * @param params - Smart wallet creation parameters
-   * @param params.owners - Array of owners for the smart wallet (addresses or WebAuthn public keys)
-   * @param params.signer - Local account used for signing transactions
-   * @param params.nonce - Optional nonce for smart wallet address generation (defaults to 0)
-   * @returns Promise resolving to the created smart wallet instance
-   */
-  async createSmartWallet(
-    params: CreateSmartWalletOptions,
-  ): Promise<SmartWallet> {
-    return this.provider.createSmartWallet(params)
-  }
+export type WalletNamespaceFor<T extends Config> = T extends MorphoConfig
+  ? MorphoWalletNamespace
+  : DefaultWalletNamespace
 
-  /**
-   * Convert a hosted wallet to a Verbs wallet
-   * @description Converts a hosted wallet to a Verbs wallet instance.
-   * @param params - Parameters for converting a hosted wallet to a Verbs wallet
-   * @param params.walletId - Unique identifier for the hosted wallet
-   * @param params.address - Ethereum address of the hosted wallet
-   * @returns Promise resolving to the Verbs wallet instance
-   */
-  async hostedWalletToVerbsWallet(
+interface WalletNamespace {
+  hostedWalletProvider: () => HostedWalletProvider
+  smartWalletProvider: () => SmartWalletProvider
+  createSmartWallet: (params: CreateSmartWalletOptions) => Promise<SmartWallet>
+  hostedWalletToVerbsWallet: (
     params: HostedWalletToVerbsWalletOptions,
-  ): Promise<Wallet> {
-    return this.provider.hostedWalletToVerbsWallet(params)
+  ) => Promise<Wallet>
+  getSmartWallet: (params: GetSmartWalletOptions) => Promise<SmartWallet>
+}
+
+interface MorphoWalletNamespace extends WalletNamespace {
+  createSmartWallet: (
+    params: CreateSmartWalletOptions,
+  ) => Promise<MorphoSmartWallet>
+}
+
+interface DefaultWalletNamespace extends WalletNamespace {
+  createSmartWallet: (
+    params: CreateSmartWalletOptions,
+  ) => Promise<DefaultSmartWallet>
+}
+
+export function createWalletNameSpace<T extends Config>(
+  provider: WalletProvider,
+  config: T,
+): WalletNamespaceFor<T> {
+  const base: Omit<WalletNamespace, 'createSmartWallet'> = {
+    hostedWalletProvider: () => provider.hostedWalletProvider,
+    smartWalletProvider: () => provider.smartWalletProvider,
+    hostedWalletToVerbsWallet: (params) =>
+      provider.hostedWalletToVerbsWallet(params),
+    getSmartWallet: (params) => provider.getSmartWallet(params),
   }
 
-  /**
-   * Get an existing smart wallet with a provided signer
-   * @description Retrieves a smart wallet using a directly provided signer. This is useful when
-   * you already have a LocalAccount signer and want to access an existing smart wallet without
-   * going through the hosted wallet provider. Use this instead of getSmartWalletWithHostedSigner
-   * when you have direct control over the signer.
-   * @param signer - Local account to use for signing transactions on the smart wallet
-   * @param getWalletParams - Wallet retrieval parameters
-   * @param getWalletParams.deploymentOwners - Array of original deployment owners for smart wallet address calculation. Required if walletAddress not provided. Must match the exact owners array used during wallet deployment.
-   * @param getWalletParams.signerOwnerIndex - Current index of the signer in the smart wallet's current owners array (used for transaction signing). Defaults to 0 if not specified. This may differ from the original deployment index if owners have been modified.
-   * @param getWalletParams.walletAddress - Optional explicit smart wallet address (skips address calculation)
-   * @param getWalletParams.nonce - Optional nonce used during smart wallet creation
-   * @returns Promise resolving to the smart wallet instance with the provided signer
-   * @throws Error if neither walletAddress nor deploymentOwners provided
-   */
-  async getSmartWallet(params: GetSmartWalletOptions) {
-    return this.provider.getSmartWallet(params)
+  if (config.type === 'morpho') {
+    const ns: MorphoWalletNamespace = {
+      ...base,
+      createSmartWallet: async (params) => {
+        // Delegate to provider and specialize the return type for callers
+        return (await provider.createSmartWallet(params)) as MorphoSmartWallet
+      },
+    }
+    return ns as WalletNamespaceFor<T>
   }
+
+  const ns: DefaultWalletNamespace = {
+    ...base,
+    createSmartWallet: async (params) => {
+      // Delegate to provider and specialize the return type for callers
+      return (await provider.createSmartWallet(params)) as DefaultSmartWallet
+    },
+  }
+  return ns as WalletNamespaceFor<T>
 }
