@@ -177,7 +177,7 @@ export interface MorphoLendConfig {
  */
 export interface LendReadOperations {
   /** Get list of available lending markets */
-  getMarkets(): Promise<LendVaultInfo[]>
+  getVaults(): Promise<LendVaultInfo[]>
   /** Get detailed information for a specific market */
   getVault(vaultAddress: Address): Promise<LendVaultInfo>
   /** Get vault balance for a specific wallet */

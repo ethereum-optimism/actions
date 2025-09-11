@@ -17,7 +17,7 @@ export function bindLendProviderToWallet(
     /**
      * Get list of available lending markets
      */
-    getMarkets: () => provider.getMarkets(),
+    getVaults: () => provider.getVaults(),
 
     /**
      * Get list of supported network IDs

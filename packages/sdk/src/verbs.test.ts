@@ -245,7 +245,7 @@ describe('Verbs SDK - System Tests', () => {
         },
       })
 
-      const vaults = await verbs.lend.getMarkets()
+      const vaults = await verbs.lend.getVaults()
 
       expect(Array.isArray(vaults)).toBe(true)
       expect(vaults.length).toBeGreaterThan(0)

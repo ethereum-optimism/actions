@@ -13,7 +13,7 @@ import type {
  */
 export class MockLendProvider {
   public deposit = vi.fn()
-  public getMarkets = vi.fn()
+  public getVaults = vi.fn()
   public supportedNetworkIds = vi.fn()
 
   constructor(config?: {
@@ -53,7 +53,7 @@ export class MockLendProvider {
       },
     )
 
-    this.getMarkets.mockImplementation(async () => {
+    this.getVaults.mockImplementation(async () => {
       return []
     })
 
