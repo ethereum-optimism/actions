@@ -36,7 +36,6 @@
     "attribution": "tsx scripts/attribution.ts"
   },
   "dependencies": {
-    "@clerk/backend": "^2.12.0",
     "@eth-optimism/utils-app": "^0.0.6",
     "@eth-optimism/verbs-sdk": "workspace:*",
     "@eth-optimism/viem": "^0.4.13",

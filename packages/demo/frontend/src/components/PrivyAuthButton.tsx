@@ -1,10 +1,12 @@
-import { useAuth, useUser, SignInButton, SignOutButton } from '@clerk/clerk-react'
+import { useLogin, useLogout, usePrivy, useUser } from '@privy-io/react-auth';
 
-export function ClerkAuthButton() {
-  const { isLoaded: clerkLoaded, isSignedIn } = useAuth()
-  const { user } = useUser()
+export function PrivyAuthButton() {
+  const { ready, authenticated} = usePrivy();
+    const { login } = useLogin();
+    const { logout } = useLogout();
+    const { user } = useUser();
 
-  if (!clerkLoaded) {
+  if (!ready) {
     return (
       <button className="px-4 py-2 text-terminal-green border border-terminal-green opacity-50 cursor-not-allowed">
         Loading...
@@ -12,13 +14,12 @@ export function ClerkAuthButton() {
     )
   }
 
-  if (isSignedIn) {
+  if (authenticated) {
     return (
       <div className="flex items-center gap-4">
         <span className="text-terminal-green">
-          {user?.primaryEmailAddress?.emailAddress || user?.id || 'Connected'}
+          {user?.email?.address || 'Connected'}
         </span>
-        <SignOutButton redirectUrl="/demo">
           <button 
             className="px-4 py-2 border border-terminal-green transition-colors" 
             style={{
@@ -33,16 +34,17 @@ export function ClerkAuthButton() {
               e.currentTarget.style.backgroundColor = 'transparent'
               e.currentTarget.style.color = '#B8BB26'
             }}
+            onClick={() => {
+              logout();
+            }}
           >
             Logout
           </button>
-        </SignOutButton>
       </div>
     )
   }
 
   return (
-    <SignInButton mode="modal">
       <button 
         className="px-4 py-2 border border-terminal-green transition-colors"
         style={{
@@ -57,9 +59,11 @@ export function ClerkAuthButton() {
           e.currentTarget.style.backgroundColor = 'transparent'
           e.currentTarget.style.color = '#B8BB26'
         }}
+        onClick={() => {
+          login();
+        }}
       >
         Login
       </button>
-    </SignInButton>
   )
 }

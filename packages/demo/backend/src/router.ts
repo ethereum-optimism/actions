@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 
 import { LendController } from './controllers/lend.js'
 import { WalletController } from './controllers/wallet.js'
+import { authMiddleware } from './middleware/auth.js'
 
 export const router = new Hono()
 
@@ -44,8 +45,12 @@ router.get('/version', (c) => {
 router.get('/wallets', walletController.getAllWallets)
 router.post('/wallet/:userId', walletController.createWallet)
 router.get('/wallet/:userId', walletController.getWallet)
-router.get('/wallet/:userId/balance', walletController.getBalance)
-router.post('/wallet/:userId/fund', walletController.fundWallet)
+router.get(
+  '/wallet/:userId/balance',
+  authMiddleware,
+  walletController.getBalance,
+)
+router.post('/wallet/:userId/fund', authMiddleware, walletController.fundWallet)
 router.post('/wallet/send', walletController.sendTokens)
 
 // Lend endpoints
@@ -55,4 +60,4 @@ router.get(
   '/lend/market/:vaultAddress/balance/:walletId',
   lendController.getMarketBalance,
 )
-router.post('/lend/deposit', lendController.deposit)
+router.post('/lend/deposit', authMiddleware, lendController.deposit)
