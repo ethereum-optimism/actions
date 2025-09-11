@@ -4,9 +4,9 @@ import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
 
-let verbsInstance: Verbs
+let verbsInstance: Verbs<'privy'>
 
-export function createVerbsConfig(): VerbsConfig {
+export function createVerbsConfig(): VerbsConfig<'privy'> {
   return {
     wallet: {
       hostedWalletConfig: {
@@ -53,7 +53,7 @@ export function createVerbsConfig(): VerbsConfig {
   }
 }
 
-export function initializeVerbs(config?: VerbsConfig): void {
+export function initializeVerbs(config?: VerbsConfig<'privy'>): void {
   const verbsConfig = config || createVerbsConfig()
   verbsInstance = new Verbs(verbsConfig)
 }

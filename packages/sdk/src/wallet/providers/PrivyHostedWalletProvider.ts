@@ -18,9 +18,9 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider {
    */
   constructor(
     private readonly privyClient: PrivyClient,
-    private readonly chainManager: ChainManager,
+    chainManager: ChainManager,
   ) {
-    super()
+    super(chainManager)
   }
 
   async toVerbsWallet(
