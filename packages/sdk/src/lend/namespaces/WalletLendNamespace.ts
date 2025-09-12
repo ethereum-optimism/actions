@@ -18,7 +18,7 @@ export class WalletLendNamespace extends VerbsLendNamespace {
   }
 
   /**
-   * Lend assets to a market
+   * Lend assets to a vault
    * @description Will be renamed to execute() in the future
    */
   async lendExecute(
