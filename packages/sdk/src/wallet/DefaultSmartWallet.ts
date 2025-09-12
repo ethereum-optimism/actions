@@ -7,7 +7,7 @@ import { unichain } from 'viem/chains'
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { bindLendProviderToWallet } from '@/lend/bindings/walletLendBinding.js'
+import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   LendOptions,
@@ -75,8 +75,8 @@ export class DefaultSmartWallet extends SmartWallet {
     this.lendProvider = lendProvider
     this.nonce = nonce
 
-    // Bind lend operations to wallet
-    this.lend = bindLendProviderToWallet(lendProvider, this)
+    // Create wallet lend namespace
+    this.lend = new WalletLendNamespace(lendProvider, this)
   }
 
   get address() {

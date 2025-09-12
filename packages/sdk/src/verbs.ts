@@ -1,5 +1,5 @@
-import { bindLendProviderToVerbs } from '@/lend/bindings/verbsLendBinding.js'
 import { LendProviderMorpho } from '@/lend/index.js'
+import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider, LendReadOperations } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
@@ -35,8 +35,8 @@ export class Verbs {
           this.chainManager,
         )
 
-        // Bind read-only operations to verbs
-        this._lend = bindLendProviderToVerbs(this.lendProvider)
+        // Create read-only lend namespace
+        this._lend = new VerbsLendNamespace(this.lendProvider)
       } else {
         throw new Error(
           `Unsupported lending provider type: ${config.lend.type}`,
