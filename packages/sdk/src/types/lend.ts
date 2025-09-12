@@ -1,5 +1,7 @@
 import type { Address, Hex } from 'viem'
 
+export { VerbsLendNamespace } from '../lend/namespaces/VerbsLendNamespace.js'
+export { WalletLendNamespace } from '../lend/namespaces/WalletLendNamespace.js'
 export { LendProvider } from '../lend/provider.js'
 
 /**
@@ -170,63 +172,3 @@ export interface MorphoLendConfig {
   /** Default slippage tolerance (basis points) */
   defaultSlippage?: number
 }
-
-/**
- * Read-only lend operations available on verbs.lend
- * @description Interface for read-only lending operations
- */
-export interface LendReadOperations {
-  /** Get list of available lending markets */
-  getVaults(): Promise<LendVaultInfo[]>
-  /** Get detailed information for a specific market */
-  getVault(vaultAddress: Address): Promise<LendVaultInfo>
-  /** Get vault balance for a specific wallet */
-  getVaultBalance(
-    vaultAddress: Address,
-    walletAddress: Address,
-  ): Promise<{
-    balance: bigint
-    balanceFormatted: string
-    shares: bigint
-    sharesFormatted: string
-    chainId: number
-  }>
-  /** Get list of supported network IDs */
-  supportedNetworkIds(): number[]
-}
-
-/**
- * Write operations for lending
- * @description Interface for write operations that modify lending positions
- */
-export interface LendWriteOperations {
-  /** will be renamed execute(). Lend assets to a market */
-  lend(
-    asset: Address,
-    amount: bigint,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction>
-  /** Deposit assets (alias for lend) */
-  deposit(
-    asset: Address,
-    amount: bigint,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction>
-  /** Withdraw assets from a market */
-  withdraw(
-    asset: Address,
-    amount: bigint,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction>
-}
-
-/**
- * Full lend operations available on wallet.lend
- * @description Interface combining both read and write lending operations
- */
-export interface WalletLendOperations
-  extends LendReadOperations,
-    LendWriteOperations {}

@@ -1,13 +1,13 @@
 import type { Address } from 'viem'
 
 import type { LendProvider } from '@/lend/provider.js'
-import type { LendReadOperations, LendVaultInfo } from '@/types/lend.js'
+import type { LendVaultInfo } from '@/types/lend.js'
 
 /**
  * Verbs Lend Namespace
  * @description Read-only lending operations available on verbs.lend
  */
-export class VerbsLendNamespace implements LendReadOperations {
+export class VerbsLendNamespace {
   constructor(protected readonly provider: LendProvider) {}
 
   /**

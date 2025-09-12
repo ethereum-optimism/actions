@@ -1,7 +1,8 @@
 import type { Address, Hash, WalletClient } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { TransactionData, WalletLendOperations } from '@/types/lend.js'
+import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
+import type { TransactionData } from '@/types/lend.js'
 import type { AssetIdentifier } from '@/utils/assets.js'
 import { Wallet } from '@/wallet/base/Wallet.js'
 
@@ -11,7 +12,7 @@ import { Wallet } from '@/wallet/base/Wallet.js'
  */
 export abstract class SmartWallet extends Wallet {
   /** Lend namespace with all lending operations */
-  abstract lend: WalletLendOperations
+  abstract lend: WalletLendNamespace
 
   async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {
     throw new Error('walletClient is not supported on SmartWallet')

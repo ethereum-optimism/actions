@@ -1,11 +1,7 @@
 import type { Address } from 'viem'
 
 import type { LendProvider } from '@/lend/provider.js'
-import type {
-  LendOptions,
-  LendTransaction,
-  WalletLendOperations,
-} from '@/types/lend.js'
+import type { LendOptions, LendTransaction } from '@/types/lend.js'
 
 import { VerbsLendNamespace } from './VerbsLendNamespace.js'
 
@@ -13,10 +9,7 @@ import { VerbsLendNamespace } from './VerbsLendNamespace.js'
  * Wallet Lend Namespace
  * @description Full lending operations available on wallet.lend
  */
-export class WalletLendNamespace
-  extends VerbsLendNamespace
-  implements WalletLendOperations
-{
+export class WalletLendNamespace extends VerbsLendNamespace {
   constructor(
     provider: LendProvider,
     private readonly wallet: { address: Address },
@@ -28,7 +21,7 @@ export class WalletLendNamespace
    * Lend assets to a market
    * @description Will be renamed to execute() in the future
    */
-  async lend(
+  async lendExecute(
     asset: Address,
     amount: bigint,
     marketId?: string,
@@ -52,7 +45,7 @@ export class WalletLendNamespace
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    return this.lend(asset, amount, marketId, options)
+    return this.lendExecute(asset, amount, marketId, options)
   }
 
   /**

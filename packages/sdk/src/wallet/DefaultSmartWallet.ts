@@ -14,7 +14,6 @@ import type {
   LendProvider,
   LendTransaction,
   TransactionData,
-  WalletLendOperations,
 } from '@/types/lend.js'
 import {
   type AssetIdentifier,
@@ -31,7 +30,7 @@ import { SmartWallet } from '@/wallet/base/SmartWallet.js'
  */
 export class DefaultSmartWallet extends SmartWallet {
   /** Lend namespace with all lending operations */
-  public lend: WalletLendOperations
+  public lend: WalletLendNamespace
 
   /** Local account used for signing transactions and UserOperations */
   public readonly signer: LocalAccount

@@ -1,7 +1,7 @@
 import { LendProviderMorpho } from '@/lend/index.js'
 import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { LendProvider, LendReadOperations } from '@/types/lend.js'
+import type { LendProvider } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
 import type { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
@@ -16,7 +16,7 @@ import { WalletProvider } from '@/wallet/WalletProvider.js'
  */
 export class Verbs {
   public readonly wallet: WalletNamespace
-  private _lend?: LendReadOperations
+  private _lend?: VerbsLendNamespace
   private chainManager: ChainManager
   private lendProvider?: LendProvider
   private hostedWalletProvider!: HostedWalletProvider
@@ -51,10 +51,10 @@ export class Verbs {
    * Get lend operations interface
    * @description Access to lending operations like markets and vault information.
    * Throws an error if no lend provider is configured in VerbsConfig.
-   * @returns LendReadOperations interface for lending operations
+   * @returns VerbsLendNamespace for lending operations
    * @throws Error if lend provider not configured
    */
-  get lend(): LendReadOperations {
+  get lend(): VerbsLendNamespace {
     if (!this._lend) {
       throw new Error(
         'Lend provider not configured. Please add lend configuration to VerbsConfig.',
