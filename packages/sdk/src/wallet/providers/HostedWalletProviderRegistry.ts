@@ -23,7 +23,9 @@ export class HostedWalletProviderRegistry {
     })
   }
 
-  getFactory<TType extends HostedProviderType>(type: TType) {
+  getFactory<TType extends HostedProviderType>(
+    type: TType,
+  ): HostedProviderFactory<TType> {
     const factory = this.registry.get(type) as
       | HostedProviderFactory<TType>
       | undefined

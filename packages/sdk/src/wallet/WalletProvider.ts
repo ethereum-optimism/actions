@@ -15,10 +15,13 @@ import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletPro
  * @description Main wallet provider that combines hosted wallet and smart wallet functionality.
  * Provides a unified interface for all wallet operations while supporting pluggable providers.
  */
-export class WalletProvider {
+export class WalletProvider<
+  H extends HostedWalletProvider,
+  S extends SmartWalletProvider = SmartWalletProvider,
+> {
   constructor(
-    public readonly hostedWalletProvider: HostedWalletProvider,
-    public readonly smartWalletProvider: SmartWalletProvider,
+    public readonly hostedWalletProvider: H,
+    public readonly smartWalletProvider: S,
   ) {}
 
   /**

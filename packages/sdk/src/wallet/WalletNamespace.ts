@@ -7,14 +7,20 @@ import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
 import type { Wallet } from '@/wallet/base/Wallet.js'
 import type { WalletProvider } from '@/wallet/WalletProvider.js'
 
+import type { HostedWalletProvider } from './providers/base/HostedWalletProvider.js'
+import type { SmartWalletProvider } from './providers/base/SmartWalletProvider.js'
+
 /**
  * Wallet namespace that provides unified wallet operations
  * @description Provides access to wallet functionality through a single provider interface
  */
-export class WalletNamespace {
-  private provider: WalletProvider
+export class WalletNamespace<
+  H extends HostedWalletProvider = HostedWalletProvider,
+  S extends SmartWalletProvider = SmartWalletProvider,
+> {
+  private provider: WalletProvider<H, S>
 
-  constructor(provider: WalletProvider) {
+  constructor(provider: WalletProvider<H, S>) {
     this.provider = provider
   }
 
@@ -24,7 +30,7 @@ export class WalletNamespace {
    * advanced functionality beyond the unified interface is needed
    * @returns The configured hosted wallet provider instance
    */
-  get hostedWalletProvider() {
+  get hostedWalletProvider(): H {
     return this.provider.hostedWalletProvider
   }
 
@@ -34,7 +40,7 @@ export class WalletNamespace {
    * advanced functionality beyond the unified interface is needed
    * @returns The configured smart wallet provider instance
    */
-  get smartWalletProvider() {
+  get smartWalletProvider(): S {
     return this.provider.smartWalletProvider
   }
 

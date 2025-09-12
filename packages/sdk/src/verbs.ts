@@ -2,9 +2,12 @@ import { LendProviderMorpho } from '@/lend/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
-import type { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
+import type {
+  HostedProviderInstanceMap,
+  HostedProviderType,
+} from '@/wallet/providers/hostedProvider.types.js'
 import { HostedWalletProviderRegistry } from '@/wallet/providers/HostedWalletProviderRegistry.js'
 import { WalletNamespace } from '@/wallet/WalletNamespace.js'
 import { WalletProvider } from '@/wallet/WalletProvider.js'
@@ -13,15 +16,18 @@ import { WalletProvider } from '@/wallet/WalletProvider.js'
  * Main Verbs SDK class
  * @description Core implementation of the Verbs SDK
  */
-export class Verbs {
-  public readonly wallet: WalletNamespace
+export class Verbs<THostedWalletProviderType extends HostedProviderType> {
+  public readonly wallet: WalletNamespace<
+    HostedProviderInstanceMap[THostedWalletProviderType],
+    SmartWalletProvider
+  >
   private chainManager: ChainManager
   private lendProvider?: LendProvider
-  private hostedWalletProvider!: HostedWalletProvider
+  private hostedWalletProvider!: HostedProviderInstanceMap[THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry
 
-  constructor(config: VerbsConfig) {
+  constructor(config: VerbsConfig<THostedWalletProviderType>) {
     this.chainManager = new ChainManager(config.chains)
     this.hostedWalletProviderRegistry = new HostedWalletProviderRegistry()
 
@@ -58,7 +64,9 @@ export class Verbs {
    * @param config - Wallet configuration
    * @returns WalletProvider instance
    */
-  private createWalletProvider(config: VerbsConfig['wallet']) {
+  private createWalletProvider(
+    config: VerbsConfig<THostedWalletProviderType>['wallet'],
+  ) {
     const hostedWalletProviderConfig = config.hostedWalletConfig.provider
     const factory = this.hostedWalletProviderRegistry.getFactory(
       hostedWalletProviderConfig.type,
@@ -100,7 +108,9 @@ export class Verbs {
    * @param config - Wallet configuration
    * @returns WalletNamespace instance
    */
-  private createWalletNamespace(config: VerbsConfig['wallet']) {
+  private createWalletNamespace(
+    config: VerbsConfig<THostedWalletProviderType>['wallet'],
+  ) {
     const walletProvider = this.createWalletProvider(config)
     return new WalletNamespace(walletProvider)
   }

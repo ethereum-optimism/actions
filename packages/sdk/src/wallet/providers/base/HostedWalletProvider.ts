@@ -1,3 +1,4 @@
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { HostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
 import type { Wallet } from '@/wallet/base/Wallet.js'
 
@@ -8,6 +9,11 @@ import type { Wallet } from '@/wallet/base/Wallet.js'
  * as signers for smart wallets or standalone wallet functionality.
  */
 export abstract class HostedWalletProvider {
+  protected chainManager: ChainManager
+
+  protected constructor(chainManager: ChainManager) {
+    this.chainManager = chainManager
+  }
   /**
    * Convert a hosted wallet to a Verbs wallet
    * @description Converts a hosted wallet to a Verbs wallet instance.
