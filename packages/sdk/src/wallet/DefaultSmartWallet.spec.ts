@@ -1,4 +1,5 @@
-import { type Address, type LocalAccount, pad } from 'viem'
+import type { Address, Hex, LocalAccount } from 'viem'
+import { concatHex, pad } from 'viem'
 import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 import { baseSepolia, unichain } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
@@ -93,7 +94,10 @@ describe('DefaultSmartWallet', () => {
   })
 
   it('should send a transaction via ERC-4337', async () => {
-    const wallet = await createAndInitDefaultSmartWallet()
+    const attributionSuffix = '0x11111111111111111111111111111111'
+    const wallet = await createAndInitDefaultSmartWallet({
+      attributionSuffix,
+    })
 
     const chainId = unichain.id
     const recipientAddress = getRandomAddress()
@@ -115,6 +119,12 @@ describe('DefaultSmartWallet', () => {
       chainId,
       mockAccount,
     )
+    // prepare returns base callData/initCode that we will append to
+    vi.mocked(bundlerClient.prepareUserOperation).mockResolvedValue({
+      account: mockAccount,
+      callData: data,
+      initCode: '0x',
+    })
     vi.mocked(bundlerClient.sendUserOperation).mockResolvedValue(
       '0xTransactionHash',
     )
@@ -125,11 +135,15 @@ describe('DefaultSmartWallet', () => {
       chainId,
       mockAccount,
     )
-    expect(bundlerClient.sendUserOperation).toHaveBeenCalledWith({
-      account: mockAccount,
-      calls: [transactionData],
-      paymaster: true,
-    })
+    expect(bundlerClient.prepareUserOperation).toHaveBeenCalled()
+    expect(bundlerClient.sendUserOperation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: mockAccount,
+        callData: concatHex([data, attributionSuffix]),
+        initCode: '0x',
+        paymaster: true,
+      }),
+    )
     expect(bundlerClient.waitForUserOperationReceipt).toHaveBeenCalledWith({
       hash: '0xTransactionHash',
     })
@@ -137,7 +151,10 @@ describe('DefaultSmartWallet', () => {
   })
 
   it('should send a batch of transactions via ERC-4337', async () => {
-    const wallet = await createAndInitDefaultSmartWallet()
+    const attributionSuffix = '0x22222222222222222222222222222222'
+    const wallet = await createAndInitDefaultSmartWallet({
+      attributionSuffix,
+    })
 
     const chainId = unichain.id
     const recipientAddress = getRandomAddress()
@@ -169,6 +186,11 @@ describe('DefaultSmartWallet', () => {
       chainId,
       mockAccount,
     )
+    vi.mocked(bundlerClient.prepareUserOperation).mockResolvedValue({
+      account: mockAccount,
+      callData: '0xdeadbeef',
+      initCode: '0x01',
+    })
     vi.mocked(bundlerClient.sendUserOperation).mockResolvedValue(
       '0xTransactionHash',
     )
@@ -179,11 +201,15 @@ describe('DefaultSmartWallet', () => {
       chainId,
       mockAccount,
     )
-    expect(bundlerClient.sendUserOperation).toHaveBeenCalledWith({
-      account: mockAccount,
-      calls: transactionData,
-      paymaster: true,
-    })
+    expect(bundlerClient.prepareUserOperation).toHaveBeenCalled()
+    expect(bundlerClient.sendUserOperation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: mockAccount,
+        callData: concatHex(['0xdeadbeef', attributionSuffix]),
+        initCode: concatHex(['0x01', attributionSuffix]),
+        paymaster: true,
+      }),
+    )
     expect(bundlerClient.waitForUserOperationReceipt).toHaveBeenCalledWith({
       hash: '0xTransactionHash',
     })
@@ -208,6 +234,29 @@ describe('DefaultSmartWallet', () => {
     const networkIds = wallet.lend!.supportedNetworkIds()
     expect(mockLendProvider.supportedNetworkIds).toHaveBeenCalled()
     expect(networkIds).toEqual([130])
+  })
+
+  it('throws if attribution suffix is not valid hex', async () => {
+    await expect(
+      createAndInitDefaultSmartWallet({
+        attributionSuffix: 'not-hex' as unknown as Hex,
+      }),
+    ).rejects.toThrow('Attribution suffix must be a valid hex string')
+  })
+
+  it('throws if attribution suffix is not 16 bytes', async () => {
+    await expect(
+      createAndInitDefaultSmartWallet({
+        attributionSuffix: '0x1234' as Hex,
+      }),
+    ).rejects.toThrow('Attribution suffix must be 16 bytes (0x + 32 hex chars)')
+  })
+
+  it('throws if attribution suffix is longer than 16 bytes', async () => {
+    const tooLong: Hex = ('0x' + '11'.repeat(17)) as Hex
+    await expect(
+      createAndInitDefaultSmartWallet({ attributionSuffix: tooLong }),
+    ).rejects.toThrow('Attribution suffix must be 16 bytes (0x + 32 hex chars)')
   })
 
   it('should lend assets using lendExecute method', async () => {
@@ -237,6 +286,7 @@ async function createAndInitDefaultSmartWallet(
     deploymentAddress?: Address
     signerOwnerIndex?: number
     nonce?: bigint
+    attributionSuffix?: Hex
   } = {},
 ) {
   const {
@@ -247,6 +297,7 @@ async function createAndInitDefaultSmartWallet(
     deploymentAddress,
     signerOwnerIndex,
     nonce,
+    attributionSuffix,
   } = params
   return DefaultSmartWallet.create({
     owners,
@@ -256,5 +307,6 @@ async function createAndInitDefaultSmartWallet(
     deploymentAddress,
     signerOwnerIndex,
     nonce,
+    attributionSuffix,
   })
 }
