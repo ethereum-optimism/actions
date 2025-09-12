@@ -8,7 +8,7 @@ vi.mock('../config/verbs.js', () => ({
 }))
 
 const mockLendProvider = {
-  getMarkets: vi.fn(),
+  getVaults: vi.fn(),
   getVault: vi.fn(),
 }
 
@@ -42,17 +42,17 @@ describe('Lend Service', () => {
         },
       ]
 
-      mockLendProvider.getMarkets.mockResolvedValue(mockVaults)
+      mockLendProvider.getVaults.mockResolvedValue(mockVaults)
 
       const result = await lendService.getVaults()
 
       expect(result).toEqual(mockVaults)
-      expect(mockLendProvider.getMarkets).toHaveBeenCalledOnce()
+      expect(mockLendProvider.getVaults).toHaveBeenCalledOnce()
     })
 
     it('should throw error when lend provider fails', async () => {
       const error = new Error('Lend provider error')
-      mockLendProvider.getMarkets.mockRejectedValue(error)
+      mockLendProvider.getVaults.mockRejectedValue(error)
 
       await expect(lendService.getVaults()).rejects.toThrow(
         'Lend provider error',
@@ -60,7 +60,7 @@ describe('Lend Service', () => {
     })
 
     it('should handle unknown errors', async () => {
-      mockLendProvider.getMarkets.mockRejectedValue('Unknown error')
+      mockLendProvider.getVaults.mockRejectedValue('Unknown error')
 
       await expect(lendService.getVaults()).rejects.toThrow('Unknown error')
     })
