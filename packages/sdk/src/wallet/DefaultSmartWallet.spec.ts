@@ -192,7 +192,7 @@ describe('DefaultSmartWallet', () => {
 
   it('should have lend namespace with bound methods', async () => {
     const wallet = await createAndInitDefaultSmartWallet({
-      deploymentAddress: '0x123' as Address,
+      deploymentAddress: '0x123',
     })
 
     // Test that lend namespace exists and is properly bound
