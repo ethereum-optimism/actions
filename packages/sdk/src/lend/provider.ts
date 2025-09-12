@@ -73,7 +73,7 @@ export abstract class LendProvider {
   abstract getVault(vaultAddress: Address): Promise<LendVaultInfo>
 
   /**
-   * Get list of available lending markets
+   * Get list of available lending vaults
    * @returns Promise resolving to array of vault information
    */
   abstract getVaults(): Promise<LendVaultInfo[]>
