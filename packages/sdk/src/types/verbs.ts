@@ -1,5 +1,8 @@
 import type { ChainConfig } from '@/types/chain.js'
-import type { HostedProviderUnion } from '@/wallet/providers/hostedProvider.types.js'
+import type {
+  HostedProviderType,
+  ProviderSpec,
+} from '@/wallet/providers/hostedProvider.types.js'
 
 import type { LendConfig } from './lend.js'
 
@@ -7,9 +10,11 @@ import type { LendConfig } from './lend.js'
  * Verbs SDK configuration
  * @description Configuration object for initializing the Verbs SDK
  */
-export interface VerbsConfig {
+export interface VerbsConfig<
+  THostedWalletProviderType extends HostedProviderType,
+> {
   /** Wallet configuration */
-  wallet: WalletConfig
+  wallet: WalletConfig<THostedWalletProviderType>
   /** Lending provider configuration (optional) */
   lend?: LendConfig
   /** Chains to use for the SDK */
@@ -20,9 +25,9 @@ export interface VerbsConfig {
  * Wallet configuration
  * @description Configuration for wallet providers
  */
-export type WalletConfig = {
+export type WalletConfig<THostedProviderType extends HostedProviderType> = {
   /** Hosted wallet configuration */
-  hostedWalletConfig: HostedWalletConfig
+  hostedWalletConfig: HostedWalletConfig<THostedProviderType>
   /** Smart wallet configuration for ERC-4337 infrastructure */
   smartWalletConfig: SmartWalletConfig
 }
@@ -31,9 +36,11 @@ export type WalletConfig = {
  * Hosted wallet configuration
  * @description Configuration for hosted wallets / signers
  */
-export interface HostedWalletConfig {
+export interface HostedWalletConfig<
+  THostedProviderType extends HostedProviderType,
+> {
   /** Wallet provider for account creation, management, and signing */
-  provider: HostedProviderUnion
+  provider: ProviderSpec<THostedProviderType>
 }
 
 /**
