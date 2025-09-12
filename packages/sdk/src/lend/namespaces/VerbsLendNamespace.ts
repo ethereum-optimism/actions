@@ -11,7 +11,7 @@ export class VerbsLendNamespace {
   constructor(protected readonly provider: LendProvider) {}
 
   /**
-   * Get list of available lending markets
+   * Get list of available lending vaults
    */
   getVaults(): Promise<LendVaultInfo[]> {
     return this.provider.getVaults()
