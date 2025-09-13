@@ -29,8 +29,6 @@ import { SmartWallet } from '@/wallet/base/SmartWallet.js'
  * Supports multi-owner wallets, gasless transactions via paymasters, and cross-chain operations.
  */
 export class DefaultSmartWallet extends SmartWallet {
-  /** Lend namespace with all lending operations */
-  public lend!: WalletLendNamespace
   /** Local account used for signing transactions and UserOperations */
   public readonly signer: LocalAccount
   /** Address of the smart wallet */

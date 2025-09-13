@@ -197,15 +197,15 @@ describe('DefaultSmartWallet', () => {
 
     // Test that lend namespace exists and is properly bound
     expect(wallet.lend).toBeDefined()
-    expect(typeof wallet.lend.getVaults).toBe('function')
-    expect(typeof wallet.lend.supportedNetworkIds).toBe('function')
+    expect(typeof wallet.lend!.getVaults).toBe('function')
+    expect(typeof wallet.lend!.supportedNetworkIds).toBe('function')
 
     // Test that lend namespace delegates to provider
-    const markets = await wallet.lend.getVaults()
+    const markets = await wallet.lend!.getVaults()
     expect(mockLendProvider.getVaults).toHaveBeenCalled()
     expect(markets).toEqual([])
 
-    const networkIds = wallet.lend.supportedNetworkIds()
+    const networkIds = wallet.lend!.supportedNetworkIds()
     expect(mockLendProvider.supportedNetworkIds).toHaveBeenCalled()
     expect(networkIds).toEqual([130])
   })
