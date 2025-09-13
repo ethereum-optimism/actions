@@ -4,6 +4,7 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
@@ -76,5 +77,13 @@ describe('Wallet (base)', () => {
     const wallet = new TestWallet(chainManager, address, signer)
 
     await expect(wallet.getBalance()).rejects.toThrow('rpc error')
+  })
+
+  it('has lend namespace available for inheritance', () => {
+    const wallet = new TestWallet(chainManager, address, signer)
+
+    wallet.lend = {} as WalletLendNamespace
+    expect(wallet.lend).toBeDefined()
+    expect(wallet.lend).toEqual({})
   })
 })

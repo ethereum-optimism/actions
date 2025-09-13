@@ -210,7 +210,6 @@ describe('Verbs SDK - System Tests', () => {
       })
 
       const networkIds = verbs.lend.supportedNetworkIds()
-
       expect(Array.isArray(networkIds)).toBe(true)
       expect(networkIds).toContain(130) // Unichain
     })

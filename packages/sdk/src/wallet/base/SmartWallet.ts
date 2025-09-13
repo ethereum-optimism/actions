@@ -1,11 +1,7 @@
 import type { Address, Hash, WalletClient } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type {
-  LendOptions,
-  LendTransaction,
-  TransactionData,
-} from '@/types/lend.js'
+import type { TransactionData } from '@/types/lend.js'
 import type { AssetIdentifier } from '@/utils/assets.js'
 import { Wallet } from '@/wallet/base/Wallet.js'
 
@@ -45,25 +41,6 @@ export abstract class SmartWallet extends Wallet {
     transactionData: TransactionData[],
     chainId: SupportedChainId,
   ): Promise<Hash>
-
-  /**
-   * Lend tokens to a lending protocol
-   * @description Deposits tokens into a lending market to earn yield.
-   * Handles token approvals, market selection, and transaction execution.
-   * @param amount - Amount to lend in human-readable format
-   * @param asset - Asset identifier for the token to lend
-   * @param chainId - Target blockchain chain ID
-   * @param marketId - Optional specific market ID (auto-selected if not provided)
-   * @param options - Optional lending configuration (slippage, etc.)
-   * @returns Promise resolving to lending transaction details
-   */
-  abstract lend(
-    amount: number,
-    asset: AssetIdentifier,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction>
 
   /**
    * Send tokens to another address

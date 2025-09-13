@@ -1,6 +1,7 @@
 import type { Address, LocalAccount, WalletClient } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
@@ -12,6 +13,8 @@ import type { TokenBalance } from '@/types/token.js'
  * Provides a standard interface for verbs wallets.
  */
 export abstract class Wallet {
+  /** Lend namespace with all lending operations */
+  lend?: WalletLendNamespace
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
   /** Promise to initialize the wallet */

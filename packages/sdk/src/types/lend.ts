@@ -1,5 +1,7 @@
 import type { Address, Hex } from 'viem'
 
+export { VerbsLendNamespace } from '../lend/namespaces/VerbsLendNamespace.js'
+export { WalletLendNamespace } from '../lend/namespaces/WalletLendNamespace.js'
 export { LendProvider } from '../lend/provider.js'
 
 /**

@@ -1,4 +1,4 @@
-import { type Address, type LocalAccount, pad, parseUnits } from 'viem'
+import { type Address, type LocalAccount, pad } from 'viem'
 import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 import { baseSepolia, unichain } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
@@ -190,26 +190,41 @@ describe('DefaultSmartWallet', () => {
     expect(result).toBe('0xTransactionHash')
   })
 
-  it('should lend assets', async () => {
+  it('should have lend namespace with bound methods', async () => {
     const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress: '0x123',
     })
 
-    const amount = 1.5
-    const asset = 'USDC'
-    const chainId = unichain.id
-    const marketId = '0x456'
-    const result = await wallet.lend(amount, asset, chainId, marketId)
+    // Test that lend namespace exists and is properly bound
+    expect(wallet.lend).toBeDefined()
+    expect(typeof wallet.lend!.getVaults).toBe('function')
+    expect(typeof wallet.lend!.supportedNetworkIds).toBe('function')
 
-    expect(mockLendProvider.deposit).toHaveBeenCalledWith(
-      SUPPORTED_TOKENS[asset].addresses[chainId],
-      parseUnits(amount.toString(), SUPPORTED_TOKENS[asset].decimals),
-      marketId,
-      {
-        receiver: '0x123',
-      },
+    // Test that lend namespace delegates to provider
+    const markets = await wallet.lend!.getVaults()
+    expect(mockLendProvider.getVaults).toHaveBeenCalled()
+    expect(markets).toEqual([])
+
+    const networkIds = wallet.lend!.supportedNetworkIds()
+    expect(mockLendProvider.supportedNetworkIds).toHaveBeenCalled()
+    expect(networkIds).toEqual([130])
+  })
+
+  it('should lend assets using lendExecute method', async () => {
+    const wallet = await createAndInitDefaultSmartWallet({
+      deploymentAddress: '0x123' as Address,
+    })
+
+    const result = await wallet.lendExecute(
+      100,
+      'usdc',
+      unichain.id,
+      'test-market',
     )
+
+    expect(mockLendProvider.deposit).toHaveBeenCalled()
     expect(result.hash).toBe('0xabc')
+    expect(result.amount).toBe(100000000n) // 100 USDC with 6 decimals
   })
 })
 

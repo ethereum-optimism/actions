@@ -80,6 +80,9 @@ export class PrivyWallet extends Wallet {
     })
   }
 
+  /**
+   * Initialize the PrivyWallet by creating the signer account
+   */
   protected async performInitialization() {
     this.signer = await this.createAccount()
   }

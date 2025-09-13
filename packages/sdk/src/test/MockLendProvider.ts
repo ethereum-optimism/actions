@@ -13,6 +13,12 @@ import type {
  */
 export class MockLendProvider {
   public deposit = vi.fn()
+  public getVaults = vi.fn()
+  public getVault = vi.fn()
+  public getVaultBalance = vi.fn()
+  public supportedNetworkIds = vi.fn()
+  public lend = vi.fn()
+  public withdraw = vi.fn()
 
   constructor(config?: {
     defaultHash?: string
@@ -50,6 +56,91 @@ export class MockLendProvider {
         }
       },
     )
+
+    this.getVaults.mockImplementation(async () => {
+      return []
+    })
+
+    this.getVault.mockImplementation(async () => {
+      return {
+        chainId: 130,
+        address: '0x123',
+        name: 'Mock Vault',
+        asset: '0x456',
+        totalAssets: BigInt('1000000'),
+        totalShares: BigInt('1000000'),
+        apy: defaultApy,
+        apyBreakdown: {},
+        owner: '0x789',
+        curator: '0xabc',
+        fee: 0.1,
+        lastUpdate: Date.now(),
+      }
+    })
+
+    this.getVaultBalance.mockImplementation(async () => {
+      return {
+        balance: BigInt('500000'),
+        balanceFormatted: '0.5',
+        shares: BigInt('500000'),
+        sharesFormatted: '0.5',
+        chainId: 130,
+      }
+    })
+
+    this.lend.mockImplementation(
+      async (
+        asset: Address,
+        amount: bigint,
+        marketId?: string,
+        options?: LendOptions,
+      ): Promise<LendTransaction> => {
+        return {
+          amount: amount || defaultAmount,
+          asset,
+          marketId: marketId || 'default-market',
+          apy: defaultApy,
+          timestamp: Date.now(),
+          transactionData: {
+            deposit: {
+              to: asset,
+              value: 0n,
+              data: '0x',
+            },
+          },
+          slippage: options?.slippage || 50,
+        }
+      },
+    )
+
+    this.withdraw.mockImplementation(
+      async (
+        asset: Address,
+        amount: bigint,
+        marketId?: string,
+        options?: LendOptions,
+      ): Promise<LendTransaction> => {
+        return {
+          amount: amount || defaultAmount,
+          asset,
+          marketId: marketId || 'default-market',
+          apy: defaultApy,
+          timestamp: Date.now(),
+          transactionData: {
+            deposit: {
+              to: asset,
+              value: 0n,
+              data: '0x',
+            },
+          },
+          slippage: options?.slippage || 50,
+        }
+      },
+    )
+
+    this.supportedNetworkIds.mockImplementation(() => {
+      return [130]
+    })
   }
 
   reset(): void {

@@ -7,6 +7,7 @@ import { unichain } from 'viem/chains'
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   LendOptions,
@@ -121,15 +122,18 @@ export class DefaultSmartWallet extends SmartWallet {
 
   /**
    * Lend assets to a lending market
+   * this will be replaced with lend.execute()
    * @description Lends assets using the configured lending provider with human-readable amounts
    * @param amount - Human-readable amount to lend (e.g. 1.5)
    * @param asset - Asset symbol (e.g. 'usdc') or token address
+   * @param chainId - Target blockchain chain ID
    * @param marketId - Optional specific market ID or vault name
    * @param options - Optional lending configuration
    * @returns Promise resolving to lending transaction details
    * @throws Error if no lending provider is configured
+   * @todo Replace this with lend.execute()
    */
-  async lend(
+  async lendExecute(
     amount: number,
     asset: AssetIdentifier,
     chainId: SupportedChainId,
@@ -287,6 +291,9 @@ export class DefaultSmartWallet extends SmartWallet {
 
   protected async performInitialization() {
     this._address = await this.getAddress()
+
+    // Create wallet lend namespace after address is initialized
+    this.lend = new WalletLendNamespace(this.lendProvider, this._address)
   }
 
   /**

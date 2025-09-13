@@ -117,7 +117,13 @@ export async function deposit(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return await wallet.lend(amount, token.toLowerCase(), chainId)
+  if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
+    return await wallet.lendExecute(amount, token.toLowerCase(), chainId)
+  } else {
+    throw new Error(
+      'Lend functionality not yet implemented for this wallet type.',
+    )
+  }
 }
 
 export async function executeLendTransaction(
