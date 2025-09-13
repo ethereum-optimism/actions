@@ -30,8 +30,7 @@ import { SmartWallet } from '@/wallet/base/SmartWallet.js'
  */
 export class DefaultSmartWallet extends SmartWallet {
   /** Lend namespace with all lending operations */
-  public lend: WalletLendNamespace
-
+  public lend!: WalletLendNamespace
   /** Local account used for signing transactions and UserOperations */
   public readonly signer: LocalAccount
   /** Address of the smart wallet */
@@ -73,9 +72,6 @@ export class DefaultSmartWallet extends SmartWallet {
     this.deploymentAddress = deploymentAddress
     this.lendProvider = lendProvider
     this.nonce = nonce
-
-    // Create wallet lend namespace
-    this.lend = new WalletLendNamespace(lendProvider, this)
   }
 
   get address() {
@@ -297,6 +293,9 @@ export class DefaultSmartWallet extends SmartWallet {
 
   protected async performInitialization() {
     this._address = await this.getAddress()
+
+    // Create wallet lend namespace after address is initialized
+    this.lend = new WalletLendNamespace(this.lendProvider, this._address)
   }
 
   /**

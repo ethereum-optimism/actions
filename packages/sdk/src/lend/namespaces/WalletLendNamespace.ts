@@ -1,9 +1,8 @@
 import type { Address } from 'viem'
 
+import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import type { LendProvider } from '@/lend/provider.js'
 import type { LendOptions, LendTransaction } from '@/types/lend.js'
-
-import { VerbsLendNamespace } from './VerbsLendNamespace.js'
 
 /**
  * Wallet Lend Namespace
@@ -12,7 +11,7 @@ import { VerbsLendNamespace } from './VerbsLendNamespace.js'
 export class WalletLendNamespace extends VerbsLendNamespace {
   constructor(
     provider: LendProvider,
-    private readonly wallet: { address: Address },
+    private readonly address: Address,
   ) {
     super(provider)
   }
@@ -30,7 +29,7 @@ export class WalletLendNamespace extends VerbsLendNamespace {
     // Set receiver to wallet address if not specified
     const lendOptions: LendOptions = {
       ...options,
-      receiver: options?.receiver || this.wallet.address,
+      receiver: options?.receiver || this.address,
     }
 
     return this.provider.lend(asset, amount, marketId, lendOptions)
@@ -60,7 +59,7 @@ export class WalletLendNamespace extends VerbsLendNamespace {
     // Set receiver to wallet address if not specified
     const withdrawOptions: LendOptions = {
       ...options,
-      receiver: options?.receiver || this.wallet.address,
+      receiver: options?.receiver || this.address,
     }
 
     return this.provider.withdraw(asset, amount, marketId, withdrawOptions)
