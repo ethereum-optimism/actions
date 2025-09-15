@@ -3,6 +3,7 @@ import type {
   GetAllWalletsResponse,
 } from '@eth-optimism/verbs-service'
 import { env } from '../envVars'
+import type { Address } from 'viem'
 
 class VerbsApiError extends Error {
   status?: number
@@ -123,6 +124,7 @@ class VerbsApiClient {
       chainBalances: Array<{
         chainId: number
         balance: string
+        tokenAddress: Address
         formattedBalance: string
       }>
     }>
@@ -132,10 +134,9 @@ class VerbsApiClient {
     })
   }
 
-  async fundWallet(userId: string, tokenType: string = 'USDC'): Promise<{ success: boolean, tokenType: string, to: string, amount: bigint }> {
+  async fundWallet(userId: string): Promise<{ success: boolean, to: string, amount: bigint }> {
     return this.request(`/wallet/${userId}/fund`, {
       method: 'POST',
-      body: JSON.stringify({ tokenType }),
     })
   }
 
@@ -171,7 +172,7 @@ class VerbsApiClient {
     })
   }
 
-  async lendDeposit(walletId: string, amount: number, token: string, chainId: number): Promise<{
+  async lendDeposit(walletId: string, amount: number, tokenAddress: Address, chainId: number): Promise<{
     transaction: {
       blockExplorerUrl: string
       hash: string
@@ -197,7 +198,7 @@ class VerbsApiClient {
   }> {
     return this.request('/lend/deposit', {
       method: 'POST',
-      body: JSON.stringify({ walletId, amount, token, chainId }),
+      body: JSON.stringify({ walletId, amount, tokenAddress, chainId }),
     })
   }
 }

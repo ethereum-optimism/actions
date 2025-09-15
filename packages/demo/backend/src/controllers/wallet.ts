@@ -22,9 +22,6 @@ const FundWalletRequestSchema = z.object({
   params: z.object({
     userId: z.string().min(1, 'User ID is required').trim(),
   }),
-  body: z.object({
-    tokenType: z.enum(['ETH', 'USDC']).optional().default('USDC'),
-  }),
 })
 
 const SendTokensRequestSchema = z.object({
@@ -187,10 +184,9 @@ export class WalletController {
 
       const {
         params: { userId },
-        body: { tokenType },
       } = validation.data
 
-      const result = await walletService.fundWallet(userId, tokenType)
+      const result = await walletService.fundWallet(userId)
 
       return c.json(result)
     } catch (error) {

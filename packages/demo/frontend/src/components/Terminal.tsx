@@ -47,7 +47,6 @@ interface PendingPrompt {
   type:
     | 'userId'
     | 'lendVault'
-    | 'tokenSelection'
     | 'lendAmount'
     | 'walletSendSelection'
     | 'walletSendAmount'
@@ -259,6 +258,7 @@ const Terminal = () => {
         (token) =>
           token.symbol === 'ETH' ||
           token.symbol === 'USDC' ||
+          token.symbol === 'USDC_DEMO' ||
           token.symbol.includes('Gauntlet') ||
           token.symbol.includes('Vault'),
       )
@@ -270,15 +270,19 @@ const Terminal = () => {
       const usdcBalance = filteredBalances.find(
         (token) => token.symbol === 'USDC',
       )
+      const usdcDemoBalance = filteredBalances.find(
+        (token) => token.symbol === 'USDC_DEMO',
+      )
 
       // Separate vault balances from token balances
       const vaultBalances = filteredBalances.filter(
-        (token) => token.symbol !== 'ETH' && token.symbol !== 'USDC',
+        (token) => token.symbol !== 'ETH' && token.symbol !== 'USDC' && token.symbol !== 'USDC_DEMO',
       )
 
       balanceLines.push(
         `  ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
         `  USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`,
+        `  USDC_DEMO: ${usdcDemoBalance ? formatBalance(usdcDemoBalance.totalBalance, 6) : '0'}`,
       )
 
       // Add vault balances if any exist and showVaultPositions is true
@@ -533,12 +537,6 @@ const Terminal = () => {
           (pendingPrompt.data as WalletData[]) || [],
         )
         return
-      } else if (pendingPrompt.type === 'tokenSelection') {
-        handleTokenSelection(
-          parseInt(trimmed),
-          pendingPrompt.data as { selectedWallet: WalletData },
-        )
-        return
       }
     }
 
@@ -734,6 +732,7 @@ User ID: ${result.userId}`,
     try {
       // Use the vault data we already have to show vault information
       const vault = selectedVault
+      console.log('vault', vault)
 
       const nameValue = vault.name
       const netApyValue = `${(vault.apy * 100).toFixed(2)}%`
@@ -799,16 +798,21 @@ User ID: ${result.userId}`,
         true,
       )
 
-      // Get USDC balance for validation
+      // Get single-chain token balance for the vault's asset (e.g., USDC on the vault's chain)
       const walletBalanceResult = await verbsApi.getWalletBalance(
         selectedWallet!.id,
       )
-      const usdcToken = walletBalanceResult.balance.find(
-        (token) => token.symbol === 'USDC',
-      )
-      const usdcBalance = usdcToken
-        ? parseFloat(usdcToken.totalBalance) / 1e6
-        : 0 // Convert from micro-USDC
+      const chainToken = walletBalanceResult.balance
+        .flatMap((t) => t.chainBalances.map((cb) => ({ ...cb })))
+        .find(
+          (cb) =>
+            cb.chainId === selectedVault.chainId &&
+            (cb.tokenAddress || '').toLowerCase() ===
+              (selectedVault.asset || '').toLowerCase(),
+        )
+
+      // TODO: update this to not hardcode the decimals and read decimals from token info.
+      const usdcBalance = chainToken ? parseFloat(chainToken.balance) / 1e6 : 0
 
       console.log('[FRONTEND] Wallet USDC balance:', usdcBalance)
 
@@ -897,7 +901,7 @@ How much would you like to lend?`
       const result = await verbsApi.lendDeposit(
         promptData.selectedWallet.id,
         amount,
-        'usdc',
+        promptData.selectedVault.asset as Address,
         promptData.selectedVault.chainId,
       )
 
@@ -1192,66 +1196,29 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       return
     }
 
-    // Show token selection
-    const tokenSelectionLine: TerminalLine = {
-      id: `token-selection-${Date.now()}`,
+    // Inform user of default funding behavior (100 USDC) and proceed
+    const fundingInfo: TerminalLine = {
+      id: `funding-info-${Date.now()}`,
       type: 'output',
-      content: `Select token to fund wallet with:\n\n1. ETH\n2. USDC\n\nEnter token number:`,
+      content:
+        'Funding selected wallet with 100 USDC...',
       timestamp: new Date(),
     }
 
-    setLines((prev) => [...prev, tokenSelectionLine])
-    setPendingPrompt({
-      type: 'tokenSelection',
-      message: '',
-      data: { selectedWallet },
-    })
-  }
-
-  const handleTokenSelection = async (
-    selection: number,
-    data: { selectedWallet: WalletData },
-  ) => {
-    setPendingPrompt(null)
-
-    if (isNaN(selection) || selection < 1 || selection > 2) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Invalid selection. Please enter 1 for ETH or 2 for USDC.`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, errorLine])
-      return
-    }
-
-    const { selectedWallet } = data
-    const tokenType = selection === 1 ? 'ETH' : 'USDC'
-
-    const fundingLine: TerminalLine = {
-      id: `funding-${Date.now()}`,
-      type: 'output',
-      content: `Funding wallet with ${tokenType}...`,
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, fundingLine])
+    setLines((prev) => [...prev, fundingInfo])
 
     try {
-      // Fund the wallet with selected token
-      const { amount } = await verbsApi.fundWallet(selectedWallet.id, tokenType)
+      const { amount } = await verbsApi.fundWallet(selectedWallet.id)
 
       const fundSuccessLine: TerminalLine = {
         id: `fund-success-${Date.now()}`,
         type: 'success',
-        content: `Wallet funded with ${amount} ${tokenType} successfully! Fetching updated balance...`,
+        content: `Wallet funded with ${amount} USDC successfully! Fetching updated balance...`,
         timestamp: new Date(),
       }
-      setLines((prev) => [...prev.slice(0, -1), fundSuccessLine])
+      setLines((prev) => [...prev, fundSuccessLine])
 
-      // Then fetch and show the balance using DRY function
       const balanceText = await displayWalletBalance(selectedWallet.id, true)
-
       const balanceSuccessLine: TerminalLine = {
         id: `balance-success-${Date.now()}`,
         type: 'success',
@@ -1266,7 +1233,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         content: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date(),
       }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
+      setLines((prev) => [...prev, errorLine])
     }
   }
 

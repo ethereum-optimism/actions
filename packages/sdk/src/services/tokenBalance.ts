@@ -22,7 +22,12 @@ export async function fetchETHBalance(
     const balance = await publicClient.getBalance({
       address: walletAddress,
     })
-    return { chainId, balance, formattedBalance: formatEther(balance) }
+    return {
+      chainId,
+      balance,
+      tokenAddress: '0x0000000000000000000000000000000000000000' as Address,
+      formattedBalance: formatEther(balance),
+    }
   })
   const chainBalances = await Promise.all(chainBalancePromises)
   const totalBalance = chainBalances.reduce(
@@ -51,7 +56,7 @@ export async function fetchERC20Balance(
   )
 
   const chainBalancePromises = chainsWithToken.map(async (chainId) => {
-    const balance = await fetchERC20BalanceForChain(
+    const { balance, tokenAddress } = await fetchERC20BalanceForChain(
       token,
       chainId,
       walletAddress,
@@ -60,6 +65,7 @@ export async function fetchERC20Balance(
     return {
       chainId,
       balance,
+      tokenAddress,
       formattedBalance: formatUnits(balance, token.decimals),
     }
   })
@@ -86,7 +92,7 @@ async function fetchERC20BalanceForChain(
   chainId: SupportedChainId,
   walletAddress: Address,
   chainManager: ChainManager,
-): Promise<bigint> {
+): Promise<{ balance: bigint; tokenAddress: Address }> {
   const tokenAddress = getTokenAddress(token.symbol, chainId)
   if (!tokenAddress) {
     throw new Error(`${token.symbol} not supported on chain ${chainId}`)
@@ -96,16 +102,20 @@ async function fetchERC20BalanceForChain(
 
   // Handle native ETH balance
   if (token.symbol === 'ETH') {
-    return publicClient.getBalance({
-      address: walletAddress,
-    })
+    return {
+      balance: await publicClient.getBalance({
+        address: walletAddress,
+      }),
+      tokenAddress,
+    }
   }
 
   // Handle ERC20 token balance
-  return publicClient.readContract({
+  const balance = await publicClient.readContract({
     address: tokenAddress,
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: [walletAddress],
   })
+  return { balance, tokenAddress }
 }

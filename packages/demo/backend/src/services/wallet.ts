@@ -3,21 +3,12 @@ import type {
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/verbs-sdk'
-import { unichain } from '@eth-optimism/viem/chains'
-import type { Address, Hex } from 'viem'
-import {
-  createPublicClient,
-  createWalletClient,
-  formatEther,
-  formatUnits,
-  getAddress,
-  http,
-} from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { writeContract } from 'viem/actions'
+import { SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
+import type { Address } from 'viem'
+import { encodeFunctionData, formatUnits, getAddress } from 'viem'
+import { baseSepolia } from 'viem/chains'
 
-import { faucetAbi } from '@/abis/faucet.js'
-import { env } from '@/config/env.js'
+import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getPrivyClient, getVerbs } from '@/config/verbs.js'
 
 /**
@@ -143,6 +134,7 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
                 {
                   chainId: vaultBalance.chainId,
                   balance: vaultBalance.balance,
+                  tokenAddress: vault.asset,
                   formattedBalance: formattedBalance,
                 },
               ],
@@ -168,94 +160,37 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
   }
 }
 
-export async function fundWallet(
-  userId: string,
-  tokenType: 'ETH' | 'USDC',
-): Promise<{
+export async function fundWallet(userId: string): Promise<{
   success: boolean
-  tokenType: string
   to: string
-  privyAddress: string
   amount: string
 }> {
-  // TODO: do this a better way
-  const isLocalSupersim = env.LOCAL_DEV
-
   const wallet = await getWallet(userId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
   const walletAddress = wallet.address
 
-  if (!isLocalSupersim) {
-    throw new Error(`Wallet fund is coming soon. For now, manually send USDC or ETH to this wallet:
+  const amountInDecimals = BigInt(Math.floor(parseFloat('100') * 1000000))
 
-${walletAddress}
+  const calls = [
+    {
+      to: SUPPORTED_TOKENS.USDC_DEMO.addresses[baseSepolia.id]!,
+      data: encodeFunctionData({
+        abi: mintableErc20Abi,
+        functionName: 'mint',
+        args: [walletAddress, amountInDecimals],
+      }),
+      value: 0n,
+    },
+  ]
 
-Funding is only available in local development with supersim`)
-  }
-
-  const faucetAdminWalletClient = createWalletClient({
-    chain: unichain,
-    transport: http(env.UNICHAIN_RPC_URL),
-    account: privateKeyToAccount(env.FAUCET_ADMIN_PRIVATE_KEY as Hex),
-  })
-
-  const publicClient = createPublicClient({
-    chain: unichain,
-    transport: http(env.UNICHAIN_RPC_URL),
-  })
-
-  let dripHash: `0x${string}`
-  let privyDripHash: `0x${string}` | undefined
-  let amount: bigint
-  let formattedAmount: string
-
-  if (tokenType === 'ETH') {
-    amount = 100000000000000000n // 0.1 ETH
-    formattedAmount = formatEther(amount)
-    dripHash = await writeContract(faucetAdminWalletClient, {
-      account: faucetAdminWalletClient.account,
-      address: env.FAUCET_ADDRESS as Address,
-      abi: faucetAbi,
-      functionName: 'dripETH',
-      args: [walletAddress, amount],
-    })
-    privyDripHash = await writeContract(faucetAdminWalletClient, {
-      account: faucetAdminWalletClient.account,
-      address: env.FAUCET_ADDRESS as Address,
-      abi: faucetAbi,
-      functionName: 'dripETH',
-      args: [wallet.signer.address as `0x${string}`, amount],
-    })
-  } else {
-    amount = 1000000000n // 1000 USDC
-    formattedAmount = formatUnits(amount, 6)
-    const usdcAddress = '0x078D782b760474a361dDA0AF3839290b0EF57AD6'
-    dripHash = await writeContract(faucetAdminWalletClient, {
-      account: faucetAdminWalletClient.account,
-      address: env.FAUCET_ADDRESS as Address,
-      abi: faucetAbi,
-      functionName: 'dripERC20',
-      args: [walletAddress, amount, usdcAddress as Address],
-    })
-  }
-
-  await publicClient.waitForTransactionReceipt({
-    hash: dripHash,
-  })
-  if (privyDripHash) {
-    await publicClient.waitForTransactionReceipt({
-      hash: privyDripHash,
-    })
-  }
+  await wallet.sendBatch(calls, baseSepolia.id)
 
   return {
     success: true,
-    tokenType,
     to: walletAddress,
-    privyAddress: wallet.signer.address,
-    amount: formattedAmount,
+    amount: formatUnits(amountInDecimals, 6),
   }
 }
 

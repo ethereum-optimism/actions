@@ -1,3 +1,5 @@
+import type { Address } from 'viem'
+
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 /**
@@ -10,6 +12,7 @@ export interface TokenBalance {
   chainBalances: Array<{
     chainId: SupportedChainId
     balance: bigint
+    tokenAddress: Address
     formattedBalance: string
   }>
 }
