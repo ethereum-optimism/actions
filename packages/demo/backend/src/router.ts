@@ -49,10 +49,10 @@ router.post('/wallet/:userId/fund', walletController.fundWallet)
 router.post('/wallet/send', walletController.sendTokens)
 
 // Lend endpoints
-router.get('/lend/vaults', lendController.getVaults)
-router.get('/lend/vault/:vaultAddress', lendController.getVault)
+router.get('/lend/markets', lendController.getMarkets)
+router.get('/lend/market/:chainId/:marketId', lendController.getMarket)
 router.get(
-  '/lend/vault/:vaultAddress/balance/:walletId',
-  lendController.getVaultBalance,
+  '/lend/market/:vaultAddress/balance/:walletId',
+  lendController.getMarketBalance,
 )
 router.post('/lend/deposit', lendController.deposit)

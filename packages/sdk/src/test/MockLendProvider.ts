@@ -13,9 +13,9 @@ import type {
  */
 export class MockLendProvider {
   public deposit = vi.fn()
-  public getVaults = vi.fn()
-  public getVault = vi.fn()
-  public getVaultBalance = vi.fn()
+  public getMarkets = vi.fn()
+  public getMarket = vi.fn()
+  public getMarketBalance = vi.fn()
   public supportedNetworkIds = vi.fn()
   public lend = vi.fn()
   public withdraw = vi.fn()
@@ -57,11 +57,11 @@ export class MockLendProvider {
       },
     )
 
-    this.getVaults.mockImplementation(async () => {
+    this.getMarkets.mockImplementation(async () => {
       return []
     })
 
-    this.getVault.mockImplementation(async () => {
+    this.getMarket.mockImplementation(async () => {
       return {
         chainId: 130,
         address: '0x123',
@@ -78,7 +78,7 @@ export class MockLendProvider {
       }
     })
 
-    this.getVaultBalance.mockImplementation(async () => {
+    this.getMarketBalance.mockImplementation(async () => {
       return {
         balance: BigInt('500000'),
         balanceFormatted: '0.5',

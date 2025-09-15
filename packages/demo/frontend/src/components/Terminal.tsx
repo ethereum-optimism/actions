@@ -1286,20 +1286,20 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       setLines((prev) => [...prev, loadingLine])
 
       try {
-        const result = await verbsApi.getVaults()
+        const result = await verbsApi.getMarkets()
 
-        if (result.vaults.length === 0) {
+        if (result.markets.length === 0) {
           const emptyLine: TerminalLine = {
             id: `empty-${Date.now()}`,
             type: 'error',
-            content: 'No vaults available.',
+            content: 'No markets available.',
             timestamp: new Date(),
           }
           setLines((prev) => [...prev.slice(0, -1), emptyLine])
           return
         }
 
-        const vaultOptions = result.vaults
+        const marketOptions = result.markets
           .map(
             (vault, index) =>
               `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
@@ -1309,7 +1309,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         const vaultSelectionLine: TerminalLine = {
           id: `vault-selection-${Date.now()}`,
           type: 'output',
-          content: `Select a Lending vault:\n\n${vaultOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
+          content: `Select a Lending market:\n\n${marketOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
           timestamp: new Date(),
         }
 
@@ -1317,7 +1317,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         setPendingPrompt({
           type: 'lendVault',
           message: '',
-          data: result.vaults,
+          data: result.markets,
         })
       } catch (vaultError) {
         const errorLine: TerminalLine = {
@@ -1706,7 +1706,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
   useEffect(() => {
     if (pendingPrompt?.type === 'lendVault') {
       const vaults = pendingPrompt.data as VaultData[]
-      const vaultOptions = vaults
+      const marketOptions = vaults
         .map(
           (vault, index) =>
             `${index === selectedVaultIndex ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
@@ -1716,7 +1716,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       const vaultSelectionLine: TerminalLine = {
         id: `vault-selection-${Date.now()}`,
         type: 'output',
-        content: `Select a Lending vault:\n\n${vaultOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
+        content: `Select a Lending market:\n\n${marketOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
         timestamp: new Date(),
       }
 

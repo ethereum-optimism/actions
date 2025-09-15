@@ -108,16 +108,16 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
     throw error
   })
 
-  // Get vault balances and add them to the response
+  // Get market balances and add them to the response
   const verbs = getVerbs()
   try {
-    const vaults = await verbs.lend.getVaults()
+    const vaults = await verbs.lend.getMarkets()
 
     const vaultBalances = await Promise.all(
       vaults.map(async (vault) => {
         try {
           const walletAddress = wallet.address
-          const vaultBalance = await verbs.lend.getVaultBalance(
+          const vaultBalance = await verbs.lend.getMarketBalance(
             vault.address,
             walletAddress,
           )

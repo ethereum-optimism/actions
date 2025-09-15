@@ -5,17 +5,19 @@ import { baseSepolia } from 'viem/chains'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 
+import type { SupportedChainId } from '../../../constants/supportedChains.js'
 import type {
+  LendMarket,
+  LendMarketId,
   LendOptions,
   LendTransaction,
-  LendVaultInfo,
   MorphoLendConfig,
 } from '../../../types/lend.js'
 import { LendProvider } from '../../provider.js'
 import {
   findBestVaultForAsset,
+  getMarkets as getMarketsHelper,
   getVaultInfo as getVaultInfoHelper,
-  getVaults as getVaultsHelper,
   SUPPORTED_VAULTS,
 } from './vaults.js'
 
@@ -77,7 +79,10 @@ export class LendProviderMorpho extends LendProvider {
         (marketId as Address) || (await findBestVaultForAsset(asset))
 
       // 2. Get vault information for APY
-      const vaultInfo = await this.getVault(selectedVaultAddress)
+      const vaultInfo = await this.getMarket({
+        id: selectedVaultAddress,
+        chainId: 130 as SupportedChainId, // TODO: Get chain ID dynamically
+      })
 
       // 3. Generate real call data for Morpho deposit
       const receiver = options?.receiver
@@ -169,40 +174,48 @@ export class LendProviderMorpho extends LendProvider {
   }
 
   /**
-   * Get detailed vault information
-   * @param vaultAddress - Vault address
-   * @returns Promise resolving to vault information
+   * Get detailed market information
+   * @param params - Market parameters
+   * @param params.id - Market identifier (vault address)
+   * @param params.chainId - Chain ID
+   * @returns Promise resolving to market information
    */
-  async getVault(vaultAddress: Address): Promise<LendVaultInfo> {
-    return getVaultInfoHelper(vaultAddress, this.chainManager)
+  async getMarket(params: {
+    id: LendMarketId
+    chainId: SupportedChainId
+  }): Promise<LendMarket> {
+    return getVaultInfoHelper(params.id as Address, this.chainManager)
   }
 
   /**
-   * Get list of available lending vaults
-   * @returns Promise resolving to array of vault information
+   * Get list of available lending markets
+   * @returns Promise resolving to array of market information
    */
-  async getVaults(): Promise<LendVaultInfo[]> {
-    return getVaultsHelper(this.chainManager)
+  async getMarkets(): Promise<LendMarket[]> {
+    return getMarketsHelper(this.chainManager)
   }
 
   /**
    * Get detailed vault information (legacy naming)
    * @param vaultAddress - Vault address
    * @returns Promise resolving to vault information
-   * @deprecated Use getVault instead
+   * @deprecated Use getMarket instead
    */
-  async getVaultInfo(vaultAddress: Address): Promise<LendVaultInfo> {
-    return this.getVault(vaultAddress)
+  async getVaultInfo(vaultAddress: Address): Promise<LendMarket> {
+    return this.getMarket({
+      id: vaultAddress,
+      chainId: 130 as SupportedChainId, // TODO: Get chain ID dynamically
+    })
   }
 
   /**
-   * Get vault balance for a specific wallet address
-   * @param vaultAddress - MetaMorpho vault address
+   * Get market balance for a specific wallet address
+   * @param marketAddress - MetaMorpho vault address
    * @param walletAddress - User wallet address to check balance for
-   * @returns Promise resolving to vault balance information
+   * @returns Promise resolving to market balance information
    */
-  async getVaultBalance(
-    vaultAddress: Address,
+  async getMarketBalance(
+    marketAddress: Address,
     walletAddress: Address,
   ): Promise<{
     balance: bigint
@@ -213,17 +226,17 @@ export class LendProviderMorpho extends LendProvider {
   }> {
     try {
       const vaultConfig = SUPPORTED_VAULTS.find(
-        (v) => v.address.toLowerCase() === vaultAddress.toLowerCase(),
+        (v) => v.address.toLowerCase() === marketAddress.toLowerCase(),
       )
       if (!vaultConfig) {
-        throw new Error(`Vault ${vaultAddress} not found`)
+        throw new Error(`Vault ${marketAddress} not found`)
       }
       const publicClient = this.chainManager.getPublicClient(
         vaultConfig.chainId,
       )
-      // Get user's vault token balance (shares in the vault)
+      // Get user's market token balance (shares in the vault)
       const shares = await publicClient.readContract({
-        address: vaultAddress,
+        address: marketAddress,
         abi: erc20Abi,
         functionName: 'balanceOf',
         args: [walletAddress],
@@ -231,7 +244,7 @@ export class LendProviderMorpho extends LendProvider {
 
       // Convert shares to underlying asset balance using convertToAssets
       const balance = await publicClient.readContract({
-        address: vaultAddress,
+        address: marketAddress,
         abi: [
           {
             name: 'convertToAssets',
@@ -258,7 +271,7 @@ export class LendProviderMorpho extends LendProvider {
       }
     } catch (error) {
       throw new Error(
-        `Failed to get vault balance for ${walletAddress} in vault ${vaultAddress}: ${
+        `Failed to get market balance for ${walletAddress} in market ${marketAddress}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       )

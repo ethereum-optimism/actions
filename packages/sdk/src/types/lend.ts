@@ -5,6 +5,12 @@ export { WalletLendNamespace } from '../lend/namespaces/WalletLendNamespace.js'
 export { LendProvider } from '../lend/provider.js'
 
 /**
+ * Lending market identifier
+ * @description Unique identifier for a lending market
+ */
+export type LendMarketId = string
+
+/**
  * Transaction data for execution
  * @description Raw transaction data for wallet execution
  */
@@ -49,7 +55,7 @@ export interface LendTransaction {
  * Lending market information
  * @description Basic information about a lending market
  */
-export interface LendMarket {
+export interface LendMarketBase {
   /** Market identifier */
   id: string
   /** Market name */
@@ -70,7 +76,7 @@ export interface LendMarket {
  * Detailed lending market information
  * @description Comprehensive market data including rates and parameters
  */
-export interface LendMarketInfo extends LendMarket {
+export interface LendMarketInfo extends LendMarketBase {
   /** Oracle address */
   oracle: Address
   /** Interest rate model address */
@@ -109,10 +115,10 @@ export interface ApyBreakdown {
 }
 
 /**
- * Lending vault information
- * @description Information about a Morpho vault
+ * Lending market (vault) information
+ * @description Information about a lending market (Morpho vault)
  */
-export interface LendVaultInfo {
+export interface LendMarket {
   /** Chain ID */
   chainId: number
   /** Vault address */

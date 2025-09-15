@@ -18,15 +18,7 @@ const DepositRequestSchema = z.object({
   }),
 })
 
-const VaultAddressParamSchema = z.object({
-  params: z.object({
-    vaultAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
-  }),
-})
-
-const VaultBalanceParamsSchema = z.object({
+const MarketBalanceParamsSchema = z.object({
   params: z.object({
     vaultAddress: z
       .string()
@@ -37,19 +29,19 @@ const VaultBalanceParamsSchema = z.object({
 
 export class LendController {
   /**
-   * GET - Retrieve all available lending vaults
+   * GET - Retrieve all available lending markets
    */
-  async getVaults(c: Context) {
+  async getMarkets(c: Context) {
     try {
-      const vaults = await lendService.getVaults()
-      const formattedVaults = await Promise.all(
-        vaults.map((vault) => lendService.formatVaultResponse(vault)),
+      const markets = await lendService.getMarkets()
+      const formattedMarkets = await Promise.all(
+        markets.map((market) => lendService.formatMarketResponse(market)),
       )
-      return c.json({ vaults: formattedVaults })
+      return c.json({ markets: formattedMarkets })
     } catch (error) {
       return c.json(
         {
-          error: 'Failed to get vaults',
+          error: 'Failed to get markets',
           message: error instanceof Error ? error.message : 'Unknown error',
         },
         500,
@@ -58,23 +50,33 @@ export class LendController {
   }
 
   /**
-   * GET - Retrieve specific vault information by address
+   * GET - Retrieve specific market information by ID and chain
    */
-  async getVault(c: Context) {
+  async getMarket(c: Context) {
     try {
-      const validation = await validateRequest(c, VaultAddressParamSchema)
-      if (!validation.success) return validation.response
+      const chainId = Number(c.req.param('chainId'))
+      const marketId = c.req.param('marketId')
 
-      const {
-        params: { vaultAddress },
-      } = validation.data
-      const vaultInfo = await lendService.getVault(vaultAddress as Address)
-      const formattedVault = await lendService.formatVaultResponse(vaultInfo)
-      return c.json({ vault: formattedVault })
+      if (!chainId || !marketId) {
+        return c.json(
+          {
+            error: 'Invalid parameters',
+            message: 'chainId and marketId are required',
+          },
+          400,
+        )
+      }
+
+      const marketInfo = await lendService.getMarket(
+        marketId as Address,
+        chainId as SupportedChainId,
+      )
+      const formattedMarket = await lendService.formatMarketResponse(marketInfo)
+      return c.json({ market: formattedMarket })
     } catch (error) {
       return c.json(
         {
-          error: 'Failed to get vault info',
+          error: 'Failed to get market info',
           message: error instanceof Error ? error.message : 'Unknown error',
         },
         500,
@@ -83,27 +85,27 @@ export class LendController {
   }
 
   /**
-   * GET - Get vault balance for a specific wallet
+   * GET - Get market balance for a specific wallet
    */
-  async getVaultBalance(c: Context) {
+  async getMarketBalance(c: Context) {
     try {
-      const validation = await validateRequest(c, VaultBalanceParamsSchema)
+      const validation = await validateRequest(c, MarketBalanceParamsSchema)
       if (!validation.success) return validation.response
 
       const {
         params: { vaultAddress, walletId },
       } = validation.data
-      const balance = await lendService.getVaultBalance(
+      const balance = await lendService.getMarketBalance(
         vaultAddress as Address,
         walletId,
       )
       const formattedBalance =
-        await lendService.formatVaultBalanceResponse(balance)
+        await lendService.formatMarketBalanceResponse(balance)
       return c.json(formattedBalance)
     } catch (error) {
       return c.json(
         {
-          error: 'Failed to get vault balance',
+          error: 'Failed to get market balance',
           message: error instanceof Error ? error.message : 'Unknown error',
         },
         500,
