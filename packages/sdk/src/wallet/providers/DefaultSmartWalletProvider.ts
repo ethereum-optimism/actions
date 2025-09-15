@@ -1,5 +1,5 @@
-import type { Address, LocalAccount } from 'viem'
-import { pad } from 'viem'
+import type { Address, Hex, LocalAccount } from 'viem'
+import { keccak256, pad, slice, toHex } from 'viem'
 import { type WebAuthnAccount } from 'viem/account-abstraction'
 
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
@@ -19,6 +19,8 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
   private chainManager: ChainManager
   /** Provider for lending market operations */
   private lendProvider: LendProvider
+  /** Optional 16-byte attribution suffix appended to callData */
+  private attributionSuffix?: Hex
 
   /**
    * Initialize the Smart Wallet Provider
@@ -26,10 +28,22 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    * @param paymasterAndBundlerUrl - URL for ERC-4337 bundler and paymaster services
    * @param lendProvider - Provider for lending market operations
    */
-  constructor(chainManager: ChainManager, lendProvider: LendProvider) {
+  constructor(
+    chainManager: ChainManager,
+    lendProvider: LendProvider,
+    attributionSuffix?: string,
+  ) {
     super()
     this.chainManager = chainManager
     this.lendProvider = lendProvider
+    if (attributionSuffix) {
+      this.attributionSuffix =
+        DefaultSmartWalletProvider.computeAttributionSuffix(attributionSuffix)
+    }
+  }
+
+  static computeAttributionSuffix(attributionSuffix: string) {
+    return slice(keccak256(toHex(attributionSuffix)), 0, 16)
   }
 
   /**
@@ -53,6 +67,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       chainManager: this.chainManager,
       lendProvider: this.lendProvider,
       nonce,
+      attributionSuffix: this.attributionSuffix,
     })
   }
 
@@ -110,6 +125,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       lendProvider: this.lendProvider,
       deploymentAddress: walletAddress,
       signerOwnerIndex: ownerIndex,
+      attributionSuffix: this.attributionSuffix,
     })
   }
 }

@@ -23,6 +23,8 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
       smartWalletConfig: {
         provider: {
           type: 'default',
+          // converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'
+          attributionSuffix: 'verbs',
         },
       },
     },

@@ -1,5 +1,5 @@
-import type { Address, Hash, LocalAccount } from 'viem'
-import { encodeFunctionData, erc20Abi, pad } from 'viem'
+import type { Address, Hash, Hex, LocalAccount } from 'viem'
+import { concatHex, encodeFunctionData, erc20Abi, isHex, pad, size } from 'viem'
 import type { WebAuthnAccount } from 'viem/account-abstraction'
 import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 import { unichain } from 'viem/chains'
@@ -43,6 +43,8 @@ export class DefaultSmartWallet extends SmartWallet {
   private lendProvider: LendProvider
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
+  /** Optional 16-byte attribution suffix appended to callData */
+  private attributionSuffix?: Hex
 
   /**
    * Create a Smart Wallet instance
@@ -62,6 +64,7 @@ export class DefaultSmartWallet extends SmartWallet {
     deploymentAddress?: Address,
     signerOwnerIndex?: number,
     nonce?: bigint,
+    attributionSuffix?: Hex,
   ) {
     super(chainManager)
     this.owners = owners
@@ -70,6 +73,10 @@ export class DefaultSmartWallet extends SmartWallet {
     this.deploymentAddress = deploymentAddress
     this.lendProvider = lendProvider
     this.nonce = nonce
+    if (attributionSuffix) {
+      DefaultSmartWallet.isValidAttributionSuffix(attributionSuffix)
+      this.attributionSuffix = attributionSuffix
+    }
   }
 
   get address() {
@@ -87,6 +94,7 @@ export class DefaultSmartWallet extends SmartWallet {
     deploymentAddress?: Address
     signerOwnerIndex?: number
     nonce?: bigint
+    attributionSuffix?: Hex
   }): Promise<DefaultSmartWallet> {
     const wallet = new DefaultSmartWallet(
       params.owners,
@@ -96,9 +104,27 @@ export class DefaultSmartWallet extends SmartWallet {
       params.deploymentAddress,
       params.signerOwnerIndex,
       params.nonce,
+      params.attributionSuffix,
     )
     await wallet.initialize()
     return wallet
+  }
+
+  /**
+   * Checks if a 16-byte attribution suffix is valid
+   * @description Checks if the suffix is a valid hex string and is exactly 16 bytes
+   * @throws Error if suffix is not hex or is not exactly 16 bytes
+   */
+  private static isValidAttributionSuffix(suffix: Hex): void {
+    if (suffix == null) {
+      return
+    }
+    if (!isHex(suffix)) {
+      throw new Error('Attribution suffix must be a valid hex string')
+    }
+    if (size(suffix) !== 16) {
+      throw new Error('Attribution suffix must be 16 bytes (0x + 32 hex chars)')
+    }
   }
 
   /**
@@ -178,10 +204,17 @@ export class DefaultSmartWallet extends SmartWallet {
     const account = await this.getCoinbaseSmartAccount(chainId)
     const bundlerClient = this.chainManager.getBundlerClient(chainId, account)
     try {
-      const calls = transactionData
+      const uo = await bundlerClient.prepareUserOperation({
+        account,
+        calls: transactionData,
+        paymaster: true,
+      })
       const hash = await bundlerClient.sendUserOperation({
         account,
-        calls,
+        callData: this.appendAttributionSuffix(uo.callData),
+        initCode: uo.initCode
+          ? this.appendAttributionSuffix(uo.initCode)
+          : uo.initCode,
         paymaster: true,
       })
       await bundlerClient.waitForUserOperationReceipt({
@@ -214,10 +247,18 @@ export class DefaultSmartWallet extends SmartWallet {
     try {
       const account = await this.getCoinbaseSmartAccount(chainId)
       const bundlerClient = this.chainManager.getBundlerClient(chainId, account)
-      const calls = [transactionData]
+      const uo = await bundlerClient.prepareUserOperation({
+        account,
+        calls: [transactionData],
+        paymaster: true,
+      })
+
       const hash = await bundlerClient.sendUserOperation({
         account,
-        calls,
+        callData: this.appendAttributionSuffix(uo.callData),
+        initCode: uo.initCode
+          ? this.appendAttributionSuffix(uo.initCode)
+          : uo.initCode,
         paymaster: true,
       })
       await bundlerClient.waitForUserOperationReceipt({
@@ -322,5 +363,16 @@ export class DefaultSmartWallet extends SmartWallet {
       args: [owners_bytes, this.nonce || 0n],
     })
     return smartWalletAddress
+  }
+
+  /**
+   * Appends the attribution suffix to the bytes
+   * @param bytes
+   * @returns The bytes with the attribution suffix appended
+   */
+  private appendAttributionSuffix(bytes: Hex) {
+    return bytes && bytes !== '0x' && this.attributionSuffix
+      ? concatHex([bytes, this.attributionSuffix])
+      : bytes
   }
 }

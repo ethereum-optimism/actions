@@ -64,4 +64,7 @@ export type SmartWalletProvider = DefaultSmartWalletProvider
  */
 export interface DefaultSmartWalletProvider {
   type: 'default'
+  // This string will be converted to a 16-byte hex suffix appended to callData and initCode
+  // on all ERC-4337 UserOperations
+  attributionSuffix?: string
 }

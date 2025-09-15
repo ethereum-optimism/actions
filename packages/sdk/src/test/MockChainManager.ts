@@ -126,6 +126,7 @@ export class MockChainManager {
     return {
       sendUserOperation: vi.fn(),
       waitForUserOperationReceipt: vi.fn(),
+      prepareUserOperation: vi.fn(),
     } as any
   }
 }

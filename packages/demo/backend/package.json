@@ -32,7 +32,8 @@
     "dev:local": "LOCAL_DEV=true pnpm dev",
     "start": "node dist/index.js",
     "test": "vitest --run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "attribution": "tsx scripts/attribution.ts"
   },
   "dependencies": {
     "@clerk/backend": "^2.12.0",

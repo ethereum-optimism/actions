@@ -1,4 +1,13 @@
-import { type Address, type LocalAccount, pad } from 'viem'
+import {
+  type Address,
+  isHex,
+  keccak256,
+  type LocalAccount,
+  pad,
+  size,
+  slice,
+  toHex,
+} from 'viem'
 import { type WebAuthnAccount } from 'viem/account-abstraction'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -21,6 +30,30 @@ const mockSigner: LocalAccount = {
 } as unknown as LocalAccount
 
 describe('DefaultSmartWalletProvider', () => {
+  describe('computeAttributionSuffix', () => {
+    it('returns first 16 bytes of keccak256(input)', () => {
+      const input = 'attribution-seed'
+      const expected = slice(keccak256(toHex(input)), 0, 16)
+
+      const actual = DefaultSmartWalletProvider.computeAttributionSuffix(input)
+
+      expect(actual).toBe(expected)
+      expect(isHex(actual)).toBe(true)
+      expect(size(actual)).toBe(16)
+    })
+
+    it('always returns a 16-byte suffix for arbitrarily long input', () => {
+      const input = 'x'.repeat(10_000)
+      const expected = slice(keccak256(toHex(input)), 0, 16)
+
+      const actual = DefaultSmartWalletProvider.computeAttributionSuffix(input)
+
+      expect(actual).toBe(expected)
+      expect(isHex(actual)).toBe(true)
+      expect(size(actual)).toBe(16)
+    })
+  })
+
   it('should create a wallet with correct parameters', async () => {
     const provider = new DefaultSmartWalletProvider(
       mockChainManager,
@@ -140,5 +173,55 @@ describe('DefaultSmartWalletProvider', () => {
     expect(wallet).toBeInstanceOf(DefaultSmartWallet)
     expect(wallet.signer).toBe(mockSigner)
     expect(wallet.address).toBe(walletAddress)
+  })
+
+  it('passes attributionSuffix from constructor into createWallet', async () => {
+    const attributionSeed = 'https://my.app'
+    const expectedSuffix =
+      DefaultSmartWalletProvider.computeAttributionSuffix(attributionSeed)
+    const provider = new DefaultSmartWalletProvider(
+      mockChainManager,
+      mockLendProvider,
+      attributionSeed,
+    )
+    const spy = vi
+      .spyOn(DefaultSmartWallet, 'create')
+      .mockResolvedValue({} as unknown as DefaultSmartWallet)
+
+    await provider.createWallet({
+      owners: [getRandomAddress()],
+      signer: mockSigner,
+    })
+
+    expect(spy).toHaveBeenCalled()
+    const callArg = spy.mock.calls[0][0]
+    expect(callArg.attributionSuffix).toBe(expectedSuffix)
+
+    spy.mockRestore()
+  })
+
+  it('passes attributionSuffix from constructor into getWallet', async () => {
+    const attributionSeed = 'campaign-123'
+    const expectedSuffix =
+      DefaultSmartWalletProvider.computeAttributionSuffix(attributionSeed)
+    const provider = new DefaultSmartWalletProvider(
+      mockChainManager,
+      mockLendProvider,
+      attributionSeed,
+    )
+    const spy = vi
+      .spyOn(DefaultSmartWallet, 'create')
+      .mockResolvedValue({} as unknown as DefaultSmartWallet)
+
+    await provider.getWallet({
+      walletAddress: getRandomAddress(),
+      signer: mockSigner,
+    })
+
+    expect(spy).toHaveBeenCalled()
+    const callArg = spy.mock.calls[0][0]
+    expect(callArg.attributionSuffix).toBe(expectedSuffix)
+
+    spy.mockRestore()
   })
 })
