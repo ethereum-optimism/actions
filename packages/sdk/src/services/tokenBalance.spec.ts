@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { TokenInfo } from '@/supported/tokens.js'
+import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 
 import { fetchERC20Balance, fetchETHBalance } from './tokenBalance.js'
@@ -46,6 +47,7 @@ describe('TokenBalance', () => {
             chainId: unichain.id,
             balance: 1000000n,
             formattedBalance: '1',
+            tokenAddress: SUPPORTED_TOKENS.USDC.addresses[unichain.id]!,
           },
         ],
       })
@@ -89,6 +91,7 @@ describe('TokenBalance', () => {
             chainId: unichain.id,
             balance: 1000000n,
             formattedBalance: '0.000000000001',
+            tokenAddress: SUPPORTED_TOKENS.ETH.addresses[unichain.id]!,
           },
         ],
       })

@@ -43,10 +43,22 @@ export const SUPPORTED_VAULTS: VaultConfig[] = [
     chainId: baseSepolia.id,
     name: 'MetaMorpho USDC Vault (Base Sepolia)',
     asset: {
-      address: getTokenAddress('USDC', baseSepolia.id)!, // USDC on Unichain
+      address: getTokenAddress('USDC', baseSepolia.id)!,
       symbol: SUPPORTED_TOKENS.USDC.symbol,
       decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
       name: SUPPORTED_TOKENS.USDC.name,
+    },
+  },
+  // USDC Vault deployed on base sepolia for demo purposes that uses an erc20 with permissionless minting
+  {
+    address: '0x297E324C46309E93112610ebf35559685b4E3547',
+    chainId: baseSepolia.id,
+    name: 'USDC Demo Vault (Base Sepolia)',
+    asset: {
+      address: getTokenAddress('USDC_DEMO', baseSepolia.id)!,
+      symbol: SUPPORTED_TOKENS.USDC_DEMO.symbol,
+      decimals: BigInt(SUPPORTED_TOKENS.USDC_DEMO.decimals),
+      name: SUPPORTED_TOKENS.USDC_DEMO.name,
     },
   },
 ]

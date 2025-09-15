@@ -108,7 +108,7 @@ export async function formatVaultBalanceResponse(
 export async function deposit(
   walletId: string,
   amount: number,
-  token: string,
+  tokenAddress: Address,
   chainId: SupportedChainId,
 ): Promise<LendTransaction> {
   const wallet = await getWallet(walletId)
@@ -118,7 +118,7 @@ export async function deposit(
   }
 
   if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
-    return await wallet.lendExecute(amount, token.toLowerCase(), chainId)
+    return await wallet.lendExecute(amount, tokenAddress, chainId)
   } else {
     throw new Error(
       'Lend functionality not yet implemented for this wallet type.',

@@ -11,7 +11,9 @@ const DepositRequestSchema = z.object({
   body: z.object({
     walletId: z.string().min(1, 'walletId is required'),
     amount: z.number().positive('amount must be positive'),
-    token: z.string().min(1, 'token is required'),
+    tokenAddress: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
     chainId: z.number().min(1, 'chainId is required'),
   }),
 })
@@ -118,12 +120,12 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        body: { walletId, amount, token, chainId },
+        body: { walletId, amount, tokenAddress, chainId },
       } = validation.data
       const lendTransaction = await lendService.deposit(
         walletId,
         amount,
-        token,
+        tokenAddress as Address,
         chainId as SupportedChainId,
       )
       const result = await lendService.executeLendTransaction(
