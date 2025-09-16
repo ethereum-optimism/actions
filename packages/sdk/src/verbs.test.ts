@@ -47,7 +47,10 @@ describe('Verbs SDK - System Tests', () => {
         const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
 
         // This will make an actual network request to fetch vault data
-        const vaultInfo = await verbs.lend.getVault(vaultAddress)
+        const vaultInfo = await verbs.lend.getMarket({
+          address: vaultAddress,
+          chainId: 130,
+        })
 
         // Verify the vault info structure
         expect(vaultInfo).toHaveProperty('address', vaultAddress)
@@ -122,7 +125,10 @@ describe('Verbs SDK - System Tests', () => {
         })
 
         const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
-        const vaultInfo = await verbs.lend.getVault(vaultAddress)
+        const vaultInfo = await verbs.lend.getMarket({
+          address: vaultAddress,
+          chainId: 130,
+        })
 
         expect(vaultInfo).toBeDefined()
         expect(vaultInfo.address).toBe(vaultAddress)
@@ -172,9 +178,12 @@ describe('Verbs SDK - System Tests', () => {
 
         const invalidVaultAddress = '0x0000000000000000000000000000000000000000'
 
-        await expect(verbs.lend.getVault(invalidVaultAddress)).rejects.toThrow(
-          `Vault ${invalidVaultAddress} not found`,
-        )
+        await expect(
+          verbs.lend.getMarket({
+            address: invalidVaultAddress,
+            chainId: 130,
+          }),
+        ).rejects.toThrow(`Vault ${invalidVaultAddress} not found`)
       },
     )
 
@@ -245,17 +254,17 @@ describe('Verbs SDK - System Tests', () => {
         },
       })
 
-      const vaults = await verbs.lend.getVaults()
+      const markets = await verbs.lend.getMarkets()
 
-      expect(Array.isArray(vaults)).toBe(true)
-      expect(vaults.length).toBeGreaterThan(0)
+      expect(Array.isArray(markets)).toBe(true)
+      expect(markets.length).toBeGreaterThan(0)
 
-      // Check first vault has expected structure
-      const firstVault = vaults[0]
-      expect(firstVault).toHaveProperty('address')
-      expect(firstVault).toHaveProperty('name')
-      expect(firstVault).toHaveProperty('apy')
-      expect(typeof firstVault.apy).toBe('number')
+      // Check first market has expected structure
+      const firstMarket = markets[0]
+      expect(firstMarket).toHaveProperty('address')
+      expect(firstMarket).toHaveProperty('name')
+      expect(firstMarket).toHaveProperty('apy')
+      expect(typeof firstMarket.apy).toBe('number')
     })
   })
 })

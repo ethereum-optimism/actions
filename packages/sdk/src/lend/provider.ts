@@ -1,9 +1,10 @@
 import type { Address } from 'viem'
 
 import type {
+  LendMarket,
+  LendMarketId,
   LendOptions,
   LendTransaction,
-  LendVaultInfo,
 } from '../types/lend.js'
 
 /**
@@ -66,26 +67,26 @@ export abstract class LendProvider {
   ): Promise<LendTransaction>
 
   /**
-   * Get detailed vault information
-   * @param vaultAddress - Vault address
-   * @returns Promise resolving to vault information
+   * Get detailed market information
+   * @param marketId - Market identifier containing address and chainId
+   * @returns Promise resolving to market information
    */
-  abstract getVault(vaultAddress: Address): Promise<LendVaultInfo>
+  abstract getMarket(marketId: LendMarketId): Promise<LendMarket>
 
   /**
-   * Get list of available lending vaults
-   * @returns Promise resolving to array of vault information
+   * Get list of available lending markets
+   * @returns Promise resolving to array of market information
    */
-  abstract getVaults(): Promise<LendVaultInfo[]>
+  abstract getMarkets(): Promise<LendMarket[]>
 
   /**
-   * Get vault balance for a specific wallet address
-   * @param vaultAddress - Vault address
+   * Get market balance for a specific wallet address
+   * @param marketAddress - Market address
    * @param walletAddress - User wallet address to check balance for
-   * @returns Promise resolving to vault balance information
+   * @returns Promise resolving to market balance information
    */
-  abstract getVaultBalance(
-    vaultAddress: Address,
+  abstract getMarketBalance(
+    marketAddress: Address,
     walletAddress: Address,
   ): Promise<{
     balance: bigint

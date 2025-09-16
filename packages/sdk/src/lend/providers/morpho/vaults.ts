@@ -10,7 +10,7 @@ import {
 } from '@/lend/providers/morpho/api.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { getTokenAddress, SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { ApyBreakdown, LendVaultInfo } from '@/types/lend.js'
+import type { ApyBreakdown, LendMarket } from '@/types/lend.js'
 
 /**
  * Vault configuration type
@@ -146,7 +146,7 @@ export function calculateBaseApy(vault: any): number {
 export async function getVaultInfo(
   vaultAddress: Address,
   chainManager: ChainManager,
-): Promise<LendVaultInfo> {
+): Promise<LendMarket> {
   try {
     // 1. Find vault configuration for validation
     const config = SUPPORTED_VAULTS.find((c) => c.address === vaultAddress)
@@ -211,13 +211,13 @@ export async function getVaultInfo(
 }
 
 /**
- * Get list of available vaults
- * @param publicClient - Viem public client
- * @returns Promise resolving to array of vault information
+ * Get list of available markets (vaults)
+ * @param chainManager - Chain manager instance
+ * @returns Promise resolving to array of market information
  */
-export async function getVaults(
+export async function getMarkets(
   chainManager: ChainManager,
-): Promise<LendVaultInfo[]> {
+): Promise<LendMarket[]> {
   try {
     const vaultInfoPromises = SUPPORTED_VAULTS.map((config) =>
       getVaultInfo(config.address, chainManager),

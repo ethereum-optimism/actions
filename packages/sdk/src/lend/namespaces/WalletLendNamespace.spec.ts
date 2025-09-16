@@ -22,7 +22,7 @@ describe('WalletLendNamespace', () => {
 
   it('should inherit read operations from VerbsLendNamespace', async () => {
     const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
-    const mockVaults = [
+    const mockMarkets = [
       {
         chainId: 130,
         address: getRandomAddress(),
@@ -44,12 +44,12 @@ describe('WalletLendNamespace', () => {
       },
     ]
 
-    vi.mocked(mockProvider.getVaults).mockResolvedValue(mockVaults)
+    vi.mocked(mockProvider.getMarkets).mockResolvedValue(mockMarkets)
 
-    const result = await namespace.getVaults()
+    const result = await namespace.getMarkets()
 
-    expect(mockProvider.getVaults).toHaveBeenCalled()
-    expect(result).toBe(mockVaults)
+    expect(mockProvider.getMarkets).toHaveBeenCalled()
+    expect(result).toBe(mockMarkets)
   })
 
   describe('lendExecute', () => {

@@ -8,8 +8,8 @@ vi.mock('../config/verbs.js', () => ({
 }))
 
 const mockLendProvider = {
-  getVaults: vi.fn(),
-  getVault: vi.fn(),
+  getMarkets: vi.fn(),
+  getMarket: vi.fn(),
 }
 
 const mockVerbs = {
@@ -23,9 +23,9 @@ describe('Lend Service', () => {
     vi.mocked(getVerbs).mockReturnValue(mockVerbs as any)
   })
 
-  describe('getVaults', () => {
-    it('should return vaults from the lend provider', async () => {
-      const mockVaults = [
+  describe('getMarkets', () => {
+    it('should return markets from the lend provider', async () => {
+      const mockMarkets = [
         {
           address:
             '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as `0x${string}`,
@@ -42,37 +42,38 @@ describe('Lend Service', () => {
         },
       ]
 
-      mockLendProvider.getVaults.mockResolvedValue(mockVaults)
+      mockLendProvider.getMarkets.mockResolvedValue(mockMarkets)
 
-      const result = await lendService.getVaults()
+      const result = await lendService.getMarkets()
 
-      expect(result).toEqual(mockVaults)
-      expect(mockLendProvider.getVaults).toHaveBeenCalledOnce()
+      expect(result).toEqual(mockMarkets)
+      expect(mockLendProvider.getMarkets).toHaveBeenCalledOnce()
     })
 
     it('should throw error when lend provider fails', async () => {
       const error = new Error('Lend provider error')
-      mockLendProvider.getVaults.mockRejectedValue(error)
+      mockLendProvider.getMarkets.mockRejectedValue(error)
 
-      await expect(lendService.getVaults()).rejects.toThrow(
+      await expect(lendService.getMarkets()).rejects.toThrow(
         'Lend provider error',
       )
     })
 
     it('should handle unknown errors', async () => {
-      mockLendProvider.getVaults.mockRejectedValue('Unknown error')
+      mockLendProvider.getMarkets.mockRejectedValue('Unknown error')
 
-      await expect(lendService.getVaults()).rejects.toThrow('Unknown error')
+      await expect(lendService.getMarkets()).rejects.toThrow('Unknown error')
     })
   })
 
-  describe('getVault', () => {
-    const vaultAddress =
+  describe('getMarket', () => {
+    const marketId =
       '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as `0x${string}`
+    const chainId = 130
 
-    it('should return vault info from the lend provider', async () => {
-      const mockVaultInfo = {
-        address: vaultAddress,
+    it('should return market info from the lend provider', async () => {
+      const mockMarketInfo = {
+        address: marketId,
         name: 'Gauntlet USDC',
         asset: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842' as `0x${string}`,
         apy: 0.03,
@@ -84,27 +85,30 @@ describe('Lend Service', () => {
         lastUpdate: 1234567890,
       }
 
-      mockLendProvider.getVault.mockResolvedValue(mockVaultInfo)
+      mockLendProvider.getMarket.mockResolvedValue(mockMarketInfo)
 
-      const result = await lendService.getVault(vaultAddress)
+      const result = await lendService.getMarket(marketId, chainId)
 
-      expect(result).toEqual(mockVaultInfo)
-      expect(mockLendProvider.getVault).toHaveBeenCalledWith(vaultAddress)
+      expect(result).toEqual(mockMarketInfo)
+      expect(mockLendProvider.getMarket).toHaveBeenCalledWith({
+        address: marketId,
+        chainId,
+      })
     })
 
     it('should throw error when lend provider fails', async () => {
-      const error = new Error('Vault not found')
-      mockLendProvider.getVault.mockRejectedValue(error)
+      const error = new Error('Market not found')
+      mockLendProvider.getMarket.mockRejectedValue(error)
 
-      await expect(lendService.getVault(vaultAddress)).rejects.toThrow(
-        'Vault not found',
+      await expect(lendService.getMarket(marketId, chainId)).rejects.toThrow(
+        'Market not found',
       )
     })
 
     it('should handle unknown errors', async () => {
-      mockLendProvider.getVault.mockRejectedValue('Unknown error')
+      mockLendProvider.getMarket.mockRejectedValue('Unknown error')
 
-      await expect(lendService.getVault(vaultAddress)).rejects.toThrow(
+      await expect(lendService.getMarket(marketId, chainId)).rejects.toThrow(
         'Unknown error',
       )
     })

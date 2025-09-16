@@ -19,9 +19,9 @@ describe('VerbsLendNamespace', () => {
     expect(namespace).toBeInstanceOf(VerbsLendNamespace)
   })
 
-  it('should delegate getVaults to provider', async () => {
+  it('should delegate getMarkets to provider', async () => {
     const namespace = new VerbsLendNamespace(mockProvider)
-    const mockVaults = [
+    const mockMarkets = [
       {
         chainId: 130,
         address: getRandomAddress(),
@@ -43,21 +43,22 @@ describe('VerbsLendNamespace', () => {
       },
     ]
 
-    vi.mocked(mockProvider.getVaults).mockResolvedValue(mockVaults)
+    vi.mocked(mockProvider.getMarkets).mockResolvedValue(mockMarkets)
 
-    const result = await namespace.getVaults()
+    const result = await namespace.getMarkets()
 
-    expect(mockProvider.getVaults).toHaveBeenCalled()
-    expect(result).toBe(mockVaults)
+    expect(mockProvider.getMarkets).toHaveBeenCalled()
+    expect(result).toBe(mockMarkets)
   })
 
-  it('should delegate getVault to provider', async () => {
+  it('should delegate getMarket to provider', async () => {
     const namespace = new VerbsLendNamespace(mockProvider)
-    const vaultAddress = getRandomAddress()
-    const mockVault = {
+    const marketId = getRandomAddress()
+    const chainId = 130 as const
+    const mockMarket = {
       chainId: 130,
-      address: vaultAddress,
-      name: 'Test Vault',
+      address: marketId,
+      name: 'Test Market',
       asset: getRandomAddress(),
       totalAssets: BigInt('1000000'),
       totalShares: BigInt('1000000'),
@@ -74,17 +75,20 @@ describe('VerbsLendNamespace', () => {
       lastUpdate: Date.now(),
     }
 
-    vi.mocked(mockProvider.getVault).mockResolvedValue(mockVault)
+    vi.mocked(mockProvider.getMarket).mockResolvedValue(mockMarket)
 
-    const result = await namespace.getVault(vaultAddress)
+    const result = await namespace.getMarket({ address: marketId, chainId })
 
-    expect(mockProvider.getVault).toHaveBeenCalledWith(vaultAddress)
-    expect(result).toBe(mockVault)
+    expect(mockProvider.getMarket).toHaveBeenCalledWith({
+      address: marketId,
+      chainId,
+    })
+    expect(result).toBe(mockMarket)
   })
 
-  it('should delegate getVaultBalance to provider', async () => {
+  it('should delegate getMarketBalance to provider', async () => {
     const namespace = new VerbsLendNamespace(mockProvider)
-    const vaultAddress = getRandomAddress()
+    const marketAddress = getRandomAddress()
     const walletAddress = getRandomAddress()
     const mockBalance = {
       balance: BigInt('500000'),
@@ -94,12 +98,15 @@ describe('VerbsLendNamespace', () => {
       chainId: 130,
     }
 
-    vi.mocked(mockProvider.getVaultBalance).mockResolvedValue(mockBalance)
+    vi.mocked(mockProvider.getMarketBalance).mockResolvedValue(mockBalance)
 
-    const result = await namespace.getVaultBalance(vaultAddress, walletAddress)
+    const result = await namespace.getMarketBalance(
+      marketAddress,
+      walletAddress,
+    )
 
-    expect(mockProvider.getVaultBalance).toHaveBeenCalledWith(
-      vaultAddress,
+    expect(mockProvider.getMarketBalance).toHaveBeenCalledWith(
+      marketAddress,
       walletAddress,
     )
     expect(result).toBe(mockBalance)

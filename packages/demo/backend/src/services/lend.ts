@@ -1,6 +1,6 @@
 import type {
+  LendMarket,
   LendTransaction,
-  LendVaultInfo,
   SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
@@ -10,14 +10,14 @@ import { baseSepolia, unichain } from 'viem/chains'
 import { getVerbs } from '../config/verbs.js'
 import { getWallet } from './wallet.js'
 
-interface VaultBalanceResult {
+interface MarketBalanceResult {
   balance: bigint
   balanceFormatted: string
   shares: bigint
   sharesFormatted: string
 }
 
-interface FormattedVaultResponse {
+interface FormattedMarketResponse {
   chainId: number
   address: Address
   name: string
@@ -46,20 +46,23 @@ async function getBlockExplorerUrl(chainId: SupportedChainId): Promise<string> {
   return `${chain.blockExplorers?.default.url}/tx` || ''
 }
 
-export async function getVaults(): Promise<LendVaultInfo[]> {
+export async function getMarkets(): Promise<LendMarket[]> {
   const verbs = getVerbs()
-  return await verbs.lend.getVaults()
+  return await verbs.lend.getMarkets()
 }
 
-export async function getVault(vaultAddress: Address): Promise<LendVaultInfo> {
+export async function getMarket(
+  marketId: Address,
+  chainId: SupportedChainId,
+): Promise<LendMarket> {
   const verbs = getVerbs()
-  return await verbs.lend.getVault(vaultAddress)
+  return await verbs.lend.getMarket({ address: marketId, chainId })
 }
 
-export async function getVaultBalance(
+export async function getMarketBalance(
   vaultAddress: Address,
   walletId: string,
-): Promise<VaultBalanceResult> {
+): Promise<MarketBalanceResult> {
   const verbs = getVerbs()
   const wallet = await getWallet(walletId)
 
@@ -67,12 +70,12 @@ export async function getVaultBalance(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return verbs.lend.getVaultBalance(vaultAddress, wallet.address)
+  return verbs.lend.getMarketBalance(vaultAddress, wallet.address)
 }
 
-export async function formatVaultResponse(
-  vault: LendVaultInfo,
-): Promise<FormattedVaultResponse> {
+export async function formatMarketResponse(
+  vault: LendMarket,
+): Promise<FormattedMarketResponse> {
   return {
     chainId: vault.chainId,
     address: vault.address,
@@ -89,8 +92,8 @@ export async function formatVaultResponse(
   }
 }
 
-export async function formatVaultBalanceResponse(
-  balance: VaultBalanceResult,
+export async function formatMarketBalanceResponse(
+  balance: MarketBalanceResult,
 ): Promise<{
   balance: string
   balanceFormatted: string

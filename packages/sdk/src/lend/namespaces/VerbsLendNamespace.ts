@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 
 import type { LendProvider } from '@/lend/provider.js'
-import type { LendVaultInfo } from '@/types/lend.js'
+import type { LendMarket, LendMarketId } from '@/types/lend.js'
 
 /**
  * Verbs Lend Namespace
@@ -11,24 +11,24 @@ export class VerbsLendNamespace {
   constructor(protected readonly provider: LendProvider) {}
 
   /**
-   * Get list of available lending vaults
+   * Get list of available lending markets
    */
-  getVaults(): Promise<LendVaultInfo[]> {
-    return this.provider.getVaults()
+  getMarkets(): Promise<LendMarket[]> {
+    return this.provider.getMarkets()
   }
 
   /**
-   * Get detailed information for a specific vault
+   * Get detailed information for a specific market
    */
-  getVault(vaultAddress: Address): Promise<LendVaultInfo> {
-    return this.provider.getVault(vaultAddress)
+  getMarket(marketId: LendMarketId): Promise<LendMarket> {
+    return this.provider.getMarket(marketId)
   }
 
   /**
-   * Get vault balance for a specific wallet
+   * Get market balance for a specific wallet
    */
-  getVaultBalance(
-    vaultAddress: Address,
+  getMarketBalance(
+    marketAddress: Address,
     walletAddress: Address,
   ): Promise<{
     balance: bigint
@@ -37,7 +37,7 @@ export class VerbsLendNamespace {
     sharesFormatted: string
     chainId: number
   }> {
-    return this.provider.getVaultBalance(vaultAddress, walletAddress)
+    return this.provider.getMarketBalance(marketAddress, walletAddress)
   }
 
   /**

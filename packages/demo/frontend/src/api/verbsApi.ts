@@ -61,7 +61,7 @@ class VerbsApiClient {
     })
   }
 
-  async getVaults(): Promise<{ vaults: Array<{ 
+  async getMarkets(): Promise<{ markets: Array<{ 
     chainId: number;
     address: string; 
     name: string; 
@@ -83,7 +83,7 @@ class VerbsApiClient {
     curator: string
     lastUpdate: number
   }> }> {
-    return this.request('/lend/vaults', {
+    return this.request('/lend/markets', {
       method: 'GET',
     })
   }
@@ -161,13 +161,13 @@ class VerbsApiClient {
     })
   }
 
-  async getVaultBalance(vaultAddress: string, walletId: string): Promise<{
+  async getMarketBalance(vaultAddress: string, walletId: string): Promise<{
     balance: string
     balanceFormatted: string
     shares: string
     sharesFormatted: string
   }> {
-    return this.request(`/lend/vault/${vaultAddress}/balance/${walletId}`, {
+    return this.request(`/lend/market/${vaultAddress}/balance/${walletId}`, {
       method: 'GET',
     })
   }
