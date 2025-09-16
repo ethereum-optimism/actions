@@ -301,9 +301,12 @@ export class DefaultSmartWallet extends SmartWallet {
     // TODO: Get actual chain ID from wallet context, for now using Unichain
     const chainId = unichain.id
 
-    // Handle ETH transfers
-    if (asset.toLowerCase() === 'eth') {
-      const parsedAmount = parseAssetAmount(amount, 18) // ETH has 18 decimals
+    // Resolve asset to get normalized information
+    const resolvedAsset = resolveAsset(asset, chainId)
+
+    // Handle ETH transfers (address will be 0x0000... for native ETH)
+    if (resolvedAsset.symbol.toLowerCase() === 'eth') {
+      const parsedAmount = parseAssetAmount(amount, resolvedAsset.decimals)
 
       return {
         to: recipientAddress,
@@ -313,7 +316,6 @@ export class DefaultSmartWallet extends SmartWallet {
     }
 
     // Handle ERC20 token transfers
-    const resolvedAsset = resolveAsset(asset, chainId)
     const parsedAmount = parseAssetAmount(amount, resolvedAsset.decimals)
 
     // Encode ERC20 transfer function call

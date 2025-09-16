@@ -3,6 +3,7 @@ export { LendProvider, LendProviderMorpho } from '@/lend/index.js'
 export { getTokenAddress, SUPPORTED_TOKENS } from '@/supported/tokens.js'
 export type {
   ApyBreakdown,
+  Asset,
   LendConfig,
   LendMarket,
   LendMarketId,
@@ -15,6 +16,14 @@ export type {
   VerbsConfig,
   WalletConfig,
 } from '@/types/index.js'
+export {
+  ETH,
+  getAssetAddress,
+  isAssetSupportedOnChain,
+  MORPHO,
+  USDC,
+  USDC_DEMO,
+} from '@/utils/assets.js'
 export { Verbs } from '@/verbs.js'
 export { SmartWallet } from '@/wallet/base/SmartWallet.js'
 export { Wallet } from '@/wallet/base/Wallet.js'
