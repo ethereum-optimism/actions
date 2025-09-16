@@ -3,7 +3,6 @@ import { parseUnits } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/token.js'
 
-
 /**
  * Parse human-readable amount to wei/smallest unit
  * @param amount - Human-readable amount (e.g. 1.5)
@@ -36,7 +35,6 @@ export function formatAssetAmount(amount: bigint, decimals: number): number {
 
   return parseFloat(result)
 }
-
 
 /**
  * Check if asset is supported on a specific chain

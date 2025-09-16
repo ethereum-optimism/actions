@@ -97,7 +97,6 @@ describe('Asset Utilities', () => {
     })
   })
 
-
   describe('Asset definitions', () => {
     it('should have correct ETH metadata', () => {
       expect(ETH.metadata).toEqual({

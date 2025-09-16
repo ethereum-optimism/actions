@@ -1,6 +1,7 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '../constants/supportedChains.js'
+import type { Asset } from './token.js'
 
 export { VerbsLendNamespace } from '../lend/namespaces/VerbsLendNamespace.js'
 export { WalletLendNamespace } from '../lend/namespaces/WalletLendNamespace.js'
@@ -13,6 +14,23 @@ export { LendProvider } from '../lend/provider.js'
 export type LendMarketId = {
   address: Address
   chainId: SupportedChainId
+}
+
+/**
+ * Lending market configuration
+ * @description Configuration for a lending market including asset information and provider
+ */
+export interface LendMarketConfig {
+  /** Market vault address */
+  address: Address
+  /** Chain ID where the market exists */
+  chainId: SupportedChainId
+  /** Human-readable name for the market */
+  name: string
+  /** Asset information for this market */
+  asset: Asset
+  /** Lending provider type */
+  lendProvider: 'morpho'
 }
 
 /**
@@ -182,4 +200,6 @@ export interface MorphoLendConfig {
   type: 'morpho'
   /** Default slippage tolerance (basis points) */
   defaultSlippage?: number
+  /** Allowlist of markets available for lending */
+  marketAllowlist?: LendMarketConfig[]
 }

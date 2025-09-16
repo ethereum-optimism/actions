@@ -15,9 +15,7 @@ import type {
   TransactionData,
 } from '@/types/lend.js'
 import type { Asset } from '@/types/token.js'
-import {
-  parseAssetAmount,
-} from '@/utils/assets.js'
+import { parseAssetAmount } from '@/utils/assets.js'
 import { SmartWallet } from '@/wallet/base/SmartWallet.js'
 
 /**
@@ -171,7 +169,9 @@ export class DefaultSmartWallet extends SmartWallet {
     // Check if asset is supported on the chain
     const tokenAddress = asset.address[chainId]
     if (!tokenAddress) {
-      throw new Error(`${asset.metadata.symbol} not supported on chain ${chainId}`)
+      throw new Error(
+        `${asset.metadata.symbol} not supported on chain ${chainId}`,
+      )
     }
 
     // Parse human-readable amount
@@ -184,7 +184,9 @@ export class DefaultSmartWallet extends SmartWallet {
     }
 
     const result = await this.lendProvider.deposit(
-      tokenAddress === 'native' ? '0x0000000000000000000000000000000000000000' : tokenAddress,
+      tokenAddress === 'native'
+        ? '0x0000000000000000000000000000000000000000'
+        : tokenAddress,
       parsedAmount,
       marketId,
       lendOptions,
@@ -307,7 +309,9 @@ export class DefaultSmartWallet extends SmartWallet {
     // Get token address for the specified chain
     const tokenAddress = asset.address[chainId]
     if (!tokenAddress) {
-      throw new Error(`${asset.metadata.symbol} not supported on chain ${chainId}`)
+      throw new Error(
+        `${asset.metadata.symbol} not supported on chain ${chainId}`,
+      )
     }
 
     // Handle ETH transfers

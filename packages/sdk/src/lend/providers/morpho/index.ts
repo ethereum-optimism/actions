@@ -8,6 +8,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { SupportedChainId } from '../../../constants/supportedChains.js'
 import type {
   LendMarket,
+  LendMarketConfig,
   LendMarketId,
   LendOptions,
   LendTransaction,
@@ -46,6 +47,7 @@ export class LendProviderMorpho extends LendProvider {
 
   private defaultSlippage: number
   private chainManager: ChainManager
+  private marketAllowlist?: LendMarketConfig[]
 
   /**
    * Create a new Morpho lending provider
@@ -56,6 +58,7 @@ export class LendProviderMorpho extends LendProvider {
     super()
     this.chainManager = chainManager
     this.defaultSlippage = config.defaultSlippage || 50 // 0.5% default
+    this.marketAllowlist = config.marketAllowlist
   }
 
   /**
@@ -76,7 +79,8 @@ export class LendProviderMorpho extends LendProvider {
     try {
       // 1. Find suitable vault if marketId not provided
       const selectedVaultAddress =
-        (marketId as Address) || (await findBestVaultForAsset(asset))
+        (marketId as Address) ||
+        (await findBestVaultForAsset(asset, this.marketAllowlist))
 
       // 2. Get vault information for APY
       const vaultInfo = await this.getMarket({
@@ -179,7 +183,11 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to market information
    */
   async getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    return getVaultInfoHelper(marketId.address, this.chainManager)
+    return getVaultInfoHelper(
+      marketId.address,
+      this.chainManager,
+      this.marketAllowlist,
+    )
   }
 
   /**
@@ -187,7 +195,7 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to array of market information
    */
   async getMarkets(): Promise<LendMarket[]> {
-    return getMarketsHelper(this.chainManager)
+    return getMarketsHelper(this.chainManager, this.marketAllowlist)
   }
 
   /**

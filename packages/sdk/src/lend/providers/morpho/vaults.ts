@@ -10,7 +10,11 @@ import {
 } from '@/lend/providers/morpho/api.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { getTokenAddress, SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { ApyBreakdown, LendMarket } from '@/types/lend.js'
+import type {
+  ApyBreakdown,
+  LendMarket,
+  LendMarketConfig,
+} from '@/types/lend.js'
 
 /**
  * Vault configuration type
@@ -144,15 +148,51 @@ export function calculateBaseApy(vault: any): number {
  * @returns Promise resolving to detailed vault information
  */
 export async function getVaultInfo(
-  vaultAddress: Address,
+  vaultConfig: Address | LendMarketConfig,
   chainManager: ChainManager,
+  marketAllowlist?: LendMarketConfig[],
 ): Promise<LendMarket> {
-  try {
-    // 1. Find vault configuration for validation
-    const config = SUPPORTED_VAULTS.find((c) => c.address === vaultAddress)
+  let config: LendMarketConfig | undefined
+  let vaultAddress: Address | undefined
 
-    if (!config) {
-      throw new Error(`Vault ${vaultAddress} not found`)
+  try {
+    if (typeof vaultConfig === 'string') {
+      // If address provided, find in allowlist or fall back to legacy SUPPORTED_VAULTS
+      vaultAddress = vaultConfig
+      const foundConfig =
+        marketAllowlist?.find((c) => c.address === vaultAddress) ||
+        SUPPORTED_VAULTS.find((c) => c.address === vaultAddress)
+
+      if (!foundConfig) {
+        throw new Error(`Vault ${vaultAddress} not found`)
+      }
+
+      if ('lendProvider' in foundConfig) {
+        config = foundConfig
+      } else {
+        config = {
+          address: foundConfig.address,
+          chainId: foundConfig.chainId,
+          name: foundConfig.name,
+          asset: {
+            address: { [foundConfig.chainId]: foundConfig.asset.address },
+            metadata: {
+              decimals: Number(foundConfig.asset.decimals),
+              name: foundConfig.asset.name || 'Unknown',
+              symbol: foundConfig.asset.symbol || 'UNK',
+            },
+            type:
+              foundConfig.asset.address ===
+              '0x0000000000000000000000000000000000000000'
+                ? 'native'
+                : 'erc20',
+          },
+          lendProvider: 'morpho' as const,
+        }
+      }
+    } else {
+      config = vaultConfig
+      vaultAddress = config.address
     }
 
     // 2. Fetch live vault data from Morpho SDK
@@ -190,7 +230,14 @@ export async function getVaultInfo(
       chainId: config.chainId,
       address: vaultAddress,
       name: config.name,
-      asset: config.asset.address,
+      asset: (() => {
+        const addr =
+          config.asset.address[config.chainId] ||
+          Object.values(config.asset.address)[0]
+        return addr === 'native'
+          ? '0x0000000000000000000000000000000000000000'
+          : addr
+      })() as Address,
       totalAssets: vault.totalAssets,
       totalShares: vault.totalSupply,
       apy: apyBreakdown.netApy, // Use Net APY calculation
@@ -203,7 +250,7 @@ export async function getVaultInfo(
   } catch (error) {
     console.error('Failed to get vault info:', error)
     throw new Error(
-      `Failed to get vault info for ${vaultAddress}: ${
+      `Failed to get vault info for ${config?.address || vaultAddress}: ${
         error instanceof Error ? error.message : 'Unknown error'
       }`,
     )
@@ -217,11 +264,18 @@ export async function getVaultInfo(
  */
 export async function getMarkets(
   chainManager: ChainManager,
+  marketAllowlist?: LendMarketConfig[],
 ): Promise<LendMarket[]> {
   try {
-    const vaultInfoPromises = SUPPORTED_VAULTS.map((config) =>
-      getVaultInfo(config.address, chainManager),
-    )
+    const marketsToFetch = marketAllowlist || SUPPORTED_VAULTS
+
+    const vaultInfoPromises = marketsToFetch.map((config) => {
+      if ('lendProvider' in config) {
+        return getVaultInfo(config, chainManager, marketAllowlist)
+      } else {
+        return getVaultInfo(config.address, chainManager, marketAllowlist)
+      }
+    })
     return await Promise.all(vaultInfoPromises)
   } catch (error) {
     throw new Error(
@@ -237,11 +291,21 @@ export async function getMarkets(
  * @param asset - Asset token address
  * @returns Promise resolving to vault address
  */
-export async function findBestVaultForAsset(asset: Address): Promise<Address> {
-  // Filter supported vaults by asset
-  const assetVaults = SUPPORTED_VAULTS.filter(
-    (vault) => vault.asset.address === asset,
-  )
+export async function findBestVaultForAsset(
+  asset: Address,
+  marketAllowlist?: LendMarketConfig[],
+): Promise<Address> {
+  const vaultsToSearch = marketAllowlist || SUPPORTED_VAULTS
+
+  const assetVaults = vaultsToSearch.filter((vault) => {
+    if ('lendProvider' in vault) {
+      // LendMarketConfig format
+      return Object.values(vault.asset.address).includes(asset)
+    } else {
+      // VaultConfig format
+      return vault.asset.address === asset
+    }
+  })
 
   if (assetVaults.length === 0) {
     throw new Error(`No vaults available for asset ${asset}`)

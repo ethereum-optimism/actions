@@ -6,6 +6,7 @@ export type {
   Asset,
   LendConfig,
   LendMarket,
+  LendMarketConfig,
   LendMarketId,
   LendMarketInfo,
   LendOptions,
