@@ -12,11 +12,25 @@ import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
 import type { LendProvider, TransactionData } from '@/types/lend.js'
+import type { Asset } from '@/types/token.js'
 import { DefaultSmartWallet } from '@/wallet/DefaultSmartWallet.js'
 
 vi.mock('viem/account-abstraction', () => ({
   toCoinbaseSmartAccount: vi.fn(),
 }))
+
+// Test Asset for mocking
+const testUSDC: Asset = {
+  address: {
+    [unichain.id]: '0x078d782b760474a361dda0af3839290b0ef57ad6',
+  },
+  metadata: {
+    decimals: 6,
+    name: 'USDC',
+    symbol: 'USDC',
+  },
+  type: 'erc20',
+}
 
 // Mock data
 const mockOwners: Address[] = ['0x123', '0x456']
@@ -266,7 +280,7 @@ describe('DefaultSmartWallet', () => {
 
     const result = await wallet.lendExecute(
       100,
-      'usdc',
+      testUSDC,
       unichain.id,
       'test-market',
     )

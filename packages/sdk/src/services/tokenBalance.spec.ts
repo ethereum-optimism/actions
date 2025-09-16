@@ -3,15 +3,15 @@ import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { TokenInfo } from '@/supported/tokens.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
+import type { Asset } from '@/types/token.js'
 
 import { fetchERC20Balance, fetchETHBalance } from './tokenBalance.js'
 
 describe('TokenBalance', () => {
   let chainManager: ChainManager
-  let mockToken: TokenInfo
+  let mockAsset: Asset
   const walletAddress: Address = '0x1234567890123456789012345678901234567890'
 
   beforeEach(() => {
@@ -20,13 +20,16 @@ describe('TokenBalance', () => {
       defaultBalance: 1000000n,
     }) as any
 
-    mockToken = {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-      addresses: {
+    mockAsset = {
+      address: {
         [unichain.id]: '0x078d782b760474a361dda0af3839290b0ef57ad6',
       },
+      metadata: {
+        decimals: 6,
+        name: 'USDC',
+        symbol: 'USDC',
+      },
+      type: 'erc20',
     }
   })
 
@@ -35,7 +38,7 @@ describe('TokenBalance', () => {
       const balance = await fetchERC20Balance(
         chainManager,
         walletAddress,
-        mockToken,
+        mockAsset,
       )
 
       expect(balance).toEqual({
@@ -47,26 +50,29 @@ describe('TokenBalance', () => {
             chainId: unichain.id,
             balance: 1000000n,
             formattedBalance: '1',
-            tokenAddress: SUPPORTED_TOKENS.USDC.addresses[unichain.id]!,
+            tokenAddress: mockAsset.address[unichain.id]!,
           },
         ],
       })
     })
 
     it('should return zero balance when token not supported on any chains', async () => {
-      const unsupportedToken: TokenInfo = {
-        symbol: 'UNSUPPORTED',
-        name: 'Unsupported Token',
-        decimals: 18,
-        addresses: {
+      const unsupportedAsset: Asset = {
+        metadata: {
+          symbol: 'UNSUPPORTED',
+          name: 'Unsupported Token',
+          decimals: 18,
+        },
+        address: {
           27637: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
         } as any,
+        type: 'erc20',
       }
 
       const balance = await fetchERC20Balance(
         chainManager,
         walletAddress,
-        unsupportedToken,
+        unsupportedAsset,
       )
 
       expect(balance).toEqual({

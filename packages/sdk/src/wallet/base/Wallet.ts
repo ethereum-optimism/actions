@@ -3,7 +3,7 @@ import type { Address, LocalAccount, WalletClient } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
+import { fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { TokenBalance } from '@/types/token.js'
 
@@ -49,14 +49,9 @@ export abstract class Wallet {
    * @returns Promise resolving to array of token balances with chain breakdown
    */
   async getBalance(): Promise<TokenBalance[]> {
-    const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
-      async (token) => {
-        return fetchERC20Balance(this.chainManager, this.address, token)
-      },
-    )
+    // For now, just return ETH balance until assets are properly configured
     const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
-
-    return Promise.all([ethBalancePromise, ...tokenBalancePromises])
+    return Promise.all([ethBalancePromise])
   }
 
   /**

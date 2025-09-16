@@ -1,6 +1,5 @@
 import type { Address, LocalAccount, WalletClient } from 'viem'
 import { unichain } from 'viem/chains'
-import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -60,15 +59,8 @@ describe('Wallet (base)', () => {
     expect(fetchETHBalance).toHaveBeenCalledTimes(1)
     expect(fetchETHBalance).toHaveBeenCalledWith(chainManager, address)
 
-    const tokenCount = Object.values(SUPPORTED_TOKENS).length
-    expect(fetchERC20Balance).toHaveBeenCalledTimes(tokenCount)
-
-    // Ensure each call used the same chainManager and address
-    for (const call of (fetchERC20Balance as Mock).mock.calls) {
-      expect(call[0]).toBe(chainManager)
-      expect(call[1]).toBe(address)
-      expect(call[2]).toBeTruthy()
-    }
+    // Currently only ETH balance is fetched
+    expect(fetchERC20Balance).toHaveBeenCalledTimes(0)
   })
 
   it('getBalance propagates errors from underlying fetchers', async () => {
