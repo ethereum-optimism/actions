@@ -328,6 +328,7 @@ describe('HTTP API Integration', () => {
               {
                 chainId: 130,
                 balance: '1000000',
+                tokenAddress: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
                 formattedBalance: '1',
               },
             ],
