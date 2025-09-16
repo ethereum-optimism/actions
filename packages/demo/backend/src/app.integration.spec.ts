@@ -93,10 +93,10 @@ vi.mock('./config/verbs.js', () => ({
           },
         ]),
       ),
-      getVault: vi.fn((vaultAddress: string) => {
-        if (vaultAddress === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
+      getMarket: vi.fn((marketId: { address: string; chainId: number }) => {
+        if (marketId.address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
           return Promise.resolve({
-            address: vaultAddress,
+            address: marketId.address,
             name: 'Gauntlet USDC',
             asset: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
             apy: 0.03,
@@ -119,6 +119,17 @@ vi.mock('./config/verbs.js', () => ({
         }
         throw new Error('Vault not found')
       }),
+      getMarketBalance: vi.fn(
+        (_marketAddress: string, _walletAddress: string) => {
+          return Promise.resolve({
+            balance: 1000000n,
+            balanceFormatted: '1.0',
+            shares: 1000000000000000000n,
+            sharesFormatted: '1.0',
+            chainId: 130,
+          })
+        },
+      ),
     },
   })),
 }))
@@ -309,6 +320,18 @@ describe('HTTP API Integration', () => {
         balance: [
           { symbol: 'USDC', balance: '1000000' },
           { symbol: 'MORPHO', balance: '500000' },
+          {
+            symbol: 'Gauntlet USDC',
+            totalBalance: '1000000',
+            totalFormattedBalance: '1',
+            chainBalances: [
+              {
+                chainId: 130,
+                balance: '1000000',
+                formattedBalance: '1',
+              },
+            ],
+          },
         ],
       })
     })
@@ -368,18 +391,18 @@ describe('HTTP API Integration', () => {
   })
 
   describe('Lend endpoints', () => {
-    it('should get all vaults', async () => {
-      const response = await request(`${baseUrl}/lend/vaults`)
+    it('should get all markets', async () => {
+      const response = await request(`${baseUrl}/lend/markets`)
 
       expect(response.statusCode).toBe(200)
       const data = (await response.body.json()) as any
 
-      expect(data).toHaveProperty('vaults')
-      expect(Array.isArray(data.vaults)).toBe(true)
-      expect(data.vaults.length).toBeGreaterThan(0)
+      expect(data).toHaveProperty('markets')
+      expect(Array.isArray(data.markets)).toBe(true)
+      expect(data.markets.length).toBeGreaterThan(0)
 
-      // Check vault structure
-      const vault = data.vaults[0]
+      // Check market structure
+      const vault = data.markets[0]
       expect(vault).toHaveProperty('address')
       expect(vault).toHaveProperty('name')
       expect(vault).toHaveProperty('apy')
@@ -389,15 +412,17 @@ describe('HTTP API Integration', () => {
       expect(typeof vault.apy).toBe('number')
     })
 
-    it('should get specific vault info', async () => {
+    it('should get specific market info', async () => {
       const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
-      const response = await request(`${baseUrl}/lend/vault/${vaultAddress}`)
+      const response = await request(
+        `${baseUrl}/lend/market/130/${vaultAddress}`,
+      )
 
       expect(response.statusCode).toBe(200)
       const data = (await response.body.json()) as any
 
-      expect(data).toHaveProperty('vault')
-      const vault = data.vault
+      expect(data).toHaveProperty('market')
+      const vault = data.market
       expect(vault).toHaveProperty('address')
       expect(vault).toHaveProperty('name')
       expect(vault).toHaveProperty('apy')
@@ -423,23 +448,23 @@ describe('HTTP API Integration', () => {
       expect(typeof vault.fee).toBe('number')
     })
 
-    it('should return 400 for missing vault address', async () => {
-      const response = await request(`${baseUrl}/lend/vault/`)
+    it('should return 400 for missing market address', async () => {
+      const response = await request(`${baseUrl}/lend/market/`)
 
       expect(response.statusCode).toBe(404) // Will be 404 since route doesn't match
     })
 
-    it('should handle vault not found', async () => {
+    it('should handle market not found', async () => {
       const invalidVaultAddress = '0x1234567890123456789012345678901234567890'
       const response = await request(
-        `${baseUrl}/lend/vault/${invalidVaultAddress}`,
+        `${baseUrl}/lend/market/130/${invalidVaultAddress}`,
       )
 
       expect(response.statusCode).toBe(500)
       const data = (await response.body.json()) as any
 
       expect(data).toHaveProperty('error')
-      expect(data.error).toBe('Failed to get vault info')
+      expect(data.error).toBe('Failed to get market info')
       expect(data).toHaveProperty('message')
       expect(data.message).toContain('Vault not found')
     })

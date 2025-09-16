@@ -1,6 +1,5 @@
 import type {
   LendMarket,
-  LendMarketId,
   LendTransaction,
   SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
@@ -53,11 +52,11 @@ export async function getMarkets(): Promise<LendMarket[]> {
 }
 
 export async function getMarket(
-  marketId: LendMarketId,
+  marketId: Address,
   chainId: SupportedChainId,
 ): Promise<LendMarket> {
   const verbs = getVerbs()
-  return await verbs.lend.getMarket({ id: marketId, chainId })
+  return await verbs.lend.getMarket({ address: marketId, chainId })
 }
 
 export async function getMarketBalance(

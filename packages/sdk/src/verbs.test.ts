@@ -48,7 +48,7 @@ describe('Verbs SDK - System Tests', () => {
 
         // This will make an actual network request to fetch vault data
         const vaultInfo = await verbs.lend.getMarket({
-          id: vaultAddress,
+          address: vaultAddress,
           chainId: 130,
         })
 
@@ -126,7 +126,7 @@ describe('Verbs SDK - System Tests', () => {
 
         const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
         const vaultInfo = await verbs.lend.getMarket({
-          id: vaultAddress,
+          address: vaultAddress,
           chainId: 130,
         })
 
@@ -180,7 +180,7 @@ describe('Verbs SDK - System Tests', () => {
 
         await expect(
           verbs.lend.getMarket({
-            id: invalidVaultAddress,
+            address: invalidVaultAddress,
             chainId: 130,
           }),
         ).rejects.toThrow(`Vault ${invalidVaultAddress} not found`)

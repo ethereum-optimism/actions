@@ -1,5 +1,7 @@
 import type { Address, Hex } from 'viem'
 
+import type { SupportedChainId } from '../constants/supportedChains.js'
+
 export { VerbsLendNamespace } from '../lend/namespaces/VerbsLendNamespace.js'
 export { WalletLendNamespace } from '../lend/namespaces/WalletLendNamespace.js'
 export { LendProvider } from '../lend/provider.js'
@@ -8,7 +10,10 @@ export { LendProvider } from '../lend/provider.js'
  * Lending market identifier
  * @description Unique identifier for a lending market
  */
-export type LendMarketId = string
+export type LendMarketId = {
+  address: Address
+  chainId: SupportedChainId
+}
 
 /**
  * Transaction data for execution

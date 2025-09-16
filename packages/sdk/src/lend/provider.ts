@@ -1,6 +1,5 @@
 import type { Address } from 'viem'
 
-import type { SupportedChainId } from '../constants/supportedChains.js'
 import type {
   LendMarket,
   LendMarketId,
@@ -69,15 +68,10 @@ export abstract class LendProvider {
 
   /**
    * Get detailed market information
-   * @param params - Market parameters
-   * @param params.id - Market identifier
-   * @param params.chainId - Chain ID
+   * @param marketId - Market identifier containing address and chainId
    * @returns Promise resolving to market information
    */
-  abstract getMarket(params: {
-    id: LendMarketId
-    chainId: SupportedChainId
-  }): Promise<LendMarket>
+  abstract getMarket(marketId: LendMarketId): Promise<LendMarket>
 
   /**
    * Get list of available lending markets

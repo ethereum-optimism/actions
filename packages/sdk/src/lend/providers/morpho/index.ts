@@ -80,7 +80,7 @@ export class LendProviderMorpho extends LendProvider {
 
       // 2. Get vault information for APY
       const vaultInfo = await this.getMarket({
-        id: selectedVaultAddress,
+        address: selectedVaultAddress,
         chainId: 130 as SupportedChainId, // TODO: Get chain ID dynamically
       })
 
@@ -175,16 +175,11 @@ export class LendProviderMorpho extends LendProvider {
 
   /**
    * Get detailed market information
-   * @param params - Market parameters
-   * @param params.id - Market identifier (vault address)
-   * @param params.chainId - Chain ID
+   * @param marketId - Market identifier containing address and chainId
    * @returns Promise resolving to market information
    */
-  async getMarket(params: {
-    id: LendMarketId
-    chainId: SupportedChainId
-  }): Promise<LendMarket> {
-    return getVaultInfoHelper(params.id as Address, this.chainManager)
+  async getMarket(marketId: LendMarketId): Promise<LendMarket> {
+    return getVaultInfoHelper(marketId.address, this.chainManager)
   }
 
   /**
@@ -203,7 +198,7 @@ export class LendProviderMorpho extends LendProvider {
    */
   async getVaultInfo(vaultAddress: Address): Promise<LendMarket> {
     return this.getMarket({
-      id: vaultAddress,
+      address: vaultAddress,
       chainId: 130 as SupportedChainId, // TODO: Get chain ID dynamically
     })
   }

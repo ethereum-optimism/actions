@@ -1,6 +1,5 @@
 import type { Address } from 'viem'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { LendProvider } from '@/lend/provider.js'
 import type { LendMarket, LendMarketId } from '@/types/lend.js'
 
@@ -21,11 +20,8 @@ export class VerbsLendNamespace {
   /**
    * Get detailed information for a specific market
    */
-  getMarket(params: {
-    id: LendMarketId
-    chainId: SupportedChainId
-  }): Promise<LendMarket> {
-    return this.provider.getMarket(params)
+  getMarket(marketId: LendMarketId): Promise<LendMarket> {
+    return this.provider.getMarket(marketId)
   }
 
   /**

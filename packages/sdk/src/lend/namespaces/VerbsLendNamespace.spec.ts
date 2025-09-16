@@ -77,10 +77,10 @@ describe('VerbsLendNamespace', () => {
 
     vi.mocked(mockProvider.getMarket).mockResolvedValue(mockMarket)
 
-    const result = await namespace.getMarket({ id: marketId, chainId })
+    const result = await namespace.getMarket({ address: marketId, chainId })
 
     expect(mockProvider.getMarket).toHaveBeenCalledWith({
-      id: marketId,
+      address: marketId,
       chainId,
     })
     expect(result).toBe(mockMarket)
