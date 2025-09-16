@@ -1259,10 +1259,10 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     // Check if selected wallet has USDC balance before proceeding
     try {
       const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id)
-      const usdcToken = balanceResult.balance.find(
-        (token) => token.symbol === 'USDC',
+      const usdcTokens = balanceResult.balance.filter(
+        (token) => token.symbol === 'USDC' || token.symbol === 'USDC_DEMO',
       )
-      const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) : 0
+      const usdcBalance = usdcTokens.reduce((acc, token) => acc + parseFloat(token.totalBalance), 0)
 
       if (usdcBalance <= 0) {
         const noBalanceLine: TerminalLine = {
