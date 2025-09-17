@@ -153,14 +153,8 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
       chainId: config.chainId,
       address: marketId.address,
       name: config.name,
-      asset: (() => {
-        const addr =
-          config.asset.address[config.chainId] ||
-          Object.values(config.asset.address)[0]
-        return addr === 'native'
-          ? '0x0000000000000000000000000000000000000000'
-          : addr
-      })() as Address,
+      asset: (config.asset.address[config.chainId] ||
+        Object.values(config.asset.address)[0]) as Address,
       totalAssets: vault.totalAssets,
       totalShares: vault.totalSupply,
       apy: apyBreakdown.netApy, // Use Net APY calculation

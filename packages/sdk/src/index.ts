@@ -1,3 +1,4 @@
+export { ETH } from '@/constants/assets.js'
 export type { SupportedChainId } from '@/constants/supportedChains.js'
 export { LendProvider, LendProviderMorpho } from '@/lend/index.js'
 export { getTokenAddress, SUPPORTED_TOKENS } from '@/supported/tokens.js'

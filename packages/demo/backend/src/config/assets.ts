@@ -1,21 +1,6 @@
 import type { Asset } from '@eth-optimism/verbs-sdk'
 import { base, baseSepolia, mainnet, unichain } from 'viem/chains'
 
-export const ETH: Asset = {
-  address: {
-    [mainnet.id]: 'native',
-    [unichain.id]: 'native',
-    [base.id]: 'native',
-    [baseSepolia.id]: 'native',
-  },
-  metadata: {
-    decimals: 18,
-    name: 'Ethereum',
-    symbol: 'ETH',
-  },
-  type: 'native',
-}
-
 export const USDC: Asset = {
   address: {
     [mainnet.id]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',

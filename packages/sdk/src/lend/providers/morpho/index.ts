@@ -3,8 +3,8 @@ import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
+import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { DEFAULT_VERBS_CONFIG } from '@/utils/config.js'
 
 import type { SupportedChainId } from '../../../constants/supportedChains.js'
 import type {
