@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { calculateBaseApy, calculateRewardsBreakdown } from './vaults.js'
+import { calculateBaseApy, calculateRewardsBreakdown } from './sdk.js'
 
 describe('Vault Utilities', () => {
   describe('calculateBaseApy', () => {

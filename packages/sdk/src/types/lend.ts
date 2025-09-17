@@ -20,11 +20,7 @@ export type LendMarketId = {
  * Lending market configuration
  * @description Configuration for a lending market including asset information and provider
  */
-export interface LendMarketConfig {
-  /** Market vault address */
-  address: Address
-  /** Chain ID where the market exists */
-  chainId: SupportedChainId
+export interface LendMarketConfig extends LendMarketId {
   /** Human-readable name for the market */
   name: string
   /** Asset information for this market */

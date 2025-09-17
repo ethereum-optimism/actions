@@ -14,7 +14,9 @@ import type {
   ApyBreakdown,
   LendMarket,
   LendMarketConfig,
+  LendMarketId,
 } from '@/types/lend.js'
+import { findMarketInAllowlist } from '@/utils/config.js'
 
 /**
  * Vault configuration type
@@ -142,13 +144,11 @@ export function calculateBaseApy(vault: any): number {
 }
 
 /**
- * Parameters for getVaultInfo function
+ * Parameters for getVault function
  */
-interface GetVaultInfoParams {
-  /** Vault configuration object (if known) */
-  vaultConfig?: LendMarketConfig
-  /** Vault address (if only address is known) */
-  address?: Address
+interface GetVaultParams {
+  /** Market identifier (address and chainId) */
+  marketId: LendMarketId
   /** Chain manager instance */
   chainManager: ChainManager
   /** Optional market allowlist */
@@ -160,42 +160,19 @@ interface GetVaultInfoParams {
  * @param params - Named parameters object
  * @returns Promise resolving to detailed vault information
  */
-export async function getVaultInfo(
-  params: GetVaultInfoParams,
-): Promise<LendMarket> {
-  const { vaultConfig, address, chainManager, marketAllowlist } = params
-
-  // Require exactly one of vaultConfig or address
-  if (!vaultConfig && !address) {
-    throw new Error('Either vaultConfig or address must be provided')
-  }
-  if (vaultConfig && address) {
-    throw new Error('Only one of vaultConfig or address should be provided')
-  }
-  let config: LendMarketConfig | undefined
-  let vaultAddress: Address | undefined
+export async function getVault(params: GetVaultParams): Promise<LendMarket> {
+  const { marketId, chainManager, marketAllowlist } = params
 
   try {
-    if (address) {
-      // If address provided, find in allowlist only
-      vaultAddress = address
-      const foundConfig = marketAllowlist?.find(
-        (c) => c.address === vaultAddress,
-      )
-
-      if (!foundConfig) {
-        throw new Error(`Vault ${vaultAddress} not found in market allowlist`)
-      }
-
-      config = foundConfig
-    } else {
-      config = vaultConfig!
-      vaultAddress = config.address
+    // Find config in allowlist (required for all vaults)
+    const config = findMarketInAllowlist(marketAllowlist, marketId)
+    if (!config) {
+      throw new Error(`Vault ${marketId.address} not found in market allowlist`)
     }
 
     // 2. Fetch live vault data from Morpho SDK
     const vault = await fetchAccrualVault(
-      vaultAddress,
+      marketId.address,
       chainManager.getPublicClient(config.chainId),
     ).catch((error) => {
       console.error('Failed to fetch vault info:', error)
@@ -208,15 +185,15 @@ export async function getVaultInfo(
     })
 
     // 3. Fetch rewards data from API
-    const rewardsBreakdown = await fetchAndCalculateRewards(vaultAddress).catch(
-      (error) => {
-        console.error('Failed to fetch rewards data:', error)
-        return {
-          other: 0,
-          totalRewardsApr: 0,
-        }
-      },
-    )
+    const rewardsBreakdown = await fetchAndCalculateRewards(
+      marketId.address,
+    ).catch((error) => {
+      console.error('Failed to fetch rewards data:', error)
+      return {
+        other: 0,
+        totalRewardsApr: 0,
+      }
+    })
 
     // 4. Calculate APY breakdown
     const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
@@ -226,7 +203,7 @@ export async function getVaultInfo(
 
     return {
       chainId: config.chainId,
-      address: vaultAddress,
+      address: marketId.address,
       name: config.name,
       asset: (() => {
         const addr =
@@ -248,7 +225,7 @@ export async function getVaultInfo(
   } catch (error) {
     console.error('Failed to get vault info:', error)
     throw new Error(
-      `Failed to get vault info for ${config?.address || vaultAddress}: ${
+      `Failed to get vault info for ${marketId.address}: ${
         error instanceof Error ? error.message : 'Unknown error'
       }`,
     )
@@ -256,33 +233,25 @@ export async function getVaultInfo(
 }
 
 /**
- * Get list of available markets (vaults)
+ * Get list of available vaults
  * @param chainManager - Chain manager instance
- * @returns Promise resolving to array of market information
+ * @returns Promise resolving to array of vault information
  */
-export async function getMarkets(
+export async function getVaults(
   chainManager: ChainManager,
   marketAllowlist?: LendMarketConfig[],
 ): Promise<LendMarket[]> {
   try {
-    const marketsToFetch = marketAllowlist || SUPPORTED_VAULTS
+    const vaultsToFetch = marketAllowlist || SUPPORTED_VAULTS
 
-    const vaultInfoPromises = marketsToFetch.map((config) => {
-      if ('lendProvider' in config) {
-        return getVaultInfo({
-          vaultConfig: config,
-          chainManager,
-          marketAllowlist,
-        })
-      } else {
-        return getVaultInfo({
-          address: config.address,
-          chainManager,
-          marketAllowlist,
-        })
-      }
+    const vaultPromises = vaultsToFetch.map((config) => {
+      return getVault({
+        marketId: { address: config.address, chainId: config.chainId },
+        chainManager,
+        marketAllowlist,
+      })
     })
-    return await Promise.all(vaultInfoPromises)
+    return await Promise.all(vaultPromises)
   } catch (error) {
     throw new Error(
       `Failed to get vaults: ${

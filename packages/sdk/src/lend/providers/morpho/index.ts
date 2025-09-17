@@ -4,7 +4,7 @@ import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import { DEFAULT_VERBS_CONFIG } from '@/verbs.js'
+import { DEFAULT_VERBS_CONFIG } from '@/utils/config.js'
 
 import type { SupportedChainId } from '../../../constants/supportedChains.js'
 import type {
@@ -17,10 +17,10 @@ import type {
 import { LendProvider } from '../../provider.js'
 import {
   findBestVaultForAsset,
-  getMarkets as getMarketsHelper,
-  getVaultInfo as getVaultInfoHelper,
+  getVault,
+  getVaults,
   SUPPORTED_VAULTS,
-} from './vaults.js'
+} from './sdk.js'
 
 /**
  * Supported networks for Morpho lending
@@ -182,8 +182,8 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to market information
    */
   async getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    return getVaultInfoHelper({
-      address: marketId.address,
+    return getVault({
+      marketId,
       chainManager: this.chainManager,
       marketAllowlist: this._config.marketAllowlist,
     })
@@ -194,21 +194,7 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to array of market information
    */
   async getMarkets(): Promise<LendMarket[]> {
-    return getMarketsHelper(this.chainManager, this._config.marketAllowlist)
-  }
-
-  /**
-   * Get detailed vault information (legacy naming)
-   * @param vaultAddress - Vault address
-   * @returns Promise resolving to vault information
-   * @deprecated Use getMarket instead
-   */
-  async getVaultInfo(vaultAddress: Address): Promise<LendMarket> {
-    return getVaultInfoHelper({
-      address: vaultAddress,
-      chainManager: this.chainManager,
-      marketAllowlist: this._config.marketAllowlist,
-    })
+    return getVaults(this.chainManager, this._config.marketAllowlist)
   }
 
   /**

@@ -3,6 +3,7 @@ import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendProvider } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
+import { DEFAULT_VERBS_CONFIG } from '@/utils/config.js'
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
 import type {
@@ -12,16 +13,6 @@ import type {
 import { HostedWalletProviderRegistry } from '@/wallet/providers/HostedWalletProviderRegistry.js'
 import { WalletNamespace } from '@/wallet/WalletNamespace.js'
 import { WalletProvider } from '@/wallet/WalletProvider.js'
-
-/**
- * Default SDK configuration values
- */
-export const DEFAULT_VERBS_CONFIG = {
-  lend: {
-    /** Default slippage tolerance for lending operations (in basis points: 50 = 0.5%) */
-    defaultSlippage: 50,
-  },
-} as const
 
 /**
  * Main Verbs SDK class
