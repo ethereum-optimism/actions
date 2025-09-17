@@ -71,7 +71,10 @@ export async function getMarketBalance(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return verbs.lend.getMarketBalance({ address: vaultAddress, chainId }, wallet.address)
+  return verbs.lend.getMarketBalance(
+    { address: vaultAddress, chainId },
+    wallet.address,
+  )
 }
 
 export async function formatMarketResponse(

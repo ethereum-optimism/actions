@@ -120,7 +120,10 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
         try {
           const walletAddress = wallet.address
           const vaultBalance = await verbs.lend.getMarketBalance(
-            { address: vault.address, chainId: vault.chainId as SupportedChainId },
+            {
+              address: vault.address,
+              chainId: vault.chainId as SupportedChainId,
+            },
             walletAddress,
           )
 
