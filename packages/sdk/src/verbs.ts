@@ -14,6 +14,16 @@ import { WalletNamespace } from '@/wallet/WalletNamespace.js'
 import { WalletProvider } from '@/wallet/WalletProvider.js'
 
 /**
+ * Default SDK configuration values
+ */
+export const DEFAULT_VERBS_CONFIG = {
+  lend: {
+    /** Default slippage tolerance for lending operations (in basis points: 50 = 0.5%) */
+    defaultSlippage: 50,
+  },
+} as const
+
+/**
  * Main Verbs SDK class
  * @description Core implementation of the Verbs SDK
  */
@@ -37,7 +47,12 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
     if (config.lend) {
       if (config.lend.provider === 'morpho') {
         this._lendProvider = new LendProviderMorpho(
-          config.lend,
+          {
+            ...config.lend,
+            defaultSlippage:
+              config.lend.defaultSlippage ??
+              DEFAULT_VERBS_CONFIG.lend.defaultSlippage,
+          },
           this.chainManager,
         )
 

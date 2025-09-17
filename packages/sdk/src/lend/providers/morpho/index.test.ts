@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-
 import type { Asset } from '@/types/token.js'
+
 import type { LendMarketConfig, MorphoLendConfig } from '../../../types/lend.js'
 import { LendProviderMorpho } from './index.js'
 
@@ -50,7 +50,8 @@ const MockWETHMarket: LendMarketConfig = {
   lendProvider: 'morpho',
 }
 
-const MockReceiverAddress = '0x1234567890123456789012345678901234567890' as Address
+const MockReceiverAddress =
+  '0x1234567890123456789012345678901234567890' as Address
 
 // Mock the Morpho SDK modules
 vi.mock('@morpho-org/blue-sdk-viem', () => ({

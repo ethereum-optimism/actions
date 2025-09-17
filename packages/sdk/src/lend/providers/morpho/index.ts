@@ -4,6 +4,7 @@ import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import { DEFAULT_VERBS_CONFIG } from '@/verbs.js'
 
 import type { SupportedChainId } from '../../../constants/supportedChains.js'
 import type {
@@ -122,7 +123,10 @@ export class LendProviderMorpho extends LendProvider {
             value: 0n,
           },
         },
-        slippage: options?.slippage || this._config.defaultSlippage || 50,
+        slippage:
+          options?.slippage ||
+          this._config.defaultSlippage ||
+          DEFAULT_VERBS_CONFIG.lend.defaultSlippage,
       }
     } catch (error) {
       throw new Error(
