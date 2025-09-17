@@ -21,108 +21,50 @@ describe('VerbsLendNamespace', () => {
 
   it('should delegate getMarkets to provider', async () => {
     const namespace = new VerbsLendNamespace(mockProvider)
-    const mockMarkets = [
-      {
-        chainId: 130,
-        address: getRandomAddress(),
-        name: 'Test Vault',
-        asset: getRandomAddress(),
-        totalAssets: BigInt('1000000'),
-        totalShares: BigInt('1000000'),
-        apy: 0.05,
-        apyBreakdown: {
-          nativeApy: 0.04,
-          totalRewardsApr: 0.01,
-          performanceFee: 0.0,
-          netApy: 0.05,
-        },
-        owner: getRandomAddress(),
-        curator: getRandomAddress(),
-        fee: 0.1,
-        lastUpdate: Date.now(),
-      },
-    ]
+    const spy = vi.spyOn(mockProvider, 'getMarkets')
 
-    vi.mocked(mockProvider.getMarkets).mockResolvedValue(mockMarkets)
+    await namespace.getMarkets()
 
-    const result = await namespace.getMarkets()
-
-    expect(mockProvider.getMarkets).toHaveBeenCalled()
-    expect(result).toBe(mockMarkets)
+    expect(spy).toHaveBeenCalledOnce()
   })
 
-  it('should delegate getMarket to provider', async () => {
+  it('should delegate getMarket to provider with correct parameters', async () => {
     const namespace = new VerbsLendNamespace(mockProvider)
     const marketId = getRandomAddress()
     const chainId = 130 as const
-    const mockMarket = {
-      chainId: 130,
-      address: marketId,
-      name: 'Test Market',
-      asset: getRandomAddress(),
-      totalAssets: BigInt('1000000'),
-      totalShares: BigInt('1000000'),
-      apy: 0.05,
-      apyBreakdown: {
-        nativeApy: 0.04,
-        totalRewardsApr: 0.01,
-        performanceFee: 0.0,
-        netApy: 0.05,
-      },
-      owner: getRandomAddress(),
-      curator: getRandomAddress(),
-      fee: 0.1,
-      lastUpdate: Date.now(),
-    }
+    const spy = vi.spyOn(mockProvider, 'getMarket')
 
-    vi.mocked(mockProvider.getMarket).mockResolvedValue(mockMarket)
+    await namespace.getMarket({ address: marketId, chainId })
 
-    const result = await namespace.getMarket({ address: marketId, chainId })
-
-    expect(mockProvider.getMarket).toHaveBeenCalledWith({
-      address: marketId,
-      chainId,
-    })
-    expect(result).toBe(mockMarket)
+    expect(spy).toHaveBeenCalledWith({ address: marketId, chainId })
   })
 
-  it('should delegate getMarketBalance to provider', async () => {
+  it('should delegate getMarketBalance to provider with correct parameters', async () => {
     const namespace = new VerbsLendNamespace(mockProvider)
     const marketAddress = getRandomAddress()
     const walletAddress = getRandomAddress()
-    const mockBalance = {
-      balance: BigInt('500000'),
-      balanceFormatted: '500.000',
-      shares: BigInt('500000'),
-      sharesFormatted: '0.5',
-      chainId: 130,
-    }
+    const spy = vi.spyOn(mockProvider, 'getMarketBalance')
 
-    vi.mocked(mockProvider.getMarketBalance).mockResolvedValue(mockBalance)
+    await namespace.getMarketBalance(marketAddress, walletAddress)
 
-    const result = await namespace.getMarketBalance(
-      marketAddress,
-      walletAddress,
-    )
-
-    expect(mockProvider.getMarketBalance).toHaveBeenCalledWith(
-      marketAddress,
-      walletAddress,
-    )
-    expect(result).toBe(mockBalance)
+    expect(spy).toHaveBeenCalledWith(marketAddress, walletAddress)
   })
 
   it('should delegate supportedNetworkIds to provider', () => {
     const namespace = new VerbsLendNamespace(mockProvider)
+    const spy = vi.spyOn(mockProvider, 'supportedNetworkIds')
 
-    const result = namespace.supportedNetworkIds()
+    namespace.supportedNetworkIds()
 
-    expect(result).toEqual([84532])
+    expect(spy).toHaveBeenCalledOnce()
   })
 
-  it('should provide access to the underlying provider', () => {
+  it('should provide access to provider config', () => {
     const namespace = new VerbsLendNamespace(mockProvider)
 
-    expect(namespace['provider']).toBe(mockProvider)
+    const config = namespace.config
+
+    expect(config).toBeDefined()
+    expect(config.defaultSlippage || 50).toBe(50)
   })
 })

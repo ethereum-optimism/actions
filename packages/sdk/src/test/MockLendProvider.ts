@@ -22,12 +22,6 @@ export interface MockLendProviderConfig {
  * @description Provides a mock implementation of LendProvider following MockChainManager pattern
  */
 export class MockLendProvider extends LendProvider {
-  protected readonly SUPPORTED_NETWORKS = {
-    TESTNET: {
-      chainId: 84532,
-      name: 'Test Network',
-    },
-  }
   public lend: MockedFunction<
     (
       asset: Address,
@@ -69,6 +63,13 @@ export class MockLendProvider extends LendProvider {
     ) => Promise<LendTransaction>
   >
 
+  protected readonly SUPPORTED_NETWORKS = {
+    TESTNET: {
+      chainId: 84532,
+      name: 'Test Network',
+    },
+  }
+
   private mockConfig: MockLendProviderConfig
 
   constructor(
@@ -102,6 +103,63 @@ export class MockLendProvider extends LendProvider {
     this.withdraw = vi
       .fn()
       .mockImplementation(this.createMockWithdraw.bind(this))
+  }
+
+  /**
+   * Helper method to configure mock responses
+   */
+  configureMock(config: {
+    lendResponse?: LendTransaction
+    marketResponse?: LendMarket
+    marketsResponse?: LendMarket[]
+    balanceResponse?: {
+      balance: bigint
+      balanceFormatted: string
+      shares: bigint
+      sharesFormatted: string
+      chainId: number
+    }
+  }) {
+    if (config.lendResponse) {
+      this.lend.mockResolvedValue(config.lendResponse)
+      this.deposit.mockResolvedValue(config.lendResponse)
+    }
+    if (config.marketResponse) {
+      this.getMarket.mockResolvedValue(config.marketResponse)
+    }
+    if (config.marketsResponse) {
+      this.getMarkets.mockResolvedValue(config.marketsResponse)
+    }
+    if (config.balanceResponse) {
+      this.getMarketBalance.mockResolvedValue(config.balanceResponse)
+    }
+  }
+
+  /**
+   * Helper method to simulate errors
+   */
+  simulateError(method: keyof MockLendProvider, error: Error) {
+    const mockMethod = this[method] as MockedFunction<any>
+    if (mockMethod && typeof mockMethod.mockRejectedValue === 'function') {
+      mockMethod.mockRejectedValue(error)
+    }
+  }
+
+  /**
+   * Reset all mocks to their default implementations
+   */
+  resetMocks() {
+    this.lend.mockImplementation(this.createMockLendTransaction.bind(this))
+    this.deposit.mockImplementation(this.createMockLendTransaction.bind(this))
+    this.getMarket.mockImplementation(this.createMockMarket.bind(this))
+    this.getMarkets.mockImplementation(this.createMockMarkets.bind(this))
+    this.getMarketBalance.mockImplementation(this.createMockBalance.bind(this))
+    this.withdraw.mockImplementation(this.createMockWithdraw.bind(this))
+  }
+
+  reset(): void {
+    vi.clearAllMocks()
+    this.resetMocks()
   }
 
   private async createMockLendTransaction(
@@ -207,63 +265,6 @@ export class MockLendProvider extends LendProvider {
         },
       },
     }
-  }
-
-  /**
-   * Helper method to configure mock responses
-   */
-  configureMock(config: {
-    lendResponse?: LendTransaction
-    marketResponse?: LendMarket
-    marketsResponse?: LendMarket[]
-    balanceResponse?: {
-      balance: bigint
-      balanceFormatted: string
-      shares: bigint
-      sharesFormatted: string
-      chainId: number
-    }
-  }) {
-    if (config.lendResponse) {
-      this.lend.mockResolvedValue(config.lendResponse)
-      this.deposit.mockResolvedValue(config.lendResponse)
-    }
-    if (config.marketResponse) {
-      this.getMarket.mockResolvedValue(config.marketResponse)
-    }
-    if (config.marketsResponse) {
-      this.getMarkets.mockResolvedValue(config.marketsResponse)
-    }
-    if (config.balanceResponse) {
-      this.getMarketBalance.mockResolvedValue(config.balanceResponse)
-    }
-  }
-
-  /**
-   * Helper method to simulate errors
-   */
-  simulateError(method: keyof MockLendProvider, error: Error) {
-    const mockMethod = this[method] as MockedFunction<any>
-    if (mockMethod && typeof mockMethod.mockRejectedValue === 'function') {
-      mockMethod.mockRejectedValue(error)
-    }
-  }
-
-  /**
-   * Reset all mocks to their default implementations
-   */
-  resetMocks() {
-    this.lend.mockImplementation(this.createMockLendTransaction.bind(this))
-    this.deposit.mockImplementation(this.createMockLendTransaction.bind(this))
-    this.getMarket.mockImplementation(this.createMockMarket.bind(this))
-    this.getMarkets.mockImplementation(this.createMockMarkets.bind(this))
-    this.getMarketBalance.mockImplementation(this.createMockBalance.bind(this))
-    this.withdraw.mockImplementation(this.createMockWithdraw.bind(this))
-  }
-
-  reset(): void {
-    vi.clearAllMocks()
-    this.resetMocks()
   }
 }
 
