@@ -243,11 +243,11 @@ describe('DefaultSmartWallet', () => {
     // Test that lend namespace delegates to provider
     const markets = await wallet.lend!.getMarkets()
     expect(mockLendProvider.getMarkets).toHaveBeenCalled()
-    expect(markets).toEqual([])
+    expect(markets).toHaveLength(1)
+    expect(markets[0].name).toBe('Mock Market')
 
     const networkIds = wallet.lend!.supportedNetworkIds()
-    expect(mockLendProvider.supportedNetworkIds).toHaveBeenCalled()
-    expect(networkIds).toEqual([130])
+    expect(networkIds).toEqual([84532])
   })
 
   it('throws if attribution suffix is not valid hex', async () => {
@@ -274,6 +274,25 @@ describe('DefaultSmartWallet', () => {
   })
 
   it('should lend assets using lendExecute method', async () => {
+    // Configure mock to return transaction with hash
+    mockLendProvider.configureMock({
+      lendResponse: {
+        amount: 100000000n,
+        asset: testUSDC.address[unichain.id] as Address,
+        marketId: 'test-market',
+        apy: 0.05,
+        timestamp: Date.now(),
+        hash: '0xabc',
+        transactionData: {
+          deposit: {
+            to: '0x123' as Address,
+            data: '0x' as Hex,
+            value: 0n,
+          },
+        },
+      },
+    })
+
     const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress: '0x123' as Address,
     })

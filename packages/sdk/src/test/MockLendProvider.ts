@@ -152,8 +152,8 @@ export class MockLendProvider extends LendProvider {
   }
 
   private async createMockBalance(
-    marketAddress: Address,
-    walletAddress: Address,
+    _marketAddress: Address,
+    _walletAddress: Address,
   ): Promise<{
     balance: bigint
     balanceFormatted: string

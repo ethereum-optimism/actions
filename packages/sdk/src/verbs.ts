@@ -103,7 +103,7 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
     ) {
       this.smartWalletProvider = new DefaultSmartWalletProvider(
         this.chainManager,
-        this.lendProviderInstance,
+        this.lendProvider,
         config.smartWalletConfig.provider.attributionSuffix,
       )
     } else {

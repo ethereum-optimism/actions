@@ -349,8 +349,10 @@ export class DefaultSmartWallet extends SmartWallet {
   protected async performInitialization() {
     this._address = await this.getAddress()
 
-    // Create wallet lend namespace after address is initialized
-    this.lend = new WalletLendNamespace(this.lendProvider, this._address)
+    // Create wallet lend namespace after address is initialized if lend provider is available
+    if (this.lendProvider) {
+      this.lend = new WalletLendNamespace(this.lendProvider, this._address)
+    }
   }
 
   /**

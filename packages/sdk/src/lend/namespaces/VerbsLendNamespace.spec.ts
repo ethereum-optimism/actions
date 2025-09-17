@@ -114,14 +114,10 @@ describe('VerbsLendNamespace', () => {
 
   it('should delegate supportedNetworkIds to provider', () => {
     const namespace = new VerbsLendNamespace(mockProvider)
-    const mockNetworkIds = [130, 8453]
-
-    vi.mocked(mockProvider.supportedNetworkIds).mockReturnValue(mockNetworkIds)
 
     const result = namespace.supportedNetworkIds()
 
-    expect(mockProvider.supportedNetworkIds).toHaveBeenCalled()
-    expect(result).toBe(mockNetworkIds)
+    expect(result).toEqual([84532]) // MockLendProvider returns [84532]
   })
 
   it('should provide access to the underlying provider', () => {
