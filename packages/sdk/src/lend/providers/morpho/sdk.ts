@@ -1,15 +1,13 @@
-import type { AccrualPosition, IToken } from '@morpho-org/blue-sdk'
+import type { AccrualPosition } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import type { Address } from 'viem'
-import { baseSepolia, unichain } from 'viem/chains'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   fetchRewards,
   type RewardsBreakdown,
 } from '@/lend/providers/morpho/api.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { getTokenAddress, SUPPORTED_TOKENS } from '@/supported/tokens.js'
+import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type {
   ApyBreakdown,
   LendMarket,
@@ -18,56 +16,6 @@ import type {
 } from '@/types/lend.js'
 import { findMarketInAllowlist } from '@/utils/config.js'
 
-/**
- * Vault configuration type
- */
-export interface VaultConfig {
-  address: Address
-  chainId: SupportedChainId
-  name: string
-  asset: IToken & { address: Address }
-}
-
-/**
- * Supported vaults on Unichain for Morpho lending
- */
-export const SUPPORTED_VAULTS: VaultConfig[] = [
-  {
-    // Gauntlet USDC vault - primary supported vault
-    address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
-    chainId: unichain.id,
-    name: 'Gauntlet USDC',
-    asset: {
-      address: getTokenAddress('USDC', 130)!, // USDC on Unichain
-      symbol: SUPPORTED_TOKENS.USDC.symbol,
-      decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
-      name: SUPPORTED_TOKENS.USDC.name,
-    },
-  },
-  {
-    address: '0x99067e5D73b1d6F1b5856E59209e12F5a0f86DED',
-    chainId: baseSepolia.id,
-    name: 'MetaMorpho USDC Vault (Base Sepolia)',
-    asset: {
-      address: getTokenAddress('USDC', baseSepolia.id)!,
-      symbol: SUPPORTED_TOKENS.USDC.symbol,
-      decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
-      name: SUPPORTED_TOKENS.USDC.name,
-    },
-  },
-  // USDC Vault deployed on base sepolia for demo purposes that uses an erc20 with permissionless minting
-  {
-    address: '0x297E324C46309E93112610ebf35559685b4E3547',
-    chainId: baseSepolia.id,
-    name: 'USDC Demo Vault (Base Sepolia)',
-    asset: {
-      address: getTokenAddress('USDC_DEMO', baseSepolia.id)!,
-      symbol: SUPPORTED_TOKENS.USDC_DEMO.symbol,
-      decimals: BigInt(SUPPORTED_TOKENS.USDC_DEMO.decimals),
-      name: SUPPORTED_TOKENS.USDC_DEMO.name,
-    },
-  },
-]
 
 /**
  * Fetch and calculate rewards breakdown from Morpho GraphQL API
@@ -235,16 +183,19 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
 /**
  * Get list of available vaults
  * @param chainManager - Chain manager instance
+ * @param marketAllowlist - Required list of allowed markets from backend
  * @returns Promise resolving to array of vault information
  */
 export async function getVaults(
   chainManager: ChainManager,
-  marketAllowlist?: LendMarketConfig[],
+  marketAllowlist: LendMarketConfig[],
 ): Promise<LendMarket[]> {
   try {
-    const vaultsToFetch = marketAllowlist || SUPPORTED_VAULTS
+    if (!marketAllowlist || marketAllowlist.length === 0) {
+      throw new Error('Market allowlist is required and cannot be empty')
+    }
 
-    const vaultPromises = vaultsToFetch.map((config) => {
+    const vaultPromises = marketAllowlist.map((config) => {
       return getVault({
         marketId: { address: config.address, chainId: config.chainId },
         chainManager,
@@ -264,22 +215,20 @@ export async function getVaults(
 /**
  * Find the best vault for a given asset
  * @param asset - Asset token address
+ * @param marketAllowlist - Required list of allowed markets from backend
  * @returns Promise resolving to vault address
  */
 export async function findBestVaultForAsset(
   asset: Address,
-  marketAllowlist?: LendMarketConfig[],
+  marketAllowlist: LendMarketConfig[],
 ): Promise<Address> {
-  const vaultsToSearch = marketAllowlist || SUPPORTED_VAULTS
+  if (!marketAllowlist || marketAllowlist.length === 0) {
+    throw new Error('Market allowlist is required and cannot be empty')
+  }
 
-  const assetVaults = vaultsToSearch.filter((vault) => {
-    if ('lendProvider' in vault) {
-      // LendMarketConfig format
-      return Object.values(vault.asset.address).includes(asset)
-    } else {
-      // VaultConfig format
-      return vault.asset.address === asset
-    }
+  const assetVaults = marketAllowlist.filter((vault) => {
+    // LendMarketConfig format
+    return Object.values(vault.asset.address).includes(asset)
   })
 
   if (assetVaults.length === 0) {

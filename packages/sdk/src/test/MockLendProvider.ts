@@ -44,7 +44,7 @@ export class MockLendProvider extends LendProvider {
   public getMarkets: MockedFunction<() => Promise<LendMarket[]>>
   public getMarketBalance: MockedFunction<
     (
-      marketAddress: Address,
+      marketId: LendMarketId,
       walletAddress: Address,
     ) => Promise<{
       balance: bigint
@@ -224,7 +224,7 @@ export class MockLendProvider extends LendProvider {
   }
 
   private async createMockBalance(
-    _marketAddress: Address,
+    marketId: LendMarketId,
     _walletAddress: Address,
   ): Promise<{
     balance: bigint
@@ -238,7 +238,7 @@ export class MockLendProvider extends LendProvider {
       balanceFormatted: (this.mockConfig.mockBalance / 2n).toString(),
       shares: this.mockConfig.mockBalance / 2n,
       sharesFormatted: (this.mockConfig.mockBalance / 2n).toString(),
-      chainId: 84532,
+      chainId: marketId.chainId,
     }
   }
 

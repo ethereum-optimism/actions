@@ -114,7 +114,7 @@ describe('LendProvider', () => {
     it('should implement getMarketBalance method', async () => {
       const provider = new MockLendProvider({})
       const balance = await provider.getMarketBalance(
-        '0x1234' as Address,
+        { address: '0x1234' as Address, chainId: 84532 as const },
         '0x5678' as Address,
       )
 

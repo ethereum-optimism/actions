@@ -19,7 +19,6 @@ import {
   findBestVaultForAsset,
   getVault,
   getVaults,
-  SUPPORTED_VAULTS,
 } from './sdk.js'
 
 /**
@@ -76,7 +75,7 @@ export class LendProviderMorpho extends LendProvider {
       // 1. Find suitable vault if marketId not provided
       const selectedVaultAddress =
         (marketId as Address) ||
-        (await findBestVaultForAsset(asset, this._config.marketAllowlist))
+        (await findBestVaultForAsset(asset, this._config.marketAllowlist || []))
 
       // 2. Get vault information for APY
       const vaultInfo = await this.getMarket({
@@ -194,17 +193,17 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to array of market information
    */
   async getMarkets(): Promise<LendMarket[]> {
-    return getVaults(this.chainManager, this._config.marketAllowlist)
+    return getVaults(this.chainManager, this._config.marketAllowlist || [])
   }
 
   /**
    * Get market balance for a specific wallet address
-   * @param marketAddress - MetaMorpho vault address
+   * @param marketId - Market identifier containing address and chainId
    * @param walletAddress - User wallet address to check balance for
    * @returns Promise resolving to market balance information
    */
   async getMarketBalance(
-    marketAddress: Address,
+    marketId: LendMarketId,
     walletAddress: Address,
   ): Promise<{
     balance: bigint
@@ -214,18 +213,11 @@ export class LendProviderMorpho extends LendProvider {
     chainId: number
   }> {
     try {
-      const vaultConfig = SUPPORTED_VAULTS.find(
-        (v) => v.address.toLowerCase() === marketAddress.toLowerCase(),
-      )
-      if (!vaultConfig) {
-        throw new Error(`Vault ${marketAddress} not found`)
-      }
-      const publicClient = this.chainManager.getPublicClient(
-        vaultConfig.chainId,
-      )
+      const publicClient = this.chainManager.getPublicClient(marketId.chainId)
+
       // Get user's market token balance (shares in the vault)
       const shares = await publicClient.readContract({
-        address: marketAddress,
+        address: marketId.address,
         abi: erc20Abi,
         functionName: 'balanceOf',
         args: [walletAddress],
@@ -233,7 +225,7 @@ export class LendProviderMorpho extends LendProvider {
 
       // Convert shares to underlying asset balance using convertToAssets
       const balance = await publicClient.readContract({
-        address: marketAddress,
+        address: marketId.address,
         abi: [
           {
             name: 'convertToAssets',
@@ -256,11 +248,11 @@ export class LendProviderMorpho extends LendProvider {
         balanceFormatted,
         shares,
         sharesFormatted,
-        chainId: vaultConfig.chainId,
+        chainId: marketId.chainId,
       }
     } catch (error) {
       throw new Error(
-        `Failed to get market balance for ${walletAddress} in market ${marketAddress}: ${
+        `Failed to get market balance for ${walletAddress} in market ${marketId.address}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       )

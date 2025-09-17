@@ -36,7 +36,7 @@ export class VerbsLendNamespace {
    * Get market balance for a specific wallet
    */
   getMarketBalance(
-    marketAddress: Address,
+    marketId: LendMarketId,
     walletAddress: Address,
   ): Promise<{
     balance: bigint
@@ -45,7 +45,7 @@ export class VerbsLendNamespace {
     sharesFormatted: string
     chainId: number
   }> {
-    return this.provider.getMarketBalance(marketAddress, walletAddress)
+    return this.provider.getMarketBalance(marketId, walletAddress)
   }
 
   /**

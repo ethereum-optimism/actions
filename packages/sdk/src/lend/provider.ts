@@ -97,12 +97,12 @@ export abstract class LendProvider {
 
   /**
    * Get market balance for a specific wallet address
-   * @param marketAddress - Market address
+   * @param marketId - Market identifier containing address and chainId
    * @param walletAddress - User wallet address to check balance for
    * @returns Promise resolving to market balance information
    */
   abstract getMarketBalance(
-    marketAddress: Address,
+    marketId: LendMarketId,
     walletAddress: Address,
   ): Promise<{
     balance: bigint
