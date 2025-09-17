@@ -186,6 +186,17 @@ export interface LendOptions {
 }
 
 /**
+ * Base lending provider configuration
+ * @description Base configuration shared by all lending providers
+ */
+export interface BaseLendConfig {
+  /** Default slippage tolerance (basis points) */
+  defaultSlippage?: number
+  /** Allowlist of markets available for lending */
+  marketAllowlist?: LendMarketConfig[]
+}
+
+/**
  * Lending provider configuration
  * @description Configuration for lending providers
  */
@@ -195,11 +206,7 @@ export type LendConfig = MorphoLendConfig
  * Morpho lending provider configuration
  * @description Configuration specific to Morpho lending provider
  */
-export interface MorphoLendConfig {
-  /** Lending provider type */
-  type: 'morpho'
-  /** Default slippage tolerance (basis points) */
-  defaultSlippage?: number
-  /** Allowlist of markets available for lending */
-  marketAllowlist?: LendMarketConfig[]
+export interface MorphoLendConfig extends BaseLendConfig {
+  /** Lending provider name */
+  provider: 'morpho'
 }

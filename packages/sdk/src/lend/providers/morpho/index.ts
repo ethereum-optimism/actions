@@ -8,7 +8,6 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { SupportedChainId } from '../../../constants/supportedChains.js'
 import type {
   LendMarket,
-  LendMarketConfig,
   LendMarketId,
   LendOptions,
   LendTransaction,
@@ -45,20 +44,16 @@ export const SUPPORTED_NETWORKS = {
 export class LendProviderMorpho extends LendProvider {
   protected readonly SUPPORTED_NETWORKS = SUPPORTED_NETWORKS
 
-  private defaultSlippage: number
   private chainManager: ChainManager
-  private marketAllowlist?: LendMarketConfig[]
 
   /**
    * Create a new Morpho lending provider
    * @param config - Morpho lending configuration
-   * @param publicClient - Viem public client for blockchain interactions // TODO: remove this
+   * @param chainManager - Chain manager for blockchain interactions
    */
   constructor(config: MorphoLendConfig, chainManager: ChainManager) {
-    super()
+    super(config)
     this.chainManager = chainManager
-    this.defaultSlippage = config.defaultSlippage || 50 // 0.5% default
-    this.marketAllowlist = config.marketAllowlist
   }
 
   /**

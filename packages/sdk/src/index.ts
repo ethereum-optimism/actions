@@ -4,6 +4,7 @@ export { getTokenAddress, SUPPORTED_TOKENS } from '@/supported/tokens.js'
 export type {
   ApyBreakdown,
   Asset,
+  BaseLendConfig,
   LendConfig,
   LendMarket,
   LendMarketConfig,

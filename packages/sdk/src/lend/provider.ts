@@ -1,7 +1,9 @@
 import type { Address } from 'viem'
 
 import type {
+  BaseLendConfig,
   LendMarket,
+  LendMarketConfig,
   LendMarketId,
   LendOptions,
   LendTransaction,
@@ -12,6 +14,9 @@ import type {
  * @description Base class for lending provider implementations
  */
 export abstract class LendProvider {
+  /** Lending provider configuration */
+  protected readonly config: BaseLendConfig
+
   /**
    * Supported networks configuration
    * @description Must be implemented by concrete providers
@@ -24,6 +29,22 @@ export abstract class LendProvider {
       [key: string]: any
     }
   >
+
+  /**
+   * Create a new lending provider
+   * @param config - Base lending configuration
+   */
+  protected constructor(config: BaseLendConfig) {
+    this.config = config
+  }
+
+  protected get defaultSlippage(): number {
+    return this.config.defaultSlippage || 50
+  }
+
+  protected get marketAllowlist(): LendMarketConfig[] | undefined {
+    return this.config.marketAllowlist
+  }
 
   /**
    * Get supported network IDs

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 
-import type { MorphoLendConfig } from '../../../types/lend.js'
+import type { LendMarketConfig, MorphoLendConfig } from '../../../types/lend.js'
 import { LendProviderMorpho } from './index.js'
 
 // Mock the Morpho SDK modules
@@ -36,7 +36,7 @@ describe('LendProviderMorpho', () => {
 
   beforeEach(() => {
     mockConfig = {
-      type: 'morpho',
+      provider: 'morpho',
       defaultSlippage: 50,
     }
 
@@ -200,6 +200,136 @@ describe('LendProviderMorpho', () => {
       })
 
       expect(lendTransaction).toHaveProperty('amount', amount)
+    })
+  })
+
+  describe('market allowlist configuration', () => {
+    it('should work without market allowlist', () => {
+      const configWithoutAllowlist: MorphoLendConfig = {
+        provider: 'morpho',
+        defaultSlippage: 50,
+      }
+
+      const providerWithoutAllowlist = new LendProviderMorpho(
+        configWithoutAllowlist,
+        mockChainManager,
+      )
+
+      expect(providerWithoutAllowlist['marketAllowlist']).toBeUndefined()
+    })
+
+    it('should store market allowlist when provided', () => {
+      const mockMarket: LendMarketConfig = {
+        address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
+        chainId: 130,
+        name: 'Test Gauntlet USDC',
+        asset: {
+          address: { 130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address },
+          metadata: {
+            decimals: 6,
+            name: 'USD Coin',
+            symbol: 'USDC',
+          },
+          type: 'erc20',
+        },
+        lendProvider: 'morpho',
+      }
+
+      const configWithAllowlist: MorphoLendConfig = {
+        provider: 'morpho',
+        defaultSlippage: 50,
+        marketAllowlist: [mockMarket],
+      }
+
+      const providerWithAllowlist = new LendProviderMorpho(
+        configWithAllowlist,
+        mockChainManager,
+      )
+
+      const allowlist = providerWithAllowlist['marketAllowlist']
+      expect(allowlist).toBeDefined()
+      expect(allowlist).toHaveLength(1)
+      expect(allowlist![0].address).toBe(mockMarket.address)
+      expect(allowlist![0].name).toBe(mockMarket.name)
+    })
+
+    it('should use default slippage from config', () => {
+      const customSlippage = 150
+      const configWithSlippage: MorphoLendConfig = {
+        provider: 'morpho',
+        defaultSlippage: customSlippage,
+      }
+
+      const providerWithSlippage = new LendProviderMorpho(
+        configWithSlippage,
+        mockChainManager,
+      )
+
+      expect(providerWithSlippage['defaultSlippage']).toBe(customSlippage)
+    })
+
+    it('should use fallback default slippage when not provided', () => {
+      const configWithoutSlippage: MorphoLendConfig = {
+        provider: 'morpho',
+      }
+
+      const providerWithoutSlippage = new LendProviderMorpho(
+        configWithoutSlippage,
+        mockChainManager,
+      )
+
+      expect(providerWithoutSlippage['defaultSlippage']).toBe(50) // Default fallback
+    })
+
+    it('should handle multiple markets in allowlist', () => {
+      const mockMarkets: LendMarketConfig[] = [
+        {
+          address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
+          chainId: 130,
+          name: 'Gauntlet USDC',
+          asset: {
+            address: { 130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address },
+            metadata: {
+              decimals: 6,
+              name: 'USD Coin',
+              symbol: 'USDC',
+            },
+            type: 'erc20',
+          },
+          lendProvider: 'morpho',
+        },
+        {
+          address: '0x1234567890123456789012345678901234567890' as Address,
+          chainId: 130,
+          name: 'Test WETH Market',
+          asset: {
+            address: { 130: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address },
+            metadata: {
+              decimals: 18,
+              name: 'Wrapped Ether',
+              symbol: 'WETH',
+            },
+            type: 'erc20',
+          },
+          lendProvider: 'morpho',
+        },
+      ]
+
+      const configWithMultipleMarkets: MorphoLendConfig = {
+        provider: 'morpho',
+        marketAllowlist: mockMarkets,
+      }
+
+      const provider = new LendProviderMorpho(
+        configWithMultipleMarkets,
+        mockChainManager,
+      )
+
+      const allowlist = provider['marketAllowlist']
+      expect(allowlist).toBeDefined()
+      expect(allowlist).toHaveLength(2)
+      expect(allowlist![0].name).toBe('Gauntlet USDC')
+      expect(allowlist![1].name).toBe('Test WETH Market')
     })
   })
 })
