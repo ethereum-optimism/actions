@@ -182,11 +182,11 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to market information
    */
   async getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    return getVaultInfoHelper(
-      marketId.address,
-      this.chainManager,
-      this._config.marketAllowlist,
-    )
+    return getVaultInfoHelper({
+      address: marketId.address,
+      chainManager: this.chainManager,
+      marketAllowlist: this._config.marketAllowlist,
+    })
   }
 
   /**
@@ -204,9 +204,10 @@ export class LendProviderMorpho extends LendProvider {
    * @deprecated Use getMarket instead
    */
   async getVaultInfo(vaultAddress: Address): Promise<LendMarket> {
-    return this.getMarket({
+    return getVaultInfoHelper({
       address: vaultAddress,
-      chainId: 130 as SupportedChainId, // TODO: Get chain ID dynamically
+      chainManager: this.chainManager,
+      marketAllowlist: this._config.marketAllowlist,
     })
   }
 

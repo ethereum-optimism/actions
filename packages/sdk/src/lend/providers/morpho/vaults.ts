@@ -142,56 +142,54 @@ export function calculateBaseApy(vault: any): number {
 }
 
 /**
+ * Parameters for getVaultInfo function
+ */
+interface GetVaultInfoParams {
+  /** Vault configuration object (if known) */
+  vaultConfig?: LendMarketConfig
+  /** Vault address (if only address is known) */
+  address?: Address
+  /** Chain manager instance */
+  chainManager: ChainManager
+  /** Optional market allowlist */
+  marketAllowlist?: LendMarketConfig[]
+}
+
+/**
  * Get detailed vault information with enhanced rewards data
- * @param vaultAddress - Vault address
- * @param publicClient - Viem public client
+ * @param params - Named parameters object
  * @returns Promise resolving to detailed vault information
  */
 export async function getVaultInfo(
-  vaultConfig: Address | LendMarketConfig,
-  chainManager: ChainManager,
-  marketAllowlist?: LendMarketConfig[],
+  params: GetVaultInfoParams,
 ): Promise<LendMarket> {
+  const { vaultConfig, address, chainManager, marketAllowlist } = params
+
+  // Require exactly one of vaultConfig or address
+  if (!vaultConfig && !address) {
+    throw new Error('Either vaultConfig or address must be provided')
+  }
+  if (vaultConfig && address) {
+    throw new Error('Only one of vaultConfig or address should be provided')
+  }
   let config: LendMarketConfig | undefined
   let vaultAddress: Address | undefined
 
   try {
-    if (typeof vaultConfig === 'string') {
-      // If address provided, find in allowlist or fall back to legacy SUPPORTED_VAULTS
-      vaultAddress = vaultConfig
-      const foundConfig =
-        marketAllowlist?.find((c) => c.address === vaultAddress) ||
-        SUPPORTED_VAULTS.find((c) => c.address === vaultAddress)
+    if (address) {
+      // If address provided, find in allowlist only
+      vaultAddress = address
+      const foundConfig = marketAllowlist?.find(
+        (c) => c.address === vaultAddress,
+      )
 
       if (!foundConfig) {
-        throw new Error(`Vault ${vaultAddress} not found`)
+        throw new Error(`Vault ${vaultAddress} not found in market allowlist`)
       }
 
-      if ('lendProvider' in foundConfig) {
-        config = foundConfig
-      } else {
-        config = {
-          address: foundConfig.address,
-          chainId: foundConfig.chainId,
-          name: foundConfig.name,
-          asset: {
-            address: { [foundConfig.chainId]: foundConfig.asset.address },
-            metadata: {
-              decimals: Number(foundConfig.asset.decimals),
-              name: foundConfig.asset.name || 'Unknown',
-              symbol: foundConfig.asset.symbol || 'UNK',
-            },
-            type:
-              foundConfig.asset.address ===
-              '0x0000000000000000000000000000000000000000'
-                ? 'native'
-                : 'erc20',
-          },
-          lendProvider: 'morpho' as const,
-        }
-      }
+      config = foundConfig
     } else {
-      config = vaultConfig
+      config = vaultConfig!
       vaultAddress = config.address
     }
 
@@ -271,9 +269,17 @@ export async function getMarkets(
 
     const vaultInfoPromises = marketsToFetch.map((config) => {
       if ('lendProvider' in config) {
-        return getVaultInfo(config, chainManager, marketAllowlist)
+        return getVaultInfo({
+          vaultConfig: config,
+          chainManager,
+          marketAllowlist,
+        })
       } else {
-        return getVaultInfo(config.address, chainManager, marketAllowlist)
+        return getVaultInfo({
+          address: config.address,
+          chainManager,
+          marketAllowlist,
+        })
       }
     })
     return await Promise.all(vaultInfoPromises)

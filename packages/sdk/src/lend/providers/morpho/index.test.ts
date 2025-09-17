@@ -83,6 +83,7 @@ describe('LendProviderMorpho', () => {
     mockConfig = {
       provider: 'morpho',
       defaultSlippage: 50,
+      marketAllowlist: [MockGauntletUSDCMarket, MockWETHMarket],
     }
 
     mockChainManager = new MockChainManager() as unknown as ChainManager
@@ -110,7 +111,7 @@ describe('LendProviderMorpho', () => {
 
   describe('withdraw', () => {
     it('should throw error for unimplemented withdraw functionality', async () => {
-      const asset = MockUSDCAsset.address[130]! as Address
+      const asset = MockGauntletUSDCMarket.asset.address[MockGauntletUSDCMarket.chainId]! as Address
       const amount = BigInt('1000000000') // 1000 USDC
       const marketId = MockGauntletUSDCMarket.address
 
@@ -188,7 +189,7 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should successfully create a lending transaction', async () => {
-      const asset = MockUSDCAsset.address[130]! as Address
+      const asset = MockGauntletUSDCMarket.asset.address[MockGauntletUSDCMarket.chainId]! as Address
       const amount = BigInt('1000000000') // 1000 USDC
       const marketId = MockGauntletUSDCMarket.address
 
@@ -209,11 +210,9 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should find best market when marketId not provided', async () => {
-      // Use the original asset address that this test was designed for
-      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address
+      // Use USDC asset from MockGauntletUSDCMarket
+      const asset = MockGauntletUSDCMarket.asset.address[MockGauntletUSDCMarket.chainId]! as Address
       const amount = BigInt('1000000000') // 1000 USDC
-
-      // Mock the market data for getMarketInfo
 
       const lendTransaction = await provider.lend(asset, amount, undefined, {
         receiver: MockReceiverAddress,
@@ -233,12 +232,10 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should use custom slippage when provided', async () => {
-      const asset = MockUSDCAsset.address[130]! as Address
+      const asset = MockGauntletUSDCMarket.asset.address[MockGauntletUSDCMarket.chainId]! as Address
       const amount = BigInt('1000000000')
       const marketId = MockGauntletUSDCMarket.address
       const customSlippage = 100 // 1%
-
-      // Mock the market data for getMarketInfo
 
       const lendTransaction = await provider.lend(asset, amount, marketId, {
         slippage: customSlippage,
