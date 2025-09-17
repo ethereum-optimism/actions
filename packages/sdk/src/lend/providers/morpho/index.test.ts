@@ -5,8 +5,52 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 
+import type { Asset } from '@/types/token.js'
 import type { LendMarketConfig, MorphoLendConfig } from '../../../types/lend.js'
 import { LendProviderMorpho } from './index.js'
+
+// Reusable mock objects
+const MockUSDCAsset: Asset = {
+  address: {
+    130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address,
+  },
+  metadata: {
+    decimals: 6,
+    name: 'USD Coin',
+    symbol: 'USDC',
+  },
+  type: 'erc20',
+}
+
+const MockWETHAsset: Asset = {
+  address: {
+    130: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
+  },
+  metadata: {
+    decimals: 18,
+    name: 'Wrapped Ether',
+    symbol: 'WETH',
+  },
+  type: 'erc20',
+}
+
+const MockGauntletUSDCMarket: LendMarketConfig = {
+  address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
+  chainId: 130,
+  name: 'Gauntlet USDC',
+  asset: MockUSDCAsset,
+  lendProvider: 'morpho',
+}
+
+const MockWETHMarket: LendMarketConfig = {
+  address: '0x1234567890123456789012345678901234567890' as Address,
+  chainId: 130,
+  name: 'Test WETH Market',
+  asset: MockWETHAsset,
+  lendProvider: 'morpho',
+}
+
+const MockReceiverAddress = '0x1234567890123456789012345678901234567890' as Address
 
 // Mock the Morpho SDK modules
 vi.mock('@morpho-org/blue-sdk-viem', () => ({
@@ -65,9 +109,9 @@ describe('LendProviderMorpho', () => {
 
   describe('withdraw', () => {
     it('should throw error for unimplemented withdraw functionality', async () => {
-      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address // USDC
+      const asset = MockUSDCAsset.address[130]! as Address
       const amount = BigInt('1000000000') // 1000 USDC
-      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
+      const marketId = MockGauntletUSDCMarket.address
 
       await expect(provider.withdraw(asset, amount, marketId)).rejects.toThrow(
         'Withdraw functionality not yet implemented',
@@ -143,12 +187,12 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should successfully create a lending transaction', async () => {
-      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address // USDC
+      const asset = MockUSDCAsset.address[130]! as Address
       const amount = BigInt('1000000000') // 1000 USDC
-      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
+      const marketId = MockGauntletUSDCMarket.address
 
       const lendTransaction = await provider.lend(asset, amount, marketId, {
-        receiver: '0x1234567890123456789012345678901234567890' as Address,
+        receiver: MockReceiverAddress,
       })
 
       expect(lendTransaction).toHaveProperty('amount', amount)
@@ -164,13 +208,14 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should find best market when marketId not provided', async () => {
-      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address // USDC
+      // Use the original asset address that this test was designed for
+      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address
       const amount = BigInt('1000000000') // 1000 USDC
 
       // Mock the market data for getMarketInfo
 
       const lendTransaction = await provider.lend(asset, amount, undefined, {
-        receiver: '0x1234567890123456789012345678901234567890' as Address,
+        receiver: MockReceiverAddress,
       })
 
       expect(lendTransaction).toHaveProperty('marketId')
@@ -187,16 +232,16 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should use custom slippage when provided', async () => {
-      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address
+      const asset = MockUSDCAsset.address[130]! as Address
       const amount = BigInt('1000000000')
-      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
+      const marketId = MockGauntletUSDCMarket.address
       const customSlippage = 100 // 1%
 
       // Mock the market data for getMarketInfo
 
       const lendTransaction = await provider.lend(asset, amount, marketId, {
         slippage: customSlippage,
-        receiver: '0x1234567890123456789012345678901234567890' as Address,
+        receiver: MockReceiverAddress,
       })
 
       expect(lendTransaction).toHaveProperty('amount', amount)
@@ -219,28 +264,10 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should store market allowlist when provided', () => {
-      const mockMarket: LendMarketConfig = {
-        address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
-        chainId: 130,
-        name: 'Test Gauntlet USDC',
-        asset: {
-          address: {
-            130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address,
-          },
-          metadata: {
-            decimals: 6,
-            name: 'USD Coin',
-            symbol: 'USDC',
-          },
-          type: 'erc20',
-        },
-        lendProvider: 'morpho',
-      }
-
       const configWithAllowlist: MorphoLendConfig = {
         provider: 'morpho',
         defaultSlippage: 50,
-        marketAllowlist: [mockMarket],
+        marketAllowlist: [MockGauntletUSDCMarket],
       }
 
       const providerWithAllowlist = new LendProviderMorpho(
@@ -251,8 +278,8 @@ describe('LendProviderMorpho', () => {
       const allowlist = providerWithAllowlist.config.marketAllowlist
       expect(allowlist).toBeDefined()
       expect(allowlist).toHaveLength(1)
-      expect(allowlist![0].address).toBe(mockMarket.address)
-      expect(allowlist![0].name).toBe(mockMarket.name)
+      expect(allowlist![0].address).toBe(MockGauntletUSDCMarket.address)
+      expect(allowlist![0].name).toBe(MockGauntletUSDCMarket.name)
     })
 
     it('should use default slippage from config', () => {
@@ -284,46 +311,9 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should handle multiple markets in allowlist', () => {
-      const mockMarkets: LendMarketConfig[] = [
-        {
-          address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
-          chainId: 130,
-          name: 'Gauntlet USDC',
-          asset: {
-            address: {
-              130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address,
-            },
-            metadata: {
-              decimals: 6,
-              name: 'USD Coin',
-              symbol: 'USDC',
-            },
-            type: 'erc20',
-          },
-          lendProvider: 'morpho',
-        },
-        {
-          address: '0x1234567890123456789012345678901234567890' as Address,
-          chainId: 130,
-          name: 'Test WETH Market',
-          asset: {
-            address: {
-              130: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
-            },
-            metadata: {
-              decimals: 18,
-              name: 'Wrapped Ether',
-              symbol: 'WETH',
-            },
-            type: 'erc20',
-          },
-          lendProvider: 'morpho',
-        },
-      ]
-
       const configWithMultipleMarkets: MorphoLendConfig = {
         provider: 'morpho',
-        marketAllowlist: mockMarkets,
+        marketAllowlist: [MockGauntletUSDCMarket, MockWETHMarket],
       }
 
       const provider = new LendProviderMorpho(
@@ -334,8 +324,8 @@ describe('LendProviderMorpho', () => {
       const allowlist = provider.config.marketAllowlist
       expect(allowlist).toBeDefined()
       expect(allowlist).toHaveLength(2)
-      expect(allowlist![0].name).toBe('Gauntlet USDC')
-      expect(allowlist![1].name).toBe('Test WETH Market')
+      expect(allowlist![0].name).toBe(MockGauntletUSDCMarket.name)
+      expect(allowlist![1].name).toBe(MockWETHMarket.name)
     })
   })
 })
