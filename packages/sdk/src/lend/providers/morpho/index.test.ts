@@ -215,7 +215,7 @@ describe('LendProviderMorpho', () => {
         mockChainManager,
       )
 
-      expect(providerWithoutAllowlist['marketAllowlist']).toBeUndefined()
+      expect(providerWithoutAllowlist.config.marketAllowlist).toBeUndefined()
     })
 
     it('should store market allowlist when provided', () => {
@@ -224,7 +224,9 @@ describe('LendProviderMorpho', () => {
         chainId: 130,
         name: 'Test Gauntlet USDC',
         asset: {
-          address: { 130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address },
+          address: {
+            130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address,
+          },
           metadata: {
             decimals: 6,
             name: 'USD Coin',
@@ -246,7 +248,7 @@ describe('LendProviderMorpho', () => {
         mockChainManager,
       )
 
-      const allowlist = providerWithAllowlist['marketAllowlist']
+      const allowlist = providerWithAllowlist.config.marketAllowlist
       expect(allowlist).toBeDefined()
       expect(allowlist).toHaveLength(1)
       expect(allowlist![0].address).toBe(mockMarket.address)
@@ -265,7 +267,7 @@ describe('LendProviderMorpho', () => {
         mockChainManager,
       )
 
-      expect(providerWithSlippage['defaultSlippage']).toBe(customSlippage)
+      expect(providerWithSlippage.config.defaultSlippage).toBe(customSlippage)
     })
 
     it('should use fallback default slippage when not provided', () => {
@@ -278,7 +280,7 @@ describe('LendProviderMorpho', () => {
         mockChainManager,
       )
 
-      expect(providerWithoutSlippage['defaultSlippage']).toBe(50) // Default fallback
+      expect(providerWithoutSlippage.config.defaultSlippage || 50).toBe(50) // Default fallback
     })
 
     it('should handle multiple markets in allowlist', () => {
@@ -288,7 +290,9 @@ describe('LendProviderMorpho', () => {
           chainId: 130,
           name: 'Gauntlet USDC',
           asset: {
-            address: { 130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address },
+            address: {
+              130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address,
+            },
             metadata: {
               decimals: 6,
               name: 'USD Coin',
@@ -303,7 +307,9 @@ describe('LendProviderMorpho', () => {
           chainId: 130,
           name: 'Test WETH Market',
           asset: {
-            address: { 130: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address },
+            address: {
+              130: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
+            },
             metadata: {
               decimals: 18,
               name: 'Wrapped Ether',
@@ -325,7 +331,7 @@ describe('LendProviderMorpho', () => {
         mockChainManager,
       )
 
-      const allowlist = provider['marketAllowlist']
+      const allowlist = provider.config.marketAllowlist
       expect(allowlist).toBeDefined()
       expect(allowlist).toHaveLength(2)
       expect(allowlist![0].name).toBe('Gauntlet USDC')

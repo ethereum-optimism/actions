@@ -75,7 +75,7 @@ export class LendProviderMorpho extends LendProvider {
       // 1. Find suitable vault if marketId not provided
       const selectedVaultAddress =
         (marketId as Address) ||
-        (await findBestVaultForAsset(asset, this.marketAllowlist))
+        (await findBestVaultForAsset(asset, this._config.marketAllowlist))
 
       // 2. Get vault information for APY
       const vaultInfo = await this.getMarket({
@@ -122,7 +122,7 @@ export class LendProviderMorpho extends LendProvider {
             value: 0n,
           },
         },
-        slippage: options?.slippage || this.defaultSlippage,
+        slippage: options?.slippage || this._config.defaultSlippage || 50,
       }
     } catch (error) {
       throw new Error(
@@ -181,7 +181,7 @@ export class LendProviderMorpho extends LendProvider {
     return getVaultInfoHelper(
       marketId.address,
       this.chainManager,
-      this.marketAllowlist,
+      this._config.marketAllowlist,
     )
   }
 
@@ -190,7 +190,7 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to array of market information
    */
   async getMarkets(): Promise<LendMarket[]> {
-    return getMarketsHelper(this.chainManager, this.marketAllowlist)
+    return getMarketsHelper(this.chainManager, this._config.marketAllowlist)
   }
 
   /**

@@ -84,12 +84,24 @@ export class MockLendProvider extends LendProvider {
     }
 
     // Create mocked functions with default implementations
-    this.lend = vi.fn().mockImplementation(this.createMockLendTransaction.bind(this))
-    this.deposit = vi.fn().mockImplementation(this.createMockLendTransaction.bind(this))
-    this.getMarket = vi.fn().mockImplementation(this.createMockMarket.bind(this))
-    this.getMarkets = vi.fn().mockImplementation(this.createMockMarkets.bind(this))
-    this.getMarketBalance = vi.fn().mockImplementation(this.createMockBalance.bind(this))
-    this.withdraw = vi.fn().mockImplementation(this.createMockWithdraw.bind(this))
+    this.lend = vi
+      .fn()
+      .mockImplementation(this.createMockLendTransaction.bind(this))
+    this.deposit = vi
+      .fn()
+      .mockImplementation(this.createMockLendTransaction.bind(this))
+    this.getMarket = vi
+      .fn()
+      .mockImplementation(this.createMockMarket.bind(this))
+    this.getMarkets = vi
+      .fn()
+      .mockImplementation(this.createMockMarkets.bind(this))
+    this.getMarketBalance = vi
+      .fn()
+      .mockImplementation(this.createMockBalance.bind(this))
+    this.withdraw = vi
+      .fn()
+      .mockImplementation(this.createMockWithdraw.bind(this))
   }
 
   private async createMockLendTransaction(
@@ -104,7 +116,7 @@ export class MockLendProvider extends LendProvider {
       marketId: marketId || 'mock-market',
       apy: this.mockConfig.defaultApy,
       timestamp: Math.floor(Date.now() / 1000),
-      slippage: options?.slippage || this.defaultSlippage,
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         approval: {
           to: asset,
@@ -112,7 +124,9 @@ export class MockLendProvider extends LendProvider {
           value: 0n,
         },
         deposit: {
-          to: (marketId as Address) || ('0x1234567890123456789012345678901234567890' as Address),
+          to:
+            (marketId as Address) ||
+            ('0x1234567890123456789012345678901234567890' as Address),
           data: '0x6e553f65' as Address,
           value: 0n,
         },
@@ -182,10 +196,12 @@ export class MockLendProvider extends LendProvider {
       marketId: marketId || 'mock-market',
       apy: 0,
       timestamp: Math.floor(Date.now() / 1000),
-      slippage: options?.slippage || this.defaultSlippage,
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         deposit: {
-          to: (marketId as Address) || ('0x1234567890123456789012345678901234567890' as Address),
+          to:
+            (marketId as Address) ||
+            ('0x1234567890123456789012345678901234567890' as Address),
           data: '0xb460af94' as Address,
           value: 0n,
         },

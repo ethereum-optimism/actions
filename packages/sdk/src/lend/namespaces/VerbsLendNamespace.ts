@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 
 import type { LendProvider } from '@/lend/provider.js'
-import type { LendConfig,LendMarket, LendMarketId } from '@/types/lend.js'
+import type { LendConfig, LendMarket, LendMarketId } from '@/types/lend.js'
 
 /**
  * Verbs Lend Namespace

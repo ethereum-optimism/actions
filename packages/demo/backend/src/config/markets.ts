@@ -1,7 +1,6 @@
+import type { LendMarketConfig } from '@eth-optimism/verbs-sdk'
 import type { Address } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
-
-import type { LendMarketConfig } from '@eth-optimism/verbs-sdk'
 
 import { USDC, USDC_DEMO } from './assets.js'
 

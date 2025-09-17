@@ -1,6 +1,5 @@
-import { base, baseSepolia, mainnet, unichain } from 'viem/chains'
-
 import type { Asset } from '@eth-optimism/verbs-sdk'
+import { base, baseSepolia, mainnet, unichain } from 'viem/chains'
 
 export const ETH: Asset = {
   address: {

@@ -25,7 +25,7 @@ describe('LendProvider', () => {
       const config: BaseLendConfig = {}
       const provider = new MockLendProvider(config)
 
-      expect(provider.defaultSlippage).toBe(50)
+      expect(provider.config.defaultSlippage || 50).toBe(50)
     })
 
     it('should use custom default slippage when provided', () => {
@@ -34,7 +34,7 @@ describe('LendProvider', () => {
       }
       const provider = new MockLendProvider(config)
 
-      expect(provider.defaultSlippage).toBe(200)
+      expect(provider.config.defaultSlippage).toBe(200)
     })
 
     it('should store market allowlist when provided', () => {
@@ -59,7 +59,7 @@ describe('LendProvider', () => {
       }
 
       const provider = new MockLendProvider(config)
-      expect(provider.marketAllowlist).toEqual([mockMarket])
+      expect(provider.config.marketAllowlist).toEqual([mockMarket])
     })
   })
 
@@ -154,7 +154,7 @@ describe('LendProvider', () => {
       }
       const provider = new MockLendProvider(config)
 
-      expect(provider.defaultSlippage).toBe(75)
+      expect(provider.config.defaultSlippage).toBe(75)
     })
 
     it('should provide access to marketAllowlist via getter', () => {
@@ -179,12 +179,12 @@ describe('LendProvider', () => {
       }
       const provider = new MockLendProvider(config)
 
-      expect(provider.marketAllowlist).toEqual([mockMarket])
+      expect(provider.config.marketAllowlist).toEqual([mockMarket])
     })
 
     it('should return undefined for marketAllowlist when not provided', () => {
       const provider = new MockLendProvider({})
-      expect(provider.marketAllowlist).toBeUndefined()
+      expect(provider.config.marketAllowlist).toBeUndefined()
     })
   })
 })

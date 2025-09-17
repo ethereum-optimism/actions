@@ -9,6 +9,7 @@ import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
+import { USDC } from '@/config/assets.js'
 import { getPrivyClient, getVerbs } from '@/config/verbs.js'
 
 /**
@@ -204,5 +205,5 @@ export async function sendTokens(
     throw new Error('Wallet not found')
   }
 
-  return wallet.sendTokens(amount, 'usdc', recipientAddress)
+  return wallet.sendTokens(amount, USDC, baseSepolia.id, recipientAddress)
 }

@@ -117,7 +117,7 @@ describe('VerbsLendNamespace', () => {
 
     const result = namespace.supportedNetworkIds()
 
-    expect(result).toEqual([84532]) // MockLendProvider returns [84532]
+    expect(result).toEqual([84532])
   })
 
   it('should provide access to the underlying provider', () => {

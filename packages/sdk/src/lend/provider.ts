@@ -3,7 +3,6 @@ import type { Address } from 'viem'
 import type {
   BaseLendConfig,
   LendMarket,
-  LendMarketConfig,
   LendMarketId,
   LendOptions,
   LendTransaction,
@@ -36,14 +35,6 @@ export abstract class LendProvider {
    */
   protected constructor(config: BaseLendConfig) {
     this._config = config
-  }
-
-  public get defaultSlippage(): number {
-    return this._config.defaultSlippage || 50
-  }
-
-  public get marketAllowlist(): LendMarketConfig[] | undefined {
-    return this._config.marketAllowlist
   }
 
   public get config(): BaseLendConfig {
