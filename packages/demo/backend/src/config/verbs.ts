@@ -30,6 +30,7 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
     },
     lend: {
       provider: 'morpho',
+      defaultSlippage: 50,
     },
     chains: [
       {

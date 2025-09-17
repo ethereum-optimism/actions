@@ -24,7 +24,7 @@ export interface MockLendProviderConfig {
 export class MockLendProvider extends LendProvider {
   protected readonly SUPPORTED_NETWORKS = {
     TESTNET: {
-      chainId: 999,
+      chainId: 84532,
       name: 'Test Network',
     },
   }
@@ -78,7 +78,7 @@ export class MockLendProvider extends LendProvider {
     super(config || {})
 
     this.mockConfig = {
-      supportedNetworks: mockConfig?.supportedNetworks ?? [999],
+      supportedNetworks: mockConfig?.supportedNetworks ?? [84532],
       defaultApy: mockConfig?.defaultApy ?? 0.05,
       mockBalance: mockConfig?.mockBalance ?? 1000000n,
     }
@@ -146,7 +146,7 @@ export class MockLendProvider extends LendProvider {
     return [
       await this.createMockMarket({
         address: '0x1234567890123456789012345678901234567890' as Address,
-        chainId: 999,
+        chainId: 84532,
       }),
     ]
   }
@@ -166,7 +166,7 @@ export class MockLendProvider extends LendProvider {
       balanceFormatted: (this.mockConfig.mockBalance / 2n).toString(),
       shares: this.mockConfig.mockBalance / 2n,
       sharesFormatted: (this.mockConfig.mockBalance / 2n).toString(),
-      chainId: 999,
+      chainId: 84532,
     }
   }
 

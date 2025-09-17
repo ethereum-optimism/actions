@@ -35,7 +35,7 @@ export class DefaultSmartWallet extends SmartWallet {
   /** Known deployment address of the wallet (if already deployed) */
   private deploymentAddress?: Address
   /** Provider for lending market operations */
-  private lendProvider: LendProvider
+  private lendProvider?: LendProvider
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
   /** Optional 16-byte attribution suffix appended to callData */
@@ -55,7 +55,7 @@ export class DefaultSmartWallet extends SmartWallet {
     owners: Array<Address | WebAuthnAccount>,
     signer: LocalAccount,
     chainManager: ChainManager,
-    lendProvider: LendProvider,
+    lendProvider?: LendProvider,
     deploymentAddress?: Address,
     signerOwnerIndex?: number,
     nonce?: bigint,
@@ -85,7 +85,7 @@ export class DefaultSmartWallet extends SmartWallet {
     owners: Array<Address | WebAuthnAccount>
     signer: LocalAccount
     chainManager: ChainManager
-    lendProvider: LendProvider
+    lendProvider?: LendProvider
     deploymentAddress?: Address
     signerOwnerIndex?: number
     nonce?: bigint
@@ -181,6 +181,10 @@ export class DefaultSmartWallet extends SmartWallet {
     const lendOptions: LendOptions = {
       ...options,
       receiver: options?.receiver || this.address,
+    }
+
+    if (!this.lendProvider) {
+      throw new Error('Lending provider not configured')
     }
 
     const result = await this.lendProvider.deposit(

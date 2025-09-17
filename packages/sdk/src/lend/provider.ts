@@ -15,7 +15,7 @@ import type {
  */
 export abstract class LendProvider {
   /** Lending provider configuration */
-  protected readonly config: BaseLendConfig
+  protected readonly _config: BaseLendConfig
 
   /**
    * Supported networks configuration
@@ -35,15 +35,19 @@ export abstract class LendProvider {
    * @param config - Base lending configuration
    */
   protected constructor(config: BaseLendConfig) {
-    this.config = config
+    this._config = config
   }
 
-  protected get defaultSlippage(): number {
-    return this.config.defaultSlippage || 50
+  public get defaultSlippage(): number {
+    return this._config.defaultSlippage || 50
   }
 
-  protected get marketAllowlist(): LendMarketConfig[] | undefined {
-    return this.config.marketAllowlist
+  public get marketAllowlist(): LendMarketConfig[] | undefined {
+    return this._config.marketAllowlist
+  }
+
+  public get config(): BaseLendConfig {
+    return this._config
   }
 
   /**

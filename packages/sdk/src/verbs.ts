@@ -24,7 +24,7 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
   >
   private chainManager: ChainManager
   private _lend?: VerbsLendNamespace
-  private lendProvider?: LendProvider
+  private _lendProvider?: LendProvider
   private hostedWalletProvider!: HostedProviderInstanceMap[THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry
@@ -35,18 +35,16 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
 
     // Create lending provider if configured
     if (config.lend) {
-      if (config.lend.type === 'morpho') {
-        this.lendProvider = new LendProviderMorpho(
+      if (config.lend.provider === 'morpho') {
+        this._lendProvider = new LendProviderMorpho(
           config.lend,
           this.chainManager,
         )
 
         // Create read-only lend namespace
-        this._lend = new VerbsLendNamespace(this.lendProvider)
+        this._lend = new VerbsLendNamespace(this._lendProvider)
       } else {
-        throw new Error(
-          `Unsupported lending provider type: ${config.lend.type}`,
-        )
+        throw new Error(`Unsupported lending provider: ${config.lend.provider}`)
       }
     }
 
@@ -70,15 +68,11 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
   }
 
   /**
-   * Get the lend provider instance (internal use)
-   * @returns LendProvider instance if configured
-   * @internal
+   * Get the lend provider instance
+   * @returns LendProvider instance if configured, undefined otherwise
    */
-  get lendProviderInstance(): LendProvider {
-    if (!this.lendProvider) {
-      throw new Error('Lend provider not configured')
-    }
-    return this.lendProvider
+  get lendProvider(): LendProvider | undefined {
+    return this._lendProvider
   }
 
   /**

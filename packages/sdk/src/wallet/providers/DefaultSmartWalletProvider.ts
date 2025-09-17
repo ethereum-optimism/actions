@@ -18,7 +18,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
   /** Manages supported blockchain networks */
   private chainManager: ChainManager
   /** Provider for lending market operations */
-  private lendProvider: LendProvider
+  private lendProvider?: LendProvider
   /** Optional 16-byte attribution suffix appended to callData */
   private attributionSuffix?: Hex
 
@@ -30,7 +30,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    */
   constructor(
     chainManager: ChainManager,
-    lendProvider: LendProvider,
+    lendProvider?: LendProvider,
     attributionSuffix?: string,
   ) {
     super()

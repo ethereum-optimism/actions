@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 
 import type { LendProvider } from '@/lend/provider.js'
-import type { LendMarket, LendMarketId } from '@/types/lend.js'
+import type { LendMarket, LendMarketId, LendConfig } from '@/types/lend.js'
 
 /**
  * Verbs Lend Namespace
@@ -45,5 +45,13 @@ export class VerbsLendNamespace {
    */
   supportedNetworkIds(): number[] {
     return this.provider.supportedNetworkIds()
+  }
+
+  /**
+   * Get lending provider configuration
+   * @description Access to provider configuration including defaultSlippage, provider type, etc.
+   */
+  get config(): LendConfig {
+    return this.provider.config as LendConfig
   }
 }
