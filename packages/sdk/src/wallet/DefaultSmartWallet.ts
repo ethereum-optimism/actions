@@ -8,13 +8,13 @@ import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   LendOptions,
   LendProvider,
   LendTransaction,
   TransactionData,
 } from '@/types/lend.js'
-import type { Asset } from '@/types/token.js'
 import { parseAssetAmount } from '@/utils/assets.js'
 import { SmartWallet } from '@/wallet/base/SmartWallet.js'
 

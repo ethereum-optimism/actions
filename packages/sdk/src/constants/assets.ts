@@ -1,6 +1,6 @@
 import { base, baseSepolia, mainnet, unichain } from 'viem/chains'
 
-import type { Asset } from '@/types/token.js'
+import type { Asset } from '@/types/asset.js'
 
 export const ETH: Asset = {
   address: {

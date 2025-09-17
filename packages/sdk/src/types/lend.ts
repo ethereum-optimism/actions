@@ -1,7 +1,7 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '../constants/supportedChains.js'
-import type { Asset } from './token.js'
+import type { Asset } from './asset.js'
 
 export { VerbsLendNamespace } from '../lend/namespaces/VerbsLendNamespace.js'
 export { WalletLendNamespace } from '../lend/namespaces/WalletLendNamespace.js'

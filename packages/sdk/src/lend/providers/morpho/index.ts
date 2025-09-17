@@ -5,6 +5,7 @@ import { baseSepolia } from 'viem/chains'
 
 import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import { findMarketInAllowlist } from '@/utils/config.js'
 
 import type { SupportedChainId } from '../../../constants/supportedChains.js'
 import type {
@@ -15,11 +16,7 @@ import type {
   MorphoLendConfig,
 } from '../../../types/lend.js'
 import { LendProvider } from '../../provider.js'
-import {
-  findBestVaultForAsset,
-  getVault,
-  getVaults,
-} from './sdk.js'
+import { findBestVaultForAsset, getVault, getVaults } from './sdk.js'
 
 /**
  * Supported networks for Morpho lending
@@ -181,6 +178,12 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to market information
    */
   async getMarket(marketId: LendMarketId): Promise<LendMarket> {
+    // Check if market is in allowlist
+    const config = findMarketInAllowlist(this._config.marketAllowlist, marketId)
+    if (!config) {
+      throw new Error(`Vault ${marketId.address} not found in market allowlist`)
+    }
+
     return getVault({
       marketId,
       chainManager: this.chainManager,
@@ -193,7 +196,13 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to array of market information
    */
   async getMarkets(): Promise<LendMarket[]> {
-    return getVaults(this.chainManager, this._config.marketAllowlist || [])
+    if (
+      !this._config.marketAllowlist ||
+      this._config.marketAllowlist.length === 0
+    ) {
+      throw new Error('Market allowlist is required and cannot be empty')
+    }
+    return getVaults(this.chainManager, this._config.marketAllowlist)
   }
 
   /**

@@ -3,7 +3,7 @@ import { erc20Abi, formatEther, formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { Asset, TokenBalance } from '@/types/token.js'
+import type { Asset, TokenBalance } from '@/types/asset.js'
 
 /**
  * Fetch ETH balance across all supported chains

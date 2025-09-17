@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
+import { MockUSDCAsset } from '@/test/MockAssets.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import type { Asset } from '@/types/token.js'
+import type { Asset } from '@/types/asset.js'
 
 import { fetchERC20Balance, fetchETHBalance } from './tokenBalance.js'
 
 describe('TokenBalance', () => {
   let chainManager: ChainManager
-  let mockAsset: Asset
   const walletAddress: Address = '0x1234567890123456789012345678901234567890'
 
   beforeEach(() => {
@@ -19,18 +19,6 @@ describe('TokenBalance', () => {
       supportedChains: [unichain.id],
       defaultBalance: 1000000n,
     }) as any
-
-    mockAsset = {
-      address: {
-        [unichain.id]: '0x078d782b760474a361dda0af3839290b0ef57ad6',
-      },
-      metadata: {
-        decimals: 6,
-        name: 'USDC',
-        symbol: 'USDC',
-      },
-      type: 'erc20',
-    }
   })
 
   describe('fetchBalance', () => {
@@ -38,7 +26,7 @@ describe('TokenBalance', () => {
       const balance = await fetchERC20Balance(
         chainManager,
         walletAddress,
-        mockAsset,
+        MockUSDCAsset,
       )
 
       expect(balance).toEqual({
@@ -50,7 +38,7 @@ describe('TokenBalance', () => {
             chainId: unichain.id,
             balance: 1000000n,
             formattedBalance: '1',
-            tokenAddress: mockAsset.address[unichain.id]!,
+            tokenAddress: MockUSDCAsset.address[unichain.id]!,
           },
         ],
       })

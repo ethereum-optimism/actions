@@ -50,7 +50,7 @@ describe('Wallet (base)', () => {
     vi.clearAllMocks()
   })
 
-  it('getBalance fetches ETH and ERC20 balances for supported tokens', async () => {
+  it('getBalance fetches ETH and ERC20 balances for all supported tokens', async () => {
     const wallet = new TestWallet(chainManager, address, signer)
 
     const result = await wallet.getBalance()
@@ -58,9 +58,10 @@ describe('Wallet (base)', () => {
     expect(result).toBeTruthy()
     expect(fetchETHBalance).toHaveBeenCalledTimes(1)
     expect(fetchETHBalance).toHaveBeenCalledWith(chainManager, address)
-
-    // Currently only ETH balance is fetched
-    expect(fetchERC20Balance).toHaveBeenCalledTimes(0)
+    // Should call fetchERC20Balance for each token in SUPPORTED_TOKENS
+    expect(fetchERC20Balance).toHaveBeenCalledTimes(
+      Object.keys(SUPPORTED_TOKENS).length,
+    )
   })
 
   it('getBalance propagates errors from underlying fetchers', async () => {

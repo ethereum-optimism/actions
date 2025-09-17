@@ -3,9 +3,9 @@ import type { Address, LocalAccount, WalletClient } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { fetchETHBalance } from '@/services/tokenBalance.js'
+import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { TokenBalance } from '@/types/token.js'
+import type { TokenBalance } from '@/types/asset.js'
 
 /**
  * Base verbs wallet class
@@ -49,9 +49,25 @@ export abstract class Wallet {
    * @returns Promise resolving to array of token balances with chain breakdown
    */
   async getBalance(): Promise<TokenBalance[]> {
-    // For now, just return ETH balance until assets are properly configured
+    // TEMPORARY - will use optimism token list eventually
+    const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
+      async (tokenInfo) => {
+        // Convert TokenInfo to Asset format
+        const asset = {
+          address: tokenInfo.addresses,
+          metadata: {
+            decimals: tokenInfo.decimals,
+            name: tokenInfo.name,
+            symbol: tokenInfo.symbol,
+          },
+          type: tokenInfo.symbol === 'ETH' ? 'native' : 'erc20',
+        } as const
+        return fetchERC20Balance(this.chainManager, this.address, asset)
+      },
+    )
     const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
-    return Promise.all([ethBalancePromise])
+
+    return Promise.all([ethBalancePromise, ...tokenBalancePromises])
   }
 
   /**

@@ -1,7 +1,7 @@
 import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { Asset } from '@/types/token.js'
+import type { Asset } from '@/types/asset.js'
 
 /**
  * Parse human-readable amount to wei/smallest unit

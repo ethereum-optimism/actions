@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
 
-import type { Asset } from '@/types/token.js'
+import type { Asset } from '@/types/asset.js'
 
 /**
  * Mock USDC asset for testing

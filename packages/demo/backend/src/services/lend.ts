@@ -62,6 +62,7 @@ export async function getMarket(
 export async function getMarketBalance(
   vaultAddress: Address,
   walletId: string,
+  chainId: SupportedChainId,
 ): Promise<MarketBalanceResult> {
   const verbs = getVerbs()
   const wallet = await getWallet(walletId)
@@ -70,7 +71,7 @@ export async function getMarketBalance(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return verbs.lend.getMarketBalance(vaultAddress, wallet.address)
+  return verbs.lend.getMarketBalance({ address: vaultAddress, chainId }, wallet.address)
 }
 
 export async function formatMarketResponse(

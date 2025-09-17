@@ -1,5 +1,6 @@
 import type {
   SmartWallet,
+  SupportedChainId,
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/verbs-sdk'
@@ -119,7 +120,7 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
         try {
           const walletAddress = wallet.address
           const vaultBalance = await verbs.lend.getMarketBalance(
-            vault.address,
+            { address: vault.address, chainId: vault.chainId as SupportedChainId },
             walletAddress,
           )
 

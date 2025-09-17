@@ -16,7 +16,6 @@ import type {
 } from '@/types/lend.js'
 import { findMarketInAllowlist } from '@/utils/config.js'
 
-
 /**
  * Fetch and calculate rewards breakdown from Morpho GraphQL API
  * @param vaultAddress - Vault address
@@ -113,10 +112,7 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
 
   try {
     // Find config in allowlist (required for all vaults)
-    const config = findMarketInAllowlist(marketAllowlist, marketId)
-    if (!config) {
-      throw new Error(`Vault ${marketId.address} not found in market allowlist`)
-    }
+    const config = findMarketInAllowlist(marketAllowlist, marketId)!
 
     // 2. Fetch live vault data from Morpho SDK
     const vault = await fetchAccrualVault(
@@ -185,10 +181,6 @@ export async function getVaults(
   marketAllowlist: LendMarketConfig[],
 ): Promise<LendMarket[]> {
   try {
-    if (!marketAllowlist || marketAllowlist.length === 0) {
-      throw new Error('Market allowlist is required and cannot be empty')
-    }
-
     const vaultPromises = marketAllowlist.map((config) => {
       return getVault({
         marketId: { address: config.address, chainId: config.chainId },
