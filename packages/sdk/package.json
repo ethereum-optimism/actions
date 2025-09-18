@@ -63,9 +63,9 @@
     "viem": "^2.24.1"
   },
   "peerDependencies": {
-    "@dynamic-labs/ethereum": ">=4.31.4",
-    "@dynamic-labs/wallet-connector-core": ">=4.31.4",
-    "@dynamic-labs/waas-evm": ">=4.31.4",
+    "@dynamic-labs/ethereum": ">=4.32.0",
+    "@dynamic-labs/wallet-connector-core": ">=4.32.0",
+    "@dynamic-labs/waas-evm": ">=4.32.0",
     "@privy-io/server-auth": ">=1.28.0"
   },
   "devDependencies": {

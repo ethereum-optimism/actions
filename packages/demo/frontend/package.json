@@ -18,11 +18,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.46.0",
+    "@dynamic-labs/ethereum": "4.32.0",
+    "@dynamic-labs/sdk-react-core": "4.32.0",
+    "@dynamic-labs/wallet-connector-core": "4.32.0",
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@eth-optimism/verbs-sdk": "workspace:*",
     "@eth-optimism/verbs-service": "workspace:*",
     "@eth-optimism/viem": "^0.4.13",
     "@privy-io/react-auth": "^2.24.0",
     "buffer": "^6.0.3",
+    "eventemitter3": "^5",
     "react": "^18",
     "react-dom": "^18",
     "react-router": "7",

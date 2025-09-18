@@ -1,21 +1,23 @@
-import { chainById } from '@eth-optimism/viem/chains'
+import { baseSepolia, chainById, unichain } from '@eth-optimism/viem/chains'
 
 // polyfill required by privy sdk: https://docs.privy.io/basics/react-native/installation#configure-polyfills
 import {Buffer} from 'buffer';
 if (!globalThis.Buffer) globalThis.Buffer = Buffer
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { useWallets, usePrivy, type WalletWithMetadata, useUser as usePrivyUser, useSessionSigners, useUser } from '@privy-io/react-auth'
+import { useState, useEffect, useRef } from 'react'
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
+import { isEthereumWallet } from "@dynamic-labs/ethereum";
 import type {
-  CreateWalletResponse,
-  GetAllWalletsResponse,
   WalletData,
 } from '@eth-optimism/verbs-service'
 import NavBar from './NavBar'
-import { PrivyAuthButton } from './PrivyAuthButton'
 import { verbsApi } from '../api/verbsApi'
-import type { Address } from 'viem'
-import { env } from '../envVars'
+import { encodeFunctionData, formatUnits } from 'viem'
+import { getVerbs } from '../config/verbs';
+import { SUPPORTED_TOKENS, type LendTransaction, type SmartWallet, type SupportedChainId, type TokenBalance } from '@eth-optimism/verbs-sdk';
+import { mintableErc20Abi } from '../abis/mintableErc20Abi';
+
 interface TerminalLine {
   id: string
   type: 'input' | 'output' | 'error' | 'success' | 'warning'
@@ -82,6 +84,7 @@ Wallet commands:
          balance - Show balance of selected wallet
          lend    - Lend and earn
          send    - Send to another address
+         sendtx  - Send a test transaction (connected wallet)
 
 Future verbs (coming soon):
   borrow        - Borrow assets
@@ -90,81 +93,38 @@ Future verbs (coming soon):
   earn          - Earn DeFi yield`
 
 const Terminal = () => {
+  const { primaryWallet } = useDynamicContext();
+
   const [lines, setLines] = useState<TerminalLine[]>([])
   const [currentInput, setCurrentInput] = useState('')
   const [commandHistory, setCommandHistory] = useState<string[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt | null>(null)
-  const [selectedWallet, setSelectedWallet] = useState<WalletData | null>(null)
-  const [screenWidth, setScreenWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1200,
-  )
-  const [currentWalletList, setCurrentWalletList] = useState<
-    GetAllWalletsResponse['wallets'] | null
-  >(null)
+  const [selectedWallet, setSelectedWallet] = useState<SmartWallet | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
 
-    const { authenticated: isSignedIn, getAccessToken } = usePrivy()
-    const { user } = useUser()
-    const getAuthHeaders = useCallback(async () => {
-      const token = await getAccessToken()
-      return token ? { Authorization: `Bearer ${token}` } : undefined
-    }, [getAccessToken])
-
-  // Privy wallet hooks
-  const { wallets } = useWallets()
-  const { authenticated: privyAuthenticated } = usePrivy()
-  const { user: privyUser } = usePrivyUser()
-  const { addSessionSigners } = useSessionSigners();
-  const ethereumEmbeddedWallets = useMemo<WalletWithMetadata[]>(
-    () =>
-      (privyUser?.linkedAccounts?.filter(
-        (account) =>
-          account.type === "wallet" &&
-          account.walletClientType === "privy" &&
-          account.chainType === "ethereum"
-      ) as WalletWithMetadata[]) ?? [],
-    [privyUser]
-  );
-
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
 
-  // Auto-select wallet when Privy is authenticated and has wallets
   useEffect(() => {
-    const autoSelectWallet = async () => {
-      if (
-        isSignedIn &&
-        privyAuthenticated &&
-        wallets.length > 0 &&
-        !selectedWallet
-      ) {
-        // Use the first available embedded wallet
-        const embeddedWallet = wallets.find(
-          (wallet) => wallet.walletClientType === 'privy',
-        )
-        if (embeddedWallet) {
-          const walletAddress = embeddedWallet.address
-
-          setSelectedWallet({
-            id: user?.id || 'unknown',
-            address: walletAddress as `0x${string}`,
-          })
-
-          // Add a success message to the terminal
-          const welcomeLine: TerminalLine = {
-            id: `welcome-${Date.now()}`,
-            type: 'success',
-            content: `Welcome back ${user?.email?.address || user?.id}!\nWallet auto-selected: ${walletAddress}`,
-            timestamp: new Date(),
-          }
-          setLines((prev) => [...prev, welcomeLine])
-        }
-      }
+    if (!primaryWallet || !isEthereumWallet(primaryWallet)) {
+      console.log('Wallet not connected or not EVM compatible')
+      setSelectedWallet(null)
+      return
     }
 
-    autoSelectWallet()
-  }, [isSignedIn, privyAuthenticated, wallets.length, selectedWallet, user])
+    const initializeVerbsWallet = async () => {
+    const verbs = getVerbs()
+    verbs.wallet.hostedWalletProvider.specialDynamicMethod()
+    const verbsWallet = await verbs.wallet.hostedWalletToVerbsWallet({wallet: primaryWallet})
+    const wallet = await verbs.wallet.getSmartWallet({
+      signer: verbsWallet.signer,
+      deploymentOwners: [verbsWallet.address],
+    })
+    setSelectedWallet(wallet)
+    }
+    initializeVerbsWallet()
+  }, [primaryWallet])
 
   // Function to render content with clickable links
   const renderContentWithLinks = (content: string) => {
@@ -196,34 +156,81 @@ const Terminal = () => {
   }
 
   // DRY function to format balance strings
-  const formatBalance = (balance: string, decimals: number): string => {
-    const balanceBigInt = BigInt(balance)
-    const divisor = BigInt(10 ** decimals)
-    const wholePart = balanceBigInt / divisor
-    const fractionalPart = balanceBigInt % divisor
+  // const formatBalance = (balance: string, decimals: number): string => {
+  //   const balanceBigInt = BigInt(balance)
+  //   const divisor = BigInt(10 ** decimals)
+  //   const wholePart = balanceBigInt / divisor
+  //   const fractionalPart = balanceBigInt % divisor
 
-    if (fractionalPart === 0n) {
-      return wholePart.toString()
-    }
+  //   if (fractionalPart === 0n) {
+  //     return wholePart.toString()
+  //   }
 
-    const fractionalStr = fractionalPart.toString().padStart(decimals, '0')
-    const trimmedFractional = fractionalStr.replace(/0+$/, '')
+  //   const fractionalStr = fractionalPart.toString().padStart(decimals, '0')
+  //   const trimmedFractional = fractionalStr.replace(/0+$/, '')
 
-    if (trimmedFractional === '') {
-      return wholePart.toString()
-    }
+  //   if (trimmedFractional === '') {
+  //     return wholePart.toString()
+  //   }
 
-    return `${wholePart}.${trimmedFractional}`
-  }
+  //   return `${wholePart}.${trimmedFractional}`
+  // }
 
   // DRY function to display wallet balance with loading state
   const displayWalletBalance = async (
-    walletId: string,
+    wallet: SmartWallet,
     showVaultPositions: boolean = true,
   ): Promise<string> => {
-    const result = await verbsApi.getWalletBalance(walletId, await getAuthHeaders())
+   
+    // For manual/backend wallets, use the original API call
+    const result = await wallet.getBalance()
+    const verbs = getVerbs()
+    const vaults = await verbs.lend.getMarkets()
+    const vaultBalances = await Promise.all(
+      vaults.map(async (vault) => {
+        try {
+          const walletAddress = wallet.address
+          const vaultBalance = await verbs.lend.getMarketBalance(
+            {
+              address: vault.address,
+              chainId: vault.chainId as SupportedChainId,
+            },
+            walletAddress,
+          )
 
-    const balancesByChain = result.balance.reduce(
+          // Only include vaults with non-zero balances
+          if (vaultBalance.balance > 0n) {
+            // Create a TokenBalance object for the vault
+            const formattedBalance = formatUnits(vaultBalance.balance, 6) // Assuming 6 decimals for vault shares
+            return {
+              symbol: `${vault.name}`,
+              totalBalance: vaultBalance.balance,
+              totalFormattedBalance: formattedBalance,
+              chainBalances: [
+                {
+                  chainId: vaultBalance.chainId,
+                  balance: vaultBalance.balance,
+                  tokenAddress: vault.asset,
+                  formattedBalance: formattedBalance,
+                },
+              ],
+            } as TokenBalance
+          }
+          return null
+        } catch (error) {
+          console.error(error)
+          return null
+        }
+      }),
+    )
+     // Filter out null values and add vault balances to token balances
+     const validVaultBalances = vaultBalances.filter(
+      (balance): balance is NonNullable<typeof balance> => balance !== null,
+    )
+    const allBalances = [...result, ...validVaultBalances]
+
+
+    const balancesByChain = allBalances.reduce(
       (acc, token) => {
         token.chainBalances.forEach(
           ({ chainId, balance, formattedBalance }) => {
@@ -239,7 +246,7 @@ const Terminal = () => {
         )
         return acc
       },
-      {} as Record<number, typeof result.balance>,
+      {} as Record<number, typeof allBalances>,
     )
 
     const balanceLines: string[] = []
@@ -275,9 +282,9 @@ const Terminal = () => {
       )
 
       balanceLines.push(
-        `  ETH: ${ethBalance ? formatBalance(ethBalance.totalBalance, 18) : '0'}`,
-        `  USDC: ${usdcBalance ? formatBalance(usdcBalance.totalBalance, 6) : '0'}`,
-        `  USDC_DEMO: ${usdcDemoBalance ? formatBalance(usdcDemoBalance.totalBalance, 6) : '0'}`,
+        `  ETH: ${ethBalance ? ethBalance.totalFormattedBalance : '0'}`,
+        `  USDC: ${usdcBalance ? usdcBalance.totalFormattedBalance : '0'}`,
+        `  USDC_DEMO: ${usdcDemoBalance ? usdcDemoBalance.totalFormattedBalance : '0'}`,
       )
 
       // Add vault balances if any exist and showVaultPositions is true
@@ -285,7 +292,7 @@ const Terminal = () => {
         balanceLines.push('  Vault Positions:')
         vaultBalances.forEach((vault) => {
           balanceLines.push(
-            `    ${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`,
+            `    ${vault.symbol}: ${vault.totalFormattedBalance}`,
           ) // Assume 6 decimals for vault shares
         })
       }
@@ -302,92 +309,6 @@ const Terminal = () => {
       inputRef.current.focus()
     }
   }, [])
-
-  // Track screen width changes
-  useEffect(() => {
-    const handleResize = () => {
-      setScreenWidth(window.innerWidth)
-    }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  // Update wallet list display when screen size changes
-  useEffect(() => {
-    if (currentWalletList && pendingPrompt?.type === 'walletSelectSelection') {
-      // Find the wallet selection line and update it
-      setLines((prev) => {
-        const walletSelectIndex = prev.findIndex((line) =>
-          line.content.includes('Select a wallet:'),
-        )
-
-        if (walletSelectIndex !== -1) {
-          const formatWalletColumns = (
-            wallets: GetAllWalletsResponse['wallets'],
-          ) => {
-            const lines: string[] = []
-            const totalWallets = wallets.length
-
-            // Responsive column logic: 1 on mobile, 2 on tablet, 3 on desktop
-            const isMobile = screenWidth < 480
-            const isTablet = screenWidth >= 480 && screenWidth < 768
-
-            const numColumns = isMobile ? 1 : isTablet ? 2 : 3
-            const walletsPerColumn = Math.ceil(totalWallets / numColumns)
-            const columnWidth = isMobile ? 0 : isTablet ? 25 : 33 // Tighter spacing for 2 cols
-
-            for (let row = 0; row < walletsPerColumn; row++) {
-              let line = ''
-
-              for (let col = 0; col < numColumns; col++) {
-                const walletIndex = col * walletsPerColumn + row
-
-                if (walletIndex < totalWallets) {
-                  const wallet = wallets[walletIndex]
-                  const num = walletIndex + 1
-                  const numStr = num < 10 ? ` ${num}` : `${num}`
-                  const addressDisplay = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
-                  const selected =
-                    selectedWallet?.id === wallet.id ? ' (selected)' : ''
-                  const columnText = `${numStr}. ${addressDisplay}${selected}`
-
-                  // Add column text and pad for next column (except last column)
-                  if (col < numColumns - 1) {
-                    line += columnText.padEnd(columnWidth)
-                  } else {
-                    line += columnText
-                  }
-                }
-              }
-
-              // Only add non-empty lines
-              if (line.trim()) {
-                lines.push(line)
-              }
-            }
-
-            return lines.join('\n')
-          }
-
-          const walletOptions = formatWalletColumns(currentWalletList)
-
-          const updatedLine = {
-            ...prev[walletSelectIndex],
-            content: `Select a wallet:\n\n${walletOptions}\n\nEnter wallet number:`,
-          }
-
-          return [
-            ...prev.slice(0, walletSelectIndex),
-            updatedLine,
-            ...prev.slice(walletSelectIndex + 1),
-          ]
-        }
-
-        return prev
-      })
-    }
-  }, [screenWidth, currentWalletList, pendingPrompt, selectedWallet])
 
   // Keep terminal scrolled to bottom
   useEffect(() => {
@@ -458,94 +379,17 @@ const Terminal = () => {
     initializeTerminal()
   }, [])
 
-  const createWallet = async (
-    userId: string,
-  ): Promise<CreateWalletResponse> => {
-    return verbsApi.createWallet(userId)
-  }
-
-  const getAllWallets = async (): Promise<GetAllWalletsResponse> => {
-    return verbsApi.getAllWallets()
-  }
-
-  
-
-  const addSessionSigner = useCallback(
-    async (walletAddress: string) => {
-      if (!env.VITE_SESSION_SIGNER_ID) {
-        console.error("SESSION_SIGNER_ID must be defined to addSessionSigner");
-        return;
-      }
-      console.log("Adding session signer for wallet:", env.VITE_SESSION_SIGNER_ID);
-      console.log('wallet address', walletAddress)
-
-      try {
-        await addSessionSigners({
-          address: walletAddress,
-          signers: [
-            {
-              signerId: env.VITE_SESSION_SIGNER_ID,
-            },
-          ],
-        });
-        console.log("Session signer added for wallet:", walletAddress);
-      } catch (error) {
-        console.error("Error adding session signer:", error);
-        console.log('error stack', (error as Error).stack)
-      }
-    },
-    [addSessionSigners]
-  );
-
-  useEffect(() => {
-    const undelegatedEthereumEmbeddedWallets = ethereumEmbeddedWallets.filter(wallet => wallet.delegated !== true);
-    undelegatedEthereumEmbeddedWallets.forEach(wallet => {
-      addSessionSigner(wallet.address)
-    })
-  }, [ethereumEmbeddedWallets])
-
   const processCommand = (command: string) => {
     const trimmed = command.trim()
     if (!trimmed) return
 
     // Handle pending prompts
     if (pendingPrompt) {
-      if (pendingPrompt.type === 'userId') {
-        handleWalletCreation(trimmed)
-        return
-      } else if (pendingPrompt.type === 'lendVault') {
+      if (pendingPrompt.type === 'lendVault') {
         handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
         return
       } else if (pendingPrompt.type === 'lendAmount') {
         handleLendAmountSubmission(parseFloat(trimmed))
-        return
-      } else if (pendingPrompt.type === 'walletSendSelection') {
-        handleWalletSendSelection(
-          parseInt(trimmed),
-          (pendingPrompt.data as WalletData[]) || [],
-        )
-        return
-      } else if (pendingPrompt.type === 'walletSendAmount') {
-        handleWalletSendAmount(
-          parseFloat(trimmed),
-          pendingPrompt.data as { selectedWallet: WalletData; balance: number },
-        )
-        return
-      } else if (pendingPrompt.type === 'walletSendRecipient') {
-        handleWalletSendRecipient(
-          trimmed,
-          pendingPrompt.data as {
-            selectedWallet: WalletData
-            balance: number
-            amount: number
-          },
-        )
-        return
-      } else if (pendingPrompt.type === 'walletSelectSelection') {
-        handleWalletSelectSelection(
-          parseInt(trimmed),
-          (pendingPrompt.data as WalletData[]) || [],
-        )
         return
       }
     }
@@ -577,40 +421,6 @@ const Terminal = () => {
       case 'clear':
         setLines([])
         return
-      case 'wallet create':
-        setLines((prev) => [...prev, commandLine])
-        if (isSignedIn) {
-          const warningLine: TerminalLine = {
-            id: `wallet-create-disabled-${Date.now()}`,
-            type: 'warning',
-            content:
-              'Wallet creation is disabled while you are logged in. Please log out to use this command. While logged in, the embedded wallet associated with your user account is used.',
-            timestamp: new Date(),
-          }
-          setLines((prev) => [...prev, warningLine])
-          return
-        }
-        setPendingPrompt({
-          type: 'userId',
-          message: 'Enter unique userId:',
-        })
-        return
-      case 'wallet select':
-      case 'select':
-        setLines((prev) => [...prev, commandLine])
-        if (isSignedIn) {
-          const warningLine: TerminalLine = {
-            id: `wallet-select-disabled-${Date.now()}`,
-            type: 'warning',
-            content:
-              'Wallet selection is disabled while you are logged in. Please log out to use this command. While logged in, the embedded wallet associated with your user account is used.',
-            timestamp: new Date(),
-          }
-          setLines((prev) => [...prev, warningLine])
-          return
-        }
-        handleWalletSelect()
-        return
       case 'wallet balance':
       case 'balance': {
         setLines((prev) => [...prev, commandLine])
@@ -621,12 +431,6 @@ const Terminal = () => {
       case 'fund': {
         setLines((prev) => [...prev, commandLine])
         handleWalletFund()
-        return
-      }
-      case 'wallet send':
-      case 'send': {
-        setLines((prev) => [...prev, commandLine])
-        handleWalletSendList()
         return
       }
       case 'wallet lend':
@@ -679,70 +483,6 @@ Active Wallets: 0`,
     }
 
     setLines((prev) => [...prev, commandLine, response])
-  }
-
-  const handleWalletCreation = async (userId: string) => {
-    const userInputLine: TerminalLine = {
-      id: `input-${Date.now()}`,
-      type: 'input',
-      content: `Enter userId for the new wallet: ${userId}`,
-      timestamp: new Date(),
-    }
-
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
-      type: 'output',
-      content: 'Creating wallet...',
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, userInputLine, loadingLine])
-    setPendingPrompt(null)
-
-    try {
-      const result = await createWallet(userId)
-
-      const successLine: TerminalLine = {
-        id: `success-${Date.now()}`,
-        type: 'success',
-        content: `Wallet created successfully!
-Privy Address: ${result.privyAddress}
-Smart Wallet Address: ${result.smartWalletAddress}
-User ID: ${result.userId}`,
-        timestamp: new Date(),
-      }
-
-      // Auto-select the newly created wallet
-      try {
-        const all = await getAllWallets()
-        const created = all.wallets.find(
-          (w) =>
-            w.address.toLowerCase() ===
-              (result.smartWalletAddress || '').toLowerCase() ||
-            w.address.toLowerCase() === (result.privyAddress || '').toLowerCase(),
-        )
-
-        const walletToSelect = created || all.wallets[all.wallets.length - 1]
-        if (walletToSelect) {
-          setSelectedWallet(walletToSelect)
-        }
-      } catch {
-        // ignore selection errors silently
-      }
-
-      setLines((prev) => [...prev.slice(0, -1), successLine])
-    } catch (error) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Failed to create wallet: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-        timestamp: new Date(),
-      }
-
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
-    }
   }
 
   const handleLendVaultSelection = async (vaults: VaultData[]) => {
@@ -820,17 +560,16 @@ User ID: ${result.userId}`,
       setLines((prev) => [...prev, loadingBalanceLine])
 
       // Get wallet balance using DRY function
-      const walletBalanceText = await displayWalletBalance(
-        selectedWallet!.id,
-        true,
-      )
+      const walletBalanceResult = await selectedWallet?.getBalance()
 
-      // Get single-chain token balance for the vault's asset (e.g., USDC on the vault's chain)
-      const walletBalanceResult = await verbsApi.getWalletBalance(
-        selectedWallet!.id,
-        await getAuthHeaders()
-      )
-      const chainToken = walletBalanceResult.balance
+      const chainToken = walletBalanceResult?.reduce((acc, token) => {
+        token.chainBalances.forEach((chainBalance) => {
+          if (chainBalance.chainId === selectedVault.chainId && chainBalance.tokenAddress === selectedVault.asset) {
+            acc.push({ ...chainBalance, symbol: token.symbol, totalBalance: chainBalance.balance, totalFormattedBalance: chainBalance.formattedBalance, chainBalances: [chainBalance] })
+          }
+        })
+        return acc
+      }, [] as TokenBalance[])
         .flatMap((t) => t.chainBalances.map((cb) => ({ ...cb })))
         .find(
           (cb) =>
@@ -846,7 +585,7 @@ User ID: ${result.userId}`,
 
       // Show balances and ask for lend amount
       const balancesDisplay = `Wallet Balance:
-${walletBalanceText}
+${walletBalanceResult?.map((token) => `${token.symbol}: ${token.totalFormattedBalance}`).join('\n')}
 
 How much would you like to lend?`
 
@@ -925,14 +664,52 @@ How much would you like to lend?`
     setLines((prev) => [...prev, processingLine])
 
     try {
-      console.log('[FRONTEND] Calling lendDeposit API')
-      const result = await verbsApi.lendDeposit(
-        promptData.selectedWallet.id,
-        amount,
-        promptData.selectedVault.asset as Address,
-          promptData.selectedVault.chainId,
-          await getAuthHeaders()
+      const asset = SUPPORTED_TOKENS.find(
+        (token) => token.address[promptData.selectedVault.chainId as SupportedChainId] === promptData.selectedVault.asset,
       )
+      if (!asset) {
+        throw new Error(`Asset not found for token address: ${promptData.selectedVault.asset}`)
+      }
+      console.log('[FRONTEND] Calling lendDeposit API')
+      let lendTransaction: LendTransaction | undefined
+      if (selectedWallet && 'lendExecute' in selectedWallet && typeof selectedWallet.lendExecute === 'function') {
+       lendTransaction = await selectedWallet?.lendExecute(amount, asset, promptData.selectedVault.chainId)
+      }
+
+      if (!lendTransaction) {
+        console.error('No lend transaction available')
+        return
+      }
+      if (!lendTransaction.transactionData) {
+        console.error('No transaction data available for execution')
+      }
+      const depositHash = lendTransaction.transactionData!.approval
+    ? await selectedWallet?.sendBatch(
+        [
+          lendTransaction.transactionData!.approval,
+          lendTransaction.transactionData!.deposit,
+        ],
+        promptData.selectedVault.chainId as SupportedChainId,
+      )
+    : await selectedWallet?.send(lendTransaction.transactionData!.deposit, promptData.selectedVault.chainId as SupportedChainId)
+    const innerResult = {
+      ...lendTransaction,
+      hash: depositHash,
+      blockExplorerUrl: getBlockExplorerUrl(promptData.selectedVault.chainId as SupportedChainId),
+    }
+    const result = {
+      transaction: {
+        blockExplorerUrl: innerResult.blockExplorerUrl,
+        hash: innerResult.hash,
+        amount: innerResult.amount.toString(),
+        asset: innerResult.asset,
+        marketId: innerResult.marketId,
+        apy: innerResult.apy,
+        timestamp: innerResult.timestamp,
+        slippage: innerResult.slippage,
+        transactionData: serializeBigInt(innerResult.transactionData),
+      },
+    }
 
       console.log(
         '[FRONTEND] Lend deposit successful:',
@@ -962,199 +739,6 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     }
   }
 
-  const handleWalletSelect = async () => {
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
-      type: 'output',
-      content: 'Loading wallets...',
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, loadingLine])
-
-    try {
-      const result = await getAllWallets()
-      console.log(result)
-
-      if (result.wallets.length === 0) {
-        const emptyLine: TerminalLine = {
-          id: `empty-${Date.now()}`,
-          type: 'error',
-          content: 'No wallets available. Create one with "wallet create".',
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), emptyLine])
-        return
-      }
-
-      // Format wallets in responsive columns
-      const formatWalletColumns = (
-        wallets: GetAllWalletsResponse['wallets'],
-      ) => {
-        const lines: string[] = []
-        const totalWallets = wallets.length
-
-        // Responsive column logic: 1 on mobile, 2 on tablet, 3 on desktop
-        const isMobile = screenWidth < 480
-        const isTablet = screenWidth >= 480 && screenWidth < 768
-
-        const numColumns = isMobile ? 1 : isTablet ? 2 : 3
-        const walletsPerColumn = Math.ceil(totalWallets / numColumns)
-        const columnWidth = isMobile ? 0 : isTablet ? 25 : 33 // Tighter spacing for 2 cols
-
-        for (let row = 0; row < walletsPerColumn; row++) {
-          let line = ''
-
-          for (let col = 0; col < numColumns; col++) {
-            const walletIndex = col * walletsPerColumn + row
-
-            if (walletIndex < totalWallets) {
-              const wallet = wallets[walletIndex]
-              const num = walletIndex + 1
-              const numStr = num < 10 ? ` ${num}` : `${num}`
-              const addressDisplay = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
-              const selected =
-                selectedWallet?.id === wallet.id ? ' (selected)' : ''
-              const columnText = `${numStr}. ${addressDisplay}${selected}`
-
-              // Add column text and pad for next column (except last column)
-              if (col < numColumns - 1) {
-                line += columnText.padEnd(columnWidth)
-              } else {
-                line += columnText
-              }
-            }
-          }
-
-          // Only add non-empty lines
-          if (line.trim()) {
-            lines.push(line)
-          }
-        }
-
-        return lines.join('\n')
-      }
-
-      const walletOptions = formatWalletColumns(result.wallets)
-
-      const walletSelectionLine: TerminalLine = {
-        id: `wallet-select-${Date.now()}`,
-        type: 'output',
-        content: `Select a wallet:\n\n${walletOptions}\n\nEnter wallet number:`,
-        timestamp: new Date(),
-      }
-
-      setLines((prev) => [...prev.slice(0, -1), walletSelectionLine])
-      setCurrentWalletList(result.wallets)
-      setPendingPrompt({
-        type: 'walletSelectSelection',
-        message: '',
-        data: result.wallets,
-      })
-    } catch (error) {
-      console.log(error)
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Failed to load wallets: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
-    }
-  }
-
-  const handleWalletSelectSelection = async (
-    selection: number,
-    wallets: WalletData[],
-  ) => {
-    setPendingPrompt(null)
-    setCurrentWalletList(null)
-
-    if (isNaN(selection) || selection < 1 || selection > wallets.length) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Invalid selection. Please enter a number between 1 and ${wallets.length}.`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, errorLine])
-      return
-    }
-
-    const selectedWalletData = wallets[selection - 1]
-    setSelectedWallet(selectedWalletData)
-
-    // Clear the wallet selection list and replace with just the success message
-    setLines((prev) => {
-      // Find the index of the "Select a wallet:" line and remove everything from there
-      const selectWalletIndex = prev.findIndex((line) =>
-        line.content.includes('Select a wallet:'),
-      )
-
-      if (selectWalletIndex !== -1) {
-        // Keep everything before the wallet selection list
-        const beforeSelection = prev.slice(0, selectWalletIndex)
-
-        // Add just the success message
-        const successLine: TerminalLine = {
-          id: `select-success-${Date.now()}`,
-          type: 'success',
-          content: `Wallet selected:\n${selectedWalletData.address}`,
-          timestamp: new Date(),
-        }
-
-        return [...beforeSelection, successLine]
-      }
-
-      // Fallback: just add the success line if we can't find the selection
-      const successLine: TerminalLine = {
-        id: `select-success-${Date.now()}`,
-        type: 'success',
-        content: `Wallet selected:\n${selectedWalletData.address}`,
-        timestamp: new Date(),
-      }
-      return [...prev, successLine]
-    })
-
-    // Automatically fetch and display balance for the selected wallet
-    setTimeout(async () => {
-      // Add loading message
-      const loadingLine: TerminalLine = {
-        id: `loading-balance-${Date.now()}`,
-        type: 'output',
-        content: 'Loading balance...',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, loadingLine])
-
-      try {
-        const balanceText = await displayWalletBalance(
-          selectedWalletData.id,
-          true,
-        )
-
-        const balanceLine: TerminalLine = {
-          id: `balance-${Date.now()}`,
-          type: 'output',
-          content: `\n${balanceText}`,
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), balanceLine]) // Replace loading message
-      } catch {
-        // Replace loading message with error
-        const errorLine: TerminalLine = {
-          id: `balance-error-${Date.now()}`,
-          type: 'error',
-          content: 'Failed to load balance',
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), errorLine])
-      }
-    }, 100)
-  }
-
   const handleWalletBalance = async () => {
     if (!selectedWallet) {
       const errorLine: TerminalLine = {
@@ -1178,7 +762,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     setLines((prev) => [...prev, loadingLine])
 
     try {
-      const balanceText = await displayWalletBalance(selectedWallet.id, true)
+      const balanceText = await displayWalletBalance(selectedWallet, true)
 
       const successLine: TerminalLine = {
         id: `success-${Date.now()}`,
@@ -1225,7 +809,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     setLines((prev) => [...prev, fundingInfo])
 
     try {
-      const { amount } = await verbsApi.fundWallet(selectedWallet.id, await getAuthHeaders())
+      const { amount } = await fundWallet(selectedWallet)
 
       const fundSuccessLine: TerminalLine = {
         id: `fund-success-${Date.now()}`,
@@ -1235,7 +819,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       }
       setLines((prev) => [...prev, fundSuccessLine])
 
-      const balanceText = await displayWalletBalance(selectedWallet.id, true)
+      const balanceText = await displayWalletBalance(selectedWallet, true)
       const balanceSuccessLine: TerminalLine = {
         id: `balance-success-${Date.now()}`,
         type: 'success',
@@ -1266,13 +850,14 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       setLines((prev) => [...prev, errorLine])
       return
     }
+
     // Check if selected wallet has USDC balance before proceeding
     try {
-      const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id, await getAuthHeaders())
+      const balanceResult = await getWalletBalance(selectedWallet)
       const usdcTokens = balanceResult.balance.filter(
         (token) => token.symbol === 'USDC' || token.symbol === 'USDC_DEMO',
       )
-      const usdcBalance = usdcTokens.reduce((acc, token) => acc + parseFloat(token.totalBalance), 0)
+      const usdcBalance = usdcTokens.reduce((acc, token) => acc + parseFloat(`${token.totalBalance}`), 0)
 
       if (usdcBalance <= 0) {
         const noBalanceLine: TerminalLine = {
@@ -1351,270 +936,6 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         timestamp: new Date(),
       }
       setLines((prev) => [...prev, errorLine])
-    }
-  }
-
-  const handleWalletSendList = async () => {
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
-      type: 'output',
-      content: 'Loading wallets...',
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, loadingLine])
-
-    try {
-      const result = await getAllWallets()
-
-      if (result.wallets.length === 0) {
-        const emptyLine: TerminalLine = {
-          id: `empty-${Date.now()}`,
-          type: 'error',
-          content: 'No wallets available. Create one with "wallet create".',
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), emptyLine])
-        return
-      }
-
-      // Get balances for all wallets
-      const walletsWithBalances = await Promise.all(
-        result.wallets.map(async (wallet) => {
-          try {
-            const balanceResult = await verbsApi.getWalletBalance(wallet.id, await getAuthHeaders())
-            const usdcToken = balanceResult.balance.find(
-              (token) => token.symbol === 'USDC',
-            )
-            const usdcBalance = usdcToken
-              ? parseFloat(usdcToken.totalBalance)
-              : 0
-            return {
-              ...wallet,
-              usdcBalance,
-            }
-          } catch {
-            return {
-              ...wallet,
-              usdcBalance: 0,
-            }
-          }
-        }),
-      )
-
-      // Filter wallets with USDC > 0 and sort by balance (highest first)
-      const walletsWithUSDC = walletsWithBalances
-        .filter((wallet) => wallet.usdcBalance > 0)
-        .sort((a, b) => b.usdcBalance - a.usdcBalance)
-
-      if (walletsWithUSDC.length === 0) {
-        const noBalanceLine: TerminalLine = {
-          id: `no-balance-${Date.now()}`,
-          type: 'error',
-          content: 'No wallets have a USDC balance. Fund a wallet first.',
-          timestamp: new Date(),
-        }
-        setLines((prev) => [...prev.slice(0, -1), noBalanceLine])
-        return
-      }
-
-      // Create wallet options list
-      const walletOptions = walletsWithUSDC
-        .map((wallet, index) => {
-          const num = index + 1
-          const numStr = num < 10 ? ` ${num}` : `${num}`
-          const addressDisplay = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
-          return `${numStr}. ${addressDisplay} - ${wallet.usdcBalance} USDC`
-        })
-        .join('\n')
-
-      const walletSelectionLine: TerminalLine = {
-        id: `wallet-send-selection-${Date.now()}`,
-        type: 'output',
-        content: `Select wallet to send from:\n\n${walletOptions}\n\nEnter wallet number:`,
-        timestamp: new Date(),
-      }
-
-      setLines((prev) => [...prev.slice(0, -1), walletSelectionLine])
-      setPendingPrompt({
-        type: 'walletSendSelection',
-        message: '',
-        data: walletsWithUSDC.map((w) => ({
-          id: w.id,
-          address: w.address as Address,
-        })),
-      })
-    } catch (error) {
-      console.log(error)
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Failed to load wallets: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
-    }
-  }
-
-  const handleWalletSendSelection = async (
-    selection: number,
-    wallets: WalletData[],
-  ) => {
-    setPendingPrompt(null)
-
-    if (isNaN(selection) || selection < 1 || selection > wallets.length) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Invalid selection. Please enter a number between 1 and ${wallets.length}.`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, errorLine])
-      return
-    }
-
-    const selectedWallet = wallets[selection - 1]
-
-    const loadingLine: TerminalLine = {
-      id: `loading-${Date.now()}`,
-      type: 'output',
-      content: 'Loading wallet balance...',
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, loadingLine])
-
-    try {
-      const result = await verbsApi.getWalletBalance(selectedWallet.id, await getAuthHeaders())
-      const usdcToken = result.balance.find((token) => token.symbol === 'USDC')
-      const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) : 0
-
-      const balanceInfoLine: TerminalLine = {
-        id: `balance-info-${Date.now()}`,
-        type: 'success',
-        content: `Wallet ${shortenAddress(selectedWallet.address)} has ${usdcBalance} USDC available.\n\nEnter amount to send:`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), balanceInfoLine])
-
-      setPendingPrompt({
-        type: 'walletSendAmount',
-        message: '',
-        data: { selectedWallet, balance: usdcBalance },
-      })
-    } catch (error) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Failed to fetch wallet balance: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
-    }
-  }
-
-  const handleWalletSendAmount = async (
-    amount: number,
-    data: { selectedWallet: WalletData; balance: number },
-  ) => {
-    setPendingPrompt(null)
-
-    if (isNaN(amount) || amount <= 0) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: 'Invalid amount. Please enter a positive number.',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, errorLine])
-      return
-    }
-
-    if (amount > data.balance) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: `Insufficient balance. Available: ${data.balance} USDC`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, errorLine])
-      return
-    }
-
-    const amountConfirmLine: TerminalLine = {
-      id: `amount-confirm-${Date.now()}`,
-      type: 'output',
-      content: `Sending ${amount} USDC from ${shortenAddress(data.selectedWallet.address)}.\n\nEnter recipient address:`,
-      timestamp: new Date(),
-    }
-    setLines((prev) => [...prev, amountConfirmLine])
-
-    setPendingPrompt({
-      type: 'walletSendRecipient',
-      message: '',
-      data: { ...data, amount },
-    })
-  }
-
-  const handleWalletSendRecipient = async (
-    recipientAddress: string,
-    data: { selectedWallet: WalletData; balance: number; amount: number },
-  ) => {
-    setPendingPrompt(null)
-
-    // Basic address validation
-    if (
-      !recipientAddress ||
-      !recipientAddress.startsWith('0x') ||
-      recipientAddress.length !== 42
-    ) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content:
-          'Invalid address. Please enter a valid Ethereum address (0x...).',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev, errorLine])
-      return
-    }
-
-    const sendingLine: TerminalLine = {
-      id: `sending-${Date.now()}`,
-      type: 'output',
-      content: `Sending ${data.amount} USDC to ${shortenAddress(recipientAddress)}...`,
-      timestamp: new Date(),
-    }
-
-    setLines((prev) => [...prev, sendingLine])
-
-    try {
-      const result = await verbsApi.sendTokens(
-        data.selectedWallet.id,
-        data.amount,
-        recipientAddress,
-        await getAuthHeaders()
-      )
-
-      const successLine: TerminalLine = {
-        id: `send-success-${Date.now()}`,
-        type: 'success',
-        content: `Transaction created successfully!\n\nTo: ${result.transaction.to}\nValue: ${result.transaction.value}\nData: ${result.transaction.data.slice(0, 20)}...\n\nTransaction ready to be signed and sent.`,
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), successLine])
-    } catch (error) {
-      const errorLine: TerminalLine = {
-        id: `error-${Date.now()}`,
-        type: 'error',
-        content: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date(),
-      }
-      setLines((prev) => [...prev.slice(0, -1), errorLine])
     }
   }
 
@@ -1734,7 +1055,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       className="w-full h-full flex flex-col bg-terminal-bg shadow-terminal-inner cursor-text"
       onClick={handleClick}
     >
-      <NavBar fullWidth rightElement={<PrivyAuthButton />} />
+      <NavBar fullWidth rightElement={<DynamicWidget />} />
 
       {/* Terminal Content */}
       <div
@@ -1815,3 +1136,123 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
 }
 
 export default Terminal
+
+
+function getBlockExplorerUrl(chainId: SupportedChainId) {
+  const chain = chainById[chainId]
+  if (!chain) {
+    throw new Error(`Chain not found for chainId: ${chainId}`)
+  }
+  if (chain.id === unichain.id) {
+    return 'https://unichain.blockscout.com/op'
+  }
+  if (chain.id === baseSepolia.id) {
+    return `https://base-sepolia.blockscout.com/op`
+  }
+  return chain.blockExplorers ? `${chain.blockExplorers?.default.url}/tx` : ''
+}
+
+function serializeBigInt<T>(obj: T): T {
+  return JSON.parse(
+    JSON.stringify(obj, (_key, value) =>
+      typeof value === 'bigint' ? value.toString() : value,
+    ),
+  )
+}
+
+async function fundWallet(wallet: SmartWallet): Promise<{
+  success: boolean
+  to: string
+  amount: string
+}> {
+  const walletAddress = wallet.address
+
+  const amountInDecimals = BigInt(Math.floor(parseFloat('100') * 1000000))
+
+  const usdcDemo = SUPPORTED_TOKENS.find((token) => token.metadata.symbol === 'USDC_DEMO')
+  if (!usdcDemo) {
+    throw new Error('USDC_DEMO not found')
+  }
+
+  const calls = [
+    {
+      to: usdcDemo.address[baseSepolia.id]!,
+      data: encodeFunctionData({
+        abi: mintableErc20Abi,
+        functionName: 'mint',
+        args: [walletAddress, amountInDecimals],
+      }),
+      value: 0n,
+    },
+  ]
+
+  await wallet.sendBatch(calls, baseSepolia.id)
+
+  return {
+    success: true,
+    to: walletAddress,
+    amount: formatUnits(amountInDecimals, 6),
+  }
+}
+
+async function getWalletBalance(wallet: SmartWallet): Promise<{ balance: TokenBalance[] }> {
+  // Get regular token balances
+  const tokenBalances = await wallet.getBalance().catch((error) => {
+    console.error(error)
+    throw error
+  })
+
+  // Get market balances and add them to the response
+  const verbs = getVerbs()
+  let result: TokenBalance[] = []
+  try {
+    const vaults = await verbs.lend.getMarkets()
+
+    const vaultBalances = await Promise.all(
+      vaults.map(async (vault) => {
+        try {
+          const walletAddress = wallet.address
+          const vaultBalance = await verbs.lend.getMarketBalance(
+            { address: vault.address, chainId: vault.chainId as SupportedChainId },
+            walletAddress,
+          )
+
+          // Only include vaults with non-zero balances
+          if (vaultBalance.balance > 0n) {
+            // Create a TokenBalance object for the vault
+            const formattedBalance = formatUnits(vaultBalance.balance, 6) // Assuming 6 decimals for vault shares
+            return {
+              symbol: `${vault.name}`,
+              totalBalance: vaultBalance.balance,
+              totalFormattedBalance: formattedBalance,
+              chainBalances: [
+                {
+                  chainId: vaultBalance.chainId,
+                  balance: vaultBalance.balance,
+                  tokenAddress: vault.asset,
+                  formattedBalance: formattedBalance,
+                },
+              ],
+            } as TokenBalance
+          }
+          return null
+        } catch (error) {
+          console.error(error)
+          return null
+        }
+      }),
+    )
+
+    // Filter out null values and add vault balances to token balances
+    const validVaultBalances = vaultBalances.filter(
+      (balance): balance is NonNullable<typeof balance> => balance !== null,
+    )
+
+    result = [...tokenBalances, ...validVaultBalances]
+  } catch {
+    // Return just token balances if vault balance fetching fails
+    result = tokenBalances
+  }
+
+  return { balance: serializeBigInt(result) }
+}

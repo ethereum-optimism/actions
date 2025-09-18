@@ -24,4 +24,8 @@ export class DynamicHostedWalletProvider extends HostedWalletProvider<'dynamic'>
       chainManager: this.chainManager,
     })
   }
+
+  async specialDynamicMethod() {
+    return 'specialDynamicMethod'
+  }
 }

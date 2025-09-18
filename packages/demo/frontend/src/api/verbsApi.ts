@@ -121,7 +121,7 @@ class VerbsApiClient {
     })
   }
 
-  async getWalletBalance(userId: string, headers: HeadersInit = {}): Promise<{
+  async getWalletBalance(walletAddress: string, headers: HeadersInit = {}): Promise<{
     balance: Array<{
       symbol: string
       totalBalance: string
@@ -134,7 +134,7 @@ class VerbsApiClient {
       }>
     }>
   }> {
-    return this.request(`/wallet/${userId}/balance`, {
+    return this.request(`/wallet/${walletAddress}/balance`, {
       method: 'GET',
       headers
     })
