@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { erc20Abi, formatEther, formatUnits } from 'viem'
 
+import { ETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
@@ -24,7 +25,7 @@ export async function fetchETHBalance(
     return {
       chainId,
       balance,
-      tokenAddress: '0x0000000000000000000000000000000000000000' as Address,
+      tokenAddress: ETH.address[chainId]!,
       formattedBalance: formatEther(balance),
     }
   })
@@ -107,13 +108,8 @@ async function fetchERC20BalanceForChain(
       balance: await publicClient.getBalance({
         address: walletAddress,
       }),
-      tokenAddress: '0x0000000000000000000000000000000000000000' as Address,
+      tokenAddress: ETH.address[chainId]!,
     }
-  }
-
-  // Handle ERC20 token balance
-  if (tokenAddress === 'native') {
-    throw new Error('Unexpected native token address for ERC20 asset')
   }
 
   const balance = await publicClient.readContract({

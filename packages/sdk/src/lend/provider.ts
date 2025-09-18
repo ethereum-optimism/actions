@@ -12,7 +12,9 @@ import type {
  * Lending provider abstract class
  * @description Base class for lending provider implementations
  */
-export abstract class LendProvider<TConfig extends BaseLendConfig = BaseLendConfig> {
+export abstract class LendProvider<
+  TConfig extends BaseLendConfig = BaseLendConfig,
+> {
   /** Lending provider configuration */
   protected readonly _config: TConfig
 

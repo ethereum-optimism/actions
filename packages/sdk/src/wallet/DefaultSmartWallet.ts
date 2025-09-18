@@ -189,9 +189,7 @@ export class DefaultSmartWallet extends SmartWallet {
     }
 
     const result = await this.lendProvider.deposit(
-      tokenAddress === 'native'
-        ? '0x0000000000000000000000000000000000000000'
-        : tokenAddress,
+      tokenAddress,
       parsedAmount,
       marketId,
       lendOptions,
