@@ -14,6 +14,9 @@ import type {
 import { WalletNamespace } from '@/wallet/WalletNamespace.js'
 import { WalletProvider } from '@/wallet/WalletProvider.js'
 
+// Import node variant by default; frontend bundlers will remap to browser variant via package.json "browser" field
+import type { HostedWalletProviderRegistry } from './internal/registry.node.js'
+
 /**
  * Main Verbs SDK class
  * @description Core implementation of the Verbs SDK

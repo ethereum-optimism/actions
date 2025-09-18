@@ -37,6 +37,9 @@
       ]
     }
   },
+  "browser": {
+    "./dist/internal/registry.node.js": "./dist/internal/registry.browser.js"
+  },
   "scripts": {
     "build": "tsc && resolve-tspaths",
     "clean": "rm -rf dist types tsconfig.tsbuildinfo",
