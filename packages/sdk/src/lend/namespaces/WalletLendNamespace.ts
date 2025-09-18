@@ -29,6 +29,7 @@ export class WalletLendNamespace<
   async lendExecute(
     asset: Address,
     amount: bigint,
+    chainId: number,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
@@ -38,7 +39,7 @@ export class WalletLendNamespace<
       receiver: options?.receiver || this.address,
     }
 
-    return this.provider.lend(asset, amount, marketId, lendOptions)
+    return this.provider.lend(asset, amount, chainId, marketId, lendOptions)
   }
 
   /**
@@ -47,10 +48,11 @@ export class WalletLendNamespace<
   async deposit(
     asset: Address,
     amount: bigint,
+    chainId: number,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    return this.lendExecute(asset, amount, marketId, options)
+    return this.lendExecute(asset, amount, chainId, marketId, options)
   }
 
   /**
@@ -59,6 +61,7 @@ export class WalletLendNamespace<
   async withdraw(
     asset: Address,
     amount: bigint,
+    chainId: number,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
@@ -68,6 +71,12 @@ export class WalletLendNamespace<
       receiver: options?.receiver || this.address,
     }
 
-    return this.provider.withdraw(asset, amount, marketId, withdrawOptions)
+    return this.provider.withdraw(
+      asset,
+      amount,
+      chainId,
+      marketId,
+      withdrawOptions,
+    )
   }
 }

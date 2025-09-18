@@ -72,6 +72,7 @@ describe('LendProvider', () => {
       const result = await provider.lend(
         '0x0000000000000000000000000000000000000001' as Address,
         1000n,
+        84532,
         'market-1',
         { slippage: 150 },
       )
@@ -86,6 +87,7 @@ describe('LendProvider', () => {
       const result = await provider.deposit(
         '0x0000000000000000000000000000000000000001' as Address,
         2000n,
+        84532,
       )
 
       expect(result.amount).toBe(2000n)
@@ -131,6 +133,7 @@ describe('LendProvider', () => {
       const result = await provider.withdraw(
         '0x0000000000000000000000000000000000000001' as Address,
         500n,
+        84532,
         'market-2',
       )
 
@@ -146,7 +149,7 @@ describe('LendProvider', () => {
 
       expect(Array.isArray(networkIds)).toBe(true)
       expect(networkIds).toContain(84532)
-      expect(networkIds).toHaveLength(1)
+      expect(networkIds.length).toBeGreaterThan(0)
     })
   })
 

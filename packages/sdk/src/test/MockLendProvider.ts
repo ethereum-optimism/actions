@@ -1,7 +1,6 @@
 import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   LendConfig,
   LendMarket,
@@ -27,18 +26,18 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     (
       asset: Address,
       amount: bigint,
+      chainId: number,
       marketId?: string,
       options?: LendOptions,
-      chainId?: SupportedChainId,
     ) => Promise<LendTransaction>
   >
   public deposit: MockedFunction<
     (
       asset: Address,
       amount: bigint,
+      chainId: number,
       marketId?: string,
       options?: LendOptions,
-      chainId?: SupportedChainId,
     ) => Promise<LendTransaction>
   >
   public getMarket: MockedFunction<
@@ -61,10 +60,13 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     (
       asset: Address,
       amount: bigint,
+      chainId: number,
       marketId?: string,
       options?: LendOptions,
     ) => Promise<LendTransaction>
   >
+
+  protected readonly SUPPORTED_NETWORK_IDS = [1, 130, 8453, 84532] as const
 
   protected readonly SUPPORTED_NETWORKS = {
     TESTNET: {
@@ -165,9 +167,57 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     this.resetMocks()
   }
 
+  protected async _lend(
+    asset: Address,
+    amount: bigint,
+    chainId: number,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction> {
+    return this.createMockLendTransaction(
+      asset,
+      amount,
+      chainId,
+      marketId,
+      options,
+    )
+  }
+
+  protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
+    return this.createMockMarket(marketId)
+  }
+
+  protected async _getMarkets(): Promise<LendMarket[]> {
+    return this.createMockMarkets()
+  }
+
+  protected async _getMarketBalance(
+    marketId: LendMarketId,
+    walletAddress: Address,
+  ): Promise<{
+    balance: bigint
+    balanceFormatted: string
+    shares: bigint
+    sharesFormatted: string
+    chainId: number
+  }> {
+    return this.createMockBalance(marketId, walletAddress)
+  }
+
+  protected async _withdraw(
+    asset: Address,
+    amount: bigint,
+    chainId: number,
+    marketId?: string,
+    options?: LendOptions,
+  ): Promise<LendTransaction> {
+    return this.createMockWithdraw(asset, amount, chainId, marketId, options)
+  }
+
   private async createMockLendTransaction(
     asset: Address,
     amount: bigint,
+    chainId: number,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
@@ -248,6 +298,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
   private async createMockWithdraw(
     asset: Address,
     amount: bigint,
+    chainId: number,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {

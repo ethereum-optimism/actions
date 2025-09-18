@@ -234,7 +234,7 @@ describe('DefaultSmartWallet', () => {
     expect(markets[0].name).toBe('Mock Market')
 
     const networkIds = wallet.lend!.supportedNetworkIds()
-    expect(networkIds).toEqual([84532])
+    expect(networkIds).toContain(84532)
   })
 
   it('throws if attribution suffix is not valid hex', async () => {

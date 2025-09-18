@@ -76,11 +76,17 @@ describe('WalletLendNamespace', () => {
 
       vi.mocked(mockProvider.lend).mockResolvedValue(mockTransaction)
 
-      const result = await namespace.lendExecute(asset, amount, marketId)
+      const result = await namespace.lendExecute(asset, amount, 130, marketId)
 
-      expect(mockProvider.lend).toHaveBeenCalledWith(asset, amount, marketId, {
-        receiver: mockWalletAddress,
-      })
+      expect(mockProvider.lend).toHaveBeenCalledWith(
+        asset,
+        amount,
+        130,
+        marketId,
+        {
+          receiver: mockWalletAddress,
+        },
+      )
       expect(result).toBe(mockTransaction)
     })
 
@@ -91,11 +97,12 @@ describe('WalletLendNamespace', () => {
       const customReceiver = getRandomAddress()
       const options = { receiver: customReceiver, slippage: 100 }
 
-      await namespace.lendExecute(asset, amount, undefined, options)
+      await namespace.lendExecute(asset, amount, 130, undefined, options)
 
       expect(mockProvider.lend).toHaveBeenCalledWith(
         asset,
         amount,
+        130,
         undefined,
         options,
       )
@@ -128,11 +135,18 @@ describe('WalletLendNamespace', () => {
       }
       lendExecuteSpy.mockResolvedValue(mockTransaction)
 
-      const result = await namespace.deposit(asset, amount, marketId, options)
+      const result = await namespace.deposit(
+        asset,
+        amount,
+        130,
+        marketId,
+        options,
+      )
 
       expect(lendExecuteSpy).toHaveBeenCalledWith(
         asset,
         amount,
+        130,
         marketId,
         options,
       )
@@ -164,11 +178,12 @@ describe('WalletLendNamespace', () => {
 
       vi.mocked(mockProvider.withdraw).mockResolvedValue(mockTransaction)
 
-      const result = await namespace.withdraw(asset, amount, marketId)
+      const result = await namespace.withdraw(asset, amount, 130, marketId)
 
       expect(mockProvider.withdraw).toHaveBeenCalledWith(
         asset,
         amount,
+        130,
         marketId,
         {
           receiver: mockWalletAddress,
@@ -184,11 +199,12 @@ describe('WalletLendNamespace', () => {
       const customReceiver = getRandomAddress()
       const options = { receiver: customReceiver, slippage: 200 }
 
-      await namespace.withdraw(asset, amount, undefined, options)
+      await namespace.withdraw(asset, amount, 130, undefined, options)
 
       expect(mockProvider.withdraw).toHaveBeenCalledWith(
         asset,
         amount,
+        130,
         undefined,
         options,
       )
