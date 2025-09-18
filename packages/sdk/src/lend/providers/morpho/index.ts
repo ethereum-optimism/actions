@@ -119,10 +119,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
             value: 0n,
           },
         },
-        slippage:
-          options?.slippage ||
-          this._config.defaultSlippage ||
-          DEFAULT_VERBS_CONFIG.lend.defaultSlippage,
+        slippage: options?.slippage || this._config.defaultSlippage,
       }
     } catch (error) {
       throw new Error(
