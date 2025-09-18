@@ -5,26 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
-import { HostedWalletProviderRegistry } from '@/wallet/providers/base/HostedWalletProviderRegistry.js'
 import type { PrivyOptions } from '@/wallet/providers/hostedProvider.types.js'
+import { NodeHostedWalletProviderRegistry } from '@/wallet/providers/NodeHostedWalletProviderRegistry.js'
 import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
 
-class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry {
-  constructor() {
-    super()
-    this.register<'privy'>({
-      type: 'privy',
-      validateOptions(options): options is PrivyOptions {
-        return Boolean((options as PrivyOptions)?.privyClient)
-      },
-      create({ chainManager }, options) {
-        return new PrivyHostedWalletProvider(options.privyClient, chainManager)
-      },
-    })
-  }
-}
-
-describe('HostedWalletProviderRegistry', () => {
+describe('NodeHostedWalletProviderRegistry', () => {
   const mockChainManager = new MockChainManager({
     supportedChains: [unichain.id],
   }) as unknown as ChainManager
@@ -39,7 +24,7 @@ describe('HostedWalletProviderRegistry', () => {
   })
 
   it('returns privy factory and validates options', () => {
-    const registry = new TestHostedWalletProviderRegistry()
+    const registry = new NodeHostedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
     expect(factory.type).toBe('privy')
@@ -51,19 +36,18 @@ describe('HostedWalletProviderRegistry', () => {
   })
 
   it('creates a PrivyHostedWalletProvider instance', () => {
-    const registry = new TestHostedWalletProviderRegistry()
+    const registry = new NodeHostedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
-    const provider = factory.create(
-      { chainManager: mockChainManager },
-      { privyClient: mockPrivyClient },
-    )
+    const provider = factory.create({ chainManager: mockChainManager }, {
+      privyClient: mockPrivyClient,
+    } satisfies PrivyOptions)
 
     expect(provider).toBeInstanceOf(PrivyHostedWalletProvider)
   })
 
   it('throws for unknown provider type', () => {
-    const registry = new TestHostedWalletProviderRegistry()
+    const registry = new NodeHostedWalletProviderRegistry()
     // @ts-expect-error: testing runtime error for unknown type
     expect(() => registry.getFactory('unknown')).toThrow(
       'Unknown hosted wallet provider: unknown',

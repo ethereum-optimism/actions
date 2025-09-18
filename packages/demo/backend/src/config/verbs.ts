@@ -1,4 +1,8 @@
-import { Verbs, type VerbsConfig } from '@eth-optimism/verbs-sdk'
+import {
+  createVerbs,
+  type Verbs,
+  type VerbsConfig,
+} from '@eth-optimism/verbs-sdk/node'
 import { PrivyClient } from '@privy-io/server-auth'
 import { baseSepolia, unichain } from 'viem/chains'
 
@@ -57,7 +61,7 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
 
 export function initializeVerbs(config?: VerbsConfig<'privy'>): void {
   const verbsConfig = config || createVerbsConfig()
-  verbsInstance = new Verbs(verbsConfig)
+  verbsInstance = createVerbs(verbsConfig)
 }
 
 export function getVerbs() {

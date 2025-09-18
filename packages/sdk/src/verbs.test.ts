@@ -3,34 +3,64 @@ import { unichain } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
 import type { LendMarketConfig, MorphoLendConfig } from '@/types/lend.js'
+import { HostedWalletProviderRegistry } from '@/wallet/providers/base/HostedWalletProviderRegistry.js'
+import type { PrivyOptions } from '@/wallet/providers/hostedProvider.types.js'
+import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
 
 import { createMockPrivyClient } from './test/MockPrivyClient.js'
 import { externalTest } from './utils/test.js'
 import { Verbs } from './verbs.js'
 
 describe('Verbs SDK', () => {
+  class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry {
+    constructor() {
+      super()
+      this.register<'privy'>({
+        type: 'privy',
+        validateOptions(options): options is PrivyOptions {
+          return Boolean((options as PrivyOptions)?.privyClient)
+        },
+        create({ chainManager }, options) {
+          return new PrivyHostedWalletProvider(
+            options.privyClient,
+            chainManager,
+          )
+        },
+      })
+    }
+  }
+
   describe('Configuration', () => {
     describe('Morpho Provider Configuration', () => {
       it('should create Morpho provider when provider is set to morpho', () => {
-        const verbs = new Verbs({
-          chains: [{ chainId: unichain.id }],
-          lend: {
-            provider: 'morpho',
-          },
-          wallet: {
-            hostedWalletConfig: {
-              provider: {
-                type: 'privy',
-                config: {
-                  privyClient: createMockPrivyClient('test-id', 'test-secret'),
+        const verbs = new Verbs(
+          {
+            chains: [{ chainId: unichain.id }],
+            lend: {
+              provider: 'morpho',
+            },
+            wallet: {
+              hostedWalletConfig: {
+                provider: {
+                  type: 'privy',
+                  config: {
+                    privyClient: createMockPrivyClient(
+                      'test-id',
+                      'test-secret',
+                    ),
+                  },
                 },
               },
-            },
-            smartWalletConfig: {
-              provider: { type: 'default' },
+              smartWalletConfig: {
+                provider: { type: 'default' },
+              },
             },
           },
-        })
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
 
         expect(verbs.lend).toBeDefined()
         expect(verbs.lend.supportedChainIds()).toContain(130) // Unichain
@@ -38,26 +68,35 @@ describe('Verbs SDK', () => {
 
       it('should create Morpho provider with custom default slippage', () => {
         const customSlippage = 150
-        const verbs = new Verbs({
-          chains: [{ chainId: unichain.id }],
-          lend: {
-            provider: 'morpho',
-            defaultSlippage: customSlippage,
-          },
-          wallet: {
-            hostedWalletConfig: {
-              provider: {
-                type: 'privy',
-                config: {
-                  privyClient: createMockPrivyClient('test-id', 'test-secret'),
+        const verbs = new Verbs(
+          {
+            chains: [{ chainId: unichain.id }],
+            lend: {
+              provider: 'morpho',
+              defaultSlippage: customSlippage,
+            },
+            wallet: {
+              hostedWalletConfig: {
+                provider: {
+                  type: 'privy',
+                  config: {
+                    privyClient: createMockPrivyClient(
+                      'test-id',
+                      'test-secret',
+                    ),
+                  },
                 },
               },
-            },
-            smartWalletConfig: {
-              provider: { type: 'default' },
+              smartWalletConfig: {
+                provider: { type: 'default' },
+              },
             },
           },
-        })
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
 
         expect(verbs.lend).toBeDefined()
         expect(verbs.lend.config.defaultSlippage).toBe(customSlippage)
@@ -84,26 +123,35 @@ describe('Verbs SDK', () => {
           lendProvider: 'morpho',
         }
 
-        const verbs = new Verbs({
-          chains: [{ chainId: unichain.id }],
-          lend: {
-            provider: 'morpho',
-            marketAllowlist: [mockMarket],
-          },
-          wallet: {
-            hostedWalletConfig: {
-              provider: {
-                type: 'privy',
-                config: {
-                  privyClient: createMockPrivyClient('test-id', 'test-secret'),
+        const verbs = new Verbs(
+          {
+            chains: [{ chainId: unichain.id }],
+            lend: {
+              provider: 'morpho',
+              marketAllowlist: [mockMarket],
+            },
+            wallet: {
+              hostedWalletConfig: {
+                provider: {
+                  type: 'privy',
+                  config: {
+                    privyClient: createMockPrivyClient(
+                      'test-id',
+                      'test-secret',
+                    ),
+                  },
                 },
               },
-            },
-            smartWalletConfig: {
-              provider: { type: 'default' },
+              smartWalletConfig: {
+                provider: { type: 'default' },
+              },
             },
           },
-        })
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
 
         expect(verbs.lend).toBeDefined()
         const allowlist = verbs.lend.config.marketAllowlist
@@ -153,41 +201,12 @@ describe('Verbs SDK', () => {
           },
         ]
 
-        const verbs = new Verbs({
-          chains: [{ chainId: unichain.id }],
-          lend: {
-            provider: 'morpho',
-            marketAllowlist: mockMarkets,
-          },
-          wallet: {
-            hostedWalletConfig: {
-              provider: {
-                type: 'privy',
-                config: {
-                  privyClient: createMockPrivyClient('test-id', 'test-secret'),
-                },
-              },
-            },
-            smartWalletConfig: {
-              provider: { type: 'default' },
-            },
-          },
-        })
-
-        expect(verbs.lend).toBeDefined()
-        const allowlist = verbs.lend.config.marketAllowlist
-        expect(allowlist).toBeDefined()
-        expect(allowlist).toHaveLength(2)
-        expect(allowlist![0].name).toBe('Gauntlet USDC')
-        expect(allowlist![1].name).toBe('Test WETH Market')
-      })
-
-      it('should throw error for unsupported lending provider', () => {
-        expect(() => {
-          new Verbs({
+        const verbs = new Verbs(
+          {
             chains: [{ chainId: unichain.id }],
             lend: {
-              provider: 'invalid' as any,
+              provider: 'morpho',
+              marketAllowlist: mockMarkets,
             },
             wallet: {
               hostedWalletConfig: {
@@ -205,27 +224,80 @@ describe('Verbs SDK', () => {
                 provider: { type: 'default' },
               },
             },
-          })
+          },
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
+
+        expect(verbs.lend).toBeDefined()
+        const allowlist = verbs.lend.config.marketAllowlist
+        expect(allowlist).toBeDefined()
+        expect(allowlist).toHaveLength(2)
+        expect(allowlist![0].name).toBe('Gauntlet USDC')
+        expect(allowlist![1].name).toBe('Test WETH Market')
+      })
+
+      it('should throw error for unsupported lending provider', () => {
+        expect(() => {
+          new Verbs(
+            {
+              chains: [{ chainId: unichain.id }],
+              lend: {
+                provider: 'invalid' as any,
+              },
+              wallet: {
+                hostedWalletConfig: {
+                  provider: {
+                    type: 'privy',
+                    config: {
+                      privyClient: createMockPrivyClient(
+                        'test-id',
+                        'test-secret',
+                      ),
+                    },
+                  },
+                },
+                smartWalletConfig: {
+                  provider: { type: 'default' },
+                },
+              },
+            },
+            {
+              hostedWalletProviderRegistry:
+                new TestHostedWalletProviderRegistry(),
+            },
+          )
         }).toThrow('Unsupported lending provider: invalid')
       })
 
       it('should work without lend configuration', () => {
-        const verbs = new Verbs({
-          chains: [{ chainId: unichain.id }],
-          wallet: {
-            hostedWalletConfig: {
-              provider: {
-                type: 'privy',
-                config: {
-                  privyClient: createMockPrivyClient('test-id', 'test-secret'),
+        const verbs = new Verbs(
+          {
+            chains: [{ chainId: unichain.id }],
+            wallet: {
+              hostedWalletConfig: {
+                provider: {
+                  type: 'privy',
+                  config: {
+                    privyClient: createMockPrivyClient(
+                      'test-id',
+                      'test-secret',
+                    ),
+                  },
                 },
               },
-            },
-            smartWalletConfig: {
-              provider: { type: 'default' },
+              smartWalletConfig: {
+                provider: { type: 'default' },
+              },
             },
           },
-        })
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
 
         expect(verbs['lendProvider']).toBeUndefined()
         expect(() => verbs.lend).toThrow('Lend provider not configured')
@@ -241,26 +313,32 @@ describe('Verbs SDK', () => {
         }
 
         expect(() => {
-          new Verbs({
-            chains: [{ chainId: unichain.id }],
-            lend: config,
-            wallet: {
-              hostedWalletConfig: {
-                provider: {
-                  type: 'privy',
-                  config: {
-                    privyClient: createMockPrivyClient(
-                      'test-id',
-                      'test-secret',
-                    ),
+          new Verbs(
+            {
+              chains: [{ chainId: unichain.id }],
+              lend: config,
+              wallet: {
+                hostedWalletConfig: {
+                  provider: {
+                    type: 'privy',
+                    config: {
+                      privyClient: createMockPrivyClient(
+                        'test-id',
+                        'test-secret',
+                      ),
+                    },
                   },
                 },
-              },
-              smartWalletConfig: {
-                provider: { type: 'default' },
+                smartWalletConfig: {
+                  provider: { type: 'default' },
+                },
               },
             },
-          })
+            {
+              hostedWalletProviderRegistry:
+                new TestHostedWalletProviderRegistry(),
+            },
+          )
         }).not.toThrow()
       })
 
@@ -270,9 +348,47 @@ describe('Verbs SDK', () => {
         }
 
         expect(() => {
-          new Verbs({
-            chains: [{ chainId: unichain.id }],
-            lend: config,
+          new Verbs(
+            {
+              chains: [{ chainId: unichain.id }],
+              lend: config,
+              wallet: {
+                hostedWalletConfig: {
+                  provider: {
+                    type: 'privy',
+                    config: {
+                      privyClient: createMockPrivyClient(
+                        'test-id',
+                        'test-secret',
+                      ),
+                    },
+                  },
+                },
+                smartWalletConfig: {
+                  provider: { type: 'default' },
+                },
+              },
+            },
+            {
+              hostedWalletProviderRegistry:
+                new TestHostedWalletProviderRegistry(),
+            },
+          )
+        }).not.toThrow()
+      })
+    })
+
+    describe('Integration with ChainManager', () => {
+      it('should pass chain configuration to lending provider', () => {
+        const verbs = new Verbs(
+          {
+            chains: [
+              { chainId: unichain.id },
+              { chainId: 84532 }, // Base Sepolia
+            ],
+            lend: {
+              provider: 'morpho',
+            },
             wallet: {
               hostedWalletConfig: {
                 provider: {
@@ -289,35 +405,12 @@ describe('Verbs SDK', () => {
                 provider: { type: 'default' },
               },
             },
-          })
-        }).not.toThrow()
-      })
-    })
-
-    describe('Integration with ChainManager', () => {
-      it('should pass chain configuration to lending provider', () => {
-        const verbs = new Verbs({
-          chains: [
-            { chainId: unichain.id },
-            { chainId: 84532 }, // Base Sepolia
-          ],
-          lend: {
-            provider: 'morpho',
           },
-          wallet: {
-            hostedWalletConfig: {
-              provider: {
-                type: 'privy',
-                config: {
-                  privyClient: createMockPrivyClient('test-id', 'test-secret'),
-                },
-              },
-            },
-            smartWalletConfig: {
-              provider: { type: 'default' },
-            },
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
           },
-        })
+        )
 
         expect(verbs.lend).toBeDefined()
         const supportedIds = verbs.lend.supportedChainIds()
@@ -328,51 +421,9 @@ describe('Verbs SDK', () => {
 
     describe('Unit Tests', () => {
       it('should list supported chain IDs', () => {
-        const verbs = new Verbs({
-          chains: [{ chainId: unichain.id }],
-          lend: {
-            provider: 'morpho',
-            defaultSlippage: 50,
-          },
-          wallet: {
-            hostedWalletConfig: {
-              provider: {
-                type: 'privy',
-                config: {
-                  privyClient: createMockPrivyClient(
-                    'test-app-id',
-                    'test-app-secret',
-                  ),
-                },
-              },
-            },
-            smartWalletConfig: {
-              provider: { type: 'default' },
-            },
-          },
-        })
-
-        const chainIds = verbs.lend.supportedChainIds()
-        expect(Array.isArray(chainIds)).toBe(true)
-        expect(chainIds).toContain(130) // Unichain
-      })
-    })
-  })
-
-  describe('System Tests', () => {
-    describe('Morpho Lend Provider Integration', () => {
-      // Note: These are external tests that make real network requests
-      // Run with: EXTERNAL_TEST=true pnpm test src/verbs.test.ts
-      it.runIf(externalTest())(
-        'should fetch real vault info from Morpho on Unichain',
-        async () => {
-          // Create Verbs instance with Morpho lending configured
-          const verbs = new Verbs({
-            chains: [
-              {
-                chainId: unichain.id,
-              },
-            ],
+        const verbs = new Verbs(
+          {
+            chains: [{ chainId: unichain.id }],
             lend: {
               provider: 'morpho',
               defaultSlippage: 50,
@@ -390,12 +441,116 @@ describe('Verbs SDK', () => {
                 },
               },
               smartWalletConfig: {
-                provider: {
-                  type: 'default',
+                provider: { type: 'default' },
+              },
+            },
+          },
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
+
+        const chainIds = verbs.lend.supportedChainIds()
+        expect(Array.isArray(chainIds)).toBe(true)
+        expect(chainIds).toContain(130) // Unichain
+      })
+    })
+  })
+
+  describe('System Tests', () => {
+    describe('Morpho Lend Provider Integration', () => {
+      // Note: These are external tests that make real network requests
+      // Run with: EXTERNAL_TEST=true pnpm test src/verbs.test.ts
+      it.runIf(externalTest())(
+        'should fetch real vault info from Morpho on Unichain',
+        async () => {
+          // Create Verbs instance with Morpho lending configured
+          const verbs = new Verbs(
+            {
+              chains: [
+                {
+                  chainId: unichain.id,
+                },
+              ],
+              lend: {
+                provider: 'morpho',
+                defaultSlippage: 50,
+              },
+              wallet: {
+                hostedWalletConfig: {
+                  provider: {
+                    type: 'privy',
+                    config: {
+                      privyClient: createMockPrivyClient(
+                        'test-app-id',
+                        'test-app-secret',
+                      ),
+                    },
+                  },
+                },
+                smartWalletConfig: {
+                  provider: { type: 'default' },
                 },
               },
             },
-          })
+            {
+              hostedWalletProviderRegistry:
+                new TestHostedWalletProviderRegistry(),
+            },
+          )
+
+          const networkIds = verbs.lend.supportedChainIds()
+          expect(Array.isArray(networkIds)).toBe(true)
+          expect(networkIds).toContain(130) // Unichain
+        },
+      )
+    })
+  })
+
+  describe('System Tests', () => {
+    describe('Morpho Lend Provider Integration', () => {
+      // Note: These are external tests that make real network requests
+      // Run with: EXTERNAL_TEST=true pnpm test src/verbs.test.ts
+      it.runIf(externalTest())(
+        'should fetch real vault info from Morpho on Unichain',
+        async () => {
+          // Create Verbs instance with Morpho lending configured
+          const verbs = new Verbs(
+            {
+              chains: [
+                {
+                  chainId: unichain.id,
+                },
+              ],
+              lend: {
+                provider: 'morpho',
+                defaultSlippage: 50,
+              },
+              wallet: {
+                hostedWalletConfig: {
+                  provider: {
+                    type: 'privy',
+                    config: {
+                      privyClient: createMockPrivyClient(
+                        'test-app-id',
+                        'test-app-secret',
+                      ),
+                    },
+                  },
+                },
+                smartWalletConfig: {
+                  provider: {
+                    type: 'default',
+                  },
+                },
+              },
+            },
+            {
+              hostedWalletProviderRegistry:
+                new TestHostedWalletProviderRegistry(),
+            },
+          )
 
           // Test the Gauntlet USDC vault
           const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
@@ -448,35 +603,41 @@ describe('Verbs SDK', () => {
       it.runIf(externalTest())(
         'should fetch vault info with enhanced rewards data',
         async () => {
-          const verbs = new Verbs({
-            chains: [
-              {
-                chainId: unichain.id,
+          const verbs = new Verbs(
+            {
+              chains: [
+                {
+                  chainId: unichain.id,
+                },
+              ],
+              lend: {
+                provider: 'morpho',
+                defaultSlippage: 50,
               },
-            ],
-            lend: {
-              provider: 'morpho',
-              defaultSlippage: 50,
-            },
-            wallet: {
-              hostedWalletConfig: {
-                provider: {
-                  type: 'privy',
-                  config: {
-                    privyClient: createMockPrivyClient(
-                      'test-app-id',
-                      'test-app-secret',
-                    ),
+              wallet: {
+                hostedWalletConfig: {
+                  provider: {
+                    type: 'privy',
+                    config: {
+                      privyClient: createMockPrivyClient(
+                        'test-app-id',
+                        'test-app-secret',
+                      ),
+                    },
+                  },
+                },
+                smartWalletConfig: {
+                  provider: {
+                    type: 'default',
                   },
                 },
               },
-              smartWalletConfig: {
-                provider: {
-                  type: 'default',
-                },
-              },
             },
-          })
+            {
+              hostedWalletProviderRegistry:
+                new TestHostedWalletProviderRegistry(),
+            },
+          )
 
           const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
           const vaultInfo = await verbs.lend.getMarket({
@@ -500,7 +661,57 @@ describe('Verbs SDK', () => {
       it.runIf(externalTest())(
         'should handle non-existent vault gracefully',
         async () => {
-          const verbs = new Verbs({
+          const verbs = new Verbs(
+            {
+              chains: [
+                {
+                  chainId: unichain.id,
+                },
+              ],
+              lend: {
+                provider: 'morpho',
+                defaultSlippage: 50,
+              },
+              wallet: {
+                hostedWalletConfig: {
+                  provider: {
+                    type: 'privy',
+                    config: {
+                      privyClient: createMockPrivyClient(
+                        'test-app-id',
+                        'test-app-secret',
+                      ),
+                    },
+                  },
+                },
+                smartWalletConfig: {
+                  provider: {
+                    type: 'default',
+                  },
+                },
+              },
+            },
+            {
+              hostedWalletProviderRegistry:
+                new TestHostedWalletProviderRegistry(),
+            },
+          )
+
+          const invalidVaultAddress =
+            '0x0000000000000000000000000000000000000000'
+
+          await expect(
+            verbs.lend.getMarket({
+              address: invalidVaultAddress,
+              chainId: 130,
+            }),
+          ).rejects.toThrow(`Vault ${invalidVaultAddress} not found`)
+        },
+      )
+
+      it.runIf(externalTest())('should get list of vaults', async () => {
+        const verbs = new Verbs(
+          {
             chains: [
               {
                 chainId: unichain.id,
@@ -528,50 +739,12 @@ describe('Verbs SDK', () => {
                 },
               },
             },
-          })
-
-          const invalidVaultAddress =
-            '0x0000000000000000000000000000000000000000'
-
-          await expect(
-            verbs.lend.getMarket({
-              address: invalidVaultAddress,
-              chainId: 130,
-            }),
-          ).rejects.toThrow(`Vault ${invalidVaultAddress} not found`)
-        },
-      )
-
-      it.runIf(externalTest())('should get list of vaults', async () => {
-        const verbs = new Verbs({
-          chains: [
-            {
-              chainId: unichain.id,
-            },
-          ],
-          lend: {
-            provider: 'morpho',
-            defaultSlippage: 50,
           },
-          wallet: {
-            hostedWalletConfig: {
-              provider: {
-                type: 'privy',
-                config: {
-                  privyClient: createMockPrivyClient(
-                    'test-app-id',
-                    'test-app-secret',
-                  ),
-                },
-              },
-            },
-            smartWalletConfig: {
-              provider: {
-                type: 'default',
-              },
-            },
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
           },
-        })
+        )
 
         const markets = await verbs.lend.getMarkets()
 

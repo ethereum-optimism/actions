@@ -2,7 +2,7 @@ import type { PrivyClient } from '@privy-io/server-auth'
 import { getAddress } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { HostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
+import type { PrivyHostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
 import type { Wallet } from '@/wallet/base/Wallet.js'
 import { PrivyWallet } from '@/wallet/PrivyWallet.js'
 import { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvider.js'
@@ -11,7 +11,7 @@ import { HostedWalletProvider } from '@/wallet/providers/base/HostedWalletProvid
  * Privy wallet provider implementation
  * @description Wallet provider implementation using Privy service
  */
-export class PrivyHostedWalletProvider extends HostedWalletProvider {
+export class PrivyHostedWalletProvider extends HostedWalletProvider<'privy'> {
   /**
    * Create a new Privy wallet provider
    * @param privyClient - Privy client instance
@@ -24,7 +24,7 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider {
   }
 
   async toVerbsWallet(
-    params: HostedWalletToVerbsWalletOptions,
+    params: PrivyHostedWalletToVerbsWalletOptions,
   ): Promise<Wallet> {
     return PrivyWallet.create({
       privyClient: this.privyClient,
