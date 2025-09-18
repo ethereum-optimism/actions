@@ -92,3 +92,12 @@ export function getTokenAddress(
   const token = SUPPORTED_TOKENS.find((t) => t.metadata.symbol === symbol)
   return token?.address[chainId] || null
 }
+
+/**
+ * Get token by symbol
+ * @param symbol Token symbol
+ * @returns Asset or null if not found
+ */
+export function getTokenBySymbol(symbol: string): Asset | null {
+  return SUPPORTED_TOKENS.find((t) => t.metadata.symbol === symbol) || null
+}

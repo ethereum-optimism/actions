@@ -4,7 +4,7 @@ import type {
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/verbs-sdk'
-import { SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
+import { getTokenBySymbol, SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
@@ -180,7 +180,7 @@ export async function fundWallet(userId: string): Promise<{
 
   const calls = [
     {
-      to: SUPPORTED_TOKENS.USDC_DEMO.addresses[baseSepolia.id]!,
+      to: getTokenBySymbol('USDC_DEMO')!.address[baseSepolia.id]!,
       data: encodeFunctionData({
         abi: mintableErc20Abi,
         functionName: 'mint',
