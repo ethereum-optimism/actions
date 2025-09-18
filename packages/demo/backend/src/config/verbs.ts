@@ -29,7 +29,8 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
       },
     },
     lend: {
-      type: 'morpho',
+      provider: 'morpho',
+      defaultSlippage: 50,
     },
     chains: [
       {

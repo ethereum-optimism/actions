@@ -3,7 +3,9 @@ import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
+import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import { findMarketInAllowlist } from '@/utils/config.js'
 
 import type { SupportedChainId } from '../../../constants/supportedChains.js'
 import type {
@@ -14,12 +16,7 @@ import type {
   MorphoLendConfig,
 } from '../../../types/lend.js'
 import { LendProvider } from '../../provider.js'
-import {
-  findBestVaultForAsset,
-  getMarkets as getMarketsHelper,
-  getVaultInfo as getVaultInfoHelper,
-  SUPPORTED_VAULTS,
-} from './vaults.js'
+import { findBestVaultForAsset, getVault, getVaults } from './sdk.js'
 
 /**
  * Supported networks for Morpho lending
@@ -41,21 +38,19 @@ export const SUPPORTED_NETWORKS = {
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
-export class LendProviderMorpho extends LendProvider {
+export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   protected readonly SUPPORTED_NETWORKS = SUPPORTED_NETWORKS
 
-  private defaultSlippage: number
   private chainManager: ChainManager
 
   /**
    * Create a new Morpho lending provider
    * @param config - Morpho lending configuration
-   * @param publicClient - Viem public client for blockchain interactions // TODO: remove this
+   * @param chainManager - Chain manager for blockchain interactions
    */
   constructor(config: MorphoLendConfig, chainManager: ChainManager) {
-    super()
+    super(config)
     this.chainManager = chainManager
-    this.defaultSlippage = config.defaultSlippage || 50 // 0.5% default
   }
 
   /**
@@ -76,7 +71,8 @@ export class LendProviderMorpho extends LendProvider {
     try {
       // 1. Find suitable vault if marketId not provided
       const selectedVaultAddress =
-        (marketId as Address) || (await findBestVaultForAsset(asset))
+        (marketId as Address) ||
+        (await findBestVaultForAsset(asset, this._config.marketAllowlist || []))
 
       // 2. Get vault information for APY
       const vaultInfo = await this.getMarket({
@@ -123,7 +119,7 @@ export class LendProviderMorpho extends LendProvider {
             value: 0n,
           },
         },
-        slippage: options?.slippage || this.defaultSlippage,
+        slippage: options?.slippage || this._config.defaultSlippage,
       }
     } catch (error) {
       throw new Error(
@@ -179,7 +175,17 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to market information
    */
   async getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    return getVaultInfoHelper(marketId.address, this.chainManager)
+    // Check if market is in allowlist
+    const config = findMarketInAllowlist(this._config.marketAllowlist, marketId)
+    if (!config) {
+      throw new Error(`Vault ${marketId.address} not found in market allowlist`)
+    }
+
+    return getVault({
+      marketId,
+      chainManager: this.chainManager,
+      marketAllowlist: this._config.marketAllowlist,
+    })
   }
 
   /**
@@ -187,30 +193,23 @@ export class LendProviderMorpho extends LendProvider {
    * @returns Promise resolving to array of market information
    */
   async getMarkets(): Promise<LendMarket[]> {
-    return getMarketsHelper(this.chainManager)
-  }
-
-  /**
-   * Get detailed vault information (legacy naming)
-   * @param vaultAddress - Vault address
-   * @returns Promise resolving to vault information
-   * @deprecated Use getMarket instead
-   */
-  async getVaultInfo(vaultAddress: Address): Promise<LendMarket> {
-    return this.getMarket({
-      address: vaultAddress,
-      chainId: 130 as SupportedChainId, // TODO: Get chain ID dynamically
-    })
+    if (
+      !this._config.marketAllowlist ||
+      this._config.marketAllowlist.length === 0
+    ) {
+      throw new Error('Market allowlist is required and cannot be empty')
+    }
+    return getVaults(this.chainManager, this._config.marketAllowlist)
   }
 
   /**
    * Get market balance for a specific wallet address
-   * @param marketAddress - MetaMorpho vault address
+   * @param marketId - Market identifier containing address and chainId
    * @param walletAddress - User wallet address to check balance for
    * @returns Promise resolving to market balance information
    */
   async getMarketBalance(
-    marketAddress: Address,
+    marketId: LendMarketId,
     walletAddress: Address,
   ): Promise<{
     balance: bigint
@@ -220,18 +219,11 @@ export class LendProviderMorpho extends LendProvider {
     chainId: number
   }> {
     try {
-      const vaultConfig = SUPPORTED_VAULTS.find(
-        (v) => v.address.toLowerCase() === marketAddress.toLowerCase(),
-      )
-      if (!vaultConfig) {
-        throw new Error(`Vault ${marketAddress} not found`)
-      }
-      const publicClient = this.chainManager.getPublicClient(
-        vaultConfig.chainId,
-      )
+      const publicClient = this.chainManager.getPublicClient(marketId.chainId)
+
       // Get user's market token balance (shares in the vault)
       const shares = await publicClient.readContract({
-        address: marketAddress,
+        address: marketId.address,
         abi: erc20Abi,
         functionName: 'balanceOf',
         args: [walletAddress],
@@ -239,7 +231,7 @@ export class LendProviderMorpho extends LendProvider {
 
       // Convert shares to underlying asset balance using convertToAssets
       const balance = await publicClient.readContract({
-        address: marketAddress,
+        address: marketId.address,
         abi: [
           {
             name: 'convertToAssets',
@@ -262,11 +254,11 @@ export class LendProviderMorpho extends LendProvider {
         balanceFormatted,
         shares,
         sharesFormatted,
-        chainId: vaultConfig.chainId,
+        chainId: marketId.chainId,
       }
     } catch (error) {
       throw new Error(
-        `Failed to get market balance for ${walletAddress} in market ${marketAddress}: ${
+        `Failed to get market balance for ${walletAddress} in market ${marketId.address}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       )

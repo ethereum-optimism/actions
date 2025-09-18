@@ -1,67 +1,20 @@
-import type { AccrualPosition, IToken } from '@morpho-org/blue-sdk'
+import type { AccrualPosition } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import type { Address } from 'viem'
-import { baseSepolia, unichain } from 'viem/chains'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   fetchRewards,
   type RewardsBreakdown,
 } from '@/lend/providers/morpho/api.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { getTokenAddress, SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { ApyBreakdown, LendMarket } from '@/types/lend.js'
-
-/**
- * Vault configuration type
- */
-export interface VaultConfig {
-  address: Address
-  chainId: SupportedChainId
-  name: string
-  asset: IToken & { address: Address }
-}
-
-/**
- * Supported vaults on Unichain for Morpho lending
- */
-export const SUPPORTED_VAULTS: VaultConfig[] = [
-  {
-    // Gauntlet USDC vault - primary supported vault
-    address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
-    chainId: unichain.id,
-    name: 'Gauntlet USDC',
-    asset: {
-      address: getTokenAddress('USDC', 130)!, // USDC on Unichain
-      symbol: SUPPORTED_TOKENS.USDC.symbol,
-      decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
-      name: SUPPORTED_TOKENS.USDC.name,
-    },
-  },
-  {
-    address: '0x99067e5D73b1d6F1b5856E59209e12F5a0f86DED',
-    chainId: baseSepolia.id,
-    name: 'MetaMorpho USDC Vault (Base Sepolia)',
-    asset: {
-      address: getTokenAddress('USDC', baseSepolia.id)!,
-      symbol: SUPPORTED_TOKENS.USDC.symbol,
-      decimals: BigInt(SUPPORTED_TOKENS.USDC.decimals),
-      name: SUPPORTED_TOKENS.USDC.name,
-    },
-  },
-  // USDC Vault deployed on base sepolia for demo purposes that uses an erc20 with permissionless minting
-  {
-    address: '0x297E324C46309E93112610ebf35559685b4E3547',
-    chainId: baseSepolia.id,
-    name: 'USDC Demo Vault (Base Sepolia)',
-    asset: {
-      address: getTokenAddress('USDC_DEMO', baseSepolia.id)!,
-      symbol: SUPPORTED_TOKENS.USDC_DEMO.symbol,
-      decimals: BigInt(SUPPORTED_TOKENS.USDC_DEMO.decimals),
-      name: SUPPORTED_TOKENS.USDC_DEMO.name,
-    },
-  },
-]
+import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
+import type {
+  ApyBreakdown,
+  LendMarket,
+  LendMarketConfig,
+  LendMarketId,
+} from '@/types/lend.js'
+import { findMarketInAllowlist } from '@/utils/config.js'
 
 /**
  * Fetch and calculate rewards breakdown from Morpho GraphQL API
@@ -81,8 +34,8 @@ export async function fetchAndCalculateRewards(
     }
 
     // Add all supported tokens (lowercase) to the rewards object
-    Object.keys(SUPPORTED_TOKENS).forEach((tokenSymbol) => {
-      emptyRewards[tokenSymbol.toLowerCase()] = 0
+    SUPPORTED_TOKENS.forEach((token) => {
+      emptyRewards[token.metadata.symbol.toLowerCase()] = 0
     })
 
     return emptyRewards as unknown as RewardsBreakdown
@@ -138,26 +91,32 @@ export function calculateBaseApy(vault: any): number {
 }
 
 /**
+ * Parameters for getVault function
+ */
+interface GetVaultParams {
+  /** Market identifier (address and chainId) */
+  marketId: LendMarketId
+  /** Chain manager instance */
+  chainManager: ChainManager
+  /** Optional market allowlist */
+  marketAllowlist?: LendMarketConfig[]
+}
+
+/**
  * Get detailed vault information with enhanced rewards data
- * @param vaultAddress - Vault address
- * @param publicClient - Viem public client
+ * @param params - Named parameters object
  * @returns Promise resolving to detailed vault information
  */
-export async function getVaultInfo(
-  vaultAddress: Address,
-  chainManager: ChainManager,
-): Promise<LendMarket> {
-  try {
-    // 1. Find vault configuration for validation
-    const config = SUPPORTED_VAULTS.find((c) => c.address === vaultAddress)
+export async function getVault(params: GetVaultParams): Promise<LendMarket> {
+  const { marketId, chainManager, marketAllowlist } = params
 
-    if (!config) {
-      throw new Error(`Vault ${vaultAddress} not found`)
-    }
+  try {
+    // Find config in allowlist (required for all vaults)
+    const config = findMarketInAllowlist(marketAllowlist, marketId)!
 
     // 2. Fetch live vault data from Morpho SDK
     const vault = await fetchAccrualVault(
-      vaultAddress,
+      marketId.address,
       chainManager.getPublicClient(config.chainId),
     ).catch((error) => {
       console.error('Failed to fetch vault info:', error)
@@ -170,15 +129,17 @@ export async function getVaultInfo(
     })
 
     // 3. Fetch rewards data from API
-    const rewardsBreakdown = await fetchAndCalculateRewards(vaultAddress).catch(
-      (error) => {
-        console.error('Failed to fetch rewards data:', error)
-        return {
-          other: 0,
-          totalRewardsApr: 0,
-        }
-      },
-    )
+    const rewardsBreakdown = await fetchAndCalculateRewards(
+      marketId.address,
+    ).catch((error) => {
+      console.error('Failed to fetch rewards data:', error)
+      return {
+        usdc: 0,
+        morpho: 0,
+        other: 0,
+        totalRewardsApr: 0,
+      }
+    })
 
     // 4. Calculate APY breakdown
     const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
@@ -188,9 +149,10 @@ export async function getVaultInfo(
 
     return {
       chainId: config.chainId,
-      address: vaultAddress,
+      address: marketId.address,
       name: config.name,
-      asset: config.asset.address,
+      asset: (config.asset.address[config.chainId] ||
+        Object.values(config.asset.address)[0]) as Address,
       totalAssets: vault.totalAssets,
       totalShares: vault.totalSupply,
       apy: apyBreakdown.netApy, // Use Net APY calculation
@@ -203,7 +165,7 @@ export async function getVaultInfo(
   } catch (error) {
     console.error('Failed to get vault info:', error)
     throw new Error(
-      `Failed to get vault info for ${vaultAddress}: ${
+      `Failed to get vault info for ${marketId.address}: ${
         error instanceof Error ? error.message : 'Unknown error'
       }`,
     )
@@ -211,18 +173,24 @@ export async function getVaultInfo(
 }
 
 /**
- * Get list of available markets (vaults)
+ * Get list of available vaults
  * @param chainManager - Chain manager instance
- * @returns Promise resolving to array of market information
+ * @param marketAllowlist - Required list of allowed markets from backend
+ * @returns Promise resolving to array of vault information
  */
-export async function getMarkets(
+export async function getVaults(
   chainManager: ChainManager,
+  marketAllowlist: LendMarketConfig[],
 ): Promise<LendMarket[]> {
   try {
-    const vaultInfoPromises = SUPPORTED_VAULTS.map((config) =>
-      getVaultInfo(config.address, chainManager),
-    )
-    return await Promise.all(vaultInfoPromises)
+    const vaultPromises = marketAllowlist.map((config) => {
+      return getVault({
+        marketId: { address: config.address, chainId: config.chainId },
+        chainManager,
+        marketAllowlist,
+      })
+    })
+    return await Promise.all(vaultPromises)
   } catch (error) {
     throw new Error(
       `Failed to get vaults: ${
@@ -235,13 +203,21 @@ export async function getMarkets(
 /**
  * Find the best vault for a given asset
  * @param asset - Asset token address
+ * @param marketAllowlist - Required list of allowed markets from backend
  * @returns Promise resolving to vault address
  */
-export async function findBestVaultForAsset(asset: Address): Promise<Address> {
-  // Filter supported vaults by asset
-  const assetVaults = SUPPORTED_VAULTS.filter(
-    (vault) => vault.asset.address === asset,
-  )
+export async function findBestVaultForAsset(
+  asset: Address,
+  marketAllowlist: LendMarketConfig[],
+): Promise<Address> {
+  if (!marketAllowlist || marketAllowlist.length === 0) {
+    throw new Error('Market allowlist is required and cannot be empty')
+  }
+
+  const assetVaults = marketAllowlist.filter((vault) => {
+    // LendMarketConfig format
+    return Object.values(vault.asset.address).includes(asset)
+  })
 
   if (assetVaults.length === 0) {
     throw new Error(`No vaults available for asset ${asset}`)
@@ -292,8 +268,8 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
   }
 
   // Add all supported tokens (lowercase) to the rewards object
-  Object.keys(SUPPORTED_TOKENS).forEach((tokenSymbol) => {
-    rewardsByCategory[tokenSymbol.toLowerCase()] = 0
+  SUPPORTED_TOKENS.forEach((token) => {
+    rewardsByCategory[token.metadata.symbol.toLowerCase()] = 0
   })
 
   // Calculate vault-level rewards

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { externalTest } from '../../../utils/test.js'
 import { fetchRewards } from './api.js'
-import { fetchAndCalculateRewards } from './vaults.js'
+import { fetchAndCalculateRewards } from './sdk.js'
 
 /**
  * External tests for API functionality

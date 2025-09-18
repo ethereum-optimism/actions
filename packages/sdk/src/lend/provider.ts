@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 
 import type {
+  BaseLendConfig,
   LendMarket,
   LendMarketId,
   LendOptions,
@@ -11,7 +12,12 @@ import type {
  * Lending provider abstract class
  * @description Base class for lending provider implementations
  */
-export abstract class LendProvider {
+export abstract class LendProvider<
+  TConfig extends BaseLendConfig = BaseLendConfig,
+> {
+  /** Lending provider configuration */
+  protected readonly _config: TConfig
+
   /**
    * Supported networks configuration
    * @description Must be implemented by concrete providers
@@ -24,6 +30,18 @@ export abstract class LendProvider {
       [key: string]: any
     }
   >
+
+  /**
+   * Create a new lending provider
+   * @param config - Provider-specific lending configuration
+   */
+  protected constructor(config: TConfig) {
+    this._config = config
+  }
+
+  public get config(): TConfig {
+    return this._config
+  }
 
   /**
    * Get supported network IDs
@@ -81,12 +99,12 @@ export abstract class LendProvider {
 
   /**
    * Get market balance for a specific wallet address
-   * @param marketAddress - Market address
+   * @param marketId - Market identifier containing address and chainId
    * @param walletAddress - User wallet address to check balance for
    * @returns Promise resolving to market balance information
    */
   abstract getMarketBalance(
-    marketAddress: Address,
+    marketId: LendMarketId,
     walletAddress: Address,
   ): Promise<{
     balance: bigint

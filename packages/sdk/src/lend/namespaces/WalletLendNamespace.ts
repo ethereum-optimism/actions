@@ -2,15 +2,21 @@ import type { Address } from 'viem'
 
 import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import type { LendProvider } from '@/lend/provider.js'
-import type { LendOptions, LendTransaction } from '@/types/lend.js'
+import type {
+  BaseLendConfig,
+  LendOptions,
+  LendTransaction,
+} from '@/types/lend.js'
 
 /**
  * Wallet Lend Namespace
  * @description Full lending operations available on wallet.lend
  */
-export class WalletLendNamespace extends VerbsLendNamespace {
+export class WalletLendNamespace<
+  TConfig extends BaseLendConfig = BaseLendConfig,
+> extends VerbsLendNamespace<TConfig> {
   constructor(
-    provider: LendProvider,
+    provider: LendProvider<TConfig>,
     private readonly address: Address,
   ) {
     super(provider)

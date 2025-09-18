@@ -1,14 +1,27 @@
 import type { Address } from 'viem'
 
 import type { LendProvider } from '@/lend/provider.js'
-import type { LendMarket, LendMarketId } from '@/types/lend.js'
+import type {
+  BaseLendConfig,
+  LendConfig,
+  LendMarket,
+  LendMarketId,
+} from '@/types/lend.js'
 
 /**
  * Verbs Lend Namespace
  * @description Read-only lending operations available on verbs.lend
  */
-export class VerbsLendNamespace {
-  constructor(protected readonly provider: LendProvider) {}
+export class VerbsLendNamespace<TConfig extends BaseLendConfig = LendConfig> {
+  constructor(protected readonly provider: LendProvider<TConfig>) {}
+
+  /**
+   * Get lending provider configuration
+   * @description Access to provider configuration including defaultSlippage, provider type, etc.
+   */
+  get config(): TConfig {
+    return this.provider.config
+  }
 
   /**
    * Get list of available lending markets
@@ -28,7 +41,7 @@ export class VerbsLendNamespace {
    * Get market balance for a specific wallet
    */
   getMarketBalance(
-    marketAddress: Address,
+    marketId: LendMarketId,
     walletAddress: Address,
   ): Promise<{
     balance: bigint
@@ -37,7 +50,7 @@ export class VerbsLendNamespace {
     sharesFormatted: string
     chainId: number
   }> {
-    return this.provider.getMarketBalance(marketAddress, walletAddress)
+    return this.provider.getMarketBalance(marketId, walletAddress)
   }
 
   /**

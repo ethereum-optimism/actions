@@ -1,7 +1,8 @@
+import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import { LendProviderMorpho } from '@/lend/index.js'
 import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { LendProvider } from '@/types/lend.js'
+import type { LendConfig, LendProvider } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
@@ -23,8 +24,8 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
     SmartWalletProvider
   >
   private chainManager: ChainManager
-  private _lend?: VerbsLendNamespace
-  private lendProvider?: LendProvider
+  private _lend?: VerbsLendNamespace<LendConfig>
+  private _lendProvider?: LendProvider<LendConfig>
   private hostedWalletProvider!: HostedProviderInstanceMap[THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry
@@ -35,18 +36,21 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
 
     // Create lending provider if configured
     if (config.lend) {
-      if (config.lend.type === 'morpho') {
-        this.lendProvider = new LendProviderMorpho(
-          config.lend,
+      if (config.lend.provider === 'morpho') {
+        this._lendProvider = new LendProviderMorpho(
+          {
+            ...config.lend,
+            defaultSlippage:
+              config.lend.defaultSlippage ??
+              DEFAULT_VERBS_CONFIG.lend.defaultSlippage,
+          },
           this.chainManager,
         )
 
         // Create read-only lend namespace
-        this._lend = new VerbsLendNamespace(this.lendProvider)
+        this._lend = new VerbsLendNamespace(this._lendProvider)
       } else {
-        throw new Error(
-          `Unsupported lending provider type: ${config.lend.type}`,
-        )
+        throw new Error(`Unsupported lending provider: ${config.lend.provider}`)
       }
     }
 
@@ -60,7 +64,7 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
    * @returns VerbsLendNamespace for lending operations
    * @throws Error if lend provider not configured
    */
-  get lend(): VerbsLendNamespace {
+  get lend(): VerbsLendNamespace<LendConfig> {
     if (!this._lend) {
       throw new Error(
         'Lend provider not configured. Please add lend configuration to VerbsConfig.',
@@ -70,15 +74,11 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
   }
 
   /**
-   * Get the lend provider instance (internal use)
-   * @returns LendProvider instance if configured
-   * @internal
+   * Get the lend provider instance
+   * @returns LendProvider instance if configured, undefined otherwise
    */
-  get lendProviderInstance(): LendProvider {
-    if (!this.lendProvider) {
-      throw new Error('Lend provider not configured')
-    }
-    return this.lendProvider
+  get lendProvider(): LendProvider<LendConfig> | undefined {
+    return this._lendProvider
   }
 
   /**
@@ -109,7 +109,7 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
     ) {
       this.smartWalletProvider = new DefaultSmartWalletProvider(
         this.chainManager,
-        this.lendProviderInstance,
+        this.lendProvider,
         config.smartWalletConfig.provider.attributionSuffix,
       )
     } else {

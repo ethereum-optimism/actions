@@ -4,6 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
+import {
+  MockGauntletUSDCMarket,
+  MockReceiverAddress,
+  MockWETHMarket,
+} from '@/test/MockMarkets.js'
 
 import type { MorphoLendConfig } from '../../../types/lend.js'
 import { LendProviderMorpho } from './index.js'
@@ -36,8 +41,9 @@ describe('LendProviderMorpho', () => {
 
   beforeEach(() => {
     mockConfig = {
-      type: 'morpho',
+      provider: 'morpho',
       defaultSlippage: 50,
+      marketAllowlist: [MockGauntletUSDCMarket, MockWETHMarket],
     }
 
     mockChainManager = new MockChainManager() as unknown as ChainManager
@@ -65,9 +71,11 @@ describe('LendProviderMorpho', () => {
 
   describe('withdraw', () => {
     it('should throw error for unimplemented withdraw functionality', async () => {
-      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address // USDC
+      const asset = MockGauntletUSDCMarket.asset.address[
+        MockGauntletUSDCMarket.chainId
+      ]! as Address
       const amount = BigInt('1000000000') // 1000 USDC
-      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
+      const marketId = MockGauntletUSDCMarket.address
 
       await expect(provider.withdraw(asset, amount, marketId)).rejects.toThrow(
         'Withdraw functionality not yet implemented',
@@ -143,12 +151,14 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should successfully create a lending transaction', async () => {
-      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address // USDC
+      const asset = MockGauntletUSDCMarket.asset.address[
+        MockGauntletUSDCMarket.chainId
+      ]! as Address
       const amount = BigInt('1000000000') // 1000 USDC
-      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
+      const marketId = MockGauntletUSDCMarket.address
 
       const lendTransaction = await provider.lend(asset, amount, marketId, {
-        receiver: '0x1234567890123456789012345678901234567890' as Address,
+        receiver: MockReceiverAddress,
       })
 
       expect(lendTransaction).toHaveProperty('amount', amount)
@@ -164,13 +174,14 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should find best market when marketId not provided', async () => {
-      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address // USDC
+      // Use USDC asset from MockGauntletUSDCMarket
+      const asset = MockGauntletUSDCMarket.asset.address[
+        MockGauntletUSDCMarket.chainId
+      ]! as Address
       const amount = BigInt('1000000000') // 1000 USDC
 
-      // Mock the market data for getMarketInfo
-
       const lendTransaction = await provider.lend(asset, amount, undefined, {
-        receiver: '0x1234567890123456789012345678901234567890' as Address,
+        receiver: MockReceiverAddress,
       })
 
       expect(lendTransaction).toHaveProperty('marketId')
@@ -187,19 +198,100 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should use custom slippage when provided', async () => {
-      const asset = '0x078d782b760474a361dda0af3839290b0ef57ad6' as Address
+      const asset = MockGauntletUSDCMarket.asset.address[
+        MockGauntletUSDCMarket.chainId
+      ]! as Address
       const amount = BigInt('1000000000')
-      const marketId = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' // Gauntlet USDC vault
+      const marketId = MockGauntletUSDCMarket.address
       const customSlippage = 100 // 1%
-
-      // Mock the market data for getMarketInfo
 
       const lendTransaction = await provider.lend(asset, amount, marketId, {
         slippage: customSlippage,
-        receiver: '0x1234567890123456789012345678901234567890' as Address,
+        receiver: MockReceiverAddress,
       })
 
       expect(lendTransaction).toHaveProperty('amount', amount)
+    })
+  })
+
+  describe('market allowlist configuration', () => {
+    it('should work without market allowlist', () => {
+      const configWithoutAllowlist: MorphoLendConfig = {
+        provider: 'morpho',
+        defaultSlippage: 50,
+      }
+
+      const providerWithoutAllowlist = new LendProviderMorpho(
+        configWithoutAllowlist,
+        mockChainManager,
+      )
+
+      expect(providerWithoutAllowlist.config.marketAllowlist).toBeUndefined()
+    })
+
+    it('should store market allowlist when provided', () => {
+      const configWithAllowlist: MorphoLendConfig = {
+        provider: 'morpho',
+        defaultSlippage: 50,
+        marketAllowlist: [MockGauntletUSDCMarket],
+      }
+
+      const providerWithAllowlist = new LendProviderMorpho(
+        configWithAllowlist,
+        mockChainManager,
+      )
+
+      const allowlist = providerWithAllowlist.config.marketAllowlist
+      expect(allowlist).toBeDefined()
+      expect(allowlist).toHaveLength(1)
+      expect(allowlist![0].address).toBe(MockGauntletUSDCMarket.address)
+      expect(allowlist![0].name).toBe(MockGauntletUSDCMarket.name)
+    })
+
+    it('should use default slippage from config', () => {
+      const customSlippage = 150
+      const configWithSlippage: MorphoLendConfig = {
+        provider: 'morpho',
+        defaultSlippage: customSlippage,
+      }
+
+      const providerWithSlippage = new LendProviderMorpho(
+        configWithSlippage,
+        mockChainManager,
+      )
+
+      expect(providerWithSlippage.config.defaultSlippage).toBe(customSlippage)
+    })
+
+    it('should use fallback default slippage when not provided', () => {
+      const configWithoutSlippage: MorphoLendConfig = {
+        provider: 'morpho',
+      }
+
+      const providerWithoutSlippage = new LendProviderMorpho(
+        configWithoutSlippage,
+        mockChainManager,
+      )
+
+      expect(providerWithoutSlippage.config.defaultSlippage || 50).toBe(50) // Default fallback
+    })
+
+    it('should handle multiple markets in allowlist', () => {
+      const configWithMultipleMarkets: MorphoLendConfig = {
+        provider: 'morpho',
+        marketAllowlist: [MockGauntletUSDCMarket, MockWETHMarket],
+      }
+
+      const provider = new LendProviderMorpho(
+        configWithMultipleMarkets,
+        mockChainManager,
+      )
+
+      const allowlist = provider.config.marketAllowlist
+      expect(allowlist).toBeDefined()
+      expect(allowlist).toHaveLength(2)
+      expect(allowlist![0].name).toBe(MockGauntletUSDCMarket.name)
+      expect(allowlist![1].name).toBe(MockWETHMarket.name)
     })
   })
 })

@@ -2,25 +2,21 @@ import type { Address, Hash, Hex, LocalAccount } from 'viem'
 import { concatHex, encodeFunctionData, erc20Abi, isHex, pad, size } from 'viem'
 import type { WebAuthnAccount } from 'viem/account-abstraction'
 import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
-import { unichain } from 'viem/chains'
 
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { Asset } from '@/types/asset.js'
 import type {
+  LendConfig,
   LendOptions,
   LendProvider,
   LendTransaction,
   TransactionData,
 } from '@/types/lend.js'
-import {
-  type AssetIdentifier,
-  parseAssetAmount,
-  parseLendParams,
-  resolveAsset,
-} from '@/utils/assets.js'
+import { parseAssetAmount } from '@/utils/assets.js'
 import { SmartWallet } from '@/wallet/base/SmartWallet.js'
 
 /**
@@ -40,7 +36,7 @@ export class DefaultSmartWallet extends SmartWallet {
   /** Known deployment address of the wallet (if already deployed) */
   private deploymentAddress?: Address
   /** Provider for lending market operations */
-  private lendProvider: LendProvider
+  private lendProvider?: LendProvider<LendConfig>
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
   /** Optional 16-byte attribution suffix appended to callData */
@@ -60,7 +56,7 @@ export class DefaultSmartWallet extends SmartWallet {
     owners: Array<Address | WebAuthnAccount>,
     signer: LocalAccount,
     chainManager: ChainManager,
-    lendProvider: LendProvider,
+    lendProvider?: LendProvider<LendConfig>,
     deploymentAddress?: Address,
     signerOwnerIndex?: number,
     nonce?: bigint,
@@ -90,7 +86,7 @@ export class DefaultSmartWallet extends SmartWallet {
     owners: Array<Address | WebAuthnAccount>
     signer: LocalAccount
     chainManager: ChainManager
-    lendProvider: LendProvider
+    lendProvider?: LendProvider<LendConfig>
     deploymentAddress?: Address
     signerOwnerIndex?: number
     nonce?: bigint
@@ -161,17 +157,26 @@ export class DefaultSmartWallet extends SmartWallet {
    */
   async lendExecute(
     amount: number,
-    asset: AssetIdentifier,
+    asset: Asset,
     chainId: SupportedChainId,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    // Parse human-readable inputs
-    const { amount: parsedAmount, asset: resolvedAsset } = parseLendParams(
-      amount,
-      asset,
-      chainId,
-    )
+    // Validate amount
+    if (amount <= 0) {
+      throw new Error('Amount must be greater than 0')
+    }
+
+    // Check if asset is supported on the chain
+    const tokenAddress = asset.address[chainId]
+    if (!tokenAddress) {
+      throw new Error(
+        `${asset.metadata.symbol} not supported on chain ${chainId}`,
+      )
+    }
+
+    // Parse human-readable amount
+    const parsedAmount = parseAssetAmount(amount, asset.metadata.decimals)
 
     // Set receiver to wallet address if not specified
     const lendOptions: LendOptions = {
@@ -179,8 +184,12 @@ export class DefaultSmartWallet extends SmartWallet {
       receiver: options?.receiver || this.address,
     }
 
+    if (!this.lendProvider) {
+      throw new Error('Lending provider not configured')
+    }
+
     const result = await this.lendProvider.deposit(
-      resolvedAsset.address,
+      tokenAddress,
       parsedAmount,
       marketId,
       lendOptions,
@@ -279,14 +288,16 @@ export class DefaultSmartWallet extends SmartWallet {
    * Send tokens to another address
    * @description Sends ETH or ERC20 tokens to a recipient address
    * @param amount - Human-readable amount to send (e.g. 1.5)
-   * @param asset - Asset symbol (e.g. 'usdc', 'eth') or token address
+   * @param asset - Asset object with address mapping and metadata
+   * @param chainId - Chain ID for the transaction
    * @param recipientAddress - Address to send to
    * @returns Promise resolving to transaction data
    * @throws Error if wallet is not initialized or asset is not supported
    */
   async sendTokens(
     amount: number,
-    asset: AssetIdentifier,
+    asset: Asset,
+    chainId: SupportedChainId,
     recipientAddress: Address,
   ): Promise<TransactionData> {
     if (!recipientAddress) {
@@ -298,12 +309,17 @@ export class DefaultSmartWallet extends SmartWallet {
       throw new Error('Amount must be greater than 0')
     }
 
-    // TODO: Get actual chain ID from wallet context, for now using Unichain
-    const chainId = unichain.id
+    // Get token address for the specified chain
+    const tokenAddress = asset.address[chainId]
+    if (!tokenAddress) {
+      throw new Error(
+        `${asset.metadata.symbol} not supported on chain ${chainId}`,
+      )
+    }
 
     // Handle ETH transfers
-    if (asset.toLowerCase() === 'eth') {
-      const parsedAmount = parseAssetAmount(amount, 18) // ETH has 18 decimals
+    if (asset.type === 'native') {
+      const parsedAmount = parseAssetAmount(amount, asset.metadata.decimals)
 
       return {
         to: recipientAddress,
@@ -313,8 +329,7 @@ export class DefaultSmartWallet extends SmartWallet {
     }
 
     // Handle ERC20 token transfers
-    const resolvedAsset = resolveAsset(asset, chainId)
-    const parsedAmount = parseAssetAmount(amount, resolvedAsset.decimals)
+    const parsedAmount = parseAssetAmount(amount, asset.metadata.decimals)
 
     // Encode ERC20 transfer function call
     const transferData = encodeFunctionData({
@@ -324,7 +339,7 @@ export class DefaultSmartWallet extends SmartWallet {
     })
 
     return {
-      to: resolvedAsset.address,
+      to: tokenAddress as Address,
       value: 0n,
       data: transferData,
     }
@@ -333,8 +348,10 @@ export class DefaultSmartWallet extends SmartWallet {
   protected async performInitialization() {
     this._address = await this.getAddress()
 
-    // Create wallet lend namespace after address is initialized
-    this.lend = new WalletLendNamespace(this.lendProvider, this._address)
+    // Create wallet lend namespace after address is initialized if lend provider is available
+    if (this.lendProvider) {
+      this.lend = new WalletLendNamespace(this.lendProvider, this._address)
+    }
   }
 
   /**

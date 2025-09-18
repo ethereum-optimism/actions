@@ -1,10 +1,10 @@
 import type { Address } from 'viem'
 import { erc20Abi, formatEther, formatUnits } from 'viem'
 
+import { ETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { getTokenAddress, type TokenInfo } from '@/supported/tokens.js'
-import type { TokenBalance } from '@/types/token.js'
+import type { Asset, TokenBalance } from '@/types/asset.js'
 
 /**
  * Fetch ETH balance across all supported chains
@@ -25,7 +25,7 @@ export async function fetchETHBalance(
     return {
       chainId,
       balance,
-      tokenAddress: '0x0000000000000000000000000000000000000000' as Address,
+      tokenAddress: ETH.address[chainId]!,
       formattedBalance: formatEther(balance),
     }
   })
@@ -43,21 +43,21 @@ export async function fetchETHBalance(
 }
 
 /**
- * Fetch total balance for this token across all supported chains
+ * Fetch total balance for this asset across all supported chains
  */
 export async function fetchERC20Balance(
   chainManager: ChainManager,
   walletAddress: Address,
-  token: TokenInfo,
+  asset: Asset,
 ): Promise<TokenBalance> {
   const supportedChains = chainManager.getSupportedChains()
-  const chainsWithToken = supportedChains.filter((chainId) =>
-    getTokenAddress(token.symbol, chainId),
+  const chainsWithToken = supportedChains.filter(
+    (chainId) => asset.address[chainId],
   )
 
   const chainBalancePromises = chainsWithToken.map(async (chainId) => {
     const { balance, tokenAddress } = await fetchERC20BalanceForChain(
-      token,
+      asset,
       chainId,
       walletAddress,
       chainManager,
@@ -66,7 +66,7 @@ export async function fetchERC20Balance(
       chainId,
       balance,
       tokenAddress,
-      formattedBalance: formatUnits(balance, token.decimals),
+      formattedBalance: formatUnits(balance, asset.metadata.decimals),
     }
   })
 
@@ -77,45 +77,46 @@ export async function fetchERC20Balance(
   )
 
   return {
-    symbol: token.symbol,
+    symbol: asset.metadata.symbol,
     totalBalance,
-    totalFormattedBalance: formatUnits(totalBalance, token.decimals),
+    totalFormattedBalance: formatUnits(totalBalance, asset.metadata.decimals),
     chainBalances,
   }
 }
 
 /**
- * Fetch balance for this token on a specific chain
+ * Fetch balance for this asset on a specific chain
  */
 async function fetchERC20BalanceForChain(
-  token: TokenInfo,
+  asset: Asset,
   chainId: SupportedChainId,
   walletAddress: Address,
   chainManager: ChainManager,
 ): Promise<{ balance: bigint; tokenAddress: Address }> {
-  const tokenAddress = getTokenAddress(token.symbol, chainId)
+  const tokenAddress = asset.address[chainId]
   if (!tokenAddress) {
-    throw new Error(`${token.symbol} not supported on chain ${chainId}`)
+    throw new Error(
+      `${asset.metadata.symbol} not supported on chain ${chainId}`,
+    )
   }
 
   const publicClient = chainManager.getPublicClient(chainId)
 
   // Handle native ETH balance
-  if (token.symbol === 'ETH') {
+  if (asset.type === 'native') {
     return {
       balance: await publicClient.getBalance({
         address: walletAddress,
       }),
-      tokenAddress,
+      tokenAddress: ETH.address[chainId]!,
     }
   }
 
-  // Handle ERC20 token balance
   const balance = await publicClient.readContract({
-    address: tokenAddress,
+    address: tokenAddress as Address,
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: [walletAddress],
   })
-  return { balance, tokenAddress }
+  return { balance, tokenAddress: tokenAddress as Address }
 }

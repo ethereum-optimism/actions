@@ -1,10 +1,18 @@
+export { ETH } from '@/constants/assets.js'
 export type { SupportedChainId } from '@/constants/supportedChains.js'
 export { LendProvider, LendProviderMorpho } from '@/lend/index.js'
-export { getTokenAddress, SUPPORTED_TOKENS } from '@/supported/tokens.js'
+export {
+  getTokenAddress,
+  getTokenBySymbol,
+  SUPPORTED_TOKENS,
+} from '@/supported/tokens.js'
 export type {
   ApyBreakdown,
+  Asset,
+  BaseLendConfig,
   LendConfig,
   LendMarket,
+  LendMarketConfig,
   LendMarketId,
   LendMarketInfo,
   LendOptions,
@@ -15,6 +23,7 @@ export type {
   VerbsConfig,
   WalletConfig,
 } from '@/types/index.js'
+export { isAssetSupportedOnChain } from '@/utils/assets.js'
 export { Verbs } from '@/verbs.js'
 export { SmartWallet } from '@/wallet/base/SmartWallet.js'
 export { Wallet } from '@/wallet/base/Wallet.js'

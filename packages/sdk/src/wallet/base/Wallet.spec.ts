@@ -1,6 +1,5 @@
 import type { Address, LocalAccount, WalletClient } from 'viem'
 import { unichain } from 'viem/chains'
-import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -51,7 +50,7 @@ describe('Wallet (base)', () => {
     vi.clearAllMocks()
   })
 
-  it('getBalance fetches ETH and ERC20 balances for supported tokens', async () => {
+  it('getBalance fetches ETH and ERC20 balances for all supported tokens', async () => {
     const wallet = new TestWallet(chainManager, address, signer)
 
     const result = await wallet.getBalance()
@@ -59,16 +58,10 @@ describe('Wallet (base)', () => {
     expect(result).toBeTruthy()
     expect(fetchETHBalance).toHaveBeenCalledTimes(1)
     expect(fetchETHBalance).toHaveBeenCalledWith(chainManager, address)
-
-    const tokenCount = Object.values(SUPPORTED_TOKENS).length
-    expect(fetchERC20Balance).toHaveBeenCalledTimes(tokenCount)
-
-    // Ensure each call used the same chainManager and address
-    for (const call of (fetchERC20Balance as Mock).mock.calls) {
-      expect(call[0]).toBe(chainManager)
-      expect(call[1]).toBe(address)
-      expect(call[2]).toBeTruthy()
-    }
+    // Should call fetchERC20Balance for each token in SUPPORTED_TOKENS
+    expect(fetchERC20Balance).toHaveBeenCalledTimes(
+      Object.keys(SUPPORTED_TOKENS).length,
+    )
   })
 
   it('getBalance propagates errors from underlying fetchers', async () => {

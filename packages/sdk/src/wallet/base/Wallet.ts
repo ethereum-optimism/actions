@@ -5,7 +5,7 @@ import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { TokenBalance } from '@/types/token.js'
+import type { TokenBalance } from '@/types/asset.js'
 
 /**
  * Base verbs wallet class
@@ -49,11 +49,10 @@ export abstract class Wallet {
    * @returns Promise resolving to array of token balances with chain breakdown
    */
   async getBalance(): Promise<TokenBalance[]> {
-    const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
-      async (token) => {
-        return fetchERC20Balance(this.chainManager, this.address, token)
-      },
-    )
+    // TEMPORARY - will use optimism token list eventually
+    const tokenBalancePromises = SUPPORTED_TOKENS.map(async (asset) => {
+      return fetchERC20Balance(this.chainManager, this.address, asset)
+    })
     const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
 
     return Promise.all([ethBalancePromise, ...tokenBalancePromises])

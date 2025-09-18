@@ -1,14 +1,16 @@
 import type {
   SmartWallet,
+  SupportedChainId,
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/verbs-sdk'
-import { SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
+import { getTokenBySymbol, SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
+import { USDC } from '@/config/assets.js'
 import { getPrivyClient, getVerbs } from '@/config/verbs.js'
 
 /**
@@ -118,7 +120,10 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
         try {
           const walletAddress = wallet.address
           const vaultBalance = await verbs.lend.getMarketBalance(
-            vault.address,
+            {
+              address: vault.address,
+              chainId: vault.chainId as SupportedChainId,
+            },
             walletAddress,
           )
 
@@ -175,7 +180,7 @@ export async function fundWallet(userId: string): Promise<{
 
   const calls = [
     {
-      to: SUPPORTED_TOKENS.USDC_DEMO.addresses[baseSepolia.id]!,
+      to: getTokenBySymbol('USDC_DEMO')!.address[baseSepolia.id]!,
       data: encodeFunctionData({
         abi: mintableErc20Abi,
         functionName: 'mint',
@@ -204,5 +209,5 @@ export async function sendTokens(
     throw new Error('Wallet not found')
   }
 
-  return wallet.sendTokens(amount, 'usdc', recipientAddress)
+  return wallet.sendTokens(amount, USDC, baseSepolia.id, recipientAddress)
 }

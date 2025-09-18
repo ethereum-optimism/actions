@@ -1,6 +1,7 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '../constants/supportedChains.js'
+import type { Asset } from './asset.js'
 
 export { VerbsLendNamespace } from '../lend/namespaces/VerbsLendNamespace.js'
 export { WalletLendNamespace } from '../lend/namespaces/WalletLendNamespace.js'
@@ -13,6 +14,19 @@ export { LendProvider } from '../lend/provider.js'
 export type LendMarketId = {
   address: Address
   chainId: SupportedChainId
+}
+
+/**
+ * Lending market configuration
+ * @description Configuration for a lending market including asset information and provider
+ */
+export interface LendMarketConfig extends LendMarketId {
+  /** Human-readable name for the market */
+  name: string
+  /** Asset information for this market */
+  asset: Asset
+  /** Lending provider type */
+  lendProvider: 'morpho'
 }
 
 /**
@@ -168,18 +182,28 @@ export interface LendOptions {
 }
 
 /**
- * Lending provider configuration
- * @description Configuration for lending providers
+ * Base lending provider configuration
+ * @description Base configuration shared by all lending providers
  */
-export type LendConfig = MorphoLendConfig
+export interface BaseLendConfig {
+  /** Default slippage tolerance (basis points) */
+  defaultSlippage?: number
+  /** Allowlist of markets available for lending */
+  marketAllowlist?: LendMarketConfig[]
+}
 
 /**
  * Morpho lending provider configuration
  * @description Configuration specific to Morpho lending provider
  */
-export interface MorphoLendConfig {
-  /** Lending provider type */
-  type: 'morpho'
-  /** Default slippage tolerance (basis points) */
-  defaultSlippage?: number
+export interface MorphoLendConfig extends BaseLendConfig {
+  /** Lending provider name */
+  provider: 'morpho'
+  // Morpho-specific fields can be added here in the future
 }
+
+/**
+ * Lending provider configuration
+ * @description Union of all possible lending provider configurations
+ */
+export type LendConfig = MorphoLendConfig

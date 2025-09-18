@@ -24,6 +24,7 @@ const MarketBalanceParamsSchema = z.object({
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
     walletId: z.string().min(1, 'walletId is required'),
+    chainId: z.string().min(1, 'chainId is required'),
   }),
 })
 
@@ -93,11 +94,12 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        params: { vaultAddress, walletId },
+        params: { vaultAddress, walletId, chainId },
       } = validation.data
       const balance = await lendService.getMarketBalance(
         vaultAddress as Address,
         walletId,
+        Number(chainId) as SupportedChainId,
       )
       const formattedBalance =
         await lendService.formatMarketBalanceResponse(balance)
