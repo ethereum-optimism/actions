@@ -2,7 +2,7 @@ import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import { LendProviderMorpho } from '@/lend/index.js'
 import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { LendProvider } from '@/types/lend.js'
+import type { LendConfig, LendProvider, MorphoLendConfig } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
 import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
@@ -24,8 +24,8 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
     SmartWalletProvider
   >
   private chainManager: ChainManager
-  private _lend?: VerbsLendNamespace
-  private _lendProvider?: LendProvider
+  private _lend?: VerbsLendNamespace<LendConfig>
+  private _lendProvider?: LendProvider<LendConfig>
   private hostedWalletProvider!: HostedProviderInstanceMap[THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry
@@ -64,7 +64,7 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
    * @returns VerbsLendNamespace for lending operations
    * @throws Error if lend provider not configured
    */
-  get lend(): VerbsLendNamespace {
+  get lend(): VerbsLendNamespace<LendConfig> {
     if (!this._lend) {
       throw new Error(
         'Lend provider not configured. Please add lend configuration to VerbsConfig.',
@@ -77,7 +77,7 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
    * Get the lend provider instance
    * @returns LendProvider instance if configured, undefined otherwise
    */
-  get lendProvider(): LendProvider | undefined {
+  get lendProvider(): LendProvider<LendConfig> | undefined {
     return this._lendProvider
   }
 

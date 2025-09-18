@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { MockLendProvider } from '@/test/MockLendProvider.js'
 
 import type {
-  BaseLendConfig,
+  LendConfig,
   LendMarketConfig,
   LendMarketId,
 } from '../types/lend.js'
@@ -12,7 +12,8 @@ import type {
 describe('LendProvider', () => {
   describe('constructor and configuration', () => {
     it('should initialize with basic config', () => {
-      const config: BaseLendConfig = {
+      const config: LendConfig = {
+        provider: 'morpho',
         defaultSlippage: 100,
       }
 
@@ -22,14 +23,15 @@ describe('LendProvider', () => {
     })
 
     it('should use default slippage when not provided', () => {
-      const config: BaseLendConfig = {}
+      const config: LendConfig = { provider: 'morpho' }
       const provider = new MockLendProvider(config)
 
       expect(provider.config.defaultSlippage || 50).toBe(50)
     })
 
     it('should use custom default slippage when provided', () => {
-      const config: BaseLendConfig = {
+      const config: LendConfig = {
+        provider: 'morpho',
         defaultSlippage: 200,
       }
       const provider = new MockLendProvider(config)
@@ -54,7 +56,8 @@ describe('LendProvider', () => {
         lendProvider: 'morpho',
       }
 
-      const config: BaseLendConfig = {
+      const config: LendConfig = {
+        provider: 'morpho',
         marketAllowlist: [mockMarket],
       }
 
@@ -65,7 +68,7 @@ describe('LendProvider', () => {
 
   describe('abstract methods implementation', () => {
     it('should implement lend method', async () => {
-      const provider = new MockLendProvider({})
+      const provider = new MockLendProvider({ provider: 'morpho' })
       const result = await provider.lend(
         '0x0000000000000000000000000000000000000001' as Address,
         1000n,
@@ -79,7 +82,7 @@ describe('LendProvider', () => {
     })
 
     it('should implement deposit method (alias for lend)', async () => {
-      const provider = new MockLendProvider({})
+      const provider = new MockLendProvider({ provider: 'morpho' })
       const result = await provider.deposit(
         '0x0000000000000000000000000000000000000001' as Address,
         2000n,
@@ -90,7 +93,7 @@ describe('LendProvider', () => {
     })
 
     it('should implement getMarket method', async () => {
-      const provider = new MockLendProvider({})
+      const provider = new MockLendProvider({ provider: 'morpho' })
       const marketId: LendMarketId = {
         address: '0x1234' as Address,
         chainId: 84532,
@@ -103,7 +106,7 @@ describe('LendProvider', () => {
     })
 
     it('should implement getMarkets method', async () => {
-      const provider = new MockLendProvider({})
+      const provider = new MockLendProvider({ provider: 'morpho' })
       const markets = await provider.getMarkets()
 
       expect(Array.isArray(markets)).toBe(true)
@@ -112,7 +115,7 @@ describe('LendProvider', () => {
     })
 
     it('should implement getMarketBalance method', async () => {
-      const provider = new MockLendProvider({})
+      const provider = new MockLendProvider({ provider: 'morpho' })
       const balance = await provider.getMarketBalance(
         { address: '0x1234' as Address, chainId: 84532 as const },
         '0x5678' as Address,
@@ -124,7 +127,7 @@ describe('LendProvider', () => {
     })
 
     it('should implement withdraw method', async () => {
-      const provider = new MockLendProvider({})
+      const provider = new MockLendProvider({ provider: 'morpho' })
       const result = await provider.withdraw(
         '0x0000000000000000000000000000000000000001' as Address,
         500n,
@@ -138,7 +141,7 @@ describe('LendProvider', () => {
 
   describe('supportedNetworkIds', () => {
     it('should return array of supported network IDs', () => {
-      const provider = new MockLendProvider({})
+      const provider = new MockLendProvider({ provider: 'morpho' })
       const networkIds = provider.supportedNetworkIds()
 
       expect(Array.isArray(networkIds)).toBe(true)
@@ -149,7 +152,8 @@ describe('LendProvider', () => {
 
   describe('public getters', () => {
     it('should provide access to defaultSlippage via getter', () => {
-      const config: BaseLendConfig = {
+      const config: LendConfig = {
+        provider: 'morpho',
         defaultSlippage: 75,
       }
       const provider = new MockLendProvider(config)
@@ -174,7 +178,8 @@ describe('LendProvider', () => {
         lendProvider: 'morpho',
       }
 
-      const config: BaseLendConfig = {
+      const config: LendConfig = {
+        provider: 'morpho',
         marketAllowlist: [mockMarket],
       }
       const provider = new MockLendProvider(config)
@@ -183,7 +188,7 @@ describe('LendProvider', () => {
     })
 
     it('should return undefined for marketAllowlist when not provided', () => {
-      const provider = new MockLendProvider({})
+      const provider = new MockLendProvider({ provider: 'morpho' })
       expect(provider.config.marketAllowlist).toBeUndefined()
     })
   })

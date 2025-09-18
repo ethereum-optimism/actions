@@ -10,6 +10,7 @@ import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type {
+  LendConfig,
   LendOptions,
   LendProvider,
   LendTransaction,
@@ -35,7 +36,7 @@ export class DefaultSmartWallet extends SmartWallet {
   /** Known deployment address of the wallet (if already deployed) */
   private deploymentAddress?: Address
   /** Provider for lending market operations */
-  private lendProvider?: LendProvider
+  private lendProvider?: LendProvider<LendConfig>
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
   /** Optional 16-byte attribution suffix appended to callData */
@@ -55,7 +56,7 @@ export class DefaultSmartWallet extends SmartWallet {
     owners: Array<Address | WebAuthnAccount>,
     signer: LocalAccount,
     chainManager: ChainManager,
-    lendProvider?: LendProvider,
+    lendProvider?: LendProvider<LendConfig>,
     deploymentAddress?: Address,
     signerOwnerIndex?: number,
     nonce?: bigint,
@@ -85,7 +86,7 @@ export class DefaultSmartWallet extends SmartWallet {
     owners: Array<Address | WebAuthnAccount>
     signer: LocalAccount
     chainManager: ChainManager
-    lendProvider?: LendProvider
+    lendProvider?: LendProvider<LendConfig>
     deploymentAddress?: Address
     signerOwnerIndex?: number
     nonce?: bigint

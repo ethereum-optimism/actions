@@ -12,9 +12,9 @@ import type {
  * Lending provider abstract class
  * @description Base class for lending provider implementations
  */
-export abstract class LendProvider {
+export abstract class LendProvider<TConfig extends BaseLendConfig = BaseLendConfig> {
   /** Lending provider configuration */
-  protected readonly _config: BaseLendConfig
+  protected readonly _config: TConfig
 
   /**
    * Supported networks configuration
@@ -31,13 +31,13 @@ export abstract class LendProvider {
 
   /**
    * Create a new lending provider
-   * @param config - Base lending configuration
+   * @param config - Provider-specific lending configuration
    */
-  protected constructor(config: BaseLendConfig) {
+  protected constructor(config: TConfig) {
     this._config = config
   }
 
-  public get config(): BaseLendConfig {
+  public get config(): TConfig {
     return this._config
   }
 

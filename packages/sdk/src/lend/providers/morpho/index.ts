@@ -38,7 +38,7 @@ export const SUPPORTED_NETWORKS = {
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
-export class LendProviderMorpho extends LendProvider {
+export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   protected readonly SUPPORTED_NETWORKS = SUPPORTED_NETWORKS
 
   private chainManager: ChainManager

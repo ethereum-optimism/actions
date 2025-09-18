@@ -2,7 +2,7 @@ import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
 import type {
-  BaseLendConfig,
+  LendConfig,
   LendMarket,
   LendMarketId,
   LendOptions,
@@ -21,7 +21,7 @@ export interface MockLendProviderConfig {
  * Mock Lend Provider for testing
  * @description Provides a mock implementation of LendProvider following MockChainManager pattern
  */
-export class MockLendProvider extends LendProvider {
+export class MockLendProvider extends LendProvider<LendConfig> {
   public lend: MockedFunction<
     (
       asset: Address,
@@ -73,10 +73,10 @@ export class MockLendProvider extends LendProvider {
   private mockConfig: MockLendProviderConfig
 
   constructor(
-    config?: BaseLendConfig,
+    config?: LendConfig,
     mockConfig?: Partial<MockLendProviderConfig>,
   ) {
-    super(config || {})
+    super(config || { provider: 'morpho' })
 
     this.mockConfig = {
       supportedNetworks: mockConfig?.supportedNetworks ?? [84532],
@@ -274,7 +274,7 @@ export class MockLendProvider extends LendProvider {
  * @returns MockLendProvider instance
  */
 export function createMockLendProvider(
-  config?: BaseLendConfig,
+  config?: LendConfig,
   mockConfig?: Partial<MockLendProviderConfig>,
 ): MockLendProvider {
   return new MockLendProvider(config, mockConfig)

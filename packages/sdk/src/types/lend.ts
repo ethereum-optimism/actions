@@ -193,16 +193,17 @@ export interface BaseLendConfig {
 }
 
 /**
- * Lending provider configuration
- * @description Configuration for lending providers
- */
-export type LendConfig = MorphoLendConfig
-
-/**
  * Morpho lending provider configuration
  * @description Configuration specific to Morpho lending provider
  */
 export interface MorphoLendConfig extends BaseLendConfig {
   /** Lending provider name */
   provider: 'morpho'
+  // Morpho-specific fields can be added here in the future
 }
+
+/**
+ * Lending provider configuration
+ * @description Union of all possible lending provider configurations
+ */
+export type LendConfig = MorphoLendConfig

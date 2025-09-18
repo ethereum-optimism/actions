@@ -12,7 +12,7 @@ import { MockUSDCAsset } from '@/test/MockAssets.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider, TransactionData } from '@/types/lend.js'
+import type { LendConfig, LendProvider, TransactionData } from '@/types/lend.js'
 import { DefaultSmartWallet } from '@/wallet/DefaultSmartWallet.js'
 
 vi.mock('viem/account-abstraction', () => ({
@@ -302,7 +302,7 @@ async function createAndInitDefaultSmartWallet(
     owners?: Address[]
     signer?: LocalAccount
     chainManager?: ChainManager
-    lendProvider?: LendProvider
+    lendProvider?: LendProvider<LendConfig>
     deploymentAddress?: Address
     signerOwnerIndex?: number
     nonce?: bigint

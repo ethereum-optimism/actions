@@ -5,7 +5,7 @@ import { type WebAuthnAccount } from 'viem/account-abstraction'
 import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProvider } from '@/types/lend.js'
+import type { LendConfig, LendProvider } from '@/types/lend.js'
 import { DefaultSmartWallet } from '@/wallet/DefaultSmartWallet.js'
 import { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
 
@@ -18,7 +18,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
   /** Manages supported blockchain networks */
   private chainManager: ChainManager
   /** Provider for lending market operations */
-  private lendProvider?: LendProvider
+  private lendProvider?: LendProvider<LendConfig>
   /** Optional 16-byte attribution suffix appended to callData */
   private attributionSuffix?: Hex
 
@@ -30,7 +30,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    */
   constructor(
     chainManager: ChainManager,
-    lendProvider?: LendProvider,
+    lendProvider?: LendProvider<LendConfig>,
     attributionSuffix?: string,
   ) {
     super()
