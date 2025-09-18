@@ -2,6 +2,7 @@ import type { Address } from 'viem'
 import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { ETH } from '@/constants/assets.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { MockUSDCAsset } from '@/test/MockAssets.js'
@@ -85,7 +86,7 @@ describe('TokenBalance', () => {
             chainId: unichain.id,
             balance: 1000000n,
             formattedBalance: '0.000000000001',
-            tokenAddress: SUPPORTED_TOKENS.ETH.addresses[unichain.id]!,
+            tokenAddress: ETH.address[unichain.id]!,
           },
         ],
       })

@@ -1,15 +1,10 @@
 import type { Address } from 'viem'
 
-import type { SUPPORTED_TOKENS } from '../../../supported/tokens.js'
-
 const MORPHO_API_ENDPOINT = 'https://api.morpho.org/graphql'
 
-// Create dynamic type based on supported tokens
-type SupportedTokenRewards = {
-  [K in keyof typeof SUPPORTED_TOKENS as Lowercase<K>]: number
-}
-
-export interface RewardsBreakdown extends SupportedTokenRewards {
+export interface RewardsBreakdown {
+  usdc: number
+  morpho: number
   other: number
   totalRewardsApr: number
 }

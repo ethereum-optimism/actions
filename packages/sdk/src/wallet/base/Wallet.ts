@@ -50,21 +50,9 @@ export abstract class Wallet {
    */
   async getBalance(): Promise<TokenBalance[]> {
     // TEMPORARY - will use optimism token list eventually
-    const tokenBalancePromises = Object.values(SUPPORTED_TOKENS).map(
-      async (tokenInfo) => {
-        // Convert TokenInfo to Asset format
-        const asset = {
-          address: tokenInfo.addresses,
-          metadata: {
-            decimals: tokenInfo.decimals,
-            name: tokenInfo.name,
-            symbol: tokenInfo.symbol,
-          },
-          type: tokenInfo.symbol === 'ETH' ? 'native' : 'erc20',
-        } as const
-        return fetchERC20Balance(this.chainManager, this.address, asset)
-      },
-    )
+    const tokenBalancePromises = SUPPORTED_TOKENS.map(async (asset) => {
+      return fetchERC20Balance(this.chainManager, this.address, asset)
+    })
     const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
 
     return Promise.all([ethBalancePromise, ...tokenBalancePromises])

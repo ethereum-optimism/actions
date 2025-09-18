@@ -34,8 +34,8 @@ export async function fetchAndCalculateRewards(
     }
 
     // Add all supported tokens (lowercase) to the rewards object
-    Object.keys(SUPPORTED_TOKENS).forEach((tokenSymbol) => {
-      emptyRewards[tokenSymbol.toLowerCase()] = 0
+    SUPPORTED_TOKENS.forEach((token) => {
+      emptyRewards[token.metadata.symbol.toLowerCase()] = 0
     })
 
     return emptyRewards as unknown as RewardsBreakdown
@@ -134,6 +134,8 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     ).catch((error) => {
       console.error('Failed to fetch rewards data:', error)
       return {
+        usdc: 0,
+        morpho: 0,
         other: 0,
         totalRewardsApr: 0,
       }
@@ -266,8 +268,8 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
   }
 
   // Add all supported tokens (lowercase) to the rewards object
-  Object.keys(SUPPORTED_TOKENS).forEach((tokenSymbol) => {
-    rewardsByCategory[tokenSymbol.toLowerCase()] = 0
+  SUPPORTED_TOKENS.forEach((token) => {
+    rewardsByCategory[token.metadata.symbol.toLowerCase()] = 0
   })
 
   // Calculate vault-level rewards
