@@ -1,18 +1,21 @@
 import { chainById } from '@eth-optimism/viem/chains'
 
-import { useState, useEffect, useRef } from 'react'
-import { useAuth, useUser } from '@clerk/clerk-react'
-import { useWallets, usePrivy } from '@privy-io/react-auth'
+// polyfill required by privy sdk: https://docs.privy.io/basics/react-native/installation#configure-polyfills
+import {Buffer} from 'buffer';
+if (!globalThis.Buffer) globalThis.Buffer = Buffer
+
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useWallets, usePrivy, type WalletWithMetadata, useUser as usePrivyUser, useSessionSigners, useUser } from '@privy-io/react-auth'
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
   WalletData,
 } from '@eth-optimism/verbs-service'
 import NavBar from './NavBar'
-import { ClerkAuthButton } from './ClerkAuthButton'
+import { PrivyAuthButton } from './PrivyAuthButton'
 import { verbsApi } from '../api/verbsApi'
 import type { Address } from 'viem'
-
+import { env } from '../envVars'
 interface TerminalLine {
   id: string
   type: 'input' | 'output' | 'error' | 'success' | 'warning'
@@ -102,16 +105,30 @@ const Terminal = () => {
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
 
-  // Clerk auth hooks
-  const { isSignedIn } = useAuth()
-  const { user } = useUser()
+    const { authenticated: isSignedIn, getAccessToken } = usePrivy()
+    const { user } = useUser()
+    const getAuthHeaders = useCallback(async () => {
+      const token = await getAccessToken()
+      return token ? { Authorization: `Bearer ${token}` } : undefined
+    }, [getAccessToken])
 
   // Privy wallet hooks
   const { wallets } = useWallets()
   const { authenticated: privyAuthenticated } = usePrivy()
+  const { user: privyUser } = usePrivyUser()
+  const { addSessionSigners } = useSessionSigners();
+  const ethereumEmbeddedWallets = useMemo<WalletWithMetadata[]>(
+    () =>
+      (privyUser?.linkedAccounts?.filter(
+        (account) =>
+          account.type === "wallet" &&
+          account.walletClientType === "privy" &&
+          account.chainType === "ethereum"
+      ) as WalletWithMetadata[]) ?? [],
+    [privyUser]
+  );
 
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
-
 
   // Auto-select wallet when Privy is authenticated and has wallets
   useEffect(() => {
@@ -138,7 +155,7 @@ const Terminal = () => {
           const welcomeLine: TerminalLine = {
             id: `welcome-${Date.now()}`,
             type: 'success',
-            content: `Welcome back ${user?.primaryEmailAddress?.emailAddress || user?.id}!\nWallet auto-selected: ${walletAddress}\n⚠️  Wallet commands do not yet work with authenticated wallets!\nSelect another wallet instead`,
+            content: `Welcome back ${user?.email?.address || user?.id}!\nWallet auto-selected: ${walletAddress}`,
             timestamp: new Date(),
           }
           setLines((prev) => [...prev, welcomeLine])
@@ -204,29 +221,7 @@ const Terminal = () => {
     walletId: string,
     showVaultPositions: boolean = true,
   ): Promise<string> => {
-    // Check if this is a Privy authenticated wallet (Clerk user ID format)
-    const isPrivyWallet = walletId.startsWith('user_') && privyAuthenticated
-
-    let result
-    if (isPrivyWallet) {
-      // For Privy wallets, we need to get the balance using the wallet address instead of user ID
-      const privyWallet = wallets.find((w) => w.walletClientType === 'privy')
-      if (!privyWallet) {
-        throw new Error('Privy wallet not found')
-      }
-
-      try {
-        // TODO: this will fail
-        result = await verbsApi.getWalletBalance(walletId)
-      } catch {
-        // Return a default empty balance structure for Privy wallets
-        result = { balance: [] }
-      }
-    } else {
-      // For manual/backend wallets, use the original API call
-      result = await verbsApi.getWalletBalance(walletId)
-    }
-
+    const result = await verbsApi.getWalletBalance(walletId, await getAuthHeaders())
 
     const balancesByChain = result.balance.reduce(
       (acc, token) => {
@@ -473,26 +468,41 @@ const Terminal = () => {
     return verbsApi.getAllWallets()
   }
 
-  // Helper function to check if the currently selected wallet is an auto-selected authenticated wallet
-  const isAuthenticatedAutoWallet = (): boolean => {
-    return !!(
-      isSignedIn &&
-      selectedWallet &&
-      user?.id &&
-      selectedWallet.id === user.id
-    )
-  }
+  
 
-  // Helper function to show auth wallet error message
-  const showAuthWalletError = () => {
-    const errorLine: TerminalLine = {
-      id: `auth-error-${Date.now()}`,
-      type: 'error',
-      content: '⚠️  Wallet commands do not yet work with authenticated wallets!\nSelect another wallet instead',
-      timestamp: new Date(),
-    }
-    setLines((prev) => [...prev, errorLine])
-  }
+  const addSessionSigner = useCallback(
+    async (walletAddress: string) => {
+      if (!env.VITE_SESSION_SIGNER_ID) {
+        console.error("SESSION_SIGNER_ID must be defined to addSessionSigner");
+        return;
+      }
+      console.log("Adding session signer for wallet:", env.VITE_SESSION_SIGNER_ID);
+      console.log('wallet address', walletAddress)
+
+      try {
+        await addSessionSigners({
+          address: walletAddress,
+          signers: [
+            {
+              signerId: env.VITE_SESSION_SIGNER_ID,
+            },
+          ],
+        });
+        console.log("Session signer added for wallet:", walletAddress);
+      } catch (error) {
+        console.error("Error adding session signer:", error);
+        console.log('error stack', (error as Error).stack)
+      }
+    },
+    [addSessionSigners]
+  );
+
+  useEffect(() => {
+    const undelegatedEthereumEmbeddedWallets = ethereumEmbeddedWallets.filter(wallet => wallet.delegated !== true);
+    undelegatedEthereumEmbeddedWallets.forEach(wallet => {
+      addSessionSigner(wallet.address)
+    })
+  }, [ethereumEmbeddedWallets])
 
   const processCommand = (command: string) => {
     const trimmed = command.trim()
@@ -568,15 +578,37 @@ const Terminal = () => {
         setLines([])
         return
       case 'wallet create':
+        setLines((prev) => [...prev, commandLine])
+        if (isSignedIn) {
+          const warningLine: TerminalLine = {
+            id: `wallet-create-disabled-${Date.now()}`,
+            type: 'warning',
+            content:
+              'Wallet creation is disabled while you are logged in. Please log out to use this command. While logged in, the embedded wallet associated with your user account is used.',
+            timestamp: new Date(),
+          }
+          setLines((prev) => [...prev, warningLine])
+          return
+        }
         setPendingPrompt({
           type: 'userId',
           message: 'Enter unique userId:',
         })
-        setLines((prev) => [...prev, commandLine])
         return
       case 'wallet select':
       case 'select':
         setLines((prev) => [...prev, commandLine])
+        if (isSignedIn) {
+          const warningLine: TerminalLine = {
+            id: `wallet-select-disabled-${Date.now()}`,
+            type: 'warning',
+            content:
+              'Wallet selection is disabled while you are logged in. Please log out to use this command. While logged in, the embedded wallet associated with your user account is used.',
+            timestamp: new Date(),
+          }
+          setLines((prev) => [...prev, warningLine])
+          return
+        }
         handleWalletSelect()
         return
       case 'wallet balance':
@@ -594,11 +626,6 @@ const Terminal = () => {
       case 'wallet send':
       case 'send': {
         setLines((prev) => [...prev, commandLine])
-        // Check if authenticated auto-wallet is selected
-        if (isAuthenticatedAutoWallet()) {
-          showAuthWalletError()
-          return
-        }
         handleWalletSendList()
         return
       }
@@ -801,6 +828,7 @@ User ID: ${result.userId}`,
       // Get single-chain token balance for the vault's asset (e.g., USDC on the vault's chain)
       const walletBalanceResult = await verbsApi.getWalletBalance(
         selectedWallet!.id,
+        await getAuthHeaders()
       )
       const chainToken = walletBalanceResult.balance
         .flatMap((t) => t.chainBalances.map((cb) => ({ ...cb })))
@@ -902,7 +930,8 @@ How much would you like to lend?`
         promptData.selectedWallet.id,
         amount,
         promptData.selectedVault.asset as Address,
-        promptData.selectedVault.chainId,
+          promptData.selectedVault.chainId,
+          await getAuthHeaders()
       )
 
       console.log(
@@ -1139,12 +1168,6 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       return
     }
 
-    // Check if this is an authenticated auto-selected wallet
-    if (isAuthenticatedAutoWallet()) {
-      showAuthWalletError()
-      return
-    }
-
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
       type: 'output',
@@ -1190,12 +1213,6 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       return
     }
 
-    // Check if this is an authenticated auto-selected wallet
-    if (isAuthenticatedAutoWallet()) {
-      showAuthWalletError()
-      return
-    }
-
     // Inform user of default funding behavior (100 USDC) and proceed
     const fundingInfo: TerminalLine = {
       id: `funding-info-${Date.now()}`,
@@ -1208,7 +1225,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     setLines((prev) => [...prev, fundingInfo])
 
     try {
-      const { amount } = await verbsApi.fundWallet(selectedWallet.id)
+      const { amount } = await verbsApi.fundWallet(selectedWallet.id, await getAuthHeaders())
 
       const fundSuccessLine: TerminalLine = {
         id: `fund-success-${Date.now()}`,
@@ -1249,16 +1266,9 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       setLines((prev) => [...prev, errorLine])
       return
     }
-
-    // Check if this is an authenticated auto-selected wallet
-    if (isAuthenticatedAutoWallet()) {
-      showAuthWalletError()
-      return
-    }
-
     // Check if selected wallet has USDC balance before proceeding
     try {
-      const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id)
+      const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id, await getAuthHeaders())
       const usdcTokens = balanceResult.balance.filter(
         (token) => token.symbol === 'USDC' || token.symbol === 'USDC_DEMO',
       )
@@ -1372,7 +1382,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       const walletsWithBalances = await Promise.all(
         result.wallets.map(async (wallet) => {
           try {
-            const balanceResult = await verbsApi.getWalletBalance(wallet.id)
+            const balanceResult = await verbsApi.getWalletBalance(wallet.id, await getAuthHeaders())
             const usdcToken = balanceResult.balance.find(
               (token) => token.symbol === 'USDC',
             )
@@ -1467,12 +1477,6 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
 
     const selectedWallet = wallets[selection - 1]
 
-    // Check if the selected wallet is an authenticated auto-selected wallet
-    if (isSignedIn && user?.id && selectedWallet.id === user.id) {
-      showAuthWalletError()
-      return
-    }
-
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
       type: 'output',
@@ -1483,7 +1487,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     setLines((prev) => [...prev, loadingLine])
 
     try {
-      const result = await verbsApi.getWalletBalance(selectedWallet.id)
+      const result = await verbsApi.getWalletBalance(selectedWallet.id, await getAuthHeaders())
       const usdcToken = result.balance.find((token) => token.symbol === 'USDC')
       const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) : 0
 
@@ -1593,6 +1597,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         data.selectedWallet.id,
         data.amount,
         recipientAddress,
+        await getAuthHeaders()
       )
 
       const successLine: TerminalLine = {
@@ -1729,7 +1734,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       className="w-full h-full flex flex-col bg-terminal-bg shadow-terminal-inner cursor-text"
       onClick={handleClick}
     >
-      <NavBar fullWidth rightElement={<ClerkAuthButton />} />
+      <NavBar fullWidth rightElement={<PrivyAuthButton />} />
 
       {/* Terminal Content */}
       <div

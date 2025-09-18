@@ -2,6 +2,7 @@ import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
 
+import type { AuthContext } from '@/middleware/auth.js'
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
@@ -159,6 +160,19 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
+      const auth = c.get('auth') as AuthContext | undefined
+
+      // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
+      // up this route.
+      if (auth && auth.userId) {
+        const wallet = await walletService.getUserWallet(auth.userId)
+        if (!wallet) {
+          throw new Error('Wallet not found')
+        }
+        const balance = await walletService.getWalletBalance(wallet)
+        return c.json({ balance: serializeBigInt(balance) })
+      }
+
       const balance = await walletService.getBalance(userId)
 
       return c.json({ balance: serializeBigInt(balance) })
@@ -185,8 +199,23 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
+      const auth = c.get('auth') as AuthContext | undefined
+      // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
+      // up this route.
+      if (auth && auth.userId) {
+        const wallet = await walletService.getUserWallet(auth.userId)
+        if (!wallet) {
+          throw new Error('Wallet not found')
+        }
+        const result = await walletService.fundWallet(wallet)
+        return c.json(result)
+      }
 
-      const result = await walletService.fundWallet(userId)
+      const wallet = await walletService.getWallet(userId)
+      if (!wallet) {
+        throw new Error('Wallet not found')
+      }
+      const result = await walletService.fundWallet(wallet)
 
       return c.json(result)
     } catch (error) {

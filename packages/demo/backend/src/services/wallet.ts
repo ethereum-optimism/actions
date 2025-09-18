@@ -70,6 +70,30 @@ export async function getWallet(userId: string): Promise<SmartWallet | null> {
   return wallet
 }
 
+export async function getUserWallet(
+  userId: string,
+): Promise<SmartWallet | null> {
+  const verbs = getVerbs()
+  const privyClient = getPrivyClient()
+  const privyUser = await privyClient.getUserById(userId).catch(() => null)
+  if (!privyUser) {
+    return null
+  }
+  const privyWallet = privyUser.wallet
+  if (!privyWallet) {
+    return null
+  }
+  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+    walletId: privyWallet.id!,
+    address: privyWallet.address,
+  })
+  const wallet = await verbs.wallet.getSmartWallet({
+    signer: verbsPrivyWallet.signer,
+    deploymentOwners: [getAddress(privyWallet.address)],
+  })
+  return wallet
+}
+
 export async function getAllWallets(
   options?: GetAllWalletsOptions,
 ): Promise<Array<{ wallet: SmartWallet; id: string }>> {
@@ -103,7 +127,12 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
   if (!wallet) {
     throw new Error('Wallet not found')
   }
+  return getWalletBalance(wallet)
+}
 
+export async function getWalletBalance(
+  wallet: SmartWallet,
+): Promise<TokenBalance[]> {
   // Get regular token balances
   const tokenBalances = await wallet.getBalance().catch((error) => {
     console.error(error)
@@ -165,15 +194,11 @@ export async function getBalance(userId: string): Promise<TokenBalance[]> {
   }
 }
 
-export async function fundWallet(userId: string): Promise<{
+export async function fundWallet(wallet: SmartWallet): Promise<{
   success: boolean
   to: string
   amount: string
 }> {
-  const wallet = await getWallet(userId)
-  if (!wallet) {
-    throw new Error('Wallet not found')
-  }
   const walletAddress = wallet.address
 
   const amountInDecimals = BigInt(Math.floor(parseFloat('100') * 1000000))

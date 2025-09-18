@@ -14,6 +14,10 @@ const envVarSchema = z.object({
     .string()
     .default('dummy-privy-app-id')
     .describe('Privy App ID for wallet connection'),
+  VITE_SESSION_SIGNER_ID: z
+    .string()
+    .optional()
+    .describe('Session signer ID for server-side signing'),
 })
 
 export const env = envVarSchema.parse(import.meta.env)

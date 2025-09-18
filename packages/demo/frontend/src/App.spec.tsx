@@ -3,11 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 
-// Mock ClerkProvider
-vi.mock('./providers/ClerkProvider', () => ({
-  ClerkProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}))
-
 // Mock PrivyProvider
 vi.mock('./providers/PrivyProvider', () => ({
   PrivyProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,

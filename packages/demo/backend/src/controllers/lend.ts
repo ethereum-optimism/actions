@@ -3,6 +3,8 @@ import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
 
+import type { AuthContext } from '@/middleware/auth.js'
+
 import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
 import { serializeBigInt } from '../utils/serializers.js'
@@ -126,6 +128,39 @@ export class LendController {
       const {
         body: { walletId, amount, tokenAddress, chainId },
       } = validation.data
+      const auth = c.get('auth') as AuthContext | undefined
+
+      // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
+      // up this route.
+      if (auth && auth.userId) {
+        const lendTransaction = await lendService.depositWithUserWallet(
+          auth.userId,
+          amount,
+          tokenAddress as Address,
+          chainId as SupportedChainId,
+        )
+
+        const result = await lendService.executeLendTransactionWithUserWallet(
+          auth.userId,
+          lendTransaction,
+          chainId as SupportedChainId,
+        )
+
+        return c.json({
+          transaction: {
+            blockExplorerUrl: result.blockExplorerUrl,
+            hash: result.hash,
+            amount: result.amount.toString(),
+            asset: result.asset,
+            marketId: result.marketId,
+            apy: result.apy,
+            timestamp: result.timestamp,
+            slippage: result.slippage,
+            transactionData: serializeBigInt(result.transactionData),
+          },
+        })
+      }
+
       const lendTransaction = await lendService.deposit(
         walletId,
         amount,

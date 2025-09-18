@@ -13,10 +13,7 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
         provider: {
           type: 'privy',
           config: {
-            privyClient: new PrivyClient(
-              env.PRIVY_APP_ID,
-              env.PRIVY_APP_SECRET,
-            ),
+            privyClient: getPrivyClient(),
           },
         },
       },
@@ -69,5 +66,9 @@ export function getVerbs() {
 }
 
 export function getPrivyClient() {
-  return new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
+  const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
+  if (env.SESSION_SIGNER_PK) {
+    privy.walletApi.updateAuthorizationKey(env.SESSION_SIGNER_PK)
+  }
+  return privy
 }
