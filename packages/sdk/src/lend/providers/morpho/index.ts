@@ -67,6 +67,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
     amount: bigint,
     marketId?: string,
     options?: LendOptions,
+    chainId?: SupportedChainId,
   ): Promise<LendTransaction> {
     try {
       // 1. Find suitable vault if marketId not provided
@@ -77,7 +78,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
       // 2. Get vault information for APY
       const vaultInfo = await this.getMarket({
         address: selectedVaultAddress,
-        chainId: 130 as SupportedChainId, // TODO: Get chain ID dynamically
+        chainId: chainId || (130 as SupportedChainId), // TODO: Get chain ID dynamically
       })
 
       // 3. Generate real call data for Morpho deposit
@@ -144,8 +145,9 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
     amount: bigint,
     marketId?: string,
     options?: LendOptions,
+    chainId?: SupportedChainId,
   ): Promise<LendTransaction> {
-    return this.lend(asset, amount, marketId, options)
+    return this.lend(asset, amount, marketId, options, chainId)
   }
 
   /**

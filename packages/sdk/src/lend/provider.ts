@@ -1,12 +1,13 @@
 import type { Address } from 'viem'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   BaseLendConfig,
   LendMarket,
   LendMarketId,
   LendOptions,
   LendTransaction,
-} from '../types/lend.js'
+} from '@/types/lend.js'
 
 /**
  * Lending provider abstract class
@@ -67,6 +68,7 @@ export abstract class LendProvider<
     amount: bigint,
     marketId?: string,
     options?: LendOptions,
+    chainId?: SupportedChainId,
   ): Promise<LendTransaction>
 
   /**
@@ -82,6 +84,7 @@ export abstract class LendProvider<
     amount: bigint,
     marketId?: string,
     options?: LendOptions,
+    chainId?: SupportedChainId,
   ): Promise<LendTransaction>
 
   /**

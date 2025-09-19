@@ -1,7 +1,8 @@
-import type {
-  LendMarket,
-  LendTransaction,
-  SupportedChainId,
+import {
+  type LendMarket,
+  type LendTransaction,
+  SUPPORTED_TOKENS,
+  type SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
 import type { Address } from 'viem'
@@ -124,8 +125,15 @@ export async function depositWithUserWallet(
     throw new Error(`Wallet not found for user ID: ${userId}`)
   }
 
+  const asset = SUPPORTED_TOKENS.find(
+    (token) => token.address[chainId] === tokenAddress,
+  )
+  if (!asset) {
+    throw new Error(`Asset not found for token address: ${tokenAddress}`)
+  }
+
   if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
-    return await wallet.lendExecute(amount, tokenAddress, chainId)
+    return await wallet.lendExecute(amount, asset, chainId)
   } else {
     throw new Error(
       'Lend functionality not yet implemented for this wallet type.',
@@ -145,8 +153,15 @@ export async function deposit(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
+  const asset = SUPPORTED_TOKENS.find(
+    (token) => token.address[chainId] === tokenAddress,
+  )
+  if (!asset) {
+    throw new Error(`Asset not found for token address: ${tokenAddress}`)
+  }
+
   if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
-    return await wallet.lendExecute(amount, tokenAddress, chainId)
+    return await wallet.lendExecute(amount, asset, chainId)
   } else {
     throw new Error(
       'Lend functionality not yet implemented for this wallet type.',
