@@ -193,7 +193,9 @@ export abstract class LendProvider<
     }
   }
 
-  // Abstract methods that must be implemented by concrete providers
+  /**
+   * Abstract methods that must be implemented by concrete providers
+   */
 
   /**
    * Concrete implementation of lend method
