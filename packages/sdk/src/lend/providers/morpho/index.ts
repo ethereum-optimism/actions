@@ -153,7 +153,6 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
    * @returns Promise resolving to market information
    */
   protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    // Base class already validates the market is in allowlist via validateConfigSupported
     return getVault({
       marketId,
       chainManager: this.chainManager,

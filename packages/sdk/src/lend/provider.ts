@@ -61,10 +61,7 @@ export abstract class LendProvider<
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    // Validate network is supported
     this.validateChainIdSupported(chainId)
-
-    // Call concrete implementation
     return this._lend(asset, amount, chainId, marketId, options)
   }
 
@@ -84,7 +81,6 @@ export abstract class LendProvider<
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    // Just delegate to lend (which handles validation)
     return this.lend(asset, amount, chainId, marketId, options)
   }
 
@@ -94,13 +90,9 @@ export abstract class LendProvider<
    * @returns Promise resolving to market information
    */
   async getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    // Validate network is supported
     this.validateNetworkSupported(marketId)
-
-    // Validate market is in allowlist if configured
     this.validateConfigSupported(marketId)
 
-    // Call concrete implementation
     return this._getMarket(marketId)
   }
 
@@ -109,7 +101,6 @@ export abstract class LendProvider<
    * @returns Promise resolving to array of market information
    */
   async getMarkets(): Promise<LendMarket[]> {
-    // Call concrete implementation (no specific validation needed here)
     return this._getMarkets()
   }
 
@@ -129,13 +120,9 @@ export abstract class LendProvider<
     sharesFormatted: string
     chainId: number
   }> {
-    // Validate network is supported
     this.validateNetworkSupported(marketId)
-
-    // Validate market is in allowlist if configured
     this.validateConfigSupported(marketId)
 
-    // Call concrete implementation
     return this._getMarketBalance(marketId, walletAddress)
   }
 
@@ -155,14 +142,9 @@ export abstract class LendProvider<
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    // Validate network is supported
     this.validateChainIdSupported(chainId)
-
-    // Call concrete implementation
     return this._withdraw(asset, amount, chainId, marketId, options)
   }
-
-  // Protected validation methods
 
   /**
    * Check if a network is supported by this lending provider
@@ -205,7 +187,6 @@ export abstract class LendProvider<
    * @throws Error if market allowlist is configured but market is not in it
    */
   protected validateConfigSupported(marketId: LendMarketId): void {
-    // If no allowlist is configured, all markets are allowed
     if (
       !this._config.marketAllowlist ||
       this._config.marketAllowlist.length === 0
@@ -213,7 +194,6 @@ export abstract class LendProvider<
       return
     }
 
-    // Check if the market is in the allowlist
     const foundMarket = this._config.marketAllowlist.find(
       (allowedMarket) =>
         allowedMarket.address.toLowerCase() ===
@@ -229,12 +209,12 @@ export abstract class LendProvider<
   }
 
   /**
-   * Abstract methods that must be implemented by concrete providers
+   * Abstract methods that must be implemented by providers
    */
 
   /**
-   * Concrete implementation of lend method
-   * @description Must be implemented by concrete providers
+   * Provider implementation of lend method
+   * @description Must be implemented by providers
    */
   protected abstract _lend(
     asset: Address,
@@ -245,20 +225,20 @@ export abstract class LendProvider<
   ): Promise<LendTransaction>
 
   /**
-   * Concrete implementation of getMarket method
-   * @description Must be implemented by concrete providers
+   * Provider implementation of getMarket method
+   * @description Must be implemented by providers
    */
   protected abstract _getMarket(marketId: LendMarketId): Promise<LendMarket>
 
   /**
-   * Concrete implementation of getMarkets method
-   * @description Must be implemented by concrete providers
+   * Provider implementation of getMarkets method
+   * @description Must be implemented by providers
    */
   protected abstract _getMarkets(): Promise<LendMarket[]>
 
   /**
-   * Concrete implementation of getMarketBalance method
-   * @description Must be implemented by concrete providers
+   * Provider implementation of getMarketBalance method
+   * @description Must be implemented by providers
    */
   protected abstract _getMarketBalance(
     marketId: LendMarketId,
@@ -272,8 +252,8 @@ export abstract class LendProvider<
   }>
 
   /**
-   * Concrete implementation of withdraw method
-   * @description Must be implemented by concrete providers
+   * Provider implementation of withdraw method
+   * @description Must be implemented by providers
    */
   protected abstract _withdraw(
     asset: Address,
