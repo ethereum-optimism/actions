@@ -840,7 +840,7 @@ User ID: ${result.userId}`,
         )
 
       // TODO: update this to not hardcode the decimals and read decimals from token info.
-      const usdcBalance = chainToken ? parseFloat(chainToken.balance) / 1e6 : 0
+      const usdcBalance = chainToken ? parseFloat(chainToken.formattedBalance) : 0
 
       console.log('[FRONTEND] Wallet USDC balance:', usdcBalance)
 
