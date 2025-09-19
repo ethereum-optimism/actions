@@ -97,6 +97,9 @@ export abstract class LendProvider<
     // Validate network is supported
     this.validateNetworkSupported(marketId)
 
+    // Validate market is in allowlist if configured
+    this.validateConfigSupported(marketId)
+
     // Call concrete implementation
     return this._getMarket(marketId)
   }
@@ -128,6 +131,9 @@ export abstract class LendProvider<
   }> {
     // Validate network is supported
     this.validateNetworkSupported(marketId)
+
+    // Validate market is in allowlist if configured
+    this.validateConfigSupported(marketId)
 
     // Call concrete implementation
     return this._getMarketBalance(marketId, walletAddress)
@@ -189,6 +195,35 @@ export abstract class LendProvider<
     if (!this.isNetworkSupported(chainId)) {
       throw new Error(
         `Network ${chainId} is not supported. Supported networks: ${this.SUPPORTED_NETWORK_IDS.join(', ')}`,
+      )
+    }
+  }
+
+  /**
+   * Validate that a market is in the config's market allowlist
+   * @param marketId - Market identifier containing address and chainId
+   * @throws Error if market allowlist is configured but market is not in it
+   */
+  protected validateConfigSupported(marketId: LendMarketId): void {
+    // If no allowlist is configured, all markets are allowed
+    if (
+      !this._config.marketAllowlist ||
+      this._config.marketAllowlist.length === 0
+    ) {
+      return
+    }
+
+    // Check if the market is in the allowlist
+    const foundMarket = this._config.marketAllowlist.find(
+      (allowedMarket) =>
+        allowedMarket.address.toLowerCase() ===
+          marketId.address.toLowerCase() &&
+        allowedMarket.chainId === marketId.chainId,
+    )
+
+    if (!foundMarket) {
+      throw new Error(
+        `Market ${marketId.address} on chain ${marketId.chainId} is not in the market allowlist`,
       )
     }
   }
