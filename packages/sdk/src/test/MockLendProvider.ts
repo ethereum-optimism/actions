@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   LendConfig,
   LendMarket,
@@ -28,6 +29,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       amount: bigint,
       marketId?: string,
       options?: LendOptions,
+      chainId?: SupportedChainId,
     ) => Promise<LendTransaction>
   >
   public deposit: MockedFunction<
@@ -36,6 +38,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       amount: bigint,
       marketId?: string,
       options?: LendOptions,
+      chainId?: SupportedChainId,
     ) => Promise<LendTransaction>
   >
   public getMarket: MockedFunction<

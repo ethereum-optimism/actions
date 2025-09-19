@@ -193,6 +193,7 @@ export class DefaultSmartWallet extends SmartWallet {
       parsedAmount,
       marketId,
       lendOptions,
+      chainId,
     )
 
     return result
