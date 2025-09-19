@@ -19,10 +19,10 @@ export abstract class LendProvider<
   protected readonly _config: TConfig
 
   /**
-   * Supported network IDs
+   * Supported chain IDs
    * @description Array of chain IDs that this provider supports
    */
-  protected abstract readonly SUPPORTED_NETWORK_IDS: readonly number[]
+  protected abstract readonly SUPPORTED_CHAIN_IDS: readonly number[]
 
   /**
    * Create a new lending provider
@@ -37,12 +37,12 @@ export abstract class LendProvider<
   }
 
   /**
-   * Get supported network IDs
+   * Get supported chain IDs
    * @description Returns an array of chain IDs that this provider supports
-   * @returns Array of supported network chain IDs
+   * @returns Array of supported chain IDs
    */
-  supportedNetworkIds(): number[] {
-    return [...this.SUPPORTED_NETWORK_IDS]
+  supportedChainIds(): number[] {
+    return [...this.SUPPORTED_CHAIN_IDS]
   }
 
   /**
@@ -61,7 +61,7 @@ export abstract class LendProvider<
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    this.validateChainIdSupported(chainId)
+    this.validateProviderSupported(chainId)
     return this._lend(asset, amount, chainId, marketId, options)
   }
 
@@ -90,7 +90,7 @@ export abstract class LendProvider<
    * @returns Promise resolving to market information
    */
   async getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    this.validateNetworkSupported(marketId)
+    this.validateProviderSupported(marketId.chainId)
     this.validateConfigSupported(marketId)
 
     return this._getMarket(marketId)
@@ -120,7 +120,7 @@ export abstract class LendProvider<
     sharesFormatted: string
     chainId: number
   }> {
-    this.validateNetworkSupported(marketId)
+    this.validateProviderSupported(marketId.chainId)
     this.validateConfigSupported(marketId)
 
     return this._getMarketBalance(marketId, walletAddress)
@@ -142,41 +142,28 @@ export abstract class LendProvider<
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    this.validateChainIdSupported(chainId)
+    this.validateProviderSupported(chainId)
     return this._withdraw(asset, amount, chainId, marketId, options)
   }
 
   /**
-   * Check if a network is supported by this lending provider
+   * Check if a chain is supported by this lending provider
    * @param chainId - Chain ID to check
-   * @returns true if network is supported, false otherwise
+   * @returns true if chain is supported, false otherwise
    */
-  protected isNetworkSupported(chainId: number): boolean {
-    return this.SUPPORTED_NETWORK_IDS.includes(chainId)
-  }
-
-  /**
-   * Validate that a market's network is supported
-   * @param marketId - Market identifier containing chainId
-   * @throws Error if network is not supported
-   */
-  protected validateNetworkSupported(marketId: LendMarketId): void {
-    if (!this.isNetworkSupported(marketId.chainId)) {
-      throw new Error(
-        `Network ${marketId.chainId} is not supported. Supported networks: ${this.SUPPORTED_NETWORK_IDS.join(', ')}`,
-      )
-    }
+  protected isChainSupported(chainId: number): boolean {
+    return this.SUPPORTED_CHAIN_IDS.includes(chainId)
   }
 
   /**
    * Validate that a chainId is supported for lending operations
    * @param chainId - Chain ID to validate
-   * @throws Error if network is not supported
+   * @throws Error if chain is not supported
    */
-  protected validateChainIdSupported(chainId: number): void {
-    if (!this.isNetworkSupported(chainId)) {
+  protected validateProviderSupported(chainId: number): void {
+    if (!this.isChainSupported(chainId)) {
       throw new Error(
-        `Network ${chainId} is not supported. Supported networks: ${this.SUPPORTED_NETWORK_IDS.join(', ')}`,
+        `Chain ${chainId} is not supported. Supported chains: ${this.SUPPORTED_CHAIN_IDS.join(', ')}`,
       )
     }
   }

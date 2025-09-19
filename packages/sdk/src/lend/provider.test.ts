@@ -11,16 +11,16 @@ import type {
 
 // Test helper class that exposes protected validation methods as public
 class TestLendProvider extends MockLendProvider {
-  public validateChainIdSupported(chainId: number): void {
-    return super.validateChainIdSupported(chainId)
+  public validateProviderSupported(chainId: number): void {
+    return super.validateProviderSupported(chainId)
   }
 
   public validateConfigSupported(marketId: LendMarketId): void {
     return super.validateConfigSupported(marketId)
   }
 
-  public isNetworkSupported(chainId: number): boolean {
-    return super.isNetworkSupported(chainId)
+  public isChainSupported(chainId: number): boolean {
+    return super.isChainSupported(chainId)
   }
 }
 
@@ -34,7 +34,7 @@ describe('LendProvider', () => {
 
       const provider = new MockLendProvider(config)
       expect(provider).toBeDefined()
-      expect(provider.supportedNetworkIds()).toContain(84532)
+      expect(provider.supportedChainIds()).toContain(84532)
     })
 
     it('should use default slippage when not provided', () => {
@@ -157,14 +157,14 @@ describe('LendProvider', () => {
     })
   })
 
-  describe('supportedNetworkIds', () => {
-    it('should return array of supported network IDs', () => {
+  describe('supportedChainIds', () => {
+    it('should return array of supported chain IDs', () => {
       const provider = new MockLendProvider({ provider: 'morpho' })
-      const networkIds = provider.supportedNetworkIds()
+      const chainIds = provider.supportedChainIds()
 
-      expect(Array.isArray(networkIds)).toBe(true)
-      expect(networkIds).toContain(84532)
-      expect(networkIds.length).toBeGreaterThan(0)
+      expect(Array.isArray(chainIds)).toBe(true)
+      expect(chainIds).toContain(84532)
+      expect(chainIds.length).toBeGreaterThan(0)
     })
   })
 
@@ -173,8 +173,8 @@ describe('LendProvider', () => {
       const provider = new TestLendProvider({ provider: 'morpho' })
 
       expect(() => {
-        provider.validateChainIdSupported(999)
-      }).toThrow('Network 999 is not supported')
+        provider.validateProviderSupported(999)
+      }).toThrow('Chain 999 is not supported')
     })
 
     it('should call validation for market allowlist', () => {
@@ -210,11 +210,11 @@ describe('LendProvider', () => {
       }).toThrow('not in the market allowlist')
     })
 
-    it('should validate network support correctly', () => {
+    it('should validate chain support correctly', () => {
       const provider = new TestLendProvider({ provider: 'morpho' })
 
-      expect(provider.isNetworkSupported(84532)).toBe(true)
-      expect(provider.isNetworkSupported(999)).toBe(false)
+      expect(provider.isChainSupported(84532)).toBe(true)
+      expect(provider.isChainSupported(999)).toBe(false)
     })
   })
 

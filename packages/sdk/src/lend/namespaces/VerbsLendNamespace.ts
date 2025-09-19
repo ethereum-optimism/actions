@@ -54,9 +54,9 @@ export class VerbsLendNamespace<TConfig extends BaseLendConfig = LendConfig> {
   }
 
   /**
-   * Get list of supported network IDs
+   * Get list of supported chain IDs
    */
-  supportedNetworkIds(): number[] {
-    return this.provider.supportedNetworkIds()
+  supportedChainIds(): number[] {
+    return this.provider.supportedChainIds()
   }
 }

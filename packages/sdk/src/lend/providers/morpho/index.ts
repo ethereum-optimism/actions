@@ -1,12 +1,12 @@
+import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
-import { base, baseSepolia, mainnet, unichain } from 'viem/chains'
 
 import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 
-import type { SupportedChainId } from '../../../constants/supportedChains.js'
+import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS, type SupportedChainId } from '../../../constants/supportedChains.js'
 import type {
   LendMarket,
   LendMarketId,
@@ -18,22 +18,22 @@ import { LendProvider } from '../../provider.js'
 import { findBestVaultForAsset, getVault, getVaults } from './sdk.js'
 
 /**
- * Supported network IDs for Morpho lending
+ * Supported chain IDs for Morpho lending
  * @description Array of chain IDs where Morpho is available
  */
-export const SUPPORTED_NETWORK_IDS = [
-  mainnet.id, // 1
-  unichain.id, // 130
-  base.id, // 8453
-  baseSepolia.id, // 84532
-] as const
+export const SUPPORTED_CHAIN_IDS = [
+  ...Object.values(ChainId).filter(
+    (value): value is number => typeof value === 'number',
+  ),
+  ...VERBS_SUPPORTED_CHAIN_IDS,
+] as readonly number[]
 
 /**
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
 export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
-  protected readonly SUPPORTED_NETWORK_IDS = SUPPORTED_NETWORK_IDS
+  protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
 
   private chainManager: ChainManager
 

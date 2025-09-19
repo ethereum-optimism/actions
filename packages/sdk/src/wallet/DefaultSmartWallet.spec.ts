@@ -225,7 +225,7 @@ describe('DefaultSmartWallet', () => {
     // Test that lend namespace exists and is properly bound
     expect(wallet.lend).toBeDefined()
     expect(typeof wallet.lend!.getMarkets).toBe('function')
-    expect(typeof wallet.lend!.supportedNetworkIds).toBe('function')
+    expect(typeof wallet.lend!.supportedChainIds).toBe('function')
 
     // Test that lend namespace delegates to provider
     const markets = await wallet.lend!.getMarkets()
@@ -233,8 +233,8 @@ describe('DefaultSmartWallet', () => {
     expect(markets).toHaveLength(1)
     expect(markets[0].name).toBe('Mock Market')
 
-    const networkIds = wallet.lend!.supportedNetworkIds()
-    expect(networkIds).toContain(84532)
+    const chainIds = wallet.lend!.supportedChainIds()
+    expect(chainIds).toContain(84532)
   })
 
   it('throws if attribution suffix is not valid hex', async () => {

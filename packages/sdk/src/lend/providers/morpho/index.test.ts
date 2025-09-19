@@ -88,20 +88,20 @@ describe('LendProviderMorpho', () => {
     })
   })
 
-  describe('supportedNetworkIds', () => {
-    it('should return array of supported network chain IDs', () => {
-      const networkIds = provider.supportedNetworkIds()
+  describe('supportedChainIds', () => {
+    it('should return array of supported chain IDs', () => {
+      const chainIds = provider.supportedChainIds()
 
-      expect(Array.isArray(networkIds)).toBe(true)
-      expect(networkIds).toContain(130) // Unichain
-      expect(networkIds.length).toBeGreaterThan(0)
+      expect(Array.isArray(chainIds)).toBe(true)
+      expect(chainIds).toContain(130) // Unichain
+      expect(chainIds.length).toBeGreaterThan(0)
     })
 
-    it('should return unique network IDs', () => {
-      const networkIds = provider.supportedNetworkIds()
-      const uniqueIds = [...new Set(networkIds)]
+    it('should return unique chain IDs', () => {
+      const chainIds = provider.supportedChainIds()
+      const uniqueIds = [...new Set(chainIds)]
 
-      expect(networkIds.length).toBe(uniqueIds.length)
+      expect(chainIds.length).toBe(uniqueIds.length)
     })
   })
 

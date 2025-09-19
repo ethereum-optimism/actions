@@ -12,7 +12,7 @@ import type {
 import { LendProvider } from '../lend/provider.js'
 
 export interface MockLendProviderConfig {
-  supportedNetworks: number[]
+  supportedChains: number[]
   defaultApy: number
   mockBalance: bigint
 }
@@ -66,12 +66,12 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     ) => Promise<LendTransaction>
   >
 
-  protected readonly SUPPORTED_NETWORK_IDS = [1, 130, 8453, 84532] as const
+  protected readonly SUPPORTED_CHAIN_IDS = [1, 130, 8453, 84532] as const
 
-  protected readonly SUPPORTED_NETWORKS = {
+  protected readonly SUPPORTED_CHAINS = {
     TESTNET: {
       chainId: 84532,
-      name: 'Test Network',
+      name: 'Test Chain',
     },
   }
 
@@ -84,7 +84,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     super(config || { provider: 'morpho' })
 
     this.mockConfig = {
-      supportedNetworks: mockConfig?.supportedNetworks ?? [84532],
+      supportedChains: mockConfig?.supportedChains ?? [84532],
       defaultApy: mockConfig?.defaultApy ?? 0.05,
       mockBalance: mockConfig?.mockBalance ?? 1000000n,
     }
