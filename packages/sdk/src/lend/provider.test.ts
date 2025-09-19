@@ -9,6 +9,21 @@ import type {
   LendMarketId,
 } from '../types/lend.js'
 
+// Test helper class that exposes protected validation methods as public
+class TestLendProvider extends MockLendProvider {
+  public validateChainIdSupported(chainId: number): void {
+    return super.validateChainIdSupported(chainId)
+  }
+
+  public validateConfigSupported(marketId: LendMarketId): void {
+    return super.validateConfigSupported(marketId)
+  }
+
+  public isNetworkSupported(chainId: number): boolean {
+    return super.isNetworkSupported(chainId)
+  }
+}
+
 describe('LendProvider', () => {
   describe('constructor and configuration', () => {
     it('should initialize with basic config', () => {
@@ -150,6 +165,56 @@ describe('LendProvider', () => {
       expect(Array.isArray(networkIds)).toBe(true)
       expect(networkIds).toContain(84532)
       expect(networkIds.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('validation', () => {
+    it('should call validation for unsupported chainId', () => {
+      const provider = new TestLendProvider({ provider: 'morpho' })
+
+      expect(() => {
+        provider.validateChainIdSupported(999)
+      }).toThrow('Network 999 is not supported')
+    })
+
+    it('should call validation for market allowlist', () => {
+      const allowedMarket: LendMarketConfig = {
+        address: '0x1234' as Address,
+        chainId: 84532,
+        name: 'Allowed Market',
+        asset: {
+          address: { 84532: '0xUSC' as Address },
+          metadata: { decimals: 6, name: 'USD Coin', symbol: 'USDC' },
+          type: 'erc20',
+        },
+        lendProvider: 'morpho',
+      }
+
+      const provider = new TestLendProvider({
+        provider: 'morpho',
+        marketAllowlist: [allowedMarket],
+      })
+
+      expect(() => {
+        provider.validateConfigSupported({
+          address: '0x1234' as Address,
+          chainId: 84532,
+        })
+      }).not.toThrow()
+
+      expect(() => {
+        provider.validateConfigSupported({
+          address: '0x9999' as Address,
+          chainId: 84532,
+        })
+      }).toThrow('not in the market allowlist')
+    })
+
+    it('should validate network support correctly', () => {
+      const provider = new TestLendProvider({ provider: 'morpho' })
+
+      expect(provider.isNetworkSupported(84532)).toBe(true)
+      expect(provider.isNetworkSupported(999)).toBe(false)
     })
   })
 
