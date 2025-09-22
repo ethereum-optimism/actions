@@ -33,7 +33,7 @@ describe('Verbs SDK', () => {
         })
 
         expect(verbs.lend).toBeDefined()
-        expect(verbs.lend.supportedNetworkIds()).toContain(130) // Unichain
+        expect(verbs.lend.supportedChainIds()).toContain(130) // Unichain
       })
 
       it('should create Morpho provider with custom default slippage', () => {
@@ -320,14 +320,14 @@ describe('Verbs SDK', () => {
         })
 
         expect(verbs.lend).toBeDefined()
-        const supportedIds = verbs.lend.supportedNetworkIds()
+        const supportedIds = verbs.lend.supportedChainIds()
         expect(supportedIds).toContain(130) // Unichain
-        expect(supportedIds).toContain(84532) // Base Sepolia
+        expect(supportedIds).toContain(8453) // Base
       })
     })
 
     describe('Unit Tests', () => {
-      it('should list supported network IDs', () => {
+      it('should list supported chain IDs', () => {
         const verbs = new Verbs({
           chains: [{ chainId: unichain.id }],
           lend: {
@@ -352,9 +352,9 @@ describe('Verbs SDK', () => {
           },
         })
 
-        const networkIds = verbs.lend.supportedNetworkIds()
-        expect(Array.isArray(networkIds)).toBe(true)
-        expect(networkIds).toContain(130) // Unichain
+        const chainIds = verbs.lend.supportedChainIds()
+        expect(Array.isArray(chainIds)).toBe(true)
+        expect(chainIds).toContain(130) // Unichain
       })
     })
   })

@@ -191,9 +191,9 @@ export class DefaultSmartWallet extends SmartWallet {
     const result = await this.lendProvider.deposit(
       tokenAddress,
       parsedAmount,
+      chainId,
       marketId,
       lendOptions,
-      chainId,
     )
 
     return result

@@ -50,11 +50,11 @@ describe('VerbsLendNamespace', () => {
     expect(spy).toHaveBeenCalledWith(marketId, walletAddress)
   })
 
-  it('should delegate supportedNetworkIds to provider', () => {
+  it('should delegate supportedChainIds to provider', () => {
     const namespace = new VerbsLendNamespace(mockProvider)
-    const spy = vi.spyOn(mockProvider, 'supportedNetworkIds')
+    const spy = vi.spyOn(mockProvider, 'supportedChainIds')
 
-    namespace.supportedNetworkIds()
+    namespace.supportedChainIds()
 
     expect(spy).toHaveBeenCalledOnce()
   })

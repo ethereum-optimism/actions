@@ -48,7 +48,7 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
         )
 
         // Create read-only lend namespace
-        this._lend = new VerbsLendNamespace(this._lendProvider)
+        this._lend = new VerbsLendNamespace(this._lendProvider!)
       } else {
         throw new Error(`Unsupported lending provider: ${config.lend.provider}`)
       }

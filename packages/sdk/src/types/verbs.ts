@@ -7,6 +7,15 @@ import type {
 import type { LendConfig } from './lend.js'
 
 /**
+ * Network configuration for lending providers
+ * @description Basic network information that lending providers need
+ */
+export interface LendNetworkConfig {
+  chainId: number
+  name: string
+}
+
+/**
  * Verbs SDK configuration
  * @description Configuration object for initializing the Verbs SDK
  */
