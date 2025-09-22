@@ -155,6 +155,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
     return getVault({
       marketId,
       chainManager: this.chainManager,
+      lendConfig: this._config,
     })
   }
 

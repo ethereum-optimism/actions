@@ -10,6 +10,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type {
   ApyBreakdown,
+  LendConfig,
   LendMarket,
   LendMarketConfig,
   LendMarketId,
@@ -90,13 +91,32 @@ export function calculateBaseApy(vault: any): number {
 }
 
 /**
- * Parameters for getVault function
+ * Parameters for getvault function
  */
 interface GetVaultParams {
   /** Market identifier (address and chainId) */
   marketId: LendMarketId
   /** Chain manager instance */
   chainManager: ChainManager
+  /** Lend configuration containing market allowlist */
+  lendConfig?: LendConfig
+}
+
+/**
+ * Find market configuration in allowlist
+ * @param marketAllowlist - Array of allowed market configurations
+ * @param marketId - Market identifier to find
+ * @returns Market configuration if found, undefined otherwise
+ */
+function findMarketInAllowlist(
+  marketAllowlist: LendMarketConfig[],
+  marketId: LendMarketId,
+): LendMarketConfig | undefined {
+  return marketAllowlist.find(
+    (config) =>
+      config.address.toLowerCase() === marketId.address.toLowerCase() &&
+      config.chainId === marketId.chainId,
+  )
 }
 
 /**
@@ -105,7 +125,18 @@ interface GetVaultParams {
  * @returns Promise resolving to detailed vault information
  */
 export async function getVault(params: GetVaultParams): Promise<LendMarket> {
-  const { marketId, chainManager } = params
+  const { marketId, chainManager, lendConfig } = params
+
+  // Find market configuration in allowlist for metadata
+  const marketConfig = lendConfig?.marketAllowlist
+    ? findMarketInAllowlist(lendConfig.marketAllowlist, marketId)
+    : undefined
+
+  if (!marketConfig) {
+    throw new Error(
+      `Market ${marketId.address} on chain ${marketId.chainId} not found in allowlist`,
+    )
+  }
 
   try {
     // Fetch live vault data from Morpho SDK
@@ -144,8 +175,9 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     return {
       chainId: marketId.chainId,
       address: marketId.address,
-      name: `Vault ${marketId.address}`, // Generic name since we don't have config metadata
-      asset: '0x' as Address, // TODO: Get asset address from vault data
+      name: marketConfig.name,
+      asset: (marketConfig.asset.address[marketConfig.chainId] ||
+        Object.values(marketConfig.asset.address)[0]) as Address,
       totalAssets: vault.totalAssets,
       totalShares: vault.totalSupply,
       apy: apyBreakdown.netApy, // Use Net APY calculation
@@ -168,15 +200,15 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
 /**
  * Get list of available vaults
  * @param chainManager - Chain manager instance
- * @param config - Lend configuration (includes allowlist and future blocklist)
+ * @param lendConfig - Lend configuration (includes allowlist and future blocklist)
  * @returns Promise resolving to array of vault information
  */
 export async function getVaults(
   chainManager: ChainManager,
-  config: { marketAllowlist?: LendMarketConfig[] },
+  lendConfig: LendConfig,
 ): Promise<LendMarket[]> {
   try {
-    const marketAllowlist = config.marketAllowlist || []
+    const marketAllowlist = lendConfig.marketAllowlist || []
     const vaultPromises = marketAllowlist.map((marketConfig) => {
       return getVault({
         marketId: {
@@ -184,6 +216,7 @@ export async function getVaults(
           chainId: marketConfig.chainId,
         },
         chainManager,
+        lendConfig,
       })
     })
     return await Promise.all(vaultPromises)
