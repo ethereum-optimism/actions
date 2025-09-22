@@ -207,3 +207,120 @@ export interface MorphoLendConfig extends BaseLendConfig {
  * @description Union of all possible lending provider configurations
  */
 export type LendConfig = MorphoLendConfig
+
+/**
+ * Market balance information
+ * @description Balance details for a user in a lending market
+ */
+export interface LendMarketBalance {
+  /** Asset balance in wei */
+  balance: bigint
+  /** Formatted asset balance */
+  balanceFormatted: string
+  /** Market shares owned */
+  shares: bigint
+  /** Formatted market shares */
+  sharesFormatted: string
+  /** Chain ID */
+  chainId: number
+}
+
+/**
+ * Parameters for lend operation
+ * @description Parameters required for lending assets
+ */
+export interface LendParams {
+  /** Asset token address to lend */
+  asset: Address
+  /** Amount to lend (in wei) */
+  amount: bigint
+  /** Chain ID for the transaction */
+  chainId: number
+  /** Optional specific market ID */
+  marketId?: string
+  /** Optional lending configuration */
+  options?: LendOptions
+}
+
+/**
+ * Parameters for withdraw operation
+ * @description Parameters required for withdrawing assets
+ */
+export interface WithdrawParams {
+  /** Asset token address to withdraw */
+  asset: Address
+  /** Amount to withdraw (in wei) */
+  amount: bigint
+  /** Chain ID for the transaction */
+  chainId: number
+  /** Optional specific market ID */
+  marketId?: string
+  /** Optional withdrawal configuration */
+  options?: LendOptions
+}
+
+/**
+ * Parameters for getting market balance
+ * @description Parameters required for fetching market balance
+ */
+export interface GetMarketBalanceParams {
+  /** Market identifier containing address and chainId */
+  marketId: LendMarketId
+  /** User wallet address to check balance for */
+  walletAddress: Address
+}
+
+/**
+ * Protected method signatures for LendProvider implementations
+ * @description Type definitions for methods that must be implemented by all lending providers
+ */
+export interface LendProviderMethods {
+  /**
+   * Provider implementation of lend method
+   * @param params - Lending operation parameters
+   * @returns Promise resolving to lending transaction details
+   */
+  _lend({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: LendParams): Promise<LendTransaction>
+
+  /**
+   * Provider implementation of withdraw method
+   * @param params - Withdrawal operation parameters
+   * @returns Promise resolving to withdrawal transaction details
+   */
+  _withdraw({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: WithdrawParams): Promise<LendTransaction>
+
+  /**
+   * Provider implementation of getMarket method
+   * @param marketId - Market identifier containing address and chainId
+   * @returns Promise resolving to market information
+   */
+  _getMarket(marketId: LendMarketId): Promise<LendMarket>
+
+  /**
+   * Provider implementation of getMarkets method
+   * @returns Promise resolving to array of market information
+   */
+  _getMarkets(): Promise<LendMarket[]>
+
+  /**
+   * Provider implementation of getMarketBalance method
+   * @param params - Parameters for fetching market balance
+   * @returns Promise resolving to market balance information
+   */
+  _getMarketBalance({
+    marketId,
+    walletAddress,
+  }: GetMarketBalanceParams): Promise<LendMarketBalance>
+}

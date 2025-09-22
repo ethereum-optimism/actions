@@ -6,13 +6,19 @@ import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 
-import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS, type SupportedChainId } from '../../../constants/supportedChains.js'
+import {
+  SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS,
+  type SupportedChainId,
+} from '../../../constants/supportedChains.js'
 import type {
+  GetMarketBalanceParams,
   LendMarket,
+  LendMarketBalance,
   LendMarketId,
-  LendOptions,
+  LendParams,
   LendTransaction,
   MorphoLendConfig,
+  WithdrawParams,
 } from '../../../types/lend.js'
 import { LendProvider } from '../../provider.js'
 import { findBestVaultForAsset, getVault, getVaults } from './sdk.js'
@@ -22,10 +28,12 @@ import { findBestVaultForAsset, getVault, getVaults } from './sdk.js'
  * @description Array of chain IDs where Morpho is available
  */
 export const SUPPORTED_CHAIN_IDS = [
-  ...Object.values(ChainId).filter(
-    (value): value is number => typeof value === 'number',
-  ),
-  ...VERBS_SUPPORTED_CHAIN_IDS,
+  ...new Set([
+    ...Object.values(ChainId).filter(
+      (value): value is number => typeof value === 'number',
+    ),
+    ...VERBS_SUPPORTED_CHAIN_IDS,
+  ]),
 ] as readonly number[]
 
 /**
@@ -50,19 +58,16 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   /**
    * Lend assets to a Morpho market
    * @description Supplies assets to a Morpho market using MetaMorpho deposit operation
-   * @param asset - Asset token address to lend
-   * @param amount - Amount to lend (in wei)
-   * @param marketId - Optional specific market ID (vault address)
-   * @param options - Optional lending configuration
+   * @param params - Lending operation parameters
    * @returns Promise resolving to lending transaction details
    */
-  protected async _lend(
-    asset: Address,
-    amount: bigint,
-    chainId: number,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
+  protected async _lend({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: LendParams): Promise<LendTransaction> {
     try {
       // 1. Find suitable vault if marketId not provided
       const selectedVaultAddress =
@@ -128,19 +133,16 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   /**
    * Withdraw assets from a Morpho market
    * @description Withdraws assets from a Morpho market using Blue_Withdraw operation
-   * @param asset - Asset token address to withdraw
-   * @param amount - Amount to withdraw (in wei)
-   * @param marketId - Optional specific market ID
-   * @param options - Optional withdrawal configuration
+   * @param params - Withdrawal operation parameters
    * @returns Promise resolving to withdrawal transaction details
    */
-  protected async _withdraw(
-    asset: Address,
-    amount: bigint,
-    chainId: number,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
+  protected async _withdraw({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: WithdrawParams): Promise<LendTransaction> {
     // TODO: Implement withdrawal functionality
 
     const _unused = { asset, amount, chainId, marketId, options }
@@ -169,20 +171,13 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
 
   /**
    * Get market balance for a specific wallet address
-   * @param marketId - Market identifier containing address and chainId
-   * @param walletAddress - User wallet address to check balance for
+   * @param params - Parameters for fetching market balance
    * @returns Promise resolving to market balance information
    */
-  protected async _getMarketBalance(
-    marketId: LendMarketId,
-    walletAddress: Address,
-  ): Promise<{
-    balance: bigint
-    balanceFormatted: string
-    shares: bigint
-    sharesFormatted: string
-    chainId: number
-  }> {
+  protected async _getMarketBalance({
+    marketId,
+    walletAddress,
+  }: GetMarketBalanceParams): Promise<LendMarketBalance> {
     try {
       const publicClient = this.chainManager.getPublicClient(marketId.chainId)
 

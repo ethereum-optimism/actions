@@ -167,13 +167,19 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     this.resetMocks()
   }
 
-  protected async _lend(
-    asset: Address,
-    amount: bigint,
-    chainId: number,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
+  protected async _lend({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: {
+    asset: Address
+    amount: bigint
+    chainId: number
+    marketId?: string
+    options?: LendOptions
+  }): Promise<LendTransaction> {
     return this.createMockLendTransaction(
       asset,
       amount,
@@ -191,10 +197,13 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     return this.createMockMarkets()
   }
 
-  protected async _getMarketBalance(
-    marketId: LendMarketId,
-    walletAddress: Address,
-  ): Promise<{
+  protected async _getMarketBalance({
+    marketId,
+    walletAddress,
+  }: {
+    marketId: LendMarketId
+    walletAddress: Address
+  }): Promise<{
     balance: bigint
     balanceFormatted: string
     shares: bigint
@@ -204,13 +213,19 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     return this.createMockBalance(marketId, walletAddress)
   }
 
-  protected async _withdraw(
-    asset: Address,
-    amount: bigint,
-    chainId: number,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
+  protected async _withdraw({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: {
+    asset: Address
+    amount: bigint
+    chainId: number
+    marketId?: string
+    options?: LendOptions
+  }): Promise<LendTransaction> {
     return this.createMockWithdraw(asset, amount, chainId, marketId, options)
   }
 

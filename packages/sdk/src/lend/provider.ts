@@ -2,10 +2,14 @@ import type { Address } from 'viem'
 
 import type {
   BaseLendConfig,
+  GetMarketBalanceParams,
   LendMarket,
+  LendMarketBalance,
   LendMarketId,
   LendOptions,
+  LendParams,
   LendTransaction,
+  WithdrawParams,
 } from '@/types/lend.js'
 
 /**
@@ -62,7 +66,7 @@ export abstract class LendProvider<
     options?: LendOptions,
   ): Promise<LendTransaction> {
     this.validateProviderSupported(chainId)
-    return this._lend(asset, amount, chainId, marketId, options)
+    return this._lend({ asset, amount, chainId, marketId, options })
   }
 
   /**
@@ -113,17 +117,11 @@ export abstract class LendProvider<
   async getMarketBalance(
     marketId: LendMarketId,
     walletAddress: Address,
-  ): Promise<{
-    balance: bigint
-    balanceFormatted: string
-    shares: bigint
-    sharesFormatted: string
-    chainId: number
-  }> {
+  ): Promise<LendMarketBalance> {
     this.validateProviderSupported(marketId.chainId)
     this.validateConfigSupported(marketId)
 
-    return this._getMarketBalance(marketId, walletAddress)
+    return this._getMarketBalance({ marketId, walletAddress })
   }
 
   /**
@@ -143,7 +141,7 @@ export abstract class LendProvider<
     options?: LendOptions,
   ): Promise<LendTransaction> {
     this.validateProviderSupported(chainId)
-    return this._withdraw(asset, amount, chainId, marketId, options)
+    return this._withdraw({ asset, amount, chainId, marketId, options })
   }
 
   /**
@@ -203,13 +201,13 @@ export abstract class LendProvider<
    * Provider implementation of lend method
    * @description Must be implemented by providers
    */
-  protected abstract _lend(
-    asset: Address,
-    amount: bigint,
-    chainId: number,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction>
+  protected abstract _lend({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: LendParams): Promise<LendTransaction>
 
   /**
    * Provider implementation of getMarket method
@@ -227,26 +225,20 @@ export abstract class LendProvider<
    * Provider implementation of getMarketBalance method
    * @description Must be implemented by providers
    */
-  protected abstract _getMarketBalance(
-    marketId: LendMarketId,
-    walletAddress: Address,
-  ): Promise<{
-    balance: bigint
-    balanceFormatted: string
-    shares: bigint
-    sharesFormatted: string
-    chainId: number
-  }>
+  protected abstract _getMarketBalance({
+    marketId,
+    walletAddress,
+  }: GetMarketBalanceParams): Promise<LendMarketBalance>
 
   /**
    * Provider implementation of withdraw method
    * @description Must be implemented by providers
    */
-  protected abstract _withdraw(
-    asset: Address,
-    amount: bigint,
-    chainId: number,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction>
+  protected abstract _withdraw({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: WithdrawParams): Promise<LendTransaction>
 }
