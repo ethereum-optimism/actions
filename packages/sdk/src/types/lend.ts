@@ -235,7 +235,7 @@ export interface LendParams {
   /** Amount to lend (in wei) */
   amount: bigint
   /** Chain ID for the transaction */
-  chainId: number
+  chainId: SupportedChainId
   /** Optional specific market ID */
   marketId?: string
   /** Optional lending configuration */
@@ -252,7 +252,7 @@ export interface WithdrawParams {
   /** Amount to withdraw (in wei) */
   amount: bigint
   /** Chain ID for the transaction */
-  chainId: number
+  chainId: SupportedChainId
   /** Optional specific market ID */
   marketId?: string
   /** Optional withdrawal configuration */

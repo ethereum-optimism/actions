@@ -6,10 +6,7 @@ import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 
-import {
-  SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS,
-  type SupportedChainId,
-} from '../../../constants/supportedChains.js'
+import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS } from '../../../constants/supportedChains.js'
 import type {
   GetMarketBalanceParams,
   LendMarket,
@@ -77,7 +74,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
       // 2. Get vault information for APY
       const vaultInfo = await this.getMarket({
         address: selectedVaultAddress,
-        chainId: chainId as SupportedChainId,
+        chainId,
       })
 
       // 3. Generate real call data for Morpho deposit

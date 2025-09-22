@@ -11,6 +11,7 @@ import type {
   LendTransaction,
   WithdrawParams,
 } from '@/types/lend.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 /**
  * Lending provider abstract class
@@ -61,7 +62,7 @@ export abstract class LendProvider<
   async lend(
     asset: Address,
     amount: bigint,
-    chainId: number,
+    chainId: SupportedChainId,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
@@ -81,7 +82,7 @@ export abstract class LendProvider<
   async deposit(
     asset: Address,
     amount: bigint,
-    chainId: number,
+    chainId: SupportedChainId,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
@@ -136,7 +137,7 @@ export abstract class LendProvider<
   async withdraw(
     asset: Address,
     amount: bigint,
-    chainId: number,
+    chainId: SupportedChainId,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
