@@ -260,6 +260,26 @@ export interface WithdrawParams {
 }
 
 /**
+ * Common filter parameters for asset and chain
+ * @description Base interface for filtering by asset and/or chain
+ */
+export interface FilterAssetChain {
+  /** Optional asset to filter by */
+  asset?: Asset
+  /** Optional chain ID to filter by */
+  chainId?: SupportedChainId
+}
+
+/**
+ * Parameters for getting lending markets
+ * @description Parameters for filtering lending markets
+ */
+export interface GetLendMarketsParams extends FilterAssetChain {
+  /** Optional pre-filtered market configs */
+  markets?: LendMarketConfig[]
+}
+
+/**
  * Parameters for getting market balance
  * @description Parameters required for fetching market balance
  */

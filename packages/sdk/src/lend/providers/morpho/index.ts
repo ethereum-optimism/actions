@@ -8,6 +8,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 
 import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS } from '../../../constants/supportedChains.js'
 import type {
+  GetLendMarketsParams,
   GetMarketBalanceParams,
   LendMarket,
   LendMarketBalance,
@@ -161,10 +162,24 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
 
   /**
    * Get list of available lending markets
+   * @param params - Filtering parameters
    * @returns Promise resolving to array of market information
    */
-  protected async _getMarkets(): Promise<LendMarket[]> {
-    return getVaults(this.chainManager, this._config)
+  protected async _getMarkets({
+    asset: _asset,
+    chainId: _chainId,
+    markets,
+  }: GetLendMarketsParams): Promise<LendMarket[]> {
+    // We will eventually fetch markets externally, filtered by Asset and chainId
+    const _unused = { asset: _asset, chainId: _chainId }
+
+    const marketConfigs = markets || []
+
+    return getVaults({
+      chainManager: this.chainManager,
+      lendConfig: this._config,
+      markets: marketConfigs,
+    })
   }
 
   /**

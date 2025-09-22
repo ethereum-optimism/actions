@@ -124,9 +124,11 @@ function findMarketInAllowlist(
  * @param params - Named parameters object
  * @returns Promise resolving to detailed vault information
  */
-export async function getVault(params: GetVaultParams): Promise<LendMarket> {
-  const { marketId, chainManager, lendConfig } = params
-
+export async function getVault({
+  marketId,
+  chainManager,
+  lendConfig,
+}: GetVaultParams): Promise<LendMarket> {
   // Find market configuration in allowlist for metadata
   const marketConfig = lendConfig?.marketAllowlist
     ? findMarketInAllowlist(lendConfig.marketAllowlist, marketId)
@@ -197,19 +199,19 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
   }
 }
 
-/**
- * Get list of available vaults
- * @param chainManager - Chain manager instance
- * @param lendConfig - Lend configuration (includes allowlist and future blocklist)
- * @returns Promise resolving to array of vault information
- */
-export async function getVaults(
-  chainManager: ChainManager,
-  lendConfig: LendConfig,
-): Promise<LendMarket[]> {
+interface GetVaultsParams {
+  chainManager: ChainManager
+  lendConfig: LendConfig
+  markets: LendMarketConfig[]
+}
+
+export async function getVaults({
+  chainManager,
+  lendConfig,
+  markets,
+}: GetVaultsParams): Promise<LendMarket[]> {
   try {
-    const marketAllowlist = lendConfig.marketAllowlist || []
-    const vaultPromises = marketAllowlist.map((marketConfig) => {
+    const vaultPromises = markets.map((marketConfig) => {
       return getVault({
         marketId: {
           address: marketConfig.address,
@@ -219,6 +221,7 @@ export async function getVaults(
         lendConfig,
       })
     })
+
     return await Promise.all(vaultPromises)
   } catch (error) {
     throw new Error(

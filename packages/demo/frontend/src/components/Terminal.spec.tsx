@@ -33,7 +33,7 @@ vi.mock('../api/verbsApi', () => ({
         privyAddress: '0x1234567890123456789012345678901234567890',
         smartWalletAddress: '0x1234567890123456789012345678901234567890',
         userId: 'test-user',
-      })
+      }),
     ),
     getAllWallets: vi.fn(() =>
       Promise.resolve({
@@ -42,7 +42,7 @@ vi.mock('../api/verbsApi', () => ({
           { address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' },
         ],
         count: 2,
-      })
+      }),
     ),
   },
 }))
@@ -55,7 +55,9 @@ describe('Terminal', () => {
     expect(screen.getByText('GitHub')).toBeInTheDocument()
 
     // Check for subtitle
-    expect(screen.getByText('DeFi library for the OP Stack')).toBeInTheDocument()
+    expect(
+      screen.getByText('DeFi library for the OP Stack'),
+    ).toBeInTheDocument()
 
     // Check for help content
     expect(screen.getByText(/Console commands:/)).toBeInTheDocument()
@@ -66,14 +68,14 @@ describe('Terminal', () => {
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
-    
+
     await user.type(input, 'help')
     await user.keyboard('{Enter}')
 
     // Check that help command was executed (should appear twice - once from initial load, once from command)
     const helpCommands = screen.getAllByText('actions: $ help')
     expect(helpCommands).toHaveLength(2)
-    
+
     // Check that help content is displayed (should appear twice - once from initial load, once from command)
     const helpTexts = screen.getAllByText(/Console commands:/)
     expect(helpTexts).toHaveLength(2)
@@ -84,15 +86,19 @@ describe('Terminal', () => {
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
-    
+
     // First verify welcome content is there
-    expect(screen.getByText('DeFi library for the OP Stack')).toBeInTheDocument()
-    
+    expect(
+      screen.getByText('DeFi library for the OP Stack'),
+    ).toBeInTheDocument()
+
     await user.type(input, 'clear')
     await user.keyboard('{Enter}')
 
     // After clear, welcome content should be gone
-    expect(screen.queryByText('Verbs library for the OP Stack')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Verbs library for the OP Stack'),
+    ).not.toBeInTheDocument()
   })
 
   it('handles status command', async () => {
@@ -100,13 +106,13 @@ describe('Terminal', () => {
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
-    
+
     await user.type(input, 'status')
     await user.keyboard('{Enter}')
 
     // Check that status command was executed
     expect(screen.getByText('actions: $ status')).toBeInTheDocument()
-    
+
     // Check for status information
     expect(screen.getByText(/System Status: ONLINE/)).toBeInTheDocument()
     expect(screen.getByText(/SDK Version: v0.0.2/)).toBeInTheDocument()
@@ -117,16 +123,16 @@ describe('Terminal', () => {
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
-    
+
     await user.type(input, 'unknown-command')
     await user.keyboard('{Enter}')
 
     // Check that command was executed
     expect(screen.getByText('actions: $ unknown-command')).toBeInTheDocument()
-    
+
     // Check for error message
     expect(
-      screen.getByText(/Command not found: unknown-command/)
+      screen.getByText(/Command not found: unknown-command/),
     ).toBeInTheDocument()
   })
 
@@ -135,22 +141,20 @@ describe('Terminal', () => {
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
-    
+
     await user.type(input, 'wallet select')
     await user.keyboard('{Enter}')
 
     // Check that command was executed
     expect(screen.getByText('actions: $ wallet select')).toBeInTheDocument()
-    
+
     // Wait for API call to complete
     await waitFor(() => {
       expect(screen.getByText(/Select a wallet:/)).toBeInTheDocument()
     })
 
     // Check that wallet addresses are displayed in shortened format
-    expect(
-      screen.getByText(/0x1234...7890/)
-    ).toBeInTheDocument()
+    expect(screen.getByText(/0x1234...7890/)).toBeInTheDocument()
   })
 
   it('handles wallet create command flow', async () => {
@@ -158,7 +162,7 @@ describe('Terminal', () => {
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
-    
+
     // Start wallet creation
     await user.type(input, 'wallet create')
     await user.keyboard('{Enter}')
@@ -173,12 +177,14 @@ describe('Terminal', () => {
 
     // Wait for wallet creation to complete
     await waitFor(() => {
-      expect(screen.getByText(/Wallet created successfully!/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Wallet created successfully!/),
+      ).toBeInTheDocument()
     })
 
     // Check that wallet details are displayed
     expect(
-      screen.getByText(/Address: 0x1234567890123456789012345678901234567890/)
+      screen.getByText(/Address: 0x1234567890123456789012345678901234567890/),
     ).toBeInTheDocument()
     expect(screen.getByText(/User ID: test-user/)).toBeInTheDocument()
   })
@@ -188,21 +194,21 @@ describe('Terminal', () => {
     render(<Terminal />)
 
     const input = screen.getByRole('textbox')
-    
+
     // Execute a few commands
     await user.type(input, 'help')
     await user.keyboard('{Enter}')
-    
+
     await user.type(input, 'status')
     await user.keyboard('{Enter}')
 
     // Use arrow up to navigate history
     await user.keyboard('{ArrowUp}')
     expect(input).toHaveValue('status')
-    
+
     await user.keyboard('{ArrowUp}')
     expect(input).toHaveValue('help')
-    
+
     // Use arrow down to navigate forward
     await user.keyboard('{ArrowDown}')
     expect(input).toHaveValue('status')
@@ -214,7 +220,7 @@ describe('Terminal', () => {
 
     const input = screen.getByRole('textbox')
     const comingSoonCommands = ['borrow', 'repay', 'swap', 'earn']
-    
+
     for (const command of comingSoonCommands) {
       await user.clear(input)
       await user.type(input, command)
@@ -222,7 +228,7 @@ describe('Terminal', () => {
 
       // Check that command was executed
       expect(screen.getByText(`actions: $ ${command}`)).toBeInTheDocument()
-      
+
       // Check for "Soon.™" message (there will be multiple instances)
       expect(screen.getAllByText('Soon.™').length).toBeGreaterThan(0)
     }

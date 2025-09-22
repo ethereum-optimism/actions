@@ -2,11 +2,16 @@ import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
 import type {
+  GetLendMarketsParams,
+  GetMarketBalanceParams,
   LendConfig,
   LendMarket,
+  LendMarketBalance,
   LendMarketId,
   LendOptions,
+  LendParams,
   LendTransaction,
+  WithdrawParams,
 } from '@/types/lend.js'
 
 import { LendProvider } from '../lend/provider.js'
@@ -43,18 +48,14 @@ export class MockLendProvider extends LendProvider<LendConfig> {
   public getMarket: MockedFunction<
     (marketId: LendMarketId) => Promise<LendMarket>
   >
-  public getMarkets: MockedFunction<() => Promise<LendMarket[]>>
+  public getMarkets: MockedFunction<
+    (params?: GetLendMarketsParams) => Promise<LendMarket[]>
+  >
   public getMarketBalance: MockedFunction<
     (
       marketId: LendMarketId,
       walletAddress: Address,
-    ) => Promise<{
-      balance: bigint
-      balanceFormatted: string
-      shares: bigint
-      sharesFormatted: string
-      chainId: number
-    }>
+    ) => Promise<LendMarketBalance>
   >
   public withdraw: MockedFunction<
     (
@@ -117,13 +118,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     lendResponse?: LendTransaction
     marketResponse?: LendMarket
     marketsResponse?: LendMarket[]
-    balanceResponse?: {
-      balance: bigint
-      balanceFormatted: string
-      shares: bigint
-      sharesFormatted: string
-      chainId: number
-    }
+    balanceResponse?: LendMarketBalance
   }) {
     if (config.lendResponse) {
       this.lend.mockResolvedValue(config.lendResponse)
@@ -173,17 +168,11 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     chainId,
     marketId,
     options,
-  }: {
-    asset: Address
-    amount: bigint
-    chainId: number
-    marketId?: string
-    options?: LendOptions
-  }): Promise<LendTransaction> {
+  }: LendParams): Promise<LendTransaction> {
     return this.createMockLendTransaction(
       asset,
       amount,
-      chainId,
+      chainId as number,
       marketId,
       options,
     )
@@ -193,23 +182,18 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     return this.createMockMarket(marketId)
   }
 
-  protected async _getMarkets(): Promise<LendMarket[]> {
+  protected async _getMarkets({
+    asset: _asset,
+    chainId: _chainId,
+    markets: _markets,
+  }: GetLendMarketsParams): Promise<LendMarket[]> {
     return this.createMockMarkets()
   }
 
   protected async _getMarketBalance({
     marketId,
     walletAddress,
-  }: {
-    marketId: LendMarketId
-    walletAddress: Address
-  }): Promise<{
-    balance: bigint
-    balanceFormatted: string
-    shares: bigint
-    sharesFormatted: string
-    chainId: number
-  }> {
+  }: GetMarketBalanceParams): Promise<LendMarketBalance> {
     return this.createMockBalance(marketId, walletAddress)
   }
 
@@ -219,14 +203,14 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     chainId,
     marketId,
     options,
-  }: {
-    asset: Address
-    amount: bigint
-    chainId: number
-    marketId?: string
-    options?: LendOptions
-  }): Promise<LendTransaction> {
-    return this.createMockWithdraw(asset, amount, chainId, marketId, options)
+  }: WithdrawParams): Promise<LendTransaction> {
+    return this.createMockWithdraw(
+      asset,
+      amount,
+      chainId as number,
+      marketId,
+      options,
+    )
   }
 
   private async createMockLendTransaction(

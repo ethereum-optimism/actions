@@ -4,7 +4,6 @@ import { env } from '../envVars'
 
 // Use Privy for wallet connection
 export function PrivyProvider({ children }: { children: ReactNode }) {
-
   return (
     <BasePrivyProvider
       appId={env.VITE_PRIVY_APP_ID}

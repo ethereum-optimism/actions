@@ -1,11 +1,14 @@
 import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   BaseLendConfig,
+  GetLendMarketsParams,
   GetMarketBalanceParams,
   LendMarket,
   LendMarketBalance,
+  LendMarketConfig,
   LendMarketId,
   LendOptions,
   LendParams,
@@ -103,10 +106,34 @@ export abstract class LendProvider<
 
   /**
    * Get list of available lending markets
+   * @param params - Optional filtering parameters
    * @returns Promise resolving to array of market information
    */
-  async getMarkets(): Promise<LendMarket[]> {
-    return this._getMarkets()
+  async getMarkets({
+    asset,
+    chainId,
+    markets,
+  }: GetLendMarketsParams = {}): Promise<LendMarket[]> {
+    if (chainId !== undefined) this.validateProviderSupported(chainId)
+
+    const filteredMarkets = this.filterMarketConfigs(chainId, asset)
+
+    return this._getMarkets({
+      asset,
+      chainId,
+      markets: markets || filteredMarkets,
+    })
+  }
+
+  private filterMarketConfigs(
+    chainId?: SupportedChainId,
+    asset?: Asset,
+  ): LendMarketConfig[] {
+    let configs = this._config.marketAllowlist || []
+    if (chainId !== undefined)
+      configs = configs.filter((m) => m.chainId === chainId)
+    if (asset !== undefined) configs = configs.filter((m) => m.asset === asset)
+    return configs
   }
 
   /**
@@ -220,7 +247,11 @@ export abstract class LendProvider<
    * Provider implementation of getMarkets method
    * @description Must be implemented by providers
    */
-  protected abstract _getMarkets(): Promise<LendMarket[]>
+  protected abstract _getMarkets({
+    asset,
+    chainId,
+    markets,
+  }: GetLendMarketsParams): Promise<LendMarket[]>
 
   /**
    * Provider implementation of getMarketBalance method

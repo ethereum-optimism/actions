@@ -131,6 +131,25 @@ describe('LendProvider', () => {
       expect(markets[0].name).toBe('Mock Market')
     })
 
+    it('should accept optional filter parameters for getMarkets', async () => {
+      const provider = new MockLendProvider({ provider: 'morpho' })
+      const markets = await provider.getMarkets({ chainId: 84532 })
+
+      expect(Array.isArray(markets)).toBe(true)
+      expect(markets).toHaveLength(1)
+    })
+
+    it('should accept asset filtering parameter', async () => {
+      const provider = new MockLendProvider({ provider: 'morpho' })
+      const mockAsset = {
+        metadata: { symbol: 'USDC', name: 'USD Coin' },
+        address: { 84532: '0x123' as Address },
+      } as any
+
+      const markets = await provider.getMarkets({ asset: mockAsset })
+      expect(Array.isArray(markets)).toBe(true)
+    })
+
     it('should implement getMarketBalance method', async () => {
       const provider = new MockLendProvider({ provider: 'morpho' })
       const balance = await provider.getMarketBalance(
