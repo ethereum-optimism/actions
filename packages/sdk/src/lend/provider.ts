@@ -1,5 +1,6 @@
 import type { Address } from 'viem'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   BaseLendConfig,
   GetMarketBalanceParams,
@@ -11,7 +12,6 @@ import type {
   LendTransaction,
   WithdrawParams,
 } from '@/types/lend.js'
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 /**
  * Lending provider abstract class

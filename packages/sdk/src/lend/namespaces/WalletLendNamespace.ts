@@ -1,5 +1,6 @@
 import type { Address } from 'viem'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import type { LendProvider } from '@/lend/provider.js'
 import type {
@@ -29,7 +30,7 @@ export class WalletLendNamespace<
   async lendExecute(
     asset: Address,
     amount: bigint,
-    chainId: number,
+    chainId: SupportedChainId,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
@@ -48,7 +49,7 @@ export class WalletLendNamespace<
   async deposit(
     asset: Address,
     amount: bigint,
-    chainId: number,
+    chainId: SupportedChainId,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
@@ -61,7 +62,7 @@ export class WalletLendNamespace<
   async withdraw(
     asset: Address,
     amount: bigint,
-    chainId: number,
+    chainId: SupportedChainId,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
