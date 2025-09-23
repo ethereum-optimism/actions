@@ -437,7 +437,7 @@ const Terminal = () => {
         {
           id: 'welcome-8',
           type: 'output',
-          content: '   DeFi library for the OP Stack',
+          content: 'DeFi Library for the OP Stack',
           timestamp: new Date(),
         },
         {
