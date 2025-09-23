@@ -280,6 +280,17 @@ export interface GetLendMarketsParams extends FilterAssetChain {
 }
 
 /**
+ * Parameters for getting a specific lending market
+ * @description Must provide either marketId or marketConfig
+ */
+export interface GetLendMarketParams {
+  /** Market identifier (address and chainId) */
+  marketId?: LendMarketId
+  /** Full market configuration */
+  marketConfig?: LendMarketConfig
+}
+
+/**
  * Parameters for getting market balance
  * @description Parameters required for fetching market balance
  */

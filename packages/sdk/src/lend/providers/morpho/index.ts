@@ -74,8 +74,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
 
       // 2. Get vault information for APY
       const vaultInfo = await this.getMarket({
-        address: selectedVaultAddress,
-        chainId,
+        marketId: { address: selectedVaultAddress, chainId },
       })
 
       // 3. Generate real call data for Morpho deposit

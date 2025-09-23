@@ -93,10 +93,10 @@ vi.mock('./config/verbs.js', () => ({
           },
         ]),
       ),
-      getMarket: vi.fn((marketId: { address: string; chainId: number }) => {
-        if (marketId.address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
+      getMarket: vi.fn((params: { marketId: { address: string; chainId: number } }) => {
+        if (params.marketId.address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
           return Promise.resolve({
-            address: marketId.address,
+            address: params.marketId.address,
             name: 'Gauntlet USDC',
             asset: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
             apy: 0.03,

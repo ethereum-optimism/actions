@@ -116,7 +116,7 @@ describe('LendProvider', () => {
         chainId: 84532,
       }
 
-      const market = await provider.getMarket(marketId)
+      const market = await provider.getMarket({ marketId })
       expect(market.chainId).toBe(84532)
       expect(market.name).toBe('Mock Market')
       expect(market.apy).toBe(0.05)

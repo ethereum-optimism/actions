@@ -34,9 +34,11 @@ describe('VerbsLendNamespace', () => {
     const chainId = 130 as const
     const spy = vi.spyOn(mockProvider, 'getMarket')
 
-    await namespace.getMarket({ address: marketId, chainId })
+    await namespace.getMarket({ marketId: { address: marketId, chainId } })
 
-    expect(spy).toHaveBeenCalledWith({ address: marketId, chainId })
+    expect(spy).toHaveBeenCalledWith({
+      marketId: { address: marketId, chainId },
+    })
   })
 
   it('should delegate getMarketBalance to provider with correct parameters', async () => {

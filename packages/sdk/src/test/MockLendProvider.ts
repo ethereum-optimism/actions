@@ -2,6 +2,7 @@ import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
 import type {
+  GetLendMarketParams,
   GetLendMarketsParams,
   GetMarketBalanceParams,
   LendConfig,
@@ -46,7 +47,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     ) => Promise<LendTransaction>
   >
   public getMarket: MockedFunction<
-    (marketId: LendMarketId) => Promise<LendMarket>
+    (params: GetLendMarketParams) => Promise<LendMarket>
   >
   public getMarkets: MockedFunction<
     (params?: GetLendMarketsParams) => Promise<LendMarket[]>
@@ -99,7 +100,13 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       .mockImplementation(this.createMockLendTransaction.bind(this))
     this.getMarket = vi
       .fn()
-      .mockImplementation(this.createMockMarket.bind(this))
+      .mockImplementation(({ marketId, marketConfig }: GetLendMarketParams) => {
+        const resolvedMarketId = marketId || {
+          address: marketConfig!.address,
+          chainId: marketConfig!.chainId,
+        }
+        return this.createMockMarket(resolvedMarketId)
+      })
     this.getMarkets = vi
       .fn()
       .mockImplementation(this.createMockMarkets.bind(this))
@@ -151,7 +158,15 @@ export class MockLendProvider extends LendProvider<LendConfig> {
   resetMocks() {
     this.lend.mockImplementation(this.createMockLendTransaction.bind(this))
     this.deposit.mockImplementation(this.createMockLendTransaction.bind(this))
-    this.getMarket.mockImplementation(this.createMockMarket.bind(this))
+    this.getMarket.mockImplementation(
+      ({ marketId, marketConfig }: GetLendMarketParams) => {
+        const resolvedMarketId = marketId || {
+          address: marketConfig!.address,
+          chainId: marketConfig!.chainId,
+        }
+        return this.createMockMarket(resolvedMarketId)
+      },
+    )
     this.getMarkets.mockImplementation(this.createMockMarkets.bind(this))
     this.getMarketBalance.mockImplementation(this.createMockBalance.bind(this))
     this.withdraw.mockImplementation(this.createMockWithdraw.bind(this))

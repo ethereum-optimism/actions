@@ -4,6 +4,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   BaseLendConfig,
+  GetLendMarketParams,
   GetLendMarketsParams,
   GetMarketBalanceParams,
   LendMarket,
@@ -94,14 +95,28 @@ export abstract class LendProvider<
 
   /**
    * Get detailed market information
-   * @param marketId - Market identifier containing address and chainId
+   * @param params - Either marketId or marketConfig must be provided
    * @returns Promise resolving to market information
    */
-  async getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    this.validateProviderSupported(marketId.chainId)
-    this.validateConfigSupported(marketId)
+  async getMarket({
+    marketId,
+    marketConfig,
+  }: GetLendMarketParams): Promise<LendMarket> {
+    // Validate that at least one parameter is provided
+    if (!marketId && !marketConfig) {
+      throw new Error('Either marketId or marketConfig must be provided')
+    }
 
-    return this._getMarket(marketId)
+    // If marketConfig is provided, use it to construct marketId
+    const resolvedMarketId: LendMarketId = marketId || {
+      address: marketConfig!.address,
+      chainId: marketConfig!.chainId,
+    }
+
+    this.validateProviderSupported(resolvedMarketId.chainId)
+    this.validateConfigSupported(resolvedMarketId)
+
+    return this._getMarket(resolvedMarketId)
   }
 
   /**

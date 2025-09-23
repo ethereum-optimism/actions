@@ -557,8 +557,7 @@ describe('Verbs SDK', () => {
 
           // This will make an actual network request to fetch vault data
           const vaultInfo = await verbs.lend.getMarket({
-            address: vaultAddress,
-            chainId: 130,
+            marketId: { address: vaultAddress, chainId: 130 },
           })
 
           // Verify the vault info structure
@@ -641,8 +640,7 @@ describe('Verbs SDK', () => {
 
           const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
           const vaultInfo = await verbs.lend.getMarket({
-            address: vaultAddress,
-            chainId: 130,
+            marketId: { address: vaultAddress, chainId: 130 },
           })
 
           expect(vaultInfo).toBeDefined()
@@ -708,6 +706,53 @@ describe('Verbs SDK', () => {
           ).rejects.toThrow(`Vault ${invalidVaultAddress} not found`)
         },
       )
+
+      it.runIf(externalTest())('should get list of vaults', async () => {
+        const verbs = new Verbs(
+          {
+            chains: [
+              {
+                chainId: unichain.id,
+              },
+            ],
+            lend: {
+              provider: 'morpho',
+              defaultSlippage: 50,
+            },
+            wallet: {
+              hostedWalletConfig: {
+                provider: {
+                  type: 'privy',
+                  config: {
+                    privyClient: createMockPrivyClient(
+                      'test-app-id',
+                      'test-app-secret',
+                    ),
+                  },
+                },
+              },
+              smartWalletConfig: {
+                provider: {
+                  type: 'default',
+                },
+              },
+            },
+          },
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
+
+        const invalidVaultAddress =
+          '0x0000000000000000000000000000000000000000'
+
+        await expect(
+          verbs.lend.getMarket({
+            marketId: { address: invalidVaultAddress, chainId: 130 },
+          }),
+        ).rejects.toThrow(`Vault ${invalidVaultAddress} not found`)
+      })
 
       it.runIf(externalTest())('should get list of vaults', async () => {
         const verbs = new Verbs(
