@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { describe, expect, it } from 'vitest'
 
+import { MockUSDCAsset } from '@/test/MockAssets.js'
 import { MockLendProvider } from '@/test/MockLendProvider.js'
 
 import type {
@@ -116,10 +117,26 @@ describe('LendProvider', () => {
         chainId: 84532,
       }
 
-      const market = await provider.getMarket({ marketId })
+      const market = await provider.getMarket(marketId)
       expect(market.chainId).toBe(84532)
       expect(market.name).toBe('Mock Market')
       expect(market.apy).toBe(0.05)
+    })
+
+    it('should accept LendMarketConfig and extract address/chainId', async () => {
+      const provider = new MockLendProvider({ provider: 'morpho' })
+      const mockMarket: LendMarketConfig = {
+        address: '0x5678' as Address,
+        chainId: 84532,
+        name: 'Test Config Market',
+        asset: MockUSDCAsset,
+        lendProvider: 'morpho',
+      }
+
+      const market = await provider.getMarket(mockMarket)
+      expect(market.chainId).toBe(84532)
+      expect(market.address).toBe('0x5678')
+      expect(market.name).toBe('Mock Market')
     })
 
     it('should implement getMarkets method', async () => {

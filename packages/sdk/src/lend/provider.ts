@@ -95,28 +95,19 @@ export abstract class LendProvider<
 
   /**
    * Get detailed market information
-   * @param params - Either marketId or marketConfig must be provided
+   * @param address - Market contract address
+   * @param chainId - Chain ID where the market exists
    * @returns Promise resolving to market information
    */
   async getMarket({
-    marketId,
-    marketConfig,
+    address,
+    chainId,
   }: GetLendMarketParams): Promise<LendMarket> {
-    // Validate that at least one parameter is provided
-    if (!marketId && !marketConfig) {
-      throw new Error('Either marketId or marketConfig must be provided')
-    }
+    const marketId: LendMarketId = { address, chainId }
 
-    // If marketConfig is provided, use it to construct marketId
-    const resolvedMarketId: LendMarketId = marketId || {
-      address: marketConfig!.address,
-      chainId: marketConfig!.chainId,
-    }
-
-    this.validateProviderSupported(resolvedMarketId.chainId)
-    this.validateConfigSupported(resolvedMarketId)
-
-    return this._getMarket(resolvedMarketId)
+    this.validateProviderSupported(chainId)
+    this.validateConfigSupported(marketId)
+    return this._getMarket(marketId)
   }
 
   /**

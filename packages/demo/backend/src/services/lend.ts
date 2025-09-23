@@ -57,9 +57,7 @@ export async function getMarket(
   chainId: SupportedChainId,
 ): Promise<LendMarket> {
   const verbs = getVerbs()
-  return await verbs.lend.getMarket({
-    marketId: { address: marketId, chainId },
-  })
+  return await verbs.lend.getMarket({ address: marketId, chainId })
 }
 
 export async function getMarketBalance(

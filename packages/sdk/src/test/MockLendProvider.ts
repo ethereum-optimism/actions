@@ -100,12 +100,8 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       .mockImplementation(this.createMockLendTransaction.bind(this))
     this.getMarket = vi
       .fn()
-      .mockImplementation(({ marketId, marketConfig }: GetLendMarketParams) => {
-        const resolvedMarketId = marketId || {
-          address: marketConfig!.address,
-          chainId: marketConfig!.chainId,
-        }
-        return this.createMockMarket(resolvedMarketId)
+      .mockImplementation(({ address, chainId }: GetLendMarketParams) => {
+        return this.createMockMarket({ address, chainId })
       })
     this.getMarkets = vi
       .fn()
@@ -159,12 +155,8 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     this.lend.mockImplementation(this.createMockLendTransaction.bind(this))
     this.deposit.mockImplementation(this.createMockLendTransaction.bind(this))
     this.getMarket.mockImplementation(
-      ({ marketId, marketConfig }: GetLendMarketParams) => {
-        const resolvedMarketId = marketId || {
-          address: marketConfig!.address,
-          chainId: marketConfig!.chainId,
-        }
-        return this.createMockMarket(resolvedMarketId)
+      ({ address, chainId }: GetLendMarketParams) => {
+        return this.createMockMarket({ address, chainId })
       },
     )
     this.getMarkets.mockImplementation(this.createMockMarkets.bind(this))

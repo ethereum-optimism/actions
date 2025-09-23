@@ -17,10 +17,10 @@ export type LendMarketId = {
 }
 
 /**
- * Lending market configuration
- * @description Configuration for a lending market including asset information and provider
+ * Lending market metadata
+ * @description Additional configuration properties for a lending market
  */
-export interface LendMarketConfig extends LendMarketId {
+export type LendMarketMetadata = {
   /** Human-readable name for the market */
   name: string
   /** Asset information for this market */
@@ -28,6 +28,18 @@ export interface LendMarketConfig extends LendMarketId {
   /** Lending provider type */
   lendProvider: 'morpho'
 }
+
+/**
+ * Lending market configuration
+ * @description Configuration for a lending market including asset information and provider
+ */
+export type LendMarketConfig = LendMarketId & LendMarketMetadata
+
+/**
+ * Parameters for getting a specific lending market
+ * @description Requires market identifier (address and chainId)
+ */
+export type GetLendMarketParams = LendMarketId
 
 /**
  * Transaction data for execution
@@ -277,17 +289,6 @@ export interface FilterAssetChain {
 export interface GetLendMarketsParams extends FilterAssetChain {
   /** Optional pre-filtered market configs */
   markets?: LendMarketConfig[]
-}
-
-/**
- * Parameters for getting a specific lending market
- * @description Must provide either marketId or marketConfig
- */
-export interface GetLendMarketParams {
-  /** Market identifier (address and chainId) */
-  marketId?: LendMarketId
-  /** Full market configuration */
-  marketConfig?: LendMarketConfig
 }
 
 /**

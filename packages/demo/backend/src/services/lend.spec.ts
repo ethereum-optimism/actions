@@ -91,7 +91,8 @@ describe('Lend Service', () => {
 
       expect(result).toEqual(mockMarketInfo)
       expect(mockLendProvider.getMarket).toHaveBeenCalledWith({
-        marketId: { address: marketId, chainId },
+        address: marketId,
+        chainId,
       })
     })
 
