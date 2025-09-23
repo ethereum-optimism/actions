@@ -8,7 +8,6 @@ import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
 import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import { MockUSDCAsset } from '@/test/MockAssets.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
@@ -258,42 +257,6 @@ describe('DefaultSmartWallet', () => {
     await expect(
       createAndInitDefaultSmartWallet({ attributionSuffix: tooLong }),
     ).rejects.toThrow('Attribution suffix must be 16 bytes (0x + 32 hex chars)')
-  })
-
-  it('should lend assets using lendExecute method', async () => {
-    // Configure mock to return transaction with hash
-    mockLendProvider.configureMock({
-      lendResponse: {
-        amount: 100000000n,
-        asset: MockUSDCAsset.address[unichain.id] as Address,
-        marketId: 'test-market',
-        apy: 0.05,
-        timestamp: Date.now(),
-        hash: '0xabc',
-        transactionData: {
-          deposit: {
-            to: '0x123' as Address,
-            data: '0x' as Hex,
-            value: 0n,
-          },
-        },
-      },
-    })
-
-    const wallet = await createAndInitDefaultSmartWallet({
-      deploymentAddress: '0x123' as Address,
-    })
-
-    const result = await wallet.lendExecute(
-      100,
-      MockUSDCAsset,
-      unichain.id,
-      'test-market',
-    )
-
-    expect(mockLendProvider.deposit).toHaveBeenCalled()
-    expect(result.hash).toBe('0xabc')
-    expect(result.amount).toBe(100000000n) // 100 USDC with 6 decimals
   })
 })
 

@@ -238,6 +238,21 @@ export interface LendMarketBalance {
 }
 
 /**
+ * Parameters for opening a lending position
+ * @description Parameters required for opening a lending position
+ */
+export interface LendOpenPositionParams {
+  /** Amount to lend (human-readable number) */
+  amount: number
+  /** Asset to lend */
+  asset: Asset
+  /** Market identifier containing address and chainId */
+  marketId: LendMarketId
+  /** Optional lending configuration */
+  options?: LendOptions
+}
+
+/**
  * Parameters for lend operation
  * @description Parameters required for lending assets
  */

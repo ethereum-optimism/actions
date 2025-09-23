@@ -5,7 +5,7 @@ import {
   type SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
-import type { Address } from 'viem'
+import type { Address, Hash } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
@@ -113,12 +113,13 @@ export async function formatMarketBalanceResponse(
   }
 }
 
-export async function depositWithUserWallet(
+export async function openPositionWithUserWallet(
   userId: string,
   amount: number,
   tokenAddress: Address,
   chainId: SupportedChainId,
-): Promise<LendTransaction> {
+  vaultAddress: Address,
+): Promise<Hash> {
   const wallet = await getUserWallet(userId)
 
   if (!wallet) {
@@ -132,21 +133,27 @@ export async function depositWithUserWallet(
     throw new Error(`Asset not found for token address: ${tokenAddress}`)
   }
 
-  if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
-    return await wallet.lendExecute(amount, asset, chainId)
-  } else {
-    throw new Error(
-      'Lend functionality not yet implemented for this wallet type.',
-    )
+  // Note: wallet.lend.openPosition would be the correct path
+  // but requires wallet.lend to be initialized
+  if (!wallet.lend) {
+    throw new Error('Lend functionality not configured for this wallet')
   }
+
+  return await wallet.lend.openPosition({
+    amount,
+    asset,
+    marketId: { address: vaultAddress, chainId },
+  })
 }
 
-export async function deposit(
+
+export async function openPosition(
   walletId: string,
   amount: number,
   tokenAddress: Address,
   chainId: SupportedChainId,
-): Promise<LendTransaction> {
+  vaultAddress: Address,
+): Promise<Hash> {
   const wallet = await getWallet(walletId)
 
   if (!wallet) {
@@ -160,14 +167,19 @@ export async function deposit(
     throw new Error(`Asset not found for token address: ${tokenAddress}`)
   }
 
-  if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
-    return await wallet.lendExecute(amount, asset, chainId)
-  } else {
-    throw new Error(
-      'Lend functionality not yet implemented for this wallet type.',
-    )
+  // Note: wallet.lend.openPosition would be the correct path
+  // but requires wallet.lend to be initialized
+  if (!wallet.lend) {
+    throw new Error('Lend functionality not configured for this wallet')
   }
+
+  return await wallet.lend.openPosition({
+    amount,
+    asset,
+    marketId: { address: vaultAddress, chainId },
+  })
 }
+
 
 export async function executeLendTransactionWithUserWallet(
   userId: string,

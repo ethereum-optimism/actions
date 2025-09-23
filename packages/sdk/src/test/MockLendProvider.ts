@@ -9,8 +9,8 @@ import type {
   LendMarket,
   LendMarketBalance,
   LendMarketId,
+  LendOpenPositionParams,
   LendOptions,
-  LendParams,
   LendTransaction,
   WithdrawParams,
 } from '@/types/lend.js'
@@ -28,23 +28,8 @@ export interface MockLendProviderConfig {
  * @description Provides a mock implementation of LendProvider following MockChainManager pattern
  */
 export class MockLendProvider extends LendProvider<LendConfig> {
-  public lend: MockedFunction<
-    (
-      asset: Address,
-      amount: bigint,
-      chainId: number,
-      marketId?: string,
-      options?: LendOptions,
-    ) => Promise<LendTransaction>
-  >
-  public deposit: MockedFunction<
-    (
-      asset: Address,
-      amount: bigint,
-      chainId: number,
-      marketId?: string,
-      options?: LendOptions,
-    ) => Promise<LendTransaction>
+  public openPosition: MockedFunction<
+    (params: LendOpenPositionParams) => Promise<LendTransaction>
   >
   public getMarket: MockedFunction<
     (params: GetLendMarketParams) => Promise<LendMarket>
@@ -92,12 +77,9 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     }
 
     // Create mocked functions with default implementations
-    this.lend = vi
+    this.openPosition = vi
       .fn()
-      .mockImplementation(this.createMockLendTransaction.bind(this))
-    this.deposit = vi
-      .fn()
-      .mockImplementation(this.createMockLendTransaction.bind(this))
+      .mockImplementation(this.createMockOpenPosition.bind(this))
     this.getMarket = vi
       .fn()
       .mockImplementation(({ address, chainId }: GetLendMarketParams) => {
@@ -118,14 +100,13 @@ export class MockLendProvider extends LendProvider<LendConfig> {
    * Helper method to configure mock responses
    */
   configureMock(config: {
-    lendResponse?: LendTransaction
+    openPositionResponse?: LendTransaction
     marketResponse?: LendMarket
     marketsResponse?: LendMarket[]
     balanceResponse?: LendMarketBalance
   }) {
-    if (config.lendResponse) {
-      this.lend.mockResolvedValue(config.lendResponse)
-      this.deposit.mockResolvedValue(config.lendResponse)
+    if (config.openPositionResponse) {
+      this.openPosition.mockResolvedValue(config.openPositionResponse)
     }
     if (config.marketResponse) {
       this.getMarket.mockResolvedValue(config.marketResponse)
@@ -152,8 +133,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
    * Reset all mocks to their default implementations
    */
   resetMocks() {
-    this.lend.mockImplementation(this.createMockLendTransaction.bind(this))
-    this.deposit.mockImplementation(this.createMockLendTransaction.bind(this))
+    this.openPosition.mockImplementation(this.createMockOpenPosition.bind(this))
     this.getMarket.mockImplementation(
       ({ address, chainId }: GetLendMarketParams) => {
         return this.createMockMarket({ address, chainId })
@@ -169,20 +149,13 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     this.resetMocks()
   }
 
-  protected async _lend({
-    asset,
+  protected async _openPosition({
     amount,
-    chainId,
+    asset,
     marketId,
     options,
-  }: LendParams): Promise<LendTransaction> {
-    return this.createMockLendTransaction(
-      asset,
-      amount,
-      chainId as number,
-      marketId,
-      options,
-    )
+  }: LendOpenPositionParams): Promise<LendTransaction> {
+    return this.createMockOpenPosition({ amount, asset, marketId, options })
   }
 
   protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
@@ -220,30 +193,36 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     )
   }
 
-  private async createMockLendTransaction(
-    asset: Address,
-    amount: bigint,
-    chainId: number,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
+  private async createMockOpenPosition({
+    amount,
+    asset,
+    marketId,
+    options,
+  }: LendOpenPositionParams): Promise<LendTransaction> {
+    // Get asset address for the chain
+    const assetAddress = asset.address[marketId.chainId]
+    if (!assetAddress) {
+      throw new Error(`Asset not supported on chain ${marketId.chainId}`)
+    }
+
+    // Convert human-readable amount to wei (mock conversion)
+    const amountWei = BigInt(Math.floor(amount * 10 ** asset.metadata.decimals))
+
     return {
-      amount,
-      asset,
-      marketId: marketId || 'mock-market',
+      amount: amountWei,
+      asset: assetAddress,
+      marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
       timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         approval: {
-          to: asset,
+          to: assetAddress,
           data: '0x095ea7b3' as Address,
           value: 0n,
         },
         deposit: {
-          to:
-            (marketId as Address) ||
-            ('0x1234567890123456789012345678901234567890' as Address),
+          to: marketId.address,
           data: '0x6e553f65' as Address,
           value: 0n,
         },

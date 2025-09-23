@@ -1,7 +1,6 @@
 import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import type { Address } from 'viem'
-import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
+import { encodeFunctionData, erc20Abi, formatUnits, parseUnits } from 'viem'
 
 import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -13,13 +12,13 @@ import type {
   LendMarket,
   LendMarketBalance,
   LendMarketId,
-  LendParams,
+  LendOpenPositionParams,
   LendTransaction,
   MorphoLendConfig,
   WithdrawParams,
 } from '../../../types/lend.js'
 import { LendProvider } from '../../provider.js'
-import { findBestVaultForAsset, getVault, getVaults } from './sdk.js'
+import { getVault, getVaults } from './sdk.js'
 
 /**
  * Supported chain IDs for Morpho lending
@@ -54,65 +53,68 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   }
 
   /**
-   * Lend assets to a Morpho market
-   * @description Supplies assets to a Morpho market using MetaMorpho deposit operation
-   * @param params - Lending operation parameters
+   * Open a lending position in a Morpho market
+   * @description Opens a lending position by supplying assets to a Morpho market
+   * @param params - Position opening parameters
    * @returns Promise resolving to lending transaction details
    */
-  protected async _lend({
-    asset,
+  protected async _openPosition({
     amount,
-    chainId,
+    asset,
     marketId,
     options,
-  }: LendParams): Promise<LendTransaction> {
+  }: LendOpenPositionParams): Promise<LendTransaction> {
     try {
-      // 1. Find suitable vault if marketId not provided
-      const selectedVaultAddress =
-        (marketId as Address) ||
-        (await findBestVaultForAsset(asset, this._config.marketAllowlist || []))
+      // Get asset address for the chain
+      const assetAddress = asset.address[marketId.chainId]
+      if (!assetAddress) {
+        throw new Error(`Asset not supported on chain ${marketId.chainId}`)
+      }
 
-      // 2. Get vault information for APY
+      // Convert human-readable amount to wei using the asset's decimals
+      const amountWei = parseUnits(amount.toString(), asset.metadata.decimals)
+
+      // Get vault information for APY
       const vaultInfo = await this.getMarket({
-        address: selectedVaultAddress,
-        chainId,
+        address: marketId.address,
+        chainId: marketId.chainId,
       })
 
-      // 3. Generate real call data for Morpho deposit
+      // Generate real call data for Morpho deposit
       const receiver = options?.receiver
       if (!receiver) {
         throw new Error(
           'Receiver address is required for Morpho deposit operation',
         )
       }
-      const depositCallData = MetaMorphoAction.deposit(amount, receiver)
+      const depositCallData = MetaMorphoAction.deposit(amountWei, receiver)
 
-      // 4. Create approval transaction data for USDC if needed
+      // Create approval transaction data if needed
       const approvalCallData = encodeFunctionData({
         abi: erc20Abi,
         functionName: 'approve',
-        args: [selectedVaultAddress, amount],
+        args: [marketId.address, amountWei],
       })
 
-      // 5. Return transaction details with real call data
+      // Return transaction details with real call data
       const currentTimestamp = Math.floor(Date.now() / 1000)
 
       return {
-        amount,
-        asset,
-        marketId: selectedVaultAddress,
+        amount: amountWei,
+        asset: assetAddress,
+        marketId: marketId.address,
         apy: vaultInfo.apy,
         timestamp: currentTimestamp,
         transactionData: {
           // Approval transaction
           approval: {
-            to: asset,
+            to: assetAddress,
             data: approvalCallData,
             value: 0n,
           },
           // Deposit transaction
           deposit: {
-            to: selectedVaultAddress,
+            to: marketId.address,
             data: depositCallData,
             value: 0n,
           },
@@ -121,7 +123,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
       }
     } catch (error) {
       throw new Error(
-        `Failed to lend ${amount} of ${asset}: ${
+        `Failed to open position with ${amount} of ${asset.metadata.symbol}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       )

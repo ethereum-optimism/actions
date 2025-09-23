@@ -83,33 +83,6 @@ describe('LendProvider', () => {
   })
 
   describe('abstract methods implementation', () => {
-    it('should implement lend method', async () => {
-      const provider = new MockLendProvider({ provider: 'morpho' })
-      const result = await provider.lend(
-        '0x0000000000000000000000000000000000000001' as Address,
-        1000n,
-        84532,
-        'market-1',
-        { slippage: 150 },
-      )
-
-      expect(result.amount).toBe(1000n)
-      expect(result.marketId).toBe('market-1')
-      expect(result.slippage).toBe(150)
-    })
-
-    it('should implement deposit method (alias for lend)', async () => {
-      const provider = new MockLendProvider({ provider: 'morpho' })
-      const result = await provider.deposit(
-        '0x0000000000000000000000000000000000000001' as Address,
-        2000n,
-        84532,
-      )
-
-      expect(result.amount).toBe(2000n)
-      expect(result.marketId).toBe('mock-market')
-    })
-
     it('should implement getMarket method', async () => {
       const provider = new MockLendProvider({ provider: 'morpho' })
       const marketId: LendMarketId = {
@@ -190,6 +163,26 @@ describe('LendProvider', () => {
 
       expect(result.amount).toBe(500n)
       expect(result.marketId).toBe('market-2')
+    })
+
+    it('should implement openPosition method', async () => {
+      const provider = new MockLendProvider({ provider: 'morpho' })
+      const mockAsset = {
+        address: { 84532: '0x123' as Address },
+        metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+        type: 'erc20' as const,
+      }
+
+      const result = await provider.openPosition({
+        amount: 1000,
+        asset: mockAsset,
+        marketId: { address: '0x1234' as Address, chainId: 84532 },
+      })
+
+      expect(result.amount).toBe(1000000000n) // 1000 * 10^6 decimals
+      expect(result.asset).toBe('0x123')
+      expect(result.marketId).toBe('0x1234')
+      expect(result.apy).toBe(0.05)
     })
   })
 

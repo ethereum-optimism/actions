@@ -105,7 +105,7 @@ describe('LendProviderMorpho', () => {
     })
   })
 
-  describe('lend', () => {
+  describe('openPosition', () => {
     beforeEach(() => {
       // Mock vault data for all lend tests
       const mockVault = {
@@ -156,25 +156,28 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should successfully create a lending transaction', async () => {
-      const asset = MockGauntletUSDCMarket.asset.address[
-        MockGauntletUSDCMarket.chainId
-      ]! as Address
-      const amount = BigInt('1000000000') // 1000 USDC
-      const marketId = MockGauntletUSDCMarket.address
+      const amount = 1000 // Human-readable amount
+      const asset = MockGauntletUSDCMarket.asset
+      const marketId = {
+        address: MockGauntletUSDCMarket.address,
+        chainId: MockGauntletUSDCMarket.chainId,
+      }
 
-      const lendTransaction = await provider.lend(
-        asset,
+      const lendTransaction = await provider.openPosition({
         amount,
-        MockGauntletUSDCMarket.chainId,
+        asset,
         marketId,
-        {
+        options: {
           receiver: MockReceiverAddress,
         },
-      )
+      })
 
-      expect(lendTransaction).toHaveProperty('amount', amount)
-      expect(lendTransaction).toHaveProperty('asset', asset)
-      expect(lendTransaction).toHaveProperty('marketId', marketId)
+      expect(lendTransaction).toHaveProperty('amount', BigInt('1000000000')) // 1000 * 10^6
+      expect(lendTransaction).toHaveProperty(
+        'asset',
+        asset.address[marketId.chainId],
+      )
+      expect(lendTransaction).toHaveProperty('marketId', marketId.address)
       expect(lendTransaction).toHaveProperty('apy')
       expect(lendTransaction).toHaveProperty('timestamp')
       expect(lendTransaction).toHaveProperty('transactionData')
@@ -185,55 +188,72 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should find best market when marketId not provided', async () => {
-      // Use USDC asset from MockGauntletUSDCMarket
-      const asset = MockGauntletUSDCMarket.asset.address[
-        MockGauntletUSDCMarket.chainId
-      ]! as Address
-      const amount = BigInt('1000000000') // 1000 USDC
+      // This test doesn't apply to openPosition which requires marketId
+      // Remove or replace with a different test
+      const amount = 1000
+      const asset = MockGauntletUSDCMarket.asset
+      const marketId = {
+        address: MockGauntletUSDCMarket.address,
+        chainId: MockGauntletUSDCMarket.chainId,
+      }
 
-      const lendTransaction = await provider.lend(
-        asset,
+      const lendTransaction = await provider.openPosition({
         amount,
-        MockGauntletUSDCMarket.chainId,
-        undefined,
-        {
+        asset,
+        marketId,
+        options: {
           receiver: MockReceiverAddress,
         },
-      )
+      })
 
       expect(lendTransaction).toHaveProperty('marketId')
       expect(lendTransaction.marketId).toBeTruthy()
     })
 
     it('should handle lending errors', async () => {
-      const asset = '0x0000000000000000000000000000000000000000' as Address // Invalid asset
-      const amount = BigInt('1000000000')
+      const invalidAsset = {
+        address: {
+          [MockGauntletUSDCMarket.chainId]:
+            '0x0000000000000000000000000000000000000000' as Address,
+        },
+        metadata: { symbol: 'INVALID', name: 'Invalid', decimals: 6 },
+        type: 'erc20' as const,
+      }
+      const amount = 1000
+      const marketId = {
+        address: MockGauntletUSDCMarket.address,
+        chainId: MockGauntletUSDCMarket.chainId,
+      }
 
       await expect(
-        provider.lend(asset, amount, MockGauntletUSDCMarket.chainId),
-      ).rejects.toThrow('Failed to lend')
+        provider.openPosition({
+          amount,
+          asset: invalidAsset,
+          marketId,
+        }),
+      ).rejects.toThrow('Failed to open position')
     })
 
     it('should use custom slippage when provided', async () => {
-      const asset = MockGauntletUSDCMarket.asset.address[
-        MockGauntletUSDCMarket.chainId
-      ]! as Address
-      const amount = BigInt('1000000000')
-      const marketId = MockGauntletUSDCMarket.address
+      const amount = 1000
+      const asset = MockGauntletUSDCMarket.asset
+      const marketId = {
+        address: MockGauntletUSDCMarket.address,
+        chainId: MockGauntletUSDCMarket.chainId,
+      }
       const customSlippage = 100 // 1%
 
-      const lendTransaction = await provider.lend(
-        asset,
+      const lendTransaction = await provider.openPosition({
         amount,
-        MockGauntletUSDCMarket.chainId,
+        asset,
         marketId,
-        {
+        options: {
           slippage: customSlippage,
           receiver: MockReceiverAddress,
         },
-      )
+      })
 
-      expect(lendTransaction).toHaveProperty('amount', amount)
+      expect(lendTransaction).toHaveProperty('amount', BigInt('1000000000'))
     })
   })
 

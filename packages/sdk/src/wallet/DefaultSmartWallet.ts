@@ -9,13 +9,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
-import type {
-  LendConfig,
-  LendOptions,
-  LendProvider,
-  LendTransaction,
-  TransactionData,
-} from '@/types/lend.js'
+import type { LendConfig, LendProvider, TransactionData } from '@/types/lend.js'
 import { parseAssetAmount } from '@/utils/assets.js'
 import { SmartWallet } from '@/wallet/base/SmartWallet.js'
 
@@ -140,63 +134,6 @@ export class DefaultSmartWallet extends SmartWallet {
       nonce: this.nonce,
       version: '1.1',
     })
-  }
-
-  /**
-   * Lend assets to a lending market
-   * this will be replaced with lend.execute()
-   * @description Lends assets using the configured lending provider with human-readable amounts
-   * @param amount - Human-readable amount to lend (e.g. 1.5)
-   * @param asset - Asset symbol (e.g. 'usdc') or token address
-   * @param chainId - Target blockchain chain ID
-   * @param marketId - Optional specific market ID or vault name
-   * @param options - Optional lending configuration
-   * @returns Promise resolving to lending transaction details
-   * @throws Error if no lending provider is configured
-   * @todo Replace this with lend.execute()
-   */
-  async lendExecute(
-    amount: number,
-    asset: Asset,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    // Validate amount
-    if (amount <= 0) {
-      throw new Error('Amount must be greater than 0')
-    }
-
-    // Check if asset is supported on the chain
-    const tokenAddress = asset.address[chainId]
-    if (!tokenAddress) {
-      throw new Error(
-        `${asset.metadata.symbol} not supported on chain ${chainId}`,
-      )
-    }
-
-    // Parse human-readable amount
-    const parsedAmount = parseAssetAmount(amount, asset.metadata.decimals)
-
-    // Set receiver to wallet address if not specified
-    const lendOptions: LendOptions = {
-      ...options,
-      receiver: options?.receiver || this.address,
-    }
-
-    if (!this.lendProvider) {
-      throw new Error('Lending provider not configured')
-    }
-
-    const result = await this.lendProvider.deposit(
-      tokenAddress,
-      parsedAmount,
-      chainId,
-      marketId,
-      lendOptions,
-    )
-
-    return result
   }
 
   /**

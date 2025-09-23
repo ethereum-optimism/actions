@@ -11,8 +11,8 @@ import type {
   LendMarketBalance,
   LendMarketConfig,
   LendMarketId,
+  LendOpenPositionParams,
   LendOptions,
-  LendParams,
   LendTransaction,
   WithdrawParams,
 } from '@/types/lend.js'
@@ -55,42 +55,22 @@ export abstract class LendProvider<
   }
 
   /**
-   * Lend/supply assets to a market
-   * @param asset - Asset token address to lend
-   * @param amount - Amount to lend (in wei)
-   * @param chainId - Chain ID for the transaction
-   * @param marketId - Optional specific market ID
+   * Open a lending position
+   * @param amount - Amount to lend (human-readable number)
+   * @param asset - Asset to lend
+   * @param marketId - Market identifier containing address and chainId
    * @param options - Optional lending configuration
    * @returns Promise resolving to lending transaction details
    */
-  async lend(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    this.validateProviderSupported(chainId)
-    return this._lend({ asset, amount, chainId, marketId, options })
-  }
-
-  /**
-   * Deposit assets to a market (alias for lend)
-   * @param asset - Asset token address to deposit
-   * @param amount - Amount to deposit (in wei)
-   * @param chainId - Chain ID for the transaction
-   * @param marketId - Optional specific market ID
-   * @param options - Optional deposit configuration
-   * @returns Promise resolving to deposit transaction details
-   */
-  async deposit(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    return this.lend(asset, amount, chainId, marketId, options)
+  async openPosition({
+    amount,
+    asset,
+    marketId,
+    options,
+  }: LendOpenPositionParams): Promise<LendTransaction> {
+    this.validateProviderSupported(marketId.chainId)
+    this.validateConfigSupported(marketId)
+    return this._openPosition({ amount, asset, marketId, options })
   }
 
   /**
@@ -232,16 +212,15 @@ export abstract class LendProvider<
    */
 
   /**
-   * Provider implementation of lend method
+   * Provider implementation of openPosition method
    * @description Must be implemented by providers
    */
-  protected abstract _lend({
-    asset,
+  protected abstract _openPosition({
     amount,
-    chainId,
+    asset,
     marketId,
     options,
-  }: LendParams): Promise<LendTransaction>
+  }: LendOpenPositionParams): Promise<LendTransaction>
 
   /**
    * Provider implementation of getMarket method
