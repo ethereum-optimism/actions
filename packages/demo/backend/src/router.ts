@@ -60,4 +60,4 @@ router.get(
   '/lend/market/:vaultAddress/balance/:walletId',
   lendController.getMarketBalance,
 )
-router.post('/lend/deposit', authMiddleware, lendController.deposit)
+router.post('/lend/open-position', authMiddleware, lendController.openPosition)

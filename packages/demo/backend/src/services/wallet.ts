@@ -48,12 +48,12 @@ export async function createWallet(): Promise<{
   }
 }
 
-export async function getWallet(userId: string): Promise<SmartWallet | null> {
+export async function getWallet(walletId: string): Promise<SmartWallet | null> {
   const verbs = getVerbs()
   const privyClient = getPrivyClient()
   const privyWallet = await privyClient.walletApi
     .getWallet({
-      id: userId,
+      id: walletId,
     })
     .catch(() => null)
   if (!privyWallet) {
@@ -122,8 +122,8 @@ export async function getAllWallets(
   }
 }
 
-export async function getBalance(userId: string): Promise<TokenBalance[]> {
-  const wallet = await getWallet(userId)
+export async function getBalance(walletId: string): Promise<TokenBalance[]> {
+  const wallet = await getWallet(walletId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }

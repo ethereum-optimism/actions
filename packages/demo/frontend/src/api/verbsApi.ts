@@ -200,39 +200,26 @@ class VerbsApiClient {
     })
   }
 
-  async lendDeposit(
+  async openLendPosition(
     walletId: string,
     amount: number,
     tokenAddress: Address,
     chainId: number,
+    vaultAddress: Address,
     headers: HeadersInit = {},
   ): Promise<{
     transaction: {
-      blockExplorerUrl: string
       hash: string
-      amount: string
-      asset: string
-      marketId: string
-      apy: number
-      timestamp: number
-      slippage: number
-      transactionData: {
-        approval?: {
-          to: string
-          data: string
-          value: string
-        }
-        deposit: {
-          to: string
-          data: string
-          value: string
-        }
-      }
+      blockExplorerUrl: string
+      amount: number
+      tokenAddress: string
+      chainId: number
+      vaultAddress: string
     }
   }> {
-    return this.request('/lend/deposit', {
+    return this.request('/lend/open-position', {
       method: 'POST',
-      body: JSON.stringify({ walletId, amount, tokenAddress, chainId }),
+      body: JSON.stringify({ walletId, amount, tokenAddress, chainId, vaultAddress }),
       headers,
     })
   }

@@ -1,27 +1,36 @@
+import type { Hash } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider } from '@/types/lend.js'
+import type { LendProvider, TransactionData } from '@/types/lend.js'
+import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
 
 import { WalletLendNamespace } from './WalletLendNamespace.js'
 
 describe('WalletLendNamespace', () => {
   const mockWalletAddress = getRandomAddress()
   let mockProvider: LendProvider
+  let mockWallet: SmartWallet
 
   beforeEach(() => {
     mockProvider = createMockLendProvider()
+    // Create a mock wallet with send and sendBatch methods
+    mockWallet = {
+      address: mockWalletAddress,
+      send: vi.fn().mockResolvedValue('0xmockhash' as Hash),
+      sendBatch: vi.fn().mockResolvedValue('0xmockbatchhash' as Hash),
+    } as unknown as SmartWallet
   })
 
-  it('should create an instance with a lend provider and wallet address', () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
+  it('should create an instance with a lend provider and wallet', () => {
+    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
 
     expect(namespace).toBeInstanceOf(WalletLendNamespace)
   })
 
   it('should inherit read operations from VerbsLendNamespace', async () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
+    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
     const mockMarkets = [
       {
         chainId: 130,
@@ -54,7 +63,7 @@ describe('WalletLendNamespace', () => {
 
   describe('openPosition', () => {
     it('should call provider openPosition with wallet address as receiver', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
+      const namespace = new WalletLendNamespace(mockProvider, mockWallet)
       const mockAsset = {
         address: { 130: getRandomAddress() },
         metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
@@ -80,14 +89,14 @@ describe('WalletLendNamespace', () => {
 
       vi.mocked(mockProvider.openPosition).mockResolvedValue(mockTransaction)
 
-      // Currently throws as execution not implemented
-      await expect(
-        namespace.openPosition({
-          amount,
-          asset: mockAsset,
-          marketId,
-        }),
-      ).rejects.toThrow('Transaction execution not yet implemented')
+      // Should now execute the transaction
+      const result = await namespace.openPosition({
+        amount,
+        asset: mockAsset,
+        marketId,
+      })
+
+      expect(result).toBe('0xmockhash')
 
       expect(mockProvider.openPosition).toHaveBeenCalledWith({
         amount,
@@ -102,7 +111,7 @@ describe('WalletLendNamespace', () => {
 
   describe('withdraw', () => {
     it('should call provider withdraw with wallet address as receiver', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
+      const namespace = new WalletLendNamespace(mockProvider, mockWallet)
       const asset = getRandomAddress()
       const amount = BigInt('500000')
       const marketId = 'test-market'
@@ -138,8 +147,8 @@ describe('WalletLendNamespace', () => {
       expect(result).toBe(mockTransaction)
     })
 
-    it('should preserve custom receiver in options', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
+    it('should always use wallet address as receiver, ignoring custom receiver', async () => {
+      const namespace = new WalletLendNamespace(mockProvider, mockWallet)
       const asset = getRandomAddress()
       const amount = BigInt('500000')
       const customReceiver = getRandomAddress()
@@ -152,14 +161,58 @@ describe('WalletLendNamespace', () => {
         amount,
         130,
         undefined,
-        options,
+        {
+          receiver: mockWalletAddress, // Should always be wallet address
+          slippage: 200,
+        },
       )
     })
   })
 
-  it('should store the wallet address', () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
+  it('should store the wallet reference', () => {
+    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
 
-    expect(namespace['address']).toBe(mockWalletAddress)
+    expect(namespace['wallet']).toBe(mockWallet)
+    expect(namespace['wallet'].address).toBe(mockWalletAddress)
+  })
+
+  it('should execute transaction with approval when present', async () => {
+    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+    const mockAsset = {
+      address: { 130: getRandomAddress() },
+      metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+      type: 'erc20' as const,
+    }
+    const marketId = { address: getRandomAddress(), chainId: 130 as const }
+    const approval: TransactionData = {
+      to: mockAsset.address[130],
+      value: 0n,
+      data: '0xapproval' as const,
+    }
+    const deposit: TransactionData = {
+      to: marketId.address,
+      value: 0n,
+      data: '0xdeposit' as const,
+    }
+    const mockTransaction = {
+      amount: 1000000000n,
+      asset: mockAsset.address[130],
+      marketId: marketId.address,
+      apy: 0.05,
+      timestamp: Date.now(),
+      transactionData: { approval, deposit },
+      slippage: 50,
+    }
+
+    vi.mocked(mockProvider.openPosition).mockResolvedValue(mockTransaction)
+
+    const result = await namespace.openPosition({
+      amount: 1000,
+      asset: mockAsset,
+      marketId,
+    })
+
+    expect(mockWallet.sendBatch).toHaveBeenCalledWith([approval, deposit], 130)
+    expect(result).toBe('0xmockbatchhash')
   })
 })

@@ -288,7 +288,7 @@ export class DefaultSmartWallet extends SmartWallet {
 
     // Create wallet lend namespace after address is initialized if lend provider is available
     if (this.lendProvider) {
-      this.lend = new WalletLendNamespace(this.lendProvider, this._address)
+      this.lend = new WalletLendNamespace(this.lendProvider, this)
     }
   }
 

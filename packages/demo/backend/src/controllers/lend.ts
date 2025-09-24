@@ -9,7 +9,7 @@ import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
 import { serializeBigInt } from '../utils/serializers.js'
 
-const DepositRequestSchema = z.object({
+const OpenPositionRequestSchema = z.object({
   body: z.object({
     walletId: z.string().min(1, 'walletId is required'),
     amount: z.number().positive('amount must be positive'),
@@ -17,6 +17,9 @@ const DepositRequestSchema = z.object({
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
     chainId: z.number().min(1, 'chainId is required'),
+    vaultAddress: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
   }),
 })
 
@@ -118,83 +121,65 @@ export class LendController {
   }
 
   /**
-   * POST - Deposit tokens into a lending vault
+   * POST - Open a lending position
    */
-  async deposit(c: Context) {
+  async openPosition(c: Context) {
     try {
-      const validation = await validateRequest(c, DepositRequestSchema)
+      const validation = await validateRequest(c, OpenPositionRequestSchema)
       if (!validation.success) return validation.response
 
       const {
-        body: { walletId, amount, tokenAddress, chainId },
+        body: { walletId, amount, tokenAddress, chainId, vaultAddress },
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
+      let hash: string
+
       // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
       // up this route.
-      if (auth && auth.userId) {
-        const lendTransaction = await lendService.depositWithUserWallet(
-          auth.userId,
-          amount,
-          tokenAddress as Address,
-          chainId as SupportedChainId,
-        )
-
-        const result = await lendService.executeLendTransactionWithUserWallet(
-          auth.userId,
-          lendTransaction,
-          chainId as SupportedChainId,
-        )
-
-        return c.json({
-          transaction: {
-            blockExplorerUrl: result.blockExplorerUrl,
-            hash: result.hash,
-            amount: result.amount.toString(),
-            asset: result.asset,
-            marketId: result.marketId,
-            apy: result.apy,
-            timestamp: result.timestamp,
-            slippage: result.slippage,
-            transactionData: serializeBigInt(result.transactionData),
-          },
-        })
+      const params = {
+        amount,
+        asset: {
+          tokenAddress: tokenAddress as Address,
+          chainId: chainId as SupportedChainId,
+        },
+        marketId: {
+          address: vaultAddress as Address,
+          chainId: chainId as SupportedChainId,
+        },
       }
 
-      const lendTransaction = await lendService.deposit(
-        walletId,
-        amount,
-        tokenAddress as Address,
-        chainId as SupportedChainId,
-      )
-      const result = await lendService.executeLendTransaction(
-        walletId,
-        lendTransaction,
+      // Use userId if authenticated, otherwise use walletId
+      if (auth && auth.userId) {
+        hash = await lendService.openPosition(auth.userId, params, true)
+      } else {
+        hash = await lendService.openPosition(walletId, params, false)
+      }
+
+      const blockExplorerUrl = await lendService.getBlockExplorerUrl(
         chainId as SupportedChainId,
       )
 
       return c.json({
         transaction: {
-          blockExplorerUrl: result.blockExplorerUrl,
-          hash: result.hash,
-          amount: result.amount.toString(),
-          asset: result.asset,
-          marketId: result.marketId,
-          apy: result.apy,
-          timestamp: result.timestamp,
-          slippage: result.slippage,
-          transactionData: serializeBigInt(result.transactionData),
+          hash,
+          blockExplorerUrl,
+          amount,
+          tokenAddress,
+          chainId,
+          vaultAddress,
         },
       })
     } catch (error) {
-      console.error('Failed to deposit', error)
+      console.error('Failed to open position', error)
       return c.json(
         {
-          error: 'Failed to deposit',
+          error: 'Failed to open position',
           message: error instanceof Error ? error.message : 'Unknown error',
         },
         500,
       )
     }
   }
+
 }

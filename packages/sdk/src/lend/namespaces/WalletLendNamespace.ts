@@ -9,6 +9,8 @@ import type {
   LendOptions,
   LendTransaction,
 } from '@/types/lend.js'
+import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
+import type { Wallet } from '@/wallet/base/Wallet.js'
 
 /**
  * Wallet Lend Namespace
@@ -19,7 +21,7 @@ export class WalletLendNamespace<
 > extends VerbsLendNamespace<TConfig> {
   constructor(
     provider: LendProvider<TConfig>,
-    private readonly address: Address,
+    private readonly wallet: Wallet,
   ) {
     super(provider)
   }
@@ -34,25 +36,53 @@ export class WalletLendNamespace<
     marketId,
     options,
   }: LendOpenPositionParams): Promise<Hash> {
-    // Inject wallet address as receiver if not specified
+    // Always use wallet address as receiver, ignore any receiver in options
     const lendOptions = {
       ...options,
-      receiver: options?.receiver || this.address,
+      receiver: this.wallet.address,
     }
 
     // Get transaction details from provider
-    const _lendTransaction = await this.provider.openPosition({
+    const lendTransaction = await this.provider.openPosition({
       amount,
       asset,
       marketId,
       options: lendOptions,
     })
 
-    // TODO: Execute the transaction using wallet
-    // For now, throw error - this needs to be implemented
-    // based on how the wallet signs and sends transactions
-    throw new Error(
-      'Transaction execution not yet implemented in WalletLendNamespace',
+    // Execute the transaction using wallet
+    const { transactionData } = lendTransaction
+    if (!transactionData) {
+      throw new Error('No transaction data returned from lend provider')
+    }
+
+    // Check if wallet is a SmartWallet (has send/sendBatch methods)
+    if (!this.isSmartWallet(this.wallet)) {
+      throw new Error(
+        'Transaction execution is only supported for SmartWallet instances',
+      )
+    }
+
+    // Execute approval + deposit or just deposit
+    if (transactionData.approval) {
+      return await this.wallet.sendBatch(
+        [transactionData.approval, transactionData.deposit],
+        marketId.chainId,
+      )
+    }
+
+    return await this.wallet.send(transactionData.deposit, marketId.chainId)
+  }
+
+  /**
+   * Type guard to check if wallet is a SmartWallet
+   */
+  private isSmartWallet(wallet: Wallet): wallet is SmartWallet {
+    return (
+      'send' in wallet &&
+      typeof wallet.send === 'function' &&
+      'sendBatch' in wallet &&
+      typeof wallet.sendBatch === 'function'
     )
   }
 
@@ -66,10 +96,10 @@ export class WalletLendNamespace<
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
-    // Set receiver to wallet address if not specified
+    // Always use wallet address as receiver, ignore any receiver in options
     const withdrawOptions: LendOptions = {
       ...options,
-      receiver: options?.receiver || this.address,
+      receiver: this.wallet.address,
     }
 
     return this.provider.withdraw(
