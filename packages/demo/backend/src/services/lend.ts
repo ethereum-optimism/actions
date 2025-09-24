@@ -132,21 +132,21 @@ interface OpenPositionParams {
  * Open a lending position
  * @param identifier - Can be either a userId (for authenticated users) or walletId
  * @param params - Position parameters
- * @param isUserId - If true, identifier is treated as userId; if false, as walletId
+ * @param isUserWallet - If true, identifier is treated as userId; if false, as walletId
  */
 export async function openPosition(
   identifier: string,
   { amount, asset: assetInfo, marketId, options }: OpenPositionParams,
-  isUserId = false,
+  isUserWallet = false,
 ): Promise<Hash> {
   // Get wallet based on identifier type
-  const wallet = isUserId
+  const wallet = isUserWallet
     ? await getUserWallet(identifier)
     : await getWallet(identifier)
 
   if (!wallet) {
     throw new Error(
-      `Wallet not found for ${isUserId ? 'user' : 'wallet'} ID: ${identifier}`,
+      `Wallet not found for ${isUserWallet ? 'user' : 'wallet'} ID: ${identifier}`,
     )
   }
 
@@ -169,13 +169,6 @@ export async function openPosition(
   })
 }
 
-// Convenience wrapper for user-based calls
-export async function openPositionWithUserWallet(
-  userId: string,
-  params: OpenPositionParams,
-): Promise<Hash> {
-  return openPosition(userId, params, true)
-}
 
 
 
