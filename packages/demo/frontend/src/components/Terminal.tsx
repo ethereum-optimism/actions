@@ -1,11 +1,18 @@
 import { chainById } from '@eth-optimism/viem/chains'
 
 // polyfill required by privy sdk: https://docs.privy.io/basics/react-native/installation#configure-polyfills
-import {Buffer} from 'buffer';
+import { Buffer } from 'buffer'
 if (!globalThis.Buffer) globalThis.Buffer = Buffer
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { useWallets, usePrivy, type WalletWithMetadata, useUser as usePrivyUser, useSessionSigners, useUser } from '@privy-io/react-auth'
+import {
+  useWallets,
+  usePrivy,
+  type WalletWithMetadata,
+  useUser as usePrivyUser,
+  useSessionSigners,
+  useUser,
+} from '@privy-io/react-auth'
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
@@ -105,28 +112,28 @@ const Terminal = () => {
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
 
-    const { authenticated: isSignedIn, getAccessToken } = usePrivy()
-    const { user } = useUser()
-    const getAuthHeaders = useCallback(async () => {
-      const token = await getAccessToken()
-      return token ? { Authorization: `Bearer ${token}` } : undefined
-    }, [getAccessToken])
+  const { authenticated: isSignedIn, getAccessToken } = usePrivy()
+  const { user } = useUser()
+  const getAuthHeaders = useCallback(async () => {
+    const token = await getAccessToken()
+    return token ? { Authorization: `Bearer ${token}` } : undefined
+  }, [getAccessToken])
 
   // Privy wallet hooks
   const { wallets } = useWallets()
   const { authenticated: privyAuthenticated } = usePrivy()
   const { user: privyUser } = usePrivyUser()
-  const { addSessionSigners } = useSessionSigners();
+  const { addSessionSigners } = useSessionSigners()
   const ethereumEmbeddedWallets = useMemo<WalletWithMetadata[]>(
     () =>
       (privyUser?.linkedAccounts?.filter(
         (account) =>
-          account.type === "wallet" &&
-          account.walletClientType === "privy" &&
-          account.chainType === "ethereum"
+          account.type === 'wallet' &&
+          account.walletClientType === 'privy' &&
+          account.chainType === 'ethereum',
       ) as WalletWithMetadata[]) ?? [],
-    [privyUser]
-  );
+    [privyUser],
+  )
 
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
 
@@ -221,7 +228,10 @@ const Terminal = () => {
     walletId: string,
     showVaultPositions: boolean = true,
   ): Promise<string> => {
-    const result = await verbsApi.getWalletBalance(walletId, await getAuthHeaders())
+    const result = await verbsApi.getWalletBalance(
+      walletId,
+      await getAuthHeaders(),
+    )
 
     const balancesByChain = result.balance.reduce(
       (acc, token) => {
@@ -271,7 +281,10 @@ const Terminal = () => {
 
       // Separate vault balances from token balances
       const vaultBalances = filteredBalances.filter(
-        (token) => token.symbol !== 'ETH' && token.symbol !== 'USDC' && token.symbol !== 'USDC_DEMO',
+        (token) =>
+          token.symbol !== 'ETH' &&
+          token.symbol !== 'USDC' &&
+          token.symbol !== 'USDC_DEMO',
       )
 
       balanceLines.push(
@@ -400,14 +413,15 @@ const Terminal = () => {
   useEffect(() => {
     const initializeTerminal = async () => {
       const verbsAscii = `
-█████   █████                    █████
-░░███   ░░███                    ░░███
- ░███    ░███   ██████  ████████  ░███████   █████
- ░███    ░███  ███░░███░░███░░███ ░███░░███ ███░░
- ░░███   ███  ░███████  ░███ ░░░  ░███ ░███░░█████
-  ░░░█████░   ░███░░░   ░███      ░███ ░███ ░░░░███
-    ░░███     ░░██████  █████     ████████  ██████
-     ░░░       ░░░░░░  ░░░░░     ░░░░░░░░  ░░░░░░`
+    █████████             █████     ███
+   ███░░░░░███           ░░███     ░░░
+  ░███    ░███   ██████  ███████   ████   ██████  ████████    █████
+  ░███████████  ███░░███░░░███░   ░░███  ███░░███░░███░░███  ███░░
+  ░███░░░░░███ ░███ ░░░   ░███     ░███ ░███ ░███ ░███ ░███ ░░█████
+  ░███    ░███ ░███  ███  ░███ ███ ░███ ░███ ░███ ░███ ░███  ░░░░███
+  █████   █████░░██████   ░░█████  █████░░██████  ████ █████ ██████
+ ░░░░░   ░░░░░  ░░░░░░     ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░
+     `
       const welcomeLines: TerminalLine[] = [
         {
           id: 'welcome-ascii',
@@ -424,7 +438,7 @@ const Terminal = () => {
         {
           id: 'welcome-8',
           type: 'output',
-          content: '   Verbs library for the OP Stack',
+          content: '   DeFi library for the OP Stack',
           timestamp: new Date(),
         },
         {
@@ -468,15 +482,16 @@ const Terminal = () => {
     return verbsApi.getAllWallets()
   }
 
-  
-
   const addSessionSigner = useCallback(
     async (walletAddress: string) => {
       if (!env.VITE_SESSION_SIGNER_ID) {
-        console.error("SESSION_SIGNER_ID must be defined to addSessionSigner");
-        return;
+        console.error('SESSION_SIGNER_ID must be defined to addSessionSigner')
+        return
       }
-      console.log("Adding session signer for wallet:", env.VITE_SESSION_SIGNER_ID);
+      console.log(
+        'Adding session signer for wallet:',
+        env.VITE_SESSION_SIGNER_ID,
+      )
       console.log('wallet address', walletAddress)
 
       try {
@@ -487,19 +502,21 @@ const Terminal = () => {
               signerId: env.VITE_SESSION_SIGNER_ID,
             },
           ],
-        });
-        console.log("Session signer added for wallet:", walletAddress);
+        })
+        console.log('Session signer added for wallet:', walletAddress)
       } catch (error) {
-        console.error("Error adding session signer:", error);
+        console.error('Error adding session signer:', error)
         console.log('error stack', (error as Error).stack)
       }
     },
-    [addSessionSigners]
-  );
+    [addSessionSigners],
+  )
 
   useEffect(() => {
-    const undelegatedEthereumEmbeddedWallets = ethereumEmbeddedWallets.filter(wallet => wallet.delegated !== true);
-    undelegatedEthereumEmbeddedWallets.forEach(wallet => {
+    const undelegatedEthereumEmbeddedWallets = ethereumEmbeddedWallets.filter(
+      (wallet) => wallet.delegated !== true,
+    )
+    undelegatedEthereumEmbeddedWallets.forEach((wallet) => {
       addSessionSigner(wallet.address)
     })
   }, [ethereumEmbeddedWallets])
@@ -719,7 +736,8 @@ User ID: ${result.userId}`,
           (w) =>
             w.address.toLowerCase() ===
               (result.smartWalletAddress || '').toLowerCase() ||
-            w.address.toLowerCase() === (result.privyAddress || '').toLowerCase(),
+            w.address.toLowerCase() ===
+              (result.privyAddress || '').toLowerCase(),
         )
 
         const walletToSelect = created || all.wallets[all.wallets.length - 1]
@@ -828,7 +846,7 @@ User ID: ${result.userId}`,
       // Get single-chain token balance for the vault's asset (e.g., USDC on the vault's chain)
       const walletBalanceResult = await verbsApi.getWalletBalance(
         selectedWallet!.id,
-        await getAuthHeaders()
+        await getAuthHeaders(),
       )
       const chainToken = walletBalanceResult.balance
         .flatMap((t) => t.chainBalances.map((cb) => ({ ...cb })))
@@ -840,7 +858,9 @@ User ID: ${result.userId}`,
         )
 
       // TODO: update this to not hardcode the decimals and read decimals from token info.
-      const usdcBalance = chainToken ? parseFloat(chainToken.formattedBalance) : 0
+      const usdcBalance = chainToken
+        ? parseFloat(chainToken.formattedBalance)
+        : 0
 
       console.log('[FRONTEND] Wallet USDC balance:', usdcBalance)
 
@@ -930,8 +950,8 @@ How much would you like to lend?`
         promptData.selectedWallet.id,
         amount,
         promptData.selectedVault.asset as Address,
-          promptData.selectedVault.chainId,
-          await getAuthHeaders()
+        promptData.selectedVault.chainId,
+        await getAuthHeaders(),
       )
 
       console.log(
@@ -1217,15 +1237,17 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     const fundingInfo: TerminalLine = {
       id: `funding-info-${Date.now()}`,
       type: 'output',
-      content:
-        'Funding selected wallet with 100 USDC...',
+      content: 'Funding selected wallet with 100 USDC...',
       timestamp: new Date(),
     }
 
     setLines((prev) => [...prev, fundingInfo])
 
     try {
-      const { amount } = await verbsApi.fundWallet(selectedWallet.id, await getAuthHeaders())
+      const { amount } = await verbsApi.fundWallet(
+        selectedWallet.id,
+        await getAuthHeaders(),
+      )
 
       const fundSuccessLine: TerminalLine = {
         id: `fund-success-${Date.now()}`,
@@ -1268,11 +1290,17 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     }
     // Check if selected wallet has USDC balance before proceeding
     try {
-      const balanceResult = await verbsApi.getWalletBalance(selectedWallet.id, await getAuthHeaders())
+      const balanceResult = await verbsApi.getWalletBalance(
+        selectedWallet.id,
+        await getAuthHeaders(),
+      )
       const usdcTokens = balanceResult.balance.filter(
         (token) => token.symbol === 'USDC' || token.symbol === 'USDC_DEMO',
       )
-      const usdcBalance = usdcTokens.reduce((acc, token) => acc + parseFloat(token.totalBalance), 0)
+      const usdcBalance = usdcTokens.reduce(
+        (acc, token) => acc + parseFloat(token.totalBalance),
+        0,
+      )
 
       if (usdcBalance <= 0) {
         const noBalanceLine: TerminalLine = {
@@ -1382,7 +1410,10 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       const walletsWithBalances = await Promise.all(
         result.wallets.map(async (wallet) => {
           try {
-            const balanceResult = await verbsApi.getWalletBalance(wallet.id, await getAuthHeaders())
+            const balanceResult = await verbsApi.getWalletBalance(
+              wallet.id,
+              await getAuthHeaders(),
+            )
             const usdcToken = balanceResult.balance.find(
               (token) => token.symbol === 'USDC',
             )
@@ -1487,7 +1518,10 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
     setLines((prev) => [...prev, loadingLine])
 
     try {
-      const result = await verbsApi.getWalletBalance(selectedWallet.id, await getAuthHeaders())
+      const result = await verbsApi.getWalletBalance(
+        selectedWallet.id,
+        await getAuthHeaders(),
+      )
       const usdcToken = result.balance.find((token) => token.symbol === 'USDC')
       const usdcBalance = usdcToken ? parseFloat(usdcToken.totalBalance) : 0
 
@@ -1597,7 +1631,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         data.selectedWallet.id,
         data.amount,
         recipientAddress,
-        await getAuthHeaders()
+        await getAuthHeaders(),
       )
 
       const successLine: TerminalLine = {
