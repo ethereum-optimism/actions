@@ -40,3 +40,12 @@ export type PrivyHostedWalletToVerbsWalletOptions = {
 export type DynamicHostedWalletToVerbsWalletOptions = {
   wallet: DynamicWallet
 }
+
+/**
+ * Options for converting a Turnkey hosted wallet to a Verbs wallet
+ * @description Parameters for converting a hosted wallet to a Verbs wallet
+ */
+export type TurnkeyHostedWalletToVerbsWalletOptions = {
+  signWith: string
+  ethereumAddress?: string
+}
