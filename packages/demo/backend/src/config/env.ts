@@ -58,4 +58,7 @@ export const env = cleanEnv(process.env, {
   UNICHAIN_BUNDLER_URL: str({ devDefault: 'dummy' }),
   UNICHAIN_BUNDLER_SPONSORSHIP_POLICY: str({ devDefault: 'dummy' }),
   SESSION_SIGNER_PK: str(),
+  TURNKEY_ORGANIZATION_ID: str(),
+  TURNKEY_API_KEY: str(),
+  TURNKEY_API_SECRET: str(),
 })

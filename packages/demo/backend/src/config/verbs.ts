@@ -4,21 +4,23 @@ import {
   type VerbsConfig,
 } from '@eth-optimism/verbs-sdk/node'
 import { PrivyClient } from '@privy-io/server-auth'
+import { Turnkey } from '@turnkey/sdk-server'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
 import { GauntletUSDC, MetaMorphoUSDC, USDCDemoVault } from './markets.js'
 
-let verbsInstance: Verbs<'privy'>
+let verbsInstance: Verbs<'turnkey'>
 
-export function createVerbsConfig(): VerbsConfig<'privy'> {
+export function createVerbsConfig(): VerbsConfig<'turnkey'> {
   return {
     wallet: {
       hostedWalletConfig: {
         provider: {
-          type: 'privy',
+          type: 'turnkey',
           config: {
-            privyClient: getPrivyClient(),
+            client: getTurnkeyClient().apiClient(),
+            organizationId: env.TURNKEY_ORGANIZATION_ID,
           },
         },
       },
@@ -59,7 +61,7 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
   }
 }
 
-export function initializeVerbs(config?: VerbsConfig<'privy'>): void {
+export function initializeVerbs(config?: VerbsConfig<'turnkey'>): void {
   const verbsConfig = config || createVerbsConfig()
   verbsInstance = createVerbs(verbsConfig)
 }
@@ -77,4 +79,13 @@ export function getPrivyClient() {
     privy.walletApi.updateAuthorizationKey(env.SESSION_SIGNER_PK)
   }
   return privy
+}
+
+export function getTurnkeyClient() {
+  return new Turnkey({
+    apiBaseUrl: 'https://api.turnkey.com',
+    apiPublicKey: env.TURNKEY_API_KEY,
+    apiPrivateKey: env.TURNKEY_API_SECRET,
+    defaultOrganizationId: env.TURNKEY_ORGANIZATION_ID,
+  })
 }

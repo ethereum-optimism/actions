@@ -165,12 +165,7 @@ export class WalletController {
       // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
       // up this route.
       if (auth && auth.userId) {
-        const wallet = await walletService.getUserWallet(auth.userId)
-        if (!wallet) {
-          throw new Error('Wallet not found')
-        }
-        const balance = await walletService.getWalletBalance(wallet)
-        return c.json({ balance: serializeBigInt(balance) })
+        throw new Error('Not implemented')
       }
 
       const balance = await walletService.getBalance(userId)
@@ -203,12 +198,7 @@ export class WalletController {
       // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
       // up this route.
       if (auth && auth.userId) {
-        const wallet = await walletService.getUserWallet(auth.userId)
-        if (!wallet) {
-          throw new Error('Wallet not found')
-        }
-        const result = await walletService.fundWallet(wallet)
-        return c.json(result)
+        throw new Error('Not implemented')
       }
 
       const wallet = await walletService.getWallet(userId)

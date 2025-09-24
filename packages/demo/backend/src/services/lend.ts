@@ -9,7 +9,7 @@ import type { Address } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
-import { getUserWallet, getWallet } from './wallet.js'
+import { getWallet } from './wallet.js'
 
 interface MarketBalanceResult {
   balance: bigint
@@ -114,31 +114,12 @@ export async function formatMarketBalanceResponse(
 }
 
 export async function depositWithUserWallet(
-  userId: string,
-  amount: number,
-  tokenAddress: Address,
-  chainId: SupportedChainId,
+  _userId: string,
+  _amount: number,
+  _tokenAddress: Address,
+  _chainId: SupportedChainId,
 ): Promise<LendTransaction> {
-  const wallet = await getUserWallet(userId)
-
-  if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${userId}`)
-  }
-
-  const asset = SUPPORTED_TOKENS.find(
-    (token) => token.address[chainId] === tokenAddress,
-  )
-  if (!asset) {
-    throw new Error(`Asset not found for token address: ${tokenAddress}`)
-  }
-
-  if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
-    return await wallet.lendExecute(amount, asset, chainId)
-  } else {
-    throw new Error(
-      'Lend functionality not yet implemented for this wallet type.',
-    )
-  }
+  throw new Error('Not implemented')
 }
 
 export async function deposit(
@@ -170,35 +151,11 @@ export async function deposit(
 }
 
 export async function executeLendTransactionWithUserWallet(
-  userId: string,
-  lendTransaction: LendTransaction,
-  chainId: SupportedChainId,
+  _userId: string,
+  _lendTransaction: LendTransaction,
+  _chainId: SupportedChainId,
 ): Promise<LendTransaction & { blockExplorerUrl: string }> {
-  const wallet = await getUserWallet(userId)
-
-  if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${userId}`)
-  }
-
-  if (!lendTransaction.transactionData) {
-    throw new Error('No transaction data available for execution')
-  }
-
-  const depositHash = lendTransaction.transactionData.approval
-    ? await wallet.sendBatch(
-        [
-          lendTransaction.transactionData.approval,
-          lendTransaction.transactionData.deposit,
-        ],
-        chainId,
-      )
-    : await wallet.send(lendTransaction.transactionData.deposit, chainId)
-
-  return {
-    ...lendTransaction,
-    hash: depositHash,
-    blockExplorerUrl: await getBlockExplorerUrl(chainId),
-  }
+  throw new Error('Not implemented')
 }
 
 export async function executeLendTransaction(

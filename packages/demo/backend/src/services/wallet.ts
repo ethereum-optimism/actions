@@ -11,8 +11,8 @@ import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { USDC } from '@/config/assets.js'
-import { getPrivyClient, getVerbs } from '@/config/verbs.js'
-
+import { env } from '@/config/env.js'
+import { getTurnkeyClient, getVerbs } from '@/config/verbs.js'
 /**
  * Options for getting all wallets
  * @description Parameters for filtering and paginating wallet results
@@ -24,18 +24,50 @@ export interface GetAllWalletsOptions {
   cursor?: string
 }
 
+async function turnkeyCreateWallet() {
+  const turnkeyClient = getTurnkeyClient()
+  const activityResponse = await turnkeyClient.apiClient().createWallet({
+    walletName: 'ETH Wallet',
+    accounts: [
+      {
+        curve: 'CURVE_SECP256K1',
+        pathFormat: 'PATH_FORMAT_BIP32',
+        path: "m/44'/60'/0'/0/0",
+        addressFormat: 'ADDRESS_FORMAT_ETHEREUM',
+      },
+    ],
+  })
+  console.log(activityResponse)
+  return activityResponse
+}
+
+async function turnkeyGetWallet(walletId: string) {
+  const turnkeyClient = getTurnkeyClient()
+  const activityResponse = await turnkeyClient.apiClient().getWalletAccount({
+    organizationId: env.TURNKEY_ORGANIZATION_ID!,
+    walletId: walletId,
+  })
+  console.log(activityResponse)
+  return activityResponse
+}
+
+async function turnkeyGetAllWallets() {
+  const turnkeyClient = getTurnkeyClient()
+  const activityResponse = await turnkeyClient.apiClient().getWallets({
+    organizationId: env.TURNKEY_ORGANIZATION_ID!,
+  })
+  console.log(activityResponse)
+  return activityResponse
+}
+
 export async function createWallet(): Promise<{
   privyAddress: string
   smartWalletAddress: string
 }> {
   const verbs = getVerbs()
-  const privyClient = getPrivyClient()
-  const privyWallet = await privyClient.walletApi.createWallet({
-    chainType: 'ethereum',
-  })
+  const turnkeyWallet = await turnkeyCreateWallet()
   const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
-    walletId: privyWallet.id,
-    address: privyWallet.address,
+    signWith: turnkeyWallet.addresses[0],
   })
   const wallet = await verbs.wallet.createSmartWallet({
     owners: [verbsPrivyWallet.address],
@@ -50,70 +82,65 @@ export async function createWallet(): Promise<{
 
 export async function getWallet(userId: string): Promise<SmartWallet | null> {
   const verbs = getVerbs()
-  const privyClient = getPrivyClient()
-  const privyWallet = await privyClient.walletApi
-    .getWallet({
-      id: userId,
-    })
-    .catch(() => null)
-  if (!privyWallet) {
-    return privyWallet
+  const turnkeyWallet = await turnkeyGetWallet(userId).catch(() => null)
+  if (!turnkeyWallet) {
+    return null
   }
-  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
-    walletId: privyWallet.id,
-    address: privyWallet.address,
+  const verbsTurnkeyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+    signWith: turnkeyWallet.account.address,
   })
   const wallet = await verbs.wallet.getSmartWallet({
-    signer: verbsPrivyWallet.signer,
-    deploymentOwners: [getAddress(privyWallet.address)],
+    signer: verbsTurnkeyWallet.signer,
+    deploymentOwners: [getAddress(turnkeyWallet.account.address)],
   })
   return wallet
 }
 
-export async function getUserWallet(
-  userId: string,
-): Promise<SmartWallet | null> {
-  const verbs = getVerbs()
-  const privyClient = getPrivyClient()
-  const privyUser = await privyClient.getUserById(userId).catch(() => null)
-  if (!privyUser) {
-    return null
-  }
-  const privyWallet = privyUser.wallet
-  if (!privyWallet) {
-    return null
-  }
-  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
-    walletId: privyWallet.id!,
-    address: privyWallet.address,
-  })
-  const wallet = await verbs.wallet.getSmartWallet({
-    signer: verbsPrivyWallet.signer,
-    deploymentOwners: [getAddress(privyWallet.address)],
-  })
-  return wallet
-}
+// export async function getUserWallet(
+//   userId: string,
+// ): Promise<SmartWallet | null> {
+//   const verbs = getVerbs()
+//   const privyClient = getPrivyClient()
+//   const privyUser = await privyClient.getUserById(userId).catch(() => null)
+//   if (!privyUser) {
+//     return null
+//   }
+//   const privyWallet = privyUser.wallet
+//   if (!privyWallet) {
+//     return null
+//   }
+//   const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+//     walletId: privyWallet.id!,
+//     address: privyWallet.address,
+//   })
+//   const wallet = await verbs.wallet.getSmartWallet({
+//     signer: verbsPrivyWallet.signer,
+//     deploymentOwners: [getAddress(privyWallet.address)],
+//   })
+//   return wallet
+// }
 
 export async function getAllWallets(
-  options?: GetAllWalletsOptions,
+  _options?: GetAllWalletsOptions,
 ): Promise<Array<{ wallet: SmartWallet; id: string }>> {
   try {
     const verbs = getVerbs()
-    const privyClient = getPrivyClient()
-    const response = await privyClient.walletApi.getWallets(options)
+    const turnkeyWallets = await turnkeyGetAllWallets()
     return Promise.all(
-      response.data.map(async (privyWallet) => {
-        const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
-          walletId: privyWallet.id,
-          address: privyWallet.address,
-        })
+      turnkeyWallets.wallets.map(async ({ walletId }) => {
+        const turnkeyWallet = await turnkeyGetWallet(walletId)
+        const verbsTurnkeyWallet = await verbs.wallet.hostedWalletToVerbsWallet(
+          {
+            signWith: turnkeyWallet.account.address,
+          },
+        )
         const wallet = await verbs.wallet.getSmartWallet({
-          signer: verbsPrivyWallet.signer,
-          deploymentOwners: [getAddress(privyWallet.address)],
+          signer: verbsTurnkeyWallet.signer,
+          deploymentOwners: [getAddress(turnkeyWallet.account.address)],
         })
         return {
           wallet,
-          id: privyWallet.id,
+          id: walletId,
         }
       }),
     )
