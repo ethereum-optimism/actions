@@ -90,11 +90,10 @@ Wallet commands:
          lend    - Lend and earn
          send    - Send to another address
 
-Future verbs (coming soon):
+Future actions (coming soon):
   borrow        - Borrow assets
-  repay         - Repay a loan
   swap          - Trade tokens
-  earn          - Earn DeFi yield`
+  `
 
 const Terminal = () => {
   const [lines, setLines] = useState<TerminalLine[]>([])
@@ -450,7 +449,7 @@ const Terminal = () => {
         {
           id: 'help-cmd',
           type: 'input',
-          content: 'verbs: $ help',
+          content: 'actions: $ help',
           timestamp: new Date(),
         },
         {
@@ -575,7 +574,7 @@ const Terminal = () => {
     const commandLine: TerminalLine = {
       id: `cmd-${Date.now()}`,
       type: 'input',
-      content: `verbs: $ ${trimmed}`,
+      content: `actions: $ ${trimmed}`,
       timestamp: new Date(),
     }
 
@@ -1825,8 +1824,8 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
             {pendingPrompt
               ? pendingPrompt.message
               : selectedWallet
-                ? `verbs (${shortenAddress(selectedWallet.address)}): $`
-                : 'verbs: $'}
+                ? `actions (${shortenAddress(selectedWallet.address)}): $`
+                : 'actions: $'}
           </span>
           <div className="flex-1 flex items-center">
             <input
