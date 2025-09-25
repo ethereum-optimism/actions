@@ -111,16 +111,6 @@ export abstract class LendProvider<
     })
   }
 
-  private filterMarketConfigs(
-    chainId?: SupportedChainId,
-    asset?: Asset,
-  ): LendMarketConfig[] {
-    let configs = this._config.marketAllowlist || []
-    if (chainId !== undefined)
-      configs = configs.filter((m) => m.chainId === chainId)
-    if (asset !== undefined) configs = configs.filter((m) => m.asset === asset)
-    return configs
-  }
 
   /**
    * Get position information for a wallet
@@ -246,6 +236,23 @@ export abstract class LendProvider<
         `Market ${marketId.address} on chain ${marketId.chainId} is not in the market allowlist`,
       )
     }
+  }
+
+  /**
+   * Helper method to filter market configurations
+   * @param chainId - Chain ID to filter by
+   * @param asset - Asset to filter by
+   * @returns Filtered market configurations
+   */
+  private filterMarketConfigs(
+    chainId?: SupportedChainId,
+    asset?: Asset,
+  ): LendMarketConfig[] {
+    let configs = this._config.marketAllowlist || []
+    if (chainId !== undefined)
+      configs = configs.filter((m) => m.chainId === chainId)
+    if (asset !== undefined) configs = configs.filter((m) => m.asset === asset)
+    return configs
   }
 
   /**
