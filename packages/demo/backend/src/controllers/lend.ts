@@ -7,7 +7,6 @@ import type { AuthContext } from '@/middleware/auth.js'
 
 import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
-import { serializeBigInt } from '../utils/serializers.js'
 
 const OpenPositionRequestSchema = z.object({
   body: z.object({
@@ -181,5 +180,4 @@ export class LendController {
       )
     }
   }
-
 }

@@ -147,15 +147,17 @@ export async function getWalletBalance(
     const vaultBalances = await Promise.all(
       vaults.map(async (vault) => {
         try {
-          const walletAddress = wallet.address
           if (!wallet.lend) {
             return null // Skip this vault if lend not configured
           }
 
-          const vaultBalance = await wallet.lend.getPosition({
-            address: vault.address,
-            chainId: vault.chainId as SupportedChainId,
-          })
+          const vaultBalance = await wallet.lend.getPosition(
+            {
+              address: vault.address,
+              chainId: vault.chainId as SupportedChainId,
+            },
+            undefined,
+          )
 
           // Only include vaults with non-zero balances
           if (vaultBalance.balance > 0n) {

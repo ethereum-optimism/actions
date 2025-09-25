@@ -1,6 +1,5 @@
 import {
   type LendMarket,
-  type LendTransaction,
   SUPPORTED_TOKENS,
   type SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
@@ -33,7 +32,9 @@ interface FormattedMarketResponse {
   lastUpdate: number
 }
 
-export async function getBlockExplorerUrl(chainId: SupportedChainId): Promise<string> {
+export async function getBlockExplorerUrl(
+  chainId: SupportedChainId,
+): Promise<string> {
   const chain = chainById[chainId]
   if (!chain) {
     throw new Error(`Chain not found for chainId: ${chainId}`)
@@ -65,7 +66,6 @@ export async function getPosition(
   walletId: string,
   chainId: SupportedChainId,
 ): Promise<MarketBalanceResult> {
-  const verbs = getVerbs()
   const wallet = await getWallet(walletId)
 
   if (!wallet) {
@@ -155,7 +155,9 @@ export async function openPosition(
     (token) => token.address[assetInfo.chainId] === assetInfo.tokenAddress,
   )
   if (!asset) {
-    throw new Error(`Asset not found for token address: ${assetInfo.tokenAddress}`)
+    throw new Error(
+      `Asset not found for token address: ${assetInfo.tokenAddress}`,
+    )
   }
 
   if (!wallet.lend) {
@@ -169,9 +171,3 @@ export async function openPosition(
     options,
   })
 }
-
-
-
-
-
-

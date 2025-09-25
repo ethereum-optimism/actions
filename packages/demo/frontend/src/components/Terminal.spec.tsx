@@ -56,7 +56,7 @@ describe('Terminal', () => {
 
     // Check for subtitle
     expect(
-      screen.getByText('DeFi library for the OP Stack'),
+      screen.getByText('DeFi Library for the OP Stack'),
     ).toBeInTheDocument()
 
     // Check for help content
@@ -89,7 +89,7 @@ describe('Terminal', () => {
 
     // First verify welcome content is there
     expect(
-      screen.getByText('DeFi library for the OP Stack'),
+      screen.getByText('DeFi Library for the OP Stack'),
     ).toBeInTheDocument()
 
     await user.type(input, 'clear')
@@ -97,7 +97,7 @@ describe('Terminal', () => {
 
     // After clear, welcome content should be gone
     expect(
-      screen.queryByText('Verbs library for the OP Stack'),
+      screen.queryByText('DeFi Library for the OP Stack'),
     ).not.toBeInTheDocument()
   })
 
