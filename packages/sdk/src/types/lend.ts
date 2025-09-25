@@ -274,7 +274,7 @@ export interface LendParams {
  * @description Parameters required for withdrawing assets
  * @deprecated Use ClosePositionParams instead
  */
-export interface WithdrawParams {
+export interface LendClosePositionParams {
   /** Asset token address to withdraw */
   asset: Address
   /** Amount to withdraw (in wei) */
@@ -286,6 +286,11 @@ export interface WithdrawParams {
   /** Optional withdrawal configuration */
   options?: LendOptions
 }
+
+/**
+ * @deprecated Use LendClosePositionParams instead
+ */
+export type WithdrawParams = LendClosePositionParams
 
 /**
  * Parameters for closing a lending position
@@ -373,7 +378,7 @@ export interface LendProviderMethods {
     chainId,
     marketId,
     options,
-  }: WithdrawParams): Promise<LendTransaction>
+  }: LendClosePositionParams): Promise<LendTransaction>
 
   /**
    * Provider implementation of getMarket method

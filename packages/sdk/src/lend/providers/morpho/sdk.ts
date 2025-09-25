@@ -124,27 +124,23 @@ function findMarketInAllowlist(
  * @param params - Named parameters object
  * @returns Promise resolving to detailed vault information
  */
-export async function getVault({
-  marketId,
-  chainManager,
-  lendConfig,
-}: GetVaultParams): Promise<LendMarket> {
+export async function getVault(params: GetVaultParams): Promise<LendMarket> {
   // Find market configuration in allowlist for metadata
-  const marketConfig = lendConfig?.marketAllowlist
-    ? findMarketInAllowlist(lendConfig.marketAllowlist, marketId)
+  const marketConfig = params.lendConfig?.marketAllowlist
+    ? findMarketInAllowlist(params.lendConfig.marketAllowlist, params.marketId)
     : undefined
 
   if (!marketConfig) {
     throw new Error(
-      `Market ${marketId.address} on chain ${marketId.chainId} not found in allowlist`,
+      `Market ${params.marketId.address} on chain ${params.marketId.chainId} not found in allowlist`,
     )
   }
 
   try {
     // Fetch live vault data from Morpho SDK
     const vault = await fetchAccrualVault(
-      marketId.address,
-      chainManager.getPublicClient(marketId.chainId),
+      params.marketId.address,
+      params.chainManager.getPublicClient(params.marketId.chainId),
     ).catch((error) => {
       console.error('Failed to fetch vault info:', error)
       return {
@@ -157,7 +153,7 @@ export async function getVault({
 
     // Fetch rewards data from API
     const rewardsBreakdown = await fetchAndCalculateRewards(
-      marketId.address,
+      params.marketId.address,
     ).catch((error) => {
       console.error('Failed to fetch rewards data:', error)
       return {
@@ -175,8 +171,8 @@ export async function getVault({
     const currentTimestampSeconds = Math.floor(Date.now() / 1000)
 
     return {
-      chainId: marketId.chainId,
-      address: marketId.address,
+      chainId: params.marketId.chainId,
+      address: params.marketId.address,
       name: marketConfig.name,
       asset: (marketConfig.asset.address[marketConfig.chainId] ||
         Object.values(marketConfig.asset.address)[0]) as Address,
@@ -192,7 +188,7 @@ export async function getVault({
   } catch (error) {
     console.error('Failed to get vault info:', error)
     throw new Error(
-      `Failed to get vault info for ${marketId.address}: ${
+      `Failed to get vault info for ${params.marketId.address}: ${
         error instanceof Error ? error.message : 'Unknown error'
       }`,
     )
@@ -205,20 +201,18 @@ interface GetVaultsParams {
   markets: LendMarketConfig[]
 }
 
-export async function getVaults({
-  chainManager,
-  lendConfig,
-  markets,
-}: GetVaultsParams): Promise<LendMarket[]> {
+export async function getVaults(
+  params: GetVaultsParams,
+): Promise<LendMarket[]> {
   try {
-    const vaultPromises = markets.map((marketConfig) => {
+    const vaultPromises = params.markets.map((marketConfig) => {
       return getVault({
         marketId: {
           address: marketConfig.address,
           chainId: marketConfig.chainId,
         },
-        chainManager,
-        lendConfig,
+        chainManager: params.chainManager,
+        lendConfig: params.lendConfig,
       })
     })
 

@@ -7,6 +7,7 @@ import type {
   GetLendMarketParams,
   GetLendMarketsParams,
   GetMarketBalanceParams,
+  LendClosePositionParams,
   LendConfig,
   LendMarket,
   LendMarketId,
@@ -14,7 +15,6 @@ import type {
   LendOpenPositionParams,
   LendOptions,
   LendTransaction,
-  WithdrawParams,
 } from '@/types/lend.js'
 
 import { LendProvider } from '../lend/provider.js'
@@ -161,47 +161,37 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     this.resetMocks()
   }
 
-  protected async _openPosition({
-    amount,
-    asset,
-    marketId,
-    options,
-  }: LendOpenPositionParams): Promise<LendTransaction> {
-    return this.createMockOpenPosition({ amount, asset, marketId, options })
+  protected async _openPosition(
+    params: LendOpenPositionParams,
+  ): Promise<LendTransaction> {
+    return this.createMockOpenPosition(params)
   }
 
   protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
     return this.createMockMarket(marketId)
   }
 
-  protected async _getMarkets({
-    asset: _asset,
-    chainId: _chainId,
-    markets: _markets,
-  }: GetLendMarketsParams): Promise<LendMarket[]> {
+  protected async _getMarkets(
+    _params: GetLendMarketsParams,
+  ): Promise<LendMarket[]> {
     return this.createMockMarkets()
   }
 
-  protected async _getMarketBalance({
-    marketId,
-    walletAddress,
-  }: GetMarketBalanceParams): Promise<LendMarketPosition> {
-    return this.createMockPosition(walletAddress, marketId)
+  protected async _getMarketBalance(
+    params: GetMarketBalanceParams,
+  ): Promise<LendMarketPosition> {
+    return this.createMockPosition(params.walletAddress, params.marketId)
   }
 
-  protected async _closePosition({
-    asset,
-    amount,
-    chainId,
-    marketId,
-    options,
-  }: WithdrawParams): Promise<LendTransaction> {
+  protected async _closePosition(
+    params: LendClosePositionParams,
+  ): Promise<LendTransaction> {
     return this.createMockWithdraw(
-      asset,
-      amount,
-      chainId as number,
-      marketId,
-      options,
+      params.asset,
+      params.amount,
+      params.chainId as number,
+      params.marketId,
+      params.options,
     )
   }
 

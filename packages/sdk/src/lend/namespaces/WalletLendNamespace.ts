@@ -43,23 +43,18 @@ export class WalletLendNamespace<
    * Open a lending position
    * @description Signs and sends a lend transaction from the wallet for the given amount and asset
    */
-  async openPosition({
-    amount,
-    asset,
-    marketId,
-    options,
-  }: LendOpenPositionParams): Promise<Hash> {
+  async openPosition(params: LendOpenPositionParams): Promise<Hash> {
     // Always use wallet address as receiver, ignore any receiver in options
     const lendOptions = {
-      ...options,
+      ...params.options,
       receiver: this.wallet.address,
     }
 
     // Get transaction details from provider
     const lendTransaction = await this.provider.openPosition({
-      amount,
-      asset,
-      marketId,
+      amount: params.amount,
+      asset: params.asset,
+      marketId: params.marketId,
       options: lendOptions,
     })
 
@@ -80,11 +75,14 @@ export class WalletLendNamespace<
     if (transactionData.approval) {
       return await this.wallet.sendBatch(
         [transactionData.approval, transactionData.deposit],
-        marketId.chainId,
+        params.marketId.chainId,
       )
     }
 
-    return await this.wallet.send(transactionData.deposit, marketId.chainId)
+    return await this.wallet.send(
+      transactionData.deposit,
+      params.marketId.chainId,
+    )
   }
 
   /**
@@ -105,23 +103,18 @@ export class WalletLendNamespace<
    * @param closePositionParams - Position closing parameters
    * @returns Promise resolving to transaction hash
    */
-  async closePosition({
-    amount,
-    asset,
-    marketId,
-    options,
-  }: ClosePositionParams): Promise<Hash> {
+  async closePosition(params: ClosePositionParams): Promise<Hash> {
     // Always use wallet address as receiver, ignore any receiver in options
     const closeOptions = {
-      ...options,
+      ...params.options,
       receiver: this.wallet.address,
     }
 
     // Get transaction details from provider
     const closeTransaction = await this.provider.closePosition({
-      amount,
-      asset,
-      marketId,
+      amount: params.amount,
+      asset: params.asset,
+      marketId: params.marketId,
       options: closeOptions,
     })
 
@@ -144,11 +137,14 @@ export class WalletLendNamespace<
     if (transactionData.approval) {
       return await this.wallet.sendBatch(
         [transactionData.approval, transactionData.deposit],
-        marketId.chainId,
+        params.marketId.chainId,
       )
     }
 
-    return await this.wallet.send(transactionData.deposit, marketId.chainId)
+    return await this.wallet.send(
+      transactionData.deposit,
+      params.marketId.chainId,
+    )
   }
 
   /**
