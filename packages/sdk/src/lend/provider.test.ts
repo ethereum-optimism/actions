@@ -140,16 +140,16 @@ describe('LendProvider', () => {
       expect(Array.isArray(markets)).toBe(true)
     })
 
-    it('should implement getMarketBalance method', async () => {
+    it('should implement getPosition method', async () => {
       const provider = new MockLendProvider({ provider: 'morpho' })
-      const balance = await provider.getMarketBalance(
-        { address: '0x1234' as Address, chainId: 84532 as const },
-        '0x5678' as Address,
-      )
+      const position = await provider.getPosition('0x5678' as Address, {
+        address: '0x1234' as Address,
+        chainId: 84532 as const,
+      })
 
-      expect(balance.balance).toBe(500000n)
-      expect(balance.shares).toBe(500000n)
-      expect(balance.chainId).toBe(84532)
+      expect(position.balance).toBe(500000n)
+      expect(position.shares).toBe(500000n)
+      expect(position.chainId).toBe(84532)
     })
 
     it('should implement withdraw method', async () => {

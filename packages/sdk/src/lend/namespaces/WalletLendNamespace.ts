@@ -1,10 +1,12 @@
 import type { Address, Hash } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import type { LendProvider } from '@/lend/provider.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   BaseLendConfig,
+  LendMarketId,
+  LendMarketPosition,
   LendOpenPositionParams,
   LendOptions,
   LendTransaction,
@@ -18,13 +20,26 @@ import type { Wallet } from '@/wallet/base/Wallet.js'
  */
 export class WalletLendNamespace<
   TConfig extends BaseLendConfig = BaseLendConfig,
-> extends VerbsLendNamespace<TConfig> {
+> {
   constructor(
-    provider: LendProvider<TConfig>,
+    protected readonly provider: LendProvider<TConfig>,
     private readonly wallet: Wallet,
-  ) {
-    super(provider)
+  ) {}
+
+  get config(): TConfig {
+    return this.provider.config
   }
+
+  // Inherited methods from VerbsLendNamespace
+  getMarkets = (...args: Parameters<LendProvider<TConfig>['getMarkets']>) =>
+    this.provider.getMarkets(...args)
+
+  getMarket = (...args: Parameters<LendProvider<TConfig>['getMarket']>) =>
+    this.provider.getMarket(...args)
+
+  supportedChainIds = (
+    ...args: Parameters<LendProvider<TConfig>['supportedChainIds']>
+  ) => this.provider.supportedChainIds(...args)
 
   /**
    * Open a lending position
@@ -84,6 +99,19 @@ export class WalletLendNamespace<
       'sendBatch' in wallet &&
       typeof wallet.sendBatch === 'function'
     )
+  }
+
+  /**
+   * Get position information for this wallet
+   * @param marketId - Market identifier (required)
+   * @param asset - Asset filter (not yet supported)
+   * @returns Promise resolving to position information
+   */
+  async getPosition(
+    marketId?: LendMarketId,
+    asset?: Asset,
+  ): Promise<LendMarketPosition> {
+    return this.provider.getPosition(this.wallet.address, marketId, asset)
   }
 
   /**

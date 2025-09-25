@@ -20,10 +20,6 @@ export class VerbsLendNamespace<TConfig extends BaseLendConfig = LendConfig> {
   getMarket = (...args: Parameters<LendProvider<TConfig>['getMarket']>) =>
     this.provider.getMarket(...args)
 
-  getMarketBalance = (
-    ...args: Parameters<LendProvider<TConfig>['getMarketBalance']>
-  ) => this.provider.getMarketBalance(...args)
-
   supportedChainIds = (
     ...args: Parameters<LendProvider<TConfig>['supportedChainIds']>
   ) => this.provider.supportedChainIds(...args)

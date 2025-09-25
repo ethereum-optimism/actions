@@ -148,13 +148,14 @@ export async function getWalletBalance(
       vaults.map(async (vault) => {
         try {
           const walletAddress = wallet.address
-          const vaultBalance = await verbs.lend.getMarketBalance(
-            {
-              address: vault.address,
-              chainId: vault.chainId as SupportedChainId,
-            },
-            walletAddress,
-          )
+          if (!wallet.lend) {
+            return null // Skip this vault if lend not configured
+          }
+
+          const vaultBalance = await wallet.lend.getPosition({
+            address: vault.address,
+            chainId: vault.chainId as SupportedChainId,
+          })
 
           // Only include vaults with non-zero balances
           if (vaultBalance.balance > 0n) {

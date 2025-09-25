@@ -8,9 +8,9 @@ import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
   LendMarket,
-  LendMarketBalance,
   LendMarketConfig,
   LendMarketId,
+  LendMarketPosition,
   LendOpenPositionParams,
   LendOptions,
   LendTransaction,
@@ -123,15 +123,30 @@ export abstract class LendProvider<
   }
 
   /**
-   * Get market balance for a specific wallet address
-   * @param marketId - Market identifier containing address and chainId
-   * @param walletAddress - User wallet address to check balance for
-   * @returns Promise resolving to market balance information
+   * Get position information for a wallet
+   * @param walletAddress - User wallet address to check position for
+   * @param marketId - Market identifier (required)
+   * @param asset - Asset filter (not yet supported)
+   * @returns Promise resolving to position information
    */
-  async getMarketBalance(
-    marketId: LendMarketId,
+  async getPosition(
     walletAddress: Address,
-  ): Promise<LendMarketBalance> {
+    marketId?: LendMarketId,
+    asset?: Asset,
+  ): Promise<LendMarketPosition> {
+    // For now, require marketId (asset-only and empty params not yet supported)
+    if (!marketId) {
+      throw new Error(
+        'marketId is required. Querying all positions or by asset is not yet supported.',
+      )
+    }
+
+    if (asset) {
+      throw new Error(
+        'Filtering by asset is not yet supported. Please provide only marketId.',
+      )
+    }
+
     this.validateProviderSupported(marketId.chainId)
     this.validateConfigSupported(marketId)
 
@@ -245,7 +260,7 @@ export abstract class LendProvider<
   protected abstract _getMarketBalance({
     marketId,
     walletAddress,
-  }: GetMarketBalanceParams): Promise<LendMarketBalance>
+  }: GetMarketBalanceParams): Promise<LendMarketPosition>
 
   /**
    * Provider implementation of withdraw method

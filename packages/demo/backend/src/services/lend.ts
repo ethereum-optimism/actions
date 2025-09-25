@@ -60,7 +60,7 @@ export async function getMarket(
   return await verbs.lend.getMarket({ address: marketId, chainId })
 }
 
-export async function getMarketBalance(
+export async function getPosition(
   vaultAddress: Address,
   walletId: string,
   chainId: SupportedChainId,
@@ -72,10 +72,11 @@ export async function getMarketBalance(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return verbs.lend.getMarketBalance(
-    { address: vaultAddress, chainId },
-    wallet.address,
-  )
+  if (!wallet.lend) {
+    throw new Error('Lend functionality not configured for this wallet')
+  }
+
+  return wallet.lend.getPosition({ address: vaultAddress, chainId })
 }
 
 export async function formatMarketResponse(

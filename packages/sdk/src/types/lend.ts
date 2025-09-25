@@ -221,10 +221,10 @@ export interface MorphoLendConfig extends BaseLendConfig {
 export type LendConfig = MorphoLendConfig
 
 /**
- * Market balance information
- * @description Balance details for a user in a lending market
+ * Market position information
+ * @description Position details for a user in a lending market
  */
-export interface LendMarketBalance {
+export interface LendMarketPosition {
   /** Asset balance in wei */
   balance: bigint
   /** Formatted asset balance */
@@ -284,6 +284,17 @@ export interface WithdrawParams {
   marketId?: string
   /** Optional withdrawal configuration */
   options?: LendOptions
+}
+
+/**
+ * Parameters for getting position information
+ * @description Parameters for retrieving wallet position details
+ */
+export interface GetPositionParams {
+  /** Optional specific market ID to get position for */
+  marketId?: LendMarketId
+  /** Optional asset to filter positions by */
+  asset?: Asset
 }
 
 /**
@@ -369,5 +380,5 @@ export interface LendProviderMethods {
   _getMarketBalance({
     marketId,
     walletAddress,
-  }: GetMarketBalanceParams): Promise<LendMarketBalance>
+  }: GetMarketBalanceParams): Promise<LendMarketPosition>
 }

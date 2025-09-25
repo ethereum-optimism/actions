@@ -10,8 +10,8 @@ import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
   LendMarket,
-  LendMarketBalance,
   LendMarketId,
+  LendMarketPosition,
   LendOpenPositionParams,
   LendTransaction,
   MorphoLendConfig,
@@ -192,7 +192,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   protected async _getMarketBalance({
     marketId,
     walletAddress,
-  }: GetMarketBalanceParams): Promise<LendMarketBalance> {
+  }: GetMarketBalanceParams): Promise<LendMarketPosition> {
     try {
       const publicClient = this.chainManager.getPublicClient(marketId.chainId)
 

@@ -101,7 +101,7 @@ export class LendController {
       const {
         params: { vaultAddress, walletId, chainId },
       } = validation.data
-      const balance = await lendService.getMarketBalance(
+      const balance = await lendService.getPosition(
         vaultAddress as Address,
         walletId,
         Number(chainId) as SupportedChainId,
