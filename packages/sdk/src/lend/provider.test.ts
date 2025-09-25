@@ -152,6 +152,18 @@ describe('LendProvider', () => {
       expect(position.chainId).toBe(84532)
     })
 
+    it('should implement closePosition method', async () => {
+      const provider = new MockLendProvider({ provider: 'morpho' })
+      const result = await provider.closePosition({
+        amount: 100,
+        marketId: { address: '0x1234' as Address, chainId: 84532 as const },
+      })
+
+      expect(result.amount).toBe(100n)
+      expect(result.marketId).toBe('0x1234')
+      expect(typeof result.transactionData).toBe('object')
+    })
+
     it('should implement withdraw method', async () => {
       const provider = new MockLendProvider({ provider: 'morpho' })
       const result = await provider.withdraw(

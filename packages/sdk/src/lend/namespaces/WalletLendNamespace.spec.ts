@@ -12,15 +12,23 @@ describe('WalletLendNamespace', () => {
   const mockWalletAddress = getRandomAddress()
   let mockProvider: LendProvider
   let mockWallet: SmartWallet
+  let mockRegularWallet: any
 
   beforeEach(() => {
     mockProvider = createMockLendProvider()
-    // Create a mock wallet with send and sendBatch methods
+    // Create a mock SmartWallet with send and sendBatch methods
     mockWallet = {
       address: mockWalletAddress,
       send: vi.fn().mockResolvedValue('0xmockhash' as Hash),
       sendBatch: vi.fn().mockResolvedValue('0xmockbatchhash' as Hash),
     } as unknown as SmartWallet
+
+    // Create a mock regular wallet without SmartWallet methods
+    mockRegularWallet = {
+      address: mockWalletAddress,
+      send: undefined,
+      sendBatch: undefined,
+    }
   })
 
   it('should create an instance with a lend provider and wallet', () => {
@@ -109,62 +117,71 @@ describe('WalletLendNamespace', () => {
     })
   })
 
-  describe('withdraw', () => {
-    it('should call provider withdraw with wallet address as receiver', async () => {
+  describe('closePosition', () => {
+    it('should call provider closePosition and execute transaction for SmartWallet', async () => {
       const namespace = new WalletLendNamespace(mockProvider, mockWallet)
-      const asset = getRandomAddress()
-      const amount = BigInt('500000')
-      const marketId = 'test-market'
+      const closeParams = {
+        amount: 100,
+        marketId: { address: getRandomAddress(), chainId: 130 as const },
+      }
+
       const mockTransaction = {
-        amount,
-        asset,
-        marketId,
+        amount: 100n,
+        asset: getRandomAddress(),
+        marketId: closeParams.marketId.address,
         apy: 0.05,
         timestamp: Date.now(),
         transactionData: {
           deposit: {
-            to: asset,
+            to: closeParams.marketId.address,
             value: 0n,
             data: '0x' as const,
           },
         },
-        slippage: 50,
       }
 
-      vi.mocked(mockProvider.withdraw).mockResolvedValue(mockTransaction)
+      vi.mocked(mockProvider.closePosition).mockResolvedValue(mockTransaction)
+      vi.mocked(mockWallet.send).mockResolvedValue('0xtxhash' as Hash)
 
-      const result = await namespace.withdraw(asset, amount, 130, marketId)
+      const result = await namespace.closePosition(closeParams)
 
-      expect(mockProvider.withdraw).toHaveBeenCalledWith(
-        asset,
-        amount,
+      expect(mockProvider.closePosition).toHaveBeenCalledWith({
+        ...closeParams,
+        options: { receiver: mockWallet.address },
+      })
+      expect(mockWallet.send).toHaveBeenCalledWith(
+        mockTransaction.transactionData.deposit,
         130,
-        marketId,
-        {
-          receiver: mockWalletAddress,
-        },
       )
-      expect(result).toBe(mockTransaction)
+      expect(result).toBe('0xtxhash')
     })
 
-    it('should always use wallet address as receiver, ignoring custom receiver', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWallet)
-      const asset = getRandomAddress()
-      const amount = BigInt('500000')
-      const customReceiver = getRandomAddress()
-      const options = { receiver: customReceiver, slippage: 200 }
+    it('should throw error for non-SmartWallet', async () => {
+      const namespace = new WalletLendNamespace(mockProvider, mockRegularWallet)
+      const closeParams = {
+        amount: 100,
+        marketId: { address: getRandomAddress(), chainId: 130 as const },
+      }
 
-      await namespace.withdraw(asset, amount, 130, undefined, options)
-
-      expect(mockProvider.withdraw).toHaveBeenCalledWith(
-        asset,
-        amount,
-        130,
-        undefined,
-        {
-          receiver: mockWalletAddress, // Should always be wallet address
-          slippage: 200,
+      const mockTransaction = {
+        amount: 100n,
+        asset: getRandomAddress(),
+        marketId: closeParams.marketId.address,
+        apy: 0.05,
+        timestamp: Date.now(),
+        transactionData: {
+          deposit: {
+            to: closeParams.marketId.address,
+            value: 0n,
+            data: '0x' as const,
+          },
         },
+      }
+
+      vi.mocked(mockProvider.closePosition).mockResolvedValue(mockTransaction)
+
+      await expect(namespace.closePosition(closeParams)).rejects.toThrow(
+        'Transaction execution is only supported for SmartWallet instances',
       )
     })
   })

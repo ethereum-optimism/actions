@@ -3,6 +3,7 @@ import { type MockedFunction, vi } from 'vitest'
 
 import type { Asset } from '@/types/asset.js'
 import type {
+  ClosePositionParams,
   GetLendMarketParams,
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -44,6 +45,9 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       marketId?: LendMarketId,
       asset?: Asset,
     ) => Promise<LendMarketPosition>
+  >
+  public closePosition: MockedFunction<
+    (closePositionParams: ClosePositionParams) => Promise<LendTransaction>
   >
   public withdraw: MockedFunction<
     (
@@ -93,6 +97,9 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     this.getPosition = vi
       .fn()
       .mockImplementation(this.createMockPosition.bind(this))
+    this.closePosition = vi
+      .fn()
+      .mockImplementation(this.createMockClosePosition.bind(this))
     this.withdraw = vi
       .fn()
       .mockImplementation(this.createMockWithdraw.bind(this))
@@ -143,6 +150,9 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     )
     this.getMarkets.mockImplementation(this.createMockMarkets.bind(this))
     this.getPosition.mockImplementation(this.createMockPosition.bind(this))
+    this.closePosition.mockImplementation(
+      this.createMockClosePosition.bind(this),
+    )
     this.withdraw.mockImplementation(this.createMockWithdraw.bind(this))
   }
 
@@ -179,7 +189,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     return this.createMockPosition(walletAddress, marketId)
   }
 
-  protected async _withdraw({
+  protected async _closePosition({
     asset,
     amount,
     chainId,
@@ -278,6 +288,34 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       shares: this.mockConfig.mockBalance / 2n,
       sharesFormatted: (this.mockConfig.mockBalance / 2n).toString(),
       chainId: marketId.chainId,
+    }
+  }
+
+  private async createMockClosePosition({
+    amount,
+    asset,
+    marketId,
+    options,
+  }: ClosePositionParams): Promise<LendTransaction> {
+    // If asset provided, use its address for the chain; otherwise use a mock asset
+    const assetAddress =
+      asset?.address[marketId.chainId] ||
+      ('0x1234567890123456789012345678901234567890' as Address)
+
+    return {
+      amount: BigInt(amount),
+      asset: assetAddress,
+      marketId: marketId.address,
+      apy: 0,
+      timestamp: Math.floor(Date.now() / 1000),
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
+      transactionData: {
+        deposit: {
+          to: marketId.address,
+          data: '0xb460af94' as Address,
+          value: 0n,
+        },
+      },
     }
   }
 

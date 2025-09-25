@@ -270,8 +270,9 @@ export interface LendParams {
 }
 
 /**
- * Parameters for withdraw operation
+ * Parameters for withdraw operation (legacy)
  * @description Parameters required for withdrawing assets
+ * @deprecated Use ClosePositionParams instead
  */
 export interface WithdrawParams {
   /** Asset token address to withdraw */
@@ -282,6 +283,21 @@ export interface WithdrawParams {
   chainId: SupportedChainId
   /** Optional specific market ID */
   marketId?: string
+  /** Optional withdrawal configuration */
+  options?: LendOptions
+}
+
+/**
+ * Parameters for closing a lending position
+ * @description Parameters required for withdrawing from a lending position
+ */
+export interface ClosePositionParams {
+  /** Amount to withdraw (human-readable number) */
+  amount: number
+  /** Asset to withdraw (optional - will be validated against marketId) */
+  asset?: Asset
+  /** Market identifier containing address and chainId */
+  marketId: LendMarketId
   /** Optional withdrawal configuration */
   options?: LendOptions
 }

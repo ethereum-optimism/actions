@@ -4,6 +4,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   BaseLendConfig,
+  ClosePositionParams,
   GetLendMarketParams,
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -12,7 +13,6 @@ import type {
   LendMarketId,
   LendMarketPosition,
   LendOpenPositionParams,
-  LendOptions,
   LendTransaction,
   WithdrawParams,
 } from '@/types/lend.js'
@@ -154,23 +154,49 @@ export abstract class LendProvider<
   }
 
   /**
-   * Withdraw/redeem assets from a market
-   * @param asset - Asset token address to withdraw
-   * @param amount - Amount to withdraw (in wei)
-   * @param chainId - Chain ID for the transaction
-   * @param marketId - Optional specific market ID
+   * Close a lending position (withdraw assets from a market)
+   * @param amount - Amount to withdraw (human-readable number)
+   * @param asset - Asset to withdraw (optional, validated against marketId)
+   * @param marketId - Market identifier containing address and chainId
    * @param options - Optional withdrawal configuration
    * @returns Promise resolving to withdrawal transaction details
    */
-  async withdraw(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    this.validateProviderSupported(chainId)
-    return this._withdraw({ asset, amount, chainId, marketId, options })
+  async closePosition({
+    amount,
+    asset,
+    marketId,
+    options,
+  }: ClosePositionParams): Promise<LendTransaction> {
+    this.validateProviderSupported(marketId.chainId)
+    this.validateConfigSupported(marketId)
+
+    // If asset is provided, validate it matches the market's asset
+    if (asset) {
+      const market = await this.getMarket(marketId)
+      const marketAssetAddress = market.asset as Address
+      const providedAssetAddress = asset.address[marketId.chainId]
+
+      if (marketAssetAddress !== providedAssetAddress) {
+        throw new Error(
+          `Asset mismatch: provided ${providedAssetAddress} but market ${marketId.address} uses ${marketAssetAddress}`,
+        )
+      }
+    }
+
+    // Get the market info to determine the asset if not provided
+    const market = await this.getMarket(marketId)
+    const assetAddress = market.asset as Address
+
+    // Convert human-readable amount to wei
+    const amountWei = BigInt(amount) // TODO: Add proper decimal conversion
+
+    return this._closePosition({
+      asset: assetAddress,
+      amount: amountWei,
+      chainId: marketId.chainId,
+      marketId: marketId.address,
+      options,
+    })
   }
 
   /**
@@ -263,10 +289,10 @@ export abstract class LendProvider<
   }: GetMarketBalanceParams): Promise<LendMarketPosition>
 
   /**
-   * Provider implementation of withdraw method
+   * Provider implementation of closePosition method
    * @description Must be implemented by providers
    */
-  protected abstract _withdraw({
+  protected abstract _closePosition({
     asset,
     amount,
     chainId,

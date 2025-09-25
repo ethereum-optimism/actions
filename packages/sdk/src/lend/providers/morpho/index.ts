@@ -131,12 +131,12 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   }
 
   /**
-   * Withdraw assets from a Morpho market
+   * Close a position in a Morpho market
    * @description Withdraws assets from a Morpho market using Blue_Withdraw operation
-   * @param params - Withdrawal operation parameters
+   * @param params - Position closing operation parameters
    * @returns Promise resolving to withdrawal transaction details
    */
-  protected async _withdraw({
+  protected async _closePosition({
     asset,
     amount,
     chainId,
@@ -146,7 +146,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
     // TODO: Implement withdrawal functionality
 
     const _unused = { asset, amount, chainId, marketId, options }
-    throw new Error('Withdraw functionality not yet implemented')
+    throw new Error('Close position functionality not yet implemented')
   }
 
   /**

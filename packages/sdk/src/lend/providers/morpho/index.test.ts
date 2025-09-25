@@ -69,22 +69,21 @@ describe('LendProviderMorpho', () => {
     })
   })
 
-  describe('withdraw', () => {
-    it('should throw error for unimplemented withdraw functionality', async () => {
-      const asset = MockGauntletUSDCMarket.asset.address[
-        MockGauntletUSDCMarket.chainId
-      ]! as Address
-      const amount = BigInt('1000000000') // 1000 USDC
-      const marketId = MockGauntletUSDCMarket.address
+  describe('closePosition', () => {
+    it('should throw error during closePosition due to getMarket failure', async () => {
+      const mockAsset = MockGauntletUSDCMarket.asset
+      const marketId = {
+        address: MockGauntletUSDCMarket.address,
+        chainId: MockGauntletUSDCMarket.chainId,
+      }
 
       await expect(
-        provider.withdraw(
-          asset,
-          amount,
-          MockGauntletUSDCMarket.chainId,
+        provider.closePosition({
+          amount: 1000,
+          asset: mockAsset,
           marketId,
-        ),
-      ).rejects.toThrow('Withdraw functionality not yet implemented')
+        }),
+      ).rejects.toThrow('Failed to get vault info')
     })
   })
 

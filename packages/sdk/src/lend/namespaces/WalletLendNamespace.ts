@@ -1,15 +1,13 @@
-import type { Address, Hash } from 'viem'
+import type { Hash } from 'viem'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { LendProvider } from '@/lend/provider.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   BaseLendConfig,
+  ClosePositionParams,
   LendMarketId,
   LendMarketPosition,
   LendOpenPositionParams,
-  LendOptions,
-  LendTransaction,
 } from '@/types/lend.js'
 import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
 import type { Wallet } from '@/wallet/base/Wallet.js'
@@ -90,18 +88,6 @@ export class WalletLendNamespace<
   }
 
   /**
-   * Type guard to check if wallet is a SmartWallet
-   */
-  private isSmartWallet(wallet: Wallet): wallet is SmartWallet {
-    return (
-      'send' in wallet &&
-      typeof wallet.send === 'function' &&
-      'sendBatch' in wallet &&
-      typeof wallet.sendBatch === 'function'
-    )
-  }
-
-  /**
    * Get position information for this wallet
    * @param marketId - Market identifier (required)
    * @param asset - Asset filter (not yet supported)
@@ -115,27 +101,65 @@ export class WalletLendNamespace<
   }
 
   /**
-   * Withdraw assets from a market
+   * Close a lending position (withdraw from market)
+   * @param closePositionParams - Position closing parameters
+   * @returns Promise resolving to transaction hash
    */
-  async withdraw(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
+  async closePosition({
+    amount,
+    asset,
+    marketId,
+    options,
+  }: ClosePositionParams): Promise<Hash> {
     // Always use wallet address as receiver, ignore any receiver in options
-    const withdrawOptions: LendOptions = {
+    const closeOptions = {
       ...options,
       receiver: this.wallet.address,
     }
 
-    return this.provider.withdraw(
-      asset,
+    // Get transaction details from provider
+    const closeTransaction = await this.provider.closePosition({
       amount,
-      chainId,
+      asset,
       marketId,
-      withdrawOptions,
+      options: closeOptions,
+    })
+
+    // Execute the transaction using wallet
+    const { transactionData } = closeTransaction
+    if (!transactionData) {
+      throw new Error(
+        'No transaction data returned from close position provider',
+      )
+    }
+
+    // Check if wallet is a SmartWallet (has send/sendBatch methods)
+    if (!this.isSmartWallet(this.wallet)) {
+      throw new Error(
+        'Transaction execution is only supported for SmartWallet instances',
+      )
+    }
+
+    // Execute approval + withdraw or just withdraw
+    if (transactionData.approval) {
+      return await this.wallet.sendBatch(
+        [transactionData.approval, transactionData.deposit],
+        marketId.chainId,
+      )
+    }
+
+    return await this.wallet.send(transactionData.deposit, marketId.chainId)
+  }
+
+  /**
+   * Type guard to check if wallet is a SmartWallet
+   */
+  private isSmartWallet(wallet: Wallet): wallet is SmartWallet {
+    return (
+      'send' in wallet &&
+      typeof wallet.send === 'function' &&
+      'sendBatch' in wallet &&
+      typeof wallet.sendBatch === 'function'
     )
   }
 }
