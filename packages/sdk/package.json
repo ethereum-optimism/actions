@@ -66,7 +66,11 @@
     "@dynamic-labs/ethereum": ">=4.31.4",
     "@dynamic-labs/wallet-connector-core": ">=4.31.4",
     "@dynamic-labs/waas-evm": ">=4.31.4",
-    "@privy-io/server-auth": ">=1.28.0"
+    "@privy-io/server-auth": ">=1.28.0",
+    "@turnkey/core": ">=1.1.1",
+    "@turnkey/http": ">=3.12.1",
+    "@turnkey/sdk-server": ">=4.9.1",
+    "@turnkey/viem": ">=0.14.1"
   },
   "devDependencies": {
     "@types/node": "^18",
