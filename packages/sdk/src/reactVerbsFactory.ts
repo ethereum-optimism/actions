@@ -1,6 +1,6 @@
 import type { VerbsConfig } from '@/types/verbs.js'
 import { Verbs } from '@/verbs.js'
-import { ReactHostedWalletProviderRegistry } from '@/wallet/providers/ReactHostedWalletProviderRegistry.js'
+import { ReactHostedWalletProviderRegistry } from '@/wallet/react/providers/registry/ReactHostedWalletProviderRegistry.js'
 
 /**
  * Creates a React/browser environment Verbs factory

@@ -1,7 +1,7 @@
 import type { VerbsConfig } from '@/types/verbs.js'
 import { Verbs } from '@/verbs.js'
-import type { NodeHostedProviderType } from '@/wallet/providers/hostedProvider.types.js'
-import { NodeHostedWalletProviderRegistry } from '@/wallet/providers/NodeHostedWalletProviderRegistry.js'
+import type { NodeHostedProviderType } from '@/wallet/core/providers/hosted/types/index.js'
+import { NodeHostedWalletProviderRegistry } from '@/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.js'
 
 /**
  * Creates a Node environment Verbs factory

@@ -4,15 +4,15 @@ import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendConfig, LendProvider } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
-import type { HostedWalletProviderRegistry } from '@/wallet/providers/base/HostedWalletProviderRegistry.js'
-import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
-import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
+import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
+import type { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
 import type {
   HostedProviderInstanceMap,
   HostedProviderType,
-} from '@/wallet/providers/hostedProvider.types.js'
-import { WalletNamespace } from '@/wallet/WalletNamespace.js'
-import { WalletProvider } from '@/wallet/WalletProvider.js'
+} from '@/wallet/core/providers/hosted/types/index.js'
+import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
+import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
+import { WalletProvider } from '@/wallet/core/providers/wallet/WalletProvider.js'
 
 /**
  * Main Verbs SDK class
