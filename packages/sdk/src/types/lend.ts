@@ -272,7 +272,6 @@ export interface LendParams {
 /**
  * Parameters for withdraw operation (legacy)
  * @description Parameters required for withdrawing assets
- * @deprecated Use ClosePositionParams instead
  */
 export interface LendClosePositionParams {
   /** Asset token address to withdraw */
@@ -286,11 +285,6 @@ export interface LendClosePositionParams {
   /** Optional withdrawal configuration */
   options?: LendOptions
 }
-
-/**
- * @deprecated Use LendClosePositionParams instead
- */
-export type WithdrawParams = LendClosePositionParams
 
 /**
  * Parameters for closing a lending position
