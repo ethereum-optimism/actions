@@ -238,18 +238,32 @@ export interface LendMarketPosition {
 }
 
 /**
- * Parameters for opening a lending position
- * @description Parameters required for opening a lending position
+ * Base parameters shared between public and internal lending position interfaces
  */
-export interface LendOpenPositionParams {
-  /** Amount to lend (human-readable number) */
-  amount: number
+export interface LendOpenPositionBaseParams {
   /** Asset to lend */
   asset: Asset
   /** Market identifier containing address and chainId */
   marketId: LendMarketId
   /** Optional lending configuration */
   options?: LendOptions
+}
+
+/**
+ * Parameters for opening a lending position
+ * @description Parameters required for opening a lending position
+ */
+export interface LendOpenPositionParams extends LendOpenPositionBaseParams {
+  /** Amount to lend (human-readable number) */
+  amount: number
+}
+
+/**
+ * Internal parameters for provider _openPosition method with amount already converted to wei
+ */
+export interface LendOpenPositionInternalParams extends LendOpenPositionBaseParams {
+  /** Amount to lend in wei */
+  amountWei: bigint
 }
 
 /**

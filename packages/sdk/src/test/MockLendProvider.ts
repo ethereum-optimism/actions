@@ -12,6 +12,7 @@ import type {
   LendMarket,
   LendMarketId,
   LendMarketPosition,
+  LendOpenPositionInternalParams,
   LendOpenPositionParams,
   LendOptions,
   LendTransaction,
@@ -162,7 +163,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
   }
 
   protected async _openPosition(
-    params: LendOpenPositionParams,
+    params: LendOpenPositionInternalParams,
   ): Promise<LendTransaction> {
     return this.createMockOpenPosition(params)
   }
@@ -196,19 +197,16 @@ export class MockLendProvider extends LendProvider<LendConfig> {
   }
 
   private async createMockOpenPosition({
-    amount,
+    amountWei,
     asset,
     marketId,
     options,
-  }: LendOpenPositionParams): Promise<LendTransaction> {
+  }: LendOpenPositionInternalParams): Promise<LendTransaction> {
     // Get asset address for the chain
     const assetAddress = asset.address[marketId.chainId]
     if (!assetAddress) {
       throw new Error(`Asset not supported on chain ${marketId.chainId}`)
     }
-
-    // Convert human-readable amount to wei (mock conversion)
-    const amountWei = BigInt(Math.floor(amount * 10 ** asset.metadata.decimals))
 
     return {
       amount: amountWei,

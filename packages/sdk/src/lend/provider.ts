@@ -1,4 +1,5 @@
 import type { Address } from 'viem'
+import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
@@ -13,6 +14,7 @@ import type {
   LendMarketConfig,
   LendMarketId,
   LendMarketPosition,
+  LendOpenPositionInternalParams,
   LendOpenPositionParams,
   LendTransaction,
 } from '@/types/lend.js'
@@ -66,7 +68,17 @@ export abstract class LendProvider<
   async openPosition(params: LendOpenPositionParams): Promise<LendTransaction> {
     this.validateProviderSupported(params.marketId.chainId)
     this.validateConfigSupported(params.marketId)
-    return this._openPosition(params)
+
+    // Convert human-readable amount to wei using the asset's decimals
+    const amountWei = parseUnits(
+      params.amount.toString(),
+      params.asset.metadata.decimals,
+    )
+
+    return this._openPosition({
+      ...params,
+      amountWei,
+    })
   }
 
   /**
@@ -150,20 +162,17 @@ export abstract class LendProvider<
     this.validateProviderSupported(params.marketId.chainId)
     this.validateConfigSupported(params.marketId)
 
-    // If asset is provided, validate it matches the market's asset
-    if (params.asset) {
-      const market = await this.getMarket({
-        address: params.marketId.address,
-        chainId: params.marketId.chainId,
-      })
-      validateMarketAsset(market, params.asset)
-    }
-
-    // Get the market info to determine the asset if not provided
+    // Get the market info once for both validation and asset extraction
     const market = await this.getMarket({
       address: params.marketId.address,
       chainId: params.marketId.chainId,
     })
+
+    // If asset is provided, validate it matches the market's asset
+    if (params.asset) {
+      validateMarketAsset(market, params.asset)
+    }
+
     const assetAddress = market.asset as Address
 
     // Convert human-readable amount to wei
@@ -253,7 +262,7 @@ export abstract class LendProvider<
    * @description Must be implemented by providers
    */
   protected abstract _openPosition(
-    params: LendOpenPositionParams,
+    params: LendOpenPositionInternalParams,
   ): Promise<LendTransaction>
 
   /**

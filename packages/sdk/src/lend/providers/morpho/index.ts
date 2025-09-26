@@ -1,6 +1,6 @@
 import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import { encodeFunctionData, erc20Abi, formatUnits, parseUnits } from 'viem'
+import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 
@@ -12,7 +12,7 @@ import type {
   LendMarket,
   LendMarketId,
   LendMarketPosition,
-  LendOpenPositionParams,
+  LendOpenPositionInternalParams,
   LendTransaction,
   MorphoLendConfig,
 } from '../../../types/lend.js'
@@ -58,7 +58,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
    * @returns Promise resolving to lending transaction details
    */
   protected async _openPosition(
-    params: LendOpenPositionParams,
+    params: LendOpenPositionInternalParams,
   ): Promise<LendTransaction> {
     try {
       // Get asset address for the chain
@@ -68,12 +68,6 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
           `Asset not supported on chain ${params.marketId.chainId}`,
         )
       }
-
-      // Convert human-readable amount to wei using the asset's decimals
-      const amountWei = parseUnits(
-        params.amount.toString(),
-        params.asset.metadata.decimals,
-      )
 
       // Get vault information for APY
       const vaultInfo = await this.getMarket({
@@ -88,20 +82,23 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
           'Receiver address is required for Morpho deposit operation',
         )
       }
-      const depositCallData = MetaMorphoAction.deposit(amountWei, receiver)
+      const depositCallData = MetaMorphoAction.deposit(
+        params.amountWei,
+        receiver,
+      )
 
       // Create approval transaction data if needed
       const approvalCallData = encodeFunctionData({
         abi: erc20Abi,
         functionName: 'approve',
-        args: [params.marketId.address, amountWei],
+        args: [params.marketId.address, params.amountWei],
       })
 
       // Return transaction details with real call data
       const currentTimestamp = Math.floor(Date.now() / 1000)
 
       return {
-        amount: amountWei,
+        amount: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy,
@@ -124,7 +121,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
       }
     } catch (error) {
       throw new Error(
-        `Failed to open position with ${params.amount} of ${params.asset.metadata.symbol}: ${
+        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       )
