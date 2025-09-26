@@ -92,6 +92,7 @@ export function calculateBaseApy(vault: any): number {
 }
 
 /**
+ * TEMPORARY - To be removed in https://github.com/ethereum-optimism/verbs/issues/112
  * Create mock vault data for Base Sepolia (testnet)
  * @param marketId - Market identifier
  * @param marketConfig - Market configuration from allowlist

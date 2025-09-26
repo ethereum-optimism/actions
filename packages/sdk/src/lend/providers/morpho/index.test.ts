@@ -186,29 +186,6 @@ describe('LendProviderMorpho', () => {
       expect(lendTransaction.apy).toBeGreaterThan(0)
     })
 
-    it('should find best market when marketId not provided', async () => {
-      // This test doesn't apply to openPosition which requires marketId
-      // Remove or replace with a different test
-      const amount = 1000
-      const asset = MockGauntletUSDCMarket.asset
-      const marketId = {
-        address: MockGauntletUSDCMarket.address,
-        chainId: MockGauntletUSDCMarket.chainId,
-      }
-
-      const lendTransaction = await provider.openPosition({
-        amount,
-        asset,
-        marketId,
-        options: {
-          receiver: MockReceiverAddress,
-        },
-      })
-
-      expect(lendTransaction).toHaveProperty('marketId')
-      expect(lendTransaction.marketId).toBeTruthy()
-    })
-
     it('should handle lending errors', async () => {
       const invalidAsset = {
         address: {
