@@ -48,14 +48,16 @@ export async function createWallet(): Promise<{
   }
 }
 
-export async function getWallet(walletId: string): Promise<SmartWallet | null> {
+export async function getWallet(userId: string): Promise<SmartWallet | null> {
   const verbs = getVerbs()
   const privyClient = getPrivyClient()
+  console.log('userId', userId)
   const privyWallet = await privyClient.walletApi
     .getWallet({
-      id: walletId,
+      id: userId,
     })
     .catch(() => null)
+  console.log('privyWallet', privyWallet)
   if (!privyWallet) {
     return privyWallet
   }
@@ -63,10 +65,12 @@ export async function getWallet(walletId: string): Promise<SmartWallet | null> {
     walletId: privyWallet.id,
     address: privyWallet.address,
   })
+  console.log('verbsPrivyWallet', verbsPrivyWallet)
   const wallet = await verbs.wallet.getSmartWallet({
     signer: verbsPrivyWallet.signer,
     deploymentOwners: [getAddress(privyWallet.address)],
   })
+  console.log('wallet', wallet)
   return wallet
 }
 
@@ -75,11 +79,23 @@ export async function getUserWallet(
 ): Promise<SmartWallet | null> {
   const verbs = getVerbs()
   const privyClient = getPrivyClient()
-  const privyUser = await privyClient.getUserById(userId).catch(() => null)
+  console.log('userId', userId)
+
+  // TODO No idea why this was needed. possibly because we switched from Clerk to Privy?
+  const actualUserId = userId.startsWith('did:privy:')
+    ? userId.replace('did:privy:', '')
+    : userId
+
+  console.log('actualUserId', actualUserId)
+  const privyUser = await privyClient
+    .getUser({ idToken: actualUserId })
+    .catch(() => null)
+  console.log('privyUser', privyUser)
   if (!privyUser) {
     return null
   }
   const privyWallet = privyUser.wallet
+  console.log('privyWallet', privyWallet)
   if (!privyWallet) {
     return null
   }
@@ -87,10 +103,12 @@ export async function getUserWallet(
     walletId: privyWallet.id!,
     address: privyWallet.address,
   })
+  console.log('verbsPrivyWallet', verbsPrivyWallet)
   const wallet = await verbs.wallet.getSmartWallet({
     signer: verbsPrivyWallet.signer,
     deploymentOwners: [getAddress(privyWallet.address)],
   })
+  console.log('wallet', wallet)
   return wallet
 }
 
