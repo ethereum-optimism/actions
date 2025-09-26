@@ -1,8 +1,4 @@
 import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  HostedProviderType,
-  HostedWalletToVerbsOptionsFor,
-} from '@/wallet/core/providers/hosted/types/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
@@ -12,7 +8,8 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
  * as signers for smart wallets or standalone wallet functionality.
  */
 export abstract class HostedWalletProvider<
-  T extends HostedProviderType = HostedProviderType,
+  TType extends string,
+  TOptionsMap extends Record<TType, unknown>,
 > {
   protected chainManager: ChainManager
 
@@ -25,7 +22,5 @@ export abstract class HostedWalletProvider<
    * @param params - Parameters for converting a hosted wallet to a Verbs wallet
    * @returns Promise resolving to the Verbs wallet instance
    */
-  abstract toVerbsWallet(
-    params: HostedWalletToVerbsOptionsFor<T>,
-  ): Promise<Wallet>
+  abstract toVerbsWallet(params: TOptionsMap[TType]): Promise<Wallet>
 }

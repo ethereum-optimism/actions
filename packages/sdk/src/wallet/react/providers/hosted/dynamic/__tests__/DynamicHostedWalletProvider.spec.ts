@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import type { DynamicHostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
+import type { DynamicHostedWalletToVerbsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 
 // Mock DynamicWallet module to avoid importing browser-related deps
 vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', () => {

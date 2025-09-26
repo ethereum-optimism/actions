@@ -1,79 +1,73 @@
-import type { PrivyClient } from '@privy-io/server-auth'
-import type { TurnkeySDKClientBase } from '@turnkey/core'
-import type { TurnkeyClient as TurnkeyHttpClient } from '@turnkey/http'
-import type { TurnkeyServerClient } from '@turnkey/sdk-server'
-
 import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  DynamicHostedWalletToVerbsWalletOptions,
-  PrivyHostedWalletToVerbsWalletOptions,
-  TurnkeyHostedWalletToVerbsWalletOptions,
-} from '@/types/wallet.js'
-import type { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import type { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
-import type { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
+import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 
-export interface PrivyOptions {
-  privyClient: PrivyClient
-}
-
-export interface TurnkeyOptions {
-  /**
-   * Turnkey client instance (HTTP, server, or core SDK base)
-   */
-  client: TurnkeyHttpClient | TurnkeyServerClient | TurnkeySDKClientBase
-  /**
-   * Turnkey organization ID that owns the signing key
-   */
-  organizationId: string
-}
-
-export type DynamicOptions = undefined
-export interface HostedProviderConfigMap {
-  privy: PrivyOptions
-  dynamic: DynamicOptions
-  turnkey: TurnkeyOptions
-}
-
-export interface HostedProviderInstanceMap {
-  privy: PrivyHostedWalletProvider
-  dynamic: DynamicHostedWalletProvider
-  turnkey: TurnkeyHostedWalletProvider
-}
-
-export interface HostedWalletToVerbsOptionsMap {
-  privy: PrivyHostedWalletToVerbsWalletOptions
-  dynamic: DynamicHostedWalletToVerbsWalletOptions
-  turnkey: TurnkeyHostedWalletToVerbsWalletOptions
-}
-
-export type HostedProviderType = keyof HostedProviderConfigMap
-
-export type NodeHostedProviderType = Extract<
-  HostedProviderType,
-  'privy' | 'turnkey'
->
-
-export type HostedWalletToVerbsType = keyof HostedWalletToVerbsOptionsMap
-
+/**
+ * Common dependencies provided to hosted provider factories
+ * @description
+ * Environment-agnostic services that providers require at creation time.
+ * Currently limited to `ChainManager`, but can be extended as needed.
+ */
 export interface HostedProviderDeps {
   chainManager: ChainManager
 }
 
-export type ProviderSpec<TType extends HostedProviderType> = {
+/**
+ * Provider registration specification
+ * @description
+ * Declarative description of a hosted wallet provider used when registering
+ * a provider factory in a registry.
+ * @template TType Unique provider key (e.g. 'privy', 'turnkey')
+ * @template TConfig Configuration object type for the provider
+ */
+export type ProviderSpec<
+  TType extends string,
+  TConfigMap extends { [K in TType]: unknown },
+> = {
   type: TType
-  config?: HostedProviderConfigMap[TType]
+  config?: TConfigMap[TType]
 }
 
-export interface HostedProviderFactory<TType extends HostedProviderType> {
+/**
+ * Hosted wallet provider factory
+ * @description
+ * Factory contract used by registries to validate configuration and create
+ * concrete hosted wallet provider instances.
+ * @template TType Unique provider key
+ * @template TInstance Concrete provider instance produced by this factory
+ * @template TOptions Options type accepted by `validateOptions` and `create`
+ */
+export interface HostedProviderFactory<
+  TType extends string,
+  TInstance,
+  TOptions = unknown,
+> {
   type: TType
-  validateOptions(options: unknown): options is HostedProviderConfigMap[TType]
-  create(
-    deps: HostedProviderDeps,
-    options: HostedProviderConfigMap[TType],
-  ): HostedProviderInstanceMap[TType]
+  validateOptions(options: unknown): options is TOptions
+  create(deps: HostedProviderDeps, options: TOptions): TInstance
 }
 
-// Helper to get options type for a given provider type
-export type HostedWalletToVerbsOptionsFor<T extends HostedProviderType> =
-  HostedWalletToVerbsOptionsMap[T]
+/**
+ * Complete hosted wallet providers schema (environment-agnostic)
+ * @description
+ * Bundles provider type keys, concrete provider instances, creation configs,
+ * and `toVerbsWallet` parameter types for a given environment (Node or React).
+ * This schema enables precise typing in `Verbs` and registries without widening
+ * keys to generic `string`.
+ * @template ProviderTypes Union of provider keys for the environment
+ * @template ProviderInstanceMap Map of provider key to concrete instance
+ * @template ProviderConfigMap Map of provider key to factory config type
+ * @template ToVerbsOptionsMap Map of provider key to `toVerbsWallet` params
+ */
+export type HostedWalletProvidersSchema<
+  ProviderTypes extends string,
+  ProviderInstanceMap extends {
+    [K in ProviderTypes]: HostedWalletProvider<K, ToVerbsOptionsMap>
+  },
+  ProviderConfigMap extends { [K in ProviderTypes]: unknown },
+  ToVerbsOptionsMap extends { [K in ProviderTypes]: unknown },
+> = {
+  providerTypes: ProviderTypes
+  providerInstances: ProviderInstanceMap
+  providerConfigs: ProviderConfigMap
+  providerToVerbsOptions: ToVerbsOptionsMap
+}

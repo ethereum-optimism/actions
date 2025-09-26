@@ -3,24 +3,28 @@ import type {
   GetSmartWalletOptions,
 } from '@/types/wallet.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
-import type { HostedProviderType } from '@/wallet/core/providers/hosted/types/index.js'
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { WalletProvider } from '@/wallet/core/providers/wallet/WalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
-
 /**
  * Wallet namespace that provides unified wallet operations
  * @description Provides access to wallet functionality through a single provider interface
  */
 export class WalletNamespace<
-  H extends
-    HostedWalletProvider<HostedProviderType> = HostedWalletProvider<HostedProviderType>,
+  THostedProviderType extends string,
+  TToVerbsMap extends Record<THostedProviderType, unknown>,
+  H extends HostedWalletProvider<
+    THostedProviderType,
+    TToVerbsMap
+  > = HostedWalletProvider<THostedProviderType, TToVerbsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
-  private provider: WalletProvider<H, S>
+  private provider: WalletProvider<THostedProviderType, TToVerbsMap, H, S>
 
-  constructor(provider: WalletProvider<H, S>) {
+  constructor(
+    provider: WalletProvider<THostedProviderType, TToVerbsMap, H, S>,
+  ) {
     this.provider = provider
   }
 
@@ -70,7 +74,7 @@ export class WalletNamespace<
    * @returns Promise resolving to the Verbs wallet instance
    */
   async hostedWalletToVerbsWallet(
-    params: Parameters<H['toVerbsWallet']>[0],
+    params: TToVerbsMap[THostedProviderType],
   ): Promise<Wallet> {
     return this.provider.hostedWalletToVerbsWallet(params)
   }

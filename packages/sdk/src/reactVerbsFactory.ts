@@ -1,6 +1,19 @@
 import type { VerbsConfig } from '@/types/verbs.js'
 import { Verbs } from '@/verbs.js'
+import type {
+  ReactHostedWalletProvidersSchema,
+  ReactOptionsMap,
+  ReactProviderTypes,
+} from '@/wallet/react/providers/hosted/types/index.js'
 import { ReactHostedWalletProviderRegistry } from '@/wallet/react/providers/registry/ReactHostedWalletProviderRegistry.js'
+
+/**
+ * React Verbs configuration
+ * @description Configuration object for initializing the Verbs SDK in React
+ */
+export type ReactVerbsConfig<
+  HostedWalletProviderType extends ReactProviderTypes,
+> = VerbsConfig<HostedWalletProviderType, ReactOptionsMap>
 
 /**
  * Creates a React/browser environment Verbs factory
@@ -11,8 +24,14 @@ import { ReactHostedWalletProviderRegistry } from '@/wallet/react/providers/regi
  * @param config Verbs configuration
  * @returns Verbs instance using the ReactHostedWalletProviderRegistry
  */
-export function createVerbs(config: VerbsConfig<'dynamic'>) {
-  return new Verbs(config, {
+export function createVerbs<
+  HostedWalletProviderType extends ReactProviderTypes,
+>(config: ReactVerbsConfig<HostedWalletProviderType>) {
+  return new Verbs<
+    ReactHostedWalletProvidersSchema['providerTypes'],
+    ReactHostedWalletProvidersSchema,
+    HostedWalletProviderType
+  >(config, {
     hostedWalletProviderRegistry: new ReactHostedWalletProviderRegistry(),
   })
 }

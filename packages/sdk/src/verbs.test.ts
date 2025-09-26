@@ -4,21 +4,37 @@ import { describe, expect, it } from 'vitest'
 
 import type { LendMarketConfig, MorphoLendConfig } from '@/types/lend.js'
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
-import type { PrivyOptions } from '@/wallet/core/providers/hosted/types/index.js'
+import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
+import type {
+  NodeOptionsMap,
+  NodeToVerbsOptionsMap,
+} from '@/wallet/node/providers/hosted/types/index.js'
 
 import { createMockPrivyClient } from './test/MockPrivyClient.js'
 import { externalTest } from './utils/test.js'
 import { Verbs } from './verbs.js'
 
 describe('Verbs SDK', () => {
-  class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry {
+  type TestInstanceMap = { privy: PrivyHostedWalletProvider }
+  type TestConfigMap = { privy: NodeOptionsMap['privy'] }
+  type TestWalletProvider = HostedWalletProvidersSchema<
+    'privy',
+    TestInstanceMap,
+    TestConfigMap,
+    NodeToVerbsOptionsMap
+  >
+  class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
+    TestInstanceMap,
+    TestConfigMap,
+    'privy'
+  > {
     constructor() {
       super()
       this.register<'privy'>({
         type: 'privy',
-        validateOptions(options): options is PrivyOptions {
-          return Boolean((options as PrivyOptions)?.privyClient)
+        validateOptions(options): options is NodeOptionsMap['privy'] {
+          return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
         },
         create({ chainManager }, options) {
           return new PrivyHostedWalletProvider(
@@ -33,7 +49,11 @@ describe('Verbs SDK', () => {
   describe('Configuration', () => {
     describe('Morpho Provider Configuration', () => {
       it('should create Morpho provider when provider is set to morpho', () => {
-        const verbs = new Verbs(
+        const verbs = new Verbs<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
           {
             chains: [{ chainId: unichain.id }],
             lend: {
@@ -68,7 +88,11 @@ describe('Verbs SDK', () => {
 
       it('should create Morpho provider with custom default slippage', () => {
         const customSlippage = 150
-        const verbs = new Verbs(
+        const verbs = new Verbs<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
           {
             chains: [{ chainId: unichain.id }],
             lend: {
@@ -123,7 +147,11 @@ describe('Verbs SDK', () => {
           lendProvider: 'morpho',
         }
 
-        const verbs = new Verbs(
+        const verbs = new Verbs<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
           {
             chains: [{ chainId: unichain.id }],
             lend: {
@@ -201,7 +229,11 @@ describe('Verbs SDK', () => {
           },
         ]
 
-        const verbs = new Verbs(
+        const verbs = new Verbs<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
           {
             chains: [{ chainId: unichain.id }],
             lend: {
@@ -273,7 +305,11 @@ describe('Verbs SDK', () => {
       })
 
       it('should work without lend configuration', () => {
-        const verbs = new Verbs(
+        const verbs = new Verbs<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
           {
             chains: [{ chainId: unichain.id }],
             wallet: {
@@ -380,7 +416,11 @@ describe('Verbs SDK', () => {
 
     describe('Integration with ChainManager', () => {
       it('should pass chain configuration to lending provider', () => {
-        const verbs = new Verbs(
+        const verbs = new Verbs<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
           {
             chains: [
               { chainId: unichain.id },
@@ -466,7 +506,11 @@ describe('Verbs SDK', () => {
         'should fetch real vault info from Morpho on Unichain',
         async () => {
           // Create Verbs instance with Morpho lending configured
-          const verbs = new Verbs(
+          const verbs = new Verbs<
+            TestWalletProvider['providerTypes'],
+            TestWalletProvider,
+            'privy'
+          >(
             {
               chains: [
                 {
@@ -516,7 +560,11 @@ describe('Verbs SDK', () => {
         'should fetch real vault info from Morpho on Unichain',
         async () => {
           // Create Verbs instance with Morpho lending configured
-          const verbs = new Verbs(
+          const verbs = new Verbs<
+            TestWalletProvider['providerTypes'],
+            TestWalletProvider,
+            'privy'
+          >(
             {
               chains: [
                 {
@@ -603,7 +651,11 @@ describe('Verbs SDK', () => {
       it.runIf(externalTest())(
         'should fetch vault info with enhanced rewards data',
         async () => {
-          const verbs = new Verbs(
+          const verbs = new Verbs<
+            TestWalletProvider['providerTypes'],
+            TestWalletProvider,
+            'privy'
+          >(
             {
               chains: [
                 {
@@ -710,7 +762,11 @@ describe('Verbs SDK', () => {
       )
 
       it.runIf(externalTest())('should get list of vaults', async () => {
-        const verbs = new Verbs(
+        const verbs = new Verbs<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
           {
             chains: [
               {

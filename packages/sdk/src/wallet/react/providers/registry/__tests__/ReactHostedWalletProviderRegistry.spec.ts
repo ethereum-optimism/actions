@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import type { DynamicOptions } from '@/wallet/core/providers/hosted/types/index.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
+import type { ReactOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
 import { ReactHostedWalletProviderRegistry } from '@/wallet/react/providers/registry/ReactHostedWalletProviderRegistry.js'
 
 // Mock the dynamic provider to avoid importing any browser-only dependencies
@@ -33,9 +33,9 @@ describe('ReactHostedWalletProviderRegistry', () => {
 
     expect(factory.type).toBe('dynamic')
     // Dynamic options are currently empty; any object should validate to true
-    expect(factory.validateOptions?.(undefined satisfies DynamicOptions)).toBe(
-      true,
-    )
+    expect(
+      factory.validateOptions?.(undefined as ReactOptionsMap['dynamic']),
+    ).toBe(true)
   })
 
   it('creates a DynamicHostedWalletProvider instance', () => {
@@ -44,7 +44,7 @@ describe('ReactHostedWalletProviderRegistry', () => {
 
     const provider = factory.create(
       { chainManager: mockChainManager },
-      undefined as DynamicOptions,
+      undefined as ReactOptionsMap['dynamic'],
     )
 
     expect(provider).toBeInstanceOf(DynamicHostedWalletProvider)

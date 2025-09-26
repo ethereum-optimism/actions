@@ -12,8 +12,8 @@ import { toAccount } from 'viem/accounts'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { DynamicHostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import type { DynamicHostedWalletToVerbsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 
 /**
  * Dynamic wallet implementation
