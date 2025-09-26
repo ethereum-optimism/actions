@@ -134,7 +134,7 @@ export abstract class LendProvider<
     this.validateProviderSupported(marketId.chainId)
     this.validateConfigSupported(marketId)
 
-    return this._getMarketBalance({ marketId, walletAddress })
+    return this._getPosition({ marketId, walletAddress })
   }
 
   /**
@@ -277,10 +277,10 @@ export abstract class LendProvider<
   ): Promise<LendMarket[]>
 
   /**
-   * Provider implementation of getMarketBalance method
+   * Provider implementation of getPosition method
    * @description Must be implemented by providers
    */
-  protected abstract _getMarketBalance(
+  protected abstract _getPosition(
     params: GetMarketBalanceParams,
   ): Promise<LendMarketPosition>
 

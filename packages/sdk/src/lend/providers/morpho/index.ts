@@ -186,11 +186,11 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   }
 
   /**
-   * Get market balance for a specific wallet address
-   * @param params - Parameters for fetching market balance
-   * @returns Promise resolving to market balance information
+   * Get position for a specific wallet address
+   * @param params - Parameters for fetching position
+   * @returns Promise resolving to position information
    */
-  protected async _getMarketBalance(
+  protected async _getPosition(
     params: GetMarketBalanceParams,
   ): Promise<LendMarketPosition> {
     try {

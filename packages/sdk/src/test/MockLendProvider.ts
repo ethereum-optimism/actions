@@ -177,7 +177,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     return this.createMockMarkets()
   }
 
-  protected async _getMarketBalance(
+  protected async _getPosition(
     params: GetMarketBalanceParams,
   ): Promise<LendMarketPosition> {
     return this.createMockPosition(params.walletAddress, params.marketId)

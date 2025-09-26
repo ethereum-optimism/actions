@@ -388,11 +388,11 @@ export interface LendProviderMethods {
   _getMarkets(): Promise<LendMarket[]>
 
   /**
-   * Provider implementation of getMarketBalance method
-   * @param params - Parameters for fetching market balance
-   * @returns Promise resolving to market balance information
+   * Provider implementation of getPosition method
+   * @param params - Parameters for fetching position
+   * @returns Promise resolving to position information
    */
-  _getMarketBalance({
+  _getPosition({
     marketId,
     walletAddress,
   }: GetMarketBalanceParams): Promise<LendMarketPosition>
