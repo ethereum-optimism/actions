@@ -1,17 +1,21 @@
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
-import type { DynamicOptions } from '@/wallet/core/providers/hosted/types/index.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
+import type {
+  ReactHostedProviderInstanceMap,
+  ReactOptionsMap,
+  ReactProviderTypes,
+} from '@/wallet/react/providers/hosted/types/index.js'
 
-/**
- * React/browser hosted wallet registry.
- * Registers browser-only providers for client apps.
- */
-export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegistry {
+export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
+  ReactHostedProviderInstanceMap,
+  ReactOptionsMap,
+  ReactProviderTypes
+> {
   public constructor() {
     super()
     this.register<'dynamic'>({
       type: 'dynamic',
-      validateOptions(_options): _options is DynamicOptions {
+      validateOptions(_options): _options is ReactOptionsMap['dynamic'] {
         return true
       },
       create({ chainManager }, _options) {

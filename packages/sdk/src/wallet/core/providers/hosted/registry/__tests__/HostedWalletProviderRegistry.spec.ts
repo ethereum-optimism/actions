@@ -6,16 +6,21 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
-import type { PrivyOptions } from '@/wallet/core/providers/hosted/types/index.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
+import type { NodeOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
 
-class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry {
+type TestInstanceMap = { privy: PrivyHostedWalletProvider }
+class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
+  TestInstanceMap,
+  Pick<NodeOptionsMap, 'privy'>,
+  'privy'
+> {
   constructor() {
     super()
     this.register<'privy'>({
       type: 'privy',
-      validateOptions(options): options is PrivyOptions {
-        return Boolean((options as PrivyOptions)?.privyClient)
+      validateOptions(options): options is NodeOptionsMap['privy'] {
+        return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
       },
       create({ chainManager }, options) {
         return new PrivyHostedWalletProvider(options.privyClient, chainManager)

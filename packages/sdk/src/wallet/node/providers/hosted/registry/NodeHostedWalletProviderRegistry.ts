@@ -1,22 +1,23 @@
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
-import type {
-  PrivyOptions,
-  TurnkeyOptions,
-} from '@/wallet/core/providers/hosted/types/index.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
+import type {
+  NodeHostedProviderInstanceMap,
+  NodeOptionsMap,
+  NodeProviderTypes,
+} from '@/wallet/node/providers/hosted/types/index.js'
 
-/**
- * Node environment hosted wallet registry.
- * Registers server-safe providers for use in Node.
- */
-export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegistry {
+export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
+  NodeHostedProviderInstanceMap,
+  NodeOptionsMap,
+  NodeProviderTypes
+> {
   public constructor() {
     super()
     this.register<'privy'>({
       type: 'privy',
-      validateOptions(options): options is PrivyOptions {
-        return Boolean((options as PrivyOptions)?.privyClient)
+      validateOptions(options): options is NodeOptionsMap['privy'] {
+        return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
       },
       create({ chainManager }, options) {
         return new PrivyHostedWalletProvider(options.privyClient, chainManager)
@@ -25,8 +26,8 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
 
     this.register<'turnkey'>({
       type: 'turnkey',
-      validateOptions(options): options is TurnkeyOptions {
-        const o = options as TurnkeyOptions
+      validateOptions(options): options is NodeOptionsMap['turnkey'] {
+        const o = options as NodeOptionsMap['turnkey']
         return Boolean(o?.client) && typeof o?.organizationId === 'string'
       },
       create({ chainManager }, options) {

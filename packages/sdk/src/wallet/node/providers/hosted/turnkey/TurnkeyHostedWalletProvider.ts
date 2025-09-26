@@ -3,9 +3,9 @@ import type { TurnkeyClient as TurnkeyHttpClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { TurnkeyHostedWalletToVerbsWalletOptions } from '@/types/wallet.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import type { NodeToVerbsOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
 import { TurnkeyWallet } from '@/wallet/node/wallets/hosted/turnkey/TurnkeyWallet.js'
 
 /**
@@ -15,7 +15,10 @@ import { TurnkeyWallet } from '@/wallet/node/wallets/hosted/turnkey/TurnkeyWalle
  * environments where the Turnkey client (HTTP, server, or core SDK) and
  * organization context are provided at construction time.
  */
-export class TurnkeyHostedWalletProvider extends HostedWalletProvider<'turnkey'> {
+export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
+  'turnkey',
+  NodeToVerbsOptionsMap
+> {
   /**
    * Create a new Turnkey wallet provider
    * @param client - Turnkey client instance (HTTP, server, or core SDK base)
@@ -43,7 +46,7 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<'turnkey'>
    * @returns Promise resolving to a Verbs-compatible wallet instance
    */
   async toVerbsWallet(
-    params: TurnkeyHostedWalletToVerbsWalletOptions,
+    params: NodeToVerbsOptionsMap['turnkey'],
   ): Promise<Wallet> {
     return TurnkeyWallet.create({
       client: this.client,

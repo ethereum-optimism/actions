@@ -6,10 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
-import type { PrivyOptions } from '@/wallet/core/providers/hosted/types/index.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import { NodeHostedWalletProviderRegistry } from '@/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.js'
 import { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
+import type { NodeOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
 
 describe('NodeHostedWalletProviderRegistry', () => {
   const mockChainManager = new MockChainManager({
@@ -31,9 +31,11 @@ describe('NodeHostedWalletProviderRegistry', () => {
     const factory = registry.getFactory('privy')
 
     expect(factory.type).toBe('privy')
-    expect(factory.validateOptions?.({ privyClient: mockPrivyClient })).toBe(
-      true,
-    )
+    expect(
+      factory.validateOptions?.({
+        privyClient: mockPrivyClient,
+      } as NodeOptionsMap['privy']),
+    ).toBe(true)
     // Invalid shape should not pass validation
     expect(factory.validateOptions?.({})).toBe(false)
   })
@@ -44,7 +46,7 @@ describe('NodeHostedWalletProviderRegistry', () => {
 
     const provider = factory.create({ chainManager: mockChainManager }, {
       privyClient: mockPrivyClient,
-    } satisfies PrivyOptions)
+    } as NodeOptionsMap['privy'])
 
     expect(provider).toBeInstanceOf(PrivyHostedWalletProvider)
   })
@@ -58,7 +60,7 @@ describe('NodeHostedWalletProviderRegistry', () => {
       factory.validateOptions?.({
         client: mockTurnkeyClient,
         organizationId: 'org_123',
-      }),
+      } as NodeOptionsMap['turnkey']),
     ).toBe(true)
     // Invalid shape should not pass validation
     expect(factory.validateOptions?.({})).toBe(false)

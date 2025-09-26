@@ -5,7 +5,6 @@ import type {
   GetSmartWalletOptions,
 } from '@/types/wallet.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
-import type { HostedProviderType } from '@/wallet/core/providers/hosted/types/index.js'
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
@@ -16,7 +15,9 @@ import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWall
  * Provides a unified interface for all wallet operations while supporting pluggable providers.
  */
 export class WalletProvider<
-  H extends HostedWalletProvider<HostedProviderType>,
+  THostedProviderType extends string,
+  TToVerbsMap extends Record<THostedProviderType, unknown>,
+  H extends HostedWalletProvider<THostedProviderType, TToVerbsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   constructor(
@@ -58,7 +59,7 @@ export class WalletProvider<
   }
 
   async hostedWalletToVerbsWallet(
-    params: Parameters<H['toVerbsWallet']>[0],
+    params: TToVerbsMap[THostedProviderType],
   ): Promise<Wallet> {
     return this.hostedWalletProvider.toVerbsWallet(params)
   }
