@@ -76,7 +76,9 @@ export async function getPosition(
     throw new Error('Lend functionality not configured for this wallet')
   }
 
-  return wallet.lend.getPosition({ address: vaultAddress, chainId })
+  return wallet.lend.getPosition({
+    marketId: { address: vaultAddress, chainId }
+  })
 }
 
 export async function formatMarketResponse(

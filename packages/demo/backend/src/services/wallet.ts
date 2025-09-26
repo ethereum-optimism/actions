@@ -115,8 +115,8 @@ export async function getAllWallets(
   }
 }
 
-export async function getBalance(walletId: string): Promise<TokenBalance[]> {
-  const wallet = await getWallet(walletId)
+export async function getBalance(userId: string): Promise<TokenBalance[]> {
+  const wallet = await getWallet(userId)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
@@ -144,13 +144,12 @@ export async function getWalletBalance(
             return null // Skip this vault if lend not configured
           }
 
-          const vaultBalance = await wallet.lend.getPosition(
-            {
+          const vaultBalance = await wallet.lend.getPosition({
+            marketId: {
               address: vault.address,
               chainId: vault.chainId as SupportedChainId,
-            },
-            undefined,
-          )
+            }
+          })
 
           // Only include vaults with non-zero balances
           if (vaultBalance.balance > 0n) {

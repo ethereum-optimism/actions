@@ -5,6 +5,7 @@ import type { Asset } from '@/types/asset.js'
 import type {
   BaseLendConfig,
   ClosePositionParams,
+  GetPositionParams,
   LendMarketId,
   LendMarketPosition,
   LendOpenPositionParams,
@@ -84,15 +85,17 @@ export class WalletLendNamespace<
 
   /**
    * Get position information for this wallet
-   * @param marketId - Market identifier (required)
-   * @param asset - Asset filter (not yet supported)
+   * @param params - Position query parameters
+   * @param params.marketId - Market identifier (required)
+   * @param params.asset - Asset filter (not yet supported)
    * @returns Promise resolving to position information
    */
-  async getPosition(
-    marketId?: LendMarketId,
-    asset?: Asset,
-  ): Promise<LendMarketPosition> {
-    return this.provider.getPosition(this.wallet.address, marketId, asset)
+  async getPosition(params: GetPositionParams): Promise<LendMarketPosition> {
+    return this.provider.getPosition(
+      this.wallet.address,
+      params.marketId,
+      params.asset,
+    )
   }
 
   /**
