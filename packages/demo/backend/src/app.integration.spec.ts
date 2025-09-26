@@ -29,8 +29,8 @@ vi.mock('./config/verbs.js', () => ({
             ]),
           lend: {
             getPosition: vi.fn(
-              ({ address, chainId }: { address: string; chainId: number }) => {
-                if (address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
+              ({ marketId }: { marketId: { address: string; chainId: number } }) => {
+                if (marketId.address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
                   return Promise.resolve({
                     balance: 1000000n,
                     balanceFormatted: '1',
@@ -44,7 +44,7 @@ vi.mock('./config/verbs.js', () => ({
                   balanceFormatted: '0',
                   shares: 0n,
                   sharesFormatted: '0',
-                  chainId: chainId,
+                  chainId: marketId.chainId,
                 })
               },
             ),
@@ -74,14 +74,12 @@ vi.mock('./config/verbs.js', () => ({
             lend: {
               getPosition: vi.fn(
                 ({
-                  address,
-                  chainId,
+                  marketId,
                 }: {
-                  address: string
-                  chainId: number
+                  marketId: { address: string; chainId: number }
                 }) => {
                   if (
-                    address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
+                    marketId.address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
                   ) {
                     return Promise.resolve({
                       balance: 1000000n,
@@ -96,7 +94,7 @@ vi.mock('./config/verbs.js', () => ({
                     balanceFormatted: '0',
                     shares: 0n,
                     sharesFormatted: '0',
-                    chainId: chainId,
+                    chainId: marketId.chainId,
                   })
                 },
               ),
