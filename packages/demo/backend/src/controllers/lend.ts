@@ -150,9 +150,17 @@ export class LendController {
 
       // Use userId if authenticated, otherwise use walletId
       if (auth && auth.userId) {
-        hash = await lendService.openPosition(auth.userId, params, true)
+        hash = await lendService.openPosition({
+          identifier: auth.userId,
+          params,
+          isUserWallet: true,
+        })
       } else {
-        hash = await lendService.openPosition(walletId, params, false)
+        hash = await lendService.openPosition({
+          identifier: walletId,
+          params,
+          isUserWallet: false,
+        })
       }
 
       const blockExplorerUrl = await lendService.getBlockExplorerUrl(

@@ -131,15 +131,20 @@ interface OpenPositionParams {
 
 /**
  * Open a lending position
- * @param identifier - Can be either a userId (for authenticated users) or walletId
- * @param params - Position parameters
- * @param isUserWallet - If true, identifier is treated as userId; if false, as walletId
+ * @param config - Configuration object with named parameters
+ * @param config.identifier - Can be either a userId (for authenticated users) or walletId
+ * @param config.params - Position parameters
+ * @param config.isUserWallet - If true, identifier is treated as userId; if false, as walletId
  */
-export async function openPosition(
-  identifier: string,
-  { amount, asset: assetInfo, marketId, options }: OpenPositionParams,
+export async function openPosition({
+  identifier,
+  params: { amount, asset: assetInfo, marketId, options },
   isUserWallet = false,
-): Promise<Hash> {
+}: {
+  identifier: string
+  params: OpenPositionParams
+  isUserWallet?: boolean
+}): Promise<Hash> {
   // Get wallet based on identifier type
   const wallet = await getWallet(identifier, isUserWallet)
 
