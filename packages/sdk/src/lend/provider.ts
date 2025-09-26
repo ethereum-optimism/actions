@@ -16,6 +16,7 @@ import type {
   LendOpenPositionParams,
   LendTransaction,
 } from '@/types/lend.js'
+import { validateMarketAsset } from '@/utils/markets.js'
 
 /**
  * Lending provider abstract class
@@ -155,14 +156,7 @@ export abstract class LendProvider<
         address: params.marketId.address,
         chainId: params.marketId.chainId,
       })
-      const marketAssetAddress = market.asset as Address
-      const providedAssetAddress = params.asset.address[params.marketId.chainId]
-
-      if (marketAssetAddress !== providedAssetAddress) {
-        throw new Error(
-          `Asset mismatch: provided ${providedAssetAddress} but market ${params.marketId.address} uses ${marketAssetAddress}`,
-        )
-      }
+      validateMarketAsset(market, params.asset)
     }
 
     // Get the market info to determine the asset if not provided
