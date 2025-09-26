@@ -1,17 +1,15 @@
 import type { Hash } from 'viem'
 
 import type { LendProvider } from '@/lend/provider.js'
-import type { Asset } from '@/types/asset.js'
 import type {
   BaseLendConfig,
   ClosePositionParams,
   GetPositionParams,
-  LendMarketId,
   LendMarketPosition,
   LendOpenPositionParams,
 } from '@/types/lend.js'
-import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
-import type { Wallet } from '@/wallet/base/Wallet.js'
+import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 /**
  * Wallet Lend Namespace

@@ -77,7 +77,7 @@ export async function getPosition(
   }
 
   return wallet.lend.getPosition({
-    marketId: { address: vaultAddress, chainId }
+    marketId: { address: vaultAddress, chainId },
   })
 }
 

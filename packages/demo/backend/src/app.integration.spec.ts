@@ -29,8 +29,15 @@ vi.mock('./config/verbs.js', () => ({
             ]),
           lend: {
             getPosition: vi.fn(
-              ({ marketId }: { marketId: { address: string; chainId: number } }) => {
-                if (marketId.address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
+              ({
+                marketId,
+              }: {
+                marketId: { address: string; chainId: number }
+              }) => {
+                if (
+                  marketId.address ===
+                  '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
+                ) {
                   return Promise.resolve({
                     balance: 1000000n,
                     balanceFormatted: '1',
@@ -79,7 +86,8 @@ vi.mock('./config/verbs.js', () => ({
                   marketId: { address: string; chainId: number }
                 }) => {
                   if (
-                    marketId.address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
+                    marketId.address ===
+                    '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
                   ) {
                     return Promise.resolve({
                       balance: 1000000n,

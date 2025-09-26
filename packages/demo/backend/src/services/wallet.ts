@@ -148,7 +148,7 @@ export async function getWalletBalance(
             marketId: {
               address: vault.address,
               chainId: vault.chainId as SupportedChainId,
-            }
+            },
           })
 
           // Only include vaults with non-zero balances

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
 import type { LendProvider, TransactionData } from '@/types/lend.js'
-import type { SmartWallet } from '@/wallet/base/SmartWallet.js'
+import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 import { WalletLendNamespace } from './WalletLendNamespace.js'
 
