@@ -1,6 +1,7 @@
 import type { AccrualPosition } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import type { Address } from 'viem'
+import { parseEther } from 'viem'
 
 import {
   fetchRewards,
@@ -91,6 +92,43 @@ export function calculateBaseApy(vault: any): number {
 }
 
 /**
+ * Create mock vault data for Base Sepolia (testnet)
+ * @param marketId - Market identifier
+ * @param marketConfig - Market configuration from allowlist
+ * @returns Mock vault data with realistic values
+ */
+function createMockVaultData(
+  marketId: LendMarketId,
+  marketConfig: LendMarketConfig,
+): LendMarket {
+  const mockApyBreakdown: ApyBreakdown = {
+    nativeApy: 0.058, // 5.8% gross APY
+    performanceFee: 0.065, // 6.5% performance fee
+    netApy: 0.0542, // 5.42% net APY
+    usdc: 0.0125, // USDC rewards
+    morpho: 0.008, // MORPHO token rewards
+    other: 0.003, // Other protocol rewards
+    totalRewardsApr: 0.0235, // Total rewards APR
+  }
+
+  return {
+    chainId: marketId.chainId,
+    address: marketId.address,
+    name: marketConfig.name,
+    asset: (marketConfig.asset.address[marketConfig.chainId] ||
+      Object.values(marketConfig.asset.address)[0]) as Address,
+    totalAssets: parseEther('125000'), // ~$125K TVL
+    totalShares: parseEther('120000'), // Slightly lower shares (some yield accrued)
+    apy: mockApyBreakdown.netApy,
+    apyBreakdown: mockApyBreakdown,
+    owner: '0x742d35Cc6464C42C0b15De2C4c98F7E8c3e0F1d9' as Address, // Mock owner
+    curator: '0x8f3Cf7ad23Cd3CaDbD9735aff958023239c6A063' as Address, // Mock curator
+    fee: mockApyBreakdown.performanceFee,
+    lastUpdate: Math.floor(Date.now() / 1000) - 300, // 5 minutes ago
+  }
+}
+
+/**
  * Parameters for getvault function
  */
 interface GetVaultParams {
@@ -134,6 +172,12 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     throw new Error(
       `Market ${params.marketId.address} on chain ${params.marketId.chainId} not found in allowlist`,
     )
+  }
+
+  // Morpho sdk doesn't support base sepolia, so we need to use the mock vault
+  if (params.marketId.chainId === 84532) {
+    console.log('Using mock vault for base sepolia')
+    return createMockVaultData(params.marketId, marketConfig)
   }
 
   try {
