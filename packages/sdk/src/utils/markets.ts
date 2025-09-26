@@ -13,7 +13,8 @@ import type { LendMarket } from '@/types/lend.js'
 export function validateMarketAsset(market: LendMarket, asset: Asset): void {
   if (!isMarketAsset(market, asset)) {
     const marketAssetAddress = market.asset as Address
-    const providedAssetAddress = asset.address[market.chainId as SupportedChainId]
+    const providedAssetAddress =
+      asset.address[market.chainId as SupportedChainId]
     throw new Error(
       `Asset mismatch: provided ${providedAssetAddress} but market ${market.address} uses ${marketAssetAddress}`,
     )

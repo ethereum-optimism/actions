@@ -165,7 +165,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
   protected async _openPosition(
     params: LendOpenPositionInternalParams,
   ): Promise<LendTransaction> {
-    return this.createMockOpenPosition(params)
+    return this.createMockOpenPositionInternal(params)
   }
 
   protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
@@ -197,6 +197,43 @@ export class MockLendProvider extends LendProvider<LendConfig> {
   }
 
   private async createMockOpenPosition({
+    amount,
+    asset,
+    marketId,
+    options,
+  }: LendOpenPositionParams): Promise<LendTransaction> {
+    // Get asset address for the chain
+    const assetAddress = asset.address[marketId.chainId]
+    if (!assetAddress) {
+      throw new Error(`Asset not supported on chain ${marketId.chainId}`)
+    }
+
+    // Convert human-readable amount to wei (mock conversion)
+    const amountWei = BigInt(Math.floor(amount * 10 ** asset.metadata.decimals))
+
+    return {
+      amount: amountWei,
+      asset: assetAddress,
+      marketId: marketId.address,
+      apy: this.mockConfig.defaultApy,
+      timestamp: Math.floor(Date.now() / 1000),
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
+      transactionData: {
+        approval: {
+          to: assetAddress,
+          data: '0x095ea7b3' as Address,
+          value: 0n,
+        },
+        deposit: {
+          to: marketId.address,
+          data: '0x6e553f65' as Address,
+          value: 0n,
+        },
+      },
+    }
+  }
+
+  private async createMockOpenPositionInternal({
     amountWei,
     asset,
     marketId,

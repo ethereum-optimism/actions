@@ -261,7 +261,8 @@ export interface LendOpenPositionParams extends LendOpenPositionBaseParams {
 /**
  * Internal parameters for provider _openPosition method with amount already converted to wei
  */
-export interface LendOpenPositionInternalParams extends LendOpenPositionBaseParams {
+export interface LendOpenPositionInternalParams
+  extends LendOpenPositionBaseParams {
   /** Amount to lend in wei */
   amountWei: bigint
 }
