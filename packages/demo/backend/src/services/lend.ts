@@ -8,7 +8,7 @@ import type { Address, Hash } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
-import { getUserWallet, getWallet } from './wallet.js'
+import { getWallet } from './wallet.js'
 
 interface MarketBalanceResult {
   balance: bigint
@@ -141,9 +141,7 @@ export async function openPosition(
   isUserWallet = false,
 ): Promise<Hash> {
   // Get wallet based on identifier type
-  const wallet = isUserWallet
-    ? await getUserWallet(identifier)
-    : await getWallet(identifier)
+  const wallet = await getWallet(identifier, isUserWallet)
 
   if (!wallet) {
     throw new Error(

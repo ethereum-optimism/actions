@@ -48,42 +48,34 @@ export async function createWallet(): Promise<{
   }
 }
 
-export async function getWallet(userId: string): Promise<SmartWallet | null> {
-  const verbs = getVerbs()
-  const privyClient = getPrivyClient()
-  const privyWallet = await privyClient.walletApi
-    .getWallet({
-      id: userId,
-    })
-    .catch(() => null)
-  if (!privyWallet) {
-    return privyWallet
-  }
-  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
-    walletId: privyWallet.id,
-    address: privyWallet.address,
-  })
-  const wallet = await verbs.wallet.getSmartWallet({
-    signer: verbsPrivyWallet.signer,
-    deploymentOwners: [getAddress(privyWallet.address)],
-  })
-  return wallet
-}
-
-export async function getUserWallet(
+export async function getWallet(
   userId: string,
+  isAuthedUser = false,
 ): Promise<SmartWallet | null> {
   const verbs = getVerbs()
   const privyClient = getPrivyClient()
 
-  const privyUser = await privyClient.getUserById(userId)
-  if (!privyUser) {
-    return null
+  let privyWallet
+  if (isAuthedUser) {
+    // Get wallet via user ID (for authenticated users)
+    const privyUser = await privyClient.getUserById(userId)
+    if (!privyUser) {
+      return null
+    }
+    privyWallet = privyUser.wallet
+  } else {
+    // Get wallet directly via wallet ID (legacy behavior)
+    privyWallet = await privyClient.walletApi
+      .getWallet({
+        id: userId,
+      })
+      .catch(() => null)
   }
-  const privyWallet = privyUser.wallet
+
   if (!privyWallet) {
     return null
   }
+
   const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
     walletId: privyWallet.id!,
     address: privyWallet.address,
@@ -92,7 +84,6 @@ export async function getUserWallet(
     signer: verbsPrivyWallet.signer,
     deploymentOwners: [getAddress(privyWallet.address)],
   })
-  console.log('wallet', wallet)
   return wallet
 }
 

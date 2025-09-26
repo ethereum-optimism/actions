@@ -44,13 +44,11 @@ export class WalletLendNamespace<
    * @description Signs and sends a lend transaction from the wallet for the given amount and asset
    */
   async openPosition(params: LendOpenPositionParams): Promise<Hash> {
-    // Always use wallet address as receiver, ignore any receiver in options
     const lendOptions = {
       ...params.options,
       receiver: this.wallet.address,
     }
 
-    // Get transaction details from provider
     const lendTransaction = await this.provider.openPosition({
       amount: params.amount,
       asset: params.asset,
@@ -58,13 +56,12 @@ export class WalletLendNamespace<
       options: lendOptions,
     })
 
-    // Execute the transaction using wallet
     const { transactionData } = lendTransaction
     if (!transactionData) {
       throw new Error('No transaction data returned from lend provider')
     }
 
-    // Check if wallet is a SmartWallet (has send/sendBatch methods)
+    // TODO Harry, can we pull sendBatch and send into the Wallet class so I can remove this?
     if (!this.isSmartWallet(this.wallet)) {
       throw new Error(
         'Transaction execution is only supported for SmartWallet instances',
@@ -104,13 +101,11 @@ export class WalletLendNamespace<
    * @returns Promise resolving to transaction hash
    */
   async closePosition(params: ClosePositionParams): Promise<Hash> {
-    // Always use wallet address as receiver, ignore any receiver in options
     const closeOptions = {
       ...params.options,
       receiver: this.wallet.address,
     }
 
-    // Get transaction details from provider
     const closeTransaction = await this.provider.closePosition({
       amount: params.amount,
       asset: params.asset,
@@ -118,7 +113,6 @@ export class WalletLendNamespace<
       options: closeOptions,
     })
 
-    // Execute the transaction using wallet
     const { transactionData } = closeTransaction
     if (!transactionData) {
       throw new Error(
@@ -126,14 +120,12 @@ export class WalletLendNamespace<
       )
     }
 
-    // Check if wallet is a SmartWallet (has send/sendBatch methods)
     if (!this.isSmartWallet(this.wallet)) {
       throw new Error(
         'Transaction execution is only supported for SmartWallet instances',
       )
     }
 
-    // Execute approval + withdraw or just withdraw
     if (transactionData.approval) {
       return await this.wallet.sendBatch(
         [transactionData.approval, transactionData.deposit],

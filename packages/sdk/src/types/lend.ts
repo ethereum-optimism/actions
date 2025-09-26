@@ -190,7 +190,7 @@ export interface LendOptions {
   /** Gas price override */
   gasPrice?: bigint
   /** Receiver address for shares (defaults to sender) */
-  receiver?: Address //TODO remove and enforce from wallet
+  receiver?: Address
 }
 
 /**
