@@ -12,14 +12,6 @@ export const GauntletUSDC: LendMarketConfig = {
   lendProvider: 'morpho',
 }
 
-export const MetaMorphoUSDC: LendMarketConfig = {
-  address: '0x99067e5D73b1d6F1b5856E59209e12F5a0f86DED' as Address,
-  chainId: baseSepolia.id,
-  name: 'MetaMorpho USDC Vault (Base Sepolia)',
-  asset: USDC,
-  lendProvider: 'morpho',
-}
-
 export const USDCDemoVault: LendMarketConfig = {
   address: '0x297E324C46309E93112610ebf35559685b4E3547' as Address,
   chainId: baseSepolia.id,
@@ -29,4 +21,4 @@ export const USDCDemoVault: LendMarketConfig = {
 }
 
 // Export all markets for easy consumption
-export const ALL_MARKETS = [GauntletUSDC, MetaMorphoUSDC, USDCDemoVault]
+export const ALL_MARKETS = [GauntletUSDC, USDCDemoVault]

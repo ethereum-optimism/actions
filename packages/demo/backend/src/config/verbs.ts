@@ -7,7 +7,7 @@ import { PrivyClient } from '@privy-io/server-auth'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
-import { GauntletUSDC, MetaMorphoUSDC, USDCDemoVault } from './markets.js'
+import { GauntletUSDC, USDCDemoVault } from './markets.js'
 
 let verbsInstance: Verbs<'privy'>
 
@@ -33,7 +33,7 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
     lend: {
       provider: 'morpho',
       defaultSlippage: 50,
-      marketAllowlist: [GauntletUSDC, MetaMorphoUSDC, USDCDemoVault],
+      marketAllowlist: [GauntletUSDC, USDCDemoVault],
     },
     chains: [
       {
