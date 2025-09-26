@@ -1,4 +1,3 @@
-import type { Wallet as DynamicWallet } from '@dynamic-labs/wallet-connector-core'
 import type { Address, LocalAccount } from 'viem'
 import type { WebAuthnAccount } from 'viem/account-abstraction'
 
@@ -22,30 +21,4 @@ export type GetSmartWalletOptions = {
   signerOwnerIndex?: number
   walletAddress?: Address
   nonce?: bigint
-}
-
-/**
- * Options for converting a Privy hosted wallet to a Verbs wallet
- * @description Parameters for converting a hosted wallet to a Verbs wallet
- */
-export type PrivyHostedWalletToVerbsWalletOptions = {
-  walletId: string
-  address: string
-}
-
-/**
- * Options for converting a Dynamic hosted wallet to a Verbs wallet
- * @description Parameters for converting a hosted wallet to a Verbs wallet
- */
-export type DynamicHostedWalletToVerbsWalletOptions = {
-  wallet: DynamicWallet
-}
-
-/**
- * Options for converting a Turnkey hosted wallet to a Verbs wallet
- * @description Parameters for converting a hosted wallet to a Verbs wallet
- */
-export type TurnkeyHostedWalletToVerbsWalletOptions = {
-  signWith: string
-  ethereumAddress?: string
 }

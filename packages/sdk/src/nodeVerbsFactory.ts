@@ -1,7 +1,19 @@
 import type { VerbsConfig } from '@/types/verbs.js'
 import { Verbs } from '@/verbs.js'
-import type { NodeHostedProviderType } from '@/wallet/providers/hostedProvider.types.js'
-import { NodeHostedWalletProviderRegistry } from '@/wallet/providers/NodeHostedWalletProviderRegistry.js'
+import { NodeHostedWalletProviderRegistry } from '@/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.js'
+import type {
+  NodeHostedWalletProvidersSchema,
+  NodeOptionsMap,
+  NodeProviderTypes,
+} from '@/wallet/node/providers/hosted/types/index.js'
+
+/**
+ * Node Verbs configuration
+ * @description Configuration object for initializing the Verbs SDK in Node
+ */
+export type NodeVerbsConfig<
+  HostedWalletProviderType extends NodeProviderTypes,
+> = VerbsConfig<HostedWalletProviderType, NodeOptionsMap>
 
 /**
  * Creates a Node environment Verbs factory
@@ -12,10 +24,14 @@ import { NodeHostedWalletProviderRegistry } from '@/wallet/providers/NodeHostedW
  * @param config Verbs configuration
  * @returns Verbs instance using the NodeHostedWalletProviderRegistry
  */
-export function createVerbs<T extends NodeHostedProviderType>(
-  config: VerbsConfig<T>,
+export function createVerbs<HostedWalletProviderType extends NodeProviderTypes>(
+  config: NodeVerbsConfig<HostedWalletProviderType>,
 ) {
-  return new Verbs<T>(config, {
+  return new Verbs<
+    NodeHostedWalletProvidersSchema['providerTypes'],
+    NodeHostedWalletProvidersSchema,
+    HostedWalletProviderType
+  >(config, {
     hostedWalletProviderRegistry: new NodeHostedWalletProviderRegistry(),
   })
 }

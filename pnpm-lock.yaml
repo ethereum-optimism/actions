@@ -246,7 +246,7 @@ importers:
         specifier: ^2.4.1
         version: 2.4.1
       '@privy-io/server-auth':
-        specifier: '>=1.28.0'
+        specifier: '>=1.31.1'
         version: 1.31.1(bufferutil@4.0.9)(encoding@0.1.13)(ethers@6.15.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5))
       '@turnkey/core':
         specifier: '>=1.1.1'

@@ -201,7 +201,7 @@ describe('HTTP API Integration', () => {
           'http://localhost:5173',
           'http://localhost:4173',
           'https://verbs-ui.netlify.app',
-          'https://verbs.money',
+          'https://actions.money', // Temporary prod url
         ],
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: ['Content-Type', 'Authorization'],
