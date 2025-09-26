@@ -3,9 +3,9 @@ import { unichain } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
 import type { LendMarketConfig, MorphoLendConfig } from '@/types/lend.js'
-import { HostedWalletProviderRegistry } from '@/wallet/providers/base/HostedWalletProviderRegistry.js'
-import type { PrivyOptions } from '@/wallet/providers/hostedProvider.types.js'
-import { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
+import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
+import type { PrivyOptions } from '@/wallet/core/providers/hosted/types/index.js'
+import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
 
 import { createMockPrivyClient } from './test/MockPrivyClient.js'
 import { externalTest } from './utils/test.js'

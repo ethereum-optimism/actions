@@ -2,7 +2,7 @@ import type { ChainConfig } from '@/types/chain.js'
 import type {
   HostedProviderType,
   ProviderSpec,
-} from '@/wallet/providers/hostedProvider.types.js'
+} from '@/wallet/core/providers/hosted/types/index.js'
 
 import type { LendConfig } from './lend.js'
 
