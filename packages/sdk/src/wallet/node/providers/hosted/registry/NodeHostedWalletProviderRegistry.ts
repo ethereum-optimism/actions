@@ -7,6 +7,15 @@ import type {
   NodeProviderTypes,
 } from '@/wallet/node/providers/hosted/types/index.js'
 
+/**
+ * Node hosted wallet provider registry
+ * @description
+ * Environment-scoped registry that binds Node/server provider keys to their
+ * factory implementations. This ensures browser-only hosted providers are
+ * discoverable at runtime without importing Node-only code. The registry
+ * pre-registers 'privy' and 'turnkey' providers and can be extended with
+ * additional providers via `register`.
+ */
 export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
   NodeHostedProviderInstanceMap,
   NodeOptionsMap,

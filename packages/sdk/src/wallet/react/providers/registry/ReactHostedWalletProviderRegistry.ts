@@ -1,11 +1,21 @@
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
+import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import type {
   ReactHostedProviderInstanceMap,
   ReactOptionsMap,
   ReactProviderTypes,
 } from '@/wallet/react/providers/hosted/types/index.js'
 
+/**
+ * React hosted wallet provider registry
+ * @description
+ * Environment-scoped registry that binds React/browser provider keys to their
+ * factory implementations. This ensures browser-only hosted providers are
+ * discoverable at runtime without importing Node-only code. The registry
+ * pre-registers 'dynamic' and 'privy' providers and can be extended with
+ * additional providers via `register`.
+ */
 export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
   ReactHostedProviderInstanceMap,
   ReactOptionsMap,
@@ -20,6 +30,16 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       },
       create({ chainManager }, _options) {
         return new DynamicHostedWalletProvider(chainManager)
+      },
+    })
+
+    this.register<'privy'>({
+      type: 'privy',
+      validateOptions(_options): _options is ReactOptionsMap['privy'] {
+        return true
+      },
+      create({ chainManager }, _options) {
+        return new PrivyHostedWalletProvider(chainManager)
       },
     })
   }
