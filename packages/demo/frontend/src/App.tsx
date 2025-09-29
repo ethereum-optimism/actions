@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Terminal from './components/Terminal'
 import Home from './components/Home'
-import { PrivyProvider } from './providers/PrivyProvider'
+import { Turnkey as TurnkeyProvider } from './providers/TurnkeyProvider'
 
 function App() {
   return (
-    <PrivyProvider>
+    <TurnkeyProvider>
       <Router>
         <div className="w-full h-screen bg-terminal-bg">
           <Routes>
@@ -14,7 +14,7 @@ function App() {
           </Routes>
         </div>
       </Router>
-    </PrivyProvider>
+    </TurnkeyProvider>
   )
 }
 

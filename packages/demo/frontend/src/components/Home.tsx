@@ -73,7 +73,7 @@ function Home() {
         <div className="py-16">
           <div className="max-w-4xl mx-auto mb-8">
             <h2 className="text-lg font-medium text-gray-300 mb-4">Overview</h2>
-            <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent"></div>
+            <div className="h-px bg-linear-to-r from-gray-600 via-gray-500 to-transparent"></div>
           </div>
           <div
             className="rounded-lg overflow-hidden max-w-4xl mx-auto shadow-2xl"
@@ -95,15 +95,15 @@ function Home() {
             >
               <div className="flex items-center space-x-2">
                 <div
-                  className="w-3 h-3 rounded-full shadow-sm"
+                  className="w-3 h-3 rounded-full shadow-xs"
                   style={{ backgroundColor: '#ff5f56' }}
                 ></div>
                 <div
-                  className="w-3 h-3 rounded-full shadow-sm"
+                  className="w-3 h-3 rounded-full shadow-xs"
                   style={{ backgroundColor: '#ffbd2e' }}
                 ></div>
                 <div
-                  className="w-3 h-3 rounded-full shadow-sm"
+                  className="w-3 h-3 rounded-full shadow-xs"
                   style={{
                     backgroundColor: 'rgb(184, 187, 38)',
                     boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',
@@ -270,7 +270,7 @@ function Home() {
         <div className="py-16">
           <div className="max-w-4xl mx-auto mb-8">
             <h2 className="text-lg font-medium text-gray-300 mb-4">Features</h2>
-            <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent"></div>
+            <div className="h-px bg-linear-to-r from-gray-600 via-gray-500 to-transparent"></div>
           </div>
 
           {/* Core Capabilities Grid */}
@@ -445,7 +445,7 @@ function Home() {
               <h2 className="text-lg font-medium text-gray-300 mb-4">
                 Getting Started
               </h2>
-              <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent"></div>
+              <div className="h-px bg-linear-to-r from-gray-600 via-gray-500 to-transparent"></div>
             </div>
             <div className="max-w-4xl mx-auto">
               <div
@@ -468,15 +468,15 @@ function Home() {
                 >
                   <div className="flex items-center space-x-2">
                     <div
-                      className="w-3 h-3 rounded-full shadow-sm"
+                      className="w-3 h-3 rounded-full shadow-xs"
                       style={{ backgroundColor: '#ff5f56' }}
                     ></div>
                     <div
-                      className="w-3 h-3 rounded-full shadow-sm"
+                      className="w-3 h-3 rounded-full shadow-xs"
                       style={{ backgroundColor: '#ffbd2e' }}
                     ></div>
                     <div
-                      className="w-3 h-3 rounded-full shadow-sm"
+                      className="w-3 h-3 rounded-full shadow-xs"
                       style={{
                         backgroundColor: 'rgb(184, 187, 38)',
                         boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',

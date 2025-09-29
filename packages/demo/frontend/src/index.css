@@ -1,8 +1,114 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap')
+layer(base);
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@source './**/*.{js,ts,jsx,tsx}';
+
+@theme {
+  --font-mono: JetBrains Mono, Monaco, Menlo, Consolas, monospace;
+
+  --color-terminal-bg: #1d2021;
+  --color-terminal-secondary: #282828;
+  --color-terminal-border: #504945;
+  --color-terminal-text: #ebdbb2;
+  --color-terminal-muted: #a89984;
+  --color-terminal-dim: #665c54;
+  --color-terminal-accent: #b8bb26;
+  --color-terminal-error: #fb4934;
+  --color-terminal-warning: #fabd2f;
+  --color-terminal-success: #b8bb26;
+  --color-terminal-info: #83a598;
+
+  --animate-cursor-blink: blink 1s infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+
+  --shadow-terminal: 0 0 20px rgba(184, 187, 38, 0.3);
+  --shadow-terminal-inner: inset 0 0 20px rgba(184, 187, 38, 0.1);
+
+  @keyframes blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+    51%,
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes glow {
+    0% {
+      text-shadow: 0 0 5px #b8bb26;
+    }
+    100% {
+      text-shadow:
+        0 0 20px #b8bb26,
+        0 0 30px #b8bb26;
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility terminal-glow {
+  text-shadow: 0 0 5px currentColor;
+}
+
+@utility terminal-cursor {
+  @apply inline-block w-2 h-5 bg-terminal-text animate-cursor-blink;
+}
+
+@utility terminal-line {
+  @apply flex items-center min-h-6 leading-relaxed;
+}
+
+@utility terminal-prompt {
+  @apply text-terminal-muted mr-2 flex-shrink-0;
+}
+
+@utility terminal-input {
+  @apply bg-transparent outline-hidden flex-1 text-terminal-text caret-transparent;
+}
+
+@utility terminal-output {
+  @apply text-terminal-text whitespace-pre-wrap;
+}
+
+@utility terminal-error {
+  @apply text-terminal-error;
+}
+
+@utility terminal-success {
+  @apply text-terminal-success;
+}
+
+@utility terminal-warning {
+  @apply text-terminal-warning;
+}
+
+@utility terminal-info {
+  @apply text-terminal-info;
+}
+
+@utility terminal-accent {
+  @apply text-terminal-accent;
+}
 
 @layer base {
   * {
@@ -18,51 +124,5 @@
   body,
   #root {
     @apply w-full h-full;
-  }
-}
-
-@layer components {
-  .terminal-glow {
-    text-shadow: 0 0 5px currentColor;
-  }
-
-  .terminal-cursor {
-    @apply inline-block w-2 h-5 bg-terminal-text animate-cursor-blink;
-  }
-
-  .terminal-line {
-    @apply flex items-center min-h-[1.5rem] leading-relaxed;
-  }
-
-  .terminal-prompt {
-    @apply text-terminal-muted mr-2 flex-shrink-0;
-  }
-
-  .terminal-input {
-    @apply bg-transparent outline-none flex-1 text-terminal-text caret-transparent;
-  }
-
-  .terminal-output {
-    @apply text-terminal-text whitespace-pre-wrap;
-  }
-
-  .terminal-error {
-    @apply text-terminal-error;
-  }
-
-  .terminal-success {
-    @apply text-terminal-success;
-  }
-
-  .terminal-warning {
-    @apply text-terminal-warning;
-  }
-
-  .terminal-info {
-    @apply text-terminal-info;
-  }
-
-  .terminal-accent {
-    @apply text-terminal-accent;
   }
 }
