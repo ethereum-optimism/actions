@@ -84,6 +84,11 @@ export async function getWallet(
     signer: verbsPrivyWallet.signer,
     deploymentOwners: [getAddress(privyWallet.address)],
   })
+
+  if (!wallet.lend) {
+    throw new Error('Lend functionality not configured for this wallet')
+  }
+
   return wallet
 }
 
@@ -140,11 +145,7 @@ export async function getWalletBalance(
     const vaultBalances = await Promise.all(
       vaults.map(async (vault) => {
         try {
-          if (!wallet.lend) {
-            return null // Skip this vault if lend not configured
-          }
-
-          const vaultBalance = await wallet.lend.getPosition({
+          const vaultBalance = await wallet.lend!.getPosition({
             marketId: {
               address: vault.address,
               chainId: vault.chainId as SupportedChainId,

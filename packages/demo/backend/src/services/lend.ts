@@ -72,11 +72,7 @@ export async function getPosition(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  if (!wallet.lend) {
-    throw new Error('Lend functionality not configured for this wallet')
-  }
-
-  return wallet.lend.getPosition({
+  return wallet.lend!.getPosition({
     marketId: { address: vaultAddress, chainId },
   })
 }
@@ -117,6 +113,7 @@ export async function formatMarketBalanceResponse(
 }
 
 interface OpenPositionParams {
+  userId: string
   amount: number
   asset: {
     tokenAddress: Address
@@ -129,30 +126,33 @@ interface OpenPositionParams {
   options?: {
     slippage?: number
   }
+  isUserWallet?: boolean
 }
 
 /**
  * Open a lending position
- * @param config - Configuration object with named parameters
- * @param config.identifier - Can be either a userId (for authenticated users) or walletId
- * @param config.params - Position parameters
- * @param config.isUserWallet - If true, identifier is treated as userId; if false, as walletId
+ * @param params - Configuration object with all parameters
+ * @param params.userId - Can be either a userId (for authenticated users) or walletId
+ * @param params.amount - Amount to lend
+ * @param params.asset - Asset information
+ * @param params.marketId - Market identifier
+ * @param params.options - Optional parameters like slippage
+ * @param params.isUserWallet - If true, userId is treated as userId; if false, as walletId
  */
 export async function openPosition({
-  identifier,
-  params: { amount, asset: assetInfo, marketId, options },
+  userId,
+  amount,
+  asset: assetInfo,
+  marketId,
+  options,
   isUserWallet = false,
-}: {
-  identifier: string
-  params: OpenPositionParams
-  isUserWallet?: boolean
-}): Promise<Hash> {
+}: OpenPositionParams): Promise<Hash> {
   // Get wallet based on identifier type
-  const wallet = await getWallet(identifier, isUserWallet)
+  const wallet = await getWallet(userId, isUserWallet)
 
   if (!wallet) {
     throw new Error(
-      `Wallet not found for ${isUserWallet ? 'user' : 'wallet'} ID: ${identifier}`,
+      `Wallet not found for ${isUserWallet ? 'user' : 'wallet'} ID: ${userId}`,
     )
   }
 
@@ -165,11 +165,7 @@ export async function openPosition({
     )
   }
 
-  if (!wallet.lend) {
-    throw new Error('Lend functionality not configured for this wallet')
-  }
-
-  return await wallet.lend.openPosition({
+  return await wallet.lend!.openPosition({
     amount,
     asset,
     marketId,
