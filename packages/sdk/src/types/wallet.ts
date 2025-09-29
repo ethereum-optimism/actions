@@ -22,12 +22,3 @@ export type GetSmartWalletOptions = {
   walletAddress?: Address
   nonce?: bigint
 }
-
-/**
- * Options for converting a hosted wallet to a Verbs wallet
- * @description Parameters for converting a hosted wallet to a Verbs wallet
- */
-export type HostedWalletToVerbsWalletOptions = {
-  walletId: string
-  address: string
-}

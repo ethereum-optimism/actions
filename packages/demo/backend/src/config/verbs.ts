@@ -1,12 +1,14 @@
-import { Verbs, type VerbsConfig } from '@eth-optimism/verbs-sdk'
+import type { NodeVerbsConfig } from '@eth-optimism/verbs-sdk/node'
+import { createVerbs } from '@eth-optimism/verbs-sdk/node'
 import { PrivyClient } from '@privy-io/server-auth'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
+import { GauntletUSDC, MetaMorphoUSDC, USDCDemoVault } from './markets.js'
 
-let verbsInstance: Verbs<'privy'>
+let verbsInstance: ReturnType<typeof createVerbs<'privy'>>
 
-export function createVerbsConfig(): VerbsConfig<'privy'> {
+export function createVerbsConfig(): NodeVerbsConfig<'privy'> {
   return {
     wallet: {
       hostedWalletConfig: {
@@ -28,6 +30,7 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
     lend: {
       provider: 'morpho',
       defaultSlippage: 50,
+      marketAllowlist: [GauntletUSDC, MetaMorphoUSDC, USDCDemoVault],
     },
     chains: [
       {
@@ -53,9 +56,9 @@ export function createVerbsConfig(): VerbsConfig<'privy'> {
   }
 }
 
-export function initializeVerbs(config?: VerbsConfig<'privy'>): void {
+export function initializeVerbs(config?: NodeVerbsConfig<'privy'>): void {
   const verbsConfig = config || createVerbsConfig()
-  verbsInstance = new Verbs(verbsConfig)
+  verbsInstance = createVerbs(verbsConfig)
 }
 
 export function getVerbs() {

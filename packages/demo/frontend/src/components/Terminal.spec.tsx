@@ -55,7 +55,7 @@ describe('Terminal', () => {
     expect(screen.getByText('GitHub')).toBeInTheDocument()
 
     // Check for subtitle
-    expect(screen.getByText('Verbs library for the OP Stack')).toBeInTheDocument()
+    expect(screen.getByText('DeFi library for the OP Stack')).toBeInTheDocument()
 
     // Check for help content
     expect(screen.getByText(/Console commands:/)).toBeInTheDocument()
@@ -71,7 +71,7 @@ describe('Terminal', () => {
     await user.keyboard('{Enter}')
 
     // Check that help command was executed (should appear twice - once from initial load, once from command)
-    const helpCommands = screen.getAllByText('verbs: $ help')
+    const helpCommands = screen.getAllByText('actions: $ help')
     expect(helpCommands).toHaveLength(2)
     
     // Check that help content is displayed (should appear twice - once from initial load, once from command)
@@ -86,7 +86,7 @@ describe('Terminal', () => {
     const input = screen.getByRole('textbox')
     
     // First verify welcome content is there
-    expect(screen.getByText('Verbs library for the OP Stack')).toBeInTheDocument()
+    expect(screen.getByText('DeFi library for the OP Stack')).toBeInTheDocument()
     
     await user.type(input, 'clear')
     await user.keyboard('{Enter}')
@@ -105,7 +105,7 @@ describe('Terminal', () => {
     await user.keyboard('{Enter}')
 
     // Check that status command was executed
-    expect(screen.getByText('verbs: $ status')).toBeInTheDocument()
+    expect(screen.getByText('actions: $ status')).toBeInTheDocument()
     
     // Check for status information
     expect(screen.getByText(/System Status: ONLINE/)).toBeInTheDocument()
@@ -122,7 +122,7 @@ describe('Terminal', () => {
     await user.keyboard('{Enter}')
 
     // Check that command was executed
-    expect(screen.getByText('verbs: $ unknown-command')).toBeInTheDocument()
+    expect(screen.getByText('actions: $ unknown-command')).toBeInTheDocument()
     
     // Check for error message
     expect(
@@ -140,7 +140,7 @@ describe('Terminal', () => {
     await user.keyboard('{Enter}')
 
     // Check that command was executed
-    expect(screen.getByText('verbs: $ wallet select')).toBeInTheDocument()
+    expect(screen.getByText('actions: $ wallet select')).toBeInTheDocument()
     
     // Wait for API call to complete
     await waitFor(() => {
@@ -164,7 +164,7 @@ describe('Terminal', () => {
     await user.keyboard('{Enter}')
 
     // Check that command was executed and prompt appeared
-    expect(screen.getByText('verbs: $ wallet create')).toBeInTheDocument()
+    expect(screen.getByText('actions: $ wallet create')).toBeInTheDocument()
     expect(screen.getByText('Enter unique userId:')).toBeInTheDocument()
 
     // Enter user ID
@@ -221,7 +221,7 @@ describe('Terminal', () => {
       await user.keyboard('{Enter}')
 
       // Check that command was executed
-      expect(screen.getByText(`verbs: $ ${command}`)).toBeInTheDocument()
+      expect(screen.getByText(`actions: $ ${command}`)).toBeInTheDocument()
       
       // Check for "Soon.™" message (there will be multiple instances)
       expect(screen.getAllByText('Soon.™').length).toBeGreaterThan(0)

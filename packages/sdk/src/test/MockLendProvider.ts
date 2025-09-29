@@ -12,7 +12,7 @@ import type {
 import { LendProvider } from '../lend/provider.js'
 
 export interface MockLendProviderConfig {
-  supportedNetworks: number[]
+  supportedChains: number[]
   defaultApy: number
   mockBalance: bigint
 }
@@ -26,6 +26,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     (
       asset: Address,
       amount: bigint,
+      chainId: number,
       marketId?: string,
       options?: LendOptions,
     ) => Promise<LendTransaction>
@@ -34,6 +35,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     (
       asset: Address,
       amount: bigint,
+      chainId: number,
       marketId?: string,
       options?: LendOptions,
     ) => Promise<LendTransaction>
@@ -58,15 +60,18 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     (
       asset: Address,
       amount: bigint,
+      chainId: number,
       marketId?: string,
       options?: LendOptions,
     ) => Promise<LendTransaction>
   >
 
-  protected readonly SUPPORTED_NETWORKS = {
+  protected readonly SUPPORTED_CHAIN_IDS = [1, 130, 8453, 84532] as const
+
+  protected readonly SUPPORTED_CHAINS = {
     TESTNET: {
       chainId: 84532,
-      name: 'Test Network',
+      name: 'Test Chain',
     },
   }
 
@@ -79,7 +84,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     super(config || { provider: 'morpho' })
 
     this.mockConfig = {
-      supportedNetworks: mockConfig?.supportedNetworks ?? [84532],
+      supportedChains: mockConfig?.supportedChains ?? [84532],
       defaultApy: mockConfig?.defaultApy ?? 0.05,
       mockBalance: mockConfig?.mockBalance ?? 1000000n,
     }
@@ -162,9 +167,72 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     this.resetMocks()
   }
 
+  protected async _lend({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: {
+    asset: Address
+    amount: bigint
+    chainId: number
+    marketId?: string
+    options?: LendOptions
+  }): Promise<LendTransaction> {
+    return this.createMockLendTransaction(
+      asset,
+      amount,
+      chainId,
+      marketId,
+      options,
+    )
+  }
+
+  protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
+    return this.createMockMarket(marketId)
+  }
+
+  protected async _getMarkets(): Promise<LendMarket[]> {
+    return this.createMockMarkets()
+  }
+
+  protected async _getMarketBalance({
+    marketId,
+    walletAddress,
+  }: {
+    marketId: LendMarketId
+    walletAddress: Address
+  }): Promise<{
+    balance: bigint
+    balanceFormatted: string
+    shares: bigint
+    sharesFormatted: string
+    chainId: number
+  }> {
+    return this.createMockBalance(marketId, walletAddress)
+  }
+
+  protected async _withdraw({
+    asset,
+    amount,
+    chainId,
+    marketId,
+    options,
+  }: {
+    asset: Address
+    amount: bigint
+    chainId: number
+    marketId?: string
+    options?: LendOptions
+  }): Promise<LendTransaction> {
+    return this.createMockWithdraw(asset, amount, chainId, marketId, options)
+  }
+
   private async createMockLendTransaction(
     asset: Address,
     amount: bigint,
+    chainId: number,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {
@@ -245,6 +313,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
   private async createMockWithdraw(
     asset: Address,
     amount: bigint,
+    chainId: number,
     marketId?: string,
     options?: LendOptions,
   ): Promise<LendTransaction> {

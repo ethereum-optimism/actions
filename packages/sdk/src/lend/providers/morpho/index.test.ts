@@ -77,26 +77,31 @@ describe('LendProviderMorpho', () => {
       const amount = BigInt('1000000000') // 1000 USDC
       const marketId = MockGauntletUSDCMarket.address
 
-      await expect(provider.withdraw(asset, amount, marketId)).rejects.toThrow(
-        'Withdraw functionality not yet implemented',
-      )
+      await expect(
+        provider.withdraw(
+          asset,
+          amount,
+          MockGauntletUSDCMarket.chainId,
+          marketId,
+        ),
+      ).rejects.toThrow('Withdraw functionality not yet implemented')
     })
   })
 
-  describe('supportedNetworkIds', () => {
-    it('should return array of supported network chain IDs', () => {
-      const networkIds = provider.supportedNetworkIds()
+  describe('supportedChainIds', () => {
+    it('should return array of supported chain IDs', () => {
+      const chainIds = provider.supportedChainIds()
 
-      expect(Array.isArray(networkIds)).toBe(true)
-      expect(networkIds).toContain(130) // Unichain
-      expect(networkIds.length).toBeGreaterThan(0)
+      expect(Array.isArray(chainIds)).toBe(true)
+      expect(chainIds).toContain(130) // Unichain
+      expect(chainIds.length).toBeGreaterThan(0)
     })
 
-    it('should return unique network IDs', () => {
-      const networkIds = provider.supportedNetworkIds()
-      const uniqueIds = [...new Set(networkIds)]
+    it('should return unique chain IDs', () => {
+      const chainIds = provider.supportedChainIds()
+      const uniqueIds = [...new Set(chainIds)]
 
-      expect(networkIds.length).toBe(uniqueIds.length)
+      expect(chainIds.length).toBe(uniqueIds.length)
     })
   })
 
@@ -157,9 +162,15 @@ describe('LendProviderMorpho', () => {
       const amount = BigInt('1000000000') // 1000 USDC
       const marketId = MockGauntletUSDCMarket.address
 
-      const lendTransaction = await provider.lend(asset, amount, marketId, {
-        receiver: MockReceiverAddress,
-      })
+      const lendTransaction = await provider.lend(
+        asset,
+        amount,
+        MockGauntletUSDCMarket.chainId,
+        marketId,
+        {
+          receiver: MockReceiverAddress,
+        },
+      )
 
       expect(lendTransaction).toHaveProperty('amount', amount)
       expect(lendTransaction).toHaveProperty('asset', asset)
@@ -180,9 +191,15 @@ describe('LendProviderMorpho', () => {
       ]! as Address
       const amount = BigInt('1000000000') // 1000 USDC
 
-      const lendTransaction = await provider.lend(asset, amount, undefined, {
-        receiver: MockReceiverAddress,
-      })
+      const lendTransaction = await provider.lend(
+        asset,
+        amount,
+        MockGauntletUSDCMarket.chainId,
+        undefined,
+        {
+          receiver: MockReceiverAddress,
+        },
+      )
 
       expect(lendTransaction).toHaveProperty('marketId')
       expect(lendTransaction.marketId).toBeTruthy()
@@ -192,9 +209,9 @@ describe('LendProviderMorpho', () => {
       const asset = '0x0000000000000000000000000000000000000000' as Address // Invalid asset
       const amount = BigInt('1000000000')
 
-      await expect(provider.lend(asset, amount)).rejects.toThrow(
-        'Failed to lend',
-      )
+      await expect(
+        provider.lend(asset, amount, MockGauntletUSDCMarket.chainId),
+      ).rejects.toThrow('Failed to lend')
     })
 
     it('should use custom slippage when provided', async () => {
@@ -205,10 +222,16 @@ describe('LendProviderMorpho', () => {
       const marketId = MockGauntletUSDCMarket.address
       const customSlippage = 100 // 1%
 
-      const lendTransaction = await provider.lend(asset, amount, marketId, {
-        slippage: customSlippage,
-        receiver: MockReceiverAddress,
-      })
+      const lendTransaction = await provider.lend(
+        asset,
+        amount,
+        MockGauntletUSDCMarket.chainId,
+        marketId,
+        {
+          slippage: customSlippage,
+          receiver: MockReceiverAddress,
+        },
+      )
 
       expect(lendTransaction).toHaveProperty('amount', amount)
     })

@@ -4,35 +4,64 @@ import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { LendConfig, LendProvider } from '@/types/lend.js'
 import type { VerbsConfig } from '@/types/verbs.js'
-import type { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
-import { DefaultSmartWalletProvider } from '@/wallet/providers/DefaultSmartWalletProvider.js'
-import type {
-  HostedProviderInstanceMap,
-  HostedProviderType,
-} from '@/wallet/providers/hostedProvider.types.js'
-import { HostedWalletProviderRegistry } from '@/wallet/providers/HostedWalletProviderRegistry.js'
-import { WalletNamespace } from '@/wallet/WalletNamespace.js'
-import { WalletProvider } from '@/wallet/WalletProvider.js'
+import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
+import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import type { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
+import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
+import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
+import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
+import { WalletProvider } from '@/wallet/core/providers/wallet/WalletProvider.js'
 
 /**
  * Main Verbs SDK class
  * @description Core implementation of the Verbs SDK
  */
-export class Verbs<THostedWalletProviderType extends HostedProviderType> {
+export class Verbs<
+  THostedWalletProviderConfigKeys extends string,
+  THostedWalletProvidersSchema extends HostedWalletProvidersSchema<
+    THostedWalletProviderConfigKeys,
+    {
+      [K in THostedWalletProviderConfigKeys]: HostedWalletProvider<
+        K,
+        { [K in THostedWalletProviderConfigKeys]: unknown }
+      >
+    },
+    { [K in THostedWalletProviderConfigKeys]: unknown },
+    { [K in THostedWalletProviderConfigKeys]: unknown }
+  >,
+  THostedWalletProviderType extends THostedWalletProviderConfigKeys,
+> {
   public readonly wallet: WalletNamespace<
-    HostedProviderInstanceMap[THostedWalletProviderType],
+    THostedWalletProviderType,
+    THostedWalletProvidersSchema['providerToVerbsOptions'],
+    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
     SmartWalletProvider
   >
   private chainManager: ChainManager
   private _lend?: VerbsLendNamespace<LendConfig>
   private _lendProvider?: LendProvider<LendConfig>
-  private hostedWalletProvider!: HostedProviderInstanceMap[THostedWalletProviderType]
+  private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
-  private hostedWalletProviderRegistry: HostedWalletProviderRegistry
-
-  constructor(config: VerbsConfig<THostedWalletProviderType>) {
+  private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
+    THostedWalletProvidersSchema['providerInstances'],
+    THostedWalletProvidersSchema['providerConfigs'],
+    THostedWalletProvidersSchema['providerTypes']
+  >
+  constructor(
+    config: VerbsConfig<
+      THostedWalletProviderType,
+      THostedWalletProvidersSchema['providerConfigs']
+    >,
+    deps: {
+      hostedWalletProviderRegistry: HostedWalletProviderRegistry<
+        THostedWalletProvidersSchema['providerInstances'],
+        THostedWalletProvidersSchema['providerConfigs'],
+        THostedWalletProvidersSchema['providerTypes']
+      >
+    },
+  ) {
     this.chainManager = new ChainManager(config.chains)
-    this.hostedWalletProviderRegistry = new HostedWalletProviderRegistry()
+    this.hostedWalletProviderRegistry = deps.hostedWalletProviderRegistry
 
     // Create lending provider if configured
     if (config.lend) {
@@ -48,7 +77,7 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
         )
 
         // Create read-only lend namespace
-        this._lend = new VerbsLendNamespace(this._lendProvider)
+        this._lend = new VerbsLendNamespace(this._lendProvider!)
       } else {
         throw new Error(`Unsupported lending provider: ${config.lend.provider}`)
       }
@@ -87,8 +116,16 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
    * @returns WalletProvider instance
    */
   private createWalletProvider(
-    config: VerbsConfig<THostedWalletProviderType>['wallet'],
-  ) {
+    config: VerbsConfig<
+      THostedWalletProviderType,
+      THostedWalletProvidersSchema['providerConfigs']
+    >['wallet'],
+  ): WalletProvider<
+    THostedWalletProviderType,
+    THostedWalletProvidersSchema['providerToVerbsOptions'],
+    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
+    SmartWalletProvider
+  > {
     const hostedWalletProviderConfig = config.hostedWalletConfig.provider
     const factory = this.hostedWalletProviderRegistry.getFactory(
       hostedWalletProviderConfig.type,
@@ -132,9 +169,17 @@ export class Verbs<THostedWalletProviderType extends HostedProviderType> {
    * @returns WalletNamespace instance
    */
   private createWalletNamespace(
-    config: VerbsConfig<THostedWalletProviderType>['wallet'],
+    config: VerbsConfig<
+      THostedWalletProviderType,
+      THostedWalletProvidersSchema['providerConfigs']
+    >['wallet'],
   ) {
     const walletProvider = this.createWalletProvider(config)
-    return new WalletNamespace(walletProvider)
+    return new WalletNamespace<
+      THostedWalletProviderType,
+      THostedWalletProvidersSchema['providerToVerbsOptions'],
+      THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
+      SmartWalletProvider
+    >(walletProvider)
   }
 }
