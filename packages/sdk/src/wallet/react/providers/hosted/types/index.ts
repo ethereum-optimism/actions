@@ -1,7 +1,9 @@
 import type { Wallet as DynamicWallet } from '@dynamic-labs/wallet-connector-core'
+import type { ConnectedWallet } from '@privy-io/react-auth'
 
 import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
 import type { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
+import type { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
 
 /**
  * React provider type keys
@@ -22,6 +24,7 @@ export type ReactProviderTypes = keyof ReactOptionsMap &
  */
 export interface ReactOptionsMap {
   dynamic: undefined
+  privy: undefined
 }
 
 /**
@@ -34,11 +37,21 @@ export type DynamicHostedWalletToVerbsWalletOptions = {
 }
 
 /**
+ * Options for converting a Privy hosted wallet to a Verbs wallet
+ * @description Parameters for converting a Privy hosted wallet to a Verbs wallet
+ * @property connectedWallet Privy ConnectedWallet instance from @privy-io/react-auth
+ */
+export type PrivyHostedWalletToVerbsWalletOptions = {
+  connectedWallet: ConnectedWallet
+}
+
+/**
  * React/browser hosted wallet registry
  * @description Registers browser-only providers for client apps.
  */
 export type ReactHostedProviderInstanceMap = {
   dynamic: DynamicHostedWalletProvider
+  privy: PrivyHostedWalletProvider
 }
 
 /**
@@ -47,6 +60,7 @@ export type ReactHostedProviderInstanceMap = {
  */
 export type ReactToVerbsOptionsMap = {
   dynamic: DynamicHostedWalletToVerbsWalletOptions
+  privy: PrivyHostedWalletToVerbsWalletOptions
 }
 
 /**
