@@ -66,6 +66,10 @@ export abstract class LendProvider<
    * @returns Promise resolving to lending transaction details
    */
   async openPosition(params: LendOpenPositionParams): Promise<LendTransaction> {
+    if (!params.walletAddress) {
+      throw new Error('walletAddress is required')
+    }
+
     this.validateProviderSupported(params.marketId.chainId)
     this.validateConfigSupported(params.marketId)
 
@@ -78,6 +82,7 @@ export abstract class LendProvider<
     return this._openPosition({
       ...params,
       amountWei,
+      walletAddress: params.walletAddress,
     })
   }
 
@@ -155,34 +160,43 @@ export abstract class LendProvider<
    * @param amount - Amount to withdraw (human-readable number)
    * @param asset - Asset to withdraw (optional, validated against marketId)
    * @param marketId - Market identifier containing address and chainId
+   * @param walletAddress - Wallet address for receiving assets and as owner
    * @param options - Optional withdrawal configuration
    * @returns Promise resolving to withdrawal transaction details
    */
   async closePosition(params: ClosePositionParams): Promise<LendTransaction> {
+    if (!params.walletAddress) {
+      throw new Error('walletAddress is required')
+    }
+
     this.validateProviderSupported(params.marketId.chainId)
     this.validateConfigSupported(params.marketId)
 
-    // Get the market info once for both validation and asset extraction
     const market = await this.getMarket({
       address: params.marketId.address,
       chainId: params.marketId.chainId,
     })
 
-    // If asset is provided, validate it matches the market's asset
     if (params.asset) {
       validateMarketAsset(market, params.asset)
     }
 
-    const assetAddress = market.asset as Address
+    const assetMetadata = params.asset?.metadata
+    if (!assetMetadata) {
+      throw new Error('Asset metadata is required for decimal conversion')
+    }
 
-    // Convert human-readable amount to wei
-    const amountWei = BigInt(params.amount) // TODO: Add proper decimal conversion
+    // Convert human-readable amount to wei using the asset's decimals
+    const amountWei = parseUnits(
+      params.amount.toString(),
+      assetMetadata.decimals,
+    )
 
     return this._closePosition({
-      asset: assetAddress,
+      asset: params.asset,
       amount: amountWei,
-      chainId: params.marketId.chainId,
-      marketId: params.marketId.address,
+      marketId: params.marketId,
+      walletAddress: params.walletAddress,
       options: params.options,
     })
   }

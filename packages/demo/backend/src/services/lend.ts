@@ -4,7 +4,7 @@ import {
   type SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
-import type { Address, Hash } from 'viem'
+import type { Address } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
@@ -112,44 +112,32 @@ export async function formatMarketBalanceResponse(
   }
 }
 
-interface OpenPositionParams {
+interface PositionParams {
   userId: string
   amount: number
-  asset: {
-    tokenAddress: Address
-    chainId: SupportedChainId
-  }
-  marketId: {
-    address: Address
-    chainId: SupportedChainId
-  }
-  options?: {
-    slippage?: number
-  }
+  tokenAddress: Address
+  chainId: SupportedChainId
+  vaultAddress: Address
   isUserWallet?: boolean
 }
 
-/**
- * Open a lending position
- * @param params - Configuration object with all parameters
- * @param params.userId - Can be either a userId (for authenticated users) or walletId
- * @param params.amount - Amount to lend
- * @param params.asset - Asset information
- * @param params.marketId - Market identifier
- * @param params.options - Optional parameters like slippage
- * @param params.isUserWallet - If true, userId is treated as userId; if false, as walletId
- */
-export async function openPosition({
-  userId,
-  amount,
-  asset: assetInfo,
-  marketId,
-  options,
-  isUserWallet = false,
-}: OpenPositionParams): Promise<Hash> {
-  // Get wallet based on identifier type
-  const wallet = await getWallet(userId, isUserWallet)
+interface PositionResponse {
+  hash: string
+  blockExplorerUrl: string
+  amount: number
+  tokenAddress: Address
+  chainId: number
+  vaultAddress: Address
+}
 
+async function executePosition(
+  params: PositionParams,
+  operation: 'open' | 'close',
+): Promise<PositionResponse> {
+  const { userId, amount, tokenAddress, chainId, vaultAddress, isUserWallet } =
+    params
+
+  const wallet = await getWallet(userId, isUserWallet)
   if (!wallet) {
     throw new Error(
       `Wallet not found for ${isUserWallet ? 'user' : 'wallet'} ID: ${userId}`,
@@ -157,18 +145,40 @@ export async function openPosition({
   }
 
   const asset = SUPPORTED_TOKENS.find(
-    (token) => token.address[assetInfo.chainId] === assetInfo.tokenAddress,
+    (token) => token.address[chainId] === tokenAddress,
   )
   if (!asset) {
-    throw new Error(
-      `Asset not found for token address: ${assetInfo.tokenAddress}`,
-    )
+    throw new Error(`Asset not found for token address: ${tokenAddress}`)
   }
 
-  return await wallet.lend!.openPosition({
+  const marketId = { address: vaultAddress, chainId }
+  const positionParams = { amount, asset, marketId }
+
+  const hash =
+    operation === 'open'
+      ? await wallet.lend!.openPosition(positionParams)
+      : await wallet.lend!.closePosition(positionParams)
+
+  const blockExplorerUrl = await getBlockExplorerUrl(chainId)
+
+  return {
+    hash,
+    blockExplorerUrl,
     amount,
-    asset,
-    marketId,
-    options,
-  })
+    tokenAddress,
+    chainId,
+    vaultAddress,
+  }
+}
+
+export async function openPosition(
+  params: PositionParams,
+): Promise<PositionResponse> {
+  return executePosition(params, 'open')
+}
+
+export async function closePosition(
+  params: PositionParams,
+): Promise<PositionResponse> {
+  return executePosition(params, 'close')
 }

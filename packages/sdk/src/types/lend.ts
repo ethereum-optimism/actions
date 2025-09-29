@@ -75,8 +75,9 @@ export interface LendTransaction {
   transactionData?: {
     /** Approval transaction (if needed) */
     approval?: TransactionData
-    /** Main deposit transaction */
-    deposit: TransactionData
+    /** Main operation transaction (openPosition or closePosition) */
+    openPosition?: TransactionData
+    closePosition?: TransactionData
   }
   /** Slippage tolerance used */
   slippage?: number
@@ -189,8 +190,6 @@ export interface LendOptions {
   gasLimit?: bigint
   /** Gas price override */
   gasPrice?: bigint
-  /** Receiver address for shares (defaults to sender) */
-  receiver?: Address
 }
 
 /**
@@ -245,6 +244,8 @@ export interface LendOpenPositionBaseParams {
   asset: Asset
   /** Market identifier containing address and chainId */
   marketId: LendMarketId
+  /** Wallet address for receiving shares and as owner (auto-populated by WalletLendNamespace) */
+  walletAddress?: Address
   /** Optional lending configuration */
   options?: LendOptions
 }
@@ -262,9 +263,11 @@ export interface LendOpenPositionParams extends LendOpenPositionBaseParams {
  * Internal parameters for provider _openPosition method with amount already converted to wei
  */
 export interface LendOpenPositionInternalParams
-  extends LendOpenPositionBaseParams {
+  extends Omit<LendOpenPositionBaseParams, 'walletAddress'> {
   /** Amount to lend in wei */
   amountWei: bigint
+  /** Wallet address for receiving shares and as owner (required in internal params) */
+  walletAddress: Address
 }
 
 /**
@@ -285,18 +288,18 @@ export interface LendParams {
 }
 
 /**
- * Parameters for withdraw operation (legacy)
- * @description Parameters required for withdrawing assets
+ * Parameters for withdraw operation (internal)
+ * @description Internal parameters required for withdrawing assets
  */
 export interface LendClosePositionParams {
-  /** Asset token address to withdraw */
-  asset: Address
+  /** Asset to withdraw (optional - will be validated against marketId) */
+  asset?: Asset
   /** Amount to withdraw (in wei) */
   amount: bigint
-  /** Chain ID for the transaction */
-  chainId: SupportedChainId
-  /** Optional specific market ID */
-  marketId?: string
+  /** Market identifier containing address and chainId */
+  marketId: LendMarketId
+  /** Wallet address for receiving assets and as owner */
+  walletAddress: Address
   /** Optional withdrawal configuration */
   options?: LendOptions
 }
@@ -312,6 +315,8 @@ export interface ClosePositionParams {
   asset?: Asset
   /** Market identifier containing address and chainId */
   marketId: LendMarketId
+  /** Wallet address for receiving assets and as owner (auto-populated by WalletLendNamespace) */
+  walletAddress?: Address
   /** Optional withdrawal configuration */
   options?: LendOptions
 }
@@ -381,13 +386,13 @@ export interface LendProviderMethods {
    * @param params - Withdrawal operation parameters
    * @returns Promise resolving to withdrawal transaction details
    */
-  _withdraw({
-    asset,
-    amount,
-    chainId,
-    marketId,
-    options,
-  }: LendClosePositionParams): Promise<LendTransaction>
+  _withdraw(params: {
+    asset: Address
+    amount: bigint
+    chainId: SupportedChainId
+    marketId?: string
+    options?: LendOptions
+  }): Promise<LendTransaction>
 
   /**
    * Provider implementation of getMarket method

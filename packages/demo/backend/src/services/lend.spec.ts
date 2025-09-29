@@ -7,6 +7,11 @@ vi.mock('../config/verbs.js', () => ({
   getVerbs: vi.fn(),
 }))
 
+// Mock the wallet module
+vi.mock('./wallet.js', () => ({
+  getWallet: vi.fn(),
+}))
+
 const mockLendProvider = {
   getMarkets: vi.fn(),
   getMarket: vi.fn(),
@@ -111,6 +116,64 @@ describe('Lend Service', () => {
       await expect(lendService.getMarket(marketId, chainId)).rejects.toThrow(
         'Unknown error',
       )
+    })
+  })
+
+  describe('closePosition', () => {
+    it('should call wallet.lend.closePosition with correct parameters', async () => {
+      const mockWallet = {
+        lend: {
+          closePosition: vi.fn().mockResolvedValue('0xtxhash'),
+        },
+      }
+
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(mockWallet as any)
+
+      const walletId = 'test-wallet-id'
+      const amount = 500
+      const chainId = 130
+      const tokenAddress = '0x078d782b760474a361dda0af3839290b0ef57ad6' as const
+      const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as const
+
+      const result = await lendService.closePosition({
+        userId: walletId,
+        amount,
+        tokenAddress,
+        chainId,
+        vaultAddress,
+        isUserWallet: false,
+      })
+
+      expect(result.hash).toBe('0xtxhash')
+      expect(mockWallet.lend.closePosition).toHaveBeenCalledWith({
+        amount,
+        asset: expect.objectContaining({
+          address: expect.objectContaining({
+            [chainId]: tokenAddress,
+          }),
+        }),
+        marketId: {
+          address: vaultAddress,
+          chainId,
+        },
+      })
+    })
+
+    it('should throw error when wallet not found', async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(null as any)
+
+      await expect(
+        lendService.closePosition({
+          userId: 'invalid-wallet',
+          amount: 500,
+          tokenAddress: '0x078d782b760474a361dda0af3839290b0ef57ad6',
+          chainId: 130,
+          vaultAddress: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
+          isUserWallet: false,
+        }),
+      ).rejects.toThrow('Wallet not found')
     })
   })
 })

@@ -18,7 +18,8 @@ vi.mock('@morpho-org/blue-sdk-viem', () => ({
   fetchMarket: vi.fn(),
   fetchAccrualVault: vi.fn(),
   MetaMorphoAction: {
-    deposit: vi.fn(() => '0x1234567890abcdef'), // Mock deposit function to return mock calldata
+    deposit: vi.fn(() => '0x1234567890abcdef'),
+    withdraw: vi.fn(() => '0xabcdef1234567890'),
   },
 }))
 
@@ -70,20 +71,107 @@ describe('LendProviderMorpho', () => {
   })
 
   describe('closePosition', () => {
-    it('should throw error during closePosition due to getMarket failure', async () => {
-      const mockAsset = MockGauntletUSDCMarket.asset
+    beforeEach(() => {
+      const mockVault = {
+        totalAssets: BigInt(10000000e6),
+        totalSupply: BigInt(10000000e6),
+        fee: BigInt(1e17),
+        owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0' as Address,
+        curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585' as Address,
+        allocations: new Map([
+          [
+            '0',
+            {
+              position: {
+                supplyShares: BigInt(1000000e6),
+                supplyAssets: BigInt(1000000e6),
+                market: {
+                  supplyApy: BigInt(3e16),
+                },
+              },
+            },
+          ],
+        ]),
+      }
+
+      vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as any)
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({
+            data: {
+              vaultByAddress: {
+                state: {
+                  rewards: [],
+                  allocation: [],
+                },
+              },
+            },
+          }),
+        } as any),
+      )
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('should successfully create a withdrawal transaction', async () => {
+      const amount = 500
+      const asset = MockGauntletUSDCMarket.asset
       const marketId = {
         address: MockGauntletUSDCMarket.address,
         chainId: MockGauntletUSDCMarket.chainId,
       }
+      const walletAddress = MockReceiverAddress
+
+      const withdrawTransaction = await provider.closePosition({
+        amount,
+        asset,
+        marketId,
+        walletAddress,
+      })
+
+      expect(withdrawTransaction).toHaveProperty('amount', BigInt('500000000'))
+      expect(withdrawTransaction).toHaveProperty(
+        'asset',
+        asset.address[marketId.chainId],
+      )
+      expect(withdrawTransaction).toHaveProperty('marketId', marketId.address)
+      expect(withdrawTransaction).toHaveProperty('apy')
+      expect(withdrawTransaction).toHaveProperty('timestamp')
+      expect(withdrawTransaction).toHaveProperty('transactionData')
+      expect(withdrawTransaction.transactionData).toHaveProperty(
+        'closePosition',
+      )
+      expect(withdrawTransaction.transactionData).not.toHaveProperty('approval')
+      expect(typeof withdrawTransaction.apy).toBe('number')
+      expect(withdrawTransaction.apy).toBeGreaterThan(0)
+    })
+
+    it('should handle withdrawal errors', async () => {
+      vi.spyOn(provider as any, '_getMarket').mockRejectedValueOnce(
+        new Error('Market fetch failed'),
+      )
+
+      const amount = 500
+      const asset = MockGauntletUSDCMarket.asset
+      const marketId = {
+        address: MockGauntletUSDCMarket.address,
+        chainId: MockGauntletUSDCMarket.chainId,
+      }
+      const walletAddress = MockReceiverAddress
 
       await expect(
         provider.closePosition({
-          amount: 1000,
-          asset: mockAsset,
+          amount,
+          asset,
           marketId,
+          walletAddress,
         }),
-      ).rejects.toThrow('Failed to get vault info')
+      ).rejects.toThrow('Market fetch failed')
     })
   })
 
@@ -155,7 +243,7 @@ describe('LendProviderMorpho', () => {
     })
 
     it('should successfully create a lending transaction', async () => {
-      const amount = 1000 // Human-readable amount
+      const amount = 1000
       const asset = MockGauntletUSDCMarket.asset
       const marketId = {
         address: MockGauntletUSDCMarket.address,
@@ -166,12 +254,10 @@ describe('LendProviderMorpho', () => {
         amount,
         asset,
         marketId,
-        options: {
-          receiver: MockReceiverAddress,
-        },
+        walletAddress: MockReceiverAddress,
       })
 
-      expect(lendTransaction).toHaveProperty('amount', BigInt('1000000000')) // 1000 * 10^6
+      expect(lendTransaction).toHaveProperty('amount', BigInt('1000000000'))
       expect(lendTransaction).toHaveProperty(
         'asset',
         asset.address[marketId.chainId],
@@ -181,20 +267,17 @@ describe('LendProviderMorpho', () => {
       expect(lendTransaction).toHaveProperty('timestamp')
       expect(lendTransaction).toHaveProperty('transactionData')
       expect(lendTransaction.transactionData).toHaveProperty('approval')
-      expect(lendTransaction.transactionData).toHaveProperty('deposit')
+      expect(lendTransaction.transactionData).toHaveProperty('openPosition')
       expect(typeof lendTransaction.apy).toBe('number')
       expect(lendTransaction.apy).toBeGreaterThan(0)
     })
 
     it('should handle lending errors', async () => {
-      const invalidAsset = {
-        address: {
-          [MockGauntletUSDCMarket.chainId]:
-            '0x0000000000000000000000000000000000000000' as Address,
-        },
-        metadata: { symbol: 'INVALID', name: 'Invalid', decimals: 6 },
-        type: 'erc20' as const,
-      }
+      vi.spyOn(provider as any, '_getMarket').mockRejectedValueOnce(
+        new Error('Market fetch failed'),
+      )
+
+      const asset = MockGauntletUSDCMarket.asset
       const amount = 1000
       const marketId = {
         address: MockGauntletUSDCMarket.address,
@@ -204,10 +287,11 @@ describe('LendProviderMorpho', () => {
       await expect(
         provider.openPosition({
           amount,
-          asset: invalidAsset,
+          asset,
           marketId,
+          walletAddress: MockReceiverAddress,
         }),
-      ).rejects.toThrow('Failed to open position')
+      ).rejects.toThrow('Market fetch failed')
     })
 
     it('should use custom slippage when provided', async () => {
@@ -223,9 +307,9 @@ describe('LendProviderMorpho', () => {
         amount,
         asset,
         marketId,
+        walletAddress: MockReceiverAddress,
         options: {
           slippage: customSlippage,
-          receiver: MockReceiverAddress,
         },
       })
 

@@ -187,11 +187,16 @@ export class MockLendProvider extends LendProvider<LendConfig> {
   protected async _closePosition(
     params: LendClosePositionParams,
   ): Promise<LendTransaction> {
+    const assetAddress = params.asset?.address[params.marketId.chainId]
+    if (!assetAddress) {
+      throw new Error(`Asset not supported on chain ${params.marketId.chainId}`)
+    }
+
     return this.createMockWithdraw(
-      params.asset,
+      assetAddress,
       params.amount,
-      params.chainId as number,
-      params.marketId,
+      params.marketId.chainId,
+      params.marketId.address,
       params.options,
     )
   }
@@ -224,7 +229,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
           data: '0x095ea7b3' as Address,
           value: 0n,
         },
-        deposit: {
+        openPosition: {
           to: marketId.address,
           data: '0x6e553f65' as Address,
           value: 0n,
@@ -258,7 +263,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
           data: '0x095ea7b3' as Address,
           value: 0n,
         },
-        deposit: {
+        openPosition: {
           to: marketId.address,
           data: '0x6e553f65' as Address,
           value: 0n,
@@ -335,7 +340,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
-        deposit: {
+        closePosition: {
           to: marketId.address,
           data: '0xb460af94' as Address,
           value: 0n,
@@ -359,7 +364,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
-        deposit: {
+        closePosition: {
           to:
             (marketId as Address) ||
             ('0x1234567890123456789012345678901234567890' as Address),

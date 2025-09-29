@@ -75,26 +75,17 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         chainId: params.marketId.chainId,
       })
 
-      // Generate real call data for Morpho deposit
-      const receiver = params.options?.receiver
-      if (!receiver) {
-        throw new Error(
-          'Receiver address is required for Morpho deposit operation',
-        )
-      }
       const depositCallData = MetaMorphoAction.deposit(
         params.amountWei,
-        receiver,
+        params.walletAddress,
       )
 
-      // Create approval transaction data if needed
       const approvalCallData = encodeFunctionData({
         abi: erc20Abi,
         functionName: 'approve',
         args: [params.marketId.address, params.amountWei],
       })
 
-      // Return transaction details with real call data
       const currentTimestamp = Math.floor(Date.now() / 1000)
 
       return {
@@ -104,14 +95,12 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         apy: vaultInfo.apy,
         timestamp: currentTimestamp,
         transactionData: {
-          // Approval transaction
           approval: {
             to: assetAddress,
             data: approvalCallData,
             value: 0n,
           },
-          // Deposit transaction
-          deposit: {
+          openPosition: {
             to: params.marketId.address,
             data: depositCallData,
             value: 0n,
@@ -130,23 +119,51 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
 
   /**
    * Close a position in a Morpho market
-   * @description Withdraws assets from a Morpho market using Blue_Withdraw operation
+   * @description Withdraws assets from a Morpho market
    * @param params - Position closing operation parameters
    * @returns Promise resolving to withdrawal transaction details
    */
   protected async _closePosition(
     params: LendClosePositionParams,
   ): Promise<LendTransaction> {
-    // TODO: Implement withdrawal functionality
+    try {
+      const vaultInfo = await this.getMarket({
+        address: params.marketId.address,
+        chainId: params.marketId.chainId,
+      })
 
-    const _unused = {
-      asset: params.asset,
-      amount: params.amount,
-      chainId: params.chainId,
-      marketId: params.marketId,
-      options: params.options,
+      const assetAddress = vaultInfo.asset
+
+      const withdrawCallData = MetaMorphoAction.withdraw(
+        params.amount,
+        params.walletAddress,
+        params.walletAddress,
+      )
+
+      const currentTimestamp = Math.floor(Date.now() / 1000)
+
+      return {
+        amount: params.amount,
+        asset: assetAddress,
+        marketId: params.marketId.address,
+        apy: vaultInfo.apy,
+        timestamp: currentTimestamp,
+        transactionData: {
+          closePosition: {
+            to: params.marketId.address,
+            data: withdrawCallData,
+            value: 0n,
+          },
+        },
+        slippage: params.options?.slippage || this._config.defaultSlippage,
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to close position: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
     }
-    throw new Error('Close position functionality not yet implemented')
   }
 
   /**
