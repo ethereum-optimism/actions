@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Info from './Info'
+import Action from './Action'
 import ActivityLog from './ActivityLog'
 
 function Earn() {
@@ -90,7 +91,7 @@ function Earn() {
 
       <main className="flex" style={{ height: 'calc(100vh - 65px)' }}>
         {/* Left Content Area */}
-        <div className="flex-1 flex flex-col items-center p-8" style={{ maxWidth: 'calc(100% - 436px)' }}>
+        <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto" style={{ maxWidth: 'calc(100% - 436px)' }}>
           <div className="w-full max-w-2xl">
             {/* Title Section */}
             <div className="mb-8 text-left">
@@ -127,7 +128,10 @@ function Earn() {
               </p>
             </div>
 
-            <Info />
+            <div className="space-y-6">
+              <Action />
+              <Info />
+            </div>
           </div>
         </div>
 
