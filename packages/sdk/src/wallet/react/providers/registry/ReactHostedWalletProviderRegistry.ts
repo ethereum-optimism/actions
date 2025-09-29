@@ -1,6 +1,7 @@
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
 import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
+import { TurnkeyHostedWalletProvider } from '@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
 import type {
   ReactHostedProviderInstanceMap,
   ReactOptionsMap,
@@ -40,6 +41,16 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       },
       create({ chainManager }, _options) {
         return new PrivyHostedWalletProvider(chainManager)
+      },
+    })
+
+    this.register<'turnkey'>({
+      type: 'turnkey',
+      validateOptions(_options): _options is ReactOptionsMap['turnkey'] {
+        return true
+      },
+      create({ chainManager }, _options) {
+        return new TurnkeyHostedWalletProvider(chainManager)
       },
     })
   }

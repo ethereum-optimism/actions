@@ -130,14 +130,19 @@ export class Verbs<
     const factory = this.hostedWalletProviderRegistry.getFactory(
       hostedWalletProviderConfig.type,
     )
-    if (!factory.validateOptions(hostedWalletProviderConfig.config)) {
+    const options = (
+      'config' in hostedWalletProviderConfig
+        ? hostedWalletProviderConfig.config
+        : undefined
+    ) as unknown
+    if (!factory.validateOptions(options)) {
       throw new Error(
         `Invalid options for hosted wallet provider: ${hostedWalletProviderConfig.type}`,
       )
     }
     this.hostedWalletProvider = factory.create(
       { chainManager: this.chainManager },
-      hostedWalletProviderConfig.config,
+      options,
     )
 
     if (

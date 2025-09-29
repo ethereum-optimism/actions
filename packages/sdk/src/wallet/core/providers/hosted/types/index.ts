@@ -21,11 +21,12 @@ export interface HostedProviderDeps {
  */
 export type ProviderSpec<
   TType extends string,
-  TConfigMap extends { [K in TType]: unknown },
+  TConfigMap extends { [K in TType]: unknown | undefined },
 > = {
-  type: TType
-  config?: TConfigMap[TType]
-}
+  [K in TType]: undefined extends TConfigMap[K]
+    ? { type: K }
+    : { type: K; config: TConfigMap[K] }
+}[TType]
 
 /**
  * Hosted wallet provider factory
