@@ -909,14 +909,17 @@ User ID: ${result.userId}`,
         const marketBalanceResult = await verbsApi.getMarketBalance(
           selectedVault.address,
           selectedWallet!.id,
+          selectedVault.chainId,
         )
         vaultShares = parseFloat(marketBalanceResult.sharesFormatted)
-        console.log('[FRONTEND] Vault shares:', vaultShares)
+        console.log('[FRONTEND] Vault shares:', vaultShares, 'Raw:', marketBalanceResult.sharesFormatted)
       } catch (error) {
         console.error('[FRONTEND] Error getting vault shares:', error)
+        // If we can't get vault balance, assume no shares and continue with open flow
       }
 
       // If vault has shares, ask open or close
+      console.log('[FRONTEND] Checking if vault has shares:', vaultShares, '> 0 =', vaultShares > 0)
       if (vaultShares > 0) {
         const positionTypes = ['open position (deposit)', 'close position (withdraw)']
         const positionTypeOptions = positionTypes

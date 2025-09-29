@@ -189,13 +189,14 @@ class VerbsApiClient {
   async getMarketBalance(
     vaultAddress: string,
     walletId: string,
+    chainId: number,
   ): Promise<{
     balance: string
     balanceFormatted: string
     shares: string
     sharesFormatted: string
   }> {
-    return this.request(`/lend/market/${vaultAddress}/balance/${walletId}`, {
+    return this.request(`/lend/market/${vaultAddress}/balance/${walletId}/${chainId}`, {
       method: 'GET',
     })
   }
@@ -217,9 +218,9 @@ class VerbsApiClient {
       vaultAddress: string
     }
   }> {
-    return this.request('/lend/open-position', {
+    return this.request(`/lend/${vaultAddress}/${chainId}/open`, {
       method: 'POST',
-      body: JSON.stringify({ walletId, amount, tokenAddress, chainId, vaultAddress }),
+      body: JSON.stringify({ walletId, amount, tokenAddress }),
       headers,
     })
   }
