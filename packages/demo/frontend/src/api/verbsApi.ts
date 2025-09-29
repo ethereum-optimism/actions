@@ -50,49 +50,59 @@ class VerbsApiClient {
     return data
   }
 
-  async createWallet(userId: string, headers: HeadersInit = {}): Promise<CreateWalletResponse> {
+  async createWallet(
+    userId: string,
+    headers: HeadersInit = {},
+  ): Promise<CreateWalletResponse> {
     return this.request<CreateWalletResponse>(`/wallet/${userId}`, {
       method: 'POST',
-      headers
+      headers,
     })
   }
 
-  async getAllWallets(headers: HeadersInit = {}): Promise<GetAllWalletsResponse> {
+  async getAllWallets(
+    headers: HeadersInit = {},
+  ): Promise<GetAllWalletsResponse> {
     return this.request<GetAllWalletsResponse>('/wallets', {
       method: 'GET',
-      headers
+      headers,
     })
   }
 
-  async getMarkets(headers: HeadersInit = {}): Promise<{ markets: Array<{ 
-    chainId: number;
-    address: string; 
-    name: string; 
-    apy: number; 
-    asset: string;
-    apyBreakdown: {
-      nativeApy: number
-      totalRewardsApr: number
-      usdc?: number
-      morpho?: number
-      other?: number
-      performanceFee: number
-      netApy: number
-    }
-    totalAssets: string
-    totalShares: string
-    fee: number
-    owner: string
-    curator: string
-    lastUpdate: number
-  }> }> {
+  async getMarkets(headers: HeadersInit = {}): Promise<{
+    markets: Array<{
+      chainId: number
+      address: string
+      name: string
+      apy: number
+      asset: string
+      apyBreakdown: {
+        nativeApy: number
+        totalRewardsApr: number
+        usdc?: number
+        morpho?: number
+        other?: number
+        performanceFee: number
+        netApy: number
+      }
+      totalAssets: string
+      totalShares: string
+      fee: number
+      owner: string
+      curator: string
+      lastUpdate: number
+    }>
+  }> {
     return this.request('/lend/markets', {
       method: 'GET',
-      headers
+      headers,
     })
   }
 
-  async getVault(vaultAddress: string, headers: HeadersInit = {}): Promise<{
+  async getVault(
+    vaultAddress: string,
+    headers: HeadersInit = {},
+  ): Promise<{
     vault: {
       address: string
       name: string
@@ -117,11 +127,14 @@ class VerbsApiClient {
   }> {
     return this.request(`/lend/vault/${vaultAddress}`, {
       method: 'GET',
-      headers
+      headers,
     })
   }
 
-  async getWalletBalance(userId: string, headers: HeadersInit = {}): Promise<{
+  async getWalletBalance(
+    userId: string,
+    headers: HeadersInit = {},
+  ): Promise<{
     balance: Array<{
       symbol: string
       totalBalance: string
@@ -136,14 +149,17 @@ class VerbsApiClient {
   }> {
     return this.request(`/wallet/${userId}/balance`, {
       method: 'GET',
-      headers
+      headers,
     })
   }
 
-  async fundWallet(userId: string, headers: HeadersInit = {}): Promise<{ success: boolean, to: string, amount: bigint }> {
+  async fundWallet(
+    userId: string,
+    headers: HeadersInit = {},
+  ): Promise<{ success: boolean; to: string; amount: bigint }> {
     return this.request(`/wallet/${userId}/fund`, {
       method: 'POST',
-      headers
+      headers,
     })
   }
 
@@ -151,7 +167,7 @@ class VerbsApiClient {
     walletId: string,
     amount: number,
     recipientAddress: string,
-    headers: HeadersInit = {}
+    headers: HeadersInit = {},
   ): Promise<{
     transaction: {
       to: string
@@ -166,11 +182,14 @@ class VerbsApiClient {
         amount,
         recipientAddress,
       }),
-      headers
+      headers,
     })
   }
 
-  async getMarketBalance(vaultAddress: string, walletId: string): Promise<{
+  async getMarketBalance(
+    vaultAddress: string,
+    walletId: string,
+  ): Promise<{
     balance: string
     balanceFormatted: string
     shares: string
@@ -181,34 +200,27 @@ class VerbsApiClient {
     })
   }
 
-  async lendDeposit(walletId: string, amount: number, tokenAddress: Address, chainId: number, headers: HeadersInit = {}): Promise<{
+  async openLendPosition(
+    walletId: string,
+    amount: number,
+    tokenAddress: Address,
+    chainId: number,
+    vaultAddress: Address,
+    headers: HeadersInit = {},
+  ): Promise<{
     transaction: {
-      blockExplorerUrl: string
       hash: string
-      amount: string
-      asset: string
-      marketId: string
-      apy: number
-      timestamp: number
-      slippage: number
-      transactionData: {
-        approval?: {
-          to: string
-          data: string
-          value: string
-        }
-        deposit: {
-          to: string
-          data: string
-          value: string
-        }
-      }
+      blockExplorerUrl: string
+      amount: number
+      tokenAddress: string
+      chainId: number
+      vaultAddress: string
     }
   }> {
-    return this.request('/lend/deposit', {
+    return this.request('/lend/open-position', {
       method: 'POST',
-      body: JSON.stringify({ walletId, amount, tokenAddress, chainId }),
-      headers
+      body: JSON.stringify({ walletId, amount, tokenAddress, chainId, vaultAddress }),
+      headers,
     })
   }
 }

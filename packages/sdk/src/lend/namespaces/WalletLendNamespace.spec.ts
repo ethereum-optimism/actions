@@ -1,27 +1,44 @@
+import type { Hash } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider } from '@/types/lend.js'
+import type { LendProvider, TransactionData } from '@/types/lend.js'
+import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 import { WalletLendNamespace } from './WalletLendNamespace.js'
 
 describe('WalletLendNamespace', () => {
   const mockWalletAddress = getRandomAddress()
   let mockProvider: LendProvider
+  let mockWallet: SmartWallet
+  let mockRegularWallet: any
 
   beforeEach(() => {
     mockProvider = createMockLendProvider()
+    // Create a mock SmartWallet with send and sendBatch methods
+    mockWallet = {
+      address: mockWalletAddress,
+      send: vi.fn().mockResolvedValue('0xmockhash' as Hash),
+      sendBatch: vi.fn().mockResolvedValue('0xmockbatchhash' as Hash),
+    } as unknown as SmartWallet
+
+    // Create a mock regular wallet without SmartWallet methods
+    mockRegularWallet = {
+      address: mockWalletAddress,
+      send: undefined,
+      sendBatch: undefined,
+    }
   })
 
-  it('should create an instance with a lend provider and wallet address', () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
+  it('should create an instance with a lend provider and wallet', () => {
+    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
 
     expect(namespace).toBeInstanceOf(WalletLendNamespace)
   })
 
   it('should inherit read operations from VerbsLendNamespace', async () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
+    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
     const mockMarkets = [
       {
         chainId: 130,
@@ -52,21 +69,25 @@ describe('WalletLendNamespace', () => {
     expect(result).toBe(mockMarkets)
   })
 
-  describe('lendExecute', () => {
-    it('should call provider lend with wallet address as receiver', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
-      const asset = getRandomAddress()
-      const amount = BigInt('1000000')
-      const marketId = 'test-market'
+  describe('openPosition', () => {
+    it('should call provider openPosition with wallet address as receiver', async () => {
+      const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+      const mockAsset = {
+        address: { 130: getRandomAddress() },
+        metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+        type: 'erc20' as const,
+      }
+      const amount = 1000
+      const marketId = { address: getRandomAddress(), chainId: 130 as const }
       const mockTransaction = {
-        amount,
-        asset,
-        marketId,
+        amount: 1000000000n,
+        asset: mockAsset.address[130],
+        marketId: marketId.address,
         apy: 0.05,
         timestamp: Date.now(),
         transactionData: {
           deposit: {
-            to: asset,
+            to: marketId.address,
             value: 0n,
             data: '0x' as const,
           },
@@ -74,146 +95,141 @@ describe('WalletLendNamespace', () => {
         slippage: 50,
       }
 
-      vi.mocked(mockProvider.lend).mockResolvedValue(mockTransaction)
+      vi.mocked(mockProvider.openPosition).mockResolvedValue(mockTransaction)
 
-      const result = await namespace.lendExecute(asset, amount, 130, marketId)
-
-      expect(mockProvider.lend).toHaveBeenCalledWith(
-        asset,
+      // Should now execute the transaction
+      const result = await namespace.openPosition({
         amount,
-        130,
+        asset: mockAsset,
         marketId,
-        {
+      })
+
+      expect(result).toBe('0xmockhash')
+
+      expect(mockProvider.openPosition).toHaveBeenCalledWith({
+        amount,
+        asset: mockAsset,
+        marketId,
+        options: {
           receiver: mockWalletAddress,
         },
-      )
-      expect(result).toBe(mockTransaction)
-    })
-
-    it('should preserve custom receiver in options', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
-      const asset = getRandomAddress()
-      const amount = BigInt('1000000')
-      const customReceiver = getRandomAddress()
-      const options = { receiver: customReceiver, slippage: 100 }
-
-      await namespace.lendExecute(asset, amount, 130, undefined, options)
-
-      expect(mockProvider.lend).toHaveBeenCalledWith(
-        asset,
-        amount,
-        130,
-        undefined,
-        options,
-      )
+      })
     })
   })
 
-  describe('deposit', () => {
-    it('should delegate to lendExecute', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
-      const asset = getRandomAddress()
-      const amount = BigInt('1000000')
-      const marketId = 'test-market'
-      const options = { slippage: 75 }
+  describe('closePosition', () => {
+    it('should call provider closePosition and execute transaction for SmartWallet', async () => {
+      const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+      const closeParams = {
+        amount: 100,
+        marketId: { address: getRandomAddress(), chainId: 130 as const },
+      }
 
-      const lendExecuteSpy = vi.spyOn(namespace, 'lendExecute')
       const mockTransaction = {
-        amount,
-        asset,
-        marketId,
+        amount: 100n,
+        asset: getRandomAddress(),
+        marketId: closeParams.marketId.address,
         apy: 0.05,
         timestamp: Date.now(),
         transactionData: {
           deposit: {
-            to: asset,
+            to: closeParams.marketId.address,
             value: 0n,
             data: '0x' as const,
           },
         },
-        slippage: 75,
       }
-      lendExecuteSpy.mockResolvedValue(mockTransaction)
 
-      const result = await namespace.deposit(
-        asset,
-        amount,
-        130,
-        marketId,
-        options,
-      )
+      vi.mocked(mockProvider.closePosition).mockResolvedValue(mockTransaction)
+      vi.mocked(mockWallet.send).mockResolvedValue('0xtxhash' as Hash)
 
-      expect(lendExecuteSpy).toHaveBeenCalledWith(
-        asset,
-        amount,
+      const result = await namespace.closePosition(closeParams)
+
+      expect(mockProvider.closePosition).toHaveBeenCalledWith({
+        ...closeParams,
+        options: { receiver: mockWallet.address },
+      })
+      expect(mockWallet.send).toHaveBeenCalledWith(
+        mockTransaction.transactionData.deposit,
         130,
-        marketId,
-        options,
       )
-      expect(result).toBe(mockTransaction)
+      expect(result).toBe('0xtxhash')
     })
-  })
 
-  describe('withdraw', () => {
-    it('should call provider withdraw with wallet address as receiver', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
-      const asset = getRandomAddress()
-      const amount = BigInt('500000')
-      const marketId = 'test-market'
+    it('should throw error for non-SmartWallet', async () => {
+      const namespace = new WalletLendNamespace(mockProvider, mockRegularWallet)
+      const closeParams = {
+        amount: 100,
+        marketId: { address: getRandomAddress(), chainId: 130 as const },
+      }
+
       const mockTransaction = {
-        amount,
-        asset,
-        marketId,
+        amount: 100n,
+        asset: getRandomAddress(),
+        marketId: closeParams.marketId.address,
         apy: 0.05,
         timestamp: Date.now(),
         transactionData: {
           deposit: {
-            to: asset,
+            to: closeParams.marketId.address,
             value: 0n,
             data: '0x' as const,
           },
         },
-        slippage: 50,
       }
 
-      vi.mocked(mockProvider.withdraw).mockResolvedValue(mockTransaction)
+      vi.mocked(mockProvider.closePosition).mockResolvedValue(mockTransaction)
 
-      const result = await namespace.withdraw(asset, amount, 130, marketId)
-
-      expect(mockProvider.withdraw).toHaveBeenCalledWith(
-        asset,
-        amount,
-        130,
-        marketId,
-        {
-          receiver: mockWalletAddress,
-        },
-      )
-      expect(result).toBe(mockTransaction)
-    })
-
-    it('should preserve custom receiver in options', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
-      const asset = getRandomAddress()
-      const amount = BigInt('500000')
-      const customReceiver = getRandomAddress()
-      const options = { receiver: customReceiver, slippage: 200 }
-
-      await namespace.withdraw(asset, amount, 130, undefined, options)
-
-      expect(mockProvider.withdraw).toHaveBeenCalledWith(
-        asset,
-        amount,
-        130,
-        undefined,
-        options,
+      await expect(namespace.closePosition(closeParams)).rejects.toThrow(
+        'Transaction execution is only supported for SmartWallet instances',
       )
     })
   })
 
-  it('should store the wallet address', () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWalletAddress)
+  it('should store the wallet reference', () => {
+    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
 
-    expect(namespace['address']).toBe(mockWalletAddress)
+    expect(namespace['wallet']).toBe(mockWallet)
+    expect(namespace['wallet'].address).toBe(mockWalletAddress)
+  })
+
+  it('should execute transaction with approval when present', async () => {
+    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+    const mockAsset = {
+      address: { 130: getRandomAddress() },
+      metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+      type: 'erc20' as const,
+    }
+    const marketId = { address: getRandomAddress(), chainId: 130 as const }
+    const approval: TransactionData = {
+      to: mockAsset.address[130],
+      value: 0n,
+      data: '0xapproval' as const,
+    }
+    const deposit: TransactionData = {
+      to: marketId.address,
+      value: 0n,
+      data: '0xdeposit' as const,
+    }
+    const mockTransaction = {
+      amount: 1000000000n,
+      asset: mockAsset.address[130],
+      marketId: marketId.address,
+      apy: 0.05,
+      timestamp: Date.now(),
+      transactionData: { approval, deposit },
+      slippage: 50,
+    }
+
+    vi.mocked(mockProvider.openPosition).mockResolvedValue(mockTransaction)
+
+    const result = await namespace.openPosition({
+      amount: 1000,
+      asset: mockAsset,
+      marketId,
+    })
+
+    expect(mockWallet.sendBatch).toHaveBeenCalledWith([approval, deposit], 130)
+    expect(result).toBe('0xmockbatchhash')
   })
 })

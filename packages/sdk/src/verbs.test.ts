@@ -802,6 +802,53 @@ describe('Verbs SDK', () => {
           },
         )
 
+        const invalidVaultAddress = '0x0000000000000000000000000000000000000000'
+
+        await expect(
+          verbs.lend.getMarket({
+            address: invalidVaultAddress,
+            chainId: 130,
+          }),
+        ).rejects.toThrow(`Vault ${invalidVaultAddress} not found`)
+      })
+
+      it.runIf(externalTest())('should get list of vaults', async () => {
+        const verbs = new Verbs(
+          {
+            chains: [
+              {
+                chainId: unichain.id,
+              },
+            ],
+            lend: {
+              provider: 'morpho',
+              defaultSlippage: 50,
+            },
+            wallet: {
+              hostedWalletConfig: {
+                provider: {
+                  type: 'privy',
+                  config: {
+                    privyClient: createMockPrivyClient(
+                      'test-app-id',
+                      'test-app-secret',
+                    ),
+                  },
+                },
+              },
+              smartWalletConfig: {
+                provider: {
+                  type: 'default',
+                },
+              },
+            },
+          },
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
+
         const markets = await verbs.lend.getMarkets()
 
         expect(Array.isArray(markets)).toBe(true)

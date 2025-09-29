@@ -1,10 +1,19 @@
 import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
+import type { Asset } from '@/types/asset.js'
 import type {
+  ClosePositionParams,
+  GetLendMarketParams,
+  GetLendMarketsParams,
+  GetMarketBalanceParams,
+  LendClosePositionParams,
   LendConfig,
   LendMarket,
   LendMarketId,
+  LendMarketPosition,
+  LendOpenPositionInternalParams,
+  LendOpenPositionParams,
   LendOptions,
   LendTransaction,
 } from '@/types/lend.js'
@@ -22,39 +31,24 @@ export interface MockLendProviderConfig {
  * @description Provides a mock implementation of LendProvider following MockChainManager pattern
  */
 export class MockLendProvider extends LendProvider<LendConfig> {
-  public lend: MockedFunction<
-    (
-      asset: Address,
-      amount: bigint,
-      chainId: number,
-      marketId?: string,
-      options?: LendOptions,
-    ) => Promise<LendTransaction>
-  >
-  public deposit: MockedFunction<
-    (
-      asset: Address,
-      amount: bigint,
-      chainId: number,
-      marketId?: string,
-      options?: LendOptions,
-    ) => Promise<LendTransaction>
+  public openPosition: MockedFunction<
+    (params: LendOpenPositionParams) => Promise<LendTransaction>
   >
   public getMarket: MockedFunction<
-    (marketId: LendMarketId) => Promise<LendMarket>
+    (params: GetLendMarketParams) => Promise<LendMarket>
   >
-  public getMarkets: MockedFunction<() => Promise<LendMarket[]>>
-  public getMarketBalance: MockedFunction<
+  public getMarkets: MockedFunction<
+    (params?: GetLendMarketsParams) => Promise<LendMarket[]>
+  >
+  public getPosition: MockedFunction<
     (
-      marketId: LendMarketId,
       walletAddress: Address,
-    ) => Promise<{
-      balance: bigint
-      balanceFormatted: string
-      shares: bigint
-      sharesFormatted: string
-      chainId: number
-    }>
+      marketId?: LendMarketId,
+      asset?: Asset,
+    ) => Promise<LendMarketPosition>
+  >
+  public closePosition: MockedFunction<
+    (closePositionParams: ClosePositionParams) => Promise<LendTransaction>
   >
   public withdraw: MockedFunction<
     (
@@ -90,21 +84,23 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     }
 
     // Create mocked functions with default implementations
-    this.lend = vi
+    this.openPosition = vi
       .fn()
-      .mockImplementation(this.createMockLendTransaction.bind(this))
-    this.deposit = vi
-      .fn()
-      .mockImplementation(this.createMockLendTransaction.bind(this))
+      .mockImplementation(this.createMockOpenPosition.bind(this))
     this.getMarket = vi
       .fn()
-      .mockImplementation(this.createMockMarket.bind(this))
+      .mockImplementation(({ address, chainId }: GetLendMarketParams) => {
+        return this.createMockMarket({ address, chainId })
+      })
     this.getMarkets = vi
       .fn()
       .mockImplementation(this.createMockMarkets.bind(this))
-    this.getMarketBalance = vi
+    this.getPosition = vi
       .fn()
-      .mockImplementation(this.createMockBalance.bind(this))
+      .mockImplementation(this.createMockPosition.bind(this))
+    this.closePosition = vi
+      .fn()
+      .mockImplementation(this.createMockClosePosition.bind(this))
     this.withdraw = vi
       .fn()
       .mockImplementation(this.createMockWithdraw.bind(this))
@@ -114,20 +110,13 @@ export class MockLendProvider extends LendProvider<LendConfig> {
    * Helper method to configure mock responses
    */
   configureMock(config: {
-    lendResponse?: LendTransaction
+    openPositionResponse?: LendTransaction
     marketResponse?: LendMarket
     marketsResponse?: LendMarket[]
-    balanceResponse?: {
-      balance: bigint
-      balanceFormatted: string
-      shares: bigint
-      sharesFormatted: string
-      chainId: number
-    }
+    balanceResponse?: LendMarketPosition
   }) {
-    if (config.lendResponse) {
-      this.lend.mockResolvedValue(config.lendResponse)
-      this.deposit.mockResolvedValue(config.lendResponse)
+    if (config.openPositionResponse) {
+      this.openPosition.mockResolvedValue(config.openPositionResponse)
     }
     if (config.marketResponse) {
       this.getMarket.mockResolvedValue(config.marketResponse)
@@ -136,7 +125,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       this.getMarkets.mockResolvedValue(config.marketsResponse)
     }
     if (config.balanceResponse) {
-      this.getMarketBalance.mockResolvedValue(config.balanceResponse)
+      this.getPosition.mockResolvedValue(config.balanceResponse)
     }
   }
 
@@ -154,11 +143,17 @@ export class MockLendProvider extends LendProvider<LendConfig> {
    * Reset all mocks to their default implementations
    */
   resetMocks() {
-    this.lend.mockImplementation(this.createMockLendTransaction.bind(this))
-    this.deposit.mockImplementation(this.createMockLendTransaction.bind(this))
-    this.getMarket.mockImplementation(this.createMockMarket.bind(this))
+    this.openPosition.mockImplementation(this.createMockOpenPosition.bind(this))
+    this.getMarket.mockImplementation(
+      ({ address, chainId }: GetLendMarketParams) => {
+        return this.createMockMarket({ address, chainId })
+      },
+    )
     this.getMarkets.mockImplementation(this.createMockMarkets.bind(this))
-    this.getMarketBalance.mockImplementation(this.createMockBalance.bind(this))
+    this.getPosition.mockImplementation(this.createMockPosition.bind(this))
+    this.closePosition.mockImplementation(
+      this.createMockClosePosition.bind(this),
+    )
     this.withdraw.mockImplementation(this.createMockWithdraw.bind(this))
   }
 
@@ -167,92 +162,104 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     this.resetMocks()
   }
 
-  protected async _lend({
-    asset,
-    amount,
-    chainId,
-    marketId,
-    options,
-  }: {
-    asset: Address
-    amount: bigint
-    chainId: number
-    marketId?: string
-    options?: LendOptions
-  }): Promise<LendTransaction> {
-    return this.createMockLendTransaction(
-      asset,
-      amount,
-      chainId,
-      marketId,
-      options,
-    )
+  protected async _openPosition(
+    params: LendOpenPositionInternalParams,
+  ): Promise<LendTransaction> {
+    return this.createMockOpenPositionInternal(params)
   }
 
   protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
     return this.createMockMarket(marketId)
   }
 
-  protected async _getMarkets(): Promise<LendMarket[]> {
+  protected async _getMarkets(
+    _params: GetLendMarketsParams,
+  ): Promise<LendMarket[]> {
     return this.createMockMarkets()
   }
 
-  protected async _getMarketBalance({
-    marketId,
-    walletAddress,
-  }: {
-    marketId: LendMarketId
-    walletAddress: Address
-  }): Promise<{
-    balance: bigint
-    balanceFormatted: string
-    shares: bigint
-    sharesFormatted: string
-    chainId: number
-  }> {
-    return this.createMockBalance(marketId, walletAddress)
+  protected async _getPosition(
+    params: GetMarketBalanceParams,
+  ): Promise<LendMarketPosition> {
+    return this.createMockPosition(params.walletAddress, params.marketId)
   }
 
-  protected async _withdraw({
-    asset,
+  protected async _closePosition(
+    params: LendClosePositionParams,
+  ): Promise<LendTransaction> {
+    return this.createMockWithdraw(
+      params.asset,
+      params.amount,
+      params.chainId as number,
+      params.marketId,
+      params.options,
+    )
+  }
+
+  private async createMockOpenPosition({
     amount,
-    chainId,
+    asset,
     marketId,
     options,
-  }: {
-    asset: Address
-    amount: bigint
-    chainId: number
-    marketId?: string
-    options?: LendOptions
-  }): Promise<LendTransaction> {
-    return this.createMockWithdraw(asset, amount, chainId, marketId, options)
-  }
+  }: LendOpenPositionParams): Promise<LendTransaction> {
+    // Get asset address for the chain
+    const assetAddress = asset.address[marketId.chainId]
+    if (!assetAddress) {
+      throw new Error(`Asset not supported on chain ${marketId.chainId}`)
+    }
 
-  private async createMockLendTransaction(
-    asset: Address,
-    amount: bigint,
-    chainId: number,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
+    // Convert human-readable amount to wei (mock conversion)
+    const amountWei = BigInt(Math.floor(amount * 10 ** asset.metadata.decimals))
+
     return {
-      amount,
-      asset,
-      marketId: marketId || 'mock-market',
+      amount: amountWei,
+      asset: assetAddress,
+      marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
       timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         approval: {
-          to: asset,
+          to: assetAddress,
           data: '0x095ea7b3' as Address,
           value: 0n,
         },
         deposit: {
-          to:
-            (marketId as Address) ||
-            ('0x1234567890123456789012345678901234567890' as Address),
+          to: marketId.address,
+          data: '0x6e553f65' as Address,
+          value: 0n,
+        },
+      },
+    }
+  }
+
+  private async createMockOpenPositionInternal({
+    amountWei,
+    asset,
+    marketId,
+    options,
+  }: LendOpenPositionInternalParams): Promise<LendTransaction> {
+    // Get asset address for the chain
+    const assetAddress = asset.address[marketId.chainId]
+    if (!assetAddress) {
+      throw new Error(`Asset not supported on chain ${marketId.chainId}`)
+    }
+
+    return {
+      amount: amountWei,
+      asset: assetAddress,
+      marketId: marketId.address,
+      apy: this.mockConfig.defaultApy,
+      timestamp: Math.floor(Date.now() / 1000),
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
+      transactionData: {
+        approval: {
+          to: assetAddress,
+          data: '0x095ea7b3' as Address,
+          value: 0n,
+        },
+        deposit: {
+          to: marketId.address,
           data: '0x6e553f65' as Address,
           value: 0n,
         },
@@ -291,22 +298,49 @@ export class MockLendProvider extends LendProvider<LendConfig> {
     ]
   }
 
-  private async createMockBalance(
-    marketId: LendMarketId,
+  private async createMockPosition(
     _walletAddress: Address,
-  ): Promise<{
-    balance: bigint
-    balanceFormatted: string
-    shares: bigint
-    sharesFormatted: string
-    chainId: number
-  }> {
+    marketId?: LendMarketId,
+    _asset?: Asset,
+  ): Promise<LendMarketPosition> {
+    if (!marketId) {
+      throw new Error('marketId is required for mock position')
+    }
+
     return {
       balance: this.mockConfig.mockBalance / 2n,
       balanceFormatted: (this.mockConfig.mockBalance / 2n).toString(),
       shares: this.mockConfig.mockBalance / 2n,
       sharesFormatted: (this.mockConfig.mockBalance / 2n).toString(),
       chainId: marketId.chainId,
+    }
+  }
+
+  private async createMockClosePosition({
+    amount,
+    asset,
+    marketId,
+    options,
+  }: ClosePositionParams): Promise<LendTransaction> {
+    // If asset provided, use its address for the chain; otherwise use a mock asset
+    const assetAddress =
+      asset?.address[marketId.chainId] ||
+      ('0x1234567890123456789012345678901234567890' as Address)
+
+    return {
+      amount: BigInt(amount),
+      asset: assetAddress,
+      marketId: marketId.address,
+      apy: 0,
+      timestamp: Math.floor(Date.now() / 1000),
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
+      transactionData: {
+        deposit: {
+          to: marketId.address,
+          data: '0xb460af94' as Address,
+          value: 0n,
+        },
+      },
     }
   }
 

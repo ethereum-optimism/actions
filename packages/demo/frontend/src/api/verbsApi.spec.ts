@@ -39,7 +39,7 @@ describe('VerbsApiClient', () => {
           headers: {
             'Content-Type': 'application/json',
           },
-        }
+        },
       )
       expect(result).toEqual(mockResponse)
     })
@@ -51,13 +51,13 @@ describe('VerbsApiClient', () => {
         statusText: 'Bad Request',
         json: () => Promise.resolve({ message: 'Invalid user ID' }),
       }
-      
+
       mockFetch.mockResolvedValue(mockErrorResponse)
 
       await expect(verbsApi.createWallet('invalid-user')).rejects.toThrow(
-        VerbsApiError
+        VerbsApiError,
       )
-      
+
       try {
         await verbsApi.createWallet('invalid-user')
       } catch (error) {
@@ -116,11 +116,11 @@ describe('VerbsApiClient', () => {
         statusText: 'Internal Server Error',
         json: () => Promise.resolve({}),
       }
-      
+
       mockFetch.mockResolvedValue(mockErrorResponse)
 
       await expect(verbsApi.getAllWallets()).rejects.toThrow(VerbsApiError)
-      
+
       try {
         await verbsApi.getAllWallets()
       } catch (error) {
@@ -137,7 +137,7 @@ describe('VerbsApiClient', () => {
         statusText: 'Not Found',
         json: () => Promise.reject(new Error('Invalid JSON')),
       }
-      
+
       mockFetch.mockResolvedValue(mockErrorResponse)
 
       try {
@@ -154,7 +154,7 @@ describe('VerbsApiClient', () => {
         statusText: 'Forbidden',
         json: () => Promise.resolve({ message: 'Access denied' }),
       }
-      
+
       mockFetch.mockResolvedValue(mockErrorResponse)
 
       try {

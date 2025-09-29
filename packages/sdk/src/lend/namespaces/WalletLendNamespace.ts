@@ -1,13 +1,15 @@
-import type { Address } from 'viem'
+import type { Hash } from 'viem'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import type { LendProvider } from '@/lend/provider.js'
 import type {
   BaseLendConfig,
-  LendOptions,
-  LendTransaction,
+  ClosePositionParams,
+  GetPositionParams,
+  LendMarketPosition,
+  LendOpenPositionParams,
 } from '@/types/lend.js'
+import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 /**
  * Wallet Lend Namespace
@@ -15,69 +17,138 @@ import type {
  */
 export class WalletLendNamespace<
   TConfig extends BaseLendConfig = BaseLendConfig,
-> extends VerbsLendNamespace<TConfig> {
+> {
   constructor(
-    provider: LendProvider<TConfig>,
-    private readonly address: Address,
-  ) {
-    super(provider)
+    protected readonly provider: LendProvider<TConfig>,
+    private readonly wallet: Wallet,
+  ) {}
+
+  get config(): TConfig {
+    return this.provider.config
   }
 
+  // Inherited methods from VerbsLendNamespace
+  getMarkets = (...args: Parameters<LendProvider<TConfig>['getMarkets']>) =>
+    this.provider.getMarkets(...args)
+
+  getMarket = (...args: Parameters<LendProvider<TConfig>['getMarket']>) =>
+    this.provider.getMarket(...args)
+
+  supportedChainIds = (
+    ...args: Parameters<LendProvider<TConfig>['supportedChainIds']>
+  ) => this.provider.supportedChainIds(...args)
+
   /**
-   * Lend assets to a vault
-   * @description Will be renamed to execute() in the future
+   * Open a lending position
+   * @description Signs and sends a lend transaction from the wallet for the given amount and asset
    */
-  async lendExecute(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    // Set receiver to wallet address if not specified
-    const lendOptions: LendOptions = {
-      ...options,
-      receiver: options?.receiver || this.address,
+  async openPosition(params: LendOpenPositionParams): Promise<Hash> {
+    const lendOptions = {
+      ...params.options,
+      receiver: this.wallet.address,
     }
 
-    return this.provider.lend(asset, amount, chainId, marketId, lendOptions)
-  }
+    const lendTransaction = await this.provider.openPosition({
+      amount: params.amount,
+      asset: params.asset,
+      marketId: params.marketId,
+      options: lendOptions,
+    })
 
-  /**
-   * Deposit assets to a market (alias for lend)
-   */
-  async deposit(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    return this.lendExecute(asset, amount, chainId, marketId, options)
-  }
-
-  /**
-   * Withdraw assets from a market
-   */
-  async withdraw(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    // Set receiver to wallet address if not specified
-    const withdrawOptions: LendOptions = {
-      ...options,
-      receiver: options?.receiver || this.address,
+    const { transactionData } = lendTransaction
+    if (!transactionData) {
+      throw new Error('No transaction data returned from lend provider')
     }
 
-    return this.provider.withdraw(
-      asset,
-      amount,
-      chainId,
-      marketId,
-      withdrawOptions,
+    // TODO we will eventualy pull sendBatch and send into the Wallet class and remove this
+    if (!this.isSmartWallet(this.wallet)) {
+      throw new Error(
+        'Transaction execution is only supported for SmartWallet instances',
+      )
+    }
+
+    // Execute approval + deposit or just deposit
+    if (transactionData.approval) {
+      return await this.wallet.sendBatch(
+        [transactionData.approval, transactionData.deposit],
+        params.marketId.chainId,
+      )
+    }
+
+    return await this.wallet.send(
+      transactionData.deposit,
+      params.marketId.chainId,
+    )
+  }
+
+  /**
+   * Get position information for this wallet
+   * @param params - Position query parameters
+   * @param params.marketId - Market identifier (required)
+   * @param params.asset - Asset filter (not yet supported)
+   * @returns Promise resolving to position information
+   */
+  async getPosition(params: GetPositionParams): Promise<LendMarketPosition> {
+    return this.provider.getPosition(
+      this.wallet.address,
+      params.marketId,
+      params.asset,
+    )
+  }
+
+  /**
+   * Close a lending position (withdraw from market)
+   * @param closePositionParams - Position closing parameters
+   * @returns Promise resolving to transaction hash
+   */
+  async closePosition(params: ClosePositionParams): Promise<Hash> {
+    const closeOptions = {
+      ...params.options,
+      receiver: this.wallet.address,
+    }
+
+    const closeTransaction = await this.provider.closePosition({
+      amount: params.amount,
+      asset: params.asset,
+      marketId: params.marketId,
+      options: closeOptions,
+    })
+
+    const { transactionData } = closeTransaction
+    if (!transactionData) {
+      throw new Error(
+        'No transaction data returned from close position provider',
+      )
+    }
+
+    if (!this.isSmartWallet(this.wallet)) {
+      throw new Error(
+        'Transaction execution is only supported for SmartWallet instances',
+      )
+    }
+
+    if (transactionData.approval) {
+      return await this.wallet.sendBatch(
+        [transactionData.approval, transactionData.deposit],
+        params.marketId.chainId,
+      )
+    }
+
+    return await this.wallet.send(
+      transactionData.deposit,
+      params.marketId.chainId,
+    )
+  }
+
+  /**
+   * Type guard to check if wallet is a SmartWallet
+   */
+  private isSmartWallet(wallet: Wallet): wallet is SmartWallet {
+    return (
+      'send' in wallet &&
+      typeof wallet.send === 'function' &&
+      'sendBatch' in wallet &&
+      typeof wallet.sendBatch === 'function'
     )
   }
 }

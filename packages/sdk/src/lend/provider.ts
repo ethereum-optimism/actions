@@ -1,17 +1,24 @@
 import type { Address } from 'viem'
+import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   BaseLendConfig,
+  ClosePositionParams,
+  GetLendMarketParams,
+  GetLendMarketsParams,
   GetMarketBalanceParams,
+  LendClosePositionParams,
   LendMarket,
-  LendMarketBalance,
+  LendMarketConfig,
   LendMarketId,
-  LendOptions,
-  LendParams,
+  LendMarketPosition,
+  LendOpenPositionInternalParams,
+  LendOpenPositionParams,
   LendTransaction,
-  WithdrawParams,
 } from '@/types/lend.js'
+import { validateMarketAsset } from '@/utils/markets.js'
 
 /**
  * Lending provider abstract class
@@ -51,98 +58,133 @@ export abstract class LendProvider<
   }
 
   /**
-   * Lend/supply assets to a market
-   * @param asset - Asset token address to lend
-   * @param amount - Amount to lend (in wei)
-   * @param chainId - Chain ID for the transaction
-   * @param marketId - Optional specific market ID
+   * Open a lending position
+   * @param amount - Amount to lend (human-readable number)
+   * @param asset - Asset to lend
+   * @param marketId - Market identifier containing address and chainId
    * @param options - Optional lending configuration
    * @returns Promise resolving to lending transaction details
    */
-  async lend(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    this.validateProviderSupported(chainId)
-    return this._lend({ asset, amount, chainId, marketId, options })
-  }
+  async openPosition(params: LendOpenPositionParams): Promise<LendTransaction> {
+    this.validateProviderSupported(params.marketId.chainId)
+    this.validateConfigSupported(params.marketId)
 
-  /**
-   * Deposit assets to a market (alias for lend)
-   * @param asset - Asset token address to deposit
-   * @param amount - Amount to deposit (in wei)
-   * @param chainId - Chain ID for the transaction
-   * @param marketId - Optional specific market ID
-   * @param options - Optional deposit configuration
-   * @returns Promise resolving to deposit transaction details
-   */
-  async deposit(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    return this.lend(asset, amount, chainId, marketId, options)
+    // Convert human-readable amount to wei using the asset's decimals
+    const amountWei = parseUnits(
+      params.amount.toString(),
+      params.asset.metadata.decimals,
+    )
+
+    return this._openPosition({
+      ...params,
+      amountWei,
+    })
   }
 
   /**
    * Get detailed market information
-   * @param marketId - Market identifier containing address and chainId
+   * @param address - Market contract address
+   * @param chainId - Chain ID where the market exists
    * @returns Promise resolving to market information
    */
-  async getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    this.validateProviderSupported(marketId.chainId)
-    this.validateConfigSupported(marketId)
+  async getMarket(params: GetLendMarketParams): Promise<LendMarket> {
+    const marketId: LendMarketId = {
+      address: params.address,
+      chainId: params.chainId,
+    }
 
+    this.validateProviderSupported(params.chainId)
+    this.validateConfigSupported(marketId)
     return this._getMarket(marketId)
   }
 
   /**
    * Get list of available lending markets
+   * @param params - Optional filtering parameters
    * @returns Promise resolving to array of market information
    */
-  async getMarkets(): Promise<LendMarket[]> {
-    return this._getMarkets()
+  async getMarkets(params: GetLendMarketsParams = {}): Promise<LendMarket[]> {
+    if (params.chainId !== undefined)
+      this.validateProviderSupported(params.chainId)
+
+    const filteredMarkets = this.filterMarketConfigs(
+      params.chainId,
+      params.asset,
+    )
+
+    return this._getMarkets({
+      asset: params.asset,
+      chainId: params.chainId,
+      markets: params.markets || filteredMarkets,
+    })
   }
 
   /**
-   * Get market balance for a specific wallet address
-   * @param marketId - Market identifier containing address and chainId
-   * @param walletAddress - User wallet address to check balance for
-   * @returns Promise resolving to market balance information
+   * Get position information for a wallet
+   * @param walletAddress - User wallet address to check position for
+   * @param marketId - Market identifier (required)
+   * @param asset - Asset filter (not yet supported)
+   * @returns Promise resolving to position information
    */
-  async getMarketBalance(
-    marketId: LendMarketId,
+  async getPosition(
     walletAddress: Address,
-  ): Promise<LendMarketBalance> {
+    marketId?: LendMarketId,
+    asset?: Asset,
+  ): Promise<LendMarketPosition> {
+    // For now, require marketId (asset-only and empty params not yet supported)
+    if (!marketId) {
+      throw new Error(
+        'marketId is required. Querying all positions or by asset is not yet supported.',
+      )
+    }
+
+    if (asset) {
+      throw new Error(
+        'Filtering by asset is not yet supported. Please provide only marketId.',
+      )
+    }
+
     this.validateProviderSupported(marketId.chainId)
     this.validateConfigSupported(marketId)
 
-    return this._getMarketBalance({ marketId, walletAddress })
+    return this._getPosition({ marketId, walletAddress })
   }
 
   /**
-   * Withdraw/redeem assets from a market
-   * @param asset - Asset token address to withdraw
-   * @param amount - Amount to withdraw (in wei)
-   * @param chainId - Chain ID for the transaction
-   * @param marketId - Optional specific market ID
+   * Close a lending position (withdraw assets from a market)
+   * @param amount - Amount to withdraw (human-readable number)
+   * @param asset - Asset to withdraw (optional, validated against marketId)
+   * @param marketId - Market identifier containing address and chainId
    * @param options - Optional withdrawal configuration
    * @returns Promise resolving to withdrawal transaction details
    */
-  async withdraw(
-    asset: Address,
-    amount: bigint,
-    chainId: SupportedChainId,
-    marketId?: string,
-    options?: LendOptions,
-  ): Promise<LendTransaction> {
-    this.validateProviderSupported(chainId)
-    return this._withdraw({ asset, amount, chainId, marketId, options })
+  async closePosition(params: ClosePositionParams): Promise<LendTransaction> {
+    this.validateProviderSupported(params.marketId.chainId)
+    this.validateConfigSupported(params.marketId)
+
+    // Get the market info once for both validation and asset extraction
+    const market = await this.getMarket({
+      address: params.marketId.address,
+      chainId: params.marketId.chainId,
+    })
+
+    // If asset is provided, validate it matches the market's asset
+    if (params.asset) {
+      validateMarketAsset(market, params.asset)
+    }
+
+    const assetAddress = market.asset as Address
+
+    // Convert human-readable amount to wei
+    const amountWei = BigInt(params.amount) // TODO: Add proper decimal conversion
+
+    return this._closePosition({
+      asset: assetAddress,
+      amount: amountWei,
+      chainId: params.marketId.chainId,
+      marketId: params.marketId.address,
+      options: params.options,
+    })
   }
 
   /**
@@ -195,20 +237,33 @@ export abstract class LendProvider<
   }
 
   /**
+   * Helper method to filter market configurations
+   * @param chainId - Chain ID to filter by
+   * @param asset - Asset to filter by
+   * @returns Filtered market configurations
+   */
+  private filterMarketConfigs(
+    chainId?: SupportedChainId,
+    asset?: Asset,
+  ): LendMarketConfig[] {
+    let configs = this._config.marketAllowlist || []
+    if (chainId !== undefined)
+      configs = configs.filter((m) => m.chainId === chainId)
+    if (asset !== undefined) configs = configs.filter((m) => m.asset === asset)
+    return configs
+  }
+
+  /**
    * Abstract methods that must be implemented by providers
    */
 
   /**
-   * Provider implementation of lend method
+   * Provider implementation of openPosition method
    * @description Must be implemented by providers
    */
-  protected abstract _lend({
-    asset,
-    amount,
-    chainId,
-    marketId,
-    options,
-  }: LendParams): Promise<LendTransaction>
+  protected abstract _openPosition(
+    params: LendOpenPositionInternalParams,
+  ): Promise<LendTransaction>
 
   /**
    * Provider implementation of getMarket method
@@ -220,26 +275,23 @@ export abstract class LendProvider<
    * Provider implementation of getMarkets method
    * @description Must be implemented by providers
    */
-  protected abstract _getMarkets(): Promise<LendMarket[]>
+  protected abstract _getMarkets(
+    params: GetLendMarketsParams,
+  ): Promise<LendMarket[]>
 
   /**
-   * Provider implementation of getMarketBalance method
+   * Provider implementation of getPosition method
    * @description Must be implemented by providers
    */
-  protected abstract _getMarketBalance({
-    marketId,
-    walletAddress,
-  }: GetMarketBalanceParams): Promise<LendMarketBalance>
+  protected abstract _getPosition(
+    params: GetMarketBalanceParams,
+  ): Promise<LendMarketPosition>
 
   /**
-   * Provider implementation of withdraw method
+   * Provider implementation of closePosition method
    * @description Must be implemented by providers
    */
-  protected abstract _withdraw({
-    asset,
-    amount,
-    chainId,
-    marketId,
-    options,
-  }: WithdrawParams): Promise<LendTransaction>
+  protected abstract _closePosition(
+    params: LendClosePositionParams,
+  ): Promise<LendTransaction>
 }

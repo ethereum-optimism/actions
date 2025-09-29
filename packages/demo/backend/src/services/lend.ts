@@ -1,15 +1,14 @@
 import {
   type LendMarket,
-  type LendTransaction,
   SUPPORTED_TOKENS,
   type SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
-import type { Address } from 'viem'
+import type { Address, Hash } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
-import { getUserWallet, getWallet } from './wallet.js'
+import { getWallet } from './wallet.js'
 
 interface MarketBalanceResult {
   balance: bigint
@@ -33,7 +32,9 @@ interface FormattedMarketResponse {
   lastUpdate: number
 }
 
-async function getBlockExplorerUrl(chainId: SupportedChainId): Promise<string> {
+export async function getBlockExplorerUrl(
+  chainId: SupportedChainId,
+): Promise<string> {
   const chain = chainById[chainId]
   if (!chain) {
     throw new Error(`Chain not found for chainId: ${chainId}`)
@@ -60,22 +61,20 @@ export async function getMarket(
   return await verbs.lend.getMarket({ address: marketId, chainId })
 }
 
-export async function getMarketBalance(
+export async function getPosition(
   vaultAddress: Address,
   walletId: string,
   chainId: SupportedChainId,
 ): Promise<MarketBalanceResult> {
-  const verbs = getVerbs()
   const wallet = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return verbs.lend.getMarketBalance(
-    { address: vaultAddress, chainId },
-    wallet.address,
-  )
+  return wallet.lend!.getPosition({
+    marketId: { address: vaultAddress, chainId },
+  })
 }
 
 export async function formatMarketResponse(
@@ -113,122 +112,63 @@ export async function formatMarketBalanceResponse(
   }
 }
 
-export async function depositWithUserWallet(
-  userId: string,
-  amount: number,
-  tokenAddress: Address,
-  chainId: SupportedChainId,
-): Promise<LendTransaction> {
-  const wallet = await getUserWallet(userId)
+interface OpenPositionParams {
+  userId: string
+  amount: number
+  asset: {
+    tokenAddress: Address
+    chainId: SupportedChainId
+  }
+  marketId: {
+    address: Address
+    chainId: SupportedChainId
+  }
+  options?: {
+    slippage?: number
+  }
+  isUserWallet?: boolean
+}
+
+/**
+ * Open a lending position
+ * @param params - Configuration object with all parameters
+ * @param params.userId - Can be either a userId (for authenticated users) or walletId
+ * @param params.amount - Amount to lend
+ * @param params.asset - Asset information
+ * @param params.marketId - Market identifier
+ * @param params.options - Optional parameters like slippage
+ * @param params.isUserWallet - If true, userId is treated as userId; if false, as walletId
+ */
+export async function openPosition({
+  userId,
+  amount,
+  asset: assetInfo,
+  marketId,
+  options,
+  isUserWallet = false,
+}: OpenPositionParams): Promise<Hash> {
+  // Get wallet based on identifier type
+  const wallet = await getWallet(userId, isUserWallet)
 
   if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${userId}`)
+    throw new Error(
+      `Wallet not found for ${isUserWallet ? 'user' : 'wallet'} ID: ${userId}`,
+    )
   }
 
   const asset = SUPPORTED_TOKENS.find(
-    (token) => token.address[chainId] === tokenAddress,
+    (token) => token.address[assetInfo.chainId] === assetInfo.tokenAddress,
   )
   if (!asset) {
-    throw new Error(`Asset not found for token address: ${tokenAddress}`)
-  }
-
-  if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
-    return await wallet.lendExecute(amount, asset, chainId)
-  } else {
     throw new Error(
-      'Lend functionality not yet implemented for this wallet type.',
+      `Asset not found for token address: ${assetInfo.tokenAddress}`,
     )
   }
-}
 
-export async function deposit(
-  walletId: string,
-  amount: number,
-  tokenAddress: Address,
-  chainId: SupportedChainId,
-): Promise<LendTransaction> {
-  const wallet = await getWallet(walletId)
-
-  if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${walletId}`)
-  }
-
-  const asset = SUPPORTED_TOKENS.find(
-    (token) => token.address[chainId] === tokenAddress,
-  )
-  if (!asset) {
-    throw new Error(`Asset not found for token address: ${tokenAddress}`)
-  }
-
-  if ('lendExecute' in wallet && typeof wallet.lendExecute === 'function') {
-    return await wallet.lendExecute(amount, asset, chainId)
-  } else {
-    throw new Error(
-      'Lend functionality not yet implemented for this wallet type.',
-    )
-  }
-}
-
-export async function executeLendTransactionWithUserWallet(
-  userId: string,
-  lendTransaction: LendTransaction,
-  chainId: SupportedChainId,
-): Promise<LendTransaction & { blockExplorerUrl: string }> {
-  const wallet = await getUserWallet(userId)
-
-  if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${userId}`)
-  }
-
-  if (!lendTransaction.transactionData) {
-    throw new Error('No transaction data available for execution')
-  }
-
-  const depositHash = lendTransaction.transactionData.approval
-    ? await wallet.sendBatch(
-        [
-          lendTransaction.transactionData.approval,
-          lendTransaction.transactionData.deposit,
-        ],
-        chainId,
-      )
-    : await wallet.send(lendTransaction.transactionData.deposit, chainId)
-
-  return {
-    ...lendTransaction,
-    hash: depositHash,
-    blockExplorerUrl: await getBlockExplorerUrl(chainId),
-  }
-}
-
-export async function executeLendTransaction(
-  walletId: string,
-  lendTransaction: LendTransaction,
-  chainId: SupportedChainId,
-): Promise<LendTransaction & { blockExplorerUrl: string }> {
-  const wallet = await getWallet(walletId)
-
-  if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${walletId}`)
-  }
-
-  if (!lendTransaction.transactionData) {
-    throw new Error('No transaction data available for execution')
-  }
-
-  const depositHash = lendTransaction.transactionData.approval
-    ? await wallet.sendBatch(
-        [
-          lendTransaction.transactionData.approval,
-          lendTransaction.transactionData.deposit,
-        ],
-        chainId,
-      )
-    : await wallet.send(lendTransaction.transactionData.deposit, chainId)
-
-  return {
-    ...lendTransaction,
-    hash: depositHash,
-    blockExplorerUrl: await getBlockExplorerUrl(chainId),
-  }
+  return await wallet.lend!.openPosition({
+    amount,
+    asset,
+    marketId,
+    options,
+  })
 }

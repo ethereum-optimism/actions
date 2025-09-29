@@ -437,7 +437,7 @@ const Terminal = () => {
         {
           id: 'welcome-8',
           type: 'output',
-          content: '   DeFi library for the OP Stack',
+          content: 'DeFi Library for the OP Stack',
           timestamp: new Date(),
         },
         {
@@ -944,12 +944,13 @@ How much would you like to lend?`
     setLines((prev) => [...prev, processingLine])
 
     try {
-      console.log('[FRONTEND] Calling lendDeposit API')
-      const result = await verbsApi.lendDeposit(
+      console.log('[FRONTEND] Calling openLendPosition API')
+      const result = await verbsApi.openLendPosition(
         promptData.selectedWallet.id,
         amount,
         promptData.selectedVault.asset as Address,
         promptData.selectedVault.chainId,
+        promptData.selectedVault.address as Address,
         await getAuthHeaders(),
       )
 

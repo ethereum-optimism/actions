@@ -48,41 +48,34 @@ export async function createWallet(): Promise<{
   }
 }
 
-export async function getWallet(userId: string): Promise<SmartWallet | null> {
-  const verbs = getVerbs()
-  const privyClient = getPrivyClient()
-  const privyWallet = await privyClient.walletApi
-    .getWallet({
-      id: userId,
-    })
-    .catch(() => null)
-  if (!privyWallet) {
-    return privyWallet
-  }
-  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
-    walletId: privyWallet.id,
-    address: privyWallet.address,
-  })
-  const wallet = await verbs.wallet.getSmartWallet({
-    signer: verbsPrivyWallet.signer,
-    deploymentOwners: [getAddress(privyWallet.address)],
-  })
-  return wallet
-}
-
-export async function getUserWallet(
+export async function getWallet(
   userId: string,
+  isAuthedUser = false,
 ): Promise<SmartWallet | null> {
   const verbs = getVerbs()
   const privyClient = getPrivyClient()
-  const privyUser = await privyClient.getUserById(userId).catch(() => null)
-  if (!privyUser) {
-    return null
+
+  let privyWallet
+  if (isAuthedUser) {
+    // Get wallet via user ID (for authenticated users)
+    const privyUser = await privyClient.getUserById(userId)
+    if (!privyUser) {
+      return null
+    }
+    privyWallet = privyUser.wallet
+  } else {
+    // Get wallet directly via wallet ID (legacy behavior)
+    privyWallet = await privyClient.walletApi
+      .getWallet({
+        id: userId,
+      })
+      .catch(() => null)
   }
-  const privyWallet = privyUser.wallet
+
   if (!privyWallet) {
     return null
   }
+
   const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
     walletId: privyWallet.id!,
     address: privyWallet.address,
@@ -91,6 +84,11 @@ export async function getUserWallet(
     signer: verbsPrivyWallet.signer,
     deploymentOwners: [getAddress(privyWallet.address)],
   })
+
+  if (!wallet.lend) {
+    throw new Error('Lend functionality not configured for this wallet')
+  }
+
   return wallet
 }
 
@@ -147,14 +145,12 @@ export async function getWalletBalance(
     const vaultBalances = await Promise.all(
       vaults.map(async (vault) => {
         try {
-          const walletAddress = wallet.address
-          const vaultBalance = await verbs.lend.getMarketBalance(
-            {
+          const vaultBalance = await wallet.lend!.getPosition({
+            marketId: {
               address: vault.address,
               chainId: vault.chainId as SupportedChainId,
             },
-            walletAddress,
-          )
+          })
 
           // Only include vaults with non-zero balances
           if (vaultBalance.balance > 0n) {

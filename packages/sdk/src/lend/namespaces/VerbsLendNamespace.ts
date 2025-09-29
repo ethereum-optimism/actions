@@ -1,12 +1,5 @@
-import type { Address } from 'viem'
-
 import type { LendProvider } from '@/lend/provider.js'
-import type {
-  BaseLendConfig,
-  LendConfig,
-  LendMarket,
-  LendMarketId,
-} from '@/types/lend.js'
+import type { BaseLendConfig, LendConfig } from '@/types/lend.js'
 
 /**
  * Verbs Lend Namespace
@@ -15,48 +8,19 @@ import type {
 export class VerbsLendNamespace<TConfig extends BaseLendConfig = LendConfig> {
   constructor(protected readonly provider: LendProvider<TConfig>) {}
 
-  /**
-   * Get lending provider configuration
-   * @description Access to provider configuration including defaultSlippage, provider type, etc.
-   */
   get config(): TConfig {
     return this.provider.config
   }
 
-  /**
-   * Get list of available lending markets
-   */
-  getMarkets(): Promise<LendMarket[]> {
-    return this.provider.getMarkets()
-  }
+  // Bind to the LendProvider's methods and carry types
 
-  /**
-   * Get detailed information for a specific market
-   */
-  getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    return this.provider.getMarket(marketId)
-  }
+  getMarkets = (...args: Parameters<LendProvider<TConfig>['getMarkets']>) =>
+    this.provider.getMarkets(...args)
 
-  /**
-   * Get market balance for a specific wallet
-   */
-  getMarketBalance(
-    marketId: LendMarketId,
-    walletAddress: Address,
-  ): Promise<{
-    balance: bigint
-    balanceFormatted: string
-    shares: bigint
-    sharesFormatted: string
-    chainId: number
-  }> {
-    return this.provider.getMarketBalance(marketId, walletAddress)
-  }
+  getMarket = (...args: Parameters<LendProvider<TConfig>['getMarket']>) =>
+    this.provider.getMarket(...args)
 
-  /**
-   * Get list of supported chain IDs
-   */
-  supportedChainIds(): number[] {
-    return this.provider.supportedChainIds()
-  }
+  supportedChainIds = (
+    ...args: Parameters<LendProvider<TConfig>['supportedChainIds']>
+  ) => this.provider.supportedChainIds(...args)
 }

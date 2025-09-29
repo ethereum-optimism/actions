@@ -55,6 +55,7 @@ describe('Wallet Service', () => {
         signer: {
           address: '0x1234567890123456789012345678901234567890',
         },
+        lend: {},
       }
 
       mockVerbs.wallet.createSmartWallet.mockResolvedValue(mockWallet)
@@ -90,6 +91,7 @@ describe('Wallet Service', () => {
       const mockWallet = {
         id: 'wallet-123',
         address: '0x1234567890123456789012345678901234567890',
+        lend: {},
       }
       const mockPrivyWallet = {
         id: 'wallet-123',
@@ -157,6 +159,7 @@ describe('Wallet Service', () => {
       })
       mockVerbs.wallet.getSmartWallet.mockResolvedValue({
         address: '0x1234567890123456789012345678901234567890',
+        lend: {},
       })
 
       const result = await walletService.getAllWallets()
@@ -165,12 +168,14 @@ describe('Wallet Service', () => {
         {
           wallet: {
             address: '0x1234567890123456789012345678901234567890',
+            lend: {},
           },
           id: 'wallet-1',
         },
         {
           wallet: {
             address: '0x1234567890123456789012345678901234567890',
+            lend: {},
           },
           id: 'wallet-2',
         },
@@ -185,6 +190,7 @@ describe('Wallet Service', () => {
           signer: {
             address: '0x1234567890123456789012345678901234567890',
           },
+          lend: {},
         },
       ]
       const options = { limit: 1, cursor: 'cursor-123' }
@@ -205,6 +211,7 @@ describe('Wallet Service', () => {
             signer: {
               address: '0x1234567890123456789012345678901234567890',
             },
+            lend: {},
           },
           id: 'wallet-1',
         },
@@ -242,6 +249,7 @@ describe('Wallet Service', () => {
           { symbol: 'USDC', balance: 1000000n },
           { symbol: 'MORPHO', balance: 500000n },
         ]),
+        lend: {},
       }
 
       mockVerbs.wallet.getSmartWallet.mockResolvedValue(mockWallet)
@@ -284,6 +292,7 @@ describe('Wallet Service', () => {
         id: 'wallet-123',
         address: '0x1234567890123456789012345678901234567890',
         getBalance: vi.fn().mockRejectedValue(balanceError),
+        lend: {},
       }
 
       mockPrivyClient.walletApi.getWallet.mockResolvedValue({

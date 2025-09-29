@@ -165,7 +165,7 @@ export class WalletController {
       // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
       // up this route.
       if (auth && auth.userId) {
-        const wallet = await walletService.getUserWallet(auth.userId)
+        const wallet = await walletService.getWallet(auth.userId, true)
         if (!wallet) {
           throw new Error('Wallet not found')
         }
@@ -200,23 +200,17 @@ export class WalletController {
         params: { userId },
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
-      // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
-      // up this route.
-      if (auth && auth.userId) {
-        const wallet = await walletService.getUserWallet(auth.userId)
-        if (!wallet) {
-          throw new Error('Wallet not found')
-        }
-        const result = await walletService.fundWallet(wallet)
-        return c.json(result)
-      }
 
-      const wallet = await walletService.getWallet(userId)
+      // Use auth.userId if authenticated, otherwise fall back to userId param
+      const targetUserId = auth?.userId || userId
+      const isAuthedUser = !!auth?.userId
+
+      const wallet = await walletService.getWallet(targetUserId, isAuthedUser)
       if (!wallet) {
         throw new Error('Wallet not found')
       }
-      const result = await walletService.fundWallet(wallet)
 
+      const result = await walletService.fundWallet(wallet)
       return c.json(result)
     } catch (error) {
       return c.json(

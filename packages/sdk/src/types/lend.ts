@@ -17,10 +17,10 @@ export type LendMarketId = {
 }
 
 /**
- * Lending market configuration
- * @description Configuration for a lending market including asset information and provider
+ * Lending market metadata
+ * @description Additional configuration properties for a lending market
  */
-export interface LendMarketConfig extends LendMarketId {
+export type LendMarketMetadata = {
   /** Human-readable name for the market */
   name: string
   /** Asset information for this market */
@@ -28,6 +28,18 @@ export interface LendMarketConfig extends LendMarketId {
   /** Lending provider type */
   lendProvider: 'morpho'
 }
+
+/**
+ * Lending market configuration
+ * @description Configuration for a lending market including asset information and provider
+ */
+export type LendMarketConfig = LendMarketId & LendMarketMetadata
+
+/**
+ * Parameters for getting a specific lending market
+ * @description Requires market identifier (address and chainId)
+ */
+export type GetLendMarketParams = LendMarketId
 
 /**
  * Transaction data for execution
@@ -178,7 +190,7 @@ export interface LendOptions {
   /** Gas price override */
   gasPrice?: bigint
   /** Receiver address for shares (defaults to sender) */
-  receiver?: Address //TODO remove and enforce from wallet
+  receiver?: Address
 }
 
 /**
@@ -209,10 +221,10 @@ export interface MorphoLendConfig extends BaseLendConfig {
 export type LendConfig = MorphoLendConfig
 
 /**
- * Market balance information
- * @description Balance details for a user in a lending market
+ * Market position information
+ * @description Position details for a user in a lending market
  */
-export interface LendMarketBalance {
+export interface LendMarketPosition {
   /** Asset balance in wei */
   balance: bigint
   /** Formatted asset balance */
@@ -223,6 +235,36 @@ export interface LendMarketBalance {
   sharesFormatted: string
   /** Chain ID */
   chainId: number
+}
+
+/**
+ * Base parameters shared between public and internal lending position interfaces
+ */
+export interface LendOpenPositionBaseParams {
+  /** Asset to lend */
+  asset: Asset
+  /** Market identifier containing address and chainId */
+  marketId: LendMarketId
+  /** Optional lending configuration */
+  options?: LendOptions
+}
+
+/**
+ * Parameters for opening a lending position
+ * @description Parameters required for opening a lending position
+ */
+export interface LendOpenPositionParams extends LendOpenPositionBaseParams {
+  /** Amount to lend (human-readable number) */
+  amount: number
+}
+
+/**
+ * Internal parameters for provider _openPosition method with amount already converted to wei
+ */
+export interface LendOpenPositionInternalParams
+  extends LendOpenPositionBaseParams {
+  /** Amount to lend in wei */
+  amountWei: bigint
 }
 
 /**
@@ -243,10 +285,10 @@ export interface LendParams {
 }
 
 /**
- * Parameters for withdraw operation
+ * Parameters for withdraw operation (legacy)
  * @description Parameters required for withdrawing assets
  */
-export interface WithdrawParams {
+export interface LendClosePositionParams {
   /** Asset token address to withdraw */
   asset: Address
   /** Amount to withdraw (in wei) */
@@ -257,6 +299,52 @@ export interface WithdrawParams {
   marketId?: string
   /** Optional withdrawal configuration */
   options?: LendOptions
+}
+
+/**
+ * Parameters for closing a lending position
+ * @description Parameters required for withdrawing from a lending position
+ */
+export interface ClosePositionParams {
+  /** Amount to withdraw (human-readable number) */
+  amount: number
+  /** Asset to withdraw (optional - will be validated against marketId) */
+  asset?: Asset
+  /** Market identifier containing address and chainId */
+  marketId: LendMarketId
+  /** Optional withdrawal configuration */
+  options?: LendOptions
+}
+
+/**
+ * Parameters for getting position information
+ * @description Parameters for retrieving wallet position details
+ */
+export interface GetPositionParams {
+  /** Optional specific market ID to get position for */
+  marketId?: LendMarketId
+  /** Optional asset to filter positions by */
+  asset?: Asset
+}
+
+/**
+ * Common filter parameters for asset and chain
+ * @description Base interface for filtering by asset and/or chain
+ */
+export interface FilterAssetChain {
+  /** Optional asset to filter by */
+  asset?: Asset
+  /** Optional chain ID to filter by */
+  chainId?: SupportedChainId
+}
+
+/**
+ * Parameters for getting lending markets
+ * @description Parameters for filtering lending markets
+ */
+export interface GetLendMarketsParams extends FilterAssetChain {
+  /** Optional pre-filtered market configs */
+  markets?: LendMarketConfig[]
 }
 
 /**
@@ -299,7 +387,7 @@ export interface LendProviderMethods {
     chainId,
     marketId,
     options,
-  }: WithdrawParams): Promise<LendTransaction>
+  }: LendClosePositionParams): Promise<LendTransaction>
 
   /**
    * Provider implementation of getMarket method
@@ -315,12 +403,12 @@ export interface LendProviderMethods {
   _getMarkets(): Promise<LendMarket[]>
 
   /**
-   * Provider implementation of getMarketBalance method
-   * @param params - Parameters for fetching market balance
-   * @returns Promise resolving to market balance information
+   * Provider implementation of getPosition method
+   * @param params - Parameters for fetching position
+   * @returns Promise resolving to position information
    */
-  _getMarketBalance({
+  _getPosition({
     marketId,
     walletAddress,
-  }: GetMarketBalanceParams): Promise<LendMarketBalance>
+  }: GetMarketBalanceParams): Promise<LendMarketPosition>
 }

@@ -1,24 +1,23 @@
 import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
-import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 
 import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS } from '../../../constants/supportedChains.js'
 import type {
+  GetLendMarketsParams,
   GetMarketBalanceParams,
+  LendClosePositionParams,
   LendMarket,
-  LendMarketBalance,
   LendMarketId,
-  LendParams,
+  LendMarketPosition,
+  LendOpenPositionInternalParams,
   LendTransaction,
   MorphoLendConfig,
-  WithdrawParams,
 } from '../../../types/lend.js'
 import { LendProvider } from '../../provider.js'
-import { findBestVaultForAsset, getVault, getVaults } from './sdk.js'
+import { getVault, getVaults } from './sdk.js'
 
 /**
  * Supported chain IDs for Morpho lending
@@ -53,74 +52,76 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   }
 
   /**
-   * Lend assets to a Morpho market
-   * @description Supplies assets to a Morpho market using MetaMorpho deposit operation
-   * @param params - Lending operation parameters
+   * Open a lending position in a Morpho market
+   * @description Opens a lending position by supplying assets to a Morpho market
+   * @param params - Position opening parameters
    * @returns Promise resolving to lending transaction details
    */
-  protected async _lend({
-    asset,
-    amount,
-    chainId,
-    marketId,
-    options,
-  }: LendParams): Promise<LendTransaction> {
+  protected async _openPosition(
+    params: LendOpenPositionInternalParams,
+  ): Promise<LendTransaction> {
     try {
-      // 1. Find suitable vault if marketId not provided
-      const selectedVaultAddress =
-        (marketId as Address) ||
-        (await findBestVaultForAsset(asset, this._config.marketAllowlist || []))
+      // Get asset address for the chain
+      const assetAddress = params.asset.address[params.marketId.chainId]
+      if (!assetAddress) {
+        throw new Error(
+          `Asset not supported on chain ${params.marketId.chainId}`,
+        )
+      }
 
-      // 2. Get vault information for APY
+      // Get vault information for APY
       const vaultInfo = await this.getMarket({
-        address: selectedVaultAddress,
-        chainId,
+        address: params.marketId.address,
+        chainId: params.marketId.chainId,
       })
 
-      // 3. Generate real call data for Morpho deposit
-      const receiver = options?.receiver
+      // Generate real call data for Morpho deposit
+      const receiver = params.options?.receiver
       if (!receiver) {
         throw new Error(
           'Receiver address is required for Morpho deposit operation',
         )
       }
-      const depositCallData = MetaMorphoAction.deposit(amount, receiver)
+      const depositCallData = MetaMorphoAction.deposit(
+        params.amountWei,
+        receiver,
+      )
 
-      // 4. Create approval transaction data for USDC if needed
+      // Create approval transaction data if needed
       const approvalCallData = encodeFunctionData({
         abi: erc20Abi,
         functionName: 'approve',
-        args: [selectedVaultAddress, amount],
+        args: [params.marketId.address, params.amountWei],
       })
 
-      // 5. Return transaction details with real call data
+      // Return transaction details with real call data
       const currentTimestamp = Math.floor(Date.now() / 1000)
 
       return {
-        amount,
-        asset,
-        marketId: selectedVaultAddress,
+        amount: params.amountWei,
+        asset: assetAddress,
+        marketId: params.marketId.address,
         apy: vaultInfo.apy,
         timestamp: currentTimestamp,
         transactionData: {
           // Approval transaction
           approval: {
-            to: asset,
+            to: assetAddress,
             data: approvalCallData,
             value: 0n,
           },
           // Deposit transaction
           deposit: {
-            to: selectedVaultAddress,
+            to: params.marketId.address,
             data: depositCallData,
             value: 0n,
           },
         },
-        slippage: options?.slippage || this._config.defaultSlippage,
+        slippage: params.options?.slippage || this._config.defaultSlippage,
       }
     } catch (error) {
       throw new Error(
-        `Failed to lend ${amount} of ${asset}: ${
+        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       )
@@ -128,22 +129,24 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
   }
 
   /**
-   * Withdraw assets from a Morpho market
+   * Close a position in a Morpho market
    * @description Withdraws assets from a Morpho market using Blue_Withdraw operation
-   * @param params - Withdrawal operation parameters
+   * @param params - Position closing operation parameters
    * @returns Promise resolving to withdrawal transaction details
    */
-  protected async _withdraw({
-    asset,
-    amount,
-    chainId,
-    marketId,
-    options,
-  }: WithdrawParams): Promise<LendTransaction> {
+  protected async _closePosition(
+    params: LendClosePositionParams,
+  ): Promise<LendTransaction> {
     // TODO: Implement withdrawal functionality
 
-    const _unused = { asset, amount, chainId, marketId, options }
-    throw new Error('Withdraw functionality not yet implemented')
+    const _unused = {
+      asset: params.asset,
+      amount: params.amount,
+      chainId: params.chainId,
+      marketId: params.marketId,
+      options: params.options,
+    }
+    throw new Error('Close position functionality not yet implemented')
   }
 
   /**
@@ -161,35 +164,48 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
 
   /**
    * Get list of available lending markets
+   * @param params - Filtering parameters
    * @returns Promise resolving to array of market information
    */
-  protected async _getMarkets(): Promise<LendMarket[]> {
-    return getVaults(this.chainManager, this._config)
+  protected async _getMarkets(
+    params: GetLendMarketsParams,
+  ): Promise<LendMarket[]> {
+    // We will eventually fetch markets externally, filtered by Asset and chainId
+    const _unused = { asset: params.asset, chainId: params.chainId }
+
+    const marketConfigs = params.markets || []
+
+    return getVaults({
+      chainManager: this.chainManager,
+      lendConfig: this._config,
+      markets: marketConfigs,
+    })
   }
 
   /**
-   * Get market balance for a specific wallet address
-   * @param params - Parameters for fetching market balance
-   * @returns Promise resolving to market balance information
+   * Get position for a specific wallet address
+   * @param params - Parameters for fetching position
+   * @returns Promise resolving to position information
    */
-  protected async _getMarketBalance({
-    marketId,
-    walletAddress,
-  }: GetMarketBalanceParams): Promise<LendMarketBalance> {
+  protected async _getPosition(
+    params: GetMarketBalanceParams,
+  ): Promise<LendMarketPosition> {
     try {
-      const publicClient = this.chainManager.getPublicClient(marketId.chainId)
+      const publicClient = this.chainManager.getPublicClient(
+        params.marketId.chainId,
+      )
 
       // Get user's market token balance (shares in the vault)
       const shares = await publicClient.readContract({
-        address: marketId.address,
+        address: params.marketId.address,
         abi: erc20Abi,
         functionName: 'balanceOf',
-        args: [walletAddress],
+        args: [params.walletAddress],
       })
 
       // Convert shares to underlying asset balance using convertToAssets
       const balance = await publicClient.readContract({
-        address: marketId.address,
+        address: params.marketId.address,
         abi: [
           {
             name: 'convertToAssets',
@@ -212,11 +228,11 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         balanceFormatted,
         shares,
         sharesFormatted,
-        chainId: marketId.chainId,
+        chainId: params.marketId.chainId,
       }
     } catch (error) {
       throw new Error(
-        `Failed to get market balance for ${walletAddress} in market ${marketId.address}: ${
+        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       )

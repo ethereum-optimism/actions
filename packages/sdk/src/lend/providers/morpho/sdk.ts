@@ -1,6 +1,7 @@
 import type { AccrualPosition } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import type { Address } from 'viem'
+import { parseEther } from 'viem'
 
 import {
   fetchRewards,
@@ -91,6 +92,44 @@ export function calculateBaseApy(vault: any): number {
 }
 
 /**
+ * TEMPORARY - To be removed in https://github.com/ethereum-optimism/verbs/issues/112
+ * Create mock vault data for Base Sepolia (testnet)
+ * @param marketId - Market identifier
+ * @param marketConfig - Market configuration from allowlist
+ * @returns Mock vault data with realistic values
+ */
+function createMockVaultData(
+  marketId: LendMarketId,
+  marketConfig: LendMarketConfig,
+): LendMarket {
+  const mockApyBreakdown: ApyBreakdown = {
+    nativeApy: 0.058, // 5.8% gross APY
+    performanceFee: 0.065, // 6.5% performance fee
+    netApy: 0.0542, // 5.42% net APY
+    usdc: 0.0125, // USDC rewards
+    morpho: 0.008, // MORPHO token rewards
+    other: 0.003, // Other protocol rewards
+    totalRewardsApr: 0.0235, // Total rewards APR
+  }
+
+  return {
+    chainId: marketId.chainId,
+    address: marketId.address,
+    name: marketConfig.name,
+    asset: (marketConfig.asset.address[marketConfig.chainId] ||
+      Object.values(marketConfig.asset.address)[0]) as Address,
+    totalAssets: parseEther('125000'), // ~$125K TVL
+    totalShares: parseEther('120000'), // Slightly lower shares (some yield accrued)
+    apy: mockApyBreakdown.netApy,
+    apyBreakdown: mockApyBreakdown,
+    owner: '0x742d35Cc6464C42C0b15De2C4c98F7E8c3e0F1d9' as Address, // Mock owner
+    curator: '0x8f3Cf7ad23Cd3CaDbD9735aff958023239c6A063' as Address, // Mock curator
+    fee: mockApyBreakdown.performanceFee,
+    lastUpdate: Math.floor(Date.now() / 1000) - 300, // 5 minutes ago
+  }
+}
+
+/**
  * Parameters for getvault function
  */
 interface GetVaultParams {
@@ -125,24 +164,28 @@ function findMarketInAllowlist(
  * @returns Promise resolving to detailed vault information
  */
 export async function getVault(params: GetVaultParams): Promise<LendMarket> {
-  const { marketId, chainManager, lendConfig } = params
-
   // Find market configuration in allowlist for metadata
-  const marketConfig = lendConfig?.marketAllowlist
-    ? findMarketInAllowlist(lendConfig.marketAllowlist, marketId)
+  const marketConfig = params.lendConfig?.marketAllowlist
+    ? findMarketInAllowlist(params.lendConfig.marketAllowlist, params.marketId)
     : undefined
 
   if (!marketConfig) {
     throw new Error(
-      `Market ${marketId.address} on chain ${marketId.chainId} not found in allowlist`,
+      `Market ${params.marketId.address} on chain ${params.marketId.chainId} not found in allowlist`,
     )
+  }
+
+  // Morpho sdk doesn't support base sepolia, so we need to use the mock vault
+  if (params.marketId.chainId === 84532) {
+    console.log('Using mock vault for base sepolia')
+    return createMockVaultData(params.marketId, marketConfig)
   }
 
   try {
     // Fetch live vault data from Morpho SDK
     const vault = await fetchAccrualVault(
-      marketId.address,
-      chainManager.getPublicClient(marketId.chainId),
+      params.marketId.address,
+      params.chainManager.getPublicClient(params.marketId.chainId),
     ).catch((error) => {
       console.error('Failed to fetch vault info:', error)
       return {
@@ -155,7 +198,7 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
 
     // Fetch rewards data from API
     const rewardsBreakdown = await fetchAndCalculateRewards(
-      marketId.address,
+      params.marketId.address,
     ).catch((error) => {
       console.error('Failed to fetch rewards data:', error)
       return {
@@ -173,8 +216,8 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     const currentTimestampSeconds = Math.floor(Date.now() / 1000)
 
     return {
-      chainId: marketId.chainId,
-      address: marketId.address,
+      chainId: params.marketId.chainId,
+      address: params.marketId.address,
       name: marketConfig.name,
       asset: (marketConfig.asset.address[marketConfig.chainId] ||
         Object.values(marketConfig.asset.address)[0]) as Address,
@@ -190,35 +233,34 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
   } catch (error) {
     console.error('Failed to get vault info:', error)
     throw new Error(
-      `Failed to get vault info for ${marketId.address}: ${
+      `Failed to get vault info for ${params.marketId.address}: ${
         error instanceof Error ? error.message : 'Unknown error'
       }`,
     )
   }
 }
 
-/**
- * Get list of available vaults
- * @param chainManager - Chain manager instance
- * @param lendConfig - Lend configuration (includes allowlist and future blocklist)
- * @returns Promise resolving to array of vault information
- */
+interface GetVaultsParams {
+  chainManager: ChainManager
+  lendConfig: LendConfig
+  markets: LendMarketConfig[]
+}
+
 export async function getVaults(
-  chainManager: ChainManager,
-  lendConfig: LendConfig,
+  params: GetVaultsParams,
 ): Promise<LendMarket[]> {
   try {
-    const marketAllowlist = lendConfig.marketAllowlist || []
-    const vaultPromises = marketAllowlist.map((marketConfig) => {
+    const vaultPromises = params.markets.map((marketConfig) => {
       return getVault({
         marketId: {
           address: marketConfig.address,
           chainId: marketConfig.chainId,
         },
-        chainManager,
-        lendConfig,
+        chainManager: params.chainManager,
+        lendConfig: params.lendConfig,
       })
     })
+
     return await Promise.all(vaultPromises)
   } catch (error) {
     throw new Error(
