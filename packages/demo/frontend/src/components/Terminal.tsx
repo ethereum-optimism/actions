@@ -51,11 +51,14 @@ interface VaultData {
   owner: string
   curator: string
   lastUpdate: number
+  operationType?: 'open' | 'close'
+  walletBalance?: number
 }
 
 interface PendingPrompt {
   type:
     | 'userId'
+    | 'lendPositionType'
     | 'lendVault'
     | 'lendAmount'
     | 'walletSendSelection'
@@ -70,8 +73,11 @@ interface PendingPrompt {
         selectedWallet?: WalletData
         selectedVault?: VaultData
         walletBalance?: number
+        vaultBalance?: number
         balance?: number
         amount?: number
+        operationType?: 'open' | 'close'
+        hasVaultPositions?: boolean
       }
 }
 
@@ -135,6 +141,7 @@ const Terminal = () => {
   )
 
   const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
+  const [selectedPositionTypeIndex, setSelectedPositionTypeIndex] = useState(0)
 
   // Auto-select wallet when Privy is authenticated and has wallets
   useEffect(() => {
@@ -529,6 +536,9 @@ const Terminal = () => {
       if (pendingPrompt.type === 'userId') {
         handleWalletCreation(trimmed)
         return
+      } else if (pendingPrompt.type === 'lendPositionType') {
+        handlePositionTypeSelection()
+        return
       } else if (pendingPrompt.type === 'lendVault') {
         handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
         return
@@ -762,19 +772,86 @@ User ID: ${result.userId}`,
     }
   }
 
+  const handlePositionTypeSelection = async () => {
+    const operationType: 'open' | 'close' = selectedPositionTypeIndex === 0 ? 'open' : 'close'
+    const promptData = pendingPrompt?.data as { hasVaultPositions: boolean; walletBalance: number }
+    setPendingPrompt(null)
+
+    // Load vaults for the selected operation type
+    const loadingLine: TerminalLine = {
+      id: `loading-${Date.now()}`,
+      type: 'output',
+      content: 'Loading vaults...',
+      timestamp: new Date(),
+    }
+    setLines((prev) => [...prev, loadingLine])
+
+    try {
+      const result = await verbsApi.getMarkets()
+
+      if (result.markets.length === 0) {
+        const emptyLine: TerminalLine = {
+          id: `empty-${Date.now()}`,
+          type: 'error',
+          content: 'No markets available.',
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev.slice(0, -1), emptyLine])
+        return
+      }
+
+      const marketOptions = result.markets
+        .map(
+          (vault, index) =>
+            `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
+        )
+        .join('\n')
+
+      const vaultSelectionLine: TerminalLine = {
+        id: `vault-selection-${Date.now()}`,
+        type: 'output',
+        content: `Select a Lending market:\n\n${marketOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
+      setPendingPrompt({
+        type: 'lendVault',
+        message: '',
+        data: result.markets.map((market) => ({
+          ...market,
+          operationType,
+          walletBalance: promptData.walletBalance,
+        })),
+      })
+      setSelectedVaultIndex(0)
+    } catch (vaultError) {
+      const errorLine: TerminalLine = {
+        id: `error-${Date.now()}`,
+        type: 'error',
+        content: `Failed to load vaults: ${
+          vaultError instanceof Error ? vaultError.message : 'Unknown error'
+        }`,
+        timestamp: new Date(),
+      }
+      setLines((prev) => [...prev.slice(0, -1), errorLine])
+    }
+  }
+
   const handleLendVaultSelection = async (vaults: VaultData[]) => {
-    // Use the selectedVaultIndex to select the vault
     const selectedVault = vaults[selectedVaultIndex]
+    const operationType = selectedVault.operationType
     setPendingPrompt(null)
 
     console.log(
       '[FRONTEND] Selected vault:',
       selectedVault.name,
       selectedVault.address,
+      'Operation:',
+      operationType || 'open',
     )
 
     try {
-      // Use the vault data we already have to show vault information
       const vault = selectedVault
       console.log('vault', vault)
 
@@ -784,7 +861,6 @@ User ID: ${result.userId}`,
       const feeValue = `${(vault.fee * 100).toFixed(1)}%`
       const managerValue = 'Gauntlet'
 
-      // APY breakdown values
       const nativeApyValue = vault.apyBreakdown
         ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%`
         : 'N/A'
@@ -827,7 +903,6 @@ User ID: ${result.userId}`,
 
       setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
 
-      // Show loading state for balance
       const loadingBalanceLine: TerminalLine = {
         id: `loading-balance-${Date.now()}`,
         type: 'output',
@@ -836,13 +911,11 @@ User ID: ${result.userId}`,
       }
       setLines((prev) => [...prev, loadingBalanceLine])
 
-      // Get wallet balance using DRY function
       const walletBalanceText = await displayWalletBalance(
         selectedWallet!.id,
         true,
       )
 
-      // Get single-chain token balance for the vault's asset (e.g., USDC on the vault's chain)
       const walletBalanceResult = await verbsApi.getWalletBalance(
         selectedWallet!.id,
         await getAuthHeaders(),
@@ -856,18 +929,29 @@ User ID: ${result.userId}`,
               (selectedVault.asset || '').toLowerCase(),
         )
 
-      // TODO: update this to not hardcode the decimals and read decimals from token info.
       const usdcBalance = chainToken
         ? parseFloat(chainToken.formattedBalance)
         : 0
 
       console.log('[FRONTEND] Wallet USDC balance:', usdcBalance)
 
-      // Show balances and ask for lend amount
-      const balancesDisplay = `Wallet Balance:
-${walletBalanceText}
+      let vaultBalance = 0
+      if (operationType === 'close') {
+        try {
+          const marketBalanceResult = await verbsApi.getMarketBalance(
+            selectedVault.address,
+            selectedWallet!.id,
+          )
+          vaultBalance = parseFloat(marketBalanceResult.balanceFormatted)
+          console.log('[FRONTEND] Vault balance:', vaultBalance)
+        } catch (error) {
+          console.error('[FRONTEND] Error getting vault balance:', error)
+        }
+      }
 
-How much would you like to lend?`
+      const balancesDisplay = operationType === 'close'
+        ? `Wallet Balance:\n${walletBalanceText}\n\nVault Position: ${vaultBalance} USDC\n\nHow much would you like to withdraw?`
+        : `Wallet Balance:\n${walletBalanceText}\n\nHow much would you like to lend?`
 
       const balancesLine: TerminalLine = {
         id: `balances-${Date.now()}`,
@@ -876,9 +960,8 @@ How much would you like to lend?`
         timestamp: new Date(),
       }
 
-      setLines((prev) => [...prev.slice(0, -1), balancesLine]) // Replace loading message
+      setLines((prev) => [...prev.slice(0, -1), balancesLine])
 
-      // Set up prompt for lend amount
       setPendingPrompt({
         type: 'lendAmount',
         message: '',
@@ -886,7 +969,9 @@ How much would you like to lend?`
           selectedWallet: selectedWallet!,
           selectedVault: selectedVault,
           walletBalance: usdcBalance,
-          balance: usdcBalance, // For compatibility
+          vaultBalance,
+          balance: operationType === 'close' ? vaultBalance : usdcBalance,
+          operationType: operationType || 'open',
         },
       })
     } catch (error) {
@@ -906,11 +991,16 @@ How much would you like to lend?`
       selectedWallet: WalletData
       selectedVault: VaultData
       walletBalance: number
+      vaultBalance?: number
+      operationType?: 'open' | 'close'
     }
+
+    const operationType = promptData.operationType || 'open'
+    const relevantBalance = operationType === 'close' ? (promptData.vaultBalance || 0) : promptData.walletBalance
 
     setPendingPrompt(null)
 
-    console.log('[FRONTEND] Lend amount submitted:', amount)
+    console.log('[FRONTEND] Amount submitted:', amount, 'Operation:', operationType)
 
     if (isNaN(amount) || amount <= 0) {
       const errorLine: TerminalLine = {
@@ -923,59 +1013,68 @@ How much would you like to lend?`
       return
     }
 
-    if (amount > promptData.walletBalance) {
+    if (amount > relevantBalance) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
-        content: `Insufficient balance. You have ${promptData.walletBalance} USDC available.`,
+        content: `Insufficient balance. You have ${relevantBalance} USDC available${operationType === 'close' ? ' in vault' : ''}.`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev, errorLine])
       return
     }
 
-    // Show processing message
     const processingLine: TerminalLine = {
       id: `processing-${Date.now()}`,
       type: 'output',
-      content: `Processing lending transaction: ${amount} USDC to ${promptData.selectedVault.name}...`,
+      content: operationType === 'close'
+        ? `Processing withdrawal: ${amount} USDC from ${promptData.selectedVault.name}...`
+        : `Processing lending transaction: ${amount} USDC to ${promptData.selectedVault.name}...`,
       timestamp: new Date(),
     }
     setLines((prev) => [...prev, processingLine])
 
     try {
-      console.log('[FRONTEND] Calling openLendPosition API')
-      const result = await verbsApi.openLendPosition(
-        promptData.selectedWallet.id,
-        amount,
-        promptData.selectedVault.asset as Address,
-        promptData.selectedVault.chainId,
-        promptData.selectedVault.address as Address,
-        await getAuthHeaders(),
-      )
+      console.log(`[FRONTEND] Calling ${operationType === 'close' ? 'closeLendPosition' : 'openLendPosition'} API`)
+
+      const result = operationType === 'close'
+        ? await verbsApi.closeLendPosition(
+            promptData.selectedWallet.id,
+            amount,
+            promptData.selectedVault.asset as Address,
+            promptData.selectedVault.chainId,
+            promptData.selectedVault.address as Address,
+            await getAuthHeaders(),
+          )
+        : await verbsApi.openLendPosition(
+            promptData.selectedWallet.id,
+            amount,
+            promptData.selectedVault.asset as Address,
+            promptData.selectedVault.chainId,
+            promptData.selectedVault.address as Address,
+            await getAuthHeaders(),
+          )
 
       console.log(
-        '[FRONTEND] Lend deposit successful:',
+        `[FRONTEND] ${operationType === 'close' ? 'Withdrawal' : 'Deposit'} successful:`,
         result.transaction.hash,
       )
 
       const successLine: TerminalLine = {
         id: `lend-success-${Date.now()}`,
         type: 'success',
-        content: `✅ Successfully lent ${amount} USDC to ${promptData.selectedVault.name}!
-
-Vault:  ${promptData.selectedVault.name}
-Amount: ${amount} USDC
-Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`,
+        content: operationType === 'close'
+          ? `✅ Successfully withdrew ${amount} USDC from ${promptData.selectedVault.name}!\n\nVault:  ${promptData.selectedVault.name}\nAmount: ${amount} USDC\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`
+          : `✅ Successfully lent ${amount} USDC to ${promptData.selectedVault.name}!\n\nVault:  ${promptData.selectedVault.name}\nAmount: ${amount} USDC\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), successLine])
     } catch (error) {
-      console.error('[FRONTEND] Lending failed:', error)
+      console.error(`[FRONTEND] ${operationType === 'close' ? 'Withdrawal' : 'Lending'} failed:`, error)
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
-        content: `Failed to lend: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        content: `Failed to ${operationType === 'close' ? 'withdraw' : 'lend'}: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), errorLine])
@@ -1288,7 +1387,7 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       setLines((prev) => [...prev, errorLine])
       return
     }
-    // Check if selected wallet has USDC balance before proceeding
+    // Check if selected wallet has USDC balance and vault positions
     try {
       const balanceResult = await verbsApi.getWalletBalance(
         selectedWallet.id,
@@ -1302,19 +1401,60 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
         0,
       )
 
-      if (usdcBalance <= 0) {
+      // Check for vault positions
+      const vaultTokens = balanceResult.balance.filter(
+        (token) =>
+          token.symbol !== 'ETH' &&
+          token.symbol !== 'USDC' &&
+          token.symbol !== 'USDC_DEMO',
+      )
+      const hasVaultPositions = vaultTokens.some(
+        (token) => parseFloat(token.totalBalance) > 0,
+      )
+
+      if (usdcBalance <= 0 && !hasVaultPositions) {
         const noBalanceLine: TerminalLine = {
           id: `no-balance-${Date.now()}`,
           type: 'error',
           content:
-            'Selected wallet has no USDC balance. Fund the wallet first.',
+            'Selected wallet has no USDC balance or vault positions. Fund the wallet first.',
           timestamp: new Date(),
         }
         setLines((prev) => [...prev, noBalanceLine])
         return
       }
 
-      // Skip provider selection and go directly to vault selection
+      // If user has vault positions, ask if they want to open or close
+      if (hasVaultPositions) {
+        const positionTypes = ['open position (deposit)', 'close position (withdraw)']
+        const positionTypeOptions = positionTypes
+          .map(
+            (type, index) =>
+              `${index === 0 ? '> ' : '  '}${type}`,
+          )
+          .join('\n')
+
+        const positionTypeSelectionLine: TerminalLine = {
+          id: `position-type-selection-${Date.now()}`,
+          type: 'output',
+          content: `Would you like to lend more or close a position?\n\n${positionTypeOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
+          timestamp: new Date(),
+        }
+
+        setLines((prev) => [...prev, positionTypeSelectionLine])
+        setSelectedPositionTypeIndex(0)
+        setPendingPrompt({
+          type: 'lendPositionType',
+          message: '',
+          data: {
+            hasVaultPositions: true,
+            walletBalance: usdcBalance,
+          },
+        })
+        return
+      }
+
+      // If no vault positions, skip to vault selection for opening
       const loadingLine: TerminalLine = {
         id: `loading-${Date.now()}`,
         type: 'output',
@@ -1653,7 +1793,35 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Handle special keys for lend prompts
+    // Handle special keys for position type selection
+    if (pendingPrompt && pendingPrompt.type === 'lendPositionType') {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        handlePositionTypeSelection()
+        return
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedPositionTypeIndex((prevIndex) =>
+          prevIndex > 0 ? 0 : 1,
+        )
+        return
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedPositionTypeIndex((prevIndex) =>
+          prevIndex < 1 ? 1 : 0,
+        )
+        return
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setPendingPrompt(null)
+        setCurrentInput('')
+        return
+      }
+      e.preventDefault()
+      return
+    }
+
+    // Handle special keys for lend vault prompts
     if (pendingPrompt && pendingPrompt.type === 'lendVault') {
       if (e.key === 'Enter') {
         e.preventDefault()
@@ -1740,6 +1908,28 @@ Tx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pen
       inputRef.current.focus()
     }
   }
+
+  // Update the position type selection display to reflect the current selection
+  useEffect(() => {
+    if (pendingPrompt?.type === 'lendPositionType') {
+      const positionTypes = ['open position (deposit)', 'close position (withdraw)']
+      const positionTypeOptions = positionTypes
+        .map(
+          (type, index) =>
+            `${index === selectedPositionTypeIndex ? '> ' : '  '}${type}`,
+        )
+        .join('\n')
+
+      const positionTypeSelectionLine: TerminalLine = {
+        id: `position-type-selection-${Date.now()}`,
+        type: 'output',
+        content: `Would you like to lend more or close a position?\n\n${positionTypeOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
+        timestamp: new Date(),
+      }
+
+      setLines((prev) => [...prev.slice(0, -1), positionTypeSelectionLine])
+    }
+  }, [selectedPositionTypeIndex, pendingPrompt])
 
   // Update the vault selection display to reflect the current selection
   useEffect(() => {

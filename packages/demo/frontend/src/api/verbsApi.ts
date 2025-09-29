@@ -223,6 +223,30 @@ class VerbsApiClient {
       headers,
     })
   }
+
+  async closeLendPosition(
+    walletId: string,
+    amount: number,
+    tokenAddress: Address,
+    chainId: number,
+    vaultAddress: Address,
+    headers: HeadersInit = {},
+  ): Promise<{
+    transaction: {
+      hash: string
+      blockExplorerUrl: string
+      amount: number
+      tokenAddress: string
+      chainId: number
+      vaultAddress: string
+    }
+  }> {
+    return this.request(`/lend/${vaultAddress}/${chainId}/close`, {
+      method: 'POST',
+      body: JSON.stringify({ walletId, amount, tokenAddress }),
+      headers,
+    })
+  }
 }
 
 export const verbsApi = new VerbsApiClient()
