@@ -903,23 +903,22 @@ User ID: ${result.userId}`,
 
       console.log('[FRONTEND] Wallet USDC balance:', usdcBalance)
 
-      // Get vault shares
-      let vaultShares = 0
-      try {
-        const marketBalanceResult = await verbsApi.getMarketBalance(
-          selectedVault.address,
-          selectedWallet!.id,
-          selectedVault.chainId,
-        )
-        vaultShares = parseFloat(marketBalanceResult.sharesFormatted)
-        console.log('[FRONTEND] Vault shares:', vaultShares, 'Raw:', marketBalanceResult.sharesFormatted)
-      } catch (error) {
-        console.error('[FRONTEND] Error getting vault shares:', error)
-        // If we can't get vault balance, assume no shares and continue with open flow
-      }
+      // Get vault shares from existing wallet balance data
+      const vaultToken = walletBalanceResult.balance.find(
+        (token) =>
+          token.symbol === selectedVault.name &&
+          token.chainBalances.some((cb) => cb.chainId === selectedVault.chainId),
+      )
+      const vaultChainBalance = vaultToken?.chainBalances.find(
+        (cb) => cb.chainId === selectedVault.chainId,
+      )
+      const vaultShares = vaultChainBalance
+        ? parseFloat(vaultChainBalance.formattedBalance)
+        : 0
+
+      console.log('[FRONTEND] Vault shares from wallet balance:', vaultShares)
 
       // If vault has shares, ask open or close
-      console.log('[FRONTEND] Checking if vault has shares:', vaultShares, '> 0 =', vaultShares > 0)
       if (vaultShares > 0) {
         const positionTypes = ['open position (deposit)', 'close position (withdraw)']
         const positionTypeOptions = positionTypes
