@@ -1,20 +1,27 @@
 import type { ChainConfig } from '@/types/chain.js'
-import type {
-  HostedProviderType,
-  ProviderSpec,
-} from '@/wallet/providers/hostedProvider.types.js'
+import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 import type { LendConfig } from './lend.js'
+
+/**
+ * Network configuration for lending providers
+ * @description Basic network information that lending providers need
+ */
+export interface LendNetworkConfig {
+  chainId: number
+  name: string
+}
 
 /**
  * Verbs SDK configuration
  * @description Configuration object for initializing the Verbs SDK
  */
 export interface VerbsConfig<
-  THostedWalletProviderType extends HostedProviderType,
+  THostedWalletProviderType extends string,
+  TConfigMap extends { [K in THostedWalletProviderType]: unknown },
 > {
   /** Wallet configuration */
-  wallet: WalletConfig<THostedWalletProviderType>
+  wallet: WalletConfig<THostedWalletProviderType, TConfigMap>
   /** Lending provider configuration (optional) */
   lend?: LendConfig
   /** Chains to use for the SDK */
@@ -25,9 +32,12 @@ export interface VerbsConfig<
  * Wallet configuration
  * @description Configuration for wallet providers
  */
-export type WalletConfig<THostedProviderType extends HostedProviderType> = {
+export type WalletConfig<
+  THostedProviderType extends string,
+  TConfigMap extends { [K in THostedProviderType]: unknown },
+> = {
   /** Hosted wallet configuration */
-  hostedWalletConfig: HostedWalletConfig<THostedProviderType>
+  hostedWalletConfig: HostedWalletConfig<THostedProviderType, TConfigMap>
   /** Smart wallet configuration for ERC-4337 infrastructure */
   smartWalletConfig: SmartWalletConfig
 }
@@ -37,10 +47,11 @@ export type WalletConfig<THostedProviderType extends HostedProviderType> = {
  * @description Configuration for hosted wallets / signers
  */
 export interface HostedWalletConfig<
-  THostedProviderType extends HostedProviderType,
+  THostedProviderType extends string,
+  TConfigMap extends { [K in THostedProviderType]: unknown },
 > {
   /** Wallet provider for account creation, management, and signing */
-  provider: ProviderSpec<THostedProviderType>
+  provider: ProviderSpec<THostedProviderType, TConfigMap>
 }
 
 /**

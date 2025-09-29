@@ -23,14 +23,15 @@ function Home() {
             border: 'none',
           }}
         >{`
-█████   █████                    █████
-░░███   ░░███                    ░░███
- ░███    ░███   ██████  ████████  ░███████   █████
- ░███    ░███  ███░░███░░███░░███ ░███░░███ ███░░
- ░░███   ███  ░███████  ░███ ░░░  ░███ ░███░░█████
-  ░░░█████░   ░███░░░   ░███      ░███ ░███ ░░░░███
-    ░░███     ░░██████  █████     ████████  ██████
-     ░░░       ░░░░░░  ░░░░░     ░░░░░░░░  ░░░░░░`}</div>
+    █████████             █████     ███
+   ███░░░░░███           ░░███     ░░░
+  ░███    ░███   ██████  ███████   ████   ██████  ████████    █████
+  ░███████████  ███░░███░░░███░   ░░███  ███░░███░░███░░███  ███░░
+  ░███░░░░░███ ░███ ░░░   ░███     ░███ ░███ ░███ ░███ ░███ ░░█████
+  ░███    ░███ ░███  ███  ░███ ███ ░███ ░███ ░███ ░███ ░███  ░░░░███
+  █████   █████░░██████   ░░█████  █████░░██████  ████ █████ ██████
+ ░░░░░   ░░░░░  ░░░░░░     ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░
+     `}</div>
       </div>
 
       {/* Hero Section */}
@@ -127,7 +128,7 @@ function Home() {
                     style={{ color: 'rgba(184, 187, 38, 0.9)' }}
                   >{`import`}</span>
                   {` { `}
-                  <span style={{ color: '#4db6ac' }}>{`Verbs`}</span>
+                  <span style={{ color: '#4db6ac' }}>{`Actions`}</span>
                   {` } `}
                   <span
                     style={{ color: 'rgba(184, 187, 38, 0.9)' }}
@@ -173,7 +174,7 @@ function Home() {
                     style={{ color: 'rgba(184, 187, 38, 0.9)' }}
                   >{`await`}</span>
                   {` `}
-                  <span style={{ color: '#4db6ac' }}>{`Verbs`}</span>
+                  <span style={{ color: '#4db6ac' }}>{`Actions`}</span>
                   {`.`}
                   <span style={{ color: '#4db6ac' }}>{`createWallet`}</span>
                   {`(`}
@@ -502,7 +503,7 @@ function Home() {
                       {` `}
                       <span style={{ color: '#4db6ac' }}>{`config`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`VerbsConfig`}</span>
+                      <span style={{ color: '#4db6ac' }}>{`ActionsConfig`}</span>
                       {` = {
   `}
                       <span style={{ color: '#9cdcfe' }}>{`wallet`}</span>
@@ -780,7 +781,7 @@ function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-8 text-center text-gray-400 text-sm">
         <div className="max-w-7xl mx-auto px-6">
-          <p>© 2025 Verbs by Optimism. Open source. MIT License.</p>
+          <p>© 2025 Actions by Optimism. Open source. MIT License.</p>
         </div>
       </footer>
     </div>

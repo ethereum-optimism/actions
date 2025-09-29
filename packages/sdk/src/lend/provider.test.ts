@@ -9,6 +9,21 @@ import type {
   LendMarketId,
 } from '../types/lend.js'
 
+// Test helper class that exposes protected validation methods as public
+class TestLendProvider extends MockLendProvider {
+  public validateProviderSupported(chainId: number): void {
+    return super.validateProviderSupported(chainId)
+  }
+
+  public validateConfigSupported(marketId: LendMarketId): void {
+    return super.validateConfigSupported(marketId)
+  }
+
+  public isChainSupported(chainId: number): boolean {
+    return super.isChainSupported(chainId)
+  }
+}
+
 describe('LendProvider', () => {
   describe('constructor and configuration', () => {
     it('should initialize with basic config', () => {
@@ -19,7 +34,7 @@ describe('LendProvider', () => {
 
       const provider = new MockLendProvider(config)
       expect(provider).toBeDefined()
-      expect(provider.supportedNetworkIds()).toContain(84532)
+      expect(provider.supportedChainIds()).toContain(84532)
     })
 
     it('should use default slippage when not provided', () => {
@@ -72,6 +87,7 @@ describe('LendProvider', () => {
       const result = await provider.lend(
         '0x0000000000000000000000000000000000000001' as Address,
         1000n,
+        84532,
         'market-1',
         { slippage: 150 },
       )
@@ -86,6 +102,7 @@ describe('LendProvider', () => {
       const result = await provider.deposit(
         '0x0000000000000000000000000000000000000001' as Address,
         2000n,
+        84532,
       )
 
       expect(result.amount).toBe(2000n)
@@ -131,6 +148,7 @@ describe('LendProvider', () => {
       const result = await provider.withdraw(
         '0x0000000000000000000000000000000000000001' as Address,
         500n,
+        84532,
         'market-2',
       )
 
@@ -139,14 +157,64 @@ describe('LendProvider', () => {
     })
   })
 
-  describe('supportedNetworkIds', () => {
-    it('should return array of supported network IDs', () => {
+  describe('supportedChainIds', () => {
+    it('should return array of supported chain IDs', () => {
       const provider = new MockLendProvider({ provider: 'morpho' })
-      const networkIds = provider.supportedNetworkIds()
+      const chainIds = provider.supportedChainIds()
 
-      expect(Array.isArray(networkIds)).toBe(true)
-      expect(networkIds).toContain(84532)
-      expect(networkIds).toHaveLength(1)
+      expect(Array.isArray(chainIds)).toBe(true)
+      expect(chainIds).toContain(84532)
+      expect(chainIds.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('validation', () => {
+    it('should call validation for unsupported chainId', () => {
+      const provider = new TestLendProvider({ provider: 'morpho' })
+
+      expect(() => {
+        provider.validateProviderSupported(999)
+      }).toThrow('Chain 999 is not supported')
+    })
+
+    it('should call validation for market allowlist', () => {
+      const allowedMarket: LendMarketConfig = {
+        address: '0x1234' as Address,
+        chainId: 84532,
+        name: 'Allowed Market',
+        asset: {
+          address: { 84532: '0xUSC' as Address },
+          metadata: { decimals: 6, name: 'USD Coin', symbol: 'USDC' },
+          type: 'erc20',
+        },
+        lendProvider: 'morpho',
+      }
+
+      const provider = new TestLendProvider({
+        provider: 'morpho',
+        marketAllowlist: [allowedMarket],
+      })
+
+      expect(() => {
+        provider.validateConfigSupported({
+          address: '0x1234' as Address,
+          chainId: 84532,
+        })
+      }).not.toThrow()
+
+      expect(() => {
+        provider.validateConfigSupported({
+          address: '0x9999' as Address,
+          chainId: 84532,
+        })
+      }).toThrow('not in the market allowlist')
+    })
+
+    it('should validate chain support correctly', () => {
+      const provider = new TestLendProvider({ provider: 'morpho' })
+
+      expect(provider.isChainSupported(84532)).toBe(true)
+      expect(provider.isChainSupported(999)).toBe(false)
     })
   })
 

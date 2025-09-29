@@ -44,7 +44,7 @@ class VerbsApp extends App {
           'http://localhost:5173', // Vite dev port
           'http://localhost:4173', // Vite prod preview port
           'https://verbs-ui.netlify.app', // Prod netlify url
-          'https://verbs.money', // Temporary prod url
+          'https://actions.money', // Temporary prod url
         ],
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: ['Content-Type', 'Authorization'],

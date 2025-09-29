@@ -24,9 +24,6 @@ export type {
   WalletConfig,
 } from '@/types/index.js'
 export { isAssetSupportedOnChain } from '@/utils/assets.js'
-export { Verbs } from '@/verbs.js'
-export { SmartWallet } from '@/wallet/base/SmartWallet.js'
-export { Wallet } from '@/wallet/base/Wallet.js'
-export { PrivyWallet } from '@/wallet/PrivyWallet.js'
-export { SmartWalletProvider } from '@/wallet/providers/base/SmartWalletProvider.js'
-export { PrivyHostedWalletProvider } from '@/wallet/providers/PrivyHostedWalletProvider.js'
+export type { Verbs } from '@/verbs.js'
+export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'

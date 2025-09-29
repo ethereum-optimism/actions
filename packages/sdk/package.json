@@ -19,7 +19,23 @@
     "src/*"
   ],
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "react": "./dist/index.react.js",
+      "import": "./dist/index.node.js",
+      "default": "./dist/index.node.js"
+    },
+    "./react": "./dist/index.react.js",
+    "./node": "./dist/index.node.js"
+  },
+  "typesVersions": {
+    "*": {
+      "react": [
+        "dist/index.react.d.ts"
+      ],
+      "node": [
+        "dist/index.node.d.ts"
+      ]
+    }
   },
   "scripts": {
     "build": "tsc && resolve-tspaths",
@@ -47,7 +63,14 @@
     "viem": "^2.24.1"
   },
   "peerDependencies": {
-    "@privy-io/server-auth": ">=1.28.0"
+    "@dynamic-labs/ethereum": ">=4.31.4",
+    "@dynamic-labs/wallet-connector-core": ">=4.31.4",
+    "@dynamic-labs/waas-evm": ">=4.31.4",
+    "@privy-io/server-auth": ">=1.31.1",
+    "@turnkey/core": ">=1.1.1",
+    "@turnkey/http": ">=3.12.1",
+    "@turnkey/sdk-server": ">=4.9.1",
+    "@turnkey/viem": ">=0.14.1"
   },
   "devDependencies": {
     "@types/node": "^18",
