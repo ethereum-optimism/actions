@@ -60,7 +60,7 @@ export class WalletLendNamespace<
       throw new Error('No transaction data returned from lend provider')
     }
 
-    // TODO Harry, can we pull sendBatch and send into the Wallet class so I can remove this?
+    // TODO we will eventualy pull sendBatch and send into the Wallet class and remove this
     if (!this.isSmartWallet(this.wallet)) {
       throw new Error(
         'Transaction execution is only supported for SmartWallet instances',
