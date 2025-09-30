@@ -1,4 +1,4 @@
-import type { LendProvider } from '@/lend/provider.js'
+import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { BaseLendConfig, LendConfig } from '@/types/lend/index.js'
 
 /**

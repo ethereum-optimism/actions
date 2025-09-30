@@ -10,8 +10,8 @@ import {
   MockWETHMarket,
 } from '@/test/MockMarkets.js'
 
-import type { MorphoLendConfig } from '../../../types/lend/index.js'
-import { LendProviderMorpho } from './index.js'
+import type { MorphoLendConfig } from '../../../../types/lend/index.js'
+import { LendProviderMorpho } from '../LendProviderMorpho.js'
 
 // Mock the Morpho SDK modules
 vi.mock('@morpho-org/blue-sdk-viem', () => ({

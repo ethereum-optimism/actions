@@ -3,9 +3,9 @@ import type { Address, Hex } from 'viem'
 import type { SupportedChainId } from '../../constants/supportedChains.js'
 import type { Asset } from '../asset.js'
 
+export { LendProvider } from '../../lend/core/LendProvider.js'
 export { VerbsLendNamespace } from '../../lend/namespaces/VerbsLendNamespace.js'
 export { WalletLendNamespace } from '../../lend/namespaces/WalletLendNamespace.js'
-export { LendProvider } from '../../lend/provider.js'
 
 /**
  * Lending market identifier
@@ -100,24 +100,7 @@ export interface LendMarketMetadata {
 }
 
 /**
- * Transaction result for lending operations
- * @description Result of openPosition or closePosition operations
- */
-export interface LendTransactionResult {
-  /** Transaction hash */
-  hash: string
-  /** Block explorer URL */
-  blockExplorerUrl: string
-  /** Market information */
-  market: LendMarket
-  /** Amount of assets deposited/withdrawn */
-  amount: bigint
-  /** Amount of shares received/burned */
-  shares: bigint
-}
-
-/**
- * Legacy lending transaction type
+ * Lending transaction type
  */
 export interface LendTransaction {
   hash?: string

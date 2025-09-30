@@ -8,7 +8,7 @@ import type {
   LendConfig,
   LendMarketConfig,
   LendMarketId,
-} from '../types/lend/index.js'
+} from '../../../types/lend/index.js'
 
 // Test helper class that exposes protected validation methods as public
 class TestLendProvider extends MockLendProvider {

@@ -4,7 +4,7 @@ import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
 import type { LendProvider } from '@/types/lend/index.js'
 
-import { VerbsLendNamespace } from './VerbsLendNamespace.js'
+import { VerbsLendNamespace } from '../VerbsLendNamespace.js'
 
 describe('VerbsLendNamespace', () => {
   let mockProvider: LendProvider

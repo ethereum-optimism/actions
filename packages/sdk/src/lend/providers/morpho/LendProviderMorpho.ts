@@ -17,7 +17,7 @@ import type {
   LendTransaction,
   MorphoLendConfig,
 } from '../../../types/lend/index.js'
-import { LendProvider } from '../../provider.js'
+import { LendProvider } from '../../core/LendProvider.js'
 import { getVault, getVaults } from './sdk.js'
 
 /**

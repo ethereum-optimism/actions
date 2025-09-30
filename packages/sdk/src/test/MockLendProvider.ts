@@ -18,7 +18,7 @@ import type {
   LendTransaction,
 } from '@/types/lend/index.js'
 
-import { LendProvider } from '../lend/provider.js'
+import { LendProvider } from '../lend/core/LendProvider.js'
 
 export interface MockLendProviderConfig {
   supportedChains: number[]

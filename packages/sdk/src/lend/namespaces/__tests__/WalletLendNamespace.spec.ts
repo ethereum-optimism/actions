@@ -6,7 +6,7 @@ import { getRandomAddress } from '@/test/utils.js'
 import type { LendProvider, TransactionData } from '@/types/lend/index.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
-import { WalletLendNamespace } from './WalletLendNamespace.js'
+import { WalletLendNamespace } from '../WalletLendNamespace.js'
 
 describe('WalletLendNamespace', () => {
   const mockWalletAddress = getRandomAddress()

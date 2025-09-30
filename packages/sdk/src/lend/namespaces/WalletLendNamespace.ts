@@ -1,6 +1,6 @@
 import type { Hash } from 'viem'
 
-import type { LendProvider } from '@/lend/provider.js'
+import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type {
   BaseLendConfig,
   ClosePositionParams,
