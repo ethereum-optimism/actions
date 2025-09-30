@@ -5,6 +5,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
 import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
+import { TurnkeyHostedWalletProvider } from '@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
 import type { ReactOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
 import { ReactHostedWalletProviderRegistry } from '@/wallet/react/providers/registry/ReactHostedWalletProviderRegistry.js'
 
@@ -82,6 +83,28 @@ describe('ReactHostedWalletProviderRegistry', () => {
     )
 
     expect(provider).toBeInstanceOf(PrivyHostedWalletProvider)
+  })
+
+  it('returns turnkey factory and validates options', () => {
+    const registry = new ReactHostedWalletProviderRegistry()
+    const factory = registry.getFactory('turnkey')
+
+    expect(factory.type).toBe('turnkey')
+    expect(
+      factory.validateOptions?.(undefined as ReactOptionsMap['turnkey']),
+    ).toBe(true)
+  })
+
+  it('creates a TurnkeyHostedWalletProvider instance', () => {
+    const registry = new ReactHostedWalletProviderRegistry()
+    const factory = registry.getFactory('turnkey')
+
+    const provider = factory.create(
+      { chainManager: mockChainManager },
+      undefined as ReactOptionsMap['turnkey'],
+    )
+
+    expect(provider).toBeInstanceOf(TurnkeyHostedWalletProvider)
   })
 
   it('throws for unknown provider type', () => {
