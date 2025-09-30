@@ -145,6 +145,8 @@ export class LendController {
       const validation = await validateRequest(c, OpenPositionRequestSchema)
       if (!validation.success) return validation.response
 
+      // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
+
       const {
         params: { marketId, chainId },
         body: { walletId, amount, tokenAddress },
@@ -162,14 +164,7 @@ export class LendController {
 
       return c.json({ transaction })
     } catch (error) {
-      console.error('Failed to open position', error)
-      return c.json(
-        {
-          error: 'Failed to open position',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return this.handleError(c, 'open position', error)
     }
   }
 
@@ -198,14 +193,18 @@ export class LendController {
 
       return c.json({ transaction })
     } catch (error) {
-      console.error('Failed to close position', error)
-      return c.json(
-        {
-          error: 'Failed to close position',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return this.handleError(c, 'close position', error)
     }
+  }
+
+  private handleError(c: Context, operation: string, error: unknown) {
+    console.error(`Failed to ${operation}`, error)
+    return c.json(
+      {
+        error: `Failed to ${operation}`,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      500,
+    )
   }
 }
