@@ -4,7 +4,11 @@ import type {
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/verbs-sdk'
-import { getTokenBySymbol, SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
+import {
+  getAssetAddress,
+  getTokenBySymbol,
+  SUPPORTED_TOKENS,
+} from '@eth-optimism/verbs-sdk'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
@@ -153,9 +157,12 @@ export async function getWalletBalance(
           if (vaultBalance.balance > 0n) {
             // Create a TokenBalance object for the vault
             const formattedBalance = formatUnits(vaultBalance.balance, 6) // Assuming 6 decimals for vault shares
-            const assetAddress =
-              vault.asset.address[vault.marketId.chainId] ||
-              (Object.values(vault.asset.address)[0] as Address)
+
+            // Get asset address for the vault's chain
+            const assetAddress = getAssetAddress(
+              vault.asset,
+              vault.marketId.chainId,
+            )
 
             return {
               symbol: `${vault.name}`,
