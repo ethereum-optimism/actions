@@ -273,7 +273,11 @@ describe('Verbs SDK', () => {
 
       it('should throw error for unsupported lending provider', () => {
         expect(() => {
-          new Verbs(
+          new Verbs<
+            TestWalletProvider['providerTypes'],
+            TestWalletProvider,
+            'privy'
+          >(
             {
               chains: [{ chainId: unichain.id }],
               lend: {
@@ -349,7 +353,11 @@ describe('Verbs SDK', () => {
         }
 
         expect(() => {
-          new Verbs(
+          new Verbs<
+            TestWalletProvider['providerTypes'],
+            TestWalletProvider,
+            'privy'
+          >(
             {
               chains: [{ chainId: unichain.id }],
               lend: config,
@@ -384,7 +392,11 @@ describe('Verbs SDK', () => {
         }
 
         expect(() => {
-          new Verbs(
+          new Verbs<
+            TestWalletProvider['providerTypes'],
+            TestWalletProvider,
+            'privy'
+          >(
             {
               chains: [{ chainId: unichain.id }],
               lend: config,
@@ -461,7 +473,11 @@ describe('Verbs SDK', () => {
 
     describe('Unit Tests', () => {
       it('should list supported chain IDs', () => {
-        const verbs = new Verbs(
+        const verbs = new Verbs<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
           {
             chains: [{ chainId: unichain.id }],
             lend: {
@@ -713,7 +729,11 @@ describe('Verbs SDK', () => {
       it.runIf(externalTest())(
         'should handle non-existent vault gracefully',
         async () => {
-          const verbs = new Verbs(
+          const verbs = new Verbs<
+            TestWalletProvider['providerTypes'],
+            TestWalletProvider,
+            'privy'
+          >(
             {
               chains: [
                 {
@@ -813,7 +833,11 @@ describe('Verbs SDK', () => {
       })
 
       it.runIf(externalTest())('should get list of vaults', async () => {
-        const verbs = new Verbs(
+        const verbs = new Verbs<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
           {
             chains: [
               {
