@@ -143,10 +143,7 @@ export class LendController {
   async openPosition(c: Context) {
     try {
       const validation = await validateRequest(c, OpenPositionRequestSchema)
-      if (!validation.success) {
-        console.log('[BACKEND] openPosition validation failed')
-        return validation.response
-      }
+      if (!validation.success) return validation.response
 
       const {
         params: { marketId, chainId },
