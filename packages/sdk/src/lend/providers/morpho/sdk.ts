@@ -321,15 +321,15 @@ export function calculateApyBreakdown(
   const netApy =
     baseApyBeforeFees + rewardsBreakdown.totalRewards - performanceFeeImpact
 
-  // Extract dynamic reward properties without totalRewards (we'll add it explicitly)
-  const { totalRewards: _, ...dynamicRewards } = rewardsBreakdown
+  // Extract individual reward token properties (excluding totalRewards aggregate)
+  const { totalRewards: _, ...rewardTokens } = rewardsBreakdown
 
   return {
     total: netApy,
     native: baseApyBeforeFees, // Native APY from market lending (before fees)
     totalRewards: rewardsBreakdown.totalRewards,
     performanceFee: performanceFee,
-    ...dynamicRewards, // Spread all dynamic reward properties (usdc, morpho, other)
+    ...rewardTokens, // Individual token rewards (usdc, morpho, other)
   }
 }
 
@@ -411,7 +411,6 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
     0,
   )
 
-  // Return dynamic rewards breakdown
   return {
     ...rewardsByCategory,
     totalRewards,
