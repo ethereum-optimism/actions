@@ -920,6 +920,15 @@ User ID: ${result.userId}`,
 
       // If vault has shares, ask open or close
       if (vaultShares > 0) {
+        // Show balances first
+        const balancesLine: TerminalLine = {
+          id: `balances-${Date.now()}`,
+          type: 'output',
+          content: `Wallet Balance:\n${walletBalanceText}\n\nVault Position: ${vaultShares} shares`,
+          timestamp: new Date(),
+        }
+        setLines((prev) => [...prev.slice(0, -1), balancesLine])
+
         const positionTypes = ['open position (deposit)', 'close position (withdraw)']
         const positionTypeOptions = positionTypes
           .map(
@@ -931,11 +940,11 @@ User ID: ${result.userId}`,
         const positionTypeSelectionLine: TerminalLine = {
           id: `position-type-selection-${Date.now()}`,
           type: 'output',
-          content: `Wallet Balance:\n${walletBalanceText}\n\nVault Position: ${vaultShares} shares\n\nWould you like to lend more or close a position?\n\n${positionTypeOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
+          content: `Would you like to lend more or close a position?\n\n${positionTypeOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
           timestamp: new Date(),
         }
 
-        setLines((prev) => [...prev.slice(0, -1), positionTypeSelectionLine])
+        setLines((prev) => [...prev, positionTypeSelectionLine])
         setSelectedPositionTypeIndex(0)
         setPendingPrompt({
           type: 'lendPositionType',
