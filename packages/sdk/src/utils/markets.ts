@@ -1,8 +1,6 @@
-import type { Address } from 'viem'
-
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendMarket } from '@/types/lend.js'
+import type { LendMarket } from '@/types/lend/index.js'
 
 /**
  * Validates that an asset matches the market's asset
@@ -12,11 +10,12 @@ import type { LendMarket } from '@/types/lend.js'
  */
 export function validateMarketAsset(market: LendMarket, asset: Asset): void {
   if (!isMarketAsset(market, asset)) {
-    const marketAssetAddress = market.asset as Address
+    const marketAssetAddress =
+      market.asset.address[market.marketId.chainId as SupportedChainId]
     const providedAssetAddress =
-      asset.address[market.chainId as SupportedChainId]
+      asset.address[market.marketId.chainId as SupportedChainId]
     throw new Error(
-      `Asset mismatch: provided ${providedAssetAddress} but market ${market.address} uses ${marketAssetAddress}`,
+      `Asset mismatch: provided ${providedAssetAddress} but market ${market.marketId.address} uses ${marketAssetAddress}`,
     )
   }
 }
@@ -28,7 +27,9 @@ export function validateMarketAsset(market: LendMarket, asset: Asset): void {
  * @returns true if asset matches market's asset, false otherwise
  */
 export function isMarketAsset(market: LendMarket, asset: Asset): boolean {
-  const marketAssetAddress = market.asset as Address
-  const providedAssetAddress = asset.address[market.chainId as SupportedChainId]
+  const marketAssetAddress =
+    market.asset.address[market.marketId.chainId as SupportedChainId]
+  const providedAssetAddress =
+    asset.address[market.marketId.chainId as SupportedChainId]
   return marketAssetAddress === providedAssetAddress
 }

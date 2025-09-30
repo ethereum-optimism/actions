@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
 
-import type { LendMarketConfig } from '@/types/lend.js'
+import type { LendMarketConfig } from '@/types/lend/index.js'
 
 import { MockUSDCAsset, MockWETHAsset } from './MockAssets.js'
 

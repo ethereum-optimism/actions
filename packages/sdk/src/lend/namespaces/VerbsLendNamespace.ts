@@ -1,5 +1,5 @@
 import type { LendProvider } from '@/lend/provider.js'
-import type { BaseLendConfig, LendConfig } from '@/types/lend.js'
+import type { BaseLendConfig, LendConfig } from '@/types/lend/index.js'
 
 /**
  * Verbs Lend Namespace

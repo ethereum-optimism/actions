@@ -2,7 +2,7 @@ import type { Address, Hash, WalletClient } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
-import type { TransactionData } from '@/types/lend.js'
+import type { TransactionData } from '@/types/lend/index.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**

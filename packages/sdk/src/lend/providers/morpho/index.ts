@@ -1,5 +1,6 @@
 import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
+import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -15,7 +16,7 @@ import type {
   LendOpenPositionInternalParams,
   LendTransaction,
   MorphoLendConfig,
-} from '../../../types/lend.js'
+} from '../../../types/lend/index.js'
 import { LendProvider } from '../../provider.js'
 import { getVault, getVaults } from './sdk.js'
 
@@ -92,7 +93,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         amount: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
-        apy: vaultInfo.apy,
+        apy: vaultInfo.apy.total,
         timestamp: currentTimestamp,
         transactionData: {
           approval: {
@@ -132,7 +133,9 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         chainId: params.marketId.chainId,
       })
 
-      const assetAddress = vaultInfo.asset
+      const assetAddress =
+        vaultInfo.asset.address[params.marketId.chainId] ||
+        (Object.values(vaultInfo.asset.address)[0] as Address)
 
       const withdrawCallData = MetaMorphoAction.withdraw(
         params.amount,
@@ -146,7 +149,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         amount: params.amount,
         asset: assetAddress,
         marketId: params.marketId.address,
-        apy: vaultInfo.apy,
+        apy: vaultInfo.apy.total,
         timestamp: currentTimestamp,
         transactionData: {
           closePosition: {
@@ -245,7 +248,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         balanceFormatted,
         shares,
         sharesFormatted,
-        chainId: params.marketId.chainId,
+        marketId: params.marketId,
       }
     } catch (error) {
       throw new Error(

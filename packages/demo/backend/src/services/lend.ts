@@ -18,18 +18,39 @@ interface MarketBalanceResult {
 }
 
 interface FormattedMarketResponse {
-  chainId: number
-  address: Address
+  marketId: {
+    chainId: number
+    address: Address
+  }
   name: string
-  apy: number
-  asset: Address
-  apyBreakdown: object
-  totalAssets: string
-  totalShares: string
-  fee: number
-  owner: Address
-  curator: Address
-  lastUpdate: number
+  asset: {
+    address: Partial<Record<SupportedChainId, Address>>
+    metadata: {
+      symbol: string
+      name: string
+      decimals: number
+    }
+    type: string
+  }
+  supply: {
+    totalAssets: string
+    totalShares: string
+  }
+  apy: {
+    total: number
+    native: number
+    totalRewards: number
+    performanceFee: number
+    usdc?: number
+    morpho?: number
+    other?: number
+  }
+  metadata: {
+    owner: Address
+    curator: Address
+    fee: number
+    lastUpdate: number
+  }
 }
 
 export async function getBlockExplorerUrl(
@@ -81,18 +102,15 @@ export async function formatMarketResponse(
   vault: LendMarket,
 ): Promise<FormattedMarketResponse> {
   return {
-    chainId: vault.chainId,
-    address: vault.address,
+    marketId: vault.marketId,
     name: vault.name,
-    apy: vault.apy,
     asset: vault.asset,
-    apyBreakdown: vault.apyBreakdown,
-    totalAssets: vault.totalAssets.toString(),
-    totalShares: vault.totalShares.toString(),
-    fee: vault.fee,
-    owner: vault.owner,
-    curator: vault.curator,
-    lastUpdate: vault.lastUpdate,
+    supply: {
+      totalAssets: vault.supply.totalAssets.toString(),
+      totalShares: vault.supply.totalShares.toString(),
+    },
+    apy: vault.apy,
+    metadata: vault.metadata,
   }
 }
 

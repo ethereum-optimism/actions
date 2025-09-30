@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider } from '@/types/lend.js'
+import type { LendProvider } from '@/types/lend/index.js'
 
 import { VerbsLendNamespace } from './VerbsLendNamespace.js'
 

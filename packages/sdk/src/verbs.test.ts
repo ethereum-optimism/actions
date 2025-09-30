@@ -2,7 +2,7 @@ import type { Address } from 'viem'
 import { unichain } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
-import type { LendMarketConfig, MorphoLendConfig } from '@/types/lend.js'
+import type { LendMarketConfig, MorphoLendConfig } from '@/types/lend/index.js'
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
 import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
@@ -626,39 +626,35 @@ describe('Verbs SDK', () => {
           })
 
           // Verify the vault info structure
-          expect(vaultInfo).toHaveProperty('address', vaultAddress)
+          expect(vaultInfo.marketId.address).toBe(vaultAddress)
           expect(vaultInfo).toHaveProperty('name')
           expect(vaultInfo).toHaveProperty('asset')
-          expect(vaultInfo).toHaveProperty('totalAssets')
-          expect(vaultInfo).toHaveProperty('totalShares')
+          expect(vaultInfo).toHaveProperty('supply')
           expect(vaultInfo).toHaveProperty('apy')
-          expect(vaultInfo).toHaveProperty('owner')
-          expect(vaultInfo).toHaveProperty('curator')
-          expect(vaultInfo).toHaveProperty('fee')
-          expect(vaultInfo).toHaveProperty('lastUpdate')
+          expect(vaultInfo).toHaveProperty('metadata')
 
           // Verify the data types
-          expect(typeof vaultInfo.apy).toBe('number')
-          expect(typeof vaultInfo.fee).toBe('number')
-          expect(typeof vaultInfo.totalAssets).toBe('bigint')
-          expect(typeof vaultInfo.totalShares).toBe('bigint')
+          expect(typeof vaultInfo.apy.total).toBe('number')
+          expect(typeof vaultInfo.metadata.fee).toBe('number')
+          expect(typeof vaultInfo.supply.totalAssets).toBe('bigint')
+          expect(typeof vaultInfo.supply.totalShares).toBe('bigint')
 
           // Verify reasonable values
-          expect(vaultInfo.apy).toBeGreaterThanOrEqual(0)
-          expect(vaultInfo.fee).toBeGreaterThanOrEqual(0)
-          expect(vaultInfo.totalAssets).toBeGreaterThanOrEqual(0n)
-          expect(vaultInfo.totalShares).toBeGreaterThanOrEqual(0n)
+          expect(vaultInfo.apy.total).toBeGreaterThanOrEqual(0)
+          expect(vaultInfo.metadata.fee).toBeGreaterThanOrEqual(0)
+          expect(vaultInfo.supply.totalAssets).toBeGreaterThanOrEqual(0n)
+          expect(vaultInfo.supply.totalShares).toBeGreaterThanOrEqual(0n)
 
           // Log the actual values for manual verification
           // eslint-disable-next-line no-console
           console.log('Vault Info:', {
-            address: vaultInfo.address,
+            address: vaultInfo.marketId.address,
             name: vaultInfo.name,
-            apy: `${(vaultInfo.apy * 100).toFixed(2)}%`,
-            totalAssets: vaultInfo.totalAssets.toString(),
-            fee: `${vaultInfo.fee}%`,
-            owner: vaultInfo.owner,
-            curator: vaultInfo.curator,
+            apy: `${(vaultInfo.apy.total * 100).toFixed(2)}%`,
+            totalAssets: vaultInfo.supply.totalAssets.toString(),
+            fee: `${vaultInfo.metadata.fee}%`,
+            owner: vaultInfo.metadata.owner,
+            curator: vaultInfo.metadata.curator,
           })
         },
         30000,
@@ -714,14 +710,14 @@ describe('Verbs SDK', () => {
           })
 
           expect(vaultInfo).toBeDefined()
-          expect(vaultInfo.address).toBe(vaultAddress)
+          expect(vaultInfo.marketId.address).toBe(vaultAddress)
           expect(vaultInfo.name).toBe('Gauntlet USDC')
-          expect(typeof vaultInfo.apy).toBe('number')
-          expect(typeof vaultInfo.totalAssets).toBe('bigint')
-          expect(typeof vaultInfo.fee).toBe('number')
+          expect(typeof vaultInfo.apy.total).toBe('number')
+          expect(typeof vaultInfo.supply.totalAssets).toBe('bigint')
+          expect(typeof vaultInfo.metadata.fee).toBe('number')
 
           // Enhanced APY should be higher than base APY due to rewards
-          expect(vaultInfo.apy).toBeGreaterThan(0.03) // Should be > 3% with rewards
+          expect(vaultInfo.apy.total).toBeGreaterThan(0.03) // Should be > 3% with rewards
         },
         30000,
       ) // 30 second timeout for network request

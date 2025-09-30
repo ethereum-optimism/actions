@@ -146,25 +146,26 @@ export async function getWalletBalance(
       vaults.map(async (vault) => {
         try {
           const vaultBalance = await wallet.lend!.getPosition({
-            marketId: {
-              address: vault.address,
-              chainId: vault.chainId as SupportedChainId,
-            },
+            marketId: vault.marketId,
           })
 
           // Only include vaults with non-zero balances
           if (vaultBalance.balance > 0n) {
             // Create a TokenBalance object for the vault
             const formattedBalance = formatUnits(vaultBalance.balance, 6) // Assuming 6 decimals for vault shares
+            const assetAddress =
+              vault.asset.address[vault.marketId.chainId] ||
+              (Object.values(vault.asset.address)[0] as Address)
+
             return {
               symbol: `${vault.name}`,
               totalBalance: vaultBalance.balance,
               totalFormattedBalance: formattedBalance,
               chainBalances: [
                 {
-                  chainId: vaultBalance.chainId,
+                  chainId: vaultBalance.marketId.chainId,
                   balance: vaultBalance.balance,
-                  tokenAddress: vault.asset,
+                  tokenAddress: assetAddress,
                   formattedBalance: formattedBalance,
                 },
               ],

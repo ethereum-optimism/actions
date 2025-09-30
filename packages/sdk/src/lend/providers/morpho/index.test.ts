@@ -10,7 +10,7 @@ import {
   MockWETHMarket,
 } from '@/test/MockMarkets.js'
 
-import type { MorphoLendConfig } from '../../../types/lend.js'
+import type { MorphoLendConfig } from '../../../types/lend/index.js'
 import { LendProviderMorpho } from './index.js'
 
 // Mock the Morpho SDK modules

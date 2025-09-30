@@ -1,5 +1,5 @@
 export * from './asset.js'
 export * from './chain.js'
-export * from './lend.js'
+export * from './lend/index.js'
 export * from './verbs.js'
 export * from './wallet.js'

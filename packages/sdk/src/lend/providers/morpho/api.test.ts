@@ -38,21 +38,21 @@ describe('Morpho API Integration', () => {
       expect(typeof rewards.usdc).toBe('number')
       expect(typeof rewards.morpho).toBe('number')
       expect(typeof rewards.other).toBe('number')
-      expect(typeof rewards.totalRewardsApr).toBe('number')
+      expect(typeof rewards.totalRewards).toBe('number')
 
       // All reward APRs should be non-negative
       expect(rewards.usdc).toBeGreaterThanOrEqual(0)
       expect(rewards.morpho).toBeGreaterThanOrEqual(0)
       expect(rewards.other).toBeGreaterThanOrEqual(0)
-      expect(rewards.totalRewardsApr).toBeGreaterThanOrEqual(0)
+      expect(rewards.totalRewards).toBeGreaterThanOrEqual(0)
 
       // Total rewards should equal sum of individual rewards
       const expectedTotal = rewards.usdc + rewards.morpho + rewards.other
-      expect(rewards.totalRewardsApr).toBeCloseTo(expectedTotal, 6)
+      expect(rewards.totalRewards).toBeCloseTo(expectedTotal, 6)
 
       // For the Gauntlet USDC vault, we typically expect some rewards
       // This assertion may need adjustment based on actual market conditions
-      expect(rewards.totalRewardsApr).toBeGreaterThanOrEqual(0)
+      expect(rewards.totalRewards).toBeGreaterThanOrEqual(0)
     },
     30000,
   ) // 30 second timeout for network request

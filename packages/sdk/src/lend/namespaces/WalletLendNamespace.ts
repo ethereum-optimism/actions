@@ -7,7 +7,7 @@ import type {
   GetPositionParams,
   LendMarketPosition,
   LendOpenPositionParams,
-} from '@/types/lend.js'
+} from '@/types/lend/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 

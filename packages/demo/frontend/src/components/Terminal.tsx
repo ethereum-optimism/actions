@@ -31,26 +31,39 @@ interface TerminalLine {
 }
 
 interface VaultData {
-  chainId: number
-  address: string
+  marketId: {
+    chainId: number
+    address: string
+  }
   name: string
-  apy: number
-  asset: string
-  apyBreakdown: {
-    nativeApy: number
-    totalRewardsApr: number
+  asset: {
+    address: Record<number, string>
+    metadata: {
+      symbol: string
+      name: string
+      decimals: number
+    }
+    type: string
+  }
+  supply: {
+    totalAssets: string
+    totalShares: string
+  }
+  apy: {
+    total: number
+    native: number
+    totalRewards: number
+    performanceFee: number
     usdc?: number
     morpho?: number
     other?: number
-    performanceFee: number
-    netApy: number
   }
-  totalAssets: string
-  totalShares: string
-  fee: number
-  owner: string
-  curator: string
-  lastUpdate: number
+  metadata: {
+    owner: string
+    curator: string
+    fee: number
+    lastUpdate: number
+  }
   operationType?: 'open' | 'close'
   walletBalance?: number
 }
@@ -783,13 +796,12 @@ User ID: ${result.userId}`,
     setPendingPrompt(null)
 
     const balanceToUse = operationType === 'close' ? promptData.vaultBalance : promptData.walletBalance
-    const balanceLabel = operationType === 'close' ? 'shares' : 'USDC'
     const actionText = operationType === 'close' ? 'withdraw' : 'deposit'
 
     const amountPromptLine: TerminalLine = {
       id: `amount-prompt-${Date.now()}`,
       type: 'output',
-      content: `How much would you like to ${actionText}? (Available: ${balanceToUse} ${balanceLabel})`,
+      content: `How much would you like to ${actionText}?`,
       timestamp: new Date(),
     }
 
@@ -816,7 +828,7 @@ User ID: ${result.userId}`,
     console.log(
       '[FRONTEND] Selected vault:',
       selectedVault.name,
-      selectedVault.address,
+      selectedVault.marketId.address,
     )
 
     try {
@@ -824,25 +836,21 @@ User ID: ${result.userId}`,
       console.log('vault', vault)
 
       const nameValue = vault.name
-      const netApyValue = `${(vault.apy * 100).toFixed(2)}%`
-      const totalAssetsValue = `$${(parseFloat(vault.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      const feeValue = `${(vault.fee * 100).toFixed(1)}%`
+      const netApyValue = `${(vault.apy.total * 100).toFixed(2)}%`
+      const totalAssetsValue = `$${(parseFloat(vault.supply.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      const feeValue = `${(vault.metadata.fee * 100).toFixed(1)}%`
       const managerValue = 'Gauntlet'
 
-      const nativeApyValue = vault.apyBreakdown
-        ? `${(vault.apyBreakdown.nativeApy * 100).toFixed(2)}%`
-        : 'N/A'
+      const nativeApyValue = `${(vault.apy.native * 100).toFixed(2)}%`
       const usdcRewardsValue =
-        vault.apyBreakdown && vault.apyBreakdown.usdc !== undefined
-          ? `${(vault.apyBreakdown.usdc * 100).toFixed(2)}%`
+        vault.apy.usdc !== undefined
+          ? `${(vault.apy.usdc * 100).toFixed(2)}%`
           : 'N/A'
       const morphoRewardsValue =
-        vault.apyBreakdown && vault.apyBreakdown.morpho !== undefined
-          ? `${(vault.apyBreakdown.morpho * 100).toFixed(2)}%`
+        vault.apy.morpho !== undefined
+          ? `${(vault.apy.morpho * 100).toFixed(2)}%`
           : 'N/A'
-      const feeImpactValue = vault.apyBreakdown
-        ? `${(vault.apyBreakdown.nativeApy * vault.apyBreakdown.performanceFee * 100).toFixed(2)}%`
-        : 'N/A'
+      const feeImpactValue = `${(vault.apy.native * vault.apy.performanceFee * 100).toFixed(2)}%`
 
       const vaultInfoTable = `
 ┌─────────────────────────────────────────────────────────────┐
@@ -888,13 +896,16 @@ User ID: ${result.userId}`,
         selectedWallet!.id,
         await getAuthHeaders(),
       )
+      const assetAddress =
+        selectedVault.asset.address[selectedVault.marketId.chainId] ||
+        Object.values(selectedVault.asset.address)[0]
+
       const chainToken = walletBalanceResult.balance
         .flatMap((t) => t.chainBalances.map((cb) => ({ ...cb })))
         .find(
           (cb) =>
-            cb.chainId === selectedVault.chainId &&
-            (cb.tokenAddress || '').toLowerCase() ===
-              (selectedVault.asset || '').toLowerCase(),
+            cb.chainId === selectedVault.marketId.chainId &&
+            (cb.tokenAddress || '').toLowerCase() === assetAddress.toLowerCase(),
         )
 
       const usdcBalance = chainToken
@@ -907,10 +918,12 @@ User ID: ${result.userId}`,
       const vaultToken = walletBalanceResult.balance.find(
         (token) =>
           token.symbol === selectedVault.name &&
-          token.chainBalances.some((cb) => cb.chainId === selectedVault.chainId),
+          token.chainBalances.some(
+            (cb) => cb.chainId === selectedVault.marketId.chainId,
+          ),
       )
       const vaultChainBalance = vaultToken?.chainBalances.find(
-        (cb) => cb.chainId === selectedVault.chainId,
+        (cb) => cb.chainId === selectedVault.marketId.chainId,
       )
       const vaultShares = vaultChainBalance
         ? parseFloat(vaultChainBalance.formattedBalance)
@@ -924,7 +937,7 @@ User ID: ${result.userId}`,
         const balancesLine: TerminalLine = {
           id: `balances-${Date.now()}`,
           type: 'output',
-          content: `Wallet Balance:\n${walletBalanceText}\n\nVault Position: ${vaultShares} shares`,
+          content: `Wallet Balance:\n${walletBalanceText}\n\nVault Position: ${vaultShares} ${selectedVault.name}`,
           timestamp: new Date(),
         }
         setLines((prev) => [...prev.slice(0, -1), balancesLine])
@@ -1023,7 +1036,7 @@ User ID: ${result.userId}`,
     }
 
     if (amount > relevantBalance) {
-      const balanceUnit = operationType === 'close' ? 'shares' : 'USDC'
+      const balanceUnit = operationType === 'close' ? promptData.selectedVault.name : 'USDC'
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
@@ -1034,7 +1047,8 @@ User ID: ${result.userId}`,
       return
     }
 
-    const amountUnit = operationType === 'close' ? 'shares' : 'USDC'
+    const assetSymbol = promptData.selectedVault.asset.metadata.symbol
+    const amountUnit = operationType === 'close' ? assetSymbol : assetSymbol
     const processingLine: TerminalLine = {
       id: `processing-${Date.now()}`,
       type: 'output',
@@ -1048,21 +1062,26 @@ User ID: ${result.userId}`,
     try {
       console.log(`[FRONTEND] Calling ${operationType === 'close' ? 'closeLendPosition' : 'openLendPosition'} API`)
 
+      const assetAddress =
+        promptData.selectedVault.asset.address[
+          promptData.selectedVault.marketId.chainId
+        ] || (Object.values(promptData.selectedVault.asset.address)[0] as Address)
+
       const result = operationType === 'close'
         ? await verbsApi.closeLendPosition(
             promptData.selectedWallet.id,
             amount,
-            promptData.selectedVault.asset as Address,
-            promptData.selectedVault.chainId,
-            promptData.selectedVault.address as Address,
+            assetAddress as Address,
+            promptData.selectedVault.marketId.chainId,
+            promptData.selectedVault.marketId.address as Address,
             await getAuthHeaders(),
           )
         : await verbsApi.openLendPosition(
             promptData.selectedWallet.id,
             amount,
-            promptData.selectedVault.asset as Address,
-            promptData.selectedVault.chainId,
-            promptData.selectedVault.address as Address,
+            assetAddress as Address,
+            promptData.selectedVault.marketId.chainId,
+            promptData.selectedVault.marketId.address as Address,
             await getAuthHeaders(),
           )
 
@@ -1075,7 +1094,7 @@ User ID: ${result.userId}`,
         id: `lend-success-${Date.now()}`,
         type: 'success',
         content: operationType === 'close'
-          ? `✅ Successfully withdrew ${amount} ${amountUnit} from ${promptData.selectedVault.name}!\n\nVault:  ${promptData.selectedVault.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`
+          ? `✅ Successfully withdrew ${amount} ${amountUnit}!\n\nVault:  ${promptData.selectedVault.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`
           : `✅ Successfully lent ${amount} ${amountUnit} to ${promptData.selectedVault.name}!\n\nVault:  ${promptData.selectedVault.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`,
         timestamp: new Date(),
       }
@@ -1425,7 +1444,7 @@ User ID: ${result.userId}`,
       const marketOptions = result.markets
         .map(
           (vault, index) =>
-            `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
+            `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy.total * 100).toFixed(2)}% APY`,
         )
         .join('\n')
 
@@ -1872,7 +1891,7 @@ User ID: ${result.userId}`,
       const marketOptions = vaults
         .map(
           (vault, index) =>
-            `${index === selectedVaultIndex ? '> ' : '  '}${vault.name} - ${(vault.apy * 100).toFixed(2)}% APY`,
+            `${index === selectedVaultIndex ? '> ' : '  '}${vault.name} - ${(vault.apy.total * 100).toFixed(2)}% APY`,
         )
         .join('\n')
 

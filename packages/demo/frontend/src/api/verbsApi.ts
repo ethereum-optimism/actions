@@ -71,26 +71,39 @@ class VerbsApiClient {
 
   async getMarkets(headers: HeadersInit = {}): Promise<{
     markets: Array<{
-      chainId: number
-      address: string
+      marketId: {
+        chainId: number
+        address: string
+      }
       name: string
-      apy: number
-      asset: string
-      apyBreakdown: {
-        nativeApy: number
-        totalRewardsApr: number
+      asset: {
+        address: Record<number, string>
+        metadata: {
+          symbol: string
+          name: string
+          decimals: number
+        }
+        type: string
+      }
+      supply: {
+        totalAssets: string
+        totalShares: string
+      }
+      apy: {
+        total: number
+        native: number
+        totalRewards: number
+        performanceFee: number
         usdc?: number
         morpho?: number
         other?: number
-        performanceFee: number
-        netApy: number
       }
-      totalAssets: string
-      totalShares: string
-      fee: number
-      owner: string
-      curator: string
-      lastUpdate: number
+      metadata: {
+        owner: string
+        curator: string
+        fee: number
+        lastUpdate: number
+      }
     }>
   }> {
     return this.request('/lend/markets', {

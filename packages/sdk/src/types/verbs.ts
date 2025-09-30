@@ -1,7 +1,7 @@
 import type { ChainConfig } from '@/types/chain.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
-import type { LendConfig } from './lend.js'
+import type { LendConfig } from './lend/index.js'
 
 /**
  * Network configuration for lending providers

@@ -11,7 +11,11 @@ import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendConfig, LendProvider, TransactionData } from '@/types/lend.js'
+import type {
+  LendConfig,
+  LendProvider,
+  TransactionData,
+} from '@/types/lend/index.js'
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
 
 vi.mock('viem/account-abstraction', () => ({

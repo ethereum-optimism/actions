@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider, TransactionData } from '@/types/lend.js'
+import type { LendProvider, TransactionData } from '@/types/lend/index.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 import { WalletLendNamespace } from './WalletLendNamespace.js'
@@ -41,23 +41,32 @@ describe('WalletLendNamespace', () => {
     const namespace = new WalletLendNamespace(mockProvider, mockWallet)
     const mockMarkets = [
       {
-        chainId: 130,
-        address: getRandomAddress(),
-        name: 'Test Vault',
-        asset: getRandomAddress(),
-        totalAssets: BigInt('1000000'),
-        totalShares: BigInt('1000000'),
-        apy: 0.05,
-        apyBreakdown: {
-          nativeApy: 0.04,
-          totalRewardsApr: 0.01,
-          performanceFee: 0.0,
-          netApy: 0.05,
+        marketId: {
+          chainId: 130 as const,
+          address: getRandomAddress(),
         },
-        owner: getRandomAddress(),
-        curator: getRandomAddress(),
-        fee: 0.1,
-        lastUpdate: Date.now(),
+        name: 'Test Vault',
+        asset: {
+          address: { 130: getRandomAddress() },
+          metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+          type: 'erc20' as const,
+        },
+        supply: {
+          totalAssets: BigInt('1000000'),
+          totalShares: BigInt('1000000'),
+        },
+        apy: {
+          total: 0.05,
+          native: 0.04,
+          totalRewards: 0.01,
+          performanceFee: 0.0,
+        },
+        metadata: {
+          owner: getRandomAddress(),
+          curator: getRandomAddress(),
+          fee: 0.1,
+          lastUpdate: Date.now(),
+        },
       },
     ]
 
