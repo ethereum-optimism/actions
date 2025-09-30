@@ -1,5 +1,4 @@
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
-import { type Address } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
