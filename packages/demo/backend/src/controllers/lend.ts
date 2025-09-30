@@ -137,25 +137,8 @@ export class LendController {
    * POST - Open a lending position
    */
   async openPosition(c: Context) {
-    return this.handlePositionOperation(c, OpenPositionRequestSchema, 'open')
-  }
-
-  /**
-   * POST - Close a lending position
-   */
-  async closePosition(c: Context) {
-    return this.handlePositionOperation(c, ClosePositionRequestSchema, 'close')
-  }
-
-  private async handlePositionOperation(
-    c: Context,
-    schema:
-      | typeof OpenPositionRequestSchema
-      | typeof ClosePositionRequestSchema,
-    operation: 'open' | 'close',
-  ) {
     try {
-      const validation = await validateRequest(c, schema)
+      const validation = await validateRequest(c, OpenPositionRequestSchema)
       if (!validation.success) return validation.response
 
       const {
@@ -163,12 +146,7 @@ export class LendController {
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
-      const positionFn =
-        operation === 'open'
-          ? lendService.openPosition
-          : lendService.closePosition
-
-      const transaction = await positionFn({
+      const transaction = await lendService.openPosition({
         userId: auth?.userId || walletId,
         amount,
         tokenAddress: tokenAddress as Address,
@@ -179,10 +157,45 @@ export class LendController {
 
       return c.json({ transaction })
     } catch (error) {
-      console.error(`Failed to ${operation} position`, error)
+      console.error('Failed to open position', error)
       return c.json(
         {
-          error: `Failed to ${operation} position`,
+          error: 'Failed to open position',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500,
+      )
+    }
+  }
+
+  /**
+   * POST - Close a lending position
+   */
+  async closePosition(c: Context) {
+    try {
+      const validation = await validateRequest(c, ClosePositionRequestSchema)
+      if (!validation.success) return validation.response
+
+      const {
+        body: { walletId, amount, tokenAddress, chainId, vaultAddress },
+      } = validation.data
+      const auth = c.get('auth') as AuthContext | undefined
+
+      const transaction = await lendService.closePosition({
+        userId: auth?.userId || walletId,
+        amount,
+        tokenAddress: tokenAddress as Address,
+        chainId: chainId as SupportedChainId,
+        vaultAddress: vaultAddress as Address,
+        isUserWallet: Boolean(auth?.userId),
+      })
+
+      return c.json({ transaction })
+    } catch (error) {
+      console.error('Failed to close position', error)
+      return c.json(
+        {
+          error: 'Failed to close position',
           message: error instanceof Error ? error.message : 'Unknown error',
         },
         500,
