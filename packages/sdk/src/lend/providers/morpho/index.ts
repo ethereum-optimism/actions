@@ -75,10 +75,10 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         chainId: params.marketId.chainId,
       })
 
-      const depositCallData = MetaMorphoAction.deposit(
-        params.amountWei,
-        params.walletAddress,
-      )
+      // MetaMorphoAction.deposit(assets, receiver)
+      const assets = params.amountWei
+      const receiver = params.walletAddress
+      const depositCallData = MetaMorphoAction.deposit(assets, receiver)
 
       const approvalCallData = encodeFunctionData({
         abi: erc20Abi,
@@ -134,10 +134,13 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
 
       const assetAddress = vaultInfo.asset
 
+      const assets = params.amount
+      const receiver = params.walletAddress
+      const owner = params.walletAddress
       const withdrawCallData = MetaMorphoAction.withdraw(
-        params.amount,
-        params.walletAddress,
-        params.walletAddress,
+        assets,
+        receiver,
+        owner,
       )
 
       const currentTimestamp = Math.floor(Date.now() / 1000)
