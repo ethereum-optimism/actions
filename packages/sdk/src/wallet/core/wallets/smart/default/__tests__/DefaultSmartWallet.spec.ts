@@ -420,6 +420,84 @@ describe('DefaultSmartWallet', () => {
     expect(idx).toBe(3)
   })
 
+  it('removes an EOA signer via removeSigner using looked-up index', async () => {
+    const deploymentAddress = getRandomAddress()
+    const wallet = await createAndInitDefaultSmartWallet({ deploymentAddress })
+
+    const chainId = unichain.id
+    const signer: Address = getRandomAddress()
+
+    const sendBatchSpy = vi.spyOn(wallet, 'sendBatch').mockResolvedValue({
+      success: true,
+    } as unknown as WaitForUserOperationReceiptReturnType)
+
+    const findSignerIndexSpy = vi
+      .spyOn(wallet, 'findSignerIndex')
+      .mockResolvedValue(5)
+
+    const receipt = await wallet.removeSigner(signer, chainId)
+
+    const signerBytes = pad(signer)
+    const expectedData = encodeFunctionData({
+      abi: smartWalletAbi,
+      functionName: 'removeOwnerAtIndex',
+      args: [5n, signerBytes] as const,
+    })
+
+    expect(findSignerIndexSpy).toHaveBeenCalledWith(signer, chainId)
+    expect(sendBatchSpy).toHaveBeenCalledWith(
+      [
+        {
+          to: deploymentAddress,
+          data: expectedData,
+          value: 0n,
+        },
+      ],
+      chainId,
+    )
+    expect(receipt).toEqual({ success: true })
+  })
+
+  it('removes a WebAuthn signer via removeSigner using provided index (skips lookup)', async () => {
+    const deploymentAddress = getRandomAddress()
+    const wallet = await createAndInitDefaultSmartWallet({ deploymentAddress })
+
+    const chainId = unichain.id
+    const publicKey64Bytes: Hex =
+      '0xe7575170745fe55d7a26190c6d5504743496c49498b129d2b3660da3697e81d4daebb2496f89aa4a05f1705e1d5d316153211c198f80d3100b51489bf4963f47'
+    const webAuthnSigner = {
+      type: 'webAuthn',
+      publicKey: publicKey64Bytes,
+    } as unknown as WebAuthnAccount
+
+    const sendBatchSpy = vi.spyOn(wallet, 'sendBatch').mockResolvedValue({
+      success: true,
+    } as unknown as WaitForUserOperationReceiptReturnType)
+
+    const findSignerIndexSpy = vi.spyOn(wallet, 'findSignerIndex')
+
+    const receipt = await wallet.removeSigner(webAuthnSigner, chainId, 9)
+
+    const expectedData = encodeFunctionData({
+      abi: smartWalletAbi,
+      functionName: 'removeOwnerAtIndex',
+      args: [9n, publicKey64Bytes] as const,
+    })
+
+    expect(findSignerIndexSpy).not.toHaveBeenCalled()
+    expect(sendBatchSpy).toHaveBeenCalledWith(
+      [
+        {
+          to: deploymentAddress,
+          data: expectedData,
+          value: 0n,
+        },
+      ],
+      chainId,
+    )
+    expect(receipt).toEqual({ success: true })
+  })
+
   it('should have lend namespace with bound methods', async () => {
     const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress: '0x123',

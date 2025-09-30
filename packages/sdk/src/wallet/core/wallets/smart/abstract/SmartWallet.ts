@@ -16,8 +16,6 @@ export abstract class SmartWallet extends Wallet {
     throw new Error('walletClient is not supported on SmartWallet')
   }
 
-  // TODO: add removeSigner method
-
   /**
    * Send a transaction using this smart wallet
    * @description Executes a transaction through the smart wallet, handling gas sponsorship
@@ -53,6 +51,20 @@ export abstract class SmartWallet extends Wallet {
    * @throws Error if the add operation fails or the owner index cannot be found
    */
   abstract addSigner(signer: Signer, chainId: SupportedChainId): Promise<number>
+
+  /**
+   * Remove a signer from the smart wallet
+   * @param signer - Ethereum address (EOA) or a `WebAuthnAccount` to remove
+   * @param chainId - Target chain on which the smart wallet operates
+   * @param signerIndex - Index of the signer to remove, if not provided, it will be found by
+   * doing a lookup on the smart wallet contract.
+   * @returns Promise resolving to the receipt of the remove operation
+   */
+  abstract removeSigner(
+    signer: Signer,
+    chainId: SupportedChainId,
+    signerIndex?: number,
+  ): Promise<WaitForUserOperationReceiptReturnType>
 
   /**
    * Find the index of a signer in the smart wallet
