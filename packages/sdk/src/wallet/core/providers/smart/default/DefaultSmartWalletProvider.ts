@@ -1,12 +1,14 @@
 import type { Address, Hex, LocalAccount } from 'viem'
 import { keccak256, pad, slice, toHex } from 'viem'
-import { type WebAuthnAccount } from 'viem/account-abstraction'
 
-import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
-import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendConfig, LendProvider } from '@/types/lend.js'
 import { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
+import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
+import {
+  smartWalletFactoryAbi,
+  smartWalletFactoryAddress,
+} from '@/wallet/core/wallets/smart/default/constants/index.js'
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
 
 /**
@@ -56,7 +58,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    * @returns Promise resolving to a new SmartWallet instance
    */
   async createWallet(params: {
-    owners: Array<Address | WebAuthnAccount>
+    owners: Signer[]
     signer: LocalAccount
     nonce?: bigint
   }): Promise<DefaultSmartWallet> {
@@ -79,10 +81,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    * @param params.nonce - Nonce for address generation (defaults to 0)
    * @returns Promise resolving to the predicted wallet address
    */
-  async getWalletAddress(params: {
-    owners: Array<Address | WebAuthnAccount>
-    nonce?: bigint
-  }) {
+  async getWalletAddress(params: { owners: Signer[]; nonce?: bigint }) {
     const { owners, nonce = 0n } = params
     const owners_bytes = owners.map((owner) => {
       if (typeof owner === 'string') return pad(owner)
