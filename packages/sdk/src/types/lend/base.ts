@@ -117,8 +117,7 @@ export interface LendTransactionResult {
 }
 
 /**
- * @deprecated Use LendTransactionResult instead. Will be removed in future version.
- * Legacy lending transaction type - kept for backwards compatibility
+ * Legacy lending transaction type
  */
 export interface LendTransaction {
   hash?: string

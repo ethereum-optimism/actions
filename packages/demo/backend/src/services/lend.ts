@@ -1,57 +1,21 @@
-import {
-  type LendMarket,
-  SUPPORTED_TOKENS,
-  type SupportedChainId,
+import type {
+  LendMarket,
+  LendMarketPosition,
+  SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
+import { SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
 import type { Address } from 'viem'
+import { formatUnits } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
+import type {
+  FormattedMarketResponse,
+  PositionParams,
+  PositionResponse,
+} from '../types/index.js'
 import { getWallet } from './wallet.js'
-
-interface MarketBalanceResult {
-  balance: bigint
-  balanceFormatted: string
-  shares: bigint
-  sharesFormatted: string
-}
-
-interface FormattedMarketResponse {
-  marketId: {
-    chainId: number
-    address: Address
-  }
-  name: string
-  asset: {
-    address: Partial<Record<SupportedChainId, Address>>
-    metadata: {
-      symbol: string
-      name: string
-      decimals: number
-    }
-    type: string
-  }
-  supply: {
-    totalAssets: string
-    totalShares: string
-  }
-  apy: {
-    total: number
-    native: number
-    totalRewards: number
-    performanceFee: number
-    usdc?: number
-    morpho?: number
-    other?: number
-  }
-  metadata: {
-    owner: Address
-    curator: Address
-    fee: number
-    lastUpdate: number
-  }
-}
 
 export async function getBlockExplorerUrl(
   chainId: SupportedChainId,
@@ -86,7 +50,7 @@ export async function getPosition(
   vaultAddress: Address,
   walletId: string,
   chainId: SupportedChainId,
-): Promise<MarketBalanceResult> {
+): Promise<LendMarketPosition> {
   const wallet = await getWallet(walletId)
 
   if (!wallet) {
@@ -106,8 +70,11 @@ export async function formatMarketResponse(
     name: vault.name,
     asset: vault.asset,
     supply: {
-      totalAssets: vault.supply.totalAssets.toString(),
-      totalShares: vault.supply.totalShares.toString(),
+      totalAssets: formatUnits(
+        vault.supply.totalAssets,
+        vault.asset.metadata.decimals,
+      ),
+      totalShares: formatUnits(vault.supply.totalShares, 18),
     },
     apy: vault.apy,
     metadata: vault.metadata,
@@ -115,7 +82,7 @@ export async function formatMarketResponse(
 }
 
 export async function formatMarketBalanceResponse(
-  balance: MarketBalanceResult,
+  balance: LendMarketPosition,
 ): Promise<{
   balance: string
   balanceFormatted: string
@@ -123,29 +90,11 @@ export async function formatMarketBalanceResponse(
   sharesFormatted: string
 }> {
   return {
-    balance: balance.balance.toString(),
+    balance: balance.balanceFormatted,
     balanceFormatted: balance.balanceFormatted,
-    shares: balance.shares.toString(),
+    shares: balance.sharesFormatted,
     sharesFormatted: balance.sharesFormatted,
   }
-}
-
-interface PositionParams {
-  userId: string
-  amount: number
-  tokenAddress: Address
-  chainId: SupportedChainId
-  vaultAddress: Address
-  isUserWallet?: boolean
-}
-
-interface PositionResponse {
-  hash: string
-  blockExplorerUrl: string
-  amount: number
-  tokenAddress: Address
-  chainId: number
-  vaultAddress: Address
 }
 
 async function executePosition(
@@ -163,7 +112,7 @@ async function executePosition(
   }
 
   const asset = SUPPORTED_TOKENS.find(
-    (token) => token.address[chainId] === tokenAddress,
+    (token) => token.address[chainId as SupportedChainId] === tokenAddress,
   )
   if (!asset) {
     throw new Error(`Asset not found for token address: ${tokenAddress}`)

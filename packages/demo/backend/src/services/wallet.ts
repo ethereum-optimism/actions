@@ -1,6 +1,5 @@
 import type {
   SmartWallet,
-  SupportedChainId,
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/verbs-sdk'

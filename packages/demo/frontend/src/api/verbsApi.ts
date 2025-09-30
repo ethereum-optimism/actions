@@ -2,8 +2,14 @@ import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
 } from '@eth-optimism/verbs-service'
-import { env } from '../envVars'
 import type { Address } from 'viem'
+
+import { env } from '../envVars'
+import type {
+  MarketResponse,
+  PositionResponse,
+  TransactionResponse,
+} from '../types/index.js'
 
 class VerbsApiError extends Error {
   status?: number
@@ -69,43 +75,9 @@ class VerbsApiClient {
     })
   }
 
-  async getMarkets(headers: HeadersInit = {}): Promise<{
-    markets: Array<{
-      marketId: {
-        chainId: number
-        address: string
-      }
-      name: string
-      asset: {
-        address: Record<number, string>
-        metadata: {
-          symbol: string
-          name: string
-          decimals: number
-        }
-        type: string
-      }
-      supply: {
-        totalAssets: string
-        totalShares: string
-      }
-      apy: {
-        total: number
-        native: number
-        totalRewards: number
-        performanceFee: number
-        usdc?: number
-        morpho?: number
-        other?: number
-      }
-      metadata: {
-        owner: string
-        curator: string
-        fee: number
-        lastUpdate: number
-      }
-    }>
-  }> {
+  async getMarkets(
+    headers: HeadersInit = {},
+  ): Promise<{ markets: MarketResponse[] }> {
     return this.request('/lend/markets', {
       method: 'GET',
       headers,
@@ -203,12 +175,7 @@ class VerbsApiClient {
     vaultAddress: string,
     chainId: number,
     walletId: string,
-  ): Promise<{
-    balance: string
-    balanceFormatted: string
-    shares: string
-    sharesFormatted: string
-  }> {
+  ): Promise<PositionResponse> {
     return this.request(`/lend/${vaultAddress}/${chainId}/position/${walletId}`, {
       method: 'GET',
     })
@@ -221,16 +188,7 @@ class VerbsApiClient {
     chainId: number,
     vaultAddress: Address,
     headers: HeadersInit = {},
-  ): Promise<{
-    transaction: {
-      hash: string
-      blockExplorerUrl: string
-      amount: number
-      tokenAddress: string
-      chainId: number
-      vaultAddress: string
-    }
-  }> {
+  ): Promise<{ transaction: TransactionResponse }> {
     return this.request(`/lend/${vaultAddress}/${chainId}/open`, {
       method: 'POST',
       body: JSON.stringify({ walletId, amount, tokenAddress }),
@@ -245,16 +203,7 @@ class VerbsApiClient {
     chainId: number,
     vaultAddress: Address,
     headers: HeadersInit = {},
-  ): Promise<{
-    transaction: {
-      hash: string
-      blockExplorerUrl: string
-      amount: number
-      tokenAddress: string
-      chainId: number
-      vaultAddress: string
-    }
-  }> {
+  ): Promise<{ transaction: TransactionResponse }> {
     return this.request(`/lend/${vaultAddress}/${chainId}/close`, {
       method: 'POST',
       body: JSON.stringify({ walletId, amount, tokenAddress }),
