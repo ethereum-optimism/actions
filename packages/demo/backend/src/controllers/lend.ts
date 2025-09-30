@@ -108,9 +108,9 @@ export class LendController {
   }
 
   /**
-   * GET - Get market balance for a specific wallet
+   * GET - Get position for a specific wallet
    */
-  async getMarketBalance(c: Context) {
+  async getPosition(c: Context) {
     try {
       const validation = await validateRequest(c, MarketBalanceParamsSchema)
       if (!validation.success) return validation.response
@@ -127,13 +127,7 @@ export class LendController {
         await lendService.formatMarketBalanceResponse(balance)
       return c.json(formattedBalance)
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get market balance',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return this.handleError(c, 'get position', error)
     }
   }
 

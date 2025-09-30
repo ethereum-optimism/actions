@@ -57,8 +57,8 @@ router.post('/wallet/send', walletController.sendTokens)
 router.get('/lend/markets', lendController.getMarkets)
 router.get('/lend/market/:chainId/:marketId', lendController.getMarket)
 router.get(
-  '/lend/market/:vaultAddress/balance/:walletId/:chainId',
-  lendController.getMarketBalance,
+  '/lend/:vaultAddress/:chainId/position/:walletId',
+  lendController.getPosition,
 )
 router.post(
   '/lend/:marketId/:chainId/open',

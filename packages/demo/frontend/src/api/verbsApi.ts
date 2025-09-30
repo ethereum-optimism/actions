@@ -186,17 +186,17 @@ class VerbsApiClient {
     })
   }
 
-  async getMarketBalance(
+  async getPosition(
     vaultAddress: string,
-    walletId: string,
     chainId: number,
+    walletId: string,
   ): Promise<{
     balance: string
     balanceFormatted: string
     shares: string
     sharesFormatted: string
   }> {
-    return this.request(`/lend/market/${vaultAddress}/balance/${walletId}/${chainId}`, {
+    return this.request(`/lend/${vaultAddress}/${chainId}/position/${walletId}`, {
       method: 'GET',
     })
   }
