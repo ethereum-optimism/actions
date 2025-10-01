@@ -47,7 +47,7 @@ export async function getMarket(
 }
 
 export async function getPosition(
-  vaultAddress: Address,
+  marketAddress: Address,
   walletId: string,
   chainId: SupportedChainId,
 ): Promise<LendMarketPosition> {
@@ -58,26 +58,26 @@ export async function getPosition(
   }
 
   return wallet.lend!.getPosition({
-    marketId: { address: vaultAddress, chainId },
+    marketId: { address: marketAddress, chainId },
   })
 }
 
 export async function formatMarketResponse(
-  vault: LendMarket,
+  market: LendMarket,
 ): Promise<FormattedMarketResponse> {
   return {
-    marketId: vault.marketId,
-    name: vault.name,
-    asset: vault.asset,
+    marketId: market.marketId,
+    name: market.name,
+    asset: market.asset,
     supply: {
       totalAssets: formatUnits(
-        vault.supply.totalAssets,
-        vault.asset.metadata.decimals,
+        market.supply.totalAssets,
+        market.asset.metadata.decimals,
       ),
-      totalShares: formatUnits(vault.supply.totalShares, 18),
+      totalShares: formatUnits(market.supply.totalShares, 18),
     },
-    apy: vault.apy,
-    metadata: vault.metadata,
+    apy: market.apy,
+    metadata: market.metadata,
   }
 }
 
@@ -101,7 +101,7 @@ async function executePosition(
   params: PositionParams,
   operation: 'open' | 'close',
 ): Promise<PositionResponse> {
-  const { userId, amount, tokenAddress, chainId, vaultAddress, isUserWallet } =
+  const { userId, amount, tokenAddress, chainId, marketAddress, isUserWallet } =
     params
 
   const wallet = await getWallet(userId, isUserWallet)
@@ -118,7 +118,7 @@ async function executePosition(
     throw new Error(`Asset not found for token address: ${tokenAddress}`)
   }
 
-  const marketId = { address: vaultAddress, chainId }
+  const marketId = { address: marketAddress, chainId }
   const positionParams = { amount, asset, marketId }
 
   const result =
@@ -135,7 +135,7 @@ async function executePosition(
     amount,
     tokenAddress,
     chainId,
-    vaultAddress,
+    marketAddress,
   }
 }
 

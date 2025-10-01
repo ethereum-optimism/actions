@@ -137,14 +137,14 @@ describe('Lend Service', () => {
       const amount = 500
       const chainId = 130
       const tokenAddress = '0x078d782b760474a361dda0af3839290b0ef57ad6' as const
-      const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as const
+      const marketAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as const
 
       const result = await lendService.closePosition({
         userId: walletId,
         amount,
         tokenAddress,
         chainId,
-        vaultAddress,
+        marketAddress,
         isUserWallet: false,
       })
 
@@ -157,7 +157,7 @@ describe('Lend Service', () => {
           }),
         }),
         marketId: {
-          address: vaultAddress,
+          address: marketAddress,
           chainId,
         },
       })
@@ -173,7 +173,7 @@ describe('Lend Service', () => {
           amount: 500,
           tokenAddress: '0x078d782b760474a361dda0af3839290b0ef57ad6',
           chainId: 130,
-          vaultAddress: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
+          marketAddress: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
           isUserWallet: false,
         }),
       ).rejects.toThrow('Wallet not found')

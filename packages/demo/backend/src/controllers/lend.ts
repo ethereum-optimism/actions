@@ -147,7 +147,7 @@ export class LendController {
         amount,
         tokenAddress: tokenAddress as Address,
         chainId: chainId as SupportedChainId,
-        vaultAddress: marketId as Address,
+        marketAddress: marketId as Address,
         isUserWallet: Boolean(auth?.userId),
       })
 
@@ -175,7 +175,7 @@ export class LendController {
         amount,
         tokenAddress: tokenAddress as Address,
         chainId: chainId as SupportedChainId,
-        vaultAddress: marketId as Address,
+        marketAddress: marketId as Address,
         isUserWallet: Boolean(auth?.userId),
       })
 

@@ -31,7 +31,7 @@ export interface PositionParams {
   amount: number
   tokenAddress: Address
   chainId: SupportedChainId
-  vaultAddress: Address
+  marketAddress: Address
   isUserWallet?: boolean
 }
 
@@ -45,5 +45,5 @@ export interface PositionResponse {
   amount: number
   tokenAddress: Address
   chainId: number
-  vaultAddress: Address
+  marketAddress: Address
 }
