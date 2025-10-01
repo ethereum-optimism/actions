@@ -3,10 +3,12 @@
  * @description Types matching backend API responses with serialized values
  */
 
+import type { Address } from 'viem'
+
 export interface MarketResponse {
   marketId: {
     chainId: number
-    address: string
+    address: Address
   }
   name: string
   asset: {
@@ -52,6 +54,8 @@ export interface TransactionResponse {
   blockExplorerUrl: string
   amount: number
   tokenAddress: string
-  chainId: number
-  marketAddress: string
+  marketId: {
+    chainId: number
+    address: Address
+  }
 }

@@ -101,8 +101,7 @@ async function executePosition(
   params: PositionParams,
   operation: 'open' | 'close',
 ): Promise<PositionResponse> {
-  const { userId, amount, tokenAddress, chainId, marketAddress, isUserWallet } =
-    params
+  const { userId, amount, tokenAddress, marketId, isUserWallet } = params
 
   const wallet = await getWallet(userId, isUserWallet)
   if (!wallet) {
@@ -112,13 +111,13 @@ async function executePosition(
   }
 
   const asset = SUPPORTED_TOKENS.find(
-    (token) => token.address[chainId as SupportedChainId] === tokenAddress,
+    (token) =>
+      token.address[marketId.chainId as SupportedChainId] === tokenAddress,
   )
   if (!asset) {
     throw new Error(`Asset not found for token address: ${tokenAddress}`)
   }
 
-  const marketId = { address: marketAddress, chainId }
   const positionParams = { amount, asset, marketId }
 
   const result =
@@ -126,7 +125,7 @@ async function executePosition(
       ? await wallet.lend!.openPosition(positionParams)
       : await wallet.lend!.closePosition(positionParams)
 
-  const blockExplorerUrl = await getBlockExplorerUrl(chainId)
+  const blockExplorerUrl = await getBlockExplorerUrl(marketId.chainId)
 
   return {
     hash: result.receipt.transactionHash,
@@ -134,8 +133,7 @@ async function executePosition(
     blockExplorerUrl,
     amount,
     tokenAddress,
-    chainId,
-    marketAddress,
+    marketId,
   }
 }
 

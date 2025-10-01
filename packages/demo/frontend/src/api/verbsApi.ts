@@ -140,12 +140,11 @@ class VerbsApiClient {
   }
 
   async getPosition(
-    marketAddress: string,
-    chainId: number,
+    marketId: { chainId: number; address: Address },
     walletId: string,
   ): Promise<PositionResponse> {
     return this.request(
-      `/lend/market/${chainId}/${marketAddress}/position/${walletId}`,
+      `/lend/market/${marketId.chainId}/${marketId.address}/position/${walletId}`,
       {
         method: 'GET',
       },
@@ -156,8 +155,7 @@ class VerbsApiClient {
     walletId: string,
     amount: number,
     tokenAddress: Address,
-    chainId: number,
-    marketAddress: Address,
+    marketId: { chainId: number; address: Address },
     headers: HeadersInit = {},
   ): Promise<{ transaction: TransactionResponse }> {
     return this.request('/lend/position/open', {
@@ -166,8 +164,7 @@ class VerbsApiClient {
         walletId,
         amount,
         tokenAddress,
-        marketId: marketAddress,
-        chainId,
+        marketId,
       }),
       headers,
     })
@@ -177,8 +174,7 @@ class VerbsApiClient {
     walletId: string,
     amount: number,
     tokenAddress: Address,
-    chainId: number,
-    marketAddress: Address,
+    marketId: { chainId: number; address: Address },
     headers: HeadersInit = {},
   ): Promise<{ transaction: TransactionResponse }> {
     return this.request('/lend/position/close', {
@@ -187,8 +183,7 @@ class VerbsApiClient {
         walletId,
         amount,
         tokenAddress,
-        marketId: marketAddress,
-        chainId,
+        marketId,
       }),
       headers,
     })

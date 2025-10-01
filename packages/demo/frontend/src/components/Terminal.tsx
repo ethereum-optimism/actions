@@ -33,7 +33,7 @@ interface TerminalLine {
 interface VaultData {
   marketId: {
     chainId: number
-    address: string
+    address: Address
   }
   name: string
   asset: {
@@ -1072,16 +1072,14 @@ User ID: ${result.userId}`,
             promptData.selectedWallet.id,
             amount,
             assetAddress as Address,
-            promptData.selectedVault.marketId.chainId,
-            promptData.selectedVault.marketId.address as Address,
+            promptData.selectedVault.marketId,
             await getAuthHeaders(),
           )
         : await verbsApi.openLendPosition(
             promptData.selectedWallet.id,
             amount,
             assetAddress as Address,
-            promptData.selectedVault.marketId.chainId,
-            promptData.selectedVault.marketId.address as Address,
+            promptData.selectedVault.marketId,
             await getAuthHeaders(),
           )
 

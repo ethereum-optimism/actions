@@ -15,10 +15,12 @@ const OpenPositionRequestSchema = z.object({
     tokenAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
-    marketId: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
-    chainId: z.number().positive('chainId must be positive'),
+    marketId: z.object({
+      address: z
+        .string()
+        .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
+      chainId: z.number().positive('chainId must be positive'),
+    }),
   }),
 })
 
@@ -29,10 +31,12 @@ const ClosePositionRequestSchema = z.object({
     tokenAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
-    marketId: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
-    chainId: z.number().positive('chainId must be positive'),
+    marketId: z.object({
+      address: z
+        .string()
+        .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
+      chainId: z.number().positive('chainId must be positive'),
+    }),
   }),
 })
 
@@ -138,7 +142,7 @@ export class LendController {
       // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
 
       const {
-        body: { walletId, amount, tokenAddress, marketId, chainId },
+        body: { walletId, amount, tokenAddress, marketId },
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
@@ -146,8 +150,10 @@ export class LendController {
         userId: auth?.userId || walletId,
         amount,
         tokenAddress: tokenAddress as Address,
-        chainId: chainId as SupportedChainId,
-        marketAddress: marketId as Address,
+        marketId: {
+          address: marketId.address as Address,
+          chainId: marketId.chainId as SupportedChainId,
+        },
         isUserWallet: Boolean(auth?.userId),
       })
 
@@ -166,7 +172,7 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        body: { walletId, amount, tokenAddress, marketId, chainId },
+        body: { walletId, amount, tokenAddress, marketId },
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
@@ -174,8 +180,10 @@ export class LendController {
         userId: auth?.userId || walletId,
         amount,
         tokenAddress: tokenAddress as Address,
-        chainId: chainId as SupportedChainId,
-        marketAddress: marketId as Address,
+        marketId: {
+          address: marketId.address as Address,
+          chainId: marketId.chainId as SupportedChainId,
+        },
         isUserWallet: Boolean(auth?.userId),
       })
 

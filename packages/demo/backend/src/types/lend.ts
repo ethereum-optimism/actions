@@ -3,7 +3,6 @@ import type {
   Asset,
   LendMarketId,
   LendMarketMetadata,
-  SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
 import type { Address } from 'viem'
 
@@ -30,8 +29,7 @@ export interface PositionParams {
   userId: string
   amount: number
   tokenAddress: Address
-  chainId: SupportedChainId
-  marketAddress: Address
+  marketId: LendMarketId
   isUserWallet?: boolean
 }
 
@@ -44,6 +42,5 @@ export interface PositionResponse {
   blockExplorerUrl: string
   amount: number
   tokenAddress: Address
-  chainId: number
-  marketAddress: Address
+  marketId: LendMarketId
 }
