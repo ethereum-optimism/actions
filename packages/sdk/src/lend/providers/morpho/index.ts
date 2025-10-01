@@ -75,7 +75,6 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         chainId: params.marketId.chainId,
       })
 
-      // MetaMorphoAction.deposit(assets, receiver)
       const assets = params.amountWei
       const receiver = params.walletAddress
       const depositCallData = MetaMorphoAction.deposit(assets, receiver)
