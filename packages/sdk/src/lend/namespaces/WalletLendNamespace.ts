@@ -1,5 +1,3 @@
-import type { Hash } from 'viem'
-
 import type { LendProvider } from '@/lend/provider.js'
 import type {
   BaseLendConfig,
@@ -7,6 +5,7 @@ import type {
   GetPositionParams,
   LendMarketPosition,
   LendOpenPositionParams,
+  LendTransactionReceipt,
 } from '@/types/lend.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
@@ -42,7 +41,9 @@ export class WalletLendNamespace<
    * Open a lending position
    * @description Signs and sends a lend transaction from the wallet for the given amount and asset
    */
-  async openPosition(params: LendOpenPositionParams): Promise<Hash> {
+  async openPosition(
+    params: LendOpenPositionParams,
+  ): Promise<LendTransactionReceipt> {
     const lendOptions = {
       ...params.options,
       receiver: this.wallet.address,
@@ -75,10 +76,15 @@ export class WalletLendNamespace<
       )
     }
 
-    return await this.wallet.send(
+    const userOperationReceipt = await this.wallet.send(
       transactionData.deposit,
       params.marketId.chainId,
     )
+
+    return {
+      receipt: userOperationReceipt.receipt,
+      userOpHash: userOperationReceipt.userOpHash,
+    }
   }
 
   /**
@@ -101,7 +107,9 @@ export class WalletLendNamespace<
    * @param closePositionParams - Position closing parameters
    * @returns Promise resolving to transaction hash
    */
-  async closePosition(params: ClosePositionParams): Promise<Hash> {
+  async closePosition(
+    params: ClosePositionParams,
+  ): Promise<LendTransactionReceipt> {
     const closeOptions = {
       ...params.options,
       receiver: this.wallet.address,
@@ -134,10 +142,15 @@ export class WalletLendNamespace<
       )
     }
 
-    return await this.wallet.send(
+    const userOperationReceipt = await this.wallet.send(
       transactionData.deposit,
       params.marketId.chainId,
     )
+
+    return {
+      receipt: userOperationReceipt.receipt,
+      userOpHash: userOperationReceipt.userOpHash,
+    }
   }
 
   /**

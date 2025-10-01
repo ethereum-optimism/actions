@@ -1,10 +1,11 @@
 import {
   type LendMarket,
+  type LendTransactionReceipt,
   SUPPORTED_TOKENS,
   type SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
-import type { Address, Hash } from 'viem'
+import type { Address } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
@@ -146,7 +147,7 @@ export async function openPosition({
   marketId,
   options,
   isUserWallet = false,
-}: OpenPositionParams): Promise<Hash> {
+}: OpenPositionParams): Promise<LendTransactionReceipt> {
   // Get wallet based on identifier type
   const wallet = await getWallet(userId, isUserWallet)
 
