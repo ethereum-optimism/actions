@@ -22,6 +22,12 @@ export type CreateSmartWalletMockOptions = {
     signer: Address | { type: 'webAuthn'; publicKey: Hex },
     chainId: SupportedChainId,
   ) => Promise<number>
+  /** Custom implementation for removeSigner */
+  removeSignerImpl?: (
+    signer: Address | { type: 'webAuthn'; publicKey: Hex },
+    chainId: SupportedChainId,
+    signerIndex?: number,
+  ) => Promise<WaitForUserOperationReceiptReturnType>
   /** Custom implementation for send */
   sendImpl?: (
     transactionData: TransactionData,
@@ -82,6 +88,18 @@ export function createMock(
     },
   )
 
+  const removeSigner = vi.fn(
+    async (
+      signer: Address | { type: 'webAuthn'; publicKey: Hex },
+      chainId: SupportedChainId,
+      signerIndex?: number,
+    ): Promise<WaitForUserOperationReceiptReturnType> => {
+      if (options.removeSignerImpl)
+        return options.removeSignerImpl(signer, chainId, signerIndex)
+      return defaultReceipt
+    },
+  )
+
   const send = vi.fn(
     async (
       transactionData: TransactionData,
@@ -132,6 +150,7 @@ export function createMock(
     },
     addSigner,
     findSignerIndex,
+    removeSigner,
     walletClient,
     send,
     sendBatch,

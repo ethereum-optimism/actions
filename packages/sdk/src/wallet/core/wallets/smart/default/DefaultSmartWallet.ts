@@ -308,6 +308,53 @@ export class DefaultSmartWallet extends SmartWallet {
   }
 
   /**
+   * Remove an existing signer from the smart wallet
+   * @description Removes a signer (EOA address or WebAuthn public key) from the
+   * smart wallet contract. If `signerIndex` is not provided, the method resolves
+   * it via {@link findSignerIndex}. The removal is executed via {@link sendBatch}
+   * by calling the contract function `removeOwnerAtIndex(index, signerBytes)`.
+   * Returns the ERC-4337 UserOperation receipt on success.
+   * @param signer - Signer to remove: EOA address or `WebAuthnAccount`
+   * @param chainId - Target chain on which the smart wallet operates
+   * @param signerIndex - Optional known on-chain index of the signer (skips lookup when provided)
+   * @returns Promise resolving to the UserOperation receipt for the removal
+   * @throws Error if the signer index cannot be found or the removal operation fails
+   */
+  async removeSigner(
+    signer: Signer,
+    chainId: SupportedChainId,
+    signerIndex?: number,
+  ): Promise<WaitForUserOperationReceiptReturnType> {
+    const resolvedSignerIndex =
+      signerIndex ?? (await this.findSignerIndex(signer, chainId))
+    if (resolvedSignerIndex === -1) {
+      throw new Error('failed to find signer index')
+    }
+    const signerBytes = formatPublicKey(signer)
+    const calls = [
+      {
+        to: this.address,
+        data: encodeFunctionData({
+          abi: smartWalletAbi,
+          functionName: 'removeOwnerAtIndex',
+          args: [BigInt(resolvedSignerIndex), signerBytes] as const,
+        }),
+        value: 0n,
+      },
+    ]
+    const userOperationReceipt = await this.sendBatch(calls, chainId)
+
+    if (!userOperationReceipt.success) {
+      throw new TransactionConfirmedButRevertedError(
+        'remove signer call failed',
+        userOperationReceipt.receipt,
+      )
+    }
+
+    return userOperationReceipt
+  }
+
+  /**
    * Find the index of a signer in the smart wallet
    * @param signer - Ethereum address (EOA) or a `WebAuthnAccount` to find
    * @param chainId - Target chain on which the smart wallet operates
