@@ -20,6 +20,10 @@ const mockVerbs = {
         address,
       },
     })),
+    createSigner: vi.fn(({ address }: { address: string }) => ({
+      address,
+      type: 'local',
+    })),
   },
 }
 const mockPrivyClient = {
@@ -65,6 +69,7 @@ describe('Wallet Service', () => {
       expect(mockVerbs.wallet.createSmartWallet).toHaveBeenCalledWith({
         owners: ['0x1234567890123456789012345678901234567890'],
         signer: {
+          type: 'local',
           address: '0x1234567890123456789012345678901234567890',
         },
       })
@@ -105,6 +110,7 @@ describe('Wallet Service', () => {
 
       expect(mockVerbs.wallet.getSmartWallet).toHaveBeenCalledWith({
         signer: {
+          type: 'local',
           address: '0x1234567890123456789012345678901234567890',
         },
         deploymentOwners: ['0x1234567890123456789012345678901234567890'],
@@ -263,6 +269,7 @@ describe('Wallet Service', () => {
       expect(mockVerbs.wallet.getSmartWallet).toHaveBeenCalledWith({
         signer: {
           address: '0x1234567890123456789012345678901234567890',
+          type: 'local',
         },
         deploymentOwners: ['0x1234567890123456789012345678901234567890'],
       })
@@ -308,6 +315,7 @@ describe('Wallet Service', () => {
       expect(mockVerbs.wallet.getSmartWallet).toHaveBeenCalledWith({
         signer: {
           address: mockWallet.address,
+          type: 'local',
         },
         deploymentOwners: [mockWallet.address],
       })

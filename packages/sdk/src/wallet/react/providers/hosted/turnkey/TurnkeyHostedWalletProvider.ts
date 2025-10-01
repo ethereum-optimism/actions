@@ -1,8 +1,11 @@
+import type { LocalAccount } from 'viem'
+
 import type { ChainManager } from '@/services/ChainManager.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { ReactToVerbsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
 import { TurnkeyWallet } from '@/wallet/react/wallets/hosted/turnkey/TurnkeyWallet.js'
+import { createSigner } from '@/wallet/react/wallets/hosted/turnkey/utils/createSigner.js'
 
 /**
  * Turnkey wallet provider implementation
@@ -47,5 +50,24 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       ethereumAddress,
       chainManager: this.chainManager,
     })
+  }
+
+  /**
+   * Create a viem LocalAccount signer from Turnkey credentials
+   * @description Produces a signing account backed by Turnkey without wrapping
+   * it in a full Verbs wallet. This is useful when you need to pass the signer
+   * into a Verbs smart wallet as an owner, for lower-level viem operations, or
+   * for passing to other libraries that accept a viem `LocalAccount`.
+   * @param params - Turnkey configuration for the signer
+   * @param params.client - Turnkey client instance
+   * @param params.organizationId - Turnkey organization ID that owns the signing key
+   * @param params.signWith - Wallet account address, private key address, or private key ID
+   * @param params.ethereumAddress - Optional Ethereum address (recommended for passkey clients to avoid extra prompts)
+   * @returns Promise resolving to a viem `LocalAccount` with Turnkey as the signer backend
+   */
+  async createSigner(
+    params: ReactToVerbsOptionsMap['turnkey'],
+  ): Promise<LocalAccount> {
+    return createSigner(params)
   }
 }

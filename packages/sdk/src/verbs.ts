@@ -10,7 +10,7 @@ import type { HostedWalletProviderRegistry } from '@/wallet/core/providers/hoste
 import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
-import { WalletProvider } from '@/wallet/core/providers/wallet/WalletProvider.js'
+import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
 
 /**
  * Main Verbs SDK class

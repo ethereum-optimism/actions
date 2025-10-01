@@ -7,7 +7,7 @@ import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
 import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
-import { WalletProvider } from '@/wallet/core/providers/wallet/WalletProvider.js'
+import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
@@ -186,6 +186,42 @@ describe('WalletProvider', () => {
       expect(hostedWallet).toBeInstanceOf(Wallet)
       expect(hostedWallet.signer.address).toBe(privyWallet.address)
       expect(hostedWallet.address).toBe(privyWallet.address)
+    })
+  })
+
+  describe('createSigner', () => {
+    it('should delegate to hosted wallet provider createSigner', async () => {
+      const mockPrivyClient = createMockPrivyClient(
+        'test-app-id',
+        'test-app-secret',
+      )
+      const hostedWalletProvider = new PrivyHostedWalletProvider(
+        mockPrivyClient,
+        mockChainManager,
+      )
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        mockLendProvider,
+      )
+      const walletProvider = new WalletProvider(
+        hostedWalletProvider,
+        smartWalletProvider,
+      )
+      const createSignerSpy = vi.spyOn(hostedWalletProvider, 'createSigner')
+
+      const privyWallet = await mockPrivyClient.walletApi.createWallet({
+        chainType: 'ethereum',
+      })
+      const params = {
+        walletId: privyWallet.id,
+        address: privyWallet.address,
+      }
+
+      const signer = await walletProvider.createSigner(params)
+
+      expect(createSignerSpy).toHaveBeenCalledWith(params)
+      expect(signer.address).toBe(privyWallet.address)
+      expect(signer.type).toBe('local')
     })
   })
 })

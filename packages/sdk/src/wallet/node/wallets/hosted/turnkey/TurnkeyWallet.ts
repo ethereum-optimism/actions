@@ -1,13 +1,13 @@
 import type { TurnkeySDKClientBase } from '@turnkey/core'
 import type { TurnkeyClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
-import { createAccount } from '@turnkey/viem'
 import type { Address, LocalAccount, WalletClient } from 'viem'
 import { createWalletClient, fallback, http } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import { createSigner } from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
 
 /**
  * Turnkey wallet implementation
@@ -79,12 +79,12 @@ export class TurnkeyWallet extends Wallet {
   }
 
   protected async performInitialization() {
-    this.signer = await this.createAccount()
+    this.signer = await this.createSigner()
     this.address = this.signer.address
   }
 
-  private async createAccount(): Promise<LocalAccount> {
-    return createAccount({
+  private async createSigner(): Promise<LocalAccount> {
+    return createSigner({
       client: this.client,
       organizationId: this.organizationId,
       signWith: this.signWith,

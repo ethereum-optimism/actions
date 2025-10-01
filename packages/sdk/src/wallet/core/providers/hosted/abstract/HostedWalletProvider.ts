@@ -1,3 +1,5 @@
+import type { LocalAccount } from 'viem'
+
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
@@ -23,4 +25,15 @@ export abstract class HostedWalletProvider<
    * @returns Promise resolving to the Verbs wallet instance
    */
   abstract toVerbsWallet(params: TOptionsMap[TType]): Promise<Wallet>
+
+  /**
+   * Create a viem LocalAccount signer from the hosted wallet
+   * @description Produces a signing account backed by the hosted wallet without wrapping
+   * it in a full Verbs wallet. This is useful when you need to pass the signer
+   * into a Verbs smart wallet as a signer, for lower-level viem operations, or
+   * for passing to other libraries that accept a viem `LocalAccount`.
+   * @param params - Configuration for the signer
+   * @returns Promise resolving to a viem `LocalAccount` with the hosted wallet as the signer backend
+   */
+  abstract createSigner(params: TOptionsMap[TType]): Promise<LocalAccount>
 }

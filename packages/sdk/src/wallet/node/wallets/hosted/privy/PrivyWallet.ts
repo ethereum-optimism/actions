@@ -1,9 +1,5 @@
 import type { PrivyClient } from '@privy-io/server-auth'
 import {
-  createViemAccount,
-  type GetViemAccountInputType,
-} from '@privy-io/server-auth/viem'
-import {
   type Address,
   createWalletClient,
   fallback,
@@ -15,6 +11,7 @@ import {
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
 
 /**
  * Privy wallet implementation
@@ -84,7 +81,7 @@ export class PrivyWallet extends Wallet {
    * Initialize the PrivyWallet by creating the signer account
    */
   protected async performInitialization() {
-    this.signer = await this.createAccount()
+    this.signer = await this.createSigner()
   }
 
   /**
@@ -95,13 +92,11 @@ export class PrivyWallet extends Wallet {
    * @returns Promise resolving to a LocalAccount configured for signing operations
    * @throws Error if wallet retrieval fails or signing operations are not supported
    */
-  private async createAccount(): Promise<LocalAccount> {
-    const account = await createViemAccount({
+  private async createSigner(): Promise<LocalAccount> {
+    return createSigner({
       walletId: this.walletId,
       address: this.address,
-      // TODO: Fix this type error
-      privy: this.privyClient as unknown as GetViemAccountInputType['privy'],
+      privyClient: this.privyClient,
     })
-    return account
   }
 }

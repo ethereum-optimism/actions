@@ -1,11 +1,11 @@
 import type { TurnkeySDKClientBase } from '@turnkey/react-wallet-kit'
-import { createAccount } from '@turnkey/viem'
 import type { Address, LocalAccount, WalletClient } from 'viem'
 import { createWalletClient, fallback, http } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import { createSigner } from '@/wallet/react/wallets/hosted/turnkey/utils/createSigner.js'
 
 /**
  * Turnkey wallet implementation
@@ -28,7 +28,7 @@ export class TurnkeyWallet extends Wallet {
   private readonly signWith: string
   /**
    * Ethereum address to use for this account, in the case that a private key ID is used to sign.
-   * If left undefined, `createAccount` will fetch it from the Turnkey API.
+   * If left undefined, `createSigner` will fetch it from the Turnkey API.
    * We recommend setting this if you're using a passkey client, so that your users are not prompted for a passkey signature just to fetch their address.
    * You may leave this undefined if using an API key client.
    */
@@ -74,12 +74,21 @@ export class TurnkeyWallet extends Wallet {
   }
 
   protected async performInitialization() {
-    this.signer = await this.createAccount()
+    this.signer = await this.createSigner()
     this.address = this.signer.address
   }
 
-  private async createAccount(): Promise<LocalAccount> {
-    return createAccount({
+  /**
+   * Create a viem LocalAccount instance backed by Turnkey
+   * @description Wraps the Turnkey SDK's `createAccount` to produce a signing
+   * account compatible with viem. Under the hood, this uses the provided
+   * `client`, `organizationId`, and `signWith` to authenticate signing requests
+   * with Turnkey. If `ethereumAddress` is supplied, it's used directly;
+   * otherwise the SDK fetches it from the Turnkey API.
+   * @returns Promise resolving to a viem `LocalAccount` with Turnkey as the signer backend
+   */
+  private async createSigner(): Promise<LocalAccount> {
+    return createSigner({
       client: this.client,
       organizationId: this.organizationId,
       signWith: this.signWith,

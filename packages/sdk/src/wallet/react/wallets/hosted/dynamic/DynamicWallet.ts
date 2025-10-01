@@ -1,5 +1,3 @@
-import { isEthereumWallet } from '@dynamic-labs/ethereum'
-import type { DynamicWaasEVMConnector } from '@dynamic-labs/waas-evm'
 import {
   type Address,
   createWalletClient,
@@ -8,12 +6,12 @@ import {
   type LocalAccount,
   type WalletClient,
 } from 'viem'
-import { toAccount } from 'viem/accounts'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { DynamicHostedWalletToVerbsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
 
 /**
  * Dynamic wallet implementation
@@ -70,7 +68,7 @@ export class DynamicWallet extends Wallet {
    * Initialize the DynamicWallet by creating the signer account
    */
   protected async performInitialization() {
-    this.signer = await this.createAccount()
+    this.signer = await this.createSigner()
     this.address = this.signer.address
   }
 
@@ -82,23 +80,9 @@ export class DynamicWallet extends Wallet {
    * @returns Promise resolving to a LocalAccount configured for signing operations
    * @throws Error if wallet retrieval fails or signing operations are not supported
    */
-  private async createAccount(): Promise<LocalAccount> {
-    if (!isEthereumWallet(this.dynamicWallet)) {
-      throw new Error('Wallet not connected or not EVM compatible')
-    }
-    const walletClient = await this.dynamicWallet.getWalletClient()
-    const connector = this.dynamicWallet.connector as DynamicWaasEVMConnector
-    return toAccount({
-      address: walletClient.account.address,
-      sign: ({ hash }) => {
-        return connector.signRawMessage({
-          accountAddress: walletClient.account.address,
-          message: hash.startsWith('0x') ? hash.slice(2) : hash,
-        })
-      },
-      signMessage: walletClient.signMessage,
-      signTransaction: walletClient.signTransaction,
-      signTypedData: walletClient.signTypedData,
+  private async createSigner(): Promise<LocalAccount> {
+    return createSigner({
+      wallet: this.dynamicWallet,
     })
   }
 }
