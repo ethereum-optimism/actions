@@ -44,16 +44,9 @@ export class WalletLendNamespace<
   async openPosition(
     params: LendOpenPositionParams,
   ): Promise<LendTransactionReceipt> {
-    const lendOptions = {
-      ...params.options,
-      receiver: this.wallet.address,
-    }
-
     const lendTransaction = await this.provider.openPosition({
-      amount: params.amount,
-      asset: params.asset,
-      marketId: params.marketId,
-      options: lendOptions,
+      ...params,
+      walletAddress: this.wallet.address,
     })
 
     const { transactionData } = lendTransaction
@@ -61,23 +54,24 @@ export class WalletLendNamespace<
       throw new Error('No transaction data returned from lend provider')
     }
 
-    // TODO we will eventualy pull sendBatch and send into the Wallet class and remove this
     if (!this.isSmartWallet(this.wallet)) {
       throw new Error(
         'Transaction execution is only supported for SmartWallet instances',
       )
     }
 
-    // Execute approval + deposit or just deposit
-    if (transactionData.approval) {
+    if (transactionData.approval && transactionData.openPosition) {
       return await this.wallet.sendBatch(
-        [transactionData.approval, transactionData.deposit],
+        [transactionData.approval, transactionData.openPosition],
         params.marketId.chainId,
       )
     }
 
+    if (!transactionData.openPosition) {
+      throw new Error('No openPosition transaction data returned')
+    }
     const userOperationReceipt = await this.wallet.send(
-      transactionData.deposit,
+      transactionData.openPosition,
       params.marketId.chainId,
     )
 
@@ -110,16 +104,9 @@ export class WalletLendNamespace<
   async closePosition(
     params: ClosePositionParams,
   ): Promise<LendTransactionReceipt> {
-    const closeOptions = {
-      ...params.options,
-      receiver: this.wallet.address,
-    }
-
     const closeTransaction = await this.provider.closePosition({
-      amount: params.amount,
-      asset: params.asset,
-      marketId: params.marketId,
-      options: closeOptions,
+      ...params,
+      walletAddress: this.wallet.address,
     })
 
     const { transactionData } = closeTransaction
@@ -135,15 +122,12 @@ export class WalletLendNamespace<
       )
     }
 
-    if (transactionData.approval) {
-      return await this.wallet.sendBatch(
-        [transactionData.approval, transactionData.deposit],
-        params.marketId.chainId,
-      )
+    if (!transactionData.closePosition) {
+      throw new Error('No closePosition transaction data returned')
     }
 
     const userOperationReceipt = await this.wallet.send(
-      transactionData.deposit,
+      transactionData.closePosition,
       params.marketId.chainId,
     )
 

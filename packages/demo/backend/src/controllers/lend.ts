@@ -9,16 +9,34 @@ import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
 
 const OpenPositionRequestSchema = z.object({
+  params: z.object({
+    marketId: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
+    chainId: z.string().min(1, 'chainId is required'),
+  }),
   body: z.object({
     walletId: z.string().min(1, 'walletId is required'),
     amount: z.number().positive('amount must be positive'),
     tokenAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
-    chainId: z.number().min(1, 'chainId is required'),
-    vaultAddress: z
+  }),
+})
+
+const ClosePositionRequestSchema = z.object({
+  params: z.object({
+    marketId: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
+    chainId: z.string().min(1, 'chainId is required'),
+  }),
+  body: z.object({
+    walletId: z.string().min(1, 'walletId is required'),
+    amount: z.number().positive('amount must be positive'),
+    tokenAddress: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
   }),
 })
 
@@ -90,9 +108,9 @@ export class LendController {
   }
 
   /**
-   * GET - Get market balance for a specific wallet
+   * GET - Get position for a specific wallet
    */
-  async getMarketBalance(c: Context) {
+  async getPosition(c: Context) {
     try {
       const validation = await validateRequest(c, MarketBalanceParamsSchema)
       if (!validation.success) return validation.response
@@ -109,13 +127,7 @@ export class LendController {
         await lendService.formatMarketBalanceResponse(balance)
       return c.json(formattedBalance)
     } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get market balance',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return this.handleError(c, 'get position', error)
     }
   }
 
@@ -127,71 +139,66 @@ export class LendController {
       const validation = await validateRequest(c, OpenPositionRequestSchema)
       if (!validation.success) return validation.response
 
+      // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
+
       const {
-        body: { walletId, amount, tokenAddress, chainId, vaultAddress },
+        params: { marketId, chainId },
+        body: { walletId, amount, tokenAddress },
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
-      let hash: string
-
-      // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
-      // up this route.
-      const params = {
+      const transaction = await lendService.openPosition({
+        userId: auth?.userId || walletId,
         amount,
-        asset: {
-          tokenAddress: tokenAddress as Address,
-          chainId: chainId as SupportedChainId,
-        },
-        marketId: {
-          address: vaultAddress as Address,
-          chainId: chainId as SupportedChainId,
-        },
-      }
-
-      // Use userId if authenticated, otherwise use walletId
-      if (auth && auth.userId) {
-        const receipt = await lendService.openPosition({
-          userId: auth.userId,
-          amount: params.amount,
-          asset: params.asset,
-          marketId: params.marketId,
-          isUserWallet: true,
-        })
-        hash = receipt.userOpHash!
-      } else {
-        const receipt = await lendService.openPosition({
-          userId: walletId,
-          amount: params.amount,
-          asset: params.asset,
-          marketId: params.marketId,
-          isUserWallet: false,
-        })
-        hash = receipt.userOpHash!
-      }
-
-      const blockExplorerUrl = await lendService.getBlockExplorerUrl(
-        chainId as SupportedChainId,
-      )
-
-      return c.json({
-        transaction: {
-          hash,
-          blockExplorerUrl,
-          amount,
-          tokenAddress,
-          chainId,
-          vaultAddress,
-        },
+        tokenAddress: tokenAddress as Address,
+        chainId: Number(chainId) as SupportedChainId,
+        vaultAddress: marketId as Address,
+        isUserWallet: Boolean(auth?.userId),
       })
+
+      return c.json({ transaction })
     } catch (error) {
-      console.error('Failed to open position', error)
-      return c.json(
-        {
-          error: 'Failed to open position',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return this.handleError(c, 'open position', error)
     }
+  }
+
+  /**
+   * POST - Close a lending position
+   */
+  async closePosition(c: Context) {
+    try {
+      const validation = await validateRequest(c, ClosePositionRequestSchema)
+      if (!validation.success) return validation.response
+
+      const {
+        params: { marketId, chainId },
+        body: { walletId, amount, tokenAddress },
+      } = validation.data
+      const auth = c.get('auth') as AuthContext | undefined
+
+      const transaction = await lendService.closePosition({
+        userId: auth?.userId || walletId,
+        amount,
+        tokenAddress: tokenAddress as Address,
+        chainId: Number(chainId) as SupportedChainId,
+        vaultAddress: marketId as Address,
+        isUserWallet: Boolean(auth?.userId),
+      })
+
+      return c.json({ transaction })
+    } catch (error) {
+      return this.handleError(c, 'close position', error)
+    }
+  }
+
+  private handleError(c: Context, operation: string, error: unknown) {
+    console.error(`Failed to ${operation}`, error)
+    return c.json(
+      {
+        error: `Failed to ${operation}`,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      500,
+    )
   }
 }

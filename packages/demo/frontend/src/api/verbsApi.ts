@@ -186,8 +186,9 @@ class VerbsApiClient {
     })
   }
 
-  async getMarketBalance(
+  async getPosition(
     vaultAddress: string,
+    chainId: number,
     walletId: string,
   ): Promise<{
     balance: string
@@ -195,7 +196,7 @@ class VerbsApiClient {
     shares: string
     sharesFormatted: string
   }> {
-    return this.request(`/lend/market/${vaultAddress}/balance/${walletId}`, {
+    return this.request(`/lend/${vaultAddress}/${chainId}/position/${walletId}`, {
       method: 'GET',
     })
   }
@@ -210,6 +211,7 @@ class VerbsApiClient {
   ): Promise<{
     transaction: {
       hash: string
+      userOpHash?: string
       blockExplorerUrl: string
       amount: number
       tokenAddress: string
@@ -217,9 +219,34 @@ class VerbsApiClient {
       vaultAddress: string
     }
   }> {
-    return this.request('/lend/open-position', {
+    return this.request(`/lend/${vaultAddress}/${chainId}/open`, {
       method: 'POST',
-      body: JSON.stringify({ walletId, amount, tokenAddress, chainId, vaultAddress }),
+      body: JSON.stringify({ walletId, amount, tokenAddress }),
+      headers,
+    })
+  }
+
+  async closeLendPosition(
+    walletId: string,
+    amount: number,
+    tokenAddress: Address,
+    chainId: number,
+    vaultAddress: Address,
+    headers: HeadersInit = {},
+  ): Promise<{
+    transaction: {
+      hash: string
+      userOpHash?: string
+      blockExplorerUrl: string
+      amount: number
+      tokenAddress: string
+      chainId: number
+      vaultAddress: string
+    }
+  }> {
+    return this.request(`/lend/${vaultAddress}/${chainId}/close`, {
+      method: 'POST',
+      body: JSON.stringify({ walletId, amount, tokenAddress }),
       headers,
     })
   }

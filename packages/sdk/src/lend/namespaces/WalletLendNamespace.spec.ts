@@ -95,7 +95,7 @@ describe('WalletLendNamespace', () => {
         apy: 0.05,
         timestamp: Date.now(),
         transactionData: {
-          deposit: {
+          openPosition: {
             to: marketId.address,
             value: 0n,
             data: '0x' as const,
@@ -106,7 +106,6 @@ describe('WalletLendNamespace', () => {
 
       vi.mocked(mockProvider.openPosition).mockResolvedValue(mockTransaction)
 
-      // Should now execute the transaction
       const result = await namespace.openPosition({
         amount,
         asset: mockAsset,
@@ -122,9 +121,8 @@ describe('WalletLendNamespace', () => {
         amount,
         asset: mockAsset,
         marketId,
-        options: {
-          receiver: mockWalletAddress,
-        },
+        walletAddress: mockWalletAddress,
+        options: undefined,
       })
     })
   })
@@ -144,7 +142,7 @@ describe('WalletLendNamespace', () => {
         apy: 0.05,
         timestamp: Date.now(),
         transactionData: {
-          deposit: {
+          closePosition: {
             to: closeParams.marketId.address,
             value: 0n,
             data: '0x' as const,
@@ -158,10 +156,11 @@ describe('WalletLendNamespace', () => {
 
       expect(mockProvider.closePosition).toHaveBeenCalledWith({
         ...closeParams,
-        options: { receiver: mockWallet.address },
+        walletAddress: mockWallet.address,
+        options: undefined,
       })
       expect(mockWallet.send).toHaveBeenCalledWith(
-        mockTransaction.transactionData.deposit,
+        mockTransaction.transactionData.closePosition,
         130,
       )
       expect(result).toEqual({
@@ -184,7 +183,7 @@ describe('WalletLendNamespace', () => {
         apy: 0.05,
         timestamp: Date.now(),
         transactionData: {
-          deposit: {
+          closePosition: {
             to: closeParams.marketId.address,
             value: 0n,
             data: '0x' as const,
@@ -220,7 +219,7 @@ describe('WalletLendNamespace', () => {
       value: 0n,
       data: '0xapproval' as const,
     }
-    const deposit: TransactionData = {
+    const openPosition: TransactionData = {
       to: marketId.address,
       value: 0n,
       data: '0xdeposit' as const,
@@ -231,7 +230,7 @@ describe('WalletLendNamespace', () => {
       marketId: marketId.address,
       apy: 0.05,
       timestamp: Date.now(),
-      transactionData: { approval, deposit },
+      transactionData: { approval, openPosition },
       slippage: 50,
     }
 
@@ -243,7 +242,10 @@ describe('WalletLendNamespace', () => {
       marketId,
     })
 
-    expect(mockWallet.sendBatch).toHaveBeenCalledWith([approval, deposit], 130)
+    expect(mockWallet.sendBatch).toHaveBeenCalledWith(
+      [approval, openPosition],
+      130,
+    )
     expect(result).toEqual({
       receipt: { success: true },
       userOpHash: '0xmockbatchhash',

@@ -157,6 +157,7 @@ describe('LendProvider', () => {
       const result = await provider.closePosition({
         amount: 100,
         marketId: { address: '0x1234' as Address, chainId: 84532 as const },
+        walletAddress: '0x5678' as Address,
       })
 
       expect(result.amount).toBe(100n)
@@ -189,9 +190,10 @@ describe('LendProvider', () => {
         amount: 1000,
         asset: mockAsset,
         marketId: { address: '0x1234' as Address, chainId: 84532 },
+        walletAddress: '0x5678' as Address,
       })
 
-      expect(result.amount).toBe(1000000000n) // 1000 * 10^6 decimals
+      expect(result.amount).toBe(1000000000n)
       expect(result.asset).toBe('0x123')
       expect(result.marketId).toBe('0x1234')
       expect(result.apy).toBe(0.05)
