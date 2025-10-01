@@ -123,6 +123,7 @@ interface PositionParams {
 
 interface PositionResponse {
   hash: string
+  userOpHash?: string
   blockExplorerUrl: string
   amount: number
   tokenAddress: Address
@@ -154,7 +155,7 @@ async function executePosition(
   const marketId = { address: vaultAddress, chainId }
   const positionParams = { amount, asset, marketId }
 
-  const hash =
+  const result =
     operation === 'open'
       ? await wallet.lend!.openPosition(positionParams)
       : await wallet.lend!.closePosition(positionParams)
@@ -162,7 +163,8 @@ async function executePosition(
   const blockExplorerUrl = await getBlockExplorerUrl(chainId)
 
   return {
-    hash,
+    hash: result.receipt.transactionHash,
+    userOpHash: result.userOpHash,
     blockExplorerUrl,
     amount,
     tokenAddress,

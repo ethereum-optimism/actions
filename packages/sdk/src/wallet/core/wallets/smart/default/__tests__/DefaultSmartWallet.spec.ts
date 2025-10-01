@@ -1,21 +1,33 @@
 import type { Address, Hex, LocalAccount } from 'viem'
-import { concatHex, pad } from 'viem'
+import { concatHex, encodeFunctionData, pad } from 'viem'
+import type {
+  WaitForUserOperationReceiptReturnType,
+  WebAuthnAccount,
+} from 'viem/account-abstraction'
 import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 import { baseSepolia, unichain } from 'viem/chains'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
-import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
 import type { LendConfig, LendProvider, TransactionData } from '@/types/lend.js'
+import {
+  smartWalletAbi,
+  smartWalletFactoryAbi,
+  smartWalletFactoryAddress,
+} from '@/wallet/core/wallets/smart/default/constants/index.js'
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
+import { findOwnerIndex } from '@/wallet/core/wallets/smart/default/utils/findOwnerIndex.js'
 
 vi.mock('viem/account-abstraction', () => ({
   toCoinbaseSmartAccount: vi.fn(),
+}))
+
+vi.mock('@/wallet/core/wallets/smart/default/utils/findOwnerIndex.js', () => ({
+  findOwnerIndex: vi.fn(),
 }))
 
 // Mock data
@@ -31,6 +43,10 @@ const mockLendProvider = createMockLendProvider()
 
 // Test suite
 describe('DefaultSmartWallet', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('should create a smart wallet instance', async () => {
     const wallet = await createAndInitDefaultSmartWallet()
 
@@ -128,6 +144,13 @@ describe('DefaultSmartWallet', () => {
     vi.mocked(bundlerClient.sendUserOperation).mockResolvedValue(
       '0xTransactionHash',
     )
+    const mockWaitForUserOperationReceipt = {
+      success: true,
+      userOpHash: '0xTransactionHash',
+    } as unknown as WaitForUserOperationReceiptReturnType
+    vi.mocked(bundlerClient.waitForUserOperationReceipt).mockResolvedValue(
+      mockWaitForUserOperationReceipt,
+    )
 
     const result = await wallet.send(transactionData, chainId)
 
@@ -147,7 +170,7 @@ describe('DefaultSmartWallet', () => {
     expect(bundlerClient.waitForUserOperationReceipt).toHaveBeenCalledWith({
       hash: '0xTransactionHash',
     })
-    expect(result).toBe('0xTransactionHash')
+    expect(result).toBe(mockWaitForUserOperationReceipt)
   })
 
   it('should send a batch of transactions via ERC-4337', async () => {
@@ -194,6 +217,13 @@ describe('DefaultSmartWallet', () => {
     vi.mocked(bundlerClient.sendUserOperation).mockResolvedValue(
       '0xTransactionHash',
     )
+    const mockWaitForUserOperationReceipt = {
+      success: true,
+      userOpHash: '0xTransactionHash',
+    } as unknown as WaitForUserOperationReceiptReturnType
+    vi.mocked(bundlerClient.waitForUserOperationReceipt).mockResolvedValue(
+      mockWaitForUserOperationReceipt,
+    )
 
     const result = await wallet.sendBatch(transactionData, chainId)
 
@@ -213,7 +243,259 @@ describe('DefaultSmartWallet', () => {
     expect(bundlerClient.waitForUserOperationReceipt).toHaveBeenCalledWith({
       hash: '0xTransactionHash',
     })
-    expect(result).toBe('0xTransactionHash')
+    expect(result).toBe(mockWaitForUserOperationReceipt)
+  })
+
+  it('adds an EOA owner via addOwner and returns index', async () => {
+    const deploymentAddress = getRandomAddress()
+    const wallet = await createAndInitDefaultSmartWallet({
+      deploymentAddress,
+    })
+
+    const chainId = unichain.id
+    const newSigner: Address = getRandomAddress()
+
+    const sendBatchSpy = vi.spyOn(wallet, 'sendBatch').mockResolvedValue({
+      success: true,
+    } as unknown as WaitForUserOperationReceiptReturnType)
+
+    vi.mocked(findOwnerIndex).mockResolvedValue(2)
+
+    const resultIndex = await wallet.addSigner(newSigner, chainId)
+
+    const expectedData = encodeFunctionData({
+      abi: smartWalletAbi,
+      functionName: 'addOwnerAddress',
+      args: [newSigner] as const,
+    })
+
+    expect(sendBatchSpy).toHaveBeenCalledWith(
+      [
+        {
+          to: deploymentAddress,
+          data: expectedData,
+          value: 0n,
+        },
+      ],
+      chainId,
+    )
+    expect(findOwnerIndex).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: deploymentAddress,
+        signer: newSigner,
+      }),
+    )
+    expect(resultIndex).toBe(2)
+  })
+
+  it('adds a WebAuthn owner via addOwner and returns index', async () => {
+    const deploymentAddress = getRandomAddress()
+    const wallet = await createAndInitDefaultSmartWallet({
+      deploymentAddress,
+    })
+
+    const chainId = unichain.id
+    const publicKey64Bytes: Hex =
+      '0xe7575170745fe55d7a26190c6d5504743496c49498b129d2b3660da3697e81d4daebb2496f89aa4a05f1705e1d5d316153211c198f80d3100b51489bf4963f47'
+    const x = ('0x' + publicKey64Bytes.slice(2, 66)) as Hex
+    const y = ('0x' + publicKey64Bytes.slice(66)) as Hex
+    const webAuthnOwner = {
+      type: 'webAuthn',
+      publicKey: publicKey64Bytes,
+    } as unknown as WebAuthnAccount
+
+    const sendBatchSpy = vi.spyOn(wallet, 'sendBatch').mockResolvedValue({
+      success: true,
+    } as unknown as WaitForUserOperationReceiptReturnType)
+
+    vi.mocked(findOwnerIndex).mockResolvedValue(1)
+
+    const resultIndex = await wallet.addSigner(webAuthnOwner, chainId)
+
+    const expectedData = encodeFunctionData({
+      abi: smartWalletAbi,
+      functionName: 'addOwnerPublicKey',
+      args: [x, y] as const,
+    })
+
+    expect(sendBatchSpy).toHaveBeenCalledWith(
+      [
+        {
+          to: deploymentAddress,
+          data: expectedData,
+          value: 0n,
+        },
+      ],
+      chainId,
+    )
+    expect(findOwnerIndex).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: deploymentAddress,
+        signer: {
+          type: 'webAuthn',
+          publicKey: publicKey64Bytes,
+        } as unknown as WebAuthnAccount,
+      }),
+    )
+    expect(resultIndex).toBe(1)
+  })
+
+  it('retries finding signer index after initial -1 with 2s backoff', async () => {
+    vi.useFakeTimers()
+
+    const deploymentAddress = getRandomAddress()
+    const wallet = await createAndInitDefaultSmartWallet({
+      deploymentAddress,
+    })
+
+    const chainId = unichain.id
+    const newSigner: Address = getRandomAddress()
+
+    vi.spyOn(wallet, 'sendBatch').mockResolvedValue({
+      success: true,
+    } as unknown as WaitForUserOperationReceiptReturnType)
+
+    vi.mocked(findOwnerIndex).mockResolvedValueOnce(-1).mockResolvedValueOnce(4)
+
+    const promise = wallet.addSigner(newSigner, chainId)
+
+    await vi.advanceTimersByTimeAsync(2000)
+    const resultIndex = await promise
+
+    expect(findOwnerIndex).toHaveBeenCalledTimes(2)
+    expect(resultIndex).toBe(4)
+
+    vi.useRealTimers()
+  })
+
+  it('findSignerIndex delegates to findOwnerIndex for EOA and returns index', async () => {
+    const deploymentAddress = getRandomAddress()
+    const wallet = await createAndInitDefaultSmartWallet({
+      deploymentAddress,
+    })
+
+    const chainId = unichain.id
+    const eoa: Address = getRandomAddress()
+
+    vi.mocked(findOwnerIndex).mockResolvedValue(7)
+
+    const idx = await wallet.findSignerIndex(eoa, chainId)
+
+    expect(findOwnerIndex).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: deploymentAddress,
+        signer: eoa,
+      }),
+    )
+    expect(idx).toBe(7)
+  })
+
+  it('findSignerIndex delegates to findOwnerIndex for WebAuthn and returns index', async () => {
+    const deploymentAddress = getRandomAddress()
+    const wallet = await createAndInitDefaultSmartWallet({
+      deploymentAddress,
+    })
+
+    const chainId = unichain.id
+    const publicKey64Bytes: Hex =
+      '0xe7575170745fe55d7a26190c6d5504743496c49498b129d2b3660da3697e81d4daebb2496f89aa4a05f1705e1d5d316153211c198f80d3100b51489bf4963f47'
+    const webAuthnSigner = {
+      type: 'webAuthn',
+      publicKey: publicKey64Bytes,
+    } as unknown as WebAuthnAccount
+
+    vi.mocked(findOwnerIndex).mockResolvedValue(3)
+
+    const idx = await wallet.findSignerIndex(webAuthnSigner, chainId)
+
+    expect(findOwnerIndex).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: deploymentAddress,
+        signer: {
+          type: 'webAuthn',
+          publicKey: publicKey64Bytes,
+        } as unknown as WebAuthnAccount,
+      }),
+    )
+    expect(idx).toBe(3)
+  })
+
+  it('removes an EOA signer via removeSigner using looked-up index', async () => {
+    const deploymentAddress = getRandomAddress()
+    const wallet = await createAndInitDefaultSmartWallet({ deploymentAddress })
+
+    const chainId = unichain.id
+    const signer: Address = getRandomAddress()
+
+    const sendBatchSpy = vi.spyOn(wallet, 'sendBatch').mockResolvedValue({
+      success: true,
+    } as unknown as WaitForUserOperationReceiptReturnType)
+
+    const findSignerIndexSpy = vi
+      .spyOn(wallet, 'findSignerIndex')
+      .mockResolvedValue(5)
+
+    const receipt = await wallet.removeSigner(signer, chainId)
+
+    const signerBytes = pad(signer)
+    const expectedData = encodeFunctionData({
+      abi: smartWalletAbi,
+      functionName: 'removeOwnerAtIndex',
+      args: [5n, signerBytes] as const,
+    })
+
+    expect(findSignerIndexSpy).toHaveBeenCalledWith(signer, chainId)
+    expect(sendBatchSpy).toHaveBeenCalledWith(
+      [
+        {
+          to: deploymentAddress,
+          data: expectedData,
+          value: 0n,
+        },
+      ],
+      chainId,
+    )
+    expect(receipt).toEqual({ success: true })
+  })
+
+  it('removes a WebAuthn signer via removeSigner using provided index (skips lookup)', async () => {
+    const deploymentAddress = getRandomAddress()
+    const wallet = await createAndInitDefaultSmartWallet({ deploymentAddress })
+
+    const chainId = unichain.id
+    const publicKey64Bytes: Hex =
+      '0xe7575170745fe55d7a26190c6d5504743496c49498b129d2b3660da3697e81d4daebb2496f89aa4a05f1705e1d5d316153211c198f80d3100b51489bf4963f47'
+    const webAuthnSigner = {
+      type: 'webAuthn',
+      publicKey: publicKey64Bytes,
+    } as unknown as WebAuthnAccount
+
+    const sendBatchSpy = vi.spyOn(wallet, 'sendBatch').mockResolvedValue({
+      success: true,
+    } as unknown as WaitForUserOperationReceiptReturnType)
+
+    const findSignerIndexSpy = vi.spyOn(wallet, 'findSignerIndex')
+
+    const receipt = await wallet.removeSigner(webAuthnSigner, chainId, 9)
+
+    const expectedData = encodeFunctionData({
+      abi: smartWalletAbi,
+      functionName: 'removeOwnerAtIndex',
+      args: [9n, publicKey64Bytes] as const,
+    })
+
+    expect(findSignerIndexSpy).not.toHaveBeenCalled()
+    expect(sendBatchSpy).toHaveBeenCalledWith(
+      [
+        {
+          to: deploymentAddress,
+          data: expectedData,
+          value: 0n,
+        },
+      ],
+      chainId,
+    )
+    expect(receipt).toEqual({ success: true })
   })
 
   it('should have lend namespace with bound methods', async () => {

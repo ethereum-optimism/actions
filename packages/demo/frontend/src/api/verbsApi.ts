@@ -211,6 +211,7 @@ class VerbsApiClient {
   ): Promise<{
     transaction: {
       hash: string
+      userOpHash?: string
       blockExplorerUrl: string
       amount: number
       tokenAddress: string
@@ -235,6 +236,7 @@ class VerbsApiClient {
   ): Promise<{
     transaction: {
       hash: string
+      userOpHash?: string
       blockExplorerUrl: string
       amount: number
       tokenAddress: string

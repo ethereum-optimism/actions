@@ -1,4 +1,4 @@
-import type { Address, Hex } from 'viem'
+import type { Address, Hash, Hex, TransactionReceipt } from 'viem'
 
 import type { SupportedChainId } from '../constants/supportedChains.js'
 import type { Asset } from './asset.js'
@@ -81,6 +81,14 @@ export interface LendTransaction {
   }
   /** Slippage tolerance used */
   slippage?: number
+}
+
+/**
+ * Lending transaction receipt
+ */
+export interface LendTransactionReceipt {
+  receipt: TransactionReceipt<bigint, number, 'success' | 'reverted'>
+  userOpHash?: Hash
 }
 
 /**

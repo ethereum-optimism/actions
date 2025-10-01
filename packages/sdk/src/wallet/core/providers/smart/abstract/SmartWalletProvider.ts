@@ -1,7 +1,7 @@
 import type { Address, LocalAccount } from 'viem'
-import type { WebAuthnAccount } from 'viem/account-abstraction'
 
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
+import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 
 /**
  * Base smart wallet provider interface
@@ -19,7 +19,7 @@ export abstract class SmartWalletProvider {
    * @returns Promise resolving to a new SmartWallet instance
    */
   abstract createWallet(params: {
-    owners: Array<Address | WebAuthnAccount>
+    owners: Signer[]
     signer: LocalAccount
     nonce?: bigint
   }): Promise<SmartWallet>
@@ -50,7 +50,7 @@ export abstract class SmartWalletProvider {
    * @returns Promise resolving to the predicted wallet address
    */
   abstract getWalletAddress(params: {
-    owners: Array<Address | WebAuthnAccount>
+    owners: Signer[]
     nonce?: bigint
   }): Promise<Address>
 }
