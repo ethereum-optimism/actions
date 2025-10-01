@@ -53,5 +53,5 @@ export interface TransactionResponse {
   amount: number
   tokenAddress: string
   chainId: number
-  vaultAddress: string
+  marketAddress: string
 }

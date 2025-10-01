@@ -84,38 +84,6 @@ class VerbsApiClient {
     })
   }
 
-  async getVault(
-    vaultAddress: string,
-    headers: HeadersInit = {},
-  ): Promise<{
-    vault: {
-      address: string
-      name: string
-      asset: string
-      apy: number
-      apyBreakdown: {
-        nativeApy: number
-        totalRewardsApr: number
-        usdc?: number
-        morpho?: number
-        other?: number
-        performanceFee: number
-        netApy: number
-      }
-      totalAssets: string
-      totalShares: string
-      fee: number
-      owner: string
-      curator: string
-      lastUpdate: number
-    }
-  }> {
-    return this.request(`/lend/vault/${vaultAddress}`, {
-      method: 'GET',
-      headers,
-    })
-  }
-
   async getWalletBalance(
     userId: string,
     headers: HeadersInit = {},
@@ -172,12 +140,12 @@ class VerbsApiClient {
   }
 
   async getPosition(
-    vaultAddress: string,
+    marketAddress: string,
     chainId: number,
     walletId: string,
   ): Promise<PositionResponse> {
     return this.request(
-      `/lend/market/${chainId}/${vaultAddress}/position/${walletId}`,
+      `/lend/market/${chainId}/${marketAddress}/position/${walletId}`,
       {
         method: 'GET',
       },
@@ -189,7 +157,7 @@ class VerbsApiClient {
     amount: number,
     tokenAddress: Address,
     chainId: number,
-    vaultAddress: Address,
+    marketAddress: Address,
     headers: HeadersInit = {},
   ): Promise<{ transaction: TransactionResponse }> {
     return this.request('/lend/position/open', {
@@ -198,7 +166,7 @@ class VerbsApiClient {
         walletId,
         amount,
         tokenAddress,
-        marketId: vaultAddress,
+        marketId: marketAddress,
         chainId,
       }),
       headers,
@@ -210,7 +178,7 @@ class VerbsApiClient {
     amount: number,
     tokenAddress: Address,
     chainId: number,
-    vaultAddress: Address,
+    marketAddress: Address,
     headers: HeadersInit = {},
   ): Promise<{ transaction: TransactionResponse }> {
     return this.request('/lend/position/close', {
@@ -219,7 +187,7 @@ class VerbsApiClient {
         walletId,
         amount,
         tokenAddress,
-        marketId: vaultAddress,
+        marketId: marketAddress,
         chainId,
       }),
       headers,
