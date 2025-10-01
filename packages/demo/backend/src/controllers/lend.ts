@@ -9,42 +9,38 @@ import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
 
 const OpenPositionRequestSchema = z.object({
-  params: z.object({
-    marketId: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
-    chainId: z.string().min(1, 'chainId is required'),
-  }),
   body: z.object({
     walletId: z.string().min(1, 'walletId is required'),
     amount: z.number().positive('amount must be positive'),
     tokenAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
+    marketId: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
+    chainId: z.number().positive('chainId must be positive'),
   }),
 })
 
 const ClosePositionRequestSchema = z.object({
-  params: z.object({
-    marketId: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
-    chainId: z.string().min(1, 'chainId is required'),
-  }),
   body: z.object({
     walletId: z.string().min(1, 'walletId is required'),
     amount: z.number().positive('amount must be positive'),
     tokenAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
+    marketId: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
+    chainId: z.number().positive('chainId must be positive'),
   }),
 })
 
 const MarketBalanceParamsSchema = z.object({
   params: z.object({
-    vaultAddress: z
+    marketId: z
       .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
     walletId: z.string().min(1, 'walletId is required'),
     chainId: z.string().min(1, 'chainId is required'),
   }),
@@ -116,10 +112,10 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        params: { vaultAddress, walletId, chainId },
+        params: { marketId, walletId, chainId },
       } = validation.data
       const balance = await lendService.getPosition(
-        vaultAddress as Address,
+        marketId as Address,
         walletId,
         Number(chainId) as SupportedChainId,
       )
@@ -142,8 +138,7 @@ export class LendController {
       // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
 
       const {
-        params: { marketId, chainId },
-        body: { walletId, amount, tokenAddress },
+        body: { walletId, amount, tokenAddress, marketId, chainId },
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
@@ -151,7 +146,7 @@ export class LendController {
         userId: auth?.userId || walletId,
         amount,
         tokenAddress: tokenAddress as Address,
-        chainId: Number(chainId) as SupportedChainId,
+        chainId: chainId as SupportedChainId,
         vaultAddress: marketId as Address,
         isUserWallet: Boolean(auth?.userId),
       })
@@ -171,8 +166,7 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        params: { marketId, chainId },
-        body: { walletId, amount, tokenAddress },
+        body: { walletId, amount, tokenAddress, marketId, chainId },
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
@@ -180,7 +174,7 @@ export class LendController {
         userId: auth?.userId || walletId,
         amount,
         tokenAddress: tokenAddress as Address,
-        chainId: Number(chainId) as SupportedChainId,
+        chainId: chainId as SupportedChainId,
         vaultAddress: marketId as Address,
         isUserWallet: Boolean(auth?.userId),
       })
