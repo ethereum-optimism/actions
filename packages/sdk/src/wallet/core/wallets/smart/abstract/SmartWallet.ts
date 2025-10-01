@@ -1,9 +1,11 @@
-import type { Address, Hash, WalletClient } from 'viem'
+import type { Address, WalletClient } from 'viem'
+import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstraction'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/lend/index.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 
 /**
  * Base smart wallet class
@@ -13,9 +15,6 @@ export abstract class SmartWallet extends Wallet {
   async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {
     throw new Error('walletClient is not supported on SmartWallet')
   }
-
-  // TODO: add addSigner method
-  // TODO: add removeSigner method
 
   /**
    * Send a transaction using this smart wallet
@@ -28,7 +27,7 @@ export abstract class SmartWallet extends Wallet {
   abstract send(
     transactionData: TransactionData,
     chainId: SupportedChainId,
-  ): Promise<Hash>
+  ): Promise<WaitForUserOperationReceiptReturnType>
 
   /**
    * Send a batch of transactions using this smart wallet
@@ -40,7 +39,44 @@ export abstract class SmartWallet extends Wallet {
   abstract sendBatch(
     transactionData: TransactionData[],
     chainId: SupportedChainId,
-  ): Promise<Hash>
+  ): Promise<WaitForUserOperationReceiptReturnType>
+
+  /**
+   * Add a new signer to the smart wallet
+   * @description Adds either an EOA address signer or a WebAuthn account signer
+   * to the underlying smart wallet contract.
+   * @param signer - Ethereum address (EOA) or a `WebAuthnAccount` to add
+   * @param chainId - Target chain on which the smart wallet operates
+   * @returns Promise resolving to the onchain signer index for the newly added signer
+   * @throws Error if the add operation fails or the owner index cannot be found
+   */
+  abstract addSigner(signer: Signer, chainId: SupportedChainId): Promise<number>
+
+  /**
+   * Remove a signer from the smart wallet
+   * @param signer - Ethereum address (EOA) or a `WebAuthnAccount` to remove
+   * @param chainId - Target chain on which the smart wallet operates
+   * @param signerIndex - Index of the signer to remove, if not provided, it will be found by
+   * doing a lookup on the smart wallet contract.
+   * @returns Promise resolving to the receipt of the remove operation
+   */
+  abstract removeSigner(
+    signer: Signer,
+    chainId: SupportedChainId,
+    signerIndex?: number,
+  ): Promise<WaitForUserOperationReceiptReturnType>
+
+  /**
+   * Find the index of a signer in the smart wallet
+   * @param signer - Ethereum address (EOA) or a `WebAuthnAccount` to find
+   * @param chainId - Target chain on which the smart wallet operates
+   * @returns Promise resolving to the onchain signer index for the found signer
+   * returns -1 if the signer is not found
+   */
+  abstract findSignerIndex(
+    signer: Signer,
+    chainId: SupportedChainId,
+  ): Promise<number>
 
   /**
    * Send tokens to another address

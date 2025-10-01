@@ -1,11 +1,18 @@
-import type { Address, Hash, Hex, LocalAccount } from 'viem'
-import { concatHex, encodeFunctionData, erc20Abi, isHex, pad, size } from 'viem'
-import type { WebAuthnAccount } from 'viem/account-abstraction'
+import type { Address, Hex, LocalAccount } from 'viem'
+import {
+  concatHex,
+  decodeAbiParameters,
+  encodeFunctionData,
+  erc20Abi,
+  isHex,
+  size,
+} from 'viem'
+import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstraction'
 import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 
-import { smartWalletFactoryAbi } from '@/abis/smartWalletFactory.js'
-import { smartWalletFactoryAddress } from '@/constants/addresses.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { TransactionConfirmedButRevertedError } from '@/core/error/errors.js'
+import { retryOnStaleRead } from '@/core/utils/retryOnStaleRead.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
@@ -16,6 +23,14 @@ import type {
 } from '@/types/lend/index.js'
 import { parseAssetAmount } from '@/utils/assets.js'
 import { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
+import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
+import {
+  smartWalletAbi,
+  smartWalletFactoryAbi,
+  smartWalletFactoryAddress,
+} from '@/wallet/core/wallets/smart/default/constants/index.js'
+import { findOwnerIndex } from '@/wallet/core/wallets/smart/default/utils/findOwnerIndex.js'
+import { formatPublicKey } from '@/wallet/core/wallets/smart/default/utils/formatPublicKey.js'
 
 /**
  * Smart Wallet Implementation
@@ -28,7 +43,7 @@ export class DefaultSmartWallet extends SmartWallet {
   /** Address of the smart wallet */
   private _address!: Address
   /** Array of wallet owners (Ethereum addresses or WebAuthn public keys) */
-  private owners: Array<Address | WebAuthnAccount>
+  private owners: Signer[]
   /** Index of the signer in the owners array (defaults to 0 if not specified) */
   private signerOwnerIndex?: number
   /** Known deployment address of the wallet (if already deployed) */
@@ -51,7 +66,7 @@ export class DefaultSmartWallet extends SmartWallet {
    * @param nonce - Nonce for address generation
    */
   private constructor(
-    owners: Array<Address | WebAuthnAccount>,
+    owners: Signer[],
     signer: LocalAccount,
     chainManager: ChainManager,
     lendProvider?: LendProvider<LendConfig>,
@@ -81,7 +96,7 @@ export class DefaultSmartWallet extends SmartWallet {
   }
 
   static async create(params: {
-    owners: Array<Address | WebAuthnAccount>
+    owners: Signer[]
     signer: LocalAccount
     chainManager: ChainManager
     lendProvider?: LendProvider<LendConfig>
@@ -151,7 +166,7 @@ export class DefaultSmartWallet extends SmartWallet {
   async sendBatch(
     transactionData: TransactionData[],
     chainId: SupportedChainId,
-  ): Promise<Hash> {
+  ): Promise<WaitForUserOperationReceiptReturnType> {
     const account = await this.getCoinbaseSmartAccount(chainId)
     const bundlerClient = this.chainManager.getBundlerClient(chainId, account)
     try {
@@ -168,11 +183,12 @@ export class DefaultSmartWallet extends SmartWallet {
           : uo.initCode,
         paymaster: true,
       })
-      await bundlerClient.waitForUserOperationReceipt({
-        hash,
-      })
+      const userOperationReceipt =
+        await bundlerClient.waitForUserOperationReceipt({
+          hash,
+        })
 
-      return hash
+      return userOperationReceipt
     } catch (error) {
       throw new Error(
         `Failed to send transaction: ${
@@ -194,7 +210,7 @@ export class DefaultSmartWallet extends SmartWallet {
   async send(
     transactionData: TransactionData,
     chainId: SupportedChainId,
-  ): Promise<Hash> {
+  ): Promise<WaitForUserOperationReceiptReturnType> {
     try {
       const account = await this.getCoinbaseSmartAccount(chainId)
       const bundlerClient = this.chainManager.getBundlerClient(chainId, account)
@@ -212,11 +228,11 @@ export class DefaultSmartWallet extends SmartWallet {
           : uo.initCode,
         paymaster: true,
       })
-      await bundlerClient.waitForUserOperationReceipt({
+      const receipt = await bundlerClient.waitForUserOperationReceipt({
         hash,
       })
 
-      return hash
+      return receipt
     } catch (error) {
       throw new Error(
         `Failed to send transaction: ${
@@ -224,6 +240,140 @@ export class DefaultSmartWallet extends SmartWallet {
         }`,
       )
     }
+  }
+
+  /**
+   * Add a new signer to the smart wallet
+   * @description Adds either an EOA address signer or a WebAuthn account signer
+   * to the underlying smart wallet contract. For WebAuthn accounts, the method
+   * extracts the x and y coordinates from the provided 64-byte public key and
+   * calls the contract's `addOwnerPublicKey`. For EOA addresses it calls
+   * `addOwnerAddress`. The add operation is sent as a UserOperation via
+   * {@link sendBatch}, and upon success the method queries the contract to
+   * resolve the signer's index.
+   * @param signer - Ethereum address (EOA) or a `WebAuthnAccount` to add
+   * @param chainId - Target chain on which the smart wallet operates
+   * @returns Promise resolving to the onchain signer index for the newly added signer
+   * @throws Error if the add operation fails or the owner index cannot be found
+   */
+  async addSigner(signer: Signer, chainId: SupportedChainId): Promise<number> {
+    const calls = []
+    if (typeof signer === 'string') {
+      calls.push({
+        to: this.address,
+        data: encodeFunctionData({
+          abi: smartWalletAbi,
+          functionName: 'addOwnerAddress',
+          args: [signer] as const,
+        }),
+        value: 0n,
+      })
+    } else if (signer.type === 'webAuthn') {
+      const [x, y] = decodeAbiParameters(
+        [{ type: 'bytes32' }, { type: 'bytes32' }],
+        signer.publicKey,
+      )
+      calls.push({
+        to: this.address,
+        data: encodeFunctionData({
+          abi: smartWalletAbi,
+          functionName: 'addOwnerPublicKey',
+          args: [x, y] as const,
+        }),
+        value: 0n,
+      })
+    }
+
+    const { success, receipt } = await this.sendBatch(calls, chainId)
+
+    if (!success) {
+      throw new TransactionConfirmedButRevertedError(
+        'add signer call failed',
+        receipt,
+      )
+    }
+
+    const signerIndex = await retryOnStaleRead(
+      () =>
+        findOwnerIndex({
+          address: this.address,
+          signer,
+          client: this.chainManager.getPublicClient(chainId),
+        }),
+      (index) => index === -1,
+      { retries: 1, delayMs: 2000 },
+    )
+
+    if (signerIndex === -1) {
+      throw new Error('failed to find signer index')
+    }
+
+    return signerIndex
+  }
+
+  /**
+   * Remove an existing signer from the smart wallet
+   * @description Removes a signer (EOA address or WebAuthn public key) from the
+   * smart wallet contract. If `signerIndex` is not provided, the method resolves
+   * it via {@link findSignerIndex}. The removal is executed via {@link sendBatch}
+   * by calling the contract function `removeOwnerAtIndex(index, signerBytes)`.
+   * Returns the ERC-4337 UserOperation receipt on success.
+   * @param signer - Signer to remove: EOA address or `WebAuthnAccount`
+   * @param chainId - Target chain on which the smart wallet operates
+   * @param signerIndex - Optional known on-chain index of the signer (skips lookup when provided)
+   * @returns Promise resolving to the UserOperation receipt for the removal
+   * @throws Error if the signer index cannot be found or the removal operation fails
+   */
+  async removeSigner(
+    signer: Signer,
+    chainId: SupportedChainId,
+    signerIndex?: number,
+  ): Promise<WaitForUserOperationReceiptReturnType> {
+    const resolvedSignerIndex =
+      signerIndex ?? (await this.findSignerIndex(signer, chainId))
+    if (resolvedSignerIndex === -1) {
+      throw new Error('failed to find signer index')
+    }
+    const signerBytes = formatPublicKey(signer)
+    const calls = [
+      {
+        to: this.address,
+        data: encodeFunctionData({
+          abi: smartWalletAbi,
+          functionName: 'removeOwnerAtIndex',
+          args: [BigInt(resolvedSignerIndex), signerBytes] as const,
+        }),
+        value: 0n,
+      },
+    ]
+    const userOperationReceipt = await this.sendBatch(calls, chainId)
+
+    if (!userOperationReceipt.success) {
+      throw new TransactionConfirmedButRevertedError(
+        'remove signer call failed',
+        userOperationReceipt.receipt,
+      )
+    }
+
+    return userOperationReceipt
+  }
+
+  /**
+   * Find the index of a signer in the smart wallet
+   * @param signer - Ethereum address (EOA) or a `WebAuthnAccount` to find
+   * @param chainId - Target chain on which the smart wallet operates
+   * @returns Promise resolving to the onchain signer index for the found signer
+   * returns -1 if the signer is not found
+   */
+  async findSignerIndex(
+    signer: Signer,
+    chainId: SupportedChainId,
+  ): Promise<number> {
+    return findOwnerIndex({
+      address: this.address,
+      signer,
+      client: this.chainManager.getPublicClient(chainId),
+    })
   }
 
   /**
@@ -305,11 +455,7 @@ export class DefaultSmartWallet extends SmartWallet {
   private async getAddress() {
     if (this.deploymentAddress) return this.deploymentAddress
 
-    const owners_bytes = this.owners.map((owner) => {
-      if (typeof owner === 'string') return pad(owner)
-      if (owner.type === 'webAuthn') return owner.publicKey
-      throw new Error('invalid owner type')
-    })
+    const owners_bytes = this.owners.map((owner) => formatPublicKey(owner))
 
     // Factory is the same across all chains, so we can use the first chain to get the wallet address
     const publicClient = this.chainManager.getPublicClient(

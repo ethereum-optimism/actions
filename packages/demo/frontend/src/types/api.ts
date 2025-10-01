@@ -48,6 +48,7 @@ export interface PositionResponse {
 
 export interface TransactionResponse {
   hash: string
+  userOpHash?: string
   blockExplorerUrl: string
   amount: number
   tokenAddress: string

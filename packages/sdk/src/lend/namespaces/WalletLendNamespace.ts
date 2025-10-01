@@ -1,13 +1,12 @@
-import type { Hash } from 'viem'
-
-import type { LendProvider } from '@/lend/core/LendProvider.js'
+import type { LendProvider } from '@/lend/provider.js'
 import type {
   BaseLendConfig,
   ClosePositionParams,
   GetPositionParams,
   LendMarketPosition,
   LendOpenPositionParams,
-} from '@/types/lend/index.js'
+  LendTransactionReceipt,
+} from '@/types/lend.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
@@ -42,7 +41,9 @@ export class WalletLendNamespace<
    * Open a lending position
    * @description Signs and sends a lend transaction from the wallet for the given amount and asset
    */
-  async openPosition(params: LendOpenPositionParams): Promise<Hash> {
+  async openPosition(
+    params: LendOpenPositionParams,
+  ): Promise<LendTransactionReceipt> {
     const lendTransaction = await this.provider.openPosition({
       ...params,
       walletAddress: this.wallet.address,
@@ -69,11 +70,15 @@ export class WalletLendNamespace<
     if (!transactionData.openPosition) {
       throw new Error('No openPosition transaction data returned')
     }
-
-    return await this.wallet.send(
+    const userOperationReceipt = await this.wallet.send(
       transactionData.openPosition,
       params.marketId.chainId,
     )
+
+    return {
+      receipt: userOperationReceipt.receipt,
+      userOpHash: userOperationReceipt.userOpHash,
+    }
   }
 
   /**
@@ -96,7 +101,9 @@ export class WalletLendNamespace<
    * @param closePositionParams - Position closing parameters
    * @returns Promise resolving to transaction hash
    */
-  async closePosition(params: ClosePositionParams): Promise<Hash> {
+  async closePosition(
+    params: ClosePositionParams,
+  ): Promise<LendTransactionReceipt> {
     const closeTransaction = await this.provider.closePosition({
       ...params,
       walletAddress: this.wallet.address,
@@ -119,10 +126,15 @@ export class WalletLendNamespace<
       throw new Error('No closePosition transaction data returned')
     }
 
-    return await this.wallet.send(
+    const userOperationReceipt = await this.wallet.send(
       transactionData.closePosition,
       params.marketId.chainId,
     )
+
+    return {
+      receipt: userOperationReceipt.receipt,
+      userOpHash: userOperationReceipt.userOpHash,
+    }
   }
 
   /**

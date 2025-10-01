@@ -1,4 +1,4 @@
-import type { Address, Hex } from 'viem'
+import type { Address, Hash, Hex, TransactionReceipt } from 'viem'
 
 import type { SupportedChainId } from '../../constants/supportedChains.js'
 import type { Asset } from '../asset.js'
@@ -66,6 +66,86 @@ export interface LendMarketSupply {
 }
 
 /**
+ * Lending transaction type
+ */
+export interface LendTransaction {
+  /** Transaction hash (set after execution) */
+  hash?: string
+  /** Amount lent */
+  amount: bigint
+  /** Asset address */
+  asset: Address
+  /** Market ID */
+  marketId: string
+  /** Estimated APY at time of lending */
+  apy: number
+  /** Transaction timestamp */
+  timestamp: number
+  /** Transaction data for execution (optional) */
+  transactionData?: {
+    /** Approval transaction (if needed) */
+    approval?: TransactionData
+    /** Main operation transaction (openPosition or closePosition) */
+    openPosition?: TransactionData
+    closePosition?: TransactionData
+  }
+  /** Slippage tolerance used */
+  slippage?: number
+}
+
+/**
+ * Lending transaction receipt
+ */
+export interface LendTransactionReceipt {
+  receipt: TransactionReceipt<bigint, number, 'success' | 'reverted'>
+  userOpHash?: Hash
+}
+
+/**
+ * Lending market information
+ * @description Basic information about a lending market
+ */
+export interface LendMarketBase {
+  /** Market identifier */
+  id: string
+  /** Market name */
+  name: string
+  /** Loanable asset address */
+  loanToken: Address
+  /** Collateral asset address */
+  collateralToken: Address
+  /** Current supply APY */
+  supplyApy: number
+  /** Current utilization rate */
+  utilization: number
+  /** Available liquidity */
+  liquidity: bigint
+}
+
+/**
+ * Detailed lending market information
+ * @description Comprehensive market data including rates and parameters
+ */
+export interface LendMarketInfo extends LendMarketBase {
+  /** Oracle address */
+  oracle: Address
+  /** Interest rate model address */
+  irm: Address
+  /** Loan-to-value ratio */
+  lltv: number
+  /** Total supply */
+  totalSupply: bigint
+  /** Total borrow */
+  totalBorrow: bigint
+  /** Supply rate */
+  supplyRate: bigint
+  /** Borrow rate */
+  borrowRate: bigint
+  /** Last update timestamp */
+  lastUpdate: number
+}
+
+/**
  * APY breakdown for detailed display
  * @description Breakdown of APY components following Morpho's official methodology
  */
@@ -97,24 +177,6 @@ export interface LendMarketMetadata {
   fee: number
   /** Last update timestamp */
   lastUpdate: number
-}
-
-/**
- * Lending transaction type
- */
-export interface LendTransaction {
-  hash?: string
-  amount: bigint
-  asset: Address
-  marketId: string
-  apy: number
-  timestamp: number
-  transactionData?: {
-    approval?: TransactionData
-    openPosition?: TransactionData
-    closePosition?: TransactionData
-  }
-  slippage?: number
 }
 
 /**

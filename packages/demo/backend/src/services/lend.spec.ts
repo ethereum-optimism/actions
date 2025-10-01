@@ -123,7 +123,10 @@ describe('Lend Service', () => {
     it('should call wallet.lend.closePosition with correct parameters', async () => {
       const mockWallet = {
         lend: {
-          closePosition: vi.fn().mockResolvedValue('0xtxhash'),
+          closePosition: vi.fn().mockResolvedValue({
+            receipt: { transactionHash: '0xtxhash' },
+            userOpHash: '0xuserophash',
+          }),
         },
       }
 

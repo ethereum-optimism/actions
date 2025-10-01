@@ -1,9 +1,10 @@
-import type { Hash } from 'viem'
+import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstraction'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider, TransactionData } from '@/types/lend/index.js'
+import type { LendProvider, TransactionData } from '@/types/lend.js'
+import { createMock as createSmartWalletMock } from '@/wallet/core/wallets/smart/abstract/__mocks__/SmartWallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 import { WalletLendNamespace } from '../WalletLendNamespace.js'
@@ -17,11 +18,19 @@ describe('WalletLendNamespace', () => {
   beforeEach(() => {
     mockProvider = createMockLendProvider()
     // Create a mock SmartWallet with send and sendBatch methods
-    mockWallet = {
+    mockWallet = createSmartWalletMock({
       address: mockWalletAddress,
-      send: vi.fn().mockResolvedValue('0xmockhash' as Hash),
-      sendBatch: vi.fn().mockResolvedValue('0xmockbatchhash' as Hash),
-    } as unknown as SmartWallet
+      sendImpl: async () =>
+        ({
+          receipt: { success: true },
+          userOpHash: '0xmockhash',
+        }) as unknown as WaitForUserOperationReceiptReturnType,
+      sendBatchImpl: async () =>
+        ({
+          receipt: { success: true },
+          userOpHash: '0xmockbatchhash',
+        }) as unknown as WaitForUserOperationReceiptReturnType,
+    }) as unknown as SmartWallet
 
     // Create a mock regular wallet without SmartWallet methods
     mockRegularWallet = {
@@ -112,7 +121,10 @@ describe('WalletLendNamespace', () => {
         marketId,
       })
 
-      expect(result).toBe('0xmockhash')
+      expect(result).toEqual({
+        receipt: { success: true },
+        userOpHash: '0xmockhash',
+      })
 
       expect(mockProvider.openPosition).toHaveBeenCalledWith({
         amount,
@@ -148,7 +160,6 @@ describe('WalletLendNamespace', () => {
       }
 
       vi.mocked(mockProvider.closePosition).mockResolvedValue(mockTransaction)
-      vi.mocked(mockWallet.send).mockResolvedValue('0xtxhash' as Hash)
 
       const result = await namespace.closePosition(closeParams)
 
@@ -161,7 +172,10 @@ describe('WalletLendNamespace', () => {
         mockTransaction.transactionData.closePosition,
         130,
       )
-      expect(result).toBe('0xtxhash')
+      expect(result).toEqual({
+        receipt: { success: true },
+        userOpHash: '0xmockhash',
+      })
     })
 
     it('should throw error for non-SmartWallet', async () => {
@@ -241,6 +255,9 @@ describe('WalletLendNamespace', () => {
       [approval, openPosition],
       130,
     )
-    expect(result).toBe('0xmockbatchhash')
+    expect(result).toEqual({
+      receipt: { success: true },
+      userOpHash: '0xmockbatchhash',
+    })
   })
 })

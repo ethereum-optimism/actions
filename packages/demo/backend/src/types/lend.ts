@@ -40,6 +40,7 @@ export interface PositionParams {
  */
 export interface PositionResponse {
   hash: string
+  userOpHash?: string
   blockExplorerUrl: string
   amount: number
   tokenAddress: Address

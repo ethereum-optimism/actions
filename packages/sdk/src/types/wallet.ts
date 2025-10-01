@@ -1,12 +1,13 @@
 import type { Address, LocalAccount } from 'viem'
-import type { WebAuthnAccount } from 'viem/account-abstraction'
+
+import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 
 /**
  * Options for creating a smart wallet
  * @description Parameters for creating a new smart wallet with specified owners and signer
  */
 export type CreateSmartWalletOptions = {
-  owners: Array<Address | WebAuthnAccount>
+  owners: Signer[]
   signer: LocalAccount
   nonce?: bigint
 }
@@ -17,7 +18,7 @@ export type CreateSmartWalletOptions = {
  */
 export type GetSmartWalletOptions = {
   signer: LocalAccount
-  deploymentOwners?: Array<Address | WebAuthnAccount>
+  deploymentOwners?: Signer[]
   signerOwnerIndex?: number
   walletAddress?: Address
   nonce?: bigint
