@@ -79,8 +79,6 @@ export interface LendTransaction {
   marketId: string
   /** Estimated APY at time of lending */
   apy: number
-  /** Transaction timestamp */
-  timestamp: number
   /** Transaction data for execution (optional) */
   transactionData?: {
     /** Approval transaction (if needed) */

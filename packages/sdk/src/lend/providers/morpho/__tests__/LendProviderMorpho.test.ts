@@ -121,7 +121,6 @@ describe('LendProviderMorpho', () => {
       )
       expect(withdrawTransaction).toHaveProperty('marketId', marketId.address)
       expect(withdrawTransaction).toHaveProperty('apy')
-      expect(withdrawTransaction).toHaveProperty('timestamp')
       expect(withdrawTransaction).toHaveProperty('transactionData')
       expect(withdrawTransaction.transactionData).toHaveProperty(
         'closePosition',
@@ -223,7 +222,6 @@ describe('LendProviderMorpho', () => {
       )
       expect(lendTransaction).toHaveProperty('marketId', marketId.address)
       expect(lendTransaction).toHaveProperty('apy')
-      expect(lendTransaction).toHaveProperty('timestamp')
       expect(lendTransaction).toHaveProperty('transactionData')
       expect(lendTransaction.transactionData).toHaveProperty('approval')
       expect(lendTransaction.transactionData).toHaveProperty('openPosition')

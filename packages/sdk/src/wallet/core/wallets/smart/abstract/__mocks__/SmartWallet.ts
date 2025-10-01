@@ -4,7 +4,7 @@ import { vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
-import type { TransactionData } from '@/types/lend.js'
+import type { TransactionData } from '@/types/lend/index.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 export type CreateSmartWalletMockOptions = {

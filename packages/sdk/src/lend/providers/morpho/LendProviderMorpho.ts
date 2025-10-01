@@ -86,14 +86,11 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         args: [params.marketId.address, params.amountWei],
       })
 
-      const currentTimestamp = Math.floor(Date.now() / 1000)
-
       return {
         amount: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
-        timestamp: currentTimestamp,
         transactionData: {
           approval: {
             to: assetAddress,
@@ -148,14 +145,11 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         owner,
       )
 
-      const currentTimestamp = Math.floor(Date.now() / 1000)
-
       return {
         amount: params.amount,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
-        timestamp: currentTimestamp,
         transactionData: {
           closePosition: {
             to: params.marketId.address,

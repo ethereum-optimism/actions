@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider, TransactionData } from '@/types/lend.js'
+import type { LendProvider, TransactionData } from '@/types/lend/index.js'
 import { createMock as createSmartWalletMock } from '@/wallet/core/wallets/smart/abstract/__mocks__/SmartWallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
@@ -102,7 +102,6 @@ describe('WalletLendNamespace', () => {
         asset: mockAsset.address[130],
         marketId: marketId.address,
         apy: 0.05,
-        timestamp: Date.now(),
         transactionData: {
           openPosition: {
             to: marketId.address,
@@ -149,7 +148,6 @@ describe('WalletLendNamespace', () => {
         asset: getRandomAddress(),
         marketId: closeParams.marketId.address,
         apy: 0.05,
-        timestamp: Date.now(),
         transactionData: {
           closePosition: {
             to: closeParams.marketId.address,
@@ -190,7 +188,6 @@ describe('WalletLendNamespace', () => {
         asset: getRandomAddress(),
         marketId: closeParams.marketId.address,
         apy: 0.05,
-        timestamp: Date.now(),
         transactionData: {
           closePosition: {
             to: closeParams.marketId.address,

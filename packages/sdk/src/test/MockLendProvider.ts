@@ -221,7 +221,6 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
-      timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         approval: {
@@ -255,7 +254,6 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
-      timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         approval: {
@@ -350,7 +348,6 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       asset: assetAddress,
       marketId: marketId.address,
       apy: 0,
-      timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         closePosition: {
@@ -374,7 +371,6 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       asset,
       marketId: marketId || 'mock-market',
       apy: 0,
-      timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         closePosition: {

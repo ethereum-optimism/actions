@@ -17,7 +17,6 @@ export function createMockOpenTransaction(params: {
     asset: params.asset,
     marketId: params.marketId,
     apy: 0.05,
-    timestamp: Date.now(),
     transactionData: {
       approval: params.approval,
       openPosition: params.openPosition,
@@ -40,7 +39,6 @@ export function createMockCloseTransaction(params: {
     asset: params.asset,
     marketId: params.marketId,
     apy: 0.05,
-    timestamp: Date.now(),
     transactionData: {
       closePosition: params.closePosition,
     },
