@@ -1,4 +1,7 @@
 import NavBar from './NavBar'
+import PrivyLogo from '../assets/privy-logo-white.svg'
+import DynamicLogo from '../assets/dynamic-logo-white.svg'
+import TurnkeyLogo from '../assets/turnkey-logo-white.svg'
 
 function Home() {
   return (
@@ -32,6 +35,19 @@ function Home() {
   █████   █████░░██████   ░░█████  █████░░██████  ████ █████ ██████
  ░░░░░   ░░░░░  ░░░░░░     ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░
      `}</div>
+      </div>
+      <div className="text-center pb-8">
+        <p className="text-gray-400 text-lg">
+          By{' '}
+          <a
+            href="https://www.optimism.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-gray-300"
+          >
+            Optimism
+          </a>
+        </p>
       </div>
 
       {/* Hero Section */}
@@ -73,7 +89,13 @@ function Home() {
         <div className="py-16">
           <div className="max-w-4xl mx-auto mb-8">
             <h2 className="text-lg font-medium text-gray-300 mb-4">Overview</h2>
-            <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent"></div>
+            <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
+            <p className="text-gray-300 mb-4">
+              Actions is an open source SDK for onchain actions:{' '}
+              <strong>Lend</strong>, <strong>Borrow</strong>,{' '}
+              <strong>Swap</strong>, <strong>Pay</strong>, without managing
+              complex infrastructure or custody.
+            </p>
           </div>
           <div
             className="rounded-lg overflow-hidden max-w-4xl mx-auto shadow-2xl"
@@ -275,47 +297,7 @@ function Home() {
 
           {/* Core Capabilities Grid */}
           <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="text-center">
-                <div className="mb-3 flex justify-center">
-                  <svg
-                    className="w-8 h-8"
-                    style={{ color: 'rgb(184, 187, 38)' }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="font-semibold mb-2 text-white">Fund</h3>
-                <p className="text-gray-300 text-sm">Onramp to stables</p>
-              </div>
-              <div className="text-center">
-                <div className="mb-3 flex justify-center">
-                  <svg
-                    className="w-8 h-8"
-                    style={{ color: 'rgb(184, 187, 38)' }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                    />
-                  </svg>
-                </div>
-                <h3 className="font-semibold mb-2 text-white">Earn</h3>
-                <p className="text-gray-300 text-sm">Earn DeFi yield</p>
-              </div>
+            <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center">
                 <div className="mb-3 flex justify-center">
                   <svg
@@ -334,27 +316,7 @@ function Home() {
                   </svg>
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Lend</h3>
-                <p className="text-gray-300 text-sm">Lend via Morpho</p>
-              </div>
-              <div className="text-center">
-                <div className="mb-3 flex justify-center">
-                  <svg
-                    className="w-8 h-8"
-                    style={{ color: 'rgb(184, 187, 38)' }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-                    />
-                  </svg>
-                </div>
-                <h3 className="font-semibold mb-2 text-white">Swap</h3>
-                <p className="text-gray-300 text-sm">Trade via Uniswap</p>
+                <p className="text-gray-300 text-sm">Lend across markets</p>
               </div>
               <div className="text-center">
                 <div className="mb-3 flex justify-center">
@@ -374,7 +336,29 @@ function Home() {
                   </svg>
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Borrow</h3>
-                <p className="text-gray-300 text-sm">Borrow via Morpho</p>
+                <p className="text-gray-300 text-sm">
+                  Borrow against collateral
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="mb-3 flex justify-center">
+                  <svg
+                    className="w-8 h-8"
+                    style={{ color: 'rgb(184, 187, 38)' }}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                    />
+                  </svg>
+                </div>
+                <h3 className="font-semibold mb-2 text-white">Swap</h3>
+                <p className="text-gray-300 text-sm">Trade via Dex</p>
               </div>
               <div className="text-center">
                 <div className="mb-3 flex justify-center">
@@ -429,12 +413,18 @@ function Home() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={1.5}
-                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
                 </div>
-                <h3 className="font-semibold mb-2 text-white">Fullstack SDK</h3>
-                <p className="text-gray-300 text-sm">Front to back</p>
+                <h3 className="font-semibold mb-2 text-white">Config</h3>
+                <p className="text-gray-300 text-sm">Modular configuration</p>
               </div>
             </div>
           </div>
@@ -443,11 +433,17 @@ function Home() {
           <div className="pt-24 pb-16">
             <div className="max-w-4xl mx-auto mb-8">
               <h2 className="text-lg font-medium text-gray-300 mb-4">
-                Getting Started
+                Configurable
               </h2>
-              <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent"></div>
+              <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
+              <p className="text-gray-300 mb-4">
+                Modular adaptors augment the library to your preferences. Pick
+                which DeFi protocols, markets, networks, and providers you want
+                to support.
+              </p>
             </div>
-            <div className="max-w-4xl mx-auto">
+
+            <div className="max-w-4xl mx-auto mb-8">
               <div
                 className="rounded-lg overflow-hidden shadow-2xl"
                 style={{
@@ -503,7 +499,9 @@ function Home() {
                       {` `}
                       <span style={{ color: '#4db6ac' }}>{`config`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`ActionsConfig`}</span>
+                      <span
+                        style={{ color: '#4db6ac' }}
+                      >{`ActionsConfig`}</span>
                       {` = {
   `}
                       <span style={{ color: '#9cdcfe' }}>{`wallet`}</span>
@@ -771,6 +769,35 @@ function Home() {
 }`}
                     </code>
                   </pre>
+                </div>
+              </div>
+            </div>
+            <div className="max-w-4xl mx-auto mb-8">
+              <h2 className="text-lg font-medium text-gray-300 mb-4">
+                Bring your own wallet
+              </h2>
+              <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
+              <div className="flex justify-start items-center gap-8 mb-8">
+                <div className="w-1/3 flex justify-center">
+                  <img
+                    src={PrivyLogo}
+                    alt="Privy"
+                    className="h-12 w-auto object-contain"
+                  />
+                </div>
+                <div className="w-1/3 flex justify-center">
+                  <img
+                    src={DynamicLogo}
+                    alt="Dynamic"
+                    className="h-12 w-auto object-contain"
+                  />
+                </div>
+                <div className="w-1/3 flex justify-center">
+                  <img
+                    src={TurnkeyLogo}
+                    alt="Turnkey"
+                    className="h-12 w-auto object-contain"
+                  />
                 </div>
               </div>
             </div>
