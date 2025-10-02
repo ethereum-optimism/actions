@@ -2,10 +2,8 @@ import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
+import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { getAssetAddress } from '@/utils/assets.js'
-
-import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS } from '../../../constants/supportedChains.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -16,7 +14,9 @@ import type {
   LendOpenPositionInternalParams,
   LendTransaction,
   MorphoLendConfig,
-} from '../../../types/lend/index.js'
+} from '@/types/lend/index.js'
+import { getAssetAddress } from '@/utils/assets.js'
+
 import { LendProvider } from '../../core/LendProvider.js'
 import { getVault, getVaults } from './sdk.js'
 

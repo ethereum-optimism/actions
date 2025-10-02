@@ -8,8 +8,8 @@ import {
   MockReceiverAddress,
   MockWETHMarket,
 } from '@/test/MockMarkets.js'
+import type { MorphoLendConfig } from '@/types/lend/index.js'
 
-import type { MorphoLendConfig } from '../../../../types/lend/index.js'
 import { createMockMorphoVault } from '../__mocks__/mockVault.js'
 import { LendProviderMorpho } from '../LendProviderMorpho.js'
 
