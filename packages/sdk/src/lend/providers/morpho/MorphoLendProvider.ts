@@ -36,7 +36,7 @@ export const SUPPORTED_CHAIN_IDS = [
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
-export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
+export class MorphoLendProvider extends LendProvider<MorphoLendConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
 
   private chainManager: ChainManager

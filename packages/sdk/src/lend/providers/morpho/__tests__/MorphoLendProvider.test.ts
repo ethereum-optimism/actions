@@ -2,7 +2,7 @@ import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockMorphoVault } from '@/lend/providers/morpho/__mocks__/mockVault.js'
-import { LendProviderMorpho } from '@/lend/providers/morpho/LendProviderMorpho.js'
+import { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import {
@@ -34,8 +34,8 @@ vi.mock('@morpho-org/bundler-sdk-viem', () => ({
   encodeBundle: vi.fn(),
 }))
 
-describe('LendProviderMorpho', () => {
-  let provider: LendProviderMorpho
+describe('MorphoLendProvider', () => {
+  let provider: MorphoLendProvider
   let mockConfig: MorphoLendConfig
   let mockChainManager: ChainManager
 
@@ -48,12 +48,12 @@ describe('LendProviderMorpho', () => {
 
     mockChainManager = new MockChainManager() as unknown as ChainManager
 
-    provider = new LendProviderMorpho(mockConfig, mockChainManager)
+    provider = new MorphoLendProvider(mockConfig, mockChainManager)
   })
 
   describe('constructor', () => {
     it('should initialize with provided config', () => {
-      expect(provider).toBeInstanceOf(LendProviderMorpho)
+      expect(provider).toBeInstanceOf(MorphoLendProvider)
     })
 
     it('should use default slippage when not provided', () => {
@@ -61,11 +61,11 @@ describe('LendProviderMorpho', () => {
         ...mockConfig,
         defaultSlippage: undefined,
       }
-      const providerWithDefaults = new LendProviderMorpho(
+      const providerWithDefaults = new MorphoLendProvider(
         configWithoutSlippage,
         mockChainManager,
       )
-      expect(providerWithDefaults).toBeInstanceOf(LendProviderMorpho)
+      expect(providerWithDefaults).toBeInstanceOf(MorphoLendProvider)
     })
   })
 
@@ -280,7 +280,7 @@ describe('LendProviderMorpho', () => {
         defaultSlippage: 50,
       }
 
-      const providerWithoutAllowlist = new LendProviderMorpho(
+      const providerWithoutAllowlist = new MorphoLendProvider(
         configWithoutAllowlist,
         mockChainManager,
       )
@@ -295,7 +295,7 @@ describe('LendProviderMorpho', () => {
         marketAllowlist: [MockGauntletUSDCMarket],
       }
 
-      const providerWithAllowlist = new LendProviderMorpho(
+      const providerWithAllowlist = new MorphoLendProvider(
         configWithAllowlist,
         mockChainManager,
       )
@@ -314,7 +314,7 @@ describe('LendProviderMorpho', () => {
         defaultSlippage: customSlippage,
       }
 
-      const providerWithSlippage = new LendProviderMorpho(
+      const providerWithSlippage = new MorphoLendProvider(
         configWithSlippage,
         mockChainManager,
       )
@@ -327,7 +327,7 @@ describe('LendProviderMorpho', () => {
         provider: 'morpho',
       }
 
-      const providerWithoutSlippage = new LendProviderMorpho(
+      const providerWithoutSlippage = new MorphoLendProvider(
         configWithoutSlippage,
         mockChainManager,
       )
@@ -341,7 +341,7 @@ describe('LendProviderMorpho', () => {
         marketAllowlist: [MockGauntletUSDCMarket, MockWETHMarket],
       }
 
-      const provider = new LendProviderMorpho(
+      const provider = new MorphoLendProvider(
         configWithMultipleMarkets,
         mockChainManager,
       )
