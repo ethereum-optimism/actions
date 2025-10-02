@@ -1,2 +1,2 @@
-export { LendProvider } from './core/LendProvider.js'
-export { LendProviderMorpho } from './providers/morpho/LendProviderMorpho.js'
+export { LendProvider } from '@/lend/core/LendProvider.js'
+export { LendProviderMorpho } from '@/lend/providers/morpho/LendProviderMorpho.js'
