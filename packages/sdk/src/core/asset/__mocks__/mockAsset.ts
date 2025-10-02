@@ -1,5 +1,5 @@
 import { getRandomAddress } from '@/test/utils.js'
-import type { Asset } from '@/types/index.js'
+import type { Asset } from '@/types/asset.js'
 
 /**
  * Creates a mock USDC asset for testing
