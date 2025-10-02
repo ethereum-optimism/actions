@@ -55,9 +55,9 @@ router.post('/wallet/send', walletController.sendTokens)
 
 // Lend endpoints
 router.get('/lend/markets', lendController.getMarkets)
-router.get('/lend/market/:chainId/:marketId', lendController.getMarket)
+router.get('/lend/market/:chainId/:marketAddress', lendController.getMarket)
 router.get(
-  '/lend/market/:chainId/:marketId/position/:walletId',
+  '/lend/market/:chainId/:marketAddress/position/:walletId',
   lendController.getPosition,
 )
 router.post('/lend/position/open', authMiddleware, lendController.openPosition)

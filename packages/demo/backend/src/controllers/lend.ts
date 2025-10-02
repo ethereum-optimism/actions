@@ -42,7 +42,7 @@ const ClosePositionRequestSchema = z.object({
 
 const MarketBalanceParamsSchema = z.object({
   params: z.object({
-    marketId: z
+    marketAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
     walletId: z.string().min(1, 'walletId is required'),
@@ -78,20 +78,20 @@ export class LendController {
   async getMarket(c: Context) {
     try {
       const chainId = Number(c.req.param('chainId'))
-      const marketId = c.req.param('marketId')
+      const marketAddress = c.req.param('marketAddress')
 
-      if (!chainId || !marketId) {
+      if (!chainId || !marketAddress) {
         return c.json(
           {
             error: 'Invalid parameters',
-            message: 'chainId and marketId are required',
+            message: 'chainId and marketAddress are required',
           },
           400,
         )
       }
 
       const marketInfo = await lendService.getMarket({
-        address: marketId as Address,
+        address: marketAddress as Address,
         chainId: chainId as SupportedChainId,
       })
       const formattedMarket = await lendService.formatMarketResponse(marketInfo)
@@ -116,11 +116,11 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        params: { marketId, walletId, chainId },
+        params: { marketAddress, walletId, chainId },
       } = validation.data
       const balance = await lendService.getPosition(
         {
-          address: marketId as Address,
+          address: marketAddress as Address,
           chainId: Number(chainId) as SupportedChainId,
         },
         walletId,
