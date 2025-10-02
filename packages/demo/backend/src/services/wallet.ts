@@ -40,7 +40,7 @@ export async function createWallet(): Promise<{
     walletId: privyWallet.id,
     address: getAddress(privyWallet.address),
   })
-  const wallet = await verbs.wallet.createSmartWallet({
+  const { wallet } = await verbs.wallet.createSmartWallet({
     owners: [privySigner.address],
     signer: privySigner,
   })
@@ -85,6 +85,7 @@ export async function getWallet(
   })
   const wallet = await verbs.wallet.getSmartWallet({
     signer: privySigner,
+    owners: [privySigner.address],
     deploymentOwners: [getAddress(privyWallet.address)],
   })
 
@@ -110,6 +111,7 @@ export async function getAllWallets(
         })
         const wallet = await verbs.wallet.getSmartWallet({
           signer: privySigner,
+          owners: [privySigner.address],
           deploymentOwners: [privySigner.address],
         })
         return {

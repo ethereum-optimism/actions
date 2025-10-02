@@ -26,6 +26,8 @@ import {
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
 import { findOwnerIndex } from '@/wallet/core/wallets/smart/default/utils/findOwnerIndex.js'
 
+import { SmartWalletDeploymentError } from '../../error/errors.js'
+
 vi.mock('viem/account-abstraction', () => ({
   toCoinbaseSmartAccount: vi.fn(),
 }))
@@ -35,9 +37,10 @@ vi.mock('@/wallet/core/wallets/smart/default/utils/findOwnerIndex.js', () => ({
 }))
 
 // Mock data
-const mockOwners: Address[] = ['0x123', '0x456']
+const mockSignerAddress = getRandomAddress()
+const mockOwners: Address[] = [mockSignerAddress, getRandomAddress()]
 const mockSigner: LocalAccount = {
-  address: '0x123',
+  address: mockSignerAddress,
   type: 'local',
 } as unknown as LocalAccount
 const mockChainManager = new MockChainManager({
@@ -69,8 +72,12 @@ describe('DefaultSmartWallet', () => {
       mockChainManager.getPublicClient(baseSepolia.id),
     )
     publicClient.readContract = vi.fn().mockResolvedValue(mockDeploymentAddress)
-    const owners = [getRandomAddress(), getRandomAddress()]
-    const wallet = await createAndInitDefaultSmartWallet({ owners })
+    const signer = {
+      address: mockSignerAddress,
+      type: 'local',
+    } as unknown as LocalAccount
+    const owners = [signer.address, getRandomAddress()]
+    const wallet = await createAndInitDefaultSmartWallet({ owners, signer })
 
     expect(wallet.address).toBe(mockDeploymentAddress)
     expect(publicClient.readContract).toHaveBeenCalledWith({
@@ -91,11 +98,17 @@ describe('DefaultSmartWallet', () => {
 
   it('should call toCoinbaseSmartAccount with correct arguments', async () => {
     const deploymentAddress = getRandomAddress()
+    const signer = {
+      address: getRandomAddress(),
+      type: 'local',
+    } as unknown as LocalAccount
+    const owners = [getRandomAddress(), signer.address]
     const signerOwnerIndex = 1
     const nonce = BigInt(123)
     const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress,
-      signerOwnerIndex,
+      owners,
+      signer,
       nonce,
     })
 
@@ -107,7 +120,7 @@ describe('DefaultSmartWallet', () => {
       address: deploymentAddress,
       ownerIndex: signerOwnerIndex,
       client: mockChainManager.getPublicClient(chainId),
-      owners: [wallet.signer],
+      owners: [owners[0], signer],
       nonce: nonce,
       version: '1.1',
     })
@@ -544,6 +557,197 @@ describe('DefaultSmartWallet', () => {
       createAndInitDefaultSmartWallet({ attributionSuffix: tooLong }),
     ).rejects.toThrow('Attribution suffix must be 16 bytes (0x + 32 hex chars)')
   })
+
+  describe('deploy', () => {
+    it('should deploy wallet successfully when not already deployed', async () => {
+      const signer = {
+        address: getRandomAddress(),
+        type: 'local',
+      } as unknown as LocalAccount
+      const owners = [signer.address, getRandomAddress()]
+      const deploymentAddress = getRandomAddress()
+      const nonce = BigInt(123)
+      const wallet = await createAndInitDefaultSmartWallet({
+        owners,
+        signer,
+        deploymentAddress,
+        nonce,
+      })
+
+      const chainId = unichain.id
+      const mockAccount = {
+        address: deploymentAddress,
+        isDeployed: vi.fn().mockResolvedValue(false),
+      } as unknown as Awaited<ReturnType<typeof toCoinbaseSmartAccount>>
+
+      vi.mocked(toCoinbaseSmartAccount).mockResolvedValue(mockAccount)
+
+      const mockReceipt = {
+        success: true,
+        userOpHash: '0xabc',
+      } as unknown as WaitForUserOperationReceiptReturnType
+
+      const sendBatchSpy = vi
+        .spyOn(wallet, 'sendBatch')
+        .mockResolvedValue(mockReceipt)
+
+      const result = await wallet.deploy(chainId)
+
+      expect(mockAccount.isDeployed).toHaveBeenCalled()
+      expect(sendBatchSpy).toHaveBeenCalledWith(
+        [
+          {
+            to: smartWalletFactoryAddress,
+            value: 0n,
+            data: encodeFunctionData({
+              abi: smartWalletFactoryAbi,
+              functionName: 'createAccount',
+              args: [owners.map((owner) => pad(owner)), nonce],
+            }),
+          },
+        ],
+        chainId,
+      )
+      expect(result).toEqual({
+        chainId,
+        success: true,
+        receipt: mockReceipt,
+      })
+    })
+
+    it('should return success without deploying when wallet is already deployed', async () => {
+      const deploymentAddress = getRandomAddress()
+      const wallet = await createAndInitDefaultSmartWallet({
+        deploymentAddress,
+      })
+
+      const chainId = baseSepolia.id
+      const mockAccount = {
+        address: deploymentAddress,
+        isDeployed: vi.fn().mockResolvedValue(true),
+      } as unknown as Awaited<ReturnType<typeof toCoinbaseSmartAccount>>
+
+      vi.mocked(toCoinbaseSmartAccount).mockResolvedValue(mockAccount)
+
+      const sendBatchSpy = vi.spyOn(wallet, 'sendBatch')
+
+      const result = await wallet.deploy(chainId)
+
+      expect(mockAccount.isDeployed).toHaveBeenCalled()
+      expect(sendBatchSpy).not.toHaveBeenCalled()
+      expect(result).toEqual({
+        chainId,
+        success: true,
+        receipt: undefined,
+      })
+    })
+
+    it('should throw SmartWalletDeploymentError when receipt.success is false', async () => {
+      const deploymentAddress = getRandomAddress()
+      const wallet = await createAndInitDefaultSmartWallet({
+        deploymentAddress,
+      })
+
+      const chainId = unichain.id
+      const mockAccount = {
+        address: deploymentAddress,
+        isDeployed: vi.fn().mockResolvedValue(false),
+      } as unknown as Awaited<ReturnType<typeof toCoinbaseSmartAccount>>
+
+      vi.mocked(toCoinbaseSmartAccount).mockResolvedValue(mockAccount)
+
+      const mockReceipt = {
+        success: false,
+        userOpHash: '0xfailed',
+      } as unknown as WaitForUserOperationReceiptReturnType
+
+      vi.spyOn(wallet, 'sendBatch').mockResolvedValue(mockReceipt)
+
+      await expect(wallet.deploy(chainId)).rejects.toThrow(
+        new SmartWalletDeploymentError(
+          'Failed to deploy smart wallet: deployment transaction reverted',
+          chainId,
+          mockReceipt,
+        ),
+      )
+    })
+
+    it('should throw SmartWalletDeploymentError when sendBatch throws', async () => {
+      const deploymentAddress = getRandomAddress()
+      const wallet = await createAndInitDefaultSmartWallet({
+        deploymentAddress,
+      })
+
+      const chainId = baseSepolia.id
+      const mockAccount = {
+        address: deploymentAddress,
+        isDeployed: vi.fn().mockResolvedValue(false),
+      } as unknown as Awaited<ReturnType<typeof toCoinbaseSmartAccount>>
+
+      vi.mocked(toCoinbaseSmartAccount).mockResolvedValue(mockAccount)
+
+      const sendBatchError = new Error('Network error')
+      vi.spyOn(wallet, 'sendBatch').mockRejectedValue(sendBatchError)
+
+      await expect(wallet.deploy(chainId)).rejects.toThrow(
+        new SmartWalletDeploymentError(
+          'Failed to deploy smart wallet: Network error',
+          chainId,
+        ),
+      )
+    })
+
+    it('should pass correct chainId to sendBatch', async () => {
+      const signer = {
+        address: getRandomAddress(),
+        type: 'local',
+      } as unknown as LocalAccount
+      const owners = [signer.address]
+      const deploymentAddress = getRandomAddress()
+      const nonce = BigInt(456)
+      const wallet = await createAndInitDefaultSmartWallet({
+        owners,
+        signer,
+        deploymentAddress,
+        nonce,
+      })
+
+      const chainId = baseSepolia.id
+      const mockAccount = {
+        address: deploymentAddress,
+        isDeployed: vi.fn().mockResolvedValue(false),
+      } as unknown as Awaited<ReturnType<typeof toCoinbaseSmartAccount>>
+
+      vi.mocked(toCoinbaseSmartAccount).mockResolvedValue(mockAccount)
+
+      const mockReceipt = {
+        success: true,
+        userOpHash: '0xdef',
+      } as unknown as WaitForUserOperationReceiptReturnType
+
+      const sendBatchSpy = vi
+        .spyOn(wallet, 'sendBatch')
+        .mockResolvedValue(mockReceipt)
+
+      await wallet.deploy(chainId)
+
+      expect(sendBatchSpy).toHaveBeenCalledWith(
+        [
+          {
+            to: smartWalletFactoryAddress,
+            value: 0n,
+            data: encodeFunctionData({
+              abi: smartWalletFactoryAbi,
+              functionName: 'createAccount',
+              args: [owners.map((owner) => pad(owner)), nonce],
+            }),
+          },
+        ],
+        chainId,
+      )
+      expect(sendBatchSpy).toHaveBeenCalledTimes(1)
+    })
+  })
 })
 
 async function createAndInitDefaultSmartWallet(
@@ -553,7 +757,6 @@ async function createAndInitDefaultSmartWallet(
     chainManager?: ChainManager
     lendProvider?: LendProvider<LendConfig>
     deploymentAddress?: Address
-    signerOwnerIndex?: number
     nonce?: bigint
     attributionSuffix?: Hex
   } = {},
@@ -564,7 +767,6 @@ async function createAndInitDefaultSmartWallet(
     chainManager = mockChainManager,
     lendProvider = mockLendProvider,
     deploymentAddress,
-    signerOwnerIndex,
     nonce,
     attributionSuffix,
   } = params
@@ -574,7 +776,6 @@ async function createAndInitDefaultSmartWallet(
     chainManager,
     lendProvider,
     deploymentAddress,
-    signerOwnerIndex,
     nonce,
     attributionSuffix,
   })

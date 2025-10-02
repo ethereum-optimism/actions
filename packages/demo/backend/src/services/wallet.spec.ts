@@ -54,12 +54,15 @@ describe('Wallet Service', () => {
       mockPrivyClient.walletApi.createWallet.mockResolvedValue(mockPrivyWallet)
 
       const mockWallet = {
-        id: 'wallet-123',
-        address: '0x1234567890123456789012345678901234567890',
-        signer: {
+        wallet: {
+          id: 'wallet-123',
           address: '0x1234567890123456789012345678901234567890',
+          signer: {
+            address: '0x1234567890123456789012345678901234567890',
+          },
+          lend: {},
         },
-        lend: {},
+        deployments: [{ chainId: 1, receipt: undefined, success: true }],
       }
 
       mockVerbs.wallet.createSmartWallet.mockResolvedValue(mockWallet)
@@ -113,6 +116,7 @@ describe('Wallet Service', () => {
           type: 'local',
           address: '0x1234567890123456789012345678901234567890',
         },
+        owners: ['0x1234567890123456789012345678901234567890'],
         deploymentOwners: ['0x1234567890123456789012345678901234567890'],
       })
       expect(result).toEqual(mockWallet)
@@ -271,6 +275,7 @@ describe('Wallet Service', () => {
           address: '0x1234567890123456789012345678901234567890',
           type: 'local',
         },
+        owners: ['0x1234567890123456789012345678901234567890'],
         deploymentOwners: ['0x1234567890123456789012345678901234567890'],
       })
       expect(mockWallet.getBalance).toHaveBeenCalled()
@@ -317,6 +322,7 @@ describe('Wallet Service', () => {
           address: mockWallet.address,
           type: 'local',
         },
+        owners: ['0x1234567890123456789012345678901234567890'],
         deploymentOwners: [mockWallet.address],
       })
       expect(mockWallet.getBalance).toHaveBeenCalled()

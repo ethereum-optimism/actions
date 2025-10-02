@@ -29,8 +29,11 @@ import {
   smartWalletFactoryAbi,
   smartWalletFactoryAddress,
 } from '@/wallet/core/wallets/smart/default/constants/index.js'
+import type { Owners } from '@/wallet/core/wallets/smart/default/types/index.js'
 import { findOwnerIndex } from '@/wallet/core/wallets/smart/default/utils/findOwnerIndex.js'
+import { findSignerIndex } from '@/wallet/core/wallets/smart/default/utils/findSignerIndex.js'
 import { formatPublicKey } from '@/wallet/core/wallets/smart/default/utils/formatPublicKey.js'
+import { SmartWalletDeploymentError } from '@/wallet/core/wallets/smart/error/errors.js'
 
 /**
  * Smart Wallet Implementation
@@ -43,9 +46,9 @@ export class DefaultSmartWallet extends SmartWallet {
   /** Address of the smart wallet */
   private _address!: Address
   /** Array of wallet owners (Ethereum addresses or WebAuthn public keys) */
-  private owners: Signer[]
-  /** Index of the signer in the owners array (defaults to 0 if not specified) */
-  private signerOwnerIndex?: number
+  private owners: Owners
+  /** Index of the signer in the owners array */
+  private signerOwnerIndex: number
   /** Known deployment address of the wallet (if already deployed) */
   private deploymentAddress?: Address
   /** Provider for lending market operations */
@@ -71,13 +74,15 @@ export class DefaultSmartWallet extends SmartWallet {
     chainManager: ChainManager,
     lendProvider?: LendProvider<LendConfig>,
     deploymentAddress?: Address,
-    signerOwnerIndex?: number,
     nonce?: bigint,
     attributionSuffix?: Hex,
   ) {
     super(chainManager)
-    this.owners = owners
+
+    const { owners: ownersWithLocalAccount, signerOwnerIndex } =
+      DefaultSmartWallet.validateAndConstructOwners(owners, signer)
     this.signer = signer
+    this.owners = ownersWithLocalAccount
     this.signerOwnerIndex = signerOwnerIndex
     this.deploymentAddress = deploymentAddress
     this.lendProvider = lendProvider
@@ -95,13 +100,36 @@ export class DefaultSmartWallet extends SmartWallet {
     return this._address
   }
 
+  /**
+   * Get the formatted owner bytes for smart wallet operations
+   * @description Converts the wallet's owners array into the bytes format expected by the smart wallet
+   * factory and contract. EOA addresses are padded to 32 bytes, LocalAccount addresses are extracted and padded,
+   * and WebAuthn public keys are passed through.
+   * @returns Array of 32-byte formatted owner identifiers
+   * @private
+   */
+  get _ownerBytes() {
+    return this.owners.map((owner) => {
+      if (typeof owner === 'string') {
+        // EOA address - pad to 32 bytes
+        return formatPublicKey(owner)
+      } else if (owner.type === 'webAuthn') {
+        // WebAuthn account - return public key as-is
+        return formatPublicKey(owner)
+      } else if ('address' in owner && owner.address) {
+        // LocalAccount - extract address and pad to 32 bytes
+        return formatPublicKey(owner.address)
+      }
+      throw new Error('Invalid owner type')
+    })
+  }
+
   static async create(params: {
     owners: Signer[]
     signer: LocalAccount
     chainManager: ChainManager
     lendProvider?: LendProvider<LendConfig>
     deploymentAddress?: Address
-    signerOwnerIndex?: number
     nonce?: bigint
     attributionSuffix?: Hex
   }): Promise<DefaultSmartWallet> {
@@ -111,12 +139,39 @@ export class DefaultSmartWallet extends SmartWallet {
       params.chainManager,
       params.lendProvider,
       params.deploymentAddress,
-      params.signerOwnerIndex,
       params.nonce,
       params.attributionSuffix,
     )
     await wallet.initialize()
     return wallet
+  }
+
+  /**
+   * Validates and constructs the owners array with the signer at the correct index
+   * @description Searches for the signer's address in the owners array and replaces that entry
+   * with the LocalAccount signer. This ensures the smart wallet has a LocalAccount at the
+   * signer position for signing operations. Only supports LocalAccount signers matching against
+   * EOA addresses in the owners array.
+   * @param owners - Array of wallet owners (EOA addresses or WebAuthn accounts)
+   * @param signer - LocalAccount for signing transactions (must have type 'local')
+   * @returns Object containing the new owners array with LocalAccount at the found index, and the signerOwnerIndex
+   * @throws Error if signer is not found in the owners array (by matching address)
+   * @throws Error if signer is not a LocalAccount (type !== 'local')
+   */
+  private static validateAndConstructOwners(
+    owners: Signer[],
+    signer: LocalAccount,
+  ): { owners: Owners; signerOwnerIndex: number } {
+    const foundIndex = findSignerIndex(owners, signer)
+
+    if (foundIndex === -1) {
+      throw new Error(`Signer does not match any owner in the owners array`)
+    }
+
+    // Replace the signer (Address or WebAuthnAccount) at the found index with the LocalAccount
+    const newOwners: Owners = [...owners]
+    newOwners[foundIndex] = signer
+    return { owners: newOwners, signerOwnerIndex: foundIndex }
   }
 
   /**
@@ -149,7 +204,7 @@ export class DefaultSmartWallet extends SmartWallet {
       address: this.deploymentAddress,
       ownerIndex: this.signerOwnerIndex,
       client: this.chainManager.getPublicClient(chainId),
-      owners: [this.signer],
+      owners: this.owners,
       nonce: this.nonce,
       version: '1.1',
     })
@@ -377,6 +432,66 @@ export class DefaultSmartWallet extends SmartWallet {
   }
 
   /**
+   * Deploy the smart wallet on a specific chain
+   * @description Triggers deployment of the smart wallet contract on the specified chain.
+   * If the wallet is already deployed, returns success immediately without creating a new transaction.
+   * Deployment is done by calling the factory's `createAccount` function, which is idempotent and will
+   * return the existing address if already deployed. The factory address is a fixed address that can be
+   * added to paymaster allowlists once, avoiding the need to allowlist each dynamically created wallet.
+   * @param chainId - Target chain ID to deploy the wallet on
+   * @returns Promise resolving to deployment result containing:
+   * - `chainId`: The chain ID where deployment was attempted
+   * - `success`: Whether the deployment succeeded
+   * - `receipt`: UserOperation receipt (undefined if wallet was already deployed)
+   * @throws {SmartWalletDeploymentError} If deployment fails or transaction reverts
+   */
+  async deploy(chainId: SupportedChainId): Promise<{
+    chainId: SupportedChainId
+    success: boolean
+    receipt?: WaitForUserOperationReceiptReturnType
+  }> {
+    try {
+      const smartAccount = await this.getCoinbaseSmartAccount(chainId)
+      // check if code already exists for this address
+      const isDeployed = await smartAccount.isDeployed()
+      if (isDeployed) {
+        return { chainId, success: true, receipt: undefined }
+      }
+
+      // Call createAccount on the factory to trigger deployment
+      // The factory's createAccount is idempotent and will return the existing address if already deployed
+      // Using the factory address allows paymasters to configure it in their allowlist once
+      const receipt = await this.sendBatch(
+        [
+          {
+            to: smartWalletFactoryAddress,
+            value: 0n,
+            data: encodeFunctionData({
+              abi: smartWalletFactoryAbi,
+              functionName: 'createAccount',
+              args: [this._ownerBytes, this.nonce || 0n],
+            }),
+          },
+        ],
+        chainId,
+      )
+      if (!receipt.success) {
+        throw new SmartWalletDeploymentError(
+          'deployment transaction reverted',
+          chainId,
+          receipt,
+        )
+      }
+      return { chainId, success: true, receipt }
+    } catch (error) {
+      throw new SmartWalletDeploymentError(
+        `Failed to deploy smart wallet: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        chainId,
+      )
+    }
+  }
+
+  /**
    * Send tokens to another address
    * @description Sends ETH or ERC20 tokens to a recipient address
    * @param amount - Human-readable amount to send (e.g. 1.5)
@@ -455,8 +570,6 @@ export class DefaultSmartWallet extends SmartWallet {
   private async getAddress() {
     if (this.deploymentAddress) return this.deploymentAddress
 
-    const owners_bytes = this.owners.map((owner) => formatPublicKey(owner))
-
     // Factory is the same across all chains, so we can use the first chain to get the wallet address
     const publicClient = this.chainManager.getPublicClient(
       this.chainManager.getSupportedChains()[0],
@@ -465,7 +578,7 @@ export class DefaultSmartWallet extends SmartWallet {
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
       functionName: 'getAddress',
-      args: [owners_bytes, this.nonce || 0n],
+      args: [this._ownerBytes, this.nonce || 0n],
     })
     return smartWalletAddress
   }
