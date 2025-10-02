@@ -2,9 +2,10 @@ import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
+import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import { LendProvider } from '@/lend/core/LendProvider.js'
+import { getVault, getVaults } from '@/lend/providers/morpho/sdk.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-
-import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS } from '../../../constants/supportedChains.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -15,9 +16,8 @@ import type {
   LendOpenPositionInternalParams,
   LendTransaction,
   MorphoLendConfig,
-} from '../../../types/lend.js'
-import { LendProvider } from '../../provider.js'
-import { getVault, getVaults } from './sdk.js'
+} from '@/types/lend/index.js'
+import { getAssetAddress } from '@/utils/assets.js'
 
 /**
  * Supported chain IDs for Morpho lending
@@ -36,7 +36,7 @@ export const SUPPORTED_CHAIN_IDS = [
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
-export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
+export class MorphoLendProvider extends LendProvider<MorphoLendConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
 
   private chainManager: ChainManager
@@ -85,14 +85,11 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         args: [params.marketId.address, params.amountWei],
       })
 
-      const currentTimestamp = Math.floor(Date.now() / 1000)
-
       return {
         amount: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
-        apy: vaultInfo.apy,
-        timestamp: currentTimestamp,
+        apy: vaultInfo.apy.total,
         transactionData: {
           approval: {
             to: assetAddress,
@@ -131,7 +128,11 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         chainId: params.marketId.chainId,
       })
 
-      const assetAddress = vaultInfo.asset
+      // Get asset address for the market's chain
+      const assetAddress = getAssetAddress(
+        vaultInfo.asset,
+        params.marketId.chainId,
+      )
 
       const assets = params.amount
       const receiver = params.walletAddress
@@ -142,14 +143,11 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         owner,
       )
 
-      const currentTimestamp = Math.floor(Date.now() / 1000)
-
       return {
         amount: params.amount,
         asset: assetAddress,
         marketId: params.marketId.address,
-        apy: vaultInfo.apy,
-        timestamp: currentTimestamp,
+        apy: vaultInfo.apy.total,
         transactionData: {
           closePosition: {
             to: params.marketId.address,
@@ -247,7 +245,7 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         balanceFormatted,
         shares,
         sharesFormatted,
-        chainId: params.marketId.chainId,
+        marketId: params.marketId,
       }
     } catch (error) {
       throw new Error(

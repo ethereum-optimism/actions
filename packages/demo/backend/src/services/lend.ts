@@ -1,36 +1,21 @@
-import {
-  type LendMarket,
-  SUPPORTED_TOKENS,
-  type SupportedChainId,
+import type {
+  LendMarket,
+  LendMarketId,
+  LendMarketPosition,
+  SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
+import { SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
-import type { Address } from 'viem'
+import { formatUnits } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { getVerbs } from '../config/verbs.js'
+import type {
+  FormattedMarketResponse,
+  PositionParams,
+  PositionResponse,
+} from '../types/index.js'
 import { getWallet } from './wallet.js'
-
-interface MarketBalanceResult {
-  balance: bigint
-  balanceFormatted: string
-  shares: bigint
-  sharesFormatted: string
-}
-
-interface FormattedMarketResponse {
-  chainId: number
-  address: Address
-  name: string
-  apy: number
-  asset: Address
-  apyBreakdown: object
-  totalAssets: string
-  totalShares: string
-  fee: number
-  owner: Address
-  curator: Address
-  lastUpdate: number
-}
 
 export async function getBlockExplorerUrl(
   chainId: SupportedChainId,
@@ -53,51 +38,45 @@ export async function getMarkets(): Promise<LendMarket[]> {
   return await verbs.lend.getMarkets()
 }
 
-export async function getMarket(
-  marketId: Address,
-  chainId: SupportedChainId,
-): Promise<LendMarket> {
+export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
   const verbs = getVerbs()
-  return await verbs.lend.getMarket({ address: marketId, chainId })
+  return await verbs.lend.getMarket(marketId)
 }
 
 export async function getPosition(
-  vaultAddress: Address,
+  marketId: LendMarketId,
   walletId: string,
-  chainId: SupportedChainId,
-): Promise<MarketBalanceResult> {
+): Promise<LendMarketPosition> {
   const wallet = await getWallet(walletId)
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return wallet.lend!.getPosition({
-    marketId: { address: vaultAddress, chainId },
-  })
+  return wallet.lend!.getPosition({ marketId })
 }
 
 export async function formatMarketResponse(
-  vault: LendMarket,
+  market: LendMarket,
 ): Promise<FormattedMarketResponse> {
   return {
-    chainId: vault.chainId,
-    address: vault.address,
-    name: vault.name,
-    apy: vault.apy,
-    asset: vault.asset,
-    apyBreakdown: vault.apyBreakdown,
-    totalAssets: vault.totalAssets.toString(),
-    totalShares: vault.totalShares.toString(),
-    fee: vault.fee,
-    owner: vault.owner,
-    curator: vault.curator,
-    lastUpdate: vault.lastUpdate,
+    marketId: market.marketId,
+    name: market.name,
+    asset: market.asset,
+    supply: {
+      totalAssets: formatUnits(
+        market.supply.totalAssets,
+        market.asset.metadata.decimals,
+      ),
+      totalShares: formatUnits(market.supply.totalShares, 18),
+    },
+    apy: market.apy,
+    metadata: market.metadata,
   }
 }
 
 export async function formatMarketBalanceResponse(
-  balance: MarketBalanceResult,
+  balance: LendMarketPosition,
 ): Promise<{
   balance: string
   balanceFormatted: string
@@ -105,38 +84,18 @@ export async function formatMarketBalanceResponse(
   sharesFormatted: string
 }> {
   return {
-    balance: balance.balance.toString(),
+    balance: balance.balanceFormatted,
     balanceFormatted: balance.balanceFormatted,
-    shares: balance.shares.toString(),
+    shares: balance.sharesFormatted,
     sharesFormatted: balance.sharesFormatted,
   }
-}
-
-interface PositionParams {
-  userId: string
-  amount: number
-  tokenAddress: Address
-  chainId: SupportedChainId
-  vaultAddress: Address
-  isUserWallet?: boolean
-}
-
-interface PositionResponse {
-  hash: string
-  userOpHash?: string
-  blockExplorerUrl: string
-  amount: number
-  tokenAddress: Address
-  chainId: number
-  vaultAddress: Address
 }
 
 async function executePosition(
   params: PositionParams,
   operation: 'open' | 'close',
 ): Promise<PositionResponse> {
-  const { userId, amount, tokenAddress, chainId, vaultAddress, isUserWallet } =
-    params
+  const { userId, amount, tokenAddress, marketId, isUserWallet } = params
 
   const wallet = await getWallet(userId, isUserWallet)
   if (!wallet) {
@@ -146,13 +105,13 @@ async function executePosition(
   }
 
   const asset = SUPPORTED_TOKENS.find(
-    (token) => token.address[chainId] === tokenAddress,
+    (token) =>
+      token.address[marketId.chainId as SupportedChainId] === tokenAddress,
   )
   if (!asset) {
     throw new Error(`Asset not found for token address: ${tokenAddress}`)
   }
 
-  const marketId = { address: vaultAddress, chainId }
   const positionParams = { amount, asset, marketId }
 
   const result =
@@ -160,7 +119,7 @@ async function executePosition(
       ? await wallet.lend!.openPosition(positionParams)
       : await wallet.lend!.closePosition(positionParams)
 
-  const blockExplorerUrl = await getBlockExplorerUrl(chainId)
+  const blockExplorerUrl = await getBlockExplorerUrl(marketId.chainId)
 
   return {
     hash: result.receipt.transactionHash,
@@ -168,8 +127,7 @@ async function executePosition(
     blockExplorerUrl,
     amount,
     tokenAddress,
-    chainId,
-    vaultAddress,
+    marketId,
   }
 }
 

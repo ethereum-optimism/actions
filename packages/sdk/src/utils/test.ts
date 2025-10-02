@@ -30,7 +30,7 @@ export const ANVIL_ACCOUNTS = {
  *
  * Usage:
  * ```typescript
- * import { externalTest } from '../utils/test.js'
+ * import { externalTest } from '@/utils/test.js'
  *
  * it.runIf(externalTest())('should make real API request', async () => {
  *   // Test that makes actual network calls
@@ -45,7 +45,7 @@ export const externalTest = () => process.env.EXTERNAL_TEST === 'true'
  *
  * Usage:
  * ```typescript
- * import { supersimTest } from '../utils/test.js'
+ * import { supersimTest } from '@/utils/test.js'
  *
  * describe.runIf(supersimTest())('Supersim Integration', () => {
  *   // Tests that require supersim

@@ -92,7 +92,7 @@ describe('Lend Service', () => {
 
       mockLendProvider.getMarket.mockResolvedValue(mockMarketInfo)
 
-      const result = await lendService.getMarket(marketId, chainId)
+      const result = await lendService.getMarket({ address: marketId, chainId })
 
       expect(result).toEqual(mockMarketInfo)
       expect(mockLendProvider.getMarket).toHaveBeenCalledWith({
@@ -105,17 +105,17 @@ describe('Lend Service', () => {
       const error = new Error('Market not found')
       mockLendProvider.getMarket.mockRejectedValue(error)
 
-      await expect(lendService.getMarket(marketId, chainId)).rejects.toThrow(
-        'Market not found',
-      )
+      await expect(
+        lendService.getMarket({ address: marketId, chainId }),
+      ).rejects.toThrow('Market not found')
     })
 
     it('should handle unknown errors', async () => {
       mockLendProvider.getMarket.mockRejectedValue('Unknown error')
 
-      await expect(lendService.getMarket(marketId, chainId)).rejects.toThrow(
-        'Unknown error',
-      )
+      await expect(
+        lendService.getMarket({ address: marketId, chainId }),
+      ).rejects.toThrow('Unknown error')
     })
   })
 
@@ -137,14 +137,14 @@ describe('Lend Service', () => {
       const amount = 500
       const chainId = 130
       const tokenAddress = '0x078d782b760474a361dda0af3839290b0ef57ad6' as const
-      const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as const
+      const marketAddress =
+        '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as const
 
       const result = await lendService.closePosition({
         userId: walletId,
         amount,
         tokenAddress,
-        chainId,
-        vaultAddress,
+        marketId: { address: marketAddress, chainId },
         isUserWallet: false,
       })
 
@@ -157,7 +157,7 @@ describe('Lend Service', () => {
           }),
         }),
         marketId: {
-          address: vaultAddress,
+          address: marketAddress,
           chainId,
         },
       })
@@ -172,8 +172,10 @@ describe('Lend Service', () => {
           userId: 'invalid-wallet',
           amount: 500,
           tokenAddress: '0x078d782b760474a361dda0af3839290b0ef57ad6',
-          chainId: 130,
-          vaultAddress: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
+          marketId: {
+            address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
+            chainId: 130,
+          },
           isUserWallet: false,
         }),
       ).rejects.toThrow('Wallet not found')

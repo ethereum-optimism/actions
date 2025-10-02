@@ -4,12 +4,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { ETH } from '@/constants/assets.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
+import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { MockUSDCAsset } from '@/test/MockAssets.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import type { Asset } from '@/types/asset.js'
-
-import { fetchERC20Balance, fetchETHBalance } from './tokenBalance.js'
 
 describe('TokenBalance', () => {
   let chainManager: ChainManager

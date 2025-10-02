@@ -1,3 +1,4 @@
+import type { Address } from 'viem'
 import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -47,4 +48,24 @@ export function isAssetSupportedOnChain(
   chainId: SupportedChainId,
 ): boolean {
   return !!asset.address[chainId]
+}
+
+/**
+ * Get asset address for a specific chain
+ * @param asset - Asset definition
+ * @param chainId - Chain ID
+ * @returns Asset address on the specified chain
+ * @throws Error if asset is not supported on the chain
+ */
+export function getAssetAddress(
+  asset: Asset,
+  chainId: SupportedChainId,
+): Address {
+  const address = asset.address[chainId]
+  if (!address) {
+    throw new Error(
+      `Asset ${asset.metadata.symbol} is not supported on chain ${chainId}`,
+    )
+  }
+  return address
 }

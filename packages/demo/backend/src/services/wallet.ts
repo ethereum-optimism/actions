@@ -1,10 +1,13 @@
 import type {
   SmartWallet,
-  SupportedChainId,
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/verbs-sdk'
-import { getTokenBySymbol, SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
+import {
+  getAssetAddress,
+  getTokenBySymbol,
+  SUPPORTED_TOKENS,
+} from '@eth-optimism/verbs-sdk'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
@@ -146,25 +149,29 @@ export async function getWalletBalance(
       vaults.map(async (vault) => {
         try {
           const vaultBalance = await wallet.lend!.getPosition({
-            marketId: {
-              address: vault.address,
-              chainId: vault.chainId as SupportedChainId,
-            },
+            marketId: vault.marketId,
           })
 
           // Only include vaults with non-zero balances
           if (vaultBalance.balance > 0n) {
             // Create a TokenBalance object for the vault
             const formattedBalance = formatUnits(vaultBalance.balance, 6) // Assuming 6 decimals for vault shares
+
+            // Get asset address for the vault's chain
+            const assetAddress = getAssetAddress(
+              vault.asset,
+              vault.marketId.chainId,
+            )
+
             return {
               symbol: `${vault.name}`,
               totalBalance: vaultBalance.balance,
               totalFormattedBalance: formattedBalance,
               chainBalances: [
                 {
-                  chainId: vaultBalance.chainId,
+                  chainId: vaultBalance.marketId.chainId,
                   balance: vaultBalance.balance,
-                  tokenAddress: vault.asset,
+                  tokenAddress: assetAddress,
                   formattedBalance: formattedBalance,
                 },
               ],

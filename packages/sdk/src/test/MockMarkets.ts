@@ -1,8 +1,7 @@
 import type { Address } from 'viem'
 
-import type { LendMarketConfig } from '@/types/lend.js'
-
-import { MockUSDCAsset, MockWETHAsset } from './MockAssets.js'
+import { MockUSDCAsset, MockWETHAsset } from '@/test/MockAssets.js'
+import type { LendMarketConfig } from '@/types/lend/index.js'
 
 /**
  * Mock Gauntlet USDC market configuration for testing

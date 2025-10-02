@@ -1,4 +1,4 @@
-import type { LendProvider } from '@/lend/provider.js'
+import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type {
   BaseLendConfig,
   ClosePositionParams,
@@ -6,7 +6,7 @@ import type {
   LendMarketPosition,
   LendOpenPositionParams,
   LendTransactionReceipt,
-} from '@/types/lend.js'
+} from '@/types/lend/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 

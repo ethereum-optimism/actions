@@ -15,7 +15,7 @@ import type {
   LendMarket,
   LendMarketConfig,
   LendMarketId,
-} from '@/types/lend.js'
+} from '@/types/lend/index.js'
 
 /**
  * Fetch and calculate rewards breakdown from Morpho GraphQL API
@@ -31,7 +31,7 @@ export async function fetchAndCalculateRewards(
     // Initialize empty rewards object with all supported tokens + other
     const emptyRewards: Record<string, number> = {
       other: 0,
-      totalRewardsApr: 0,
+      totalRewards: 0,
     }
 
     // Add all supported tokens (lowercase) to the rewards object
@@ -103,29 +103,30 @@ function createMockVaultData(
   marketConfig: LendMarketConfig,
 ): LendMarket {
   const mockApyBreakdown: ApyBreakdown = {
-    nativeApy: 0.058, // 5.8% gross APY
-    performanceFee: 0.065, // 6.5% performance fee
-    netApy: 0.0542, // 5.42% net APY
+    total: 0.0542, // 5.42% net APY
+    native: 0.058, // 5.8% gross APY
+    totalRewards: 0.0235, // Total rewards APR
     usdc: 0.0125, // USDC rewards
     morpho: 0.008, // MORPHO token rewards
     other: 0.003, // Other protocol rewards
-    totalRewardsApr: 0.0235, // Total rewards APR
+    performanceFee: 0.065, // 6.5% performance fee
   }
 
   return {
-    chainId: marketId.chainId,
-    address: marketId.address,
+    marketId,
     name: marketConfig.name,
-    asset: (marketConfig.asset.address[marketConfig.chainId] ||
-      Object.values(marketConfig.asset.address)[0]) as Address,
-    totalAssets: parseEther('125000'), // ~$125K TVL
-    totalShares: parseEther('120000'), // Slightly lower shares (some yield accrued)
-    apy: mockApyBreakdown.netApy,
-    apyBreakdown: mockApyBreakdown,
-    owner: '0x742d35Cc6464C42C0b15De2C4c98F7E8c3e0F1d9' as Address, // Mock owner
-    curator: '0x8f3Cf7ad23Cd3CaDbD9735aff958023239c6A063' as Address, // Mock curator
-    fee: mockApyBreakdown.performanceFee,
-    lastUpdate: Math.floor(Date.now() / 1000) - 300, // 5 minutes ago
+    asset: marketConfig.asset,
+    supply: {
+      totalAssets: parseEther('125000'), // ~$125K TVL
+      totalShares: parseEther('120000'), // Slightly lower shares (some yield accrued)
+    },
+    apy: mockApyBreakdown,
+    metadata: {
+      owner: '0x742d35Cc6464C42C0b15De2C4c98F7E8c3e0F1d9' as Address, // Mock owner
+      curator: '0x8f3Cf7ad23Cd3CaDbD9735aff958023239c6A063' as Address, // Mock curator
+      fee: mockApyBreakdown.performanceFee,
+      lastUpdate: Math.floor(Date.now() / 1000) - 300, // 5 minutes ago
+    },
   }
 }
 
@@ -205,7 +206,7 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
         usdc: 0,
         morpho: 0,
         other: 0,
-        totalRewardsApr: 0,
+        totalRewards: 0,
       }
     })
 
@@ -216,19 +217,20 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     const currentTimestampSeconds = Math.floor(Date.now() / 1000)
 
     return {
-      chainId: params.marketId.chainId,
-      address: params.marketId.address,
+      marketId: params.marketId,
       name: marketConfig.name,
-      asset: (marketConfig.asset.address[marketConfig.chainId] ||
-        Object.values(marketConfig.asset.address)[0]) as Address,
-      totalAssets: vault.totalAssets,
-      totalShares: vault.totalSupply,
-      apy: apyBreakdown.netApy, // Use Net APY calculation
-      apyBreakdown: apyBreakdown, // Detailed breakdown
-      owner: vault.owner,
-      curator: vault.curator,
-      fee: apyBreakdown.performanceFee,
-      lastUpdate: currentTimestampSeconds,
+      asset: marketConfig.asset,
+      supply: {
+        totalAssets: vault.totalAssets,
+        totalShares: vault.totalSupply,
+      },
+      apy: apyBreakdown,
+      metadata: {
+        owner: vault.owner,
+        curator: vault.curator,
+        fee: apyBreakdown.performanceFee,
+        lastUpdate: currentTimestampSeconds,
+      },
     }
   } catch (error) {
     console.error('Failed to get vault info:', error)
@@ -317,13 +319,17 @@ export function calculateApyBreakdown(
   // Net APY = Native APY + Rewards APRs - (Performance Fee × Native APY)
   const performanceFeeImpact = baseApyBeforeFees * performanceFee
   const netApy =
-    baseApyBeforeFees + rewardsBreakdown.totalRewardsApr - performanceFeeImpact
+    baseApyBeforeFees + rewardsBreakdown.totalRewards - performanceFeeImpact
+
+  // Extract individual reward token properties (excluding totalRewards aggregate)
+  const { totalRewards: _, ...rewardTokens } = rewardsBreakdown
 
   return {
-    nativeApy: baseApyBeforeFees, // Native APY from market lending (before fees)
+    total: netApy,
+    native: baseApyBeforeFees, // Native APY from market lending (before fees)
+    totalRewards: rewardsBreakdown.totalRewards,
     performanceFee: performanceFee,
-    netApy: netApy,
-    ...rewardsBreakdown, // Spread all dynamic reward properties
+    ...rewardTokens, // Individual token rewards (usdc, morpho, other)
   }
 }
 
@@ -400,14 +406,13 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
   }
 
   // Calculate total rewards APR
-  const totalRewardsApr = Object.values(rewardsByCategory).reduce(
+  const totalRewards = Object.values(rewardsByCategory).reduce(
     (total, apr) => total + apr,
     0,
   )
 
-  // Return dynamic rewards breakdown
   return {
     ...rewardsByCategory,
-    totalRewardsApr,
+    totalRewards,
   } as RewardsBreakdown
 }

@@ -3,12 +3,11 @@ import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset } from '@/test/MockAssets.js'
 import { MockLendProvider } from '@/test/MockLendProvider.js'
-
 import type {
   LendConfig,
   LendMarketConfig,
   LendMarketId,
-} from '../types/lend.js'
+} from '@/types/lend/index.js'
 
 // Test helper class that exposes protected validation methods as public
 class TestLendProvider extends MockLendProvider {
@@ -91,9 +90,9 @@ describe('LendProvider', () => {
       }
 
       const market = await provider.getMarket(marketId)
-      expect(market.chainId).toBe(84532)
+      expect(market.marketId.chainId).toBe(84532)
       expect(market.name).toBe('Mock Market')
-      expect(market.apy).toBe(0.05)
+      expect(market.apy.total).toBe(0.05)
     })
 
     it('should accept LendMarketConfig and extract address/chainId', async () => {
@@ -107,8 +106,8 @@ describe('LendProvider', () => {
       }
 
       const market = await provider.getMarket(mockMarket)
-      expect(market.chainId).toBe(84532)
-      expect(market.address).toBe('0x5678')
+      expect(market.marketId.chainId).toBe(84532)
+      expect(market.marketId.address).toBe('0x5678')
       expect(market.name).toBe('Mock Market')
     })
 
@@ -149,7 +148,7 @@ describe('LendProvider', () => {
 
       expect(position.balance).toBe(500000n)
       expect(position.shares).toBe(500000n)
-      expect(position.chainId).toBe(84532)
+      expect(position.marketId.chainId).toBe(84532)
     })
 
     it('should implement closePosition method', async () => {

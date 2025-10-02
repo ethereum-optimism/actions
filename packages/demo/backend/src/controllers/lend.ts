@@ -9,42 +9,42 @@ import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
 
 const OpenPositionRequestSchema = z.object({
-  params: z.object({
-    marketId: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
-    chainId: z.string().min(1, 'chainId is required'),
-  }),
   body: z.object({
     walletId: z.string().min(1, 'walletId is required'),
     amount: z.number().positive('amount must be positive'),
     tokenAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
+    marketId: z.object({
+      address: z
+        .string()
+        .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
+      chainId: z.number().positive('chainId must be positive'),
+    }),
   }),
 })
 
 const ClosePositionRequestSchema = z.object({
-  params: z.object({
-    marketId: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
-    chainId: z.string().min(1, 'chainId is required'),
-  }),
   body: z.object({
     walletId: z.string().min(1, 'walletId is required'),
     amount: z.number().positive('amount must be positive'),
     tokenAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
+    marketId: z.object({
+      address: z
+        .string()
+        .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
+      chainId: z.number().positive('chainId must be positive'),
+    }),
   }),
 })
 
 const MarketBalanceParamsSchema = z.object({
   params: z.object({
-    vaultAddress: z
+    marketAddress: z
       .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid vault address format'),
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
     walletId: z.string().min(1, 'walletId is required'),
     chainId: z.string().min(1, 'chainId is required'),
   }),
@@ -78,22 +78,22 @@ export class LendController {
   async getMarket(c: Context) {
     try {
       const chainId = Number(c.req.param('chainId'))
-      const marketId = c.req.param('marketId')
+      const marketAddress = c.req.param('marketAddress')
 
-      if (!chainId || !marketId) {
+      if (!chainId || !marketAddress) {
         return c.json(
           {
             error: 'Invalid parameters',
-            message: 'chainId and marketId are required',
+            message: 'chainId and marketAddress are required',
           },
           400,
         )
       }
 
-      const marketInfo = await lendService.getMarket(
-        marketId as Address,
-        chainId as SupportedChainId,
-      )
+      const marketInfo = await lendService.getMarket({
+        address: marketAddress as Address,
+        chainId: chainId as SupportedChainId,
+      })
       const formattedMarket = await lendService.formatMarketResponse(marketInfo)
       return c.json({ market: formattedMarket })
     } catch (error) {
@@ -116,12 +116,14 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        params: { vaultAddress, walletId, chainId },
+        params: { marketAddress, walletId, chainId },
       } = validation.data
       const balance = await lendService.getPosition(
-        vaultAddress as Address,
+        {
+          address: marketAddress as Address,
+          chainId: Number(chainId) as SupportedChainId,
+        },
         walletId,
-        Number(chainId) as SupportedChainId,
       )
       const formattedBalance =
         await lendService.formatMarketBalanceResponse(balance)
@@ -142,8 +144,7 @@ export class LendController {
       // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
 
       const {
-        params: { marketId, chainId },
-        body: { walletId, amount, tokenAddress },
+        body: { walletId, amount, tokenAddress, marketId },
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
@@ -151,8 +152,10 @@ export class LendController {
         userId: auth?.userId || walletId,
         amount,
         tokenAddress: tokenAddress as Address,
-        chainId: Number(chainId) as SupportedChainId,
-        vaultAddress: marketId as Address,
+        marketId: {
+          address: marketId.address as Address,
+          chainId: marketId.chainId as SupportedChainId,
+        },
         isUserWallet: Boolean(auth?.userId),
       })
 
@@ -171,8 +174,7 @@ export class LendController {
       if (!validation.success) return validation.response
 
       const {
-        params: { marketId, chainId },
-        body: { walletId, amount, tokenAddress },
+        body: { walletId, amount, tokenAddress, marketId },
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
@@ -180,8 +182,10 @@ export class LendController {
         userId: auth?.userId || walletId,
         amount,
         tokenAddress: tokenAddress as Address,
-        chainId: Number(chainId) as SupportedChainId,
-        vaultAddress: marketId as Address,
+        marketId: {
+          address: marketId.address as Address,
+          chainId: marketId.chainId as SupportedChainId,
+        },
         isUserWallet: Boolean(auth?.userId),
       })
 

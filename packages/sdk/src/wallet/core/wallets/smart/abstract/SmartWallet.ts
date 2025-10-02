@@ -3,7 +3,7 @@ import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstrac
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
-import type { TransactionData } from '@/types/lend.js'
+import type { TransactionData } from '@/types/lend/index.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 

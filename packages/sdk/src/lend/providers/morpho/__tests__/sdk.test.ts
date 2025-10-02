@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { calculateBaseApy, calculateRewardsBreakdown } from './sdk.js'
+import {
+  calculateBaseApy,
+  calculateRewardsBreakdown,
+} from '@/lend/providers/morpho/sdk.js'
 
 describe('Vault Utilities', () => {
   describe('calculateBaseApy', () => {
@@ -162,7 +165,7 @@ describe('Vault Utilities', () => {
         morpho: 0,
         eth: 0,
         other: 0,
-        totalRewardsApr: 0,
+        totalRewards: 0,
       })
     })
 
@@ -198,7 +201,7 @@ describe('Vault Utilities', () => {
       expect(result.usdc).toBeCloseTo(0.03, 4)
       expect(result.morpho).toBeCloseTo(0.015, 4)
       expect(result.other).toBe(0)
-      expect(result.totalRewardsApr).toBeCloseTo(0.045, 4)
+      expect(result.totalRewards).toBeCloseTo(0.045, 4)
     })
 
     it('should calculate weighted market-level rewards', () => {
@@ -254,7 +257,7 @@ describe('Vault Utilities', () => {
       expect(result.usdc).toBeCloseTo(0.012, 4)
       expect(result.morpho).toBeCloseTo(0.02, 4)
       expect(result.other).toBe(0)
-      expect(result.totalRewardsApr).toBeCloseTo(0.032, 4)
+      expect(result.totalRewards).toBeCloseTo(0.032, 4)
     })
 
     it('should handle mixed vault and market rewards', () => {
@@ -297,7 +300,7 @@ describe('Vault Utilities', () => {
 
       expect(result.usdc).toBeCloseTo(0.01, 4) // Vault-level
       expect(result.morpho).toBeCloseTo(0.015, 4) // Market-level (100% weight)
-      expect(result.totalRewardsApr).toBeCloseTo(0.025, 4)
+      expect(result.totalRewards).toBeCloseTo(0.025, 4)
     })
 
     it('should categorize unknown tokens as other rewards', () => {
@@ -323,7 +326,7 @@ describe('Vault Utilities', () => {
       expect(result.usdc).toBe(0)
       expect(result.morpho).toBe(0)
       expect(result.other).toBeCloseTo(0.005, 4)
-      expect(result.totalRewardsApr).toBeCloseTo(0.005, 4)
+      expect(result.totalRewards).toBeCloseTo(0.005, 4)
     })
 
     it('should handle zero total supply in market allocations', () => {
@@ -357,7 +360,7 @@ describe('Vault Utilities', () => {
 
       // Should be zero because total supply is zero (weight = 0)
       expect(result.usdc).toBe(0)
-      expect(result.totalRewardsApr).toBe(0)
+      expect(result.totalRewards).toBe(0)
     })
   })
 })

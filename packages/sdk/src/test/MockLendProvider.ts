@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
+import { LendProvider } from '@/lend/core/LendProvider.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   ClosePositionParams,
@@ -16,9 +17,7 @@ import type {
   LendOpenPositionParams,
   LendOptions,
   LendTransaction,
-} from '@/types/lend.js'
-
-import { LendProvider } from '../lend/provider.js'
+} from '@/types/lend/index.js'
 
 export interface MockLendProviderConfig {
   supportedChains: number[]
@@ -221,7 +220,6 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
-      timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         approval: {
@@ -255,7 +253,6 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
-      timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         approval: {
@@ -274,23 +271,36 @@ export class MockLendProvider extends LendProvider<LendConfig> {
 
   private async createMockMarket(marketId: LendMarketId): Promise<LendMarket> {
     return {
-      chainId: marketId.chainId,
-      address: marketId.address,
+      marketId,
       name: 'Mock Market',
-      asset: '0x0000000000000000000000000000000000000001' as Address,
-      totalAssets: this.mockConfig.mockBalance,
-      totalShares: this.mockConfig.mockBalance,
-      apy: this.mockConfig.defaultApy,
-      apyBreakdown: {
-        nativeApy: this.mockConfig.defaultApy * 0.8,
-        totalRewardsApr: this.mockConfig.defaultApy * 0.2,
-        performanceFee: 0.1,
-        netApy: this.mockConfig.defaultApy,
+      asset: {
+        address: {
+          [marketId.chainId]:
+            '0x0000000000000000000000000000000000000001' as Address,
+        },
+        metadata: {
+          symbol: 'MOCK',
+          name: 'Mock Token',
+          decimals: 18,
+        },
+        type: 'erc20',
       },
-      owner: '0x0000000000000000000000000000000000000002' as Address,
-      curator: '0x0000000000000000000000000000000000000003' as Address,
-      fee: 10,
-      lastUpdate: Math.floor(Date.now() / 1000),
+      supply: {
+        totalAssets: this.mockConfig.mockBalance,
+        totalShares: this.mockConfig.mockBalance,
+      },
+      apy: {
+        total: this.mockConfig.defaultApy,
+        native: this.mockConfig.defaultApy * 0.8,
+        totalRewards: this.mockConfig.defaultApy * 0.2,
+        performanceFee: 0.1,
+      },
+      metadata: {
+        owner: '0x0000000000000000000000000000000000000002' as Address,
+        curator: '0x0000000000000000000000000000000000000003' as Address,
+        fee: 10,
+        lastUpdate: Math.floor(Date.now() / 1000),
+      },
     }
   }
 
@@ -317,7 +327,7 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       balanceFormatted: (this.mockConfig.mockBalance / 2n).toString(),
       shares: this.mockConfig.mockBalance / 2n,
       sharesFormatted: (this.mockConfig.mockBalance / 2n).toString(),
-      chainId: marketId.chainId,
+      marketId,
     }
   }
 
@@ -337,7 +347,6 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       asset: assetAddress,
       marketId: marketId.address,
       apy: 0,
-      timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         closePosition: {
@@ -361,7 +370,6 @@ export class MockLendProvider extends LendProvider<LendConfig> {
       asset,
       marketId: marketId || 'mock-market',
       apy: 0,
-      timestamp: Math.floor(Date.now() / 1000),
       slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         closePosition: {

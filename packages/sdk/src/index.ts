@@ -1,7 +1,7 @@
 export { ETH } from '@/constants/assets.js'
 export type { SupportedChainId } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'
-export { LendProvider, LendProviderMorpho } from '@/lend/index.js'
+export { LendProvider, MorphoLendProvider } from '@/lend/index.js'
 export {
   getTokenAddress,
   getTokenBySymbol,
@@ -15,7 +15,9 @@ export type {
   LendMarket,
   LendMarketConfig,
   LendMarketId,
-  LendMarketInfo,
+  LendMarketMetadata,
+  LendMarketPosition,
+  LendMarketSupply,
   LendOptions,
   LendTransaction,
   LendTransactionReceipt,
@@ -25,7 +27,7 @@ export type {
   VerbsConfig,
   WalletConfig,
 } from '@/types/index.js'
-export { isAssetSupportedOnChain } from '@/utils/assets.js'
+export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 export type { Verbs } from '@/verbs.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'

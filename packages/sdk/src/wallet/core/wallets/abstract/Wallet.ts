@@ -6,7 +6,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { TokenBalance } from '@/types/asset.js'
-import type { BaseLendConfig } from '@/types/lend.js'
+import type { BaseLendConfig } from '@/types/lend/index.js'
 
 /**
  * Base verbs wallet class

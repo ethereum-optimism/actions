@@ -17,7 +17,7 @@ import type {
   LendOpenPositionInternalParams,
   LendOpenPositionParams,
   LendTransaction,
-} from '@/types/lend.js'
+} from '@/types/lend/index.js'
 import { validateMarketAsset } from '@/utils/markets.js'
 
 /**

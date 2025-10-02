@@ -6,7 +6,7 @@ export interface RewardsBreakdown {
   usdc: number
   morpho: number
   other: number
-  totalRewardsApr: number
+  totalRewards: number
 }
 
 /**

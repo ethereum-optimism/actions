@@ -1,7 +1,8 @@
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
-import { type Address } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createMockMorphoVault } from '@/lend/providers/morpho/__mocks__/mockVault.js'
+import { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import {
@@ -9,9 +10,7 @@ import {
   MockReceiverAddress,
   MockWETHMarket,
 } from '@/test/MockMarkets.js'
-
-import type { MorphoLendConfig } from '../../../types/lend.js'
-import { LendProviderMorpho } from './index.js'
+import type { MorphoLendConfig } from '@/types/lend/index.js'
 
 // Mock the Morpho SDK modules
 vi.mock('@morpho-org/blue-sdk-viem', () => ({
@@ -35,8 +34,8 @@ vi.mock('@morpho-org/bundler-sdk-viem', () => ({
   encodeBundle: vi.fn(),
 }))
 
-describe('LendProviderMorpho', () => {
-  let provider: LendProviderMorpho
+describe('MorphoLendProvider', () => {
+  let provider: MorphoLendProvider
   let mockConfig: MorphoLendConfig
   let mockChainManager: ChainManager
 
@@ -49,12 +48,12 @@ describe('LendProviderMorpho', () => {
 
     mockChainManager = new MockChainManager() as unknown as ChainManager
 
-    provider = new LendProviderMorpho(mockConfig, mockChainManager)
+    provider = new MorphoLendProvider(mockConfig, mockChainManager)
   })
 
   describe('constructor', () => {
     it('should initialize with provided config', () => {
-      expect(provider).toBeInstanceOf(LendProviderMorpho)
+      expect(provider).toBeInstanceOf(MorphoLendProvider)
     })
 
     it('should use default slippage when not provided', () => {
@@ -62,37 +61,17 @@ describe('LendProviderMorpho', () => {
         ...mockConfig,
         defaultSlippage: undefined,
       }
-      const providerWithDefaults = new LendProviderMorpho(
+      const providerWithDefaults = new MorphoLendProvider(
         configWithoutSlippage,
         mockChainManager,
       )
-      expect(providerWithDefaults).toBeInstanceOf(LendProviderMorpho)
+      expect(providerWithDefaults).toBeInstanceOf(MorphoLendProvider)
     })
   })
 
   describe('closePosition', () => {
     beforeEach(() => {
-      const mockVault = {
-        totalAssets: BigInt(10000000e6),
-        totalSupply: BigInt(10000000e6),
-        fee: BigInt(1e17),
-        owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0' as Address,
-        curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585' as Address,
-        allocations: new Map([
-          [
-            '0',
-            {
-              position: {
-                supplyShares: BigInt(1000000e6),
-                supplyAssets: BigInt(1000000e6),
-                market: {
-                  supplyApy: BigInt(3e16),
-                },
-              },
-            },
-          ],
-        ]),
-      }
+      const mockVault = createMockMorphoVault()
 
       vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as any)
 
@@ -141,7 +120,6 @@ describe('LendProviderMorpho', () => {
       )
       expect(withdrawTransaction).toHaveProperty('marketId', marketId.address)
       expect(withdrawTransaction).toHaveProperty('apy')
-      expect(withdrawTransaction).toHaveProperty('timestamp')
       expect(withdrawTransaction).toHaveProperty('transactionData')
       expect(withdrawTransaction.transactionData).toHaveProperty(
         'closePosition',
@@ -194,28 +172,7 @@ describe('LendProviderMorpho', () => {
 
   describe('openPosition', () => {
     beforeEach(() => {
-      // Mock vault data for all lend tests
-      const mockVault = {
-        totalAssets: BigInt(10000000e6), // 10M USDC
-        totalSupply: BigInt(10000000e6), // 10M shares
-        fee: BigInt(1e17), // 10% fee in WAD format
-        owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0' as Address,
-        curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585' as Address,
-        allocations: new Map([
-          [
-            '0',
-            {
-              position: {
-                supplyShares: BigInt(1000000e6),
-                supplyAssets: BigInt(1000000e6),
-                market: {
-                  supplyApy: BigInt(3e16), // 3% APY
-                },
-              },
-            },
-          ],
-        ]),
-      }
+      const mockVault = createMockMorphoVault()
 
       vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as any)
 
@@ -264,7 +221,6 @@ describe('LendProviderMorpho', () => {
       )
       expect(lendTransaction).toHaveProperty('marketId', marketId.address)
       expect(lendTransaction).toHaveProperty('apy')
-      expect(lendTransaction).toHaveProperty('timestamp')
       expect(lendTransaction).toHaveProperty('transactionData')
       expect(lendTransaction.transactionData).toHaveProperty('approval')
       expect(lendTransaction.transactionData).toHaveProperty('openPosition')
@@ -324,7 +280,7 @@ describe('LendProviderMorpho', () => {
         defaultSlippage: 50,
       }
 
-      const providerWithoutAllowlist = new LendProviderMorpho(
+      const providerWithoutAllowlist = new MorphoLendProvider(
         configWithoutAllowlist,
         mockChainManager,
       )
@@ -339,7 +295,7 @@ describe('LendProviderMorpho', () => {
         marketAllowlist: [MockGauntletUSDCMarket],
       }
 
-      const providerWithAllowlist = new LendProviderMorpho(
+      const providerWithAllowlist = new MorphoLendProvider(
         configWithAllowlist,
         mockChainManager,
       )
@@ -358,7 +314,7 @@ describe('LendProviderMorpho', () => {
         defaultSlippage: customSlippage,
       }
 
-      const providerWithSlippage = new LendProviderMorpho(
+      const providerWithSlippage = new MorphoLendProvider(
         configWithSlippage,
         mockChainManager,
       )
@@ -371,7 +327,7 @@ describe('LendProviderMorpho', () => {
         provider: 'morpho',
       }
 
-      const providerWithoutSlippage = new LendProviderMorpho(
+      const providerWithoutSlippage = new MorphoLendProvider(
         configWithoutSlippage,
         mockChainManager,
       )
@@ -385,7 +341,7 @@ describe('LendProviderMorpho', () => {
         marketAllowlist: [MockGauntletUSDCMarket, MockWETHMarket],
       }
 
-      const provider = new LendProviderMorpho(
+      const provider = new MorphoLendProvider(
         configWithMultipleMarkets,
         mockChainManager,
       )

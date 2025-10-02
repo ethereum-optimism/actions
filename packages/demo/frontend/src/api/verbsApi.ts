@@ -2,8 +2,14 @@ import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
 } from '@eth-optimism/verbs-service'
-import { env } from '../envVars'
 import type { Address } from 'viem'
+
+import { env } from '../envVars'
+import type {
+  MarketResponse,
+  PositionResponse,
+  TransactionResponse,
+} from '../types/index.js'
 
 class VerbsApiError extends Error {
   status?: number
@@ -69,63 +75,10 @@ class VerbsApiClient {
     })
   }
 
-  async getMarkets(headers: HeadersInit = {}): Promise<{
-    markets: Array<{
-      chainId: number
-      address: string
-      name: string
-      apy: number
-      asset: string
-      apyBreakdown: {
-        nativeApy: number
-        totalRewardsApr: number
-        usdc?: number
-        morpho?: number
-        other?: number
-        performanceFee: number
-        netApy: number
-      }
-      totalAssets: string
-      totalShares: string
-      fee: number
-      owner: string
-      curator: string
-      lastUpdate: number
-    }>
-  }> {
-    return this.request('/lend/markets', {
-      method: 'GET',
-      headers,
-    })
-  }
-
-  async getVault(
-    vaultAddress: string,
+  async getMarkets(
     headers: HeadersInit = {},
-  ): Promise<{
-    vault: {
-      address: string
-      name: string
-      asset: string
-      apy: number
-      apyBreakdown: {
-        nativeApy: number
-        totalRewardsApr: number
-        usdc?: number
-        morpho?: number
-        other?: number
-        performanceFee: number
-        netApy: number
-      }
-      totalAssets: string
-      totalShares: string
-      fee: number
-      owner: string
-      curator: string
-      lastUpdate: number
-    }
-  }> {
-    return this.request(`/lend/vault/${vaultAddress}`, {
+  ): Promise<{ markets: MarketResponse[] }> {
+    return this.request('/lend/markets', {
       method: 'GET',
       headers,
     })
@@ -187,41 +140,32 @@ class VerbsApiClient {
   }
 
   async getPosition(
-    vaultAddress: string,
-    chainId: number,
+    marketId: { chainId: number; address: Address },
     walletId: string,
-  ): Promise<{
-    balance: string
-    balanceFormatted: string
-    shares: string
-    sharesFormatted: string
-  }> {
-    return this.request(`/lend/${vaultAddress}/${chainId}/position/${walletId}`, {
-      method: 'GET',
-    })
+  ): Promise<PositionResponse> {
+    return this.request(
+      `/lend/market/${marketId.chainId}/${marketId.address}/position/${walletId}`,
+      {
+        method: 'GET',
+      },
+    )
   }
 
   async openLendPosition(
     walletId: string,
     amount: number,
     tokenAddress: Address,
-    chainId: number,
-    vaultAddress: Address,
+    marketId: { chainId: number; address: Address },
     headers: HeadersInit = {},
-  ): Promise<{
-    transaction: {
-      hash: string
-      userOpHash?: string
-      blockExplorerUrl: string
-      amount: number
-      tokenAddress: string
-      chainId: number
-      vaultAddress: string
-    }
-  }> {
-    return this.request(`/lend/${vaultAddress}/${chainId}/open`, {
+  ): Promise<{ transaction: TransactionResponse }> {
+    return this.request('/lend/position/open', {
       method: 'POST',
-      body: JSON.stringify({ walletId, amount, tokenAddress }),
+      body: JSON.stringify({
+        walletId,
+        amount,
+        tokenAddress,
+        marketId,
+      }),
       headers,
     })
   }
@@ -230,23 +174,17 @@ class VerbsApiClient {
     walletId: string,
     amount: number,
     tokenAddress: Address,
-    chainId: number,
-    vaultAddress: Address,
+    marketId: { chainId: number; address: Address },
     headers: HeadersInit = {},
-  ): Promise<{
-    transaction: {
-      hash: string
-      userOpHash?: string
-      blockExplorerUrl: string
-      amount: number
-      tokenAddress: string
-      chainId: number
-      vaultAddress: string
-    }
-  }> {
-    return this.request(`/lend/${vaultAddress}/${chainId}/close`, {
+  ): Promise<{ transaction: TransactionResponse }> {
+    return this.request('/lend/position/close', {
       method: 'POST',
-      body: JSON.stringify({ walletId, amount, tokenAddress }),
+      body: JSON.stringify({
+        walletId,
+        amount,
+        tokenAddress,
+        marketId,
+      }),
       headers,
     })
   }

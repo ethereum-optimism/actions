@@ -1,11 +1,11 @@
 import type { Address, Hash, Hex, TransactionReceipt } from 'viem'
 
-import type { SupportedChainId } from '../constants/supportedChains.js'
-import type { Asset } from './asset.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { Asset } from '@/types/asset.js'
 
-export { VerbsLendNamespace } from '../lend/namespaces/VerbsLendNamespace.js'
-export { WalletLendNamespace } from '../lend/namespaces/WalletLendNamespace.js'
-export { LendProvider } from '../lend/provider.js'
+export { LendProvider } from '@/lend/core/LendProvider.js'
+export { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
+export { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 
 /**
  * Lending market identifier
@@ -17,10 +17,10 @@ export type LendMarketId = {
 }
 
 /**
- * Lending market metadata
+ * Lending market configuration metadata
  * @description Additional configuration properties for a lending market
  */
-export type LendMarketMetadata = {
+export type LendMarketConfigMetadata = {
   /** Human-readable name for the market */
   name: string
   /** Asset information for this market */
@@ -33,7 +33,7 @@ export type LendMarketMetadata = {
  * Lending market configuration
  * @description Configuration for a lending market including asset information and provider
  */
-export type LendMarketConfig = LendMarketId & LendMarketMetadata
+export type LendMarketConfig = LendMarketId & LendMarketConfigMetadata
 
 /**
  * Parameters for getting a specific lending market
@@ -55,8 +55,18 @@ export interface TransactionData {
 }
 
 /**
- * Lending transaction result
- * @description Result of a lending operation
+ * Supply metrics for a lending market
+ * @description Total assets and shares in the vault
+ */
+export interface LendMarketSupply {
+  /** Total underlying assets in the vault */
+  totalAssets: bigint
+  /** Total vault shares issued */
+  totalShares: bigint
+}
+
+/**
+ * Lending transaction type
  */
 export interface LendTransaction {
   /** Transaction hash (set after execution) */
@@ -69,8 +79,6 @@ export interface LendTransaction {
   marketId: string
   /** Estimated APY at time of lending */
   apy: number
-  /** Transaction timestamp */
-  timestamp: number
   /** Transaction data for execution (optional) */
   transactionData?: {
     /** Approval transaction (if needed) */
@@ -140,41 +148,25 @@ export interface LendMarketInfo extends LendMarketBase {
  * @description Breakdown of APY components following Morpho's official methodology
  */
 export interface ApyBreakdown {
+  /** Total net APY after all components and fees */
+  total: number
   /** Native APY from market lending (before fees) */
-  nativeApy: number
+  native: number
   /** Total rewards APR from all sources */
-  totalRewardsApr: number
+  totalRewards: number
   /** Individual token rewards APRs (dynamically populated) */
   usdc?: number
   morpho?: number
   other?: number
   /** Performance/management fee rate */
   performanceFee: number
-  /** Net APY after all components and fees */
-  netApy: number
 }
 
 /**
- * Lending market (vault) information
- * @description Information about a lending market (Morpho vault)
+ * Lending market metadata
+ * @description Additional vault configuration and info
  */
-export interface LendMarket {
-  /** Chain ID */
-  chainId: number
-  /** Vault address */
-  address: Address
-  /** Vault name */
-  name: string
-  /** Asset token address */
-  asset: Address
-  /** Total assets under management */
-  totalAssets: bigint
-  /** Total shares issued */
-  totalShares: bigint
-  /** Current APY (net APY after rewards and fees) */
-  apy: number
-  /** Detailed APY breakdown */
-  apyBreakdown: ApyBreakdown
+export interface LendMarketMetadata {
   /** Vault owner address */
   owner: Address
   /** Vault curator address */
@@ -183,6 +175,25 @@ export interface LendMarket {
   fee: number
   /** Last update timestamp */
   lastUpdate: number
+}
+
+/**
+ * Lending market (vault) information
+ * @description Information about a lending market (Morpho vault)
+ */
+export interface LendMarket {
+  /** Market identifier */
+  marketId: LendMarketId
+  /** Vault name */
+  name: string
+  /** Asset information */
+  asset: Asset
+  /** Supply metrics */
+  supply: LendMarketSupply
+  /** APY breakdown */
+  apy: ApyBreakdown
+  /** Additional vault metadata */
+  metadata: LendMarketMetadata
 }
 
 /**
@@ -240,8 +251,8 @@ export interface LendMarketPosition {
   shares: bigint
   /** Formatted market shares */
   sharesFormatted: string
-  /** Chain ID */
-  chainId: number
+  /** Market identifier */
+  marketId: LendMarketId
 }
 
 /**
@@ -276,23 +287,6 @@ export interface LendOpenPositionInternalParams
   amountWei: bigint
   /** Wallet address for receiving shares and as owner (required in internal params) */
   walletAddress: Address
-}
-
-/**
- * Parameters for lend operation
- * @description Parameters required for lending assets
- */
-export interface LendParams {
-  /** Asset token address to lend */
-  asset: Address
-  /** Amount to lend (in wei) */
-  amount: bigint
-  /** Chain ID for the transaction */
-  chainId: SupportedChainId
-  /** Optional specific market ID */
-  marketId?: string
-  /** Optional lending configuration */
-  options?: LendOptions
 }
 
 /**
@@ -377,30 +371,20 @@ export interface GetMarketBalanceParams {
  */
 export interface LendProviderMethods {
   /**
-   * Provider implementation of lend method
-   * @param params - Lending operation parameters
-   * @returns Promise resolving to lending transaction details
+   * Provider implementation of openPosition method
+   * @param params - Open position operation parameters
+   * @returns Promise resolving to transaction data
    */
-  _lend({
-    asset,
-    amount,
-    chainId,
-    marketId,
-    options,
-  }: LendParams): Promise<LendTransaction>
+  _openPosition(
+    params: LendOpenPositionInternalParams,
+  ): Promise<TransactionData>
 
   /**
-   * Provider implementation of withdraw method
-   * @param params - Withdrawal operation parameters
-   * @returns Promise resolving to withdrawal transaction details
+   * Provider implementation of closePosition method
+   * @param params - Close position operation parameters
+   * @returns Promise resolving to transaction data
    */
-  _withdraw(params: {
-    asset: Address
-    amount: bigint
-    chainId: SupportedChainId
-    marketId?: string
-    options?: LendOptions
-  }): Promise<LendTransaction>
+  _closePosition(params: LendClosePositionParams): Promise<TransactionData>
 
   /**
    * Provider implementation of getMarket method
@@ -411,9 +395,10 @@ export interface LendProviderMethods {
 
   /**
    * Provider implementation of getMarkets method
+   * @param params - Optional filtering parameters
    * @returns Promise resolving to array of market information
    */
-  _getMarkets(): Promise<LendMarket[]>
+  _getMarkets(params: GetLendMarketsParams): Promise<LendMarket[]>
 
   /**
    * Provider implementation of getPosition method

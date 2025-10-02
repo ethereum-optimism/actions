@@ -1,8 +1,8 @@
 import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
-import { LendProviderMorpho } from '@/lend/index.js'
+import { MorphoLendProvider } from '@/lend/index.js'
 import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { LendConfig, LendProvider } from '@/types/lend.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import type { VerbsConfig } from '@/types/verbs.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
@@ -66,7 +66,7 @@ export class Verbs<
     // Create lending provider if configured
     if (config.lend) {
       if (config.lend.provider === 'morpho') {
-        this._lendProvider = new LendProviderMorpho(
+        this._lendProvider = new MorphoLendProvider(
           {
             ...config.lend,
             defaultSlippage:
