@@ -1,3 +1,4 @@
+import type { Address } from 'viem'
 import { getAddress } from 'viem'
 import { unichain } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
@@ -15,50 +16,71 @@ describe('PrivyHostedWalletProvider', () => {
     supportedChains: [unichain.id],
   }) as unknown as ChainManager
 
-  it('toVerbsWallet creates a VerbsWallet with correct address and signer', async () => {
-    const privy = createMockPrivyClient('app', 'secret')
-    const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
+  describe('toVerbsWallet', () => {
+    it('toVerbsWallet creates a VerbsWallet with correct address and signer', async () => {
+      const privy = createMockPrivyClient('app', 'secret')
+      const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
 
-    const hostedWallet = await privy.walletApi.createWallet({
-      chainType: 'ethereum',
+      const hostedWallet = await privy.walletApi.createWallet({
+        chainType: 'ethereum',
+      })
+
+      const verbsWallet = await provider.toVerbsWallet({
+        walletId: hostedWallet.id,
+        address: hostedWallet.address as Address,
+      })
+
+      expect(verbsWallet).toBeInstanceOf(Wallet)
+      expect(verbsWallet.address).toBe(hostedWallet.address)
+      expect(verbsWallet.signer.address).toBe(hostedWallet.address)
     })
 
-    const verbsWallet = await provider.toVerbsWallet({
-      walletId: hostedWallet.id,
-      address: hostedWallet.address,
+    it('forwards params to PrivyWallet.create', async () => {
+      const privy = createMockPrivyClient('app', 'secret')
+      const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
+      const spy = vi.spyOn(PrivyWallet, 'create')
+
+      const id = 'mock-wallet-123'
+      const addr = getRandomAddress().toLowerCase()
+
+      await provider.toVerbsWallet({ walletId: id, address: addr as Address })
+
+      expect(spy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          privyClient: privy,
+          walletId: id,
+          address: getAddress(addr),
+          chainManager: mockChainManager,
+        }),
+      )
     })
 
-    expect(verbsWallet).toBeInstanceOf(Wallet)
-    expect(verbsWallet.address).toBe(hostedWallet.address)
-    expect(verbsWallet.signer.address).toBe(hostedWallet.address)
+    it('throws on invalid address', async () => {
+      const privy = createMockPrivyClient('app', 'secret')
+      const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
+
+      await expect(
+        provider.toVerbsWallet({ walletId: 'id', address: '0x123' }),
+      ).rejects.toBeTruthy()
+    })
   })
 
-  it('forwards params to PrivyWallet.create', async () => {
-    const privy = createMockPrivyClient('app', 'secret')
-    const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
-    const spy = vi.spyOn(PrivyWallet, 'create')
+  describe('createSigner', () => {
+    it('should create a LocalAccount with correct address', async () => {
+      const privy = createMockPrivyClient('app', 'secret')
+      const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
 
-    const id = 'mock-wallet-123'
-    const addr = getRandomAddress().toLowerCase()
+      const hostedWallet = await privy.walletApi.createWallet({
+        chainType: 'ethereum',
+      })
 
-    await provider.toVerbsWallet({ walletId: id, address: addr })
+      const signer = await provider.createSigner({
+        walletId: hostedWallet.id,
+        address: hostedWallet.address as Address,
+      })
 
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        privyClient: privy,
-        walletId: id,
-        address: getAddress(addr),
-        chainManager: mockChainManager,
-      }),
-    )
-  })
-
-  it('throws on invalid address', async () => {
-    const privy = createMockPrivyClient('app', 'secret')
-    const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
-
-    await expect(
-      provider.toVerbsWallet({ walletId: 'id', address: '0x123' }),
-    ).rejects.toBeTruthy()
+      expect(signer.address).toBe(hostedWallet.address)
+      expect(signer.type).toBe('local')
+    })
   })
 })

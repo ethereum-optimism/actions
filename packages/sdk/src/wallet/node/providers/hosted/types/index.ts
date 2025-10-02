@@ -2,6 +2,7 @@ import type { PrivyClient } from '@privy-io/server-auth'
 import type { TurnkeySDKClientBase } from '@turnkey/core'
 import type { TurnkeyClient as TurnkeyHttpClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
+import type { Address } from 'viem'
 
 import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
 import type { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
@@ -37,7 +38,6 @@ export interface NodeOptionsMap {
    */
   turnkey: {
     client: TurnkeyHttpClient | TurnkeyServerClient | TurnkeySDKClientBase
-    organizationId: string
   }
 }
 
@@ -51,6 +51,7 @@ export interface NodeOptionsMap {
  * undefined if using an API key client.
  */
 export type TurnkeyHostedWalletToVerbsWalletOptions = {
+  organizationId: string
   signWith: string
   ethereumAddress?: string
 }
@@ -63,7 +64,7 @@ export type TurnkeyHostedWalletToVerbsWalletOptions = {
  */
 export type PrivyHostedWalletToVerbsWalletOptions = {
   walletId: string
-  address: string
+  address: Address
 }
 
 /**

@@ -68,6 +68,16 @@ vi.mock('./config/verbs.js', () => ({
           }
         },
       ),
+      createSigner: vi.fn(
+        async ({ address }: { walletId: string; address: string }) => {
+          return {
+            address: address,
+            signer: {
+              address: address,
+            },
+          }
+        },
+      ),
       getSmartWallet: vi.fn(
         async ({ signer }: { signer: { address: string } }) => {
           return {

@@ -53,7 +53,7 @@ export type PrivyHostedWalletToVerbsWalletOptions = {
  * @description Parameters for converting a hosted wallet to a Verbs wallet
  * @property signWith This can be a wallet account address, private key address, or private key ID.
  * @property ethereumAddress Ethereum address to use for this account, in the case that a private key ID is used to sign.
- * If left undefined, `createAccount` will fetch it from the Turnkey API. We recommend setting this if you're using a passkey
+ * If left undefined, `createSigner` will fetch it from the Turnkey API. We recommend setting this if you're using a passkey
  * client, so that your users are not prompted for a passkey signature just to fetch their address. You may leave this
  * undefined if using an API key client.
  */

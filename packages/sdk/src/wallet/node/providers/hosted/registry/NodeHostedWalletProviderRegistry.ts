@@ -37,14 +37,10 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
       type: 'turnkey',
       validateOptions(options): options is NodeOptionsMap['turnkey'] {
         const o = options as NodeOptionsMap['turnkey']
-        return Boolean(o?.client) && typeof o?.organizationId === 'string'
+        return Boolean(o?.client)
       },
       create({ chainManager }, options) {
-        return new TurnkeyHostedWalletProvider(
-          options.client,
-          options.organizationId,
-          chainManager,
-        )
+        return new TurnkeyHostedWalletProvider(options.client, chainManager)
       },
     })
   }

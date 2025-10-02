@@ -1,12 +1,11 @@
 import type { ConnectedWallet } from '@privy-io/react-auth'
-import { toViemAccount } from '@privy-io/react-auth'
-import type { Address, CustomSource, LocalAccount, WalletClient } from 'viem'
+import type { Address, LocalAccount, WalletClient } from 'viem'
 import { createWalletClient, fallback, http } from 'viem'
-import { toAccount } from 'viem/accounts'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import { createSigner } from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
 
 /**
  * Privy wallet implementation
@@ -59,7 +58,7 @@ export class PrivyWallet extends Wallet {
    * Initialize the PrivyWallet by creating the signer account
    */
   protected async performInitialization() {
-    this.signer = await this.createAccount()
+    this.signer = await this.createSigner()
     this.address = this.signer.address
   }
 
@@ -71,17 +70,9 @@ export class PrivyWallet extends Wallet {
    * @returns Promise resolving to a LocalAccount configured for signing operations
    * @throws Error if wallet retrieval fails or signing operations are not supported
    */
-  private async createAccount(): Promise<LocalAccount> {
-    const privyViemAccount = await toViemAccount({
-      wallet: this.connectedWallet,
-    })
-    return toAccount({
-      address: privyViemAccount.address,
-      sign: privyViemAccount.sign,
-      signMessage: privyViemAccount.signMessage,
-      signTransaction: privyViemAccount.signTransaction,
-      signTypedData:
-        privyViemAccount.signTypedData as CustomSource['signTypedData'],
+  private async createSigner(): Promise<LocalAccount> {
+    return createSigner({
+      connectedWallet: this.connectedWallet,
     })
   }
 }

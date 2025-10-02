@@ -59,13 +59,10 @@ describe('NodeHostedWalletProviderRegistry', () => {
     expect(
       factory.validateOptions?.({
         client: mockTurnkeyClient,
-        organizationId: 'org_123',
       } as NodeOptionsMap['turnkey']),
     ).toBe(true)
     // Invalid shape should not pass validation
     expect(factory.validateOptions?.({})).toBe(false)
-    expect(factory.validateOptions?.({ client: mockTurnkeyClient })).toBe(false)
-    expect(factory.validateOptions?.({ organizationId: 'org_123' })).toBe(false)
   })
 
   it('creates a TurnkeyHostedWalletProvider instance', () => {
@@ -76,7 +73,6 @@ describe('NodeHostedWalletProviderRegistry', () => {
       { chainManager: mockChainManager },
       {
         client: mockTurnkeyClient,
-        organizationId: 'org_123',
       },
     )
 

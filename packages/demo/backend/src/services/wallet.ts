@@ -36,13 +36,13 @@ export async function createWallet(): Promise<{
   const privyWallet = await privyClient.walletApi.createWallet({
     chainType: 'ethereum',
   })
-  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+  const privySigner = await verbs.wallet.createSigner({
     walletId: privyWallet.id,
-    address: privyWallet.address,
+    address: getAddress(privyWallet.address),
   })
   const wallet = await verbs.wallet.createSmartWallet({
-    owners: [verbsPrivyWallet.address],
-    signer: verbsPrivyWallet.signer,
+    owners: [privySigner.address],
+    signer: privySigner,
   })
   const smartWalletAddress = wallet.address
   return {
@@ -79,12 +79,12 @@ export async function getWallet(
     return null
   }
 
-  const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+  const privySigner = await verbs.wallet.createSigner({
     walletId: privyWallet.id!,
-    address: privyWallet.address,
+    address: getAddress(privyWallet.address),
   })
   const wallet = await verbs.wallet.getSmartWallet({
-    signer: verbsPrivyWallet.signer,
+    signer: privySigner,
     deploymentOwners: [getAddress(privyWallet.address)],
   })
 
@@ -104,13 +104,13 @@ export async function getAllWallets(
     const response = await privyClient.walletApi.getWallets(options)
     return Promise.all(
       response.data.map(async (privyWallet) => {
-        const verbsPrivyWallet = await verbs.wallet.hostedWalletToVerbsWallet({
+        const privySigner = await verbs.wallet.createSigner({
           walletId: privyWallet.id,
-          address: privyWallet.address,
+          address: getAddress(privyWallet.address),
         })
         const wallet = await verbs.wallet.getSmartWallet({
-          signer: verbsPrivyWallet.signer,
-          deploymentOwners: [getAddress(privyWallet.address)],
+          signer: privySigner,
+          deploymentOwners: [privySigner.address],
         })
         return {
           wallet,

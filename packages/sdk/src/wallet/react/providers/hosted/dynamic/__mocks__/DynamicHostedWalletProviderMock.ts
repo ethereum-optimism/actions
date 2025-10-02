@@ -1,3 +1,4 @@
+import type { LocalAccount } from 'viem'
 import { unichain } from 'viem/op-stack'
 import { vi } from 'vitest'
 
@@ -27,6 +28,14 @@ export class DynamicHostedWalletProviderMock extends HostedWalletProvider<
     },
   )
 
+  public readonly createSignerMock = vi.fn(
+    async (
+      _params: DynamicHostedWalletToVerbsWalletOptions,
+    ): Promise<LocalAccount> => {
+      return {} as unknown as LocalAccount
+    },
+  )
+
   constructor() {
     const mockChainManager = new MockChainManager({
       supportedChains: [unichain.id],
@@ -38,5 +47,11 @@ export class DynamicHostedWalletProviderMock extends HostedWalletProvider<
     params: DynamicHostedWalletToVerbsWalletOptions,
   ): Promise<Wallet> {
     return this.toVerbsWalletMock(params)
+  }
+
+  async createSigner(
+    params: DynamicHostedWalletToVerbsWalletOptions,
+  ): Promise<LocalAccount> {
+    return this.createSignerMock(params)
   }
 }
