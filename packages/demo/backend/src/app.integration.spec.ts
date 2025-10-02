@@ -138,44 +138,76 @@ vi.mock('./config/verbs.js', () => ({
       getMarkets: vi.fn(() =>
         Promise.resolve([
           {
-            address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
+            marketId: {
+              address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
+              chainId: 130,
+            },
             name: 'Gauntlet USDC',
-            asset: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
-            apy: 0.03,
-            totalAssets: BigInt('16199575764995'),
-            totalShares: BigInt('16199575764995'),
-            owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
-            curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585',
-            fee: 0.1,
-            lastUpdate: 1234567890,
+            asset: {
+              address: { 130: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842' },
+              metadata: {
+                symbol: 'USDC',
+                name: 'USD Coin',
+                decimals: 6,
+              },
+              type: 'ERC20',
+            },
+            supply: {
+              totalAssets: BigInt('16199575764995'),
+              totalShares: BigInt('16199575764995'),
+            },
+            apy: {
+              total: 0.03,
+              native: 0.025,
+              totalRewards: 0.005,
+              performanceFee: 0.1,
+            },
+            metadata: {
+              owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
+              curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585',
+              fee: 0.1,
+              lastUpdate: 1234567890,
+            },
           },
         ]),
       ),
-      getMarket: vi.fn(({ address }: { address: string; chainId: number }) => {
-        if (address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
-          return Promise.resolve({
-            address,
-            name: 'Gauntlet USDC',
-            asset: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
-            apy: 0.03,
-            apyBreakdown: {
-              nativeApy: 0.025,
-              totalRewardsApr: 0.01,
-              usdc: 0.005,
-              morpho: 0.005,
-              other: 0,
-              performanceFee: 0.1,
-              netApy: 0.0325,
-            },
-            totalAssets: BigInt('16199575764995'),
-            totalShares: BigInt('16199575764995'),
-            owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
-            curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585',
-            fee: 0.1,
-            lastUpdate: 1234567890,
-          })
-        }
-        throw new Error('Vault not found')
+      getMarket: vi.fn(
+        ({ address, chainId }: { address: string; chainId: number }) => {
+          if (address === '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9') {
+            return Promise.resolve({
+              marketId: {
+                address,
+                chainId,
+              },
+              name: 'Gauntlet USDC',
+              asset: {
+                address: { 130: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842' },
+                metadata: {
+                  symbol: 'USDC',
+                  name: 'USD Coin',
+                  decimals: 6,
+                },
+                type: 'ERC20',
+              },
+              supply: {
+                totalAssets: BigInt('16199575764995'),
+                totalShares: BigInt('16199575764995'),
+              },
+              apy: {
+                total: 0.03,
+                native: 0.025,
+                totalRewards: 0.005,
+                performanceFee: 0.1,
+              },
+              metadata: {
+                owner: '0x5a4E19842e09000a582c20A4f524C26Fb48Dd4D0',
+                curator: '0x9E33faAE38ff641094fa68c65c2cE600b3410585',
+                fee: 0.1,
+                lastUpdate: 1234567890,
+              },
+            })
+          }
+          throw new Error('Market not found')
       }),
       getMarketBalance: vi.fn(
         (_marketAddress: string, _walletAddress: string) => {
@@ -378,19 +410,6 @@ describe('HTTP API Integration', () => {
         balance: [
           { symbol: 'USDC', balance: '1000000' },
           { symbol: 'MORPHO', balance: '500000' },
-          {
-            symbol: 'Gauntlet USDC',
-            totalBalance: '1000000',
-            totalFormattedBalance: '1',
-            chainBalances: [
-              {
-                chainId: 130,
-                balance: '1000000',
-                tokenAddress: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
-                formattedBalance: '1',
-              },
-            ],
-          },
         ],
       })
     })
@@ -461,50 +480,41 @@ describe('HTTP API Integration', () => {
       expect(data.markets.length).toBeGreaterThan(0)
 
       // Check market structure
-      const vault = data.markets[0]
-      expect(vault).toHaveProperty('address')
-      expect(vault).toHaveProperty('name')
-      expect(vault).toHaveProperty('apy')
-      expect(vault).toHaveProperty('asset')
-      expect(vault.address).toBe('0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9')
-      expect(vault.name).toBe('Gauntlet USDC')
-      expect(typeof vault.apy).toBe('number')
+      const market = data.markets[0]
+      expect(market).toHaveProperty('marketId')
+      expect(market).toHaveProperty('name')
+      expect(market).toHaveProperty('apy')
+      expect(market).toHaveProperty('asset')
+      expect(market.marketId.address).toBe(
+        '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
+      )
+      expect(market.name).toBe('Gauntlet USDC')
+      expect(typeof market.apy.total).toBe('number')
     })
 
     it('should get specific market info', async () => {
-      const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
+      const marketAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
       const response = await request(
-        `${baseUrl}/lend/market/130/${vaultAddress}`,
+        `${baseUrl}/lend/market/130/${marketAddress}`,
       )
 
       expect(response.statusCode).toBe(200)
       const data = (await response.body.json()) as any
 
       expect(data).toHaveProperty('market')
-      const vault = data.market
-      expect(vault).toHaveProperty('address')
-      expect(vault).toHaveProperty('name')
-      expect(vault).toHaveProperty('apy')
-      expect(vault).toHaveProperty('apyBreakdown')
-      expect(vault).toHaveProperty('asset')
-      expect(vault).toHaveProperty('totalAssets')
-      expect(vault).toHaveProperty('totalShares')
-      expect(vault).toHaveProperty('fee')
-      expect(vault).toHaveProperty('owner')
-      expect(vault).toHaveProperty('curator')
-      expect(vault).toHaveProperty('lastUpdate')
+      const market = data.market
+      expect(market).toHaveProperty('marketId')
+      expect(market).toHaveProperty('name')
+      expect(market).toHaveProperty('apy')
+      expect(market).toHaveProperty('asset')
+      expect(market).toHaveProperty('supply')
+      expect(market).toHaveProperty('metadata')
 
-      // Validate APY breakdown structure
-      expect(vault.apyBreakdown).toHaveProperty('nativeApy')
-      expect(vault.apyBreakdown).toHaveProperty('totalRewardsApr')
-      expect(vault.apyBreakdown).toHaveProperty('performanceFee')
-      expect(vault.apyBreakdown).toHaveProperty('netApy')
-
-      expect(vault.address).toBe(vaultAddress)
-      expect(vault.name).toBe('Gauntlet USDC')
-      expect(typeof vault.apy).toBe('number')
-      expect(typeof vault.totalAssets).toBe('string') // BigInt serialized as string
-      expect(typeof vault.fee).toBe('number')
+      expect(market.marketId.address).toBe(marketAddress)
+      expect(market.name).toBe('Gauntlet USDC')
+      expect(typeof market.apy.total).toBe('number')
+      expect(typeof market.supply.totalAssets).toBe('string') // BigInt serialized as string
+      expect(typeof market.metadata.fee).toBe('number')
     })
 
     it('should return 400 for missing market address', async () => {
@@ -525,7 +535,7 @@ describe('HTTP API Integration', () => {
       expect(data).toHaveProperty('error')
       expect(data.error).toBe('Failed to get market info')
       expect(data).toHaveProperty('message')
-      expect(data.message).toContain('Vault not found')
+      expect(data.message).toContain('Market not found')
     })
   })
 })

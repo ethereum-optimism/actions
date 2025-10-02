@@ -30,7 +30,7 @@ interface TerminalLine {
   timestamp: Date
 }
 
-interface VaultData {
+interface MarketData {
   marketId: {
     chainId: number
     address: Address
@@ -72,7 +72,7 @@ interface PendingPrompt {
   type:
     | 'userId'
     | 'lendPositionType'
-    | 'lendVault'
+    | 'lendMarket'
     | 'lendAmount'
     | 'walletSendSelection'
     | 'walletSendAmount'
@@ -80,17 +80,17 @@ interface PendingPrompt {
     | 'walletSelectSelection'
   message: string
   data?:
-    | VaultData[]
+    | MarketData[]
     | WalletData[]
     | {
         selectedWallet?: WalletData
-        selectedVault?: VaultData
+        selectedMarket?: MarketData
         walletBalance?: number
-        vaultBalance?: number
+        marketBalance?: number
         balance?: number
         amount?: number
         operationType?: 'open' | 'close'
-        hasVaultPositions?: boolean
+        hasMarketPositions?: boolean
       }
 }
 
@@ -153,7 +153,7 @@ const Terminal = () => {
     [privyUser],
   )
 
-  const [selectedVaultIndex, setSelectedVaultIndex] = useState(0)
+  const [selectedMarketIndex, setSelectedMarketIndex] = useState(0)
   const [selectedPositionTypeIndex, setSelectedPositionTypeIndex] = useState(0)
 
   // Auto-select wallet when Privy is authenticated and has wallets
@@ -245,7 +245,7 @@ const Terminal = () => {
   // DRY function to display wallet balance with loading state
   const displayWalletBalance = async (
     walletId: string,
-    showVaultPositions: boolean = true,
+    showMarketPositions: boolean = true,
   ): Promise<string> => {
     const result = await verbsApi.getWalletBalance(
       walletId,
@@ -277,14 +277,14 @@ const Terminal = () => {
     for (const [chainId, tokens] of Object.entries(balancesByChain)) {
       balanceLines.push(`Chain: ${chainById[Number(chainId)].name}`)
 
-      // Show ETH, USDC, and any vault balances
+      // Show ETH, USDC, and any market balances
       const filteredBalances = tokens.filter(
         (token) =>
           token.symbol === 'ETH' ||
           token.symbol === 'USDC' ||
           token.symbol === 'USDC_DEMO' ||
           token.symbol.includes('Gauntlet') ||
-          token.symbol.includes('Vault'),
+          token.symbol.includes('Market'),
       )
 
       // Ensure both ETH and USDC are shown, even if not in response
@@ -298,8 +298,8 @@ const Terminal = () => {
         (token) => token.symbol === 'USDC_DEMO',
       )
 
-      // Separate vault balances from token balances
-      const vaultBalances = filteredBalances.filter(
+      // Separate market balances from token balances
+      const marketBalances = filteredBalances.filter(
         (token) =>
           token.symbol !== 'ETH' &&
           token.symbol !== 'USDC' &&
@@ -312,13 +312,13 @@ const Terminal = () => {
         `  USDC_DEMO: ${usdcDemoBalance ? formatBalance(usdcDemoBalance.totalBalance, 6) : '0'}`,
       )
 
-      // Add vault balances if any exist and showVaultPositions is true
-      if (showVaultPositions && vaultBalances.length > 0) {
-        balanceLines.push('  Vault Positions:')
-        vaultBalances.forEach((vault) => {
+      // Add market balances if any exist and showMarketPositions is true
+      if (showMarketPositions && marketBalances.length > 0) {
+        balanceLines.push('  Market Positions:')
+        marketBalances.forEach((market) => {
           balanceLines.push(
-            `    ${vault.symbol}: ${formatBalance(vault.totalBalance, 6)}`,
-          ) // Assume 6 decimals for vault shares
+            `    ${market.symbol}: ${formatBalance(market.totalBalance, 6)}`,
+          ) // Assume 6 decimals for market shares
         })
       }
 
@@ -552,8 +552,8 @@ const Terminal = () => {
       } else if (pendingPrompt.type === 'lendPositionType') {
         handlePositionTypeSelection()
         return
-      } else if (pendingPrompt.type === 'lendVault') {
-        handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
+      } else if (pendingPrompt.type === 'lendMarket') {
+        handleLendMarketSelection((pendingPrompt.data as MarketData[]) || [])
         return
       } else if (pendingPrompt.type === 'lendAmount') {
         handleLendAmountSubmission(parseFloat(trimmed))
@@ -789,13 +789,13 @@ User ID: ${result.userId}`,
     const operationType: 'open' | 'close' = selectedPositionTypeIndex === 0 ? 'open' : 'close'
     const promptData = pendingPrompt?.data as {
       selectedWallet: WalletData
-      selectedVault: VaultData
+      selectedMarket: MarketData
       walletBalance: number
-      vaultBalance: number
+      marketBalance: number
     }
     setPendingPrompt(null)
 
-    const balanceToUse = operationType === 'close' ? promptData.vaultBalance : promptData.walletBalance
+    const balanceToUse = operationType === 'close' ? promptData.marketBalance : promptData.walletBalance
     const actionText = operationType === 'close' ? 'withdraw' : 'deposit'
 
     const amountPromptLine: TerminalLine = {
@@ -812,47 +812,47 @@ User ID: ${result.userId}`,
       message: '',
       data: {
         selectedWallet: promptData.selectedWallet,
-        selectedVault: promptData.selectedVault,
+        selectedMarket: promptData.selectedMarket,
         walletBalance: promptData.walletBalance,
-        vaultBalance: promptData.vaultBalance,
+        marketBalance: promptData.marketBalance,
         balance: balanceToUse,
         operationType,
       },
     })
   }
 
-  const handleLendVaultSelection = async (vaults: VaultData[]) => {
-    const selectedVault = vaults[selectedVaultIndex]
+  const handleLendMarketSelection = async (markets: MarketData[]) => {
+    const selectedMarket = markets[selectedMarketIndex]
     setPendingPrompt(null)
 
     console.log(
-      '[FRONTEND] Selected vault:',
-      selectedVault.name,
-      selectedVault.marketId.address,
+      '[FRONTEND] Selected market:',
+      selectedMarket.name,
+      selectedMarket.marketId.address,
     )
 
     try {
-      const vault = selectedVault
-      console.log('vault', vault)
+      const market = selectedMarket
+      console.log('market', market)
 
-      const nameValue = vault.name
-      const netApyValue = `${(vault.apy.total * 100).toFixed(2)}%`
-      const totalAssetsValue = `$${(parseFloat(vault.supply.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      const feeValue = `${(vault.metadata.fee * 100).toFixed(1)}%`
+      const nameValue = market.name
+      const netApyValue = `${(market.apy.total * 100).toFixed(2)}%`
+      const totalAssetsValue = `$${(parseFloat(market.supply.totalAssets) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      const feeValue = `${(market.metadata.fee * 100).toFixed(1)}%`
       const managerValue = 'Gauntlet'
 
-      const nativeApyValue = `${(vault.apy.native * 100).toFixed(2)}%`
+      const nativeApyValue = `${(market.apy.native * 100).toFixed(2)}%`
       const usdcRewardsValue =
-        vault.apy.usdc !== undefined
-          ? `${(vault.apy.usdc * 100).toFixed(2)}%`
+        market.apy.usdc !== undefined
+          ? `${(market.apy.usdc * 100).toFixed(2)}%`
           : 'N/A'
       const morphoRewardsValue =
-        vault.apy.morpho !== undefined
-          ? `${(vault.apy.morpho * 100).toFixed(2)}%`
+        market.apy.morpho !== undefined
+          ? `${(market.apy.morpho * 100).toFixed(2)}%`
           : 'N/A'
-      const feeImpactValue = `${(vault.apy.native * vault.apy.performanceFee * 100).toFixed(2)}%`
+      const feeImpactValue = `${(market.apy.native * market.apy.performanceFee * 100).toFixed(2)}%`
 
-      const vaultInfoTable = `
+      const marketInfoTable = `
 ┌─────────────────────────────────────────────────────────────┐
 │                     VAULT INFORMATION                       │
 ├─────────────────────────────────────────────────────────────┤
@@ -870,14 +870,14 @@ User ID: ${result.userId}`,
 │ Manager:           ${managerValue.padEnd(40)} │
 └─────────────────────────────────────────────────────────────┘`
 
-      const vaultInfoLine: TerminalLine = {
-        id: `vault-info-${Date.now()}`,
+      const marketInfoLine: TerminalLine = {
+        id: `market-info-${Date.now()}`,
         type: 'success',
-        content: vaultInfoTable,
+        content: marketInfoTable,
         timestamp: new Date(),
       }
 
-      setLines((prev) => [...prev.slice(0, -1), vaultInfoLine])
+      setLines((prev) => [...prev.slice(0, -1), marketInfoLine])
 
       const loadingBalanceLine: TerminalLine = {
         id: `loading-balance-${Date.now()}`,
@@ -897,14 +897,14 @@ User ID: ${result.userId}`,
         await getAuthHeaders(),
       )
       const assetAddress =
-        selectedVault.asset.address[selectedVault.marketId.chainId] ||
-        Object.values(selectedVault.asset.address)[0]
+        selectedMarket.asset.address[selectedMarket.marketId.chainId] ||
+        Object.values(selectedMarket.asset.address)[0]
 
       const chainToken = walletBalanceResult.balance
         .flatMap((t) => t.chainBalances.map((cb) => ({ ...cb })))
         .find(
           (cb) =>
-            cb.chainId === selectedVault.marketId.chainId &&
+            cb.chainId === selectedMarket.marketId.chainId &&
             (cb.tokenAddress || '').toLowerCase() === assetAddress.toLowerCase(),
         )
 
@@ -914,30 +914,30 @@ User ID: ${result.userId}`,
 
       console.log('[FRONTEND] Wallet USDC balance:', usdcBalance)
 
-      // Get vault shares from existing wallet balance data
-      const vaultToken = walletBalanceResult.balance.find(
+      // Get market shares from existing wallet balance data
+      const marketToken = walletBalanceResult.balance.find(
         (token) =>
-          token.symbol === selectedVault.name &&
+          token.symbol === selectedMarket.name &&
           token.chainBalances.some(
-            (cb) => cb.chainId === selectedVault.marketId.chainId,
+            (cb) => cb.chainId === selectedMarket.marketId.chainId,
           ),
       )
-      const vaultChainBalance = vaultToken?.chainBalances.find(
-        (cb) => cb.chainId === selectedVault.marketId.chainId,
+      const marketChainBalance = marketToken?.chainBalances.find(
+        (cb) => cb.chainId === selectedMarket.marketId.chainId,
       )
-      const vaultShares = vaultChainBalance
-        ? parseFloat(vaultChainBalance.formattedBalance)
+      const marketShares = marketChainBalance
+        ? parseFloat(marketChainBalance.formattedBalance)
         : 0
 
-      console.log('[FRONTEND] Vault shares from wallet balance:', vaultShares)
+      console.log('[FRONTEND] Market shares from wallet balance:', marketShares)
 
-      // If vault has shares, ask open or close
-      if (vaultShares > 0) {
+      // If market has shares, ask open or close
+      if (marketShares > 0) {
         // Show balances first
         const balancesLine: TerminalLine = {
           id: `balances-${Date.now()}`,
           type: 'output',
-          content: `Wallet Balance:\n${walletBalanceText}\n\nVault Position: ${vaultShares} ${selectedVault.name}`,
+          content: `Wallet Balance:\n${walletBalanceText}\n\nMarket Position: ${marketShares} ${selectedMarket.name}`,
           timestamp: new Date(),
         }
         setLines((prev) => [...prev.slice(0, -1), balancesLine])
@@ -964,15 +964,15 @@ User ID: ${result.userId}`,
           message: '',
           data: {
             selectedWallet: selectedWallet!,
-            selectedVault: selectedVault,
+            selectedMarket: selectedMarket,
             walletBalance: usdcBalance,
-            vaultBalance: vaultShares,
+            marketBalance: marketShares,
           },
         })
         return
       }
 
-      // No vault position, go directly to lend amount
+      // No market position, go directly to lend amount
       const balancesDisplay = `Wallet Balance:\n${walletBalanceText}\n\nHow much would you like to lend?`
 
       const balancesLine: TerminalLine = {
@@ -989,9 +989,9 @@ User ID: ${result.userId}`,
         message: '',
         data: {
           selectedWallet: selectedWallet!,
-          selectedVault: selectedVault,
+          selectedMarket: selectedMarket,
           walletBalance: usdcBalance,
-          vaultBalance: vaultShares,
+          marketBalance: marketShares,
           balance: usdcBalance,
           operationType: 'open',
         },
@@ -1011,14 +1011,14 @@ User ID: ${result.userId}`,
   const handleLendAmountSubmission = async (amount: number) => {
     const promptData = pendingPrompt?.data as {
       selectedWallet: WalletData
-      selectedVault: VaultData
+      selectedMarket: MarketData
       walletBalance: number
-      vaultBalance?: number
+      marketBalance?: number
       operationType?: 'open' | 'close'
     }
 
     const operationType = promptData.operationType || 'open'
-    const relevantBalance = operationType === 'close' ? (promptData.vaultBalance || 0) : promptData.walletBalance
+    const relevantBalance = operationType === 'close' ? (promptData.marketBalance || 0) : promptData.walletBalance
 
     setPendingPrompt(null)
 
@@ -1036,7 +1036,7 @@ User ID: ${result.userId}`,
     }
 
     if (amount > relevantBalance) {
-      const balanceUnit = operationType === 'close' ? promptData.selectedVault.name : 'USDC'
+      const balanceUnit = operationType === 'close' ? promptData.selectedMarket.name : 'USDC'
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
@@ -1047,14 +1047,14 @@ User ID: ${result.userId}`,
       return
     }
 
-    const assetSymbol = promptData.selectedVault.asset.metadata.symbol
+    const assetSymbol = promptData.selectedMarket.asset.metadata.symbol
     const amountUnit = operationType === 'close' ? assetSymbol : assetSymbol
     const processingLine: TerminalLine = {
       id: `processing-${Date.now()}`,
       type: 'output',
       content: operationType === 'close'
-        ? `Processing withdrawal: ${amount} ${amountUnit} from ${promptData.selectedVault.name}...`
-        : `Processing lending transaction: ${amount} ${amountUnit} to ${promptData.selectedVault.name}...`,
+        ? `Processing withdrawal: ${amount} ${amountUnit} from ${promptData.selectedMarket.name}...`
+        : `Processing lending transaction: ${amount} ${amountUnit} to ${promptData.selectedMarket.name}...`,
       timestamp: new Date(),
     }
     setLines((prev) => [...prev, processingLine])
@@ -1063,23 +1063,23 @@ User ID: ${result.userId}`,
       console.log(`[FRONTEND] Calling ${operationType === 'close' ? 'closeLendPosition' : 'openLendPosition'} API`)
 
       const assetAddress =
-        promptData.selectedVault.asset.address[
-          promptData.selectedVault.marketId.chainId
-        ] || (Object.values(promptData.selectedVault.asset.address)[0] as Address)
+        promptData.selectedMarket.asset.address[
+          promptData.selectedMarket.marketId.chainId
+        ] || (Object.values(promptData.selectedMarket.asset.address)[0] as Address)
 
       const result = operationType === 'close'
         ? await verbsApi.closeLendPosition(
             promptData.selectedWallet.id,
             amount,
             assetAddress as Address,
-            promptData.selectedVault.marketId,
+            promptData.selectedMarket.marketId,
             await getAuthHeaders(),
           )
         : await verbsApi.openLendPosition(
             promptData.selectedWallet.id,
             amount,
             assetAddress as Address,
-            promptData.selectedVault.marketId,
+            promptData.selectedMarket.marketId,
             await getAuthHeaders(),
           )
 
@@ -1092,8 +1092,8 @@ User ID: ${result.userId}`,
         id: `lend-success-${Date.now()}`,
         type: 'success',
         content: operationType === 'close'
-          ? `✅ Successfully withdrew ${amount} ${amountUnit}!\n\nVault:  ${promptData.selectedVault.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`
-          : `✅ Successfully lent ${amount} ${amountUnit} to ${promptData.selectedVault.name}!\n\nVault:  ${promptData.selectedVault.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`,
+          ? `✅ Successfully withdrew ${amount} ${amountUnit}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`
+          : `✅ Successfully lent ${amount} ${amountUnit} to ${promptData.selectedMarket.name}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), successLine])
@@ -1416,11 +1416,11 @@ User ID: ${result.userId}`,
       return
     }
 
-    // Load vaults immediately
+    // Load markets immediately
     const loadingLine: TerminalLine = {
       id: `loading-${Date.now()}`,
       type: 'output',
-      content: 'Loading vaults...',
+      content: 'Loading markets...',
       timestamp: new Date(),
     }
     setLines((prev) => [...prev, loadingLine])
@@ -1441,31 +1441,31 @@ User ID: ${result.userId}`,
 
       const marketOptions = result.markets
         .map(
-          (vault, index) =>
-            `${index === 0 ? '> ' : '  '}${vault.name} - ${(vault.apy.total * 100).toFixed(2)}% APY`,
+          (market, index) =>
+            `${index === 0 ? '> ' : '  '}${market.name} - ${(market.apy.total * 100).toFixed(2)}% APY`,
         )
         .join('\n')
 
-      const vaultSelectionLine: TerminalLine = {
-        id: `vault-selection-${Date.now()}`,
+      const marketSelectionLine: TerminalLine = {
+        id: `market-selection-${Date.now()}`,
         type: 'output',
         content: `Select a Lending market:\n\n${marketOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
         timestamp: new Date(),
       }
 
-      setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
+      setLines((prev) => [...prev.slice(0, -1), marketSelectionLine])
       setPendingPrompt({
-        type: 'lendVault',
+        type: 'lendMarket',
         message: '',
         data: result.markets,
       })
-      setSelectedVaultIndex(0)
-    } catch (vaultError) {
+      setSelectedMarketIndex(0)
+    } catch (marketError) {
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
-        content: `Failed to load vaults: ${
-          vaultError instanceof Error ? vaultError.message : 'Unknown error'
+        content: `Failed to load markets: ${
+          marketError instanceof Error ? marketError.message : 'Unknown error'
         }`,
         timestamp: new Date(),
       }
@@ -1772,24 +1772,24 @@ User ID: ${result.userId}`,
       return
     }
 
-    // Handle special keys for lend vault prompts
-    if (pendingPrompt && pendingPrompt.type === 'lendVault') {
+    // Handle special keys for lend market prompts
+    if (pendingPrompt && pendingPrompt.type === 'lendMarket') {
       if (e.key === 'Enter') {
         e.preventDefault()
-        handleLendVaultSelection((pendingPrompt.data as VaultData[]) || [])
+        handleLendMarketSelection((pendingPrompt.data as MarketData[]) || [])
         return
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        setSelectedVaultIndex((prevIndex) =>
+        setSelectedMarketIndex((prevIndex) =>
           prevIndex > 0
             ? prevIndex - 1
-            : (pendingPrompt.data as VaultData[]).length - 1,
+            : (pendingPrompt.data as MarketData[]).length - 1,
         )
         return
       } else if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setSelectedVaultIndex((prevIndex) =>
-          prevIndex < (pendingPrompt.data as VaultData[]).length - 1
+        setSelectedMarketIndex((prevIndex) =>
+          prevIndex < (pendingPrompt.data as MarketData[]).length - 1
             ? prevIndex + 1
             : 0,
         )
@@ -1882,27 +1882,27 @@ User ID: ${result.userId}`,
     }
   }, [selectedPositionTypeIndex, pendingPrompt])
 
-  // Update the vault selection display to reflect the current selection
+  // Update the market selection display to reflect the current selection
   useEffect(() => {
-    if (pendingPrompt?.type === 'lendVault') {
-      const vaults = pendingPrompt.data as VaultData[]
-      const marketOptions = vaults
+    if (pendingPrompt?.type === 'lendMarket') {
+      const markets = pendingPrompt.data as MarketData[]
+      const marketOptions = markets
         .map(
-          (vault, index) =>
-            `${index === selectedVaultIndex ? '> ' : '  '}${vault.name} - ${(vault.apy.total * 100).toFixed(2)}% APY`,
+          (market, index) =>
+            `${index === selectedMarketIndex ? '> ' : '  '}${market.name} - ${(market.apy.total * 100).toFixed(2)}% APY`,
         )
         .join('\n')
 
-      const vaultSelectionLine: TerminalLine = {
-        id: `vault-selection-${Date.now()}`,
+      const marketSelectionLine: TerminalLine = {
+        id: `market-selection-${Date.now()}`,
         type: 'output',
         content: `Select a Lending market:\n\n${marketOptions}\n\n[Enter] to select, [↑/↓] to navigate`,
         timestamp: new Date(),
       }
 
-      setLines((prev) => [...prev.slice(0, -1), vaultSelectionLine])
+      setLines((prev) => [...prev.slice(0, -1), marketSelectionLine])
     }
-  }, [selectedVaultIndex, pendingPrompt])
+  }, [selectedMarketIndex, pendingPrompt])
 
   return (
     <div
