@@ -1,10 +1,9 @@
 import type { Address } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
+import { fetchRewards } from '@/lend/providers/morpho/api.js'
+import { fetchAndCalculateRewards } from '@/lend/providers/morpho/sdk.js'
 import { externalTest } from '@/utils/test.js'
-
-import { fetchRewards } from '../api.js'
-import { fetchAndCalculateRewards } from '../sdk.js'
 
 /**
  * External tests for API functionality

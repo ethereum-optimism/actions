@@ -1,11 +1,11 @@
 import type { Address, Hash, Hex, TransactionReceipt } from 'viem'
 
-import type { SupportedChainId } from '../../constants/supportedChains.js'
-import type { Asset } from '../asset.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { Asset } from '@/types/asset.js'
 
-export { LendProvider } from '../../lend/core/LendProvider.js'
-export { VerbsLendNamespace } from '../../lend/namespaces/VerbsLendNamespace.js'
-export { WalletLendNamespace } from '../../lend/namespaces/WalletLendNamespace.js'
+export { LendProvider } from '@/lend/core/LendProvider.js'
+export { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
+export { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 
 /**
  * Lending market identifier

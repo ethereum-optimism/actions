@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
+import { LendProvider } from '@/lend/core/LendProvider.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   ClosePositionParams,
@@ -17,8 +18,6 @@ import type {
   LendOptions,
   LendTransaction,
 } from '@/types/lend/index.js'
-
-import { LendProvider } from '../lend/core/LendProvider.js'
 
 export interface MockLendProviderConfig {
   supportedChains: number[]

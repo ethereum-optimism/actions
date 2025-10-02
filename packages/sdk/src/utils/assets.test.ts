@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset, MockWETHAsset } from '@/test/MockAssets.js'
-
-import { isAssetSupportedOnChain } from './assets.js'
+import { isAssetSupportedOnChain } from '@/utils/assets.js'
 
 describe('Asset Utilities', () => {
   describe('isAssetSupportedOnChain', () => {

@@ -1,13 +1,12 @@
 import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstraction'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
 import type { LendProvider, TransactionData } from '@/types/lend/index.js'
 import { createMock as createSmartWalletMock } from '@/wallet/core/wallets/smart/abstract/__mocks__/SmartWallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
-
-import { WalletLendNamespace } from '../WalletLendNamespace.js'
 
 describe('WalletLendNamespace', () => {
   const mockWalletAddress = getRandomAddress()

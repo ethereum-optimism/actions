@@ -3,6 +3,8 @@ import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import { LendProvider } from '@/lend/core/LendProvider.js'
+import { getVault, getVaults } from '@/lend/providers/morpho/sdk.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   GetLendMarketsParams,
@@ -16,9 +18,6 @@ import type {
   MorphoLendConfig,
 } from '@/types/lend/index.js'
 import { getAssetAddress } from '@/utils/assets.js'
-
-import { LendProvider } from '../../core/LendProvider.js'
-import { getVault, getVaults } from './sdk.js'
 
 /**
  * Supported chain IDs for Morpho lending
@@ -135,7 +134,6 @@ export class LendProviderMorpho extends LendProvider<MorphoLendConfig> {
         params.marketId.chainId,
       )
 
-      // MetaMorphoAction.withdraw(assets, receiver, owner)
       const assets = params.amount
       const receiver = params.walletAddress
       const owner = params.walletAddress

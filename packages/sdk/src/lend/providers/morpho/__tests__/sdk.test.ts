@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { calculateBaseApy, calculateRewardsBreakdown } from '../sdk.js'
+import {
+  calculateBaseApy,
+  calculateRewardsBreakdown,
+} from '@/lend/providers/morpho/sdk.js'
 
 describe('Vault Utilities', () => {
   describe('calculateBaseApy', () => {

@@ -1,6 +1,8 @@
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createMockMorphoVault } from '@/lend/providers/morpho/__mocks__/mockVault.js'
+import { LendProviderMorpho } from '@/lend/providers/morpho/LendProviderMorpho.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import {
@@ -9,9 +11,6 @@ import {
   MockWETHMarket,
 } from '@/test/MockMarkets.js'
 import type { MorphoLendConfig } from '@/types/lend/index.js'
-
-import { createMockMorphoVault } from '../__mocks__/mockVault.js'
-import { LendProviderMorpho } from '../LendProviderMorpho.js'
 
 // Mock the Morpho SDK modules
 vi.mock('@morpho-org/blue-sdk-viem', () => ({
