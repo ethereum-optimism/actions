@@ -92,7 +92,7 @@ describe('Lend Service', () => {
 
       mockLendProvider.getMarket.mockResolvedValue(mockMarketInfo)
 
-      const result = await lendService.getMarket(marketId, chainId)
+      const result = await lendService.getMarket({ address: marketId, chainId })
 
       expect(result).toEqual(mockMarketInfo)
       expect(mockLendProvider.getMarket).toHaveBeenCalledWith({
@@ -105,17 +105,17 @@ describe('Lend Service', () => {
       const error = new Error('Market not found')
       mockLendProvider.getMarket.mockRejectedValue(error)
 
-      await expect(lendService.getMarket(marketId, chainId)).rejects.toThrow(
-        'Market not found',
-      )
+      await expect(
+        lendService.getMarket({ address: marketId, chainId }),
+      ).rejects.toThrow('Market not found')
     })
 
     it('should handle unknown errors', async () => {
       mockLendProvider.getMarket.mockRejectedValue('Unknown error')
 
-      await expect(lendService.getMarket(marketId, chainId)).rejects.toThrow(
-        'Unknown error',
-      )
+      await expect(
+        lendService.getMarket({ address: marketId, chainId }),
+      ).rejects.toThrow('Unknown error')
     })
   })
 

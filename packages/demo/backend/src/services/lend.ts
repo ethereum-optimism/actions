@@ -1,11 +1,11 @@
 import type {
   LendMarket,
+  LendMarketId,
   LendMarketPosition,
   SupportedChainId,
 } from '@eth-optimism/verbs-sdk'
 import { SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
-import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
@@ -38,18 +38,14 @@ export async function getMarkets(): Promise<LendMarket[]> {
   return await verbs.lend.getMarkets()
 }
 
-export async function getMarket(
-  marketId: Address,
-  chainId: SupportedChainId,
-): Promise<LendMarket> {
+export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
   const verbs = getVerbs()
-  return await verbs.lend.getMarket({ address: marketId, chainId })
+  return await verbs.lend.getMarket(marketId)
 }
 
 export async function getPosition(
-  marketAddress: Address,
+  marketId: LendMarketId,
   walletId: string,
-  chainId: SupportedChainId,
 ): Promise<LendMarketPosition> {
   const wallet = await getWallet(walletId)
 
@@ -57,9 +53,7 @@ export async function getPosition(
     throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
-  return wallet.lend!.getPosition({
-    marketId: { address: marketAddress, chainId },
-  })
+  return wallet.lend!.getPosition({ marketId })
 }
 
 export async function formatMarketResponse(

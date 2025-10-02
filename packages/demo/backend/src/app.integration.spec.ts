@@ -208,7 +208,8 @@ vi.mock('./config/verbs.js', () => ({
             })
           }
           throw new Error('Market not found')
-      }),
+        },
+      ),
       getMarketBalance: vi.fn(
         (_marketAddress: string, _walletAddress: string) => {
           return Promise.resolve({

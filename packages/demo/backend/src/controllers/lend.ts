@@ -90,10 +90,10 @@ export class LendController {
         )
       }
 
-      const marketInfo = await lendService.getMarket(
-        marketId as Address,
-        chainId as SupportedChainId,
-      )
+      const marketInfo = await lendService.getMarket({
+        address: marketId as Address,
+        chainId: chainId as SupportedChainId,
+      })
       const formattedMarket = await lendService.formatMarketResponse(marketInfo)
       return c.json({ market: formattedMarket })
     } catch (error) {
@@ -119,9 +119,11 @@ export class LendController {
         params: { marketId, walletId, chainId },
       } = validation.data
       const balance = await lendService.getPosition(
-        marketId as Address,
+        {
+          address: marketId as Address,
+          chainId: Number(chainId) as SupportedChainId,
+        },
         walletId,
-        Number(chainId) as SupportedChainId,
       )
       const formattedBalance =
         await lendService.formatMarketBalanceResponse(balance)
