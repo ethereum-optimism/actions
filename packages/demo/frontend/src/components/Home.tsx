@@ -619,11 +619,11 @@ function Home() {
                       >{`import`}</span>
                       {` { `}
                       <span
-                        style={{ color: '#4db6ac' }}
+                        style={{ color: colors.syntax.variable }}
                       >{`ExampleMorphoMarket`}</span>
                       {`, `}
                       <span
-                        style={{ color: '#4db6ac' }}
+                        style={{ color: colors.syntax.variable }}
                       >{`ExampleAaveMarket`}</span>
                       {` } `}
                       <span
@@ -662,7 +662,7 @@ function Home() {
                       <span style={{ color: colors.syntax.variable }}>{`config`}</span>
                       {`: `}
                       <span
-                        style={{ color: '#4db6ac' }}
+                        style={{ color: '#8ec07c' }}
                       >{`ActionsConfig`}</span>
                       {` = {
   `}
@@ -670,7 +670,7 @@ function Home() {
                       {`: {
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`hostedWalletConfig`}</span>
                       {`: {
       `}
@@ -679,7 +679,7 @@ function Home() {
         `}
                       <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
-                      <span style={{ color: '#ff8a65' }}>{`'privy'`}</span>
+                      <span style={{ color: colors.syntax.string }}>{`'privy'`}</span>
                       {`,
         `}
                       <span style={{ color: colors.syntax.property }}>{`config`}</span>
@@ -688,7 +688,7 @@ function Home() {
                       <span style={{ color: colors.syntax.property }}>{`privyClient`}</span>
                       {`: `}
                       <span
-                        style={{ color: '#4db6ac' }}
+                        style={{ color: colors.syntax.function }}
                       >{`getPrivyClient`}</span>
                       {`(),
         },
@@ -696,7 +696,7 @@ function Home() {
     },
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`smartWalletConfig`}</span>
                       {`: {
       `}
@@ -705,14 +705,14 @@ function Home() {
         `}
                       <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
-                      <span style={{ color: '#ff8a65' }}>{`'default'`}</span>
+                      <span style={{ color: colors.syntax.string }}>{`'default'`}</span>
                       {`,
         `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`attributionSuffix`}</span>
                       {`: `}
-                      <span style={{ color: '#ff8a65' }}>{`'actions'`}</span>
+                      <span style={{ color: colors.syntax.string }}>{`'actions'`}</span>
                       {`,
       },
     },
@@ -723,7 +723,7 @@ function Home() {
     `}
                       <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
-                      <span style={{ color: '#ff8a65' }}>{`'morpho'`}</span>
+                      <span style={{ color: colors.syntax.string }}>{`'morpho'`}</span>
                       {`, `}
                       <span
                         style={{ color: colors.syntax.comment }}
@@ -731,7 +731,7 @@ function Home() {
                       {`
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`assetAllowlist`}</span>
                       {`: [`}
                       <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
@@ -742,27 +742,27 @@ function Home() {
                       {`],
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`assetBlocklist`}</span>
                       {`: [`}
                       <span style={{ color: colors.syntax.variable }}>{`USDT`}</span>
                       {`],
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`marketAllowlist`}</span>
                       {`: [`}
                       <span
-                        style={{ color: '#4db6ac' }}
+                        style={{ color: colors.syntax.variable }}
                       >{`ExampleMorphoMarket`}</span>
                       {`],
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`marketBlocklist`}</span>
                       {`: [`}
                       <span
-                        style={{ color: '#4db6ac' }}
+                        style={{ color: colors.syntax.variable }}
                       >{`ExampleAaveMarket`}</span>
                       {`],
   },
@@ -772,7 +772,7 @@ function Home() {
     `}
                       <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
-                      <span style={{ color: '#ff8a65' }}>{`'morpho'`}</span>
+                      <span style={{ color: colors.syntax.string }}>{`'morpho'`}</span>
                       {`, `}
                       <span
                         style={{ color: colors.syntax.comment }}
@@ -780,7 +780,7 @@ function Home() {
                       {`
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`assetAllowlist`}</span>
                       {`: [`}
                       <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
@@ -791,27 +791,27 @@ function Home() {
                       {`],
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`assetBlocklist`}</span>
                       {`: [`}
                       <span style={{ color: colors.syntax.variable }}>{`USDT`}</span>
                       {`],
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`marketAllowlist`}</span>
                       {`: [`}
                       <span
-                        style={{ color: '#4db6ac' }}
+                        style={{ color: colors.syntax.variable }}
                       >{`ExampleMorphoMarket`}</span>
                       {`],
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`marketBlocklist`}</span>
                       {`: [`}
                       <span
-                        style={{ color: '#4db6ac' }}
+                        style={{ color: colors.syntax.variable }}
                       >{`ExampleAaveMarket`}</span>
                       {`],
   },
@@ -821,7 +821,7 @@ function Home() {
     `}
                       <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
-                      <span style={{ color: '#ff8a65' }}>{`'uniswap'`}</span>
+                      <span style={{ color: colors.syntax.string }}>{`'uniswap'`}</span>
                       {`, `}
                       <span
                         style={{ color: colors.syntax.comment }}
@@ -829,14 +829,14 @@ function Home() {
                       {`
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`defaultSlippage`}</span>
                       {`: `}
                       <span style={{ color: colors.syntax.number }}>{`100`}</span>
                       {`,
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`assetAllowList`}</span>
                       {`: [`}
                       <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
@@ -847,7 +847,7 @@ function Home() {
                       {`]
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`marketAllowlist`}</span>
                       {`: [
       { `}
@@ -889,7 +889,7 @@ function Home() {
     ],
     `}
                       <span
-                        style={{ color: '#9cdcfe' }}
+                        style={{ color: colors.syntax.property }}
                       >{`marketBlocklist`}</span>
                       {`: [
       { `}
@@ -1183,7 +1183,7 @@ const config: ActionsConfig = {
                               >{`const`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`privyWallet`}</span>
                               {` = `}
                               <span
@@ -1191,20 +1191,20 @@ const config: ActionsConfig = {
                               >{`await`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`privyClient`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`walletApi`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`createWallet`}</span>
                               {`({
   `}
                               <span
-                                style={{ color: '#9cdcfe' }}
+                                style={{ color: colors.syntax.property }}
                               >{`chainType`}</span>
                               {`: `}
                               <span
@@ -1224,7 +1224,7 @@ const config: ActionsConfig = {
                               >{`const`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`wallet`}</span>
                               {` = `}
                               <span
@@ -1232,39 +1232,39 @@ const config: ActionsConfig = {
                               >{`await`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`actions`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`wallet`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`hostedWalletToActionsWallet`}</span>
                               {`({
   `}
                               <span
-                                style={{ color: '#9cdcfe' }}
+                                style={{ color: colors.syntax.property }}
                               >{`walletId`}</span>
                               {`: `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`privyWallet`}</span>
                               {`.`}
                               <span style={{ color: colors.syntax.variable }}>{`id`}</span>
                               {`,
   `}
                               <span
-                                style={{ color: '#9cdcfe' }}
+                                style={{ color: colors.syntax.property }}
                               >{`address`}</span>
                               {`: `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`privyWallet`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`address`}</span>
                               {`,
 })`}
@@ -1391,7 +1391,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`const`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`dynamicWallet`}</span>
                               {` = `}
                               <span
@@ -1399,20 +1399,20 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`await`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`dynamicClient`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`walletApi`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`createWallet`}</span>
                               {`({
   `}
                               <span
-                                style={{ color: '#9cdcfe' }}
+                                style={{ color: colors.syntax.property }}
                               >{`chainType`}</span>
                               {`: `}
                               <span
@@ -1432,7 +1432,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`const`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`wallet`}</span>
                               {` = `}
                               <span
@@ -1440,39 +1440,39 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`await`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`actions`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`wallet`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`hostedWalletToActionsWallet`}</span>
                               {`({
   `}
                               <span
-                                style={{ color: '#9cdcfe' }}
+                                style={{ color: colors.syntax.property }}
                               >{`walletId`}</span>
                               {`: `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`dynamicWallet`}</span>
                               {`.`}
                               <span style={{ color: colors.syntax.variable }}>{`id`}</span>
                               {`,
   `}
                               <span
-                                style={{ color: '#9cdcfe' }}
+                                style={{ color: colors.syntax.property }}
                               >{`address`}</span>
                               {`: `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`dynamicWallet`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`address`}</span>
                               {`,
 })`}
@@ -1599,7 +1599,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`const`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`turnkeyWallet`}</span>
                               {` = `}
                               <span
@@ -1607,20 +1607,20 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`await`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`turnkeyClient`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`walletApi`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`createWallet`}</span>
                               {`({
   `}
                               <span
-                                style={{ color: '#9cdcfe' }}
+                                style={{ color: colors.syntax.property }}
                               >{`chainType`}</span>
                               {`: `}
                               <span
@@ -1640,7 +1640,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`const`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`wallet`}</span>
                               {` = `}
                               <span
@@ -1648,39 +1648,39 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`await`}</span>
                               {` `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`actions`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`wallet`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`hostedWalletToActionsWallet`}</span>
                               {`({
   `}
                               <span
-                                style={{ color: '#9cdcfe' }}
+                                style={{ color: colors.syntax.property }}
                               >{`walletId`}</span>
                               {`: `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`turnkeyWallet`}</span>
                               {`.`}
                               <span style={{ color: colors.syntax.variable }}>{`id`}</span>
                               {`,
   `}
                               <span
-                                style={{ color: '#9cdcfe' }}
+                                style={{ color: colors.syntax.property }}
                               >{`address`}</span>
                               {`: `}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`turnkeyWallet`}</span>
                               {`.`}
                               <span
-                                style={{ color: '#4db6ac' }}
+                                style={{ color: colors.syntax.variable }}
                               >{`address`}</span>
                               {`,
 })`}
@@ -1793,7 +1793,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         <span style={{ color: colors.syntax.variable }}>{`lend`}</span>
                         {`.`}
                         <span
-                          style={{ color: '#4db6ac' }}
+                          style={{ color: colors.syntax.variable }}
                         >{`openPosition`}</span>
                         {`({
   `}
@@ -1808,7 +1808,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         {`,
   ...`}
                         <span
-                          style={{ color: '#4db6ac' }}
+                          style={{ color: colors.syntax.variable }}
                         >{`ExampleMorphoMarket`}</span>
                         {`
 })
@@ -1830,7 +1830,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         <span style={{ color: colors.syntax.variable }}>{`borrow`}</span>
                         {`.`}
                         <span
-                          style={{ color: '#4db6ac' }}
+                          style={{ color: colors.syntax.variable }}
                         >{`openPosition`}</span>
                         {`({
   `}
@@ -1845,7 +1845,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         {`,
   ...`}
                         <span
-                          style={{ color: '#4db6ac' }}
+                          style={{ color: colors.syntax.variable }}
                         >{`ExampleAaveMarket`}</span>
                         {`
 })
