@@ -1,3 +1,8 @@
+[build]
+  base = "packages/demo/frontend"   # Netlify will cd here before building
+  publish = "dist"                  # relative to the base dir
+  command = "npm ci && npm run build"
+
 [[redirects]]
   from = "/*"
   to = "https://actions.money/:splat"
