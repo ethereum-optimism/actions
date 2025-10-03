@@ -1100,7 +1100,7 @@ const config: ActionsConfig = {
                 </div>
 
                 {/* Content for each provider */}
-                <div className="p-8" style={{ backgroundColor: '#0f1011' }}>
+                <div className="p-8" style={{ backgroundColor: '#32302f' }}>
                   {selectedWalletProvider === 'privy' && (
                     <div className="space-y-6">
                       <div>
