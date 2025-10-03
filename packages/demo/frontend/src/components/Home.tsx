@@ -503,7 +503,9 @@ function Home() {
                       {` `}
                       <span style={{ color: '#4db6ac' }}>{`config`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`ActionsConfig`}</span>
+                      <span
+                        style={{ color: '#4db6ac' }}
+                      >{`ActionsConfig`}</span>
                       {` = {
   `}
                       <span style={{ color: '#9cdcfe' }}>{`wallet`}</span>
