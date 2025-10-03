@@ -1,0 +1,4 @@
+https://verbs.money/_ https://actions.money/:splat 301!
+https://www.verbs.money/_ https://actions.money/:splat 301!
+https://deploy-preview-164--verbs-ui.netlify.app/_ https://actions.money/:splat 301!
+/_ /index.html 200
