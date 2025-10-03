@@ -10,7 +10,7 @@ import {
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import type { DynamicHostedWalletToVerbsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
 
 /**
@@ -20,7 +20,7 @@ import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/create
 export class DynamicWallet extends Wallet {
   public signer!: LocalAccount
   public address!: Address
-  private readonly dynamicWallet: DynamicHostedWalletToVerbsWalletOptions['wallet']
+  private readonly dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
 
   /**
    * Create a new Dynamic wallet
@@ -29,14 +29,14 @@ export class DynamicWallet extends Wallet {
    */
   private constructor(
     chainManager: ChainManager,
-    dynamicWallet: DynamicHostedWalletToVerbsWalletOptions['wallet'],
+    dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet'],
   ) {
     super(chainManager)
     this.dynamicWallet = dynamicWallet
   }
 
   static async create(params: {
-    dynamicWallet: DynamicHostedWalletToVerbsWalletOptions['wallet']
+    dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
     chainManager: ChainManager
   }): Promise<DynamicWallet> {
     const wallet = new DynamicWallet(params.chainManager, params.dynamicWallet)

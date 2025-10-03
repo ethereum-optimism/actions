@@ -52,7 +52,7 @@ function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <a
-                href="https://github.com/ethereum-optimism/verbs"
+                href="https://github.com/ethereum-optimism/actions"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-200 inline-block text-center"

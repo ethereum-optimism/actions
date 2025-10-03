@@ -4,19 +4,19 @@ import { Option } from 'commander'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-import { initializeVerbs } from '@/config/actions.js'
+import { initializeActions } from '@/config/actions.js'
 import { env } from '@/config/env.js'
-import { verbsMiddleware } from '@/middleware/actions.js'
+import { actionsMiddleware } from '@/middleware/actions.js'
 import { router } from '@/router.js'
 
-class VerbsApp extends App {
+class ActionsApp extends App {
   private server: ReturnType<typeof serve> | null = null
 
   constructor() {
     super({
-      name: 'verbs-service',
+      name: 'actions-service',
       version: '0.0.1',
-      description: 'Hono service for verbs SDK',
+      description: 'Hono service for actions SDK',
     })
   }
 
@@ -29,8 +29,8 @@ class VerbsApp extends App {
   }
 
   protected async preMain(): Promise<void> {
-    // Initialize Verbs SDK once at startup
-    initializeVerbs()
+    // Initialize Actions SDK once at startup
+    initializeActions()
   }
 
   protected async main(): Promise<void> {
@@ -51,11 +51,11 @@ class VerbsApp extends App {
       }),
     )
 
-    // Apply Verbs middleware (initialization already happened at startup)
-    app.use('*', verbsMiddleware)
+    // Apply Actions middleware (initialization already happened at startup)
+    app.use('*', actionsMiddleware)
     app.route('/', router)
 
-    this.logger.info('starting verbs service on port %s', this.options.port)
+    this.logger.info('starting actions service on port %s', this.options.port)
 
     this.server = serve({
       fetch: app.fetch,
@@ -70,10 +70,10 @@ class VerbsApp extends App {
   protected async shutdown(): Promise<void> {
     if (this.server) {
       return new Promise((resolve, reject) => {
-        this.logger.info('stopping verbs service...')
+        this.logger.info('stopping actions service...')
         this.server!.close((error) => {
           if (error) {
-            this.logger.error({ error }, 'error closing verbs service')
+            this.logger.error({ error }, 'error closing actions service')
             reject(error)
           } else {
             resolve()
@@ -85,4 +85,4 @@ class VerbsApp extends App {
 }
 
 export * from '@/types/index.js'
-export { VerbsApp }
+export { ActionsApp }

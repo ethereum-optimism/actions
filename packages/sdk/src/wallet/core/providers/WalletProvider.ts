@@ -17,8 +17,8 @@ import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWall
  */
 export class WalletProvider<
   THostedProviderType extends string,
-  TToVerbsMap extends Record<THostedProviderType, unknown>,
-  H extends HostedWalletProvider<THostedProviderType, TToVerbsMap>,
+  TToActionsMap extends Record<THostedProviderType, unknown>,
+  H extends HostedWalletProvider<THostedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   constructor(
@@ -61,23 +61,23 @@ export class WalletProvider<
     return this.smartWalletProvider.createWallet({ ...params })
   }
 
-  async hostedWalletToVerbsWallet(
-    params: TToVerbsMap[THostedProviderType],
+  async hostedWalletToActionsWallet(
+    params: TToActionsMap[THostedProviderType],
   ): Promise<Wallet> {
-    return this.hostedWalletProvider.toVerbsWallet(params)
+    return this.hostedWalletProvider.toActionsWallet(params)
   }
 
   /**
    * Create a viem LocalAccount signer from the hosted wallet
    * @description Produces a signing account backed by the hosted wallet without wrapping
-   * it in a full Verbs wallet. This is useful when you need to pass the signer
-   * into a Verbs smart wallet as a signer, for lower-level viem operations, or
+   * it in a full Actions wallet. This is useful when you need to pass the signer
+   * into an Actions smart wallet as a signer, for lower-level viem operations, or
    * for passing to other libraries that accept a viem `LocalAccount`.
    * @param params - Configuration for the signer
    * @returns Promise resolving to a viem `LocalAccount` with the hosted wallet as the signer backend
    */
   async createSigner(
-    params: TToVerbsMap[THostedProviderType],
+    params: TToActionsMap[THostedProviderType],
   ): Promise<LocalAccount> {
     return this.hostedWalletProvider.createSigner(params)
   }

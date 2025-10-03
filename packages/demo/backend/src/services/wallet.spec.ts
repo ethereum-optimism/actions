@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as walletService from './wallet.js'
 
-// Mock the Verbs SDK
-const mockVerbs = {
+// Mock the Actions SDK
+const mockActions = {
   wallet: {
     hostedWalletProvider: {
-      toVerbsWallet: vi.fn(),
+      toActionsWallet: vi.fn(),
     },
     smartWalletProvider: {
       getWalletAddress: vi.fn(),
@@ -14,7 +14,7 @@ const mockVerbs = {
     },
     getSmartWallet: vi.fn(),
     createSmartWallet: vi.fn(),
-    hostedWalletToVerbsWallet: vi.fn(({ address }: { address: string }) => ({
+    hostedWalletToActionsWallet: vi.fn(({ address }: { address: string }) => ({
       address,
       signer: {
         address,
@@ -34,9 +34,9 @@ const mockPrivyClient = {
   },
 }
 
-// Mock the getVerbs function
+// Mock the getActions function
 vi.mock('../config/actions.js', () => ({
-  getVerbs: () => mockVerbs,
+  getActions: () => mockActions,
   getPrivyClient: () => mockPrivyClient,
 }))
 
@@ -46,7 +46,7 @@ describe('Wallet Service', () => {
   })
 
   describe('createWallet', () => {
-    it('should create a wallet using the Verbs SDK', async () => {
+    it('should create a wallet using the Actions SDK', async () => {
       const mockPrivyWallet = {
         id: 'wallet-123',
         address: '0x1234567890123456789012345678901234567890',
@@ -65,11 +65,11 @@ describe('Wallet Service', () => {
         deployments: [{ chainId: 1, receipt: undefined, success: true }],
       }
 
-      mockVerbs.wallet.createSmartWallet.mockResolvedValue(mockWallet)
+      mockActions.wallet.createSmartWallet.mockResolvedValue(mockWallet)
 
       const result = await walletService.createWallet()
 
-      expect(mockVerbs.wallet.createSmartWallet).toHaveBeenCalledWith({
+      expect(mockActions.wallet.createSmartWallet).toHaveBeenCalledWith({
         owners: ['0x1234567890123456789012345678901234567890'],
         signer: {
           type: 'local',
@@ -85,7 +85,7 @@ describe('Wallet Service', () => {
     it('should handle wallet creation errors', async () => {
       const error = new Error('Wallet creation failed')
 
-      mockVerbs.wallet.createSmartWallet.mockRejectedValue(error)
+      mockActions.wallet.createSmartWallet.mockRejectedValue(error)
 
       await expect(walletService.createWallet()).rejects.toThrow(
         'Wallet creation failed',
@@ -107,11 +107,11 @@ describe('Wallet Service', () => {
       }
       mockPrivyClient.walletApi.getWallet.mockResolvedValue(mockPrivyWallet)
 
-      mockVerbs.wallet.getSmartWallet.mockResolvedValue(mockWallet)
+      mockActions.wallet.getSmartWallet.mockResolvedValue(mockWallet)
 
       const result = await walletService.getWallet(userId)
 
-      expect(mockVerbs.wallet.getSmartWallet).toHaveBeenCalledWith({
+      expect(mockActions.wallet.getSmartWallet).toHaveBeenCalledWith({
         signer: {
           type: 'local',
           address: '0x1234567890123456789012345678901234567890',
@@ -129,7 +129,7 @@ describe('Wallet Service', () => {
 
       const result = await walletService.getWallet(userId)
 
-      expect(mockVerbs.wallet.getSmartWallet).not.toHaveBeenCalled()
+      expect(mockActions.wallet.getSmartWallet).not.toHaveBeenCalled()
       expect(result).toEqual(null)
     })
 
@@ -143,7 +143,7 @@ describe('Wallet Service', () => {
 
       mockPrivyClient.walletApi.getWallet.mockResolvedValue(mockPrivyWallet)
 
-      mockVerbs.wallet.getSmartWallet.mockRejectedValue(error)
+      mockActions.wallet.getSmartWallet.mockRejectedValue(error)
 
       await expect(walletService.getWallet(userId)).rejects.toThrow(
         'Wallet retrieval failed',
@@ -167,7 +167,7 @@ describe('Wallet Service', () => {
       mockPrivyClient.walletApi.getWallets.mockResolvedValue({
         data: mockPrivyWallets,
       })
-      mockVerbs.wallet.getSmartWallet.mockResolvedValue({
+      mockActions.wallet.getSmartWallet.mockResolvedValue({
         address: '0x1234567890123456789012345678901234567890',
         lend: {},
       })
@@ -208,7 +208,7 @@ describe('Wallet Service', () => {
       mockPrivyClient.walletApi.getWallets.mockResolvedValue({
         data: mockWallets,
       })
-      mockVerbs.wallet.getSmartWallet.mockResolvedValue(mockWallets[0])
+      mockActions.wallet.getSmartWallet.mockResolvedValue(mockWallets[0])
 
       const result = await walletService.getAllWallets(options)
 
@@ -262,7 +262,7 @@ describe('Wallet Service', () => {
         lend: {},
       }
 
-      mockVerbs.wallet.getSmartWallet.mockResolvedValue(mockWallet)
+      mockActions.wallet.getSmartWallet.mockResolvedValue(mockWallet)
       mockPrivyClient.walletApi.getWallet.mockResolvedValue({
         id: mockWallet.id,
         address: mockWallet.address,
@@ -270,7 +270,7 @@ describe('Wallet Service', () => {
 
       const result = await walletService.getBalance(userId)
 
-      expect(mockVerbs.wallet.getSmartWallet).toHaveBeenCalledWith({
+      expect(mockActions.wallet.getSmartWallet).toHaveBeenCalledWith({
         signer: {
           address: '0x1234567890123456789012345678901234567890',
           type: 'local',
@@ -288,13 +288,13 @@ describe('Wallet Service', () => {
     it('should throw error when wallet not found', async () => {
       const userId = 'non-existent-user'
       mockPrivyClient.walletApi.getWallet.mockResolvedValue(null)
-      mockVerbs.wallet.getSmartWallet.mockResolvedValue(null)
+      mockActions.wallet.getSmartWallet.mockResolvedValue(null)
 
       await expect(walletService.getBalance(userId)).rejects.toThrow(
         'Wallet not found',
       )
 
-      expect(mockVerbs.wallet.getSmartWallet).not.toHaveBeenCalledWith()
+      expect(mockActions.wallet.getSmartWallet).not.toHaveBeenCalledWith()
     })
 
     it('should handle balance retrieval errors', async () => {
@@ -311,13 +311,13 @@ describe('Wallet Service', () => {
         id: mockWallet.id,
         address: mockWallet.address,
       })
-      mockVerbs.wallet.getSmartWallet.mockResolvedValue(mockWallet)
+      mockActions.wallet.getSmartWallet.mockResolvedValue(mockWallet)
 
       await expect(walletService.getBalance(userId)).rejects.toThrow(
         'Balance retrieval failed',
       )
 
-      expect(mockVerbs.wallet.getSmartWallet).toHaveBeenCalledWith({
+      expect(mockActions.wallet.getSmartWallet).toHaveBeenCalledWith({
         signer: {
           address: mockWallet.address,
           type: 'local',

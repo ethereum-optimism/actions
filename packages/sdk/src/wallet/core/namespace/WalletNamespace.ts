@@ -17,17 +17,17 @@ import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWall
  */
 export class WalletNamespace<
   THostedProviderType extends string,
-  TToVerbsMap extends Record<THostedProviderType, unknown>,
+  TToActionsMap extends Record<THostedProviderType, unknown>,
   H extends HostedWalletProvider<
     THostedProviderType,
-    TToVerbsMap
-  > = HostedWalletProvider<THostedProviderType, TToVerbsMap>,
+    TToActionsMap
+  > = HostedWalletProvider<THostedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
-  private provider: WalletProvider<THostedProviderType, TToVerbsMap, H, S>
+  private provider: WalletProvider<THostedProviderType, TToActionsMap, H, S>
 
   constructor(
-    provider: WalletProvider<THostedProviderType, TToVerbsMap, H, S>,
+    provider: WalletProvider<THostedProviderType, TToActionsMap, H, S>,
   ) {
     this.provider = provider
   }
@@ -78,30 +78,30 @@ export class WalletNamespace<
   /**
    * Create a viem LocalAccount signer from the hosted wallet
    * @description Produces a signing account backed by the hosted wallet without wrapping
-   * it in a full Verbs wallet. This is useful when you need to pass the signer
-   * into a Verbs smart wallet as a signer, for lower-level viem operations, or
+   * it in a full Actions wallet. This is useful when you need to pass the signer
+   * into an Actions smart wallet as a signer, for lower-level viem operations, or
    * for passing to other libraries that accept a viem `LocalAccount`.
    * @param params - Configuration for the signer
    * @returns Promise resolving to a viem `LocalAccount` with the hosted wallet as the signer backend
    */
   async createSigner(
-    params: TToVerbsMap[THostedProviderType],
+    params: TToActionsMap[THostedProviderType],
   ): Promise<LocalAccount> {
     return this.provider.createSigner(params)
   }
 
   /**
-   * Convert a hosted wallet to a Verbs wallet
-   * @description Converts a hosted wallet to a Verbs wallet instance.
-   * @param params - Parameters for converting a hosted wallet to a Verbs wallet
+   * Convert a hosted wallet to an Actions wallet
+   * @description Converts a hosted wallet to an Actions wallet instance.
+   * @param params - Parameters for converting a hosted wallet to an Actions wallet
    * @param params.walletId - Unique identifier for the hosted wallet
    * @param params.address - Ethereum address of the hosted wallet
-   * @returns Promise resolving to the Verbs wallet instance
+   * @returns Promise resolving to the Actions wallet instance
    */
-  async hostedWalletToVerbsWallet(
-    params: TToVerbsMap[THostedProviderType],
+  async hostedWalletToActionsWallet(
+    params: TToActionsMap[THostedProviderType],
   ): Promise<Wallet> {
-    return this.provider.hostedWalletToVerbsWallet(params)
+    return this.provider.hostedWalletToActionsWallet(params)
   }
 
   /**

@@ -51,24 +51,24 @@ export interface HostedProviderFactory<
  * Complete hosted wallet providers schema (environment-agnostic)
  * @description
  * Bundles provider type keys, concrete provider instances, creation configs,
- * and `toVerbsWallet` parameter types for a given environment (Node or React).
- * This schema enables precise typing in `Verbs` and registries without widening
+ * and `toActionsWallet` parameter types for a given environment (Node or React).
+ * This schema enables precise typing in `Actions` and registries without widening
  * keys to generic `string`.
  * @template ProviderTypes Union of provider keys for the environment
  * @template ProviderInstanceMap Map of provider key to concrete instance
  * @template ProviderConfigMap Map of provider key to factory config type
- * @template ToVerbsOptionsMap Map of provider key to `toVerbsWallet` params
+ * @template ToActionsOptionsMap Map of provider key to `toActionsWallet` params
  */
 export type HostedWalletProvidersSchema<
   ProviderTypes extends string,
   ProviderInstanceMap extends {
-    [K in ProviderTypes]: HostedWalletProvider<K, ToVerbsOptionsMap>
+    [K in ProviderTypes]: HostedWalletProvider<K, ToActionsOptionsMap>
   },
   ProviderConfigMap extends { [K in ProviderTypes]: unknown },
-  ToVerbsOptionsMap extends { [K in ProviderTypes]: unknown },
+  ToActionsOptionsMap extends { [K in ProviderTypes]: unknown },
 > = {
   providerTypes: ProviderTypes
   providerInstances: ProviderInstanceMap
   providerConfigs: ProviderConfigMap
-  providerToVerbsOptions: ToVerbsOptionsMap
+  providerToActionsOptions: ToActionsOptionsMap
 }

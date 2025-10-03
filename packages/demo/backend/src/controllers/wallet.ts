@@ -162,7 +162,7 @@ export class WalletController {
       } = validation.data
       const auth = c.get('auth') as AuthContext | undefined
 
-      // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
+      // TODO (https://github.com/ethereum-optimism/actions/issues/124): enforce auth and clean
       // up this route.
       if (auth && auth.userId) {
         const wallet = await walletService.getWallet(auth.userId, true)

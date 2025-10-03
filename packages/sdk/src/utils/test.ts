@@ -1,5 +1,5 @@
 /**
- * Test utilities for the Verbs SDK
+ * Test utilities for the Actions SDK
  */
 
 import type { ChildProcess } from 'child_process'

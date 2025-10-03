@@ -14,7 +14,7 @@ describe('TurnkeyHostedWalletProvider', () => {
     supportedChains: [unichain.id],
   }) as unknown as ChainManager
 
-  describe('toVerbsWallet', () => {
+  describe('toActionsWallet', () => {
     it('forwards params to TurnkeyWallet.create', async () => {
       const turnkeyClient = {} as unknown as TurnkeySDKClientBase
       const provider = new TurnkeyHostedWalletProvider(mockChainManager)
@@ -24,7 +24,7 @@ describe('TurnkeyHostedWalletProvider', () => {
           address: '0xabc',
         } as unknown as TurnkeyWallet)
 
-      await provider.toVerbsWallet({
+      await provider.toActionsWallet({
         client: turnkeyClient,
         organizationId: 'org_123',
         signWith: 'key_abc',
@@ -50,7 +50,7 @@ describe('TurnkeyHostedWalletProvider', () => {
           address: '0xabc',
         } as unknown as TurnkeyWallet)
 
-      await provider.toVerbsWallet({
+      await provider.toActionsWallet({
         client: turnkeyClient,
         organizationId: 'org_123',
         signWith: 'key_abc',
@@ -76,13 +76,13 @@ describe('TurnkeyHostedWalletProvider', () => {
       } as unknown as TurnkeyWallet
       vi.spyOn(TurnkeyWallet, 'create').mockResolvedValueOnce(fakeWallet)
 
-      const verbsWallet = await provider.toVerbsWallet({
+      const actionsWallet = await provider.toActionsWallet({
         client: turnkeyClient,
         organizationId: 'org_123',
         signWith: 'key_abc',
       })
 
-      expect(verbsWallet).toBe(fakeWallet)
+      expect(actionsWallet).toBe(fakeWallet)
     })
   })
 

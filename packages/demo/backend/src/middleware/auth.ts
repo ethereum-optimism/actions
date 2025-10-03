@@ -10,7 +10,7 @@ export async function authMiddleware(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization')
 
   if (!authHeader?.startsWith('Bearer ')) {
-    // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth
+    // TODO (https://github.com/ethereum-optimism/actions/issues/124): enforce auth
     // Fail silently
     await next()
     return
@@ -30,7 +30,7 @@ export async function authMiddleware(c: Context, next: Next) {
     const userId = verifiedPrivy.userId
     authContext.userId = userId
   } catch {
-    // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth
+    // TODO (https://github.com/ethereum-optimism/actions/issues/124): enforce auth
     // Silently continue without Privy auth key if request fails
   }
 

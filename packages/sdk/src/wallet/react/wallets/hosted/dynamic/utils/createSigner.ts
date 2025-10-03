@@ -3,7 +3,7 @@ import type { DynamicWaasEVMConnector } from '@dynamic-labs/waas-evm'
 import type { LocalAccount } from 'viem'
 import { toAccount } from 'viem/accounts'
 
-import type { DynamicHostedWalletToVerbsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 
 /**
  * Create a LocalAccount from a Dynamic wallet
@@ -15,7 +15,7 @@ import type { DynamicHostedWalletToVerbsWalletOptions } from '@/wallet/react/pro
  * @throws Error if wallet retrieval fails or signing operations are not supported
  */
 export async function createSigner(
-  params: DynamicHostedWalletToVerbsWalletOptions,
+  params: DynamicHostedWalletToActionsWalletOptions,
 ): Promise<LocalAccount> {
   const { wallet } = params
   if (!isEthereumWallet(wallet)) {

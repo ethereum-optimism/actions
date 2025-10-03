@@ -14,7 +14,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { DynamicHostedWalletToVerbsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
 
 vi.mock('viem', async () => ({
@@ -45,7 +45,7 @@ const mockLocalAccount = {
   signTypedData: vi.fn(),
 } as unknown as LocalAccount
 
-function createMockDynamicWallet(): DynamicHostedWalletToVerbsWalletOptions['wallet'] {
+function createMockDynamicWallet(): DynamicHostedWalletToActionsWalletOptions['wallet'] {
   const mockConnector = {
     signRawMessage: vi.fn().mockResolvedValue('0xsigned'),
   }

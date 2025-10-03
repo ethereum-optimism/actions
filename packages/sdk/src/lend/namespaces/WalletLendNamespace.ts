@@ -26,7 +26,7 @@ export class WalletLendNamespace<
     return this.provider.config
   }
 
-  // Inherited methods from VerbsLendNamespace
+  // Inherited methods from ActionsLendNamespace
   getMarkets = (...args: Parameters<LendProvider<TConfig>['getMarkets']>) =>
     this.provider.getMarkets(...args)
 

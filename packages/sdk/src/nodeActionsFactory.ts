@@ -1,5 +1,5 @@
-import { Verbs } from '@/actions.js'
-import type { VerbsConfig } from '@/types/actions.js'
+import { Actions } from '@/actions.js'
+import type { ActionsConfig } from '@/types/actions.js'
 import { NodeHostedWalletProviderRegistry } from '@/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.js'
 import type {
   NodeHostedWalletProvidersSchema,
@@ -8,26 +8,26 @@ import type {
 } from '@/wallet/node/providers/hosted/types/index.js'
 
 /**
- * Node Verbs configuration
- * @description Configuration object for initializing the Verbs SDK in Node
+ * Node Actions configuration
+ * @description Configuration object for initializing the Actions SDK in Node
  */
-export type NodeVerbsConfig<
+export type NodeActionsConfig<
   HostedWalletProviderType extends NodeProviderTypes,
-> = VerbsConfig<HostedWalletProviderType, NodeOptionsMap>
+> = ActionsConfig<HostedWalletProviderType, NodeOptionsMap>
 
 /**
- * Creates a Node environment Verbs factory
+ * Creates a Node environment Actions factory
  *
- * Creates a Verbs instance wired with the Node-specific HostedWalletProviderRegistry.
+ * Creates an Actions instance wired with the Node-specific HostedWalletProviderRegistry.
  * This ensures browser-only providers  are never imported in Node,
  * avoiding runtime/module-resolution issues on the backend.
- * @param config Verbs configuration
- * @returns Verbs instance using the NodeHostedWalletProviderRegistry
+ * @param config Actions configuration
+ * @returns Actions instance using the NodeHostedWalletProviderRegistry
  */
-export function createVerbs<HostedWalletProviderType extends NodeProviderTypes>(
-  config: NodeVerbsConfig<HostedWalletProviderType>,
-) {
-  return new Verbs<
+export function createActions<
+  HostedWalletProviderType extends NodeProviderTypes,
+>(config: NodeActionsConfig<HostedWalletProviderType>) {
+  return new Actions<
     NodeHostedWalletProvidersSchema['providerTypes'],
     NodeHostedWalletProvidersSchema,
     HostedWalletProviderType

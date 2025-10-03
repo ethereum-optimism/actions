@@ -1,4 +1,4 @@
-export type { Verbs } from '@/actions.js'
+export type { Actions } from '@/actions.js'
 export { ETH } from '@/constants/assets.js'
 export type { SupportedChainId } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'
@@ -9,6 +9,7 @@ export {
   SUPPORTED_TOKENS,
 } from '@/supported/tokens.js'
 export type {
+  ActionsConfig,
   ApyBreakdown,
   Asset,
   BaseLendConfig,
@@ -25,7 +26,6 @@ export type {
   MorphoLendConfig,
   TokenBalance,
   TransactionData,
-  VerbsConfig,
   WalletConfig,
 } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'

@@ -17,21 +17,21 @@ vi.mock('@/wallet/react/wallets/hosted/privy/PrivyWallet.js', async () => {
 })
 
 describe('PrivyHostedWalletProvider (React)', () => {
-  describe('toVerbsWallet', () => {
-    it('toVerbsWallet delegates to PrivyWallet.create with correct args', async () => {
+  describe('toActionsWallet', () => {
+    it('toActionsWallet delegates to PrivyWallet.create with correct args', async () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
       const provider = new PrivyHostedWalletProvider(mockChainManager)
-      const mockVerbsWallet = {
-        __brand: 'verbs-wallet',
+      const mockActionsWallet = {
+        __brand: 'actions-wallet',
       } as unknown as PrivyWallet
       const mockConnectedWallet = {
         __brand: 'privy-connected-wallet',
       } as unknown as ConnectedWallet
-      vi.mocked(PrivyWallet.create).mockResolvedValueOnce(mockVerbsWallet)
+      vi.mocked(PrivyWallet.create).mockResolvedValueOnce(mockActionsWallet)
 
-      const result = await provider.toVerbsWallet({
+      const result = await provider.toActionsWallet({
         connectedWallet: mockConnectedWallet,
       })
 
@@ -40,7 +40,7 @@ describe('PrivyHostedWalletProvider (React)', () => {
         chainManager: mockChainManager,
         connectedWallet: mockConnectedWallet,
       })
-      expect(result).toBe(mockVerbsWallet)
+      expect(result).toBe(mockActionsWallet)
     })
   })
 

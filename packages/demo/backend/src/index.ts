@@ -1,3 +1,3 @@
-import { VerbsApp } from '@/app.js'
+import { ActionsApp } from '@/app.js'
 
-await new VerbsApp().run()
+await new ActionsApp().run()
