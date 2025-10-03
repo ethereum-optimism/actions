@@ -1,0 +1,11 @@
+[[redirects]]
+  from = "/*"
+  to = "https://actions.money/:splat"
+  status = 301
+  force = true
+  conditions = { Host = ["verbs.money", "www.verbs.money"] }
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
