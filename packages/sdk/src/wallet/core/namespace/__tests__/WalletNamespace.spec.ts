@@ -3,6 +3,7 @@ import { getAddress } from 'viem'
 import { unichain } from 'viem/chains'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
@@ -14,6 +15,8 @@ import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
+
+import { SmartWalletDeploymentError } from '../../wallets/smart/error/errors.js'
 
 const mockChainManager = new MockChainManager({
   supportedChains: [unichain.id],
@@ -75,7 +78,7 @@ describe('WalletNamespace', () => {
   })
 
   describe('createSmartWallet', () => {
-    it('should create a smart wallet with provided signer and owners', async () => {
+    it('should create a smart wallet and return deployment result', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
         mockChainManager,
@@ -103,18 +106,96 @@ describe('WalletNamespace', () => {
       const owners = [getRandomAddress(), hostedWallet.address]
       const nonce = BigInt(123)
 
-      const smartWallet = await walletNamespace.createSmartWallet({
+      const result = await walletNamespace.createSmartWallet({
         owners,
         signer: hostedWallet.signer,
         nonce,
       })
 
-      expect(smartWallet).toBeInstanceOf(DefaultSmartWallet)
-      expect(smartWallet.signer).toBe(hostedWallet.signer)
+      expect(result.wallet).toBeInstanceOf(DefaultSmartWallet)
       expect(createSmartWalletSpy).toHaveBeenCalledWith({
         owners,
         signer: hostedWallet.signer,
         nonce,
+      })
+    })
+
+    it('should report deployment successes and failures', async () => {
+      const hostedWalletProvider = new PrivyHostedWalletProvider(
+        mockPrivyClient,
+        mockChainManager,
+      )
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        mockLendProvider,
+      )
+      const walletProvider = new WalletProvider(
+        hostedWalletProvider,
+        smartWalletProvider,
+      )
+      const walletNamespace = new WalletNamespace(walletProvider)
+
+      // Create a hosted wallet to use as signer
+      const privyWallet = await mockPrivyClient.walletApi.createWallet({
+        chainType: 'ethereum',
+      })
+      const hostedWallet =
+        await walletProvider.hostedWalletProvider.toVerbsWallet({
+          walletId: privyWallet.id,
+          address: getAddress(privyWallet.address),
+        })
+      const owners = [getRandomAddress(), hostedWallet.address]
+      const nonce = BigInt(456)
+      const deploymentChainIds = [130] as SupportedChainId[]
+
+      // Mock the provider's createSmartWallet to return successes and failures
+      const createSmartWalletSpy = vi.spyOn(walletProvider, 'createSmartWallet')
+      const mockWallet = {} as DefaultSmartWallet
+
+      createSmartWalletSpy.mockResolvedValueOnce({
+        wallet: mockWallet,
+        deployments: [
+          { chainId: 130, receipt: undefined, success: true },
+          {
+            chainId: 8453,
+            error: new SmartWalletDeploymentError(
+              'Deployment failed on chain 8453',
+              8453,
+            ),
+            success: false,
+          },
+        ],
+      })
+
+      const result = await walletNamespace.createSmartWallet({
+        owners,
+        signer: hostedWallet.signer,
+        nonce,
+        deploymentChainIds,
+      })
+
+      // Verify it was called with correct params
+      expect(createSmartWalletSpy).toHaveBeenCalledWith({
+        owners,
+        signer: hostedWallet.signer,
+        nonce,
+        deploymentChainIds,
+      })
+
+      // Verify we have successes and failures
+      expect(result).toEqual({
+        wallet: mockWallet,
+        deployments: [
+          { chainId: 130, receipt: undefined, success: true },
+          {
+            chainId: 8453,
+            error: new SmartWalletDeploymentError(
+              'Deployment failed on chain 8453',
+              8453,
+            ),
+            success: false,
+          },
+        ],
       })
     })
   })
@@ -149,12 +230,11 @@ describe('WalletNamespace', () => {
           address: getAddress(privyWallet.address),
         })
       const deploymentOwners = [hostedWallet.address, getRandomAddress()]
-      const signerOwnerIndex = 0
       const nonce = BigInt(789)
       const params = {
         signer: hostedWallet.signer,
         deploymentOwners,
-        signerOwnerIndex,
+        owners: [hostedWallet.signer.address],
         nonce,
       }
 
@@ -195,6 +275,7 @@ describe('WalletNamespace', () => {
       await expect(
         walletNamespace.getSmartWallet({
           signer: hostedWallet.signer,
+          owners: [hostedWallet.signer.address],
           // Missing both walletAddress and deploymentOwners
         }),
       ).rejects.toThrow(
@@ -304,7 +385,7 @@ describe('WalletNamespace', () => {
 
       // Use the signer to create a smart wallet
       const owners = [signer.address, getRandomAddress()]
-      const smartWallet = await walletNamespace.createSmartWallet({
+      const { wallet: smartWallet } = await walletNamespace.createSmartWallet({
         owners,
         signer,
         nonce: 0n,

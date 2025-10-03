@@ -1,15 +1,18 @@
 import type { Address, Hex, LocalAccount } from 'viem'
 import { keccak256, pad, slice, toHex } from 'viem'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
+import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 import {
   smartWalletFactoryAbi,
   smartWalletFactoryAddress,
 } from '@/wallet/core/wallets/smart/default/constants/index.js'
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
+import { SmartWalletDeploymentError } from '@/wallet/core/wallets/smart/error/errors.js'
 
 /**
  * Smart Wallet Provider
@@ -50,20 +53,27 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
 
   /**
    * Create a new smart wallet instance
-   * @description Creates a new smart wallet that will be deployed on first transaction.
-   * The wallet address is deterministically calculated from owners and nonce.
+   * @description Creates a new smart wallet and attempts to deploy it across all supported chains.
+   * The wallet address is deterministically calculated from owners and nonce. Deployment failures
+   * on individual chains do not prevent wallet creation - they are reported in the result.
    * @param owners - Array of wallet owners (addresses or WebAuthn public keys)
    * @param signer - Local account used for signing transactions
    * @param nonce - Optional nonce for address generation (defaults to 0)
-   * @returns Promise resolving to a new SmartWallet instance
+   * @param deploymentChainIds - Optional chain IDs to deploy the wallet to.
+   * If not provided, the wallet will be deployed to all supported chains. If you would
+   * like to lazily deploy the wallet on first transaction, you can provide an empty array.
+   * @returns Promise resolving to deployment result containing:
+   * - `wallet`: The created SmartWallet instance
+   * - `deployments`: Array of deployment results with chainId, receipt, success flag, and error
    */
   async createWallet(params: {
     owners: Signer[]
     signer: LocalAccount
     nonce?: bigint
-  }): Promise<DefaultSmartWallet> {
-    const { owners, signer, nonce } = params
-    return DefaultSmartWallet.create({
+    deploymentChainIds?: SupportedChainId[]
+  }): Promise<SmartWalletCreationResult<DefaultSmartWallet>> {
+    const { owners, signer, nonce, deploymentChainIds } = params
+    const wallet = await DefaultSmartWallet.create({
       owners,
       signer,
       chainManager: this.chainManager,
@@ -71,6 +81,41 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       nonce,
       attributionSuffix: this.attributionSuffix,
     })
+
+    const deploymentResults = await Promise.allSettled(
+      (deploymentChainIds ?? this.chainManager.getSupportedChains()).map(
+        (chainId) => wallet.deploy(chainId),
+      ),
+    )
+    const deploymentSuccesses = deploymentResults
+      .filter(
+        (
+          r,
+        ): r is PromiseFulfilledResult<
+          Awaited<ReturnType<typeof wallet.deploy>>
+        > => r.status === 'fulfilled',
+      )
+      .map((r) => {
+        return {
+          chainId: r.value.chainId,
+          receipt: r.value.receipt,
+          success: r.value.success,
+        }
+      })
+
+    const deploymentFailures = deploymentResults
+      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+      .map((r) => {
+        if (r.reason instanceof SmartWalletDeploymentError) {
+          return { error: r.reason, chainId: r.reason.chainId, success: false }
+        }
+        throw new Error(`Unknown error: ${r.reason}`)
+      })
+
+    return {
+      wallet,
+      deployments: [...deploymentSuccesses, ...deploymentFailures],
+    }
   }
 
   /**
@@ -114,16 +159,15 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
   async getWallet(params: {
     walletAddress: Address
     signer: LocalAccount
-    ownerIndex?: number
+    owners: Signer[]
   }): Promise<DefaultSmartWallet> {
-    const { walletAddress, signer, ownerIndex } = params
+    const { walletAddress, signer, owners } = params
     return DefaultSmartWallet.create({
-      owners: [signer.address],
+      owners,
       signer,
       chainManager: this.chainManager,
       lendProvider: this.lendProvider,
       deploymentAddress: walletAddress,
-      signerOwnerIndex: ownerIndex,
       attributionSuffix: this.attributionSuffix,
     })
   }

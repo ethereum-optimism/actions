@@ -8,14 +8,19 @@ import {
   slice,
   toHex,
 } from 'viem'
-import { type WebAuthnAccount } from 'viem/account-abstraction'
-import { describe, expect, it, vi } from 'vitest'
+import type {
+  WaitForUserOperationReceiptReturnType,
+  WebAuthnAccount,
+} from 'viem/account-abstraction'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
 import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
+import { createMock as createDefaultSmartWalletMock } from '@/wallet/core/wallets/smart/default/__mocks__/DefaultSmartWallet.js'
 import {
   smartWalletFactoryAbi,
   smartWalletFactoryAddress,
@@ -32,6 +37,19 @@ const mockSigner: LocalAccount = {
 } as unknown as LocalAccount
 
 describe('DefaultSmartWalletProvider', () => {
+  const mockWallet: ReturnType<typeof createDefaultSmartWalletMock> =
+    createDefaultSmartWalletMock({
+      address: getRandomAddress(),
+      signer: mockSigner,
+    })
+  const createWalletSpy = vi
+    .spyOn(DefaultSmartWallet, 'create')
+    .mockResolvedValue(mockWallet as unknown as DefaultSmartWallet)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('computeAttributionSuffix', () => {
     it('returns first 16 bytes of keccak256(input)', () => {
       const input = 'attribution-seed'
@@ -56,22 +74,235 @@ describe('DefaultSmartWalletProvider', () => {
     })
   })
 
-  it('should create a wallet with correct parameters', async () => {
+  it('should create a wallet and return deployment results', async () => {
     const provider = new DefaultSmartWalletProvider(
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [getRandomAddress(), getRandomAddress()]
+    const owners = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
 
-    const wallet = await provider.createWallet({
+    // Mock deploy to succeed for all chains
+    vi.mocked(mockWallet.deploy).mockResolvedValueOnce({
+      chainId: 1,
+      success: true,
+      receipt: undefined,
+    })
+    vi.mocked(mockWallet.deploy).mockResolvedValueOnce({
+      chainId: 130,
+      success: true,
+      receipt: undefined,
+    })
+
+    const result = await provider.createWallet({
       owners,
       signer: mockSigner,
       nonce,
     })
 
-    expect(wallet).toBeInstanceOf(DefaultSmartWallet)
-    expect(wallet.signer).toBe(mockSigner)
+    expect(result.wallet).toBe(mockWallet)
+    expect(result.wallet.signer).toBe(mockSigner)
+    expect(result).toEqual({
+      wallet: mockWallet,
+      deployments: [
+        { chainId: 1, receipt: undefined, success: true },
+        { chainId: 130, receipt: undefined, success: true },
+      ],
+    })
+
+    // Verify deploy was called for each supported chain
+    expect(mockWallet.deploy).toHaveBeenCalledTimes(2)
+    expect(mockWallet.deploy).toHaveBeenCalledWith(1)
+    expect(mockWallet.deploy).toHaveBeenCalledWith(130)
+  })
+
+  it('should report deployment successes across multiple chains', async () => {
+    const provider = new DefaultSmartWalletProvider(
+      mockChainManager,
+      mockLendProvider,
+    )
+    const owners = [mockSigner.address, getRandomAddress()]
+    const nonce = BigInt(123)
+
+    const mockReceipt = {
+      txHash: '0x123',
+      success: true,
+    } as unknown as WaitForUserOperationReceiptReturnType
+    // Mock deploy to succeed for different chains
+    vi.mocked(mockWallet.deploy)
+      .mockResolvedValueOnce({
+        chainId: 1,
+        success: true,
+        receipt: mockReceipt,
+      })
+      .mockResolvedValueOnce({
+        chainId: 130,
+        success: true,
+        receipt: undefined,
+      })
+
+    const result = await provider.createWallet({
+      owners,
+      signer: mockSigner,
+      nonce,
+    })
+
+    expect(result.deployments).toEqual([
+      { chainId: 1, receipt: mockReceipt, success: true },
+      { chainId: 130, receipt: undefined, success: true },
+    ])
+
+    // Verify deploy was called once per chain
+    expect(mockWallet.deploy).toHaveBeenCalledTimes(2)
+    expect(mockWallet.deploy).toHaveBeenCalledWith(1)
+    expect(mockWallet.deploy).toHaveBeenCalledWith(130)
+  })
+
+  it('should report deployment failures', async () => {
+    const provider = new DefaultSmartWalletProvider(
+      mockChainManager,
+      mockLendProvider,
+    )
+    const owners = [mockSigner.address, getRandomAddress()]
+    const nonce = BigInt(123)
+
+    // Mock deploy to fail for all chains
+    const { SmartWalletDeploymentError } = await import(
+      '@/wallet/core/wallets/smart/error/errors.js'
+    )
+    vi.mocked(mockWallet.deploy)
+      .mockRejectedValueOnce(
+        new SmartWalletDeploymentError('Deployment failed', 1),
+      )
+      .mockRejectedValueOnce(
+        new SmartWalletDeploymentError('Deployment failed', 130),
+      )
+
+    const result = await provider.createWallet({
+      owners,
+      signer: mockSigner,
+      nonce,
+    })
+
+    expect(result).toEqual({
+      wallet: mockWallet,
+      deployments: [
+        {
+          chainId: 1,
+          error: new SmartWalletDeploymentError('Deployment failed', 1),
+          success: false,
+        },
+        {
+          chainId: 130,
+          error: new SmartWalletDeploymentError('Deployment failed', 130),
+          success: false,
+        },
+      ],
+    })
+
+    // Verify deploy was called for each chain
+    expect(mockWallet.deploy).toHaveBeenCalledTimes(2)
+  })
+
+  it('should handle mixed deployment successes and failures', async () => {
+    const provider = new DefaultSmartWalletProvider(
+      mockChainManager,
+      mockLendProvider,
+    )
+    const owners = [mockSigner.address, getRandomAddress()]
+    const nonce = BigInt(123)
+
+    const { SmartWalletDeploymentError } = await import(
+      '@/wallet/core/wallets/smart/error/errors.js'
+    )
+
+    // Mock deploy to succeed for chain 1, fail for chain 130
+    vi.mocked(mockWallet.deploy)
+      .mockResolvedValueOnce({
+        chainId: 1,
+        success: true,
+        receipt: undefined,
+      })
+      .mockRejectedValueOnce(
+        new SmartWalletDeploymentError('Deployment failed on chain 130', 130),
+      )
+
+    const result = await provider.createWallet({
+      owners,
+      signer: mockSigner,
+      nonce,
+    })
+
+    expect(result).toEqual({
+      wallet: mockWallet,
+      deployments: [
+        { chainId: 1, receipt: undefined, success: true },
+        {
+          chainId: 130,
+          error: new SmartWalletDeploymentError(
+            'Deployment failed on chain 130',
+            130,
+          ),
+          success: false,
+        },
+      ],
+    })
+
+    // Verify deploy was called for both chains
+    expect(mockWallet.deploy).toHaveBeenCalledTimes(2)
+    expect(mockWallet.deploy).toHaveBeenCalledWith(1)
+    expect(mockWallet.deploy).toHaveBeenCalledWith(130)
+  })
+
+  it('should respect deploymentChainIds parameter', async () => {
+    const provider = new DefaultSmartWalletProvider(
+      mockChainManager,
+      mockLendProvider,
+    )
+    const owners = [mockSigner.address, getRandomAddress()]
+    const nonce = BigInt(123)
+    const deploymentChainIds: SupportedChainId[] = [1]
+
+    vi.mocked(mockWallet.deploy).mockResolvedValue({
+      chainId: 1,
+      success: true,
+      receipt: undefined,
+    })
+
+    const result = await provider.createWallet({
+      owners,
+      signer: mockSigner,
+      nonce,
+      deploymentChainIds,
+    })
+
+    // Should only call deploy once for chain 1
+    expect(mockWallet.deploy).toHaveBeenCalledTimes(1)
+    expect(mockWallet.deploy).toHaveBeenCalledWith(1)
+    expect(result).toEqual({
+      wallet: mockWallet,
+      deployments: [{ chainId: 1, receipt: undefined, success: true }],
+    })
+  })
+
+  it('should throw error for non-SmartWalletDeploymentError failures', async () => {
+    const provider = new DefaultSmartWalletProvider(
+      mockChainManager,
+      mockLendProvider,
+    )
+    const owners = [mockSigner.address, getRandomAddress()]
+    const nonce = BigInt(123)
+
+    // Mock deploy to throw a generic error (not SmartWalletDeploymentError)
+    vi.mocked(mockWallet.deploy).mockRejectedValue(new Error('Generic error'))
+
+    await expect(
+      provider.createWallet({
+        owners,
+        signer: mockSigner,
+        nonce,
+      }),
+    ).rejects.toThrow('Unknown error')
   })
 
   it('should get wallet address with correct contract call', async () => {
@@ -79,7 +310,7 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [getRandomAddress(), getRandomAddress()]
+    const owners = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(456)
     const mockAddress = getRandomAddress()
 
@@ -150,7 +381,7 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const invalidOwner = { type: 'invalid' } as any
+    const invalidOwner = { type: 'invalid' } as unknown as Address
     const owners = [invalidOwner]
 
     await expect(provider.getWalletAddress({ owners })).rejects.toThrow(
@@ -164,17 +395,24 @@ describe('DefaultSmartWalletProvider', () => {
       mockLendProvider,
     )
     const walletAddress = getRandomAddress()
-    const ownerIndex = 2
 
     const wallet = await provider.getWallet({
       walletAddress,
       signer: mockSigner,
-      ownerIndex,
+      owners: [mockSigner.address],
     })
 
-    expect(wallet).toBeInstanceOf(DefaultSmartWallet)
+    // Verify DefaultSmartWallet.create was called with correct params
+    expect(createWalletSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        owners: [mockSigner.address],
+        signer: mockSigner,
+        deploymentAddress: walletAddress,
+      }),
+    )
+    expect(wallet).toBe(mockWallet)
     expect(wallet.signer).toBe(mockSigner)
-    expect(wallet.address).toBe(walletAddress)
+    expect(wallet.address).toBeDefined()
   })
 
   it('passes attributionSuffix from constructor into createWallet', async () => {
@@ -186,20 +424,21 @@ describe('DefaultSmartWalletProvider', () => {
       mockLendProvider,
       attributionSeed,
     )
-    const spy = vi
-      .spyOn(DefaultSmartWallet, 'create')
-      .mockResolvedValue({} as unknown as DefaultSmartWallet)
+
+    vi.mocked(mockWallet.deploy).mockResolvedValue({
+      chainId: 1,
+      success: true,
+      receipt: undefined,
+    })
 
     await provider.createWallet({
-      owners: [getRandomAddress()],
+      owners: [mockSigner.address],
       signer: mockSigner,
     })
 
-    expect(spy).toHaveBeenCalled()
-    const callArg = spy.mock.calls[0][0]
-    expect(callArg.attributionSuffix).toBe(expectedSuffix)
-
-    spy.mockRestore()
+    expect(createWalletSpy).toHaveBeenCalled()
+    const callArg = createWalletSpy.mock.calls[0]?.[0]
+    expect(callArg?.attributionSuffix).toBe(expectedSuffix)
   })
 
   it('passes attributionSuffix from constructor into getWallet', async () => {
@@ -211,19 +450,15 @@ describe('DefaultSmartWalletProvider', () => {
       mockLendProvider,
       attributionSeed,
     )
-    const spy = vi
-      .spyOn(DefaultSmartWallet, 'create')
-      .mockResolvedValue({} as unknown as DefaultSmartWallet)
 
     await provider.getWallet({
       walletAddress: getRandomAddress(),
       signer: mockSigner,
+      owners: [mockSigner.address],
     })
 
-    expect(spy).toHaveBeenCalled()
-    const callArg = spy.mock.calls[0][0]
-    expect(callArg.attributionSuffix).toBe(expectedSuffix)
-
-    spy.mockRestore()
+    expect(createWalletSpy).toHaveBeenCalled()
+    const callArg = createWalletSpy.mock.calls[0]?.[0]
+    expect(callArg?.attributionSuffix).toBe(expectedSuffix)
   })
 })

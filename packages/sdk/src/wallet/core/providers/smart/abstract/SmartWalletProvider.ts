@@ -1,5 +1,7 @@
 import type { Address, LocalAccount } from 'viem'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 
@@ -10,19 +12,25 @@ import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js
 export abstract class SmartWalletProvider {
   /**
    * Create a new smart wallet instance
-   * @description Creates a new smart wallet that will be deployed on first transaction.
-   * The wallet address is deterministically calculated from owners and nonce.
+   * @description Creates a new smart wallet and attempts to deploy it across all supported chains.
+   * The wallet address is deterministically calculated from owners and nonce. Deployment failures
+   * on individual chains do not prevent wallet creation - they are reported in the result.
    * @param params - Wallet creation parameters
    * @param params.owners - Array of wallet owners (addresses or WebAuthn public keys)
    * @param params.signer - Local account used for signing transactions
    * @param params.nonce - Optional nonce for address generation (defaults to 0)
-   * @returns Promise resolving to a new SmartWallet instance
+   * @param params.deploymentChainIds - Optional chain IDs to deploy the wallet to.
+   * If not provided, the wallet will be deployed to all supported chains.
+   * @returns Promise resolving to deployment result containing:
+   * - `wallet`: The created SmartWallet instance
+   * - `deployments`: Array of deployment results with chainId, receipt, success flag, and error
    */
   abstract createWallet(params: {
     owners: Signer[]
     signer: LocalAccount
     nonce?: bigint
-  }): Promise<SmartWallet>
+    deploymentChainIds?: SupportedChainId[]
+  }): Promise<SmartWalletCreationResult<SmartWallet>>
 
   /**
    * Get an existing smart wallet instance
@@ -37,7 +45,7 @@ export abstract class SmartWalletProvider {
   abstract getWallet(params: {
     walletAddress: Address
     signer: LocalAccount
-    ownerIndex?: number
+    owners: Signer[]
   }): Promise<SmartWallet>
 
   /**

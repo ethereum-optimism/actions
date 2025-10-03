@@ -18,44 +18,47 @@ vi.mock('./config/verbs.js', () => ({
     wallet: {
       createSmartWallet: vi.fn(() =>
         Promise.resolve({
-          signer: {
-            address: `0x1111111111111111111111111111111111111111`,
-          },
-          address: `0x1111111111111111111111111111111111111112`,
-          getBalance: () =>
-            Promise.resolve([
-              { symbol: 'USDC', balance: 1000000n },
-              { symbol: 'MORPHO', balance: 500000n },
-            ]),
-          lend: {
-            getPosition: vi.fn(
-              ({
-                marketId,
-              }: {
-                marketId: { address: string; chainId: number }
-              }) => {
-                if (
-                  marketId.address ===
-                  '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
-                ) {
+          wallet: {
+            signer: {
+              address: `0x1111111111111111111111111111111111111111`,
+            },
+            address: `0x1111111111111111111111111111111111111112`,
+            getBalance: () =>
+              Promise.resolve([
+                { symbol: 'USDC', balance: 1000000n },
+                { symbol: 'MORPHO', balance: 500000n },
+              ]),
+            lend: {
+              getPosition: vi.fn(
+                ({
+                  marketId,
+                }: {
+                  marketId: { address: string; chainId: number }
+                }) => {
+                  if (
+                    marketId.address ===
+                    '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
+                  ) {
+                    return Promise.resolve({
+                      balance: 1000000n,
+                      balanceFormatted: '1',
+                      shares: 1000000n,
+                      sharesFormatted: '1',
+                      chainId: 130,
+                    })
+                  }
                   return Promise.resolve({
-                    balance: 1000000n,
-                    balanceFormatted: '1',
-                    shares: 1000000n,
-                    sharesFormatted: '1',
-                    chainId: 130,
+                    balance: 0n,
+                    balanceFormatted: '0',
+                    shares: 0n,
+                    sharesFormatted: '0',
+                    chainId: marketId.chainId,
                   })
-                }
-                return Promise.resolve({
-                  balance: 0n,
-                  balanceFormatted: '0',
-                  shares: 0n,
-                  sharesFormatted: '0',
-                  chainId: marketId.chainId,
-                })
-              },
-            ),
+                },
+              ),
+            },
           },
+          deployments: [{ chainId: 1, receipt: undefined, success: true }],
         }),
       ),
       hostedWalletToVerbsWallet: vi.fn(

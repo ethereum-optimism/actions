@@ -1,5 +1,6 @@
 import type { Address, LocalAccount } from 'viem'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 
 /**
@@ -10,6 +11,7 @@ export type CreateSmartWalletOptions = {
   owners: Signer[]
   signer: LocalAccount
   nonce?: bigint
+  deploymentChainIds?: SupportedChainId[]
 }
 
 /**
@@ -18,8 +20,8 @@ export type CreateSmartWalletOptions = {
  */
 export type GetSmartWalletOptions = {
   signer: LocalAccount
+  owners: Signer[]
   deploymentOwners?: Signer[]
-  signerOwnerIndex?: number
   walletAddress?: Address
   nonce?: bigint
 }

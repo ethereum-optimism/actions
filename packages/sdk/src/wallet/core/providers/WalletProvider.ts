@@ -6,6 +6,7 @@ import type {
 } from '@/types/wallet.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
+import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
@@ -27,19 +28,25 @@ export class WalletProvider<
 
   /**
    * Create a new smart wallet
-   * @description Creates only a smart wallet using the configured smart wallet provider.
-   * This is useful when you already have a signer and want to create a smart wallet without
-   * creating a hosted wallet. You must provide your own signer and owners array.
+   * @description Creates a smart wallet and attempts to deploy it across all supported chains.
+   * The wallet address is deterministically calculated from owners and nonce. The signer must
+   * be included in the owners array. Deployment failures on individual chains do not prevent
+   * wallet creation - they are reported in the result.
    * @param params - Smart wallet creation parameters
    * @param params.owners - Array of owners for the smart wallet (addresses or WebAuthn public keys)
-   * @param params.signer - Local account used for signing transactions
+   * @param params.signer - Local account used for signing transactions (must be in owners array)
    * @param params.nonce - Optional nonce for smart wallet address generation (defaults to 0)
-   * @returns Promise resolving to the created smart wallet instance
+   * @param params.deploymentChainIds - Optional chain IDs to deploy the wallet to.
+   * If not provided, the wallet will be deployed to all supported chains.
+   * @returns Promise resolving to deployment result containing:
+   * - `wallet`: The created SmartWallet instance
+   * - `deployments`: Array of deployment results with chainId, receipt, success flag, and error
+   * @throws Error if signer is not included in the owners array
    */
   async createSmartWallet(
     params: CreateSmartWalletOptions,
-  ): Promise<SmartWallet> {
-    const { owners, signer, nonce } = params
+  ): Promise<SmartWalletCreationResult<SmartWallet>> {
+    const { owners, signer } = params
 
     if (
       owners.filter(
@@ -51,11 +58,7 @@ export class WalletProvider<
       throw new Error('Signer must be in the owners array')
     }
 
-    return this.smartWalletProvider.createWallet({
-      owners,
-      signer,
-      nonce,
-    })
+    return this.smartWalletProvider.createWallet({ ...params })
   }
 
   async hostedWalletToVerbsWallet(
@@ -98,7 +101,7 @@ export class WalletProvider<
     const {
       signer,
       deploymentOwners,
-      signerOwnerIndex,
+      owners,
       walletAddress: walletAddressParam,
       nonce,
     } = params
@@ -116,8 +119,6 @@ export class WalletProvider<
       }
     }
 
-    const ownerIndex = signerOwnerIndex ?? 0
-
     const walletAddress =
       walletAddressParam ||
       (await this.smartWalletProvider.getWalletAddress({
@@ -128,7 +129,7 @@ export class WalletProvider<
     return this.smartWalletProvider.getWallet({
       walletAddress,
       signer,
-      ownerIndex,
+      owners,
     })
   }
 }
