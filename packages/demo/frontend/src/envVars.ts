@@ -6,7 +6,7 @@ const envVarSchema = z.object({
     .url()
     .default(
       import.meta.env.MODE === 'production'
-        ? 'https://dev-actions-service.optimism.io'
+        ? 'https://dev-verbs-service.optimism.io'
         : 'http://localhost:3000',
     )
     .describe('Base URL for the actions service API'),
