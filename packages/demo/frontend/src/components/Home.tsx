@@ -149,7 +149,7 @@ function Home() {
               </div>
               <div
                 className="text-xs font-mono"
-                style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                style={{ color: '#FF0621' }}
               >
                 example.ts
               </div>
@@ -580,7 +580,7 @@ function Home() {
                   </div>
                   <div
                     className="text-xs font-mono"
-                    style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                    style={{ color: '#FF0621' }}
                   >
                     config.ts
                   </div>
@@ -1162,7 +1162,7 @@ const config: ActionsConfig = {
                             </div>
                             <div
                               className="text-xs font-mono"
-                              style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                              style={{ color: '#FF0621' }}
                             >
                               wallet.ts
                             </div>
@@ -1371,7 +1371,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                             </div>
                             <div
                               className="text-xs font-mono"
-                              style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                              style={{ color: '#FF0621' }}
                             >
                               wallet.ts
                             </div>
@@ -1580,7 +1580,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                             </div>
                             <div
                               className="text-xs font-mono"
-                              style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                              style={{ color: '#FF0621' }}
                             >
                               wallet.ts
                             </div>
@@ -1767,7 +1767,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                   </div>
                   <div
                     className="text-xs font-mono"
-                    style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                    style={{ color: '#FF0621' }}
                   >
                     wallet.ts
                   </div>
