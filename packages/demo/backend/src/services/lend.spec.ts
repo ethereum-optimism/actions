@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as lendService from './lend.js'
 
-// Mock the verbs config module
-vi.mock('../config/verbs.js', () => ({
+// Mock the actions config module
+vi.mock('../config/actions.js', () => ({
   getVerbs: vi.fn(),
 }))
 
@@ -24,7 +24,7 @@ const mockVerbs = {
 describe('Lend Service', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
-    const { getVerbs } = await import('../config/verbs.js')
+    const { getVerbs } = await import('../config/actions.js')
     vi.mocked(getVerbs).mockReturnValue(mockVerbs as any)
   })
 

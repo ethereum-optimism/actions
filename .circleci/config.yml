@@ -246,7 +246,7 @@ workflows:
           docker_name: ecosystem-verbs-backend
           docker_tags: <<pipeline.git.revision>>,<<pipeline.git.branch>>,latest
           docker_context: .
-          docker_target: verbs-service
+          docker_target: actions-service
       - docker-publish:
           name: verbs-backend-docker-publish
           docker_name: ecosystem-verbs-backend

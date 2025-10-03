@@ -1,4 +1,4 @@
-import VerbsLogo from './VerbsLogo'
+import VerbsLogo from './ActionsLogo'
 
 interface NavBarProps {
   fullWidth?: boolean

@@ -1,5 +1,5 @@
-import type { VerbsConfig } from '@/types/verbs.js'
-import { Verbs } from '@/verbs.js'
+import { Verbs } from '@/actions.js'
+import type { VerbsConfig } from '@/types/actions.js'
 import type {
   ReactHostedWalletProvidersSchema,
   ReactOptionsMap,

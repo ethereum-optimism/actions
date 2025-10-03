@@ -1,4 +1,4 @@
 export * from '@/index.js'
-export type { ReactVerbsConfig } from '@/reactVerbsFactory.js'
-export { createVerbs } from '@/reactVerbsFactory.js'
+export type { ReactVerbsConfig } from '@/reactActionsFactory.js'
+export { createVerbs } from '@/reactActionsFactory.js'
 export * from '@/wallet/react/index.js'

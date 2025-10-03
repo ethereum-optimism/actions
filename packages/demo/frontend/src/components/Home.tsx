@@ -136,7 +136,7 @@ function Home() {
                   {` `}
                   <span
                     style={{ color: '#ff8a65' }}
-                  >{`'@eth-optimism/verbs-sdk'`}</span>
+                  >{`'@eth-optimism/actions-sdk'`}</span>
                   {`
 `}
                   <span
@@ -155,7 +155,7 @@ function Home() {
                   {` `}
                   <span
                     style={{ color: '#ff8a65' }}
-                  >{`'@eth-optimism/verbs-sdk/assets'`}</span>
+                  >{`'@eth-optimism/actions-sdk/assets'`}</span>
                   {`
 
 `}

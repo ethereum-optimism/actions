@@ -57,7 +57,7 @@ pnpm typecheck
 
 ### Monorepo Structure
 
-- `packages/sdk/` - Core Verbs TypeScript SDK
+- `packages/sdk/` - Core Actions TypeScript SDK
 - `packages/demo/backend/` - Hono-based backend service demonstrating SDK usage
 - `packages/demo/frontend/` - React + Vite frontend application
 
@@ -94,7 +94,7 @@ The SDK follows a provider pattern for wallet integration:
 
 ### Workspace Dependencies
 
-- All demo apps reference SDK via `"@eth-optimism/verbs-sdk": "workspace:*"`
+- All demo apps reference SDK via `"@eth-optimism/actions-sdk": "workspace:*"`
 - Backend and frontend are separate packages under `packages/demo/`
 
 ### TypeScript Configuration
@@ -105,7 +105,7 @@ The SDK follows a provider pattern for wallet integration:
 
 ### Provider Pattern
 
-The SDK uses a provider pattern for wallet integrations. New wallet providers implement the `WalletProvider` interface and are registered in the `createWalletProvider` factory method in `verbs.ts:30-39`.
+The SDK uses a provider pattern for wallet integrations. New wallet providers implement the `WalletProvider` interface and are registered in the `createWalletProvider` factory method in `actions.ts:30-39`.
 
 ## CI/CD Configuration
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { verbsApi, VerbsApiError } from './verbsApi'
+import { verbsApi, VerbsApiError } from './actionsApi'
 
 // Mock fetch globally
 const mockFetch = vi.fn()

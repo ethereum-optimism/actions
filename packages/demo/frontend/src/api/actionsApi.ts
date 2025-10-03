@@ -1,10 +1,10 @@
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
-} from '@eth-optimism/verbs-service'
+} from '@eth-optimism/actions-service'
 import type { Address } from 'viem'
 
-import { env } from '../envVars'
+import { env } from '../envVars.js'
 import type {
   MarketResponse,
   PositionResponse,

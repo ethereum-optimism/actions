@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import VerbsLogo from './VerbsLogo'
+import VerbsLogo from './ActionsLogo'
 
 describe('VerbsLogo', () => {
   it('renders logo SVG', () => {
