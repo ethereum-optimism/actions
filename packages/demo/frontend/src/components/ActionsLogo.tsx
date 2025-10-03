@@ -6,7 +6,7 @@ const ActionsLogo = () => {
       viewBox="0 0 80 80"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="text-terminal-success"
+      style={{ color: '#FF0621' }}
     >
       {/* ASCII art V pattern using rectangular blocks */}
       <g fill="currentColor">

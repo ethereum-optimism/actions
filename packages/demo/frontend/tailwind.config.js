@@ -7,18 +7,25 @@ export default {
         mono: ['JetBrains Mono', 'Monaco', 'Menlo', 'Consolas', 'monospace'],
       },
       colors: {
+        red: '#FF0621',
+        orange: '#FF7A00',
+        yellow: '#FFD500',
+        green: '#00D42F',
+        blue: '#0075FF',
+        indigo: '#4B00FF',
+        purple: '#CC00FF',
         terminal: {
-          bg: '#1d2021', // Gruvbox dark background
-          secondary: '#282828', // Gruvbox dark0_soft
-          border: '#504945', // Gruvbox dark2
-          text: '#ebdbb2', // Gruvbox light0
-          muted: '#a89984', // Gruvbox light4
-          dim: '#665c54', // Gruvbox dark3
-          accent: '#b8bb26', // Gruvbox bright_green
-          error: '#fb4934', // Gruvbox bright_red
-          warning: '#fabd2f', // Gruvbox bright_yellow
-          success: '#b8bb26', // Gruvbox bright_green
-          info: '#83a598', // Gruvbox bright_blue
+          bg: '#1d2021',
+          secondary: '#282828',
+          border: '#504945',
+          text: '#ebdbb2',
+          muted: '#a89984',
+          dim: '#665c54',
+          accent: '#FF0621',
+          error: '#FF0621',
+          warning: '#FFD500',
+          success: '#00D42F',
+          info: '#0075FF',
         },
       },
       animation: {
@@ -31,13 +38,13 @@ export default {
           '51%, 100%': { opacity: '0' },
         },
         glow: {
-          '0%': { 'text-shadow': '0 0 5px #b8bb26' },
-          '100%': { 'text-shadow': '0 0 20px #b8bb26, 0 0 30px #b8bb26' },
+          '0%': { 'text-shadow': '0 0 5px #FF0621' },
+          '100%': { 'text-shadow': '0 0 20px #FF0621, 0 0 30px #FF0621' },
         },
       },
       boxShadow: {
-        terminal: '0 0 20px rgba(184, 187, 38, 0.3)',
-        'terminal-inner': 'inset 0 0 20px rgba(184, 187, 38, 0.1)',
+        terminal: '0 0 20px rgba(255, 6, 33, 0.3)',
+        'terminal-inner': 'inset 0 0 20px rgba(255, 6, 33, 0.1)',
       },
     },
   },
