@@ -1,6 +1,6 @@
 ## Contracts
 
-This project contains demo contracts that support the Verbs demo application in the `packages/demo` directory. These contracts are **not intended for production use** and are designed specifically to facilitate funding wallets used in the demo environment.
+This project contains demo contracts that support the Actions demo application in the `packages/demo` directory. These contracts are **not intended for production use** and are designed specifically to facilitate funding wallets used in the demo environment.
 
 The system includes a Faucet contract with deployment and funding scripts:
 

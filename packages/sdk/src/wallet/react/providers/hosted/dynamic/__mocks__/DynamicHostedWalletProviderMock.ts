@@ -7,8 +7,8 @@ import { MockChainManager } from '@/test/MockChainManager.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
-  DynamicHostedWalletToVerbsWalletOptions,
-  ReactToVerbsOptionsMap,
+  DynamicHostedWalletToActionsWalletOptions,
+  ReactToActionsOptionsMap,
 } from '@/wallet/react/providers/hosted/types/index.js'
 
 /**
@@ -17,12 +17,12 @@ import type {
  */
 export class DynamicHostedWalletProviderMock extends HostedWalletProvider<
   'dynamic',
-  ReactToVerbsOptionsMap
+  ReactToActionsOptionsMap
 > {
   // Exposed mock for assertions if needed
-  public readonly toVerbsWalletMock = vi.fn(
+  public readonly toActionsWalletMock = vi.fn(
     async (
-      _params: DynamicHostedWalletToVerbsWalletOptions,
+      _params: DynamicHostedWalletToActionsWalletOptions,
     ): Promise<Wallet> => {
       return {} as unknown as Wallet
     },
@@ -30,7 +30,7 @@ export class DynamicHostedWalletProviderMock extends HostedWalletProvider<
 
   public readonly createSignerMock = vi.fn(
     async (
-      _params: DynamicHostedWalletToVerbsWalletOptions,
+      _params: DynamicHostedWalletToActionsWalletOptions,
     ): Promise<LocalAccount> => {
       return {} as unknown as LocalAccount
     },
@@ -43,14 +43,14 @@ export class DynamicHostedWalletProviderMock extends HostedWalletProvider<
     super(mockChainManager)
   }
 
-  async toVerbsWallet(
-    params: DynamicHostedWalletToVerbsWalletOptions,
+  async toActionsWallet(
+    params: DynamicHostedWalletToActionsWalletOptions,
   ): Promise<Wallet> {
-    return this.toVerbsWalletMock(params)
+    return this.toActionsWalletMock(params)
   }
 
   async createSigner(
-    params: DynamicHostedWalletToVerbsWalletOptions,
+    params: DynamicHostedWalletToActionsWalletOptions,
   ): Promise<LocalAccount> {
     return this.createSignerMock(params)
   }

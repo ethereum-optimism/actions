@@ -2,7 +2,7 @@ import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
-import { SUPPORTED_CHAIN_IDS as VERBS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import { SUPPORTED_CHAIN_IDS as ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/lend/providers/morpho/sdk.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -28,7 +28,7 @@ export const SUPPORTED_CHAIN_IDS = [
     ...Object.values(ChainId).filter(
       (value): value is number => typeof value === 'number',
     ),
-    ...VERBS_SUPPORTED_CHAIN_IDS,
+    ...ACTIONS_SUPPORTED_CHAIN_IDS,
   ]),
 ] as readonly number[]
 

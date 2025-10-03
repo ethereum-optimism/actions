@@ -1,6 +1,6 @@
-# Verbs Service
+# Actions Service
 
-A backend service for interacting with the Verbs SDK.
+A backend service for interacting with the Actions SDK.
 
 ## Development Setup
 

@@ -6,20 +6,20 @@ import type { LocalAccount } from 'viem'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import type { NodeToVerbsOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
+import type { NodeToActionsOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
 import { TurnkeyWallet } from '@/wallet/node/wallets/hosted/turnkey/TurnkeyWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
 
 /**
  * Turnkey wallet provider implementation
  * @description Hosted wallet provider that wraps Turnkey's signing infrastructure
- * and exposes a Verbs-compatible wallet. This provider is intended for Node
+ * and exposes an Actions-compatible wallet. This provider is intended for Node
  * environments where the Turnkey client (HTTP, server, or core SDK) and
  * organization context are provided at construction time.
  */
 export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
   'turnkey',
-  NodeToVerbsOptionsMap
+  NodeToActionsOptionsMap
 > {
   /**
    * Create a new Turnkey wallet provider
@@ -37,16 +37,16 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
   }
 
   /**
-   * Convert a Turnkey hosted wallet context into a Verbs wallet
+   * Convert a Turnkey hosted wallet context into an Actions wallet
    * @description Creates a `TurnkeyWallet` configured with the provider's Turnkey
    * client and organization.
-   * @param params - Options for creating the Verbs wallet from Turnkey context
+   * @param params - Options for creating the Actions wallet from Turnkey context
    * @param params.signWith - Wallet account address, private key address, or private key ID
    * @param params.ethereumAddress - Ethereum address to use for this account, in the case that a private key ID is used to sign.
-   * @returns Promise resolving to a Verbs-compatible wallet instance
+   * @returns Promise resolving to an Actions-compatible wallet instance
    */
-  async toVerbsWallet(
-    params: NodeToVerbsOptionsMap['turnkey'],
+  async toActionsWallet(
+    params: NodeToActionsOptionsMap['turnkey'],
   ): Promise<Wallet> {
     return TurnkeyWallet.create({
       client: this.client,
@@ -60,8 +60,8 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
   /**
    * Create a viem LocalAccount signer from Turnkey credentials
    * @description Produces a signing account backed by Turnkey without wrapping
-   * it in a full Verbs wallet. This is useful when you need to pass the signer
-   * into a Verbs smart wallet as a signer, for lower-level viem operations, or
+   * it in a full Actions wallet. This is useful when you need to pass the signer
+   * into an Actions smart wallet as a signer, for lower-level viem operations, or
    * for passing to other libraries that accept a viem `LocalAccount`.
    * @param params - Turnkey configuration for the signer
    * @param params.client - Turnkey client instance
@@ -71,7 +71,7 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
    * @returns Promise resolving to a viem `LocalAccount` with Turnkey as the signer backend
    */
   async createSigner(
-    params: NodeToVerbsOptionsMap['turnkey'],
+    params: NodeToActionsOptionsMap['turnkey'],
   ): Promise<LocalAccount> {
     return createSigner({
       ...params,

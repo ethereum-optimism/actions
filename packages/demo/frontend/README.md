@@ -1,6 +1,6 @@
-# Verbs UI
+# Actions UI
 
-A terminal-style web interface for interacting with verbs-service endpoints.
+A terminal-style web interface for interacting with actions-service endpoints.
 
 ## Quick Setup
 

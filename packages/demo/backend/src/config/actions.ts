@@ -1,14 +1,14 @@
-import type { NodeVerbsConfig } from '@eth-optimism/verbs-sdk/node'
-import { createVerbs } from '@eth-optimism/verbs-sdk/node'
+import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
+import { createActions } from '@eth-optimism/actions-sdk/node'
 import { PrivyClient } from '@privy-io/server-auth'
 import { baseSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
 import { GauntletUSDC, USDCDemoVault } from './markets.js'
 
-let verbsInstance: ReturnType<typeof createVerbs<'privy'>>
+let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
-export function createVerbsConfig(): NodeVerbsConfig<'privy'> {
+export function createActionsConfig(): NodeActionsConfig<'privy'> {
   return {
     wallet: {
       hostedWalletConfig: {
@@ -23,7 +23,7 @@ export function createVerbsConfig(): NodeVerbsConfig<'privy'> {
         provider: {
           type: 'default',
           // converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'
-          attributionSuffix: 'verbs',
+          attributionSuffix: 'actions',
         },
       },
     },
@@ -56,16 +56,18 @@ export function createVerbsConfig(): NodeVerbsConfig<'privy'> {
   }
 }
 
-export function initializeVerbs(config?: NodeVerbsConfig<'privy'>): void {
-  const verbsConfig = config || createVerbsConfig()
-  verbsInstance = createVerbs(verbsConfig)
+export function initializeActions(config?: NodeActionsConfig<'privy'>): void {
+  const actionsConfig = config || createActionsConfig()
+  actionsInstance = createActions(actionsConfig)
 }
 
-export function getVerbs() {
-  if (!verbsInstance) {
-    throw new Error('Verbs SDK not initialized. Call initializeVerbs() first.')
+export function getActions() {
+  if (!actionsInstance) {
+    throw new Error(
+      'Actions SDK not initialized. Call initializeActions() first.',
+    )
   }
-  return verbsInstance
+  return actionsInstance
 }
 
 export function getPrivyClient() {

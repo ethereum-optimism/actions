@@ -1,15 +1,15 @@
 {
-  "name": "verbs",
+  "name": "actions",
   "private": true,
   "version": "0.0.1",
-  "description": "Verbs SDK and demo applications",
+  "description": "Actions SDK and demo applications",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ethereum-optimism/verbs.git"
+    "url": "https://github.com/ethereum-optimism/actions.git"
   },
-  "homepage": "https://github.com/ethereum-optimism/verbs#readme",
+  "homepage": "https://github.com/ethereum-optimism/actions#readme",
   "bugs": {
-    "url": "https://github.com/ethereum-optimism/verbs/issues"
+    "url": "https://github.com/ethereum-optimism/actions/issues"
   },
   "workspaces": [
     "packages/*",

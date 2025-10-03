@@ -25,9 +25,9 @@ vi.mock('@privy-io/react-auth', () => ({
   })),
 }))
 
-// Mock the verbsApi
-vi.mock('../api/verbsApi', () => ({
-  verbsApi: {
+// Mock the actionsApi
+vi.mock('../api/actionsApi', () => ({
+  actionsApi: {
     createWallet: vi.fn(() =>
       Promise.resolve({
         privyAddress: '0x1234567890123456789012345678901234567890',

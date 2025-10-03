@@ -2,19 +2,19 @@ import type {
   SmartWallet,
   TokenBalance,
   TransactionData,
-} from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/actions-sdk'
 import {
   getAssetAddress,
   getTokenBySymbol,
   SUPPORTED_TOKENS,
-} from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
+import { getActions, getPrivyClient } from '@/config/actions.js'
 import { USDC } from '@/config/assets.js'
-import { getPrivyClient, getVerbs } from '@/config/verbs.js'
 
 /**
  * Options for getting all wallets
@@ -31,16 +31,16 @@ export async function createWallet(): Promise<{
   privyAddress: string
   smartWalletAddress: string
 }> {
-  const verbs = getVerbs()
+  const actions = getActions()
   const privyClient = getPrivyClient()
   const privyWallet = await privyClient.walletApi.createWallet({
     chainType: 'ethereum',
   })
-  const privySigner = await verbs.wallet.createSigner({
+  const privySigner = await actions.wallet.createSigner({
     walletId: privyWallet.id,
     address: getAddress(privyWallet.address),
   })
-  const wallet = await verbs.wallet.createSmartWallet({
+  const { wallet } = await actions.wallet.createSmartWallet({
     owners: [privySigner.address],
     signer: privySigner,
   })
@@ -55,7 +55,7 @@ export async function getWallet(
   userId: string,
   isAuthedUser = false,
 ): Promise<SmartWallet | null> {
-  const verbs = getVerbs()
+  const actions = getActions()
   const privyClient = getPrivyClient()
 
   let privyWallet
@@ -79,12 +79,13 @@ export async function getWallet(
     return null
   }
 
-  const privySigner = await verbs.wallet.createSigner({
+  const privySigner = await actions.wallet.createSigner({
     walletId: privyWallet.id!,
     address: getAddress(privyWallet.address),
   })
-  const wallet = await verbs.wallet.getSmartWallet({
+  const wallet = await actions.wallet.getSmartWallet({
     signer: privySigner,
+    owners: [privySigner.address],
     deploymentOwners: [getAddress(privyWallet.address)],
   })
 
@@ -99,17 +100,18 @@ export async function getAllWallets(
   options?: GetAllWalletsOptions,
 ): Promise<Array<{ wallet: SmartWallet; id: string }>> {
   try {
-    const verbs = getVerbs()
+    const actions = getActions()
     const privyClient = getPrivyClient()
     const response = await privyClient.walletApi.getWallets(options)
     return Promise.all(
       response.data.map(async (privyWallet) => {
-        const privySigner = await verbs.wallet.createSigner({
+        const privySigner = await actions.wallet.createSigner({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
-        const wallet = await verbs.wallet.getSmartWallet({
+        const wallet = await actions.wallet.getSmartWallet({
           signer: privySigner,
+          owners: [privySigner.address],
           deploymentOwners: [privySigner.address],
         })
         return {
@@ -141,9 +143,9 @@ export async function getWalletBalance(
   })
 
   // Get market balances and add them to the response
-  const verbs = getVerbs()
+  const actions = getActions()
   try {
-    const vaults = await verbs.lend.getMarkets()
+    const vaults = await actions.lend.getMarkets()
 
     const vaultBalances = await Promise.all(
       vaults.map(async (vault) => {

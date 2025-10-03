@@ -27,7 +27,7 @@ export class PrivyWallet extends Wallet {
    * Create a new Privy wallet provider
    * @param appId - Privy application ID
    * @param appSecret - Privy application secret
-   * @param verbs - Verbs instance for accessing configured providers
+   * @param actions - Actions instance for accessing configured providers
    */
   private constructor(
     privyClient: PrivyClient,

@@ -31,33 +31,33 @@ export interface ReactOptionsMap {
 }
 
 /**
- * Options for converting a Dynamic hosted wallet to a Verbs wallet
- * @description Parameters for converting a hosted wallet to a Verbs wallet
+ * Options for converting a Dynamic hosted wallet to an Actions wallet
+ * @description Parameters for converting a hosted wallet to an Actions wallet
  * @property wallet Dynamic wallet instance obtained from the Dynamic connector
  */
-export type DynamicHostedWalletToVerbsWalletOptions = {
+export type DynamicHostedWalletToActionsWalletOptions = {
   wallet: DynamicWallet
 }
 
 /**
- * Options for converting a Privy hosted wallet to a Verbs wallet
- * @description Parameters for converting a Privy hosted wallet to a Verbs wallet
+ * Options for converting a Privy hosted wallet to an Actions wallet
+ * @description Parameters for converting a Privy hosted wallet to an Actions wallet
  * @property connectedWallet Privy ConnectedWallet instance from @privy-io/react-auth
  */
-export type PrivyHostedWalletToVerbsWalletOptions = {
+export type PrivyHostedWalletToActionsWalletOptions = {
   connectedWallet: ConnectedWallet
 }
 
 /**
- * Options for converting a Turnkey hosted wallet to a Verbs wallet
- * @description Parameters for converting a hosted wallet to a Verbs wallet
+ * Options for converting a Turnkey hosted wallet to an Actions wallet
+ * @description Parameters for converting a hosted wallet to an Actions wallet
  * @property signWith This can be a wallet account address, private key address, or private key ID.
  * @property ethereumAddress Ethereum address to use for this account, in the case that a private key ID is used to sign.
  * If left undefined, `createSigner` will fetch it from the Turnkey API. We recommend setting this if you're using a passkey
  * client, so that your users are not prompted for a passkey signature just to fetch their address. You may leave this
  * undefined if using an API key client.
  */
-export type TurnkeyHostedWalletToVerbsWalletOptions = {
+export type TurnkeyHostedWalletToActionsWalletOptions = {
   client: TurnkeySDKClientBase
   organizationId: string
   signWith: string
@@ -75,26 +75,26 @@ export type ReactHostedProviderInstanceMap = {
 }
 
 /**
- * Parameters required to convert each hosted wallet to a Verbs wallet (React)
- * @description Provider-specific, caller-supplied data needed by `toVerbsWallet`.
+ * Parameters required to convert each hosted wallet to an Actions wallet (React)
+ * @description Provider-specific, caller-supplied data needed by `toActionsWallet`.
  */
-export type ReactToVerbsOptionsMap = {
-  dynamic: DynamicHostedWalletToVerbsWalletOptions
-  privy: PrivyHostedWalletToVerbsWalletOptions
-  turnkey: TurnkeyHostedWalletToVerbsWalletOptions
+export type ReactToActionsOptionsMap = {
+  dynamic: DynamicHostedWalletToActionsWalletOptions
+  privy: PrivyHostedWalletToActionsWalletOptions
+  turnkey: TurnkeyHostedWalletToActionsWalletOptions
 }
 
 /**
  * Complete React hosted wallet providers schema
  * @description
  * Bundles provider type keys, concrete provider instances, creation configs,
- * and `toVerbsWallet` parameter types for the React environment.
- * This schema is used to type `Verbs` and its registries without widening
+ * and `toActionsWallet` parameter types for the React environment.
+ * This schema is used to type `Actions` and its registries without widening
  * to generic `string` keys.
  */
 export type ReactHostedWalletProvidersSchema = HostedWalletProvidersSchema<
   ReactProviderTypes,
   ReactHostedProviderInstanceMap,
   ReactOptionsMap,
-  ReactToVerbsOptionsMap
+  ReactToActionsOptionsMap
 >

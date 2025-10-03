@@ -2,26 +2,26 @@ import type { Address } from 'viem'
 import { unichain } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
+import { Actions } from '@/actions.js'
 import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
 import type { LendMarketConfig, MorphoLendConfig } from '@/types/lend/index.js'
 import { externalTest } from '@/utils/test.js'
-import { Verbs } from '@/verbs.js'
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
 import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import type {
   NodeOptionsMap,
-  NodeToVerbsOptionsMap,
+  NodeToActionsOptionsMap,
 } from '@/wallet/node/providers/hosted/types/index.js'
 
-describe('Verbs SDK', () => {
+describe('Actions SDK', () => {
   type TestInstanceMap = { privy: PrivyHostedWalletProvider }
   type TestConfigMap = { privy: NodeOptionsMap['privy'] }
   type TestWalletProvider = HostedWalletProvidersSchema<
     'privy',
     TestInstanceMap,
     TestConfigMap,
-    NodeToVerbsOptionsMap
+    NodeToActionsOptionsMap
   >
   class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
     TestInstanceMap,
@@ -48,7 +48,7 @@ describe('Verbs SDK', () => {
   describe('Configuration', () => {
     describe('Morpho Provider Configuration', () => {
       it('should create Morpho provider when provider is set to morpho', () => {
-        const verbs = new Verbs<
+        const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
           'privy'
@@ -81,13 +81,13 @@ describe('Verbs SDK', () => {
           },
         )
 
-        expect(verbs.lend).toBeDefined()
-        expect(verbs.lend.supportedChainIds()).toContain(130) // Unichain
+        expect(actions.lend).toBeDefined()
+        expect(actions.lend.supportedChainIds()).toContain(130) // Unichain
       })
 
       it('should create Morpho provider with custom default slippage', () => {
         const customSlippage = 150
-        const verbs = new Verbs<
+        const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
           'privy'
@@ -121,9 +121,9 @@ describe('Verbs SDK', () => {
           },
         )
 
-        expect(verbs.lend).toBeDefined()
-        expect(verbs.lend.config.defaultSlippage).toBe(customSlippage)
-        expect(verbs.lend.config.provider).toBe('morpho')
+        expect(actions.lend).toBeDefined()
+        expect(actions.lend.config.defaultSlippage).toBe(customSlippage)
+        expect(actions.lend.config.provider).toBe('morpho')
       })
 
       it('should create Morpho provider with market allowlist', () => {
@@ -146,7 +146,7 @@ describe('Verbs SDK', () => {
           lendProvider: 'morpho',
         }
 
-        const verbs = new Verbs<
+        const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
           'privy'
@@ -180,8 +180,8 @@ describe('Verbs SDK', () => {
           },
         )
 
-        expect(verbs.lend).toBeDefined()
-        const allowlist = verbs.lend.config.marketAllowlist
+        expect(actions.lend).toBeDefined()
+        const allowlist = actions.lend.config.marketAllowlist
         expect(allowlist).toBeDefined()
         expect(allowlist).toHaveLength(1)
         expect(allowlist![0].address).toBe(mockMarket.address)
@@ -228,7 +228,7 @@ describe('Verbs SDK', () => {
           },
         ]
 
-        const verbs = new Verbs<
+        const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
           'privy'
@@ -262,8 +262,8 @@ describe('Verbs SDK', () => {
           },
         )
 
-        expect(verbs.lend).toBeDefined()
-        const allowlist = verbs.lend.config.marketAllowlist
+        expect(actions.lend).toBeDefined()
+        const allowlist = actions.lend.config.marketAllowlist
         expect(allowlist).toBeDefined()
         expect(allowlist).toHaveLength(2)
         expect(allowlist![0].name).toBe('Gauntlet USDC')
@@ -272,7 +272,7 @@ describe('Verbs SDK', () => {
 
       it('should throw error for unsupported lending provider', () => {
         expect(() => {
-          new Verbs<
+          new Actions<
             TestWalletProvider['providerTypes'],
             TestWalletProvider,
             'privy'
@@ -308,7 +308,7 @@ describe('Verbs SDK', () => {
       })
 
       it('should work without lend configuration', () => {
-        const verbs = new Verbs<
+        const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
           'privy'
@@ -338,8 +338,8 @@ describe('Verbs SDK', () => {
           },
         )
 
-        expect(verbs['lendProvider']).toBeUndefined()
-        expect(() => verbs.lend).toThrow('Lend provider not configured')
+        expect(actions['lendProvider']).toBeUndefined()
+        expect(() => actions.lend).toThrow('Lend provider not configured')
       })
     })
 
@@ -352,7 +352,7 @@ describe('Verbs SDK', () => {
         }
 
         expect(() => {
-          new Verbs<
+          new Actions<
             TestWalletProvider['providerTypes'],
             TestWalletProvider,
             'privy'
@@ -391,7 +391,7 @@ describe('Verbs SDK', () => {
         }
 
         expect(() => {
-          new Verbs<
+          new Actions<
             TestWalletProvider['providerTypes'],
             TestWalletProvider,
             'privy'
@@ -427,7 +427,7 @@ describe('Verbs SDK', () => {
 
     describe('Integration with ChainManager', () => {
       it('should pass chain configuration to lending provider', () => {
-        const verbs = new Verbs<
+        const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
           'privy'
@@ -463,8 +463,8 @@ describe('Verbs SDK', () => {
           },
         )
 
-        expect(verbs.lend).toBeDefined()
-        const supportedIds = verbs.lend.supportedChainIds()
+        expect(actions.lend).toBeDefined()
+        const supportedIds = actions.lend.supportedChainIds()
         expect(supportedIds).toContain(130) // Unichain
         expect(supportedIds).toContain(8453) // Base
       })
@@ -472,7 +472,7 @@ describe('Verbs SDK', () => {
 
     describe('Unit Tests', () => {
       it('should list supported chain IDs', () => {
-        const verbs = new Verbs<
+        const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
           'privy'
@@ -506,7 +506,7 @@ describe('Verbs SDK', () => {
           },
         )
 
-        const chainIds = verbs.lend.supportedChainIds()
+        const chainIds = actions.lend.supportedChainIds()
         expect(Array.isArray(chainIds)).toBe(true)
         expect(chainIds).toContain(130) // Unichain
       })
@@ -516,12 +516,12 @@ describe('Verbs SDK', () => {
   describe('System Tests', () => {
     describe('Morpho Lend Provider Integration', () => {
       // Note: These are external tests that make real network requests
-      // Run with: EXTERNAL_TEST=true pnpm test src/verbs.test.ts
+      // Run with: EXTERNAL_TEST=true pnpm test src/actions.test.ts
       it.runIf(externalTest())(
         'should fetch real vault info from Morpho on Unichain',
         async () => {
-          // Create Verbs instance with Morpho lending configured
-          const verbs = new Verbs<
+          // Create Actions instance with Morpho lending configured
+          const actions = new Actions<
             TestWalletProvider['providerTypes'],
             TestWalletProvider,
             'privy'
@@ -559,7 +559,7 @@ describe('Verbs SDK', () => {
             },
           )
 
-          const networkIds = verbs.lend.supportedChainIds()
+          const networkIds = actions.lend.supportedChainIds()
           expect(Array.isArray(networkIds)).toBe(true)
           expect(networkIds).toContain(130) // Unichain
         },
@@ -570,12 +570,12 @@ describe('Verbs SDK', () => {
   describe('System Tests', () => {
     describe('Morpho Lend Provider Integration', () => {
       // Note: These are external tests that make real network requests
-      // Run with: EXTERNAL_TEST=true pnpm test src/verbs.test.ts
+      // Run with: EXTERNAL_TEST=true pnpm test src/actions.test.ts
       it.runIf(externalTest())(
         'should fetch real vault info from Morpho on Unichain',
         async () => {
-          // Create Verbs instance with Morpho lending configured
-          const verbs = new Verbs<
+          // Create Actions instance with Morpho lending configured
+          const actions = new Actions<
             TestWalletProvider['providerTypes'],
             TestWalletProvider,
             'privy'
@@ -619,7 +619,7 @@ describe('Verbs SDK', () => {
           const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
 
           // This will make an actual network request to fetch vault data
-          const vaultInfo = await verbs.lend.getMarket({
+          const vaultInfo = await actions.lend.getMarket({
             address: vaultAddress,
             chainId: 130,
           })
@@ -662,7 +662,7 @@ describe('Verbs SDK', () => {
       it.runIf(externalTest())(
         'should fetch vault info with enhanced rewards data',
         async () => {
-          const verbs = new Verbs<
+          const actions = new Actions<
             TestWalletProvider['providerTypes'],
             TestWalletProvider,
             'privy'
@@ -703,7 +703,7 @@ describe('Verbs SDK', () => {
           )
 
           const vaultAddress = '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
-          const vaultInfo = await verbs.lend.getMarket({
+          const vaultInfo = await actions.lend.getMarket({
             address: vaultAddress,
             chainId: 130,
           })
@@ -724,7 +724,7 @@ describe('Verbs SDK', () => {
       it.runIf(externalTest())(
         'should handle non-existent vault gracefully',
         async () => {
-          const verbs = new Verbs<
+          const actions = new Actions<
             TestWalletProvider['providerTypes'],
             TestWalletProvider,
             'privy'
@@ -768,7 +768,7 @@ describe('Verbs SDK', () => {
             '0x0000000000000000000000000000000000000000'
 
           await expect(
-            verbs.lend.getMarket({
+            actions.lend.getMarket({
               address: invalidVaultAddress,
               chainId: 130,
             }),
@@ -777,7 +777,7 @@ describe('Verbs SDK', () => {
       )
 
       it.runIf(externalTest())('should get list of vaults', async () => {
-        const verbs = new Verbs<
+        const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
           'privy'
@@ -820,7 +820,7 @@ describe('Verbs SDK', () => {
         const invalidVaultAddress = '0x0000000000000000000000000000000000000000'
 
         await expect(
-          verbs.lend.getMarket({
+          actions.lend.getMarket({
             address: invalidVaultAddress,
             chainId: 130,
           }),
@@ -828,7 +828,7 @@ describe('Verbs SDK', () => {
       })
 
       it.runIf(externalTest())('should get list of vaults', async () => {
-        const verbs = new Verbs<
+        const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
           'privy'
@@ -868,7 +868,7 @@ describe('Verbs SDK', () => {
           },
         )
 
-        const markets = await verbs.lend.getMarkets()
+        const markets = await actions.lend.getMarkets()
 
         expect(Array.isArray(markets)).toBe(true)
         expect(markets.length).toBeGreaterThan(0)

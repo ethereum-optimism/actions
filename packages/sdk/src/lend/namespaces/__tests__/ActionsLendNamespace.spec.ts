@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
+import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
 import type { LendProvider } from '@/types/lend/index.js'
 
-describe('VerbsLendNamespace', () => {
+describe('ActionsLendNamespace', () => {
   let mockProvider: LendProvider
 
   beforeEach(() => {
@@ -13,13 +13,13 @@ describe('VerbsLendNamespace', () => {
   })
 
   it('should create an instance with a lend provider', () => {
-    const namespace = new VerbsLendNamespace(mockProvider)
+    const namespace = new ActionsLendNamespace(mockProvider)
 
-    expect(namespace).toBeInstanceOf(VerbsLendNamespace)
+    expect(namespace).toBeInstanceOf(ActionsLendNamespace)
   })
 
   it('should delegate getMarkets to provider', async () => {
-    const namespace = new VerbsLendNamespace(mockProvider)
+    const namespace = new ActionsLendNamespace(mockProvider)
     const spy = vi.spyOn(mockProvider, 'getMarkets')
 
     await namespace.getMarkets()
@@ -28,7 +28,7 @@ describe('VerbsLendNamespace', () => {
   })
 
   it('should delegate getMarket to provider with correct parameters', async () => {
-    const namespace = new VerbsLendNamespace(mockProvider)
+    const namespace = new ActionsLendNamespace(mockProvider)
     const marketId = getRandomAddress()
     const chainId = 130 as const
     const spy = vi.spyOn(mockProvider, 'getMarket')
@@ -39,7 +39,7 @@ describe('VerbsLendNamespace', () => {
   })
 
   it('should delegate supportedChainIds to provider', () => {
-    const namespace = new VerbsLendNamespace(mockProvider)
+    const namespace = new ActionsLendNamespace(mockProvider)
     const spy = vi.spyOn(mockProvider, 'supportedChainIds')
 
     namespace.supportedChainIds()
@@ -48,7 +48,7 @@ describe('VerbsLendNamespace', () => {
   })
 
   it('should provide access to provider config', () => {
-    const namespace = new VerbsLendNamespace(mockProvider)
+    const namespace = new ActionsLendNamespace(mockProvider)
 
     const config = namespace.config
 

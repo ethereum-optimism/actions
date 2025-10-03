@@ -9,9 +9,9 @@ import type { TokenBalance } from '@/types/asset.js'
 import type { BaseLendConfig } from '@/types/lend/index.js'
 
 /**
- * Base verbs wallet class
- * @description Abstract base class for verbs wallet implementations.
- * Provides a standard interface for verbs wallets.
+ * Base actions wallet class
+ * @description Abstract base class for actions wallet implementations.
+ * Provides a standard interface for actions wallets.
  */
 export abstract class Wallet {
   /** Lend namespace with all lending operations */
@@ -22,13 +22,13 @@ export abstract class Wallet {
   private initPromise?: Promise<void>
 
   /**
-   * Get the address of this verbs wallet
-   * @description Returns the address of the verbs wallet.
-   * @returns The address of the verbs wallet.
+   * Get the address of this actions wallet
+   * @description Returns the address of the actions wallet.
+   * @returns The address of the actions wallet.
    */
   public abstract readonly address: Address
   /**
-   * Get a signer for this verbs wallet
+   * Get a signer for this actions wallet
    * @description Returns a LocalAccount that can be used to sign transactions and messages.
    * This can be used as the signer for smart wallet operations if the signer is an
    * owner on the smart wallet.
@@ -105,7 +105,7 @@ export abstract class Wallet {
   }
 
   /**
-   * Get a wallet client for this verbs wallet
+   * Get a wallet client for this actions wallet
    * @description Returns a WalletClient that can be used to send transactions and interact
    * with smart contracts.
    * @param chainId - The chain ID to create the wallet client for

@@ -1,5 +1,5 @@
-import type { VerbsConfig } from '@/types/verbs.js'
-import { Verbs } from '@/verbs.js'
+import { Actions } from '@/actions.js'
+import type { ActionsConfig } from '@/types/actions.js'
 import type {
   ReactHostedWalletProvidersSchema,
   ReactOptionsMap,
@@ -8,26 +8,26 @@ import type {
 import { ReactHostedWalletProviderRegistry } from '@/wallet/react/providers/registry/ReactHostedWalletProviderRegistry.js'
 
 /**
- * React Verbs configuration
- * @description Configuration object for initializing the Verbs SDK in React
+ * React Actions configuration
+ * @description Configuration object for initializing the Actions SDK in React
  */
-export type ReactVerbsConfig<
+export type ReactActionsConfig<
   HostedWalletProviderType extends ReactProviderTypes,
-> = VerbsConfig<HostedWalletProviderType, ReactOptionsMap>
+> = ActionsConfig<HostedWalletProviderType, ReactOptionsMap>
 
 /**
- * Creates a React/browser environment Verbs factory
+ * Creates a React/browser environment Actions factory
  *
- * Creates a Verbs instance wired with the React-specific HostedWalletProviderRegistry.
+ * Creates an Actions instance wired with the React-specific HostedWalletProviderRegistry.
  * This registry enables browser-only hosted providers and defers
  * their imports to the client environment to keep server builds clean.
- * @param config Verbs configuration
- * @returns Verbs instance using the ReactHostedWalletProviderRegistry
+ * @param config Actions configuration
+ * @returns Actions instance using the ReactHostedWalletProviderRegistry
  */
-export function createVerbs<
+export function createActions<
   HostedWalletProviderType extends ReactProviderTypes,
->(config: ReactVerbsConfig<HostedWalletProviderType>) {
-  return new Verbs<
+>(config: ReactActionsConfig<HostedWalletProviderType>) {
+  return new Actions<
     ReactHostedWalletProvidersSchema['providerTypes'],
     ReactHostedWalletProvidersSchema,
     HostedWalletProviderType

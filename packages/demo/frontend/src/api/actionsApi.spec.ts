@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { verbsApi, VerbsApiError } from './verbsApi'
+import { actionsApi, ActionsApiError } from './actionsApi'
 
 // Mock fetch globally
 const mockFetch = vi.fn()
@@ -9,11 +9,11 @@ global.fetch = mockFetch
 // Mock environment variables
 vi.mock('../envVars', () => ({
   env: {
-    VITE_VERBS_API_URL: 'https://api.test.com',
+    VITE_ACTIONS_API_URL: 'https://api.test.com',
   },
 }))
 
-describe('VerbsApiClient', () => {
+describe('ActionsApiClient', () => {
   beforeEach(() => {
     mockFetch.mockClear()
   })
@@ -30,7 +30,7 @@ describe('VerbsApiClient', () => {
         json: () => Promise.resolve(mockResponse),
       })
 
-      const result = await verbsApi.createWallet('test-user')
+      const result = await actionsApi.createWallet('test-user')
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.test.com/wallet/test-user',
@@ -44,7 +44,7 @@ describe('VerbsApiClient', () => {
       expect(result).toEqual(mockResponse)
     })
 
-    it('throws VerbsApiError on API failure', async () => {
+    it('throws ActionsApiError on API failure', async () => {
       const mockErrorResponse = {
         ok: false,
         status: 400,
@@ -54,12 +54,12 @@ describe('VerbsApiClient', () => {
 
       mockFetch.mockResolvedValue(mockErrorResponse)
 
-      await expect(verbsApi.createWallet('invalid-user')).rejects.toThrow(
-        VerbsApiError,
+      await expect(actionsApi.createWallet('invalid-user')).rejects.toThrow(
+        ActionsApiError,
       )
 
       try {
-        await verbsApi.createWallet('invalid-user')
+        await actionsApi.createWallet('invalid-user')
       } catch (error) {
         expect((error as Error).message).toBe('Invalid user ID')
       }
@@ -81,7 +81,7 @@ describe('VerbsApiClient', () => {
         json: () => Promise.resolve(mockResponse),
       })
 
-      const result = await verbsApi.getAllWallets()
+      const result = await actionsApi.getAllWallets()
 
       expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/wallets', {
         method: 'GET',
@@ -103,13 +103,13 @@ describe('VerbsApiClient', () => {
         json: () => Promise.resolve(mockResponse),
       })
 
-      const result = await verbsApi.getAllWallets()
+      const result = await actionsApi.getAllWallets()
 
       expect(result.wallets).toHaveLength(0)
       expect(result.count).toBe(0)
     })
 
-    it('throws VerbsApiError on network error', async () => {
+    it('throws ActionsApiError on network error', async () => {
       const mockErrorResponse = {
         ok: false,
         status: 500,
@@ -119,10 +119,10 @@ describe('VerbsApiClient', () => {
 
       mockFetch.mockResolvedValue(mockErrorResponse)
 
-      await expect(verbsApi.getAllWallets()).rejects.toThrow(VerbsApiError)
+      await expect(actionsApi.getAllWallets()).rejects.toThrow(ActionsApiError)
 
       try {
-        await verbsApi.getAllWallets()
+        await actionsApi.getAllWallets()
       } catch (error) {
         expect((error as Error).message).toBe('HTTP 500: Internal Server Error')
       }
@@ -141,13 +141,13 @@ describe('VerbsApiClient', () => {
       mockFetch.mockResolvedValue(mockErrorResponse)
 
       try {
-        await verbsApi.getAllWallets()
+        await actionsApi.getAllWallets()
       } catch (error) {
         expect((error as Error).message).toBe('HTTP 404: Not Found')
       }
     })
 
-    it('preserves status code in VerbsApiError', async () => {
+    it('preserves status code in ActionsApiError', async () => {
       const mockErrorResponse = {
         ok: false,
         status: 403,
@@ -158,10 +158,10 @@ describe('VerbsApiClient', () => {
       mockFetch.mockResolvedValue(mockErrorResponse)
 
       try {
-        await verbsApi.getAllWallets()
+        await actionsApi.getAllWallets()
       } catch (error) {
-        expect(error).toBeInstanceOf(VerbsApiError)
-        expect((error as VerbsApiError).status).toBe(403)
+        expect(error).toBeInstanceOf(ActionsApiError)
+        expect((error as ActionsApiError).status).toBe(403)
       }
     })
   })

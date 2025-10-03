@@ -1,17 +1,17 @@
 {
-  "name": "@eth-optimism/verbs-sdk",
+  "name": "@eth-optimism/actions-sdk",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ethereum-optimism/verbs.git",
+    "url": "https://github.com/ethereum-optimism/actions.git",
     "directory": "packages/sdk"
   },
-  "homepage": "https://github.com/ethereum-optimism/verbs/tree/main/packages/sdk#readme",
+  "homepage": "https://github.com/ethereum-optimism/actions/tree/main/packages/sdk#readme",
   "bugs": {
-    "url": "https://github.com/ethereum-optimism/verbs/issues"
+    "url": "https://github.com/ethereum-optimism/actions/issues"
   },
   "type": "module",
   "version": "0.0.2",
-  "description": "TypeScript SDK for Verbs",
+  "description": "TypeScript SDK for Actions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -48,7 +48,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "keywords": [
-    "verbs",
+    "actions",
     "typescript",
     "sdk"
   ],

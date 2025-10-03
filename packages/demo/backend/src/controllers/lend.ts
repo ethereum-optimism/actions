@@ -1,4 +1,4 @@
-import type { SupportedChainId } from '@eth-optimism/verbs-sdk'
+import type { SupportedChainId } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
@@ -141,7 +141,7 @@ export class LendController {
       const validation = await validateRequest(c, OpenPositionRequestSchema)
       if (!validation.success) return validation.response
 
-      // TODO (https://github.com/ethereum-optimism/verbs/issues/124): enforce auth and clean
+      // TODO (https://github.com/ethereum-optimism/actions/issues/124): enforce auth and clean
 
       const {
         body: { walletId, amount, tokenAddress, marketId },

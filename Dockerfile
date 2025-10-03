@@ -29,17 +29,17 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 # provide the ability to build a single projects
 ARG DOCKER_TARGET
 
-RUN pnpm nx build @eth-optimism/verbs-service
-RUN pnpm deploy --filter @eth-optimism/verbs-service --prod /prod/verbs-service
+RUN pnpm nx build @eth-optimism/actions-service
+RUN pnpm deploy --filter @eth-optimism/actions-service --prod /prod/actions-service
 
 ########################################################
 # STAGE 2: Image
 ########################################################
 
-FROM base AS verbs-service
+FROM base AS actions-service
 
 WORKDIR /usr/src/app
-COPY --from=builder /prod/verbs-service ./
+COPY --from=builder /prod/actions-service ./
 
 EXPOSE 3000
 

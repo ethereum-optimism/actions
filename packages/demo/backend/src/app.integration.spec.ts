@@ -4,61 +4,64 @@ import { cors } from 'hono/cors'
 import { request } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { verbsMiddleware } from './middleware/verbs.js'
+import { actionsMiddleware } from './middleware/actions.js'
 import { createMockPrivyClient } from './mocks/MockPrivyClient.js'
 import { router } from './router.js'
 
 const mockPrivyClient = createMockPrivyClient('test-app-id', 'test-app-secret')
-// Mock the Verbs configuration to avoid external dependencies
+// Mock the Actions configuration to avoid external dependencies
 // TODO Determine if we want to maintain this mock or have the SDK export tests implementations
-vi.mock('./config/verbs.js', () => ({
-  initializeVerbs: vi.fn(),
+vi.mock('./config/actions.js', () => ({
+  initializeActions: vi.fn(),
   getPrivyClient: vi.fn(() => mockPrivyClient),
-  getVerbs: vi.fn(() => ({
+  getActions: vi.fn(() => ({
     wallet: {
       createSmartWallet: vi.fn(() =>
         Promise.resolve({
-          signer: {
-            address: `0x1111111111111111111111111111111111111111`,
-          },
-          address: `0x1111111111111111111111111111111111111112`,
-          getBalance: () =>
-            Promise.resolve([
-              { symbol: 'USDC', balance: 1000000n },
-              { symbol: 'MORPHO', balance: 500000n },
-            ]),
-          lend: {
-            getPosition: vi.fn(
-              ({
-                marketId,
-              }: {
-                marketId: { address: string; chainId: number }
-              }) => {
-                if (
-                  marketId.address ===
-                  '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
-                ) {
+          wallet: {
+            signer: {
+              address: `0x1111111111111111111111111111111111111111`,
+            },
+            address: `0x1111111111111111111111111111111111111112`,
+            getBalance: () =>
+              Promise.resolve([
+                { symbol: 'USDC', balance: 1000000n },
+                { symbol: 'MORPHO', balance: 500000n },
+              ]),
+            lend: {
+              getPosition: vi.fn(
+                ({
+                  marketId,
+                }: {
+                  marketId: { address: string; chainId: number }
+                }) => {
+                  if (
+                    marketId.address ===
+                    '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9'
+                  ) {
+                    return Promise.resolve({
+                      balance: 1000000n,
+                      balanceFormatted: '1',
+                      shares: 1000000n,
+                      sharesFormatted: '1',
+                      chainId: 130,
+                    })
+                  }
                   return Promise.resolve({
-                    balance: 1000000n,
-                    balanceFormatted: '1',
-                    shares: 1000000n,
-                    sharesFormatted: '1',
-                    chainId: 130,
+                    balance: 0n,
+                    balanceFormatted: '0',
+                    shares: 0n,
+                    sharesFormatted: '0',
+                    chainId: marketId.chainId,
                   })
-                }
-                return Promise.resolve({
-                  balance: 0n,
-                  balanceFormatted: '0',
-                  shares: 0n,
-                  sharesFormatted: '0',
-                  chainId: marketId.chainId,
-                })
-              },
-            ),
+                },
+              ),
+            },
           },
+          deployments: [{ chainId: 1, receipt: undefined, success: true }],
         }),
       ),
-      hostedWalletToVerbsWallet: vi.fn(
+      hostedWalletToActionsWallet: vi.fn(
         async ({ address }: { walletId: string; address: string }) => {
           return {
             address: address,
@@ -251,7 +254,7 @@ describe('HTTP API Integration', () => {
         origin: [
           'http://localhost:5173',
           'http://localhost:4173',
-          'https://verbs-ui.netlify.app',
+          'https://actions-ui.netlify.app',
           'https://actions.money', // Temporary prod url
         ],
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -259,7 +262,7 @@ describe('HTTP API Integration', () => {
       }),
     )
 
-    app.use('*', verbsMiddleware)
+    app.use('*', actionsMiddleware)
     app.route('/', router)
 
     server = serve({
@@ -297,7 +300,7 @@ describe('HTTP API Integration', () => {
       expect(data).toHaveProperty('name')
       expect(data).toHaveProperty('version')
       expect(data).toHaveProperty('description')
-      expect(data.name).toBe('@eth-optimism/verbs-service')
+      expect(data.name).toBe('@eth-optimism/actions-service')
     })
   })
 
@@ -399,7 +402,7 @@ describe('HTTP API Integration', () => {
       expect(response.statusCode).toBe(200)
       const data = (await response.body.json()) as any
 
-      // Note: The actual limit behavior depends on the Verbs SDK implementation
+      // Note: The actual limit behavior depends on the Actions SDK implementation
       // We're just testing that the endpoint handles query parameters without error
       expect(data).toHaveProperty('wallets')
       expect(data).toHaveProperty('count')

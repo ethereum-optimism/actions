@@ -1,11 +1,11 @@
-# verbs-sdk
+# actions-sdk
 
-Verbs is an SDK of abstractions and adapters for building applications on the OP stack
+Actions is an SDK of abstractions and adapters for building applications on the OP stack
 
 ## Installation
 
 ```bash
-npm install @eth-optimism/verbs-sdk
+npm install @eth-optimism/actions-sdk
 ```
 
 ## Quick Start
@@ -13,9 +13,9 @@ npm install @eth-optimism/verbs-sdk
 Initialize the SDK with your wallet provider configuration:
 
 ```typescript
-import { initVerbs } from '@eth-optimism/verbs-sdk'
+import { initActions } from '@eth-optimism/actions-sdk'
 
-const verbs = initVerbs({
+const actions = initActions({
   // MORE COMING SOON
 })
 ```
@@ -26,7 +26,7 @@ const verbs = initVerbs({
 
 ```typescript
 // Create a new wallet for a user
-const wallet = await verbs.createWallet('user123')
+const wallet = await actions.createWallet('user123')
 
 console.log(`Wallet created: ${wallet.address}`)
 console.log(`Wallet ID: ${wallet.id}`)
@@ -40,7 +40,7 @@ console.log(`Balance: ${balance} wei`)
 
 ```typescript
 // Get existing wallet by user ID
-const wallet = await verbs.getWallet('user123')
+const wallet = await actions.getWallet('user123')
 
 if (wallet) {
   console.log(`Found wallet: ${wallet.address}`)

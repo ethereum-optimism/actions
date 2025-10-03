@@ -2,10 +2,10 @@ import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { BaseLendConfig, LendConfig } from '@/types/lend/index.js'
 
 /**
- * Verbs Lend Namespace
- * @description Read-only lending operations available on verbs.lend
+ * Actions Lend Namespace
+ * @description Read-only lending operations available on actions.lend
  */
-export class VerbsLendNamespace<TConfig extends BaseLendConfig = LendConfig> {
+export class ActionsLendNamespace<TConfig extends BaseLendConfig = LendConfig> {
   constructor(protected readonly provider: LendProvider<TConfig>) {}
 
   get config(): TConfig {

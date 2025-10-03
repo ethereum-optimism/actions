@@ -3,13 +3,13 @@ import type {
   LendMarketId,
   LendMarketPosition,
   SupportedChainId,
-} from '@eth-optimism/verbs-sdk'
-import { SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/actions-sdk'
+import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
 import { formatUnits } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
-import { getVerbs } from '../config/verbs.js'
+import { getActions } from '../config/actions.js'
 import type {
   FormattedMarketResponse,
   PositionParams,
@@ -34,13 +34,13 @@ export async function getBlockExplorerUrl(
 }
 
 export async function getMarkets(): Promise<LendMarket[]> {
-  const verbs = getVerbs()
-  return await verbs.lend.getMarkets()
+  const actions = getActions()
+  return await actions.lend.getMarkets()
 }
 
 export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
-  const verbs = getVerbs()
-  return await verbs.lend.getMarket(marketId)
+  const actions = getActions()
+  return await actions.lend.getMarket(marketId)
 }
 
 export async function getPosition(

@@ -1,4 +1,4 @@
-const VerbsLogo = () => {
+const ActionsLogo = () => {
   return (
     <svg
       width="24"
@@ -40,4 +40,4 @@ const VerbsLogo = () => {
   )
 }
 
-export default VerbsLogo
+export default ActionsLogo
