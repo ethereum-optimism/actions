@@ -91,7 +91,7 @@ Run tests including supersim integration tests:
 SUPERSIM_TEST=true pnpm test
 ```
 
-External tests are used for integration testing with live APIs and services. Supersim tests require supersim to be installed and create local forked networks. Both are disabled by default.
+External tests are used for integration testing with live APIs and services. Supersim tests require supersim to be installed and create local forked networks. Both are disabled by default
 
 #### Supersim Integration Tests
 
