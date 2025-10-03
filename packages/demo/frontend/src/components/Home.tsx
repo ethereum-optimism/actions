@@ -173,7 +173,7 @@ function Home() {
                   {` `}
                   <span
                     style={{ color: '#ff8a65' }}
-                  >{`'@eth-optimism/actions-sdk'`}</span>
+                  >{`'@eth-optimism/actions'`}</span>
                   {`
 `}
                   <span
@@ -192,7 +192,7 @@ function Home() {
                   {` `}
                   <span
                     style={{ color: '#ff8a65' }}
-                  >{`'@eth-optimism/actions-sdk/assets'`}</span>
+                  >{`'@eth-optimism/actions/assets'`}</span>
                   {`
 
 `}
@@ -451,7 +451,7 @@ function Home() {
                 Getting Started
               </h2>
               <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
-              <p className="text-gray-300 mb-4">1. Install the library:</p>
+              <p className="text-gray-300 mb-4">Install the library:</p>
               <div
                 className="rounded-lg overflow-hidden mb-8 shadow-2xl"
                 style={{
@@ -540,11 +540,11 @@ function Home() {
                 <span style={{ color: '#FF0621', fontWeight: 'bold' }}>
                   Actions
                 </span>
-                : Pick which DeFi protocols, markets, networks, and providers
-                you want to support.
+                : Pick which DeFi protocols, markets, networks, assets, and
+                providers you want to support.
               </p>
               <div
-                className="rounded-lg overflow-hidden mb-8 shadow-2xl relative"
+                className="rounded-lg overflow-hidden mb-8 shadow-2xl"
                 style={{
                   backgroundColor: '#1a1b1e',
                   border: '1px solid rgba(184, 187, 38, 0.1)',
@@ -552,8 +552,42 @@ function Home() {
                     '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
                 }}
               >
+                {/* Terminal header */}
                 <div
-                  className="p-8 text-left"
+                  className="px-4 py-3 border-b flex items-center justify-between"
+                  style={{
+                    backgroundColor: '#0f1011',
+                    borderColor: 'rgba(184, 187, 38, 0.15)',
+                    backdropFilter: 'blur(10px)',
+                  }}
+                >
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className="w-3 h-3 rounded-full shadow-sm"
+                      style={{ backgroundColor: '#ff5f56' }}
+                    ></div>
+                    <div
+                      className="w-3 h-3 rounded-full shadow-sm"
+                      style={{ backgroundColor: '#ffbd2e' }}
+                    ></div>
+                    <div
+                      className="w-3 h-3 rounded-full shadow-sm"
+                      style={{
+                        backgroundColor: 'rgb(184, 187, 38)',
+                        boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',
+                      }}
+                    ></div>
+                  </div>
+                  <div
+                    className="text-xs font-mono"
+                    style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                  >
+                    config.ts
+                  </div>
+                </div>
+                {/* Code content */}
+                <div
+                  className="p-8 text-left relative"
                   style={{ backgroundColor: '#1a1b1e' }}
                 >
                   <pre className="text-sm leading-relaxed font-mono">
@@ -576,7 +610,7 @@ function Home() {
                       {` `}
                       <span
                         style={{ color: '#ff8a65' }}
-                      >{`'@eth-optimism/actions-sdk/assets'`}</span>
+                      >{`'@eth-optimism/actions/assets'`}</span>
                       {`
 `}
                       <span
@@ -597,7 +631,26 @@ function Home() {
                       {` `}
                       <span
                         style={{ color: '#ff8a65' }}
-                      >{`'@eth-optimism/actions-sdk/markets'`}</span>
+                      >{`'@eth-optimism/actions/markets'`}</span>
+                      {`
+`}
+                      <span
+                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                      >{`import`}</span>
+                      {` { `}
+                      <span style={{ color: '#4db6ac' }}>{`unichain`}</span>
+                      {`, `}
+                      <span style={{ color: '#4db6ac' }}>{`optimism`}</span>
+                      {`, `}
+                      <span style={{ color: '#4db6ac' }}>{`base`}</span>
+                      {` } `}
+                      <span
+                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                      >{`from`}</span>
+                      {` `}
+                      <span
+                        style={{ color: '#ff8a65' }}
+                      >{`'viem/chains'`}</span>
                       {`
 
 `}
@@ -615,41 +668,53 @@ function Home() {
                       <span style={{ color: '#9cdcfe' }}>{`wallet`}</span>
                       {`: {
     `}
-                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
-                      {`: `}
-                      <span style={{ color: '#ff8a65' }}>{`'privy'`}</span>
-                      {`, `}
                       <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
-                      >{`// Wallet Provider`}</span>
-                      {`
-    `}
-                      <span style={{ color: '#9cdcfe' }}>{`appId`}</span>
-                      {`: `}
-                      <span
-                        style={{ color: '#ff8a65' }}
-                      >{`'your-privy-app-id'`}</span>
-                      {`,
-    `}
-                      <span style={{ color: '#9cdcfe' }}>{`appSecret`}</span>
-                      {`: `}
-                      <span
-                        style={{ color: '#ff8a65' }}
-                      >{`'your-privy-app-secret'`}</span>
-                      {`
-  },
-  `}
-                      <span style={{ color: '#9cdcfe' }}>{`gas`}</span>
+                        style={{ color: '#9cdcfe' }}
+                      >{`hostedWalletConfig`}</span>
                       {`: {
-    `}
+      `}
+                      <span style={{ color: '#9cdcfe' }}>{`provider`}</span>
+                      {`: {
+        `}
                       <span style={{ color: '#9cdcfe' }}>{`type`}</span>
                       {`: `}
                       <span style={{ color: '#ff8a65' }}>{`'privy'`}</span>
-                      {`, `}
+                      {`,
+        `}
+                      <span style={{ color: '#9cdcfe' }}>{`config`}</span>
+                      {`: {
+          `}
+                      <span style={{ color: '#9cdcfe' }}>{`privyClient`}</span>
+                      {`: `}
                       <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
-                      >{`// Gas Provider`}</span>
-                      {`
+                        style={{ color: '#4db6ac' }}
+                      >{`getPrivyClient`}</span>
+                      {`(),
+        },
+      },
+    },
+    `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`smartWalletConfig`}</span>
+                      {`: {
+      `}
+                      <span style={{ color: '#9cdcfe' }}>{`provider`}</span>
+                      {`: {
+        `}
+                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
+                      {`: `}
+                      <span style={{ color: '#ff8a65' }}>{`'default'`}</span>
+                      {`,
+        `}
+                      <span
+                        style={{ color: '#9cdcfe' }}
+                      >{`attributionSuffix`}</span>
+                      {`: `}
+                      <span style={{ color: '#ff8a65' }}>{`'actions'`}</span>
+                      {`,
+      },
+    },
   },
   `}
                       <span style={{ color: '#9cdcfe' }}>{`lend`}</span>
@@ -867,21 +932,31 @@ function Home() {
 }`}
                     </code>
                   </pre>
-                </div>
-                <button
-                  onClick={() =>
-                    navigator.clipboard.writeText(
-                      `import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
-import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions-sdk/markets'
+                  {/* Copy button */}
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        `import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions/assets'
+import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions/markets'
+import { unichain, optimism, base } from 'viem/chains'
 
 const config: ActionsConfig = {
   wallet: {
-    type: 'privy', // Wallet Provider
-    appId: 'your-privy-app-id',
-    appSecret: 'your-privy-app-secret'
-  },
-  gas: {
-    type: 'privy', // Gas Provider
+    hostedWalletConfig: {
+      provider: {
+        type: 'privy',
+        config: {
+          privyClient: getPrivyClient(),
+        },
+      },
+    },
+    smartWalletConfig: {
+      provider: {
+        type: 'default',
+        // converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'
+        attributionSuffix: 'actions',
+      },
+    },
   },
   lend: {
     type: 'morpho', // Lend Provider
@@ -919,25 +994,26 @@ const config: ActionsConfig = {
       base
   ]
 }`,
-                    )
-                  }
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
-                  aria-label="Copy code"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                      )
+                    }
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
+                    aria-label="Copy code"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <p className="text-gray-300 mb-4">
@@ -956,15 +1032,15 @@ const config: ActionsConfig = {
                 <div
                   className="flex border-b"
                   style={{
-                    backgroundColor: '#0f1011',
+                    backgroundColor: '#1a1b1e',
                     borderColor: 'rgba(184, 187, 38, 0.15)',
                   }}
                 >
                   <button
                     onClick={() => setSelectedWalletProvider('privy')}
-                    className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center ${
+                    className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center border-b-2 ${
                       selectedWalletProvider === 'privy'
-                        ? 'border-b-2'
+                        ? ''
                         : 'opacity-50 hover:opacity-75'
                     }`}
                     style={{
@@ -982,9 +1058,9 @@ const config: ActionsConfig = {
                   </button>
                   <button
                     onClick={() => setSelectedWalletProvider('dynamic')}
-                    className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center ${
+                    className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center border-b-2 ${
                       selectedWalletProvider === 'dynamic'
-                        ? 'border-b-2'
+                        ? ''
                         : 'opacity-50 hover:opacity-75'
                     }`}
                     style={{
@@ -1002,9 +1078,9 @@ const config: ActionsConfig = {
                   </button>
                   <button
                     onClick={() => setSelectedWalletProvider('turnkey')}
-                    className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center ${
+                    className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center border-b-2 ${
                       selectedWalletProvider === 'turnkey'
-                        ? 'border-b-2'
+                        ? ''
                         : 'opacity-50 hover:opacity-75'
                     }`}
                     style={{
@@ -1023,7 +1099,7 @@ const config: ActionsConfig = {
                 </div>
 
                 {/* Content for each provider */}
-                <div className="p-8" style={{ backgroundColor: '#1a1b1e' }}>
+                <div className="p-8" style={{ backgroundColor: '#0f1011' }}>
                   {selectedWalletProvider === 'privy' && (
                     <div className="space-y-6">
                       <div>
@@ -1051,11 +1127,51 @@ const config: ActionsConfig = {
                           </span>
                           :
                         </p>
-                        <div className="relative">
-                          <pre
-                            className="text-sm leading-relaxed font-mono p-4 rounded"
-                            style={{ backgroundColor: '#0f1011' }}
+                        <div
+                          className="rounded-lg overflow-hidden"
+                          style={{
+                            backgroundColor: '#1a1b1e',
+                            border: '1px solid rgba(184, 187, 38, 0.1)',
+                          }}
+                        >
+                          {/* Terminal header */}
+                          <div
+                            className="px-4 py-3 border-b flex items-center justify-between"
+                            style={{
+                              backgroundColor: '#0f1011',
+                              borderColor: 'rgba(184, 187, 38, 0.15)',
+                              backdropFilter: 'blur(10px)',
+                            }}
                           >
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className="w-3 h-3 rounded-full shadow-sm"
+                                style={{ backgroundColor: '#ff5f56' }}
+                              ></div>
+                              <div
+                                className="w-3 h-3 rounded-full shadow-sm"
+                                style={{ backgroundColor: '#ffbd2e' }}
+                              ></div>
+                              <div
+                                className="w-3 h-3 rounded-full shadow-sm"
+                                style={{
+                                  backgroundColor: 'rgb(184, 187, 38)',
+                                  boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',
+                                }}
+                              ></div>
+                            </div>
+                            <div
+                              className="text-xs font-mono"
+                              style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                            >
+                              wallet.ts
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <pre
+                              className="text-sm leading-relaxed font-mono p-4"
+                              style={{ backgroundColor: '#1a1b1e' }}
+                            >
                             <code style={{ color: '#e8e3d3' }}>
                               <span
                                 style={{ color: 'rgb(98, 114, 164)' }}
@@ -1154,6 +1270,7 @@ const config: ActionsConfig = {
 })`}
                             </code>
                           </pre>
+                          {/* Copy button */}
                           <button
                             onClick={() =>
                               navigator.clipboard.writeText(
@@ -1169,7 +1286,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 })`,
                               )
                             }
-                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 transition-colors"
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
                             aria-label="Copy code"
                           >
                             <svg
@@ -1186,6 +1303,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               />
                             </svg>
                           </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1218,11 +1336,51 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                           </span>
                           :
                         </p>
-                        <div className="relative">
-                          <pre
-                            className="text-sm leading-relaxed font-mono p-4 rounded"
-                            style={{ backgroundColor: '#0f1011' }}
+                        <div
+                          className="rounded-lg overflow-hidden"
+                          style={{
+                            backgroundColor: '#1a1b1e',
+                            border: '1px solid rgba(184, 187, 38, 0.1)',
+                          }}
+                        >
+                          {/* Terminal header */}
+                          <div
+                            className="px-4 py-3 border-b flex items-center justify-between"
+                            style={{
+                              backgroundColor: '#0f1011',
+                              borderColor: 'rgba(184, 187, 38, 0.15)',
+                              backdropFilter: 'blur(10px)',
+                            }}
                           >
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className="w-3 h-3 rounded-full shadow-sm"
+                                style={{ backgroundColor: '#ff5f56' }}
+                              ></div>
+                              <div
+                                className="w-3 h-3 rounded-full shadow-sm"
+                                style={{ backgroundColor: '#ffbd2e' }}
+                              ></div>
+                              <div
+                                className="w-3 h-3 rounded-full shadow-sm"
+                                style={{
+                                  backgroundColor: 'rgb(184, 187, 38)',
+                                  boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',
+                                }}
+                              ></div>
+                            </div>
+                            <div
+                              className="text-xs font-mono"
+                              style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                            >
+                              wallet.ts
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <pre
+                              className="text-sm leading-relaxed font-mono p-4"
+                              style={{ backgroundColor: '#1a1b1e' }}
+                            >
                             <code style={{ color: '#e8e3d3' }}>
                               <span
                                 style={{ color: 'rgb(98, 114, 164)' }}
@@ -1321,6 +1479,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 })`}
                             </code>
                           </pre>
+                          {/* Copy button */}
                           <button
                             onClick={() =>
                               navigator.clipboard.writeText(
@@ -1336,7 +1495,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 })`,
                               )
                             }
-                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 transition-colors"
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
                             aria-label="Copy code"
                           >
                             <svg
@@ -1353,6 +1512,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               />
                             </svg>
                           </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1385,11 +1545,51 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                           </span>
                           :
                         </p>
-                        <div className="relative">
-                          <pre
-                            className="text-sm leading-relaxed font-mono p-4 rounded"
-                            style={{ backgroundColor: '#0f1011' }}
+                        <div
+                          className="rounded-lg overflow-hidden"
+                          style={{
+                            backgroundColor: '#1a1b1e',
+                            border: '1px solid rgba(184, 187, 38, 0.1)',
+                          }}
+                        >
+                          {/* Terminal header */}
+                          <div
+                            className="px-4 py-3 border-b flex items-center justify-between"
+                            style={{
+                              backgroundColor: '#0f1011',
+                              borderColor: 'rgba(184, 187, 38, 0.15)',
+                              backdropFilter: 'blur(10px)',
+                            }}
                           >
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className="w-3 h-3 rounded-full shadow-sm"
+                                style={{ backgroundColor: '#ff5f56' }}
+                              ></div>
+                              <div
+                                className="w-3 h-3 rounded-full shadow-sm"
+                                style={{ backgroundColor: '#ffbd2e' }}
+                              ></div>
+                              <div
+                                className="w-3 h-3 rounded-full shadow-sm"
+                                style={{
+                                  backgroundColor: 'rgb(184, 187, 38)',
+                                  boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',
+                                }}
+                              ></div>
+                            </div>
+                            <div
+                              className="text-xs font-mono"
+                              style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                            >
+                              wallet.ts
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <pre
+                              className="text-sm leading-relaxed font-mono p-4"
+                              style={{ backgroundColor: '#1a1b1e' }}
+                            >
                             <code style={{ color: '#e8e3d3' }}>
                               <span
                                 style={{ color: 'rgb(98, 114, 164)' }}
@@ -1488,6 +1688,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 })`}
                             </code>
                           </pre>
+                          {/* Copy button */}
                           <button
                             onClick={() =>
                               navigator.clipboard.writeText(
@@ -1503,7 +1704,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 })`,
                               )
                             }
-                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 transition-colors"
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
                             aria-label="Copy code"
                           >
                             <svg
@@ -1520,6 +1721,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               />
                             </svg>
                           </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1529,7 +1731,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 
               <p className="text-gray-300 mb-2">Lend, Borrow, Swap, or Send:</p>
               <div
-                className="rounded-lg overflow-hidden mb-8 shadow-2xl relative"
+                className="rounded-lg overflow-hidden mb-8 shadow-2xl"
                 style={{
                   backgroundColor: '#1a1b1e',
                   border: '1px solid rgba(184, 187, 38, 0.1)',
@@ -1537,13 +1739,46 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                     '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
                 }}
               >
-                <div className="p-8" style={{ backgroundColor: '#1a1b1e' }}>
-                  <div className="relative">
-                    <pre
-                      className="text-sm leading-relaxed font-mono p-4 rounded"
-                      style={{ backgroundColor: '#0f1011' }}
-                    >
-                      <code style={{ color: '#e8e3d3' }}>
+                {/* Terminal header */}
+                <div
+                  className="px-4 py-3 border-b flex items-center justify-between"
+                  style={{
+                    backgroundColor: '#0f1011',
+                    borderColor: 'rgba(184, 187, 38, 0.15)',
+                    backdropFilter: 'blur(10px)',
+                  }}
+                >
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className="w-3 h-3 rounded-full shadow-sm"
+                      style={{ backgroundColor: '#ff5f56' }}
+                    ></div>
+                    <div
+                      className="w-3 h-3 rounded-full shadow-sm"
+                      style={{ backgroundColor: '#ffbd2e' }}
+                    ></div>
+                    <div
+                      className="w-3 h-3 rounded-full shadow-sm"
+                      style={{
+                        backgroundColor: 'rgb(184, 187, 38)',
+                        boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',
+                      }}
+                    ></div>
+                  </div>
+                  <div
+                    className="text-xs font-mono"
+                    style={{ color: 'rgba(184, 187, 38, 0.7)' }}
+                  >
+                    wallet.ts
+                  </div>
+                </div>
+                {/* Code content */}
+                <div
+                  className="p-8 text-left relative"
+                  style={{ backgroundColor: '#1a1b1e' }}
+                >
+                  <pre className="text-sm leading-relaxed font-mono">
+                    <code style={{ color: '#e8e3d3' }}>
                         <span
                           style={{ color: 'rgb(98, 114, 164)' }}
                         >{`// Enable asset lending in DeFi`}</span>
@@ -1686,12 +1921,12 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         >{`'vitalik.eth'`}</span>
                         {`,
 })`}
-                      </code>
-                    </pre>
-                    <button
-                      onClick={() =>
-                        navigator.clipboard.writeText(
-                          `// Enable asset lending in DeFi
+                    </code>
+                  </pre>
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        `// Enable asset lending in DeFi
 const receipt1 = wallet.lend.openPosition({
   amount: 1,
   asset: USDC,
@@ -1718,26 +1953,25 @@ const receipt4 = wallet.send({
   asset: USDC,
   to: 'vitalik.eth',
 })`,
-                        )
-                      }
-                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 transition-colors"
-                      aria-label="Copy code"
+                      )
+                    }
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
+                    aria-label="Copy code"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
