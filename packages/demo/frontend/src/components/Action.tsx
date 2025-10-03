@@ -1,6 +1,11 @@
 import { useState } from 'react'
 
-function Action() {
+interface ActionProps {
+  usdcBalance: string
+  isLoadingBalance: boolean
+}
+
+function Action({ usdcBalance, isLoadingBalance }: ActionProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
@@ -64,7 +69,7 @@ function Action() {
             fontSize: '14px',
             fontWeight: 500
           }}>
-            100
+            {isLoadingBalance ? 'Loading...' : usdcBalance}
           </span>
         </div>
       </div>
