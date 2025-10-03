@@ -1942,7 +1942,7 @@ User ID: ${result.userId}`,
                   ? {
                       fontFamily:
                         'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
-                      color: '#b8bb26',
+                      color: '#FF0621',
                       whiteSpace: 'pre',
                       lineHeight: '0.75',
                       letterSpacing: '0',
