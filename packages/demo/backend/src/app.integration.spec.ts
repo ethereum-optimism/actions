@@ -4,14 +4,14 @@ import { cors } from 'hono/cors'
 import { request } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { verbsMiddleware } from './middleware/verbs.js'
+import { verbsMiddleware } from './middleware/actions.js'
 import { createMockPrivyClient } from './mocks/MockPrivyClient.js'
 import { router } from './router.js'
 
 const mockPrivyClient = createMockPrivyClient('test-app-id', 'test-app-secret')
-// Mock the Verbs configuration to avoid external dependencies
+// Mock the Actions configuration to avoid external dependencies
 // TODO Determine if we want to maintain this mock or have the SDK export tests implementations
-vi.mock('./config/verbs.js', () => ({
+vi.mock('./config/actions.js', () => ({
   initializeVerbs: vi.fn(),
   getPrivyClient: vi.fn(() => mockPrivyClient),
   getVerbs: vi.fn(() => ({
@@ -254,7 +254,7 @@ describe('HTTP API Integration', () => {
         origin: [
           'http://localhost:5173',
           'http://localhost:4173',
-          'https://verbs-ui.netlify.app',
+          'https://actions-ui.netlify.app',
           'https://actions.money', // Temporary prod url
         ],
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -300,7 +300,7 @@ describe('HTTP API Integration', () => {
       expect(data).toHaveProperty('name')
       expect(data).toHaveProperty('version')
       expect(data).toHaveProperty('description')
-      expect(data.name).toBe('@eth-optimism/verbs-service')
+      expect(data.name).toBe('@eth-optimism/actions-service')
     })
   })
 

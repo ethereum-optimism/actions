@@ -1,11 +1,11 @@
 {
-  "name": "verbs-ui",
+  "name": "actions-ui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ethereum-optimism/verbs.git",
+    "url": "https://github.com/ethereum-optimism/actions.git",
     "directory": "packages/demo/frontend"
   },
   "scripts": {
@@ -18,8 +18,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@eth-optimism/verbs-sdk": "workspace:*",
-    "@eth-optimism/verbs-service": "workspace:*",
+    "@eth-optimism/actions-sdk": "workspace:*",
+    "@eth-optimism/actions-service": "workspace:*",
     "@eth-optimism/viem": "^0.4.13",
     "@privy-io/react-auth": "^2.24.0",
     "buffer": "^6.0.3",

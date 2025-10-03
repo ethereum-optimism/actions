@@ -1,14 +1,14 @@
 {
-  "name": "@eth-optimism/verbs-service",
-  "description": "Node service running Verbs SDK.",
+  "name": "@eth-optimism/actions-service",
+  "description": "Node service running Actions SDK.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ethereum-optimism/verbs.git",
+    "url": "https://github.com/ethereum-optimism/actions.git",
     "directory": "packages/demo/backend"
   },
-  "homepage": "https://github.com/ethereum-optimism/verbs/tree/main/packages/demo/backend#readme",
+  "homepage": "https://github.com/ethereum-optimism/actions/tree/main/packages/demo/backend#readme",
   "bugs": {
-    "url": "https://github.com/ethereum-optimism/verbs/issues"
+    "url": "https://github.com/ethereum-optimism/actions/issues"
   },
   "version": "0.0.2",
   "type": "module",
@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@eth-optimism/utils-app": "^0.0.6",
-    "@eth-optimism/verbs-sdk": "workspace:*",
+    "@eth-optimism/actions-sdk": "workspace:*",
     "@eth-optimism/viem": "^0.4.13",
     "@hono/node-server": "^1.14.0",
     "@privy-io/server-auth": "^1.31.1",

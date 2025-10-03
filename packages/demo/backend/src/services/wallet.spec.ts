@@ -35,7 +35,7 @@ const mockPrivyClient = {
 }
 
 // Mock the getVerbs function
-vi.mock('../config/verbs.js', () => ({
+vi.mock('../config/actions.js', () => ({
   getVerbs: () => mockVerbs,
   getPrivyClient: () => mockPrivyClient,
 }))

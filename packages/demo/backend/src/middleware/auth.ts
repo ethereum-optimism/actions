@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono'
 
-import { getPrivyClient } from '@/config/verbs.js'
+import { getPrivyClient } from '@/config/actions.js'
 
 export interface AuthContext {
   userId?: string
