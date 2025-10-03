@@ -4,7 +4,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 
 export { LendProvider } from '@/lend/core/LendProvider.js'
-export { VerbsLendNamespace } from '@/lend/namespaces/VerbsLendNamespace.js'
+export { VerbsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 export { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 
 /**

@@ -1,5 +1,5 @@
+export * from '@/types/actions.js'
 export * from '@/types/asset.js'
 export * from '@/types/chain.js'
 export * from '@/types/lend/index.js'
-export * from '@/types/verbs.js'
 export * from '@/types/wallet.js'

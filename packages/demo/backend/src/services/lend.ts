@@ -3,13 +3,13 @@ import type {
   LendMarketId,
   LendMarketPosition,
   SupportedChainId,
-} from '@eth-optimism/verbs-sdk'
-import { SUPPORTED_TOKENS } from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/actions-sdk'
+import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
 import { formatUnits } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
-import { getVerbs } from '../config/verbs.js'
+import { getVerbs } from '../config/actions.js'
 import type {
   FormattedMarketResponse,
   PositionParams,

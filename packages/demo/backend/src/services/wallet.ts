@@ -2,19 +2,19 @@ import type {
   SmartWallet,
   TokenBalance,
   TransactionData,
-} from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/actions-sdk'
 import {
   getAssetAddress,
   getTokenBySymbol,
   SUPPORTED_TOKENS,
-} from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
+import { getPrivyClient, getVerbs } from '@/config/actions.js'
 import { USDC } from '@/config/assets.js'
-import { getPrivyClient, getVerbs } from '@/config/verbs.js'
 
 /**
  * Options for getting all wallets

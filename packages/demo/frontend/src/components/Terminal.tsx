@@ -17,10 +17,10 @@ import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
   WalletData,
-} from '@eth-optimism/verbs-service'
+} from '@eth-optimism/actions-service'
 import NavBar from './NavBar'
 import { PrivyAuthButton } from './PrivyAuthButton'
-import { verbsApi } from '../api/verbsApi'
+import { verbsApi } from '../api/actionsApi'
 import type { Address } from 'viem'
 import { env } from '../envVars'
 interface TerminalLine {

@@ -1,5 +1,5 @@
-import type { NodeVerbsConfig } from '@eth-optimism/verbs-sdk/node'
-import { createVerbs } from '@eth-optimism/verbs-sdk/node'
+import type { NodeVerbsConfig } from '@eth-optimism/actions-sdk/node'
+import { createVerbs } from '@eth-optimism/actions-sdk/node'
 import { PrivyClient } from '@privy-io/server-auth'
 import { baseSepolia, unichain } from 'viem/chains'
 

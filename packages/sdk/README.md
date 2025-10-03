@@ -5,7 +5,7 @@ Verbs is an SDK of abstractions and adapters for building applications on the OP
 ## Installation
 
 ```bash
-npm install @eth-optimism/verbs-sdk
+npm install @eth-optimism/actions-sdk
 ```
 
 ## Quick Start
@@ -13,7 +13,7 @@ npm install @eth-optimism/verbs-sdk
 Initialize the SDK with your wallet provider configuration:
 
 ```typescript
-import { initVerbs } from '@eth-optimism/verbs-sdk'
+import { initVerbs } from '@eth-optimism/actions-sdk'
 
 const verbs = initVerbs({
   // MORE COMING SOON

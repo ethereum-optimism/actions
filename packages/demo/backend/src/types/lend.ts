@@ -3,7 +3,7 @@ import type {
   Asset,
   LendMarketId,
   LendMarketMetadata,
-} from '@eth-optimism/verbs-sdk'
+} from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 
 /**

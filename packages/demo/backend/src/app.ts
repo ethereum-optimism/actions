@@ -4,9 +4,9 @@ import { Option } from 'commander'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
+import { initializeVerbs } from '@/config/actions.js'
 import { env } from '@/config/env.js'
-import { initializeVerbs } from '@/config/verbs.js'
-import { verbsMiddleware } from '@/middleware/verbs.js'
+import { verbsMiddleware } from '@/middleware/actions.js'
 import { router } from '@/router.js'
 
 class VerbsApp extends App {
@@ -43,7 +43,7 @@ class VerbsApp extends App {
         origin: [
           'http://localhost:5173', // Vite dev port
           'http://localhost:4173', // Vite prod preview port
-          'https://verbs-ui.netlify.app', // Prod netlify url
+          'https://actions-ui.netlify.app', // Prod netlify url
           'https://actions.money', // Temporary prod url
         ],
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
