@@ -3,7 +3,7 @@
   to = "https://actions.money/:splat"
   status = 301
   force = true
-  conditions = { Host = ["verbs.money", "www.verbs.money"] }
+  conditions = { Host = ["verbs.money", "www.verbs.money", "https://deploy-preview-164--verbs-ui.netlify.app/"] }
 
 [[redirects]]
   from = "/*"
