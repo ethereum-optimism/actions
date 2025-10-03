@@ -1,9 +1,20 @@
+import { useState } from 'react'
 import NavBar from './NavBar'
 import PrivyLogo from '../assets/privy-logo-white.svg'
 import DynamicLogo from '../assets/dynamic-logo-white.svg'
 import TurnkeyLogo from '../assets/turnkey-logo-white.svg'
 
 function Home() {
+  const [selectedPackageManager, setSelectedPackageManager] = useState('npm')
+  const [selectedWalletProvider, setSelectedWalletProvider] = useState('privy')
+
+  const packageManagers = {
+    npm: 'npm install @ethereum-optimism/actions',
+    pnpm: 'pnpm add @ethereum-optimism/actions',
+    yarn: 'yarn add @ethereum-optimism/actions',
+    bun: 'bun add @ethereum-optimism/actions',
+    deno: 'deno add @ethereum-optimism/actions',
+  }
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#121113' }}>
       <NavBar />
@@ -14,7 +25,7 @@ function Home() {
           style={{
             fontFamily:
               'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
-            color: '#b8bb26',
+            color: '#FF0621',
             whiteSpace: 'pre',
             lineHeight: '0.75',
             letterSpacing: '0',
@@ -43,7 +54,8 @@ function Home() {
             href="https://www.optimism.io/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-gray-300"
+            style={{ color: '#FF0621', fontWeight: 'bold' }}
+            className="hover:opacity-80"
           >
             Optimism
           </a>
@@ -91,10 +103,13 @@ function Home() {
             <h2 className="text-lg font-medium text-gray-300 mb-4">Overview</h2>
             <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
             <p className="text-gray-300 mb-4">
-              Actions is an open source SDK for onchain actions:{' '}
-              <strong>Lend</strong>, <strong>Borrow</strong>,{' '}
-              <strong>Swap</strong>, <strong>Pay</strong>, without managing
-              complex infrastructure or custody.
+              <span style={{ color: '#FF0621', fontWeight: 'bold' }}>
+                Actions
+              </span>{' '}
+              is an open source SDK for onchain actions: <strong>Lend</strong>,{' '}
+              <strong>Borrow</strong>, <strong>Swap</strong>,{' '}
+              <strong>Pay</strong>, without managing complex infrastructure or
+              custody.
             </p>
           </div>
           <div
@@ -424,7 +439,7 @@ function Home() {
                   </svg>
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Config</h3>
-                <p className="text-gray-300 text-sm">Modular configuration</p>
+                <p className="text-gray-300 text-sm">Flexible configuration</p>
               </div>
             </div>
           </div>
@@ -433,19 +448,12 @@ function Home() {
           <div className="pt-24 pb-16">
             <div className="max-w-4xl mx-auto mb-8">
               <h2 className="text-lg font-medium text-gray-300 mb-4">
-                Configurable
+                Getting Started
               </h2>
               <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
-              <p className="text-gray-300 mb-4">
-                Modular adaptors augment the library to your preferences. Pick
-                which DeFi protocols, markets, networks, and providers you want
-                to support.
-              </p>
-            </div>
-
-            <div className="max-w-4xl mx-auto mb-8">
+              <p className="text-gray-300 mb-4">1. Install the library:</p>
               <div
-                className="rounded-lg overflow-hidden shadow-2xl"
+                className="rounded-lg overflow-hidden mb-8 shadow-2xl"
                 style={{
                   backgroundColor: '#1a1b1e',
                   border: '1px solid rgba(184, 187, 38, 0.1)',
@@ -453,46 +461,146 @@ function Home() {
                     '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
                 }}
               >
-                {/* Terminal header */}
+                {/* Tab switcher */}
                 <div
-                  className="px-4 py-3 border-b flex items-center justify-between"
+                  className="flex border-b"
                   style={{
                     backgroundColor: '#0f1011',
                     borderColor: 'rgba(184, 187, 38, 0.15)',
-                    backdropFilter: 'blur(10px)',
                   }}
                 >
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className="w-3 h-3 rounded-full shadow-sm"
-                      style={{ backgroundColor: '#ff5f56' }}
-                    ></div>
-                    <div
-                      className="w-3 h-3 rounded-full shadow-sm"
-                      style={{ backgroundColor: '#ffbd2e' }}
-                    ></div>
-                    <div
-                      className="w-3 h-3 rounded-full shadow-sm"
+                  {Object.keys(packageManagers).map((pm) => (
+                    <button
+                      key={pm}
+                      onClick={() => setSelectedPackageManager(pm)}
+                      className={`px-4 py-2 text-sm font-medium transition-colors ${
+                        selectedPackageManager === pm
+                          ? 'text-white border-b-2'
+                          : 'text-gray-400 hover:text-gray-300'
+                      }`}
                       style={{
-                        backgroundColor: 'rgb(184, 187, 38)',
-                        boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',
+                        borderColor:
+                          selectedPackageManager === pm
+                            ? 'rgb(184, 187, 38)'
+                            : 'transparent',
                       }}
-                    ></div>
-                  </div>
-                  <div
-                    className="text-xs font-mono"
-                    style={{ color: 'rgba(184, 187, 38, 0.7)' }}
-                  >
-                    config.ts
-                  </div>
+                    >
+                      {pm}
+                    </button>
+                  ))}
                 </div>
                 {/* Code content */}
+                <div
+                  className="p-8 text-left relative"
+                  style={{ backgroundColor: '#1a1b1e' }}
+                >
+                  <pre className="text-sm leading-relaxed font-mono">
+                    <code style={{ color: '#e8e3d3' }}>
+                      <span style={{ color: 'rgba(184, 187, 38, 0.9)' }}>
+                        {
+                          packageManagers[
+                            selectedPackageManager as keyof typeof packageManagers
+                          ].split(' ')[0]
+                        }
+                      </span>
+                      {` ${packageManagers[selectedPackageManager as keyof typeof packageManagers].split(' ').slice(1).join(' ')}`}
+                    </code>
+                  </pre>
+                  {/* Copy button */}
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        packageManagers[
+                          selectedPackageManager as keyof typeof packageManagers
+                        ],
+                      )
+                    }
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
+                    aria-label="Copy command"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-gray-300 mb-2">
+                Configure{' '}
+                <span style={{ color: '#FF0621', fontWeight: 'bold' }}>
+                  Actions
+                </span>
+                : Pick which DeFi protocols, markets, networks, and providers
+                you want to support.
+              </p>
+              <div
+                className="rounded-lg overflow-hidden mb-8 shadow-2xl relative"
+                style={{
+                  backgroundColor: '#1a1b1e',
+                  border: '1px solid rgba(184, 187, 38, 0.1)',
+                  boxShadow:
+                    '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
+                }}
+              >
                 <div
                   className="p-8 text-left"
                   style={{ backgroundColor: '#1a1b1e' }}
                 >
                   <pre className="text-sm leading-relaxed font-mono">
                     <code style={{ color: '#e8e3d3' }}>
+                      <span
+                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                      >{`import`}</span>
+                      {` { `}
+                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      {`, `}
+                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      {`, `}
+                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      {`, `}
+                      <span style={{ color: '#4db6ac' }}>{`USDT`}</span>
+                      {` } `}
+                      <span
+                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                      >{`from`}</span>
+                      {` `}
+                      <span
+                        style={{ color: '#ff8a65' }}
+                      >{`'@eth-optimism/actions-sdk/assets'`}</span>
+                      {`
+`}
+                      <span
+                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                      >{`import`}</span>
+                      {` { `}
+                      <span
+                        style={{ color: '#4db6ac' }}
+                      >{`ExampleMorphoMarket`}</span>
+                      {`, `}
+                      <span
+                        style={{ color: '#4db6ac' }}
+                      >{`ExampleAaveMarket`}</span>
+                      {` } `}
+                      <span
+                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                      >{`from`}</span>
+                      {` `}
+                      <span
+                        style={{ color: '#ff8a65' }}
+                      >{`'@eth-optimism/actions-sdk/markets'`}</span>
+                      {`
+
+`}
                       <span
                         style={{ color: 'rgba(184, 187, 38, 0.9)' }}
                       >{`const`}</span>
@@ -578,14 +686,18 @@ function Home() {
                         style={{ color: '#9cdcfe' }}
                       >{`marketAllowlist`}</span>
                       {`: [`}
-                      <span style={{ color: '#ff8a65' }}>{`0x123...`}</span>
+                      <span
+                        style={{ color: '#4db6ac' }}
+                      >{`ExampleMorphoMarket`}</span>
                       {`],
     `}
                       <span
                         style={{ color: '#9cdcfe' }}
                       >{`marketBlocklist`}</span>
                       {`: [`}
-                      <span style={{ color: '#ff8a65' }}>{`0xabc...`}</span>
+                      <span
+                        style={{ color: '#4db6ac' }}
+                      >{`ExampleAaveMarket`}</span>
                       {`],
   },
   `}
@@ -623,14 +735,18 @@ function Home() {
                         style={{ color: '#9cdcfe' }}
                       >{`marketAllowlist`}</span>
                       {`: [`}
-                      <span style={{ color: '#ff8a65' }}>{`0x123...`}</span>
+                      <span
+                        style={{ color: '#4db6ac' }}
+                      >{`ExampleMorphoMarket`}</span>
                       {`],
     `}
                       <span
                         style={{ color: '#9cdcfe' }}
                       >{`marketBlocklist`}</span>
                       {`: [`}
-                      <span style={{ color: '#ff8a65' }}>{`0xabc...`}</span>
+                      <span
+                        style={{ color: '#4db6ac' }}
+                      >{`ExampleAaveMarket`}</span>
                       {`],
   },
   `}
@@ -731,24 +847,6 @@ function Home() {
     ],
   },
   `}
-                      <span style={{ color: '#9cdcfe' }}>{`price`}</span>
-                      {`: {
-    `}
-                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
-                      {`: `}
-                      <span style={{ color: '#ff8a65' }}>{`'coingecko'`}</span>
-                      {`, `}
-                      <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
-                      >{`// Price provider`}</span>
-                      {`
-    `}
-                      <span style={{ color: '#9cdcfe' }}>{`apiKey`}</span>
-                      {`: `}
-                      <span style={{ color: '#ff8a65' }}>{`'...'`}</span>
-                      {`,
-  }
-  `}
                       <span
                         style={{ color: 'rgb(98, 114, 164)' }}
                       >{`// Chain Provider`}</span>
@@ -770,34 +868,876 @@ function Home() {
                     </code>
                   </pre>
                 </div>
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(
+                      `import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
+import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions-sdk/markets'
+
+const config: ActionsConfig = {
+  wallet: {
+    type: 'privy', // Wallet Provider
+    appId: 'your-privy-app-id',
+    appSecret: 'your-privy-app-secret'
+  },
+  gas: {
+    type: 'privy', // Gas Provider
+  },
+  lend: {
+    type: 'morpho', // Lend Provider
+    assetAllowlist: [USDC, ETH, WBTC],
+    assetBlocklist: [USDT],
+    marketAllowlist: [ExampleMorphoMarket],
+    marketBlocklist: [ExampleAaveMarket],
+  },
+  borrow: {
+    type: 'morpho', // Borrow Provider
+    assetAllowlist: [USDC, ETH, WBTC],
+    assetBlocklist: [USDT],
+    marketAllowlist: [ExampleMorphoMarket],
+    marketBlocklist: [ExampleAaveMarket],
+  },
+  swap: {
+    type: 'uniswap', // Swap Provider
+    defaultSlippage: 100,
+    assetAllowList: [USDC, ETH, WBTC]
+    marketAllowlist: [
+      { from: ETH, to: USDC },
+      { from: USDC, to: ETH },
+      { from: ETH, to: WBTC },
+      { from: WBTC, to: ETH }
+    ],
+    marketBlocklist: [
+      { from: ETH, to: USDC },
+      { from: USDC, to: ETH },
+    ],
+  },
+  // Chain Provider
+  chains: [
+      unichain,
+      optimism,
+      base
+  ]
+}`,
+                    )
+                  }
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
+                  aria-label="Copy code"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                </button>
               </div>
-            </div>
-            <div className="max-w-4xl mx-auto mb-8">
-              <h2 className="text-lg font-medium text-gray-300 mb-4">
-                Bring your own wallet
-              </h2>
-              <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
-              <div className="flex justify-start items-center gap-8 mb-8">
-                <div className="w-1/3 flex justify-center">
-                  <img
-                    src={PrivyLogo}
-                    alt="Privy"
-                    className="h-12 w-auto object-contain"
-                  />
+
+              <p className="text-gray-300 mb-4">
+                Bring your own wallet provider:
+              </p>
+              <div
+                className="rounded-lg overflow-hidden mb-8 shadow-2xl"
+                style={{
+                  backgroundColor: '#1a1b1e',
+                  border: '1px solid rgba(184, 187, 38, 0.1)',
+                  boxShadow:
+                    '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
+                }}
+              >
+                {/* Tab switcher with logos */}
+                <div
+                  className="flex border-b"
+                  style={{
+                    backgroundColor: '#0f1011',
+                    borderColor: 'rgba(184, 187, 38, 0.15)',
+                  }}
+                >
+                  <button
+                    onClick={() => setSelectedWalletProvider('privy')}
+                    className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center ${
+                      selectedWalletProvider === 'privy'
+                        ? 'border-b-2'
+                        : 'opacity-50 hover:opacity-75'
+                    }`}
+                    style={{
+                      borderColor:
+                        selectedWalletProvider === 'privy'
+                          ? 'rgb(184, 187, 38)'
+                          : 'transparent',
+                    }}
+                  >
+                    <img
+                      src={PrivyLogo}
+                      alt="Privy"
+                      className="h-8 w-auto object-contain"
+                    />
+                  </button>
+                  <button
+                    onClick={() => setSelectedWalletProvider('dynamic')}
+                    className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center ${
+                      selectedWalletProvider === 'dynamic'
+                        ? 'border-b-2'
+                        : 'opacity-50 hover:opacity-75'
+                    }`}
+                    style={{
+                      borderColor:
+                        selectedWalletProvider === 'dynamic'
+                          ? 'rgb(184, 187, 38)'
+                          : 'transparent',
+                    }}
+                  >
+                    <img
+                      src={DynamicLogo}
+                      alt="Dynamic"
+                      className="h-8 w-auto object-contain"
+                    />
+                  </button>
+                  <button
+                    onClick={() => setSelectedWalletProvider('turnkey')}
+                    className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center ${
+                      selectedWalletProvider === 'turnkey'
+                        ? 'border-b-2'
+                        : 'opacity-50 hover:opacity-75'
+                    }`}
+                    style={{
+                      borderColor:
+                        selectedWalletProvider === 'turnkey'
+                          ? 'rgb(184, 187, 38)'
+                          : 'transparent',
+                    }}
+                  >
+                    <img
+                      src={TurnkeyLogo}
+                      alt="Turnkey"
+                      className="h-8 w-auto object-contain"
+                    />
+                  </button>
                 </div>
-                <div className="w-1/3 flex justify-center">
-                  <img
-                    src={DynamicLogo}
-                    alt="Dynamic"
-                    className="h-12 w-auto object-contain"
-                  />
+
+                {/* Content for each provider */}
+                <div className="p-8" style={{ backgroundColor: '#1a1b1e' }}>
+                  {selectedWalletProvider === 'privy' && (
+                    <div className="space-y-6">
+                      <div>
+                        <p className="text-gray-300 mb-4">
+                          1.{' '}
+                          <a
+                            href="https://docs.privy.io/basics/react/installation"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline"
+                          >
+                            Install
+                          </a>{' '}
+                          and setup Privy.
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-gray-300 mb-2">
+                          2. Create user wallet and extend it with DeFi{' '}
+                          <span
+                            style={{ color: '#FF0621', fontWeight: 'bold' }}
+                          >
+                            Actions
+                          </span>
+                          :
+                        </p>
+                        <div className="relative">
+                          <pre
+                            className="text-sm leading-relaxed font-mono p-4 rounded"
+                            style={{ backgroundColor: '#0f1011' }}
+                          >
+                            <code style={{ color: '#e8e3d3' }}>
+                              <span
+                                style={{ color: 'rgb(98, 114, 164)' }}
+                              >{`// Create a new wallet using your hosted wallet provider.`}</span>
+                              {`
+`}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`const`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`privyWallet`}</span>
+                              {` = `}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`await`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`privyClient`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`walletApi`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`createWallet`}</span>
+                              {`({
+  `}
+                              <span
+                                style={{ color: '#9cdcfe' }}
+                              >{`chainType`}</span>
+                              {`: `}
+                              <span
+                                style={{ color: '#ff8a65' }}
+                              >{`'ethereum'`}</span>
+                              {`,
+})
+
+`}
+                              <span
+                                style={{ color: 'rgb(98, 114, 164)' }}
+                              >{`// Convert the hosted wallet to a DeFi Actions wallet.`}</span>
+                              {`
+`}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`const`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`wallet`}</span>
+                              {` = `}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`await`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`actions`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`wallet`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`hostedWalletToActionsWallet`}</span>
+                              {`({
+  `}
+                              <span
+                                style={{ color: '#9cdcfe' }}
+                              >{`walletId`}</span>
+                              {`: `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`privyWallet`}</span>
+                              {`.`}
+                              <span style={{ color: '#4db6ac' }}>{`id`}</span>
+                              {`,
+  `}
+                              <span
+                                style={{ color: '#9cdcfe' }}
+                              >{`address`}</span>
+                              {`: `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`privyWallet`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`address`}</span>
+                              {`,
+})`}
+                            </code>
+                          </pre>
+                          <button
+                            onClick={() =>
+                              navigator.clipboard.writeText(
+                                `// Create a new wallet using your hosted wallet provider.
+const privyWallet = await privyClient.walletApi.createWallet({
+  chainType: 'ethereum',
+})
+
+// Convert the hosted wallet to a DeFi Actions wallet.
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
+  walletId: privyWallet.id,
+  address: privyWallet.address,
+})`,
+                              )
+                            }
+                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 transition-colors"
+                            aria-label="Copy code"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedWalletProvider === 'dynamic' && (
+                    <div className="space-y-6">
+                      <div>
+                        <p className="text-gray-300 mb-4">
+                          1.{' '}
+                          <a
+                            href="https://www.dynamic.xyz/docs/wallets/embedded-wallets/mpc/setup"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline"
+                          >
+                            Install
+                          </a>{' '}
+                          and setup Dynamic.
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-gray-300 mb-2">
+                          2. Create user wallet and extend it with DeFi{' '}
+                          <span
+                            style={{ color: '#FF0621', fontWeight: 'bold' }}
+                          >
+                            Actions
+                          </span>
+                          :
+                        </p>
+                        <div className="relative">
+                          <pre
+                            className="text-sm leading-relaxed font-mono p-4 rounded"
+                            style={{ backgroundColor: '#0f1011' }}
+                          >
+                            <code style={{ color: '#e8e3d3' }}>
+                              <span
+                                style={{ color: 'rgb(98, 114, 164)' }}
+                              >{`// Create a new wallet using your hosted wallet provider.`}</span>
+                              {`
+`}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`const`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`dynamicWallet`}</span>
+                              {` = `}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`await`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`dynamicClient`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`walletApi`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`createWallet`}</span>
+                              {`({
+  `}
+                              <span
+                                style={{ color: '#9cdcfe' }}
+                              >{`chainType`}</span>
+                              {`: `}
+                              <span
+                                style={{ color: '#ff8a65' }}
+                              >{`'ethereum'`}</span>
+                              {`,
+})
+
+`}
+                              <span
+                                style={{ color: 'rgb(98, 114, 164)' }}
+                              >{`// Convert the hosted wallet to a DeFi Actions wallet.`}</span>
+                              {`
+`}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`const`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`wallet`}</span>
+                              {` = `}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`await`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`actions`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`wallet`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`hostedWalletToActionsWallet`}</span>
+                              {`({
+  `}
+                              <span
+                                style={{ color: '#9cdcfe' }}
+                              >{`walletId`}</span>
+                              {`: `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`dynamicWallet`}</span>
+                              {`.`}
+                              <span style={{ color: '#4db6ac' }}>{`id`}</span>
+                              {`,
+  `}
+                              <span
+                                style={{ color: '#9cdcfe' }}
+                              >{`address`}</span>
+                              {`: `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`dynamicWallet`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`address`}</span>
+                              {`,
+})`}
+                            </code>
+                          </pre>
+                          <button
+                            onClick={() =>
+                              navigator.clipboard.writeText(
+                                `// Create a new wallet using your hosted wallet provider.
+const dynamicWallet = await dynamicClient.walletApi.createWallet({
+  chainType: 'ethereum',
+})
+
+// Convert the hosted wallet to a DeFi Actions wallet.
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
+  walletId: dynamicWallet.id,
+  address: dynamicWallet.address,
+})`,
+                              )
+                            }
+                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 transition-colors"
+                            aria-label="Copy code"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedWalletProvider === 'turnkey' && (
+                    <div className="space-y-6">
+                      <div>
+                        <p className="text-gray-300 mb-4">
+                          1.{' '}
+                          <a
+                            href="https://docs.turnkey.com/sdks/react/getting-started"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline"
+                          >
+                            Install
+                          </a>{' '}
+                          and setup Turnkey.
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-gray-300 mb-2">
+                          2. Create user wallet and extend it with DeFi{' '}
+                          <span
+                            style={{ color: '#FF0621', fontWeight: 'bold' }}
+                          >
+                            Actions
+                          </span>
+                          :
+                        </p>
+                        <div className="relative">
+                          <pre
+                            className="text-sm leading-relaxed font-mono p-4 rounded"
+                            style={{ backgroundColor: '#0f1011' }}
+                          >
+                            <code style={{ color: '#e8e3d3' }}>
+                              <span
+                                style={{ color: 'rgb(98, 114, 164)' }}
+                              >{`// Create a new wallet using your hosted wallet provider.`}</span>
+                              {`
+`}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`const`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`turnkeyWallet`}</span>
+                              {` = `}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`await`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`turnkeyClient`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`walletApi`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`createWallet`}</span>
+                              {`({
+  `}
+                              <span
+                                style={{ color: '#9cdcfe' }}
+                              >{`chainType`}</span>
+                              {`: `}
+                              <span
+                                style={{ color: '#ff8a65' }}
+                              >{`'ethereum'`}</span>
+                              {`,
+})
+
+`}
+                              <span
+                                style={{ color: 'rgb(98, 114, 164)' }}
+                              >{`// Convert the hosted wallet to a DeFi Actions wallet.`}</span>
+                              {`
+`}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`const`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`wallet`}</span>
+                              {` = `}
+                              <span
+                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                              >{`await`}</span>
+                              {` `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`actions`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`wallet`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`hostedWalletToActionsWallet`}</span>
+                              {`({
+  `}
+                              <span
+                                style={{ color: '#9cdcfe' }}
+                              >{`walletId`}</span>
+                              {`: `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`turnkeyWallet`}</span>
+                              {`.`}
+                              <span style={{ color: '#4db6ac' }}>{`id`}</span>
+                              {`,
+  `}
+                              <span
+                                style={{ color: '#9cdcfe' }}
+                              >{`address`}</span>
+                              {`: `}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`turnkeyWallet`}</span>
+                              {`.`}
+                              <span
+                                style={{ color: '#4db6ac' }}
+                              >{`address`}</span>
+                              {`,
+})`}
+                            </code>
+                          </pre>
+                          <button
+                            onClick={() =>
+                              navigator.clipboard.writeText(
+                                `// Create a new wallet using your hosted wallet provider.
+const turnkeyWallet = await turnkeyClient.walletApi.createWallet({
+  chainType: 'ethereum',
+})
+
+// Convert the hosted wallet to a DeFi Actions wallet.
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
+  walletId: turnkeyWallet.id,
+  address: turnkeyWallet.address,
+})`,
+                              )
+                            }
+                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 transition-colors"
+                            aria-label="Copy code"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="w-1/3 flex justify-center">
-                  <img
-                    src={TurnkeyLogo}
-                    alt="Turnkey"
-                    className="h-12 w-auto object-contain"
-                  />
+              </div>
+
+              <p className="text-gray-300 mb-2">Lend, Borrow, Swap, or Send:</p>
+              <div
+                className="rounded-lg overflow-hidden mb-8 shadow-2xl relative"
+                style={{
+                  backgroundColor: '#1a1b1e',
+                  border: '1px solid rgba(184, 187, 38, 0.1)',
+                  boxShadow:
+                    '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
+                }}
+              >
+                <div className="p-8" style={{ backgroundColor: '#1a1b1e' }}>
+                  <div className="relative">
+                    <pre
+                      className="text-sm leading-relaxed font-mono p-4 rounded"
+                      style={{ backgroundColor: '#0f1011' }}
+                    >
+                      <code style={{ color: '#e8e3d3' }}>
+                        <span
+                          style={{ color: 'rgb(98, 114, 164)' }}
+                        >{`// Enable asset lending in DeFi`}</span>
+                        {`
+`}
+                        <span
+                          style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        >{`const`}</span>
+                        {` `}
+                        <span style={{ color: '#4db6ac' }}>{`receipt1`}</span>
+                        {` = `}
+                        <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                        {`.`}
+                        <span style={{ color: '#4db6ac' }}>{`lend`}</span>
+                        {`.`}
+                        <span
+                          style={{ color: '#4db6ac' }}
+                        >{`openPosition`}</span>
+                        {`({
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`amount`}</span>
+                        {`: `}
+                        <span style={{ color: '#ce9178' }}>{`1`}</span>
+                        {`,
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`asset`}</span>
+                        {`: `}
+                        <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                        {`,
+  ...`}
+                        <span
+                          style={{ color: '#4db6ac' }}
+                        >{`ExampleMorphoMarket`}</span>
+                        {`
+})
+
+`}
+                        <span
+                          style={{ color: 'rgb(98, 114, 164)' }}
+                        >{`// Use lent assets as collateral`}</span>
+                        {`
+`}
+                        <span
+                          style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        >{`const`}</span>
+                        {` `}
+                        <span style={{ color: '#4db6ac' }}>{`receipt2`}</span>
+                        {` = `}
+                        <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                        {`.`}
+                        <span style={{ color: '#4db6ac' }}>{`borrow`}</span>
+                        {`.`}
+                        <span
+                          style={{ color: '#4db6ac' }}
+                        >{`openPosition`}</span>
+                        {`({
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`amount`}</span>
+                        {`: `}
+                        <span style={{ color: '#ce9178' }}>{`1`}</span>
+                        {`,
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`asset`}</span>
+                        {`: `}
+                        <span style={{ color: '#4db6ac' }}>{`USDT`}</span>
+                        {`,
+  ...`}
+                        <span
+                          style={{ color: '#4db6ac' }}
+                        >{`ExampleAaveMarket`}</span>
+                        {`
+})
+
+`}
+                        <span
+                          style={{ color: 'rgb(98, 114, 164)' }}
+                        >{`// Token swap via DEX of choice`}</span>
+                        {`
+`}
+                        <span
+                          style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        >{`const`}</span>
+                        {` `}
+                        <span style={{ color: '#4db6ac' }}>{`receipt3`}</span>
+                        {` = `}
+                        <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                        {`.`}
+                        <span style={{ color: '#4db6ac' }}>{`swap`}</span>
+                        {`.`}
+                        <span style={{ color: '#4db6ac' }}>{`execute`}</span>
+                        {`({
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`amountIn`}</span>
+                        {`: `}
+                        <span style={{ color: '#ce9178' }}>{`1`}</span>
+                        {`,
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`assetIn`}</span>
+                        {`: `}
+                        <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                        {`,
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`assetOut`}</span>
+                        {`: `}
+                        <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                        {`,
+})
+
+`}
+                        <span
+                          style={{ color: 'rgb(98, 114, 164)' }}
+                        >{`// Easy, safe asset transfers`}</span>
+                        {`
+`}
+                        <span
+                          style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        >{`const`}</span>
+                        {` `}
+                        <span style={{ color: '#4db6ac' }}>{`receipt4`}</span>
+                        {` = `}
+                        <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                        {`.`}
+                        <span style={{ color: '#4db6ac' }}>{`send`}</span>
+                        {`({
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`amount`}</span>
+                        {`: `}
+                        <span style={{ color: '#ce9178' }}>{`1`}</span>
+                        {`,
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`asset`}</span>
+                        {`: `}
+                        <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                        {`,
+  `}
+                        <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                        {`: `}
+                        <span
+                          style={{ color: '#ff8a65' }}
+                        >{`'vitalik.eth'`}</span>
+                        {`,
+})`}
+                      </code>
+                    </pre>
+                    <button
+                      onClick={() =>
+                        navigator.clipboard.writeText(
+                          `// Enable asset lending in DeFi
+const receipt1 = wallet.lend.openPosition({
+  amount: 1,
+  asset: USDC,
+  ...ExampleMorphoMarket
+})
+
+// Use lent assets as collateral
+const receipt2 = wallet.borrow.openPosition({
+  amount: 1,
+  asset: USDT,
+  ...ExampleAaveMarket
+})
+
+// Token swap via DEX of choice
+const receipt3 = wallet.swap.execute({
+  amountIn: 1,
+  assetIn: USDC,
+  assetOut: ETH,
+})
+
+// Easy, safe asset transfers
+const receipt4 = wallet.send({
+  amount: 1,
+  asset: USDC,
+  to: 'vitalik.eth',
+})`,
+                        )
+                      }
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 transition-colors"
+                      aria-label="Copy code"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -808,7 +1748,19 @@ function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-8 text-center text-gray-400 text-sm">
         <div className="max-w-7xl mx-auto px-6">
-          <p>© 2025 Actions by Optimism. Open source. MIT License.</p>
+          <p>
+            © 2025 Actions by{' '}
+            <a
+              href="https://www.optimism.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#FF0621', fontWeight: 'bold' }}
+              className="hover:opacity-80"
+            >
+              Optimism
+            </a>
+            . Open source. MIT License.
+          </p>
         </div>
       </footer>
     </div>
