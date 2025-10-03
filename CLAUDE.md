@@ -66,11 +66,11 @@ pnpm typecheck
 The SDK follows a provider pattern for wallet integration:
 
 - **Core Classes**:
-  - `Verbs` - Main SDK class implementing `VerbsInterface`
+  - `Actions` - Main SDK class implementing `ActionsInterface`
   - `Wallet` - Wallet implementation with balance and transaction methods
   - `WalletProviderPrivy` - Privy integration adapter
 
-- **Configuration**: Uses `VerbsConfig` with wallet provider settings (currently supports Privy)
+- **Configuration**: Uses `ActionsConfig` with wallet provider settings (currently supports Privy)
 - **Dependencies**: Built on viem for Ethereum interaction, Privy for wallet management
 - **Exports**: All public API exports through `src/index.ts`
 

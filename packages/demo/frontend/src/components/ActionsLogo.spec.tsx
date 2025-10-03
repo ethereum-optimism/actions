@@ -1,11 +1,11 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import VerbsLogo from './ActionsLogo'
+import ActionsLogo from './ActionsLogo'
 
-describe('VerbsLogo', () => {
+describe('ActionsLogo', () => {
   it('renders logo SVG', () => {
-    const { container } = render(<VerbsLogo />)
+    const { container } = render(<ActionsLogo />)
 
     // Check that an SVG element is rendered
     const svgElement = container.querySelector('svg')
@@ -16,7 +16,7 @@ describe('VerbsLogo', () => {
   })
 
   it('has proper dimensions and styling', () => {
-    const { container } = render(<VerbsLogo />)
+    const { container } = render(<ActionsLogo />)
 
     const svgElement = container.querySelector('svg')
     expect(svgElement).toHaveAttribute('width', '24')

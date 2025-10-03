@@ -2,7 +2,7 @@ import { toViemAccount } from '@privy-io/react-auth'
 import type { CustomSource, LocalAccount } from 'viem'
 import { toAccount } from 'viem/accounts'
 
-import type { PrivyHostedWalletToVerbsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import type { PrivyHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 
 /**
  * Create a LocalAccount from a Privy wallet
@@ -14,7 +14,7 @@ import type { PrivyHostedWalletToVerbsWalletOptions } from '@/wallet/react/provi
  * @throws Error if wallet retrieval fails or signing operations are not supported
  */
 export async function createSigner(
-  params: PrivyHostedWalletToVerbsWalletOptions,
+  params: PrivyHostedWalletToActionsWalletOptions,
 ): Promise<LocalAccount> {
   const privyViemAccount = await toViemAccount({
     wallet: params.connectedWallet,

@@ -20,7 +20,7 @@ import type {
 } from '@eth-optimism/actions-service'
 import NavBar from './NavBar'
 import { PrivyAuthButton } from './PrivyAuthButton'
-import { verbsApi } from '../api/actionsApi'
+import { actionsApi } from '../api/actionsApi'
 import type { Address } from 'viem'
 import { env } from '../envVars'
 interface TerminalLine {
@@ -247,7 +247,7 @@ const Terminal = () => {
     walletId: string,
     showMarketPositions: boolean = true,
   ): Promise<string> => {
-    const result = await verbsApi.getWalletBalance(
+    const result = await actionsApi.getWalletBalance(
       walletId,
       await getAuthHeaders(),
     )
@@ -431,7 +431,7 @@ const Terminal = () => {
   // Initialize with welcome message and run help command
   useEffect(() => {
     const initializeTerminal = async () => {
-      const verbsAscii = `
+      const actionsAscii = `
     █████████             █████     ███
    ███░░░░░███           ░░███     ░░░
   ░███    ░███   ██████  ███████   ████   ██████  ████████    █████
@@ -445,7 +445,7 @@ const Terminal = () => {
         {
           id: 'welcome-ascii',
           type: 'success',
-          content: verbsAscii,
+          content: actionsAscii,
           timestamp: new Date(),
         },
         {
@@ -494,11 +494,11 @@ const Terminal = () => {
   const createWallet = async (
     userId: string,
   ): Promise<CreateWalletResponse> => {
-    return verbsApi.createWallet(userId)
+    return actionsApi.createWallet(userId)
   }
 
   const getAllWallets = async (): Promise<GetAllWalletsResponse> => {
-    return verbsApi.getAllWallets()
+    return actionsApi.getAllWallets()
   }
 
   const addSessionSigner = useCallback(
@@ -892,7 +892,7 @@ User ID: ${result.userId}`,
         true,
       )
 
-      const walletBalanceResult = await verbsApi.getWalletBalance(
+      const walletBalanceResult = await actionsApi.getWalletBalance(
         selectedWallet!.id,
         await getAuthHeaders(),
       )
@@ -1068,14 +1068,14 @@ User ID: ${result.userId}`,
         ] || (Object.values(promptData.selectedMarket.asset.address)[0] as Address)
 
       const result = operationType === 'close'
-        ? await verbsApi.closeLendPosition(
+        ? await actionsApi.closeLendPosition(
             promptData.selectedWallet.id,
             amount,
             assetAddress as Address,
             promptData.selectedMarket.marketId,
             await getAuthHeaders(),
           )
-        : await verbsApi.openLendPosition(
+        : await actionsApi.openLendPosition(
             promptData.selectedWallet.id,
             amount,
             assetAddress as Address,
@@ -1371,7 +1371,7 @@ User ID: ${result.userId}`,
     setLines((prev) => [...prev, fundingInfo])
 
     try {
-      const { amount } = await verbsApi.fundWallet(
+      const { amount } = await actionsApi.fundWallet(
         selectedWallet.id,
         await getAuthHeaders(),
       )
@@ -1426,7 +1426,7 @@ User ID: ${result.userId}`,
     setLines((prev) => [...prev, loadingLine])
 
     try {
-      const result = await verbsApi.getMarkets()
+      const result = await actionsApi.getMarkets()
 
       if (result.markets.length === 0) {
         const emptyLine: TerminalLine = {
@@ -1501,7 +1501,7 @@ User ID: ${result.userId}`,
       const walletsWithBalances = await Promise.all(
         result.wallets.map(async (wallet) => {
           try {
-            const balanceResult = await verbsApi.getWalletBalance(
+            const balanceResult = await actionsApi.getWalletBalance(
               wallet.id,
               await getAuthHeaders(),
             )
@@ -1609,7 +1609,7 @@ User ID: ${result.userId}`,
     setLines((prev) => [...prev, loadingLine])
 
     try {
-      const result = await verbsApi.getWalletBalance(
+      const result = await actionsApi.getWalletBalance(
         selectedWallet.id,
         await getAuthHeaders(),
       )
@@ -1718,7 +1718,7 @@ User ID: ${result.userId}`,
     setLines((prev) => [...prev, sendingLine])
 
     try {
-      const result = await verbsApi.sendTokens(
+      const result = await actionsApi.sendTokens(
         data.selectedWallet.id,
         data.amount,
         recipientAddress,

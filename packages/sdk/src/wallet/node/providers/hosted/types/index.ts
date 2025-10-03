@@ -13,11 +13,11 @@ import type { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted
  * @description
  * Narrow union of provider identifiers supported in the Node environment.
  * Uses an intersection of the keys from each map to guarantee that all maps
- * stay in sync (options, instances, and toVerbs options) at compile time.
+ * stay in sync (options, instances, and toActions options) at compile time.
  */
 export type NodeProviderTypes = keyof NodeOptionsMap &
   keyof NodeHostedProviderInstanceMap &
-  keyof NodeToVerbsOptionsMap
+  keyof NodeToActionsOptionsMap
 
 /**
  * Configuration options per Node hosted wallet provider
@@ -42,27 +42,27 @@ export interface NodeOptionsMap {
 }
 
 /**
- * Options for converting a Turnkey hosted wallet to a Verbs wallet
- * @description Parameters for converting a hosted wallet to a Verbs wallet
+ * Options for converting a Turnkey hosted wallet to an Actions wallet
+ * @description Parameters for converting a hosted wallet to an Actions wallet
  * @property signWith This can be a wallet account address, private key address, or private key ID.
  * @property ethereumAddress Ethereum address to use for this account, in the case that a private key ID is used to sign.
  * If left undefined, `createAccount` will fetch it from the Turnkey API. We recommend setting this if you're using a passkey
  * client, so that your users are not prompted for a passkey signature just to fetch their address. You may leave this
  * undefined if using an API key client.
  */
-export type TurnkeyHostedWalletToVerbsWalletOptions = {
+export type TurnkeyHostedWalletToActionsWalletOptions = {
   organizationId: string
   signWith: string
   ethereumAddress?: string
 }
 
 /**
- * Options for converting a Privy hosted wallet to a Verbs wallet
- * @description Parameters for converting a hosted wallet to a Verbs wallet
+ * Options for converting a Privy hosted wallet to an Actions wallet
+ * @description Parameters for converting a hosted wallet to an Actions wallet
  * @property walletId Privy wallet identifier
  * @property address Ethereum address of the wallet
  */
-export type PrivyHostedWalletToVerbsWalletOptions = {
+export type PrivyHostedWalletToActionsWalletOptions = {
   walletId: string
   address: Address
 }
@@ -77,26 +77,26 @@ export type NodeHostedProviderInstanceMap = {
 }
 
 /**
- * Parameters required to convert each hosted wallet to a Verbs wallet (Node)
+ * Parameters required to convert each hosted wallet to an Actions wallet (Node)
  * @description
- * Provider-specific, caller-supplied data needed by `toVerbsWallet`.
+ * Provider-specific, caller-supplied data needed by `toActionsWallet`.
  */
-export type NodeToVerbsOptionsMap = {
-  privy: PrivyHostedWalletToVerbsWalletOptions
-  turnkey: TurnkeyHostedWalletToVerbsWalletOptions
+export type NodeToActionsOptionsMap = {
+  privy: PrivyHostedWalletToActionsWalletOptions
+  turnkey: TurnkeyHostedWalletToActionsWalletOptions
 }
 
 /**
  * Complete Node hosted wallet providers schema
  * @description
  * Bundles provider type keys, concrete provider instances, creation configs,
- * and `toVerbsWallet` parameter types for the Node environment.
- * This schema is used to type `Verbs` and its registries without widening
+ * and `toActionsWallet` parameter types for the Node environment.
+ * This schema is used to type `Actions` and its registries without widening
  * to generic `string` keys.
  */
 export type NodeHostedWalletProvidersSchema = HostedWalletProvidersSchema<
   NodeProviderTypes,
   NodeHostedProviderInstanceMap,
   NodeOptionsMap,
-  NodeToVerbsOptionsMap
+  NodeToActionsOptionsMap
 >

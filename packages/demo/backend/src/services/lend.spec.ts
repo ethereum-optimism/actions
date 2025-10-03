@@ -4,7 +4,7 @@ import * as lendService from './lend.js'
 
 // Mock the actions config module
 vi.mock('../config/actions.js', () => ({
-  getVerbs: vi.fn(),
+  getActions: vi.fn(),
 }))
 
 // Mock the wallet module
@@ -17,15 +17,15 @@ const mockLendProvider = {
   getMarket: vi.fn(),
 }
 
-const mockVerbs = {
+const mockActions = {
   lend: mockLendProvider,
 }
 
 describe('Lend Service', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
-    const { getVerbs } = await import('../config/actions.js')
-    vi.mocked(getVerbs).mockReturnValue(mockVerbs as any)
+    const { getActions } = await import('../config/actions.js')
+    vi.mocked(getActions).mockReturnValue(mockActions as any)
   })
 
   describe('getMarkets', () => {

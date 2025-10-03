@@ -45,7 +45,7 @@ describe('WalletLendNamespace', () => {
     expect(namespace).toBeInstanceOf(WalletLendNamespace)
   })
 
-  it('should inherit read operations from VerbsLendNamespace', async () => {
+  it('should inherit read operations from ActionsLendNamespace', async () => {
     const namespace = new WalletLendNamespace(mockProvider, mockWallet)
     const mockMarkets = [
       {

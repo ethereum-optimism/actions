@@ -45,7 +45,7 @@ describe('WalletProvider', () => {
       )
 
       // Create a hosted wallet to use as signer
-      const hostedWallet = (await hostedWalletProvider.toVerbsWallet({
+      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
@@ -97,7 +97,7 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toVerbsWallet({
+      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
@@ -151,7 +151,7 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toVerbsWallet({
+      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
@@ -203,7 +203,7 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toVerbsWallet({
+      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
@@ -240,7 +240,7 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toVerbsWallet({
+      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
@@ -281,7 +281,7 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toVerbsWallet({
+      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
@@ -299,8 +299,8 @@ describe('WalletProvider', () => {
     })
   })
 
-  describe('hostedWalletToVerbsWallet', () => {
-    it('should convert a hosted wallet to a Verbs wallet', async () => {
+  describe('hostedWalletToActionsWallet', () => {
+    it('should convert a hosted wallet to an Actions wallet', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
         mockChainManager,
@@ -313,17 +313,20 @@ describe('WalletProvider', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const toVerbsWalletSpy = vi.spyOn(hostedWalletProvider, 'toVerbsWallet')
+      const toActionsWalletSpy = vi.spyOn(
+        hostedWalletProvider,
+        'toActionsWallet',
+      )
 
       const privyWallet = await mockPrivyClient.walletApi.createWallet({
         chainType: 'ethereum',
       })
-      const hostedWallet = await walletProvider.hostedWalletToVerbsWallet({
+      const hostedWallet = await walletProvider.hostedWalletToActionsWallet({
         walletId: privyWallet.id,
         address: privyWallet.address,
       })
 
-      expect(toVerbsWalletSpy).toHaveBeenCalledWith({
+      expect(toActionsWalletSpy).toHaveBeenCalledWith({
         walletId: privyWallet.id,
         address: privyWallet.address,
       })

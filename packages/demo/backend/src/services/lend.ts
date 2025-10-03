@@ -9,7 +9,7 @@ import { chainById } from '@eth-optimism/viem/chains'
 import { formatUnits } from 'viem'
 import { baseSepolia, unichain } from 'viem/chains'
 
-import { getVerbs } from '../config/actions.js'
+import { getActions } from '../config/actions.js'
 import type {
   FormattedMarketResponse,
   PositionParams,
@@ -34,13 +34,13 @@ export async function getBlockExplorerUrl(
 }
 
 export async function getMarkets(): Promise<LendMarket[]> {
-  const verbs = getVerbs()
-  return await verbs.lend.getMarkets()
+  const actions = getActions()
+  return await actions.lend.getMarkets()
 }
 
 export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
-  const verbs = getVerbs()
-  return await verbs.lend.getMarket(marketId)
+  const actions = getActions()
+  return await actions.lend.getMarket(marketId)
 }
 
 export async function getPosition(

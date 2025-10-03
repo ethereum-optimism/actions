@@ -12,10 +12,10 @@ export interface LendNetworkConfig {
 }
 
 /**
- * Verbs SDK configuration
- * @description Configuration object for initializing the Verbs SDK
+ * Actions SDK configuration
+ * @description Configuration object for initializing the Actions SDK
  */
-export interface VerbsConfig<
+export interface ActionsConfig<
   THostedWalletProviderType extends string,
   TConfigMap extends { [K in THostedWalletProviderType]: unknown },
 > {

@@ -4,7 +4,7 @@ import type { LocalAccount } from 'viem'
 
 import type {
   NodeOptionsMap,
-  PrivyHostedWalletToVerbsWalletOptions,
+  PrivyHostedWalletToActionsWalletOptions,
 } from '@/wallet/node/providers/hosted/types/index.js'
 
 /**
@@ -19,7 +19,7 @@ import type {
  * @throws Error if wallet retrieval fails or signing operations are not supported
  */
 export async function createSigner(
-  params: PrivyHostedWalletToVerbsWalletOptions & NodeOptionsMap['privy'],
+  params: PrivyHostedWalletToActionsWalletOptions & NodeOptionsMap['privy'],
 ): Promise<LocalAccount> {
   const { walletId, address, privyClient } = params
   const account = await createViemAccount({

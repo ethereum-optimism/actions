@@ -1,16 +1,16 @@
-# Verbs
+# Actions
 
-Verbs SDK and demo applications for the Optimism ecosystem
+Actions SDK and demo applications for the Optimism ecosystem
 
 ## Structure
 
 This monorepo contains the following packages:
 
-- [`packages/sdk`](./packages/sdk) - The core Verbs TypeScript SDK - A library of bare-bones abstractions for building onchain.
+- [`packages/sdk`](./packages/sdk) - The core Actions TypeScript SDK - A library of bare-bones abstractions for building onchain.
 
-- [`packages/demo/frontend`](./packages/demo/frontend) - A React+vite web application providing a user interface for interacting with Verbs functionality.
+- [`packages/demo/frontend`](./packages/demo/frontend) - A React+vite web application providing a user interface for interacting with Actions functionality.
 
-- [`packages/demo/backend`](./packages/demo/backend) - A hono service demonstrating the Verbs SDK in a backend environment.
+- [`packages/demo/backend`](./packages/demo/backend) - A hono service demonstrating the Actions SDK in a backend environment.
 
 - [`packages/demo/contracts`](./packages/demo/contracts) - Demo smart contracts including a Faucet contract with deployment and funding scripts for local development.
 
@@ -62,7 +62,7 @@ This uses `mprocs` to orchestrate multiple processes:
 
 - **Supersim**: Starts a local Ethereum L2 development environment
 - **Contract Deployment**: Deploys and funds the demo faucet contract
-- **Backend**: Starts the Verbs SDK backend service
+- **Backend**: Starts the Actions SDK backend service
 - **Frontend**: Starts the React web application
 
 The demo will be available at `http://localhost:5173` once all services are running.

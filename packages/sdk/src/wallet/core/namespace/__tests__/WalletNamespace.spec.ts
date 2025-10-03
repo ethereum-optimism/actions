@@ -99,7 +99,7 @@ describe('WalletNamespace', () => {
         chainType: 'ethereum',
       })
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toVerbsWallet({
+        await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
@@ -140,7 +140,7 @@ describe('WalletNamespace', () => {
         chainType: 'ethereum',
       })
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toVerbsWallet({
+        await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
@@ -225,7 +225,7 @@ describe('WalletNamespace', () => {
         chainType: 'ethereum',
       })
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toVerbsWallet({
+        await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
@@ -267,7 +267,7 @@ describe('WalletNamespace', () => {
         chainType: 'ethereum',
       })
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toVerbsWallet({
+        await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
@@ -284,8 +284,8 @@ describe('WalletNamespace', () => {
     })
   })
 
-  describe('hostedWalletToVerbsWallet', () => {
-    it('should convert a hosted wallet to a Verbs wallet', async () => {
+  describe('hostedWalletToActionsWallet', () => {
+    it('should convert a hosted wallet to an Actions wallet', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
         mockChainManager,
@@ -304,27 +304,27 @@ describe('WalletNamespace', () => {
         chainType: 'ethereum',
       })
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toVerbsWallet({
+        await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
-      const toVerbsWalletSpy = vi.spyOn(
+      const toActionsWalletSpy = vi.spyOn(
         walletProvider.hostedWalletProvider,
-        'toVerbsWallet',
+        'toActionsWallet',
       )
 
-      const verbsWallet = await walletNamespace.hostedWalletToVerbsWallet({
+      const actionsWallet = await walletNamespace.hostedWalletToActionsWallet({
         walletId: privyWallet.id,
         address: privyWallet.address,
       })
 
-      expect(toVerbsWalletSpy).toHaveBeenCalledWith({
+      expect(toActionsWalletSpy).toHaveBeenCalledWith({
         walletId: privyWallet.id,
         address: privyWallet.address,
       })
-      expect(verbsWallet).toBeInstanceOf(Wallet)
-      expect(verbsWallet.signer.address).toBe(hostedWallet.signer.address)
-      expect(verbsWallet.address).toBe(hostedWallet.address)
+      expect(actionsWallet).toBeInstanceOf(Wallet)
+      expect(actionsWallet.signer.address).toBe(hostedWallet.signer.address)
+      expect(actionsWallet.address).toBe(hostedWallet.address)
     })
   })
 

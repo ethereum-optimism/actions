@@ -1,8 +1,8 @@
-import { DEFAULT_VERBS_CONFIG } from '@/constants/config.js'
+import { DEFAULT_ACTIONS_CONFIG } from '@/constants/config.js'
 import { MorphoLendProvider } from '@/lend/index.js'
-import { VerbsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
+import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { VerbsConfig } from '@/types/actions.js'
+import type { ActionsConfig } from '@/types/actions.js'
 import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
@@ -13,10 +13,10 @@ import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/defaul
 import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
 
 /**
- * Main Verbs SDK class
- * @description Core implementation of the Verbs SDK
+ * Main Actions SDK class
+ * @description Core implementation of the Actions SDK
  */
-export class Verbs<
+export class Actions<
   THostedWalletProviderConfigKeys extends string,
   THostedWalletProvidersSchema extends HostedWalletProvidersSchema<
     THostedWalletProviderConfigKeys,
@@ -33,12 +33,12 @@ export class Verbs<
 > {
   public readonly wallet: WalletNamespace<
     THostedWalletProviderType,
-    THostedWalletProvidersSchema['providerToVerbsOptions'],
+    THostedWalletProvidersSchema['providerToActionsOptions'],
     THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
     SmartWalletProvider
   >
   private chainManager: ChainManager
-  private _lend?: VerbsLendNamespace<LendConfig>
+  private _lend?: ActionsLendNamespace<LendConfig>
   private _lendProvider?: LendProvider<LendConfig>
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
@@ -48,7 +48,7 @@ export class Verbs<
     THostedWalletProvidersSchema['providerTypes']
   >
   constructor(
-    config: VerbsConfig<
+    config: ActionsConfig<
       THostedWalletProviderType,
       THostedWalletProvidersSchema['providerConfigs']
     >,
@@ -71,13 +71,13 @@ export class Verbs<
             ...config.lend,
             defaultSlippage:
               config.lend.defaultSlippage ??
-              DEFAULT_VERBS_CONFIG.lend.defaultSlippage,
+              DEFAULT_ACTIONS_CONFIG.lend.defaultSlippage,
           },
           this.chainManager,
         )
 
         // Create read-only lend namespace
-        this._lend = new VerbsLendNamespace(this._lendProvider!)
+        this._lend = new ActionsLendNamespace(this._lendProvider!)
       } else {
         throw new Error(`Unsupported lending provider: ${config.lend.provider}`)
       }
@@ -89,14 +89,14 @@ export class Verbs<
   /**
    * Get lend operations interface
    * @description Access to lending operations like markets and vault information.
-   * Throws an error if no lend provider is configured in VerbsConfig.
-   * @returns VerbsLendNamespace for lending operations
+   * Throws an error if no lend provider is configured in ActionsConfig.
+   * @returns ActionsLendNamespace for lending operations
    * @throws Error if lend provider not configured
    */
-  get lend(): VerbsLendNamespace<LendConfig> {
+  get lend(): ActionsLendNamespace<LendConfig> {
     if (!this._lend) {
       throw new Error(
-        'Lend provider not configured. Please add lend configuration to VerbsConfig.',
+        'Lend provider not configured. Please add lend configuration to ActionsConfig.',
       )
     }
     return this._lend
@@ -116,13 +116,13 @@ export class Verbs<
    * @returns WalletProvider instance
    */
   private createWalletProvider(
-    config: VerbsConfig<
+    config: ActionsConfig<
       THostedWalletProviderType,
       THostedWalletProvidersSchema['providerConfigs']
     >['wallet'],
   ): WalletProvider<
     THostedWalletProviderType,
-    THostedWalletProvidersSchema['providerToVerbsOptions'],
+    THostedWalletProvidersSchema['providerToActionsOptions'],
     THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
     SmartWalletProvider
   > {
@@ -174,7 +174,7 @@ export class Verbs<
    * @returns WalletNamespace instance
    */
   private createWalletNamespace(
-    config: VerbsConfig<
+    config: ActionsConfig<
       THostedWalletProviderType,
       THostedWalletProvidersSchema['providerConfigs']
     >['wallet'],
@@ -182,7 +182,7 @@ export class Verbs<
     const walletProvider = this.createWalletProvider(config)
     return new WalletNamespace<
       THostedWalletProviderType,
-      THostedWalletProvidersSchema['providerToVerbsOptions'],
+      THostedWalletProvidersSchema['providerToActionsOptions'],
       THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
       SmartWalletProvider
     >(walletProvider)

@@ -1,4 +1,4 @@
-import VerbsLogo from './ActionsLogo'
+import ActionsLogo from './ActionsLogo'
 
 interface NavBarProps {
   fullWidth?: boolean
@@ -11,12 +11,12 @@ function NavBar({ fullWidth = false, rightElement }: NavBarProps) {
       <div className={fullWidth ? 'px-6 py-4' : 'max-w-7xl mx-auto px-6 py-4'}>
         <div className="flex items-center justify-between">
           <a href="/" className="cursor-pointer">
-            <VerbsLogo />
+            <ActionsLogo />
           </a>
           <div className="flex items-center gap-4">
             {rightElement}
             <a
-              href="https://github.com/ethereum-optimism/verbs"
+              href="https://github.com/ethereum-optimism/actions"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center space-x-2 px-2 py-2 text-sm text-gray-300 hover:text-white transition-colors duration-200"

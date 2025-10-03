@@ -4,7 +4,7 @@ import { cors } from 'hono/cors'
 import { request } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { verbsMiddleware } from './middleware/actions.js'
+import { actionsMiddleware } from './middleware/actions.js'
 import { createMockPrivyClient } from './mocks/MockPrivyClient.js'
 import { router } from './router.js'
 
@@ -12,9 +12,9 @@ const mockPrivyClient = createMockPrivyClient('test-app-id', 'test-app-secret')
 // Mock the Actions configuration to avoid external dependencies
 // TODO Determine if we want to maintain this mock or have the SDK export tests implementations
 vi.mock('./config/actions.js', () => ({
-  initializeVerbs: vi.fn(),
+  initializeActions: vi.fn(),
   getPrivyClient: vi.fn(() => mockPrivyClient),
-  getVerbs: vi.fn(() => ({
+  getActions: vi.fn(() => ({
     wallet: {
       createSmartWallet: vi.fn(() =>
         Promise.resolve({
@@ -61,7 +61,7 @@ vi.mock('./config/actions.js', () => ({
           deployments: [{ chainId: 1, receipt: undefined, success: true }],
         }),
       ),
-      hostedWalletToVerbsWallet: vi.fn(
+      hostedWalletToActionsWallet: vi.fn(
         async ({ address }: { walletId: string; address: string }) => {
           return {
             address: address,
@@ -262,7 +262,7 @@ describe('HTTP API Integration', () => {
       }),
     )
 
-    app.use('*', verbsMiddleware)
+    app.use('*', actionsMiddleware)
     app.route('/', router)
 
     server = serve({
@@ -402,7 +402,7 @@ describe('HTTP API Integration', () => {
       expect(response.statusCode).toBe(200)
       const data = (await response.body.json()) as any
 
-      // Note: The actual limit behavior depends on the Verbs SDK implementation
+      // Note: The actual limit behavior depends on the Actions SDK implementation
       // We're just testing that the endpoint handles query parameters without error
       expect(data).toHaveProperty('wallets')
       expect(data).toHaveProperty('count')

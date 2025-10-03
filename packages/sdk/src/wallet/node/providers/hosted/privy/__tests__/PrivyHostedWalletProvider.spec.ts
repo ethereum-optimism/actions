@@ -16,8 +16,8 @@ describe('PrivyHostedWalletProvider', () => {
     supportedChains: [unichain.id],
   }) as unknown as ChainManager
 
-  describe('toVerbsWallet', () => {
-    it('toVerbsWallet creates a VerbsWallet with correct address and signer', async () => {
+  describe('toActionsWallet', () => {
+    it('toActionsWallet creates an ActionsWallet with correct address and signer', async () => {
       const privy = createMockPrivyClient('app', 'secret')
       const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
 
@@ -25,14 +25,14 @@ describe('PrivyHostedWalletProvider', () => {
         chainType: 'ethereum',
       })
 
-      const verbsWallet = await provider.toVerbsWallet({
+      const actionsWallet = await provider.toActionsWallet({
         walletId: hostedWallet.id,
         address: hostedWallet.address as Address,
       })
 
-      expect(verbsWallet).toBeInstanceOf(Wallet)
-      expect(verbsWallet.address).toBe(hostedWallet.address)
-      expect(verbsWallet.signer.address).toBe(hostedWallet.address)
+      expect(actionsWallet).toBeInstanceOf(Wallet)
+      expect(actionsWallet.address).toBe(hostedWallet.address)
+      expect(actionsWallet.signer.address).toBe(hostedWallet.address)
     })
 
     it('forwards params to PrivyWallet.create', async () => {
@@ -43,7 +43,7 @@ describe('PrivyHostedWalletProvider', () => {
       const id = 'mock-wallet-123'
       const addr = getRandomAddress().toLowerCase()
 
-      await provider.toVerbsWallet({ walletId: id, address: addr as Address })
+      await provider.toActionsWallet({ walletId: id, address: addr as Address })
 
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -60,7 +60,7 @@ describe('PrivyHostedWalletProvider', () => {
       const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
 
       await expect(
-        provider.toVerbsWallet({ walletId: 'id', address: '0x123' }),
+        provider.toActionsWallet({ walletId: 'id', address: '0x123' }),
       ).rejects.toBeTruthy()
     })
   })

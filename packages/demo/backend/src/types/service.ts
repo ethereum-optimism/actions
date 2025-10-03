@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 
 /**
- * API response types for verbs-service endpoints
+ * API response types for actions-service endpoints
  * @description Shared types between SDK, service, and UI for consistent API contracts
  */
 

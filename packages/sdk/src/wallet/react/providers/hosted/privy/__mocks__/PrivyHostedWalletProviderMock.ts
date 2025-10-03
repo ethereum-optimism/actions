@@ -7,8 +7,8 @@ import { MockChainManager } from '@/test/MockChainManager.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
-  PrivyHostedWalletToVerbsWalletOptions,
-  ReactToVerbsOptionsMap,
+  PrivyHostedWalletToActionsWalletOptions,
+  ReactToActionsOptionsMap,
 } from '@/wallet/react/providers/hosted/types/index.js'
 
 /**
@@ -17,17 +17,19 @@ import type {
  */
 export class PrivyHostedWalletProviderMock extends HostedWalletProvider<
   'privy',
-  ReactToVerbsOptionsMap
+  ReactToActionsOptionsMap
 > {
-  public readonly toVerbsWalletMock = vi.fn(
-    async (_params: PrivyHostedWalletToVerbsWalletOptions): Promise<Wallet> => {
+  public readonly toActionsWalletMock = vi.fn(
+    async (
+      _params: PrivyHostedWalletToActionsWalletOptions,
+    ): Promise<Wallet> => {
       return {} as unknown as Wallet
     },
   )
 
   public readonly createSignerMock = vi.fn(
     async (
-      _params: PrivyHostedWalletToVerbsWalletOptions,
+      _params: PrivyHostedWalletToActionsWalletOptions,
     ): Promise<LocalAccount> => {
       return {} as unknown as LocalAccount
     },
@@ -40,14 +42,14 @@ export class PrivyHostedWalletProviderMock extends HostedWalletProvider<
     super(mockChainManager)
   }
 
-  async toVerbsWallet(
-    params: PrivyHostedWalletToVerbsWalletOptions,
+  async toActionsWallet(
+    params: PrivyHostedWalletToActionsWalletOptions,
   ): Promise<Wallet> {
-    return this.toVerbsWalletMock(params)
+    return this.toActionsWalletMock(params)
   }
 
   async createSigner(
-    params: PrivyHostedWalletToVerbsWalletOptions,
+    params: PrivyHostedWalletToActionsWalletOptions,
   ): Promise<LocalAccount> {
     return this.createSignerMock(params)
   }

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
-import type { DynamicHostedWalletToVerbsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import * as createSignerUtil from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
 
 // Mock DynamicWallet module to avoid importing browser-related deps
@@ -17,8 +17,8 @@ const { DynamicWallet } = (await import(
 )) as unknown as { DynamicWallet: { create: ReturnType<typeof vi.fn> } }
 
 describe('DynamicHostedWalletProvider', () => {
-  describe('toVerbsWallet', () => {
-    it('toVerbsWallet delegates to DynamicWallet.create with correct args', async () => {
+  describe('toActionsWallet', () => {
+    it('toActionsWallet delegates to DynamicWallet.create with correct args', async () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
@@ -26,11 +26,13 @@ describe('DynamicHostedWalletProvider', () => {
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',
-      } as unknown as DynamicHostedWalletToVerbsWalletOptions['wallet']
-      const mockResult = { __brand: 'verbs-wallet' }
+      } as unknown as DynamicHostedWalletToActionsWalletOptions['wallet']
+      const mockResult = { __brand: 'actions-wallet' }
       vi.mocked(DynamicWallet.create).mockResolvedValueOnce(mockResult)
 
-      const result = await provider.toVerbsWallet({ wallet: mockDynamicWallet })
+      const result = await provider.toActionsWallet({
+        wallet: mockDynamicWallet,
+      })
 
       expect(DynamicWallet.create).toHaveBeenCalledTimes(1)
       expect(DynamicWallet.create).toHaveBeenCalledWith({
@@ -50,7 +52,7 @@ describe('DynamicHostedWalletProvider', () => {
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',
-      } as unknown as DynamicHostedWalletToVerbsWalletOptions['wallet']
+      } as unknown as DynamicHostedWalletToActionsWalletOptions['wallet']
 
       const mockSigner = {
         address: '0xabc',

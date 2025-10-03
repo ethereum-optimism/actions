@@ -11,18 +11,18 @@ import type {
   TransactionResponse,
 } from '../types/index.js'
 
-class VerbsApiError extends Error {
+class ActionsApiError extends Error {
   status?: number
 
   constructor(message: string, status?: number) {
     super(message)
-    this.name = 'VerbsApiError'
+    this.name = 'ActionsApiError'
     this.status = status
   }
 }
 
-class VerbsApiClient {
-  private baseUrl = env.VITE_VERBS_API_URL
+class ActionsApiClient {
+  private baseUrl = env.VITE_ACTIONS_API_URL
 
   private async request<T>(
     endpoint: string,
@@ -49,7 +49,7 @@ class VerbsApiClient {
         // If JSON parsing fails, use the default error message
       }
 
-      throw new VerbsApiError(errorMessage, response.status)
+      throw new ActionsApiError(errorMessage, response.status)
     }
 
     const data = await response.json()
@@ -190,5 +190,5 @@ class VerbsApiClient {
   }
 }
 
-export const verbsApi = new VerbsApiClient()
-export { VerbsApiError }
+export const actionsApi = new ActionsApiClient()
+export { ActionsApiError }

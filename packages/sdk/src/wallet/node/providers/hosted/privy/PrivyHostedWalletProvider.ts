@@ -6,8 +6,8 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
-  NodeToVerbsOptionsMap,
-  PrivyHostedWalletToVerbsWalletOptions,
+  NodeToActionsOptionsMap,
+  PrivyHostedWalletToActionsWalletOptions,
 } from '@/wallet/node/providers/hosted/types/index.js'
 import { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
@@ -18,7 +18,7 @@ import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSig
  */
 export class PrivyHostedWalletProvider extends HostedWalletProvider<
   'privy',
-  NodeToVerbsOptionsMap
+  NodeToActionsOptionsMap
 > {
   /**
    * Create a new Privy wallet provider
@@ -31,8 +31,8 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
     super(chainManager)
   }
 
-  async toVerbsWallet(
-    params: PrivyHostedWalletToVerbsWalletOptions,
+  async toActionsWallet(
+    params: PrivyHostedWalletToActionsWalletOptions,
   ): Promise<Wallet> {
     return PrivyWallet.create({
       privyClient: this.privyClient,
@@ -55,7 +55,7 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
    * @throws Error if wallet retrieval fails or signing operations are not supported
    */
   async createSigner(
-    params: NodeToVerbsOptionsMap['privy'],
+    params: NodeToActionsOptionsMap['privy'],
   ): Promise<LocalAccount> {
     return createSigner({ ...params, privyClient: this.privyClient })
   }
