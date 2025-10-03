@@ -317,7 +317,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: 'rgb(184, 187, 38)' }}
+                    style={{ color: '#FF0621' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -337,7 +337,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: 'rgb(184, 187, 38)' }}
+                    style={{ color: '#FF0621' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -359,7 +359,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: 'rgb(184, 187, 38)' }}
+                    style={{ color: '#FF0621' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -379,7 +379,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: 'rgb(184, 187, 38)' }}
+                    style={{ color: '#FF0621' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -399,7 +399,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: 'rgb(184, 187, 38)' }}
+                    style={{ color: '#FF0621' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -419,7 +419,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: 'rgb(184, 187, 38)' }}
+                    style={{ color: '#FF0621' }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
