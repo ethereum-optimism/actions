@@ -332,7 +332,7 @@ function Home() {
                   </svg>
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Lend</h3>
-                <p className="text-gray-300 text-sm">Lend across markets</p>
+                <p className="text-gray-300 text-base">Lend across markets</p>
               </div>
               <div className="text-center">
                 <div className="mb-3 flex justify-center">
@@ -352,7 +352,7 @@ function Home() {
                   </svg>
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Borrow</h3>
-                <p className="text-gray-300 text-sm">
+                <p className="text-gray-300 text-base">
                   Borrow against collateral
                 </p>
               </div>
@@ -374,7 +374,7 @@ function Home() {
                   </svg>
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Swap</h3>
-                <p className="text-gray-300 text-sm">Trade via Dex</p>
+                <p className="text-gray-300 text-base">Trade via Dex</p>
               </div>
               <div className="text-center">
                 <div className="mb-3 flex justify-center">
@@ -394,7 +394,7 @@ function Home() {
                   </svg>
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Wallet</h3>
-                <p className="text-gray-300 text-sm">Create smart wallets</p>
+                <p className="text-gray-300 text-base">Create smart wallets</p>
               </div>
               <div className="text-center">
                 <div className="mb-3 flex justify-center">
@@ -414,7 +414,7 @@ function Home() {
                   </svg>
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Gas Paymaster</h3>
-                <p className="text-gray-300 text-sm">Sponsor transactions</p>
+                <p className="text-gray-300 text-base">Sponsor transactions</p>
               </div>
               <div className="text-center">
                 <div className="mb-3 flex justify-center">
@@ -440,7 +440,7 @@ function Home() {
                   </svg>
                 </div>
                 <h3 className="font-semibold mb-2 text-white">Config</h3>
-                <p className="text-gray-300 text-sm">Flexible configuration</p>
+                <p className="text-gray-300 text-base">Flexible configuration</p>
               </div>
             </div>
           </div>
@@ -541,7 +541,7 @@ function Home() {
                   Actions
                 </span>
               </h3>
-              <p className="text-gray-300 mb-4">
+              <p className="text-gray-300 text-base mb-4">
                 Pick which DeFi protocols, markets, networks, assets, and
                 providers you want to support.
               </p>
@@ -1018,7 +1018,7 @@ const config: ActionsConfig = {
               </div>
 
               <h3 className="text-lg font-medium text-gray-300 mb-2">BYO Wallet</h3>
-              <p className="text-gray-300 mb-4">
+              <p className="text-gray-300 text-base mb-4">
                 Actions supports your existing hosted wallet provider.
               </p>
               <div
@@ -1104,7 +1104,7 @@ const config: ActionsConfig = {
                   {selectedWalletProvider === 'privy' && (
                     <div className="space-y-6">
                       <div>
-                        <p className="text-gray-300 mb-4">
+                        <p className="text-gray-300 text-base mb-4">
                           1.{' '}
                           <a
                             href="https://docs.privy.io/basics/react/installation"
@@ -1312,7 +1312,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                   {selectedWalletProvider === 'dynamic' && (
                     <div className="space-y-6">
                       <div>
-                        <p className="text-gray-300 mb-4">
+                        <p className="text-gray-300 text-base mb-4">
                           1.{' '}
                           <a
                             href="https://www.dynamic.xyz/docs/wallets/embedded-wallets/mpc/setup"
@@ -1520,7 +1520,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                   {selectedWalletProvider === 'turnkey' && (
                     <div className="space-y-6">
                       <div>
-                        <p className="text-gray-300 mb-4">
+                        <p className="text-gray-300 text-base mb-4">
                           1.{' '}
                           <a
                             href="https://docs.turnkey.com/sdks/react/getting-started"
@@ -1728,7 +1728,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
               </div>
 
               <h3 className="text-lg font-medium text-gray-300 mb-2">Now take Action</h3>
-              <p className="text-gray-300 mb-4">Lend, Borrow, Swap, or Send.</p>
+              <p className="text-gray-300 text-base mb-4">Lend, Borrow, Swap, or Send.</p>
               <div
                 className="rounded-lg overflow-hidden mb-8 shadow-2xl"
                 style={{
