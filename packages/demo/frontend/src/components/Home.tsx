@@ -3,6 +3,7 @@ import NavBar from './NavBar'
 import PrivyLogo from '../assets/privy-logo-white.svg'
 import DynamicLogo from '../assets/dynamic-logo-white.svg'
 import TurnkeyLogo from '../assets/turnkey-logo-white.svg'
+import { colors } from '../constants/colors'
 
 function Home() {
   const [selectedPackageManager, setSelectedPackageManager] = useState('npm')
@@ -16,7 +17,7 @@ function Home() {
     deno: 'deno add @ethereum-optimism/actions',
   }
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#121113' }}>
+    <div className="min-h-screen" style={{ backgroundColor: colors.bg.dark }}>
       <NavBar />
 
       {/* ASCII Art - Isolated from other styles */}
@@ -25,7 +26,7 @@ function Home() {
           style={{
             fontFamily:
               'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
-            color: '#FF0621',
+            color: colors.actionsRed,
             whiteSpace: 'pre',
             lineHeight: '0.75',
             letterSpacing: '0',
@@ -54,7 +55,7 @@ function Home() {
             href="https://www.optimism.io/"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#FF0621', fontWeight: 'bold' }}
+            style={{ color: colors.actionsRed, fontWeight: 'bold' }}
             className="hover:opacity-80"
           >
             Optimism
@@ -71,7 +72,7 @@ function Home() {
               style={{
                 fontFamily:
                   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                color: '#d1d5db',
+                color: 'white',
               }}
             >
               Perform <span className="font-semibold">DeFi</span> actions with
@@ -100,10 +101,10 @@ function Home() {
         {/* Code Example */}
         <div className="py-16">
           <div className="max-w-4xl mx-auto mb-8">
-            <h2 className="text-lg font-medium text-gray-300 mb-4">Overview</h2>
+            <h2 className="text-3xl font-medium text-gray-300 mb-4">Overview</h2>
             <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
             <p className="text-gray-300 mb-4">
-              <span style={{ color: '#FF0621', fontWeight: 'bold' }}>
+              <span style={{ color: colors.actionsRed, fontWeight: 'bold' }}>
                 Actions
               </span>{' '}
               is an open source SDK for onchain actions: <strong>Lend</strong>,{' '}
@@ -115,8 +116,8 @@ function Home() {
           <div
             className="rounded-lg overflow-hidden max-w-4xl mx-auto shadow-2xl"
             style={{
-              backgroundColor: '#1a1b1e',
-              border: '1px solid rgba(184, 187, 38, 0.1)',
+              backgroundColor: colors.bg.code,
+              border: '1px solid rgba(80, 73, 69, 0.3)',
               boxShadow:
                 '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
             }}
@@ -125,7 +126,7 @@ function Home() {
             <div
               className="px-4 py-3 border-b flex items-center justify-between"
               style={{
-                backgroundColor: '#0f1011',
+                backgroundColor: colors.bg.header,
                 borderColor: 'rgba(184, 187, 38, 0.15)',
                 backdropFilter: 'blur(10px)',
               }}
@@ -133,23 +134,23 @@ function Home() {
               <div className="flex items-center space-x-2">
                 <div
                   className="w-3 h-3 rounded-full shadow-sm"
-                  style={{ backgroundColor: '#ff5f56' }}
+                  style={{ backgroundColor: colors.macos.red }}
                 ></div>
                 <div
                   className="w-3 h-3 rounded-full shadow-sm"
-                  style={{ backgroundColor: '#ffbd2e' }}
+                  style={{ backgroundColor: colors.macos.yellow }}
                 ></div>
                 <div
                   className="w-3 h-3 rounded-full shadow-sm"
                   style={{
-                    backgroundColor: 'rgb(184, 187, 38)',
+                    backgroundColor: colors.macos.green,
                     boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',
                   }}
                 ></div>
               </div>
               <div
                 className="text-xs font-mono"
-                style={{ color: '#FF0621' }}
+                style={{ color: colors.syntax.keyword }}
               >
                 example.ts
               </div>
@@ -157,145 +158,145 @@ function Home() {
             {/* Code content */}
             <div
               className="p-8 text-left"
-              style={{ backgroundColor: '#1a1b1e' }}
+              style={{ backgroundColor: colors.bg.code }}
             >
               <pre className="text-sm leading-relaxed font-mono">
-                <code style={{ color: '#e8e3d3' }}>
+                <code style={{ color: colors.text.primary }}>
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`import`}</span>
                   {` { `}
-                  <span style={{ color: '#4db6ac' }}>{`Actions`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`Actions`}</span>
                   {` } `}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`from`}</span>
                   {` `}
                   <span
-                    style={{ color: '#ff8a65' }}
+                    style={{ color: colors.syntax.string }}
                   >{`'@eth-optimism/actions'`}</span>
                   {`
 `}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`import`}</span>
                   {` { `}
-                  <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                   {`, `}
-                  <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`, `}
-                  <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`WBTC`}</span>
                   {` } `}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`from`}</span>
                   {` `}
                   <span
-                    style={{ color: '#ff8a65' }}
+                    style={{ color: colors.syntax.string }}
                   >{`'@eth-optimism/actions/assets'`}</span>
                   {`
 
 `}
                   <span
-                    style={{ color: 'rgb(98, 114, 164)' }}
+                    style={{ color: colors.syntax.comment }}
                   >{`// gas sponsored smart wallets`}</span>
                   {`
 `}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`const`}</span>
                   {` `}
-                  <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`wallet`}</span>
                   {` = `}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`await`}</span>
                   {` `}
-                  <span style={{ color: '#4db6ac' }}>{`Actions`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`Actions`}</span>
                   {`.`}
-                  <span style={{ color: '#4db6ac' }}>{`createWallet`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`createWallet`}</span>
                   {`(`}
                   <span
-                    style={{ color: '#ff8a65' }}
+                    style={{ color: colors.syntax.string }}
                   >{`'user@example.com'`}</span>
                   {`)
 
 `}
                   <span
-                    style={{ color: 'rgb(98, 114, 164)' }}
+                    style={{ color: colors.syntax.comment }}
                   >{`// onramp to stables`}</span>
                   {`
 `}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`await`}</span>
                   {` `}
-                  <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`wallet`}</span>
                   {`.`}
-                  <span style={{ color: '#4db6ac' }}>{`fund`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`fund`}</span>
                   {`(`}
-                  <span style={{ color: '#ce9178' }}>{`1000`}</span>
+                  <span style={{ color: colors.syntax.number }}>{`1000`}</span>
                   {`, `}
-                  <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                   {`)
 
 `}
                   <span
-                    style={{ color: 'rgb(98, 114, 164)' }}
+                    style={{ color: colors.syntax.comment }}
                   >{`// earn DeFi yield`}</span>
                   {`
 `}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`await`}</span>
                   {` `}
-                  <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`wallet`}</span>
                   {`.`}
-                  <span style={{ color: '#4db6ac' }}>{`lend`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`lend`}</span>
                   {`(`}
-                  <span style={{ color: '#ce9178' }}>{`100`}</span>
+                  <span style={{ color: colors.syntax.number }}>{`100`}</span>
                   {`, `}
-                  <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                   {`)
 
 `}
                   <span
-                    style={{ color: 'rgb(98, 114, 164)' }}
+                    style={{ color: colors.syntax.comment }}
                   >{`// borrow against collateral`}</span>
                   {`
 `}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`await`}</span>
                   {` `}
-                  <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`wallet`}</span>
                   {`.`}
-                  <span style={{ color: '#4db6ac' }}>{`borrow`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`borrow`}</span>
                   {`(`}
-                  <span style={{ color: '#ce9178' }}>{`0.01`}</span>
+                  <span style={{ color: colors.syntax.number }}>{`0.01`}</span>
                   {`, `}
-                  <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`)
 
 `}
                   <span
-                    style={{ color: 'rgb(98, 114, 164)' }}
+                    style={{ color: colors.syntax.comment }}
                   >{`// swap tokens`}</span>
                   {`
 `}
                   <span
-                    style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                    style={{ color: colors.syntax.keyword }}
                   >{`await`}</span>
                   {` `}
-                  <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`wallet`}</span>
                   {`.`}
-                  <span style={{ color: '#4db6ac' }}>{`swap`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`swap`}</span>
                   {`(`}
-                  <span style={{ color: '#ce9178' }}>{`0.01`}</span>
+                  <span style={{ color: colors.syntax.number }}>{`0.01`}</span>
                   {`, `}
-                  <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`, `}
-                  <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`WBTC`}</span>
                   {`)`}
                 </code>
               </pre>
@@ -306,7 +307,7 @@ function Home() {
         {/* Features Section */}
         <div className="py-16">
           <div className="max-w-4xl mx-auto mb-8">
-            <h2 className="text-lg font-medium text-gray-300 mb-4">Features</h2>
+            <h2 className="text-3xl font-medium text-gray-300 mb-4">Features</h2>
             <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent"></div>
           </div>
 
@@ -317,7 +318,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: '#FF0621' }}
+                    style={{ color: colors.syntax.keyword }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -337,7 +338,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: '#FF0621' }}
+                    style={{ color: colors.syntax.keyword }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -359,7 +360,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: '#FF0621' }}
+                    style={{ color: colors.syntax.keyword }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -379,7 +380,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: '#FF0621' }}
+                    style={{ color: colors.syntax.keyword }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -399,7 +400,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: '#FF0621' }}
+                    style={{ color: colors.syntax.keyword }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -419,7 +420,7 @@ function Home() {
                 <div className="mb-3 flex justify-center">
                   <svg
                     className="w-8 h-8"
-                    style={{ color: '#FF0621' }}
+                    style={{ color: colors.syntax.keyword }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -447,17 +448,16 @@ function Home() {
           {/* Getting Started Subsection */}
           <div className="pt-24 pb-16">
             <div className="max-w-4xl mx-auto mb-8">
-              <h2 className="text-lg font-medium text-gray-300 mb-4">
+              <h2 className="text-3xl font-medium text-gray-300 mb-4">
                 Getting Started
               </h2>
-              <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
-              <p className="text-gray-300 mb-4">Install the library:</p>
+              <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-8"></div>
+              <h3 className="text-lg font-medium text-gray-300 mb-4">Install the library</h3>
               <div
                 className="rounded-lg overflow-hidden mb-8 shadow-2xl"
                 style={{
-                  backgroundColor: '#1a1b1e',
-                  border: '1px solid rgba(184, 187, 38, 0.1)',
-                  boxShadow:
+                  backgroundColor: colors.bg.code,
+                      boxShadow:
                     '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
                 }}
               >
@@ -465,7 +465,7 @@ function Home() {
                 <div
                   className="flex border-b"
                   style={{
-                    backgroundColor: '#0f1011',
+                    backgroundColor: colors.bg.header,
                     borderColor: 'rgba(184, 187, 38, 0.15)',
                   }}
                 >
@@ -492,10 +492,10 @@ function Home() {
                 {/* Code content */}
                 <div
                   className="p-8 text-left relative"
-                  style={{ backgroundColor: '#1a1b1e' }}
+                  style={{ backgroundColor: colors.bg.code }}
                 >
                   <pre className="text-sm leading-relaxed font-mono">
-                    <code style={{ color: '#e8e3d3' }}>
+                    <code style={{ color: colors.text.primary }}>
                       <span style={{ color: 'rgba(184, 187, 38, 0.9)' }}>
                         {
                           packageManagers[
@@ -535,20 +535,21 @@ function Home() {
                 </div>
               </div>
 
-              <p className="text-gray-300 mb-2">
+              <h3 className="text-lg font-medium text-gray-300 mb-2">
                 Configure{' '}
-                <span style={{ color: '#FF0621', fontWeight: 'bold' }}>
+                <span style={{ color: colors.actionsRed, fontWeight: 'bold' }}>
                   Actions
                 </span>
-                : Pick which DeFi protocols, markets, networks, assets, and
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Pick which DeFi protocols, markets, networks, assets, and
                 providers you want to support.
               </p>
               <div
                 className="rounded-lg overflow-hidden mb-8 shadow-2xl"
                 style={{
-                  backgroundColor: '#1a1b1e',
-                  border: '1px solid rgba(184, 187, 38, 0.1)',
-                  boxShadow:
+                  backgroundColor: colors.bg.code,
+                      boxShadow:
                     '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
                 }}
               >
@@ -556,7 +557,7 @@ function Home() {
                 <div
                   className="px-4 py-3 border-b flex items-center justify-between"
                   style={{
-                    backgroundColor: '#0f1011',
+                    backgroundColor: colors.bg.header,
                     borderColor: 'rgba(184, 187, 38, 0.15)',
                     backdropFilter: 'blur(10px)',
                   }}
@@ -564,11 +565,11 @@ function Home() {
                   <div className="flex items-center space-x-2">
                     <div
                       className="w-3 h-3 rounded-full shadow-sm"
-                      style={{ backgroundColor: '#ff5f56' }}
+                      style={{ backgroundColor: colors.macos.red }}
                     ></div>
                     <div
                       className="w-3 h-3 rounded-full shadow-sm"
-                      style={{ backgroundColor: '#ffbd2e' }}
+                      style={{ backgroundColor: colors.macos.yellow }}
                     ></div>
                     <div
                       className="w-3 h-3 rounded-full shadow-sm"
@@ -580,7 +581,7 @@ function Home() {
                   </div>
                   <div
                     className="text-xs font-mono"
-                    style={{ color: '#FF0621' }}
+                    style={{ color: colors.syntax.keyword }}
                   >
                     config.ts
                   </div>
@@ -588,33 +589,33 @@ function Home() {
                 {/* Code content */}
                 <div
                   className="p-8 text-left relative"
-                  style={{ backgroundColor: '#1a1b1e' }}
+                  style={{ backgroundColor: colors.bg.code }}
                 >
                   <pre className="text-sm leading-relaxed font-mono">
-                    <code style={{ color: '#e8e3d3' }}>
+                    <code style={{ color: colors.text.primary }}>
                       <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        style={{ color: colors.syntax.keyword }}
                       >{`import`}</span>
                       {` { `}
-                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`WBTC`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`USDT`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDT`}</span>
                       {` } `}
                       <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        style={{ color: colors.syntax.keyword }}
                       >{`from`}</span>
                       {` `}
                       <span
-                        style={{ color: '#ff8a65' }}
+                        style={{ color: colors.syntax.string }}
                       >{`'@eth-optimism/actions/assets'`}</span>
                       {`
 `}
                       <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        style={{ color: colors.syntax.keyword }}
                       >{`import`}</span>
                       {` { `}
                       <span
@@ -626,46 +627,46 @@ function Home() {
                       >{`ExampleAaveMarket`}</span>
                       {` } `}
                       <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        style={{ color: colors.syntax.keyword }}
                       >{`from`}</span>
                       {` `}
                       <span
-                        style={{ color: '#ff8a65' }}
+                        style={{ color: colors.syntax.string }}
                       >{`'@eth-optimism/actions/markets'`}</span>
                       {`
 `}
                       <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        style={{ color: colors.syntax.keyword }}
                       >{`import`}</span>
                       {` { `}
-                      <span style={{ color: '#4db6ac' }}>{`unichain`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`unichain`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`optimism`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`optimism`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`base`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`base`}</span>
                       {` } `}
                       <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        style={{ color: colors.syntax.keyword }}
                       >{`from`}</span>
                       {` `}
                       <span
-                        style={{ color: '#ff8a65' }}
+                        style={{ color: colors.syntax.string }}
                       >{`'viem/chains'`}</span>
                       {`
 
 `}
                       <span
-                        style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                        style={{ color: colors.syntax.keyword }}
                       >{`const`}</span>
                       {` `}
-                      <span style={{ color: '#4db6ac' }}>{`config`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`config`}</span>
                       {`: `}
                       <span
                         style={{ color: '#4db6ac' }}
                       >{`ActionsConfig`}</span>
                       {` = {
   `}
-                      <span style={{ color: '#9cdcfe' }}>{`wallet`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`wallet`}</span>
                       {`: {
     `}
                       <span
@@ -673,18 +674,18 @@ function Home() {
                       >{`hostedWalletConfig`}</span>
                       {`: {
       `}
-                      <span style={{ color: '#9cdcfe' }}>{`provider`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`provider`}</span>
                       {`: {
         `}
-                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
                       <span style={{ color: '#ff8a65' }}>{`'privy'`}</span>
                       {`,
         `}
-                      <span style={{ color: '#9cdcfe' }}>{`config`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`config`}</span>
                       {`: {
           `}
-                      <span style={{ color: '#9cdcfe' }}>{`privyClient`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`privyClient`}</span>
                       {`: `}
                       <span
                         style={{ color: '#4db6ac' }}
@@ -699,10 +700,10 @@ function Home() {
                       >{`smartWalletConfig`}</span>
                       {`: {
       `}
-                      <span style={{ color: '#9cdcfe' }}>{`provider`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`provider`}</span>
                       {`: {
         `}
-                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
                       <span style={{ color: '#ff8a65' }}>{`'default'`}</span>
                       {`,
@@ -717,15 +718,15 @@ function Home() {
     },
   },
   `}
-                      <span style={{ color: '#9cdcfe' }}>{`lend`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`lend`}</span>
                       {`: {
     `}
-                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
                       <span style={{ color: '#ff8a65' }}>{`'morpho'`}</span>
                       {`, `}
                       <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
+                        style={{ color: colors.syntax.comment }}
                       >{`// Lend Provider`}</span>
                       {`
     `}
@@ -733,18 +734,18 @@ function Home() {
                         style={{ color: '#9cdcfe' }}
                       >{`assetAllowlist`}</span>
                       {`: [`}
-                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`WBTC`}</span>
                       {`],
     `}
                       <span
                         style={{ color: '#9cdcfe' }}
                       >{`assetBlocklist`}</span>
                       {`: [`}
-                      <span style={{ color: '#4db6ac' }}>{`USDT`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDT`}</span>
                       {`],
     `}
                       <span
@@ -766,15 +767,15 @@ function Home() {
                       {`],
   },
   `}
-                      <span style={{ color: '#9cdcfe' }}>{`borrow`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`borrow`}</span>
                       {`: {
     `}
-                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
                       <span style={{ color: '#ff8a65' }}>{`'morpho'`}</span>
                       {`, `}
                       <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
+                        style={{ color: colors.syntax.comment }}
                       >{`// Borrow Provider`}</span>
                       {`
     `}
@@ -782,18 +783,18 @@ function Home() {
                         style={{ color: '#9cdcfe' }}
                       >{`assetAllowlist`}</span>
                       {`: [`}
-                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`WBTC`}</span>
                       {`],
     `}
                       <span
                         style={{ color: '#9cdcfe' }}
                       >{`assetBlocklist`}</span>
                       {`: [`}
-                      <span style={{ color: '#4db6ac' }}>{`USDT`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDT`}</span>
                       {`],
     `}
                       <span
@@ -815,15 +816,15 @@ function Home() {
                       {`],
   },
   `}
-                      <span style={{ color: '#9cdcfe' }}>{`swap`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`swap`}</span>
                       {`: {
     `}
-                      <span style={{ color: '#9cdcfe' }}>{`type`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`type`}</span>
                       {`: `}
                       <span style={{ color: '#ff8a65' }}>{`'uniswap'`}</span>
                       {`, `}
                       <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
+                        style={{ color: colors.syntax.comment }}
                       >{`// Swap Provider`}</span>
                       {`
     `}
@@ -831,18 +832,18 @@ function Home() {
                         style={{ color: '#9cdcfe' }}
                       >{`defaultSlippage`}</span>
                       {`: `}
-                      <span style={{ color: '#ce9178' }}>{`100`}</span>
+                      <span style={{ color: colors.syntax.number }}>{`100`}</span>
                       {`,
     `}
                       <span
                         style={{ color: '#9cdcfe' }}
                       >{`assetAllowList`}</span>
                       {`: [`}
-                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {`, `}
-                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`WBTC`}</span>
                       {`]
     `}
                       <span
@@ -850,40 +851,40 @@ function Home() {
                       >{`marketAllowlist`}</span>
                       {`: [
       { `}
-                      <span style={{ color: '#9cdcfe' }}>{`from`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`from`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {`, `}
-                      <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`to`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                       {` },
       { `}
-                      <span style={{ color: '#9cdcfe' }}>{`from`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`from`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                       {`, `}
-                      <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`to`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {` },
       { `}
-                      <span style={{ color: '#9cdcfe' }}>{`from`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`from`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {`, `}
-                      <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`to`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`WBTC`}</span>
                       {` },
       { `}
-                      <span style={{ color: '#9cdcfe' }}>{`from`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`from`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`WBTC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`WBTC`}</span>
                       {`, `}
-                      <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`to`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {` }
     ],
     `}
@@ -892,41 +893,41 @@ function Home() {
                       >{`marketBlocklist`}</span>
                       {`: [
       { `}
-                      <span style={{ color: '#9cdcfe' }}>{`from`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`from`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {`, `}
-                      <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`to`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                       {` },
       { `}
-                      <span style={{ color: '#9cdcfe' }}>{`from`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`from`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                       {`, `}
-                      <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`to`}</span>
                       {`: `}
-                      <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                       {` },
     ],
   },
   `}
                       <span
-                        style={{ color: 'rgb(98, 114, 164)' }}
+                        style={{ color: colors.syntax.comment }}
                       >{`// Chain Provider`}</span>
                       {`
   `}
-                      <span style={{ color: '#9cdcfe' }}>{`chains`}</span>
+                      <span style={{ color: colors.syntax.property }}>{`chains`}</span>
                       {`: [
       `}
-                      <span style={{ color: '#4db6ac' }}>{`unichain`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`unichain`}</span>
                       {`,
       `}
-                      <span style={{ color: '#4db6ac' }}>{`optimism`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`optimism`}</span>
                       {`,
       `}
-                      <span style={{ color: '#4db6ac' }}>{`base`}</span>
+                      <span style={{ color: colors.syntax.variable }}>{`base`}</span>
                       {`
   ]
 }`}
@@ -1016,15 +1017,15 @@ const config: ActionsConfig = {
                 </div>
               </div>
 
+              <h3 className="text-lg font-medium text-gray-300 mb-2">BYO Wallet</h3>
               <p className="text-gray-300 mb-4">
-                Bring your own wallet provider:
+                Actions supports your existing hosted wallet provider.
               </p>
               <div
                 className="rounded-lg overflow-hidden mb-8 shadow-2xl"
                 style={{
-                  backgroundColor: '#1a1b1e',
-                  border: '1px solid rgba(184, 187, 38, 0.1)',
-                  boxShadow:
+                  backgroundColor: colors.bg.code,
+                      boxShadow:
                     '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
                 }}
               >
@@ -1032,7 +1033,7 @@ const config: ActionsConfig = {
                 <div
                   className="flex border-b"
                   style={{
-                    backgroundColor: '#1a1b1e',
+                    backgroundColor: colors.bg.code,
                     borderColor: 'rgba(184, 187, 38, 0.15)',
                   }}
                 >
@@ -1121,7 +1122,7 @@ const config: ActionsConfig = {
                         <p className="text-gray-300 mb-2">
                           2. Create user wallet and extend it with DeFi{' '}
                           <span
-                            style={{ color: '#FF0621', fontWeight: 'bold' }}
+                            style={{ color: colors.actionsRed, fontWeight: 'bold' }}
                           >
                             Actions
                           </span>
@@ -1130,15 +1131,14 @@ const config: ActionsConfig = {
                         <div
                           className="rounded-lg overflow-hidden"
                           style={{
-                            backgroundColor: '#1a1b1e',
-                            border: '1px solid rgba(184, 187, 38, 0.1)',
-                          }}
+                            backgroundColor: colors.bg.code,
+                                        }}
                         >
                           {/* Terminal header */}
                           <div
                             className="px-4 py-3 border-b flex items-center justify-between"
                             style={{
-                              backgroundColor: '#0f1011',
+                              backgroundColor: colors.bg.header,
                               borderColor: 'rgba(184, 187, 38, 0.15)',
                               backdropFilter: 'blur(10px)',
                             }}
@@ -1146,11 +1146,11 @@ const config: ActionsConfig = {
                             <div className="flex items-center space-x-2">
                               <div
                                 className="w-3 h-3 rounded-full shadow-sm"
-                                style={{ backgroundColor: '#ff5f56' }}
+                                style={{ backgroundColor: colors.macos.red }}
                               ></div>
                               <div
                                 className="w-3 h-3 rounded-full shadow-sm"
-                                style={{ backgroundColor: '#ffbd2e' }}
+                                style={{ backgroundColor: colors.macos.yellow }}
                               ></div>
                               <div
                                 className="w-3 h-3 rounded-full shadow-sm"
@@ -1162,7 +1162,7 @@ const config: ActionsConfig = {
                             </div>
                             <div
                               className="text-xs font-mono"
-                              style={{ color: '#FF0621' }}
+                              style={{ color: colors.syntax.keyword }}
                             >
                               wallet.ts
                             </div>
@@ -1170,16 +1170,16 @@ const config: ActionsConfig = {
                           <div className="relative">
                             <pre
                               className="text-sm leading-relaxed font-mono p-4"
-                              style={{ backgroundColor: '#1a1b1e' }}
+                              style={{ backgroundColor: colors.bg.code }}
                             >
-                            <code style={{ color: '#e8e3d3' }}>
+                            <code style={{ color: colors.text.primary }}>
                               <span
-                                style={{ color: 'rgb(98, 114, 164)' }}
+                                style={{ color: colors.syntax.comment }}
                               >{`// Create a new wallet using your hosted wallet provider.`}</span>
                               {`
 `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`const`}</span>
                               {` `}
                               <span
@@ -1187,7 +1187,7 @@ const config: ActionsConfig = {
                               >{`privyWallet`}</span>
                               {` = `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`await`}</span>
                               {` `}
                               <span
@@ -1208,19 +1208,19 @@ const config: ActionsConfig = {
                               >{`chainType`}</span>
                               {`: `}
                               <span
-                                style={{ color: '#ff8a65' }}
+                                style={{ color: colors.syntax.string }}
                               >{`'ethereum'`}</span>
                               {`,
 })
 
 `}
                               <span
-                                style={{ color: 'rgb(98, 114, 164)' }}
+                                style={{ color: colors.syntax.comment }}
                               >{`// Convert the hosted wallet to a DeFi Actions wallet.`}</span>
                               {`
 `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`const`}</span>
                               {` `}
                               <span
@@ -1228,7 +1228,7 @@ const config: ActionsConfig = {
                               >{`wallet`}</span>
                               {` = `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`await`}</span>
                               {` `}
                               <span
@@ -1252,7 +1252,7 @@ const config: ActionsConfig = {
                                 style={{ color: '#4db6ac' }}
                               >{`privyWallet`}</span>
                               {`.`}
-                              <span style={{ color: '#4db6ac' }}>{`id`}</span>
+                              <span style={{ color: colors.syntax.variable }}>{`id`}</span>
                               {`,
   `}
                               <span
@@ -1330,7 +1330,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         <p className="text-gray-300 mb-2">
                           2. Create user wallet and extend it with DeFi{' '}
                           <span
-                            style={{ color: '#FF0621', fontWeight: 'bold' }}
+                            style={{ color: colors.actionsRed, fontWeight: 'bold' }}
                           >
                             Actions
                           </span>
@@ -1339,15 +1339,14 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         <div
                           className="rounded-lg overflow-hidden"
                           style={{
-                            backgroundColor: '#1a1b1e',
-                            border: '1px solid rgba(184, 187, 38, 0.1)',
-                          }}
+                            backgroundColor: colors.bg.code,
+                                        }}
                         >
                           {/* Terminal header */}
                           <div
                             className="px-4 py-3 border-b flex items-center justify-between"
                             style={{
-                              backgroundColor: '#0f1011',
+                              backgroundColor: colors.bg.header,
                               borderColor: 'rgba(184, 187, 38, 0.15)',
                               backdropFilter: 'blur(10px)',
                             }}
@@ -1355,11 +1354,11 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                             <div className="flex items-center space-x-2">
                               <div
                                 className="w-3 h-3 rounded-full shadow-sm"
-                                style={{ backgroundColor: '#ff5f56' }}
+                                style={{ backgroundColor: colors.macos.red }}
                               ></div>
                               <div
                                 className="w-3 h-3 rounded-full shadow-sm"
-                                style={{ backgroundColor: '#ffbd2e' }}
+                                style={{ backgroundColor: colors.macos.yellow }}
                               ></div>
                               <div
                                 className="w-3 h-3 rounded-full shadow-sm"
@@ -1371,7 +1370,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                             </div>
                             <div
                               className="text-xs font-mono"
-                              style={{ color: '#FF0621' }}
+                              style={{ color: colors.syntax.keyword }}
                             >
                               wallet.ts
                             </div>
@@ -1379,16 +1378,16 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                           <div className="relative">
                             <pre
                               className="text-sm leading-relaxed font-mono p-4"
-                              style={{ backgroundColor: '#1a1b1e' }}
+                              style={{ backgroundColor: colors.bg.code }}
                             >
-                            <code style={{ color: '#e8e3d3' }}>
+                            <code style={{ color: colors.text.primary }}>
                               <span
-                                style={{ color: 'rgb(98, 114, 164)' }}
+                                style={{ color: colors.syntax.comment }}
                               >{`// Create a new wallet using your hosted wallet provider.`}</span>
                               {`
 `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`const`}</span>
                               {` `}
                               <span
@@ -1396,7 +1395,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`dynamicWallet`}</span>
                               {` = `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`await`}</span>
                               {` `}
                               <span
@@ -1417,19 +1416,19 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`chainType`}</span>
                               {`: `}
                               <span
-                                style={{ color: '#ff8a65' }}
+                                style={{ color: colors.syntax.string }}
                               >{`'ethereum'`}</span>
                               {`,
 })
 
 `}
                               <span
-                                style={{ color: 'rgb(98, 114, 164)' }}
+                                style={{ color: colors.syntax.comment }}
                               >{`// Convert the hosted wallet to a DeFi Actions wallet.`}</span>
                               {`
 `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`const`}</span>
                               {` `}
                               <span
@@ -1437,7 +1436,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`wallet`}</span>
                               {` = `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`await`}</span>
                               {` `}
                               <span
@@ -1461,7 +1460,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                                 style={{ color: '#4db6ac' }}
                               >{`dynamicWallet`}</span>
                               {`.`}
-                              <span style={{ color: '#4db6ac' }}>{`id`}</span>
+                              <span style={{ color: colors.syntax.variable }}>{`id`}</span>
                               {`,
   `}
                               <span
@@ -1539,7 +1538,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         <p className="text-gray-300 mb-2">
                           2. Create user wallet and extend it with DeFi{' '}
                           <span
-                            style={{ color: '#FF0621', fontWeight: 'bold' }}
+                            style={{ color: colors.actionsRed, fontWeight: 'bold' }}
                           >
                             Actions
                           </span>
@@ -1548,15 +1547,14 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         <div
                           className="rounded-lg overflow-hidden"
                           style={{
-                            backgroundColor: '#1a1b1e',
-                            border: '1px solid rgba(184, 187, 38, 0.1)',
-                          }}
+                            backgroundColor: colors.bg.code,
+                                        }}
                         >
                           {/* Terminal header */}
                           <div
                             className="px-4 py-3 border-b flex items-center justify-between"
                             style={{
-                              backgroundColor: '#0f1011',
+                              backgroundColor: colors.bg.header,
                               borderColor: 'rgba(184, 187, 38, 0.15)',
                               backdropFilter: 'blur(10px)',
                             }}
@@ -1564,11 +1562,11 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                             <div className="flex items-center space-x-2">
                               <div
                                 className="w-3 h-3 rounded-full shadow-sm"
-                                style={{ backgroundColor: '#ff5f56' }}
+                                style={{ backgroundColor: colors.macos.red }}
                               ></div>
                               <div
                                 className="w-3 h-3 rounded-full shadow-sm"
-                                style={{ backgroundColor: '#ffbd2e' }}
+                                style={{ backgroundColor: colors.macos.yellow }}
                               ></div>
                               <div
                                 className="w-3 h-3 rounded-full shadow-sm"
@@ -1580,7 +1578,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                             </div>
                             <div
                               className="text-xs font-mono"
-                              style={{ color: '#FF0621' }}
+                              style={{ color: colors.syntax.keyword }}
                             >
                               wallet.ts
                             </div>
@@ -1588,16 +1586,16 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                           <div className="relative">
                             <pre
                               className="text-sm leading-relaxed font-mono p-4"
-                              style={{ backgroundColor: '#1a1b1e' }}
+                              style={{ backgroundColor: colors.bg.code }}
                             >
-                            <code style={{ color: '#e8e3d3' }}>
+                            <code style={{ color: colors.text.primary }}>
                               <span
-                                style={{ color: 'rgb(98, 114, 164)' }}
+                                style={{ color: colors.syntax.comment }}
                               >{`// Create a new wallet using your hosted wallet provider.`}</span>
                               {`
 `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`const`}</span>
                               {` `}
                               <span
@@ -1605,7 +1603,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`turnkeyWallet`}</span>
                               {` = `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`await`}</span>
                               {` `}
                               <span
@@ -1626,19 +1624,19 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`chainType`}</span>
                               {`: `}
                               <span
-                                style={{ color: '#ff8a65' }}
+                                style={{ color: colors.syntax.string }}
                               >{`'ethereum'`}</span>
                               {`,
 })
 
 `}
                               <span
-                                style={{ color: 'rgb(98, 114, 164)' }}
+                                style={{ color: colors.syntax.comment }}
                               >{`// Convert the hosted wallet to a DeFi Actions wallet.`}</span>
                               {`
 `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`const`}</span>
                               {` `}
                               <span
@@ -1646,7 +1644,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               >{`wallet`}</span>
                               {` = `}
                               <span
-                                style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                                style={{ color: colors.syntax.keyword }}
                               >{`await`}</span>
                               {` `}
                               <span
@@ -1670,7 +1668,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                                 style={{ color: '#4db6ac' }}
                               >{`turnkeyWallet`}</span>
                               {`.`}
-                              <span style={{ color: '#4db6ac' }}>{`id`}</span>
+                              <span style={{ color: colors.syntax.variable }}>{`id`}</span>
                               {`,
   `}
                               <span
@@ -1729,13 +1727,13 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                 </div>
               </div>
 
-              <p className="text-gray-300 mb-2">Lend, Borrow, Swap, or Send:</p>
+              <h3 className="text-lg font-medium text-gray-300 mb-2">Now take Action</h3>
+              <p className="text-gray-300 mb-4">Lend, Borrow, Swap, or Send.</p>
               <div
                 className="rounded-lg overflow-hidden mb-8 shadow-2xl"
                 style={{
-                  backgroundColor: '#1a1b1e',
-                  border: '1px solid rgba(184, 187, 38, 0.1)',
-                  boxShadow:
+                  backgroundColor: colors.bg.code,
+                      boxShadow:
                     '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
                 }}
               >
@@ -1743,7 +1741,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                 <div
                   className="px-4 py-3 border-b flex items-center justify-between"
                   style={{
-                    backgroundColor: '#0f1011',
+                    backgroundColor: colors.bg.header,
                     borderColor: 'rgba(184, 187, 38, 0.15)',
                     backdropFilter: 'blur(10px)',
                   }}
@@ -1751,11 +1749,11 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                   <div className="flex items-center space-x-2">
                     <div
                       className="w-3 h-3 rounded-full shadow-sm"
-                      style={{ backgroundColor: '#ff5f56' }}
+                      style={{ backgroundColor: colors.macos.red }}
                     ></div>
                     <div
                       className="w-3 h-3 rounded-full shadow-sm"
-                      style={{ backgroundColor: '#ffbd2e' }}
+                      style={{ backgroundColor: colors.macos.yellow }}
                     ></div>
                     <div
                       className="w-3 h-3 rounded-full shadow-sm"
@@ -1767,7 +1765,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                   </div>
                   <div
                     className="text-xs font-mono"
-                    style={{ color: '#FF0621' }}
+                    style={{ color: colors.syntax.keyword }}
                   >
                     wallet.ts
                   </div>
@@ -1775,38 +1773,38 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                 {/* Code content */}
                 <div
                   className="p-8 text-left relative"
-                  style={{ backgroundColor: '#1a1b1e' }}
+                  style={{ backgroundColor: colors.bg.code }}
                 >
                   <pre className="text-sm leading-relaxed font-mono">
-                    <code style={{ color: '#e8e3d3' }}>
+                    <code style={{ color: colors.text.primary }}>
                         <span
-                          style={{ color: 'rgb(98, 114, 164)' }}
+                          style={{ color: colors.syntax.comment }}
                         >{`// Enable asset lending in DeFi`}</span>
                         {`
 `}
                         <span
-                          style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                          style={{ color: colors.syntax.keyword }}
                         >{`const`}</span>
                         {` `}
-                        <span style={{ color: '#4db6ac' }}>{`receipt1`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`receipt1`}</span>
                         {` = `}
-                        <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`wallet`}</span>
                         {`.`}
-                        <span style={{ color: '#4db6ac' }}>{`lend`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`lend`}</span>
                         {`.`}
                         <span
                           style={{ color: '#4db6ac' }}
                         >{`openPosition`}</span>
                         {`({
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`amount`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`amount`}</span>
                         {`: `}
-                        <span style={{ color: '#ce9178' }}>{`1`}</span>
+                        <span style={{ color: colors.syntax.number }}>{`1`}</span>
                         {`,
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`asset`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`asset`}</span>
                         {`: `}
-                        <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                         {`,
   ...`}
                         <span
@@ -1817,33 +1815,33 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 
 `}
                         <span
-                          style={{ color: 'rgb(98, 114, 164)' }}
+                          style={{ color: colors.syntax.comment }}
                         >{`// Use lent assets as collateral`}</span>
                         {`
 `}
                         <span
-                          style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                          style={{ color: colors.syntax.keyword }}
                         >{`const`}</span>
                         {` `}
-                        <span style={{ color: '#4db6ac' }}>{`receipt2`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`receipt2`}</span>
                         {` = `}
-                        <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`wallet`}</span>
                         {`.`}
-                        <span style={{ color: '#4db6ac' }}>{`borrow`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`borrow`}</span>
                         {`.`}
                         <span
                           style={{ color: '#4db6ac' }}
                         >{`openPosition`}</span>
                         {`({
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`amount`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`amount`}</span>
                         {`: `}
-                        <span style={{ color: '#ce9178' }}>{`1`}</span>
+                        <span style={{ color: colors.syntax.number }}>{`1`}</span>
                         {`,
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`asset`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`asset`}</span>
                         {`: `}
-                        <span style={{ color: '#4db6ac' }}>{`USDT`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`USDT`}</span>
                         {`,
   ...`}
                         <span
@@ -1854,70 +1852,70 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 
 `}
                         <span
-                          style={{ color: 'rgb(98, 114, 164)' }}
+                          style={{ color: colors.syntax.comment }}
                         >{`// Token swap via DEX of choice`}</span>
                         {`
 `}
                         <span
-                          style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                          style={{ color: colors.syntax.keyword }}
                         >{`const`}</span>
                         {` `}
-                        <span style={{ color: '#4db6ac' }}>{`receipt3`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`receipt3`}</span>
                         {` = `}
-                        <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`wallet`}</span>
                         {`.`}
-                        <span style={{ color: '#4db6ac' }}>{`swap`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`swap`}</span>
                         {`.`}
-                        <span style={{ color: '#4db6ac' }}>{`execute`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`execute`}</span>
                         {`({
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`amountIn`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`amountIn`}</span>
                         {`: `}
-                        <span style={{ color: '#ce9178' }}>{`1`}</span>
+                        <span style={{ color: colors.syntax.number }}>{`1`}</span>
                         {`,
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`assetIn`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`assetIn`}</span>
                         {`: `}
-                        <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                         {`,
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`assetOut`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`assetOut`}</span>
                         {`: `}
-                        <span style={{ color: '#4db6ac' }}>{`ETH`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                         {`,
 })
 
 `}
                         <span
-                          style={{ color: 'rgb(98, 114, 164)' }}
+                          style={{ color: colors.syntax.comment }}
                         >{`// Easy, safe asset transfers`}</span>
                         {`
 `}
                         <span
-                          style={{ color: 'rgba(184, 187, 38, 0.9)' }}
+                          style={{ color: colors.syntax.keyword }}
                         >{`const`}</span>
                         {` `}
-                        <span style={{ color: '#4db6ac' }}>{`receipt4`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`receipt4`}</span>
                         {` = `}
-                        <span style={{ color: '#4db6ac' }}>{`wallet`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`wallet`}</span>
                         {`.`}
-                        <span style={{ color: '#4db6ac' }}>{`send`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`send`}</span>
                         {`({
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`amount`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`amount`}</span>
                         {`: `}
-                        <span style={{ color: '#ce9178' }}>{`1`}</span>
+                        <span style={{ color: colors.syntax.number }}>{`1`}</span>
                         {`,
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`asset`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`asset`}</span>
                         {`: `}
-                        <span style={{ color: '#4db6ac' }}>{`USDC`}</span>
+                        <span style={{ color: colors.syntax.variable }}>{`USDC`}</span>
                         {`,
   `}
-                        <span style={{ color: '#9cdcfe' }}>{`to`}</span>
+                        <span style={{ color: colors.syntax.property }}>{`to`}</span>
                         {`: `}
                         <span
-                          style={{ color: '#ff8a65' }}
+                          style={{ color: colors.syntax.string }}
                         >{`'vitalik.eth'`}</span>
                         {`,
 })`}
@@ -1988,7 +1986,7 @@ const receipt4 = wallet.send({
               href="https://www.optimism.io/"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: '#FF0621', fontWeight: 'bold' }}
+              style={{ color: colors.actionsRed, fontWeight: 'bold' }}
               className="hover:opacity-80"
             >
               Optimism
