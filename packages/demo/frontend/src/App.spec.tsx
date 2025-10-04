@@ -16,8 +16,8 @@ describe('App', () => {
     render(<App />)
 
     expect(screen.getByText('GitHub')).toBeInTheDocument()
-    // Home page should have the Docs and Demo buttons
-    expect(screen.getByText('Docs')).toBeInTheDocument()
+    // Home page should have the Github and Demo buttons
+    expect(screen.getByText('Github')).toBeInTheDocument()
     expect(screen.getByText('Demo')).toBeInTheDocument()
     const appContainer = document.querySelector(
       '.w-full.h-screen.bg-terminal-bg',
