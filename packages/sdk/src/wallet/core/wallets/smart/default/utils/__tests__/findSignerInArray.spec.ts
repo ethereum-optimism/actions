@@ -4,9 +4,9 @@ import type { WebAuthnAccount } from 'viem/account-abstraction'
 import { describe, expect, it } from 'vitest'
 
 import { getRandomAddress } from '@/test/utils.js'
-import { findSignerIndex } from '@/wallet/core/wallets/smart/default/utils/findSignerIndex.js'
+import { findSignerInArray } from '@/wallet/core/wallets/smart/default/utils/findSignerInArray.js'
 
-describe('findSignerIndex', () => {
+describe('findSignerInArray', () => {
   const mockAddress1 = getRandomAddress()
   const mockAddress2 = getRandomAddress()
   const mockPublicKey1 = pad('0xaabb', { size: 32 }) as Hex
@@ -18,7 +18,7 @@ describe('findSignerIndex', () => {
       type: 'local',
     } as unknown as LocalAccount
 
-    const index = findSignerIndex(owners, signer)
+    const index = findSignerInArray(owners, signer)
 
     expect(index).toBe(0)
   })
@@ -30,7 +30,7 @@ describe('findSignerIndex', () => {
       type: 'local',
     } as unknown as LocalAccount
 
-    const index = findSignerIndex(owners, signer)
+    const index = findSignerInArray(owners, signer)
 
     expect(index).toBe(1)
   })
@@ -42,7 +42,7 @@ describe('findSignerIndex', () => {
       type: 'local',
     } as unknown as LocalAccount
 
-    const index = findSignerIndex(owners, signer)
+    const index = findSignerInArray(owners, signer)
 
     expect(index).toBe(-1)
   })
@@ -61,20 +61,8 @@ describe('findSignerIndex', () => {
     } as unknown as LocalAccount
 
     // Should return -1 because we only match EOA addresses, not WebAuthn accounts
-    const index = findSignerIndex(owners, signer)
+    const index = findSignerInArray(owners, signer)
 
     expect(index).toBe(-1)
-  })
-
-  it('should throw error when signer is not a LocalAccount', () => {
-    const owners = [mockAddress1, mockAddress2]
-    const notLocalAccount = {
-      address: mockAddress1,
-      type: 'webAuthn',
-    } as unknown as LocalAccount
-
-    expect(() => findSignerIndex(owners, notLocalAccount)).toThrow(
-      'Signer is not a LocalAccount',
-    )
   })
 })

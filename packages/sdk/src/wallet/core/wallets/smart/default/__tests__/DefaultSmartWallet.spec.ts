@@ -24,7 +24,7 @@ import {
   smartWalletFactoryAddress,
 } from '@/wallet/core/wallets/smart/default/constants/index.js'
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
-import { findOwnerIndex } from '@/wallet/core/wallets/smart/default/utils/findOwnerIndex.js'
+import { findSignerIndexOnChain } from '@/wallet/core/wallets/smart/default/utils/findSignerIndexOnChain.js'
 
 import { SmartWalletDeploymentError } from '../../error/errors.js'
 
@@ -32,13 +32,16 @@ vi.mock('viem/account-abstraction', () => ({
   toCoinbaseSmartAccount: vi.fn(),
 }))
 
-vi.mock('@/wallet/core/wallets/smart/default/utils/findOwnerIndex.js', () => ({
-  findOwnerIndex: vi.fn(),
-}))
+vi.mock(
+  '@/wallet/core/wallets/smart/default/utils/findSignerIndexOnChain.js',
+  () => ({
+    findSignerIndexOnChain: vi.fn(),
+  }),
+)
 
 // Mock data
 const mockSignerAddress = getRandomAddress()
-const mockOwners: Address[] = [mockSignerAddress, getRandomAddress()]
+const mockSigners: Address[] = [mockSignerAddress, getRandomAddress()]
 const mockSigner: LocalAccount = {
   address: mockSignerAddress,
   type: 'local',
@@ -76,15 +79,15 @@ describe('DefaultSmartWallet', () => {
       address: mockSignerAddress,
       type: 'local',
     } as unknown as LocalAccount
-    const owners = [signer.address, getRandomAddress()]
-    const wallet = await createAndInitDefaultSmartWallet({ owners, signer })
+    const signers = [signer.address, getRandomAddress()]
+    const wallet = await createAndInitDefaultSmartWallet({ signers, signer })
 
     expect(wallet.address).toBe(mockDeploymentAddress)
     expect(publicClient.readContract).toHaveBeenCalledWith({
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
       functionName: 'getAddress',
-      args: [owners.map((owner) => pad(owner)), BigInt(0)],
+      args: [signers.map((signer) => pad(signer)), BigInt(0)],
     })
   })
 
@@ -102,12 +105,12 @@ describe('DefaultSmartWallet', () => {
       address: getRandomAddress(),
       type: 'local',
     } as unknown as LocalAccount
-    const owners = [getRandomAddress(), signer.address]
-    const signerOwnerIndex = 1
+    const signers = [getRandomAddress(), signer.address]
+    const signerIndex = 1
     const nonce = BigInt(123)
     const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress,
-      owners,
+      signers,
       signer,
       nonce,
     })
@@ -118,9 +121,9 @@ describe('DefaultSmartWallet', () => {
     const toCoinbaseSmartAccountMock = vi.mocked(toCoinbaseSmartAccount)
     expect(toCoinbaseSmartAccountMock).toHaveBeenCalledWith({
       address: deploymentAddress,
-      ownerIndex: signerOwnerIndex,
+      ownerIndex: signerIndex,
       client: mockChainManager.getPublicClient(chainId),
-      owners: [owners[0], signer],
+      owners: [signers[0], signer],
       nonce: nonce,
       version: '1.1',
     })
@@ -263,7 +266,7 @@ describe('DefaultSmartWallet', () => {
     expect(result).toBe(mockWaitForUserOperationReceipt)
   })
 
-  it('adds an EOA owner via addOwner and returns index', async () => {
+  it('adds an EOA signer via addSigner and returns index', async () => {
     const deploymentAddress = getRandomAddress()
     const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress,
@@ -276,7 +279,7 @@ describe('DefaultSmartWallet', () => {
       success: true,
     } as unknown as WaitForUserOperationReceiptReturnType)
 
-    vi.mocked(findOwnerIndex).mockResolvedValue(2)
+    vi.mocked(findSignerIndexOnChain).mockResolvedValue(2)
 
     const resultIndex = await wallet.addSigner(newSigner, chainId)
 
@@ -296,16 +299,16 @@ describe('DefaultSmartWallet', () => {
       ],
       chainId,
     )
-    expect(findOwnerIndex).toHaveBeenCalledWith(
+    expect(findSignerIndexOnChain).toHaveBeenCalledWith(
       expect.objectContaining({
         address: deploymentAddress,
-        signer: newSigner,
+        signerPublicKey: newSigner,
       }),
     )
     expect(resultIndex).toBe(2)
   })
 
-  it('adds a WebAuthn owner via addOwner and returns index', async () => {
+  it('adds a WebAuthn signer via addSigner and returns index', async () => {
     const deploymentAddress = getRandomAddress()
     const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress,
@@ -316,7 +319,7 @@ describe('DefaultSmartWallet', () => {
       '0xe7575170745fe55d7a26190c6d5504743496c49498b129d2b3660da3697e81d4daebb2496f89aa4a05f1705e1d5d316153211c198f80d3100b51489bf4963f47'
     const x = ('0x' + publicKey64Bytes.slice(2, 66)) as Hex
     const y = ('0x' + publicKey64Bytes.slice(66)) as Hex
-    const webAuthnOwner = {
+    const webAuthnSigner = {
       type: 'webAuthn',
       publicKey: publicKey64Bytes,
     } as unknown as WebAuthnAccount
@@ -325,9 +328,9 @@ describe('DefaultSmartWallet', () => {
       success: true,
     } as unknown as WaitForUserOperationReceiptReturnType)
 
-    vi.mocked(findOwnerIndex).mockResolvedValue(1)
+    vi.mocked(findSignerIndexOnChain).mockResolvedValue(1)
 
-    const resultIndex = await wallet.addSigner(webAuthnOwner, chainId)
+    const resultIndex = await wallet.addSigner(webAuthnSigner, chainId)
 
     const expectedData = encodeFunctionData({
       abi: smartWalletAbi,
@@ -345,13 +348,10 @@ describe('DefaultSmartWallet', () => {
       ],
       chainId,
     )
-    expect(findOwnerIndex).toHaveBeenCalledWith(
+    expect(findSignerIndexOnChain).toHaveBeenCalledWith(
       expect.objectContaining({
         address: deploymentAddress,
-        signer: {
-          type: 'webAuthn',
-          publicKey: publicKey64Bytes,
-        } as unknown as WebAuthnAccount,
+        signerPublicKey: publicKey64Bytes,
       }),
     )
     expect(resultIndex).toBe(1)
@@ -372,20 +372,22 @@ describe('DefaultSmartWallet', () => {
       success: true,
     } as unknown as WaitForUserOperationReceiptReturnType)
 
-    vi.mocked(findOwnerIndex).mockResolvedValueOnce(-1).mockResolvedValueOnce(4)
+    vi.mocked(findSignerIndexOnChain)
+      .mockResolvedValueOnce(-1)
+      .mockResolvedValueOnce(4)
 
     const promise = wallet.addSigner(newSigner, chainId)
 
     await vi.advanceTimersByTimeAsync(2000)
     const resultIndex = await promise
 
-    expect(findOwnerIndex).toHaveBeenCalledTimes(2)
+    expect(findSignerIndexOnChain).toHaveBeenCalledTimes(2)
     expect(resultIndex).toBe(4)
 
     vi.useRealTimers()
   })
 
-  it('findSignerIndex delegates to findOwnerIndex for EOA and returns index', async () => {
+  it('findSignerIndexOnChain delegates to findSignerIndexOnChain util for EOA and returns index', async () => {
     const deploymentAddress = getRandomAddress()
     const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress,
@@ -394,20 +396,20 @@ describe('DefaultSmartWallet', () => {
     const chainId = unichain.id
     const eoa: Address = getRandomAddress()
 
-    vi.mocked(findOwnerIndex).mockResolvedValue(7)
+    vi.mocked(findSignerIndexOnChain).mockResolvedValue(7)
 
-    const idx = await wallet.findSignerIndex(eoa, chainId)
+    const idx = await wallet.findSignerIndexOnChain(eoa, chainId)
 
-    expect(findOwnerIndex).toHaveBeenCalledWith(
+    expect(findSignerIndexOnChain).toHaveBeenCalledWith(
       expect.objectContaining({
         address: deploymentAddress,
-        signer: eoa,
+        signerPublicKey: eoa,
       }),
     )
     expect(idx).toBe(7)
   })
 
-  it('findSignerIndex delegates to findOwnerIndex for WebAuthn and returns index', async () => {
+  it('findSignerIndex delegates to findSignerIndexOnChain for WebAuthn and returns index', async () => {
     const deploymentAddress = getRandomAddress()
     const wallet = await createAndInitDefaultSmartWallet({
       deploymentAddress,
@@ -421,17 +423,14 @@ describe('DefaultSmartWallet', () => {
       publicKey: publicKey64Bytes,
     } as unknown as WebAuthnAccount
 
-    vi.mocked(findOwnerIndex).mockResolvedValue(3)
+    vi.mocked(findSignerIndexOnChain).mockResolvedValue(3)
 
-    const idx = await wallet.findSignerIndex(webAuthnSigner, chainId)
+    const idx = await wallet.findSignerIndexOnChain(webAuthnSigner, chainId)
 
-    expect(findOwnerIndex).toHaveBeenCalledWith(
+    expect(findSignerIndexOnChain).toHaveBeenCalledWith(
       expect.objectContaining({
         address: deploymentAddress,
-        signer: {
-          type: 'webAuthn',
-          publicKey: publicKey64Bytes,
-        } as unknown as WebAuthnAccount,
+        signerPublicKey: publicKey64Bytes,
       }),
     )
     expect(idx).toBe(3)
@@ -449,7 +448,7 @@ describe('DefaultSmartWallet', () => {
     } as unknown as WaitForUserOperationReceiptReturnType)
 
     const findSignerIndexSpy = vi
-      .spyOn(wallet, 'findSignerIndex')
+      .spyOn(wallet, 'findSignerIndexOnChain')
       .mockResolvedValue(5)
 
     const receipt = await wallet.removeSigner(signer, chainId)
@@ -491,7 +490,7 @@ describe('DefaultSmartWallet', () => {
       success: true,
     } as unknown as WaitForUserOperationReceiptReturnType)
 
-    const findSignerIndexSpy = vi.spyOn(wallet, 'findSignerIndex')
+    const findSignerIndexSpy = vi.spyOn(wallet, 'findSignerIndexOnChain')
 
     const receipt = await wallet.removeSigner(webAuthnSigner, chainId, 9)
 
@@ -564,11 +563,11 @@ describe('DefaultSmartWallet', () => {
         address: getRandomAddress(),
         type: 'local',
       } as unknown as LocalAccount
-      const owners = [signer.address, getRandomAddress()]
+      const signers = [signer.address, getRandomAddress()]
       const deploymentAddress = getRandomAddress()
       const nonce = BigInt(123)
       const wallet = await createAndInitDefaultSmartWallet({
-        owners,
+        signers,
         signer,
         deploymentAddress,
         nonce,
@@ -602,7 +601,7 @@ describe('DefaultSmartWallet', () => {
             data: encodeFunctionData({
               abi: smartWalletFactoryAbi,
               functionName: 'createAccount',
-              args: [owners.map((owner) => pad(owner)), nonce],
+              args: [signers.map((signer) => pad(signer)), nonce],
             }),
           },
         ],
@@ -702,11 +701,11 @@ describe('DefaultSmartWallet', () => {
         address: getRandomAddress(),
         type: 'local',
       } as unknown as LocalAccount
-      const owners = [signer.address]
+      const signers = [signer.address]
       const deploymentAddress = getRandomAddress()
       const nonce = BigInt(456)
       const wallet = await createAndInitDefaultSmartWallet({
-        owners,
+        signers,
         signer,
         deploymentAddress,
         nonce,
@@ -739,7 +738,7 @@ describe('DefaultSmartWallet', () => {
             data: encodeFunctionData({
               abi: smartWalletFactoryAbi,
               functionName: 'createAccount',
-              args: [owners.map((owner) => pad(owner)), nonce],
+              args: [signers.map((signer) => pad(signer)), nonce],
             }),
           },
         ],
@@ -752,7 +751,7 @@ describe('DefaultSmartWallet', () => {
 
 async function createAndInitDefaultSmartWallet(
   params: {
-    owners?: Address[]
+    signers?: Address[]
     signer?: LocalAccount
     chainManager?: ChainManager
     lendProvider?: LendProvider<LendConfig>
@@ -762,7 +761,7 @@ async function createAndInitDefaultSmartWallet(
   } = {},
 ) {
   const {
-    owners = mockOwners,
+    signers = mockSigners,
     signer = mockSigner,
     chainManager = mockChainManager,
     lendProvider = mockLendProvider,
@@ -771,7 +770,7 @@ async function createAndInitDefaultSmartWallet(
     attributionSuffix,
   } = params
   return DefaultSmartWallet.create({
-    owners,
+    signers,
     signer,
     chainManager,
     lendProvider,

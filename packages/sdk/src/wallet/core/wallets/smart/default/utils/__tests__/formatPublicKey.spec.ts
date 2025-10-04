@@ -22,12 +22,7 @@ describe('formatPublicKey', () => {
       publicKey: publicKey64Bytes,
     } as unknown as WebAuthnAccount
 
-    const result = formatPublicKey(webAuthn)
+    const result = formatPublicKey(webAuthn.publicKey)
     expect(result).toBe(publicKey64Bytes)
-  })
-
-  it('throws for unknown signer type', () => {
-    const badSigner = { type: 'unknown' } as unknown as WebAuthnAccount
-    expect(() => formatPublicKey(badSigner)).toThrow('invalid signer type')
   })
 })

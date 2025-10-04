@@ -41,7 +41,6 @@ export async function createWallet(): Promise<{
     address: getAddress(privyWallet.address),
   })
   const { wallet } = await actions.wallet.createSmartWallet({
-    owners: [privySigner.address],
     signer: privySigner,
   })
   const smartWalletAddress = wallet.address
@@ -85,8 +84,7 @@ export async function getWallet(
   })
   const wallet = await actions.wallet.getSmartWallet({
     signer: privySigner,
-    owners: [privySigner.address],
-    deploymentOwners: [getAddress(privyWallet.address)],
+    deploymentSigners: [getAddress(privyWallet.address)],
   })
 
   if (!wallet.lend) {
@@ -111,8 +109,7 @@ export async function getAllWallets(
         })
         const wallet = await actions.wallet.getSmartWallet({
           signer: privySigner,
-          owners: [privySigner.address],
-          deploymentOwners: [privySigner.address],
+          deploymentSigners: [privySigner.address],
         })
         return {
           wallet,
