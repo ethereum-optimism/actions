@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { colors } from '../../constants/colors'
-import PrivyLogo from '../../assets/privy-logo-white.svg'
-import DynamicLogo from '../../assets/dynamic-logo-white.svg'
-import TurnkeyLogo from '../../assets/turnkey-logo-white.svg'
+import { colors } from '@/constants/colors'
+import PrivyLogo from '@/assets/privy-logo-white.svg'
+import DynamicLogo from '@/assets/dynamic-logo-white.svg'
+import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
 
 function GettingStarted() {
   const [openAccordion, setOpenAccordion] = useState<string | null>('install')
@@ -15,11 +15,11 @@ function GettingStarted() {
   const [selectedSmartTurnkeyTab, setSelectedSmartTurnkeyTab] = useState('frontend')
 
   const packageManagers = {
-    npm: 'npm install @ethereum-optimism/actions',
-    pnpm: 'pnpm add @ethereum-optimism/actions',
-    yarn: 'yarn add @ethereum-optimism/actions',
-    bun: 'bun add @ethereum-optimism/actions',
-    deno: 'deno add @ethereum-optimism/actions',
+    npm: 'npm install @eth-optimism/actions-sdk',
+    pnpm: 'pnpm add @eth-optimism/actions-sdk',
+    yarn: 'yarn add @eth-optimism/actions-sdk',
+    bun: 'bun add @eth-optimism/actions-sdk',
+    deno: 'deno add @eth-optimism/actions-sdk',
   }
 
   return (
@@ -307,7 +307,7 @@ function GettingStarted() {
                         {` `}
                         <span
                           style={{ color: colors.syntax.string }}
-                        >{`'@eth-optimism/actions/assets'`}</span>
+                        >{`'@eth-optimism/actions-sdk/assets'`}</span>
                         {`
 `}
                         <span
@@ -328,7 +328,7 @@ function GettingStarted() {
                         {` `}
                         <span
                           style={{ color: colors.syntax.string }}
-                        >{`'@eth-optimism/actions/markets'`}</span>
+                        >{`'@eth-optimism/actions-sdk/markets'`}</span>
                         {`
 `}
                         <span
@@ -776,8 +776,8 @@ function GettingStarted() {
                     <button
                       onClick={() =>
                         navigator.clipboard.writeText(
-                          `import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions/assets'
-import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions/markets'
+                          `import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
+import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions-sdk/markets'
 import { unichain, optimism, base } from 'viem/chains'
 import { getPrivyClient } from 'privy'
 
