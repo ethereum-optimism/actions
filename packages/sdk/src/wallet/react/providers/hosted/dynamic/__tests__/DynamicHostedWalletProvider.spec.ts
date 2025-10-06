@@ -5,16 +5,16 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
 import * as createSignerUtil from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
 
-// Mock DynamicWallet module to avoid importing browser-related deps
-vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', () => {
-  const createSpy = vi.fn()
-  return { DynamicWallet: { create: createSpy } }
+// Mock DynamicWallet to avoid importing browser-related deps
+vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', async () => {
+  const { DynamicWalletMock } = await import(
+    '@/wallet/react/wallets/hosted/dynamic/__mocks__/DynamicWalletMock.js'
+  )
+  return { DynamicWallet: DynamicWalletMock }
 })
-const { DynamicWallet } = (await import(
-  '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
-)) as unknown as { DynamicWallet: { create: ReturnType<typeof vi.fn> } }
 
 describe('DynamicHostedWalletProvider', () => {
   describe('toActionsWallet', () => {
@@ -27,7 +27,9 @@ describe('DynamicHostedWalletProvider', () => {
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',
       } as unknown as DynamicHostedWalletToActionsWalletOptions['wallet']
-      const mockResult = { __brand: 'actions-wallet' }
+      const mockResult = {
+        __brand: 'actions-wallet',
+      } as unknown as DynamicWallet
       vi.mocked(DynamicWallet.create).mockResolvedValueOnce(mockResult)
 
       const result = await provider.toActionsWallet({
