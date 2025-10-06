@@ -8,8 +8,8 @@ import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js
  * @description Parameters for creating a new smart wallet with specified owners and signer
  */
 export type CreateSmartWalletOptions = {
-  owners: Signer[]
   signer: LocalAccount
+  signers?: Signer[]
   nonce?: bigint
   deploymentChainIds?: SupportedChainId[]
 }
@@ -20,8 +20,8 @@ export type CreateSmartWalletOptions = {
  */
 export type GetSmartWalletOptions = {
   signer: LocalAccount
-  owners: Signer[]
-  deploymentOwners?: Signer[]
+  signers?: Signer[]
+  deploymentSigners?: Signer[]
   walletAddress?: Address
   nonce?: bigint
 }

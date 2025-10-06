@@ -79,7 +79,7 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [mockSigner.address, getRandomAddress()]
+    const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
 
     // Mock deploy to succeed for all chains
@@ -95,7 +95,7 @@ describe('DefaultSmartWalletProvider', () => {
     })
 
     const result = await provider.createWallet({
-      owners,
+      signers,
       signer: mockSigner,
       nonce,
     })
@@ -121,7 +121,7 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [mockSigner.address, getRandomAddress()]
+    const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
 
     const mockReceipt = {
@@ -142,7 +142,7 @@ describe('DefaultSmartWalletProvider', () => {
       })
 
     const result = await provider.createWallet({
-      owners,
+      signers,
       signer: mockSigner,
       nonce,
     })
@@ -163,7 +163,7 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [mockSigner.address, getRandomAddress()]
+    const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
 
     // Mock deploy to fail for all chains
@@ -179,7 +179,7 @@ describe('DefaultSmartWalletProvider', () => {
       )
 
     const result = await provider.createWallet({
-      owners,
+      signers,
       signer: mockSigner,
       nonce,
     })
@@ -209,7 +209,7 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [mockSigner.address, getRandomAddress()]
+    const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
 
     const { SmartWalletDeploymentError } = await import(
@@ -228,7 +228,7 @@ describe('DefaultSmartWalletProvider', () => {
       )
 
     const result = await provider.createWallet({
-      owners,
+      signers,
       signer: mockSigner,
       nonce,
     })
@@ -259,7 +259,7 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [mockSigner.address, getRandomAddress()]
+    const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
     const deploymentChainIds: SupportedChainId[] = [1]
 
@@ -270,7 +270,7 @@ describe('DefaultSmartWalletProvider', () => {
     })
 
     const result = await provider.createWallet({
-      owners,
+      signers,
       signer: mockSigner,
       nonce,
       deploymentChainIds,
@@ -290,7 +290,7 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [mockSigner.address, getRandomAddress()]
+    const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
 
     // Mock deploy to throw a generic error (not SmartWalletDeploymentError)
@@ -298,7 +298,7 @@ describe('DefaultSmartWalletProvider', () => {
 
     await expect(
       provider.createWallet({
-        owners,
+        signers,
         signer: mockSigner,
         nonce,
       }),
@@ -310,21 +310,21 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [mockSigner.address, getRandomAddress()]
+    const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(456)
     const mockAddress = getRandomAddress()
 
     const publicClient = vi.mocked(mockChainManager.getPublicClient(1))
     publicClient.readContract = vi.fn().mockResolvedValue(mockAddress)
 
-    const address = await provider.getWalletAddress({ owners, nonce })
+    const address = await provider.getWalletAddress({ signers, nonce })
 
     expect(address).toBe(mockAddress)
     expect(publicClient.readContract).toHaveBeenCalledWith({
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
       functionName: 'getAddress',
-      args: [owners.map((owner) => pad(owner)), nonce],
+      args: [signers.map((signer) => pad(signer)), nonce],
     })
   })
 
@@ -333,20 +333,20 @@ describe('DefaultSmartWalletProvider', () => {
       mockChainManager,
       mockLendProvider,
     )
-    const owners = [getRandomAddress()]
+    const signers = [getRandomAddress()]
     const mockAddress = getRandomAddress()
 
     const publicClient = vi.mocked(mockChainManager.getPublicClient(1))
     publicClient.readContract = vi.fn().mockResolvedValue(mockAddress)
 
-    const address = await provider.getWalletAddress({ owners })
+    const address = await provider.getWalletAddress({ signers })
 
     expect(address).toBe(mockAddress)
     expect(publicClient.readContract).toHaveBeenCalledWith({
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
       functionName: 'getAddress',
-      args: [owners.map((owner) => pad(owner)), BigInt(0)],
+      args: [signers.map((signer) => pad(signer)), BigInt(0)],
     })
   })
 
@@ -359,33 +359,36 @@ describe('DefaultSmartWalletProvider', () => {
       type: 'webAuthn',
       publicKey: '0x123456789abcdef',
     } as unknown as WebAuthnAccount
-    const owners = [getRandomAddress(), webAuthnAccount]
+    const signers = [getRandomAddress(), webAuthnAccount]
     const mockAddress = getRandomAddress()
 
     const publicClient = vi.mocked(mockChainManager.getPublicClient(1))
     publicClient.readContract = vi.fn().mockResolvedValue(mockAddress)
 
-    const address = await provider.getWalletAddress({ owners })
+    const address = await provider.getWalletAddress({ signers })
 
     expect(address).toBe(mockAddress)
     expect(publicClient.readContract).toHaveBeenCalledWith({
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
       functionName: 'getAddress',
-      args: [[pad(owners[0] as Address), webAuthnAccount.publicKey], BigInt(0)],
+      args: [
+        [pad(signers[0] as Address), webAuthnAccount.publicKey],
+        BigInt(0),
+      ],
     })
   })
 
-  it('should throw error for invalid owner type', async () => {
+  it('should throw error for invalid signer type', async () => {
     const provider = new DefaultSmartWalletProvider(
       mockChainManager,
       mockLendProvider,
     )
-    const invalidOwner = { type: 'invalid' } as unknown as Address
-    const owners = [invalidOwner]
+    const invalidSigner = { type: 'invalid' } as unknown as Address
+    const signers = [invalidSigner]
 
-    await expect(provider.getWalletAddress({ owners })).rejects.toThrow(
-      'invalid owner type',
+    await expect(provider.getWalletAddress({ signers })).rejects.toThrow(
+      'invalid signer type',
     )
   })
 
@@ -399,13 +402,13 @@ describe('DefaultSmartWalletProvider', () => {
     const wallet = await provider.getWallet({
       walletAddress,
       signer: mockSigner,
-      owners: [mockSigner.address],
+      signers: [mockSigner.address],
     })
 
     // Verify DefaultSmartWallet.create was called with correct params
     expect(createWalletSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        owners: [mockSigner.address],
+        signers: [mockSigner.address],
         signer: mockSigner,
         deploymentAddress: walletAddress,
       }),
@@ -432,7 +435,7 @@ describe('DefaultSmartWalletProvider', () => {
     })
 
     await provider.createWallet({
-      owners: [mockSigner.address],
+      signers: [mockSigner.address],
       signer: mockSigner,
     })
 
@@ -454,7 +457,7 @@ describe('DefaultSmartWalletProvider', () => {
     await provider.getWallet({
       walletAddress: getRandomAddress(),
       signer: mockSigner,
-      owners: [mockSigner.address],
+      signers: [mockSigner.address],
     })
 
     expect(createWalletSpy).toHaveBeenCalled()

@@ -70,7 +70,6 @@ describe('Wallet Service', () => {
       const result = await walletService.createWallet()
 
       expect(mockActions.wallet.createSmartWallet).toHaveBeenCalledWith({
-        owners: ['0x1234567890123456789012345678901234567890'],
         signer: {
           type: 'local',
           address: '0x1234567890123456789012345678901234567890',
@@ -116,8 +115,7 @@ describe('Wallet Service', () => {
           type: 'local',
           address: '0x1234567890123456789012345678901234567890',
         },
-        owners: ['0x1234567890123456789012345678901234567890'],
-        deploymentOwners: ['0x1234567890123456789012345678901234567890'],
+        deploymentSigners: ['0x1234567890123456789012345678901234567890'],
       })
       expect(result).toEqual(mockWallet)
     })
@@ -275,8 +273,7 @@ describe('Wallet Service', () => {
           address: '0x1234567890123456789012345678901234567890',
           type: 'local',
         },
-        owners: ['0x1234567890123456789012345678901234567890'],
-        deploymentOwners: ['0x1234567890123456789012345678901234567890'],
+        deploymentSigners: ['0x1234567890123456789012345678901234567890'],
       })
       expect(mockWallet.getBalance).toHaveBeenCalled()
       expect(result).toEqual([
@@ -322,8 +319,7 @@ describe('Wallet Service', () => {
           address: mockWallet.address,
           type: 'local',
         },
-        owners: ['0x1234567890123456789012345678901234567890'],
-        deploymentOwners: [mockWallet.address],
+        deploymentSigners: [mockWallet.address],
       })
       expect(mockWallet.getBalance).toHaveBeenCalled()
     })

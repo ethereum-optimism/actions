@@ -103,18 +103,18 @@ describe('WalletNamespace', () => {
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
-      const owners = [getRandomAddress(), hostedWallet.address]
+      const signers = [getRandomAddress(), hostedWallet.address]
       const nonce = BigInt(123)
 
       const result = await walletNamespace.createSmartWallet({
-        owners,
+        signers,
         signer: hostedWallet.signer,
         nonce,
       })
 
       expect(result.wallet).toBeInstanceOf(DefaultSmartWallet)
       expect(createSmartWalletSpy).toHaveBeenCalledWith({
-        owners,
+        signers,
         signer: hostedWallet.signer,
         nonce,
       })
@@ -144,7 +144,7 @@ describe('WalletNamespace', () => {
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
-      const owners = [getRandomAddress(), hostedWallet.address]
+      const signers = [getRandomAddress(), hostedWallet.address]
       const nonce = BigInt(456)
       const deploymentChainIds = [130] as SupportedChainId[]
 
@@ -168,7 +168,7 @@ describe('WalletNamespace', () => {
       })
 
       const result = await walletNamespace.createSmartWallet({
-        owners,
+        signers,
         signer: hostedWallet.signer,
         nonce,
         deploymentChainIds,
@@ -176,7 +176,7 @@ describe('WalletNamespace', () => {
 
       // Verify it was called with correct params
       expect(createSmartWalletSpy).toHaveBeenCalledWith({
-        owners,
+        signers,
         signer: hostedWallet.signer,
         nonce,
         deploymentChainIds,
@@ -229,12 +229,12 @@ describe('WalletNamespace', () => {
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
-      const deploymentOwners = [hostedWallet.address, getRandomAddress()]
+      const deploymentSigners = [hostedWallet.address, getRandomAddress()]
       const nonce = BigInt(789)
       const params = {
         signer: hostedWallet.signer,
-        deploymentOwners,
-        owners: [hostedWallet.signer.address],
+        deploymentSigners,
+        signers: [hostedWallet.signer.address],
         nonce,
       }
 
@@ -275,11 +275,11 @@ describe('WalletNamespace', () => {
       await expect(
         walletNamespace.getSmartWallet({
           signer: hostedWallet.signer,
-          owners: [hostedWallet.signer.address],
-          // Missing both walletAddress and deploymentOwners
+          signers: [hostedWallet.signer.address],
+          // Missing both walletAddress and deploymentSigners
         }),
       ).rejects.toThrow(
-        'Either walletAddress or deploymentOwners array must be provided to locate the smart wallet',
+        'Either walletAddress or deploymentSigners array must be provided to locate the smart wallet',
       )
     })
   })
@@ -384,9 +384,9 @@ describe('WalletNamespace', () => {
       })
 
       // Use the signer to create a smart wallet
-      const owners = [signer.address, getRandomAddress()]
+      const signers = [signer.address, getRandomAddress()]
       const { wallet: smartWallet } = await walletNamespace.createSmartWallet({
-        owners,
+        signers,
         signer,
         nonce: 0n,
       })

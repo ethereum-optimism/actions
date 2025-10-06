@@ -73,7 +73,7 @@ export abstract class SmartWallet extends Wallet {
    * @returns Promise resolving to the onchain signer index for the found signer
    * returns -1 if the signer is not found
    */
-  abstract findSignerIndex(
+  abstract findSignerIndexOnChain(
     signer: Signer,
     chainId: SupportedChainId,
   ): Promise<number>
