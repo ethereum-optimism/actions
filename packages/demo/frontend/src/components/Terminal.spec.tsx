@@ -73,7 +73,7 @@ describe('Terminal', () => {
     await user.keyboard('{Enter}')
 
     // Check that help command was executed (should appear twice - once from initial load, once from command)
-    const helpCommands = screen.getAllByText((content, element) => {
+    const helpCommands = screen.getAllByText((_content, element) => {
       return element?.textContent === 'actions: $ help'
     })
     expect(helpCommands.length).toBeGreaterThan(0)
@@ -113,7 +113,7 @@ describe('Terminal', () => {
     await user.keyboard('{Enter}')
 
     // Check that status command was executed - use getAllByText since command appears multiple times
-    const statusElements = screen.getAllByText((content, element) => {
+    const statusElements = screen.getAllByText((_content, element) => {
       return element?.textContent === 'actions: $ status'
     })
     expect(statusElements.length).toBeGreaterThan(0)
@@ -151,7 +151,7 @@ describe('Terminal', () => {
     await user.keyboard('{Enter}')
 
     // Check that command was executed - use getAllByText since command appears multiple times
-    const selectElements = screen.getAllByText((content, element) => {
+    const selectElements = screen.getAllByText((_content, element) => {
       return element?.textContent === 'actions: $ wallet select'
     })
     expect(selectElements.length).toBeGreaterThan(0)
@@ -176,7 +176,7 @@ describe('Terminal', () => {
     await user.keyboard('{Enter}')
 
     // Check that command was executed and prompt appeared - use getAllByText since command appears multiple times
-    const createElements = screen.getAllByText((content, element) => {
+    const createElements = screen.getAllByText((_content, element) => {
       return element?.textContent === 'actions: $ wallet create'
     })
     expect(createElements.length).toBeGreaterThan(0)
@@ -238,7 +238,7 @@ describe('Terminal', () => {
       await user.keyboard('{Enter}')
 
       // Check that command was executed - use getAllByText since command appears multiple times
-      const commandElements = screen.getAllByText((content, element) => {
+      const commandElements = screen.getAllByText((_content, element) => {
         return element?.textContent === `actions: $ ${command}`
       })
       expect(commandElements.length).toBeGreaterThan(0)
