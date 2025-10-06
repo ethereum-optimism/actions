@@ -597,10 +597,7 @@ function Home() {
               </div>
 
               <h3 className="text-lg font-medium text-gray-300 mb-2">
-                Configure{' '}
-                <span style={{ color: colors.actionsRed, fontWeight: 'bold' }}>
-                  Actions
-                </span>
+                Configure Actions
               </h3>
               <p className="text-gray-300 text-base mb-4">
                 Pick which DeFi protocols, markets, networks, assets, and
@@ -1335,16 +1332,8 @@ const config: ActionsConfig = {
 
                       <div>
                         <p className="text-gray-300 mb-2">
-                          2. Create user wallet and extend it with DeFi{' '}
-                          <span
-                            style={{
-                              color: colors.actionsRed,
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            Actions
-                          </span>
-                          :
+                          2. Create a frontend or backend user wallet and extend
+                          it with DeFi Actions:
                         </p>
                         <div
                           className="rounded-lg overflow-hidden"
@@ -1759,16 +1748,8 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 
                       <div>
                         <p className="text-gray-300 mb-2">
-                          2. Create user wallet and extend it with DeFi{' '}
-                          <span
-                            style={{
-                              color: colors.actionsRed,
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            Actions
-                          </span>
-                          :
+                          2. Create a frontend or backend user wallet and extend
+                          it with DeFi Actions:
                         </p>
                         <div
                           className="rounded-lg overflow-hidden"
@@ -1975,16 +1956,8 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
 
                       <div>
                         <p className="text-gray-300 mb-2">
-                          2. Create user wallet and extend it with DeFi{' '}
-                          <span
-                            style={{
-                              color: colors.actionsRed,
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            Actions
-                          </span>
-                          :
+                          2. Create a frontend or backend user wallet and extend
+                          it with DeFi Actions:
                         </p>
                         <div
                           className="rounded-lg overflow-hidden"
