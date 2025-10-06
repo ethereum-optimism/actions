@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Terminal from './components/Terminal'
-import Home from './components/home/Home'
-import { PrivyProvider } from './providers/PrivyProvider'
+import Terminal from '@/components/Terminal'
+import Home from '@/components/home/Home'
+import { PrivyProvider } from '@/providers/PrivyProvider'
 
 function App() {
   return (
