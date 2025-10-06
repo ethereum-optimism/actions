@@ -1,5 +1,3 @@
-import ActionsLogo from './ActionsLogo'
-
 interface NavBarProps {
   fullWidth?: boolean
   rightElement?: React.ReactNode
@@ -7,11 +5,11 @@ interface NavBarProps {
 
 function NavBar({ fullWidth = false, rightElement }: NavBarProps) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
+    <header className="fixed top-0 left-0 right-0 z-50" style={{ backgroundColor: 'rgba(29, 32, 33, 0.5)' }}>
       <div className={fullWidth ? 'px-6 py-4' : 'max-w-7xl mx-auto px-6 py-4'}>
         <div className="flex items-center justify-between">
           <a href="/" className="cursor-pointer">
-            <ActionsLogo />
+            <img src="/Actions-logo-A.png" alt="Actions" className="h-8 w-auto" />
           </a>
           <div className="flex items-center gap-4">
             {rightElement}

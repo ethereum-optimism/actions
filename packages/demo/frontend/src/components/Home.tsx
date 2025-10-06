@@ -193,40 +193,19 @@ function Home() {
                   {` { `}
                   <span
                     style={{ color: colors.syntax.variable }}
-                  >{`Actions`}</span>
+                  >{`wallet`}</span>
                   {` } `}
                   <span style={{ color: colors.syntax.keyword }}>{`from`}</span>
                   {` `}
                   <span
                     style={{ color: colors.syntax.string }}
-                  >{`'@eth-optimism/actions'`}</span>
-                  {`
-`}
-                  <span
-                    style={{ color: colors.syntax.keyword }}
-                  >{`import`}</span>
-                  {` { `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`USDC`}</span>
-                  {`, `}
-                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
-                  {`, `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`WBTC`}</span>
-                  {` } `}
-                  <span style={{ color: colors.syntax.keyword }}>{`from`}</span>
-                  {` `}
-                  <span
-                    style={{ color: colors.syntax.string }}
-                  >{`'@eth-optimism/actions/assets'`}</span>
+                  >{`'actions'`}</span>
                   {`
 
 `}
                   <span
                     style={{ color: colors.syntax.comment }}
-                  >{`// gas sponsored smart wallets`}</span>
+                  >{`// Enable asset lending in DeFi`}</span>
                   {`
 `}
                   <span
@@ -235,60 +214,8 @@ function Home() {
                   {` `}
                   <span
                     style={{ color: colors.syntax.variable }}
-                  >{`wallet`}</span>
+                  >{`receipt1`}</span>
                   {` = `}
-                  <span
-                    style={{ color: colors.syntax.keyword }}
-                  >{`await`}</span>
-                  {` `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`Actions`}</span>
-                  {`.`}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`createWallet`}</span>
-                  {`(`}
-                  <span
-                    style={{ color: colors.syntax.string }}
-                  >{`'user@example.com'`}</span>
-                  {`)
-
-`}
-                  <span
-                    style={{ color: colors.syntax.comment }}
-                  >{`// onramp to stables`}</span>
-                  {`
-`}
-                  <span
-                    style={{ color: colors.syntax.keyword }}
-                  >{`await`}</span>
-                  {` `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`wallet`}</span>
-                  {`.`}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`fund`}</span>
-                  {`(`}
-                  <span style={{ color: colors.syntax.number }}>{`1000`}</span>
-                  {`, `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`USDC`}</span>
-                  {`)
-
-`}
-                  <span
-                    style={{ color: colors.syntax.comment }}
-                  >{`// earn DeFi yield`}</span>
-                  {`
-`}
-                  <span
-                    style={{ color: colors.syntax.keyword }}
-                  >{`await`}</span>
-                  {` `}
                   <span
                     style={{ color: colors.syntax.variable }}
                   >{`wallet`}</span>
@@ -296,24 +223,48 @@ function Home() {
                   <span
                     style={{ color: colors.syntax.variable }}
                   >{`lend`}</span>
-                  {`(`}
-                  <span style={{ color: colors.syntax.number }}>{`100`}</span>
-                  {`, `}
+                  {`.`}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`openPosition`}</span>
+                  {`({
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`amount`}</span>
+                  {`: `}
+                  <span style={{ color: colors.syntax.number }}>{`1`}</span>
+                  {`,
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`asset`}</span>
+                  {`: `}
                   <span
                     style={{ color: colors.syntax.variable }}
                   >{`USDC`}</span>
-                  {`)
+                  {`,
+  ...`}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`ExampleMorphoMarket`}</span>
+                  {`
+})
 
 `}
                   <span
                     style={{ color: colors.syntax.comment }}
-                  >{`// borrow against collateral`}</span>
+                  >{`// Use lent assets as collateral`}</span>
                   {`
 `}
                   <span
                     style={{ color: colors.syntax.keyword }}
-                  >{`await`}</span>
+                  >{`const`}</span>
                   {` `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`receipt2`}</span>
+                  {` = `}
                   <span
                     style={{ color: colors.syntax.variable }}
                   >{`wallet`}</span>
@@ -321,22 +272,48 @@ function Home() {
                   <span
                     style={{ color: colors.syntax.variable }}
                   >{`borrow`}</span>
-                  {`(`}
-                  <span style={{ color: colors.syntax.number }}>{`0.01`}</span>
-                  {`, `}
-                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
-                  {`)
+                  {`.`}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`openPosition`}</span>
+                  {`({
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`amount`}</span>
+                  {`: `}
+                  <span style={{ color: colors.syntax.number }}>{`1`}</span>
+                  {`,
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`asset`}</span>
+                  {`: `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`USDT`}</span>
+                  {`,
+  ...`}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`ExampleAaveMarket`}</span>
+                  {`
+})
 
 `}
                   <span
                     style={{ color: colors.syntax.comment }}
-                  >{`// swap tokens`}</span>
+                  >{`// Token swap via DEX of choice`}</span>
                   {`
 `}
                   <span
                     style={{ color: colors.syntax.keyword }}
-                  >{`await`}</span>
+                  >{`const`}</span>
                   {` `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`receipt3`}</span>
+                  {` = `}
                   <span
                     style={{ color: colors.syntax.variable }}
                   >{`wallet`}</span>
@@ -344,15 +321,86 @@ function Home() {
                   <span
                     style={{ color: colors.syntax.variable }}
                   >{`swap`}</span>
-                  {`(`}
-                  <span style={{ color: colors.syntax.number }}>{`0.01`}</span>
-                  {`, `}
-                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
-                  {`, `}
+                  {`.`}
                   <span
                     style={{ color: colors.syntax.variable }}
-                  >{`WBTC`}</span>
-                  {`)`}
+                  >{`execute`}</span>
+                  {`({
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`amountIn`}</span>
+                  {`: `}
+                  <span style={{ color: colors.syntax.number }}>{`1`}</span>
+                  {`,
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`assetIn`}</span>
+                  {`: `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`USDC`}</span>
+                  {`,
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`assetOut`}</span>
+                  {`: `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`ETH`}</span>
+                  {`,
+})
+
+`}
+                  <span
+                    style={{ color: colors.syntax.comment }}
+                  >{`// Easy, safe asset transfers`}</span>
+                  {`
+`}
+                  <span
+                    style={{ color: colors.syntax.keyword }}
+                  >{`const`}</span>
+                  {` `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`receipt4`}</span>
+                  {` = `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`wallet`}</span>
+                  {`.`}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`send`}</span>
+                  {`({
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`amount`}</span>
+                  {`: `}
+                  <span style={{ color: colors.syntax.number }}>{`1`}</span>
+                  {`,
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`asset`}</span>
+                  {`: `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`USDC`}</span>
+                  {`,
+  `}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`to`}</span>
+                  {`: `}
+                  <span
+                    style={{ color: colors.syntax.string }}
+                  >{`'vitalik.eth'`}</span>
+                  {`,
+})`}
                 </code>
               </pre>
             </div>
@@ -1651,7 +1699,7 @@ const config: ActionsConfig = {
                                   {` `}
                                   <span
                                     style={{ color: colors.syntax.string }}
-                                  >{`'@privy-io/server-auth'`}</span>
+                                  >{`'@privy-io/node'`}</span>
                                   {`
 
 `}
@@ -1794,7 +1842,7 @@ const embeddedWallet = wallets.find(
 const actionsWallet = await actions.wallet.hostedWalletToActionsWallet({
   connectedWallet: embeddedWallet,
 })`
-                                    : `import { PrivyClient } from '@privy-io/server-auth'
+                                    : `import { PrivyClient } from '@privy-io/node'
 
 const privyClient = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
 
@@ -3033,7 +3081,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                                   {` } `}
                                   <span style={{ color: colors.syntax.keyword }}>{`from`}</span>
                                   {` `}
-                                  <span style={{ color: colors.syntax.string }}>{`'@privy-io/server-auth'`}</span>
+                                  <span style={{ color: colors.syntax.string }}>{`'@privy-io/node'`}</span>
                                   {`
 `}
                                   <span style={{ color: colors.syntax.keyword }}>{`import`}</span>
@@ -3145,7 +3193,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
   owners: [signer.address],
   signer: signer,
 })`
-                                    : `import { PrivyClient } from '@privy-io/server-auth'
+                                    : `import { PrivyClient } from '@privy-io/node'
 import { getAddress } from 'viem'
 
 const privyWallet = await privyClient.walletApi.createWallet({
