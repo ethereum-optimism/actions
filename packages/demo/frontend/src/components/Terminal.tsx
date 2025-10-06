@@ -1962,7 +1962,7 @@ User ID: ${result.userId}`,
       style={{ backgroundColor: '#282828' }}
       onClick={handleClick}
     >
-      <NavBar fullWidth rightElement={<PrivyAuthButton />} />
+      <NavBar fullWidth responsiveLogo rightElement={<PrivyAuthButton />} />
 
       {/* Terminal Content */}
       <div
