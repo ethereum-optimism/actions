@@ -12,11 +12,12 @@ function Home() {
   const heroRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // used to show/hide the navbar when scrolling
     const observer = new IntersectionObserver(
       ([entry]) => {
         setShowNav(!entry.isIntersecting)
       },
-      { threshold: 0 }
+      { threshold: 0 },
     )
 
     if (heroRef.current) {
