@@ -24,7 +24,7 @@ function Home() {
       <NavBar />
 
       {/* ASCII Art - Isolated from other styles */}
-      <div className="pt-32 pb-8 flex justify-center">
+      <div className="pt-32 pb-8 flex justify-center px-6 overflow-x-auto">
         <div
           style={{
             fontFamily:
@@ -35,7 +35,7 @@ function Home() {
             letterSpacing: '0',
             fontVariantLigatures: 'none',
             fontFeatureSettings: '"liga" 0',
-            fontSize: 'clamp(0.625rem, 2.5vw, 1.25rem)',
+            fontSize: 'clamp(0.5rem, 2.5vw, 1.25rem)',
             margin: 0,
             padding: 0,
             border: 'none',
@@ -129,13 +129,10 @@ function Home() {
             </h2>
             <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
             <p className="text-gray-300 mb-4">
-              <span style={{ color: colors.actionsRed, fontWeight: 'bold' }}>
-                Actions
-              </span>{' '}
-              is an open source SDK for onchain actions: <strong>Lend</strong>,{' '}
-              <strong>Borrow</strong>, <strong>Swap</strong>,{' '}
-              <strong>Pay</strong>, without managing complex infrastructure or
-              custody.
+              Actions is an open source SDK for onchain actions:{' '}
+              <strong>Lend</strong>, <strong>Borrow</strong>,{' '}
+              <strong>Swap</strong>, <strong>Pay</strong>, without managing
+              complex infrastructure or custody.
             </p>
           </div>
           <div
