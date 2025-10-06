@@ -1,9 +1,10 @@
 interface NavBarProps {
   fullWidth?: boolean
   rightElement?: React.ReactNode
+  showDemo?: boolean
 }
 
-function NavBar({ fullWidth = false, rightElement }: NavBarProps) {
+function NavBar({ fullWidth = false, rightElement, showDemo = false }: NavBarProps) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50" style={{ backgroundColor: 'rgba(29, 32, 33, 0.5)' }}>
       <div className={fullWidth ? 'px-6 py-4' : 'max-w-7xl mx-auto px-6 py-4'}>
@@ -13,6 +14,14 @@ function NavBar({ fullWidth = false, rightElement }: NavBarProps) {
           </a>
           <div className="flex items-center gap-4">
             {rightElement}
+            {showDemo && (
+              <a
+                href="/demo"
+                className="flex items-center space-x-2 px-2 py-2 text-sm text-gray-300 hover:text-white transition-colors duration-200"
+              >
+                <span>Demo</span>
+              </a>
+            )}
             <a
               href="https://github.com/ethereum-optimism/actions"
               target="_blank"
