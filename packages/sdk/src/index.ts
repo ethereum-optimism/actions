@@ -13,6 +13,7 @@ export type {
   ApyBreakdown,
   Asset,
   BaseLendConfig,
+  EOATransactionReceipt,
   LendConfig,
   LendMarket,
   LendMarketConfig,
@@ -26,6 +27,7 @@ export type {
   MorphoLendConfig,
   TokenBalance,
   TransactionData,
+  UserOperationTransactionReceipt,
   WalletConfig,
 } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'

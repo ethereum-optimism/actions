@@ -148,7 +148,8 @@ describe('Lend Service', () => {
         isUserWallet: false,
       })
 
-      expect(result.hash).toBe('0xtxhash')
+      expect(result.transactionHashes).toBeUndefined()
+      expect(result.userOpHash).toBe('0xuserophash')
       expect(mockWallet.lend.closePosition).toHaveBeenCalledWith({
         amount,
         asset: expect.objectContaining({

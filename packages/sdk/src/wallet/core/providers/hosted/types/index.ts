@@ -1,4 +1,5 @@
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 
 /**
@@ -9,6 +10,7 @@ import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstra
  */
 export interface HostedProviderDeps {
   chainManager: ChainManager
+  lendProvider?: LendProvider<LendConfig>
 }
 
 /**

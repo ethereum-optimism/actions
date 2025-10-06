@@ -3,6 +3,7 @@ import type { Address, LocalAccount } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 
+export * from '@/wallet/core/wallets/abstract/types/index.js'
 /**
  * Options for creating a smart wallet
  * @description Parameters for creating a new smart wallet with specified owners and signer

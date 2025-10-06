@@ -87,6 +87,12 @@ export class MockChainManager {
     return this.getChain(chainId).rpcUrls.default.http as string[]
   }
 
+  getTransportForChain(_chainId: (typeof SUPPORTED_CHAIN_IDS)[number]) {
+    // Mock implementation returns a simple http transport
+    // In tests, the actual transport behavior is typically mocked at a higher level
+    return {} as unknown
+  }
+
   private createMockBundlerClients(): Map<SupportedChainId, BundlerClient> {
     const clients = new Map<SupportedChainId, BundlerClient>()
 

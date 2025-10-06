@@ -1,6 +1,7 @@
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
@@ -14,9 +15,14 @@ export abstract class HostedWalletProvider<
   TOptionsMap extends Record<TType, unknown>,
 > {
   protected chainManager: ChainManager
+  protected lendProvider?: LendProvider<LendConfig>
 
-  protected constructor(chainManager: ChainManager) {
+  protected constructor(
+    chainManager: ChainManager,
+    lendProvider?: LendProvider<LendConfig>,
+  ) {
     this.chainManager = chainManager
+    this.lendProvider = lendProvider
   }
   /**
    * Convert a hosted wallet to an Actions wallet

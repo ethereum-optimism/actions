@@ -13,7 +13,6 @@ import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { TransactionConfirmedButRevertedError } from '@/core/error/errors.js'
 import { retryOnStaleRead } from '@/core/utils/retryOnStaleRead.js'
-import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -51,8 +50,6 @@ export class DefaultSmartWallet extends SmartWallet {
   private signerIndex: number
   /** Known deployment address of the wallet (if already deployed) */
   private deploymentAddress?: Address
-  /** Provider for lending market operations */
-  private lendProvider?: LendProvider<LendConfig>
   /** Nonce used for deterministic address generation (defaults to 0) */
   private nonce?: bigint
   /** Optional 16-byte attribution suffix appended to callData */
@@ -77,7 +74,7 @@ export class DefaultSmartWallet extends SmartWallet {
     nonce?: bigint,
     attributionSuffix?: Hex,
   ) {
-    super(chainManager)
+    super(chainManager, lendProvider)
 
     const { signersWithLocalAccount, signerIndex } =
       DefaultSmartWallet.ensureLocalAccountSigner(signers, signer)
@@ -85,7 +82,6 @@ export class DefaultSmartWallet extends SmartWallet {
     this.signers = signersWithLocalAccount
     this.signerIndex = signerIndex
     this.deploymentAddress = deploymentAddress
-    this.lendProvider = lendProvider
     this.nonce = nonce
     if (attributionSuffix) {
       DefaultSmartWallet.isValidAttributionSuffix(attributionSuffix)
@@ -565,11 +561,6 @@ export class DefaultSmartWallet extends SmartWallet {
 
   protected async performInitialization() {
     this._address = await this.getAddress()
-
-    // Create wallet lend namespace after address is initialized if lend provider is available
-    if (this.lendProvider) {
-      this.lend = new WalletLendNamespace(this.lendProvider, this)
-    }
   }
 
   /**
