@@ -28,6 +28,16 @@ function Code({ code, language = 'typescript' }: CodeProps) {
         '$1<span class="var-name">$2</span>'
       )
 
+      // Wrap destructuring braces after const in purple
+      html = html.replace(
+        /(<span class="hljs-keyword">const<\/span> )(\{)/g,
+        '$1<span class="func-brace">$2</span>'
+      )
+      html = html.replace(
+        /(\})( = )/g,
+        '<span class="func-brace">$1</span>$2'
+      )
+
       // Wrap import braces in yellow class
       html = html.replace(
         /(<span class="hljs-keyword">import<\/span> )([{])/g,
@@ -38,11 +48,14 @@ function Code({ code, language = 'typescript' }: CodeProps) {
         '<span class="import-brace">$1</span>$2'
       )
 
-      // Wrap function call syntax: openPosition({ ... })
-      // Opening paren in yellow
+      // Wrap all parentheses in yellow
       html = html.replace(
-        /(<span class="hljs-title function_">.*?<\/span>)(\()/g,
-        '$1<span class="import-brace">$2</span>'
+        /(\()/g,
+        '<span class="import-brace">$1</span>'
+      )
+      html = html.replace(
+        /(\))/g,
+        '<span class="import-brace">$1</span>'
       )
       // Opening brace in purple
       html = html.replace(
