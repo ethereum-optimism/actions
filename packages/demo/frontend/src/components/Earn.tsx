@@ -66,10 +66,18 @@ function Earn() {
     const initializeWallet = async () => {
       if (authenticated && user?.id && !walletCreated) {
         try {
-          // Use user ID as the wallet identifier
           const userId = user.id
+          const headers = await getAuthHeaders()
 
-          // Try to fetch balance first (wallet might already exist)
+          // First, try to create the wallet (idempotent - won't fail if exists)
+          try {
+            await actionsApi.createWallet(userId, headers)
+          } catch (createError) {
+            // If wallet already exists, that's fine - continue to fetch balance
+            console.log('Wallet may already exist:', createError)
+          }
+
+          // Now fetch the balance
           await fetchBalance(userId)
           setWalletCreated(true)
         } catch (error) {
@@ -79,7 +87,7 @@ function Earn() {
     }
 
     initializeWallet()
-  }, [authenticated, user?.id, walletCreated, fetchBalance])
+  }, [authenticated, user?.id, walletCreated, fetchBalance, getAuthHeaders])
 
   // Show loading state while Privy is initializing
   if (!ready) {
