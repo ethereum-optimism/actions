@@ -19,7 +19,7 @@ function Info() {
         <ul className="space-y-3 mb-8" style={{ color: '#000000', fontSize: '14px' }}>
           <li className="flex items-start">
             <span className="mr-2">•</span>
-            <span>Verbs creates a smart wallet for you.</span>
+            <span>Actions creates a smart wallet for you.</span>
           </li>
           <li className="flex items-start">
             <span className="mr-2">•</span>
@@ -27,13 +27,13 @@ function Info() {
           </li>
           <li className="flex items-start">
             <span className="mr-2">•</span>
-            <span>When you click Lend USDC, Verbs: gets a quote and opens a lending position on Base Sepolia.</span>
+            <span>When you click Lend USDC, Actions: gets a quote and opens a lending position on Base Sepolia.</span>
           </li>
         </ul>
 
         <div className="space-y-3">
           <a
-            href="https://github.com/ethereum-optimism/verbs"
+            href="https://github.com/ethereum-optimism/actions"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between p-3 rounded-lg transition-all hover:bg-gray-50"
@@ -53,7 +53,7 @@ function Info() {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <span style={{ color: '#1a1b1e' }}>Get started with Verbs SDK</span>
+              <span style={{ color: '#1a1b1e' }}>Get started with Actions SDK</span>
             </div>
             <svg
               className="w-4 h-4"
@@ -74,7 +74,7 @@ function Info() {
           <div style={{ borderBottom: '1px solid #E0E2EB' }}></div>
 
           <a
-            href="https://github.com/ethereum-optimism/verbs"
+            href="https://github.com/ethereum-optimism/actions"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between p-3 rounded-lg transition-all hover:bg-gray-50"
