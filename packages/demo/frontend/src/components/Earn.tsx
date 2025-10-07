@@ -5,6 +5,7 @@ import Action from './Action'
 import ActivityLog from './ActivityLog'
 import { ActivityLogProvider } from '../contexts/ActivityLogContext'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
+import { actionsApi } from '../api/actionsApi'
 import { env } from '../envVars'
 
 function EarnContent() {
@@ -88,38 +89,45 @@ function EarnContent() {
     try {
       setIsLoadingBalance(true)
       const headers = await getAuthHeaders()
-      const balanceResult = await loggedApi.getWalletBalance(userId, headers)
+      const balanceResult = await actionsApi.getWalletBalance(userId, headers)
 
-      // Find USDC balance
+      // Find USDC balance (try USDC_DEMO first not USDC)
       const usdcToken = balanceResult.balance.find(
         (token) => token.symbol === 'USDC_DEMO'
       )
 
-      if (usdcToken) {
+      if (usdcToken && parseFloat(usdcToken.totalBalance) > 0) {
         // Parse the balance (it's in smallest unit, divide by 1e6 for USDC)
         const balance = parseFloat(usdcToken.totalBalance) / 1e6
-        setUsdcBalance(balance.toFixed(2))
+        const formattedBalance = balance.toFixed(2)
+        setUsdcBalance(formattedBalance)
       } else {
-        setUsdcBalance('0')
+        setUsdcBalance('0.00')
       }
     } catch {
-      setUsdcBalance('0')
+      setUsdcBalance('0.00')
     } finally {
       setIsLoadingBalance(false)
     }
-  }, [getAuthHeaders, loggedApi])
+  }, [getAuthHeaders])
 
   // Function to mint demo USDC
   const handleMintUSDC = useCallback(async () => {
     if (!user?.id) return
 
     try {
+      setIsLoadingBalance(true)
       const headers = await getAuthHeaders()
       await loggedApi.fundWallet(user.id, headers)
+
+      // Wait for the transaction to settle
+      await new Promise(resolve => setTimeout(resolve, 3000))
+
       // Refresh balance after minting
       await fetchBalance(user.id)
     } catch (error) {
       console.error('Error minting USDC:', error)
+      setIsLoadingBalance(false)
     }
   }, [user?.id, getAuthHeaders, loggedApi, fetchBalance])
 
@@ -329,7 +337,13 @@ function EarnContent() {
                 usdcBalance={usdcBalance}
                 isLoadingBalance={isLoadingBalance}
                 onMintUSDC={handleMintUSDC}
-                onTransactionSuccess={() => user?.id && fetchBalance(user.id)}
+                onTransactionSuccess={async () => {
+                  if (user?.id) {
+                    // Wait a bit for the transaction to settle
+                    await new Promise(resolve => setTimeout(resolve, 2000))
+                    await fetchBalance(user.id)
+                  }
+                }}
               />
               <Info />
             </div>

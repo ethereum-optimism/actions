@@ -60,7 +60,13 @@ export async function getPosition(
   marketId: LendMarketId,
   walletId: string,
 ): Promise<LendMarketPosition> {
-  const wallet = await getWallet(walletId)
+  // Try to get wallet as authenticated user first (for Privy user IDs like did:privy:...)
+  let wallet = await getWallet(walletId, true)
+
+  // If not found, try as direct wallet ID (legacy behavior)
+  if (!wallet) {
+    wallet = await getWallet(walletId, false)
+  }
 
   if (!wallet) {
     throw new Error(`Wallet not found for user ID: ${walletId}`)

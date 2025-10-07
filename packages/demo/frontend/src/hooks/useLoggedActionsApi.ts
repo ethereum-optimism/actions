@@ -9,18 +9,10 @@ type LogConfig = {
 }
 
 const LOG_CONFIG: Record<string, LogConfig> = {
-  getWalletBalance: {
-    type: 'wallet',
-    action: 'Get wallet balance',
-  },
   fundWallet: {
     type: 'fund',
     action: 'mint',
     getAmount: () => '100.00',
-  },
-  getMarkets: {
-    type: 'markets',
-    action: 'Get market',
   },
   openLendPosition: {
     type: 'lend',
