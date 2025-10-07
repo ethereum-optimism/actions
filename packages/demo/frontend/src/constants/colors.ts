@@ -12,6 +12,7 @@ export const colors = {
     primary: '#ebdbb2', // light1
     secondary: '#d5c4a1', // light2
   },
+  blue: '#83a598', // bright blue for identifiers
   syntax: {
     keyword: '#fb4933', // bright red
     function: '#fe8019', // bright orange

@@ -181,9 +181,7 @@ function ConfigureSection({
                     style={{ color: colors.syntax.keyword }}
                   >{`import`}</span>
                   {` { `}
-                  <span
-                    style={{ color: '#8ec07c' }}
-                  >{`PrivyClient`}</span>
+                  <span style={{ color: '#8ec07c' }}>{`PrivyClient`}</span>
                   {` } `}
                   <span style={{ color: colors.syntax.keyword }}>{`from`}</span>
                   {` `}
@@ -201,25 +199,17 @@ function ConfigureSection({
                     style={{ color: colors.syntax.variable }}
                   >{`privy`}</span>
                   {` = `}
-                  <span
-                    style={{ color: colors.syntax.keyword }}
-                  >{`new`}</span>
+                  <span style={{ color: colors.syntax.keyword }}>{`new`}</span>
                   {` `}
-                  <span
-                    style={{ color: '#8ec07c' }}
-                  >{`PrivyClient`}</span>
+                  <span style={{ color: '#8ec07c' }}>{`PrivyClient`}</span>
                   {`(`}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`env`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`env`}</span>
                   {`.`}
                   <span
                     style={{ color: colors.syntax.property }}
                   >{`PRIVY_APP_ID`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`env`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`env`}</span>
                   {`.`}
                   <span
                     style={{ color: colors.syntax.property }}
@@ -297,11 +287,6 @@ function ConfigureSection({
                     style={{ color: colors.syntax.string }}
                   >{`'default'`}</span>
                   {`,
-        `}
-                  <span
-                    style={{ color: colors.syntax.comment }}
-                  >{`// converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'`}</span>
-                  {`
         `}
                   <span
                     style={{ color: colors.syntax.property }}
@@ -620,7 +605,6 @@ const config: ActionsConfig = {
     smartWalletConfig: {
       provider: {
         type: 'default',
-        // converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'
         attributionSuffix: 'actions',
       },
     },
