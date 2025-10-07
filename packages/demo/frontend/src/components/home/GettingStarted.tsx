@@ -8,13 +8,6 @@ import TakeActionSection from './TakeActionSection'
 function GettingStarted() {
   const [openAccordion, setOpenAccordion] = useState<string | null>('install')
   const [selectedPackageManager, setSelectedPackageManager] = useState('npm')
-  const [selectedWalletProvider, setSelectedWalletProvider] = useState('privy')
-  const [selectedPrivyTab, setSelectedPrivyTab] = useState('frontend')
-  const [selectedDynamicTab, setSelectedDynamicTab] = useState('frontend')
-  const [selectedTurnkeyTab, setSelectedTurnkeyTab] = useState('frontend')
-  const [selectedSmartPrivyTab, setSelectedSmartPrivyTab] = useState('frontend')
-  const [selectedSmartDynamicTab, setSelectedSmartDynamicTab] = useState('frontend')
-  const [selectedSmartTurnkeyTab, setSelectedSmartTurnkeyTab] = useState('frontend')
 
   const packageManagers = {
     npm: 'npm install @eth-optimism/actions-sdk',
@@ -67,14 +60,6 @@ function GettingStarted() {
             stepNumber={3}
             openAccordion={openAccordion}
             setOpenAccordion={setOpenAccordion}
-            selectedWalletProvider={selectedWalletProvider}
-            setSelectedWalletProvider={setSelectedWalletProvider}
-            selectedPrivyTab={selectedPrivyTab}
-            setSelectedPrivyTab={setSelectedPrivyTab}
-            selectedDynamicTab={selectedDynamicTab}
-            setSelectedDynamicTab={setSelectedDynamicTab}
-            selectedTurnkeyTab={selectedTurnkeyTab}
-            setSelectedTurnkeyTab={setSelectedTurnkeyTab}
           />
 
           {/* Horizontal line with OR */}
@@ -89,12 +74,6 @@ function GettingStarted() {
             stepNumber={3}
             openAccordion={openAccordion}
             setOpenAccordion={setOpenAccordion}
-            selectedSmartPrivyTab={selectedSmartPrivyTab}
-            setSelectedSmartPrivyTab={setSelectedSmartPrivyTab}
-            selectedSmartDynamicTab={selectedSmartDynamicTab}
-            setSelectedSmartDynamicTab={setSelectedSmartDynamicTab}
-            selectedSmartTurnkeyTab={selectedSmartTurnkeyTab}
-            setSelectedSmartTurnkeyTab={setSelectedSmartTurnkeyTab}
           />
 
           {/* Horizontal line */}

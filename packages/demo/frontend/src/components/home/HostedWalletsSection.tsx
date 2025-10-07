@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { colors } from '@/constants/colors'
 import PrivyLogo from '@/assets/privy-logo-white.svg'
 import DynamicLogo from '@/assets/dynamic-logo-white.svg'
@@ -8,29 +9,17 @@ interface HostedWalletsSectionProps {
   stepNumber: number
   openAccordion: string | null
   setOpenAccordion: (value: string | null) => void
-  selectedWalletProvider: string
-  setSelectedWalletProvider: (provider: string) => void
-  selectedPrivyTab: string
-  setSelectedPrivyTab: (tab: string) => void
-  selectedDynamicTab: string
-  setSelectedDynamicTab: (tab: string) => void
-  selectedTurnkeyTab: string
-  setSelectedTurnkeyTab: (tab: string) => void
 }
 
 function HostedWalletsSection({
   stepNumber,
   openAccordion,
   setOpenAccordion,
-  selectedWalletProvider,
-  setSelectedWalletProvider,
-  selectedPrivyTab,
-  setSelectedPrivyTab,
-  selectedDynamicTab,
-  setSelectedDynamicTab,
-  selectedTurnkeyTab,
-  setSelectedTurnkeyTab,
 }: HostedWalletsSectionProps) {
+  const [selectedWalletProvider, setSelectedWalletProvider] = useState('privy')
+  const [selectedPrivyTab, setSelectedPrivyTab] = useState('frontend')
+  const [selectedDynamicTab, setSelectedDynamicTab] = useState('frontend')
+  const [selectedTurnkeyTab, setSelectedTurnkeyTab] = useState('frontend')
   const privyFrontendCode = `import { useWallets } from '@privy-io/react-auth'
 
 const { wallets } = useWallets()
