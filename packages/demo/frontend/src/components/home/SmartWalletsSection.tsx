@@ -1,49 +1,44 @@
+import { useState } from 'react'
 import { colors } from '@/constants/colors'
 import PrivyLogo from '@/assets/privy-logo-white.svg'
 import DynamicLogo from '@/assets/dynamic-logo-white.svg'
 import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
 
-interface HostedWalletsSectionProps {
+interface SmartWalletsSectionProps {
   stepNumber: number
   openAccordion: string | null
   setOpenAccordion: (value: string | null) => void
-  selectedWalletProvider: string
-  setSelectedWalletProvider: (provider: string) => void
-  selectedPrivyTab: string
-  setSelectedPrivyTab: (tab: string) => void
-  selectedDynamicTab: string
-  setSelectedDynamicTab: (tab: string) => void
-  selectedTurnkeyTab: string
-  setSelectedTurnkeyTab: (tab: string) => void
+  selectedSmartPrivyTab: string
+  setSelectedSmartPrivyTab: (tab: string) => void
+  selectedSmartTurnkeyTab: string
+  setSelectedSmartTurnkeyTab: (tab: string) => void
 }
 
-function HostedWalletsSection({
+function SmartWalletsSection({
   stepNumber,
   openAccordion,
   setOpenAccordion,
-  selectedWalletProvider,
-  setSelectedWalletProvider,
-  selectedPrivyTab,
-  setSelectedPrivyTab,
-  selectedDynamicTab,
-  setSelectedDynamicTab,
-  selectedTurnkeyTab,
-  setSelectedTurnkeyTab,
-}: HostedWalletsSectionProps) {
+  selectedSmartPrivyTab,
+  setSelectedSmartPrivyTab,
+  selectedSmartTurnkeyTab,
+  setSelectedSmartTurnkeyTab,
+}: SmartWalletsSectionProps) {
+  const [selectedWalletProvider, setSelectedWalletProvider] = useState('privy')
+
   return (
     <>
-      {/* Accordion Item 3: BYO Hosted Wallets */}
+      {/* Accordion Item 3 (alternate): Customizable Smart Wallets */}
       <div className="mb-4">
         <button
           onClick={() =>
             setOpenAccordion(
-              openAccordion === 'byo-wallet' ? null : 'byo-wallet',
+              openAccordion === 'smart-wallet' ? null : 'smart-wallet',
             )
           }
           className="w-full flex items-center justify-between py-4 px-6 rounded-lg transition-colors"
           style={{
             backgroundColor:
-              openAccordion === 'byo-wallet'
+              openAccordion === 'smart-wallet'
                 ? 'rgba(60, 60, 60, 0.5)'
                 : 'rgba(40, 40, 40, 0.5)',
           }}
@@ -56,14 +51,14 @@ function HostedWalletsSection({
               {stepNumber}
             </span>
             <h3 className="text-lg font-medium text-gray-300">
-              BYO Hosted Wallets
+              Customizable Smart Wallets
             </h3>
           </div>
           <svg
             className="w-5 h-5 text-gray-400 transition-transform duration-300"
             style={{
               transform:
-                openAccordion === 'byo-wallet'
+                openAccordion === 'smart-wallet'
                   ? 'rotate(180deg)'
                   : 'rotate(0deg)',
             }}
@@ -82,13 +77,15 @@ function HostedWalletsSection({
         <div
           className="overflow-hidden transition-all duration-300 ease-in-out"
           style={{
-            maxHeight: openAccordion === 'byo-wallet' ? '3000px' : '0',
-            opacity: openAccordion === 'byo-wallet' ? 1 : 0,
+            maxHeight:
+              openAccordion === 'smart-wallet' ? '3000px' : '0',
+            opacity: openAccordion === 'smart-wallet' ? 1 : 0,
           }}
         >
           <div className="pt-6 pb-4">
             <p className="text-gray-300 text-base mb-4">
-              Actions supports your existing hosted wallet provider.
+              Use hosted wallets as signers of smart wallets you
+              control.
             </p>
             <div
               className="rounded-lg overflow-hidden mb-8 shadow-2xl"
@@ -98,13 +95,9 @@ function HostedWalletsSection({
                   '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
               }}
             >
-              {/* Tab switcher with logos */}
               <div
                 className="flex border-b"
-                style={{
-                  backgroundColor: colors.bg.code,
-                  borderColor: 'rgba(184, 187, 38, 0.15)',
-                }}
+                style={{ borderColor: 'rgba(184, 187, 38, 0.15)' }}
               >
                 <button
                   onClick={() => setSelectedWalletProvider('privy')}
@@ -191,9 +184,9 @@ function HostedWalletsSection({
                     </div>
 
                     <div>
-                      <p className="text-gray-300 mb-2">
-                        2. Create a frontend or backend user wallet and
-                        extend it with DeFi Actions:
+                      <p className="text-gray-300 text-base mb-2">
+                        2. Hosted user wallets can become signers for
+                        new, customizable smart wallets:
                       </p>
                       <div
                         className="rounded-lg overflow-hidden"
@@ -210,21 +203,21 @@ function HostedWalletsSection({
                         >
                           <button
                             onClick={() =>
-                              setSelectedPrivyTab('frontend')
+                              setSelectedSmartPrivyTab('frontend')
                             }
                             className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
                             style={{
                               backgroundColor: colors.bg.header,
                               color:
-                                selectedPrivyTab === 'frontend'
+                                selectedSmartPrivyTab === 'frontend'
                                   ? colors.text.primary
                                   : colors.text.secondary,
                               borderColor:
-                                selectedPrivyTab === 'frontend'
+                                selectedSmartPrivyTab === 'frontend'
                                   ? 'rgb(184, 187, 38)'
                                   : 'transparent',
                               opacity:
-                                selectedPrivyTab === 'frontend'
+                                selectedSmartPrivyTab === 'frontend'
                                   ? 1
                                   : 0.6,
                             }}
@@ -233,21 +226,21 @@ function HostedWalletsSection({
                           </button>
                           <button
                             onClick={() =>
-                              setSelectedPrivyTab('backend')
+                              setSelectedSmartPrivyTab('backend')
                             }
                             className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
                             style={{
                               backgroundColor: colors.bg.header,
                               color:
-                                selectedPrivyTab === 'backend'
+                                selectedSmartPrivyTab === 'backend'
                                   ? colors.text.primary
                                   : colors.text.secondary,
                               borderColor:
-                                selectedPrivyTab === 'backend'
+                                selectedSmartPrivyTab === 'backend'
                                   ? 'rgb(184, 187, 38)'
                                   : 'transparent',
                               opacity:
-                                selectedPrivyTab === 'backend'
+                                selectedSmartPrivyTab === 'backend'
                                   ? 1
                                   : 0.6,
                             }}
@@ -294,7 +287,7 @@ function HostedWalletsSection({
                           </div>
                         </div>
                         <div className="relative">
-                          {selectedPrivyTab === 'frontend' && (
+                          {selectedSmartPrivyTab === 'frontend' && (
                             <pre
                               className="text-sm leading-relaxed font-mono p-4"
                               style={{
@@ -423,7 +416,7 @@ function HostedWalletsSection({
                                   style={{
                                     color: colors.syntax.variable,
                                   }}
-                                >{`wallet`}</span>
+                                >{`signer`}</span>
                                 {` = `}
                                 <span
                                   style={{
@@ -447,7 +440,7 @@ function HostedWalletsSection({
                                   style={{
                                     color: colors.syntax.function,
                                   }}
-                                >{`hostedWalletToActionsWallet`}</span>
+                                >{`createSigner`}</span>
                                 {`({
   `}
                                 <span
@@ -462,11 +455,63 @@ function HostedWalletsSection({
                                   }}
                                 >{`embeddedWallet`}</span>
                                 {`,
+})
+
+`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.keyword,
+                                  }}
+                                >{`const`}</span>
+                                {` { `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`wallet`}</span>
+                                {` } = `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.keyword,
+                                  }}
+                                >{`await`}</span>
+                                {` `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`actions`}</span>
+                                {`.`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`wallet`}</span>
+                                {`.`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.function,
+                                  }}
+                                >{`createSmartWallet`}</span>
+                                {`({
+  `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.property,
+                                  }}
+                                >{`signer`}</span>
+                                {`: `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`signer`}</span>
+                                {`
 })`}
                               </code>
                             </pre>
                           )}
-                          {selectedPrivyTab === 'backend' && (
+                          {selectedSmartPrivyTab === 'backend' && (
                             <pre
                               className="text-sm leading-relaxed font-mono p-4"
                               style={{
@@ -498,54 +543,31 @@ function HostedWalletsSection({
                                   }}
                                 >{`'@privy-io/node'`}</span>
                                 {`
-
 `}
                                 <span
                                   style={{
                                     color: colors.syntax.keyword,
                                   }}
-                                >{`const`}</span>
-                                {` `}
+                                >{`import`}</span>
+                                {` { `}
                                 <span
                                   style={{
-                                    color: colors.syntax.variable,
+                                    color: colors.syntax.function,
                                   }}
-                                >{`privyClient`}</span>
-                                {` = `}
+                                >{`getAddress`}</span>
+                                {` } `}
                                 <span
                                   style={{
                                     color: colors.syntax.keyword,
                                   }}
-                                >{`new`}</span>
+                                >{`from`}</span>
                                 {` `}
                                 <span
-                                  style={{ color: '#8ec07c' }}
-                                >{`PrivyClient`}</span>
-                                {`(`}
-                                <span
                                   style={{
-                                    color: colors.syntax.variable,
+                                    color: colors.syntax.string,
                                   }}
-                                >{`env`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`PRIVY_APP_ID`}</span>
-                                {`, `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`env`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`PRIVY_APP_SECRET`}</span>
-                                {`)
+                                >{`'viem'`}</span>
+                                {`
 
 `}
                                 <span
@@ -610,7 +632,7 @@ function HostedWalletsSection({
                                   style={{
                                     color: colors.syntax.variable,
                                   }}
-                                >{`wallet`}</span>
+                                >{`privySigner`}</span>
                                 {` = `}
                                 <span
                                   style={{
@@ -634,7 +656,7 @@ function HostedWalletsSection({
                                   style={{
                                     color: colors.syntax.function,
                                   }}
-                                >{`hostedWalletToActionsWallet`}</span>
+                                >{`createSigner`}</span>
                                 {`({
   `}
                                 <span
@@ -664,6 +686,12 @@ function HostedWalletsSection({
                                 {`: `}
                                 <span
                                   style={{
+                                    color: colors.syntax.function,
+                                  }}
+                                >{`getAddress`}</span>
+                                {`(`}
+                                <span
+                                  style={{
                                     color: colors.syntax.variable,
                                   }}
                                 >{`privyWallet`}</span>
@@ -673,7 +701,59 @@ function HostedWalletsSection({
                                     color: colors.syntax.property,
                                   }}
                                 >{`address`}</span>
-                                {`,
+                                {`),
+})
+
+`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.keyword,
+                                  }}
+                                >{`const`}</span>
+                                {` { `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`wallet`}</span>
+                                {` } = `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.keyword,
+                                  }}
+                                >{`await`}</span>
+                                {` `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`actions`}</span>
+                                {`.`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`wallet`}</span>
+                                {`.`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.function,
+                                  }}
+                                >{`createSmartWallet`}</span>
+                                {`({
+  `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.property,
+                                  }}
+                                >{`signer`}</span>
+                                {`: `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`privySigner`}</span>
+                                {`
 })`}
                               </code>
                             </pre>
@@ -682,28 +762,35 @@ function HostedWalletsSection({
                           <button
                             onClick={() =>
                               navigator.clipboard.writeText(
-                                selectedPrivyTab === 'frontend'
-                                  ? `import {useWallets} from '@privy-io/react-auth'
+                                selectedSmartPrivyTab === 'frontend'
+                                  ? `import { useWallets } from '@privy-io/react-auth'
 
 const { wallets } = useWallets()
 const embeddedWallet = wallets.find(
   (wallet) => wallet.walletClientType === 'privy',
 )
 
-const actionsWallet = await actions.wallet.hostedWalletToActionsWallet({
+const signer = await actions.wallet.createSigner({
   connectedWallet: embeddedWallet,
+})
+
+const { wallet } = await actions.wallet.createSmartWallet({
+  signer: signer
 })`
                                   : `import { PrivyClient } from '@privy-io/node'
-
-const privyClient = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
+import { getAddress } from 'viem'
 
 const privyWallet = await privyClient.walletApi.createWallet({
   chainType: 'ethereum',
 })
 
-const wallet = await actions.wallet.hostedWalletToActionsWallet({
+const privySigner = await actions.wallet.createSigner({
   walletId: privyWallet.id,
-  address: privyWallet.address,
+  address: getAddress(privyWallet.address),
+})
+
+const { wallet } = await actions.wallet.createSmartWallet({
+  signer: privySigner
 })`,
                               )
                             }
@@ -729,14 +816,13 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                     </div>
                   </div>
                 )}
-
                 {selectedWalletProvider === 'dynamic' && (
                   <div className="space-y-6">
                     <div>
                       <p className="text-gray-300 text-base mb-4">
                         1.{' '}
                         <a
-                          href="https://www.dynamic.xyz/docs/wallets/embedded-wallets/mpc/setup"
+                          href="https://docs.dynamic.xyz/quickstart"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-400 hover:text-blue-300 underline"
@@ -748,9 +834,9 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                     </div>
 
                     <div>
-                      <p className="text-gray-300 mb-2">
-                        2. Create a frontend user wallet and extend it
-                        with DeFi Actions:
+                      <p className="text-gray-300 text-base mb-2">
+                        2. Hosted user wallets can become signers for
+                        new, customizable smart wallets:
                       </p>
                       <div
                         className="rounded-lg overflow-hidden"
@@ -758,7 +844,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                           backgroundColor: colors.bg.code,
                         }}
                       >
-                        {/* Frontend/Backend tabs */}
+                        {/* Frontend tab only */}
                         <div
                           className="flex border-b"
                           style={{
@@ -766,24 +852,12 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                           }}
                         >
                           <button
-                            onClick={() =>
-                              setSelectedDynamicTab('frontend')
-                            }
                             className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
                             style={{
                               backgroundColor: colors.bg.header,
-                              color:
-                                selectedDynamicTab === 'frontend'
-                                  ? colors.text.primary
-                                  : colors.text.secondary,
-                              borderColor:
-                                selectedDynamicTab === 'frontend'
-                                  ? 'rgb(184, 187, 38)'
-                                  : 'transparent',
-                              opacity:
-                                selectedDynamicTab === 'frontend'
-                                  ? 1
-                                  : 0.6,
+                              color: colors.text.primary,
+                              borderColor: 'rgb(184, 187, 38)',
+                              opacity: 1,
                             }}
                           >
                             Frontend
@@ -795,7 +869,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               backgroundColor: colors.bg.header,
                               color: colors.text.secondary,
                               borderColor: 'transparent',
-                              opacity: 0.3,
+                              opacity: 0.4,
                             }}
                           >
                             Backend
@@ -893,7 +967,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                                 style={{
                                   color: colors.syntax.variable,
                                 }}
-                              >{`wallet`}</span>
+                              >{`signer`}</span>
                               {` = `}
                               <span
                                 style={{ color: colors.syntax.keyword }}
@@ -907,7 +981,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                               {`.`}
                               <span
                                 style={{
-                                  color: colors.syntax.variable,
+                                  color: colors.syntax.property,
                                 }}
                               >{`wallet`}</span>
                               {`.`}
@@ -915,9 +989,8 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                                 style={{
                                   color: colors.syntax.function,
                                 }}
-                              >{`hostedWalletToVerbsWallet`}</span>
-                              {`({
-  `}
+                              >{`createSigner`}</span>
+                              {`({`}
                               <span
                                 style={{
                                   color: colors.syntax.property,
@@ -929,46 +1002,61 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                                   color: colors.syntax.variable,
                                 }}
                               >{`primaryWallet`}</span>
-                              {`,
+                              {`})
+`}
+                              <span
+                                style={{ color: colors.syntax.keyword }}
+                              >{`const`}</span>
+                              {` { `}
+                              <span
+                                style={{
+                                  color: colors.syntax.variable,
+                                }}
+                              >{`wallet`}</span>
+                              {` } = `}
+                              <span
+                                style={{ color: colors.syntax.keyword }}
+                              >{`await`}</span>
+                              {` `}
+                              <span
+                                style={{
+                                  color: colors.syntax.variable,
+                                }}
+                              >{`actions`}</span>
+                              {`.`}
+                              <span
+                                style={{
+                                  color: colors.syntax.property,
+                                }}
+                              >{`wallet`}</span>
+                              {`.`}
+                              <span
+                                style={{
+                                  color: colors.syntax.function,
+                                }}
+                              >{`createSmartWallet`}</span>
+                              {`({
+  `}
+                              <span
+                                style={{
+                                  color: colors.syntax.property,
+                                }}
+                              >{`signer`}</span>
+                              {`: `}
+                              <span
+                                style={{
+                                  color: colors.syntax.variable,
+                                }}
+                              >{`signer`}</span>
+                              {`
 })`}
                             </code>
                           </pre>
-                          {/* Copy button */}
-                          <button
-                            onClick={() =>
-                              navigator.clipboard.writeText(
-                                `import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
-
-const { primaryWallet } = useDynamicContext()
-
-const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
-  wallet: primaryWallet,
-})`,
-                              )
-                            }
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
-                            aria-label="Copy code"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                              />
-                            </svg>
-                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
-
                 {selectedWalletProvider === 'turnkey' && (
                   <div className="space-y-6">
                     <div>
@@ -987,9 +1075,9 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                     </div>
 
                     <div>
-                      <p className="text-gray-300 mb-2">
-                        2. Create a frontend or backend user wallet and
-                        extend it with DeFi Actions:
+                      <p className="text-gray-300 text-base mb-2">
+                        2. Hosted user wallets can become signers for
+                        new, customizable smart wallets:
                       </p>
                       <div
                         className="rounded-lg overflow-hidden"
@@ -1006,21 +1094,21 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                         >
                           <button
                             onClick={() =>
-                              setSelectedTurnkeyTab('frontend')
+                              setSelectedSmartTurnkeyTab('frontend')
                             }
                             className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
                             style={{
                               backgroundColor: colors.bg.header,
                               color:
-                                selectedTurnkeyTab === 'frontend'
+                                selectedSmartTurnkeyTab === 'frontend'
                                   ? colors.text.primary
                                   : colors.text.secondary,
                               borderColor:
-                                selectedTurnkeyTab === 'frontend'
+                                selectedSmartTurnkeyTab === 'frontend'
                                   ? 'rgb(184, 187, 38)'
                                   : 'transparent',
                               opacity:
-                                selectedTurnkeyTab === 'frontend'
+                                selectedSmartTurnkeyTab === 'frontend'
                                   ? 1
                                   : 0.6,
                             }}
@@ -1029,21 +1117,21 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                           </button>
                           <button
                             onClick={() =>
-                              setSelectedTurnkeyTab('backend')
+                              setSelectedSmartTurnkeyTab('backend')
                             }
                             className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
                             style={{
                               backgroundColor: colors.bg.header,
                               color:
-                                selectedTurnkeyTab === 'backend'
+                                selectedSmartTurnkeyTab === 'backend'
                                   ? colors.text.primary
                                   : colors.text.secondary,
                               borderColor:
-                                selectedTurnkeyTab === 'backend'
+                                selectedSmartTurnkeyTab === 'backend'
                                   ? 'rgb(184, 187, 38)'
                                   : 'transparent',
                               opacity:
-                                selectedTurnkeyTab === 'backend'
+                                selectedSmartTurnkeyTab === 'backend'
                                   ? 1
                                   : 0.6,
                             }}
@@ -1090,7 +1178,7 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                           </div>
                         </div>
                         <div className="relative">
-                          {selectedTurnkeyTab === 'frontend' && (
+                          {selectedSmartTurnkeyTab === 'frontend' && (
                             <pre
                               className="text-sm leading-relaxed font-mono p-4"
                               style={{
@@ -1403,7 +1491,7 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                                   style={{
                                     color: colors.syntax.variable,
                                   }}
-                                >{`actionsWallet`}</span>
+                                >{`signer`}</span>
                                 {` = `}
                                 <span
                                   style={{
@@ -1427,7 +1515,7 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                                   style={{
                                     color: colors.syntax.function,
                                   }}
-                                >{`hostedWalletToActionsWallet`}</span>
+                                >{`createSigner`}</span>
                                 {`({
   `}
                                 <span
@@ -1487,11 +1575,62 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                                   }}
                                 >{`walletAddress`}</span>
                                 {`
+})
+`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.keyword,
+                                  }}
+                                >{`const`}</span>
+                                {` { `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`wallet`}</span>
+                                {` } = `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.keyword,
+                                  }}
+                                >{`await`}</span>
+                                {` `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`actions`}</span>
+                                {`.`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.property,
+                                  }}
+                                >{`wallet`}</span>
+                                {`.`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.function,
+                                  }}
+                                >{`createSmartWallet`}</span>
+                                {`({
+  `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.property,
+                                  }}
+                                >{`signer`}</span>
+                                {`: `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`signer`}</span>
+                                {`
 })`}
                               </code>
                             </pre>
                           )}
-                          {selectedTurnkeyTab === 'backend' && (
+                          {selectedSmartTurnkeyTab === 'backend' && (
                             <pre
                               className="text-sm leading-relaxed font-mono p-4"
                               style={{
@@ -1508,7 +1647,9 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                                 >{`import`}</span>
                                 {` { `}
                                 <span
-                                  style={{ color: '#8ec07c' }}
+                                  style={{
+                                    color: colors.syntax.function,
+                                  }}
                                 >{`Turnkey`}</span>
                                 {` } `}
                                 <span
@@ -1544,7 +1685,9 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                                 >{`new`}</span>
                                 {` `}
                                 <span
-                                  style={{ color: '#8ec07c' }}
+                                  style={{
+                                    color: colors.syntax.function,
+                                  }}
                                 >{`Turnkey`}</span>
                                 {`({
   `}
@@ -1742,7 +1885,7 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                                   style={{
                                     color: colors.syntax.variable,
                                   }}
-                                >{`wallet`}</span>
+                                >{`turnkeySigner`}</span>
                                 {` = `}
                                 <span
                                   style={{
@@ -1758,7 +1901,7 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                                 {`.`}
                                 <span
                                   style={{
-                                    color: colors.syntax.variable,
+                                    color: colors.syntax.property,
                                   }}
                                 >{`wallet`}</span>
                                 {`.`}
@@ -1766,7 +1909,7 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                                   style={{
                                     color: colors.syntax.function,
                                   }}
-                                >{`hostedWalletToActionsWallet`}</span>
+                                >{`createSigner`}</span>
                                 {`({
   `}
                                 <span
@@ -1818,74 +1961,62 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
                                   }}
                                 >{`0`}</span>
                                 {`],
+})
+
+`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.keyword,
+                                  }}
+                                >{`const`}</span>
+                                {` { `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`wallet`}</span>
+                                {` } = `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.keyword,
+                                  }}
+                                >{`await`}</span>
+                                {` `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`actions`}</span>
+                                {`.`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.property,
+                                  }}
+                                >{`wallet`}</span>
+                                {`.`}
+                                <span
+                                  style={{
+                                    color: colors.syntax.function,
+                                  }}
+                                >{`createSmartWallet`}</span>
+                                {`({
+  `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.property,
+                                  }}
+                                >{`signer`}</span>
+                                {`: `}
+                                <span
+                                  style={{
+                                    color: colors.syntax.variable,
+                                  }}
+                                >{`turnkeySigner`}</span>
+                                {`
 })`}
                               </code>
                             </pre>
                           )}
-                          {/* Copy button */}
-                          <button
-                            onClick={() =>
-                              navigator.clipboard.writeText(
-                                selectedTurnkeyTab === 'frontend'
-                                  ? `import { useTurnkey } from "@turnkey/react-wallet-kit"
-
-const { wallets, createWallet, refreshWallets, httpClient, session } = useTurnkey()
-
-const wallet = await createWallet({
-  walletName: \`My New Wallet \${Math.random()}\`,
-  accounts: ["ADDRESS_FORMAT_ETHEREUM"],
-})
-
-const walletAddress = wallet.accounts[0].address
-
-const actionsWallet = await actions.wallet.hostedWalletToActionsWallet({
-  client: httpClient,
-  organizationId: session.organizationId,
-  signWith: walletAddress,
-  ethereumAddress: walletAddress,
-})`
-                                  : `import { Turnkey } from '@turnkey/sdk-server'
-
-const turnkeyClient = new Turnkey({
-  apiBaseUrl: 'https://api.turnkey.com',
-  apiPublicKey: env.TURNKEY_API_KEY,
-  apiPrivateKey: env.TURNKEY_API_SECRET,
-  defaultOrganizationId: env.TURNKEY_ORGANIZATION_ID,
-})
-
-const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
-  walletName: 'ETH Wallet',
-  accounts: [{
-    curve: 'CURVE_SECP256K1',
-    pathFormat: 'PATH_FORMAT_BIP32',
-    path: "m/44'/60'/0'/0/0",
-    addressFormat: 'ADDRESS_FORMAT_ETHEREUM',
-  }],
-})
-
-const wallet = await actions.wallet.hostedWalletToActionsWallet({
-  organizationId: turnkeyWallet.activity.organizationId,
-  signWith: turnkeyWallet.addresses[0],
-})`,
-                              )
-                            }
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
-                            aria-label="Copy code"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                              />
-                            </svg>
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -1900,4 +2031,4 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
   )
 }
 
-export default HostedWalletsSection
+export default SmartWalletsSection
