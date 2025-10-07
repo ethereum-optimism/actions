@@ -13,6 +13,7 @@ function GettingStarted() {
   const [selectedDynamicTab, setSelectedDynamicTab] = useState('frontend')
   const [selectedTurnkeyTab, setSelectedTurnkeyTab] = useState('frontend')
   const [selectedSmartPrivyTab, setSelectedSmartPrivyTab] = useState('frontend')
+  const [selectedSmartDynamicTab, setSelectedSmartDynamicTab] = useState('frontend')
   const [selectedSmartTurnkeyTab, setSelectedSmartTurnkeyTab] = useState('frontend')
 
   const packageManagers = {
@@ -90,6 +91,8 @@ function GettingStarted() {
             setOpenAccordion={setOpenAccordion}
             selectedSmartPrivyTab={selectedSmartPrivyTab}
             setSelectedSmartPrivyTab={setSelectedSmartPrivyTab}
+            selectedSmartDynamicTab={selectedSmartDynamicTab}
+            setSelectedSmartDynamicTab={setSelectedSmartDynamicTab}
             selectedSmartTurnkeyTab={selectedSmartTurnkeyTab}
             setSelectedSmartTurnkeyTab={setSelectedSmartTurnkeyTab}
           />

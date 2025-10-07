@@ -51,8 +51,8 @@ function Code({ code, language = 'typescript' }: CodeProps) {
       )
       // Closing brace and paren in purple and yellow
       html = html.replace(
-        /(\})(\))/g,
-        '<span class="func-brace">$1</span><span class="import-brace">$2</span>'
+        /(\})(<span class="import-brace">\)<\/span>)/g,
+        '<span class="func-brace">$1</span>$2'
       )
 
       // Separate string quotes from content
