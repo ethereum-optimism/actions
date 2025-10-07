@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 import { useUser, usePrivy } from '@privy-io/react-auth'
 import type { Address } from 'viem'
 import TransactionModal from './TransactionModal'
+import { actionsApi } from '../api/actionsApi'
 
 interface ActionProps {
   usdcBalance: string
@@ -28,6 +29,8 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     marketId: { chainId: number; address: Address }
     assetAddress: Address
   } | null>(null)
+  const [depositedAmount, setDepositedAmount] = useState<string>('0.00')
+  const [isLoadingPosition, setIsLoadingPosition] = useState(false)
 
   // Fetch market APY on mount
   useEffect(() => {
@@ -99,9 +102,14 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
         headers
       )
 
-      setTransactionHash(result.transaction.hash)
+      // Get the first transaction hash if available, or use userOpHash for account abstraction
+      const txHash = result.transaction.transactionHashes?.[0] || result.transaction.userOpHash
+      setTransactionHash(txHash)
       setModalStatus('success')
       setAmount('')
+
+      // Refresh position after successful transaction
+      await fetchPosition()
 
       if (onTransactionSuccess) {
         onTransactionSuccess()
@@ -119,6 +127,29 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     setModalStatus('loading')
     setTransactionHash(undefined)
   }
+
+  // Fetch user's position in the vault
+  const fetchPosition = useCallback(async () => {
+    if (!user?.id || !marketData) return
+
+    try {
+      setIsLoadingPosition(true)
+      const position = await actionsApi.getPosition(marketData.marketId, user.id)
+      setDepositedAmount(position.balanceFormatted)
+    } catch (error) {
+      console.error('Error fetching position:', error)
+      setDepositedAmount('0.00')
+    } finally {
+      setIsLoadingPosition(false)
+    }
+  }, [user?.id, marketData])
+
+  // Fetch position when market data is available or user changes
+  useEffect(() => {
+    if (user?.id && marketData) {
+      fetchPosition()
+    }
+  }, [user?.id, marketData, fetchPosition])
 
   return (
     <div
@@ -168,7 +199,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
             }}>
               Loading...
             </span>
-          ) : parseFloat(usdcBalance) === 0 ? (
+          ) : !usdcBalance || usdcBalance === '0.00' || usdcBalance === '0' || parseFloat(usdcBalance || '0') === 0 ? (
             <button
               onClick={onMintUSDC}
               className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
@@ -192,7 +223,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
               fontSize: '14px',
               fontWeight: 500
             }}>
-              {usdcBalance}
+              {usdcBalance} USDC
             </span>
           )}
         </div>
@@ -343,7 +374,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
               fontSize: '14px',
               fontWeight: 500
             }}>
-              0.00 USDC
+              {isLoadingPosition ? 'Loading...' : `${depositedAmount} USDC`}
             </span>
             <img
               src="/usd-coin-usdc-logo.svg"

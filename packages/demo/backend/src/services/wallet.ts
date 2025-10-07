@@ -64,7 +64,23 @@ export async function getWallet(
     if (!privyUser) {
       return null
     }
-    privyWallet = privyUser.wallet
+
+    // Get the first embedded ethereum wallet from linked accounts
+    const walletAccount = privyUser.linkedAccounts?.find(
+      (account: any) =>
+        account.type === 'wallet' &&
+        account.walletClientType === 'privy' &&
+        account.chainType === 'ethereum',
+    ) as any
+
+    if (!walletAccount) {
+      return null
+    }
+
+    privyWallet = {
+      id: walletAccount.id, // Use the actual wallet ID from Privy
+      address: walletAccount.address,
+    }
   } else {
     // Get wallet directly via wallet ID (legacy behavior)
     privyWallet = await privyClient.walletApi

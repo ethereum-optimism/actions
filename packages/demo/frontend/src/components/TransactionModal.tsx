@@ -145,9 +145,28 @@ function TransactionModal({ isOpen, status, onClose, transactionHash }: Transact
               href={`https://sepolia.basescan.org/tx/${transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-600 text-sm underline"
+              className="flex items-center gap-1 mb-6 hover:opacity-80 transition-opacity"
+              style={{
+                color: '#3374DB',
+                fontSize: '14px',
+                fontWeight: 500,
+                textDecoration: 'none'
+              }}
             >
-              View on Block Explorer
+              Check on Basescan
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M7 17L17 7"></path>
+                <path d="M7 7h10v10"></path>
+              </svg>
             </a>
           )}
 
@@ -156,7 +175,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash }: Transact
               onClick={onClose}
               className="mt-6 w-full py-3 px-4 font-medium transition-all hover:opacity-90"
               style={{
-                backgroundColor: '#FF0420',
+                backgroundColor: '#0000008F',
                 color: '#FFFFFF',
                 fontSize: '16px',
                 borderRadius: '12px',
