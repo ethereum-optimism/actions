@@ -102,7 +102,7 @@ function EarnContent() {
       } else {
         setUsdcBalance('0')
       }
-    } catch (error) {
+    } catch {
       setUsdcBalance('0')
     } finally {
       setIsLoadingBalance(false)
