@@ -41,6 +41,7 @@ function ActivityLog() {
             <ActivityLogItem
               key={activity.id}
               type={activity.type}
+              action={activity.action}
               amount={activity.amount || '0'}
               timestamp={formatTimestamp(activity.timestamp)}
               status={activity.status}

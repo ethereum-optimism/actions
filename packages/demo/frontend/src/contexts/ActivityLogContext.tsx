@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 
 export type ActivityEntry = {
   id: number
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'markets'
   action: string
   amount?: string
   timestamp: string

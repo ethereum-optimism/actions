@@ -1,17 +1,20 @@
 interface ActivityLogItemProps {
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'markets'
+  action: string
   amount: string
   timestamp: string
   status: 'pending' | 'confirmed' | 'error'
 }
 
 // Map action types to API method calls
-const getApiMethod = (type: ActivityLogItemProps['type']) => {
+const getApiMethod = (type: ActivityLogItemProps['type'], action: string) => {
   switch (type) {
     case 'wallet':
-      return 'actionsApi.createWallet()'
+      return action === 'Get wallet balance' ? 'actionsApi.getWalletBalance()' : 'actionsApi.createWallet()'
     case 'fund':
       return 'actionsApi.fundWallet()'
+    case 'markets':
+      return 'actionsApi.getMarkets()'
     case 'lend':
       return 'actionsApi.openLendPosition()'
     case 'withdraw':
@@ -21,7 +24,7 @@ const getApiMethod = (type: ActivityLogItemProps['type']) => {
   }
 }
 
-function ActivityLogItem({ type, status }: ActivityLogItemProps) {
+function ActivityLogItem({ type, action, status }: ActivityLogItemProps) {
   const getStatusColor = () => {
     switch (status) {
       case 'confirmed':
@@ -46,21 +49,49 @@ function ActivityLogItem({ type, status }: ActivityLogItemProps) {
         return 'Fund'
       case 'wallet':
         return 'Wallet'
+      case 'markets':
+        return 'Markets'
       default:
         return type
     }
   }
 
   const getActionDescription = () => {
+    // Check specific actions first
+    if (action === 'Get market') {
+      return 'Get market APY'
+    }
+    if (action === 'Get wallet balance') {
+      return 'Get balance'
+    }
+    if (action === 'deposit') {
+      return 'Open lending position'
+    }
+    if (action === 'withdraw') {
+      return 'Close lending position'
+    }
+    if (action === 'mint') {
+      return 'Mint demo USDC'
+    }
+    if (action === 'create') {
+      return 'Create smart wallet'
+    }
+    if (action === 'send') {
+      return 'Send tokens'
+    }
+
+    // Fallback to type-based descriptions
     switch (type) {
       case 'lend':
-        return 'Open lending position'
+        return 'Lending action'
       case 'withdraw':
-        return 'Close lending position'
+        return 'Withdrawal action'
       case 'fund':
-        return 'Mint demo USDC'
+        return 'Funding action'
       case 'wallet':
-        return 'Create smart wallet'
+        return 'Wallet action'
+      case 'markets':
+        return 'Get markets'
       default:
         return 'Action'
     }
@@ -76,6 +107,8 @@ function ActivityLogItem({ type, status }: ActivityLogItemProps) {
         return { bg: '#D1FAE5', stroke: '#10B981' }
       case 'wallet':
         return { bg: '#E0E7FF', stroke: '#6366F1' }
+      case 'markets':
+        return { bg: '#FEF3C7', stroke: '#F59E0B' }
       default:
         return { bg: '#F3F4F6', stroke: '#6B7280' }
     }
@@ -119,7 +152,7 @@ function ActivityLogItem({ type, status }: ActivityLogItemProps) {
             className="text-xs font-mono"
             style={{ color: '#6B7280' }}
           >
-            {getApiMethod(type)}
+            {getApiMethod(type, action)}
           </div>
         </div>
 

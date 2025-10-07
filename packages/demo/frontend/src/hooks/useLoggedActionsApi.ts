@@ -3,20 +3,24 @@ import { actionsApi } from '../api/actionsApi'
 import { useActivityLog } from '../contexts/ActivityLogContext'
 
 type LogConfig = {
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'markets'
   action: string
   getAmount?: (...args: any[]) => string
 }
 
 const LOG_CONFIG: Record<string, LogConfig> = {
-  createWallet: {
+  getWalletBalance: {
     type: 'wallet',
-    action: 'create',
+    action: 'Get wallet balance',
   },
   fundWallet: {
     type: 'fund',
     action: 'mint',
     getAmount: () => '100.00',
+  },
+  getMarkets: {
+    type: 'markets',
+    action: 'Get market',
   },
   openLendPosition: {
     type: 'lend',
