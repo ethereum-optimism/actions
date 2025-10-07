@@ -3,7 +3,7 @@ import { usePrivy, useLogin, useLogout, useUser } from '@privy-io/react-auth'
 import Info from './Info'
 import Action from './Action'
 import ActivityLog from './ActivityLog'
-import { verbsApi } from '../api/verbsApi'
+import { actionsApi } from '../api/actionsApi'
 
 function Earn() {
   const { ready, authenticated, getAccessToken } = usePrivy()
@@ -39,7 +39,7 @@ function Earn() {
     try {
       setIsLoadingBalance(true)
       const headers = await getAuthHeaders()
-      const balanceResult = await verbsApi.getWalletBalance(userId, headers)
+      const balanceResult = await actionsApi.getWalletBalance(userId, headers)
 
       // Find USDC or USDC_DEMO balance
       const usdcToken = balanceResult.balance.find(
