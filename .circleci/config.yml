@@ -8,6 +8,9 @@ commands:
   setup:
     description: 'Setup Node.js environment with pnpm'
     steps:
+      - run:
+          name: Set GITHUB_TOKEN for mise
+          command: echo 'export GITHUB_TOKEN=${MISE_GITHUB_TOKEN}' >> $BASH_ENV
       - utils/checkout-with-mise # Install dependencies
       - run:
           name: Install dependencies
@@ -233,7 +236,9 @@ jobs:
 workflows:
   check-workflow:
     jobs:
-      - check
+      - check:
+          context:
+            - circleci-repo-readonly-authenticated-github-token
 
   build-and-publish-backend:
     when:
