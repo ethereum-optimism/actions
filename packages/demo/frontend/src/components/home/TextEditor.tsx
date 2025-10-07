@@ -52,7 +52,10 @@ function TextEditor({ filename, children, onCopy }: TextEditorProps) {
       </div>
       {/* Code content */}
       <div className="relative">
-        <div className="p-8 text-left" style={{ backgroundColor: colors.bg.code }}>
+        <div
+          className="p-8 text-left"
+          style={{ backgroundColor: colors.bg.code }}
+        >
           {children}
         </div>
         {/* Copy button */}

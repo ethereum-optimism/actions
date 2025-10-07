@@ -23,6 +23,7 @@
     "@eth-optimism/viem": "^0.4.13",
     "@privy-io/react-auth": "^2.24.0",
     "buffer": "^6.0.3",
+    "highlight.js": "^11.11.1",
     "react": "^18",
     "react-dom": "^18",
     "react-router": "7",
