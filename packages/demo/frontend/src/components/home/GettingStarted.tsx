@@ -2,6 +2,7 @@ import { useState } from 'react'
 import InstallSection from './InstallSection'
 import ConfigureSection from './ConfigureSection'
 import HostedWalletsSection from './HostedWalletsSection'
+import SmartWalletsSection from './SmartWalletsSection'
 import TakeActionSection from './TakeActionSection'
 
 function GettingStarted() {
@@ -73,6 +74,20 @@ function GettingStarted() {
             setSelectedDynamicTab={setSelectedDynamicTab}
             selectedTurnkeyTab={selectedTurnkeyTab}
             setSelectedTurnkeyTab={setSelectedTurnkeyTab}
+          />
+
+          {/* Horizontal line with OR */}
+          <div className="flex items-center my-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
+            <span className="px-4 text-sm font-medium text-gray-500">OR</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
+          </div>
+
+          {/* Accordion Item 3 (alternate): Customizable Smart Wallets */}
+          <SmartWalletsSection
+            stepNumber={3}
+            openAccordion={openAccordion}
+            setOpenAccordion={setOpenAccordion}
             selectedSmartPrivyTab={selectedSmartPrivyTab}
             setSelectedSmartPrivyTab={setSelectedSmartPrivyTab}
             selectedSmartTurnkeyTab={selectedSmartTurnkeyTab}

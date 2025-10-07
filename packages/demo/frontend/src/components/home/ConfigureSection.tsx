@@ -6,7 +6,11 @@ interface ConfigureSectionProps {
   onToggle: () => void
 }
 
-function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProps) {
+function ConfigureSection({
+  stepNumber,
+  isOpen,
+  onToggle,
+}: ConfigureSectionProps) {
   return (
     <div className="mb-4">
       <button
@@ -55,8 +59,8 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
       >
         <div className="pt-6 pb-4">
           <p className="text-gray-300 text-base mb-4">
-            Pick which DeFi protocols, markets, networks, assets, and
-            providers you want to support.
+            Pick which DeFi protocols, markets, networks, assets, and providers
+            you want to support.
           </p>
           <div
             className="rounded-lg overflow-hidden mb-8 shadow-2xl"
@@ -114,9 +118,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`USDC`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`, `}
                   <span
                     style={{ color: colors.syntax.variable }}
@@ -126,9 +128,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`USDT`}</span>
                   {` } `}
-                  <span
-                    style={{ color: colors.syntax.keyword }}
-                  >{`from`}</span>
+                  <span style={{ color: colors.syntax.keyword }}>{`from`}</span>
                   {` `}
                   <span
                     style={{ color: colors.syntax.string }}
@@ -147,9 +147,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`ExampleAaveMarket`}</span>
                   {` } `}
-                  <span
-                    style={{ color: colors.syntax.keyword }}
-                  >{`from`}</span>
+                  <span style={{ color: colors.syntax.keyword }}>{`from`}</span>
                   {` `}
                   <span
                     style={{ color: colors.syntax.string }}
@@ -172,9 +170,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`base`}</span>
                   {` } `}
-                  <span
-                    style={{ color: colors.syntax.keyword }}
-                  >{`from`}</span>
+                  <span style={{ color: colors.syntax.keyword }}>{`from`}</span>
                   {` `}
                   <span
                     style={{ color: colors.syntax.string }}
@@ -186,17 +182,49 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                   >{`import`}</span>
                   {` { `}
                   <span
-                    style={{ color: colors.syntax.function }}
-                  >{`getPrivyClient`}</span>
+                    style={{ color: '#8ec07c' }}
+                  >{`PrivyClient`}</span>
                   {` } `}
-                  <span
-                    style={{ color: colors.syntax.keyword }}
-                  >{`from`}</span>
+                  <span style={{ color: colors.syntax.keyword }}>{`from`}</span>
                   {` `}
                   <span
                     style={{ color: colors.syntax.string }}
-                  >{`'privy'`}</span>
+                  >{`'@privy-io/server-auth'`}</span>
                   {`
+
+`}
+                  <span
+                    style={{ color: colors.syntax.keyword }}
+                  >{`const`}</span>
+                  {` `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`privy`}</span>
+                  {` = `}
+                  <span
+                    style={{ color: colors.syntax.keyword }}
+                  >{`new`}</span>
+                  {` `}
+                  <span
+                    style={{ color: '#8ec07c' }}
+                  >{`PrivyClient`}</span>
+                  {`(`}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`env`}</span>
+                  {`.`}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`PRIVY_APP_ID`}</span>
+                  {`, `}
+                  <span
+                    style={{ color: colors.syntax.variable }}
+                  >{`env`}</span>
+                  {`.`}
+                  <span
+                    style={{ color: colors.syntax.property }}
+                  >{`PRIVY_APP_SECRET`}</span>
+                  {`)
 
 `}
                   <span
@@ -207,9 +235,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`config`}</span>
                   {`: `}
-                  <span
-                    style={{ color: '#8ec07c' }}
-                  >{`ActionsConfig`}</span>
+                  <span style={{ color: '#8ec07c' }}>{`ActionsConfig`}</span>
                   {` = {
   `}
                   <span
@@ -226,7 +252,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.property }}
                   >{`provider`}</span>
                   {`: {
-    `}
+        `}
                   <span
                     style={{ color: colors.syntax.property }}
                   >{`type`}</span>
@@ -235,21 +261,21 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.string }}
                   >{`'privy'`}</span>
                   {`,
-    `}
+        `}
                   <span
                     style={{ color: colors.syntax.property }}
                   >{`config`}</span>
                   {`: {
-      `}
+          `}
                   <span
                     style={{ color: colors.syntax.property }}
                   >{`privyClient`}</span>
                   {`: `}
                   <span
-                    style={{ color: colors.syntax.function }}
-                  >{`getPrivyClient`}</span>
-                  {`(),
-    },
+                    style={{ color: colors.syntax.variable }}
+                  >{`privy`}</span>
+                  {`,
+        },
       },
     },
     `}
@@ -262,7 +288,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.property }}
                   >{`provider`}</span>
                   {`: {
-    `}
+        `}
                   <span
                     style={{ color: colors.syntax.property }}
                   >{`type`}</span>
@@ -271,7 +297,12 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.string }}
                   >{`'default'`}</span>
                   {`,
-    `}
+        `}
+                  <span
+                    style={{ color: colors.syntax.comment }}
+                  >{`// converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'`}</span>
+                  {`
+        `}
                   <span
                     style={{ color: colors.syntax.property }}
                   >{`attributionSuffix`}</span>
@@ -310,9 +341,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`USDC`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`, `}
                   <span
                     style={{ color: colors.syntax.variable }}
@@ -373,9 +402,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`USDC`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`, `}
                   <span
                     style={{ color: colors.syntax.variable }}
@@ -432,9 +459,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.property }}
                   >{`defaultSlippage`}</span>
                   {`: `}
-                  <span
-                    style={{ color: colors.syntax.number }}
-                  >{`100`}</span>
+                  <span style={{ color: colors.syntax.number }}>{`100`}</span>
                   {`,
     `}
                   <span
@@ -445,9 +470,7 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`USDC`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`, `}
                   <span
                     style={{ color: colors.syntax.variable }}
@@ -463,13 +486,9 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.property }}
                   >{`from`}</span>
                   {`: `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.property }}
-                  >{`to`}</span>
+                  <span style={{ color: colors.syntax.property }}>{`to`}</span>
                   {`: `}
                   <span
                     style={{ color: colors.syntax.variable }}
@@ -484,26 +503,18 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`USDC`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.property }}
-                  >{`to`}</span>
+                  <span style={{ color: colors.syntax.property }}>{`to`}</span>
                   {`: `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {` },
       { `}
                   <span
                     style={{ color: colors.syntax.property }}
                   >{`from`}</span>
                   {`: `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.property }}
-                  >{`to`}</span>
+                  <span style={{ color: colors.syntax.property }}>{`to`}</span>
                   {`: `}
                   <span
                     style={{ color: colors.syntax.variable }}
@@ -518,13 +529,9 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`WBTC`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.property }}
-                  >{`to`}</span>
+                  <span style={{ color: colors.syntax.property }}>{`to`}</span>
                   {`: `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {` }
     ],
     `}
@@ -537,13 +544,9 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.property }}
                   >{`from`}</span>
                   {`: `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.property }}
-                  >{`to`}</span>
+                  <span style={{ color: colors.syntax.property }}>{`to`}</span>
                   {`: `}
                   <span
                     style={{ color: colors.syntax.variable }}
@@ -558,13 +561,9 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     style={{ color: colors.syntax.variable }}
                   >{`USDC`}</span>
                   {`, `}
-                  <span
-                    style={{ color: colors.syntax.property }}
-                  >{`to`}</span>
+                  <span style={{ color: colors.syntax.property }}>{`to`}</span>
                   {`: `}
-                  <span
-                    style={{ color: colors.syntax.variable }}
-                  >{`ETH`}</span>
+                  <span style={{ color: colors.syntax.variable }}>{`ETH`}</span>
                   {` },
     ],
   },
@@ -604,23 +603,25 @@ function ConfigureSection({ stepNumber, isOpen, onToggle }: ConfigureSectionProp
                     `import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
 import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions-sdk/markets'
 import { unichain, optimism, base } from 'viem/chains'
-import { getPrivyClient } from 'privy'
+import { PrivyClient } from '@privy-io/server-auth'
+
+const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
 
 const config: ActionsConfig = {
   wallet: {
     hostedWalletConfig: {
       provider: {
-    type: 'privy',
-    config: {
-      privyClient: getPrivyClient(),
-    },
+        type: 'privy',
+        config: {
+          privyClient: privy,
+        },
       },
     },
     smartWalletConfig: {
       provider: {
-    type: 'default',
-    // converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'
-    attributionSuffix: 'actions',
+        type: 'default',
+        // converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'
+        attributionSuffix: 'actions',
       },
     },
   },
