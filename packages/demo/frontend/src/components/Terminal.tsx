@@ -1085,15 +1085,15 @@ User ID: ${result.userId}`,
 
       console.log(
         `[FRONTEND] ${operationType === 'close' ? 'Withdrawal' : 'Deposit'} successful:`,
-        result.transaction.hash,
+        result.transaction.blockExplorerUrls,
       )
 
       const successLine: TerminalLine = {
         id: `lend-success-${Date.now()}`,
         type: 'success',
         content: operationType === 'close'
-          ? `✅ Successfully withdrew ${amount} ${amountUnit}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`
-          : `✅ Successfully lent ${amount} ${amountUnit} to ${promptData.selectedMarket.name}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrl}/${result.transaction.hash || 'pending'}`,
+          ? `✅ Successfully withdrew ${amount} ${amountUnit}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrls.join('\n') || 'pending'}`
+          : `✅ Successfully lent ${amount} ${amountUnit} to ${promptData.selectedMarket.name}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrls.join('\n') || 'pending'}`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), successLine])

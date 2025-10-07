@@ -1,7 +1,11 @@
-import type { Address, Hash, Hex, TransactionReceipt } from 'viem'
+import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
+import type {
+  BatchTransactionReturnType,
+  TransactionReturnType,
+} from '@/wallet/core/wallets/abstract/types/index.js'
 
 export { LendProvider } from '@/lend/core/LendProvider.js'
 export { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
@@ -94,10 +98,9 @@ export interface LendTransaction {
 /**
  * Lending transaction receipt
  */
-export interface LendTransactionReceipt {
-  receipt: TransactionReceipt<bigint, number, 'success' | 'reverted'>
-  userOpHash?: Hash
-}
+export type LendTransactionReceipt =
+  | TransactionReturnType
+  | BatchTransactionReturnType
 
 /**
  * Lending market information

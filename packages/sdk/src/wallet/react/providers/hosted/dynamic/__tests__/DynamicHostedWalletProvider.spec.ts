@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import * as createSignerUtil from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
@@ -40,6 +41,33 @@ describe('DynamicHostedWalletProvider', () => {
         chainManager: mockChainManager,
       })
       expect(result).toBe(mockResult)
+    })
+
+    it('forwards lendProvider when provided to constructor', async () => {
+      const mockChainManager = new MockChainManager({
+        supportedChains: [1],
+      }) as unknown as ChainManager
+      const mockLendProvider = {} as any
+      const provider = new DynamicHostedWalletProvider(
+        mockChainManager,
+        mockLendProvider as LendProvider<LendConfig>,
+      )
+
+      const mockDynamicWallet = {
+        __brand: 'dynamic-wallet',
+      } as unknown as DynamicHostedWalletToActionsWalletOptions['wallet']
+      const mockResult = { __brand: 'actions-wallet' }
+      vi.mocked(DynamicWallet.create).mockResolvedValueOnce(mockResult)
+
+      await provider.toActionsWallet({
+        wallet: mockDynamicWallet,
+      })
+
+      expect(DynamicWallet.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lendProvider: mockLendProvider,
+        }),
+      )
     })
   })
 

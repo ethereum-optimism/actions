@@ -12,7 +12,6 @@ describe('WalletLendNamespace', () => {
   const mockWalletAddress = getRandomAddress()
   let mockProvider: LendProvider
   let mockWallet: SmartWallet
-  let mockRegularWallet: any
 
   beforeEach(() => {
     mockProvider = createMockLendProvider()
@@ -30,13 +29,6 @@ describe('WalletLendNamespace', () => {
           userOpHash: '0xmockbatchhash',
         }) as unknown as WaitForUserOperationReceiptReturnType,
     }) as unknown as SmartWallet
-
-    // Create a mock regular wallet without SmartWallet methods
-    mockRegularWallet = {
-      address: mockWalletAddress,
-      send: undefined,
-      sendBatch: undefined,
-    }
   })
 
   it('should create an instance with a lend provider and wallet', () => {
@@ -173,34 +165,6 @@ describe('WalletLendNamespace', () => {
         receipt: { success: true },
         userOpHash: '0xmockhash',
       })
-    })
-
-    it('should throw error for non-SmartWallet', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockRegularWallet)
-      const closeParams = {
-        amount: 100,
-        marketId: { address: getRandomAddress(), chainId: 130 as const },
-      }
-
-      const mockTransaction = {
-        amount: 100n,
-        asset: getRandomAddress(),
-        marketId: closeParams.marketId.address,
-        apy: 0.05,
-        transactionData: {
-          closePosition: {
-            to: closeParams.marketId.address,
-            value: 0n,
-            data: '0x' as const,
-          },
-        },
-      }
-
-      vi.mocked(mockProvider.closePosition).mockResolvedValue(mockTransaction)
-
-      await expect(namespace.closePosition(closeParams)).rejects.toThrow(
-        'Transaction execution is only supported for SmartWallet instances',
-      )
     })
   })
 

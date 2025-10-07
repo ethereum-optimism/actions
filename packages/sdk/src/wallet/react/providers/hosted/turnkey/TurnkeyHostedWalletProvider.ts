@@ -1,6 +1,7 @@
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
@@ -24,8 +25,11 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
    * @param organizationId - Turnkey organization ID that owns the signing key
    * @param chainManager - Chain manager used to resolve chains and RPC transports
    */
-  constructor(chainManager: ChainManager) {
-    super(chainManager)
+  constructor(
+    chainManager: ChainManager,
+    lendProvider?: LendProvider<LendConfig>,
+  ) {
+    super(chainManager, lendProvider)
   }
 
   /**
@@ -49,6 +53,7 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       signWith,
       ethereumAddress,
       chainManager: this.chainManager,
+      lendProvider: this.lendProvider,
     })
   }
 

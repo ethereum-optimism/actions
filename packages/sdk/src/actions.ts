@@ -141,7 +141,7 @@ export class Actions<
       )
     }
     this.hostedWalletProvider = factory.create(
-      { chainManager: this.chainManager },
+      { chainManager: this.chainManager, lendProvider: this.lendProvider },
       options,
     )
 

@@ -49,9 +49,9 @@ export interface PositionResponse {
 }
 
 export interface TransactionResponse {
-  hash: string
+  transactionHashes?: string[]
   userOpHash?: string
-  blockExplorerUrl: string
+  blockExplorerUrls: string[]
   amount: number
   tokenAddress: string
   marketId: {

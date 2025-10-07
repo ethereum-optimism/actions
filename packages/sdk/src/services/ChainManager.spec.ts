@@ -1,6 +1,13 @@
 import { chainById } from '@eth-optimism/viem/chains'
 import { createSmartAccountClient } from 'permissionless/clients'
 import { createPimlicoClient } from 'permissionless/clients/pimlico'
+import type {
+  FallbackTransport,
+  HttpTransport,
+  PublicClient,
+  Transport,
+} from 'viem'
+import { createPublicClient, fallback, http } from 'viem'
 import { createBundlerClient } from 'viem/account-abstraction'
 import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +15,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { ChainConfig, PimlicoBundlerConfig } from '@/types/chain.js'
+
+vi.mock('viem', async () => ({
+  // @ts-ignore - importActual returns unknown
+  ...(await vi.importActual('viem')),
+  createPublicClient: vi.fn(),
+  fallback: vi.fn(),
+  http: vi.fn().mockImplementation((url) => url as unknown as HttpTransport),
+}))
 
 vi.mock('viem/account-abstraction', () => {
   return {
@@ -38,9 +53,20 @@ vi.mock('permissionless/clients', () => {
 describe('ChainManager', () => {
   let chainManager: ChainManager
   let mockChainConfigs: ChainConfig[]
+  let mockFallbackTransport: FallbackTransport<readonly Transport[]>
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(createPublicClient).mockImplementation(
+      ({ chain }) =>
+        ({
+          chain,
+        }) as unknown as PublicClient,
+    )
+    mockFallbackTransport = {
+      __type: 'fallback',
+    } as unknown as FallbackTransport<readonly Transport[]>
+    vi.mocked(fallback).mockReturnValue(mockFallbackTransport)
     mockChainConfigs = [
       {
         chainId: unichain.id,
@@ -100,6 +126,64 @@ describe('ChainManager', () => {
     it('should return array of supported chain IDs', () => {
       const supportedChains = chainManager.getSupportedChains()
       expect(supportedChains).toEqual([unichain.id])
+    })
+  })
+
+  describe('getTransportForChain', () => {
+    it('should return fallback transport when multiple RPC URLs are configured', () => {
+      // clear mocks for fallback
+      vi.clearAllMocks()
+      const transport = chainManager.getTransportForChain(unichain.id)
+
+      expect(transport).toBeDefined()
+      expect(fallback).toHaveBeenCalledTimes(1)
+      expect(transport).toEqual(mockFallbackTransport)
+      expect(fallback).toHaveBeenCalledWith(['https://rpc.unichain.org'])
+    })
+
+    it('should return http transport when no RPC URLs are configured', () => {
+      const configWithoutRpcUrls: ChainConfig[] = [
+        {
+          chainId: unichain.id,
+        },
+      ]
+      const mgr = new ChainManager(configWithoutRpcUrls)
+      vi.clearAllMocks()
+      const mockHttpTransport = { __type: 'http' } as unknown as HttpTransport
+      vi.mocked(http).mockReturnValue(mockHttpTransport)
+
+      const transport = mgr.getTransportForChain(unichain.id)
+
+      expect(http).toHaveBeenCalledTimes(1)
+      expect(http).toHaveBeenCalledWith()
+      expect(transport).toEqual(mockHttpTransport)
+    })
+
+    it('should return http transport when empty RPC URLs array is configured', () => {
+      const configWithEmptyRpcUrls: ChainConfig[] = [
+        {
+          chainId: unichain.id,
+          rpcUrls: [],
+        },
+      ]
+      const mgr = new ChainManager(configWithEmptyRpcUrls)
+      vi.clearAllMocks()
+      const mockHttpTransport = { __type: 'http' } as unknown as HttpTransport
+      vi.mocked(http).mockReturnValue(mockHttpTransport)
+
+      const transport = mgr.getTransportForChain(unichain.id)
+
+      expect(http).toHaveBeenCalledTimes(1)
+      expect(http).toHaveBeenCalledWith()
+      expect(transport).toEqual(mockHttpTransport)
+    })
+
+    it('should throw error for unsupported chain', () => {
+      const unsupportedChainId = 999 as unknown as SupportedChainId
+
+      expect(() =>
+        chainManager.getTransportForChain(unsupportedChainId),
+      ).toThrow('No chain config found for chain ID: 999')
     })
   })
 

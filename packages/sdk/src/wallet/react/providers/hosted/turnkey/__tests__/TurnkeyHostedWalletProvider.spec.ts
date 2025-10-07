@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { TurnkeyHostedWalletProvider } from '@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
 import { TurnkeyWallet } from '@/wallet/react/wallets/hosted/turnkey/TurnkeyWallet.js'
 import * as createSignerUtil from '@/wallet/react/wallets/hosted/turnkey/utils/createSigner.js'
@@ -83,6 +84,32 @@ describe('TurnkeyHostedWalletProvider', () => {
       })
 
       expect(actionsWallet).toBe(fakeWallet)
+    })
+
+    it('forwards lendProvider when provided to constructor', async () => {
+      const turnkeyClient = {} as unknown as TurnkeySDKClientBase
+      const mockLendProvider = {} as unknown as LendProvider<LendConfig>
+      const provider = new TurnkeyHostedWalletProvider(
+        mockChainManager,
+        mockLendProvider,
+      )
+      const spyTurnkeyWalletCreate = vi
+        .spyOn(TurnkeyWallet, 'create')
+        .mockResolvedValueOnce({
+          address: '0xabc',
+        } as unknown as TurnkeyWallet)
+
+      await provider.toActionsWallet({
+        client: turnkeyClient,
+        organizationId: 'org_123',
+        signWith: 'key_abc',
+      })
+
+      expect(spyTurnkeyWalletCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lendProvider: mockLendProvider,
+        }),
+      )
     })
   })
 

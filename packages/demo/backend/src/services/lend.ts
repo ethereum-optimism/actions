@@ -1,8 +1,11 @@
 import type {
+  EOATransactionReceipt,
   LendMarket,
   LendMarketId,
   LendMarketPosition,
+  LendTransactionReceipt,
   SupportedChainId,
+  UserOperationTransactionReceipt,
 } from '@eth-optimism/actions-sdk'
 import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
@@ -17,20 +20,30 @@ import type {
 } from '../types/index.js'
 import { getWallet } from './wallet.js'
 
-export async function getBlockExplorerUrl(
+export async function getBlockExplorerUrls(
   chainId: SupportedChainId,
-): Promise<string> {
+  transactionHashes?: string[],
+  userOpHash?: string,
+): Promise<string[]> {
   const chain = chainById[chainId]
   if (!chain) {
     throw new Error(`Chain not found for chainId: ${chainId}`)
   }
+  let url = `${chain.blockExplorers?.default.url}`
   if (chain.id === unichain.id) {
-    return 'https://unichain.blockscout.com/op'
+    url = `https://unichain.blockscout.com`
   }
   if (chain.id === baseSepolia.id) {
-    return `https://base-sepolia.blockscout.com/op`
+    url = `https://base-sepolia.blockscout.com`
   }
-  return `${chain.blockExplorers?.default.url}/tx` || ''
+
+  if (userOpHash) {
+    return [`${url}/op/${userOpHash}`]
+  }
+  if (!transactionHashes) {
+    throw new Error('Transaction hashes not found')
+  }
+  return transactionHashes.map((hash) => `${url}/tx/${hash}`)
 }
 
 export async function getMarkets(): Promise<LendMarket[]> {
@@ -119,12 +132,23 @@ async function executePosition(
       ? await wallet.lend!.openPosition(positionParams)
       : await wallet.lend!.closePosition(positionParams)
 
-  const blockExplorerUrl = await getBlockExplorerUrl(marketId.chainId)
+  const transactionHashes = isEOATransactionReceipt(result)
+    ? [result.transactionHash]
+    : isBatchEOATransactionReceipt(result)
+      ? result.map((receipt) => receipt.transactionHash)
+      : undefined
+  const blockExplorerUrls = await getBlockExplorerUrls(
+    marketId.chainId,
+    transactionHashes,
+    isUserOperationTransactionReceipt(result) ? result.userOpHash : undefined,
+  )
 
   return {
-    hash: result.receipt.transactionHash,
-    userOpHash: result.userOpHash,
-    blockExplorerUrl,
+    transactionHashes,
+    userOpHash: isUserOperationTransactionReceipt(result)
+      ? result.userOpHash
+      : undefined,
+    blockExplorerUrls,
     amount,
     tokenAddress,
     marketId,
@@ -141,4 +165,22 @@ export async function closePosition(
   params: PositionParams,
 ): Promise<PositionResponse> {
   return executePosition(params, 'close')
+}
+
+function isEOATransactionReceipt(
+  receipt: LendTransactionReceipt,
+): receipt is EOATransactionReceipt {
+  return !Array.isArray(receipt) && !('userOpHash' in receipt)
+}
+
+function isUserOperationTransactionReceipt(
+  receipt: LendTransactionReceipt,
+): receipt is UserOperationTransactionReceipt {
+  return 'userOpHash' in receipt
+}
+
+function isBatchEOATransactionReceipt(
+  receipt: LendTransactionReceipt,
+): receipt is EOATransactionReceipt[] {
+  return Array.isArray(receipt)
 }

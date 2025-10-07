@@ -4,6 +4,7 @@ import type { TurnkeyServerClient } from '@turnkey/sdk-server'
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { NodeToActionsOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
@@ -32,8 +33,9 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       | TurnkeyServerClient
       | TurnkeySDKClientBase,
     chainManager: ChainManager,
+    lendProvider?: LendProvider<LendConfig>,
   ) {
-    super(chainManager)
+    super(chainManager, lendProvider)
   }
 
   /**
@@ -54,6 +56,7 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       signWith: params.signWith,
       ethereumAddress: params.ethereumAddress,
       chainManager: this.chainManager,
+      lendProvider: this.lendProvider,
     })
   }
 

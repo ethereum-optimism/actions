@@ -37,9 +37,9 @@ export interface PositionParams {
  * Position operation response
  */
 export interface PositionResponse {
-  hash: string
+  transactionHashes?: string[]
   userOpHash?: string
-  blockExplorerUrl: string
+  blockExplorerUrls: string[]
   amount: number
   tokenAddress: Address
   marketId: LendMarketId

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import { PrivyWallet } from '@/wallet/react/wallets/hosted/privy/PrivyWallet.js'
 import * as createSignerUtil from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
@@ -41,6 +42,34 @@ describe('PrivyHostedWalletProvider (React)', () => {
         connectedWallet: mockConnectedWallet,
       })
       expect(result).toBe(mockActionsWallet)
+    })
+
+    it('forwards lendProvider when provided to constructor', async () => {
+      const mockChainManager = new MockChainManager({
+        supportedChains: [1],
+      }) as unknown as ChainManager
+      const mockLendProvider = {} as any
+      const provider = new PrivyHostedWalletProvider(
+        mockChainManager,
+        mockLendProvider as LendProvider<LendConfig>,
+      )
+      const mockActionsWallet = {
+        __brand: 'actions-wallet',
+      } as unknown as PrivyWallet
+      const mockConnectedWallet = {
+        __brand: 'privy-connected-wallet',
+      } as unknown as ConnectedWallet
+      vi.mocked(PrivyWallet.create).mockResolvedValueOnce(mockActionsWallet)
+
+      await provider.toActionsWallet({
+        connectedWallet: mockConnectedWallet,
+      })
+
+      expect(PrivyWallet.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lendProvider: mockLendProvider,
+        }),
+      )
     })
   })
 
