@@ -1,25 +1,74 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { usePrivy, useLogin, useLogout, useUser } from '@privy-io/react-auth'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { usePrivy, useLogin, useLogout, useUser, useSessionSigners, type WalletWithMetadata } from '@privy-io/react-auth'
 import Info from './Info'
 import Action from './Action'
 import ActivityLog from './ActivityLog'
-import { actionsApi } from '../api/actionsApi'
+import { ActivityLogProvider } from '../contexts/ActivityLogContext'
+import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
+import { env } from '../envVars'
 
-function Earn() {
+function EarnContent() {
   const { ready, authenticated, getAccessToken } = usePrivy()
   const { login } = useLogin()
   const { logout } = useLogout()
   const { user } = useUser()
+  const { addSessionSigners } = useSessionSigners()
+  const loggedApi = useLoggedActionsApi()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [usdcBalance, setUsdcBalance] = useState<string>('0')
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
   const [walletCreated, setWalletCreated] = useState(false)
 
+  const ethereumEmbeddedWallets = useMemo<WalletWithMetadata[]>(
+    () =>
+      (user?.linkedAccounts?.filter(
+        (account) =>
+          account.type === 'wallet' &&
+          account.walletClientType === 'privy' &&
+          account.chainType === 'ethereum',
+      ) as WalletWithMetadata[]) ?? [],
+    [user],
+  )
+
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken()
     return token ? { Authorization: `Bearer ${token}` } : undefined
   }, [getAccessToken])
+
+  const addSessionSigner = useCallback(
+    async (walletAddress: string) => {
+      if (!env.VITE_SESSION_SIGNER_ID) {
+        console.error('SESSION_SIGNER_ID must be defined to addSessionSigner')
+        return
+      }
+
+      try {
+        await addSessionSigners({
+          address: walletAddress,
+          signers: [
+            {
+              signerId: env.VITE_SESSION_SIGNER_ID,
+            },
+          ],
+        })
+        console.log('Session signer added for wallet:', walletAddress)
+      } catch (error) {
+        console.error('Error adding session signer:', error)
+      }
+    },
+    [addSessionSigners],
+  )
+
+  // Add session signers for undelegated wallets
+  useEffect(() => {
+    const undelegatedEthereumEmbeddedWallets = ethereumEmbeddedWallets.filter(
+      (wallet) => wallet.delegated !== true,
+    )
+    undelegatedEthereumEmbeddedWallets.forEach((wallet) => {
+      addSessionSigner(wallet.address)
+    })
+  }, [ethereumEmbeddedWallets, addSessionSigner])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -39,11 +88,11 @@ function Earn() {
     try {
       setIsLoadingBalance(true)
       const headers = await getAuthHeaders()
-      const balanceResult = await actionsApi.getWalletBalance(userId, headers)
+      const balanceResult = await loggedApi.getWalletBalance(userId, headers)
 
-      // Find USDC or USDC_DEMO balance
+      // Find USDC balance
       const usdcToken = balanceResult.balance.find(
-        (token) => token.symbol === 'USDC' || token.symbol === 'USDC_DEMO'
+        (token) => token.symbol === 'USDC_DEMO'
       )
 
       if (usdcToken) {
@@ -54,40 +103,42 @@ function Earn() {
         setUsdcBalance('0')
       }
     } catch (error) {
-      console.error('Error fetching balance:', error)
       setUsdcBalance('0')
     } finally {
       setIsLoadingBalance(false)
     }
-  }, [getAuthHeaders])
+  }, [getAuthHeaders, loggedApi])
 
-  // Create wallet and fetch balance when user logs in
+  // Function to mint demo USDC
+  const handleMintUSDC = useCallback(async () => {
+    if (!user?.id) return
+
+    try {
+      const headers = await getAuthHeaders()
+      await loggedApi.fundWallet(user.id, headers)
+      // Refresh balance after minting
+      await fetchBalance(user.id)
+    } catch (error) {
+      console.error('Error minting USDC:', error)
+    }
+  }, [user?.id, getAuthHeaders, loggedApi, fetchBalance])
+
+  // Fetch balance when user logs in
   useEffect(() => {
     const initializeWallet = async () => {
       if (authenticated && user?.id && !walletCreated) {
         try {
           const userId = user.id
-          const headers = await getAuthHeaders()
-
-          // First, try to create the wallet (idempotent - won't fail if exists)
-          try {
-            await actionsApi.createWallet(userId, headers)
-          } catch (createError) {
-            // If wallet already exists, that's fine - continue to fetch balance
-            console.log('Wallet may already exist:', createError)
-          }
-
-          // Now fetch the balance
           await fetchBalance(userId)
           setWalletCreated(true)
         } catch (error) {
-          console.error('Error initializing wallet:', error)
+          console.error('Error fetching balance:', error)
         }
       }
     }
 
     initializeWallet()
-  }, [authenticated, user?.id, walletCreated, fetchBalance, getAuthHeaders])
+  }, [authenticated, user?.id, walletCreated, fetchBalance])
 
   // Show loading state while Privy is initializing
   if (!ready) {
@@ -274,7 +325,11 @@ function Earn() {
             </div>
 
             <div className="space-y-6">
-              <Action usdcBalance={usdcBalance} isLoadingBalance={isLoadingBalance} />
+              <Action
+                usdcBalance={usdcBalance}
+                isLoadingBalance={isLoadingBalance}
+                onMintUSDC={handleMintUSDC}
+              />
               <Info />
             </div>
           </div>
@@ -286,6 +341,14 @@ function Earn() {
         </div>
       </main>
     </div>
+  )
+}
+
+function Earn() {
+  return (
+    <ActivityLogProvider>
+      <EarnContent />
+    </ActivityLogProvider>
   )
 }
 

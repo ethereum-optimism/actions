@@ -1,5 +1,5 @@
 import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
-import { createActions } from '@eth-optimism/actions-sdk/node'
+import { createActions } from '@eth-optimism/actions-sdk'
 import { PrivyClient } from '@privy-io/server-auth'
 import { baseSepolia, unichain } from 'viem/chains'
 

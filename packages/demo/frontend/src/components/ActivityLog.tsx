@@ -1,30 +1,23 @@
 import ActivityLogItem from './ActivityLogItem'
+import { useActivityLog } from '../contexts/ActivityLogContext'
 
 function ActivityLog() {
-  // Sample data - replace with real data later
-  const activities = [
-    {
-      id: 1,
-      type: 'lend' as const,
-      amount: '100.00',
-      timestamp: '2 minutes ago',
-      status: 'confirmed' as const
-    },
-    {
-      id: 2,
-      type: 'withdraw' as const,
-      amount: '50.00',
-      timestamp: '1 hour ago',
-      status: 'confirmed' as const
-    },
-    {
-      id: 3,
-      type: 'lend' as const,
-      amount: '200.00',
-      timestamp: '3 hours ago',
-      status: 'pending' as const
-    }
-  ]
+  const { activities } = useActivityLog()
+
+  // Helper function to format timestamp
+  const formatTimestamp = (isoString: string) => {
+    const date = new Date(isoString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+  }
 
   return (
     <div
@@ -48,8 +41,8 @@ function ActivityLog() {
             <ActivityLogItem
               key={activity.id}
               type={activity.type}
-              amount={activity.amount}
-              timestamp={activity.timestamp}
+              amount={activity.amount || '0'}
+              timestamp={formatTimestamp(activity.timestamp)}
               status={activity.status}
             />
           ))

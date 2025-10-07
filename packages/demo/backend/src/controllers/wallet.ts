@@ -213,6 +213,7 @@ export class WalletController {
       const result = await walletService.fundWallet(wallet)
       return c.json(result)
     } catch (error) {
+      console.error(error)
       return c.json(
         {
           error: 'Failed to fund wallet',

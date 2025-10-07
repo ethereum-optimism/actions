@@ -10,6 +10,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      '@base-org/account':
+        specifier: ^2.3.1
+        version: 2.3.1(@types/react@18.3.23)(bufferutil@4.0.9)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.5.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
     devDependencies:
       '@eslint/compat':
         specifier: ^1.3.1
@@ -885,6 +889,12 @@ packages:
 
   '@base-org/account@1.1.1':
     resolution: {integrity: sha512-IfVJPrDPhHfqXRDb89472hXkpvJuQQR7FDI9isLPHEqSYt/45whIoBxSPgZ0ssTt379VhQo4+87PWI1DoLSfAQ==}
+
+  '@base-org/account@2.3.1':
+    resolution: {integrity: sha512-EfDEkyZxZCRLceDZnxV2AnXuPmncD+vjPsDZ8vVVa396s3n9ppF4PIwuf9RtV2C4wW9ZJuOTQUWwv/FCGR+DmQ==}
+
+  '@coinbase/cdp-sdk@1.38.3':
+    resolution: {integrity: sha512-W5KtVdxSAJjpC0ASYI6sTOXjFZMXdiL5R2e/gmn3pvhxIoKTpuRqc5O05D5pId7/y5SXwu41QcX7oqDWf0Sgbg==}
 
   '@coinbase/wallet-sdk@4.3.2':
     resolution: {integrity: sha512-hOLA2YONq8Z9n8f6oVP6N//FEEHOen7nq+adG/cReol6juFTHUelVN5GnA5zTIxiLFMDcrhDwwgCA6Tdb5jubw==}
@@ -2584,6 +2594,12 @@ packages:
     peerDependencies:
       '@solana/web3.js': ^1.95.5
 
+  '@solana/spl-token@0.4.14':
+    resolution: {integrity: sha512-u09zr96UBpX4U685MnvQsNzlvw9TiY005hk1vJmJr7gMJldoPG1eYU5/wNEyOA5lkMLiR/gOi9SFD4MefOYEsA==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@solana/web3.js': ^1.95.5
+
   '@solana/wallet-adapter-base@0.9.23':
     resolution: {integrity: sha512-apqMuYwFp1jFi55NxDfvXUX2x1T0Zh07MxhZ/nCCTGys5raSfYUh82zen2BLv8BSDj/JxZ2P/s7jrQZGrX8uAw==}
     engines: {node: '>=16'}
@@ -3123,6 +3139,17 @@ packages:
     resolution: {integrity: sha512-nrUSn7hzt7J6JWgWGz78ZYI8wj+gdIJdk0Ynjpp8l+trkn58Uqsf6RYrYkEK+3X18EX+TNdtJI0WxAtc+L84SQ==}
     hasBin: true
 
+  abitype@1.0.6:
+    resolution: {integrity: sha512-MMSqYh4+C/aVqI2RQaWqbvI4Kxo5cQV40WQ4QFtDnNzCkqChm8MuENhElmynZlO0qUy/ObkEUaXtKqYnx1Kp3A==}
+    peerDependencies:
+      typescript: '>=5.0.4'
+      zod: ^3 >=3.22.0
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+      zod:
+        optional: true
+
   abitype@1.0.8:
     resolution: {integrity: sha512-ZeiI6h3GnW06uYDLx0etQtX/p8E24UaHHBj57RSjK7YBFe7iuVn07EDpOeP451D06sF27VOz9JJPlIKJmXgkEg==}
     peerDependencies:
@@ -3305,6 +3332,11 @@ packages:
   available-typed-arrays@1.0.7:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
+
+  axios-retry@4.5.0:
+    resolution: {integrity: sha512-aR99oXhpEDGo0UuAlYcn2iGRds30k366Zfa05XWScR9QaQD4JYiP3/1Qt1u7YlefUOK+cn0CcwoL1oefavQUlQ==}
+    peerDependencies:
+      axios: 0.x || 1.x
 
   axios@1.12.2:
     resolution: {integrity: sha512-vMJzPewAlRyOgxV2dU0Cuz2O8zzzx9VYtbJOaBgXFeLc4IV/Eg50n4LowmehOOR61S8ZMpc2K5Sa7g6A4jfkUw==}
@@ -4626,6 +4658,10 @@ packages:
     resolution: {integrity: sha512-MjYsKHO5O7mCsmRGxWcLWheFqN9DJ/2TmngvjKXihe6efViPqc274+Fx/4fYj/r03+ESvBdTXK0V6tA3rgez1g==}
     engines: {node: '>= 0.4'}
 
+  is-retry-allowed@2.2.0:
+    resolution: {integrity: sha512-XVm7LOeLpTW4jV19QSH38vkswxoLud8sQ57YwJVTPWdiaI9I8keEhGFpBlslyVsgdQy4Opg8QOLb8YRgsyZiQg==}
+    engines: {node: '>=10'}
+
   is-set@2.0.3:
     resolution: {integrity: sha512-iPAjerrse27/ygGLxw+EBR9agv9Y6uLeYVJMu+QNCoouJ1/1ri0mGrcWpfCqFZuzzx3WjtwxG098X+n4OuRkPg==}
     engines: {node: '>= 0.4'}
@@ -4725,6 +4761,9 @@ packages:
 
   jose@4.15.9:
     resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
+
+  jose@6.1.0:
+    resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
 
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
@@ -7605,6 +7644,50 @@ snapshots:
       - utf-8-validate
       - zod
 
+  '@base-org/account@2.3.1(@types/react@18.3.23)(bufferutil@4.0.9)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(react@18.3.1)(typescript@5.8.3)(use-sync-external-store@1.5.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
+      '@coinbase/cdp-sdk': 1.38.3(bufferutil@4.0.9)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@noble/hashes': 1.4.0
+      clsx: 1.2.1
+      eventemitter3: 5.0.1
+      idb-keyval: 6.2.1
+      ox: 0.6.9(typescript@5.8.3)(zod@3.25.76)
+      preact: 10.24.2
+      viem: 2.37.3(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      zustand: 5.0.3(@types/react@18.3.23)(react@18.3.1)(use-sync-external-store@1.5.0(react@18.3.1))
+    transitivePeerDependencies:
+      - '@types/react'
+      - bufferutil
+      - debug
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - immer
+      - react
+      - typescript
+      - use-sync-external-store
+      - utf-8-validate
+      - zod
+
+  '@coinbase/cdp-sdk@1.38.3(bufferutil@4.0.9)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(utf-8-validate@5.0.10)':
+    dependencies:
+      '@solana/spl-token': 0.4.14(@solana/web3.js@1.98.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@solana/web3.js': 1.98.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      abitype: 1.0.6(typescript@5.8.3)(zod@3.25.76)
+      axios: 1.12.2
+      axios-retry: 4.5.0(axios@1.12.2)
+      jose: 6.1.0
+      md5: 2.3.0
+      uncrypto: 0.1.3
+      viem: 2.37.3(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - typescript
+      - utf-8-validate
+
   '@coinbase/wallet-sdk@4.3.2':
     dependencies:
       '@noble/hashes': 1.8.0
@@ -10203,7 +10286,6 @@ snapshots:
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
       - typescript
-    optional: true
 
   '@solana/spl-token-metadata@0.1.6(@solana/web3.js@1.98.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10))(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)':
     dependencies:
@@ -10220,7 +10302,6 @@ snapshots:
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
       - typescript
-    optional: true
 
   '@solana/spl-token@0.4.12(@solana/web3.js@1.98.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(utf-8-validate@5.0.10)':
     dependencies:
@@ -10252,6 +10333,21 @@ snapshots:
       - typescript
       - utf-8-validate
     optional: true
+
+  '@solana/spl-token@0.4.14(@solana/web3.js@1.98.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(utf-8-validate@5.0.10)':
+    dependencies:
+      '@solana/buffer-layout': 4.0.1
+      '@solana/buffer-layout-utils': 0.2.0(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@solana/spl-token-group': 0.0.7(@solana/web3.js@1.98.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10))(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)
+      '@solana/spl-token-metadata': 0.1.6(@solana/web3.js@1.98.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10))(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)
+      '@solana/web3.js': 1.98.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      buffer: 6.0.3
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - typescript
+      - utf-8-validate
 
   '@solana/wallet-adapter-base@0.9.23(@solana/web3.js@1.98.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10))':
     dependencies:
@@ -11965,6 +12061,11 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
+  abitype@1.0.6(typescript@5.8.3)(zod@3.25.76):
+    optionalDependencies:
+      typescript: 5.8.3
+      zod: 3.25.76
+
   abitype@1.0.8(typescript@5.8.3)(zod@4.0.5):
     optionalDependencies:
       typescript: 5.8.3
@@ -12156,6 +12257,11 @@ snapshots:
   available-typed-arrays@1.0.7:
     dependencies:
       possible-typed-array-names: 1.1.0
+
+  axios-retry@4.5.0(axios@1.12.2):
+    dependencies:
+      axios: 1.12.2
+      is-retry-allowed: 2.2.0
 
   axios@1.12.2:
     dependencies:
@@ -13710,6 +13816,8 @@ snapshots:
       has-tostringtag: 1.0.2
       hasown: 2.0.2
 
+  is-retry-allowed@2.2.0: {}
+
   is-set@2.0.3: {}
 
   is-shared-array-buffer@1.0.4:
@@ -13824,6 +13932,8 @@ snapshots:
   jiti@1.21.7: {}
 
   jose@4.15.9: {}
+
+  jose@6.1.0: {}
 
   joycon@3.1.1: {}
 
@@ -14311,6 +14421,20 @@ snapshots:
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
       abitype: 1.1.0(typescript@5.8.3)(zod@4.0.5)
+      eventemitter3: 5.0.1
+    optionalDependencies:
+      typescript: 5.8.3
+    transitivePeerDependencies:
+      - zod
+
+  ox@0.6.9(typescript@5.8.3)(zod@3.25.76):
+    dependencies:
+      '@adraffy/ens-normalize': 1.11.0
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      abitype: 1.1.0(typescript@5.8.3)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.8.3

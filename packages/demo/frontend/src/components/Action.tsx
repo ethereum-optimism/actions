@@ -3,9 +3,10 @@ import { useState } from 'react'
 interface ActionProps {
   usdcBalance: string
   isLoadingBalance: boolean
+  onMintUSDC?: () => void
 }
 
-function Action({ usdcBalance, isLoadingBalance }: ActionProps) {
+function Action({ usdcBalance, isLoadingBalance, onMintUSDC }: ActionProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
@@ -63,14 +64,42 @@ function Action({ usdcBalance, isLoadingBalance }: ActionProps) {
               USDC
             </span>
           </div>
-          <span style={{
-            color: '#404454',
-            fontFamily: 'Inter',
-            fontSize: '14px',
-            fontWeight: 500
-          }}>
-            {isLoadingBalance ? 'Loading...' : usdcBalance}
-          </span>
+          {isLoadingBalance ? (
+            <span style={{
+              color: '#404454',
+              fontFamily: 'Inter',
+              fontSize: '14px',
+              fontWeight: 500
+            }}>
+              Loading...
+            </span>
+          ) : parseFloat(usdcBalance) === 0 ? (
+            <button
+              onClick={onMintUSDC}
+              className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
+              style={{
+                backgroundColor: '#FFFFFF',
+                color: '#1a1b1e',
+                fontSize: '14px',
+                fontWeight: 500,
+                borderRadius: '6px',
+                border: '1px solid #E0E2EB',
+                cursor: 'pointer',
+                fontFamily: 'Inter'
+              }}
+            >
+              Get 100 USDC
+            </button>
+          ) : (
+            <span style={{
+              color: '#404454',
+              fontFamily: 'Inter',
+              fontSize: '14px',
+              fontWeight: 500
+            }}>
+              {usdcBalance}
+            </span>
+          )}
         </div>
       </div>
 
