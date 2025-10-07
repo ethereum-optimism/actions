@@ -1,10 +1,11 @@
-import type { Address, Hex, LocalAccount, WalletClient } from 'viem'
+import type { Address, LocalAccount, WalletClient } from 'viem'
 import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstraction'
 import { vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/lend/index.js'
+import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 import type { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
 
 export type CreateDefaultSmartWalletMockOptions = {
@@ -19,18 +20,15 @@ export type CreateDefaultSmartWalletMockOptions = {
     receipt?: WaitForUserOperationReceiptReturnType
   }>
   /** Custom implementation for addSigner */
-  addSignerImpl?: (
-    owner: Address | { type: 'webAuthn'; publicKey: Hex },
-    chainId: SupportedChainId,
-  ) => Promise<number>
+  addSignerImpl?: (signer: Signer, chainId: SupportedChainId) => Promise<number>
   /** Custom implementation for findSignerIndex */
   findSignerIndexImpl?: (
-    signer: Address | { type: 'webAuthn'; publicKey: Hex },
+    signer: Signer,
     chainId: SupportedChainId,
   ) => Promise<number>
   /** Custom implementation for removeSigner */
   removeSignerImpl?: (
-    signer: Address | { type: 'webAuthn'; publicKey: Hex },
+    signer: Signer,
     chainId: SupportedChainId,
     signerIndex?: number,
   ) => Promise<WaitForUserOperationReceiptReturnType>
@@ -86,20 +84,14 @@ export function createMock(
   )
 
   const addSigner = vi.fn(
-    async (
-      owner: Address | { type: 'webAuthn'; publicKey: Hex },
-      chainId: SupportedChainId,
-    ): Promise<number> => {
-      if (options.addSignerImpl) return options.addSignerImpl(owner, chainId)
+    async (signer: Signer, chainId: SupportedChainId): Promise<number> => {
+      if (options.addSignerImpl) return options.addSignerImpl(signer, chainId)
       return 0
     },
   )
 
   const findSignerIndex = vi.fn(
-    async (
-      signer: Address | { type: 'webAuthn'; publicKey: Hex },
-      chainId: SupportedChainId,
-    ): Promise<number> => {
+    async (signer: Signer, chainId: SupportedChainId): Promise<number> => {
       if (options.findSignerIndexImpl)
         return options.findSignerIndexImpl(signer, chainId)
       return -1
@@ -108,7 +100,7 @@ export function createMock(
 
   const removeSigner = vi.fn(
     async (
-      signer: Address | { type: 'webAuthn'; publicKey: Hex },
+      signer: Signer,
       chainId: SupportedChainId,
       signerIndex?: number,
     ): Promise<WaitForUserOperationReceiptReturnType> => {

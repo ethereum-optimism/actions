@@ -29,10 +29,10 @@ import {
   smartWalletFactoryAbi,
   smartWalletFactoryAddress,
 } from '@/wallet/core/wallets/smart/default/constants/index.js'
-import type { Owners } from '@/wallet/core/wallets/smart/default/types/index.js'
-import { findOwnerIndex } from '@/wallet/core/wallets/smart/default/utils/findOwnerIndex.js'
-import { findSignerIndex } from '@/wallet/core/wallets/smart/default/utils/findSignerIndex.js'
+import { findSignerInArray } from '@/wallet/core/wallets/smart/default/utils/findSignerInArray.js'
+import { findSignerIndexOnChain } from '@/wallet/core/wallets/smart/default/utils/findSignerIndexOnChain.js'
 import { formatPublicKey } from '@/wallet/core/wallets/smart/default/utils/formatPublicKey.js'
+import { getSignerPublicKey } from '@/wallet/core/wallets/smart/default/utils/getSignerPublicKey.js'
 import { SmartWalletDeploymentError } from '@/wallet/core/wallets/smart/error/errors.js'
 
 /**
@@ -45,10 +45,10 @@ export class DefaultSmartWallet extends SmartWallet {
   public readonly signer: LocalAccount
   /** Address of the smart wallet */
   private _address!: Address
-  /** Array of wallet owners (Ethereum addresses or WebAuthn public keys) */
-  private owners: Owners
-  /** Index of the signer in the owners array */
-  private signerOwnerIndex: number
+  /** Array of wallet signers */
+  private signers: Signer[]
+  /** Index of this.signer in this.signers array */
+  private signerIndex: number
   /** Known deployment address of the wallet (if already deployed) */
   private deploymentAddress?: Address
   /** Provider for lending market operations */
@@ -69,7 +69,7 @@ export class DefaultSmartWallet extends SmartWallet {
    * @param nonce - Nonce for address generation
    */
   private constructor(
-    owners: Signer[],
+    signers: Signer[],
     signer: LocalAccount,
     chainManager: ChainManager,
     lendProvider?: LendProvider<LendConfig>,
@@ -79,11 +79,11 @@ export class DefaultSmartWallet extends SmartWallet {
   ) {
     super(chainManager)
 
-    const { owners: ownersWithLocalAccount, signerOwnerIndex } =
-      DefaultSmartWallet.validateAndConstructOwners(owners, signer)
+    const { signersWithLocalAccount, signerIndex } =
+      DefaultSmartWallet.ensureLocalAccountSigner(signers, signer)
     this.signer = signer
-    this.owners = ownersWithLocalAccount
-    this.signerOwnerIndex = signerOwnerIndex
+    this.signers = signersWithLocalAccount
+    this.signerIndex = signerIndex
     this.deploymentAddress = deploymentAddress
     this.lendProvider = lendProvider
     this.nonce = nonce
@@ -108,33 +108,25 @@ export class DefaultSmartWallet extends SmartWallet {
    * @returns Array of 32-byte formatted owner identifiers
    * @private
    */
-  get _ownerBytes() {
-    return this.owners.map((owner) => {
-      if (typeof owner === 'string') {
-        // EOA address - pad to 32 bytes
-        return formatPublicKey(owner)
-      } else if (owner.type === 'webAuthn') {
-        // WebAuthn account - return public key as-is
-        return formatPublicKey(owner)
-      } else if ('address' in owner && owner.address) {
-        // LocalAccount - extract address and pad to 32 bytes
-        return formatPublicKey(owner.address)
-      }
-      throw new Error('Invalid owner type')
+  get _signerBytes() {
+    return this.signers.map((signer) => {
+      const publicKey = getSignerPublicKey(signer)
+      return formatPublicKey(publicKey)
     })
   }
 
   static async create(params: {
-    owners: Signer[]
     signer: LocalAccount
     chainManager: ChainManager
+    signers?: Signer[]
     lendProvider?: LendProvider<LendConfig>
     deploymentAddress?: Address
     nonce?: bigint
     attributionSuffix?: Hex
   }): Promise<DefaultSmartWallet> {
+    const signers = params.signers ?? [params.signer.address]
     const wallet = new DefaultSmartWallet(
-      params.owners,
+      signers,
       params.signer,
       params.chainManager,
       params.lendProvider,
@@ -147,31 +139,38 @@ export class DefaultSmartWallet extends SmartWallet {
   }
 
   /**
-   * Validates and constructs the owners array with the signer at the correct index
-   * @description Searches for the signer's address in the owners array and replaces that entry
-   * with the LocalAccount signer. This ensures the smart wallet has a LocalAccount at the
-   * signer position for signing operations. Only supports LocalAccount signers matching against
-   * EOA addresses in the owners array.
-   * @param owners - Array of wallet owners (EOA addresses or WebAuthn accounts)
-   * @param signer - LocalAccount for signing transactions (must have type 'local')
-   * @returns Object containing the new owners array with LocalAccount at the found index, and the signerOwnerIndex
-   * @throws Error if signer is not found in the owners array (by matching address)
-   * @throws Error if signer is not a LocalAccount (type !== 'local')
+   * Ensures the LocalAccount signer is present in the signers array for signing operations.
+   * This is needed because the toCoinbaseSmartAccount requires two things:
+   * 1. The signers array to contain the signer (LocalAccount).
+   * 2. The index that the signer is at in the signers array.
+   *
+   *
+   * Another benefit of this is that it allows flexible constructor arguments because it can take a mix
+   * of public keys/addresses or LocalAccounts.
+   * Searches for the signer's public key in the array and replaces that entry with the LocalAccount.
+   * If the LocalAccount is already at that index, this is a no-op.
+   * @param signers - Array of signers (addresses, LocalAccounts, or WebAuthnAccounts)
+   * @param signer - LocalAccount that will sign transactions
+   * @returns The signers array with LocalAccount at the correct index, and that index
+   * @throws Error if signer's public key is not found in the signers array
    */
-  private static validateAndConstructOwners(
-    owners: Signer[],
+  private static ensureLocalAccountSigner(
+    signers: Signer[],
     signer: LocalAccount,
-  ): { owners: Owners; signerOwnerIndex: number } {
-    const foundIndex = findSignerIndex(owners, signer)
+  ): {
+    signersWithLocalAccount: Signer[]
+    signerIndex: number
+  } {
+    const signerIndex = findSignerInArray(signers, signer)
 
-    if (foundIndex === -1) {
-      throw new Error(`Signer does not match any owner in the owners array`)
+    if (signerIndex === -1) {
+      throw new Error(`Signer does not match any signer in the signers array`)
     }
 
-    // Replace the signer (Address or WebAuthnAccount) at the found index with the LocalAccount
-    const newOwners: Owners = [...owners]
-    newOwners[foundIndex] = signer
-    return { owners: newOwners, signerOwnerIndex: foundIndex }
+    // Replace the signer at the found index with the LocalAccount
+    const signersWithLocalAccount: Signer[] = [...signers]
+    signersWithLocalAccount[signerIndex] = signer
+    return { signersWithLocalAccount, signerIndex }
   }
 
   /**
@@ -202,9 +201,9 @@ export class DefaultSmartWallet extends SmartWallet {
   ): ReturnType<typeof toCoinbaseSmartAccount> {
     return toCoinbaseSmartAccount({
       address: this.deploymentAddress,
-      ownerIndex: this.signerOwnerIndex,
+      ownerIndex: this.signerIndex,
       client: this.chainManager.getPublicClient(chainId),
-      owners: this.owners,
+      owners: this.signers,
       nonce: this.nonce,
       version: '1.1',
     })
@@ -337,6 +336,18 @@ export class DefaultSmartWallet extends SmartWallet {
         }),
         value: 0n,
       })
+    } else if (signer.type === 'local') {
+      calls.push({
+        to: this.address,
+        data: encodeFunctionData({
+          abi: smartWalletAbi,
+          functionName: 'addOwnerAddress',
+          args: [signer.address] as const,
+        }),
+        value: 0n,
+      })
+    } else {
+      throw new Error('invalid signer type')
     }
 
     const { success, receipt } = await this.sendBatch(calls, chainId)
@@ -350,9 +361,9 @@ export class DefaultSmartWallet extends SmartWallet {
 
     const signerIndex = await retryOnStaleRead(
       () =>
-        findOwnerIndex({
+        findSignerIndexOnChain({
           address: this.address,
-          signer,
+          signerPublicKey: getSignerPublicKey(signer),
           client: this.chainManager.getPublicClient(chainId),
         }),
       (index) => index === -1,
@@ -370,7 +381,7 @@ export class DefaultSmartWallet extends SmartWallet {
    * Remove an existing signer from the smart wallet
    * @description Removes a signer (EOA address or WebAuthn public key) from the
    * smart wallet contract. If `signerIndex` is not provided, the method resolves
-   * it via {@link findSignerIndex}. The removal is executed via {@link sendBatch}
+   * it via {@link findSignerIndexOnChain}. The removal is executed via {@link sendBatch}
    * by calling the contract function `removeOwnerAtIndex(index, signerBytes)`.
    * Returns the ERC-4337 UserOperation receipt on success.
    * @param signer - Signer to remove: EOA address or `WebAuthnAccount`
@@ -385,11 +396,11 @@ export class DefaultSmartWallet extends SmartWallet {
     signerIndex?: number,
   ): Promise<WaitForUserOperationReceiptReturnType> {
     const resolvedSignerIndex =
-      signerIndex ?? (await this.findSignerIndex(signer, chainId))
+      signerIndex ?? (await this.findSignerIndexOnChain(signer, chainId))
     if (resolvedSignerIndex === -1) {
       throw new Error('failed to find signer index')
     }
-    const signerBytes = formatPublicKey(signer)
+    const signerBytes = formatPublicKey(getSignerPublicKey(signer))
     const calls = [
       {
         to: this.address,
@@ -420,13 +431,13 @@ export class DefaultSmartWallet extends SmartWallet {
    * @returns Promise resolving to the onchain signer index for the found signer
    * returns -1 if the signer is not found
    */
-  async findSignerIndex(
+  async findSignerIndexOnChain(
     signer: Signer,
     chainId: SupportedChainId,
   ): Promise<number> {
-    return findOwnerIndex({
+    return findSignerIndexOnChain({
       address: this.address,
-      signer,
+      signerPublicKey: getSignerPublicKey(signer),
       client: this.chainManager.getPublicClient(chainId),
     })
   }
@@ -469,7 +480,7 @@ export class DefaultSmartWallet extends SmartWallet {
             data: encodeFunctionData({
               abi: smartWalletFactoryAbi,
               functionName: 'createAccount',
-              args: [this._ownerBytes, this.nonce || 0n],
+              args: [this._signerBytes, this.nonce || 0n],
             }),
           },
         ],
@@ -564,7 +575,7 @@ export class DefaultSmartWallet extends SmartWallet {
   /**
    * Get the smart wallet address
    * @description Returns the deployment address if known, otherwise calculates the deterministic
-   * address using CREATE2 based on owners and nonce.
+   * address using CREATE2 based on signers and nonce.
    * @returns Promise resolving to the wallet address
    */
   private async getAddress() {
@@ -578,7 +589,7 @@ export class DefaultSmartWallet extends SmartWallet {
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
       functionName: 'getAddress',
-      args: [this._ownerBytes, this.nonce || 0n],
+      args: [this._signerBytes, this.nonce || 0n],
     })
     return smartWalletAddress
   }

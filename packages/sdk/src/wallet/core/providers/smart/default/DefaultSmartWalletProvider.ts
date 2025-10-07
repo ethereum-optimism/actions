@@ -1,5 +1,5 @@
 import type { Address, Hex, LocalAccount } from 'viem'
-import { keccak256, pad, slice, toHex } from 'viem'
+import { keccak256, slice, toHex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -12,6 +12,8 @@ import {
   smartWalletFactoryAddress,
 } from '@/wallet/core/wallets/smart/default/constants/index.js'
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
+import { formatPublicKey } from '@/wallet/core/wallets/smart/default/utils/formatPublicKey.js'
+import { getSignerPublicKey } from '@/wallet/core/wallets/smart/default/utils/getSignerPublicKey.js'
 import { SmartWalletDeploymentError } from '@/wallet/core/wallets/smart/error/errors.js'
 
 /**
@@ -67,14 +69,14 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    * - `deployments`: Array of deployment results with chainId, receipt, success flag, and error
    */
   async createWallet(params: {
-    owners: Signer[]
     signer: LocalAccount
+    signers?: Signer[]
     nonce?: bigint
     deploymentChainIds?: SupportedChainId[]
   }): Promise<SmartWalletCreationResult<DefaultSmartWallet>> {
-    const { owners, signer, nonce, deploymentChainIds } = params
+    const { signers, signer, nonce, deploymentChainIds } = params
     const wallet = await DefaultSmartWallet.create({
-      owners,
+      signers,
       signer,
       chainManager: this.chainManager,
       lendProvider: this.lendProvider,
@@ -126,12 +128,11 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    * @param params.nonce - Nonce for address generation (defaults to 0)
    * @returns Promise resolving to the predicted wallet address
    */
-  async getWalletAddress(params: { owners: Signer[]; nonce?: bigint }) {
-    const { owners, nonce = 0n } = params
-    const owners_bytes = owners.map((owner) => {
-      if (typeof owner === 'string') return pad(owner)
-      if (owner.type === 'webAuthn') return owner.publicKey
-      throw new Error('invalid owner type')
+  async getWalletAddress(params: { signers: Signer[]; nonce?: bigint }) {
+    const { signers, nonce = 0n } = params
+    const signerBytes = signers.map((signer) => {
+      const publicKey = getSignerPublicKey(signer)
+      return formatPublicKey(publicKey)
     })
 
     // Factory is the same accross all chains, so we can use the first chain to get the wallet address
@@ -142,7 +143,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       abi: smartWalletFactoryAbi,
       address: smartWalletFactoryAddress,
       functionName: 'getAddress',
-      args: [owners_bytes, nonce],
+      args: [signerBytes, nonce],
     })
     return smartWalletAddress
   }
@@ -159,11 +160,11 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
   async getWallet(params: {
     walletAddress: Address
     signer: LocalAccount
-    owners: Signer[]
+    signers?: Signer[]
   }): Promise<DefaultSmartWallet> {
-    const { walletAddress, signer, owners } = params
+    const { walletAddress, signer, signers } = params
     return DefaultSmartWallet.create({
-      owners,
+      signers,
       signer,
       chainManager: this.chainManager,
       lendProvider: this.lendProvider,

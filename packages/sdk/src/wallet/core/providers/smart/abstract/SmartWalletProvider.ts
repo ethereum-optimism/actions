@@ -13,10 +13,10 @@ export abstract class SmartWalletProvider {
   /**
    * Create a new smart wallet instance
    * @description Creates a new smart wallet and attempts to deploy it across all supported chains.
-   * The wallet address is deterministically calculated from owners and nonce. Deployment failures
+   * The wallet address is deterministically calculated from signers and nonce. Deployment failures
    * on individual chains do not prevent wallet creation - they are reported in the result.
    * @param params - Wallet creation parameters
-   * @param params.owners - Array of wallet owners (addresses or WebAuthn public keys)
+   * @param params.signers - Array of wallet signers
    * @param params.signer - Local account used for signing transactions
    * @param params.nonce - Optional nonce for address generation (defaults to 0)
    * @param params.deploymentChainIds - Optional chain IDs to deploy the wallet to.
@@ -26,8 +26,8 @@ export abstract class SmartWalletProvider {
    * - `deployments`: Array of deployment results with chainId, receipt, success flag, and error
    */
   abstract createWallet(params: {
-    owners: Signer[]
     signer: LocalAccount
+    signers?: Signer[]
     nonce?: bigint
     deploymentChainIds?: SupportedChainId[]
   }): Promise<SmartWalletCreationResult<SmartWallet>>
@@ -39,26 +39,26 @@ export abstract class SmartWalletProvider {
    * @param params - Wallet retrieval parameters
    * @param params.walletAddress - Address of the deployed smart wallet
    * @param params.signer - Local account used for signing transactions
-   * @param params.ownerIndex - Index of the signer in the wallet's owner list (defaults to 0)
+   * @param params.signers - Array of wallet signers
    * @returns SmartWallet instance for the existing wallet
    */
   abstract getWallet(params: {
     walletAddress: Address
     signer: LocalAccount
-    owners: Signer[]
+    signers?: Signer[]
   }): Promise<SmartWallet>
 
   /**
    * Get the predicted smart wallet address
    * @description Calculates the deterministic address where a smart wallet would be deployed
-   * given the specified owners and nonce. Uses CREATE2 for address prediction.
+   * given the specified signers and nonce. Uses CREATE2 for address prediction.
    * @param params - Address prediction parameters
-   * @param params.owners - Array of wallet owners (addresses or WebAuthn public keys)
+   * @param params.signers - Array of wallet signers
    * @param params.nonce - Nonce for address generation (defaults to 0)
    * @returns Promise resolving to the predicted wallet address
    */
   abstract getWalletAddress(params: {
-    owners: Signer[]
+    signers: Signer[]
     nonce?: bigint
   }): Promise<Address>
 }

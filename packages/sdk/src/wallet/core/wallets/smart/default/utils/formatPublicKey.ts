@@ -1,20 +1,14 @@
-import type { Hex } from 'viem'
-import { pad } from 'viem'
-
-import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
+import type { Address, Hex } from 'viem'
+import { isAddress, pad } from 'viem'
 
 /**
- * Normalize a signer identifier to the 32-byte public key format
- * @description The smart wallet stores owner identifiers as 32-byte values.
- * - For EOA owners (20-byte addresses), this pads the address to 32 bytes
- * (left-padded with zeros) using viem's `pad`.
- * - For WebAuthn owners, the 32-byte `publicKey` is returned as-is.
- * @param signer - EOA `Address` or `WebAuthnAccount` to normalize
- * @returns 32-byte `Hex` value suitable for on-chain comparisons
- * @throws Error if the signer type is not recognized
+ * Formats 20 byte addresses to 32 byte public keys. Contract uses 32 byte keys for owners.
+ * @param publicKey - The public key to format
+ * @returns The formatted public key
  */
-export function formatPublicKey(signer: Signer): Hex {
-  if (typeof signer === 'string') return pad(signer)
-  if (signer.type === 'webAuthn') return signer.publicKey
-  throw new Error('invalid signer type')
+export function formatPublicKey(publicKey: Hex | Address): Hex {
+  if (isAddress(publicKey)) {
+    return pad(publicKey)
+  }
+  return publicKey
 }

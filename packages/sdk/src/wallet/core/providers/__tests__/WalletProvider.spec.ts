@@ -50,7 +50,7 @@ describe('WalletProvider', () => {
         address: getRandomAddress(),
       })) as PrivyWallet
       const signer = hostedWallet.signer
-      const owners = [getRandomAddress(), hostedWallet.address]
+      const signers = [getRandomAddress(), hostedWallet.address]
       const nonce = BigInt(123)
 
       const mockWallet = {} as DefaultSmartWallet
@@ -70,13 +70,13 @@ describe('WalletProvider', () => {
         .mockResolvedValue(mockDeploymentResult)
 
       const result = await walletProvider.createSmartWallet({
-        owners,
+        signers,
         signer,
         nonce,
       })
 
       expect(createWalletSpy).toHaveBeenCalledWith({
-        owners,
+        signers,
         signer,
         nonce,
       })
@@ -102,7 +102,7 @@ describe('WalletProvider', () => {
         address: getRandomAddress(),
       })) as PrivyWallet
       const signer = hostedWallet.signer
-      const owners = [getRandomAddress(), hostedWallet.address]
+      const signers = [getRandomAddress(), hostedWallet.address]
 
       const mockWallet = {} as DefaultSmartWallet
       const mockReceipt = {
@@ -130,7 +130,7 @@ describe('WalletProvider', () => {
       )
 
       const result = await walletProvider.createSmartWallet({
-        owners,
+        signers,
         signer,
       })
 
@@ -156,7 +156,7 @@ describe('WalletProvider', () => {
         address: getRandomAddress(),
       })) as PrivyWallet
       const signer = hostedWallet.signer
-      const owners = [getRandomAddress(), hostedWallet.address]
+      const signers = [getRandomAddress(), hostedWallet.address]
       const deploymentChainIds: SupportedChainId[] = [8453]
 
       const mockWallet = {} as DefaultSmartWallet
@@ -176,20 +176,20 @@ describe('WalletProvider', () => {
         .mockResolvedValue(mockDeploymentResult)
 
       const result = await walletProvider.createSmartWallet({
-        owners,
+        signers,
         signer,
         deploymentChainIds,
       })
 
       expect(createWalletSpy).toHaveBeenCalledWith({
-        owners,
+        signers,
         signer,
         deploymentChainIds,
       })
       expect(result).toEqual(mockDeploymentResult)
     })
 
-    it('should throw error if signer is not in owners array', async () => {
+    it('should throw error if signer is not in signers array', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
         mockChainManager,
@@ -208,15 +208,15 @@ describe('WalletProvider', () => {
         address: getRandomAddress(),
       })) as PrivyWallet
       const signer = hostedWallet.signer
-      // Signer is NOT in the owners array
-      const owners = [getRandomAddress(), getRandomAddress()]
+      // Signer is NOT in the signers array
+      const signers = [getRandomAddress(), getRandomAddress()]
 
       await expect(
         walletProvider.createSmartWallet({
-          owners,
+          signers,
           signer,
         }),
-      ).rejects.toThrow('Signer must be in the owners array')
+      ).rejects.toThrow('Signer does not match any signer in the signers array')
     })
   })
 
@@ -245,25 +245,25 @@ describe('WalletProvider', () => {
         address: getRandomAddress(),
       })) as PrivyWallet
       const signer = hostedWallet.signer
-      const deploymentOwners = [hostedWallet.address, getRandomAddress()]
+      const deploymentSigners = [hostedWallet.address, getRandomAddress()]
       const nonce = BigInt(789)
 
       const smartWallet = await walletProvider.getSmartWallet({
         signer,
-        deploymentOwners,
-        owners: [signer.address],
+        deploymentSigners,
+        signers: [signer.address],
         nonce,
       })
 
       expect(smartWallet).toBeInstanceOf(DefaultSmartWallet)
       expect(getWalletAddressSpy).toHaveBeenCalledWith({
-        owners: deploymentOwners,
+        signers: deploymentSigners,
         nonce,
       })
       expect(getWalletSpy).toHaveBeenCalledWith({
         walletAddress: mockWalletAddress,
         signer,
-        owners: [signer.address],
+        signers: [signer.address],
       })
     })
 
@@ -290,11 +290,11 @@ describe('WalletProvider', () => {
       await expect(
         walletProvider.getSmartWallet({
           signer,
-          owners: [signer.address],
-          // Missing both walletAddress and deploymentOwners
+          signers: [signer.address],
+          // Missing both walletAddress and deploymentSigners
         }),
       ).rejects.toThrow(
-        'Either walletAddress or deploymentOwners array must be provided to locate the smart wallet',
+        'Either walletAddress or deploymentSigners array must be provided to locate the smart wallet',
       )
     })
   })
