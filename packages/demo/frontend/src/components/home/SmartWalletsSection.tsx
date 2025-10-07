@@ -9,26 +9,17 @@ interface SmartWalletsSectionProps {
   stepNumber: number
   openAccordion: string | null
   setOpenAccordion: (value: string | null) => void
-  selectedSmartPrivyTab: string
-  setSelectedSmartPrivyTab: (tab: string) => void
-  selectedSmartDynamicTab: string
-  setSelectedSmartDynamicTab: (tab: string) => void
-  selectedSmartTurnkeyTab: string
-  setSelectedSmartTurnkeyTab: (tab: string) => void
 }
 
 function SmartWalletsSection({
   stepNumber,
   openAccordion,
   setOpenAccordion,
-  selectedSmartPrivyTab,
-  setSelectedSmartPrivyTab,
-  selectedSmartDynamicTab,
-  setSelectedSmartDynamicTab,
-  selectedSmartTurnkeyTab,
-  setSelectedSmartTurnkeyTab,
 }: SmartWalletsSectionProps) {
   const [selectedWalletProvider, setSelectedWalletProvider] = useState('privy')
+  const [selectedSmartPrivyTab, setSelectedSmartPrivyTab] = useState('frontend')
+  const [selectedSmartDynamicTab, setSelectedSmartDynamicTab] = useState('frontend')
+  const [selectedSmartTurnkeyTab, setSelectedSmartTurnkeyTab] = useState('frontend')
 
   const privyFrontendCode = `import { useWallets } from '@privy-io/react-auth'
 
