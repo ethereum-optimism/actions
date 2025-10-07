@@ -329,6 +329,7 @@ function EarnContent() {
                 usdcBalance={usdcBalance}
                 isLoadingBalance={isLoadingBalance}
                 onMintUSDC={handleMintUSDC}
+                onTransactionSuccess={() => user?.id && fetchBalance(user.id)}
               />
               <Info />
             </div>
