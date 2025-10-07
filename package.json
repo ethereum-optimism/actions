@@ -23,10 +23,15 @@
     "dev:supersim": "pnpm supersim fork --chains unichain --logs.directory supersim-logs",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
+    "release:publish": "pnpm install --frozen-lockfile && pnpm nx run-many --target=build && changeset publish",
+    "release:version": "changeset version && pnpm install --lockfile-only",
+    "release:version:snapshot": "changeset version --snapshot ${SNAPSHOT_NAME:-snapshot} && pnpm install --lockfile-only",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.1",
     "@eslint/compat": "^1.3.1",
     "@nx/js": "^21.3.2",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
