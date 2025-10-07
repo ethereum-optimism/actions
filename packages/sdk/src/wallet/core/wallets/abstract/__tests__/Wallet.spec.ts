@@ -1,15 +1,14 @@
-import type { Address, LocalAccount, WalletClient } from 'viem'
+import type { LocalAccount } from 'viem'
 import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { getRandomAddress } from '@/test/utils.js'
-import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import { TestWallet } from '@/wallet/core/wallets/abstract/__mocks__/TestWallet.js'
 
 vi.mock('@/services/tokenBalance.js', async () => {
   return {
@@ -17,26 +16,6 @@ vi.mock('@/services/tokenBalance.js', async () => {
     fetchERC20Balance: vi.fn().mockResolvedValue({} as unknown),
   }
 })
-
-class TestWallet extends Wallet {
-  public readonly address: Address
-  public readonly signer: LocalAccount
-
-  constructor(
-    chainManager: ChainManager,
-    address: Address,
-    signer: LocalAccount,
-  ) {
-    super(chainManager)
-    this.address = address
-    this.signer = signer
-  }
-
-  // Not used in these tests
-  async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {
-    return {} as unknown as WalletClient
-  }
-}
 
 describe('Wallet (base)', () => {
   const chainManager = new MockChainManager({

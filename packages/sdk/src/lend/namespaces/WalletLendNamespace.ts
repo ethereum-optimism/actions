@@ -8,7 +8,6 @@ import type {
   LendTransactionReceipt,
 } from '@/types/lend/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 /**
  * Wallet Lend Namespace
@@ -54,12 +53,6 @@ export class WalletLendNamespace<
       throw new Error('No transaction data returned from lend provider')
     }
 
-    if (!this.isSmartWallet(this.wallet)) {
-      throw new Error(
-        'Transaction execution is only supported for SmartWallet instances',
-      )
-    }
-
     if (transactionData.approval && transactionData.openPosition) {
       return await this.wallet.sendBatch(
         [transactionData.approval, transactionData.openPosition],
@@ -70,15 +63,10 @@ export class WalletLendNamespace<
     if (!transactionData.openPosition) {
       throw new Error('No openPosition transaction data returned')
     }
-    const userOperationReceipt = await this.wallet.send(
+    return await this.wallet.send(
       transactionData.openPosition,
       params.marketId.chainId,
     )
-
-    return {
-      receipt: userOperationReceipt.receipt,
-      userOpHash: userOperationReceipt.userOpHash,
-    }
   }
 
   /**
@@ -116,36 +104,13 @@ export class WalletLendNamespace<
       )
     }
 
-    if (!this.isSmartWallet(this.wallet)) {
-      throw new Error(
-        'Transaction execution is only supported for SmartWallet instances',
-      )
-    }
-
     if (!transactionData.closePosition) {
       throw new Error('No closePosition transaction data returned')
     }
 
-    const userOperationReceipt = await this.wallet.send(
+    return await this.wallet.send(
       transactionData.closePosition,
       params.marketId.chainId,
-    )
-
-    return {
-      receipt: userOperationReceipt.receipt,
-      userOpHash: userOperationReceipt.userOpHash,
-    }
-  }
-
-  /**
-   * Type guard to check if wallet is a SmartWallet
-   */
-  private isSmartWallet(wallet: Wallet): wallet is SmartWallet {
-    return (
-      'send' in wallet &&
-      typeof wallet.send === 'function' &&
-      'sendBatch' in wallet &&
-      typeof wallet.sendBatch === 'function'
     )
   }
 }

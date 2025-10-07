@@ -1,4 +1,4 @@
-import type { Address, WalletClient } from 'viem'
+import type { Address } from 'viem'
 import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstraction'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -12,10 +12,6 @@ import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js
  * @description Abstract base class for smart wallet implementations (ERC-4337 compatible wallets).
  */
 export abstract class SmartWallet extends Wallet {
-  async walletClient(_chainId: SupportedChainId): Promise<WalletClient> {
-    throw new Error('walletClient is not supported on SmartWallet')
-  }
-
   /**
    * Send a transaction using this smart wallet
    * @description Executes a transaction through the smart wallet, handling gas sponsorship

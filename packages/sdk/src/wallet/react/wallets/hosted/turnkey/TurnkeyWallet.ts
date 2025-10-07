@@ -1,17 +1,16 @@
 import type { TurnkeySDKClientBase } from '@turnkey/react-wallet-kit'
-import type { Address, LocalAccount, WalletClient } from 'viem'
-import { createWalletClient, fallback, http } from 'viem'
+import type { Address, LocalAccount } from 'viem'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/turnkey/utils/createSigner.js'
 
 /**
  * Turnkey wallet implementation
  * @description Wallet implementation using Turnkey service
  */
-export class TurnkeyWallet extends Wallet {
+export class TurnkeyWallet extends EOAWallet {
   public address!: Address
   public signer!: LocalAccount
   /**
@@ -40,10 +39,17 @@ export class TurnkeyWallet extends Wallet {
     organizationId: string
     signWith: string
     ethereumAddress?: string
+    lendProvider?: LendProvider<LendConfig>
   }) {
-    const { chainManager, client, organizationId, signWith, ethereumAddress } =
-      params
-    super(chainManager)
+    const {
+      chainManager,
+      client,
+      organizationId,
+      signWith,
+      ethereumAddress,
+      lendProvider,
+    } = params
+    super(chainManager, lendProvider)
     this.client = client
     this.organizationId = organizationId
     this.signWith = signWith
@@ -56,21 +62,11 @@ export class TurnkeyWallet extends Wallet {
     organizationId: string
     signWith: string
     ethereumAddress?: string
+    lendProvider?: LendProvider<LendConfig>
   }): Promise<TurnkeyWallet> {
     const wallet = new TurnkeyWallet(params)
     await wallet.initialize()
     return wallet
-  }
-
-  async walletClient(chainId: SupportedChainId): Promise<WalletClient> {
-    const rpcUrls = this.chainManager.getRpcUrls(chainId)
-    return createWalletClient({
-      account: this.signer,
-      chain: this.chainManager.getChain(chainId),
-      transport: rpcUrls?.length
-        ? fallback(rpcUrls.map((rpcUrl) => http(rpcUrl)))
-        : http(),
-    })
   }
 
   protected async performInitialization() {

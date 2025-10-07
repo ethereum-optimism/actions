@@ -135,6 +135,19 @@ export class ChainManager {
   }
 
   /**
+   * Get transport for a specific chain with fallback support
+   * @param chainId - The chain ID to retrieve the transport for
+   * @returns Transport configured with fallback RPC URLs or default http transport
+   * @throws Error if no chain config is found for the chain ID
+   */
+  getTransportForChain(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]) {
+    const rpcUrls = this.getRpcUrls(chainId)
+    return rpcUrls?.length
+      ? fallback(rpcUrls.map((rpcUrl) => http(rpcUrl)))
+      : http()
+  }
+
+  /**
    * Create public clients for all configured chains
    * @param chains - Array of chain configurations
    * @returns Map of chain IDs to their corresponding public clients
@@ -160,9 +173,7 @@ export class ChainManager {
       }
       const client = createPublicClient({
         chain,
-        transport: chainConfig.rpcUrls?.length
-          ? fallback(chainConfig.rpcUrls.map((rpcUrl) => http(rpcUrl)))
-          : http(),
+        transport: this.getTransportForChain(chainConfig.chainId),
       })
 
       clients.set(chainConfig.chainId, client)

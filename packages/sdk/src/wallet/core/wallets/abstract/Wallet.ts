@@ -1,12 +1,21 @@
-import type { Address, LocalAccount, WalletClient } from 'viem'
+import type { Address, LocalAccount } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
+import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { TokenBalance } from '@/types/asset.js'
-import type { BaseLendConfig } from '@/types/lend/index.js'
+import type {
+  BaseLendConfig,
+  LendConfig,
+  LendProvider,
+  TransactionData,
+} from '@/types/lend/index.js'
+import type {
+  BatchTransactionReturnType,
+  TransactionReturnType,
+} from '@/wallet/core/wallets/abstract/types/index.js'
 
 /**
  * Base actions wallet class
@@ -16,6 +25,8 @@ import type { BaseLendConfig } from '@/types/lend/index.js'
 export abstract class Wallet {
   /** Lend namespace with all lending operations */
   lend?: WalletLendNamespace<BaseLendConfig>
+  /** Provider for lending market operations */
+  protected lendProvider?: LendProvider<LendConfig>
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
   /** Promise to initialize the wallet */
@@ -39,9 +50,17 @@ export abstract class Wallet {
   /**
    * Create a new wallet
    * @param chainManager - Chain manager for the wallet
+   * @param lendProvider - Lend provider for the wallet
    */
-  protected constructor(chainManager: ChainManager) {
+  protected constructor(
+    chainManager: ChainManager,
+    lendProvider?: LendProvider<LendConfig>,
+  ) {
     this.chainManager = chainManager
+    this.lendProvider = lendProvider
+    if (this.lendProvider) {
+      this.lend = new WalletLendNamespace(this.lendProvider, this)
+    }
   }
 
   /**
@@ -105,11 +124,26 @@ export abstract class Wallet {
   }
 
   /**
-   * Get a wallet client for this actions wallet
-   * @description Returns a WalletClient that can be used to send transactions and interact
-   * with smart contracts.
-   * @param chainId - The chain ID to create the wallet client for
-   * @returns Promise resolving to a WalletClient configured for the specified chain
+   * Send a transaction using this actions wallet
+   * @description Executes a transaction through the actions wallet.
+   * @param transactionData - The transaction data to execute
+   * @param chainId - Target blockchain chain ID
+   * @returns Promise resolving to the transaction hash
    */
-  abstract walletClient(chainId: SupportedChainId): Promise<WalletClient>
+  abstract send(
+    transactionData: TransactionData,
+    chainId: SupportedChainId,
+  ): Promise<TransactionReturnType>
+
+  /**
+   * Send a batch of transactions using this actions wallet
+   * @description Executes a batch of transactions through the actions wallet.
+   * @param transactionData - The transaction data to execute
+   * @param chainId - Target blockchain chain ID
+   * @returns Promise resolving to the transaction hash
+   */
+  abstract sendBatch(
+    transactionData: TransactionData[],
+    chainId: SupportedChainId,
+  ): Promise<BatchTransactionReturnType>
 }
