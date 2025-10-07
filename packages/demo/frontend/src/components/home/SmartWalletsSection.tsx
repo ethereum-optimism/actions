@@ -3,6 +3,7 @@ import { colors } from '@/constants/colors'
 import PrivyLogo from '@/assets/privy-logo-white.svg'
 import DynamicLogo from '@/assets/dynamic-logo-white.svg'
 import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
+import TabbedCodeBlock from '../TabbedCodeBlock'
 
 interface SmartWalletsSectionProps {
   stepNumber: number
@@ -10,6 +11,8 @@ interface SmartWalletsSectionProps {
   setOpenAccordion: (value: string | null) => void
   selectedSmartPrivyTab: string
   setSelectedSmartPrivyTab: (tab: string) => void
+  selectedSmartDynamicTab: string
+  setSelectedSmartDynamicTab: (tab: string) => void
   selectedSmartTurnkeyTab: string
   setSelectedSmartTurnkeyTab: (tab: string) => void
 }
@@ -20,10 +23,109 @@ function SmartWalletsSection({
   setOpenAccordion,
   selectedSmartPrivyTab,
   setSelectedSmartPrivyTab,
+  selectedSmartDynamicTab,
+  setSelectedSmartDynamicTab,
   selectedSmartTurnkeyTab,
   setSelectedSmartTurnkeyTab,
 }: SmartWalletsSectionProps) {
   const [selectedWalletProvider, setSelectedWalletProvider] = useState('privy')
+
+  const privyFrontendCode = `import { useWallets } from '@privy-io/react-auth'
+
+const { wallets } = useWallets()
+const embeddedWallet = wallets.find(
+  (wallet) => wallet.walletClientType === 'privy',
+)
+
+const signer = await actions.wallet.createSigner({
+  connectedWallet: embeddedWallet,
+})
+
+const { wallet } = await actions.wallet.createSmartWallet({
+  signer: signer
+})`
+
+  const privyBackendCode = `import { PrivyClient } from '@privy-io/node'
+import { getAddress } from 'viem'
+
+const privyWallet = await privyClient.walletApi.createWallet({
+  chainType: 'ethereum',
+})
+
+const privySigner = await actions.wallet.createSigner({
+  walletId: privyWallet.id,
+  address: getAddress(privyWallet.address),
+})
+
+const { wallet } = await actions.wallet.createSmartWallet({
+  signer: privySigner
+})`
+
+  const dynamicFrontendCode = `import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
+
+const { primaryWallet } = useDynamicContext()
+
+const signer = await actions.wallet.createSigner({wallet: primaryWallet})
+const { wallet } = await actions.wallet.createSmartWallet({
+  signer: signer
+})`
+
+  const dynamicBackendCode = ``
+
+  const turnkeyFrontendCode = `import { useTurnkey } from "@turnkey/react-wallet-kit"
+
+const { wallets, user, createWallet, refreshWallets, httpClient, session } = useTurnkey()
+useEffect(() => {
+  async function createEmbeddedWallet() {
+    const wallet = await createWallet({
+      walletName: \`My New Wallet \${Math.random().toString(36).substring(2, 15)}\`,
+      accounts: ["ADDRESS_FORMAT_ETHEREUM"],
+    })
+    refreshWallets()
+  }
+
+const embeddedWallet = wallets.find(
+  (wallet) => wallet.accounts.some((account) => account.addressFormat === 'ADDRESS_FORMAT_ETHEREUM' && wallet.source === WalletSource.Embedded,
+)
+
+const walletAddress = embeddedWallet.accounts[0].address
+const signer = await actions.wallet.createSigner({
+  client: httpClient,
+  organizationId: session.organizationId,
+  signWith: walletAddress,
+  ethereumAddress: walletAddress
+})
+const { wallet } = await actions.wallet.createSmartWallet({
+  signer: signer
+})`
+
+  const turnkeyBackendCode = `import { Turnkey } from '@turnkey/sdk-server'
+
+const turnkeyClient = new Turnkey({
+  apiBaseUrl: 'https://api.turnkey.com',
+  apiPublicKey: env.TURNKEY_API_KEY,
+  apiPrivateKey: env.TURNKEY_API_SECRET,
+  defaultOrganizationId: env.TURNKEY_ORGANIZATION_ID,
+})
+
+const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
+  walletName: 'ETH Wallet',
+  accounts: [{
+    curve: 'CURVE_SECP256K1',
+    pathFormat: 'PATH_FORMAT_BIP32',
+    path: "m/44'/60'/0'/0/0",
+    addressFormat: 'ADDRESS_FORMAT_ETHEREUM',
+  }],
+})
+
+const turnkeySigner = await actions.wallet.createSigner({
+  organizationId: turnkeyWallet.activity.organizationId,
+  signWith: turnkeyWallet.addresses[0],
+})
+
+const { wallet } = await actions.wallet.createSmartWallet({
+  signer: turnkeySigner
+})`
 
   return (
     <>
@@ -77,15 +179,13 @@ function SmartWalletsSection({
         <div
           className="overflow-hidden transition-all duration-300 ease-in-out"
           style={{
-            maxHeight:
-              openAccordion === 'smart-wallet' ? '3000px' : '0',
+            maxHeight: openAccordion === 'smart-wallet' ? '3000px' : '0',
             opacity: openAccordion === 'smart-wallet' ? 1 : 0,
           }}
         >
           <div className="pt-6 pb-4">
             <p className="text-gray-300 text-base mb-4">
-              Use hosted wallets as signers of smart wallets you
-              control.
+              Use hosted wallets as signers of smart wallets you control.
             </p>
             <div
               className="rounded-lg overflow-hidden mb-8 shadow-2xl"
@@ -162,10 +262,7 @@ function SmartWalletsSection({
               </div>
 
               {/* Content for each provider */}
-              <div
-                className="p-8"
-                style={{ backgroundColor: '#32302f' }}
-              >
+              <div className="p-8" style={{ backgroundColor: '#32302f' }}>
                 {selectedWalletProvider === 'privy' && (
                   <div className="space-y-6">
                     <div>
@@ -185,634 +282,18 @@ function SmartWalletsSection({
 
                     <div>
                       <p className="text-gray-300 text-base mb-2">
-                        2. Hosted user wallets can become signers for
-                        new, customizable smart wallets:
+                        2. Hosted user wallets can become signers for new,
+                        customizable smart wallets:
                       </p>
-                      <div
-                        className="rounded-lg overflow-hidden"
-                        style={{
-                          backgroundColor: colors.bg.code,
-                        }}
-                      >
-                        {/* Frontend/Backend tabs */}
-                        <div
-                          className="flex border-b"
-                          style={{
-                            borderColor: 'rgba(184, 187, 38, 0.15)',
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              setSelectedSmartPrivyTab('frontend')
-                            }
-                            className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
-                            style={{
-                              backgroundColor: colors.bg.header,
-                              color:
-                                selectedSmartPrivyTab === 'frontend'
-                                  ? colors.text.primary
-                                  : colors.text.secondary,
-                              borderColor:
-                                selectedSmartPrivyTab === 'frontend'
-                                  ? 'rgb(184, 187, 38)'
-                                  : 'transparent',
-                              opacity:
-                                selectedSmartPrivyTab === 'frontend'
-                                  ? 1
-                                  : 0.6,
-                            }}
-                          >
-                            Frontend
-                          </button>
-                          <button
-                            onClick={() =>
-                              setSelectedSmartPrivyTab('backend')
-                            }
-                            className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
-                            style={{
-                              backgroundColor: colors.bg.header,
-                              color:
-                                selectedSmartPrivyTab === 'backend'
-                                  ? colors.text.primary
-                                  : colors.text.secondary,
-                              borderColor:
-                                selectedSmartPrivyTab === 'backend'
-                                  ? 'rgb(184, 187, 38)'
-                                  : 'transparent',
-                              opacity:
-                                selectedSmartPrivyTab === 'backend'
-                                  ? 1
-                                  : 0.6,
-                            }}
-                          >
-                            Backend
-                          </button>
-                        </div>
-                        {/* Terminal header */}
-                        <div
-                          className="px-4 py-3 border-b flex items-center justify-between"
-                          style={{
-                            backgroundColor: colors.bg.header,
-                            borderColor: 'rgba(184, 187, 38, 0.15)',
-                            backdropFilter: 'blur(10px)',
-                          }}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <div
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: colors.macos.red,
-                              }}
-                            ></div>
-                            <div
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: colors.macos.yellow,
-                              }}
-                            ></div>
-                            <div
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: 'rgb(184, 187, 38)',
-                                boxShadow:
-                                  '0 0 6px rgba(184, 187, 38, 0.4)',
-                              }}
-                            ></div>
-                          </div>
-                          <div
-                            className="text-xs font-mono"
-                            style={{ color: colors.syntax.keyword }}
-                          >
-                            wallet.ts
-                          </div>
-                        </div>
-                        <div className="relative">
-                          {selectedSmartPrivyTab === 'frontend' && (
-                            <pre
-                              className="text-sm leading-relaxed font-mono p-4"
-                              style={{
-                                backgroundColor: colors.bg.code,
-                              }}
-                            >
-                              <code
-                                style={{ color: colors.text.primary }}
-                              >
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`import`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`useWallets`}</span>
-                                {` } `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`from`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'@privy-io/react-auth'`}</span>
-                                {`
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallets`}</span>
-                                {` } = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`useWallets`}</span>
-                                {`()
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`embeddedWallet`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallets`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`find`}</span>
-                                {`(
-  (`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {`) `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`=>`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`walletClientType`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`===`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'privy'`}</span>
-                                {`,
-)
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`signer`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`actions`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createSigner`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`connectedWallet`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`embeddedWallet`}</span>
-                                {`,
-})
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {` } = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`actions`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createSmartWallet`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`signer`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`signer`}</span>
-                                {`
-})`}
-                              </code>
-                            </pre>
-                          )}
-                          {selectedSmartPrivyTab === 'backend' && (
-                            <pre
-                              className="text-sm leading-relaxed font-mono p-4"
-                              style={{
-                                backgroundColor: colors.bg.code,
-                              }}
-                            >
-                              <code
-                                style={{ color: colors.text.primary }}
-                              >
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`import`}</span>
-                                {` { `}
-                                <span
-                                  style={{ color: '#8ec07c' }}
-                                >{`PrivyClient`}</span>
-                                {` } `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`from`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'@privy-io/node'`}</span>
-                                {`
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`import`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`getAddress`}</span>
-                                {` } `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`from`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'viem'`}</span>
-                                {`
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`privyWallet`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`privyClient`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`walletApi`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createWallet`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`chainType`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'ethereum'`}</span>
-                                {`,
-})
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`privySigner`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`actions`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createSigner`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`walletId`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`privyWallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`id`}</span>
-                                {`,
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`address`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`getAddress`}</span>
-                                {`(`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`privyWallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`address`}</span>
-                                {`),
-})
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {` } = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`actions`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createSmartWallet`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`signer`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`privySigner`}</span>
-                                {`
-})`}
-                              </code>
-                            </pre>
-                          )}
-                          {/* Copy button */}
-                          <button
-                            onClick={() =>
-                              navigator.clipboard.writeText(
-                                selectedSmartPrivyTab === 'frontend'
-                                  ? `import { useWallets } from '@privy-io/react-auth'
-
-const { wallets } = useWallets()
-const embeddedWallet = wallets.find(
-  (wallet) => wallet.walletClientType === 'privy',
-)
-
-const signer = await actions.wallet.createSigner({
-  connectedWallet: embeddedWallet,
-})
-
-const { wallet } = await actions.wallet.createSmartWallet({
-  signer: signer
-})`
-                                  : `import { PrivyClient } from '@privy-io/node'
-import { getAddress } from 'viem'
-
-const privyWallet = await privyClient.walletApi.createWallet({
-  chainType: 'ethereum',
-})
-
-const privySigner = await actions.wallet.createSigner({
-  walletId: privyWallet.id,
-  address: getAddress(privyWallet.address),
-})
-
-const { wallet } = await actions.wallet.createSmartWallet({
-  signer: privySigner
-})`,
-                              )
-                            }
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
-                            aria-label="Copy code"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
+                      <TabbedCodeBlock
+                        tabs={[
+                          { label: 'Frontend', code: privyFrontendCode },
+                          { label: 'Backend', code: privyBackendCode },
+                        ]}
+                        selectedTab={selectedSmartPrivyTab}
+                        onTabChange={setSelectedSmartPrivyTab}
+                        filename="wallet.ts"
+                      />
                     </div>
                   </div>
                 )}
@@ -835,225 +316,18 @@ const { wallet } = await actions.wallet.createSmartWallet({
 
                     <div>
                       <p className="text-gray-300 text-base mb-2">
-                        2. Hosted user wallets can become signers for
-                        new, customizable smart wallets:
+                        2. Hosted user wallets can become signers for new,
+                        customizable smart wallets:
                       </p>
-                      <div
-                        className="rounded-lg overflow-hidden"
-                        style={{
-                          backgroundColor: colors.bg.code,
-                        }}
-                      >
-                        {/* Frontend tab only */}
-                        <div
-                          className="flex border-b"
-                          style={{
-                            borderColor: 'rgba(184, 187, 38, 0.15)',
-                          }}
-                        >
-                          <button
-                            className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
-                            style={{
-                              backgroundColor: colors.bg.header,
-                              color: colors.text.primary,
-                              borderColor: 'rgb(184, 187, 38)',
-                              opacity: 1,
-                            }}
-                          >
-                            Frontend
-                          </button>
-                          <button
-                            disabled
-                            className="px-6 py-3 text-sm font-mono transition-colors border-b-2 cursor-not-allowed"
-                            style={{
-                              backgroundColor: colors.bg.header,
-                              color: colors.text.secondary,
-                              borderColor: 'transparent',
-                              opacity: 0.4,
-                            }}
-                          >
-                            Backend
-                          </button>
-                        </div>
-                        {/* Terminal header */}
-                        <div
-                          className="px-4 py-3 border-b flex items-center justify-between"
-                          style={{
-                            backgroundColor: colors.bg.header,
-                            borderColor: 'rgba(184, 187, 38, 0.15)',
-                            backdropFilter: 'blur(10px)',
-                          }}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <div
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: colors.macos.red,
-                              }}
-                            ></div>
-                            <div
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: colors.macos.yellow,
-                              }}
-                            ></div>
-                            <div
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: 'rgb(184, 187, 38)',
-                                boxShadow:
-                                  '0 0 6px rgba(184, 187, 38, 0.4)',
-                              }}
-                            ></div>
-                          </div>
-                          <div
-                            className="text-xs font-mono"
-                            style={{ color: colors.syntax.keyword }}
-                          >
-                            wallet.ts
-                          </div>
-                        </div>
-                        <div className="relative">
-                          <pre
-                            className="text-sm leading-relaxed font-mono p-4"
-                            style={{ backgroundColor: colors.bg.code }}
-                          >
-                            <code
-                              style={{ color: colors.text.primary }}
-                            >
-                              <span
-                                style={{ color: colors.syntax.keyword }}
-                              >{`import`}</span>
-                              {` { `}
-                              <span
-                                style={{
-                                  color: colors.syntax.function,
-                                }}
-                              >{`useDynamicContext`}</span>
-                              {` } `}
-                              <span
-                                style={{ color: colors.syntax.keyword }}
-                              >{`from`}</span>
-                              {` `}
-                              <span
-                                style={{ color: colors.syntax.string }}
-                              >{`"@dynamic-labs/sdk-react-core"`}</span>
-                              {`
-
-`}
-                              <span
-                                style={{ color: colors.syntax.keyword }}
-                              >{`const`}</span>
-                              {` { `}
-                              <span
-                                style={{
-                                  color: colors.syntax.variable,
-                                }}
-                              >{`primaryWallet`}</span>
-                              {` } = `}
-                              <span
-                                style={{
-                                  color: colors.syntax.function,
-                                }}
-                              >{`useDynamicContext`}</span>
-                              {`()
-
-`}
-                              <span
-                                style={{ color: colors.syntax.keyword }}
-                              >{`const`}</span>
-                              {` `}
-                              <span
-                                style={{
-                                  color: colors.syntax.variable,
-                                }}
-                              >{`signer`}</span>
-                              {` = `}
-                              <span
-                                style={{ color: colors.syntax.keyword }}
-                              >{`await`}</span>
-                              {` `}
-                              <span
-                                style={{
-                                  color: colors.syntax.variable,
-                                }}
-                              >{`actions`}</span>
-                              {`.`}
-                              <span
-                                style={{
-                                  color: colors.syntax.property,
-                                }}
-                              >{`wallet`}</span>
-                              {`.`}
-                              <span
-                                style={{
-                                  color: colors.syntax.function,
-                                }}
-                              >{`createSigner`}</span>
-                              {`({`}
-                              <span
-                                style={{
-                                  color: colors.syntax.property,
-                                }}
-                              >{`wallet`}</span>
-                              {`: `}
-                              <span
-                                style={{
-                                  color: colors.syntax.variable,
-                                }}
-                              >{`primaryWallet`}</span>
-                              {`})
-`}
-                              <span
-                                style={{ color: colors.syntax.keyword }}
-                              >{`const`}</span>
-                              {` { `}
-                              <span
-                                style={{
-                                  color: colors.syntax.variable,
-                                }}
-                              >{`wallet`}</span>
-                              {` } = `}
-                              <span
-                                style={{ color: colors.syntax.keyword }}
-                              >{`await`}</span>
-                              {` `}
-                              <span
-                                style={{
-                                  color: colors.syntax.variable,
-                                }}
-                              >{`actions`}</span>
-                              {`.`}
-                              <span
-                                style={{
-                                  color: colors.syntax.property,
-                                }}
-                              >{`wallet`}</span>
-                              {`.`}
-                              <span
-                                style={{
-                                  color: colors.syntax.function,
-                                }}
-                              >{`createSmartWallet`}</span>
-                              {`({
-  `}
-                              <span
-                                style={{
-                                  color: colors.syntax.property,
-                                }}
-                              >{`signer`}</span>
-                              {`: `}
-                              <span
-                                style={{
-                                  color: colors.syntax.variable,
-                                }}
-                              >{`signer`}</span>
-                              {`
-})`}
-                            </code>
-                          </pre>
-                        </div>
-                      </div>
+                      <TabbedCodeBlock
+                        tabs={[
+                          { label: 'Frontend', code: dynamicFrontendCode },
+                          { label: 'Backend', code: dynamicBackendCode },
+                        ]}
+                        selectedTab={selectedSmartDynamicTab}
+                        onTabChange={setSelectedSmartDynamicTab}
+                        filename="wallet.ts"
+                      />
                     </div>
                   </div>
                 )}
@@ -1076,949 +350,18 @@ const { wallet } = await actions.wallet.createSmartWallet({
 
                     <div>
                       <p className="text-gray-300 text-base mb-2">
-                        2. Hosted user wallets can become signers for
-                        new, customizable smart wallets:
+                        2. Hosted user wallets can become signers for new,
+                        customizable smart wallets:
                       </p>
-                      <div
-                        className="rounded-lg overflow-hidden"
-                        style={{
-                          backgroundColor: colors.bg.code,
-                        }}
-                      >
-                        {/* Frontend/Backend tabs */}
-                        <div
-                          className="flex border-b"
-                          style={{
-                            borderColor: 'rgba(184, 187, 38, 0.15)',
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              setSelectedSmartTurnkeyTab('frontend')
-                            }
-                            className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
-                            style={{
-                              backgroundColor: colors.bg.header,
-                              color:
-                                selectedSmartTurnkeyTab === 'frontend'
-                                  ? colors.text.primary
-                                  : colors.text.secondary,
-                              borderColor:
-                                selectedSmartTurnkeyTab === 'frontend'
-                                  ? 'rgb(184, 187, 38)'
-                                  : 'transparent',
-                              opacity:
-                                selectedSmartTurnkeyTab === 'frontend'
-                                  ? 1
-                                  : 0.6,
-                            }}
-                          >
-                            Frontend
-                          </button>
-                          <button
-                            onClick={() =>
-                              setSelectedSmartTurnkeyTab('backend')
-                            }
-                            className="px-6 py-3 text-sm font-mono transition-colors border-b-2"
-                            style={{
-                              backgroundColor: colors.bg.header,
-                              color:
-                                selectedSmartTurnkeyTab === 'backend'
-                                  ? colors.text.primary
-                                  : colors.text.secondary,
-                              borderColor:
-                                selectedSmartTurnkeyTab === 'backend'
-                                  ? 'rgb(184, 187, 38)'
-                                  : 'transparent',
-                              opacity:
-                                selectedSmartTurnkeyTab === 'backend'
-                                  ? 1
-                                  : 0.6,
-                            }}
-                          >
-                            Backend
-                          </button>
-                        </div>
-                        {/* Terminal header */}
-                        <div
-                          className="px-4 py-3 border-b flex items-center justify-between"
-                          style={{
-                            backgroundColor: colors.bg.header,
-                            borderColor: 'rgba(184, 187, 38, 0.15)',
-                            backdropFilter: 'blur(10px)',
-                          }}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <div
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: colors.macos.red,
-                              }}
-                            ></div>
-                            <div
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: colors.macos.yellow,
-                              }}
-                            ></div>
-                            <div
-                              className="w-3 h-3 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: 'rgb(184, 187, 38)',
-                                boxShadow:
-                                  '0 0 6px rgba(184, 187, 38, 0.4)',
-                              }}
-                            ></div>
-                          </div>
-                          <div
-                            className="text-xs font-mono"
-                            style={{ color: colors.syntax.keyword }}
-                          >
-                            wallet.ts
-                          </div>
-                        </div>
-                        <div className="relative">
-                          {selectedSmartTurnkeyTab === 'frontend' && (
-                            <pre
-                              className="text-sm leading-relaxed font-mono p-4"
-                              style={{
-                                backgroundColor: colors.bg.code,
-                              }}
-                            >
-                              <code
-                                style={{ color: colors.text.primary }}
-                              >
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`import`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`useTurnkey`}</span>
-                                {` } `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`from`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`"@turnkey/react-wallet-kit"`}</span>
-                                {`
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallets`}</span>
-                                {`, `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`user`}</span>
-                                {`, `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`createWallet`}</span>
-                                {`, `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`refreshWallets`}</span>
-                                {`, `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`httpClient`}</span>
-                                {`, `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`session`}</span>
-                                {` } = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`useTurnkey`}</span>
-                                {`()
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`useEffect`}</span>
-                                {`(() => {
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`async function`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createEmbeddedWallet`}</span>
-                                {`() {
-    `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createWallet`}</span>
-                                {`({
-      `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`walletName`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`\`My New Wallet \${Math.random().toString(36).substring(2, 15)}\``}</span>
-                                {`,
-      `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`accounts`}</span>
-                                {`: [`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`"ADDRESS_FORMAT_ETHEREUM"`}</span>
-                                {`],
-    })
-    `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`refreshWallets`}</span>
-                                {`()
-  }
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`embeddedWallet`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallets`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`find`}</span>
-                                {`(
-  (`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {`) => `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`accounts`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`some`}</span>
-                                {`((`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`account`}</span>
-                                {`) => `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`account`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`addressFormat`}</span>
-                                {` === `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'ADDRESS_FORMAT_ETHEREUM'`}</span>
-                                {`) && `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`source`}</span>
-                                {` === `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`WalletSource`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`Embedded`}</span>
-                                {`,
-)
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`walletAddress`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`embeddedWallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`accounts`}</span>
-                                {`[`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.number,
-                                  }}
-                                >{`0`}</span>
-                                {`].`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`address`}</span>
-                                {`
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`signer`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`actions`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createSigner`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`client`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`httpClient`}</span>
-                                {`,
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`organizationId`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`session`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`organizationId`}</span>
-                                {`,
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`signWith`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`walletAddress`}</span>
-                                {`,
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`ethereumAddress`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`walletAddress`}</span>
-                                {`
-})
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {` } = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`actions`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createSmartWallet`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`signer`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`signer`}</span>
-                                {`
-})`}
-                              </code>
-                            </pre>
-                          )}
-                          {selectedSmartTurnkeyTab === 'backend' && (
-                            <pre
-                              className="text-sm leading-relaxed font-mono p-4"
-                              style={{
-                                backgroundColor: colors.bg.code,
-                              }}
-                            >
-                              <code
-                                style={{ color: colors.text.primary }}
-                              >
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`import`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`Turnkey`}</span>
-                                {` } `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`from`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'@turnkey/sdk-server'`}</span>
-                                {`
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`turnkeyClient`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`new`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`Turnkey`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`apiBaseUrl`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'https://api.turnkey.com'`}</span>
-                                {`,
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`apiPublicKey`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`env`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`TURNKEY_API_KEY`}</span>
-                                {`,
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`apiPrivateKey`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`env`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`TURNKEY_API_SECRET`}</span>
-                                {`,
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`defaultOrganizationId`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`env`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`TURNKEY_ORGANIZATION_ID`}</span>
-                                {`,
-})
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`turnkeyWallet`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`turnkeyClient`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`apiClient`}</span>
-                                {`().`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createWallet`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`walletName`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'ETH Wallet'`}</span>
-                                {`,
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`accounts`}</span>
-                                {`: [{
-    `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`curve`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'CURVE_SECP256K1'`}</span>
-                                {`,
-    `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`pathFormat`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'PATH_FORMAT_BIP32'`}</span>
-                                {`,
-    `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`path`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`"m/44'/60'/0'/0/0"`}</span>
-                                {`,
-    `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`addressFormat`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.string,
-                                  }}
-                                >{`'ADDRESS_FORMAT_ETHEREUM'`}</span>
-                                {`,
-  }],
-})
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`turnkeySigner`}</span>
-                                {` = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`actions`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createSigner`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`organizationId`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`turnkeyWallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`activity`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`organizationId`}</span>
-                                {`,
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`signWith`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`turnkeyWallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`addresses`}</span>
-                                {`[`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.number,
-                                  }}
-                                >{`0`}</span>
-                                {`],
-})
-
-`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`const`}</span>
-                                {` { `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`wallet`}</span>
-                                {` } = `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.keyword,
-                                  }}
-                                >{`await`}</span>
-                                {` `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`actions`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`wallet`}</span>
-                                {`.`}
-                                <span
-                                  style={{
-                                    color: colors.syntax.function,
-                                  }}
-                                >{`createSmartWallet`}</span>
-                                {`({
-  `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.property,
-                                  }}
-                                >{`signer`}</span>
-                                {`: `}
-                                <span
-                                  style={{
-                                    color: colors.syntax.variable,
-                                  }}
-                                >{`turnkeySigner`}</span>
-                                {`
-})`}
-                              </code>
-                            </pre>
-                          )}
-                        </div>
-                      </div>
+                      <TabbedCodeBlock
+                        tabs={[
+                          { label: 'Frontend', code: turnkeyFrontendCode },
+                          { label: 'Backend', code: turnkeyBackendCode },
+                        ]}
+                        selectedTab={selectedSmartTurnkeyTab}
+                        onTabChange={setSelectedSmartTurnkeyTab}
+                        filename="wallet.ts"
+                      />
                     </div>
                   </div>
                 )}
