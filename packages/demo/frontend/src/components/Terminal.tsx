@@ -18,7 +18,7 @@ import type {
   GetAllWalletsResponse,
   WalletData,
 } from '@eth-optimism/actions-service'
-import NavBar from './NavBar'
+import NavBar from './nav/NavBar'
 import { PrivyAuthButton } from './PrivyAuthButton'
 import { actionsApi } from '../api/actionsApi'
 import type { Address } from 'viem'

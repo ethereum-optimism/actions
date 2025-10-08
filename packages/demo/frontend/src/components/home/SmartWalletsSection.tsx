@@ -3,7 +3,7 @@ import { colors } from '@/constants/colors'
 import PrivyLogo from '@/assets/privy-logo-white.svg'
 import DynamicLogo from '@/assets/dynamic-logo-white.svg'
 import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
-import TabbedCodeBlock from '../TabbedCodeBlock'
+import TabbedCodeBlock from './TabbedCodeBlock'
 
 interface SmartWalletsSectionProps {
   stepNumber: number
@@ -21,7 +21,8 @@ function SmartWalletsSection({
   const [selectedSmartDynamicTab, setSelectedSmartDynamicTab] = useState('frontend')
   const [selectedSmartTurnkeyTab, setSelectedSmartTurnkeyTab] = useState('frontend')
 
-  const privyFrontendCode = `import { useWallets } from '@privy-io/react-auth'
+  const privyFrontendCode = `import { actions } from './config'
+import { useWallets } from '@privy-io/react-auth'
 
 const { wallets } = useWallets()
 const embeddedWallet = wallets.find(
@@ -36,7 +37,8 @@ const { wallet } = await actions.wallet.createSmartWallet({
   signer: signer
 })`
 
-  const privyBackendCode = `import { PrivyClient } from '@privy-io/node'
+  const privyBackendCode = `import { actions } from './config'
+import { PrivyClient } from '@privy-io/node'
 import { getAddress } from 'viem'
 
 const privyWallet = await privyClient.walletApi.createWallet({
@@ -52,7 +54,8 @@ const { wallet } = await actions.wallet.createSmartWallet({
   signer: privySigner
 })`
 
-  const dynamicFrontendCode = `import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
+  const dynamicFrontendCode = `import { actions } from './config'
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 
 const { primaryWallet } = useDynamicContext()
 
@@ -63,7 +66,8 @@ const { wallet } = await actions.wallet.createSmartWallet({
 
   const dynamicBackendCode = ``
 
-  const turnkeyFrontendCode = `import { useTurnkey } from "@turnkey/react-wallet-kit"
+  const turnkeyFrontendCode = `import { actions } from './config'
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 
 const { wallets, user, createWallet, refreshWallets, httpClient, session } = useTurnkey()
 useEffect(() => {
@@ -90,7 +94,8 @@ const { wallet } = await actions.wallet.createSmartWallet({
   signer: signer
 })`
 
-  const turnkeyBackendCode = `import { Turnkey } from '@turnkey/sdk-server'
+  const turnkeyBackendCode = `import { actions } from './config'
+import { Turnkey } from '@turnkey/sdk-server'
 
 const turnkeyClient = new Turnkey({
   apiBaseUrl: 'https://api.turnkey.com',
