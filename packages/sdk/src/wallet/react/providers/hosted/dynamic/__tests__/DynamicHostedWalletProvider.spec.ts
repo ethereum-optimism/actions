@@ -58,7 +58,9 @@ describe('DynamicHostedWalletProvider', () => {
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',
       } as unknown as DynamicHostedWalletToActionsWalletOptions['wallet']
-      const mockResult = { __brand: 'actions-wallet' } as unknown as DynamicWallet
+      const mockResult = {
+        __brand: 'actions-wallet',
+      } as unknown as DynamicWallet
       vi.mocked(DynamicWallet.create).mockResolvedValueOnce(mockResult)
 
       await provider.toActionsWallet({
