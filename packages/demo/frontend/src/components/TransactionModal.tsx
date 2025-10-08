@@ -41,7 +41,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash }: Transact
             </div>
           ),
           title: 'Transaction Successful',
-          description: 'Your USDC has been successfully deposited into the lending vault.',
+          description: 'Your USDC is now earning interest',
           showClose: true
         }
       case 'error':

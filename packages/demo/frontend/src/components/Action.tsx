@@ -53,8 +53,8 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
             assetAddress
           })
         }
-      } catch (error) {
-        console.error('Error fetching market APY:', error)
+      } catch {
+        // Error fetching market APY
       } finally {
         setIsLoadingApy(false)
       }
@@ -64,7 +64,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
   }, [loggedApi])
 
   const handleMaxClick = () => {
-    setAmount(usdcBalance)
+    setAmount(mode === 'lend' ? usdcBalance : depositedAmount)
   }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +81,8 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     }
 
     const amountValue = parseFloat(amount)
-    if (amountValue > parseFloat(usdcBalance)) {
+    const maxAmount = mode === 'lend' ? parseFloat(usdcBalance) : parseFloat(depositedAmount)
+    if (amountValue > maxAmount) {
       return
     }
 
@@ -94,13 +95,21 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       const token = await getAccessToken()
       const headers = token ? { Authorization: `Bearer ${token}` } : undefined
 
-      const result = await loggedApi.openLendPosition(
-        user.id,
-        amountValue,
-        marketData.assetAddress,
-        marketData.marketId,
-        headers
-      )
+      const result = mode === 'lend'
+        ? await loggedApi.openLendPosition(
+            user.id,
+            amountValue,
+            marketData.assetAddress,
+            marketData.marketId,
+            headers
+          )
+        : await loggedApi.closeLendPosition(
+            user.id,
+            amountValue,
+            marketData.assetAddress,
+            marketData.marketId,
+            headers
+          )
 
       // Get the first transaction hash if available, or use userOpHash for account abstraction
       const txHash = result.transaction.transactionHashes?.[0] || result.transaction.userOpHash
@@ -108,14 +117,15 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       setModalStatus('success')
       setAmount('')
 
-      // Refresh position after successful transaction
-      await fetchPosition()
+      // Refresh position after successful transaction with a small delay to ensure state is updated
+      setTimeout(async () => {
+        await fetchPosition()
+      }, 1000)
 
       if (onTransactionSuccess) {
         onTransactionSuccess()
       }
-    } catch (error) {
-      console.error('Error lending USDC:', error)
+    } catch {
       setModalStatus('error')
     } finally {
       setIsLoading(false)
@@ -136,8 +146,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       setIsLoadingPosition(true)
       const position = await actionsApi.getPosition(marketData.marketId, user.id)
       setDepositedAmount(position.balanceFormatted)
-    } catch (error) {
-      console.error('Error fetching position:', error)
+    } catch {
       setDepositedAmount('0.00')
     } finally {
       setIsLoadingPosition(false)
@@ -463,7 +472,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
 
         <button
           onClick={handleLendUSDC}
-          disabled={isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(usdcBalance)}
+          disabled={isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount)}
           className="w-full py-3 px-4 font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor: '#FF0420',

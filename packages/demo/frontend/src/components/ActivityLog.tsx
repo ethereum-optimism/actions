@@ -28,12 +28,31 @@ function ActivityLog() {
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
       }}
     >
-      <h2
-        className="text-lg font-semibold mb-4"
-        style={{ color: '#1a1b1e' }}
-      >
-        Activity Log
-      </h2>
+      <div className="flex items-center gap-2 mb-4">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#1a1b1e"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" />
+          <line x1="3" y1="12" x2="3.01" y2="12" />
+          <line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
+        <h2
+          className="text-lg font-semibold"
+          style={{ color: '#1a1b1e' }}
+        >
+          Activity Log
+        </h2>
+      </div>
 
       <div>
         {activities.length > 0 ? (

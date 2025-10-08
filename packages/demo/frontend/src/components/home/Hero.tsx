@@ -79,7 +79,7 @@ function Hero() {
                 Github
               </a>
               <a
-                href="/demo"
+                href="/earn"
                 className="border border-gray-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
               >
                 <svg
