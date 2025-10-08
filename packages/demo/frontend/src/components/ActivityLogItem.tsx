@@ -1,111 +1,184 @@
 interface ActivityLogItemProps {
-  type: 'lend' | 'withdraw'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'markets'
+  action: string
   amount: string
   timestamp: string
-  status: 'pending' | 'confirmed' | 'failed'
+  status: 'pending' | 'confirmed' | 'error'
 }
 
-function ActivityLogItem({ type, amount, timestamp, status }: ActivityLogItemProps) {
+// Map action types to API method calls
+const getApiMethod = (type: ActivityLogItemProps['type'], action: string) => {
+  switch (type) {
+    case 'wallet':
+      return action === 'Get wallet balance' ? 'actionsApi.getWalletBalance()' : 'actionsApi.createWallet()'
+    case 'fund':
+      return 'actionsApi.fundWallet()'
+    case 'markets':
+      return 'actionsApi.getMarkets()'
+    case 'lend':
+      return 'actionsApi.openLendPosition()'
+    case 'withdraw':
+      return 'actionsApi.closeLendPosition()'
+    default:
+      return 'actionsApi()'
+  }
+}
+
+function ActivityLogItem({ type, action, status }: ActivityLogItemProps) {
   const getStatusColor = () => {
     switch (status) {
       case 'confirmed':
         return '#22C55E'
       case 'pending':
         return '#F59E0B'
-      case 'failed':
+      case 'error':
         return '#EF4444'
       default:
         return '#666666'
     }
   }
 
-  const getStatusText = () => {
-    switch (status) {
-      case 'confirmed':
-        return 'Confirmed'
-      case 'pending':
-        return 'Pending'
-      case 'failed':
-        return 'Failed'
+
+  const getTypeLabel = () => {
+    switch (type) {
+      case 'lend':
+        return 'Lend'
+      case 'withdraw':
+        return 'Withdraw'
+      case 'fund':
+        return 'Fund'
+      case 'wallet':
+        return 'Wallet'
+      case 'markets':
+        return 'Markets'
       default:
-        return ''
+        return type
     }
   }
 
+  const getActionDescription = () => {
+    // Check specific actions first
+    if (action === 'Get market') {
+      return 'Get market APY'
+    }
+    if (action === 'Get wallet balance') {
+      return 'Get balance'
+    }
+    if (action === 'deposit') {
+      return 'Open lending position'
+    }
+    if (action === 'withdraw') {
+      return 'Close lending position'
+    }
+    if (action === 'mint') {
+      return 'Mint demo USDC'
+    }
+    if (action === 'create') {
+      return 'Create smart wallet'
+    }
+    if (action === 'send') {
+      return 'Send tokens'
+    }
+
+    // Fallback to type-based descriptions
+    switch (type) {
+      case 'lend':
+        return 'Lending action'
+      case 'withdraw':
+        return 'Withdrawal action'
+      case 'fund':
+        return 'Funding action'
+      case 'wallet':
+        return 'Wallet action'
+      case 'markets':
+        return 'Get markets'
+      default:
+        return 'Action'
+    }
+  }
+
+  const getTypeColor = () => {
+    switch (type) {
+      case 'lend':
+        return { bg: '#DBEAFE', stroke: '#3B82F6' }
+      case 'withdraw':
+        return { bg: '#FEE2E2', stroke: '#EF4444' }
+      case 'fund':
+        return { bg: '#D1FAE5', stroke: '#10B981' }
+      case 'wallet':
+        return { bg: '#E0E7FF', stroke: '#6366F1' }
+      case 'markets':
+        return { bg: '#FEF3C7', stroke: '#F59E0B' }
+      default:
+        return { bg: '#F3F4F6', stroke: '#6B7280' }
+    }
+  }
+
+
   return (
     <div
-      className="p-4 rounded-lg mb-3"
+      className="px-4 py-3 border-b hover:bg-gray-50 transition-colors"
       style={{
-        backgroundColor: '#F9FAFB',
-        border: '1px solid #E5E7EB'
+        borderColor: '#E5E7EB'
       }}
     >
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{
-              backgroundColor: type === 'lend' ? '#DBEAFE' : '#FEE2E2'
-            }}
-          >
-            {type === 'lend' ? (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#3B82F6"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <polyline points="19 12 12 19 5 12"></polyline>
-              </svg>
-            ) : (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#EF4444"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="12" y1="19" x2="12" y2="5"></line>
-                <polyline points="5 12 12 5 19 12"></polyline>
-              </svg>
-            )}
-          </div>
-          <div>
-            <div
-              className="font-medium"
-              style={{ color: '#1a1b1e', fontSize: '14px' }}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          {/* Top row: Label badge + Action description */}
+          <div className="flex items-center gap-2 mb-1.5">
+            <span
+              className="px-2 py-0.5 rounded text-xs font-medium"
+              style={{
+                backgroundColor: getTypeColor().bg,
+                color: getTypeColor().stroke
+              }}
             >
-              {type === 'lend' ? 'Lend' : 'Withdraw'}
-            </div>
-            <div style={{ color: '#9CA3AF', fontSize: '12px' }}>
-              {timestamp}
-            </div>
+              {getTypeLabel()}
+            </span>
+            <span
+              className="text-sm font-medium"
+              style={{ color: '#1a1b1e' }}
+            >
+              {getActionDescription()}
+            </span>
+            <div
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: getStatusColor() }}
+            />
+          </div>
+
+          {/* Bottom row: API method call */}
+          <div
+            className="text-xs font-mono"
+            style={{ color: '#6B7280' }}
+          >
+            {getApiMethod(type, action)}
           </div>
         </div>
-        <div
-          className="text-right"
+
+        {/* Right side: Arrow link */}
+        <button
+          className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
+          style={{ color: '#9CA3AF' }}
+          onClick={() => {
+            // TODO: Open modal/panel with API payload details
+            console.log('View details for', type)
+          }}
         >
-          <div
-            className="font-semibold"
-            style={{ color: '#1a1b1e', fontSize: '14px' }}
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            {type === 'lend' ? '+' : '-'}{amount} USDC
-          </div>
-          <div
-            className="text-xs font-medium"
-            style={{ color: getStatusColor() }}
-          >
-            {getStatusText()}
-          </div>
-        </div>
+            <path d="M7 17L17 7"></path>
+            <path d="M7 7h10v10"></path>
+          </svg>
+        </button>
       </div>
     </div>
   )

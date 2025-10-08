@@ -1,14 +1,53 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 
 interface ActionProps {
   usdcBalance: string
   isLoadingBalance: boolean
+  onMintUSDC?: () => void
 }
 
-function Action({ usdcBalance, isLoadingBalance }: ActionProps) {
+function Action({ usdcBalance, isLoadingBalance, onMintUSDC }: ActionProps) {
+  const loggedApi = useLoggedActionsApi()
   const [isLoading, setIsLoading] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
+  const [apy, setApy] = useState<number | null>(null)
+  const [isLoadingApy, setIsLoadingApy] = useState(true)
+  const [amount, setAmount] = useState('')
+
+  // Fetch market APY on mount
+  useEffect(() => {
+    const fetchMarketApy = async () => {
+      try {
+        setIsLoadingApy(true)
+        const result = await loggedApi.getMarkets()
+
+        // Get the USDC Demo Vault (Base Sepolia) at index 1
+        if (result.markets.length > 1) {
+          setApy(result.markets[1].apy.total)
+        }
+      } catch (error) {
+        console.error('Error fetching market APY:', error)
+      } finally {
+        setIsLoadingApy(false)
+      }
+    }
+
+    fetchMarketApy()
+  }, [loggedApi])
+
+  const handleMaxClick = () => {
+    setAmount(usdcBalance)
+  }
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Allow only numbers and decimals
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setAmount(value)
+    }
+  }
 
   // TODO: NEED TO IMPLEMENT
   const handleLendUSDC = async () => {
@@ -63,14 +102,42 @@ function Action({ usdcBalance, isLoadingBalance }: ActionProps) {
               USDC
             </span>
           </div>
-          <span style={{
-            color: '#404454',
-            fontFamily: 'Inter',
-            fontSize: '14px',
-            fontWeight: 500
-          }}>
-            {isLoadingBalance ? 'Loading...' : usdcBalance}
-          </span>
+          {isLoadingBalance ? (
+            <span style={{
+              color: '#404454',
+              fontFamily: 'Inter',
+              fontSize: '14px',
+              fontWeight: 500
+            }}>
+              Loading...
+            </span>
+          ) : parseFloat(usdcBalance) === 0 ? (
+            <button
+              onClick={onMintUSDC}
+              className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
+              style={{
+                backgroundColor: '#FFFFFF',
+                color: '#1a1b1e',
+                fontSize: '14px',
+                fontWeight: 500,
+                borderRadius: '6px',
+                border: '1px solid #E0E2EB',
+                cursor: 'pointer',
+                fontFamily: 'Inter'
+              }}
+            >
+              Get 100 USDC
+            </button>
+          ) : (
+            <span style={{
+              color: '#404454',
+              fontFamily: 'Inter',
+              fontSize: '14px',
+              fontWeight: 500
+            }}>
+              {usdcBalance}
+            </span>
+          )}
         </div>
       </div>
 
@@ -141,7 +208,7 @@ function Action({ usdcBalance, isLoadingBalance }: ActionProps) {
             fontSize: '14px',
             fontWeight: 500
           }}>
-            30.90%
+            {isLoadingApy ? 'Loading...' : apy !== null ? `${(apy * 100).toFixed(2)}%` : '0.00%'}
           </span>
         </div>
 
@@ -248,6 +315,7 @@ function Action({ usdcBalance, isLoadingBalance }: ActionProps) {
               {mode === 'lend' ? 'Amount to lend' : 'Amount to withdraw'}
             </label>
             <button
+              onClick={handleMaxClick}
               style={{
                 padding: '4px 8px',
                 borderRadius: '6px',
@@ -256,6 +324,7 @@ function Action({ usdcBalance, isLoadingBalance }: ActionProps) {
                 fontWeight: 400,
                 color: '#3374DB',
                 cursor: 'pointer',
+                backgroundColor: 'transparent'
               }}
             >
               Max
@@ -273,6 +342,8 @@ function Action({ usdcBalance, isLoadingBalance }: ActionProps) {
             <input
               type="text"
               placeholder="0"
+              value={amount}
+              onChange={handleAmountChange}
               style={{
                 flex: 1,
                 border: 'none',
