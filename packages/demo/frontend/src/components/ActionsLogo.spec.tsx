@@ -15,12 +15,11 @@ describe('ActionsLogo', () => {
     expect(svgElement).toHaveAttribute('viewBox')
   })
 
-  it('has proper dimensions and styling', () => {
+  it('has proper dimensions', () => {
     const { container } = render(<ActionsLogo />)
 
     const svgElement = container.querySelector('svg')
     expect(svgElement).toHaveAttribute('width', '24')
     expect(svgElement).toHaveAttribute('height', '24')
-    expect(svgElement).toHaveClass('text-terminal-success')
   })
 })

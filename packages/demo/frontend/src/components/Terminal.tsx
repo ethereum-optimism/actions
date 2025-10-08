@@ -105,7 +105,7 @@ Wallet commands:
   wallet create - Create a new wallet
   wallet select - Select a wallet to use for commands
          fund    - Fund selected wallet
-         balance - Show balance of selected wallet
+         balance - Show selected wallet funds
          lend    - Lend and earn
          send    - Send to another address
 
@@ -192,12 +192,36 @@ const Terminal = () => {
     autoSelectWallet()
   }, [isSignedIn, privyAuthenticated, wallets.length, selectedWallet, user])
 
-  // Function to render content with clickable links
+  // Function to render content with clickable links and colored commands
   const renderContentWithLinks = (content: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g
-    const parts = content.split(urlRegex)
 
-    return parts.map((part, index) => {
+    // Color mappings for wallet commands (rainbow order)
+    const colorMap: Record<string, string> = {
+      // Console commands - blue
+      'help': '#83a598',
+      'clear': '#83a598',
+      'status': '#83a598',
+      'exit': '#83a598',
+      // Future actions - red
+      'borrow': '#fb4933',
+      'swap': '#fb4933',
+      // Wallet commands - rainbow
+      'create': '#fb4933',  // red
+      'select': '#fe8019',  // orange
+      'fund': '#fabd2f',    // yellow
+      'balance': '#b8bb26', // green
+      'lend': '#83a598',    // blue
+      'send': '#d3869b',    // purple
+    }
+
+    // Build regex pattern for colored commands
+    const commandPattern = Object.keys(colorMap).join('|')
+    const commandRegex = new RegExp(`\\b(${commandPattern})\\b`, 'g')
+
+    const urlParts = content.split(urlRegex)
+
+    return urlParts.map((part, index) => {
       if (part.match(urlRegex)) {
         return (
           <a
@@ -211,7 +235,35 @@ const Terminal = () => {
           </a>
         )
       }
-      return part
+
+      // Check if this part contains colored commands
+      const segments: React.ReactNode[] = []
+      let lastIndex = 0
+      let match: RegExpExecArray | null
+
+      while ((match = commandRegex.exec(part)) !== null) {
+        // Add text before match
+        if (match.index > lastIndex) {
+          segments.push(part.substring(lastIndex, match.index))
+        }
+
+        // Add colored command
+        const command = match[0]
+        segments.push(
+          <span key={`${index}-${match.index}`} style={{ color: colorMap[command] }}>
+            {command}
+          </span>
+        )
+
+        lastIndex = match.index + command.length
+      }
+
+      // Add remaining text
+      if (lastIndex < part.length) {
+        segments.push(part.substring(lastIndex))
+      }
+
+      return segments.length > 0 ? <span key={index}>{segments}</span> : part
     })
   }
 
@@ -1906,10 +1958,11 @@ User ID: ${result.userId}`,
 
   return (
     <div
-      className="w-full h-full flex flex-col bg-terminal-bg shadow-terminal-inner cursor-text"
+      className="w-full h-full flex flex-col shadow-terminal-inner cursor-text"
+      style={{ backgroundColor: '#282828' }}
       onClick={handleClick}
     >
-      <NavBar fullWidth rightElement={<PrivyAuthButton />} />
+      <NavBar fullWidth responsiveLogo rightElement={<PrivyAuthButton />} />
 
       {/* Terminal Content */}
       <div
@@ -1942,7 +1995,7 @@ User ID: ${result.userId}`,
                   ? {
                       fontFamily:
                         'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
-                      color: '#b8bb26',
+                      color: '#FF0621',
                       whiteSpace: 'pre',
                       lineHeight: '0.75',
                       letterSpacing: '0',
