@@ -129,7 +129,13 @@ export class LendController {
         await lendService.formatMarketBalanceResponse(balance)
       return c.json(formattedBalance)
     } catch (error) {
-      return this.handleError(c, 'get position', error)
+      return c.json(
+        {
+          error: 'Failed to get position',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500,
+      )
     }
   }
 

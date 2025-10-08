@@ -8,6 +8,7 @@ import {
   getTokenBySymbol,
   SUPPORTED_TOKENS,
 } from '@eth-optimism/actions-sdk'
+import type { WalletWithMetadata } from '@privy-io/server-auth'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
@@ -64,7 +65,23 @@ export async function getWallet(
     if (!privyUser) {
       return null
     }
-    privyWallet = privyUser.wallet
+
+    // Get the first embedded ethereum wallet from linked accounts
+    const walletAccount = privyUser.linkedAccounts?.find(
+      (account): account is WalletWithMetadata =>
+        account.type === 'wallet' &&
+        account.walletClientType === 'privy' &&
+        account.chainType === 'ethereum',
+    )
+
+    if (!walletAccount) {
+      return null
+    }
+
+    privyWallet = {
+      id: walletAccount.id,
+      address: walletAccount.address,
+    }
   } else {
     // Get wallet directly via wallet ID (legacy behavior)
     privyWallet = await privyClient.walletApi
