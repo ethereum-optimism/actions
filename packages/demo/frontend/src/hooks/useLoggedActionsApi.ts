@@ -5,6 +5,7 @@ import { useActivityLog } from '../contexts/ActivityLogContext'
 type LogConfig = {
   type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'markets'
   action: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getAmount?: (...args: any[]) => string
 }
 
@@ -51,6 +52,7 @@ export function useLoggedActionsApi() {
         }
 
         // Wrap with logging
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return async (...args: any[]) => {
           const amount = config.getAmount ? config.getAmount(...args) : undefined
 
@@ -77,6 +79,7 @@ export function useLoggedActionsApi() {
           }
 
           try {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
             const result = await (original as Function).apply(target, args)
 
             // Update with actual amount from result if available
