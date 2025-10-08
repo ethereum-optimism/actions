@@ -3,6 +3,7 @@ import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
 import { PrivyClient } from '@privy-io/server-auth'
 
 import { BASE_SEPOLIA, UNICHAIN } from './chains.js'
+import { env } from './env.js'
 import { GauntletUSDC, USDCDemoVault } from './markets.js'
 
 let actionsInstance: ReturnType<typeof createActions<'privy'>>
