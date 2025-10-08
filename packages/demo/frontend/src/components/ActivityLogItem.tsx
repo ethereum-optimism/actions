@@ -10,17 +10,17 @@ interface ActivityLogItemProps {
 const getApiMethod = (type: ActivityLogItemProps['type'], action: string) => {
   switch (type) {
     case 'wallet':
-      return action === 'Get wallet balance' ? 'actionsApi.getWalletBalance()' : 'actionsApi.createWallet()'
+      return action === 'Get wallet balance' ? 'wallet.getBalance()' : 'actions.wallet.createSmartWallet()'
     case 'fund':
-      return 'actionsApi.fundWallet()'
+      return 'wallet.fund()'
     case 'markets':
-      return 'actionsApi.getMarkets()'
+      return 'actions.getMarkets()'
     case 'lend':
-      return 'actionsApi.openLendPosition()'
+      return 'wallet.lend.openPosition()'
     case 'withdraw':
-      return 'actionsApi.closeLendPosition()'
+      return 'wallet.lend.closePosition()'
     default:
-      return 'actionsApi()'
+      return 'actions()'
   }
 }
 

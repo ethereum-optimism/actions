@@ -3,7 +3,6 @@ import type {
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/actions-sdk'
-import type { WalletWithMetadata } from '@privy-io/server-auth'
 import {
   getAssetAddress,
   getTokenBySymbol,
