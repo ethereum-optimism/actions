@@ -9,6 +9,7 @@ import {
   getTokenBySymbol,
   SUPPORTED_TOKENS,
 } from '@eth-optimism/actions-sdk'
+import type { WalletWithMetadata } from '@privy-io/server-auth'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'

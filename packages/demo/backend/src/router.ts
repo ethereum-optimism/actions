@@ -55,12 +55,19 @@ router.post('/wallet/send', walletController.sendTokens)
 
 // Lend endpoints
 router.get('/lend/markets', lendController.getMarkets.bind(lendController))
-router.get('/lend/market/:chainId/:marketAddress', lendController.getMarket.bind(lendController))
+router.get(
+  '/lend/market/:chainId/:marketAddress',
+  lendController.getMarket.bind(lendController),
+)
 router.get(
   '/lend/market/:chainId/:marketAddress/position/:walletId',
   lendController.getPosition.bind(lendController),
 )
-router.post('/lend/position/open', authMiddleware, lendController.openPosition.bind(lendController))
+router.post(
+  '/lend/position/open',
+  authMiddleware,
+  lendController.openPosition.bind(lendController),
+)
 router.post(
   '/lend/position/close',
   authMiddleware,
