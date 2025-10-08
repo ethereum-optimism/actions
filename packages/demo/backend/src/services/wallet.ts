@@ -3,6 +3,7 @@ import type {
   TokenBalance,
   TransactionData,
 } from '@eth-optimism/actions-sdk'
+import type { WalletWithMetadata } from '@privy-io/server-auth'
 import {
   getAssetAddress,
   getTokenBySymbol,
@@ -52,46 +53,38 @@ export async function createWallet(): Promise<{
 
 export async function getWallet(
   userId: string,
-  isAuthedUser = false,
+  isAuthedUser = true,
 ): Promise<SmartWallet | null> {
   const actions = getActions()
   const privyClient = getPrivyClient()
 
-  let privyWallet
-  if (isAuthedUser) {
-    // Get wallet via user ID (for authenticated users)
-    const privyUser = await privyClient.getUserById(userId)
-    if (!privyUser) {
-      return null
-    }
-
-    // Get the first embedded ethereum wallet from linked accounts
-    const walletAccount = privyUser.linkedAccounts?.find(
-      (account: any) =>
-        account.type === 'wallet' &&
-        account.walletClientType === 'privy' &&
-        account.chainType === 'ethereum',
-    ) as any
-
-    if (!walletAccount) {
-      return null
-    }
-
-    privyWallet = {
-      id: walletAccount.id, // Use the actual wallet ID from Privy
-      address: walletAccount.address,
-    }
-  } else {
-    // Get wallet directly via wallet ID (legacy behavior)
-    privyWallet = await privyClient.walletApi
-      .getWallet({
-        id: userId,
-      })
-      .catch(() => null)
+  if (!isAuthedUser) {
+    throw new Error(
+      'Direct wallet ID lookup is no longer supported. Use user DID instead.',
+    )
   }
 
-  if (!privyWallet) {
+  // Get wallet via user DID
+  const privyUser = await privyClient.getUserById(userId)
+  if (!privyUser) {
     return null
+  }
+
+  // Get the first embedded ethereum wallet from linked accounts
+  const walletAccount = privyUser.linkedAccounts?.find(
+    (account): account is WalletWithMetadata =>
+      account.type === 'wallet' &&
+      account.walletClientType === 'privy' &&
+      account.chainType === 'ethereum',
+  )
+
+  if (!walletAccount) {
+    return null
+  }
+
+  const privyWallet = {
+    id: walletAccount.id,
+    address: walletAccount.address,
   }
 
   const privySigner = await actions.wallet.createSigner({
