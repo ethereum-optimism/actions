@@ -58,12 +58,18 @@ export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
 
 export async function getPosition(
   marketId: LendMarketId,
-  userId: string,
+  walletId: string,
 ): Promise<LendMarketPosition> {
-  const wallet = await getWallet(userId, true)
+  // Try to get wallet as authenticated user first (for Privy user IDs like did:privy:...)
+  let wallet = await getWallet(walletId, true)
+
+  // If not found, try as direct wallet ID (legacy behavior)
+  if (!wallet) {
+    wallet = await getWallet(walletId, false)
+  }
 
   if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${userId}`)
+    throw new Error(`Wallet not found for user ID: ${walletId}`)
   }
 
   return wallet.lend!.getPosition({ marketId })
