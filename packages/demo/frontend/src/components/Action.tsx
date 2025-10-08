@@ -53,7 +53,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
             assetAddress
           })
         }
-      } catch (error) {
+      } catch {
         // Error fetching market APY
       } finally {
         setIsLoadingApy(false)
@@ -125,7 +125,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       if (onTransactionSuccess) {
         onTransactionSuccess()
       }
-    } catch (error) {
+    } catch {
       setModalStatus('error')
     } finally {
       setIsLoading(false)
@@ -146,7 +146,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       setIsLoadingPosition(true)
       const position = await actionsApi.getPosition(marketData.marketId, user.id)
       setDepositedAmount(position.balanceFormatted)
-    } catch (error) {
+    } catch {
       setDepositedAmount('0.00')
     } finally {
       setIsLoadingPosition(false)
