@@ -41,7 +41,6 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
 
         // Get the USDC Demo Vault (Base Sepolia) at index 1
         if (result.markets.length > 1) {
-          // TODO Replace this with filtering for USDC_DEMO
           const market = result.markets[1]
           setApy(market.apy.total)
 

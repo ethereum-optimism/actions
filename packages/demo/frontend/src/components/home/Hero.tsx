@@ -1,4 +1,4 @@
-import { colors } from '../../constants/colors'
+import { colors } from '@/constants/colors'
 
 function Hero() {
   return (
@@ -67,7 +67,7 @@ function Hero() {
                 href="https://github.com/ethereum-optimism/actions"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-200 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 max-w-xs"
+                className="bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-200 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
               >
                 <svg
                   className="w-5 h-5"
@@ -80,7 +80,7 @@ function Hero() {
               </a>
               <a
                 href="/earn"
-                className="border border-gray-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 max-w-xs"
+                className="border border-gray-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
               >
                 <svg
                   className="w-5 h-5"
