@@ -17,6 +17,13 @@ function Code({ code, language = 'typescript' }: CodeProps) {
 
   useEffect(() => {
     if (codeRef.current) {
+      // Remove any existing highlighting class
+      codeRef.current.removeAttribute('data-highlighted')
+      codeRef.current.classList.remove('hljs')
+
+      // Reset the content to raw code first
+      codeRef.current.textContent = code
+
       hljs.highlightElement(codeRef.current)
 
       // Post-process the HTML
