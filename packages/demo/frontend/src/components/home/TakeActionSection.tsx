@@ -1,5 +1,5 @@
 import { colors } from '@/constants/colors'
-import CodeBlock from '../CodeBlock'
+import CodeBlock from './CodeBlock'
 
 interface TakeActionSectionProps {
   stepNumber: number

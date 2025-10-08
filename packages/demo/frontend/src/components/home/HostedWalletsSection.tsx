@@ -3,7 +3,7 @@ import { colors } from '@/constants/colors'
 import PrivyLogo from '@/assets/privy-logo-white.svg'
 import DynamicLogo from '@/assets/dynamic-logo-white.svg'
 import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
-import TabbedCodeBlock from '../TabbedCodeBlock'
+import TabbedCodeBlock from './TabbedCodeBlock'
 
 interface HostedWalletsSectionProps {
   stepNumber: number
@@ -20,7 +20,8 @@ function HostedWalletsSection({
   const [selectedPrivyTab, setSelectedPrivyTab] = useState('frontend')
   const [selectedDynamicTab, setSelectedDynamicTab] = useState('frontend')
   const [selectedTurnkeyTab, setSelectedTurnkeyTab] = useState('frontend')
-  const privyFrontendCode = `import { useWallets } from '@privy-io/react-auth'
+  const privyFrontendCode = `import { actions } from './config'
+import { useWallets } from '@privy-io/react-auth'
 
 const { wallets } = useWallets()
 const embeddedWallet = wallets.find(
@@ -31,7 +32,8 @@ const actionsWallet = await actions.wallet.hostedWalletToActionsWallet({
   connectedWallet: embeddedWallet,
 })`
 
-  const privyBackendCode = `import { PrivyClient } from '@privy-io/node'
+  const privyBackendCode = `import { actions } from './config'
+import { PrivyClient } from '@privy-io/node'
 
 const privyClient = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
 
@@ -44,7 +46,8 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
   address: privyWallet.address,
 })`
 
-  const dynamicCode = `import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
+  const dynamicCode = `import { actions } from './config'
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 
 const { primaryWallet } = useDynamicContext()
 
@@ -52,7 +55,8 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
   wallet: primaryWallet,
 })`
 
-  const turnkeyFrontendCode = `import { useTurnkey } from "@turnkey/react-wallet-kit"
+  const turnkeyFrontendCode = `import { actions } from './config'
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 
 const { wallets, createWallet, refreshWallets, httpClient, session } = useTurnkey()
 
@@ -70,7 +74,8 @@ const actionsWallet = await actions.wallet.hostedWalletToActionsWallet({
   ethereumAddress: walletAddress,
 })`
 
-  const turnkeyBackendCode = `import { Turnkey } from '@turnkey/sdk-server'
+  const turnkeyBackendCode = `import { actions } from './config'
+import { Turnkey } from '@turnkey/sdk-server'
 
 const turnkeyClient = new Turnkey({
   apiBaseUrl: 'https://api.turnkey.com',

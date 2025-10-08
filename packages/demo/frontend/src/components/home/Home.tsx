@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import NavBar from '@/components/NavBar'
+import NavBar from '@/components/nav/NavBar'
 import Hero from '@/components/home/Hero'
 import Overview from '@/components/home/Overview'
 import Features from '@/components/home/Features'
 import GettingStarted from '@/components/home/GettingStarted'
-import Footer from '@/components/Footer'
+import Footer from '@/components/nav/Footer'
 import { colors } from '@/constants/colors'
 
 function Home() {

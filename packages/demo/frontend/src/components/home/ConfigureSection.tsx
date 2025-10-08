@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { colors } from '@/constants/colors'
-import CodeBlock from '../CodeBlock'
+import TabbedCodeBlock from './TabbedCodeBlock'
 
 interface ConfigureSectionProps {
   stepNumber: number
@@ -12,10 +13,66 @@ function ConfigureSection({
   isOpen,
   onToggle,
 }: ConfigureSectionProps) {
-  const configCode = `import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
+  const [selectedTab, setSelectedTab] = useState('backend')
+
+  const frontendConfigCode = `import { createActions } from '@eth-optimism/actions-sdk/react'
+import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
 import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions-sdk/markets'
-import { unichain, optimism, base } from 'viem/chains'
-import { PrivyClient } from '@privy-io/server-auth'
+import { unichain, optimism, base } from 'config/chains'
+
+const config: ActionsConfig = {
+  // no frontend wallet config
+
+  // Lend Provider
+  lend: {
+    type: 'morpho',
+    assetAllowlist: [USDC, ETH, WBTC],
+    assetBlocklist: [USDT],
+    marketAllowlist: [ExampleMorphoMarket],
+    marketBlocklist: [ExampleAaveMarket],
+  },
+
+  // Borrow Provider
+  borrow: {
+    type: 'morpho',
+    assetAllowlist: [USDC, ETH, WBTC],
+    assetBlocklist: [USDT],
+    marketAllowlist: [ExampleMorphoMarket],
+    marketBlocklist: [ExampleAaveMarket],
+  },
+
+  // Swap Provider
+  swap: {
+    type: 'uniswap',
+    defaultSlippage: 100,
+    assetAllowList: [USDC, ETH, WBTC]
+    marketAllowlist: [
+      { from: ETH, to: USDC },
+      { from: USDC, to: ETH },
+      { from: ETH, to: WBTC },
+      { from: WBTC, to: ETH }
+    ],
+    marketBlocklist: [
+      { from: ETH, to: USDC },
+      { from: USDC, to: ETH },
+    ],
+  },
+
+  // Chain Provider
+  chains: [
+      unichain,
+      optimism,
+      base
+  ]
+}
+
+export const actions = createActions(config)`
+
+  const backendConfigCode = `import { createActions } from '@eth-optimism/actions-sdk/node'
+import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
+import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions-sdk/markets'
+import { unichain, optimism, base } from 'config/chains'
+import { PrivyClient } from '@privy-io/node'
 
 const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
 
@@ -36,22 +93,28 @@ const config: ActionsConfig = {
       },
     },
   },
+
+  // Lend Provider
   lend: {
-    type: 'morpho', // Lend Provider
+    type: 'morpho',
     assetAllowlist: [USDC, ETH, WBTC],
     assetBlocklist: [USDT],
     marketAllowlist: [ExampleMorphoMarket],
     marketBlocklist: [ExampleAaveMarket],
   },
+
+  // Borrow Provider
   borrow: {
-    type: 'morpho', // Borrow Provider
+    type: 'morpho',
     assetAllowlist: [USDC, ETH, WBTC],
     assetBlocklist: [USDT],
     marketAllowlist: [ExampleMorphoMarket],
     marketBlocklist: [ExampleAaveMarket],
   },
+
+  // Swap Provider
   swap: {
-    type: 'uniswap', // Swap Provider
+    type: 'uniswap',
     defaultSlippage: 100,
     assetAllowList: [USDC, ETH, WBTC]
     marketAllowlist: [
@@ -65,13 +128,16 @@ const config: ActionsConfig = {
       { from: USDC, to: ETH },
     ],
   },
+
   // Chain Provider
   chains: [
       unichain,
       optimism,
       base
   ]
-}`
+}
+
+export const actions = createActions(config)`
 
   return (
     <div className="mb-4">
@@ -124,7 +190,15 @@ const config: ActionsConfig = {
             Pick which DeFi protocols, markets, networks, assets, and providers
             you want to support.
           </p>
-          <CodeBlock code={configCode} filename="config.ts" />
+          <TabbedCodeBlock
+            tabs={[
+              { label: 'Backend', code: backendConfigCode },
+              { label: 'Frontend', code: frontendConfigCode, disabled: true, disabledMessage: 'Soon™' },
+            ]}
+            selectedTab={selectedTab}
+            onTabChange={setSelectedTab}
+            filename="config.ts"
+          />
         </div>
       </div>
     </div>
