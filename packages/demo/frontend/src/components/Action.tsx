@@ -1,20 +1,36 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
+import { useUser, usePrivy } from '@privy-io/react-auth'
+import type { Address } from 'viem'
+import TransactionModal from './TransactionModal'
+import { actionsApi } from '../api/actionsApi'
 
 interface ActionProps {
   usdcBalance: string
   isLoadingBalance: boolean
   onMintUSDC?: () => void
+  onTransactionSuccess?: () => void
 }
 
-function Action({ usdcBalance, isLoadingBalance, onMintUSDC }: ActionProps) {
+function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSuccess }: ActionProps) {
   const loggedApi = useLoggedActionsApi()
+  const { user } = useUser()
+  const { getAccessToken } = usePrivy()
   const [isLoading, setIsLoading] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [apy, setApy] = useState<number | null>(null)
   const [isLoadingApy, setIsLoadingApy] = useState(true)
   const [amount, setAmount] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalStatus, setModalStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined)
+  const [marketData, setMarketData] = useState<{
+    marketId: { chainId: number; address: Address }
+    assetAddress: Address
+  } | null>(null)
+  const [depositedAmount, setDepositedAmount] = useState<string>('0.00')
+  const [isLoadingPosition, setIsLoadingPosition] = useState(false)
 
   // Fetch market APY on mount
   useEffect(() => {
@@ -25,7 +41,17 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC }: ActionProps) {
 
         // Get the USDC Demo Vault (Base Sepolia) at index 1
         if (result.markets.length > 1) {
-          setApy(result.markets[1].apy.total)
+          const market = result.markets[1]
+          setApy(market.apy.total)
+
+          // Store market data for transactions
+          const assetAddress = (market.asset.address[market.marketId.chainId] ||
+            Object.values(market.asset.address)[0]) as Address
+
+          setMarketData({
+            marketId: market.marketId,
+            assetAddress
+          })
         }
       } catch (error) {
         console.error('Error fetching market APY:', error)
@@ -49,19 +75,81 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC }: ActionProps) {
     }
   }
 
-  // TODO: NEED TO IMPLEMENT
   const handleLendUSDC = async () => {
+    if (!user?.id || !marketData || !amount || parseFloat(amount) <= 0) {
+      return
+    }
+
+    const amountValue = parseFloat(amount)
+    if (amountValue > parseFloat(usdcBalance)) {
+      return
+    }
+
     setIsLoading(true)
+    setModalOpen(true)
+    setModalStatus('loading')
+    setTransactionHash(undefined)
+
     try {
-      // TODO: Add lend USDC logic here
-      console.log('Lending USDC...')
-      await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate API call
+      const token = await getAccessToken()
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined
+
+      const result = await loggedApi.openLendPosition(
+        user.id,
+        amountValue,
+        marketData.assetAddress,
+        marketData.marketId,
+        headers
+      )
+
+      // Get the first transaction hash if available, or use userOpHash for account abstraction
+      const txHash = result.transaction.transactionHashes?.[0] || result.transaction.userOpHash
+      setTransactionHash(txHash)
+      setModalStatus('success')
+      setAmount('')
+
+      // Refresh position after successful transaction
+      await fetchPosition()
+
+      if (onTransactionSuccess) {
+        onTransactionSuccess()
+      }
     } catch (error) {
       console.error('Error lending USDC:', error)
+      setModalStatus('error')
     } finally {
       setIsLoading(false)
     }
   }
+
+  const handleModalClose = () => {
+    setModalOpen(false)
+    setModalStatus('loading')
+    setTransactionHash(undefined)
+  }
+
+  // Fetch user's position in the vault
+  const fetchPosition = useCallback(async () => {
+    if (!user?.id || !marketData) return
+
+    try {
+      setIsLoadingPosition(true)
+      const position = await actionsApi.getPosition(marketData.marketId, user.id)
+      setDepositedAmount(position.balanceFormatted)
+    } catch (error) {
+      console.error('Error fetching position:', error)
+      setDepositedAmount('0.00')
+    } finally {
+      setIsLoadingPosition(false)
+    }
+  }, [user?.id, marketData])
+
+  // Fetch position when market data is available or user changes
+  useEffect(() => {
+    if (user?.id && marketData) {
+      fetchPosition()
+    }
+  }, [user?.id, marketData, fetchPosition])
 
   return (
     <div
@@ -111,7 +199,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC }: ActionProps) {
             }}>
               Loading...
             </span>
-          ) : parseFloat(usdcBalance) === 0 ? (
+          ) : !usdcBalance || usdcBalance === '0.00' || usdcBalance === '0' || parseFloat(usdcBalance || '0') === 0 ? (
             <button
               onClick={onMintUSDC}
               className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
@@ -135,7 +223,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC }: ActionProps) {
               fontSize: '14px',
               fontWeight: 500
             }}>
-              {usdcBalance}
+              {usdcBalance} USDC
             </span>
           )}
         </div>
@@ -286,7 +374,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC }: ActionProps) {
               fontSize: '14px',
               fontWeight: 500
             }}>
-              0.00 USDC
+              {isLoadingPosition ? 'Loading...' : `${depositedAmount} USDC`}
             </span>
             <img
               src="/usd-coin-usdc-logo.svg"
@@ -375,18 +463,27 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC }: ActionProps) {
 
         <button
           onClick={handleLendUSDC}
-          disabled={isLoading}
+          disabled={isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(usdcBalance)}
           className="w-full py-3 px-4 font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor: '#FF0420',
             color: '#FFFFFF',
             fontSize: '16px',
-            borderRadius: '12px'
+            borderRadius: '12px',
+            border: 'none',
+            cursor: isLoading || !amount || parseFloat(amount) <= 0 ? 'not-allowed' : 'pointer'
           }}
         >
           {isLoading ? 'Processing...' : (mode === 'lend' ? 'Lend USDC' : 'Withdraw USDC')}
         </button>
       </div>
+
+      <TransactionModal
+        isOpen={modalOpen}
+        status={modalStatus}
+        onClose={handleModalClose}
+        transactionHash={transactionHash}
+      />
     </div>
   )
 }
