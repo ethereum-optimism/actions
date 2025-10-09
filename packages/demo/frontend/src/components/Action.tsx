@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 import { useUser, usePrivy } from '@privy-io/react-auth'
 import type { Address } from 'viem'
 import TransactionModal from './TransactionModal'
-import { actionsApi } from '../api/actionsApi'
 
 interface ActionProps {
   usdcBalance: string
@@ -127,7 +126,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       setTimeout(async () => {
         if (user?.id && marketData) {
           try {
-            const position = await actionsApi.getPosition(marketData.marketId, user.id)
+            const position = await loggedApi.getPosition(marketData.marketId, user.id)
             setDepositedAmount(position.balanceFormatted)
           } catch {
             setDepositedAmount('0.00')
@@ -163,7 +162,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
 
       try {
         setIsLoadingPosition(true)
-        const position = await actionsApi.getPosition(
+        const position = await loggedApi.getPosition(
           { chainId: marketChainId, address: marketAddress },
           user.id
         )
@@ -178,7 +177,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     if (user?.id && marketChainId && marketAddress) {
       fetchPosition()
     }
-  }, [user?.id, marketChainId, marketAddress])
+  }, [user?.id, marketChainId, marketAddress, loggedApi])
 
   return (
     <div

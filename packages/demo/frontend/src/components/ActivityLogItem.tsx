@@ -6,120 +6,88 @@ interface ActivityLogItemProps {
   status: 'pending' | 'confirmed' | 'error'
 }
 
-// Map action types to API method calls
-const getApiMethod = (type: ActivityLogItemProps['type'], action: string) => {
-  switch (type) {
-    case 'wallet':
-      return action === 'Get wallet balance' ? 'wallet.getBalance()' : 'actions.wallet.createSmartWallet()'
-    case 'fund':
-      return 'wallet.fund()'
-    case 'markets':
-      return 'actions.getMarkets()'
-    case 'lend':
-      return 'wallet.lend.openPosition()'
-    case 'withdraw':
-      return 'wallet.lend.closePosition()'
-    default:
-      return 'actions()'
-  }
+const STATUS_CONFIG = {
+  confirmed: { color: '#22C55E' },
+  pending: { color: '#F59E0B' },
+  error: { color: '#EF4444' },
+} as const
+
+const TYPE_CONFIG = {
+  lend: {
+    label: 'Lend',
+    bg: '#DBEAFE',
+    stroke: '#3B82F6',
+  },
+  withdraw: {
+    label: 'Withdraw',
+    bg: '#FEE2E2',
+    stroke: '#EF4444',
+  },
+  fund: {
+    label: 'Fund',
+    bg: '#D1FAE5',
+    stroke: '#10B981',
+  },
+  wallet: {
+    label: 'Wallet',
+    bg: '#E0E7FF',
+    stroke: '#6366F1',
+  },
+  markets: {
+    label: 'Markets',
+    bg: '#FEF3C7',
+    stroke: '#F59E0B',
+  },
+} as const
+
+const ACTION_CONFIG: Record<string, { description: string; apiMethod: string }> = {
+  getMarket: {
+    description: 'Get market APY',
+    apiMethod: 'actions.lend.getMarket()',
+  },
+  getBalance: {
+    description: 'Get wallet balance',
+    apiMethod: 'wallet.getBalance()',
+  },
+  getPosition: {
+    description: 'Get position',
+    apiMethod: 'wallet.lend.getPosition()',
+  },
+  deposit: {
+    description: 'Open lending position',
+    apiMethod: 'wallet.lend.openPosition()',
+  },
+  withdraw: {
+    description: 'Close lending position',
+    apiMethod: 'wallet.lend.closePosition()',
+  },
+  mint: {
+    description: 'Mint demo USDC',
+    apiMethod: 'wallet.fund()',
+  },
+  create: {
+    description: 'Create smart wallet',
+    apiMethod: 'actions.wallet.createSmartWallet()',
+  },
+  send: {
+    description: 'Send tokens',
+    apiMethod: 'wallet.sendTokens()',
+  },
 }
 
 function ActivityLogItem({ type, action, status }: ActivityLogItemProps) {
-  const getStatusColor = () => {
-    switch (status) {
-      case 'confirmed':
-        return '#22C55E'
-      case 'pending':
-        return '#F59E0B'
-      case 'error':
-        return '#EF4444'
-      default:
-        return '#666666'
-    }
-  }
+  const statusColor = STATUS_CONFIG[status]?.color || '#666666'
+  const typeConfig = TYPE_CONFIG[type] || { label: type, bg: '#F3F4F6', stroke: '#6B7280' }
+  const actionConfig = ACTION_CONFIG[action]
 
-
-  const getTypeLabel = () => {
-    switch (type) {
-      case 'lend':
-        return 'Lend'
-      case 'withdraw':
-        return 'Withdraw'
-      case 'fund':
-        return 'Fund'
-      case 'wallet':
-        return 'Wallet'
-      case 'markets':
-        return 'Markets'
-      default:
-        return type
-    }
-  }
-
-  const getActionDescription = () => {
-    // Check specific actions first
-    if (action === 'Get market') {
-      return 'Get market APY'
-    }
-    if (action === 'Get wallet balance') {
-      return 'Get balance'
-    }
-    if (action === 'deposit') {
-      return 'Open lending position'
-    }
-    if (action === 'withdraw') {
-      return 'Close lending position'
-    }
-    if (action === 'mint') {
-      return 'Mint demo USDC'
-    }
-    if (action === 'create') {
-      return 'Create smart wallet'
-    }
-    if (action === 'send') {
-      return 'Send tokens'
-    }
-
-    // Fallback to type-based descriptions
-    switch (type) {
-      case 'lend':
-        return 'Lending action'
-      case 'withdraw':
-        return 'Withdrawal action'
-      case 'fund':
-        return 'Funding action'
-      case 'wallet':
-        return 'Wallet action'
-      case 'markets':
-        return 'Get markets'
-      default:
-        return 'Action'
-    }
-  }
-
-  const getTypeColor = () => {
-    switch (type) {
-      case 'lend':
-        return { bg: '#DBEAFE', stroke: '#3B82F6' }
-      case 'withdraw':
-        return { bg: '#FEE2E2', stroke: '#EF4444' }
-      case 'fund':
-        return { bg: '#D1FAE5', stroke: '#10B981' }
-      case 'wallet':
-        return { bg: '#E0E7FF', stroke: '#6366F1' }
-      case 'markets':
-        return { bg: '#FEF3C7', stroke: '#F59E0B' }
-      default:
-        return { bg: '#F3F4F6', stroke: '#6B7280' }
-    }
-  }
-
+  const description = actionConfig?.description || `${typeConfig.label} action`
+  const apiMethod = actionConfig?.apiMethod || 'actions()'
 
   return (
     <div
       className="px-4 py-3 border-b hover:bg-gray-50 transition-colors"
       style={{
-        borderColor: '#E5E7EB'
+        borderColor: '#E5E7EB',
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -129,30 +97,24 @@ function ActivityLogItem({ type, action, status }: ActivityLogItemProps) {
             <span
               className="px-2 py-0.5 rounded text-xs font-medium"
               style={{
-                backgroundColor: getTypeColor().bg,
-                color: getTypeColor().stroke
+                backgroundColor: typeConfig.bg,
+                color: typeConfig.stroke,
               }}
             >
-              {getTypeLabel()}
+              {typeConfig.label}
             </span>
-            <span
-              className="text-sm font-medium"
-              style={{ color: '#1a1b1e' }}
-            >
-              {getActionDescription()}
+            <span className="text-sm font-medium" style={{ color: '#1a1b1e' }}>
+              {description}
             </span>
             <div
               className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: getStatusColor() }}
+              style={{ backgroundColor: statusColor }}
             />
           </div>
 
           {/* Bottom row: API method call */}
-          <div
-            className="text-xs font-mono"
-            style={{ color: '#6B7280' }}
-          >
-            {getApiMethod(type, action)}
+          <div className="text-xs font-mono" style={{ color: '#6B7280' }}>
+            {apiMethod}
           </div>
         </div>
 

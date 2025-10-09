@@ -7,6 +7,8 @@ type LogConfig = {
   action: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getAmount?: (...args: any[]) => string
+  // Read-only operations should not use retry logic (creates new entry each time)
+  isReadOnly?: boolean
 }
 
 const LOG_CONFIG: Record<string, LogConfig> = {
@@ -29,6 +31,21 @@ const LOG_CONFIG: Record<string, LogConfig> = {
     type: 'wallet',
     action: 'send',
     getAmount: (_walletId: string, amount: number) => amount.toString(),
+  },
+  getMarkets: {
+    type: 'markets',
+    action: 'getMarket',
+    isReadOnly: true,
+  },
+  getWalletBalance: {
+    type: 'wallet',
+    action: 'getBalance',
+    isReadOnly: true,
+  },
+  getPosition: {
+    type: 'lend',
+    action: 'getPosition',
+    isReadOnly: true,
   },
 }
 
@@ -56,6 +73,27 @@ export function useLoggedActionsApi() {
         return async (...args: any[]) => {
           const amount = config.getAmount ? config.getAmount(...args) : undefined
 
+          // For read-only operations, always create a new entry (no retry logic)
+          if (config.isReadOnly) {
+            const id = addActivity({
+              type: config.type,
+              action: config.action,
+              amount,
+              status: 'pending',
+            })
+
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+              const result = await (original as Function).apply(target, args)
+              updateActivity(id, { status: 'confirmed' })
+              return result
+            } catch (error) {
+              updateActivity(id, { status: 'error' })
+              throw error
+            }
+          }
+
+          // For write operations, use retry logic
           // Create a unique key for this call based on method and first arg (usually userId)
           const callKey = `${prop}:${args[0] || 'default'}`
 

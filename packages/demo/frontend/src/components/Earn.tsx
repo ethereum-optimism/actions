@@ -12,7 +12,6 @@ import Action from './Action'
 import ActivityLog from './ActivityLog'
 import { ActivityLogProvider } from '../contexts/ActivityLogContext'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
-import { actionsApi } from '../api/actionsApi'
 import { env } from '../envVars'
 
 function EarnContent() {
@@ -100,7 +99,7 @@ function EarnContent() {
       try {
         setIsLoadingBalance(true)
         const headers = await getAuthHeaders()
-        const balanceResult = await actionsApi.getWalletBalance(userId, headers)
+        const balanceResult = await loggedApi.getWalletBalance(userId, headers)
 
         // Find USDC balance (try USDC_DEMO first not USDC)
         const usdcToken = balanceResult.balance.find(
@@ -122,7 +121,7 @@ function EarnContent() {
         setIsLoadingBalance(false)
       }
     },
-    [getAuthHeaders],
+    [getAuthHeaders, loggedApi],
   )
 
   // Function to mint demo USDC

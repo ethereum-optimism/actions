@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react'
 
 export type ActivityEntry = {
   id: number
@@ -21,25 +21,26 @@ const ActivityLogContext = createContext<ActivityLogContextType | undefined>(und
 
 export function ActivityLogProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<ActivityEntry[]>([])
-  const [nextId, setNextId] = useState(1)
-  const [activityKeys, setActivityKeys] = useState<Map<string, number>>(new Map())
+  const nextIdRef = useRef(1)
+  const activityKeysRef = useRef<Map<string, number>>(new Map())
 
   const addActivity = useCallback((entry: Omit<ActivityEntry, 'id' | 'timestamp'>) => {
-    const id = nextId
+    const newId = nextIdRef.current
+    nextIdRef.current += 1
+
     const newActivity: ActivityEntry = {
       ...entry,
-      id,
+      id: newId,
       timestamp: new Date().toISOString(),
     }
 
     setActivities(prev => [newActivity, ...prev])
-    setNextId(prev => prev + 1)
 
-    return id
-  }, [nextId])
+    return newId
+  }, [])
 
   const addOrUpdateActivity = useCallback((key: string, entry: Omit<ActivityEntry, 'id' | 'timestamp'>) => {
-    const existingId = activityKeys.get(key)
+    const existingId = activityKeysRef.current.get(key)
 
     if (existingId !== undefined) {
       // Update existing activity
@@ -53,20 +54,21 @@ export function ActivityLogProvider({ children }: { children: ReactNode }) {
       return existingId
     } else {
       // Create new activity
-      const id = nextId
+      const newId = nextIdRef.current
+      nextIdRef.current += 1
+
       const newActivity: ActivityEntry = {
         ...entry,
-        id,
+        id: newId,
         timestamp: new Date().toISOString(),
       }
 
       setActivities(prev => [newActivity, ...prev])
-      setNextId(prev => prev + 1)
-      setActivityKeys(prev => new Map(prev).set(key, id))
+      activityKeysRef.current.set(key, newId)
 
-      return id
+      return newId
     }
-  }, [nextId, activityKeys])
+  }, [])
 
   const updateActivity = useCallback((id: number, updates: Partial<ActivityEntry>) => {
     setActivities(prev =>
@@ -80,8 +82,8 @@ export function ActivityLogProvider({ children }: { children: ReactNode }) {
 
   const clearActivities = useCallback(() => {
     setActivities([])
-    setNextId(1)
-    setActivityKeys(new Map())
+    nextIdRef.current = 1
+    activityKeysRef.current = new Map()
   }, [])
 
   return (
