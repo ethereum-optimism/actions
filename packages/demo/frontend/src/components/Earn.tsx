@@ -110,8 +110,9 @@ function EarnContent() {
         if (usdcToken && parseFloat(usdcToken.totalBalance) > 0) {
           // Parse the balance (it's in smallest unit, divide by 1e6 for USDC)
           const balance = parseFloat(usdcToken.totalBalance) / 1e6
-          const formattedBalance = balance.toFixed(2)
-          setUsdcBalance(formattedBalance)
+          // Floor to 2 decimals to ensure we never try to send more than we have
+          const flooredBalance = Math.floor(balance * 100) / 100
+          setUsdcBalance(flooredBalance.toFixed(2))
         } else {
           setUsdcBalance('0.00')
         }
