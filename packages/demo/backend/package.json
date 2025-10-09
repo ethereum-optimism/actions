@@ -1,5 +1,6 @@
 {
   "name": "@eth-optimism/actions-service",
+  "private": true,
   "description": "Node service running Actions SDK.",
   "repository": {
     "type": "git",
