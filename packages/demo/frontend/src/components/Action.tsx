@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 import { useUser, usePrivy } from '@privy-io/react-auth'
 import type { Address } from 'viem'
@@ -30,7 +30,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     marketId: { chainId: number; address: Address }
     assetAddress: Address
   } | null>(null)
-  const [depositedAmount, setDepositedAmount] = useState<string>('0.00')
+  const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
   const [isLoadingPosition, setIsLoadingPosition] = useState(false)
 
   // Fetch market APY on mount
@@ -65,7 +65,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
   }, [loggedApi])
 
   const handleMaxClick = () => {
-    setAmount(mode === 'lend' ? usdcBalance : depositedAmount)
+    setAmount(mode === 'lend' ? usdcBalance : depositedAmount || '0')
   }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,7 +82,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     }
 
     const amountValue = parseFloat(amount)
-    const maxAmount = mode === 'lend' ? parseFloat(usdcBalance) : parseFloat(depositedAmount)
+    const maxAmount = mode === 'lend' ? parseFloat(usdcBalance) : parseFloat(depositedAmount || '0')
     if (amountValue > maxAmount) {
       return
     }
@@ -125,7 +125,14 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
 
       // Refresh position after successful transaction with a small delay to ensure state is updated
       setTimeout(async () => {
-        await fetchPosition()
+        if (user?.id && marketData) {
+          try {
+            const position = await actionsApi.getPosition(marketData.marketId, user.id)
+            setDepositedAmount(position.balanceFormatted)
+          } catch {
+            setDepositedAmount('0.00')
+          }
+        }
       }, 1000)
 
       if (onTransactionSuccess) {
@@ -145,27 +152,33 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     setBlockExplorerUrl(undefined)
   }
 
-  // Fetch user's position in the vault
-  const fetchPosition = useCallback(async () => {
-    if (!user?.id || !marketData) return
-
-    try {
-      setIsLoadingPosition(true)
-      const position = await actionsApi.getPosition(marketData.marketId, user.id)
-      setDepositedAmount(position.balanceFormatted)
-    } catch {
-      setDepositedAmount('0.00')
-    } finally {
-      setIsLoadingPosition(false)
-    }
-  }, [user?.id, marketData])
+  // Extract primitive values to avoid unnecessary re-renders
+  const marketChainId = marketData?.marketId.chainId
+  const marketAddress = marketData?.marketId.address
 
   // Fetch position when market data is available or user changes
   useEffect(() => {
-    if (user?.id && marketData) {
+    const fetchPosition = async () => {
+      if (!user?.id || !marketChainId || !marketAddress) return
+
+      try {
+        setIsLoadingPosition(true)
+        const position = await actionsApi.getPosition(
+          { chainId: marketChainId, address: marketAddress },
+          user.id
+        )
+        setDepositedAmount(position.balanceFormatted)
+      } catch {
+        setDepositedAmount('0.00')
+      } finally {
+        setIsLoadingPosition(false)
+      }
+    }
+
+    if (user?.id && marketChainId && marketAddress) {
       fetchPosition()
     }
-  }, [user?.id, marketData, fetchPosition])
+  }, [user?.id, marketChainId, marketAddress])
 
   return (
     <div
@@ -390,7 +403,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
               fontSize: '14px',
               fontWeight: 500
             }}>
-              {isLoadingPosition ? 'Loading...' : `${depositedAmount} USDC`}
+              {isLoadingPosition || depositedAmount === null ? 'Loading...' : `${depositedAmount} USDC`}
             </span>
             <img
               src="/usd-coin-usdc-logo.svg"
@@ -479,7 +492,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
 
         <button
           onClick={handleLendUSDC}
-          disabled={isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount)}
+          disabled={isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')}
           className="w-full py-3 px-4 font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor: '#FF0420',
