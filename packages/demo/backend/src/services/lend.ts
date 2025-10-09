@@ -29,6 +29,7 @@ export async function getBlockExplorerUrls(
   if (!chain) {
     throw new Error(`Chain not found for chainId: ${chainId}`)
   }
+
   let url = `${chain.blockExplorers?.default.url}`
   if (chain.id === unichain.id) {
     url = `https://unichain.blockscout.com`
