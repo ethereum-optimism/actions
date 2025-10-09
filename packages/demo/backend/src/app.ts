@@ -40,12 +40,25 @@ class ActionsApp extends App {
     app.use(
       '*',
       cors({
-        origin: [
-          'http://localhost:5173', // Vite dev port
-          'http://localhost:4173', // Vite prod preview port
-          'https://actions-ui.netlify.app', // Prod netlify url
-          'https://actions.money', // Temporary prod url
-        ],
+        origin: (origin) => {
+          // Allow localhost for development
+          if (origin.startsWith('http://localhost:')) return origin
+
+          // Allow production domains
+          if (origin === 'https://actions-ui.netlify.app') return origin
+          if (origin === 'https://actions.money') return origin
+
+          // Allow Netlify deploy previews (e.g., https://deploy-preview-123--actions-ui.netlify.app)
+          if (
+            origin.match(
+              /^https:\/\/deploy-preview-\d+--actions-ui\.netlify\.app$/,
+            )
+          ) {
+            return origin
+          }
+
+          return null
+        },
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: ['Content-Type', 'Authorization'],
       }),
