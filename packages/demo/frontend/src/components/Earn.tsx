@@ -9,6 +9,7 @@ import {
 } from '@privy-io/react-auth'
 import Info from './Info'
 import Action from './Action'
+import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
 import { ActivityLogProvider } from '../contexts/ActivityLogContext'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
@@ -26,6 +27,10 @@ function EarnContent() {
   const [usdcBalance, setUsdcBalance] = useState<string>('0')
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
   const [walletCreated, setWalletCreated] = useState(false)
+  const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
+  const [apy, setApy] = useState<number | null>(null)
+  const [isLoadingPosition, setIsLoadingPosition] = useState(false)
+  const [isLoadingApy, setIsLoadingApy] = useState(true)
 
   const ethereumEmbeddedWallets = useMemo<WalletWithMetadata[]>(
     () =>
@@ -160,6 +165,17 @@ function EarnContent() {
 
     initializeWallet()
   }, [authenticated, user?.id, walletCreated, fetchBalance])
+
+  // Handle position updates from Action component
+  const handlePositionUpdate = useCallback(
+    (newDepositedAmount: string | null, newApy: number | null, newIsLoadingPosition: boolean, newIsLoadingApy: boolean) => {
+      setDepositedAmount(newDepositedAmount)
+      setApy(newApy)
+      setIsLoadingPosition(newIsLoadingPosition)
+      setIsLoadingApy(newIsLoadingApy)
+    },
+    []
+  )
 
   // Show loading state while Privy is initializing
   if (!ready) {
@@ -384,6 +400,13 @@ function EarnContent() {
                     await fetchBalance(user.id)
                   }
                 }}
+                onPositionUpdate={handlePositionUpdate}
+              />
+              <LentBalance
+                depositedAmount={depositedAmount}
+                apy={apy}
+                isLoadingPosition={isLoadingPosition}
+                isLoadingApy={isLoadingApy}
               />
               <Info />
             </div>

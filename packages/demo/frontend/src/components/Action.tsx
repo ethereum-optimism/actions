@@ -3,15 +3,17 @@ import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 import { useUser, usePrivy } from '@privy-io/react-auth'
 import type { Address } from 'viem'
 import TransactionModal from './TransactionModal'
+import morphoLogo from '../assets/morpho-logo-light.svg'
 
 interface ActionProps {
   usdcBalance: string
   isLoadingBalance: boolean
   onMintUSDC?: () => void
   onTransactionSuccess?: () => void
+  onPositionUpdate?: (depositedAmount: string | null, apy: number | null, isLoadingPosition: boolean, isLoadingApy: boolean) => void
 }
 
-function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSuccess }: ActionProps) {
+function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSuccess, onPositionUpdate }: ActionProps) {
   const loggedApi = useLoggedActionsApi()
   const { user } = useUser()
   const { getAccessToken } = usePrivy()
@@ -73,18 +75,6 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     fetchMarketApy()
   }, [loggedApi])
 
-  const handleMaxClick = () => {
-    setAmount(mode === 'lend' ? usdcBalance : depositedAmount || '0')
-  }
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    // Allow only numbers and decimals
-    if (value === '' || /^\d*\.?\d*$/.test(value)) {
-      setAmount(value)
-    }
-  }
-
   // Format deposited amount to 4 decimals and return parts
   const formatDepositedAmount = (amount: string) => {
     const num = parseFloat(amount)
@@ -98,6 +88,18 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     return {
       main: `${wholePart}.${decimalPart.substring(0, 2)}`,
       secondary: decimalPart.substring(2, 4)
+    }
+  }
+
+  const handleMaxClick = () => {
+    setAmount(mode === 'lend' ? usdcBalance : depositedAmount || '0')
+  }
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Allow only numbers and decimals
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setAmount(value)
     }
   }
 
@@ -181,6 +183,12 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
   const marketChainId = marketData?.marketId.chainId
   const marketAddress = marketData?.marketId.address
 
+  // Store callback in ref to prevent infinite loops
+  const onPositionUpdateRef = useRef(onPositionUpdate)
+  useEffect(() => {
+    onPositionUpdateRef.current = onPositionUpdate
+  }, [onPositionUpdate])
+
   // Fetch position when market data is available or user changes
   useEffect(() => {
     const fetchPosition = async () => {
@@ -205,6 +213,13 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     }
   }, [user?.id, marketChainId, marketAddress, loggedApi])
 
+  // Notify parent of position updates
+  useEffect(() => {
+    if (onPositionUpdateRef.current) {
+      onPositionUpdateRef.current(depositedAmount, apy, isLoadingPosition, isLoadingApy)
+    }
+  }, [depositedAmount, apy, isLoadingPosition, isLoadingApy])
+
   return (
     <div
       className="w-full"
@@ -216,102 +231,56 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       }}
     >
       <div className="py-6 px-6">
-        <div className="flex gap-6">
-          {/* Wallet Balance - Left 50% */}
-          <div className="flex-1">
-            <h2
-              className="font-semibold"
-              style={{ color: '#1a1b1e', fontSize: '16px', marginBottom: '12px' }}
-            >
-              Wallet Balance
-            </h2>
-            <div className="flex items-center gap-2">
-              {isLoadingBalance ? (
-                <span style={{
-                  color: '#000',
-                  fontSize: '14px',
-                  fontWeight: 500
-                }}>
-                  Loading...
-                </span>
-              ) : !usdcBalance || usdcBalance === '0.00' || usdcBalance === '0' || parseFloat(usdcBalance || '0') === 0 ? (
-                <button
-                  onClick={onMintUSDC}
-                  className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    color: '#1a1b1e',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '6px',
-                    border: '1px solid #E0E2EB',
-                    cursor: 'pointer',
-                    fontFamily: 'Inter'
-                  }}
-                >
-                  Get 100 USDC
-                </button>
-              ) : (
-                <span style={{
-                  color: '#000',
-                  fontSize: '14px',
-                  fontWeight: 500
-                }}>
-                  ${usdcBalance}
-                </span>
-              )}
-              <img
-                src="/usd-coin-usdc-logo.svg"
-                alt="USDC"
+        <div className="flex items-center justify-between">
+          <h2
+            className="font-semibold"
+            style={{ color: '#1a1b1e', fontSize: '16px' }}
+          >
+            Wallet Balance
+          </h2>
+          <div className="flex items-center gap-2">
+            {isLoadingBalance ? (
+              <span style={{
+                color: '#000',
+                fontSize: '14px',
+                fontWeight: 500
+              }}>
+                Loading...
+              </span>
+            ) : !usdcBalance || usdcBalance === '0.00' || usdcBalance === '0' || parseFloat(usdcBalance || '0') === 0 ? (
+              <button
+                onClick={onMintUSDC}
+                className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
                 style={{
-                  width: '20px',
-                  height: '20px'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Lent Balance - Right 50% */}
-          <div className="flex-1">
-            <h2
-              className="font-semibold"
-              style={{ color: '#1a1b1e', fontSize: '16px', marginBottom: '12px', textAlign: 'right' }}
-            >
-              Lent Balance
-            </h2>
-            <div className="flex items-center justify-end gap-2">
-              {isLoadingPosition || depositedAmount === null ? (
-                <span style={{
-                  color: '#000',
+                  backgroundColor: '#FFFFFF',
+                  color: '#1a1b1e',
                   fontSize: '14px',
-                  fontWeight: 500
-                }}>
-                  Loading...
-                </span>
-              ) : (
-                <span style={{
-                  color: '#000',
-                  fontSize: '14px',
-                  fontWeight: 500
-                }}>
-                  ${formatDepositedAmount(depositedAmount).main}
-                  <span style={{
-                    color: '#9195A6',
-                    fontSize: '12px'
-                  }}>
-                    {formatDepositedAmount(depositedAmount).secondary}
-                  </span>
-                </span>
-              )}
-              <img
-                src="/usd-coin-usdc-logo.svg"
-                alt="USDC"
-                style={{
-                  width: '20px',
-                  height: '20px'
+                  fontWeight: 500,
+                  borderRadius: '6px',
+                  border: '1px solid #E0E2EB',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter'
                 }}
-              />
-            </div>
+              >
+                Get 100 USDC
+              </button>
+            ) : (
+              <span style={{
+                color: '#000',
+                fontSize: '14px',
+                fontWeight: 500
+              }}>
+                ${usdcBalance}
+              </span>
+            )}
+            <img
+              src="/usd-coin-usdc-logo.svg"
+              alt="USDC"
+              style={{
+                width: '20px',
+                height: '20px'
+              }}
+            />
           </div>
         </div>
       </div>
