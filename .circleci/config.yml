@@ -5,6 +5,23 @@ orbs:
   utils: ethereum-optimism/circleci-utils@1.0.17
 
 commands:
+  prepare-snapshot:
+    description: 'Prepare the snapshot name'
+    steps:
+      - run:
+          name: Setup snapshot name
+          command: |
+            SNAPSHOT_NAME=${CIRCLE_BRANCH}
+            echo "Will create snapshot using name $SNAPSHOT_NAME"
+            echo "export SNAPSHOT_NAME=${SNAPSHOT_NAME}" >> "$BASH_ENV"
+      - run:
+          name: Prepare changeset version environment
+          command: |
+            echo "export GITHUB_TOKEN=${GITHUB_TOKEN_GOVERNANCE}" >> "$BASH_ENV"
+      - run:
+          name: Create snapshot versions
+          command: pnpm release:version:snapshot
+
   setup:
     description: 'Setup Node.js environment with pnpm'
     steps:
@@ -61,6 +78,47 @@ commands:
             echo "export GOOGLE_APPLICATION_CREDENTIALS='<< parameters.gcp_cred_config_file_path >>'" | tee -a "$BASH_ENV"
 
 jobs:
+  publish-to-npm:
+    docker:
+      - image: cimg/node:20.11
+    parameters:
+      prepare-snapshot:
+        type: boolean
+        default: false
+    steps:
+      - setup
+      - run:
+          name: Build projects
+          environment:
+            NPM_TOKEN: nada
+          command: pnpm nx run-many --target=build
+      - run:
+          name: Check NPM Token
+          command: |
+            if [ -z "${NPM_TOKEN}" ]; then
+              echo "NPM_TOKEN is not set. Please set it in CircleCI project settings."
+              exit 1
+            fi
+      - run:
+          name: Configure NPM Token and Registry
+          command: |
+            npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+
+      - run:
+          name: Verify NPM Token
+          command: npm whoami
+
+      - when:
+          condition:
+            equal: [<< parameters.prepare-snapshot >>, true]
+          steps:
+            - prepare-snapshot
+
+      - utils/changesets:
+          createGithubReleases: false
+          publish: 'pnpm release:publish'
+          version: 'pnpm release:version'
+
   check:
     docker:
       - image: cimg/node:20.11
@@ -192,48 +250,26 @@ jobs:
             DOCKER_TAGS=$(echo -ne <<parameters.docker_tags>> | sed "s/,/\n/g" | sed "s/[^a-zA-Z0-9\n]/-/g" | sed -e "s|^|${IMAGE_BASE}:|")
             echo -ne $DOCKER_TAGS | tr ' ' '\n' | xargs -L1 docker push
 
-  publish-to-npm:
-    docker:
-      - image: cimg/node:20.11
-    parameters:
-      prepare-snapshot:
-        type: boolean
-        default: false
-    steps:
-      - setup
-      - run:
-          name: Build projects
-          environment:
-            NPM_TOKEN: nada
-          command: pnpm nx run-many --target=build
-      - run:
-          name: Check NPM Token
-          command: |
-            if [ -z "${NPM_TOKEN}" ]; then
-              echo "NPM_TOKEN is not set. Please set it in CircleCI project settings."
-              exit 1
-            fi
-      - run:
-          name: Configure NPM Token and Registry
-          command: |
-            npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-
-      - run:
-          name: Verify NPM Token
-          command: npm whoami
-
-      - when:
-          condition:
-            equal: [<< parameters.prepare-snapshot >>, true]
-          steps:
-            - prepare-snapshot
-
-      - utils/changesets:
-          createGithubReleases: false
-          publish: 'pnpm release:publish'
-          version: 'pnpm release:version'
-
 workflows:
+  release:
+    jobs:
+      - publish-to-npm:
+          name: Publish new versions
+          context:
+            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE && NPM_TOKEN
+          filters:
+            branches:
+              only: main
+
+      - publish-to-npm:
+          name: Publish snapshot versions
+          prepare-snapshot: true
+          context:
+            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE && NPM_TOKEN
+          filters:
+            branches:
+              only: main
+
   check-workflow:
     jobs:
       - check:
