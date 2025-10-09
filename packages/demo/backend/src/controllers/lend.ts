@@ -50,162 +50,161 @@ const MarketBalanceParamsSchema = z.object({
   }),
 })
 
-export class LendController {
-  /**
-   * GET - Retrieve all available lending markets
-   */
-  async getMarkets(c: Context) {
-    try {
-      const markets = await lendService.getMarkets()
-      const formattedMarkets = await Promise.all(
-        markets.map((market) => lendService.formatMarketResponse(market)),
-      )
-      return c.json({ markets: formattedMarkets })
-    } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get markets',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
-    }
-  }
-
-  /**
-   * GET - Retrieve specific market information by ID and chain
-   */
-  async getMarket(c: Context) {
-    try {
-      const chainId = Number(c.req.param('chainId'))
-      const marketAddress = c.req.param('marketAddress')
-
-      if (!chainId || !marketAddress) {
-        return c.json(
-          {
-            error: 'Invalid parameters',
-            message: 'chainId and marketAddress are required',
-          },
-          400,
-        )
-      }
-
-      const marketInfo = await lendService.getMarket({
-        address: marketAddress as Address,
-        chainId: chainId as SupportedChainId,
-      })
-      const formattedMarket = await lendService.formatMarketResponse(marketInfo)
-      return c.json({ market: formattedMarket })
-    } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get market info',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
-    }
-  }
-
-  /**
-   * GET - Get position for a specific wallet
-   */
-  async getPosition(c: Context) {
-    try {
-      const validation = await validateRequest(c, MarketBalanceParamsSchema)
-      if (!validation.success) return validation.response
-
-      const {
-        params: { marketAddress, walletId, chainId },
-      } = validation.data
-      const balance = await lendService.getPosition(
-        {
-          address: marketAddress as Address,
-          chainId: Number(chainId) as SupportedChainId,
-        },
-        walletId,
-      )
-      const formattedBalance =
-        await lendService.formatMarketBalanceResponse(balance)
-      return c.json(formattedBalance)
-    } catch (error) {
-      return c.json(
-        {
-          error: 'Failed to get position',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
-    }
-  }
-
-  /**
-   * POST - Open a lending position
-   */
-  async openPosition(c: Context) {
-    try {
-      const validation = await validateRequest(c, OpenPositionRequestSchema)
-      if (!validation.success) return validation.response
-
-      // TODO (https://github.com/ethereum-optimism/actions/issues/124): enforce auth and clean
-
-      const {
-        body: { walletId, amount, tokenAddress, marketId },
-      } = validation.data
-      const auth = c.get('auth') as AuthContext | undefined
-
-      const transaction = await lendService.openPosition({
-        userId: auth?.userId || walletId,
-        amount,
-        tokenAddress: tokenAddress as Address,
-        marketId: {
-          address: marketId.address as Address,
-          chainId: marketId.chainId as SupportedChainId,
-        },
-        isUserWallet: Boolean(auth?.userId),
-      })
-
-      return c.json({ transaction })
-    } catch (error) {
-      return this.handleError(c, 'open position', error)
-    }
-  }
-
-  /**
-   * POST - Close a lending position
-   */
-  async closePosition(c: Context) {
-    try {
-      const validation = await validateRequest(c, ClosePositionRequestSchema)
-      if (!validation.success) return validation.response
-
-      const {
-        body: { walletId, amount, tokenAddress, marketId },
-      } = validation.data
-      const auth = c.get('auth') as AuthContext | undefined
-
-      const transaction = await lendService.closePosition({
-        userId: auth?.userId || walletId,
-        amount,
-        tokenAddress: tokenAddress as Address,
-        marketId: {
-          address: marketId.address as Address,
-          chainId: marketId.chainId as SupportedChainId,
-        },
-        isUserWallet: Boolean(auth?.userId),
-      })
-
-      return c.json({ transaction })
-    } catch (error) {
-      return this.handleError(c, 'close position', error)
-    }
-  }
-
-  private handleError(c: Context, operation: string, error: unknown) {
-    console.error(`Failed to ${operation}`, error)
+/**
+ * GET - Retrieve all available lending markets
+ */
+export async function getMarkets(c: Context) {
+  try {
+    const markets = await lendService.getMarkets()
+    const formattedMarkets = await Promise.all(
+      markets.map((market) => lendService.formatMarketResponse(market)),
+    )
+    return c.json({ markets: formattedMarkets })
+  } catch (error) {
     return c.json(
       {
-        error: `Failed to ${operation}`,
+        error: 'Failed to get markets',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      500,
+    )
+  }
+}
+
+/**
+ * GET - Retrieve specific market information by ID and chain
+ */
+export async function getMarket(c: Context) {
+  try {
+    const chainId = Number(c.req.param('chainId'))
+    const marketAddress = c.req.param('marketAddress')
+
+    if (!chainId || !marketAddress) {
+      return c.json(
+        {
+          error: 'Invalid parameters',
+          message: 'chainId and marketAddress are required',
+        },
+        400,
+      )
+    }
+
+    const marketInfo = await lendService.getMarket({
+      address: marketAddress as Address,
+      chainId: chainId as SupportedChainId,
+    })
+    const formattedMarket = await lendService.formatMarketResponse(marketInfo)
+    return c.json({ market: formattedMarket })
+  } catch (error) {
+    return c.json(
+      {
+        error: 'Failed to get market info',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      500,
+    )
+  }
+}
+
+/**
+ * GET - Get position for a specific wallet
+ */
+export async function getPosition(c: Context) {
+  try {
+    const validation = await validateRequest(c, MarketBalanceParamsSchema)
+    if (!validation.success) return validation.response
+
+    const {
+      params: { marketAddress, walletId, chainId },
+    } = validation.data
+    const balance = await lendService.getPosition(
+      {
+        address: marketAddress as Address,
+        chainId: Number(chainId) as SupportedChainId,
+      },
+      walletId,
+    )
+    const formattedBalance =
+      await lendService.formatMarketBalanceResponse(balance)
+    return c.json(formattedBalance)
+  } catch (error) {
+    return c.json(
+      {
+        error: 'Failed to get position',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      500,
+    )
+  }
+}
+
+/**
+ * POST - Open a lending position
+ */
+export async function openPosition(c: Context) {
+  try {
+    const validation = await validateRequest(c, OpenPositionRequestSchema)
+    if (!validation.success) return validation.response
+
+    // TODO (https://github.com/ethereum-optimism/actions/issues/124): enforce auth and clean
+
+    const {
+      body: { walletId, amount, tokenAddress, marketId },
+    } = validation.data
+    const auth = c.get('auth') as AuthContext | undefined
+
+    const transaction = await lendService.openPosition({
+      userId: auth?.userId || walletId,
+      amount,
+      tokenAddress: tokenAddress as Address,
+      marketId: {
+        address: marketId.address as Address,
+        chainId: marketId.chainId as SupportedChainId,
+      },
+      isUserWallet: Boolean(auth?.userId),
+    })
+
+    return c.json({ transaction })
+  } catch (error) {
+    return c.json(
+      {
+        error: 'Failed to open position',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      500,
+    )
+  }
+}
+
+/**
+ * POST - Close a lending position
+ */
+export async function closePosition(c: Context) {
+  try {
+    const validation = await validateRequest(c, ClosePositionRequestSchema)
+    if (!validation.success) return validation.response
+
+    const {
+      body: { walletId, amount, tokenAddress, marketId },
+    } = validation.data
+    const auth = c.get('auth') as AuthContext | undefined
+
+    const transaction = await lendService.closePosition({
+      userId: auth?.userId || walletId,
+      amount,
+      tokenAddress: tokenAddress as Address,
+      marketId: {
+        address: marketId.address as Address,
+        chainId: marketId.chainId as SupportedChainId,
+      },
+      isUserWallet: Boolean(auth?.userId),
+    })
+
+    return c.json({ transaction })
+  } catch (error) {
+    return c.json(
+      {
+        error: 'Failed to close position',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       500,
