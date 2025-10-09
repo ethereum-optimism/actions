@@ -1,13 +1,15 @@
 import morphoLogo from '../assets/morpho-logo-light.svg'
+import Shimmer from './Shimmer'
 
 interface LentBalanceProps {
   depositedAmount: string | null
   apy: number | null
   isLoadingPosition: boolean
   isLoadingApy: boolean
+  isInitialLoad?: boolean
 }
 
-function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy }: LentBalanceProps) {
+function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, isInitialLoad = false }: LentBalanceProps) {
   // Format deposited amount to 4 decimals and return parts
   const formatDepositedAmount = (amount: string) => {
     const num = parseFloat(amount)
@@ -105,76 +107,85 @@ function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy }: 
             <tbody>
               <tr>
                 <td style={{ padding: '16px 8px' }}>
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={morphoLogo}
-                      alt="Morpho"
-                      style={{ width: '20px', height: '20px' }}
-                    />
-                    <span style={{
-                      color: '#1a1b1e',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      fontFamily: 'Inter'
-                    }}>
-                      Gauntlet USDC
-                    </span>
-                  </div>
+                  {isInitialLoad ? (
+                    <Shimmer width="120px" height="20px" borderRadius="4px" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={morphoLogo}
+                        alt="Morpho"
+                        style={{ width: '20px', height: '20px' }}
+                      />
+                      <span style={{
+                        color: '#1a1b1e',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        fontFamily: 'Inter'
+                      }}>
+                        Gauntlet USDC
+                      </span>
+                    </div>
+                  )}
                 </td>
                 <td style={{ padding: '16px 8px' }}>
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/base-logo.svg"
-                      alt="Base"
-                      style={{ width: '20px', height: '20px' }}
-                    />
-                    <span style={{
-                      color: '#1a1b1e',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      fontFamily: 'Inter'
-                    }}>
-                      Base Sepolia
-                    </span>
-                  </div>
+                  {isInitialLoad ? (
+                    <Shimmer width="110px" height="20px" borderRadius="4px" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="/base-logo.svg"
+                        alt="Base"
+                        style={{ width: '20px', height: '20px' }}
+                      />
+                      <span style={{
+                        color: '#1a1b1e',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        fontFamily: 'Inter'
+                      }}>
+                        Base Sepolia
+                      </span>
+                    </div>
+                  )}
                 </td>
                 <td style={{ padding: '16px 8px' }}>
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/usd-coin-usdc-logo.svg"
-                      alt="USDC"
-                      style={{ width: '20px', height: '20px' }}
-                    />
+                  {isInitialLoad ? (
+                    <Shimmer width="60px" height="20px" borderRadius="4px" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="/usd-coin-usdc-logo.svg"
+                        alt="USDC"
+                        style={{ width: '20px', height: '20px' }}
+                      />
+                      <span style={{
+                        color: '#1a1b1e',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        fontFamily: 'Inter'
+                      }}>
+                        USDC
+                      </span>
+                    </div>
+                  )}
+                </td>
+                <td style={{ padding: '16px 8px', textAlign: 'right' }}>
+                  {isInitialLoad || isLoadingApy ? (
+                    <Shimmer width="50px" height="20px" borderRadius="4px" />
+                  ) : (
                     <span style={{
                       color: '#1a1b1e',
                       fontSize: '14px',
                       fontWeight: 400,
                       fontFamily: 'Inter'
                     }}>
-                      USDC
+                      {apy !== null ? `${(apy * 100).toFixed(2)}%` : '0.00%'}
                     </span>
-                  </div>
+                  )}
                 </td>
                 <td style={{ padding: '16px 8px', textAlign: 'right' }}>
-                  <span style={{
-                    color: '#1a1b1e',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    fontFamily: 'Inter'
-                  }}>
-                    {isLoadingApy ? 'Loading...' : apy !== null ? `${(apy * 100).toFixed(2)}%` : '0.00%'}
-                  </span>
-                </td>
-                <td style={{ padding: '16px 8px', textAlign: 'right' }}>
-                  {isLoadingPosition ? (
-                    <span style={{
-                      color: '#1a1b1e',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      fontFamily: 'Inter'
-                    }}>
-                      Loading...
-                    </span>
+                  {isInitialLoad || isLoadingPosition ? (
+                    <Shimmer width="70px" height="20px" borderRadius="4px" />
                   ) : (
                     <span style={{
                       color: '#1a1b1e',

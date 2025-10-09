@@ -3,14 +3,14 @@ import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 import { useUser, usePrivy } from '@privy-io/react-auth'
 import type { Address } from 'viem'
 import TransactionModal from './TransactionModal'
-import morphoLogo from '../assets/morpho-logo-light.svg'
+import Shimmer from './Shimmer'
 
 interface ActionProps {
   usdcBalance: string
   isLoadingBalance: boolean
   onMintUSDC?: () => void
   onTransactionSuccess?: () => void
-  onPositionUpdate?: (depositedAmount: string | null, apy: number | null, isLoadingPosition: boolean, isLoadingApy: boolean) => void
+  onPositionUpdate?: (depositedAmount: string | null, apy: number | null, isLoadingPosition: boolean, isLoadingApy: boolean, isInitialLoad: boolean) => void
 }
 
 function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSuccess, onPositionUpdate }: ActionProps) {
@@ -32,7 +32,8 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     assetAddress: Address
   } | null>(null)
   const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
-  const [isLoadingPosition, setIsLoadingPosition] = useState(false)
+  const [isLoadingPosition, setIsLoadingPosition] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const hasInitiatedMarketFetch = useRef(false)
 
   // Fetch market APY on mount
@@ -69,27 +70,12 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
         // Error fetching market APY
       } finally {
         setIsLoadingApy(false)
+        setIsInitialLoad(false)
       }
     }
 
     fetchMarketApy()
   }, [loggedApi])
-
-  // Format deposited amount to 4 decimals and return parts
-  const formatDepositedAmount = (amount: string) => {
-    const num = parseFloat(amount)
-    if (isNaN(num)) return { main: '0.00', secondary: '00' }
-
-    const formatted = num.toFixed(4)
-    const parts = formatted.split('.')
-    const wholePart = parts[0]
-    const decimalPart = parts[1] || '0000'
-
-    return {
-      main: `${wholePart}.${decimalPart.substring(0, 2)}`,
-      secondary: decimalPart.substring(2, 4)
-    }
-  }
 
   const handleMaxClick = () => {
     setAmount(mode === 'lend' ? usdcBalance : depositedAmount || '0')
@@ -216,9 +202,9 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
   // Notify parent of position updates
   useEffect(() => {
     if (onPositionUpdateRef.current) {
-      onPositionUpdateRef.current(depositedAmount, apy, isLoadingPosition, isLoadingApy)
+      onPositionUpdateRef.current(depositedAmount, apy, isLoadingPosition, isLoadingApy, isInitialLoad)
     }
-  }, [depositedAmount, apy, isLoadingPosition, isLoadingApy])
+  }, [depositedAmount, apy, isLoadingPosition, isLoadingApy, isInitialLoad])
 
   return (
     <div
@@ -240,13 +226,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
           </h2>
           <div className="flex items-center gap-2">
             {isLoadingBalance ? (
-              <span style={{
-                color: '#000',
-                fontSize: '14px',
-                fontWeight: 500
-              }}>
-                Loading...
-              </span>
+              <Shimmer width="60px" height="20px" borderRadius="4px" />
             ) : !usdcBalance || usdcBalance === '0.00' || usdcBalance === '0' || parseFloat(usdcBalance || '0') === 0 ? (
               <button
                 onClick={onMintUSDC}
@@ -346,14 +326,18 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
               )}
             </div>
           </div>
-          <span style={{
-            color:  '#000',
-            fontFamily: 'Inter',
-            fontSize: '14px',
-            fontWeight: 500
-          }}>
-            {isLoadingApy ? 'Loading...' : apy !== null ? `${(apy * 100).toFixed(2)}%` : '0.00%'}
-          </span>
+          {isLoadingApy ? (
+            <Shimmer width="50px" height="20px" borderRadius="4px" />
+          ) : (
+            <span style={{
+              color:  '#000',
+              fontFamily: 'Inter',
+              fontSize: '14px',
+              fontWeight: 500
+            }}>
+              {apy !== null ? `${(apy * 100).toFixed(2)}%` : '0.00%'}
+            </span>
+          )}
         </div>
 
         <div style={{
@@ -480,14 +464,15 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
         <button
           onClick={handleLendUSDC}
           disabled={isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')}
-          className="w-full py-3 px-4 font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 px-4 font-medium transition-all"
           style={{
-            backgroundColor: '#FF0420',
-            color: '#FFFFFF',
+            backgroundColor: (isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')) ? '#D1D5DB' : '#FF0420',
+            color: (isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')) ? '#6B7280' : '#FFFFFF',
             fontSize: '16px',
             borderRadius: '12px',
             border: 'none',
-            cursor: isLoading || !amount || parseFloat(amount) <= 0 ? 'not-allowed' : 'pointer'
+            cursor: (isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')) ? 'not-allowed' : 'pointer',
+            opacity: 1
           }}
         >
           {isLoading ? 'Processing...' : (mode === 'lend' ? 'Lend USDC' : 'Withdraw USDC')}

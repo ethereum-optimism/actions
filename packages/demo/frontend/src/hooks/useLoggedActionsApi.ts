@@ -1,53 +1,7 @@
 import { useMemo, useRef, useEffect } from 'react'
 import { actionsApi } from '../api/actionsApi'
 import { useActivityLog } from '../contexts/ActivityLogContext'
-
-type LogConfig = {
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'markets'
-  action: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getAmount?: (...args: any[]) => string
-  // Read-only operations should not use retry logic (creates new entry each time)
-  isReadOnly?: boolean
-}
-
-const LOG_CONFIG: Record<string, LogConfig> = {
-  fundWallet: {
-    type: 'fund',
-    action: 'mint',
-    getAmount: () => '100.00',
-  },
-  openLendPosition: {
-    type: 'lend',
-    action: 'deposit',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-  closeLendPosition: {
-    type: 'withdraw',
-    action: 'withdraw',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-  sendTokens: {
-    type: 'wallet',
-    action: 'send',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-  getMarkets: {
-    type: 'markets',
-    action: 'getMarket',
-    isReadOnly: true,
-  },
-  getWalletBalance: {
-    type: 'wallet',
-    action: 'getBalance',
-    isReadOnly: true,
-  },
-  getPosition: {
-    type: 'lend',
-    action: 'getPosition',
-    isReadOnly: true,
-  },
-}
+import { ACTIVITY_CONFIG } from '../components/ActivityLogItem'
 
 const activeCallsMap = new Map<string, number>()
 
@@ -72,8 +26,8 @@ export function useLoggedActionsApi() {
         // Not a function, return as-is
         if (typeof original !== 'function') return original
 
-        // Not in log config, pass through without logging
-        const config = LOG_CONFIG[prop]
+        // Not in activity config, pass through without logging
+        const config = ACTIVITY_CONFIG[prop as keyof typeof ACTIVITY_CONFIG]
         if (!config) {
           return original.bind(target)
         }

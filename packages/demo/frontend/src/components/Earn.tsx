@@ -31,6 +31,7 @@ function EarnContent() {
   const [apy, setApy] = useState<number | null>(null)
   const [isLoadingPosition, setIsLoadingPosition] = useState(false)
   const [isLoadingApy, setIsLoadingApy] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   const ethereumEmbeddedWallets = useMemo<WalletWithMetadata[]>(
     () =>
@@ -168,11 +169,12 @@ function EarnContent() {
 
   // Handle position updates from Action component
   const handlePositionUpdate = useCallback(
-    (newDepositedAmount: string | null, newApy: number | null, newIsLoadingPosition: boolean, newIsLoadingApy: boolean) => {
+    (newDepositedAmount: string | null, newApy: number | null, newIsLoadingPosition: boolean, newIsLoadingApy: boolean, newIsInitialLoad: boolean) => {
       setDepositedAmount(newDepositedAmount)
       setApy(newApy)
       setIsLoadingPosition(newIsLoadingPosition)
       setIsLoadingApy(newIsLoadingApy)
+      setIsInitialLoad(newIsInitialLoad)
     },
     []
   )
@@ -407,6 +409,7 @@ function EarnContent() {
                 apy={apy}
                 isLoadingPosition={isLoadingPosition}
                 isLoadingApy={isLoadingApy}
+                isInitialLoad={isInitialLoad}
               />
               <Info />
             </div>

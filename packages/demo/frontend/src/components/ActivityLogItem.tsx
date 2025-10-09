@@ -1,5 +1,5 @@
 interface ActivityLogItemProps {
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'markets'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet'
   action: string
   amount: string
   timestamp: string
@@ -33,47 +33,93 @@ const TYPE_CONFIG = {
     bg: '#E0E7FF',
     stroke: '#6366F1',
   },
-  markets: {
-    label: 'Markets',
-    bg: '#FEF3C7',
-    stroke: '#F59E0B',
-  },
 } as const
 
-const ACTION_CONFIG: Record<string, { description: string; apiMethod: string }> = {
-  getMarket: {
-    description: 'Get market APY',
+// Consolidated configuration for all API methods
+// Maps API method names to their logging configuration
+type ActivityConfigEntry = {
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet'
+  action: string
+  description: string
+  apiMethod: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getAmount?: (...args: any[]) => string
+  isReadOnly?: boolean
+}
+
+export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
+  // Lend operations
+  getMarkets: {
+    type: 'lend',
+    action: 'getMarket',
+    description: 'Get market',
     apiMethod: 'actions.lend.getMarket()',
-  },
-  getBalance: {
-    description: 'Get wallet balance',
-    apiMethod: 'wallet.getBalance()',
+    isReadOnly: true,
   },
   getPosition: {
+    type: 'lend',
+    action: 'getPosition',
     description: 'Get position',
     apiMethod: 'wallet.lend.getPosition()',
+    isReadOnly: true,
   },
-  deposit: {
+  openLendPosition: {
+    type: 'lend',
+    action: 'deposit',
     description: 'Open lending position',
     apiMethod: 'wallet.lend.openPosition()',
+    getAmount: (_walletId: string, amount: number) => amount.toString(),
   },
-  withdraw: {
+
+  // Withdraw operations
+  closeLendPosition: {
+    type: 'withdraw',
+    action: 'withdraw',
     description: 'Close lending position',
     apiMethod: 'wallet.lend.closePosition()',
+    getAmount: (_walletId: string, amount: number) => amount.toString(),
   },
-  mint: {
+
+  // Fund operations
+  fundWallet: {
+    type: 'fund',
+    action: 'mint',
     description: 'Mint demo USDC',
     apiMethod: 'wallet.fund()',
+    getAmount: () => '100.00',
   },
-  create: {
+
+  // Wallet operations
+  getWalletBalance: {
+    type: 'wallet',
+    action: 'getBalance',
+    description: 'Get wallet balance',
+    apiMethod: 'wallet.getBalance()',
+    isReadOnly: true,
+  },
+  sendTokens: {
+    type: 'wallet',
+    action: 'send',
+    description: 'Send tokens',
+    apiMethod: 'wallet.sendTokens()',
+    getAmount: (_walletId: string, amount: number) => amount.toString(),
+  },
+  createSmartWallet: {
+    type: 'wallet',
+    action: 'create',
     description: 'Create smart wallet',
     apiMethod: 'actions.wallet.createSmartWallet()',
   },
-  send: {
-    description: 'Send tokens',
-    apiMethod: 'wallet.sendTokens()',
-  },
 }
+
+// Helper to get action config by action name (for ActivityLogItem component)
+const ACTION_CONFIG: Record<string, { description: string; apiMethod: string }> = Object.values(ACTIVITY_CONFIG).reduce((acc, config) => {
+  acc[config.action] = {
+    description: config.description,
+    apiMethod: config.apiMethod,
+  }
+  return acc
+}, {} as Record<string, { description: string; apiMethod: string }>)
 
 function ActivityLogItem({ type, action, status }: ActivityLogItemProps) {
   const statusColor = STATUS_CONFIG[status]?.color || '#666666'
