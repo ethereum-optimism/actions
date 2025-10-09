@@ -257,6 +257,7 @@ workflows:
           name: Publish new versions
           context:
             - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE && NPM_TOKEN
+            - circleci-repo-readonly-authenticated-github-token #needed for MISE
           filters:
             branches:
               only: main
@@ -266,6 +267,7 @@ workflows:
           prepare-snapshot: true
           context:
             - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE && NPM_TOKEN
+            - circleci-repo-readonly-authenticated-github-token #needed for MISE
           filters:
             branches:
               only: main
