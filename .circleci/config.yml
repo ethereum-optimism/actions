@@ -126,7 +126,7 @@ jobs:
       - setup
       - run:
           name: Run Build
-          command: pnpm build
+          command: pnpm nx run-many --target=build
       - run:
           name: Run TypeChecker
           command: pnpm typecheck

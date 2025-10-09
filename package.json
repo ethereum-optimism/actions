@@ -17,7 +17,6 @@
   ],
   "nx": {},
   "scripts": {
-    "build": "pnpm -r build",
     "clean": "pnpm -r clean",
     "dev": "mprocs --config mprocs.yml",
     "dev:supersim": "pnpm supersim fork --chains unichain --logs.directory supersim-logs",
