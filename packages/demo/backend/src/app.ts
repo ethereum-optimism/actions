@@ -57,11 +57,6 @@ class ActionsApp extends App {
             return origin
           }
 
-          // Allow Netlify branch deploys (e.g., https://branch-name--actions-ui.netlify.app)
-          if (origin.match(/^https:\/\/[a-z0-9-]+--actions-ui\.netlify\.app$/)) {
-            return origin
-          }
-
           return null
         },
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
