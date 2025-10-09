@@ -25,6 +25,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined)
+  const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(undefined)
   const [marketData, setMarketData] = useState<{
     marketId: { chainId: number; address: Address }
     assetAddress: Address
@@ -90,6 +91,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     setModalOpen(true)
     setModalStatus('loading')
     setTransactionHash(undefined)
+    setBlockExplorerUrl(undefined)
 
     try {
       const token = await getAccessToken()
@@ -114,6 +116,10 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       // Get the first transaction hash if available, or use userOpHash for account abstraction
       const txHash = result.transaction.transactionHashes?.[0] || result.transaction.userOpHash
       setTransactionHash(txHash)
+
+      // Use the block explorer URL from the backend (first one in the array)
+      const explorerUrl = result.transaction.blockExplorerUrls?.[0]
+      setBlockExplorerUrl(explorerUrl)
       setModalStatus('success')
       setAmount('')
 
@@ -136,6 +142,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     setModalOpen(false)
     setModalStatus('loading')
     setTransactionHash(undefined)
+    setBlockExplorerUrl(undefined)
   }
 
   // Fetch user's position in the vault
@@ -492,6 +499,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
         status={modalStatus}
         onClose={handleModalClose}
         transactionHash={transactionHash}
+        blockExplorerUrl={blockExplorerUrl}
       />
     </div>
   )
