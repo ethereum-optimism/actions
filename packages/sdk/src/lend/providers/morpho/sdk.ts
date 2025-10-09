@@ -178,7 +178,6 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
 
   // Morpho sdk doesn't support base sepolia, so we need to use the mock vault
   if (params.marketId.chainId === 84532) {
-    console.log('Using mock vault for base sepolia')
     return createMockVaultData(params.marketId, marketConfig)
   }
 

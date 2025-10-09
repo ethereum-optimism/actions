@@ -9,10 +9,10 @@ import {
 } from '@privy-io/react-auth'
 import Info from './Info'
 import Action from './Action'
+import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
 import { ActivityLogProvider } from '../contexts/ActivityLogContext'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
-import { actionsApi } from '../api/actionsApi'
 import { env } from '../envVars'
 
 function EarnContent() {
@@ -27,6 +27,11 @@ function EarnContent() {
   const [usdcBalance, setUsdcBalance] = useState<string>('0')
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
   const [walletCreated, setWalletCreated] = useState(false)
+  const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
+  const [apy, setApy] = useState<number | null>(null)
+  const [isLoadingPosition, setIsLoadingPosition] = useState(false)
+  const [isLoadingApy, setIsLoadingApy] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   const ethereumEmbeddedWallets = useMemo<WalletWithMetadata[]>(
     () =>
@@ -100,7 +105,7 @@ function EarnContent() {
       try {
         setIsLoadingBalance(true)
         const headers = await getAuthHeaders()
-        const balanceResult = await actionsApi.getWalletBalance(userId, headers)
+        const balanceResult = await loggedApi.getWalletBalance(userId, headers)
 
         // Find USDC balance (try USDC_DEMO first not USDC)
         const usdcToken = balanceResult.balance.find(
@@ -110,8 +115,9 @@ function EarnContent() {
         if (usdcToken && parseFloat(usdcToken.totalBalance) > 0) {
           // Parse the balance (it's in smallest unit, divide by 1e6 for USDC)
           const balance = parseFloat(usdcToken.totalBalance) / 1e6
-          const formattedBalance = balance.toFixed(2)
-          setUsdcBalance(formattedBalance)
+          // Floor to 2 decimals to ensure we never try to send more than we have
+          const flooredBalance = Math.floor(balance * 100) / 100
+          setUsdcBalance(flooredBalance.toFixed(2))
         } else {
           setUsdcBalance('0.00')
         }
@@ -121,7 +127,7 @@ function EarnContent() {
         setIsLoadingBalance(false)
       }
     },
-    [getAuthHeaders],
+    [getAuthHeaders, loggedApi],
   )
 
   // Function to mint demo USDC
@@ -160,6 +166,18 @@ function EarnContent() {
 
     initializeWallet()
   }, [authenticated, user?.id, walletCreated, fetchBalance])
+
+  // Handle position updates from Action component
+  const handlePositionUpdate = useCallback(
+    (newDepositedAmount: string | null, newApy: number | null, newIsLoadingPosition: boolean, newIsLoadingApy: boolean, newIsInitialLoad: boolean) => {
+      setDepositedAmount(newDepositedAmount)
+      setApy(newApy)
+      setIsLoadingPosition(newIsLoadingPosition)
+      setIsLoadingApy(newIsLoadingApy)
+      setIsInitialLoad(newIsInitialLoad)
+    },
+    []
+  )
 
   // Show loading state while Privy is initializing
   if (!ready) {
@@ -384,6 +402,14 @@ function EarnContent() {
                     await fetchBalance(user.id)
                   }
                 }}
+                onPositionUpdate={handlePositionUpdate}
+              />
+              <LentBalance
+                depositedAmount={depositedAmount}
+                apy={apy}
+                isLoadingPosition={isLoadingPosition}
+                isLoadingApy={isLoadingApy}
+                isInitialLoad={isInitialLoad}
               />
               <Info />
             </div>

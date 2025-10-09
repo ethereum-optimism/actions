@@ -166,6 +166,11 @@ export async function openPosition(c: Context) {
 
     return c.json({ transaction })
   } catch (error) {
+    console.error('[openPosition] ERROR:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     return c.json(
       {
         error: 'Failed to open position',
@@ -202,6 +207,11 @@ export async function closePosition(c: Context) {
 
     return c.json({ transaction })
   } catch (error) {
+    console.error('[closePosition] ERROR:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     return c.json(
       {
         error: 'Failed to close position',

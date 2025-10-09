@@ -29,6 +29,7 @@ export async function getBlockExplorerUrls(
   if (!chain) {
     throw new Error(`Chain not found for chainId: ${chainId}`)
   }
+
   let url = `${chain.blockExplorers?.default.url}`
   if (chain.id === unichain.id) {
     url = `https://unichain.blockscout.com`
@@ -116,48 +117,62 @@ async function executePosition(
 ): Promise<PositionResponse> {
   const { userId, amount, tokenAddress, marketId, isUserWallet } = params
 
-  const wallet = await getWallet(userId, isUserWallet)
-  if (!wallet) {
-    throw new Error(
-      `Wallet not found for ${isUserWallet ? 'user' : 'wallet'} ID: ${userId}`,
+  try {
+    const wallet = await getWallet(userId, isUserWallet)
+    if (!wallet) {
+      const error = `Wallet not found for ${isUserWallet ? 'user' : 'wallet'} ID: ${userId}`
+      console.error('[executePosition] ERROR:', error)
+      throw new Error(error)
+    }
+
+    const asset = SUPPORTED_TOKENS.find(
+      (token) =>
+        token.address[marketId.chainId as SupportedChainId] === tokenAddress,
     )
-  }
+    if (!asset) {
+      const error = `Asset not found for token address: ${tokenAddress}`
+      console.error('[executePosition] ERROR:', error)
+      throw new Error(error)
+    }
 
-  const asset = SUPPORTED_TOKENS.find(
-    (token) =>
-      token.address[marketId.chainId as SupportedChainId] === tokenAddress,
-  )
-  if (!asset) {
-    throw new Error(`Asset not found for token address: ${tokenAddress}`)
-  }
+    const positionParams = { amount, asset, marketId }
 
-  const positionParams = { amount, asset, marketId }
+    const result =
+      operation === 'open'
+        ? await wallet.lend!.openPosition(positionParams)
+        : await wallet.lend!.closePosition(positionParams)
 
-  const result =
-    operation === 'open'
-      ? await wallet.lend!.openPosition(positionParams)
-      : await wallet.lend!.closePosition(positionParams)
+    const transactionHashes = isEOATransactionReceipt(result)
+      ? [result.transactionHash]
+      : isBatchEOATransactionReceipt(result)
+        ? result.map((receipt) => receipt.transactionHash)
+        : undefined
 
-  const transactionHashes = isEOATransactionReceipt(result)
-    ? [result.transactionHash]
-    : isBatchEOATransactionReceipt(result)
-      ? result.map((receipt) => receipt.transactionHash)
-      : undefined
-  const blockExplorerUrls = await getBlockExplorerUrls(
-    marketId.chainId,
-    transactionHashes,
-    isUserOperationTransactionReceipt(result) ? result.userOpHash : undefined,
-  )
-
-  return {
-    transactionHashes,
-    userOpHash: isUserOperationTransactionReceipt(result)
+    const userOpHash = isUserOperationTransactionReceipt(result)
       ? result.userOpHash
-      : undefined,
-    blockExplorerUrls,
-    amount,
-    tokenAddress,
-    marketId,
+      : undefined
+
+    const blockExplorerUrls = await getBlockExplorerUrls(
+      marketId.chainId,
+      transactionHashes,
+      userOpHash,
+    )
+
+    return {
+      transactionHashes,
+      userOpHash,
+      blockExplorerUrls,
+      amount,
+      tokenAddress,
+      marketId,
+    }
+  } catch (error) {
+    console.error('[executePosition] ERROR:', {
+      error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+    throw error
   }
 }
 

@@ -1,41 +1,22 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 import { actionsApi } from '../api/actionsApi'
 import { useActivityLog } from '../contexts/ActivityLogContext'
-
-type LogConfig = {
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'markets'
-  action: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getAmount?: (...args: any[]) => string
-}
-
-const LOG_CONFIG: Record<string, LogConfig> = {
-  fundWallet: {
-    type: 'fund',
-    action: 'mint',
-    getAmount: () => '100.00',
-  },
-  openLendPosition: {
-    type: 'lend',
-    action: 'deposit',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-  closeLendPosition: {
-    type: 'withdraw',
-    action: 'withdraw',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-  sendTokens: {
-    type: 'wallet',
-    action: 'send',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-}
+import { ACTIVITY_CONFIG } from '../components/ActivityLogItem'
 
 const activeCallsMap = new Map<string, number>()
 
 export function useLoggedActionsApi() {
   const { addActivity, updateActivity } = useActivityLog()
+
+  // Store callbacks in refs to avoid recreating the proxy
+  const addActivityRef = useRef(addActivity)
+  const updateActivityRef = useRef(updateActivity)
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    addActivityRef.current = addActivity
+    updateActivityRef.current = updateActivity
+  }, [addActivity, updateActivity])
 
   return useMemo(() => {
     return new Proxy(actionsApi, {
@@ -45,8 +26,8 @@ export function useLoggedActionsApi() {
         // Not a function, return as-is
         if (typeof original !== 'function') return original
 
-        // Not in log config, pass through without logging
-        const config = LOG_CONFIG[prop]
+        // Not in activity config, pass through without logging
+        const config = ACTIVITY_CONFIG[prop as keyof typeof ACTIVITY_CONFIG]
         if (!config) {
           return original.bind(target)
         }
@@ -56,6 +37,27 @@ export function useLoggedActionsApi() {
         return async (...args: any[]) => {
           const amount = config.getAmount ? config.getAmount(...args) : undefined
 
+          // For read-only operations, always create a new entry (no retry logic)
+          if (config.isReadOnly) {
+            const id = addActivityRef.current({
+              type: config.type,
+              action: config.action,
+              amount,
+              status: 'pending',
+            })
+
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+              const result = await (original as Function).apply(target, args)
+              updateActivityRef.current(id, { status: 'confirmed' })
+              return result
+            } catch (error) {
+              updateActivityRef.current(id, { status: 'error' })
+              throw error
+            }
+          }
+
+          // For write operations, use retry logic
           // Create a unique key for this call based on method and first arg (usually userId)
           const callKey = `${prop}:${args[0] || 'default'}`
 
@@ -64,7 +66,7 @@ export function useLoggedActionsApi() {
 
           if (id === undefined) {
             // First call - create new activity
-            id = addActivity({
+            id = addActivityRef.current({
               type: config.type,
               action: config.action,
               amount,
@@ -73,7 +75,7 @@ export function useLoggedActionsApi() {
             activeCallsMap.set(callKey, id)
           } else {
             // Retry - update existing activity to pending
-            updateActivity(id, {
+            updateActivityRef.current(id, {
               status: 'pending',
             })
           }
@@ -84,7 +86,7 @@ export function useLoggedActionsApi() {
 
             // Update with actual amount from result if available
             const finalAmount = result?.amount || amount
-            updateActivity(id, {
+            updateActivityRef.current(id, {
               status: 'confirmed',
               amount: finalAmount,
             })
@@ -94,12 +96,12 @@ export function useLoggedActionsApi() {
 
             return result
           } catch (error) {
-            updateActivity(id, { status: 'error' })
+            updateActivityRef.current(id, { status: 'error' })
             // Don't clear the active call on error - next retry will reuse the same entry
             throw error
           }
         }
       },
     }) as typeof actionsApi
-  }, [addActivity, updateActivity])
+  }, [])
 }

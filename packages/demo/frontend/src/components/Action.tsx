@@ -1,18 +1,19 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 import { useUser, usePrivy } from '@privy-io/react-auth'
 import type { Address } from 'viem'
 import TransactionModal from './TransactionModal'
-import { actionsApi } from '../api/actionsApi'
+import Shimmer from './Shimmer'
 
 interface ActionProps {
   usdcBalance: string
   isLoadingBalance: boolean
   onMintUSDC?: () => void
   onTransactionSuccess?: () => void
+  onPositionUpdate?: (depositedAmount: string | null, apy: number | null, isLoadingPosition: boolean, isLoadingApy: boolean, isInitialLoad: boolean) => void
 }
 
-function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSuccess }: ActionProps) {
+function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSuccess, onPositionUpdate }: ActionProps) {
   const loggedApi = useLoggedActionsApi()
   const { user } = useUser()
   const { getAccessToken } = usePrivy()
@@ -25,16 +26,28 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined)
+  const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(undefined)
   const [marketData, setMarketData] = useState<{
     marketId: { chainId: number; address: Address }
     assetAddress: Address
   } | null>(null)
-  const [depositedAmount, setDepositedAmount] = useState<string>('0.00')
-  const [isLoadingPosition, setIsLoadingPosition] = useState(false)
+  const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
+  const [isLoadingPosition, setIsLoadingPosition] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const hasInitiatedMarketFetch = useRef(false)
 
   // Fetch market APY on mount
   useEffect(() => {
     const fetchMarketApy = async () => {
+      // Skip if already initiated (prevents double-fetch in StrictMode)
+      if (hasInitiatedMarketFetch.current) {
+        console.log('[getMarkets] Skipping - already initiated')
+        return
+      }
+
+      hasInitiatedMarketFetch.current = true
+      console.log('[getMarkets] Fetching market data...')
+
       try {
         setIsLoadingApy(true)
         const result = await loggedApi.getMarkets()
@@ -57,6 +70,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
         // Error fetching market APY
       } finally {
         setIsLoadingApy(false)
+        setIsInitialLoad(false)
       }
     }
 
@@ -64,7 +78,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
   }, [loggedApi])
 
   const handleMaxClick = () => {
-    setAmount(mode === 'lend' ? usdcBalance : depositedAmount)
+    setAmount(mode === 'lend' ? usdcBalance : depositedAmount || '0')
   }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +95,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     }
 
     const amountValue = parseFloat(amount)
-    const maxAmount = mode === 'lend' ? parseFloat(usdcBalance) : parseFloat(depositedAmount)
+    const maxAmount = mode === 'lend' ? parseFloat(usdcBalance) : parseFloat(depositedAmount || '0')
     if (amountValue > maxAmount) {
       return
     }
@@ -90,6 +104,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     setModalOpen(true)
     setModalStatus('loading')
     setTransactionHash(undefined)
+    setBlockExplorerUrl(undefined)
 
     try {
       const token = await getAccessToken()
@@ -114,12 +129,23 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       // Get the first transaction hash if available, or use userOpHash for account abstraction
       const txHash = result.transaction.transactionHashes?.[0] || result.transaction.userOpHash
       setTransactionHash(txHash)
+
+      // Use the block explorer URL from the backend (first one in the array)
+      const explorerUrl = result.transaction.blockExplorerUrls?.[0]
+      setBlockExplorerUrl(explorerUrl)
       setModalStatus('success')
       setAmount('')
 
       // Refresh position after successful transaction with a small delay to ensure state is updated
       setTimeout(async () => {
-        await fetchPosition()
+        if (user?.id && marketData) {
+          try {
+            const position = await loggedApi.getPosition(marketData.marketId, user.id)
+            setDepositedAmount(position.balanceFormatted)
+          } catch {
+            setDepositedAmount('0.00')
+          }
+        }
       }, 1000)
 
       if (onTransactionSuccess) {
@@ -136,29 +162,49 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     setModalOpen(false)
     setModalStatus('loading')
     setTransactionHash(undefined)
+    setBlockExplorerUrl(undefined)
   }
 
-  // Fetch user's position in the vault
-  const fetchPosition = useCallback(async () => {
-    if (!user?.id || !marketData) return
+  // Extract primitive values to avoid unnecessary re-renders
+  const marketChainId = marketData?.marketId.chainId
+  const marketAddress = marketData?.marketId.address
 
-    try {
-      setIsLoadingPosition(true)
-      const position = await actionsApi.getPosition(marketData.marketId, user.id)
-      setDepositedAmount(position.balanceFormatted)
-    } catch {
-      setDepositedAmount('0.00')
-    } finally {
-      setIsLoadingPosition(false)
-    }
-  }, [user?.id, marketData])
+  // Store callback in ref to prevent infinite loops
+  const onPositionUpdateRef = useRef(onPositionUpdate)
+  useEffect(() => {
+    onPositionUpdateRef.current = onPositionUpdate
+  }, [onPositionUpdate])
 
   // Fetch position when market data is available or user changes
   useEffect(() => {
-    if (user?.id && marketData) {
+    const fetchPosition = async () => {
+      if (!user?.id || !marketChainId || !marketAddress) return
+
+      try {
+        setIsLoadingPosition(true)
+        const position = await loggedApi.getPosition(
+          { chainId: marketChainId, address: marketAddress },
+          user.id
+        )
+        setDepositedAmount(position.balanceFormatted)
+      } catch {
+        setDepositedAmount('0.00')
+      } finally {
+        setIsLoadingPosition(false)
+      }
+    }
+
+    if (user?.id && marketChainId && marketAddress) {
       fetchPosition()
     }
-  }, [user?.id, marketData, fetchPosition])
+  }, [user?.id, marketChainId, marketAddress, loggedApi])
+
+  // Notify parent of position updates
+  useEffect(() => {
+    if (onPositionUpdateRef.current) {
+      onPositionUpdateRef.current(depositedAmount, apy, isLoadingPosition, isLoadingApy, isInitialLoad)
+    }
+  }, [depositedAmount, apy, isLoadingPosition, isLoadingApy, isInitialLoad])
 
   return (
     <div
@@ -171,15 +217,42 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       }}
     >
       <div className="py-6 px-6">
-        <h2
-          className="font-semibold"
-          style={{ color: '#1a1b1e', fontSize: '16px', marginBottom: '12px' }}
-        >
-          Wallet Balance
-        </h2>
-
         <div className="flex items-center justify-between">
+          <h2
+            className="font-semibold"
+            style={{ color: '#1a1b1e', fontSize: '16px' }}
+          >
+            Wallet Balance
+          </h2>
           <div className="flex items-center gap-2">
+            {isLoadingBalance ? (
+              <Shimmer width="60px" height="20px" borderRadius="4px" />
+            ) : !usdcBalance || usdcBalance === '0.00' || usdcBalance === '0' || parseFloat(usdcBalance || '0') === 0 ? (
+              <button
+                onClick={onMintUSDC}
+                className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  color: '#1a1b1e',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  borderRadius: '6px',
+                  border: '1px solid #E0E2EB',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter'
+                }}
+              >
+                Get 100 USDC
+              </button>
+            ) : (
+              <span style={{
+                color: '#000',
+                fontSize: '14px',
+                fontWeight: 500
+              }}>
+                ${usdcBalance}
+              </span>
+            )}
             <img
               src="/usd-coin-usdc-logo.svg"
               alt="USDC"
@@ -188,53 +261,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
                 height: '20px'
               }}
             />
-            <span style={{
-              color: '#000',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontStyle: 'normal',
-              fontWeight: 400,
-              lineHeight: '20px'
-            }}>
-              USDC
-            </span>
           </div>
-          {isLoadingBalance ? (
-            <span style={{
-              color: '#404454',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontWeight: 500
-            }}>
-              Loading...
-            </span>
-          ) : !usdcBalance || usdcBalance === '0.00' || usdcBalance === '0' || parseFloat(usdcBalance || '0') === 0 ? (
-            <button
-              onClick={onMintUSDC}
-              className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
-              style={{
-                backgroundColor: '#FFFFFF',
-                color: '#1a1b1e',
-                fontSize: '14px',
-                fontWeight: 500,
-                borderRadius: '6px',
-                border: '1px solid #E0E2EB',
-                cursor: 'pointer',
-                fontFamily: 'Inter'
-              }}
-            >
-              Get 100 USDC
-            </button>
-          ) : (
-            <span style={{
-              color: '#404454',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontWeight: 500
-            }}>
-              {usdcBalance} USDC
-            </span>
-          )}
         </div>
       </div>
 
@@ -299,14 +326,18 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
               )}
             </div>
           </div>
-          <span style={{
-            color:  '#000',
-            fontFamily: 'Inter',
-            fontSize: '14px',
-            fontWeight: 500
-          }}>
-            {isLoadingApy ? 'Loading...' : apy !== null ? `${(apy * 100).toFixed(2)}%` : '0.00%'}
-          </span>
+          {isLoadingApy ? (
+            <Shimmer width="50px" height="20px" borderRadius="4px" />
+          ) : (
+            <span style={{
+              color:  '#000',
+              fontFamily: 'Inter',
+              fontSize: '14px',
+              fontWeight: 500
+            }}>
+              {apy !== null ? `${(apy * 100).toFixed(2)}%` : '0.00%'}
+            </span>
+          )}
         </div>
 
         <div style={{
@@ -354,46 +385,6 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
           >
             Withdraw
           </button>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span style={{
-              color: '#000',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontStyle: 'normal',
-              fontWeight: 400,
-              lineHeight: '20px'
-            }}>
-              Your Deposited Assets
-            </span>
-            <span style={{
-              color: '#9195A6',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontWeight: 400
-            }}>
-              Principal + Interest
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span style={{
-              color: '#000',
-              fontSize: '14px',
-              fontWeight: 500
-            }}>
-              {isLoadingPosition ? 'Loading...' : `${depositedAmount} USDC`}
-            </span>
-            <img
-              src="/usd-coin-usdc-logo.svg"
-              alt="USDC"
-              style={{
-                width: '20px',
-                height: '20px'
-              }}
-            />
-          </div>
         </div>
 
         <div>
@@ -472,15 +463,16 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
 
         <button
           onClick={handleLendUSDC}
-          disabled={isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount)}
-          className="w-full py-3 px-4 font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')}
+          className="w-full py-3 px-4 font-medium transition-all"
           style={{
-            backgroundColor: '#FF0420',
-            color: '#FFFFFF',
+            backgroundColor: (isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')) ? '#D1D5DB' : '#FF0420',
+            color: (isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')) ? '#6B7280' : '#FFFFFF',
             fontSize: '16px',
             borderRadius: '12px',
             border: 'none',
-            cursor: isLoading || !amount || parseFloat(amount) <= 0 ? 'not-allowed' : 'pointer'
+            cursor: (isLoading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')) ? 'not-allowed' : 'pointer',
+            opacity: 1
           }}
         >
           {isLoading ? 'Processing...' : (mode === 'lend' ? 'Lend USDC' : 'Withdraw USDC')}
@@ -492,6 +484,7 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
         status={modalStatus}
         onClose={handleModalClose}
         transactionHash={transactionHash}
+        blockExplorerUrl={blockExplorerUrl}
       />
     </div>
   )

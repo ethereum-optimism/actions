@@ -3,9 +3,10 @@ interface TransactionModalProps {
   status: 'loading' | 'success' | 'error'
   onClose: () => void
   transactionHash?: string
+  blockExplorerUrl?: string
 }
 
-function TransactionModal({ isOpen, status, onClose, transactionHash }: TransactionModalProps) {
+function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplorerUrl }: TransactionModalProps) {
   if (!isOpen) return null
 
   const getStatusContent = () => {
@@ -140,9 +141,9 @@ function TransactionModal({ isOpen, status, onClose, transactionHash }: Transact
             </p>
           )}
 
-          {status === 'success' && transactionHash && (
+          {status === 'success' && (blockExplorerUrl || transactionHash) && (
             <a
-              href={`https://sepolia.basescan.org/tx/${transactionHash}`}
+              href={blockExplorerUrl || `https://sepolia.basescan.org/tx/${transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 mb-6 hover:opacity-80 transition-opacity"
@@ -153,7 +154,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash }: Transact
                 textDecoration: 'none'
               }}
             >
-              Check on Basescan
+              View on Block Explorer
               <svg
                 width="16"
                 height="16"
