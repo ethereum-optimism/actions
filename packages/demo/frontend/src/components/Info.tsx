@@ -33,9 +33,7 @@ function Info() {
 
         <div className="space-y-3">
           <a
-            href="https://github.com/ethereum-optimism/actions"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/#getting-started"
             className="flex items-center justify-between p-3 rounded-lg transition-all hover:bg-gray-50"
           >
             <div className="flex items-center gap-2">
@@ -66,7 +64,7 @@ function Info() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M7 17L17 7M17 7H7M17 7V17"
+                d="M9 5l7 7-7 7"
               />
             </svg>
           </a>

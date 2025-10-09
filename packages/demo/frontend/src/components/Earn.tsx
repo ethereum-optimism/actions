@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { usePrivy, useLogin, useLogout, useUser, useSessionSigners, type WalletWithMetadata } from '@privy-io/react-auth'
+import {
+  usePrivy,
+  useLogin,
+  useLogout,
+  useUser,
+  useSessionSigners,
+  type WalletWithMetadata,
+} from '@privy-io/react-auth'
 import Info from './Info'
 import Action from './Action'
 import ActivityLog from './ActivityLog'
@@ -73,7 +80,10 @@ function EarnContent() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setDropdownOpen(false)
       }
     }
@@ -85,31 +95,34 @@ function EarnContent() {
   }, [dropdownOpen])
 
   // Function to fetch wallet balance
-  const fetchBalance = useCallback(async (userId: string) => {
-    try {
-      setIsLoadingBalance(true)
-      const headers = await getAuthHeaders()
-      const balanceResult = await actionsApi.getWalletBalance(userId, headers)
+  const fetchBalance = useCallback(
+    async (userId: string) => {
+      try {
+        setIsLoadingBalance(true)
+        const headers = await getAuthHeaders()
+        const balanceResult = await actionsApi.getWalletBalance(userId, headers)
 
-      // Find USDC balance (try USDC_DEMO first not USDC)
-      const usdcToken = balanceResult.balance.find(
-        (token) => token.symbol === 'USDC_DEMO'
-      )
+        // Find USDC balance (try USDC_DEMO first not USDC)
+        const usdcToken = balanceResult.balance.find(
+          (token) => token.symbol === 'USDC_DEMO',
+        )
 
-      if (usdcToken && parseFloat(usdcToken.totalBalance) > 0) {
-        // Parse the balance (it's in smallest unit, divide by 1e6 for USDC)
-        const balance = parseFloat(usdcToken.totalBalance) / 1e6
-        const formattedBalance = balance.toFixed(2)
-        setUsdcBalance(formattedBalance)
-      } else {
+        if (usdcToken && parseFloat(usdcToken.totalBalance) > 0) {
+          // Parse the balance (it's in smallest unit, divide by 1e6 for USDC)
+          const balance = parseFloat(usdcToken.totalBalance) / 1e6
+          const formattedBalance = balance.toFixed(2)
+          setUsdcBalance(formattedBalance)
+        } else {
+          setUsdcBalance('0.00')
+        }
+      } catch {
         setUsdcBalance('0.00')
+      } finally {
+        setIsLoadingBalance(false)
       }
-    } catch {
-      setUsdcBalance('0.00')
-    } finally {
-      setIsLoadingBalance(false)
-    }
-  }, [getAuthHeaders])
+    },
+    [getAuthHeaders],
+  )
 
   // Function to mint demo USDC
   const handleMintUSDC = useCallback(async () => {
@@ -121,7 +134,7 @@ function EarnContent() {
       await loggedApi.fundWallet(user.id, headers)
 
       // Wait for the transaction to settle
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      await new Promise((resolve) => setTimeout(resolve, 3000))
 
       // Refresh balance after minting
       await fetchBalance(user.id)
@@ -151,9 +164,14 @@ function EarnContent() {
   // Show loading state while Privy is initializing
   if (!ready) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FFFFFF' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: '#FFFFFF' }}
+      >
         <div className="text-center">
-          <div className="text-lg" style={{ color: '#666666' }}>Loading...</div>
+          <div className="text-lg" style={{ color: '#666666' }}>
+            Loading...
+          </div>
         </div>
       </div>
     )
@@ -162,8 +180,17 @@ function EarnContent() {
   // Show login prompt if not authenticated
   if (!authenticated) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#FFFFFF', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
-        <div className="flex items-center justify-center" style={{ height: '100vh' }}>
+      <div
+        className="min-h-screen"
+        style={{
+          backgroundColor: '#FFFFFF',
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        }}
+      >
+        <div
+          className="flex items-center justify-center"
+          style={{ height: '100vh' }}
+        >
           <div className="max-w-md text-center p-8">
             <div className="mb-6">
               <img
@@ -176,7 +203,7 @@ function EarnContent() {
                 style={{
                   color: '#1a1b1e',
                   fontSize: '28px',
-                  fontWeight: 600
+                  fontWeight: 600,
                 }}
               >
                 Welcome to Actions
@@ -192,7 +219,7 @@ function EarnContent() {
                 fontSize: '16px',
                 borderRadius: '12px',
                 border: 'none',
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
               Sign in
@@ -205,17 +232,25 @@ function EarnContent() {
 
   // Show the main Earn page when authenticated
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FFFFFF', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: '#FFFFFF',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+      }}
+    >
       {/* Custom Header */}
-      <header className="w-full" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E2EB' }}>
+      <header
+        className="w-full"
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid #E0E2EB',
+        }}
+      >
         <div className="w-full px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <img
-                src="/Optimism.svg"
-                alt="Optimism"
-                className="h-4"
-              />
+              <img src="/Optimism.svg" alt="Optimism" className="h-4" />
             </div>
             <div className="flex items-center gap-4">
               {/* Privy Dropdown Menu */}
@@ -225,14 +260,10 @@ function EarnContent() {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:bg-gray-50"
                   style={{
                     border: '1px solid #E5E5E5',
-                    backgroundColor: dropdownOpen ? '#F5F5F5' : 'transparent'
+                    backgroundColor: dropdownOpen ? '#F5F5F5' : 'transparent',
                   }}
                 >
-                  <img
-                    src="/Privy.png"
-                    alt="Privy"
-                    className="h-5"
-                  />
+                  <img src="/Privy.png" alt="Privy" className="h-5" />
                   <span className="text-sm" style={{ color: '#1a1b1e' }}>
                     Privy
                   </span>
@@ -240,7 +271,7 @@ function EarnContent() {
                     className="w-4 h-4 transition-transform"
                     style={{
                       transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0)',
-                      color: '#666666'
+                      color: '#666666',
                     }}
                     fill="none"
                     stroke="currentColor"
@@ -261,14 +292,20 @@ function EarnContent() {
                     style={{
                       backgroundColor: '#FFFFFF',
                       border: '1px solid #E5E5E5',
-                      zIndex: 50
+                      zIndex: 50,
                     }}
                   >
                     <div className="p-4">
-                      <div className="text-xs mb-2" style={{ color: '#666666' }}>
+                      <div
+                        className="text-xs mb-2"
+                        style={{ color: '#666666' }}
+                      >
                         Signed in as
                       </div>
-                      <div className="text-sm mb-4" style={{ color: '#1a1b1e', fontWeight: 500 }}>
+                      <div
+                        className="text-sm mb-4"
+                        style={{ color: '#1a1b1e', fontWeight: 500 }}
+                      >
                         {user?.email?.address || 'Connected'}
                       </div>
                       <button
@@ -279,7 +316,7 @@ function EarnContent() {
                           backgroundColor: 'transparent',
                           color: '#1a1b1e',
                           fontSize: '14px',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
                         }}
                       >
                         Logout
@@ -295,7 +332,10 @@ function EarnContent() {
 
       <main className="flex" style={{ height: 'calc(100vh - 65px)' }}>
         {/* Left Content Area */}
-        <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto" style={{ maxWidth: 'calc(100% - 436px)' }}>
+        <div
+          className="flex-1 flex flex-col items-center p-8 overflow-y-auto"
+          style={{ maxWidth: 'calc(100% - 436px)' }}
+        >
           <div className="w-full max-w-2xl">
             {/* Title Section */}
             <div className="mb-8 text-left">
@@ -305,10 +345,10 @@ function EarnContent() {
                     color: '#1a1b1e',
                     fontSize: '24px',
                     fontStyle: 'normal',
-                    fontWeight: 600
+                    fontWeight: 600,
                   }}
                 >
-                  Verbs Earn Demo
+                  Actions Demo
                 </h1>
                 <span
                   className="px-2 py-2 text-xs font-medium rounded"
@@ -316,7 +356,7 @@ function EarnContent() {
                     backgroundColor: '#F2F3F8',
                     color: '#404454',
                     fontSize: '14px',
-                    fontWeight: 400
+                    fontWeight: 400,
                   }}
                 >
                   Sandbox
@@ -325,7 +365,7 @@ function EarnContent() {
               <p
                 style={{
                   color: '#666666',
-                  fontSize: '16px'
+                  fontSize: '16px',
                 }}
               >
                 Earn interest by lending USDC
@@ -340,7 +380,7 @@ function EarnContent() {
                 onTransactionSuccess={async () => {
                   if (user?.id) {
                     // Wait a bit for the transaction to settle
-                    await new Promise(resolve => setTimeout(resolve, 2000))
+                    await new Promise((resolve) => setTimeout(resolve, 2000))
                     await fetchBalance(user.id)
                   }
                 }}
