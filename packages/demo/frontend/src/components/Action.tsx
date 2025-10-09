@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 import { useUser, usePrivy } from '@privy-io/react-auth'
 import type { Address } from 'viem'
@@ -31,10 +31,20 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
   } | null>(null)
   const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
   const [isLoadingPosition, setIsLoadingPosition] = useState(false)
+  const hasInitiatedMarketFetch = useRef(false)
 
   // Fetch market APY on mount
   useEffect(() => {
     const fetchMarketApy = async () => {
+      // Skip if already initiated (prevents double-fetch in StrictMode)
+      if (hasInitiatedMarketFetch.current) {
+        console.log('[getMarkets] Skipping - already initiated')
+        return
+      }
+
+      hasInitiatedMarketFetch.current = true
+      console.log('[getMarkets] Fetching market data...')
+
       try {
         setIsLoadingApy(true)
         const result = await loggedApi.getMarkets()
@@ -72,6 +82,22 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
     // Allow only numbers and decimals
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setAmount(value)
+    }
+  }
+
+  // Format deposited amount to 4 decimals and return parts
+  const formatDepositedAmount = (amount: string) => {
+    const num = parseFloat(amount)
+    if (isNaN(num)) return { main: '0.00', secondary: '00' }
+
+    const formatted = num.toFixed(4)
+    const parts = formatted.split('.')
+    const wholePart = parts[0]
+    const decimalPart = parts[1] || '0000'
+
+    return {
+      main: `${wholePart}.${decimalPart.substring(0, 2)}`,
+      secondary: decimalPart.substring(2, 4)
     }
   }
 
@@ -190,70 +216,103 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
       }}
     >
       <div className="py-6 px-6">
-        <h2
-          className="font-semibold"
-          style={{ color: '#1a1b1e', fontSize: '16px', marginBottom: '12px' }}
-        >
-          Wallet Balance
-        </h2>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img
-              src="/usd-coin-usdc-logo.svg"
-              alt="USDC"
-              style={{
-                width: '20px',
-                height: '20px'
-              }}
-            />
-            <span style={{
-              color: '#000',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontStyle: 'normal',
-              fontWeight: 400,
-              lineHeight: '20px'
-            }}>
-              USDC
-            </span>
-          </div>
-          {isLoadingBalance ? (
-            <span style={{
-              color: '#404454',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontWeight: 500
-            }}>
-              Loading...
-            </span>
-          ) : !usdcBalance || usdcBalance === '0.00' || usdcBalance === '0' || parseFloat(usdcBalance || '0') === 0 ? (
-            <button
-              onClick={onMintUSDC}
-              className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
-              style={{
-                backgroundColor: '#FFFFFF',
-                color: '#1a1b1e',
-                fontSize: '14px',
-                fontWeight: 500,
-                borderRadius: '6px',
-                border: '1px solid #E0E2EB',
-                cursor: 'pointer',
-                fontFamily: 'Inter'
-              }}
+        <div className="flex gap-6">
+          {/* Wallet Balance - Left 50% */}
+          <div className="flex-1">
+            <h2
+              className="font-semibold"
+              style={{ color: '#1a1b1e', fontSize: '16px', marginBottom: '12px' }}
             >
-              Get 100 USDC
-            </button>
-          ) : (
-            <span style={{
-              color: '#404454',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontWeight: 500
-            }}>
-              {usdcBalance} USDC
-            </span>
-          )}
+              Wallet Balance
+            </h2>
+            <div className="flex items-center gap-2">
+              {isLoadingBalance ? (
+                <span style={{
+                  color: '#000',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}>
+                  Loading...
+                </span>
+              ) : !usdcBalance || usdcBalance === '0.00' || usdcBalance === '0' || parseFloat(usdcBalance || '0') === 0 ? (
+                <button
+                  onClick={onMintUSDC}
+                  className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    color: '#1a1b1e',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    borderRadius: '6px',
+                    border: '1px solid #E0E2EB',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter'
+                  }}
+                >
+                  Get 100 USDC
+                </button>
+              ) : (
+                <span style={{
+                  color: '#000',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}>
+                  ${usdcBalance}
+                </span>
+              )}
+              <img
+                src="/usd-coin-usdc-logo.svg"
+                alt="USDC"
+                style={{
+                  width: '20px',
+                  height: '20px'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Lent Balance - Right 50% */}
+          <div className="flex-1">
+            <h2
+              className="font-semibold"
+              style={{ color: '#1a1b1e', fontSize: '16px', marginBottom: '12px', textAlign: 'right' }}
+            >
+              Lent Balance
+            </h2>
+            <div className="flex items-center justify-end gap-2">
+              {isLoadingPosition || depositedAmount === null ? (
+                <span style={{
+                  color: '#000',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}>
+                  Loading...
+                </span>
+              ) : (
+                <span style={{
+                  color: '#000',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}>
+                  ${formatDepositedAmount(depositedAmount).main}
+                  <span style={{
+                    color: '#9195A6',
+                    fontSize: '12px'
+                  }}>
+                    {formatDepositedAmount(depositedAmount).secondary}
+                  </span>
+                </span>
+              )}
+              <img
+                src="/usd-coin-usdc-logo.svg"
+                alt="USDC"
+                style={{
+                  width: '20px',
+                  height: '20px'
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -373,46 +432,6 @@ function Action({ usdcBalance, isLoadingBalance, onMintUSDC, onTransactionSucces
           >
             Withdraw
           </button>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span style={{
-              color: '#000',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontStyle: 'normal',
-              fontWeight: 400,
-              lineHeight: '20px'
-            }}>
-              Your Deposited Assets
-            </span>
-            <span style={{
-              color: '#9195A6',
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontWeight: 400
-            }}>
-              Principal + Interest
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span style={{
-              color: '#000',
-              fontSize: '14px',
-              fontWeight: 500
-            }}>
-              {isLoadingPosition || depositedAmount === null ? 'Loading...' : `${depositedAmount} USDC`}
-            </span>
-            <img
-              src="/usd-coin-usdc-logo.svg"
-              alt="USDC"
-              style={{
-                width: '20px',
-                height: '20px'
-              }}
-            />
-          </div>
         </div>
 
         <div>
