@@ -67,6 +67,13 @@ This uses `mprocs` to orchestrate multiple processes:
 
 The demo will be available at `http://localhost:5173` once all services are running.
 
+## Contributing
+
+No contribution is too small and all contributions are valued.
+Thanks for your help improving the project! We are so happy to have you!
+
+You can read our contribution guide [here](./CONTRIBUTING.md) to understand better how we work in the repo.
+
 ## License
 
-MIT
+All other files within this repository are licensed under the [MIT License](https://github.com/ethereum-optimism/actions/blob/main/LICENSE) unless stated otherwise.
