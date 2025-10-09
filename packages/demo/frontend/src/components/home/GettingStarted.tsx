@@ -20,7 +20,7 @@ function GettingStarted() {
   return (
     <>
       {/* Getting Started Subsection */}
-      <div className="pt-24 pb-16">
+      <div id="getting-started" className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-medium text-gray-300 mb-8">
             Getting Started
