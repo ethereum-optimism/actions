@@ -6,7 +6,7 @@ import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
 import TabbedCodeBlock from './TabbedCodeBlock'
 
 interface HostedWalletsSectionProps {
-  stepNumber: number
+  stepNumber: number | string
   openAccordion: string | null
   setOpenAccordion: (value: string | null) => void
 }
@@ -128,14 +128,16 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
           }}
         >
           <div className="flex items-center gap-4">
-            <span
-              className="text-2xl font-medium"
-              style={{ color: colors.actionsRed }}
-            >
-              {stepNumber}
-            </span>
+            {stepNumber && (
+              <span
+                className="text-2xl font-medium"
+                style={{ color: colors.actionsRed }}
+              >
+                {stepNumber}
+              </span>
+            )}
             <h3 className="text-lg font-medium text-gray-300">
-              BYO Hosted Wallets
+              Hosted Wallets
             </h3>
           </div>
           <svg
