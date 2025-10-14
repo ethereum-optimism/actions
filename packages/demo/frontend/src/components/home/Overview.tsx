@@ -16,7 +16,7 @@ const receipt2 = wallet.borrow.openPosition({
   ...ExampleAaveMarket
 })
 
-// Token swap via DEX of choice
+// Swap between tokens onchain
 const receipt3 = wallet.swap.execute({
   amountIn: 1,
   assetIn: USDC,
