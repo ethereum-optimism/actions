@@ -73,7 +73,7 @@ function Features() {
               </svg>
             </div>
             <h3 className="font-semibold mb-2 text-white">Swap</h3>
-            <p className="text-gray-300 text-base">Trade via Dex</p>
+            <p className="text-gray-300 text-base">Trade onchain</p>
           </div>
           <div className="text-center">
             <div className="mb-3 flex justify-center">
