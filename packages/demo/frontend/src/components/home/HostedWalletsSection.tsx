@@ -23,11 +23,13 @@ function HostedWalletsSection({
   const privyFrontendCode = `import { actions } from './config'
 import { useWallets } from '@privy-io/react-auth'
 
+// PRIVY: Fetch wallet
 const { wallets } = useWallets()
 const embeddedWallet = wallets.find(
   (wallet) => wallet.walletClientType === 'privy',
 )
 
+// ACTIONS: Let wallet make onchain Actions
 const actionsWallet = await actions.wallet.hostedWalletToActionsWallet({
   connectedWallet: embeddedWallet,
 })`
@@ -37,10 +39,12 @@ import { PrivyClient } from '@privy-io/node'
 
 const privyClient = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
 
+// PRIVY: Create wallet
 const privyWallet = await privyClient.walletApi.createWallet({
   chainType: 'ethereum',
 })
 
+// ACTIONS: Let wallet make onchain Actions
 const wallet = await actions.wallet.hostedWalletToActionsWallet({
   walletId: privyWallet.id,
   address: privyWallet.address,
@@ -49,8 +53,10 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
   const dynamicCode = `import { actions } from './config'
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 
+// DYNAMIC: Fetch wallet
 const { primaryWallet } = useDynamicContext()
 
+// ACTIONS: Let wallet make onchain Actions
 const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
   wallet: primaryWallet,
 })`
@@ -58,6 +64,7 @@ const verbsDynamicWallet = await actions.wallet.hostedWalletToVerbsWallet({
   const turnkeyFrontendCode = `import { actions } from './config'
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 
+// TURNKEY: Fetch wallet
 const { wallets, createWallet, refreshWallets, httpClient, session } = useTurnkey()
 
 const wallet = await createWallet({
@@ -67,6 +74,7 @@ const wallet = await createWallet({
 
 const walletAddress = wallet.accounts[0].address
 
+// ACTIONS: Let wallet make onchain Actions
 const actionsWallet = await actions.wallet.hostedWalletToActionsWallet({
   client: httpClient,
   organizationId: session.organizationId,
@@ -84,6 +92,7 @@ const turnkeyClient = new Turnkey({
   defaultOrganizationId: env.TURNKEY_ORGANIZATION_ID,
 })
 
+// TURNKEY: Create wallet
 const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
   walletName: 'ETH Wallet',
   accounts: [{
@@ -94,6 +103,7 @@ const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
   }],
 })
 
+// ACTIONS: Let wallet make onchain Actions
 const wallet = await actions.wallet.hostedWalletToActionsWallet({
   organizationId: turnkeyWallet.activity.organizationId,
   signWith: turnkeyWallet.addresses[0],
