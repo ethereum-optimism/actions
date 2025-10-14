@@ -37,7 +37,7 @@ function Overview() {
         <h2 className="text-3xl font-medium text-gray-300 mb-4">Overview</h2>
         <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
         <p className="text-gray-300 mb-4">
-          Actions is an open source SDK for onchain actions:{' '}
+          Actions is an open source TypeScript SDK for onchain actions:{' '}
           <strong>Lend</strong>, <strong>Borrow</strong>, <strong>Swap</strong>,{' '}
           <strong>Pay</strong>, without managing complex infrastructure or
           custody.

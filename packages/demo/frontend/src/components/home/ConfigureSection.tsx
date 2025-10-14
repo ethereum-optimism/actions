@@ -17,7 +17,7 @@ function ConfigureSection({
 
   const frontendConfigCode = `import { createActions } from '@eth-optimism/actions-sdk/react'
 import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
-import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions-sdk/markets'
+import { USDCMorphoMarket, USDCAaveMarket } from '@eth-optimism/actions-sdk/markets'
 import { unichain, optimism, base } from 'config/chains'
 
 const config: ActionsConfig = {
@@ -27,35 +27,25 @@ const config: ActionsConfig = {
   lend: {
     type: 'morpho',
     assetAllowlist: [USDC, ETH, WBTC],
-    assetBlocklist: [USDT],
-    marketAllowlist: [ExampleMorphoMarket],
-    marketBlocklist: [ExampleAaveMarket],
+    assetBlocklist: [],
+    marketAllowlist: [USDCMorphoMarket],
+    marketBlocklist: [],
   },
 
   // Borrow Provider
   borrow: {
     type: 'morpho',
     assetAllowlist: [USDC, ETH, WBTC],
-    assetBlocklist: [USDT],
-    marketAllowlist: [ExampleMorphoMarket],
-    marketBlocklist: [ExampleAaveMarket],
+    assetBlocklist: [],
+    marketAllowlist: [USDCMorphoMarket],
+    marketBlocklist: [],
   },
 
   // Swap Provider
   swap: {
     type: 'uniswap',
-    defaultSlippage: 100,
+    defaultSlippage: 100, // 100 bips or 1%
     assetAllowList: [USDC, ETH, WBTC]
-    marketAllowlist: [
-      { from: ETH, to: USDC },
-      { from: USDC, to: ETH },
-      { from: ETH, to: WBTC },
-      { from: WBTC, to: ETH }
-    ],
-    marketBlocklist: [
-      { from: ETH, to: USDC },
-      { from: USDC, to: ETH },
-    ],
   },
 
   // Chain Provider
@@ -70,7 +60,7 @@ export const actions = createActions(config)`
 
   const backendConfigCode = `import { createActions } from '@eth-optimism/actions-sdk/node'
 import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
-import { ExampleMorphoMarket, ExampleAaveMarket } from '@eth-optimism/actions-sdk/markets'
+import { USDCMorphoMarket, USDCAaveMarket } from '@eth-optimism/actions-sdk/markets'
 import { unichain, optimism, base } from 'config/chains'
 import { PrivyClient } from '@privy-io/node'
 
@@ -98,35 +88,25 @@ const config: ActionsConfig = {
   lend: {
     type: 'morpho',
     assetAllowlist: [USDC, ETH, WBTC],
-    assetBlocklist: [USDT],
-    marketAllowlist: [ExampleMorphoMarket],
-    marketBlocklist: [ExampleAaveMarket],
+    assetBlocklist: [],
+    marketAllowlist: [USDCMorphoMarket],
+    marketBlocklist: [],
   },
 
   // Borrow Provider
   borrow: {
     type: 'morpho',
     assetAllowlist: [USDC, ETH, WBTC],
-    assetBlocklist: [USDT],
-    marketAllowlist: [ExampleMorphoMarket],
-    marketBlocklist: [ExampleAaveMarket],
+    assetBlocklist: [],
+    marketAllowlist: [USDCMorphoMarket],
+    marketBlocklist: [],
   },
 
   // Swap Provider
   swap: {
     type: 'uniswap',
-    defaultSlippage: 100,
+    defaultSlippage: 100, // 100 bips or 1%
     assetAllowList: [USDC, ETH, WBTC]
-    marketAllowlist: [
-      { from: ETH, to: USDC },
-      { from: USDC, to: ETH },
-      { from: ETH, to: WBTC },
-      { from: WBTC, to: ETH }
-    ],
-    marketBlocklist: [
-      { from: ETH, to: USDC },
-      { from: USDC, to: ETH },
-    ],
   },
 
   // Chain Provider
