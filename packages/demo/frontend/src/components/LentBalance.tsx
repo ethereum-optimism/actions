@@ -16,6 +16,7 @@ function LentBalance({
   isLoadingApy,
   isInitialLoad = false,
 }: LentBalanceProps) {
+
   // Format deposited amount to 4 decimals and return parts
   const formatDepositedAmount = (amount: string) => {
     const num = parseFloat(amount)

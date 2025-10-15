@@ -314,70 +314,76 @@ function Action({
             className="flex items-center gap-2"
             style={{ position: 'relative' }}
           >
-            <span
-              style={{
-                color: '#000',
-                fontSize: '14px',
-              }}
-            >
-              Demo APY
-            </span>
             <div
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              style={{
-                position: 'relative',
-                display: 'inline-flex',
-                cursor: 'pointer',
-              }}
+              className="inline-flex items-center gap-1"
+              style={{ position: 'relative' }}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#666666"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <span
+                style={{
+                  color: '#000',
+                  fontSize: '14px',
+                }}
               >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              {showTooltip && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: '100%',
-                    left: '50%',
-                    transform: 'translateX(-50%) translateY(-8px)',
-                    padding: '8px 12px',
-                    backgroundColor: 'rgba(0, 0, 0, 0.56)',
-                    color: '#FFFFFF',
-                    fontSize: '12px',
-                    borderRadius: '6px',
-                    whiteSpace: 'nowrap',
-                    zIndex: 10,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  }}
+                APY
+              </span>
+              <div
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+                style={{
+                  position: 'relative',
+                  display: 'inline-flex',
+                  cursor: 'pointer',
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#666666"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  For demo only. Real APYs vary by market and provider.
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                {showTooltip && (
                   <div
                     style={{
                       position: 'absolute',
-                      top: '100%',
+                      bottom: '100%',
                       left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: 0,
-                      height: 0,
-                      borderLeft: '4px solid transparent',
-                      borderRight: '4px solid transparent',
-                      borderTop: '4px solid rgba(0, 0, 0, 0.56)',
+                      transform: 'translateX(-50%) translateY(-8px)',
+                      padding: '8px 12px',
+                      backgroundColor: 'rgba(0, 0, 0, 0.56)',
+                      color: '#FFFFFF',
+                      fontSize: '12px',
+                      borderRadius: '6px',
+                      whiteSpace: 'nowrap',
+                      zIndex: 10,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                     }}
-                  />
-                </div>
-              )}
+                  >
+                    Annual Percentage Yield: the rate of return earned on an
+                    investment over one year
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 0,
+                        height: 0,
+                        borderLeft: '4px solid transparent',
+                        borderRight: '4px solid transparent',
+                        borderTop: '4px solid rgba(0, 0, 0, 0.56)',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           {isLoadingApy ? (
