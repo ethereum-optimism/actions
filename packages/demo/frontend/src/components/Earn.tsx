@@ -7,7 +7,6 @@ import {
   useSessionSigners,
   type WalletWithMetadata,
 } from '@privy-io/react-auth'
-import Info from './Info'
 import Action from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
@@ -397,7 +396,6 @@ function EarnContent() {
             </div>
 
             <div className="space-y-6">
-              <Info />
               <LentBalance
                 depositedAmount={depositedAmount}
                 apy={apy}

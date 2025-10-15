@@ -1,9 +1,14 @@
+import { useState } from 'react'
+
 interface ActivityLogItemProps {
   type: 'lend' | 'withdraw' | 'fund' | 'wallet'
   action: string
   amount: string
   timestamp: string
   status: 'pending' | 'confirmed' | 'error'
+  request?: Record<string, unknown>
+  response?: Record<string, unknown>
+  blockExplorerUrl?: string
 }
 
 const STATUS_CONFIG = {
@@ -127,7 +132,15 @@ const ACTION_CONFIG: Record<
   {} as Record<string, { description: string; apiMethod: string }>,
 )
 
-function ActivityLogItem({ type, action, status }: ActivityLogItemProps) {
+function ActivityLogItem({
+  type,
+  action,
+  status,
+  request,
+  response,
+  blockExplorerUrl,
+}: ActivityLogItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
   const statusColor = STATUS_CONFIG[status]?.color || '#666666'
   const typeConfig = TYPE_CONFIG[type] || {
     label: type,
@@ -139,65 +152,154 @@ function ActivityLogItem({ type, action, status }: ActivityLogItemProps) {
   const description = actionConfig?.description || `${typeConfig.label} action`
   const apiMethod = actionConfig?.apiMethod || 'actions()'
 
+  // Placeholder data for now
+  const displayRequest = request || { walletId: '0x1234...', amount: 100 }
+  const displayResponse = response || { success: true, txHash: '0xabcd...' }
+  const displayBlockExplorerUrl =
+    blockExplorerUrl || 'https://base-sepolia.blockscout.com/tx/0x...'
+
   return (
     <div
-      className="px-4 py-3 border-b hover:bg-gray-50 transition-colors"
+      className="border-b transition-colors"
       style={{
         borderColor: '#E5E7EB',
       }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          {/* Top row: Label badge + Action description */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <span
-              className="px-2 py-0.5 rounded text-xs font-medium"
+      <div className="px-4 py-3 hover:bg-gray-50">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            {/* Top row: Label badge + Action description */}
+            <div className="flex items-center gap-2 mb-1.5">
+              <span
+                className="px-2 py-0.5 rounded text-xs font-medium"
+                style={{
+                  backgroundColor: typeConfig.bg,
+                  color: typeConfig.stroke,
+                }}
+              >
+                {typeConfig.label}
+              </span>
+              <span
+                className="text-sm font-medium"
+                style={{ color: '#1a1b1e' }}
+              >
+                {description}
+              </span>
+              <div
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: statusColor }}
+              />
+            </div>
+
+            {/* Bottom row: API method call */}
+            <div className="text-xs font-mono" style={{ color: '#6B7280' }}>
+              {apiMethod}
+            </div>
+          </div>
+
+          {/* Right side: Chevron toggle */}
+          <button
+            className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-all"
+            style={{ color: '#9CA3AF' }}
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               style={{
-                backgroundColor: typeConfig.bg,
-                color: typeConfig.stroke,
+                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s',
               }}
             >
-              {typeConfig.label}
-            </span>
-            <span className="text-sm font-medium" style={{ color: '#1a1b1e' }}>
-              {description}
-            </span>
-            <div
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: statusColor }}
-            />
-          </div>
-
-          {/* Bottom row: API method call */}
-          <div className="text-xs font-mono" style={{ color: '#6B7280' }}>
-            {apiMethod}
-          </div>
+              <path d="M6 9l6 6 6-6"></path>
+            </svg>
+          </button>
         </div>
-
-        {/* Right side: Arrow link */}
-        <button
-          className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
-          style={{ color: '#9CA3AF' }}
-          onClick={() => {
-            // TODO: Open modal/panel with API payload details
-            console.log('View details for', type)
-          }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M7 17L17 7"></path>
-            <path d="M7 7h10v10"></path>
-          </svg>
-        </button>
       </div>
+
+      {/* Expanded details */}
+      {isExpanded && (
+        <div
+          className="px-4 pb-4 space-y-3"
+          style={{ backgroundColor: '#F9FAFB' }}
+        >
+          {/* Request */}
+          <div>
+            <div
+              className="text-xs font-semibold mb-1"
+              style={{ color: '#6B7280' }}
+            >
+              Request
+            </div>
+            <pre
+              className="text-xs p-2 rounded overflow-x-auto"
+              style={{
+                backgroundColor: '#1F2937',
+                color: '#D1D5DB',
+                fontFamily: 'monospace',
+              }}
+            >
+              {JSON.stringify(displayRequest, null, 2)}
+            </pre>
+          </div>
+
+          {/* Response */}
+          {status === 'confirmed' && (
+            <div>
+              <div
+                className="text-xs font-semibold mb-1"
+                style={{ color: '#6B7280' }}
+              >
+                Response
+              </div>
+              <pre
+                className="text-xs p-2 rounded overflow-x-auto"
+                style={{
+                  backgroundColor: '#1F2937',
+                  color: '#D1D5DB',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {JSON.stringify(displayResponse, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {/* Block Explorer Link */}
+          {status === 'confirmed' && blockExplorerUrl && (
+            <div>
+              <a
+                href={displayBlockExplorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs flex items-center gap-1 hover:underline"
+                style={{ color: '#3B82F6' }}
+              >
+                View on Block Explorer
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M7 17L17 7"></path>
+                  <path d="M7 7h10v10"></path>
+                </svg>
+              </a>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

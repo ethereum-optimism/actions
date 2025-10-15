@@ -14,6 +14,9 @@ export type ActivityEntry = {
   amount?: string
   timestamp: string
   status: 'pending' | 'confirmed' | 'error'
+  request?: Record<string, unknown>
+  response?: Record<string, unknown>
+  blockExplorerUrl?: string
 }
 
 type ActivityLogContextType = {

@@ -1,4 +1,5 @@
 import ActivityLogItem from './ActivityLogItem'
+import Info from './Info'
 import { useActivityLog } from '../contexts/ActivityLogContext'
 
 function ActivityLog() {
@@ -22,55 +23,69 @@ function ActivityLog() {
 
   return (
     <div
-      className="h-full p-6 overflow-y-auto"
+      className="h-full flex flex-col overflow-y-auto"
       style={{
         backgroundColor: '#FFFFFF',
         borderLeft: '1px solid #E0E2EB',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#1a1b1e"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="8" y1="6" x2="21" y2="6" />
-          <line x1="8" y1="12" x2="21" y2="12" />
-          <line x1="8" y1="18" x2="21" y2="18" />
-          <line x1="3" y1="6" x2="3.01" y2="6" />
-          <line x1="3" y1="12" x2="3.01" y2="12" />
-          <line x1="3" y1="18" x2="3.01" y2="18" />
-        </svg>
-        <h2 className="text-lg font-semibold" style={{ color: '#1a1b1e' }}>
-          Activity Log
-        </h2>
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#1a1b1e"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" />
+            <line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
+          <h2 className="text-lg font-semibold" style={{ color: '#1a1b1e' }}>
+            Activity Log
+          </h2>
+        </div>
+
+        <div>
+          {activities.length > 0 ? (
+            activities.map((activity) => (
+              <ActivityLogItem
+                key={activity.id}
+                type={activity.type}
+                action={activity.action}
+                amount={activity.amount || '0'}
+                timestamp={formatTimestamp(activity.timestamp)}
+                status={activity.status}
+                request={activity.request}
+                response={activity.response}
+                blockExplorerUrl={activity.blockExplorerUrl}
+              />
+            ))
+          ) : (
+            <div
+              style={{
+                color: '#9CA3AF',
+                textAlign: 'center',
+                padding: '2rem',
+              }}
+            >
+              No activity yet
+            </div>
+          )}
+        </div>
       </div>
 
-      <div>
-        {activities.length > 0 ? (
-          activities.map((activity) => (
-            <ActivityLogItem
-              key={activity.id}
-              type={activity.type}
-              action={activity.action}
-              amount={activity.amount || '0'}
-              timestamp={formatTimestamp(activity.timestamp)}
-              status={activity.status}
-            />
-          ))
-        ) : (
-          <div
-            style={{ color: '#9CA3AF', textAlign: 'center', padding: '2rem' }}
-          >
-            No activity yet
-          </div>
-        )}
+      {/* Info section at bottom */}
+      <div className="mt-auto p-6">
+        <Info />
       </div>
     </div>
   )
