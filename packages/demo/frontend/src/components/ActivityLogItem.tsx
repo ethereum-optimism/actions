@@ -35,8 +35,8 @@ const TYPE_CONFIG = {
   },
   wallet: {
     label: 'Wallet',
-    bg: '#E0E7FF',
-    stroke: '#6366F1',
+    bg: '#FEF3C7',
+    stroke: '#F59E0B',
   },
 } as const
 
@@ -120,17 +120,49 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
 // Helper to get action config by action name (for ActivityLogItem component)
 const ACTION_CONFIG: Record<
   string,
-  { description: string; apiMethod: string }
-> = Object.values(ACTIVITY_CONFIG).reduce(
-  (acc, config) => {
-    acc[config.action] = {
-      description: config.description,
-      apiMethod: config.apiMethod,
-    }
-    return acc
+  { description: string; apiMethod: string; tooltip: string }
+> = {
+  getMarket: {
+    description: 'Get market',
+    apiMethod: 'actions.lend.getMarket()',
+    tooltip: 'Fetches available lending markets',
   },
-  {} as Record<string, { description: string; apiMethod: string }>,
-)
+  getPosition: {
+    description: 'Get position',
+    apiMethod: 'wallet.lend.getPosition()',
+    tooltip: "Returns a wallet's market positions",
+  },
+  deposit: {
+    description: 'Open lending position',
+    apiMethod: 'wallet.lend.openPosition()',
+    tooltip: 'Opens a new lending position',
+  },
+  withdraw: {
+    description: 'Close lending position',
+    apiMethod: 'wallet.lend.closePosition()',
+    tooltip: 'Closes an existing lending position',
+  },
+  mint: {
+    description: 'Mint demo USDC',
+    apiMethod: 'wallet.fund()',
+    tooltip: 'Funds a wallet with demo tokens',
+  },
+  getBalance: {
+    description: 'Get wallet balance',
+    apiMethod: 'wallet.getBalance()',
+    tooltip: 'Retrieves wallet token balances',
+  },
+  send: {
+    description: 'Send tokens',
+    apiMethod: 'wallet.sendTokens()',
+    tooltip: 'Transfers tokens to another address',
+  },
+  create: {
+    description: 'Create smart wallet',
+    apiMethod: 'actions.wallet.createSmartWallet()',
+    tooltip: 'Creates a new smart wallet',
+  },
+}
 
 function ActivityLogItem({
   type,
@@ -151,6 +183,7 @@ function ActivityLogItem({
 
   const description = actionConfig?.description || `${typeConfig.label} action`
   const apiMethod = actionConfig?.apiMethod || 'actions()'
+  const tooltip = actionConfig?.tooltip
 
   // Placeholder data for now
   const displayRequest = request || { walletId: '0x1234...', amount: 100 }
@@ -229,6 +262,13 @@ function ActivityLogItem({
           className="px-4 pb-4 space-y-3"
           style={{ backgroundColor: '#F9FAFB' }}
         >
+          {/* Description */}
+          {tooltip && (
+            <div className="text-xs pt-2" style={{ color: '#1F2937' }}>
+              {tooltip}
+            </div>
+          )}
+
           {/* Request */}
           <div>
             <div
