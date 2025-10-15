@@ -19,6 +19,8 @@ import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getActions, getPrivyClient } from '@/config/actions.js'
 import { USDC } from '@/config/assets.js'
 
+import { getBlockExplorerUrls } from './lend.js'
+
 /**
  * Options for getting all wallets
  * @description Parameters for filtering and paginating wallet results
@@ -241,21 +243,16 @@ export async function fundWallet(wallet: SmartWallet): Promise<{
 
   const result = await wallet.sendBatch(calls, baseSepolia.id)
 
-  // Import getBlockExplorerUrls helper
-  const { getBlockExplorerUrls } = await import('./lend.js')
-
-  // Extract transaction hashes and user op hash using type guards
   let transactionHashes: Address[] | undefined
   let userOpHash: Address | undefined
 
   if (Array.isArray(result)) {
-    // Batch of EOA transactions
-    transactionHashes = result.map((r: EOATransactionReceipt) => r.transactionHash)
+    transactionHashes = result.map(
+      (r: EOATransactionReceipt) => r.transactionHash,
+    )
   } else if ('userOpHash' in result) {
-    // UserOperation transaction
     userOpHash = (result as UserOperationTransactionReceipt).userOpHash
   } else {
-    // Single EOA transaction
     transactionHashes = [(result as EOATransactionReceipt).transactionHash]
   }
 

@@ -229,7 +229,6 @@ function Action({
     }
   }, [user?.id, marketChainId, marketAddress, loggedApi])
 
-  // Poll position every 5 seconds to show interest accumulation
   useEffect(() => {
     if (!user?.id || !marketChainId || !marketAddress) return
 
