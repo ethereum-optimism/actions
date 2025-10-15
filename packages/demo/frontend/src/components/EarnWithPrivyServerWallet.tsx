@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { LoginWithPrivy } from './LoginWithPrivy'
 import { env } from '@/envVars'
 import { EarnWithServerWallet } from './EarnWithServerWallet'
+import { WALLET_PROVIDER_CONFIGS } from '@/constants/walletProviders'
 
 export function EarnWithPrivyServerWallet() {
   const { ready, authenticated, getAccessToken } = usePrivy()
@@ -72,6 +73,7 @@ export function EarnWithPrivyServerWallet() {
 
   return (
     <EarnWithServerWallet
+      selectedProvider={WALLET_PROVIDER_CONFIGS.privy}
       userId={user?.id}
       userEmailAddress={user?.email?.address}
       ready={ready}

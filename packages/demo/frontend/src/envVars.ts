@@ -18,6 +18,18 @@ const envVarSchema = z.object({
     .string()
     .optional()
     .describe('Session signer ID for server-side signing'),
+  VITE_DYNAMIC_ENVIRONMENT_ID: z
+    .string()
+    .optional()
+    .describe('Dynamic environment ID for wallet connection'),
+  VITE_BASE_SEPOLIA_RPC_URL: z
+    .string()
+    .optional()
+    .describe('Base Sepolia RPC URL for wallet connection'),
+  VITE_BASE_SEPOLIA_BUNDER_URL: z
+    .string()
+    .optional()
+    .describe('Base Sepolia Bundler URL for wallet connection'),
 })
 
 export const env = envVarSchema.parse(import.meta.env)

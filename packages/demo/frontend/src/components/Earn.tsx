@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
 import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
+import { WalletProviderDropdown } from './WalletProviderDropdown'
+import type { WalletProviderConfig } from '@/constants/walletProviders'
 export interface EarnContentProps {
   ready: boolean
-  logout: () => void
-  userEmail?: string
+  logout: () => Promise<void>
+  walletAddress: string | null
   usdcBalance: string
   isLoadingBalance: boolean
   apy: number | null
@@ -13,6 +14,7 @@ export interface EarnContentProps {
   depositedAmount: string | null
   isLoadingPosition: boolean
   isInitialLoad: boolean
+  selectedProvider: WalletProviderConfig
   onMintUSDC: () => void
   onTransaction: (
     mode: 'lend' | 'withdraw',
@@ -30,9 +32,10 @@ export interface EarnContentProps {
 function Earn({
   ready,
   logout,
-  userEmail,
+  walletAddress,
   usdcBalance,
   isLoadingBalance,
+  selectedProvider,
   apy,
   isLoadingApy,
   depositedAmount,
@@ -41,25 +44,6 @@ function Earn({
   onMintUSDC,
   onTransaction,
 }: EarnContentProps) {
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [dropdownOpen])
-
   // Show loading state while Privy is initializing
   if (!ready) {
     return (
@@ -98,78 +82,14 @@ function Earn({
               <img src="/Optimism.svg" alt="Optimism" className="h-4" />
             </div>
             <div className="flex items-center gap-4">
-              {/* Privy Dropdown Menu */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:bg-gray-50"
-                  style={{
-                    border: '1px solid #E5E5E5',
-                    backgroundColor: dropdownOpen ? '#F5F5F5' : 'transparent',
-                  }}
-                >
-                  <img src="/Privy.png" alt="Privy" className="h-5" />
-                  <span className="text-sm" style={{ color: '#1a1b1e' }}>
-                    Privy
-                  </span>
-                  <svg
-                    className="w-4 h-4 transition-transform"
-                    style={{
-                      transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0)',
-                      color: '#666666',
-                    }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-
-                {dropdownOpen && (
-                  <div
-                    className="absolute right-0 mt-2 w-64 rounded-lg shadow-lg overflow-hidden"
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      border: '1px solid #E5E5E5',
-                      zIndex: 50,
-                    }}
-                  >
-                    <div className="p-4">
-                      <div
-                        className="text-xs mb-2"
-                        style={{ color: '#666666' }}
-                      >
-                        Signed in as
-                      </div>
-                      <div
-                        className="text-sm mb-4"
-                        style={{ color: '#1a1b1e', fontWeight: 500 }}
-                      >
-                        {userEmail || 'Connected'}
-                      </div>
-                      <button
-                        onClick={() => logout()}
-                        className="w-full px-4 py-2 rounded-lg transition-all hover:bg-gray-50"
-                        style={{
-                          border: '1px solid #E5E5E5',
-                          backgroundColor: 'transparent',
-                          color: '#1a1b1e',
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <WalletProviderDropdown
+                selectedProvider={selectedProvider}
+                walletAddress={walletAddress}
+                onProviderSelect={async (providerConfig) => {
+                  await logout()
+                  window.location.href = `/earn?walletProvider=${providerConfig.queryParam}`
+                }}
+              />
             </div>
           </div>
         </div>
