@@ -39,6 +39,9 @@ export function useLoggedActionsApi() {
             ? config.getAmount(...args)
             : undefined
 
+          // Console log the function call
+          console.log(`[${config.apiMethod}]`)
+
           // For read-only operations, always create a new entry (no retry logic)
           if (config.isReadOnly) {
             const id = addActivityRef.current({
