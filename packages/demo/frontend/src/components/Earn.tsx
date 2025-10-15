@@ -397,6 +397,14 @@ function EarnContent() {
             </div>
 
             <div className="space-y-6">
+              <Info />
+              <LentBalance
+                depositedAmount={depositedAmount}
+                apy={apy}
+                isLoadingPosition={isLoadingPosition}
+                isLoadingApy={isLoadingApy}
+                isInitialLoad={isInitialLoad}
+              />
               <Action
                 usdcBalance={usdcBalance}
                 isLoadingBalance={isLoadingBalance}
@@ -410,14 +418,6 @@ function EarnContent() {
                 }}
                 onPositionUpdate={handlePositionUpdate}
               />
-              <LentBalance
-                depositedAmount={depositedAmount}
-                apy={apy}
-                isLoadingPosition={isLoadingPosition}
-                isLoadingApy={isLoadingApy}
-                isInitialLoad={isInitialLoad}
-              />
-              <Info />
             </div>
           </div>
         </div>
