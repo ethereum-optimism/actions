@@ -173,7 +173,6 @@ function ActivityLogItem({
   request,
   response,
   blockExplorerUrl,
-  isTransaction,
   isFromPreviousSession,
 }: ActivityLogItemProps) {
   const [isExpanded, setIsExpanded] = useState(false)

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
+import { actionsApi } from '../api/actionsApi'
 import { useUser, usePrivy } from '@privy-io/react-auth'
 import type { Address } from 'viem'
 import TransactionModal from './TransactionModal'
@@ -227,6 +228,27 @@ function Action({
       fetchPosition()
     }
   }, [user?.id, marketChainId, marketAddress, loggedApi])
+
+  // Poll position every 5 seconds to show interest accumulation
+  useEffect(() => {
+    if (!user?.id || !marketChainId || !marketAddress) return
+
+    const pollPosition = async () => {
+      try {
+        // Use actionsApi directly to avoid creating activity log entries
+        const position = await actionsApi.getPosition(
+          { chainId: marketChainId, address: marketAddress },
+          user.id,
+        )
+        setDepositedAmount(position.balanceFormatted)
+      } catch {
+        // Silently fail polling - don't reset to 0.00
+      }
+    }
+
+    const intervalId = setInterval(pollPosition, 5000)
+    return () => clearInterval(intervalId)
+  }, [user?.id, marketChainId, marketAddress])
 
   // Notify parent of position updates
   useEffect(() => {
