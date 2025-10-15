@@ -90,6 +90,8 @@ function ActivityLog() {
                 request={activity.request}
                 response={activity.response}
                 blockExplorerUrl={activity.blockExplorerUrl}
+                isTransaction={activity.isTransaction}
+                isFromPreviousSession={activity.isFromPreviousSession}
               />
             ))
           ) : (

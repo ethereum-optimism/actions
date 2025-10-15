@@ -9,6 +9,8 @@ interface ActivityLogItemProps {
   request?: Record<string, unknown>
   response?: Record<string, unknown>
   blockExplorerUrl?: string
+  isTransaction?: boolean
+  isFromPreviousSession?: boolean
 }
 
 const STATUS_CONFIG = {
@@ -171,6 +173,8 @@ function ActivityLogItem({
   request,
   response,
   blockExplorerUrl,
+  isTransaction,
+  isFromPreviousSession,
 }: ActivityLogItemProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const statusColor = STATUS_CONFIG[status]?.color || '#666666'
@@ -198,7 +202,12 @@ function ActivityLogItem({
         borderColor: '#E5E7EB',
       }}
     >
-      <div className="px-4 py-3 hover:bg-gray-50">
+      <div
+        className="px-4 py-3 hover:bg-gray-50"
+        style={{
+          opacity: isFromPreviousSession ? 0.6 : 1,
+        }}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             {/* Top row: Label badge + Action description */}
@@ -230,29 +239,46 @@ function ActivityLogItem({
             </div>
           </div>
 
-          {/* Right side: Chevron toggle */}
-          <button
-            className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-all"
-            style={{ color: '#9CA3AF' }}
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{
-                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s',
-              }}
+          {/* Right side: Clock icon + Chevron toggle */}
+          <div className="flex items-center gap-1">
+            {isTransaction && (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9CA3AF"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            )}
+            <button
+              className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-all"
+              style={{ color: '#9CA3AF' }}
+              onClick={() => setIsExpanded(!isExpanded)}
             >
-              <path d="M6 9l6 6 6-6"></path>
-            </svg>
-          </button>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s',
+                }}
+              >
+                <path d="M6 9l6 6 6-6"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -49,6 +49,7 @@ export function useLoggedActionsApi() {
               action: config.action,
               amount,
               status: 'pending',
+              isTransaction: false,
             })
 
             try {
@@ -76,6 +77,7 @@ export function useLoggedActionsApi() {
               action: config.action,
               amount,
               status: 'pending',
+              isTransaction: true,
             })
             activeCallsMap.set(callKey, id)
           } else {
