@@ -7,11 +7,13 @@ import TakeActionSection from './TakeActionSection'
 
 function GettingStarted() {
   const [openAccordions, setOpenAccordions] = useState<Set<string>>(new Set())
-  const [openNestedAccordions, setOpenNestedAccordions] = useState<Set<string>>(new Set())
+  const [openNestedAccordions, setOpenNestedAccordions] = useState<Set<string>>(
+    new Set(),
+  )
   const [selectedPackageManager, setSelectedPackageManager] = useState('npm')
 
   const toggleAccordion = (id: string) => {
-    setOpenAccordions(prev => {
+    setOpenAccordions((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(id)) {
         newSet.delete(id)
@@ -23,7 +25,7 @@ function GettingStarted() {
   }
 
   const toggleNestedAccordion = (id: string) => {
-    setOpenNestedAccordions(prev => {
+    setOpenNestedAccordions((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(id)) {
         newSet.delete(id)
@@ -74,10 +76,9 @@ function GettingStarted() {
               onClick={() => toggleAccordion('configure-wallet')}
               className="w-full flex items-center justify-between py-4 px-6 rounded-lg transition-colors"
               style={{
-                backgroundColor:
-                  openAccordions.has('configure-wallet')
-                    ? 'rgba(60, 60, 60, 0.5)'
-                    : 'rgba(40, 40, 40, 0.5)',
+                backgroundColor: openAccordions.has('configure-wallet')
+                  ? 'rgba(60, 60, 60, 0.5)'
+                  : 'rgba(40, 40, 40, 0.5)',
               }}
             >
               <div className="flex items-center gap-4">
@@ -94,10 +95,9 @@ function GettingStarted() {
               <svg
                 className="w-5 h-5 text-gray-400 transition-transform duration-300"
                 style={{
-                  transform:
-                    openAccordions.has('configure-wallet')
-                      ? 'rotate(180deg)'
-                      : 'rotate(0deg)',
+                  transform: openAccordions.has('configure-wallet')
+                    ? 'rotate(180deg)'
+                    : 'rotate(0deg)',
                 }}
                 fill="none"
                 stroke="currentColor"
@@ -114,7 +114,9 @@ function GettingStarted() {
             <div
               className="overflow-hidden transition-all duration-300 ease-in-out"
               style={{
-                maxHeight: openAccordions.has('configure-wallet') ? '5000px' : '0',
+                maxHeight: openAccordions.has('configure-wallet')
+                  ? '5000px'
+                  : '0',
                 opacity: openAccordions.has('configure-wallet') ? 1 : 0,
               }}
             >
@@ -124,12 +126,16 @@ function GettingStarted() {
                   {/* Accordion Item: BYO Hosted Wallets */}
                   <HostedWalletsSection
                     stepNumber=""
-                    openAccordion={openNestedAccordions.has('byo-wallet') ? 'byo-wallet' : null}
+                    openAccordion={
+                      openNestedAccordions.has('byo-wallet')
+                        ? 'byo-wallet'
+                        : null
+                    }
                     setOpenAccordion={(val) => {
                       if (val === 'byo-wallet') {
                         toggleNestedAccordion('byo-wallet')
                       } else {
-                        setOpenNestedAccordions(prev => {
+                        setOpenNestedAccordions((prev) => {
                           const newSet = new Set(prev)
                           newSet.delete('byo-wallet')
                           return newSet
@@ -141,19 +147,25 @@ function GettingStarted() {
                   {/* OR separator */}
                   <div className="flex items-center my-4">
                     <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
-                    <span className="px-4 text-sm font-medium text-gray-500">OR</span>
+                    <span className="px-4 text-sm font-medium text-gray-500">
+                      OR
+                    </span>
                     <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
                   </div>
 
                   {/* Accordion Item: Customizable Smart Wallets */}
                   <SmartWalletsSection
                     stepNumber=""
-                    openAccordion={openNestedAccordions.has('smart-wallet') ? 'smart-wallet' : null}
+                    openAccordion={
+                      openNestedAccordions.has('smart-wallet')
+                        ? 'smart-wallet'
+                        : null
+                    }
                     setOpenAccordion={(val) => {
                       if (val === 'smart-wallet') {
                         toggleNestedAccordion('smart-wallet')
                       } else {
-                        setOpenNestedAccordions(prev => {
+                        setOpenNestedAccordions((prev) => {
                           const newSet = new Set(prev)
                           newSet.delete('smart-wallet')
                           return newSet

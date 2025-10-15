@@ -7,12 +7,12 @@ interface TakeActionSectionProps {
   onToggle: () => void
 }
 
-function TakeActionSection({ stepNumber, isOpen, onToggle }: TakeActionSectionProps) {
-  const codeExample = `import { wallet } from 'actions'
-import { USDC, USDT, ETH } from '@eth-optimism/actions-sdk/assets'
-import { USDCMorphoMarket, USDCAaveMarket } from '@eth-optimism/actions-sdk/markets'
-
-// Enable asset lending in DeFi
+function TakeActionSection({
+  stepNumber,
+  isOpen,
+  onToggle,
+}: TakeActionSectionProps) {
+  const codeExample = `// Enable asset lending in DeFi
 const receipt1 = wallet.lend.openPosition({
   amount: 1,
   asset: USDC,
@@ -58,9 +58,7 @@ const receipt4 = wallet.send({
           >
             {stepNumber}
           </span>
-          <h3 className="text-lg font-medium text-gray-300">
-            Take Action
-          </h3>
+          <h3 className="text-lg font-medium text-gray-300">Take Action</h3>
         </div>
         <svg
           className="w-5 h-5 text-gray-400 transition-transform duration-300"

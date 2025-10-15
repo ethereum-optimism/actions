@@ -113,17 +113,27 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
 }
 
 // Helper to get action config by action name (for ActivityLogItem component)
-const ACTION_CONFIG: Record<string, { description: string; apiMethod: string }> = Object.values(ACTIVITY_CONFIG).reduce((acc, config) => {
-  acc[config.action] = {
-    description: config.description,
-    apiMethod: config.apiMethod,
-  }
-  return acc
-}, {} as Record<string, { description: string; apiMethod: string }>)
+const ACTION_CONFIG: Record<
+  string,
+  { description: string; apiMethod: string }
+> = Object.values(ACTIVITY_CONFIG).reduce(
+  (acc, config) => {
+    acc[config.action] = {
+      description: config.description,
+      apiMethod: config.apiMethod,
+    }
+    return acc
+  },
+  {} as Record<string, { description: string; apiMethod: string }>,
+)
 
 function ActivityLogItem({ type, action, status }: ActivityLogItemProps) {
   const statusColor = STATUS_CONFIG[status]?.color || '#666666'
-  const typeConfig = TYPE_CONFIG[type] || { label: type, bg: '#F3F4F6', stroke: '#6B7280' }
+  const typeConfig = TYPE_CONFIG[type] || {
+    label: type,
+    bg: '#F3F4F6',
+    stroke: '#6B7280',
+  }
   const actionConfig = ACTION_CONFIG[action]
 
   const description = actionConfig?.description || `${typeConfig.label} action`

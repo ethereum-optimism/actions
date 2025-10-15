@@ -12,8 +12,8 @@
     "build": "tsc -b && vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "eslint \"**/*.{ts,tsx}\" && pnpm prettier --check \"**/*.{ts,tsx}\"",
+    "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix --quiet && pnpm prettier \"**/*.{ts,tsx}\" --write --loglevel=warn",
     "test": "vitest --run",
     "typecheck": "tsc --noEmit"
   },

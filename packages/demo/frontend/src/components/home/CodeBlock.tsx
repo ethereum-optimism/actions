@@ -9,7 +9,11 @@ interface CodeBlockProps {
   language?: string
 }
 
-function CodeBlock({ code, filename, language = 'typescript' }: CodeBlockProps) {
+function CodeBlock({
+  code,
+  filename,
+  language = 'typescript',
+}: CodeBlockProps) {
   return (
     <div
       className="rounded-lg overflow-hidden mb-8 shadow-2xl"

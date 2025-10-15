@@ -18,8 +18,10 @@ function SmartWalletsSection({
 }: SmartWalletsSectionProps) {
   const [selectedWalletProvider, setSelectedWalletProvider] = useState('privy')
   const [selectedSmartPrivyTab, setSelectedSmartPrivyTab] = useState('frontend')
-  const [selectedSmartDynamicTab, setSelectedSmartDynamicTab] = useState('frontend')
-  const [selectedSmartTurnkeyTab, setSelectedSmartTurnkeyTab] = useState('frontend')
+  const [selectedSmartDynamicTab, setSelectedSmartDynamicTab] =
+    useState('frontend')
+  const [selectedSmartTurnkeyTab, setSelectedSmartTurnkeyTab] =
+    useState('frontend')
 
   const privyFrontendCode = `import { actions } from './config'
 import { useWallets } from '@privy-io/react-auth'
@@ -168,9 +170,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
                 {stepNumber}
               </span>
             )}
-            <h3 className="text-lg font-medium text-gray-300">
-              Smart Wallets
-            </h3>
+            <h3 className="text-lg font-medium text-gray-300">Smart Wallets</h3>
           </div>
           <svg
             className="w-5 h-5 text-gray-400 transition-transform duration-300"

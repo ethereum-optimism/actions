@@ -9,7 +9,13 @@ interface LentBalanceProps {
   isInitialLoad?: boolean
 }
 
-function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, isInitialLoad = false }: LentBalanceProps) {
+function LentBalance({
+  depositedAmount,
+  apy,
+  isLoadingPosition,
+  isLoadingApy,
+  isInitialLoad = false,
+}: LentBalanceProps) {
   // Format deposited amount to 4 decimals and return parts
   const formatDepositedAmount = (amount: string) => {
     const num = parseFloat(amount)
@@ -22,7 +28,7 @@ function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, is
 
     return {
       main: `${wholePart}.${decimalPart.substring(0, 2)}`,
-      secondary: decimalPart.substring(2, 4)
+      secondary: decimalPart.substring(2, 4),
     }
   }
 
@@ -33,7 +39,7 @@ function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, is
         backgroundColor: '#FFFFFF',
         border: '1px solid #E0E2EB',
         borderRadius: '24px',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
       <div className="py-6 px-6">
@@ -50,54 +56,64 @@ function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, is
             {/* Header */}
             <thead>
               <tr style={{ borderBottom: '1px solid #E0E2EB' }}>
-                <th style={{
-                  textAlign: 'left',
-                  padding: '12px 8px',
-                  color: '#9195A6',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  fontFamily: 'Inter'
-                }}>
+                <th
+                  style={{
+                    textAlign: 'left',
+                    padding: '12px 8px',
+                    color: '#9195A6',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    fontFamily: 'Inter',
+                  }}
+                >
                   Market
                 </th>
-                <th style={{
-                  textAlign: 'left',
-                  padding: '12px 8px',
-                  color: '#9195A6',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  fontFamily: 'Inter'
-                }}>
+                <th
+                  style={{
+                    textAlign: 'left',
+                    padding: '12px 8px',
+                    color: '#9195A6',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    fontFamily: 'Inter',
+                  }}
+                >
                   Network
                 </th>
-                <th style={{
-                  textAlign: 'left',
-                  padding: '12px 8px',
-                  color: '#9195A6',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  fontFamily: 'Inter'
-                }}>
+                <th
+                  style={{
+                    textAlign: 'left',
+                    padding: '12px 8px',
+                    color: '#9195A6',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    fontFamily: 'Inter',
+                  }}
+                >
                   Asset
                 </th>
-                <th style={{
-                  textAlign: 'right',
-                  padding: '12px 8px',
-                  color: '#9195A6',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  fontFamily: 'Inter'
-                }}>
+                <th
+                  style={{
+                    textAlign: 'right',
+                    padding: '12px 8px',
+                    color: '#9195A6',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    fontFamily: 'Inter',
+                  }}
+                >
                   APY
                 </th>
-                <th style={{
-                  textAlign: 'right',
-                  padding: '12px 8px',
-                  color: '#9195A6',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  fontFamily: 'Inter'
-                }}>
+                <th
+                  style={{
+                    textAlign: 'right',
+                    padding: '12px 8px',
+                    color: '#9195A6',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    fontFamily: 'Inter',
+                  }}
+                >
                   Value
                 </th>
               </tr>
@@ -116,12 +132,14 @@ function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, is
                         alt="Morpho"
                         style={{ width: '20px', height: '20px' }}
                       />
-                      <span style={{
-                        color: '#1a1b1e',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        fontFamily: 'Inter'
-                      }}>
+                      <span
+                        style={{
+                          color: '#1a1b1e',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          fontFamily: 'Inter',
+                        }}
+                      >
                         Gauntlet USDC
                       </span>
                     </div>
@@ -137,12 +155,14 @@ function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, is
                         alt="Base"
                         style={{ width: '20px', height: '20px' }}
                       />
-                      <span style={{
-                        color: '#1a1b1e',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        fontFamily: 'Inter'
-                      }}>
+                      <span
+                        style={{
+                          color: '#1a1b1e',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          fontFamily: 'Inter',
+                        }}
+                      >
                         Base Sepolia
                       </span>
                     </div>
@@ -158,12 +178,14 @@ function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, is
                         alt="USDC"
                         style={{ width: '20px', height: '20px' }}
                       />
-                      <span style={{
-                        color: '#1a1b1e',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        fontFamily: 'Inter'
-                      }}>
+                      <span
+                        style={{
+                          color: '#1a1b1e',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          fontFamily: 'Inter',
+                        }}
+                      >
                         USDC
                       </span>
                     </div>
@@ -173,12 +195,14 @@ function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, is
                   {isInitialLoad || isLoadingApy ? (
                     <Shimmer width="50px" height="20px" borderRadius="4px" />
                   ) : (
-                    <span style={{
-                      color: '#1a1b1e',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      fontFamily: 'Inter'
-                    }}>
+                    <span
+                      style={{
+                        color: '#1a1b1e',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        fontFamily: 'Inter',
+                      }}
+                    >
                       {apy !== null ? `${(apy * 100).toFixed(2)}%` : '0.00%'}
                     </span>
                   )}
@@ -187,18 +211,25 @@ function LentBalance({ depositedAmount, apy, isLoadingPosition, isLoadingApy, is
                   {isInitialLoad || isLoadingPosition ? (
                     <Shimmer width="70px" height="20px" borderRadius="4px" />
                   ) : (
-                    <span style={{
-                      color: '#1a1b1e',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      fontFamily: 'Inter'
-                    }}>
+                    <span
+                      style={{
+                        color: '#1a1b1e',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        fontFamily: 'Inter',
+                      }}
+                    >
                       ${formatDepositedAmount(depositedAmount || '0').main}
-                      <span style={{
-                        color: '#9195A6',
-                        fontSize: '12px'
-                      }}>
-                        {formatDepositedAmount(depositedAmount || '0').secondary}
+                      <span
+                        style={{
+                          color: '#9195A6',
+                          fontSize: '12px',
+                        }}
+                      >
+                        {
+                          formatDepositedAmount(depositedAmount || '0')
+                            .secondary
+                        }
                       </span>
                     </span>
                   )}
