@@ -25,8 +25,8 @@ const TYPE_CONFIG = {
   },
   withdraw: {
     label: 'Lend',
-    bg: '#FEE2E2',
-    stroke: '#EF4444',
+    bg: '#DBEAFE',
+    stroke: '#3B82F6',
   },
   fund: {
     label: 'Fund',
