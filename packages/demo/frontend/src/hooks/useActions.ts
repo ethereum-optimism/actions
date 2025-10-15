@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { USDCDemoVault } from '@/constants/markets'
 import { env } from '@/envVars'
 import {
@@ -7,39 +8,46 @@ import {
 import { baseSepolia } from 'viem/chains'
 
 export function useActions() {
-  const config: ReactActionsConfig<'dynamic'> = {
-    wallet: {
-      hostedWalletConfig: {
-        provider: {
-          type: 'dynamic',
+  // Memoize the config to prevent recreating it on every render
+  const config: ReactActionsConfig<'dynamic'> = useMemo(
+    () => ({
+      wallet: {
+        hostedWalletConfig: {
+          provider: {
+            type: 'dynamic',
+          },
+        },
+        smartWalletConfig: {
+          provider: {
+            type: 'default',
+            attributionSuffix: 'actions',
+          },
         },
       },
-      smartWalletConfig: {
-        provider: {
-          type: 'default',
-          attributionSuffix: 'actions',
+      lend: {
+        provider: 'morpho',
+        marketAllowlist: [USDCDemoVault],
+      },
+      chains: [
+        {
+          chainId: baseSepolia.id,
+          rpcUrls: env.VITE_BASE_SEPOLIA_RPC_URL
+            ? [env.VITE_BASE_SEPOLIA_RPC_URL]
+            : undefined,
+          bundler: env.VITE_BASE_SEPOLIA_BUNDER_URL
+            ? {
+                type: 'simple',
+                url: env.VITE_BASE_SEPOLIA_BUNDER_URL,
+              }
+            : undefined,
         },
-      },
-    },
-    lend: {
-      provider: 'morpho',
-      marketAllowlist: [USDCDemoVault],
-    },
-    chains: [
-      {
-        chainId: baseSepolia.id,
-        rpcUrls: env.VITE_BASE_SEPOLIA_RPC_URL
-          ? [env.VITE_BASE_SEPOLIA_RPC_URL]
-          : undefined,
-        bundler: env.VITE_BASE_SEPOLIA_BUNDER_URL
-          ? {
-              type: 'simple',
-              url: env.VITE_BASE_SEPOLIA_BUNDER_URL,
-            }
-          : undefined,
-      },
-    ],
-  }
+      ],
+    }),
+    [], // Empty deps since config is static
+  )
 
-  return { actions: createActions(config) }
+  // Memoize the actions instance to prevent recreating on every render
+  const actions = useMemo(() => createActions(config), [config])
+
+  return { actions }
 }

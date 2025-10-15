@@ -1,16 +1,11 @@
 // TODO: Re-enable useState in next PR when expand functionality is restored
 // import { useState } from 'react'
-
 interface ActivityLogItemProps {
   type: 'lend' | 'withdraw' | 'fund' | 'wallet'
   action: string
-  amount: string
   timestamp: string
   status: 'pending' | 'confirmed' | 'error'
-  request?: Record<string, unknown>
-  response?: Record<string, unknown>
   blockExplorerUrl?: string
-  isTransaction?: boolean
   isFromPreviousSession?: boolean
 }
 
@@ -42,118 +37,6 @@ const TYPE_CONFIG = {
     stroke: '#F59E0B',
   },
 } as const
-
-// Consolidated configuration for all API methods
-// Maps API method names to their logging configuration
-type ActivityConfigEntry = {
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet'
-  action: string
-  description: string
-  apiMethod: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getAmount?: (...args: any[]) => string
-  isReadOnly?: boolean
-}
-
-export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
-  // Lend operations
-  getMarkets: {
-    type: 'lend',
-    action: 'getMarket',
-    description: 'Get market',
-    apiMethod: 'actions.lend.getMarket()',
-    isReadOnly: true,
-  },
-  getMarketsV1: {
-    type: 'lend',
-    action: 'getMarket',
-    description: 'Get market',
-    apiMethod: 'actions.lend.getMarket()',
-    isReadOnly: true,
-  },
-  getPosition: {
-    type: 'lend',
-    action: 'getPosition',
-    description: 'Get position',
-    apiMethod: 'wallet.lend.getPosition()',
-    isReadOnly: true,
-  },
-  getPositionV1: {
-    type: 'lend',
-    action: 'getPosition',
-    description: 'Get position',
-    apiMethod: 'wallet.lend.getPosition()',
-    isReadOnly: true,
-  },
-  openLendPosition: {
-    type: 'lend',
-    action: 'deposit',
-    description: 'Open lending position',
-    apiMethod: 'wallet.lend.openPosition()',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-  openLendPositionV1: {
-    type: 'lend',
-    action: 'deposit',
-    description: 'Open lending position',
-    apiMethod: 'wallet.lend.openPosition()',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-
-  // Withdraw operations
-  closeLendPosition: {
-    type: 'withdraw',
-    action: 'withdraw',
-    description: 'Close lending position',
-    apiMethod: 'wallet.lend.closePosition()',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-  closeLendPositionV1: {
-    type: 'withdraw',
-    action: 'withdraw',
-    description: 'Close lending position',
-    apiMethod: 'wallet.lend.closePosition()',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-
-  // Fund operations
-  fundWallet: {
-    type: 'fund',
-    action: 'mint',
-    description: 'Mint demo USDC',
-    apiMethod: 'wallet.fund()',
-    getAmount: () => '100.00',
-  },
-
-  // Wallet operations
-  getWalletBalance: {
-    type: 'wallet',
-    action: 'getBalance',
-    description: 'Get wallet balance',
-    apiMethod: 'wallet.getBalance()',
-    isReadOnly: true,
-  },
-  getWalletBalanceV1: {
-    type: 'wallet',
-    action: 'getBalance',
-    description: 'Get wallet balance',
-    apiMethod: 'wallet.getBalance()',
-    isReadOnly: true,
-  },
-  sendTokens: {
-    type: 'wallet',
-    action: 'send',
-    description: 'Send tokens',
-    apiMethod: 'wallet.sendTokens()',
-    getAmount: (_walletId: string, amount: number) => amount.toString(),
-  },
-  createSmartWallet: {
-    type: 'wallet',
-    action: 'create',
-    description: 'Create smart wallet',
-    apiMethod: 'actions.wallet.createSmartWallet()',
-  },
-}
 
 // Helper to get action config by action name (for ActivityLogItem component)
 const ACTION_CONFIG: Record<
@@ -206,8 +89,6 @@ function ActivityLogItem({
   type,
   action,
   status,
-  request,
-  response,
   blockExplorerUrl,
   isFromPreviousSession,
 }: ActivityLogItemProps) {
@@ -227,8 +108,8 @@ function ActivityLogItem({
   const tooltip = actionConfig?.tooltip
 
   // Use real data when available
-  const displayRequest = request
-  const displayResponse = response
+  const displayRequest = { request: 'john' }
+  const displayResponse = { response: 'doe' }
 
   return (
     <div

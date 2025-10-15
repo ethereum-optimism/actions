@@ -18,14 +18,12 @@ import {
   isUserOperationTransactionReceipt,
 } from '@/utils/receiptTypeGuards'
 import { getBlockExplorerUrls } from '@/utils/blockExplorer'
+import { useActivityLogger } from './useActivityLogger'
 
 export interface UseBalanceOperationsConfig {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarket['marketId']) => Promise<LendMarketPosition>
-  getPositionSilent?: (
-    marketId: LendMarket['marketId'],
-  ) => Promise<LendMarketPosition>
   mintUSDC: () => Promise<void>
   openPosition: (
     positionParams: LendExecutePositionParams,
@@ -39,14 +37,16 @@ export interface UseBalanceOperationsConfig {
 
 export function useBalanceOperations(params: UseBalanceOperationsConfig) {
   const {
-    getTokenBalances,
-    getMarkets,
-    getPosition,
-    mintUSDC,
+    getTokenBalances: getTokenBalancesRaw,
+    getMarkets: getMarketsRaw,
+    getPosition: getPositionRaw,
+    mintUSDC: mintUSDCRaw,
     isReady,
     openPosition,
     closePosition,
   } = params
+  const { logActivity } = useActivityLogger()
+
   const [isLoadingPosition, setIsLoadingPosition] = useState(false)
   const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
   const [usdcBalance, setUsdcBalance] = useState<string>('0.00')
@@ -63,6 +63,59 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   const hasInitialized = useRef(false)
   const hasInitiatedMarketFetch = useRef(false)
+
+  // Wrap operations with activity logging
+  const getTokenBalances = useCallback(async () => {
+    const activity = logActivity('wallet.getBalance()')
+    try {
+      const result = await getTokenBalancesRaw()
+      activity?.confirm()
+      return result
+    } catch (error) {
+      activity?.error()
+      throw error
+    }
+  }, [getTokenBalancesRaw, logActivity])
+
+  const getMarkets = useCallback(async () => {
+    const activity = logActivity('actions.lend.getMarkets()')
+    try {
+      const result = await getMarketsRaw()
+      activity?.confirm()
+      return result
+    } catch (error) {
+      activity?.error()
+      throw error
+    }
+  }, [getMarketsRaw, logActivity])
+
+  const getPosition = useCallback(
+    async (marketId: LendMarketId, withLogging: boolean = true) => {
+      const activity = withLogging
+        ? logActivity('wallet.lend.getPosition()')
+        : null
+      try {
+        const result = await getPositionRaw(marketId)
+        activity?.confirm()
+        return result
+      } catch (error) {
+        activity?.error()
+        throw error
+      }
+    },
+    [getPositionRaw, logActivity],
+  )
+
+  const mintUSDC = useCallback(async () => {
+    const activity = logActivity('wallet.fund()')
+    try {
+      await mintUSDCRaw()
+      activity?.confirm()
+    } catch (error) {
+      activity?.error()
+      throw error
+    }
+  }, [mintUSDCRaw, logActivity])
 
   const fetchBalance = useCallback(async () => {
     try {
@@ -217,10 +270,20 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
       const positionParams = { amount, asset, marketId }
 
+      const activity =
+        operation === 'open'
+          ? logActivity('wallet.lend.openPosition()')
+          : logActivity('wallet.lend.closePosition()')
       const result =
         operation === 'open'
-          ? await openPosition(positionParams)
-          : await closePosition(positionParams)
+          ? await openPosition(positionParams).catch((error) => {
+              activity?.error()
+              throw error
+            })
+          : await closePosition(positionParams).catch((error) => {
+              activity?.error()
+              throw error
+            })
 
       const transactionHashes = isEOATransactionReceipt(result)
         ? [result.transactionHash]
@@ -237,6 +300,12 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
         transactionHashes,
         userOpHash,
       )
+
+      activity?.confirm({
+        blockExplorerUrl: blockExplorerUrls.length
+          ? blockExplorerUrls[blockExplorerUrls.length - 1]
+          : undefined,
+      })
 
       const transaction = {
         transactionHashes,
@@ -264,12 +333,20 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
           ? await executePositon('open', amount)
           : await executePositon('close', amount)
 
-      // Get the first transaction hash if available, or use userOpHash for account abstraction
+      // Get the last transaction hash if available, or use userOpHash for account abstraction
       const txHash =
-        result.transaction.transactionHashes?.[0] ||
-        result.transaction.userOpHash
+        result.transaction.userOpHash ||
+        result.transaction.transactionHashes?.length
+          ? result.transaction.transactionHashes?.[
+              result.transaction.transactionHashes?.length - 1
+            ]
+          : undefined
 
-      const explorerUrl = result.transaction.blockExplorerUrls?.[0]
+      const explorerUrl = result.transaction.blockExplorerUrls.length
+        ? result.transaction.blockExplorerUrls[
+            result.transaction.blockExplorerUrls.length - 1
+          ]
+        : undefined
 
       // Refresh position after successful transaction with a small delay to ensure state is updated
       setTimeout(async () => {
@@ -349,19 +426,17 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     async (backgroundPolling: boolean = false) => {
       if (!isReady() || !marketChainId || !marketAddress) return
 
-      const getPosition =
-        backgroundPolling && params.getPositionSilent
-          ? params.getPositionSilent
-          : params.getPosition
-
       try {
         if (!backgroundPolling) {
           setIsLoadingPosition(true)
         }
-        const position = await getPosition({
-          chainId: marketChainId,
-          address: marketAddress,
-        })
+        const position = await getPosition(
+          {
+            chainId: marketChainId,
+            address: marketAddress,
+          },
+          !backgroundPolling,
+        )
         setDepositedAmount(position.balanceFormatted)
       } catch {
         // Silently fail polling - don't reset to 0.00
@@ -374,13 +449,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
         }
       }
     },
-    [
-      isReady,
-      marketChainId,
-      marketAddress,
-      params.getPosition,
-      params.getPositionSilent,
-    ],
+    [isReady, marketChainId, marketAddress, getPosition],
   )
 
   // Fetch position when market data is available or user changes
