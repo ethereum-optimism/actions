@@ -8,21 +8,25 @@ interface TakeActionSectionProps {
 }
 
 function TakeActionSection({ stepNumber, isOpen, onToggle }: TakeActionSectionProps) {
-  const codeExample = `// Enable asset lending in DeFi
+  const codeExample = `import { wallet } from 'actions'
+import { USDC, USDT, ETH } from '@eth-optimism/actions-sdk/assets'
+import { USDCMorphoMarket, USDCAaveMarket } from '@eth-optimism/actions-sdk/markets'
+
+// Enable asset lending in DeFi
 const receipt1 = wallet.lend.openPosition({
   amount: 1,
   asset: USDC,
-  ...ExampleMorphoMarket
+  ...USDCMorphoMarket
 })
 
 // Use lent assets as collateral
 const receipt2 = wallet.borrow.openPosition({
   amount: 1,
   asset: USDT,
-  ...ExampleAaveMarket
+  ...USDCAaveMarket
 })
 
-// Token swap via DEX of choice
+// Swap between tokens onchain
 const receipt3 = wallet.swap.execute({
   amountIn: 1,
   assetIn: USDC,

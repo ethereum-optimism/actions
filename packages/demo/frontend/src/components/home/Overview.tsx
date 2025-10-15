@@ -1,8 +1,6 @@
 import CodeBlock from './CodeBlock'
 
-const exampleCode = `import { wallet } from 'actions'
-
-// Enable asset lending in DeFi
+const exampleCode = `// Enable asset lending in DeFi
 const receipt1 = wallet.lend.openPosition({
   amount: 1,
   asset: USDC,
