@@ -31,7 +31,7 @@ function NavBar({ fullWidth = false, rightElement, showDemo = false, visible = t
             {rightElement}
             {showDemo && (
               <a
-                href="/demo"
+                href="/earn"
                 className="flex items-center space-x-2 px-2 py-2 text-sm text-gray-300 hover:text-white transition-colors duration-200"
               >
                 <span>Demo</span>

@@ -6,7 +6,7 @@ import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
 import TabbedCodeBlock from './TabbedCodeBlock'
 
 interface SmartWalletsSectionProps {
-  stepNumber: number
+  stepNumber: number | string
   openAccordion: string | null
   setOpenAccordion: (value: string | null) => void
 }
@@ -24,15 +24,18 @@ function SmartWalletsSection({
   const privyFrontendCode = `import { actions } from './config'
 import { useWallets } from '@privy-io/react-auth'
 
+// PRIVY: Fetch wallet
 const { wallets } = useWallets()
 const embeddedWallet = wallets.find(
   (wallet) => wallet.walletClientType === 'privy',
 )
 
+// ACTIONS: Create signer from hosted wallet
 const signer = await actions.wallet.createSigner({
   connectedWallet: embeddedWallet,
 })
 
+// ACTIONS: Create smart wallet capable of Actions
 const { wallet } = await actions.wallet.createSmartWallet({
   signer: signer
 })`
@@ -41,15 +44,18 @@ const { wallet } = await actions.wallet.createSmartWallet({
 import { PrivyClient } from '@privy-io/node'
 import { getAddress } from 'viem'
 
+// PRIVY: Create wallet
 const privyWallet = await privyClient.walletApi.createWallet({
   chainType: 'ethereum',
 })
 
+// ACTIONS: Create signer from hosted wallet
 const privySigner = await actions.wallet.createSigner({
   walletId: privyWallet.id,
   address: getAddress(privyWallet.address),
 })
 
+// ACTIONS: Create smart wallet capable of Actions
 const { wallet } = await actions.wallet.createSmartWallet({
   signer: privySigner
 })`
@@ -57,9 +63,13 @@ const { wallet } = await actions.wallet.createSmartWallet({
   const dynamicFrontendCode = `import { actions } from './config'
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 
+// DYNAMIC: Fetch wallet
 const { primaryWallet } = useDynamicContext()
 
+// ACTIONS: Create signer from hosted wallet
 const signer = await actions.wallet.createSigner({wallet: primaryWallet})
+
+// ACTIONS: Create smart wallet capable of Actions
 const { wallet } = await actions.wallet.createSmartWallet({
   signer: signer
 })`
@@ -69,6 +79,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
   const turnkeyFrontendCode = `import { actions } from './config'
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 
+// TURNKEY: Fetch wallet
 const { wallets, user, createWallet, refreshWallets, httpClient, session } = useTurnkey()
 useEffect(() => {
   async function createEmbeddedWallet() {
@@ -84,12 +95,16 @@ const embeddedWallet = wallets.find(
 )
 
 const walletAddress = embeddedWallet.accounts[0].address
+
+// ACTIONS: Create signer from hosted wallet
 const signer = await actions.wallet.createSigner({
   client: httpClient,
   organizationId: session.organizationId,
   signWith: walletAddress,
   ethereumAddress: walletAddress
 })
+
+// ACTIONS: Create smart wallet capable of Actions
 const { wallet } = await actions.wallet.createSmartWallet({
   signer: signer
 })`
@@ -104,6 +119,7 @@ const turnkeyClient = new Turnkey({
   defaultOrganizationId: env.TURNKEY_ORGANIZATION_ID,
 })
 
+// TURNKEY: Create wallet
 const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
   walletName: 'ETH Wallet',
   accounts: [{
@@ -114,11 +130,13 @@ const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
   }],
 })
 
+// ACTIONS: Create signer from hosted wallet
 const turnkeySigner = await actions.wallet.createSigner({
   organizationId: turnkeyWallet.activity.organizationId,
   signWith: turnkeyWallet.addresses[0],
 })
 
+// ACTIONS: Create smart wallet capable of Actions
 const { wallet } = await actions.wallet.createSmartWallet({
   signer: turnkeySigner
 })`
@@ -142,14 +160,16 @@ const { wallet } = await actions.wallet.createSmartWallet({
           }}
         >
           <div className="flex items-center gap-4">
-            <span
-              className="text-2xl font-medium"
-              style={{ color: colors.actionsRed }}
-            >
-              {stepNumber}
-            </span>
+            {stepNumber && (
+              <span
+                className="text-2xl font-medium"
+                style={{ color: colors.actionsRed }}
+              >
+                {stepNumber}
+              </span>
+            )}
             <h3 className="text-lg font-medium text-gray-300">
-              Customizable Smart Wallets
+              Smart Wallets
             </h3>
           </div>
           <svg
