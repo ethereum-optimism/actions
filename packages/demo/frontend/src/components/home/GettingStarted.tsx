@@ -6,9 +6,33 @@ import SmartWalletsSection from './SmartWalletsSection'
 import TakeActionSection from './TakeActionSection'
 
 function GettingStarted() {
-  const [openAccordion, setOpenAccordion] = useState<string | null>('install')
-  const [openNestedAccordion, setOpenNestedAccordion] = useState<string | null>(null)
+  const [openAccordions, setOpenAccordions] = useState<Set<string>>(new Set())
+  const [openNestedAccordions, setOpenNestedAccordions] = useState<Set<string>>(new Set())
   const [selectedPackageManager, setSelectedPackageManager] = useState('npm')
+
+  const toggleAccordion = (id: string) => {
+    setOpenAccordions(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  const toggleNestedAccordion = (id: string) => {
+    setOpenNestedAccordions(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
 
   const packageManagers = {
     npm: 'npm install @eth-optimism/actions-sdk',
@@ -30,10 +54,8 @@ function GettingStarted() {
           {/* Accordion Item 1: Install */}
           <InstallSection
             stepNumber={1}
-            isOpen={openAccordion === 'install'}
-            onToggle={() =>
-              setOpenAccordion(openAccordion === 'install' ? null : 'install')
-            }
+            isOpen={openAccordions.has('install')}
+            onToggle={() => toggleAccordion('install')}
             selectedPackageManager={selectedPackageManager}
             setSelectedPackageManager={setSelectedPackageManager}
             packageManagers={packageManagers}
@@ -42,26 +64,18 @@ function GettingStarted() {
           {/* Accordion Item 2: Configure */}
           <ConfigureSection
             stepNumber={2}
-            isOpen={openAccordion === 'configure'}
-            onToggle={() =>
-              setOpenAccordion(
-                openAccordion === 'configure' ? null : 'configure',
-              )
-            }
+            isOpen={openAccordions.has('configure')}
+            onToggle={() => toggleAccordion('configure')}
           />
 
           {/* Accordion Item 3: Configure Wallet */}
           <div className="mb-4">
             <button
-              onClick={() =>
-                setOpenAccordion(
-                  openAccordion === 'configure-wallet' ? null : 'configure-wallet',
-                )
-              }
+              onClick={() => toggleAccordion('configure-wallet')}
               className="w-full flex items-center justify-between py-4 px-6 rounded-lg transition-colors"
               style={{
                 backgroundColor:
-                  openAccordion === 'configure-wallet'
+                  openAccordions.has('configure-wallet')
                     ? 'rgba(60, 60, 60, 0.5)'
                     : 'rgba(40, 40, 40, 0.5)',
               }}
@@ -81,7 +95,7 @@ function GettingStarted() {
                 className="w-5 h-5 text-gray-400 transition-transform duration-300"
                 style={{
                   transform:
-                    openAccordion === 'configure-wallet'
+                    openAccordions.has('configure-wallet')
                       ? 'rotate(180deg)'
                       : 'rotate(0deg)',
                 }}
@@ -100,8 +114,8 @@ function GettingStarted() {
             <div
               className="overflow-hidden transition-all duration-300 ease-in-out"
               style={{
-                maxHeight: openAccordion === 'configure-wallet' ? '5000px' : '0',
-                opacity: openAccordion === 'configure-wallet' ? 1 : 0,
+                maxHeight: openAccordions.has('configure-wallet') ? '5000px' : '0',
+                opacity: openAccordions.has('configure-wallet') ? 1 : 0,
               }}
             >
               <div className="pt-6 pb-4">
@@ -110,8 +124,18 @@ function GettingStarted() {
                   {/* Accordion Item: BYO Hosted Wallets */}
                   <HostedWalletsSection
                     stepNumber=""
-                    openAccordion={openNestedAccordion}
-                    setOpenAccordion={setOpenNestedAccordion}
+                    openAccordion={openNestedAccordions.has('byo-wallet') ? 'byo-wallet' : null}
+                    setOpenAccordion={(val) => {
+                      if (val === 'byo-wallet') {
+                        toggleNestedAccordion('byo-wallet')
+                      } else {
+                        setOpenNestedAccordions(prev => {
+                          const newSet = new Set(prev)
+                          newSet.delete('byo-wallet')
+                          return newSet
+                        })
+                      }
+                    }}
                   />
 
                   {/* OR separator */}
@@ -124,8 +148,18 @@ function GettingStarted() {
                   {/* Accordion Item: Customizable Smart Wallets */}
                   <SmartWalletsSection
                     stepNumber=""
-                    openAccordion={openNestedAccordion}
-                    setOpenAccordion={setOpenNestedAccordion}
+                    openAccordion={openNestedAccordions.has('smart-wallet') ? 'smart-wallet' : null}
+                    setOpenAccordion={(val) => {
+                      if (val === 'smart-wallet') {
+                        toggleNestedAccordion('smart-wallet')
+                      } else {
+                        setOpenNestedAccordions(prev => {
+                          const newSet = new Set(prev)
+                          newSet.delete('smart-wallet')
+                          return newSet
+                        })
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -135,12 +169,8 @@ function GettingStarted() {
           {/* Accordion Item 4: Take Action */}
           <TakeActionSection
             stepNumber={4}
-            isOpen={openAccordion === 'take-action'}
-            onToggle={() =>
-              setOpenAccordion(
-                openAccordion === 'take-action' ? null : 'take-action',
-              )
-            }
+            isOpen={openAccordions.has('take-action')}
+            onToggle={() => toggleAccordion('take-action')}
           />
         </div>
       </div>
