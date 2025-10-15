@@ -1,7 +1,9 @@
 import type {
+  EOATransactionReceipt,
   SmartWallet,
   TokenBalance,
   TransactionData,
+  UserOperationTransactionReceipt,
 } from '@eth-optimism/actions-sdk'
 import {
   getAssetAddress,
@@ -217,6 +219,9 @@ export async function fundWallet(wallet: SmartWallet): Promise<{
   success: boolean
   to: string
   amount: string
+  transactionHashes?: Address[]
+  userOpHash?: Address
+  blockExplorerUrls?: string[]
 }> {
   const walletAddress = wallet.address
 
@@ -234,12 +239,40 @@ export async function fundWallet(wallet: SmartWallet): Promise<{
     },
   ]
 
-  await wallet.sendBatch(calls, baseSepolia.id)
+  const result = await wallet.sendBatch(calls, baseSepolia.id)
+
+  // Import getBlockExplorerUrls helper
+  const { getBlockExplorerUrls } = await import('./lend.js')
+
+  // Extract transaction hashes and user op hash using type guards
+  let transactionHashes: Address[] | undefined
+  let userOpHash: Address | undefined
+
+  if (Array.isArray(result)) {
+    // Batch of EOA transactions
+    transactionHashes = result.map((r: EOATransactionReceipt) => r.transactionHash)
+  } else if ('userOpHash' in result) {
+    // UserOperation transaction
+    userOpHash = (result as UserOperationTransactionReceipt).userOpHash
+  } else {
+    // Single EOA transaction
+    transactionHashes = [(result as EOATransactionReceipt).transactionHash]
+  }
+
+  // Get block explorer URLs
+  const blockExplorerUrls = await getBlockExplorerUrls(
+    baseSepolia.id,
+    transactionHashes,
+    userOpHash,
+  )
 
   return {
     success: true,
     to: walletAddress,
     amount: formatUnits(amountInDecimals, 6),
+    transactionHashes,
+    userOpHash,
+    blockExplorerUrls,
   }
 }
 

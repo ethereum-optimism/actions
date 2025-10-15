@@ -136,18 +136,42 @@ function EarnContent() {
     try {
       setIsLoadingBalance(true)
       const headers = await getAuthHeaders()
+
+      // Execute the fund wallet transaction
       await loggedApi.fundWallet(user.id, headers)
 
-      // Wait for the transaction to settle
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      // Transaction succeeded - optimistically update balance with the minted amount (100 USDC)
+      const currentBalance = parseFloat(usdcBalance)
+      const mintedAmount = 100
+      const newOptimisticBalance = (currentBalance + mintedAmount).toFixed(2)
+      setUsdcBalance(newOptimisticBalance)
+      setIsLoadingBalance(false)
 
-      // Refresh balance after minting
-      await fetchBalance(user.id)
+      // Fetch actual balance to verify/correct the optimistic update
+      const balanceResult = await loggedApi.getWalletBalance(user.id, headers)
+      const usdcToken = balanceResult.balance.find(
+        (token) => token.symbol === 'USDC_DEMO',
+      )
+
+      if (usdcToken && parseFloat(usdcToken.totalBalance) > 0) {
+        const actualBalance = parseFloat(usdcToken.totalBalance) / 1e6
+        const flooredBalance = Math.floor(actualBalance * 100) / 100
+        const actualBalanceStr = flooredBalance.toFixed(2)
+
+        // Only update if different from optimistic value
+        if (actualBalanceStr !== newOptimisticBalance) {
+          setUsdcBalance(actualBalanceStr)
+        }
+      }
     } catch (error) {
       console.error('Error minting USDC:', error)
+      // Revert to actual balance on error
       setIsLoadingBalance(false)
+      if (user?.id) {
+        await fetchBalance(user.id)
+      }
     }
-  }, [user?.id, getAuthHeaders, loggedApi, fetchBalance])
+  }, [user?.id, getAuthHeaders, loggedApi, fetchBalance, usdcBalance])
 
   // Fetch balance when user logs in
   useEffect(() => {

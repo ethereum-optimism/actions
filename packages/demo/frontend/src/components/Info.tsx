@@ -7,6 +7,9 @@ function Info() {
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
+      <h3 className="text-sm font-semibold mb-3" style={{ color: '#1a1b1e' }}>
+        What's happening?
+      </h3>
       <ul
         className="space-y-3 mb-8"
         style={{ color: '#000000', fontSize: '14px' }}

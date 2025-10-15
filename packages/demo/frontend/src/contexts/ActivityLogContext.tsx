@@ -57,14 +57,16 @@ export function ActivityLogProvider({ children }: { children: ReactNode }) {
       return []
     }
   })
-  const nextIdRef = useRef((() => {
-    try {
-      const stored = localStorage.getItem(NEXT_ID_KEY)
-      return stored ? parseInt(stored, 10) : 1
-    } catch {
-      return 1
-    }
-  })())
+  const nextIdRef = useRef(
+    (() => {
+      try {
+        const stored = localStorage.getItem(NEXT_ID_KEY)
+        return stored ? parseInt(stored, 10) : 1
+      } catch {
+        return 1
+      }
+    })(),
+  )
   const activityKeysRef = useRef<Map<string, number>>(new Map())
 
   // Sync transaction activities to localStorage whenever they change

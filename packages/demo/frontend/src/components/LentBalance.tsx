@@ -16,7 +16,6 @@ function LentBalance({
   isLoadingApy,
   isInitialLoad = false,
 }: LentBalanceProps) {
-
   // Format deposited amount to 4 decimals and return parts
   const formatDepositedAmount = (amount: string) => {
     const num = parseFloat(amount)
@@ -195,7 +194,9 @@ function LentBalance({
                 </td>
                 <td style={{ padding: '16px 8px', textAlign: 'right' }}>
                   {isInitialLoad || isLoadingApy ? (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <div
+                      style={{ display: 'flex', justifyContent: 'flex-end' }}
+                    >
                       <Shimmer width="50px" height="20px" borderRadius="4px" />
                     </div>
                   ) : (
@@ -213,7 +214,9 @@ function LentBalance({
                 </td>
                 <td style={{ padding: '16px 8px', textAlign: 'right' }}>
                   {isInitialLoad || isLoadingPosition ? (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <div
+                      style={{ display: 'flex', justifyContent: 'flex-end' }}
+                    >
                       <Shimmer width="70px" height="20px" borderRadius="4px" />
                     </div>
                   ) : (

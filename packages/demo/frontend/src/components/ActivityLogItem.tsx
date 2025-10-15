@@ -1,4 +1,5 @@
-import { useState } from 'react'
+// TODO: Re-enable useState in next PR when expand functionality is restored
+// import { useState } from 'react'
 
 interface ActivityLogItemProps {
   type: 'lend' | 'withdraw' | 'fund' | 'wallet'
@@ -150,7 +151,7 @@ const ACTION_CONFIG: Record<
     tooltip: 'Funds a wallet with demo tokens',
   },
   getBalance: {
-    description: 'Get wallet balance',
+    description: 'Get balance',
     apiMethod: 'wallet.getBalance()',
     tooltip: 'Retrieves wallet token balances',
   },
@@ -175,7 +176,9 @@ function ActivityLogItem({
   blockExplorerUrl,
   isFromPreviousSession,
 }: ActivityLogItemProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  // TODO: Re-enable expand state in next PR when request/response data is improved
+  // const [isExpanded, setIsExpanded] = useState(false)
+  const isExpanded = false
   const statusColor = STATUS_CONFIG[status]?.color || '#666666'
   const typeConfig = TYPE_CONFIG[type] || {
     label: type,
@@ -188,11 +191,9 @@ function ActivityLogItem({
   const apiMethod = actionConfig?.apiMethod || 'actions()'
   const tooltip = actionConfig?.tooltip
 
-  // Placeholder data for now
-  const displayRequest = request || { walletId: '0x1234...', amount: 100 }
-  const displayResponse = response || { success: true, txHash: '0xabcd...' }
-  const displayBlockExplorerUrl =
-    blockExplorerUrl || 'https://base-sepolia.blockscout.com/tx/0x...'
+  // Use real data when available
+  const displayRequest = request
+  const displayResponse = response
 
   return (
     <div
@@ -238,8 +239,35 @@ function ActivityLogItem({
             </div>
           </div>
 
-          {/* Right side: Clock icon + Chevron toggle */}
-          <div className="flex items-center gap-1">
+          {/* Right side: Block Explorer link, Clock icon - aligned with top row */}
+          <div
+            className="flex items-center gap-0.5"
+            style={{ marginTop: '1px', marginRight: '-2px' }}
+          >
+            {blockExplorerUrl && (
+              <a
+                href={blockExplorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 hover:bg-gray-100 rounded transition-all"
+                style={{ color: '#9CA3AF', padding: '2px' }}
+                title="View on Block Explorer"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M7 17L17 7"></path>
+                  <path d="M7 7h10v10"></path>
+                </svg>
+              </a>
+            )}
             {isFromPreviousSession && (
               <svg
                 width="14"
@@ -255,7 +283,8 @@ function ActivityLogItem({
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
             )}
-            <button
+            {/* TODO: Re-enable expand button in next PR when request/response data is improved */}
+            {/* <button
               className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-all"
               style={{ color: '#9CA3AF' }}
               onClick={() => setIsExpanded(!isExpanded)}
@@ -276,7 +305,7 @@ function ActivityLogItem({
               >
                 <path d="M6 9l6 6 6-6"></path>
               </svg>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
@@ -294,28 +323,30 @@ function ActivityLogItem({
             </div>
           )}
 
-          {/* Request */}
-          <div>
-            <div
-              className="text-xs font-semibold mb-1"
-              style={{ color: '#6B7280' }}
-            >
-              Request
+          {/* Params */}
+          {displayRequest && (
+            <div>
+              <div
+                className="text-xs font-semibold mb-1"
+                style={{ color: '#6B7280' }}
+              >
+                Params
+              </div>
+              <pre
+                className="text-xs p-2 rounded overflow-x-auto"
+                style={{
+                  backgroundColor: '#1F2937',
+                  color: '#D1D5DB',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {JSON.stringify(displayRequest, null, 2)}
+              </pre>
             </div>
-            <pre
-              className="text-xs p-2 rounded overflow-x-auto"
-              style={{
-                backgroundColor: '#1F2937',
-                color: '#D1D5DB',
-                fontFamily: 'monospace',
-              }}
-            >
-              {JSON.stringify(displayRequest, null, 2)}
-            </pre>
-          </div>
+          )}
 
           {/* Response */}
-          {status === 'confirmed' && (
+          {status === 'confirmed' && displayResponse && (
             <div>
               <div
                 className="text-xs font-semibold mb-1"
@@ -340,7 +371,7 @@ function ActivityLogItem({
           {status === 'confirmed' && blockExplorerUrl && (
             <div>
               <a
-                href={displayBlockExplorerUrl}
+                href={blockExplorerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs flex items-center gap-1 hover:underline"
