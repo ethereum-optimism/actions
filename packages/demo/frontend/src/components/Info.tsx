@@ -7,10 +7,6 @@ function Info() {
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
-      <h2 className="text-lg font-semibold mb-6" style={{ color: '#1a1b1e' }}>
-        Under the Hood
-      </h2>
-
       <ul
         className="space-y-3 mb-8"
         style={{ color: '#000000', fontSize: '14px' }}

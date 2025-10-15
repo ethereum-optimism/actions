@@ -50,7 +50,7 @@ function ActivityLog() {
             <line x1="3" y1="18" x2="3.01" y2="18" />
           </svg>
           <h2 className="text-lg font-semibold" style={{ color: '#1a1b1e' }}>
-            Activity Log
+            Under the Hood
           </h2>
         </div>
       </div>
