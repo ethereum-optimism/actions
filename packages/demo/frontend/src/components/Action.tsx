@@ -96,7 +96,9 @@ function Action({
   }, [loggedApi])
 
   const handleMaxClick = () => {
-    setAmount(mode === 'lend' ? usdcBalance : depositedAmount || '0')
+    const maxAmount = mode === 'lend' ? usdcBalance : depositedAmount || '0'
+    const rounded = parseFloat(maxAmount).toFixed(2)
+    setAmount(rounded)
   }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
