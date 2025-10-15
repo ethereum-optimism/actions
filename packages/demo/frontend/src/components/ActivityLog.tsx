@@ -15,7 +15,8 @@ function ActivityLog() {
 
     if (diffMins < 1) return 'Just now'
     if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
     return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
   }
 
@@ -25,7 +26,7 @@ function ActivityLog() {
       style={{
         backgroundColor: '#FFFFFF',
         borderLeft: '1px solid #E0E2EB',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
       <div className="flex items-center gap-2 mb-4">
@@ -46,10 +47,7 @@ function ActivityLog() {
           <line x1="3" y1="12" x2="3.01" y2="12" />
           <line x1="3" y1="18" x2="3.01" y2="18" />
         </svg>
-        <h2
-          className="text-lg font-semibold"
-          style={{ color: '#1a1b1e' }}
-        >
+        <h2 className="text-lg font-semibold" style={{ color: '#1a1b1e' }}>
           Activity Log
         </h2>
       </div>
@@ -67,7 +65,9 @@ function ActivityLog() {
             />
           ))
         ) : (
-          <div style={{ color: '#9CA3AF', textAlign: 'center', padding: '2rem' }}>
+          <div
+            style={{ color: '#9CA3AF', textAlign: 'center', padding: '2rem' }}
+          >
             No activity yet
           </div>
         )}

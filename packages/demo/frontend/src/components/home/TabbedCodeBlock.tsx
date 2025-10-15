@@ -28,7 +28,8 @@ function TabbedCodeBlock({
 }: TabbedCodeBlockProps) {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const currentCode =
-    tabs.find((tab) => tab.label.toLowerCase() === selectedTab)?.code || tabs[0].code
+    tabs.find((tab) => tab.label.toLowerCase() === selectedTab)?.code ||
+    tabs[0].code
 
   return (
     <div
@@ -51,7 +52,9 @@ function TabbedCodeBlock({
             <div key={tabKey} className="relative">
               <button
                 onClick={() => !isDisabled && onTabChange(tabKey)}
-                onMouseEnter={() => isDisabled && tab.disabledMessage && setHoveredTab(tabKey)}
+                onMouseEnter={() =>
+                  isDisabled && tab.disabledMessage && setHoveredTab(tabKey)
+                }
                 onMouseLeave={() => setHoveredTab(null)}
                 disabled={isDisabled}
                 className={`px-6 py-3 text-sm font-mono transition-colors border-b-2 ${
@@ -60,9 +63,13 @@ function TabbedCodeBlock({
                 style={{
                   backgroundColor: colors.bg.header,
                   color:
-                    selectedTab === tabKey ? colors.text.primary : colors.text.secondary,
+                    selectedTab === tabKey
+                      ? colors.text.primary
+                      : colors.text.secondary,
                   borderColor:
-                    selectedTab === tabKey ? 'rgb(184, 187, 38)' : 'transparent',
+                    selectedTab === tabKey
+                      ? 'rgb(184, 187, 38)'
+                      : 'transparent',
                   opacity: isDisabled ? 0.3 : selectedTab === tabKey ? 1 : 0.6,
                 }}
               >

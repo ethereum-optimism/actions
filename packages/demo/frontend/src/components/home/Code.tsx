@@ -32,53 +32,44 @@ function Code({ code, language = 'typescript' }: CodeProps) {
       // Wrap variable names after 'const' in a custom class
       html = html.replace(
         /(<span class="hljs-keyword">const<\/span> )(\w+)/g,
-        '$1<span class="var-name">$2</span>'
+        '$1<span class="var-name">$2</span>',
       )
 
       // Wrap destructuring braces after const in purple
       html = html.replace(
         /(<span class="hljs-keyword">const<\/span> )(\{)/g,
-        '$1<span class="func-brace">$2</span>'
+        '$1<span class="func-brace">$2</span>',
       )
-      html = html.replace(
-        /(\})( = )/g,
-        '<span class="func-brace">$1</span>$2'
-      )
+      html = html.replace(/(\})( = )/g, '<span class="func-brace">$1</span>$2')
 
       // Wrap import braces in yellow class
       html = html.replace(
         /(<span class="hljs-keyword">import<\/span> )([{])/g,
-        '$1<span class="import-brace">$2</span>'
+        '$1<span class="import-brace">$2</span>',
       )
       html = html.replace(
         /([}])(.*?<span class="hljs-keyword">from<\/span>)/g,
-        '<span class="import-brace">$1</span>$2'
+        '<span class="import-brace">$1</span>$2',
       )
 
       // Wrap all parentheses in yellow
-      html = html.replace(
-        /(\()/g,
-        '<span class="import-brace">$1</span>'
-      )
-      html = html.replace(
-        /(\))/g,
-        '<span class="import-brace">$1</span>'
-      )
+      html = html.replace(/(\()/g, '<span class="import-brace">$1</span>')
+      html = html.replace(/(\))/g, '<span class="import-brace">$1</span>')
       // Opening brace in purple
       html = html.replace(
         /(<span class="import-brace">\(<\/span>)(\{)/g,
-        '$1<span class="func-brace">$2</span>'
+        '$1<span class="func-brace">$2</span>',
       )
       // Closing brace and paren in purple and yellow
       html = html.replace(
         /(\})(<span class="import-brace">\)<\/span>)/g,
-        '<span class="func-brace">$1</span>$2'
+        '<span class="func-brace">$1</span>$2',
       )
 
       // Separate string quotes from content
       html = html.replace(
         /<span class="hljs-string">('|")([^'"]*?)('|")<\/span>/g,
-        '<span class="string-quote">$1</span><span class="hljs-string">$2</span><span class="string-quote">$3</span>'
+        '<span class="string-quote">$1</span><span class="hljs-string">$2</span><span class="string-quote">$3</span>',
       )
 
       codeRef.current.innerHTML = html

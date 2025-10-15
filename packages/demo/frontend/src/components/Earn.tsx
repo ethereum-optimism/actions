@@ -169,14 +169,20 @@ function EarnContent() {
 
   // Handle position updates from Action component
   const handlePositionUpdate = useCallback(
-    (newDepositedAmount: string | null, newApy: number | null, newIsLoadingPosition: boolean, newIsLoadingApy: boolean, newIsInitialLoad: boolean) => {
+    (
+      newDepositedAmount: string | null,
+      newApy: number | null,
+      newIsLoadingPosition: boolean,
+      newIsLoadingApy: boolean,
+      newIsInitialLoad: boolean,
+    ) => {
       setDepositedAmount(newDepositedAmount)
       setApy(newApy)
       setIsLoadingPosition(newIsLoadingPosition)
       setIsLoadingApy(newIsLoadingApy)
       setIsInitialLoad(newIsInitialLoad)
     },
-    []
+    [],
   )
 
   // Show loading state while Privy is initializing

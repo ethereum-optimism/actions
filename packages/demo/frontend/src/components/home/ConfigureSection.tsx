@@ -173,7 +173,12 @@ export const actions = createActions(config)`
           <TabbedCodeBlock
             tabs={[
               { label: 'Backend', code: backendConfigCode },
-              { label: 'Frontend', code: frontendConfigCode, disabled: true, disabledMessage: 'Soon™' },
+              {
+                label: 'Frontend',
+                code: frontendConfigCode,
+                disabled: true,
+                disabledMessage: 'Soon™',
+              },
             ]}
             selectedTab={selectedTab}
             onTabChange={setSelectedTab}

@@ -31,7 +31,10 @@ function TerminalHeader({ filename }: TerminalHeaderProps) {
           }}
         ></div>
       </div>
-      <div className="text-xs font-mono" style={{ color: colors.syntax.keyword }}>
+      <div
+        className="text-xs font-mono"
+        style={{ color: colors.syntax.keyword }}
+      >
         {filename}
       </div>
     </div>

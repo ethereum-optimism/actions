@@ -250,10 +250,7 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
               </div>
 
               {/* Content for each provider */}
-              <div
-                className="p-8"
-                style={{ backgroundColor: '#32302f' }}
-              >
+              <div className="p-8" style={{ backgroundColor: '#32302f' }}>
                 {selectedWalletProvider === 'privy' && (
                   <div className="space-y-6">
                     <div>
@@ -273,8 +270,8 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 
                     <div>
                       <p className="text-gray-300 mb-2">
-                        2. Create a frontend or backend user wallet and
-                        extend it with DeFi Actions:
+                        2. Create a frontend or backend user wallet and extend
+                        it with DeFi Actions:
                       </p>
                       <TabbedCodeBlock
                         tabs={[
@@ -308,8 +305,8 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 
                     <div>
                       <p className="text-gray-300 mb-2">
-                        2. Create a frontend user wallet and extend it
-                        with DeFi Actions:
+                        2. Create a frontend user wallet and extend it with DeFi
+                        Actions:
                       </p>
                       <TabbedCodeBlock
                         tabs={[
@@ -343,8 +340,8 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
 
                     <div>
                       <p className="text-gray-300 mb-2">
-                        2. Create a frontend or backend user wallet and
-                        extend it with DeFi Actions:
+                        2. Create a frontend or backend user wallet and extend
+                        it with DeFi Actions:
                       </p>
                       <TabbedCodeBlock
                         tabs={[

@@ -6,7 +6,13 @@ interface TransactionModalProps {
   blockExplorerUrl?: string
 }
 
-function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplorerUrl }: TransactionModalProps) {
+function TransactionModal({
+  isOpen,
+  status,
+  onClose,
+  transactionHash,
+  blockExplorerUrl,
+}: TransactionModalProps) {
   if (!isOpen) return null
 
   const getStatusContent = () => {
@@ -20,8 +26,9 @@ function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplo
             </div>
           ),
           title: 'Transaction Pending',
-          description: 'Please wait while your transaction is being processed...',
-          showClose: false
+          description:
+            'Please wait while your transaction is being processed...',
+          showClose: false,
         }
       case 'success':
         return {
@@ -43,7 +50,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplo
           ),
           title: 'Transaction Successful',
           description: 'Your USDC is now earning interest',
-          showClose: true
+          showClose: true,
         }
       case 'error':
         return {
@@ -66,7 +73,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplo
           ),
           title: 'Transaction Failed',
           description: '',
-          showClose: true
+          showClose: true,
         }
     }
   }
@@ -89,7 +96,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplo
           width: '90%',
           maxWidth: '400px',
           padding: '32px',
-          fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
         }}
       >
         {content.showClose && (
@@ -122,7 +129,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplo
             style={{
               color: '#1a1b1e',
               fontSize: '20px',
-              fontWeight: 600
+              fontWeight: 600,
             }}
           >
             {content.title}
@@ -134,7 +141,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplo
               style={{
                 color: '#666666',
                 fontSize: '14px',
-                lineHeight: '20px'
+                lineHeight: '20px',
               }}
             >
               {content.description}
@@ -143,7 +150,10 @@ function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplo
 
           {status === 'success' && (blockExplorerUrl || transactionHash) && (
             <a
-              href={blockExplorerUrl || `https://sepolia.basescan.org/tx/${transactionHash}`}
+              href={
+                blockExplorerUrl ||
+                `https://sepolia.basescan.org/tx/${transactionHash}`
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 mb-6 hover:opacity-80 transition-opacity"
@@ -151,7 +161,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplo
                 color: '#3374DB',
                 fontSize: '14px',
                 fontWeight: 500,
-                textDecoration: 'none'
+                textDecoration: 'none',
               }}
             >
               View on Block Explorer
@@ -181,7 +191,7 @@ function TransactionModal({ isOpen, status, onClose, transactionHash, blockExplo
                 fontSize: '16px',
                 borderRadius: '12px',
                 border: 'none',
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
               Close

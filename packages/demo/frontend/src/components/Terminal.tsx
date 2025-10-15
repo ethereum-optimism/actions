@@ -199,20 +199,20 @@ const Terminal = () => {
     // Color mappings for wallet commands (rainbow order)
     const colorMap: Record<string, string> = {
       // Console commands - blue
-      'help': '#83a598',
-      'clear': '#83a598',
-      'status': '#83a598',
-      'exit': '#83a598',
+      help: '#83a598',
+      clear: '#83a598',
+      status: '#83a598',
+      exit: '#83a598',
       // Future actions - red
-      'borrow': '#fb4933',
-      'swap': '#fb4933',
+      borrow: '#fb4933',
+      swap: '#fb4933',
       // Wallet commands - rainbow
-      'create': '#fb4933',  // red
-      'select': '#fe8019',  // orange
-      'fund': '#fabd2f',    // yellow
-      'balance': '#b8bb26', // green
-      'lend': '#83a598',    // blue
-      'send': '#d3869b',    // purple
+      create: '#fb4933', // red
+      select: '#fe8019', // orange
+      fund: '#fabd2f', // yellow
+      balance: '#b8bb26', // green
+      lend: '#83a598', // blue
+      send: '#d3869b', // purple
     }
 
     // Build regex pattern for colored commands
@@ -250,9 +250,12 @@ const Terminal = () => {
         // Add colored command
         const command = match[0]
         segments.push(
-          <span key={`${index}-${match.index}`} style={{ color: colorMap[command] }}>
+          <span
+            key={`${index}-${match.index}`}
+            style={{ color: colorMap[command] }}
+          >
             {command}
-          </span>
+          </span>,
         )
 
         lastIndex = match.index + command.length
@@ -838,7 +841,8 @@ User ID: ${result.userId}`,
   }
 
   const handlePositionTypeSelection = async () => {
-    const operationType: 'open' | 'close' = selectedPositionTypeIndex === 0 ? 'open' : 'close'
+    const operationType: 'open' | 'close' =
+      selectedPositionTypeIndex === 0 ? 'open' : 'close'
     const promptData = pendingPrompt?.data as {
       selectedWallet: WalletData
       selectedMarket: MarketData
@@ -847,7 +851,10 @@ User ID: ${result.userId}`,
     }
     setPendingPrompt(null)
 
-    const balanceToUse = operationType === 'close' ? promptData.marketBalance : promptData.walletBalance
+    const balanceToUse =
+      operationType === 'close'
+        ? promptData.marketBalance
+        : promptData.walletBalance
     const actionText = operationType === 'close' ? 'withdraw' : 'deposit'
 
     const amountPromptLine: TerminalLine = {
@@ -957,7 +964,8 @@ User ID: ${result.userId}`,
         .find(
           (cb) =>
             cb.chainId === selectedMarket.marketId.chainId &&
-            (cb.tokenAddress || '').toLowerCase() === assetAddress.toLowerCase(),
+            (cb.tokenAddress || '').toLowerCase() ===
+              assetAddress.toLowerCase(),
         )
 
       const usdcBalance = chainToken
@@ -994,12 +1002,12 @@ User ID: ${result.userId}`,
         }
         setLines((prev) => [...prev.slice(0, -1), balancesLine])
 
-        const positionTypes = ['open position (deposit)', 'close position (withdraw)']
+        const positionTypes = [
+          'open position (deposit)',
+          'close position (withdraw)',
+        ]
         const positionTypeOptions = positionTypes
-          .map(
-            (type, index) =>
-              `${index === 0 ? '> ' : '  '}${type}`,
-          )
+          .map((type, index) => `${index === 0 ? '> ' : '  '}${type}`)
           .join('\n')
 
         const positionTypeSelectionLine: TerminalLine = {
@@ -1070,11 +1078,19 @@ User ID: ${result.userId}`,
     }
 
     const operationType = promptData.operationType || 'open'
-    const relevantBalance = operationType === 'close' ? (promptData.marketBalance || 0) : promptData.walletBalance
+    const relevantBalance =
+      operationType === 'close'
+        ? promptData.marketBalance || 0
+        : promptData.walletBalance
 
     setPendingPrompt(null)
 
-    console.log('[FRONTEND] Amount submitted:', amount, 'Operation:', operationType)
+    console.log(
+      '[FRONTEND] Amount submitted:',
+      amount,
+      'Operation:',
+      operationType,
+    )
 
     if (isNaN(amount) || amount <= 0) {
       const errorLine: TerminalLine = {
@@ -1088,7 +1104,8 @@ User ID: ${result.userId}`,
     }
 
     if (amount > relevantBalance) {
-      const balanceUnit = operationType === 'close' ? promptData.selectedMarket.name : 'USDC'
+      const balanceUnit =
+        operationType === 'close' ? promptData.selectedMarket.name : 'USDC'
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
@@ -1104,36 +1121,41 @@ User ID: ${result.userId}`,
     const processingLine: TerminalLine = {
       id: `processing-${Date.now()}`,
       type: 'output',
-      content: operationType === 'close'
-        ? `Processing withdrawal: ${amount} ${amountUnit} from ${promptData.selectedMarket.name}...`
-        : `Processing lending transaction: ${amount} ${amountUnit} to ${promptData.selectedMarket.name}...`,
+      content:
+        operationType === 'close'
+          ? `Processing withdrawal: ${amount} ${amountUnit} from ${promptData.selectedMarket.name}...`
+          : `Processing lending transaction: ${amount} ${amountUnit} to ${promptData.selectedMarket.name}...`,
       timestamp: new Date(),
     }
     setLines((prev) => [...prev, processingLine])
 
     try {
-      console.log(`[FRONTEND] Calling ${operationType === 'close' ? 'closeLendPosition' : 'openLendPosition'} API`)
+      console.log(
+        `[FRONTEND] Calling ${operationType === 'close' ? 'closeLendPosition' : 'openLendPosition'} API`,
+      )
 
       const assetAddress =
         promptData.selectedMarket.asset.address[
           promptData.selectedMarket.marketId.chainId
-        ] || (Object.values(promptData.selectedMarket.asset.address)[0] as Address)
+        ] ||
+        (Object.values(promptData.selectedMarket.asset.address)[0] as Address)
 
-      const result = operationType === 'close'
-        ? await actionsApi.closeLendPosition(
-            promptData.selectedWallet.id,
-            amount,
-            assetAddress as Address,
-            promptData.selectedMarket.marketId,
-            await getAuthHeaders(),
-          )
-        : await actionsApi.openLendPosition(
-            promptData.selectedWallet.id,
-            amount,
-            assetAddress as Address,
-            promptData.selectedMarket.marketId,
-            await getAuthHeaders(),
-          )
+      const result =
+        operationType === 'close'
+          ? await actionsApi.closeLendPosition(
+              promptData.selectedWallet.id,
+              amount,
+              assetAddress as Address,
+              promptData.selectedMarket.marketId,
+              await getAuthHeaders(),
+            )
+          : await actionsApi.openLendPosition(
+              promptData.selectedWallet.id,
+              amount,
+              assetAddress as Address,
+              promptData.selectedMarket.marketId,
+              await getAuthHeaders(),
+            )
 
       console.log(
         `[FRONTEND] ${operationType === 'close' ? 'Withdrawal' : 'Deposit'} successful:`,
@@ -1143,14 +1165,18 @@ User ID: ${result.userId}`,
       const successLine: TerminalLine = {
         id: `lend-success-${Date.now()}`,
         type: 'success',
-        content: operationType === 'close'
-          ? `✅ Successfully withdrew ${amount} ${amountUnit}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrls.join('\n') || 'pending'}`
-          : `✅ Successfully lent ${amount} ${amountUnit} to ${promptData.selectedMarket.name}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrls.join('\n') || 'pending'}`,
+        content:
+          operationType === 'close'
+            ? `✅ Successfully withdrew ${amount} ${amountUnit}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrls.join('\n') || 'pending'}`
+            : `✅ Successfully lent ${amount} ${amountUnit} to ${promptData.selectedMarket.name}!\n\nMarket:  ${promptData.selectedMarket.name}\nAmount: ${amount} ${amountUnit}\nTx:     ${result.transaction.blockExplorerUrls.join('\n') || 'pending'}`,
         timestamp: new Date(),
       }
       setLines((prev) => [...prev.slice(0, -1), successLine])
     } catch (error) {
-      console.error(`[FRONTEND] ${operationType === 'close' ? 'Withdrawal' : 'Lending'} failed:`, error)
+      console.error(
+        `[FRONTEND] ${operationType === 'close' ? 'Withdrawal' : 'Lending'} failed:`,
+        error,
+      )
       const errorLine: TerminalLine = {
         id: `error-${Date.now()}`,
         type: 'error',
@@ -1804,15 +1830,11 @@ User ID: ${result.userId}`,
         return
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        setSelectedPositionTypeIndex((prevIndex) =>
-          prevIndex > 0 ? 0 : 1,
-        )
+        setSelectedPositionTypeIndex((prevIndex) => (prevIndex > 0 ? 0 : 1))
         return
       } else if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setSelectedPositionTypeIndex((prevIndex) =>
-          prevIndex < 1 ? 1 : 0,
-        )
+        setSelectedPositionTypeIndex((prevIndex) => (prevIndex < 1 ? 1 : 0))
         return
       } else if (e.key === 'Escape') {
         e.preventDefault()
@@ -1915,7 +1937,10 @@ User ID: ${result.userId}`,
   // Update the position type selection display to reflect the current selection
   useEffect(() => {
     if (pendingPrompt?.type === 'lendPositionType') {
-      const positionTypes = ['open position (deposit)', 'close position (withdraw)']
+      const positionTypes = [
+        'open position (deposit)',
+        'close position (withdraw)',
+      ]
       const positionTypeOptions = positionTypes
         .map(
           (type, index) =>

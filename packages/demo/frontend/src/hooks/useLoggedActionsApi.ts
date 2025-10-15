@@ -35,7 +35,9 @@ export function useLoggedActionsApi() {
         // Wrap with logging
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return async (...args: any[]) => {
-          const amount = config.getAmount ? config.getAmount(...args) : undefined
+          const amount = config.getAmount
+            ? config.getAmount(...args)
+            : undefined
 
           // For read-only operations, always create a new entry (no retry logic)
           if (config.isReadOnly) {
