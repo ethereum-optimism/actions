@@ -241,7 +241,7 @@ function ActivityLogItem({
 
           {/* Right side: Clock icon + Chevron toggle */}
           <div className="flex items-center gap-1">
-            {isTransaction && (
+            {isFromPreviousSession && (
               <svg
                 width="14"
                 height="14"
