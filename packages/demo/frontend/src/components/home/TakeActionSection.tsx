@@ -58,7 +58,7 @@ const receipt4 = wallet.send({
           >
             {stepNumber}
           </span>
-          <h3 className="text-lg font-medium text-gray-300">Take Action</h3>
+          <h3 className="text-lg font-medium" style={{ color: colors.text.cream }}>Take Action</h3>
         </div>
         <svg
           className="w-5 h-5 text-gray-400 transition-transform duration-300"
@@ -85,7 +85,7 @@ const receipt4 = wallet.send({
         }}
       >
         <div className="pt-6 pb-4">
-          <p className="text-gray-300 text-base mb-4">
+          <p className="text-base mb-4" style={{ color: colors.text.cream }}>
             Lend, Borrow, Swap, or Send.
           </p>
           <CodeBlock code={codeExample} filename="wallet.ts" />

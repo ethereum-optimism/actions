@@ -137,7 +137,7 @@ export const actions = createActions(config)`
           >
             {stepNumber}
           </span>
-          <h3 className="text-lg font-medium text-gray-300">
+          <h3 className="text-lg font-medium" style={{ color: colors.text.cream }}>
             Configure Actions
           </h3>
         </div>
@@ -166,7 +166,7 @@ export const actions = createActions(config)`
         }}
       >
         <div className="pt-6 pb-4">
-          <p className="text-gray-300 text-base mb-4">
+          <p className="text-base mb-4" style={{ color: colors.text.cream }}>
             Pick which DeFi protocols, markets, networks, assets, and providers
             you want to support.
           </p>

@@ -55,7 +55,7 @@ function Hero() {
               style={{
                 fontFamily:
                   '"VT323", "IBM VGA", "IBM BIOS", "Courier New", Courier, "Lucida Console", Monaco, monospace',
-                color: '#F5F5DC',
+                color: colors.text.cream,
               }}
             >
               Perform <span className="font-semibold">DeFi</span> actions with
@@ -68,9 +68,9 @@ function Hero() {
               <a
                 href="/earn"
                 className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
-                style={{ backgroundColor: '#F5F5DC' }}
+                style={{ backgroundColor: colors.text.cream }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E5E5CC'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F5F5DC'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.text.cream}
               >
                 <svg
                   className="w-5 h-5"
@@ -92,7 +92,7 @@ function Hero() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
-                style={{ color: '#F5F5DC' }}
+                style={{ color: colors.text.cream }}
               >
                 <svg
                   className="w-5 h-5"

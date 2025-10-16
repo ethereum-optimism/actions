@@ -35,7 +35,7 @@ function InstallSection({
           >
             {stepNumber}
           </span>
-          <h3 className="text-lg font-medium text-gray-300">
+          <h3 className="text-lg font-medium" style={{ color: colors.text.cream }}>
             Install the library
           </h3>
         </div>
@@ -86,9 +86,12 @@ function InstallSection({
                   onClick={() => setSelectedPackageManager(pm)}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     selectedPackageManager === pm
-                      ? 'text-white border-b-2'
+                      ? 'border-b-2'
                       : 'text-gray-400 hover:text-gray-300'
                   }`}
+                  style={{
+                    color: selectedPackageManager === pm ? colors.text.cream : undefined,
+                  }}
                   style={{
                     borderColor:
                       selectedPackageManager === pm

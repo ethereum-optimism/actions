@@ -4,6 +4,7 @@ import ConfigureSection from './ConfigureSection'
 import HostedWalletsSection from './HostedWalletsSection'
 import SmartWalletsSection from './SmartWalletsSection'
 import TakeActionSection from './TakeActionSection'
+import { colors } from '@/constants/colors'
 
 function GettingStarted() {
   const [openAccordions, setOpenAccordions] = useState<Set<string>>(new Set())
@@ -49,7 +50,7 @@ function GettingStarted() {
       {/* Getting Started Subsection */}
       <div id="getting-started" className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-medium mb-8" style={{ color: '#F5F5DC' }}>
+          <h2 className="text-3xl font-medium mb-8" style={{ color: colors.text.cream }}>
             Getting Started
           </h2>
 
@@ -88,7 +89,7 @@ function GettingStarted() {
                 >
                   3
                 </span>
-                <h3 className="text-lg font-medium" style={{ color: '#F5F5DC' }}>
+                <h3 className="text-lg font-medium" style={{ color: colors.text.cream }}>
                   Configure Wallet
                 </h3>
               </div>
@@ -187,16 +188,16 @@ function GettingStarted() {
 
           {/* CTA Section */}
           <div className="pt-16 text-center">
-            <h3 className="text-2xl font-medium mb-6" style={{ color: '#F5F5DC' }}>
+            <h3 className="text-2xl font-medium mb-6" style={{ color: colors.text.cream }}>
               Ready to get started?
             </h3>
             <div className="flex flex-row gap-4 justify-center">
               <a
                 href="/earn"
                 className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200"
-                style={{ backgroundColor: '#F5F5DC' }}
+                style={{ backgroundColor: colors.text.cream }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E5E5CC'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F5F5DC'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.text.cream}
               >
                 <svg
                   className="w-5 h-5"
@@ -218,7 +219,7 @@ function GettingStarted() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200"
-                style={{ color: '#F5F5DC' }}
+                style={{ color: colors.text.cream }}
               >
                 <svg
                   className="w-5 h-5"

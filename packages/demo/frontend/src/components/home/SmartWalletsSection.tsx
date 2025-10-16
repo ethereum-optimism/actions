@@ -170,7 +170,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
                 {stepNumber}
               </span>
             )}
-            <h3 className="text-lg font-medium text-gray-300">Smart Wallets</h3>
+            <h3 className="text-lg font-medium" style={{ color: colors.text.cream }}>Smart Wallets</h3>
           </div>
           <svg
             className="w-5 h-5 text-gray-400 transition-transform duration-300"
@@ -200,7 +200,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
           }}
         >
           <div className="pt-6 pb-4">
-            <p className="text-gray-300 text-base mb-4">
+            <p className="text-base mb-4" style={{ color: colors.text.cream }}>
               Use hosted wallets as signers of smart wallets you control.
             </p>
             <div
@@ -282,7 +282,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
                 {selectedWalletProvider === 'privy' && (
                   <div className="space-y-6">
                     <div>
-                      <p className="text-gray-300 text-base mb-4">
+                      <p className="text-base mb-4" style={{ color: colors.text.cream }}>
                         1.{' '}
                         <a
                           href="https://docs.privy.io/basics/react/installation"
@@ -297,7 +297,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
                     </div>
 
                     <div>
-                      <p className="text-gray-300 text-base mb-2">
+                      <p className="text-base mb-2" style={{ color: colors.text.cream }}>
                         2. Hosted user wallets can become signers for new,
                         customizable smart wallets:
                       </p>
@@ -316,7 +316,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
                 {selectedWalletProvider === 'dynamic' && (
                   <div className="space-y-6">
                     <div>
-                      <p className="text-gray-300 text-base mb-4">
+                      <p className="text-base mb-4" style={{ color: colors.text.cream }}>
                         1.{' '}
                         <a
                           href="https://docs.dynamic.xyz/quickstart"
@@ -331,7 +331,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
                     </div>
 
                     <div>
-                      <p className="text-gray-300 text-base mb-2">
+                      <p className="text-base mb-2" style={{ color: colors.text.cream }}>
                         2. Hosted user wallets can become signers for new,
                         customizable smart wallets:
                       </p>
@@ -350,7 +350,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
                 {selectedWalletProvider === 'turnkey' && (
                   <div className="space-y-6">
                     <div>
-                      <p className="text-gray-300 text-base mb-4">
+                      <p className="text-base mb-4" style={{ color: colors.text.cream }}>
                         1.{' '}
                         <a
                           href="https://docs.turnkey.com/sdks/react/getting-started"
@@ -365,7 +365,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
                     </div>
 
                     <div>
-                      <p className="text-gray-300 text-base mb-2">
+                      <p className="text-base mb-2" style={{ color: colors.text.cream }}>
                         2. Hosted user wallets can become signers for new,
                         customizable smart wallets:
                       </p>
