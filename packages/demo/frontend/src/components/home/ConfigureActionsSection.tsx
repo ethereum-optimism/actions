@@ -1,26 +1,20 @@
 import { colors } from '@/constants/colors'
 import CodeBlock from './CodeBlock'
 
-interface ConfigureSectionProps {
+interface ConfigureActionsSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
 }
 
-function ConfigureSection({
+function ConfigureActionsSection({
   stepNumber,
   isOpen,
   onToggle,
-}: ConfigureSectionProps) {
-  const configCode = `import { createActions } from '@eth-optimism/actions-sdk/node'
-import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
-import { USDCMorphoMarket, USDCAaveMarket } from '@eth-optimism/actions-sdk/markets'
-import { unichain, optimism, base } from 'config/chains'
-import { PrivyClient } from '@privy-io/node'
-
-const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
-
+}: ConfigureActionsSectionProps) {
+  const configCode = `
 const config: ActionsConfig = {
+  // WalletConfig
   wallet: {
     hostedWalletConfig: {
       provider: {
@@ -38,7 +32,7 @@ const config: ActionsConfig = {
     },
   },
 
-  // Lend Provider
+  // LendConfig
   lend: {
     type: 'morpho',
     assetAllowlist: [USDC, ETH, WBTC],
@@ -47,7 +41,7 @@ const config: ActionsConfig = {
     marketBlocklist: [],
   },
 
-  // Borrow Provider
+  // BorrowConfig
   borrow: {
     type: 'morpho',
     assetAllowlist: [USDC, ETH, WBTC],
@@ -56,18 +50,17 @@ const config: ActionsConfig = {
     marketBlocklist: [],
   },
 
-  // Swap Provider
+  // SwapConfig
   swap: {
     type: 'uniswap',
     defaultSlippage: 100, // 100 bips or 1%
     assetAllowList: [USDC, ETH, WBTC]
   },
 
-  // Chain Provider
+  // ChainConfig
   chains: [
-      unichain,
-      optimism,
-      base
+    optimism,
+    unichain,
   ]
 }
 
@@ -91,7 +84,10 @@ export const actions = createActions(config)`
           >
             {stepNumber}
           </span>
-          <h3 className="text-lg font-medium" style={{ color: colors.text.cream }}>
+          <h3
+            className="text-lg font-medium"
+            style={{ color: colors.text.cream }}
+          >
             Configure Actions
           </h3>
         </div>
@@ -131,4 +127,4 @@ export const actions = createActions(config)`
   )
 }
 
-export default ConfigureSection
+export default ConfigureActionsSection

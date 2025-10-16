@@ -1,52 +1,30 @@
 import { colors } from '@/constants/colors'
 import CodeBlock from './CodeBlock'
 
-interface TakeActionSectionProps {
+interface ConfigureChainsSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
 }
 
-function TakeActionSection({
+function ConfigureChainsSection({
   stepNumber,
   isOpen,
   onToggle,
-}: TakeActionSectionProps) {
-  const codeExample = `import { USDC, ETH, USDT } from '@eth-optimism/actions-sdk/assets'
+}: ConfigureChainsSectionProps) {
+  const chainsCode = `
 
-// Fetch your preferred market for any asset
-const market = actions.lend.getMarket(USDC)
+// Define and abstract away supported chains
+const OPTIMISM = {
+  chainId: optimism.id,
+  rpcUrls: env.OPTIMISM_RPC_URL
+  bundler: {
+    type: 'simple' as const,
+    url: env.OPTIMISM_BUNDLER_URL,
+  },
+}
 
-// Enable asset lending in DeFi
-const receipt1 = wallet.lend.openPosition({
-  amount: 1,
-  asset: USDC,
-  ...market
-})
-
-// Manage user market positions
-const position = wallet.lend.getPosition(market)
-
-// Use lent assets as collateral
-const receipt2 = wallet.borrow.openPosition({
-  amount: 1,
-  asset: USDT,
-  ...market
-})
-
-// Swap between tokens onchain
-const receipt3 = wallet.swap.execute({
-  amountIn: 1,
-  assetIn: USDC,
-  assetOut: ETH,
-})
-
-// Easy, safe asset transfers
-const receipt4 = wallet.send({
-  amount: 1,
-  asset: USDC,
-  to: 'vitalik.eth',
-})`
+export const actions = createActions({chains: [OPTIMISM], ...config})`
 
   return (
     <div className="mb-4">
@@ -70,7 +48,7 @@ const receipt4 = wallet.send({
             className="text-lg font-medium"
             style={{ color: colors.text.cream }}
           >
-            Take Action
+            Configure Chains
           </h3>
         </div>
         <svg
@@ -93,19 +71,19 @@ const receipt4 = wallet.send({
       <div
         className="overflow-hidden transition-all duration-300 ease-in-out"
         style={{
-          maxHeight: isOpen ? '3000px' : '0',
+          maxHeight: isOpen ? '2000px' : '0',
           opacity: isOpen ? 1 : 0,
         }}
       >
         <div className="pt-6 pb-4">
           <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-            Bring it all together and let users take action.
+            Abstract away chains and sponsor preferred transactions.
           </p>
-          <CodeBlock code={codeExample} filename="wallet.ts" />
+          <CodeBlock code={chainsCode} filename="chains.ts" />
         </div>
       </div>
     </div>
   )
 }
 
-export default TakeActionSection
+export default ConfigureChainsSection

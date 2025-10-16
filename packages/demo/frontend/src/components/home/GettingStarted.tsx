@@ -1,17 +1,24 @@
 import { useState } from 'react'
 import InstallSection from './InstallSection'
-import ConfigureSection from './ConfigureSection'
-import HostedWalletsSection from './HostedWalletsSection'
-import SmartWalletsSection from './SmartWalletsSection'
+import ConfigureActionsSection from './ConfigureActionsSection'
 import TakeActionSection from './TakeActionSection'
+import ConfigureAssetsSection from './ConfigureAssetsSection'
+import ConfigureMarketsSection from './ConfigureMarketsSection'
+import ConfigureChainsSection from './ConfigureChainsSection'
+import ConfigureSignersSection from './ConfigureSignersSection'
 import { colors } from '@/constants/colors'
+import PrivyLogo from '@/assets/privy-logo-white.svg'
+import DynamicLogo from '@/assets/dynamic-logo-white.svg'
+import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
+import TabbedCodeBlock from './TabbedCodeBlock'
 
 function GettingStarted() {
   const [openAccordions, setOpenAccordions] = useState<Set<string>>(new Set())
-  const [openNestedAccordions, setOpenNestedAccordions] = useState<Set<string>>(
-    new Set(),
-  )
   const [selectedPackageManager, setSelectedPackageManager] = useState('npm')
+  const [selectedWalletProvider, setSelectedWalletProvider] = useState('privy')
+  const [selectedPrivyTab, setSelectedPrivyTab] = useState('frontend')
+  const [selectedDynamicTab, setSelectedDynamicTab] = useState('frontend')
+  const [selectedTurnkeyTab, setSelectedTurnkeyTab] = useState('frontend')
 
   const toggleAccordion = (id: string) => {
     setOpenAccordions((prev) => {
@@ -25,17 +32,95 @@ function GettingStarted() {
     })
   }
 
-  const toggleNestedAccordion = (id: string) => {
-    setOpenNestedAccordions((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(id)) {
-        newSet.delete(id)
-      } else {
-        newSet.add(id)
-      }
-      return newSet
-    })
-  }
+  const privyFrontendCode = `import { actions } from './config'
+import { useWallets } from '@privy-io/react-auth'
+
+// PRIVY: Fetch wallet
+const { wallets } = useWallets()
+const embeddedWallet = wallets.find(
+  (wallet) => wallet.walletClientType === 'privy',
+)
+
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
+  connectedWallet: embeddedWallet,
+})`
+
+  const privyBackendCode = `import { actions } from './config'
+import { PrivyClient } from '@privy-io/node'
+
+const privyClient = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
+
+// PRIVY: Create wallet
+const privyWallet = await privyClient.walletApi.createWallet({
+  chainType: 'ethereum',
+})
+
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
+  walletId: privyWallet.id,
+  address: privyWallet.address,
+})`
+
+  const dynamicCode = `import { actions } from './config'
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
+
+// DYNAMIC: Fetch wallet
+const { primaryWallet } = useDynamicContext()
+const embeddedWallet = primaryWallet
+
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToVerbsWallet({
+  wallet: embeddedWallet,
+})`
+
+  const turnkeyFrontendCode = `import { actions } from './config'
+import { useTurnkey } from "@turnkey/react-wallet-kit"
+
+// TURNKEY: Fetch wallet
+const { wallets, createWallet, refreshWallets, httpClient, session } = useTurnkey()
+
+const embeddedWallet = await createWallet({
+  walletName: \`My New Wallet \${Math.random()}\`,
+  accounts: ["ADDRESS_FORMAT_ETHEREUM"],
+})
+
+const walletAddress = embeddedWallet.accounts[0].address
+
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
+  client: httpClient,
+  organizationId: session.organizationId,
+  signWith: walletAddress,
+  ethereumAddress: walletAddress,
+})`
+
+  const turnkeyBackendCode = `import { actions } from './config'
+import { Turnkey } from '@turnkey/sdk-server'
+
+const turnkeyClient = new Turnkey({
+  apiBaseUrl: 'https://api.turnkey.com',
+  apiPublicKey: env.TURNKEY_API_KEY,
+  apiPrivateKey: env.TURNKEY_API_SECRET,
+  defaultOrganizationId: env.TURNKEY_ORGANIZATION_ID,
+})
+
+// TURNKEY: Create wallet
+const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
+  walletName: 'ETH Wallet',
+  accounts: [{
+    curve: 'CURVE_SECP256K1',
+    pathFormat: 'PATH_FORMAT_BIP32',
+    path: "m/44'/60'/0'/0/0",
+    addressFormat: 'ADDRESS_FORMAT_ETHEREUM',
+  }],
+})
+
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
+  organizationId: turnkeyWallet.activity.organizationId,
+  signWith: turnkeyWallet.addresses[0],
+})`
 
   const packageManagers = {
     npm: 'npm install @eth-optimism/actions-sdk',
@@ -50,7 +135,10 @@ function GettingStarted() {
       {/* Getting Started Subsection */}
       <div id="getting-started" className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-medium mb-8" style={{ color: colors.text.cream }}>
+          <h2
+            className="text-3xl font-medium mb-8"
+            style={{ color: colors.text.cream }}
+          >
             Getting Started
           </h2>
 
@@ -64,7 +152,7 @@ function GettingStarted() {
             packageManagers={packageManagers}
           />
 
-          {/* Accordion Item 2: Configure Wallet */}
+          {/* Accordion Item 2: Configure Wallets */}
           <div className="mb-4">
             <button
               onClick={() => toggleAccordion('configure-wallet')}
@@ -78,12 +166,15 @@ function GettingStarted() {
               <div className="flex items-center gap-4">
                 <span
                   className="text-2xl font-medium"
-                  style={{ color: '#FF0420' }}
+                  style={{ color: colors.actionsRed }}
                 >
                   2
                 </span>
-                <h3 className="text-lg font-medium" style={{ color: colors.text.cream }}>
-                  Configure Wallet
+                <h3
+                  className="text-lg font-medium"
+                  style={{ color: colors.text.cream }}
+                >
+                  Configure Wallets
                 </h3>
               </div>
               <svg
@@ -109,86 +200,253 @@ function GettingStarted() {
               className="overflow-hidden transition-all duration-300 ease-in-out"
               style={{
                 maxHeight: openAccordions.has('configure-wallet')
-                  ? '5000px'
+                  ? '3000px'
                   : '0',
                 opacity: openAccordions.has('configure-wallet') ? 1 : 0,
               }}
             >
               <div className="pt-6 pb-4">
-                {/* Flexible wallet config container */}
-                <div className="border border-gray-600 rounded-lg p-6">
-                  {/* Accordion Item: BYO Hosted Wallets */}
-                  <HostedWalletsSection
-                    stepNumber=""
-                    openAccordion={
-                      openNestedAccordions.has('byo-wallet')
-                        ? 'byo-wallet'
-                        : null
-                    }
-                    setOpenAccordion={(val) => {
-                      if (val === 'byo-wallet') {
-                        toggleNestedAccordion('byo-wallet')
-                      } else {
-                        setOpenNestedAccordions((prev) => {
-                          const newSet = new Set(prev)
-                          newSet.delete('byo-wallet')
-                          return newSet
-                        })
-                      }
+                <p className="text-base mb-4" style={{ color: colors.text.cream }}>
+                  Actions supports your existing embedded wallet provider.
+                </p>
+                <div
+                  className="rounded-lg overflow-hidden mb-8 shadow-2xl"
+                  style={{
+                    backgroundColor: colors.bg.code,
+                    boxShadow:
+                      '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
+                  }}
+                >
+                  {/* Tab switcher with logos */}
+                  <div
+                    className="flex border-b"
+                    style={{
+                      backgroundColor: colors.bg.code,
+                      borderColor: 'rgba(184, 187, 38, 0.15)',
                     }}
-                  />
-
-                  {/* OR separator */}
-                  <div className="flex items-center my-4">
-                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
-                    <span className="px-4 text-sm font-medium text-gray-500">
-                      OR
-                    </span>
-                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
+                  >
+                    <button
+                      onClick={() => setSelectedWalletProvider('privy')}
+                      className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center border-b-2 ${
+                        selectedWalletProvider === 'privy'
+                          ? ''
+                          : 'opacity-50 hover:opacity-75'
+                      }`}
+                      style={{
+                        borderColor:
+                          selectedWalletProvider === 'privy'
+                            ? 'rgb(184, 187, 38)'
+                            : 'transparent',
+                      }}
+                    >
+                      <img
+                        src={PrivyLogo}
+                        alt="Privy"
+                        className="h-8 w-auto object-contain"
+                      />
+                    </button>
+                    <button
+                      onClick={() => setSelectedWalletProvider('turnkey')}
+                      className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center border-b-2 ${
+                        selectedWalletProvider === 'turnkey'
+                          ? ''
+                          : 'opacity-50 hover:opacity-75'
+                      }`}
+                      style={{
+                        borderColor:
+                          selectedWalletProvider === 'turnkey'
+                            ? 'rgb(184, 187, 38)'
+                            : 'transparent',
+                      }}
+                    >
+                      <img
+                        src={TurnkeyLogo}
+                        alt="Turnkey"
+                        className="h-8 w-auto object-contain"
+                      />
+                    </button>
+                    <button
+                      onClick={() => setSelectedWalletProvider('dynamic')}
+                      className={`w-1/3 px-6 py-4 transition-colors flex items-center justify-center border-b-2 ${
+                        selectedWalletProvider === 'dynamic'
+                          ? ''
+                          : 'opacity-50 hover:opacity-75'
+                      }`}
+                      style={{
+                        borderColor:
+                          selectedWalletProvider === 'dynamic'
+                            ? 'rgb(184, 187, 38)'
+                            : 'transparent',
+                      }}
+                    >
+                      <img
+                        src={DynamicLogo}
+                        alt="Dynamic"
+                        className="h-8 w-auto object-contain"
+                      />
+                    </button>
                   </div>
 
-                  {/* Accordion Item: Customizable Smart Wallets */}
-                  <SmartWalletsSection
-                    stepNumber=""
-                    openAccordion={
-                      openNestedAccordions.has('smart-wallet')
-                        ? 'smart-wallet'
-                        : null
-                    }
-                    setOpenAccordion={(val) => {
-                      if (val === 'smart-wallet') {
-                        toggleNestedAccordion('smart-wallet')
-                      } else {
-                        setOpenNestedAccordions((prev) => {
-                          const newSet = new Set(prev)
-                          newSet.delete('smart-wallet')
-                          return newSet
-                        })
-                      }
-                    }}
-                  />
+                  {/* Content for each provider */}
+                  <div className="p-8" style={{ backgroundColor: '#32302f' }}>
+                    {selectedWalletProvider === 'privy' && (
+                      <div className="space-y-6">
+                        <div>
+                          <p className="text-base mb-4" style={{ color: colors.text.cream }}>
+                            1.{' '}
+                            <a
+                              href="https://docs.privy.io/basics/react/installation"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 underline"
+                            >
+                              Install
+                            </a>{' '}
+                            and setup Privy.
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="mb-2" style={{ color: colors.text.cream }}>
+                            2. Create a frontend or backend user wallet and extend
+                            it with DeFi Actions:
+                          </p>
+                          <TabbedCodeBlock
+                            tabs={[
+                              { label: 'Frontend', code: privyFrontendCode },
+                              { label: 'Backend', code: privyBackendCode },
+                            ]}
+                            selectedTab={selectedPrivyTab}
+                            onTabChange={setSelectedPrivyTab}
+                            filename="wallet.ts"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedWalletProvider === 'dynamic' && (
+                      <div className="space-y-6">
+                        <div>
+                          <p className="text-base mb-4" style={{ color: colors.text.cream }}>
+                            1.{' '}
+                            <a
+                              href="https://www.dynamic.xyz/docs/wallets/embedded-wallets/mpc/setup"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 underline"
+                            >
+                              Install
+                            </a>{' '}
+                            and setup Dynamic.
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="mb-2" style={{ color: colors.text.cream }}>
+                            2. Create a frontend user wallet and extend it with DeFi
+                            Actions:
+                          </p>
+                          <TabbedCodeBlock
+                            tabs={[
+                              { label: 'Frontend', code: dynamicCode },
+                              { label: 'Backend', code: '' },
+                            ]}
+                            selectedTab={selectedDynamicTab}
+                            onTabChange={setSelectedDynamicTab}
+                            filename="wallet.ts"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedWalletProvider === 'turnkey' && (
+                      <div className="space-y-6">
+                        <div>
+                          <p className="text-base mb-4" style={{ color: colors.text.cream }}>
+                            1.{' '}
+                            <a
+                              href="https://docs.turnkey.com/sdks/react/getting-started"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 underline"
+                            >
+                              Install
+                            </a>{' '}
+                            and setup Turnkey.
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="mb-2" style={{ color: colors.text.cream }}>
+                            2. Create a frontend or backend user wallet and extend
+                            it with DeFi Actions:
+                          </p>
+                          <TabbedCodeBlock
+                            tabs={[
+                              { label: 'Frontend', code: turnkeyFrontendCode },
+                              { label: 'Backend', code: turnkeyBackendCode },
+                            ]}
+                            selectedTab={selectedTurnkeyTab}
+                            onTabChange={setSelectedTurnkeyTab}
+                            filename="wallet.ts"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Accordion Item 3: Configure */}
-          <ConfigureSection
+          {/* Accordion Item 3: Configure Signers */}
+          <ConfigureSignersSection
             stepNumber={3}
+            isOpen={openAccordions.has('configure-signers')}
+            onToggle={() => toggleAccordion('configure-signers')}
+          />
+
+          {/* Accordion Item 4: Configure Actions */}
+          <ConfigureActionsSection
+            stepNumber={4}
             isOpen={openAccordions.has('configure')}
             onToggle={() => toggleAccordion('configure')}
           />
 
-          {/* Accordion Item 4: Take Action */}
+          {/* Accordion Item 5: Configure Assets */}
+          <ConfigureAssetsSection
+            stepNumber={5}
+            isOpen={openAccordions.has('configure-assets')}
+            onToggle={() => toggleAccordion('configure-assets')}
+          />
+
+          {/* Accordion Item 6: Configure Markets */}
+          <ConfigureMarketsSection
+            stepNumber={6}
+            isOpen={openAccordions.has('configure-markets')}
+            onToggle={() => toggleAccordion('configure-markets')}
+          />
+
+          {/* Accordion Item 7: Configure Chains */}
+          <ConfigureChainsSection
+            stepNumber={7}
+            isOpen={openAccordions.has('configure-chains')}
+            onToggle={() => toggleAccordion('configure-chains')}
+          />
+
+          {/* Accordion Item 8: Take Action */}
           <TakeActionSection
-            stepNumber={4}
+            stepNumber={8}
             isOpen={openAccordions.has('take-action')}
             onToggle={() => toggleAccordion('take-action')}
           />
 
           {/* CTA Section */}
           <div className="pt-16 text-center">
-            <h3 className="text-2xl font-medium mb-6" style={{ color: colors.text.cream }}>
+            <h3
+              className="text-2xl font-medium mb-6"
+              style={{ color: colors.text.cream }}
+            >
               Ready to get started?
             </h3>
             <div className="flex flex-row gap-4 justify-center">
@@ -196,8 +454,12 @@ function GettingStarted() {
                 href="/earn"
                 className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200"
                 style={{ backgroundColor: colors.text.cream }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E5E5CC'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.text.cream}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = '#E5E5CC')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = colors.text.cream)
+                }
               >
                 <svg
                   className="w-5 h-5"
