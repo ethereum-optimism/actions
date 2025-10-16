@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { colors } from '@/constants/colors'
-import TabbedCodeBlock from './TabbedCodeBlock'
+import CodeBlock from './CodeBlock'
 
 interface ConfigureSectionProps {
   stepNumber: number
@@ -13,52 +12,7 @@ function ConfigureSection({
   isOpen,
   onToggle,
 }: ConfigureSectionProps) {
-  const [selectedTab, setSelectedTab] = useState('backend')
-
-  const frontendConfigCode = `import { createActions } from '@eth-optimism/actions-sdk/react'
-import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
-import { USDCMorphoMarket, USDCAaveMarket } from '@eth-optimism/actions-sdk/markets'
-import { unichain, optimism, base } from 'config/chains'
-
-const config: ActionsConfig = {
-  // no frontend wallet config
-
-  // Lend Provider
-  lend: {
-    type: 'morpho',
-    assetAllowlist: [USDC, ETH, WBTC],
-    assetBlocklist: [],
-    marketAllowlist: [USDCMorphoMarket],
-    marketBlocklist: [],
-  },
-
-  // Borrow Provider
-  borrow: {
-    type: 'morpho',
-    assetAllowlist: [USDC, ETH, WBTC],
-    assetBlocklist: [],
-    marketAllowlist: [USDCMorphoMarket],
-    marketBlocklist: [],
-  },
-
-  // Swap Provider
-  swap: {
-    type: 'uniswap',
-    defaultSlippage: 100, // 100 bips or 1%
-    assetAllowList: [USDC, ETH, WBTC]
-  },
-
-  // Chain Provider
-  chains: [
-      unichain,
-      optimism,
-      base
-  ]
-}
-
-export const actions = createActions(config)`
-
-  const backendConfigCode = `import { createActions } from '@eth-optimism/actions-sdk/node'
+  const configCode = `import { createActions } from '@eth-optimism/actions-sdk/node'
 import { USDC, ETH, WBTC, USDT } from '@eth-optimism/actions-sdk/assets'
 import { USDCMorphoMarket, USDCAaveMarket } from '@eth-optimism/actions-sdk/markets'
 import { unichain, optimism, base } from 'config/chains'
@@ -170,20 +124,7 @@ export const actions = createActions(config)`
             Pick which DeFi protocols, markets, networks, assets, and providers
             you want to support.
           </p>
-          <TabbedCodeBlock
-            tabs={[
-              { label: 'Backend', code: backendConfigCode },
-              {
-                label: 'Frontend',
-                code: frontendConfigCode,
-                disabled: true,
-                disabledMessage: 'Soon™',
-              },
-            ]}
-            selectedTab={selectedTab}
-            onTabChange={setSelectedTab}
-            filename="config.ts"
-          />
+          <CodeBlock code={configCode} filename="config.ts" />
         </div>
       </div>
     </div>
