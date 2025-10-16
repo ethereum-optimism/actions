@@ -64,14 +64,7 @@ function GettingStarted() {
             packageManagers={packageManagers}
           />
 
-          {/* Accordion Item 2: Configure */}
-          <ConfigureSection
-            stepNumber={2}
-            isOpen={openAccordions.has('configure')}
-            onToggle={() => toggleAccordion('configure')}
-          />
-
-          {/* Accordion Item 3: Configure Wallet */}
+          {/* Accordion Item 2: Configure Wallet */}
           <div className="mb-4">
             <button
               onClick={() => toggleAccordion('configure-wallet')}
@@ -87,7 +80,7 @@ function GettingStarted() {
                   className="text-2xl font-medium"
                   style={{ color: '#FF0420' }}
                 >
-                  3
+                  2
                 </span>
                 <h3 className="text-lg font-medium" style={{ color: colors.text.cream }}>
                   Configure Wallet
@@ -178,6 +171,13 @@ function GettingStarted() {
               </div>
             </div>
           </div>
+
+          {/* Accordion Item 3: Configure */}
+          <ConfigureSection
+            stepNumber={3}
+            isOpen={openAccordions.has('configure')}
+            onToggle={() => toggleAccordion('configure')}
+          />
 
           {/* Accordion Item 4: Take Action */}
           <TakeActionSection
