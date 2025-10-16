@@ -12,18 +12,26 @@ function TakeActionSection({
   isOpen,
   onToggle,
 }: TakeActionSectionProps) {
-  const codeExample = `// Enable asset lending in DeFi
+  const codeExample = `import { USDC, ETH, USDT } from '@eth-optimism/actions-sdk/assets'
+
+// Fetch your preferred market for any asset
+const market = actions.lend.getMarket(USDC)
+
+// Enable asset lending in DeFi
 const receipt1 = wallet.lend.openPosition({
   amount: 1,
   asset: USDC,
-  ...USDCMorphoMarket
+  ...market
 })
+
+// Manage user market positions
+const position = wallet.lend.getPosition(market)
 
 // Use lent assets as collateral
 const receipt2 = wallet.borrow.openPosition({
   amount: 1,
   asset: USDT,
-  ...USDCAaveMarket
+  ...market
 })
 
 // Swap between tokens onchain
