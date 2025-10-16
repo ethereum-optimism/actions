@@ -2,7 +2,10 @@ import { colors } from '@/constants/colors'
 
 function Footer() {
   return (
-    <footer className="border-t border-gray-800 py-8 text-center text-sm" style={{ color: colors.text.cream }}>
+    <footer
+      className="border-t border-gray-800 py-8 text-center text-sm"
+      style={{ color: colors.text.cream }}
+    >
       <div className="max-w-7xl mx-auto px-6">
         <p>
           © 2025 Actions by{' '}

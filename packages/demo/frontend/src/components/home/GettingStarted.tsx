@@ -206,7 +206,10 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
               }}
             >
               <div className="pt-6 pb-4">
-                <p className="text-base mb-4" style={{ color: colors.text.cream }}>
+                <p
+                  className="text-base mb-4"
+                  style={{ color: colors.text.cream }}
+                >
                   Actions supports your existing embedded wallet provider.
                 </p>
                 <div
@@ -292,7 +295,10 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                     {selectedWalletProvider === 'privy' && (
                       <div className="space-y-6">
                         <div>
-                          <p className="text-base mb-4" style={{ color: colors.text.cream }}>
+                          <p
+                            className="text-base mb-4"
+                            style={{ color: colors.text.cream }}
+                          >
                             1.{' '}
                             <a
                               href="https://docs.privy.io/basics/react/installation"
@@ -307,9 +313,12 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         </div>
 
                         <div>
-                          <p className="mb-2" style={{ color: colors.text.cream }}>
-                            2. Create a frontend or backend user wallet and extend
-                            it with DeFi Actions:
+                          <p
+                            className="mb-2"
+                            style={{ color: colors.text.cream }}
+                          >
+                            2. Create a frontend or backend user wallet and
+                            extend it with DeFi Actions:
                           </p>
                           <TabbedCodeBlock
                             tabs={[
@@ -327,7 +336,10 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                     {selectedWalletProvider === 'dynamic' && (
                       <div className="space-y-6">
                         <div>
-                          <p className="text-base mb-4" style={{ color: colors.text.cream }}>
+                          <p
+                            className="text-base mb-4"
+                            style={{ color: colors.text.cream }}
+                          >
                             1.{' '}
                             <a
                               href="https://www.dynamic.xyz/docs/wallets/embedded-wallets/mpc/setup"
@@ -342,9 +354,12 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         </div>
 
                         <div>
-                          <p className="mb-2" style={{ color: colors.text.cream }}>
-                            2. Create a frontend user wallet and extend it with DeFi
-                            Actions:
+                          <p
+                            className="mb-2"
+                            style={{ color: colors.text.cream }}
+                          >
+                            2. Create a frontend user wallet and extend it with
+                            DeFi Actions:
                           </p>
                           <TabbedCodeBlock
                             tabs={[
@@ -362,7 +377,10 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                     {selectedWalletProvider === 'turnkey' && (
                       <div className="space-y-6">
                         <div>
-                          <p className="text-base mb-4" style={{ color: colors.text.cream }}>
+                          <p
+                            className="text-base mb-4"
+                            style={{ color: colors.text.cream }}
+                          >
                             1.{' '}
                             <a
                               href="https://docs.turnkey.com/sdks/react/getting-started"
@@ -377,9 +395,12 @@ const wallet = await actions.wallet.hostedWalletToActionsWallet({
                         </div>
 
                         <div>
-                          <p className="mb-2" style={{ color: colors.text.cream }}>
-                            2. Create a frontend or backend user wallet and extend
-                            it with DeFi Actions:
+                          <p
+                            className="mb-2"
+                            style={{ color: colors.text.cream }}
+                          >
+                            2. Create a frontend or backend user wallet and
+                            extend it with DeFi Actions:
                           </p>
                           <TabbedCodeBlock
                             tabs={[

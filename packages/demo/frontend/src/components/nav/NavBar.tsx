@@ -54,8 +54,8 @@ function NavBar({
                 href="/earn"
                 className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
                 style={{ color: colors.text.cream }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
               >
                 <span>Demo</span>
               </a>
@@ -66,8 +66,8 @@ function NavBar({
               rel="noopener noreferrer"
               className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
               style={{ color: colors.text.cream }}
-              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
             >
               <span>GitHub</span>
               <svg
