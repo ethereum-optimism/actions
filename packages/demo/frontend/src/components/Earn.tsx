@@ -1,86 +1,48 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import {
-  usePrivy,
-  useLogin,
-  useLogout,
-  useUser,
-  useSessionSigners,
-  type WalletWithMetadata,
-} from '@privy-io/react-auth'
-import Action from './Action'
+import { useState, useEffect, useRef } from 'react'
+import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
-import { ActivityLogProvider } from '../contexts/ActivityLogContext'
-import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
-import { env } from '../envVars'
+export interface EarnContentProps {
+  ready: boolean
+  logout: () => void
+  userEmail?: string
+  usdcBalance: string
+  isLoadingBalance: boolean
+  apy: number | null
+  isLoadingApy: boolean
+  depositedAmount: string | null
+  isLoadingPosition: boolean
+  isInitialLoad: boolean
+  onMintUSDC: () => void
+  onTransaction: (
+    mode: 'lend' | 'withdraw',
+    amount: number,
+  ) => Promise<{
+    transactionHash?: string
+    blockExplorerUrl?: string
+  }>
+}
 
-function EarnContent() {
-  const { ready, authenticated, getAccessToken } = usePrivy()
-  const { login } = useLogin()
-  const { logout } = useLogout()
-  const { user } = useUser()
-  const { addSessionSigners } = useSessionSigners()
-  const loggedApi = useLoggedActionsApi()
+/**
+ * Presentational component for the Earn page
+ * Handles layout and user dropdown - all business logic delegated to container
+ */
+function Earn({
+  ready,
+  logout,
+  userEmail,
+  usdcBalance,
+  isLoadingBalance,
+  apy,
+  isLoadingApy,
+  depositedAmount,
+  isLoadingPosition,
+  isInitialLoad,
+  onMintUSDC,
+  onTransaction,
+}: EarnContentProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const [usdcBalance, setUsdcBalance] = useState<string>('0')
-  const [isLoadingBalance, setIsLoadingBalance] = useState(false)
-  const [walletCreated, setWalletCreated] = useState(false)
-  const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
-  const [apy, setApy] = useState<number | null>(null)
-  const [isLoadingPosition, setIsLoadingPosition] = useState(false)
-  const [isLoadingApy, setIsLoadingApy] = useState(true)
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
-
-  const ethereumEmbeddedWallets = useMemo<WalletWithMetadata[]>(
-    () =>
-      (user?.linkedAccounts?.filter(
-        (account) =>
-          account.type === 'wallet' &&
-          account.walletClientType === 'privy' &&
-          account.chainType === 'ethereum',
-      ) as WalletWithMetadata[]) ?? [],
-    [user],
-  )
-
-  const getAuthHeaders = useCallback(async () => {
-    const token = await getAccessToken()
-    return token ? { Authorization: `Bearer ${token}` } : undefined
-  }, [getAccessToken])
-
-  const addSessionSigner = useCallback(
-    async (walletAddress: string) => {
-      if (!env.VITE_SESSION_SIGNER_ID) {
-        console.error('SESSION_SIGNER_ID must be defined to addSessionSigner')
-        return
-      }
-
-      try {
-        await addSessionSigners({
-          address: walletAddress,
-          signers: [
-            {
-              signerId: env.VITE_SESSION_SIGNER_ID,
-            },
-          ],
-        })
-        console.log('Session signer added for wallet:', walletAddress)
-      } catch (error) {
-        console.error('Error adding session signer:', error)
-      }
-    },
-    [addSessionSigners],
-  )
-
-  // Add session signers for undelegated wallets
-  useEffect(() => {
-    const undelegatedEthereumEmbeddedWallets = ethereumEmbeddedWallets.filter(
-      (wallet) => wallet.delegated !== true,
-    )
-    undelegatedEthereumEmbeddedWallets.forEach((wallet) => {
-      addSessionSigner(wallet.address)
-    })
-  }, [ethereumEmbeddedWallets, addSessionSigner])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -98,116 +60,6 @@ function EarnContent() {
     }
   }, [dropdownOpen])
 
-  // Function to fetch wallet balance
-  const fetchBalance = useCallback(
-    async (userId: string) => {
-      try {
-        setIsLoadingBalance(true)
-        const headers = await getAuthHeaders()
-        const balanceResult = await loggedApi.getWalletBalance(userId, headers)
-
-        // Find USDC balance (try USDC_DEMO first not USDC)
-        const usdcToken = balanceResult.balance.find(
-          (token) => token.symbol === 'USDC_DEMO',
-        )
-
-        if (usdcToken && parseFloat(usdcToken.totalBalance) > 0) {
-          // Parse the balance (it's in smallest unit, divide by 1e6 for USDC)
-          const balance = parseFloat(usdcToken.totalBalance) / 1e6
-          // Floor to 2 decimals to ensure we never try to send more than we have
-          const flooredBalance = Math.floor(balance * 100) / 100
-          setUsdcBalance(flooredBalance.toFixed(2))
-        } else {
-          setUsdcBalance('0.00')
-        }
-      } catch {
-        setUsdcBalance('0.00')
-      } finally {
-        setIsLoadingBalance(false)
-      }
-    },
-    [getAuthHeaders, loggedApi],
-  )
-
-  // Function to mint demo USDC
-  const handleMintUSDC = useCallback(async () => {
-    if (!user?.id) return
-
-    try {
-      setIsLoadingBalance(true)
-      const headers = await getAuthHeaders()
-
-      // Execute the fund wallet transaction
-      await loggedApi.fundWallet(user.id, headers)
-
-      // Transaction succeeded - optimistically update balance with the minted amount (100 USDC)
-      const currentBalance = parseFloat(usdcBalance)
-      const mintedAmount = 100
-      const newOptimisticBalance = (currentBalance + mintedAmount).toFixed(2)
-      setUsdcBalance(newOptimisticBalance)
-      setIsLoadingBalance(false)
-
-      // Fetch actual balance to verify/correct the optimistic update
-      const balanceResult = await loggedApi.getWalletBalance(user.id, headers)
-      const usdcToken = balanceResult.balance.find(
-        (token) => token.symbol === 'USDC_DEMO',
-      )
-
-      if (usdcToken && parseFloat(usdcToken.totalBalance) > 0) {
-        const actualBalance = parseFloat(usdcToken.totalBalance) / 1e6
-        const flooredBalance = Math.floor(actualBalance * 100) / 100
-        const actualBalanceStr = flooredBalance.toFixed(2)
-
-        // Only update if different from optimistic value
-        if (actualBalanceStr !== newOptimisticBalance) {
-          setUsdcBalance(actualBalanceStr)
-        }
-      }
-    } catch (error) {
-      console.error('Error minting USDC:', error)
-      // Revert to actual balance on error
-      setIsLoadingBalance(false)
-      if (user?.id) {
-        await fetchBalance(user.id)
-      }
-    }
-  }, [user?.id, getAuthHeaders, loggedApi, fetchBalance, usdcBalance])
-
-  // Fetch balance when user logs in
-  useEffect(() => {
-    const initializeWallet = async () => {
-      if (authenticated && user?.id && !walletCreated) {
-        try {
-          const userId = user.id
-          await fetchBalance(userId)
-          setWalletCreated(true)
-        } catch (error) {
-          console.error('Error fetching balance:', error)
-        }
-      }
-    }
-
-    initializeWallet()
-  }, [authenticated, user?.id, walletCreated, fetchBalance])
-
-  // Handle position updates from Action component
-  const handlePositionUpdate = useCallback(
-    (
-      newDepositedAmount: string | null,
-      newApy: number | null,
-      newIsLoadingPosition: boolean,
-      newIsLoadingApy: boolean,
-      newIsInitialLoad: boolean,
-    ) => {
-      setDepositedAmount(newDepositedAmount)
-      setApy(newApy)
-      setIsLoadingPosition(newIsLoadingPosition)
-      setIsLoadingApy(newIsLoadingApy)
-      setIsInitialLoad(newIsInitialLoad)
-    },
-    [],
-  )
-
   // Show loading state while Privy is initializing
   if (!ready) {
     return (
@@ -224,60 +76,6 @@ function EarnContent() {
     )
   }
 
-  // Show login prompt if not authenticated
-  if (!authenticated) {
-    return (
-      <div
-        className="min-h-screen"
-        style={{
-          backgroundColor: '#FFFFFF',
-          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-        }}
-      >
-        <div
-          className="flex items-center justify-center"
-          style={{ height: '100vh' }}
-        >
-          <div className="max-w-md text-center p-8">
-            <div className="mb-6">
-              <img
-                src="/Optimism.svg"
-                alt="Optimism"
-                className="h-12 mx-auto mb-4"
-              />
-              <h1
-                className="mb-3"
-                style={{
-                  color: '#1a1b1e',
-                  fontSize: '28px',
-                  fontWeight: 600,
-                }}
-              >
-                Welcome to Actions
-              </h1>
-            </div>
-
-            <button
-              onClick={() => login()}
-              className="w-full py-3 px-6 font-medium transition-all hover:opacity-90"
-              style={{
-                backgroundColor: '#FF0420',
-                color: '#FFFFFF',
-                fontSize: '16px',
-                borderRadius: '12px',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Sign in
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Show the main Earn page when authenticated
   return (
     <div
       className="min-h-screen"
@@ -353,7 +151,7 @@ function EarnContent() {
                         className="text-sm mb-4"
                         style={{ color: '#1a1b1e', fontWeight: 500 }}
                       >
-                        {user?.email?.address || 'Connected'}
+                        {userEmail || 'Connected'}
                       </div>
                       <button
                         onClick={() => logout()}
@@ -430,15 +228,11 @@ function EarnContent() {
               <Action
                 usdcBalance={usdcBalance}
                 isLoadingBalance={isLoadingBalance}
-                onMintUSDC={handleMintUSDC}
-                onTransactionSuccess={async () => {
-                  if (user?.id) {
-                    // Wait a bit for the transaction to settle
-                    await new Promise((resolve) => setTimeout(resolve, 2000))
-                    await fetchBalance(user.id)
-                  }
-                }}
-                onPositionUpdate={handlePositionUpdate}
+                apy={apy}
+                isLoadingApy={isLoadingApy}
+                depositedAmount={depositedAmount}
+                onMintUSDC={onMintUSDC}
+                onTransaction={onTransaction}
               />
             </div>
           </div>
@@ -450,14 +244,6 @@ function EarnContent() {
         </div>
       </main>
     </div>
-  )
-}
-
-function Earn() {
-  return (
-    <ActivityLogProvider>
-      <EarnContent />
-    </ActivityLogProvider>
   )
 }
 
