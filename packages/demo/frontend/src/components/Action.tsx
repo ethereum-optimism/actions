@@ -1,40 +1,39 @@
-import { useState, useEffect, useRef } from 'react'
-import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
-import { actionsApi } from '../api/actionsApi'
-import { useUser, usePrivy } from '@privy-io/react-auth'
-import type { Address } from 'viem'
+import { useState } from 'react'
 import TransactionModal from './TransactionModal'
 import Shimmer from './Shimmer'
 
 interface ActionProps {
   usdcBalance: string
   isLoadingBalance: boolean
+  apy: number | null
+  isLoadingApy: boolean
+  depositedAmount: string | null
   onMintUSDC?: () => void
-  onTransactionSuccess?: () => void
-  onPositionUpdate?: (
-    depositedAmount: string | null,
-    apy: number | null,
-    isLoadingPosition: boolean,
-    isLoadingApy: boolean,
-    isInitialLoad: boolean,
-  ) => void
+  onTransaction: (
+    mode: 'lend' | 'withdraw',
+    amount: number,
+  ) => Promise<{
+    transactionHash?: string
+    blockExplorerUrl?: string
+  }>
 }
 
-function Action({
+/**
+ * Presentational component for the Action card
+ * Handles UI state and user interactions, delegates business logic to container
+ */
+export function Action({
   usdcBalance,
   isLoadingBalance,
+  apy,
+  isLoadingApy,
+  depositedAmount,
   onMintUSDC,
-  onTransactionSuccess,
-  onPositionUpdate,
+  onTransaction,
 }: ActionProps) {
-  const loggedApi = useLoggedActionsApi()
-  const { user } = useUser()
-  const { getAccessToken } = usePrivy()
   const [isLoading, setIsLoading] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
-  const [apy, setApy] = useState<number | null>(null)
-  const [isLoadingApy, setIsLoadingApy] = useState(true)
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<
@@ -46,55 +45,6 @@ function Action({
   const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(
     undefined,
   )
-  const [marketData, setMarketData] = useState<{
-    marketId: { chainId: number; address: Address }
-    assetAddress: Address
-  } | null>(null)
-  const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
-  const [isLoadingPosition, setIsLoadingPosition] = useState(true)
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const hasInitiatedMarketFetch = useRef(false)
-
-  // Fetch market APY on mount
-  useEffect(() => {
-    const fetchMarketApy = async () => {
-      // Skip if already initiated (prevents double-fetch in StrictMode)
-      if (hasInitiatedMarketFetch.current) {
-        console.log('[getMarkets] Skipping - already initiated')
-        return
-      }
-
-      hasInitiatedMarketFetch.current = true
-      console.log('[getMarkets] Fetching market data...')
-
-      try {
-        setIsLoadingApy(true)
-        const result = await loggedApi.getMarkets()
-
-        // Get the USDC Demo Vault (Base Sepolia) at index 1
-        if (result.markets.length > 1) {
-          const market = result.markets[1]
-          setApy(market.apy.total)
-
-          // Store market data for transactions
-          const assetAddress = (market.asset.address[market.marketId.chainId] ||
-            Object.values(market.asset.address)[0]) as Address
-
-          setMarketData({
-            marketId: market.marketId,
-            assetAddress,
-          })
-        }
-      } catch {
-        // Error fetching market APY
-      } finally {
-        setIsLoadingApy(false)
-        setIsInitialLoad(false)
-      }
-    }
-
-    fetchMarketApy()
-  }, [loggedApi])
 
   const handleMaxClick = () => {
     const maxAmount = mode === 'lend' ? usdcBalance : depositedAmount || '0'
@@ -111,7 +61,7 @@ function Action({
   }
 
   const handleLendUSDC = async () => {
-    if (!user?.id || !marketData || !amount || parseFloat(amount) <= 0) {
+    if (!amount || parseFloat(amount) <= 0) {
       return
     }
 
@@ -131,56 +81,12 @@ function Action({
     setBlockExplorerUrl(undefined)
 
     try {
-      const token = await getAccessToken()
-      const headers = token ? { Authorization: `Bearer ${token}` } : undefined
+      const result = await onTransaction(mode, amountValue)
 
-      const result =
-        mode === 'lend'
-          ? await loggedApi.openLendPosition(
-              user.id,
-              amountValue,
-              marketData.assetAddress,
-              marketData.marketId,
-              headers,
-            )
-          : await loggedApi.closeLendPosition(
-              user.id,
-              amountValue,
-              marketData.assetAddress,
-              marketData.marketId,
-              headers,
-            )
-
-      // Get the first transaction hash if available, or use userOpHash for account abstraction
-      const txHash =
-        result.transaction.transactionHashes?.[0] ||
-        result.transaction.userOpHash
-      setTransactionHash(txHash)
-
-      // Use the block explorer URL from the backend (first one in the array)
-      const explorerUrl = result.transaction.blockExplorerUrls?.[0]
-      setBlockExplorerUrl(explorerUrl)
+      setTransactionHash(result.transactionHash)
+      setBlockExplorerUrl(result.blockExplorerUrl)
       setModalStatus('success')
       setAmount('')
-
-      // Refresh position after successful transaction with a small delay to ensure state is updated
-      setTimeout(async () => {
-        if (user?.id && marketData) {
-          try {
-            const position = await loggedApi.getPosition(
-              marketData.marketId,
-              user.id,
-            )
-            setDepositedAmount(position.balanceFormatted)
-          } catch {
-            setDepositedAmount('0.00')
-          }
-        }
-      }, 1000)
-
-      if (onTransactionSuccess) {
-        onTransactionSuccess()
-      }
     } catch {
       setModalStatus('error')
     } finally {
@@ -194,73 +100,6 @@ function Action({
     setTransactionHash(undefined)
     setBlockExplorerUrl(undefined)
   }
-
-  // Extract primitive values to avoid unnecessary re-renders
-  const marketChainId = marketData?.marketId.chainId
-  const marketAddress = marketData?.marketId.address
-
-  // Store callback in ref to prevent infinite loops
-  const onPositionUpdateRef = useRef(onPositionUpdate)
-  useEffect(() => {
-    onPositionUpdateRef.current = onPositionUpdate
-  }, [onPositionUpdate])
-
-  // Fetch position when market data is available or user changes
-  useEffect(() => {
-    const fetchPosition = async () => {
-      if (!user?.id || !marketChainId || !marketAddress) return
-
-      try {
-        setIsLoadingPosition(true)
-        const position = await loggedApi.getPosition(
-          { chainId: marketChainId, address: marketAddress },
-          user.id,
-        )
-        setDepositedAmount(position.balanceFormatted)
-      } catch {
-        setDepositedAmount('0.00')
-      } finally {
-        setIsLoadingPosition(false)
-      }
-    }
-
-    if (user?.id && marketChainId && marketAddress) {
-      fetchPosition()
-    }
-  }, [user?.id, marketChainId, marketAddress, loggedApi])
-
-  useEffect(() => {
-    if (!user?.id || !marketChainId || !marketAddress) return
-
-    const pollPosition = async () => {
-      try {
-        // Use actionsApi directly to avoid creating activity log entries
-        const position = await actionsApi.getPosition(
-          { chainId: marketChainId, address: marketAddress },
-          user.id,
-        )
-        setDepositedAmount(position.balanceFormatted)
-      } catch {
-        // Silently fail polling - don't reset to 0.00
-      }
-    }
-
-    const intervalId = setInterval(pollPosition, 5000)
-    return () => clearInterval(intervalId)
-  }, [user?.id, marketChainId, marketAddress])
-
-  // Notify parent of position updates
-  useEffect(() => {
-    if (onPositionUpdateRef.current) {
-      onPositionUpdateRef.current(
-        depositedAmount,
-        apy,
-        isLoadingPosition,
-        isLoadingApy,
-        isInitialLoad,
-      )
-    }
-  }, [depositedAmount, apy, isLoadingPosition, isLoadingApy, isInitialLoad])
 
   return (
     <div
@@ -625,5 +464,3 @@ function Action({
     </div>
   )
 }
-
-export default Action
