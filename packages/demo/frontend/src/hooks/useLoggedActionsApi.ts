@@ -39,6 +39,9 @@ export function useLoggedActionsApi() {
             ? config.getAmount(...args)
             : undefined
 
+          // Console log the function call
+          console.log(`[${config.apiMethod}]`)
+
           // For read-only operations, always create a new entry (no retry logic)
           if (config.isReadOnly) {
             const id = addActivityRef.current({
@@ -46,12 +49,31 @@ export function useLoggedActionsApi() {
               action: config.action,
               amount,
               status: 'pending',
+              isTransaction: false,
             })
 
             try {
               // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
               const result = await (original as Function).apply(target, args)
-              updateActivityRef.current(id, { status: 'confirmed' })
+
+              // Map params based on the method
+              let sdkParams
+              if (prop === 'getPosition') {
+                // getPosition(marketId, walletId) -> wallet.lend.getPosition({ marketId })
+                sdkParams = { marketId: args[0] }
+              } else if (prop === 'getMarkets') {
+                // getMarkets() -> actions.lend.getMarkets()
+                sdkParams = undefined
+              } else if (prop === 'getWalletBalance') {
+                // getWalletBalance(userId) -> wallet.getBalance()
+                sdkParams = undefined
+              }
+
+              updateActivityRef.current(id, {
+                status: 'confirmed',
+                response: result,
+                request: sdkParams,
+              })
               return result
             } catch (error) {
               updateActivityRef.current(id, { status: 'error' })
@@ -73,6 +95,7 @@ export function useLoggedActionsApi() {
               action: config.action,
               amount,
               status: 'pending',
+              isTransaction: true,
             })
             activeCallsMap.set(callKey, id)
           } else {
@@ -88,9 +111,65 @@ export function useLoggedActionsApi() {
 
             // Update with actual amount from result if available
             const finalAmount = result?.amount || amount
+
+            // Extract blockExplorerUrl from transaction response
+            let blockExplorerUrl: string | undefined
+            if (result?.transaction?.blockExplorerUrls) {
+              blockExplorerUrl = result.transaction.blockExplorerUrls[0]
+            } else if (result?.blockExplorerUrls) {
+              blockExplorerUrl = result.blockExplorerUrls[0]
+            }
+
+            // Map backend params to SDK function signatures
+            let sdkParams: Record<string, unknown> | undefined
+            let sdkResponse: Record<string, unknown> | undefined
+
+            switch (prop) {
+              case 'openLendPosition':
+              case 'closeLendPosition':
+                // Backend params: (walletId, amount, tokenAddress, marketId)
+                // SDK signature: wallet.lend.openPosition({ amount, asset, marketId })
+                sdkParams = {
+                  amount: args[1],
+                  asset: {
+                    address: { [args[3]?.chainId]: args[2] },
+                    metadata: { symbol: 'USDC' }, // TODO: get from result
+                  },
+                  marketId: args[3],
+                }
+                // Backend returns: { transaction: { transactionHashes, userOpHash, blockExplorerUrls, amount, tokenAddress, marketId } }
+                // SDK returns: { transactionHash, userOpHash, ... } (LendTransactionReceipt)
+                sdkResponse = result?.transaction
+                  ? {
+                      transactionHash:
+                        result.transaction.transactionHashes?.[0],
+                      userOpHash: result.transaction.userOpHash,
+                    }
+                  : undefined
+                break
+
+              case 'fundWallet':
+                // Backend params: (userId)
+                // SDK signature: wallet.fund()
+                sdkParams = undefined
+                // Backend returns: { success, to, amount, transactionHashes, userOpHash, blockExplorerUrls }
+                sdkResponse = {
+                  transactionHash: result?.transactionHashes?.[0],
+                  userOpHash: result?.userOpHash,
+                }
+                break
+
+              default:
+                sdkParams = undefined
+                sdkResponse = undefined
+            }
+
             updateActivityRef.current(id, {
               status: 'confirmed',
               amount: finalAmount,
+              response: sdkResponse || result,
+              request: sdkParams,
+              blockExplorerUrl,
             })
 
             // Clear the active call since it succeeded

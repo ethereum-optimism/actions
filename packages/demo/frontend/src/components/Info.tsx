@@ -1,18 +1,15 @@
 function Info() {
   return (
     <div
-      className="w-full p-8"
+      className="w-full"
       style={{
         backgroundColor: '#FFFFFF',
-        border: '1px solid #E0E2EB',
-        borderRadius: '24px',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
-      <h2 className="text-2xl font-semibold mb-6" style={{ color: '#1a1b1e' }}>
-        What's Happening Under the Hood
-      </h2>
-
+      <h3 className="text-sm font-semibold mb-3" style={{ color: '#1a1b1e' }}>
+        What's happening?
+      </h3>
       <ul
         className="space-y-3 mb-8"
         style={{ color: '#000000', fontSize: '14px' }}

@@ -109,7 +109,14 @@ class ActionsApiClient {
   async fundWallet(
     userId: string,
     headers: HeadersInit = {},
-  ): Promise<{ success: boolean; to: string; amount: bigint }> {
+  ): Promise<{
+    success: boolean
+    to: string
+    amount: string
+    transactionHashes?: Address[]
+    userOpHash?: Address
+    blockExplorerUrls?: string[]
+  }> {
     return this.request(`/wallet/${userId}/fund`, {
       method: 'POST',
       headers,

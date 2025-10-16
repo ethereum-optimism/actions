@@ -112,6 +112,7 @@ function LentBalance({
                     fontSize: '12px',
                     fontWeight: 500,
                     fontFamily: 'Inter',
+                    minWidth: '100px',
                   }}
                 >
                   Value
@@ -140,7 +141,7 @@ function LentBalance({
                           fontFamily: 'Inter',
                         }}
                       >
-                        Gauntlet USDC
+                        Gauntlet
                       </span>
                     </div>
                   )}
@@ -193,7 +194,11 @@ function LentBalance({
                 </td>
                 <td style={{ padding: '16px 8px', textAlign: 'right' }}>
                   {isInitialLoad || isLoadingApy ? (
-                    <Shimmer width="50px" height="20px" borderRadius="4px" />
+                    <div
+                      style={{ display: 'flex', justifyContent: 'flex-end' }}
+                    >
+                      <Shimmer width="50px" height="20px" borderRadius="4px" />
+                    </div>
                   ) : (
                     <span
                       style={{
@@ -209,7 +214,11 @@ function LentBalance({
                 </td>
                 <td style={{ padding: '16px 8px', textAlign: 'right' }}>
                   {isInitialLoad || isLoadingPosition ? (
-                    <Shimmer width="70px" height="20px" borderRadius="4px" />
+                    <div
+                      style={{ display: 'flex', justifyContent: 'flex-end' }}
+                    >
+                      <Shimmer width="70px" height="20px" borderRadius="4px" />
+                    </div>
                   ) : (
                     <span
                       style={{
