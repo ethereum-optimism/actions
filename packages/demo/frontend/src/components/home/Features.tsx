@@ -4,7 +4,7 @@ function Features() {
   return (
     <div className="py-16">
       <div className="max-w-4xl mx-auto mb-8">
-        <h2 className="text-3xl font-medium text-gray-300 mb-4">Features</h2>
+        <h2 className="text-3xl font-medium mb-4" style={{ color: '#F5F5DC' }}>Features</h2>
         <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent"></div>
       </div>
 
@@ -28,8 +28,8 @@ function Features() {
                 />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2 text-white">Lend</h3>
-            <p className="text-gray-300 text-base">Lend across markets</p>
+            <h3 className="font-semibold mb-2" style={{ color: '#F5F5DC' }}>Lend</h3>
+            <p className="text-base" style={{ color: '#F5F5DC' }}>Lend across markets</p>
           </div>
           <div className="text-center">
             <div className="mb-3 flex justify-center">
@@ -48,8 +48,8 @@ function Features() {
                 />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2 text-white">Borrow</h3>
-            <p className="text-gray-300 text-base">Borrow against collateral</p>
+            <h3 className="font-semibold mb-2" style={{ color: '#F5F5DC' }}>Borrow</h3>
+            <p className="text-base" style={{ color: '#F5F5DC' }}>Borrow against collateral</p>
           </div>
           <div className="text-center">
             <div className="mb-3 flex justify-center">
@@ -68,8 +68,8 @@ function Features() {
                 />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2 text-white">Swap</h3>
-            <p className="text-gray-300 text-base">Trade onchain</p>
+            <h3 className="font-semibold mb-2" style={{ color: '#F5F5DC' }}>Swap</h3>
+            <p className="text-base" style={{ color: '#F5F5DC' }}>Trade onchain</p>
           </div>
           <div className="text-center">
             <div className="mb-3 flex justify-center">
@@ -88,8 +88,8 @@ function Features() {
                 />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2 text-white">Wallet</h3>
-            <p className="text-gray-300 text-base">Create smart wallets</p>
+            <h3 className="font-semibold mb-2" style={{ color: '#F5F5DC' }}>Wallet</h3>
+            <p className="text-base" style={{ color: '#F5F5DC' }}>Create smart wallets</p>
           </div>
           <div className="text-center">
             <div className="mb-3 flex justify-center">
@@ -108,8 +108,8 @@ function Features() {
                 />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2 text-white">Gas Paymaster</h3>
-            <p className="text-gray-300 text-base">Sponsor transactions</p>
+            <h3 className="font-semibold mb-2" style={{ color: '#F5F5DC' }}>Gas Paymaster</h3>
+            <p className="text-base" style={{ color: '#F5F5DC' }}>Sponsor transactions</p>
           </div>
           <div className="text-center">
             <div className="mb-3 flex justify-center">
@@ -134,8 +134,8 @@ function Features() {
                 />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2 text-white">Config</h3>
-            <p className="text-gray-300 text-base">Flexible configuration</p>
+            <h3 className="font-semibold mb-2" style={{ color: '#F5F5DC' }}>Config</h3>
+            <p className="text-base" style={{ color: '#F5F5DC' }}>Flexible configuration</p>
           </div>
         </div>
       </div>

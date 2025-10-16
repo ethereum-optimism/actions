@@ -49,7 +49,7 @@ function GettingStarted() {
       {/* Getting Started Subsection */}
       <div id="getting-started" className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-medium text-gray-300 mb-8">
+          <h2 className="text-3xl font-medium mb-8" style={{ color: '#F5F5DC' }}>
             Getting Started
           </h2>
 
@@ -88,7 +88,7 @@ function GettingStarted() {
                 >
                   3
                 </span>
-                <h3 className="text-lg font-medium text-gray-300">
+                <h3 className="text-lg font-medium" style={{ color: '#F5F5DC' }}>
                   Configure Wallet
                 </h3>
               </div>
@@ -187,13 +187,16 @@ function GettingStarted() {
 
           {/* CTA Section */}
           <div className="pt-16 text-center">
-            <h3 className="text-2xl font-medium text-gray-300 mb-6">
+            <h3 className="text-2xl font-medium mb-6" style={{ color: '#F5F5DC' }}>
               Ready to get started?
             </h3>
             <div className="flex flex-row gap-4 justify-center">
               <a
                 href="/earn"
-                className="bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-200 inline-flex items-center justify-center gap-2 transition-colors duration-200"
+                className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200"
+                style={{ backgroundColor: '#F5F5DC' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E5E5CC'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F5F5DC'}
               >
                 <svg
                   className="w-5 h-5"
@@ -214,7 +217,8 @@ function GettingStarted() {
                 href="https://github.com/ethereum-optimism/actions"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border border-gray-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200"
+                className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200"
+                style={{ color: '#F5F5DC' }}
               >
                 <svg
                   className="w-5 h-5"
