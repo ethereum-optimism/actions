@@ -91,8 +91,6 @@ function InstallSection({
                   }`}
                   style={{
                     color: selectedPackageManager === pm ? colors.text.cream : undefined,
-                  }}
-                  style={{
                     borderColor:
                       selectedPackageManager === pm
                         ? 'rgb(184, 187, 38)'
