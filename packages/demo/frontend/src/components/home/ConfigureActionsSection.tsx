@@ -12,8 +12,7 @@ function ConfigureActionsSection({
   isOpen,
   onToggle,
 }: ConfigureActionsSectionProps) {
-  const configCode = `
-const config: ActionsConfig = {
+  const configCode = `const config: ActionsConfig = {
   // WalletConfig
   wallet: {
     hostedWalletConfig: {
@@ -117,8 +116,7 @@ export const actions = createActions(config)`
       >
         <div className="pt-6 pb-4">
           <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-            Pick which DeFi protocols, markets, networks, assets, and providers
-            you want to support.
+            Pick which DeFi protocols and providers you want to support.
           </p>
           <CodeBlock code={configCode} filename="config.ts" />
         </div>

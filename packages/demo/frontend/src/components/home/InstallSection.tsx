@@ -35,8 +35,11 @@ function InstallSection({
           >
             {stepNumber}
           </span>
-          <h3 className="text-lg font-medium" style={{ color: colors.text.cream }}>
-            Install the library
+          <h3
+            className="text-lg font-medium"
+            style={{ color: colors.text.cream }}
+          >
+            Install Actions SDK
           </h3>
         </div>
         <svg
@@ -90,7 +93,10 @@ function InstallSection({
                       : 'text-gray-400 hover:text-gray-300'
                   }`}
                   style={{
-                    color: selectedPackageManager === pm ? colors.text.cream : undefined,
+                    color:
+                      selectedPackageManager === pm
+                        ? colors.text.cream
+                        : undefined,
                     borderColor:
                       selectedPackageManager === pm
                         ? 'rgb(184, 187, 38)'

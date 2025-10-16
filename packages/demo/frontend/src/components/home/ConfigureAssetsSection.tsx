@@ -12,8 +12,7 @@ function ConfigureAssetsSection({
   isOpen,
   onToggle,
 }: ConfigureAssetsSectionProps) {
-  const assetsCode = `
-// Import popular assets
+  const assetsCode = `// Import popular assets
 import { USDC } from '@eth-optimism/actions-sdk/assets'
 
 // Define custom assets
@@ -82,7 +81,7 @@ export const CustomToken: Asset = {
       >
         <div className="pt-6 pb-4">
           <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-            Import tokens from the{' '}
+            Import asset data from the{' '}
             <a
               href="https://github.com/ethereum-optimism/ethereum-optimism.github.io"
               target="_blank"
@@ -91,7 +90,7 @@ export const CustomToken: Asset = {
             >
               Superchain Token List
             </a>{' '}
-            or define custom assets and markets.
+            or define custom assets.
           </p>
           <CodeBlock code={assetsCode} filename="assets.ts" />
         </div>

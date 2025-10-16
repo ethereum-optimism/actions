@@ -26,7 +26,7 @@ function CodeBlock({
     >
       <TerminalHeader filename={filename} />
       <div
-        className="p-8 text-left relative"
+        className="px-8 py-4 text-left relative"
         style={{ backgroundColor: colors.bg.code }}
       >
         <Code code={code} language={language} />

@@ -12,9 +12,7 @@ function ConfigureChainsSection({
   isOpen,
   onToggle,
 }: ConfigureChainsSectionProps) {
-  const chainsCode = `
-
-// Define and abstract away supported chains
+  const chainsCode = `// Define and abstract away supported chains
 const OPTIMISM = {
   chainId: optimism.id,
   rpcUrls: env.OPTIMISM_RPC_URL

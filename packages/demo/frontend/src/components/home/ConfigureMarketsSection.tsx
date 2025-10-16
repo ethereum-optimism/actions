@@ -12,8 +12,7 @@ function ConfigureMarketsSection({
   isOpen,
   onToggle,
 }: ConfigureMarketsSectionProps) {
-  const marketsCode = `
-// Fetch all markets
+  const marketsCode = `// Fetch all markets
 const markets = actions.lend.getMarkets()
 
 // Specify your preferred ones
