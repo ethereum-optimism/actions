@@ -44,8 +44,10 @@ function Overview() {
           Actions is an open source TypeScript SDK for letting your users easily
           perform onchain actions: <strong>Lend</strong>,{' '}
           <strong>Borrow</strong>, <strong>Swap</strong>, <strong>Pay</strong>,
-          without managing complex infrastructure or custody. Integrate DeFi
-          with a single dependency.
+          without managing complex infrastructure or custody.
+          <br />
+          <br />
+          Integrate DeFi with a single dependency.
         </p>
       </div>
       <div className="max-w-4xl mx-auto">
