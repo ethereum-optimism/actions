@@ -3,14 +3,23 @@ import type {
   GetAllWalletsResponse,
   GetWalletResponse,
 } from '@eth-optimism/actions-service'
+import type {
+  LendMarketPosition,
+  SupportedChainId,
+  TokenBalance,
+  LendMarket,
+  LendTransactionReceipt,
+} from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 
 import { env } from '../envVars.js'
 import type {
+  LendExecutePositionParams,
   MarketResponse,
   PositionResponse,
   TransactionResponse,
 } from '../types/index.js'
+import type { Serialized } from '../util/serialize.js'
 
 class ActionsApiError extends Error {
   status?: number
@@ -95,6 +104,24 @@ class ActionsApiClient {
     })
   }
 
+  async getMarketsV1(headers: HeadersInit = {}): Promise<LendMarket[]> {
+    const { result } = await this.request<{ result: Serialized<LendMarket[]> }>(
+      '/v1/lend/markets',
+      {
+        method: 'GET',
+        headers,
+      },
+    )
+    return result.map((market) => ({
+      ...market,
+      supply: {
+        ...market.supply,
+        totalShares: BigInt(market.supply.totalShares),
+        totalAssets: BigInt(market.supply.totalAssets),
+      },
+    }))
+  }
+
   async getWalletBalance(
     userId: string,
     headers: HeadersInit = {},
@@ -115,6 +142,23 @@ class ActionsApiClient {
       method: 'GET',
       headers,
     })
+  }
+
+  async getWalletBalanceV1(headers: HeadersInit = {}): Promise<TokenBalance[]> {
+    const { result } = await this.request<{
+      result: Serialized<TokenBalance>[]
+    }>('/wallet/balance', {
+      method: 'GET',
+      headers,
+    })
+    return result.map((balance) => ({
+      ...balance,
+      totalBalance: BigInt(balance.totalBalance),
+      chainBalances: balance.chainBalances.map((chainBalance) => ({
+        ...chainBalance,
+        balance: BigInt(chainBalance.balance),
+      })),
+    }))
   }
 
   async fundWallet(
@@ -169,6 +213,46 @@ class ActionsApiClient {
     )
   }
 
+  async getPositionV1(
+    {
+      marketId,
+    }: {
+      marketId: { chainId: SupportedChainId; address: Address }
+    },
+    headers: HeadersInit = {},
+  ): Promise<LendMarketPosition> {
+    const { result } = await this.request<{
+      result: Serialized<LendMarketPosition>
+    }>(`/wallet/lend/${marketId.chainId}/${marketId.address}/position`, {
+      method: 'GET',
+      headers,
+    })
+    return {
+      ...result,
+      balance: BigInt(result.balance),
+      shares: BigInt(result.shares),
+    }
+  }
+
+  async openLendPositionV1(
+    { amount, asset, marketId }: LendExecutePositionParams,
+    headers: HeadersInit = {},
+  ): Promise<LendTransactionReceipt> {
+    const { result } = await this.request<{ result: LendTransactionReceipt }>(
+      '/v1/lend/position/open',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          amount,
+          tokenAddress: asset.address[marketId.chainId],
+          marketId,
+        }),
+        headers,
+      },
+    )
+    return result
+  }
+
   async openLendPosition(
     walletId: string,
     amount: number,
@@ -186,6 +270,25 @@ class ActionsApiClient {
       }),
       headers,
     })
+  }
+
+  async closeLendPositionV1(
+    { amount, asset, marketId }: LendExecutePositionParams,
+    headers: HeadersInit = {},
+  ): Promise<LendTransactionReceipt> {
+    const { result } = await this.request<{ result: LendTransactionReceipt }>(
+      '/v1/lend/position/close',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          amount,
+          tokenAddress: asset.address[marketId.chainId],
+          marketId,
+        }),
+        headers,
+      },
+    )
+    return result
   }
 
   async closeLendPosition(

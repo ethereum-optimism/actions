@@ -111,6 +111,48 @@ export async function formatMarketBalanceResponse(
   }
 }
 
+async function executePositionV1(
+  params: PositionParams,
+  operation: 'open' | 'close',
+): Promise<LendTransactionReceipt> {
+  const { userId, amount, tokenAddress, marketId } = params
+
+  try {
+    const wallet = await getWallet(userId, true)
+    if (!wallet) {
+      const error = `Wallet not found for user ID: ${userId}`
+      console.error('[executePositionV1] ERROR:', error)
+      throw new Error(error)
+    }
+
+    const asset = SUPPORTED_TOKENS.find(
+      (token) =>
+        token.address[marketId.chainId as SupportedChainId] === tokenAddress,
+    )
+    if (!asset) {
+      const error = `Asset not found for token address: ${tokenAddress}`
+      console.error('[executePosition] ERROR:', error)
+      throw new Error(error)
+    }
+
+    const positionParams = { amount, asset, marketId }
+
+    const result =
+      operation === 'open'
+        ? await wallet.lend!.openPosition(positionParams)
+        : await wallet.lend!.closePosition(positionParams)
+
+    return result
+  } catch (error) {
+    console.error('[executePosition] ERROR:', {
+      error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+    throw error
+  }
+}
+
 async function executePosition(
   params: PositionParams,
   operation: 'open' | 'close',
@@ -176,10 +218,22 @@ async function executePosition(
   }
 }
 
+export async function openPositionV1(
+  params: PositionParams,
+): Promise<LendTransactionReceipt> {
+  return executePositionV1(params, 'open')
+}
+
 export async function openPosition(
   params: PositionParams,
 ): Promise<PositionResponse> {
   return executePosition(params, 'open')
+}
+
+export async function closePositionV1(
+  params: PositionParams,
+): Promise<LendTransactionReceipt> {
+  return executePositionV1(params, 'close')
 }
 
 export async function closePosition(

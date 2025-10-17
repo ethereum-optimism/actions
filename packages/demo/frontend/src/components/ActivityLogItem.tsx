@@ -64,7 +64,21 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
     apiMethod: 'actions.lend.getMarket()',
     isReadOnly: true,
   },
+  getMarketsV1: {
+    type: 'lend',
+    action: 'getMarket',
+    description: 'Get market',
+    apiMethod: 'actions.lend.getMarket()',
+    isReadOnly: true,
+  },
   getPosition: {
+    type: 'lend',
+    action: 'getPosition',
+    description: 'Get position',
+    apiMethod: 'wallet.lend.getPosition()',
+    isReadOnly: true,
+  },
+  getPositionV1: {
     type: 'lend',
     action: 'getPosition',
     description: 'Get position',
@@ -78,9 +92,23 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
     apiMethod: 'wallet.lend.openPosition()',
     getAmount: (_walletId: string, amount: number) => amount.toString(),
   },
+  openLendPositionV1: {
+    type: 'lend',
+    action: 'deposit',
+    description: 'Open lending position',
+    apiMethod: 'wallet.lend.openPosition()',
+    getAmount: (_walletId: string, amount: number) => amount.toString(),
+  },
 
   // Withdraw operations
   closeLendPosition: {
+    type: 'withdraw',
+    action: 'withdraw',
+    description: 'Close lending position',
+    apiMethod: 'wallet.lend.closePosition()',
+    getAmount: (_walletId: string, amount: number) => amount.toString(),
+  },
+  closeLendPositionV1: {
     type: 'withdraw',
     action: 'withdraw',
     description: 'Close lending position',
@@ -99,6 +127,13 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
 
   // Wallet operations
   getWalletBalance: {
+    type: 'wallet',
+    action: 'getBalance',
+    description: 'Get wallet balance',
+    apiMethod: 'wallet.getBalance()',
+    isReadOnly: true,
+  },
+  getWalletBalanceV1: {
     type: 'wallet',
     action: 'getBalance',
     description: 'Get wallet balance',
