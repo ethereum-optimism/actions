@@ -54,6 +54,9 @@ export function EarnWithFrontendWallet({
   } | null>(null)
   const hasInitiatedMarketFetch = useRef(false)
 
+  const marketChainId = marketData?.marketId.chainId
+  const marketAddress = marketData?.marketId.address
+
   // Function to fetch wallet balance
   const fetchBalance = useCallback(async () => {
     if (!wallet) {
@@ -132,6 +135,7 @@ export function EarnWithFrontendWallet({
       setIsLoadingBalance(false)
     }
   }, [wallet, actions])
+
   const handleMintUSDC = useCallback(async () => {
     if (!wallet) return
 
@@ -153,14 +157,33 @@ export function EarnWithFrontendWallet({
 
       await wallet.sendBatch(calls, baseSepolia.id)
 
-      // Wait for the transaction to settle
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      // Transaction succeeded - optimistically update balance with the minted amount (100 USDC)
+      const currentBalance = parseFloat(usdcBalance)
+      const mintedAmount = 100
+      const newOptimisticBalance = (currentBalance + mintedAmount).toFixed(2)
+      setUsdcBalance(newOptimisticBalance)
+      setIsLoadingBalance(false)
 
-      // Refresh balance after minting
-      await fetchBalance()
+      // Fetch actual balance to verify/correct the optimistic update
+      const balanceResult = await wallet.getBalance()
+      const usdcToken = balanceResult.find(
+        (token) => token.symbol === 'USDC_DEMO',
+      )
+
+      if (usdcToken && usdcToken.totalBalance > 0) {
+        const actualBalance = parseFloat(`${usdcToken.totalBalance}`) / 1e6
+        const flooredBalance = Math.floor(actualBalance * 100) / 100
+        const actualBalanceStr = flooredBalance.toFixed(2)
+
+        // Only update if different from optimistic value
+        if (actualBalanceStr !== newOptimisticBalance) {
+          setUsdcBalance(actualBalanceStr)
+        }
+      }
     } catch (error) {
       console.error('Error minting USDC:', error)
       setIsLoadingBalance(false)
+      await fetchBalance()
     }
   }, [wallet, fetchBalance])
 
@@ -236,41 +259,49 @@ export function EarnWithFrontendWallet({
     setApy,
   ])
 
-  const fetchPosition = useCallback(async () => {
-    if (
-      !wallet ||
-      !marketData?.marketId.chainId ||
-      !marketData?.marketId.address
-    )
-      return
+  const fetchPosition = useCallback(
+    async (backgroundPolling: boolean = false) => {
+      if (!wallet || !marketChainId || !marketAddress) return
 
-    try {
-      setIsLoadingPosition(true)
-      const balance = await wallet.lend!.getPosition({
-        marketId: {
-          chainId: marketData.marketId.chainId as SupportedChainId,
-          address: marketData.marketId.address,
-        },
-      })
-      const position = await formatMarketBalanceResponse(balance)
-      setDepositedAmount(position.balanceFormatted)
-    } catch {
-      setDepositedAmount('0.00')
-    } finally {
-      setIsLoadingPosition(false)
-    }
-  }, [wallet, marketData])
+      try {
+        if (!backgroundPolling) {
+          setIsLoadingPosition(true)
+        }
+        const balance = await wallet.lend!.getPosition({
+          marketId: {
+            chainId: marketData.marketId.chainId as SupportedChainId,
+            address: marketData.marketId.address,
+          },
+        })
+        const position = await formatMarketBalanceResponse(balance)
+        setDepositedAmount(position.balanceFormatted)
+      } catch {
+        // Silently fail polling - don't reset to 0.00
+        if (!backgroundPolling) {
+          setDepositedAmount('0.00')
+        }
+      } finally {
+        if (!backgroundPolling) {
+          setIsLoadingPosition(false)
+        }
+      }
+    },
+    [wallet, marketData],
+  )
 
   // Fetch position when market data is available or user changes
   useEffect(() => {
-    if (
-      wallet &&
-      marketData?.marketId.chainId &&
-      marketData?.marketId.address
-    ) {
+    if (wallet && marketChainId && marketAddress) {
       fetchPosition()
     }
-  }, [wallet, marketData?.marketId.chainId, marketData?.marketId.address])
+  }, [wallet, marketChainId, marketAddress])
+
+  useEffect(() => {
+    if (!wallet || !marketChainId || !marketAddress) return
+
+    const intervalId = setInterval(() => fetchPosition(true), 5000)
+    return () => clearInterval(intervalId)
+  }, [wallet, marketChainId, marketAddress])
 
   const executePositon = useCallback(
     async (operation: 'open' | 'close', amount: number) => {
