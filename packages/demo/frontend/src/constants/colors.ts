@@ -11,6 +11,7 @@ export const colors = {
   text: {
     primary: '#ebdbb2', // light1
     secondary: '#d5c4a1', // light2
+    cream: '#F5F5DC', // beige - warm yellowish white
   },
   blue: '#83a598', // bright blue for identifiers
   syntax: {

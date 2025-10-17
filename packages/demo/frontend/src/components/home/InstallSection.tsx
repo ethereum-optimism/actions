@@ -1,22 +1,22 @@
+import { useState } from 'react'
 import { colors } from '@/constants/colors'
 
 interface InstallSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
-  selectedPackageManager: string
-  setSelectedPackageManager: (pm: string) => void
-  packageManagers: Record<string, string>
 }
 
-function InstallSection({
-  stepNumber,
-  isOpen,
-  onToggle,
-  selectedPackageManager,
-  setSelectedPackageManager,
-  packageManagers,
-}: InstallSectionProps) {
+function InstallSection({ stepNumber, isOpen, onToggle }: InstallSectionProps) {
+  const [selectedPackageManager, setSelectedPackageManager] = useState('npm')
+
+  const packageManagers = {
+    npm: 'npm install @eth-optimism/actions-sdk',
+    pnpm: 'pnpm add @eth-optimism/actions-sdk',
+    yarn: 'yarn add @eth-optimism/actions-sdk',
+    bun: 'bun add @eth-optimism/actions-sdk',
+    deno: 'deno add @eth-optimism/actions-sdk',
+  }
   return (
     <div className="mb-4">
       <button
@@ -35,8 +35,11 @@ function InstallSection({
           >
             {stepNumber}
           </span>
-          <h3 className="text-lg font-medium text-gray-300">
-            Install the library
+          <h3
+            className="text-lg font-medium"
+            style={{ color: colors.text.cream }}
+          >
+            Install Actions SDK
           </h3>
         </div>
         <svg
@@ -86,10 +89,14 @@ function InstallSection({
                   onClick={() => setSelectedPackageManager(pm)}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     selectedPackageManager === pm
-                      ? 'text-white border-b-2'
+                      ? 'border-b-2'
                       : 'text-gray-400 hover:text-gray-300'
                   }`}
                   style={{
+                    color:
+                      selectedPackageManager === pm
+                        ? colors.text.cream
+                        : undefined,
                     borderColor:
                       selectedPackageManager === pm
                         ? 'rgb(184, 187, 38)'

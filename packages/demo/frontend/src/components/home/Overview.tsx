@@ -1,4 +1,5 @@
 import CodeBlock from './CodeBlock'
+import { colors } from '@/constants/colors'
 
 const exampleCode = `// Enable asset lending in DeFi
 const receipt1 = wallet.lend.openPosition({
@@ -32,13 +33,21 @@ function Overview() {
   return (
     <div className="py-16">
       <div className="max-w-4xl mx-auto mb-8">
-        <h2 className="text-3xl font-medium text-gray-300 mb-4">Overview</h2>
+        <h2
+          className="text-3xl font-medium mb-4"
+          style={{ color: colors.text.cream }}
+        >
+          Overview
+        </h2>
         <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
-        <p className="text-gray-300 mb-4">
-          Actions is an open source TypeScript SDK for onchain actions:{' '}
-          <strong>Lend</strong>, <strong>Borrow</strong>, <strong>Swap</strong>,{' '}
-          <strong>Pay</strong>, without managing complex infrastructure or
-          custody.
+        <p className="mb-4" style={{ color: colors.text.cream }}>
+          Actions is an open source TypeScript SDK for letting your users easily
+          perform onchain actions: <strong>Lend</strong>,{' '}
+          <strong>Borrow</strong>, <strong>Swap</strong>, <strong>Pay</strong>,
+          without managing complex infrastructure or custody.
+          <br />
+          <br />
+          Integrate DeFi with a single dependency.
         </p>
       </div>
       <div className="max-w-4xl mx-auto">

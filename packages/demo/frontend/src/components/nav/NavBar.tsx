@@ -1,3 +1,5 @@
+import { colors } from '@/constants/colors'
+
 interface NavBarProps {
   fullWidth?: boolean
   rightElement?: React.ReactNode
@@ -50,7 +52,10 @@ function NavBar({
             {showDemo && (
               <a
                 href="/earn"
-                className="flex items-center space-x-2 px-2 py-2 text-sm text-gray-300 hover:text-white transition-colors duration-200"
+                className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+                style={{ color: colors.text.cream }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
               >
                 <span>Demo</span>
               </a>
@@ -59,7 +64,10 @@ function NavBar({
               href="https://github.com/ethereum-optimism/actions"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-2 px-2 py-2 text-sm text-gray-300 hover:text-white transition-colors duration-200"
+              className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+              style={{ color: colors.text.cream }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
             >
               <span>GitHub</span>
               <svg

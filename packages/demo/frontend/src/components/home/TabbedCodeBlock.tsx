@@ -110,7 +110,7 @@ function TabbedCodeBlock({
       <TerminalHeader filename={filename} />
 
       <div className="relative">
-        <div className="p-4">
+        <div className="px-4 py-3">
           <Code code={currentCode} language={language} />
         </div>
         <CopyButton text={currentCode} />
