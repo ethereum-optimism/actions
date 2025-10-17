@@ -1,6 +1,7 @@
 import type {
   CreateWalletResponse,
   GetAllWalletsResponse,
+  GetWalletResponse,
 } from '@eth-optimism/actions-service'
 import type { Address } from 'viem'
 
@@ -62,6 +63,16 @@ class ActionsApiClient {
   ): Promise<CreateWalletResponse> {
     return this.request<CreateWalletResponse>(`/wallet/${userId}`, {
       method: 'POST',
+      headers,
+    })
+  }
+
+  async getWallet(
+    userId: string,
+    headers: HeadersInit = {},
+  ): Promise<GetWalletResponse> {
+    return this.request<GetWalletResponse>(`/wallet/${userId}`, {
+      method: 'GET',
       headers,
     })
   }
