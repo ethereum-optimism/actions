@@ -3,6 +3,7 @@
  * @description Types matching backend API responses with serialized values
  */
 
+import type { Asset, LendMarketId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 
 export interface MarketResponse {
@@ -58,4 +59,13 @@ export interface TransactionResponse {
     chainId: number
     address: Address
   }
+}
+
+export interface LendExecutePositionParams {
+  /** Asset to withdraw (optional - will be validated against marketId) */
+  asset: Asset
+  /** Amount to withdraw (in wei) */
+  amount: number
+  /** Market identifier containing address and chainId */
+  marketId: LendMarketId
 }
