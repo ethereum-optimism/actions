@@ -11,6 +11,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
+    include: ['eventemitter3'],
     exclude: ['@base-org/account'],
   },
 })

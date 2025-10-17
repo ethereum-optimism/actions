@@ -3,10 +3,11 @@ import type { Address } from 'viem'
 import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 import Earn from './Earn'
 import { actionsApi } from '@/api/actionsApi'
+import type { WalletProviderConfig } from '@/constants/walletProviders'
 
 interface EarnWithServerWalletProps {
   ready: boolean
-  logout: () => void
+  logout: () => Promise<void>
   userId?: string
   getAuthHeaders: () => Promise<
     | {
@@ -15,6 +16,7 @@ interface EarnWithServerWalletProps {
     | undefined
   >
   userEmailAddress?: string
+  selectedProvider: WalletProviderConfig
 }
 
 /**
@@ -23,10 +25,10 @@ interface EarnWithServerWalletProps {
  */
 export function EarnWithServerWallet({
   ready,
-  logout,
   userId,
   getAuthHeaders,
-  userEmailAddress,
+  logout,
+  selectedProvider,
 }: EarnWithServerWalletProps) {
   const loggedApi = useLoggedActionsApi()
 
@@ -39,6 +41,7 @@ export function EarnWithServerWallet({
   const [isLoadingPosition, setIsLoadingPosition] = useState(false)
   const [isLoadingApy, setIsLoadingApy] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [walletAddress, setWalletAddress] = useState<Address | null>(null)
 
   // Market data for transactions
   const [marketData, setMarketData] = useState<{
@@ -49,6 +52,15 @@ export function EarnWithServerWallet({
 
   const marketChainId = marketData?.marketId.chainId
   const marketAddress = marketData?.marketId.address
+
+  const fetchWalletAddress = useCallback(
+    async (userId: string) => {
+      const headers = await getAuthHeaders()
+      const { address } = await loggedApi.getWallet(userId, headers)
+      setWalletAddress(address)
+    },
+    [getAuthHeaders, loggedApi],
+  )
 
   // Function to fetch wallet balance
   const fetchBalance = useCallback(
@@ -142,6 +154,12 @@ export function EarnWithServerWallet({
 
     initializeWallet()
   }, [userId, fetchBalance])
+
+  useEffect(() => {
+    if (userId) {
+      fetchWalletAddress(userId)
+    }
+  }, [userId, fetchWalletAddress])
 
   // Fetch market APY and data on mount
   useEffect(() => {
@@ -297,8 +315,9 @@ export function EarnWithServerWallet({
   return (
     <Earn
       ready={ready}
+      selectedProvider={selectedProvider}
+      walletAddress={walletAddress}
       logout={logout}
-      userEmail={userEmailAddress}
       usdcBalance={usdcBalance}
       isLoadingBalance={isLoadingBalance}
       apy={apy}

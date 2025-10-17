@@ -88,7 +88,12 @@ export class WalletController {
       const {
         params: { userId },
       } = validation.data
-      const wallet = await walletService.getWallet(userId)
+      const auth = c.get('auth') as AuthContext | undefined
+
+      // Use auth.userId if authenticated, otherwise fall back to userId param
+      const targetUserId = auth?.userId || userId
+      const isAuthedUser = !!auth?.userId
+      const wallet = await walletService.getWallet(targetUserId, isAuthedUser)
 
       if (!wallet) {
         return c.json(

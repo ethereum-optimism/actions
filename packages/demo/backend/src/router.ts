@@ -43,7 +43,7 @@ router.get('/version', (c) => {
 
 router.get('/wallets', walletController.getAllWallets)
 router.post('/wallet/:userId', walletController.createWallet)
-router.get('/wallet/:userId', walletController.getWallet)
+router.get('/wallet/:userId', authMiddleware, walletController.getWallet)
 router.get(
   '/wallet/:userId/balance',
   authMiddleware,
