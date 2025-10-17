@@ -1,22 +1,22 @@
+import { useState } from 'react'
 import { colors } from '@/constants/colors'
 
 interface InstallSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
-  selectedPackageManager: string
-  setSelectedPackageManager: (pm: string) => void
-  packageManagers: Record<string, string>
 }
 
-function InstallSection({
-  stepNumber,
-  isOpen,
-  onToggle,
-  selectedPackageManager,
-  setSelectedPackageManager,
-  packageManagers,
-}: InstallSectionProps) {
+function InstallSection({ stepNumber, isOpen, onToggle }: InstallSectionProps) {
+  const [selectedPackageManager, setSelectedPackageManager] = useState('npm')
+
+  const packageManagers = {
+    npm: 'npm install @eth-optimism/actions-sdk',
+    pnpm: 'pnpm add @eth-optimism/actions-sdk',
+    yarn: 'yarn add @eth-optimism/actions-sdk',
+    bun: 'bun add @eth-optimism/actions-sdk',
+    deno: 'deno add @eth-optimism/actions-sdk',
+  }
   return (
     <div className="mb-4">
       <button
