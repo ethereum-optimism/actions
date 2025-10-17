@@ -28,7 +28,9 @@ export const CustomToken: Asset = {
     symbol: 'CUSTOM',
   },
   type: 'erc20',
-}`
+}
+
+export const actions = createActions({lend: {assetAllowlist: [USDC, CustomToken]}, ...config})`
 
   return (
     <div className="mb-4">

@@ -53,7 +53,8 @@ function ConfigureActionsSection({
   swap: {
     type: 'uniswap',
     defaultSlippage: 100, // 100 bips or 1%
-    assetAllowList: [USDC, ETH, WBTC]
+    assetAllowList: [USDC, ETH, WBTC],
+    assetBlocklist: [],
   },
 
   // ChainConfig

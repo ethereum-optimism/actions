@@ -22,7 +22,9 @@ export const GauntletUSDC: LendMarketConfig = {
   name: 'Gauntlet USDC',
   asset: USDC,
   lendProvider: 'morpho',
-}`
+}
+
+export const actions = createActions({lend: {marketAllowlist: [GauntletUSDC]}, ...config})`
 
   return (
     <div className="mb-4">
