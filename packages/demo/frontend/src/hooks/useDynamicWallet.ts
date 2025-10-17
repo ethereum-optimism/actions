@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core'
-import type { SmartWallet } from '@eth-optimism/actions-sdk'
+import type { SmartWallet } from '@eth-optimism/actions-sdk/react'
 import { useActions } from './useActions'
 
 /**

@@ -1,4 +1,3 @@
-import { useActions } from '@/hooks/useActions'
 import { encodeFunctionData } from 'viem'
 import { getTokenBySymbol } from '@eth-optimism/actions-sdk/react'
 import type { LendMarketId, Wallet } from '@eth-optimism/actions-sdk/react'
@@ -9,6 +8,7 @@ import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { useBalanceOperations } from '@/hooks/useBalanceOperations'
 import { useCallback } from 'react'
 import type { LendExecutePositionParams } from '@/types/api'
+import { useActions } from '@/hooks/useActions'
 
 export interface EarnWithFrontendWalletProps {
   wallet: Wallet | null

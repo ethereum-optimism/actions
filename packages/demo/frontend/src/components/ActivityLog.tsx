@@ -1,6 +1,6 @@
 import ActivityLogItem from './ActivityLogItem'
 import Info from './Info'
-import { useActivityLog } from '../contexts/ActivityLogContext'
+import { useActivityLog } from '../hooks/useActivityLog'
 
 function ActivityLog() {
   const { activities } = useActivityLog()
@@ -84,13 +84,9 @@ function ActivityLog() {
                 key={activity.id}
                 type={activity.type}
                 action={activity.action}
-                amount={activity.amount || '0'}
                 timestamp={formatTimestamp(activity.timestamp)}
                 status={activity.status}
-                request={activity.request}
-                response={activity.response}
                 blockExplorerUrl={activity.blockExplorerUrl}
-                isTransaction={activity.isTransaction}
                 isFromPreviousSession={activity.isFromPreviousSession}
               />
             ))

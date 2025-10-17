@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 import { PrivyProvider } from '../providers/PrivyProvider'
-import { ActivityLogProvider } from '../contexts/ActivityLogContext'
+import { ActivityLogProvider } from '../providers/ActivityLogProvider'
 import { DynamicProvider } from '@/providers/DynamicProvider'
 import { EarnWithDynamicWallet } from '@/components/EarnWithDynamicWallet'
 import { EarnWithPrivyServerWallet } from '@/components/EarnWithPrivyServerWallet'

@@ -1,12 +1,11 @@
 import { useState, useCallback, useEffect } from 'react'
 import { type Address } from 'viem'
-import { useLoggedActionsApi } from '../hooks/useLoggedActionsApi'
 import Earn from './Earn'
-import { actionsApi } from '@/api/actionsApi'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { type LendMarketId } from '@eth-optimism/actions-sdk/react'
 import { useBalanceOperations } from '@/hooks/useBalanceOperations'
 import type { LendExecutePositionParams } from '@/types/api'
+import { actionsApi } from '@/api/actionsApi'
 
 interface EarnWithServerWalletProps {
   ready: boolean
@@ -33,31 +32,21 @@ export function EarnWithServerWallet({
   logout,
   selectedProvider,
 }: EarnWithServerWalletProps) {
-  const loggedApi = useLoggedActionsApi()
-
   // State for wallet balance and lend position
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
 
   // Memoize operation functions to prevent infinite loops
   const getTokenBalances = useCallback(async () => {
     const headers = await getAuthHeaders()
-    return loggedApi.getWalletBalanceV1(headers)
-  }, [getAuthHeaders, loggedApi])
+    return actionsApi.getWalletBalanceV1(headers)
+  }, [getAuthHeaders])
 
   const getMarkets = useCallback(async () => {
     const headers = await getAuthHeaders()
-    return loggedApi.getMarketsV1(headers)
-  }, [getAuthHeaders, loggedApi])
+    return actionsApi.getMarketsV1(headers)
+  }, [getAuthHeaders])
 
   const getPosition = useCallback(
-    async (marketId: LendMarketId) => {
-      const headers = await getAuthHeaders()
-      return loggedApi.getPositionV1({ marketId }, headers)
-    },
-    [getAuthHeaders, loggedApi],
-  )
-
-  const getPositionSilent = useCallback(
     async (marketId: LendMarketId) => {
       const headers = await getAuthHeaders()
       return actionsApi.getPositionV1({ marketId }, headers)
@@ -67,23 +56,23 @@ export function EarnWithServerWallet({
 
   const mintUSDC = useCallback(async () => {
     const headers = await getAuthHeaders()
-    await loggedApi.fundWallet(userId!, headers)
-  }, [getAuthHeaders, loggedApi, userId])
+    await actionsApi.fundWallet(userId!, headers)
+  }, [getAuthHeaders, userId])
 
   const openPosition = useCallback(
     async (positionParams: LendExecutePositionParams) => {
       const headers = await getAuthHeaders()
-      return loggedApi.openLendPositionV1(positionParams, headers)
+      return actionsApi.openLendPositionV1(positionParams, headers)
     },
-    [getAuthHeaders, loggedApi],
+    [getAuthHeaders],
   )
 
   const closePosition = useCallback(
     async (positionParams: LendExecutePositionParams) => {
       const headers = await getAuthHeaders()
-      return loggedApi.closeLendPositionV1(positionParams, headers)
+      return actionsApi.closeLendPositionV1(positionParams, headers)
     },
-    [getAuthHeaders, loggedApi],
+    [getAuthHeaders],
   )
 
   const isReady = useCallback(() => !!userId, [userId])
@@ -102,7 +91,6 @@ export function EarnWithServerWallet({
     getTokenBalances,
     getMarkets,
     getPosition,
-    getPositionSilent,
     mintUSDC,
     openPosition,
     closePosition,
@@ -112,10 +100,10 @@ export function EarnWithServerWallet({
   const fetchWalletAddress = useCallback(
     async (userId: string) => {
       const headers = await getAuthHeaders()
-      const { address } = await loggedApi.getWallet(userId, headers)
+      const { address } = await actionsApi.getWallet(userId, headers)
       setWalletAddress(address)
     },
-    [getAuthHeaders, loggedApi],
+    [getAuthHeaders],
   )
 
   useEffect(() => {

@@ -1,41 +1,16 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useRef,
-  useEffect,
-  type ReactNode,
-} from 'react'
+import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
+
+import { ActivityLogContext } from '../contexts/ActivityLogContext'
 
 export type ActivityEntry = {
   id: number
   type: 'lend' | 'withdraw' | 'fund' | 'wallet'
   action: string
-  amount?: string
   timestamp: string
   status: 'pending' | 'confirmed' | 'error'
-  request?: Record<string, unknown>
-  response?: Record<string, unknown>
   blockExplorerUrl?: string
-  isTransaction?: boolean
   isFromPreviousSession?: boolean
 }
-
-type ActivityLogContextType = {
-  activities: ActivityEntry[]
-  addActivity: (entry: Omit<ActivityEntry, 'id' | 'timestamp'>) => number
-  updateActivity: (id: number, updates: Partial<ActivityEntry>) => void
-  clearActivities: () => void
-  addOrUpdateActivity: (
-    key: string,
-    entry: Omit<ActivityEntry, 'id' | 'timestamp'>,
-  ) => number
-}
-
-const ActivityLogContext = createContext<ActivityLogContextType | undefined>(
-  undefined,
-)
 
 const STORAGE_KEY = 'activity-log'
 const NEXT_ID_KEY = 'activity-log-next-id'
@@ -73,7 +48,7 @@ export function ActivityLogProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const transactionActivities = activities.filter(
-        (activity) => activity.isTransaction,
+        (activity) => !!activity.blockExplorerUrl,
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(transactionActivities))
       localStorage.setItem(NEXT_ID_KEY, nextIdRef.current.toString())
@@ -170,12 +145,4 @@ export function ActivityLogProvider({ children }: { children: ReactNode }) {
       {children}
     </ActivityLogContext.Provider>
   )
-}
-
-export function useActivityLog() {
-  const context = useContext(ActivityLogContext)
-  if (!context) {
-    throw new Error('useActivityLog must be used within ActivityLogProvider')
-  }
-  return context
 }
