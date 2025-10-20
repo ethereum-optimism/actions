@@ -124,15 +124,12 @@ export async function getReserve(
 
   const poolAddress = getPoolAddress(params.marketId.chainId)
   if (!poolAddress) {
-    throw new Error(
-      `Aave V3 not deployed on chain ${params.marketId.chainId}`,
-    )
+    throw new Error(`Aave V3 not deployed on chain ${params.marketId.chainId}`)
   }
 
   const uiPoolDataProviderAddress =
     UI_POOL_DATA_PROVIDER_ADDRESSES[params.marketId.chainId]
-  const poolAddressesProvider =
-    POOL_ADDRESSES_PROVIDER[params.marketId.chainId]
+  const poolAddressesProvider = POOL_ADDRESSES_PROVIDER[params.marketId.chainId]
 
   if (!uiPoolDataProviderAddress || !poolAddressesProvider) {
     throw new Error(

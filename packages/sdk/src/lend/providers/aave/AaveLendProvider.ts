@@ -241,7 +241,10 @@ export class AaveLendProvider extends LendProvider<AaveLendConfig> {
       // TODO: Fetch aToken address from Pool.getReserveData(asset) and read balance
       // For now, return zero balance as placeholder
       const balance = 0n
-      const balanceFormatted = formatUnits(balance, market.asset.metadata.decimals)
+      const balanceFormatted = formatUnits(
+        balance,
+        market.asset.metadata.decimals,
+      )
 
       return {
         balance,
