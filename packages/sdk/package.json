@@ -55,6 +55,8 @@
   "author": "Optimism PBC",
   "license": "MIT",
   "dependencies": {
+    "@aave/contract-helpers": "^1.30.0",
+    "@aave/math-utils": "^1.30.0",
     "@eth-optimism/viem": "^0.4.13",
     "@morpho-org/blue-sdk": "^4.5.1",
     "@morpho-org/blue-sdk-viem": "^3.1.1",
