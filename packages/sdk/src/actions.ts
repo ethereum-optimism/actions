@@ -65,12 +65,13 @@ export class Actions<
 
     // Create lending provider if configured
     if (config.lend) {
-      if (config.lend.provider === 'morpho') {
+      const lendConfig = config.lend
+      if (lendConfig.provider === 'morpho') {
         this._lendProvider = new MorphoLendProvider(
           {
-            ...config.lend,
+            ...lendConfig,
             defaultSlippage:
-              config.lend.defaultSlippage ??
+              lendConfig.defaultSlippage ??
               DEFAULT_ACTIONS_CONFIG.lend.defaultSlippage,
           },
           this.chainManager,
@@ -78,12 +79,12 @@ export class Actions<
 
         // Create read-only lend namespace
         this._lend = new ActionsLendNamespace(this._lendProvider!)
-      } else if (config.lend.provider === 'aave') {
+      } else if (lendConfig.provider === 'aave') {
         this._lendProvider = new AaveLendProvider(
           {
-            ...config.lend,
+            ...lendConfig,
             defaultSlippage:
-              config.lend.defaultSlippage ??
+              lendConfig.defaultSlippage ??
               DEFAULT_ACTIONS_CONFIG.lend.defaultSlippage,
           },
           this.chainManager,
@@ -92,7 +93,7 @@ export class Actions<
         // Create read-only lend namespace
         this._lend = new ActionsLendNamespace(this._lendProvider!)
       } else {
-        throw new Error(`Unsupported lending provider: ${config.lend.provider}`)
+        throw new Error(`Unsupported lending provider: ${lendConfig.provider}`)
       }
     }
 

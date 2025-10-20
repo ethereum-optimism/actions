@@ -1,4 +1,4 @@
-import { formatReserves, type ReserveDataHumanized } from '@aave/math-utils'
+import { formatReserves } from '@aave/math-utils'
 import { UiPoolDataProvider } from '@aave/contract-helpers'
 import type { Address } from 'viem'
 
@@ -85,9 +85,9 @@ function findMarketInAllowlist(
  * @param reserve - Formatted reserve data from Aave
  * @returns APY breakdown with native APY and rewards
  */
-export function calculateApyBreakdown(
-  reserve: ReserveDataHumanized & { formattedReserve?: any },
-): ApyBreakdown {
+export function calculateApyBreakdown(reserve: {
+  formattedReserve?: any
+}): ApyBreakdown {
   // Get supply APY from formatted reserve data
   const supplyApy = reserve.formattedReserve?.supplyAPY
     ? parseFloat(reserve.formattedReserve.supplyAPY)
@@ -200,7 +200,7 @@ export async function getReserve(
       asset: marketConfig.asset,
       supply: {
         totalAssets: BigInt(reserve.availableLiquidity),
-        totalShares: BigInt(reserve.totalAToken || '0'),
+        totalShares: BigInt(reserve.totalScaledVariableDebt || '0'),
       },
       apy,
       metadata: {
