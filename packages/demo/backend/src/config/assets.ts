@@ -1,5 +1,11 @@
 import type { Asset } from '@eth-optimism/actions-sdk'
-import { base, baseSepolia, mainnet, optimismSepolia, unichain } from 'viem/chains'
+import {
+  base,
+  baseSepolia,
+  mainnet,
+  optimismSepolia,
+  unichain,
+} from 'viem/chains'
 
 export const USDC: Asset = {
   address: {

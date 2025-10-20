@@ -45,8 +45,39 @@ const ClosePositionRequestSchema = z.object({
 export async function getMarkets(c: Context) {
   try {
     const markets = await lendService.getMarkets()
+    const formattedMarkets = await Promise.all(
+      markets.map((market) => lendService.formatMarketResponse(market)),
+    )
+    return c.json({ markets: formattedMarkets })
+  } catch (error) {
+    console.error('[getMarkets] ERROR:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+    return c.json(
+      {
+        error: 'Failed to get markets',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      500,
+    )
+  }
+}
+
+/**
+ * GET - Retrieve all available lending markets
+ */
+export async function getMarketsV1(c: Context) {
+  try {
+    const markets = await lendService.getMarkets()
     return c.json({ result: serializeBigInt(markets) })
   } catch (error) {
+    console.error('[getMarketsV1] ERROR:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     return c.json(
       {
         error: 'Failed to get markets',
