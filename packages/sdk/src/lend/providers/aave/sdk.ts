@@ -1,5 +1,6 @@
 import { UiPoolDataProvider } from '@aave/contract-helpers'
 import { formatReserves } from '@aave/math-utils'
+import { providers } from 'ethers'
 import type { Address } from 'viem'
 
 import { getPoolAddress } from '@/lend/providers/aave/addresses.js'
