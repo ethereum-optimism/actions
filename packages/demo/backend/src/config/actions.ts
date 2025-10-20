@@ -4,7 +4,7 @@ import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 
 import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
-import { GauntletUSDC, USDCDemoVault } from './markets.js'
+import { AaveWETHOptimismSepolia } from './markets.js'
 
 let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
@@ -29,9 +29,9 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
       },
     },
     lend: {
-      provider: 'morpho',
+      provider: 'aave',
       defaultSlippage: 50,
-      marketAllowlist: [GauntletUSDC, USDCDemoVault],
+      marketAllowlist: [AaveWETHOptimismSepolia],
     },
     chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }
