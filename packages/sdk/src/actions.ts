@@ -93,7 +93,9 @@ export class Actions<
         // Create read-only lend namespace
         this._lend = new ActionsLendNamespace(this._lendProvider!)
       } else {
-        throw new Error(`Unsupported lending provider: ${lendConfig.provider}`)
+        throw new Error(
+          `Unsupported lending provider: ${(lendConfig as any).provider}`,
+        )
       }
     }
 
