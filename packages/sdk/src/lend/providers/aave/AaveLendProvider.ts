@@ -1,7 +1,5 @@
 import { encodeFunctionData, erc20Abi, formatUnits, parseAbi } from 'viem'
 
-import { getPoolAddress, getSupportedChainIds } from './addresses.js'
-import { getReserve, getReserves } from './sdk.js'
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
@@ -16,6 +14,9 @@ import type {
   LendTransaction,
 } from '@/types/lend/index.js'
 import { getAssetAddress } from '@/utils/assets.js'
+
+import { getPoolAddress, getSupportedChainIds } from './addresses.js'
+import { getReserve, getReserves } from './sdk.js'
 
 /**
  * Aave Pool ABI - only the functions we need
@@ -231,24 +232,13 @@ export class AaveLendProvider extends LendProvider<AaveLendConfig> {
     params: GetMarketBalanceParams,
   ): Promise<LendMarketPosition> {
     try {
-      const publicClient = this.chainManager.getPublicClient(
-        params.marketId.chainId,
-      )
-
+      // TODO: Implement aToken balance fetching
+      // const publicClient = this.chainManager.getPublicClient(params.marketId.chainId)
       // Get market info to find the aToken address
       const market = await this._getMarket(params.marketId)
-      const assetAddress = getAssetAddress(market.asset, params.marketId.chainId)
+      // const assetAddress = getAssetAddress(market.asset, params.marketId.chainId)
 
-      // In Aave, aTokens have the same address pattern
-      // We need to get the aToken address from the reserve data
-      // For now, we'll read the aToken balance directly
-      // The aToken address would be in the reserve configuration
-
-      // Get user's aToken balance
-      // Note: In production, we should fetch the aToken address from reserve data
-      // For now, we'll use a simplified approach and read the balance directly
-
-      // TODO: Fetch aToken address from Pool.getReserveData(asset)
+      // TODO: Fetch aToken address from Pool.getReserveData(asset) and read balance
       // For now, return zero balance as placeholder
       const balance = 0n
       const balanceFormatted = formatUnits(balance, market.asset.metadata.decimals)
