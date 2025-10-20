@@ -1,5 +1,5 @@
 import { DEFAULT_ACTIONS_CONFIG } from '@/constants/config.js'
-import { MorphoLendProvider } from '@/lend/index.js'
+import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { ActionsConfig } from '@/types/actions.js'
@@ -67,6 +67,19 @@ export class Actions<
     if (config.lend) {
       if (config.lend.provider === 'morpho') {
         this._lendProvider = new MorphoLendProvider(
+          {
+            ...config.lend,
+            defaultSlippage:
+              config.lend.defaultSlippage ??
+              DEFAULT_ACTIONS_CONFIG.lend.defaultSlippage,
+          },
+          this.chainManager,
+        )
+
+        // Create read-only lend namespace
+        this._lend = new ActionsLendNamespace(this._lendProvider!)
+      } else if (config.lend.provider === 'aave') {
+        this._lendProvider = new AaveLendProvider(
           {
             ...config.lend,
             defaultSlippage:
