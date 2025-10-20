@@ -143,10 +143,20 @@ export async function getReserve(
       params.marketId.chainId,
     )
 
+    // Create ethers provider from viem's RPC URL
+    // Aave SDK requires ethers provider, not viem
+    const rpcUrl =
+      publicClient.chain?.rpcUrls.default.http[0] ||
+      publicClient.chain?.rpcUrls.public?.http[0]
+    if (!rpcUrl) {
+      throw new Error(`No RPC URL available for chain ${params.marketId.chainId}`)
+    }
+    const ethersProvider = new providers.JsonRpcProvider(rpcUrl)
+
     // Create UiPoolDataProvider instance
     const uiPoolDataProvider = new UiPoolDataProvider({
       uiPoolDataProviderAddress,
-      provider: publicClient as any, // UiPoolDataProvider expects ethers provider but works with viem
+      provider: ethersProvider,
       chainId: params.marketId.chainId,
     })
 
