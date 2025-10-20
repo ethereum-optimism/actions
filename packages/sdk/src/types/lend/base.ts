@@ -30,7 +30,7 @@ export type LendMarketConfigMetadata = {
   /** Asset information for this market */
   asset: Asset
   /** Lending provider type */
-  lendProvider: 'morpho'
+  lendProvider: 'morpho' | 'aave'
 }
 
 /**
@@ -236,10 +236,20 @@ export interface MorphoLendConfig extends BaseLendConfig {
 }
 
 /**
+ * Aave lending provider configuration
+ * @description Configuration specific to Aave lending provider
+ */
+export interface AaveLendConfig extends BaseLendConfig {
+  /** Lending provider name */
+  provider: 'aave'
+  // Aave-specific fields can be added here in the future
+}
+
+/**
  * Lending provider configuration
  * @description Union of all possible lending provider configurations
  */
-export type LendConfig = MorphoLendConfig
+export type LendConfig = MorphoLendConfig | AaveLendConfig
 
 /**
  * Market position information
