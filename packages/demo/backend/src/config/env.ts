@@ -47,6 +47,7 @@ export const env = cleanEnv(process.env, {
   LOCAL_DEV: bool({ default: false }),
   BASE_SEPOLIA_RPC_URL: str({ default: undefined }),
   UNICHAIN_RPC_URL: str({ default: undefined }),
+  OPTIMISM_SEPOLIA_RPC_URL: str({ default: undefined }),
   FAUCET_ADMIN_PRIVATE_KEY: str({
     default:
       '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
@@ -57,6 +58,7 @@ export const env = cleanEnv(process.env, {
   BASE_SEPOLIA_BUNDER_URL: str({ devDefault: 'dummy' }),
   UNICHAIN_BUNDLER_URL: str({ devDefault: 'dummy' }),
   UNICHAIN_BUNDLER_SPONSORSHIP_POLICY: str({ devDefault: 'dummy' }),
+  OPTIMISM_SEPOLIA_BUNDLER_URL: str({ default: undefined }),
   SESSION_SIGNER_PK: str(),
   AUTH_MODULE_ADDRESS: str({
     devDefault: 'dummy',
