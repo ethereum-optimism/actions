@@ -24,7 +24,7 @@ const UI_POOL_DATA_PROVIDER_ADDRESSES: Record<number, Address> = {
   // Base Mainnet
   8453: '0xd82a47fdebB5bf5329b09441C3DaB4b5df2153Ad',
   // Optimism Sepolia
-  11155420: '0x9E41Bb6F1f72C0F87Ea95fB794f22e252e934D30',
+  11155420: '0x86E2938daE289763D4e09a7e42c5cCcA62Cf9809',
   // Base Sepolia
   84532: '0xBc9f5b7E248451CdD7cA54e717a2BFe1F32b566b',
 } as const
@@ -38,7 +38,7 @@ const POOL_ADDRESSES_PROVIDER: Record<number, Address> = {
   // Base Mainnet
   8453: '0xe20fCBdBfFC4Dd138cE8b2E6FBb6CB49777ad64D',
   // Optimism Sepolia
-  11155420: '0x05bA83A101f7225E2C9FEd3B8d4faC17F9834732',
+  11155420: '0x36616cf17557639614c1cdDb356b1B83fc0B2132',
   // Base Sepolia
   84532: '0xE4C23309117Aa30342BFaae6c95c6478e0A4Ad00',
 } as const
