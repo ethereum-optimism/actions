@@ -8,9 +8,34 @@ import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
 import { baseSepolia, unichain } from 'viem/chains'
 
-import { getActions } from '../config/actions.js'
-import type { PositionParams } from '../types/index.js'
+import {
+  getActions,
+  getAaveActions,
+  getMorphoActions,
+} from '../config/actions.js'
+import { ALL_MARKETS } from '../config/markets.js'
+import type {
+  FormattedMarketResponse,
+  PositionParams,
+  PositionResponse,
+} from '../types/index.js'
 import { getWallet } from './wallet.js'
+
+function getActionsForMarket(marketId: LendMarketId) {
+  const market = ALL_MARKETS.find(
+    (m) =>
+      m.address.toLowerCase() === marketId.address.toLowerCase() &&
+      m.chainId === marketId.chainId,
+  )
+
+  if (!market) {
+    throw new Error(`Market not found: ${marketId.address} on chain ${marketId.chainId}`)
+  }
+
+  return market.lendProvider === 'morpho'
+    ? getMorphoActions()
+    : getAaveActions()
+}
 
 export async function getBlockExplorerUrls(
   chainId: SupportedChainId,
@@ -40,12 +65,15 @@ export async function getBlockExplorerUrls(
 }
 
 export async function getMarkets(): Promise<LendMarket[]> {
-  const actions = getActions()
-  return await actions.lend.getMarkets()
+  const [morphoMarkets, aaveMarkets] = await Promise.all([
+    getMorphoActions().lend.getMarkets(),
+    getAaveActions().lend.getMarkets(),
+  ])
+  return [...morphoMarkets, ...aaveMarkets]
 }
 
 export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
-  const actions = getActions()
+  const actions = getActionsForMarket(marketId)
   return await actions.lend.getMarket(marketId)
 }
 
