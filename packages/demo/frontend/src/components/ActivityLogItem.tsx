@@ -129,7 +129,7 @@ function ActivityLogItem({
             {/* Top row: Label badge + Action description */}
             <div className="flex items-center gap-2 mb-1.5">
               <span
-                className="px-2 py-0.5 rounded text-xs font-medium"
+                className="px-2 py-0.5 rounded-sm text-xs font-medium"
                 style={{
                   backgroundColor: typeConfig.bg,
                   color: typeConfig.stroke,
@@ -165,7 +165,7 @@ function ActivityLogItem({
                 href={blockExplorerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-shrink-0 hover:bg-gray-100 rounded transition-all"
+                className="flex-shrink-0 hover:bg-gray-100 rounded-sm transition-all"
                 style={{ color: '#9CA3AF', padding: '2px' }}
                 title="View on Block Explorer"
               >
@@ -201,7 +201,7 @@ function ActivityLogItem({
             )}
             {/* TODO: Re-enable expand button in next PR when request/response data is improved */}
             {/* <button
-              className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-all"
+              className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-sm transition-all"
               style={{ color: '#9CA3AF' }}
               onClick={() => setIsExpanded(!isExpanded)}
             >
@@ -249,7 +249,7 @@ function ActivityLogItem({
                 Params
               </div>
               <pre
-                className="text-xs p-2 rounded overflow-x-auto"
+                className="text-xs p-2 rounded-sm overflow-x-auto"
                 style={{
                   backgroundColor: '#1F2937',
                   color: '#D1D5DB',
@@ -271,7 +271,7 @@ function ActivityLogItem({
                 Response
               </div>
               <pre
-                className="text-xs p-2 rounded overflow-x-auto"
+                className="text-xs p-2 rounded-sm overflow-x-auto"
                 style={{
                   backgroundColor: '#1F2937',
                   color: '#D1D5DB',
