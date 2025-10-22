@@ -83,8 +83,8 @@ function Home() {
           activities as it pertains to the software, including compliance with
           any law, rule or regulation (collectively, "Law"), including without
           limitation, any applicable economic sanctions Laws, export control
-          Laws, securities Laws, anti-money laundering Laws, or privacy Laws.
-          By using this software, you are subject to Optimism's full{' '}
+          Laws, securities Laws, anti-money laundering Laws, or privacy Laws. By
+          using this software, you are subject to Optimism's full{' '}
           <a
             href="https://www.optimism.io/terms"
             target="_blank"
