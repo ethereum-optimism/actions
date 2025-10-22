@@ -56,7 +56,7 @@ function Home() {
       >
         <p
           style={{
-            fontSize: '12px',
+            fontSize: '10px',
             lineHeight: '1.6',
             color: '#A89B8F',
             textAlign: 'left',
@@ -68,34 +68,22 @@ function Home() {
           noninfringement. In no event shall the authors or copyright holders be
           liable for any claim, damages, or other liability, whether in an
           action of contract, tort, or otherwise, arising from, out of, or in
-          connection with the software or the use or other dealings in the
-          software.
+          connection with the software.
         </p>
         <p
           style={{
-            fontSize: '12px',
+            fontSize: '10px',
             lineHeight: '1.6',
             color: '#A89B8F',
             textAlign: 'left',
             marginTop: '12px',
           }}
         >
-          If you publish, deploy, or use this software, you are responsible for
-          any regulatory implications related to your activities as it pertains
-          to the software, including compliance with any law, rule or regulation
-          (collectively, "Law"), including without limitation, any applicable
-          sanctions Laws, export control Laws, securities Laws, anti-money
-          laundering Laws, or privacy Laws.
-        </p>
-        <p
-          style={{
-            fontSize: '12px',
-            lineHeight: '1.6',
-            color: '#A89B8F',
-            textAlign: 'left',
-            marginTop: '12px',
-          }}
-        >
+          You are responsible for any regulatory implications related to your
+          activities as it pertains to the software, including compliance with
+          any law, rule or regulation (collectively, "Law"), including without
+          limitation, any applicable economic sanctions Laws, export control
+          Laws, securities Laws, anti-money laundering Laws, or privacy Laws.
           By using this software, you are subject to Optimism's full{' '}
           <a
             href="https://www.optimism.io/terms"
