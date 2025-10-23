@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import CodeBlock from './CodeBlock'
 import { colors } from '@/constants/colors'
 
@@ -30,6 +31,29 @@ const receipt4 = wallet.send({
 })`
 
 function Overview() {
+  const [hoveredLayer, setHoveredLayer] = useState<number | null>(null)
+
+  const GAP_SIZE = 124
+  const LAYER_OVERLAP = -229 // Negative margin to create overlap
+
+  const getLayerMargin = (layerNum: number) => {
+    // First layer always has no margin
+    if (layerNum === 1) return 0
+
+    const baseMargin = LAYER_OVERLAP
+
+    if (hoveredLayer !== null) {
+      // no top gap for layer 1
+      if (layerNum === hoveredLayer && hoveredLayer !== 1)
+        return baseMargin + GAP_SIZE * 2
+      // no bottom gap for layer 7
+      if (layerNum === hoveredLayer + 1 && layerNum <= 7)
+        return baseMargin + GAP_SIZE * 2
+    }
+
+    return baseMargin
+  }
+
   return (
     <div className="py-16">
       <div className="max-w-4xl mx-auto mb-8">
@@ -51,124 +75,221 @@ function Overview() {
         </p>
       </div>
       <div className="max-w-4xl mx-auto mb-8">
-        <div className="grid grid-cols-2 gap-8">
-          {/* Image Stack */}
-          <div className="relative">
-            <img
-              src="/src/assets/stack/1-red.png"
-              alt="Layer 1"
-              className="relative z-[70] w-full"
-              style={{ top: '0px' }}
-            />
-            <img
-              src="/src/assets/stack/2-orange.png"
-              alt="Layer 2"
-              className="absolute left-0 z-[60] w-full"
-              style={{ top: '0px' }}
-            />
-            <img
-              src="/src/assets/stack/3-yellow.png"
-              alt="Layer 3"
-              className="absolute left-0 z-50 w-full"
-              style={{ top: '0px' }}
-            />
-            <img
-              src="/src/assets/stack/4-green.png"
-              alt="Layer 4"
-              className="absolute left-0 z-40 w-full"
-              style={{ top: '0px' }}
-            />
-            <img
-              src="/src/assets/stack/5-teal.png"
-              alt="Layer 5"
-              className="absolute left-0 z-30 w-full"
-              style={{ top: '0px' }}
-            />
-            <img
-              src="/src/assets/stack/6-indigo.png"
-              alt="Layer 6"
-              className="absolute left-0 z-20 w-full"
-              style={{ top: '0px' }}
-            />
-            <img
-              src="/src/assets/stack/7-violet.png"
-              alt="Layer 7"
-              className="absolute left-0 z-10 w-full"
-              style={{ top: '0px' }}
-            />
+        <div className="flex flex-col">
+          {/* Layer 1 - Wallet */}
+          <div
+            className="flex items-center cursor-pointer z-[70]"
+            style={{
+              marginTop: `${getLayerMargin(1)}px`,
+              transition: 'margin-top 0.3s ease-in-out',
+            }}
+            onMouseEnter={() => setHoveredLayer(1)}
+            onMouseLeave={() => setHoveredLayer(null)}
+          >
+            <div className="w-1/2">
+              <img
+                src="/src/assets/stack/1.png"
+                alt="Layer 1"
+                className="w-full"
+              />
+            </div>
+            <div className="w-1/2 flex items-center justify-start pl-8">
+              <div
+                className="w-48 h-px mr-3"
+                style={{ backgroundColor: colors.text.cream }}
+              />
+              <span
+                className="font-medium whitespace-nowrap"
+                style={{ color: colors.text.cream }}
+              >
+                Wallet
+              </span>
+            </div>
           </div>
 
-          {/* Labels in right column */}
-          <div className="relative">
-            <div
-              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '98px', left: '-80px', color: colors.text.cream }}
-            >
-              <div
-                className="w-48 h-px mr-3"
-                style={{ backgroundColor: colors.text.cream }}
+          {/* Layer 2 - Lend */}
+          <div
+            className="flex items-center cursor-pointer z-[60]"
+            style={{
+              marginTop: `${getLayerMargin(2)}px`,
+              transition: 'margin-top 0.3s ease-in-out',
+            }}
+            onMouseEnter={() => setHoveredLayer(2)}
+            onMouseLeave={() => setHoveredLayer(null)}
+          >
+            <div className="w-1/2">
+              <img
+                src="/src/assets/stack/2.png"
+                alt="Layer 2"
+                className="w-full"
               />
-              Wallet
             </div>
-            <div
-              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '139px', left: '-80px', color: colors.text.cream }}
-            >
+            <div className="w-1/2 flex items-center justify-start pl-8">
               <div
                 className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
-              Lend
+              <span
+                className="font-medium whitespace-nowrap"
+                style={{ color: colors.text.cream }}
+              >
+                Lend
+              </span>
             </div>
-            <div
-              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '180px', left: '-80px', color: colors.text.cream }}
-            >
-              <div
-                className="w-48 h-px mr-3"
-                style={{ backgroundColor: colors.text.cream }}
+          </div>
+
+          {/* Layer 3 - Borrow */}
+          <div
+            className="flex items-center cursor-pointer z-[50]"
+            style={{
+              marginTop: `${getLayerMargin(3)}px`,
+              transition: 'margin-top 0.3s ease-in-out',
+            }}
+            onMouseEnter={() => setHoveredLayer(3)}
+            onMouseLeave={() => setHoveredLayer(null)}
+          >
+            <div className="w-1/2">
+              <img
+                src="/src/assets/stack/3.png"
+                alt="Layer 3"
+                className="w-full"
               />
-              Borrow
             </div>
-            <div
-              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '221px', left: '-80px', color: colors.text.cream }}
-            >
+            <div className="w-1/2 flex items-center justify-start pl-8">
               <div
                 className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
-              Swap
+              <span
+                className="font-medium whitespace-nowrap"
+                style={{ color: colors.text.cream }}
+              >
+                Borrow
+              </span>
             </div>
-            <div
-              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '262px', left: '-80px', color: colors.text.cream }}
-            >
-              <div
-                className="w-48 h-px mr-3"
-                style={{ backgroundColor: colors.text.cream }}
+          </div>
+
+          {/* Layer 4 - Swap */}
+          <div
+            className="flex items-center cursor-pointer z-[40]"
+            style={{
+              marginTop: `${getLayerMargin(4)}px`,
+              transition: 'margin-top 0.3s ease-in-out',
+            }}
+            onMouseEnter={() => setHoveredLayer(4)}
+            onMouseLeave={() => setHoveredLayer(null)}
+          >
+            <div className="w-1/2">
+              <img
+                src="/src/assets/stack/4.png"
+                alt="Layer 4"
+                className="w-full"
               />
-              Pay
             </div>
-            <div
-              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '303px', left: '-80px', color: colors.text.cream }}
-            >
+            <div className="w-1/2 flex items-center justify-start pl-8">
               <div
                 className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
-              Assets
+              <span
+                className="font-medium whitespace-nowrap"
+                style={{ color: colors.text.cream }}
+              >
+                Swap
+              </span>
             </div>
-            <div
-              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '344px', left: '-80px', color: colors.text.cream }}
-            >
+          </div>
+
+          {/* Layer 5 - Pay */}
+          <div
+            className="flex items-center cursor-pointer z-[30]"
+            style={{
+              marginTop: `${getLayerMargin(5)}px`,
+              transition: 'margin-top 0.3s ease-in-out',
+            }}
+            onMouseEnter={() => setHoveredLayer(5)}
+            onMouseLeave={() => setHoveredLayer(null)}
+          >
+            <div className="w-1/2">
+              <img
+                src="/src/assets/stack/5.png"
+                alt="Layer 5"
+                className="w-full"
+              />
+            </div>
+            <div className="w-1/2 flex items-center justify-start pl-8">
               <div
                 className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
-              Chains
+              <span
+                className="font-medium whitespace-nowrap"
+                style={{ color: colors.text.cream }}
+              >
+                Pay
+              </span>
+            </div>
+          </div>
+
+          {/* Layer 6 - Assets */}
+          <div
+            className="flex items-center cursor-pointer z-[20]"
+            style={{
+              marginTop: `${getLayerMargin(6)}px`,
+              transition: 'margin-top 0.3s ease-in-out',
+            }}
+            onMouseEnter={() => setHoveredLayer(6)}
+            onMouseLeave={() => setHoveredLayer(null)}
+          >
+            <div className="w-1/2">
+              <img
+                src="/src/assets/stack/6.png"
+                alt="Layer 6"
+                className="w-full"
+              />
+            </div>
+            <div className="w-1/2 flex items-center justify-start pl-8">
+              <div
+                className="w-48 h-px mr-3"
+                style={{ backgroundColor: colors.text.cream }}
+              />
+              <span
+                className="font-medium whitespace-nowrap"
+                style={{ color: colors.text.cream }}
+              >
+                Assets
+              </span>
+            </div>
+          </div>
+
+          {/* Layer 7 - Chains */}
+          <div
+            className="flex items-center cursor-pointer z-[10]"
+            style={{
+              marginTop: `${getLayerMargin(7)}px`,
+              transition: 'margin-top 0.3s ease-in-out',
+            }}
+            onMouseEnter={() => setHoveredLayer(7)}
+            onMouseLeave={() => setHoveredLayer(null)}
+          >
+            <div className="w-1/2">
+              <img
+                src="/src/assets/stack/7.png"
+                alt="Layer 7"
+                className="w-full"
+              />
+            </div>
+            <div className="w-1/2 flex items-center justify-start pl-8">
+              <div
+                className="w-48 h-px mr-3"
+                style={{ backgroundColor: colors.text.cream }}
+              />
+              <span
+                className="font-medium whitespace-nowrap"
+                style={{ color: colors.text.cream }}
+              >
+                Chains
+              </span>
             </div>
           </div>
         </div>
