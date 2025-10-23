@@ -112,7 +112,7 @@ function Overview() {
             </div>
             <div
               className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '138px', left: '-80px', color: colors.text.cream }}
+              style={{ top: '139px', left: '-80px', color: colors.text.cream }}
             >
               <div
                 className="w-48 h-px mr-3"
@@ -122,7 +122,7 @@ function Overview() {
             </div>
             <div
               className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '178px', left: '-80px', color: colors.text.cream }}
+              style={{ top: '180px', left: '-80px', color: colors.text.cream }}
             >
               <div
                 className="w-48 h-px mr-3"
@@ -132,7 +132,7 @@ function Overview() {
             </div>
             <div
               className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '218px', left: '-80px', color: colors.text.cream }}
+              style={{ top: '221px', left: '-80px', color: colors.text.cream }}
             >
               <div
                 className="w-48 h-px mr-3"
@@ -142,7 +142,7 @@ function Overview() {
             </div>
             <div
               className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '258px', left: '-80px', color: colors.text.cream }}
+              style={{ top: '262px', left: '-80px', color: colors.text.cream }}
             >
               <div
                 className="w-48 h-px mr-3"
@@ -152,7 +152,7 @@ function Overview() {
             </div>
             <div
               className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '298px', left: '-80px', color: colors.text.cream }}
+              style={{ top: '303px', left: '-80px', color: colors.text.cream }}
             >
               <div
                 className="w-48 h-px mr-3"
@@ -162,7 +162,7 @@ function Overview() {
             </div>
             <div
               className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ top: '338px', left: '-80px', color: colors.text.cream }}
+              style={{ top: '344px', left: '-80px', color: colors.text.cream }}
             >
               <div
                 className="w-48 h-px mr-3"
