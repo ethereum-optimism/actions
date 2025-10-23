@@ -58,107 +58,114 @@ function Overview() {
               src="/src/assets/stack/1-red.png"
               alt="Layer 1"
               className="relative z-[70] w-full"
+              style={{ top: '0px' }}
             />
             <img
               src="/src/assets/stack/2-orange.png"
               alt="Layer 2"
-              className="absolute top-0 left-0 z-[60] w-full"
+              className="absolute left-0 z-[60] w-full"
+              style={{ top: '0px' }}
             />
             <img
               src="/src/assets/stack/3-yellow.png"
               alt="Layer 3"
-              className="absolute top-0 left-0 z-50 w-full"
+              className="absolute left-0 z-50 w-full"
+              style={{ top: '0px' }}
             />
             <img
               src="/src/assets/stack/4-green.png"
               alt="Layer 4"
-              className="absolute top-0 left-0 z-40 w-full"
+              className="absolute left-0 z-40 w-full"
+              style={{ top: '0px' }}
             />
             <img
               src="/src/assets/stack/5-teal.png"
               alt="Layer 5"
-              className="absolute top-0 left-0 z-30 w-full"
+              className="absolute left-0 z-30 w-full"
+              style={{ top: '0px' }}
             />
             <img
               src="/src/assets/stack/6-indigo.png"
               alt="Layer 6"
-              className="absolute top-0 left-0 z-20 w-full"
+              className="absolute left-0 z-20 w-full"
+              style={{ top: '0px' }}
             />
             <img
               src="/src/assets/stack/7-violet.png"
               alt="Layer 7"
-              className="absolute top-0 left-0 z-10 w-full"
+              className="absolute left-0 z-10 w-full"
+              style={{ top: '0px' }}
             />
           </div>
 
           {/* Labels in right column */}
           <div className="relative">
             <div
-              className="absolute top-[17%] left-32 font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ color: colors.text.cream }}
+              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
+              style={{ top: '98px', left: '-80px', color: colors.text.cream }}
             >
               <div
-                className="absolute right-full w-48 h-px mr-3"
+                className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
               Wallet
             </div>
             <div
-              className="absolute top-[24.6%] left-32 font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ color: colors.text.cream }}
+              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
+              style={{ top: '138px', left: '-80px', color: colors.text.cream }}
             >
               <div
-                className="absolute right-full w-48 h-px mr-3"
+                className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
               Lend
             </div>
             <div
-              className="absolute top-[32.2%] left-32 font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ color: colors.text.cream }}
+              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
+              style={{ top: '178px', left: '-80px', color: colors.text.cream }}
             >
               <div
-                className="absolute right-full w-48 h-px mr-3"
+                className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
               Borrow
             </div>
             <div
-              className="absolute top-[39.8%] left-32 font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ color: colors.text.cream }}
+              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
+              style={{ top: '218px', left: '-80px', color: colors.text.cream }}
             >
               <div
-                className="absolute right-full w-48 h-px mr-3"
+                className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
               Swap
             </div>
             <div
-              className="absolute top-[47.4%] left-32 font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ color: colors.text.cream }}
+              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
+              style={{ top: '258px', left: '-80px', color: colors.text.cream }}
             >
               <div
-                className="absolute right-full w-48 h-px mr-3"
+                className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
               Pay
             </div>
             <div
-              className="absolute top-[55%] left-32 font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ color: colors.text.cream }}
+              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
+              style={{ top: '298px', left: '-80px', color: colors.text.cream }}
             >
               <div
-                className="absolute right-full w-48 h-px mr-3"
+                className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
               Assets
             </div>
             <div
-              className="absolute top-[62.6%] left-32 font-medium flex items-center whitespace-nowrap z-[100]"
-              style={{ color: colors.text.cream }}
+              className="absolute font-medium flex items-center whitespace-nowrap z-[100]"
+              style={{ top: '338px', left: '-80px', color: colors.text.cream }}
             >
               <div
-                className="absolute right-full w-48 h-px mr-3"
+                className="w-48 h-px mr-3"
                 style={{ backgroundColor: colors.text.cream }}
               />
               Chains
