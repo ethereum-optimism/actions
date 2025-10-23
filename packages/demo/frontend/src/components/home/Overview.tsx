@@ -34,7 +34,8 @@ function Overview() {
   const [hoveredLayer, setHoveredLayer] = useState<number | null>(null)
 
   const GAP_SIZE = 124
-  const LAYER_OVERLAP = -229 // Negative margin to create overlap
+  const LAYER_OVERLAP = -210.5 // Negative margin to create overlap
+  const IMAGE_PADDING_LEFT = 36 // Left padding for images
 
   const getLayerMargin = (layerNum: number) => {
     // First layer always has no margin
@@ -86,7 +87,10 @@ function Overview() {
             onMouseEnter={() => setHoveredLayer(1)}
             onMouseLeave={() => setHoveredLayer(null)}
           >
-            <div className="w-1/2">
+            <div
+              className="w-1/2"
+              style={{ paddingLeft: `${IMAGE_PADDING_LEFT}px` }}
+            >
               <img
                 src="/src/assets/stack/1.png"
                 alt="Layer 1"
@@ -117,7 +121,10 @@ function Overview() {
             onMouseEnter={() => setHoveredLayer(2)}
             onMouseLeave={() => setHoveredLayer(null)}
           >
-            <div className="w-1/2">
+            <div
+              className="w-1/2"
+              style={{ paddingLeft: `${IMAGE_PADDING_LEFT}px` }}
+            >
               <img
                 src="/src/assets/stack/2.png"
                 alt="Layer 2"
@@ -148,7 +155,10 @@ function Overview() {
             onMouseEnter={() => setHoveredLayer(3)}
             onMouseLeave={() => setHoveredLayer(null)}
           >
-            <div className="w-1/2">
+            <div
+              className="w-1/2"
+              style={{ paddingLeft: `${IMAGE_PADDING_LEFT}px` }}
+            >
               <img
                 src="/src/assets/stack/3.png"
                 alt="Layer 3"
@@ -179,7 +189,10 @@ function Overview() {
             onMouseEnter={() => setHoveredLayer(4)}
             onMouseLeave={() => setHoveredLayer(null)}
           >
-            <div className="w-1/2">
+            <div
+              className="w-1/2"
+              style={{ paddingLeft: `${IMAGE_PADDING_LEFT}px` }}
+            >
               <img
                 src="/src/assets/stack/4.png"
                 alt="Layer 4"
@@ -210,7 +223,10 @@ function Overview() {
             onMouseEnter={() => setHoveredLayer(5)}
             onMouseLeave={() => setHoveredLayer(null)}
           >
-            <div className="w-1/2">
+            <div
+              className="w-1/2"
+              style={{ paddingLeft: `${IMAGE_PADDING_LEFT}px` }}
+            >
               <img
                 src="/src/assets/stack/5.png"
                 alt="Layer 5"
@@ -241,7 +257,10 @@ function Overview() {
             onMouseEnter={() => setHoveredLayer(6)}
             onMouseLeave={() => setHoveredLayer(null)}
           >
-            <div className="w-1/2">
+            <div
+              className="w-1/2"
+              style={{ paddingLeft: `${IMAGE_PADDING_LEFT}px` }}
+            >
               <img
                 src="/src/assets/stack/6.png"
                 alt="Layer 6"
@@ -272,7 +291,10 @@ function Overview() {
             onMouseEnter={() => setHoveredLayer(7)}
             onMouseLeave={() => setHoveredLayer(null)}
           >
-            <div className="w-1/2">
+            <div
+              className="w-1/2"
+              style={{ paddingLeft: `${IMAGE_PADDING_LEFT}px` }}
+            >
               <img
                 src="/src/assets/stack/7.png"
                 alt="Layer 7"
