@@ -150,7 +150,9 @@ export async function getReserve(
       publicClient.chain?.rpcUrls.default.http[0] ||
       publicClient.chain?.rpcUrls.public?.http[0]
     if (!rpcUrl) {
-      throw new Error(`No RPC URL available for chain ${params.marketId.chainId}`)
+      throw new Error(
+        `No RPC URL available for chain ${params.marketId.chainId}`,
+      )
     }
     const ethersProvider = new providers.JsonRpcProvider(rpcUrl)
 
