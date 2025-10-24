@@ -12,25 +12,21 @@ export const GauntletUSDC: LendMarketConfig = {
   lendProvider: 'morpho',
 }
 
-export const USDCDemoVault: LendMarketConfig = {
+export const GauntletUSDCDemo: LendMarketConfig = {
   address: '0x297E324C46309E93112610ebf35559685b4E3547' as Address,
   chainId: baseSepolia.id,
-  name: 'USDC Demo Vault (Base Sepolia)',
+  name: 'Gauntlet USDC',
   asset: USDC_DEMO,
   lendProvider: 'morpho',
 }
 
-export const AaveWETHOptimismSepolia: LendMarketConfig = {
+export const AaveWETH: LendMarketConfig = {
   address: '0x4200000000000000000000000000000000000006' as Address,
   chainId: optimismSepolia.id,
-  name: 'Aave WETH (Optimism Sepolia)',
+  name: 'Aave ETH',
   asset: WETH,
   lendProvider: 'aave',
 }
 
 // Export all markets for easy consumption
-export const ALL_MARKETS = [
-  GauntletUSDC,
-  USDCDemoVault,
-  AaveWETHOptimismSepolia,
-]
+export const ALL_MARKETS = [GauntletUSDC, GauntletUSDCDemo, AaveWETH]

@@ -24,15 +24,19 @@ export interface UseBalanceOperationsConfig {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarket['marketId']) => Promise<LendMarketPosition>
-  mintUSDC: () => Promise<void>
+  mintAsset: (assetSymbol: string, chainId: number) => Promise<void>
   openPosition: (
     positionParams: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
   closePosition: (
     positionParams: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
-  /** is ready to perform balance operations */
-  ready: boolean
+  /** Predicate to check if balance operations can be executed */
+  isReady: () => boolean
+  /** The currently selected market for operations */
+  selectedMarketId?: LendMarketId | null
+  /** Asset symbol for the selected market (e.g., 'USDC_DEMO', 'WETH') */
+  selectedAssetSymbol?: string
 }
 
 export function useBalanceOperations(params: UseBalanceOperationsConfig) {
@@ -40,16 +44,18 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     getTokenBalances: getTokenBalancesRaw,
     getMarkets: getMarketsRaw,
     getPosition: getPositionRaw,
-    mintUSDC: mintUSDCRaw,
-    ready,
+    mintAsset: mintAssetRaw,
+    isReady,
     openPosition,
     closePosition,
+    selectedMarketId,
+    selectedAssetSymbol = 'USDC_DEMO',
   } = params
   const { logActivity } = useActivityLogger()
 
   const [isLoadingPosition, setIsLoadingPosition] = useState(false)
   const [depositedAmount, setDepositedAmount] = useState<string | null>(null)
-  const [usdcBalance, setUsdcBalance] = useState<string>('0.00')
+  const [assetBalance, setAssetBalance] = useState<string>('0.00')
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
   const [isLoadingApy, setIsLoadingApy] = useState(true)
   const [apy, setApy] = useState<number | null>(null)
@@ -107,16 +113,19 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     [getPositionRaw, logActivity],
   )
 
-  const mintUSDC = useCallback(async () => {
-    const activity = logActivity('mint')
-    try {
-      await mintUSDCRaw()
-      activity?.confirm()
-    } catch (error) {
-      activity?.error()
-      throw error
-    }
-  }, [mintUSDCRaw, logActivity])
+  const mintAsset = useCallback(
+    async (assetSymbol: string, chainId: number) => {
+      const activity = logActivity('wallet.fund()')
+      try {
+        await mintAssetRaw(assetSymbol, chainId)
+        activity?.confirm()
+      } catch (error) {
+        activity?.error()
+        throw error
+      }
+    },
+    [mintAssetRaw, logActivity],
+  )
 
   const fetchBalance = useCallback(async () => {
     try {
@@ -170,72 +179,78 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
         balance: [...tokenBalances, ...validVaultBalances],
       }
 
-      // Find USDC balance (try USDC_DEMO first not USDC)
-      const usdcToken = balanceResult.balance.find(
-        (token) => token.symbol === 'USDC_DEMO',
+      // Find balance for the selected asset
+      const assetToken = balanceResult.balance.find(
+        (token) => token.symbol === selectedAssetSymbol,
       )
 
-      if (usdcToken && BigInt(usdcToken.totalBalance) > 0n) {
-        // Parse the balance (it's in smallest unit, divide by 1e6 for USDC)
-        const balance = parseFloat(`${usdcToken.totalBalance}`) / 1e6
+      if (assetToken && BigInt(assetToken.totalBalance) > 0n) {
+        // Get decimals for the asset (USDC/USDC_DEMO uses 6, WETH uses 18)
+        const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
+        const balance =
+          parseFloat(`${assetToken.totalBalance}`) / Math.pow(10, decimals)
         // Floor to 2 decimals to ensure we never try to send more than we have
         const flooredBalance = Math.floor(balance * 100) / 100
-        setUsdcBalance(flooredBalance.toFixed(2))
+        setAssetBalance(flooredBalance.toFixed(2))
       } else {
-        setUsdcBalance('0.00')
+        setAssetBalance('0.00')
       }
     } catch {
-      setUsdcBalance('0.00')
+      setAssetBalance('0.00')
     } finally {
       setIsLoadingBalance(false)
     }
-  }, [getPosition, getMarkets, getTokenBalances])
+  }, [getPosition, getMarkets, getTokenBalances, selectedAssetSymbol])
 
-  // Function to mint demo USDC
-  const handleMintUSDC = useCallback(async () => {
+  // Function to mint demo asset
+  const handleMintAsset = useCallback(async () => {
     // Early exit if precondition not met
-    if (!ready) {
+    if (!isReady() || !selectedMarketId) {
       return
     }
 
     try {
       setIsLoadingBalance(true)
-      await mintUSDC()
+      await mintAsset(selectedAssetSymbol, selectedMarketId.chainId)
 
-      // Transaction succeeded - optimistically update balance with the minted amount (100 USDC)
-      const currentBalance = parseFloat(usdcBalance) || 0
+      // Transaction succeeded - optimistically update balance with the minted amount (100 tokens)
+      const currentBalance = parseFloat(assetBalance)
       const mintedAmount = 100
       const newOptimisticBalance = (currentBalance + mintedAmount).toFixed(2)
-      setUsdcBalance(newOptimisticBalance)
+      setAssetBalance(newOptimisticBalance)
       setIsLoadingBalance(false)
 
-      // Fetch actual balance in background to verify - but don't reset if not found yet
-      setTimeout(async () => {
-        try {
-          const balanceResult = await getTokenBalances()
-          const usdcToken = balanceResult.find(
-            (token) => token.symbol === 'USDC_DEMO',
-          )
+      // Fetch actual balance to verify/correct the optimistic update
+      const balanceResult = await getTokenBalances()
+      const assetToken = balanceResult.find(
+        (token) => token.symbol === selectedAssetSymbol,
+      )
 
-          if (usdcToken && usdcToken.totalBalance > 0) {
-            const actualBalance = parseFloat(`${usdcToken.totalBalance}`) / 1e6
-            const flooredBalance = Math.floor(actualBalance * 100) / 100
-            const actualBalanceStr = flooredBalance.toFixed(2)
+      if (assetToken && assetToken.totalBalance > 0) {
+        const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
+        const actualBalance =
+          parseFloat(`${assetToken.totalBalance}`) / Math.pow(10, decimals)
+        const flooredBalance = Math.floor(actualBalance * 100) / 100
+        const actualBalanceStr = flooredBalance.toFixed(2)
 
-            // Only update if different from optimistic value
-            if (actualBalanceStr !== newOptimisticBalance) {
-              setUsdcBalance(actualBalanceStr)
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching balance after mint:', error)
+        // Only update if different from optimistic value
+        if (actualBalanceStr !== newOptimisticBalance) {
+          setAssetBalance(actualBalanceStr)
         }
-      }, 2000)
+      }
     } catch (error) {
-      console.error('Error minting USDC:', error)
+      console.error('Error minting asset:', error)
       setIsLoadingBalance(false)
     }
-  }, [mintUSDC, ready, fetchBalance, usdcBalance, getTokenBalances])
+  }, [
+    mintAsset,
+    isReady,
+    fetchBalance,
+    assetBalance,
+    getTokenBalances,
+    selectedAssetSymbol,
+    selectedMarketId,
+  ])
 
   // Auto-initialize balance on first ready state
   useEffect(() => {
@@ -256,6 +271,13 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
     initialize()
   }, [ready, fetchBalance])
+
+  // Refetch balance when selected asset changes
+  useEffect(() => {
+    if (isReady() && hasInitialized.current) {
+      fetchBalance()
+    }
+  }, [selectedAssetSymbol, fetchBalance, isReady])
 
   const executePositon = useCallback(
     async (operation: 'open' | 'close', amount: number) => {
@@ -379,16 +401,17 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     [ready, marketData, fetchBalance],
   )
 
-  // Fetch market APY and data on mount
+  // Fetch market APY and data when selected market changes
   useEffect(() => {
     const fetchMarketApy = async () => {
-      // Skip if already initiated (prevents double-fetch in StrictMode)
-      if (hasInitiatedMarketFetch.current) {
-        console.log('[getMarkets] Skipping - already initiated')
-        return
+      if (!selectedMarketId) {
+        // Use default USDC Demo market on initial load
+        if (hasInitiatedMarketFetch.current) {
+          return
+        }
+        hasInitiatedMarketFetch.current = true
       }
 
-      hasInitiatedMarketFetch.current = true
       console.log('[getMarkets] Fetching market data...')
 
       try {
@@ -398,10 +421,12 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
           formatMarketResponse(market),
         )
 
+        const targetMarket = selectedMarketId || USDCDemoVault
         const market = formattedMarkets.find(
           (market) =>
-            market.marketId.address === USDCDemoVault.address &&
-            market.marketId.chainId === USDCDemoVault.chainId,
+            market.marketId.address.toLowerCase() ===
+              targetMarket.address.toLowerCase() &&
+            market.marketId.chainId === targetMarket.chainId,
         )
 
         if (market) {
@@ -425,7 +450,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     }
 
     fetchMarketApy()
-  }, [hasInitiatedMarketFetch])
+  }, [selectedMarketId, getMarkets])
 
   const fetchPosition = useCallback(
     async (backgroundPolling: boolean = false) => {
@@ -472,9 +497,9 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
   }, [ready, marketChainId, marketAddress, fetchPosition])
 
   return {
-    usdcBalance,
+    assetBalance,
     isLoadingBalance,
-    handleMintUSDC,
+    handleMintAsset,
     isLoadingApy,
     apy,
     isInitialLoad,

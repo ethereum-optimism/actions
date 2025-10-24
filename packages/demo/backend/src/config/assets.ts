@@ -27,8 +27,8 @@ export const USDC_DEMO: Asset = {
   },
   metadata: {
     decimals: 6,
-    name: 'USDC Demo',
-    symbol: 'USDC_DEMO',
+    name: 'USDC',
+    symbol: 'USDC',
   },
   type: 'erc20',
 }

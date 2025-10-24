@@ -5,10 +5,12 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 
 interface ActionProps {
-  usdcBalance: string
+  assetBalance: string
   isLoadingBalance: boolean
   depositedAmount: string | null
-  onMintUSDC?: () => void
+  assetSymbol: string
+  assetLogo: string
+  onMintAsset?: () => void
   onTransaction: (
     mode: 'lend' | 'withdraw',
     amount: number,
@@ -23,10 +25,12 @@ interface ActionProps {
  * Handles UI state and user interactions, delegates business logic to container
  */
 export function Action({
-  usdcBalance,
+  assetBalance,
   isLoadingBalance,
   depositedAmount,
-  onMintUSDC,
+  assetSymbol,
+  assetLogo,
+  onMintAsset,
   onTransaction,
 }: ActionProps) {
   const { hoveredAction } = useActivityHighlight()
@@ -45,7 +49,7 @@ export function Action({
   )
 
   const handleMaxClick = () => {
-    const maxAmount = mode === 'lend' ? usdcBalance : depositedAmount || '0'
+    const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
     const rounded = parseFloat(maxAmount).toFixed(2)
     setAmount(rounded)
   }
@@ -66,7 +70,7 @@ export function Action({
     const amountValue = parseFloat(amount)
     const maxAmount =
       mode === 'lend'
-        ? parseFloat(usdcBalance)
+        ? parseFloat(assetBalance)
         : parseFloat(depositedAmount || '0')
     if (amountValue > maxAmount) {
       return
@@ -130,13 +134,10 @@ export function Action({
           <div className="flex items-center gap-2">
             {isLoadingBalance ? (
               <Shimmer width="60px" height="26px" borderRadius="6px" />
-            ) : !usdcBalance ||
-              usdcBalance === '0.00' ||
-              usdcBalance === '0' ||
-              parseFloat(usdcBalance || '0') === 0 ? (
+            ) : parseFloat(assetBalance || '0') === 0 ? (
               <>
                 <button
-                  onClick={onMintUSDC}
+                  onClick={onMintAsset}
                   className="flex items-center gap-1.5 transition-all hover:bg-gray-50"
                   style={{
                     padding: '6px 12px',
@@ -156,11 +157,11 @@ export function Action({
                     fontFamily: 'Inter',
                   }}
                 >
-                  Get 100 USDC
+                  Get 100 {assetSymbol}
                 </button>
                 <img
-                  src="/usd-coin-usdc-logo.svg"
-                  alt="USDC"
+                  src={assetLogo}
+                  alt={assetSymbol}
                   style={{
                     width: '20px',
                     height: '20px',
@@ -191,11 +192,11 @@ export function Action({
                       fontWeight: 500,
                     }}
                   >
-                    ${usdcBalance}
+                    ${assetBalance}
                   </span>
                   <img
-                    src="/usd-coin-usdc-logo.svg"
-                    alt="USDC"
+                    src={assetLogo}
+                    alt={assetSymbol}
                     style={{
                       width: '20px',
                       height: '20px',
@@ -376,67 +377,66 @@ export function Action({
                   fontFamily: 'Inter',
                 }}
               >
-                USDC
+                {assetSymbol}
               </span>
             </div>
           </div>
 
-          <button
-            onClick={handleLendUSDC}
-            disabled={
+        <button
+          onClick={handleLendUSDC}
+          disabled={
+            isLoading ||
+            !amount ||
+            parseFloat(amount) <= 0 ||
+            parseFloat(amount) >
+              parseFloat(
+                mode === 'lend' ? assetBalance : depositedAmount || '0',
+              )
+          }
+          className="w-full py-3 px-4 font-medium transition-all"
+          style={{
+            backgroundColor:
               isLoading ||
               !amount ||
               parseFloat(amount) <= 0 ||
               parseFloat(amount) >
                 parseFloat(
-                  mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                  mode === 'lend' ? assetBalance : depositedAmount || '0',
                 )
-            }
-            className="w-full py-3 px-4 font-medium transition-all"
-            style={{
-              backgroundColor:
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) >
-                  parseFloat(
-                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
-                  )
-                  ? '#D1D5DB'
-                  : '#FF0420',
-              color:
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) >
-                  parseFloat(
-                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
-                  )
-                  ? '#6B7280'
-                  : '#FFFFFF',
-              fontSize: '16px',
-              borderRadius: '12px',
-              border: 'none',
-              cursor:
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) >
-                  parseFloat(
-                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
-                  )
-                  ? 'not-allowed'
-                  : 'pointer',
-              opacity: 1,
-            }}
-          >
-            {isLoading
-              ? 'Processing...'
-              : mode === 'lend'
-                ? 'Lend USDC'
-                : 'Withdraw USDC'}
-          </button>
-        </div>
+                ? '#D1D5DB'
+                : '#FF0420',
+            color:
+              isLoading ||
+              !amount ||
+              parseFloat(amount) <= 0 ||
+              parseFloat(amount) >
+                parseFloat(
+                  mode === 'lend' ? assetBalance : depositedAmount || '0',
+                )
+                ? '#6B7280'
+                : '#FFFFFF',
+            fontSize: '16px',
+            borderRadius: '12px',
+            border: 'none',
+            cursor:
+              isLoading ||
+              !amount ||
+              parseFloat(amount) <= 0 ||
+              parseFloat(amount) >
+                parseFloat(
+                  mode === 'lend' ? assetBalance : depositedAmount || '0',
+                )
+                ? 'not-allowed'
+                : 'pointer',
+            opacity: 1,
+          }}
+        >
+          {isLoading
+            ? 'Processing...'
+            : mode === 'lend'
+              ? `Lend ${assetSymbol}`
+              : `Withdraw ${assetSymbol}`}
+        </button>
       </div>
 
       <TransactionModal
