@@ -1,7 +1,7 @@
 import { useDynamicWallet } from '@/hooks/useDynamicWallet'
 import { EarnWithFrontendWallet } from './EarnWithFrontendWallet'
 import { useDynamicContext, useIsLoggedIn } from '@dynamic-labs/sdk-react-core'
-import { WALLET_PROVIDER_CONFIGS } from '@/constants/walletProviders'
+import { WALLET_PROVIDERS } from '@/constants/walletProviders'
 import { LoginWithDynamic } from './LoginWithDynamic'
 
 export function EarnWithDynamicWallet() {
@@ -17,7 +17,7 @@ export function EarnWithDynamicWallet() {
     <EarnWithFrontendWallet
       wallet={smartWallet}
       logout={handleLogOut}
-      selectedProvider={WALLET_PROVIDER_CONFIGS.dynamic}
+      selectedProvider={WALLET_PROVIDERS.DYNAMIC}
     />
   )
 }

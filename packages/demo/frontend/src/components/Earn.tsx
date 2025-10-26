@@ -14,7 +14,7 @@ export interface EarnContentProps {
   depositedAmount: string | null
   isLoadingPosition: boolean
   isInitialLoad: boolean
-  selectedProvider: WalletProviderConfig
+  selectedProviderConfig: WalletProviderConfig
   onMintUSDC: () => void
   onTransaction: (
     mode: 'lend' | 'withdraw',
@@ -35,7 +35,7 @@ function Earn({
   walletAddress,
   usdcBalance,
   isLoadingBalance,
-  selectedProvider,
+  selectedProviderConfig,
   apy,
   isLoadingApy,
   depositedAmount,
@@ -83,7 +83,7 @@ function Earn({
             </div>
             <div className="flex items-center gap-4">
               <WalletProviderDropdown
-                selectedProvider={selectedProvider}
+                selectedProvider={selectedProviderConfig}
                 walletAddress={walletAddress}
                 onProviderSelect={async (providerConfig) => {
                   await logout()
@@ -116,7 +116,7 @@ function Earn({
                   Actions Demo
                 </h1>
                 <span
-                  className="px-2 py-2 text-xs font-medium rounded"
+                  className="px-2 py-2 text-xs font-medium rounded-sm"
                   style={{
                     backgroundColor: '#F2F3F8',
                     color: '#404454',

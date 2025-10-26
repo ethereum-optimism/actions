@@ -10,7 +10,7 @@ function Features() {
         >
           Features
         </h2>
-        <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent"></div>
+        <div className="h-px bg-linear-to-r from-gray-600 via-gray-500 to-transparent"></div>
       </div>
 
       {/* Core Capabilities Grid */}

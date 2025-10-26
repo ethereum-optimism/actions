@@ -3,11 +3,13 @@ import { PrivyProvider } from '../providers/PrivyProvider'
 import { ActivityLogProvider } from '../providers/ActivityLogProvider'
 import { DynamicProvider } from '@/providers/DynamicProvider'
 import { EarnWithDynamicWallet } from '@/components/EarnWithDynamicWallet'
+import { EarnWithTurnkeyWallet } from '@/components/EarnWithTurnkeyWallet'
 import { EarnWithPrivyServerWallet } from '@/components/EarnWithPrivyServerWallet'
 import {
   WALLET_PROVIDERS,
   DEFAULT_WALLET_PROVIDER,
 } from '@/constants/walletProviders'
+import { TurnkeyProvider } from '../providers/TurnkeyProvider'
 
 /**
  * Earn page that renders different wallet provider implementations
@@ -35,6 +37,16 @@ export function EarnPage() {
           <EarnWithDynamicWallet />
         </ActivityLogProvider>
       </DynamicProvider>
+    )
+  }
+
+  if (walletProvider === WALLET_PROVIDERS.TURNKEY) {
+    return (
+      <TurnkeyProvider>
+        <ActivityLogProvider>
+          <EarnWithTurnkeyWallet />
+        </ActivityLogProvider>
+      </TurnkeyProvider>
     )
   }
 

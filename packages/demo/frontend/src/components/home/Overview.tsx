@@ -39,7 +39,7 @@ function Overview() {
         >
           Overview
         </h2>
-        <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
+        <div className="h-px bg-linear-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
         <p className="mb-4" style={{ color: colors.text.cream }}>
           Actions is an open source TypeScript SDK for letting your users easily
           perform onchain actions: <strong>Lend</strong>,{' '}

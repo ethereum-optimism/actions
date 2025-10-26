@@ -4,7 +4,11 @@ import type { LendMarketId, Wallet } from '@eth-optimism/actions-sdk/react'
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi'
 import { baseSepolia } from '@eth-optimism/viem/chains'
 import Earn from './Earn'
-import type { WalletProviderConfig } from '@/constants/walletProviders'
+import {
+  FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS,
+  WALLET_PROVIDER_CONFIGS,
+  type FrontendWalletProviderType,
+} from '@/constants/walletProviders'
 import { useBalanceOperations } from '@/hooks/useBalanceOperations'
 import { useCallback } from 'react'
 import type { LendExecutePositionParams } from '@/types/api'
@@ -13,7 +17,7 @@ import { useActions } from '@/hooks/useActions'
 export interface EarnWithFrontendWalletProps {
   wallet: Wallet | null
   logout: () => Promise<void>
-  selectedProvider: WalletProviderConfig
+  selectedProvider: FrontendWalletProviderType
 }
 
 export function EarnWithFrontendWallet({
@@ -21,7 +25,9 @@ export function EarnWithFrontendWallet({
   selectedProvider,
   logout,
 }: EarnWithFrontendWalletProps) {
-  const { actions } = useActions()
+  const hostedWalletProviderType =
+    FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS[selectedProvider]
+  const { actions } = useActions({ hostedWalletProviderType })
 
   // Memoize operation functions to prevent infinite loops
   const getTokenBalances = useCallback(
@@ -87,7 +93,7 @@ export function EarnWithFrontendWallet({
   return (
     <Earn
       ready={true}
-      selectedProvider={selectedProvider}
+      selectedProviderConfig={WALLET_PROVIDER_CONFIGS[selectedProvider]}
       walletAddress={wallet?.address || null}
       logout={logout}
       usdcBalance={usdcBalance}
