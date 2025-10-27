@@ -87,8 +87,8 @@ const receipt = await wallet.bridgeAsset(...)`,
   },
 ]
 
-const GAP_SIZE = 180
-const LAYER_OVERLAP = -155
+const GAP_SIZE = 200
+const LAYER_OVERLAP = -178
 const IMAGE_PADDING_LEFT = 36
 
 const layers = [
@@ -128,11 +128,36 @@ function ScrollyStack() {
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const [imageHeight, setImageHeight] = useState(0)
+  const [smoothScrollRatio, setSmoothScrollRatio] = useState(0)
 
   const { scrollRatio } = useScrolly(containerRef, {
     offsetTop: 0,
     offsetBottom: 0,
   })
+
+  // Direct scroll listener for smooth progress bar updates
+  useEffect(() => {
+    const handleScroll = () => {
+      const container = containerRef.current
+      if (!container) return
+
+      const rect = container.getBoundingClientRect()
+      const containerHeight = container.offsetHeight
+      const viewportHeight = window.innerHeight
+
+      // Calculate how far through the container we've scrolled
+      const scrolled = -rect.top
+      const scrollableDistance = containerHeight - viewportHeight
+      const ratio = Math.max(0, Math.min(1, scrolled / scrollableDistance))
+
+      setSmoothScrollRatio(ratio)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll() // Initial calculation
+
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Measure image height once loaded
   useEffect(() => {
@@ -155,8 +180,12 @@ function ScrollyStack() {
     }
   }, [])
 
-  // Map scroll progress to active layer (0 = none, 1-7 = layers)
-  const activeLayer = Math.min(Math.floor(scrollRatio * 8), 7)
+  // Map scroll progress to active layer (0 = inactive, 1-7 = layers)
+  // Small intro section (0-0.05) where stack is centered, then 7 equal sections
+  const activeLayer =
+    scrollRatio < 0.05
+      ? 0
+      : Math.min(Math.ceil(((scrollRatio - 0.05) / 0.95) * 7), 7)
 
   // Calculate how far to move the stack up so active layer stays at top position
   const getStackTranslateY = () => {
@@ -174,8 +203,87 @@ function ScrollyStack() {
     return -((activeLayer - 1) * imageHeight + marginSum)
   }
 
+  const progressColors = [
+    '#fb4933', // Red
+    '#fe8019', // Orange
+    '#fabd2f', // Yellow
+    '#b8bb26', // Green
+    '#8ec07c', // Aqua
+    '#83a598', // Blue
+    '#d3869b', // Purple
+  ]
+
+  // Calculate progress percentage (0-100), accounting for 0.05 intro section
+  // Use smoothScrollRatio for progress bar to avoid chunky updates
+  const progressPercent =
+    smoothScrollRatio < 0.05
+      ? 0
+      : Math.min(((smoothScrollRatio - 0.05) / 0.95) * 100, 100)
+
+  // Show progress bar when in scrolly section, hide when outside
+  const showProgressBar = smoothScrollRatio > 0 && smoothScrollRatio < 1
+
   return (
-    <div ref={containerRef} style={{ height: '400vh' }}>
+    <div ref={containerRef} style={{ height: '1000vh' }}>
+      {/* Progress bar */}
+      <div
+        style={{
+          display: showProgressBar ? 'block' : 'none',
+          position: 'sticky',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          backgroundColor: '#282828',
+          zIndex: 1000,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            height: '100%',
+            width: '100%',
+          }}
+        >
+          {progressColors.map((color, index) => {
+            const sectionStart = (index / 7) * 100
+            const sectionVisible =
+              progressPercent >= sectionStart
+                ? Math.min(
+                    ((progressPercent - sectionStart) / (100 / 7)) * 100,
+                    100,
+                  )
+                : 0
+
+            return (
+              <div
+                key={index}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#282828',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    height: '100%',
+                    width: '100%',
+                    backgroundColor: color,
+                    transform: `scaleX(${sectionVisible / 100})`,
+                    transformOrigin: 'left',
+                    willChange: 'transform',
+                  }}
+                />
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Sticky container that holds the stack */}
       <div
         style={{
@@ -185,14 +293,24 @@ function ScrollyStack() {
         }}
       >
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-start gap-12">
+          <div
+            className="flex items-start gap-16"
+            style={{ position: 'relative', minHeight: '60vh' }}
+          >
             {/* Left side: Stack visualization - 1/3 width */}
-            <div className="w-1/3">
+            <div
+              className="w-1/3"
+              style={{
+                position: 'absolute',
+                left: activeLayer > 0 ? '0' : '50%',
+                transition: 'left 0.4s ease-in-out',
+              }}
+            >
               <div
                 className="flex flex-col"
                 style={{
-                  transform: `translateY(${getStackTranslateY()}px)`,
-                  transition: 'transform 0.5s ease-in-out',
+                  transform: `translateX(${activeLayer > 0 ? '0' : '-50%'}) translateY(${getStackTranslateY()}px)`,
+                  transition: 'transform 0.4s ease-in-out',
                 }}
               >
                 {layers.map((layer) => (
@@ -243,7 +361,14 @@ function ScrollyStack() {
             </div>
 
             {/* Right side: Content panel - 2/3 width */}
-            <div className="w-2/3">
+            <div
+              className="w-2/3"
+              style={{
+                marginLeft: 'calc(33.333% + 4rem)',
+                opacity: activeLayer > 0 ? 1 : 0,
+                transition: 'opacity 0.4s ease-in-out',
+              }}
+            >
               {activeLayer > 0 && (
                 <div
                   style={{
