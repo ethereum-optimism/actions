@@ -87,7 +87,7 @@ const receipt = await wallet.bridgeAsset(...)`,
   },
 ]
 
-const GAP_SIZE = 200
+const GAP_SIZE = 210
 const LAYER_OVERLAP = -178
 const IMAGE_PADDING_LEFT = 36
 
@@ -181,11 +181,11 @@ function ScrollyStack() {
   }, [])
 
   // Map scroll progress to active layer (0 = inactive, 1-7 = layers)
-  // Small intro section (0-0.05) where stack is centered, then 7 equal sections
+  // Small intro section (0-0.01) where stack is centered, then 7 equal sections
   const activeLayer =
-    scrollRatio < 0.05
+    scrollRatio < 0.01
       ? 0
-      : Math.min(Math.ceil(((scrollRatio - 0.05) / 0.95) * 7), 7)
+      : Math.min(Math.ceil(((scrollRatio - 0.01) / 0.99) * 7), 7)
 
   // Calculate how far to move the stack up so active layer stays at top position
   const getStackTranslateY = () => {
@@ -213,12 +213,12 @@ function ScrollyStack() {
     '#d3869b', // Purple
   ]
 
-  // Calculate progress percentage (0-100), accounting for 0.05 intro section
+  // Calculate progress percentage (0-100), accounting for 0.01 intro section
   // Use smoothScrollRatio for progress bar to avoid chunky updates
   const progressPercent =
-    smoothScrollRatio < 0.05
+    smoothScrollRatio < 0.01
       ? 0
-      : Math.min(((smoothScrollRatio - 0.05) / 0.95) * 100, 100)
+      : Math.min(((smoothScrollRatio - 0.01) / 0.99) * 100, 100)
 
   // Show progress bar when in scrolly section, hide when outside
   const showProgressBar = smoothScrollRatio > 0 && smoothScrollRatio < 1
@@ -228,7 +228,6 @@ function ScrollyStack() {
       {/* Progress bar */}
       <div
         style={{
-          display: showProgressBar ? 'block' : 'none',
           position: 'sticky',
           top: 0,
           left: 0,
@@ -236,6 +235,10 @@ function ScrollyStack() {
           height: '4px',
           backgroundColor: '#282828',
           zIndex: 1000,
+          transform: showProgressBar ? 'translateY(0)' : 'translateY(-100%)',
+          opacity: showProgressBar ? 1 : 0,
+          transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+          pointerEvents: showProgressBar ? 'auto' : 'none',
         }}
       >
         <div
