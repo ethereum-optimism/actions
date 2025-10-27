@@ -34,7 +34,7 @@ function Overview() {
   const [expandedLayer, setExpandedLayer] = useState<number | null>(null)
 
   const GAP_SIZE = 134
-  const LAYER_OVERLAP = -192 // Negative margin to create overlap
+  const LAYER_OVERLAP = -192.2 // Negative margin to create overlap
   const IMAGE_PADDING_LEFT = 36 // Left padding for images
 
   const layers = [
