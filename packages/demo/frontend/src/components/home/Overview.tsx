@@ -33,19 +33,24 @@ const receipt4 = wallet.send({
 function Overview() {
   const [expandedLayer, setExpandedLayer] = useState<number | null>(null)
 
-  const GAP_SIZE = 124
-  const LAYER_OVERLAP = -210.5 // Negative margin to create overlap
+  const GAP_SIZE = 134
+  const LAYER_OVERLAP = -192 // Negative margin to create overlap
   const IMAGE_PADDING_LEFT = 36 // Left padding for images
 
   const layers = [
-    { num: 1, image: '1.png', label: 'Wallet', imageZIndex: 70 },
-    { num: 2, image: '2.png', label: 'Lend', imageZIndex: 60 },
-    { num: 3, image: '3.png', label: 'Borrow', imageZIndex: 50 },
-    { num: 4, image: '4.png', label: 'Swap', imageZIndex: 40 },
-    { num: 5, image: '5.png', label: 'Pay', imageZIndex: 30 },
-    { num: 6, image: '6.png', label: 'Assets', imageZIndex: 20 },
-    { num: 7, image: '7.png', label: 'Chains', imageZIndex: 10 },
+    { num: 1, label: 'Wallet', imageZIndex: 70 },
+    { num: 2, label: 'Lend', imageZIndex: 60 },
+    { num: 3, label: 'Borrow', imageZIndex: 50 },
+    { num: 4, label: 'Swap', imageZIndex: 40 },
+    { num: 5, label: 'Pay', imageZIndex: 30 },
+    { num: 6, label: 'Assets', imageZIndex: 20 },
+    { num: 7, label: 'Chains', imageZIndex: 10 },
   ]
+
+  const getImagePath = (layerNum: number, isActive: boolean) => {
+    const folder = isActive ? 'active' : 'trace'
+    return `/src/assets/stack/${folder}/${layerNum}.png`
+  }
 
   // Click handler for labels
   const handleLabelClick = (layerNum: number) => {
@@ -110,10 +115,29 @@ function Overview() {
                   zIndex: layer.imageZIndex,
                 }}
               >
+                {/* Trace image (inactive state) - maintains container height */}
                 <img
-                  src={`/src/assets/stack/${layer.image}`}
-                  alt={`Layer ${layer.num}`}
-                  className="w-full"
+                  src={getImagePath(layer.num, false)}
+                  alt={`Layer ${layer.num} trace`}
+                  className="w-full block"
+                  style={{
+                    opacity: expandedLayer === layer.num ? 0 : 1,
+                    transition: 'opacity 0.5s ease-in-out',
+                  }}
+                />
+                {/* Active image (selected state) - overlays on top */}
+                <img
+                  src={getImagePath(layer.num, true)}
+                  alt={`Layer ${layer.num} active`}
+                  className="w-full block"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: `${IMAGE_PADDING_LEFT}px`,
+                    width: `calc(100% - ${IMAGE_PADDING_LEFT}px)`,
+                    opacity: expandedLayer === layer.num ? 1 : 0,
+                    transition: 'opacity 0.5s ease-in-out',
+                  }}
                 />
               </div>
               <div
