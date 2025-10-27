@@ -178,6 +178,9 @@ importers:
       react-router-dom:
         specifier: '7'
         version: 7.7.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-scrolly-telling:
+        specifier: ^0.2.2
+        version: 0.2.2(react@18.3.1)
       viem:
         specifier: ^2.24.1
         version: 2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.0.5)
@@ -5780,6 +5783,11 @@ packages:
     peerDependenciesMeta:
       react-dom:
         optional: true
+
+  react-scrolly-telling@0.2.2:
+    resolution: {integrity: sha512-ejJGqMhXWK/nHfhuIg55cnshTcjYQgzyerG8dDiqQ183GjsiH+i3a2EEEUQTc5uSooEDs8gMHwnuuR4k/I8zfw==}
+    peerDependencies:
+      react: '>=18.0.0'
 
   react@18.3.1:
     resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
@@ -15196,6 +15204,10 @@ snapshots:
       set-cookie-parser: 2.7.1
     optionalDependencies:
       react-dom: 18.3.1(react@18.3.1)
+
+  react-scrolly-telling@0.2.2(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   react@18.3.1:
     dependencies:
