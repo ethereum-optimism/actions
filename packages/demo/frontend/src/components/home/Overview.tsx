@@ -34,43 +34,48 @@ const smartWallet = await actions.wallet.createSmartWallet({
     num: 2,
     title: 'Lend',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Enable users to earn yield by lending assets to DeFi protocols with a single function call.',
-    code: `// Enable asset lending in DeFi
+      'Let users earn yield by lending assets across chains and protocols. Configure preferred markets with allow & block lists',
+    code: `// Fetch live market data
+const markets = actions.lend.getMarkets(USDC);
+
+// Lend assets, earn yield
 const receipt = wallet.lend.openPosition({
   amount: 1,
   asset: USDC,
   ...ExampleMorphoMarket
-})`,
+});`,
   },
   {
     num: 3,
     title: 'Borrow',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Allow users to borrow assets against their collateral across multiple lending protocols.',
-    code: `// Use lent assets as collateral
+      'Let users borrow assets against lent collateral. Configure preferred markets with allow & block lists',
+    code: `// Fetch live market data
+const markets = actions.borrow.getMarkets(USDC);
+
+// Borrow against lent collateral
 const receipt = wallet.borrow.openPosition({
   amount: 1,
-  asset: USDT,
+  asset: ETH,
   ...ExampleAaveMarket
-})`,
+});`,
   },
   {
     num: 4,
     title: 'Swap',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Execute token swaps across decentralized exchanges with optimal routing and pricing.',
-    code: `// Swap between tokens onchain
+      'Enable onchain trading between configured protocols and assets.',
+    code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,
   assetIn: USDC,
   assetOut: ETH,
-})`,
+});`,
   },
   {
     num: 5,
     title: 'Pay',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Simple, safe asset transfers with ENS support and cross-chain compatibility.',
+    description: 'Simple interface for transfers and payments.',
     code: `// Easy, safe asset transfers
 const receipt = wallet.send({
   amount: 1,
@@ -81,24 +86,42 @@ const receipt = wallet.send({
   {
     num: 6,
     title: 'Assets',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Comprehensive asset management with real-time balances, prices, and portfolio tracking.',
-    code: `// Get all wallet balances
-const balances = await wallet.getBalances()
+    description: 'Configure which assets you want to support.',
+    code: `// Import popular assets
+import { USDC } from '@eth-optimism/actions-sdk/assets'
 
-// Track specific asset
-const usdcBalance = await wallet.getBalance(USDC)`,
+// Define custom assets
+export const CustomToken: Asset = {
+  address: {
+    [mainnet.id]: '0x123...',
+    [unichain.id]: '0x456...',
+    [baseSepolia.id]: '0x789...',
+  },
+  metadata: {
+    decimals: 6,
+    name: 'Custom Token',
+    symbol: 'CUSTOM',
+  },
+  type: 'erc20',
+}
+
+// Track balances
+const usdcBalance = await wallet.getBalance(CustomToken);`,
   },
   {
     num: 7,
     title: 'Chains',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Seamless multi-chain support across Ethereum, Optimism, Base, and other L2 networks.',
-    code: `// Switch between chains
-await wallet.switchChain(optimism)
-
-// Execute cross-chain transaction
-const receipt = await wallet.bridgeAsset(...)`,
+      'Configure which chains you want to support. Abstract them away from your users.',
+    code: `// Define chains in global config.
+const OPTIMISM = {
+  chainId: optimism.id,
+  rpcUrls: env.OPTIMISM_RPC_URL
+  bundler: { // Bundle and sponsor txs with a gas paymaster
+    type: 'simple' as const,
+    url: env.OPTIMISM_BUNDLER_URL,
+  },
+}`,
   },
 ]
 
