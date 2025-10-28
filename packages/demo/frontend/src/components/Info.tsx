@@ -25,7 +25,7 @@ function Info() {
         <li className="flex items-start">
           <span className="mr-2">•</span>
           <span>
-            When you click Lend USDC, Actions: gets a quote and opens a lending
+            When you click Lend USDC, Actions gets a quote and opens a lending
             position on Base Sepolia.
           </span>
         </li>
