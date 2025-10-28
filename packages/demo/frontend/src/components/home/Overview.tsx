@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useLayoutEffect } from 'react'
 import { ScrollyProvider, useScrolly } from 'react-scrolly-telling'
 import CodeBlock from './CodeBlock'
 import { colors } from '@/constants/colors'
@@ -110,6 +110,8 @@ const receipt = await wallet.bridgeAsset(...)`,
 const GAP_SIZE = 210
 const LAYER_OVERLAP = -178
 const IMAGE_PADDING_LEFT = 36
+const CONTENT_SCROLL_BUFFER_START = 0.33 // Content stays at top for first 33%
+const CONTENT_SCROLL_BUFFER_END = 0.33 // Content stays at bottom for last 33%
 
 const layers = [
   { num: 1, label: 'Wallet', imageZIndex: 70 },
@@ -151,8 +153,12 @@ function ScrollyStack({
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const [imageHeight, setImageHeight] = useState(0)
   const [smoothScrollRatio, setSmoothScrollRatio] = useState(0)
+  const [contentOpacity, setContentOpacity] = useState(1)
+  const prevLayerRef = useRef(0)
+  const frozenScrollOffsetRef = useRef(0)
 
   const { scrollRatio } = useScrolly(containerRef)
 
@@ -252,8 +258,9 @@ function ScrollyStack({
     // Calculate scroll position for this layer
     // Layer 0 (intro) is at scrollRatio 0-0.01
     // Layer 1-7 are divided equally in scrollRatio 0.01-1.0
+    // Scroll to the beginning of each layer's section
     const targetScrollRatio =
-      layerIndex === 0 ? 0 : 0.01 + ((layerIndex - 0.5) / 7) * 0.99
+      layerIndex === 0 ? 0 : 0.01 + ((layerIndex - 1) / 7) * 0.99
 
     const containerHeight = container.offsetHeight
     const viewportHeight = window.innerHeight
@@ -290,6 +297,88 @@ function ScrollyStack({
     }
   }, [activeLayer])
 
+  // Calculate content scroll offset based on progress within current slide
+  const calculateContentScrollOffset = (layerNum: number) => {
+    const content = contentRef.current
+    if (!content || layerNum === 0) return 0
+
+    // Calculate progress within the current slide (0 to 1)
+    const slideStartRatio = 0.01 + ((layerNum - 1) / 7) * 0.99
+    const slideEndRatio = 0.01 + (layerNum / 7) * 0.99
+    const slideProgress = Math.max(
+      0,
+      Math.min(
+        1,
+        (smoothScrollRatio - slideStartRatio) /
+          (slideEndRatio - slideStartRatio),
+      ),
+    )
+
+    // Calculate how much content can be scrolled
+    const scrollableHeight = content.scrollHeight - content.clientHeight
+
+    if (scrollableHeight > 0) {
+      // First 33%: stay at top
+      if (slideProgress < CONTENT_SCROLL_BUFFER_START) {
+        return 0
+      }
+
+      // Last 33%: stay at bottom
+      if (slideProgress > 1 - CONTENT_SCROLL_BUFFER_END) {
+        return -scrollableHeight
+      }
+
+      // Middle 34%: scroll from top to bottom
+      const scrollStart = CONTENT_SCROLL_BUFFER_START
+      const scrollEnd = 1 - CONTENT_SCROLL_BUFFER_END
+      const scrollProgress =
+        (slideProgress - scrollStart) / (scrollEnd - scrollStart)
+
+      // Return negative offset to scroll content upward as user scrolls down
+      return -(scrollProgress * scrollableHeight)
+    }
+
+    return 0
+  }
+
+  // Initialize prevLayerRef synchronously before first render
+  useLayoutEffect(() => {
+    if (activeLayer > 0 && prevLayerRef.current === 0) {
+      prevLayerRef.current = activeLayer
+      setContentOpacity(1)
+    }
+  }, [activeLayer])
+
+  // Handle smooth fade transitions when layer changes
+  useEffect(() => {
+    if (activeLayer > 0 && prevLayerRef.current > 0) {
+      // Handle layer changes with fade transition
+      if (activeLayer !== prevLayerRef.current) {
+        // Freeze the current scroll offset before fading out
+        frozenScrollOffsetRef.current = calculateContentScrollOffset(
+          prevLayerRef.current,
+        )
+
+        // Fade out
+        setContentOpacity(0)
+
+        // Wait for fade out, then change content and fade in
+        const timer = setTimeout(() => {
+          prevLayerRef.current = activeLayer
+          setContentOpacity(1)
+        }, 150)
+
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [activeLayer])
+
+  // Get content scroll offset - use frozen offset during fade-out, live offset otherwise
+  const contentScrollOffset =
+    contentOpacity === 0
+      ? frozenScrollOffsetRef.current
+      : calculateContentScrollOffset(prevLayerRef.current)
+
   // Handle initial hash navigation on page load
   useEffect(() => {
     const hash = window.location.hash.slice(1) // Remove the '#'
@@ -303,9 +392,9 @@ function ScrollyStack({
         const scrollToHash = () => {
           const container = containerRef.current
           if (container && container.offsetHeight > 0) {
-            // Calculate scroll position
+            // Calculate scroll position - scroll to beginning of section
             const targetScrollRatio =
-              layerNum === 0 ? 0 : 0.01 + ((layerNum - 0.5) / 7) * 0.99
+              layerNum === 0 ? 0 : 0.01 + ((layerNum - 1) / 7) * 0.99
             const containerHeight = container.offsetHeight
             const viewportHeight = window.innerHeight
             const scrollableDistance = containerHeight - viewportHeight
@@ -344,179 +433,222 @@ function ScrollyStack({
   }, [])
 
   return (
-    <div ref={containerRef} style={{ height: '1000vh' }}>
-      {/* Sticky container that holds the stack */}
-      <div
-        style={{
-          position: 'sticky',
-          top: '140px',
-          height: '80vh',
-        }}
-      >
-        <div className="max-w-6xl mx-auto">
-          <div
-            className="flex items-start gap-16"
-            style={{ position: 'relative', minHeight: '60vh' }}
-          >
-            {/* Left side: Stack visualization - 1/3 width */}
+    <>
+      <style>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+      <div ref={containerRef} style={{ height: '1000vh' }}>
+        {/* Sticky container that holds the stack */}
+        <div
+          style={{
+            position: 'sticky',
+            top: '140px',
+            height: '80vh',
+          }}
+        >
+          <div className="max-w-6xl mx-auto">
             <div
-              className="w-1/3"
-              style={{
-                position: 'absolute',
-                left: activeLayer > 0 ? '0' : '50%',
-                transition: 'left 0.4s ease-in-out',
-              }}
+              className="flex items-start gap-16"
+              style={{ position: 'relative', minHeight: '60vh' }}
             >
+              {/* Left side: Stack visualization - 1/3 width */}
               <div
-                className="flex flex-col"
+                className="w-1/3"
                 style={{
-                  transform: `translateX(${activeLayer > 0 ? '0' : '-50%'}) translateY(${getStackTranslateY()}px)`,
-                  transition: 'transform 0.4s ease-in-out',
+                  position: 'absolute',
+                  left: activeLayer > 0 ? '0' : '50%',
+                  transition: 'left 0.4s ease-in-out',
                 }}
               >
-                {layers.map((layer) => (
+                <div
+                  className="flex flex-col"
+                  style={{
+                    transform: `translateX(${activeLayer > 0 ? '0' : '-50%'}) translateY(${getStackTranslateY()}px)`,
+                    transition: 'transform 0.4s ease-in-out',
+                  }}
+                >
+                  {layers.map((layer) => (
+                    <div
+                      key={layer.num}
+                      className="flex items-center"
+                      style={{
+                        marginTop: `${getLayerMargin(layer.num, activeLayer)}px`,
+                        transition: 'margin-top 0.3s ease-in-out',
+                      }}
+                    >
+                      <div
+                        style={{
+                          paddingLeft: `${IMAGE_PADDING_LEFT}px`,
+                          position: 'relative',
+                          pointerEvents: 'none',
+                          zIndex: layer.imageZIndex,
+                          width: '100%',
+                        }}
+                      >
+                        <img
+                          ref={layer.num === 1 ? imageRef : null}
+                          src={getImagePath(layer.num, false)}
+                          alt={`Layer ${layer.num} trace`}
+                          className="w-full block"
+                          style={{
+                            opacity: activeLayer === layer.num ? 0 : 1,
+                            transition: 'opacity 0.5s ease-in-out',
+                          }}
+                        />
+                        <img
+                          src={getImagePath(layer.num, true)}
+                          alt={`Layer ${layer.num} active`}
+                          className="w-full block"
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: `${IMAGE_PADDING_LEFT}px`,
+                            width: `calc(100% - ${IMAGE_PADDING_LEFT}px)`,
+                            opacity: activeLayer === layer.num ? 1 : 0,
+                            transition: 'opacity 0.5s ease-in-out',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right side: Content panel - 2/3 width */}
+              <div
+                className="w-2/3"
+                style={{
+                  marginLeft: 'calc(33.333% + 4rem)',
+                  opacity: activeLayer > 0 ? 1 : 0,
+                  transition: 'opacity 0.4s ease-in-out',
+                }}
+              >
+                {activeLayer > 0 && prevLayerRef.current > 0 && (
                   <div
-                    key={layer.num}
-                    className="flex items-center"
+                    ref={contentRef}
                     style={{
-                      marginTop: `${getLayerMargin(layer.num, activeLayer)}px`,
-                      transition: 'margin-top 0.3s ease-in-out',
+                      overflow: 'hidden',
+                      maxHeight: '80vh',
+                      position: 'relative',
+                      opacity: contentOpacity,
+                      transition: 'opacity 0.15s ease-in-out',
                     }}
                   >
                     <div
+                      key={prevLayerRef.current}
                       style={{
-                        paddingLeft: `${IMAGE_PADDING_LEFT}px`,
-                        position: 'relative',
-                        pointerEvents: 'none',
-                        zIndex: layer.imageZIndex,
-                        width: '100%',
+                        opacity: 1,
+                        animation:
+                          contentOpacity === 1
+                            ? 'slideUp 0.25s ease-out'
+                            : 'none',
                       }}
                     >
-                      <img
-                        ref={layer.num === 1 ? imageRef : null}
-                        src={getImagePath(layer.num, false)}
-                        alt={`Layer ${layer.num} trace`}
-                        className="w-full block"
-                        style={{
-                          opacity: activeLayer === layer.num ? 0 : 1,
-                          transition: 'opacity 0.5s ease-in-out',
-                        }}
-                      />
-                      <img
-                        src={getImagePath(layer.num, true)}
-                        alt={`Layer ${layer.num} active`}
-                        className="w-full block"
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: `${IMAGE_PADDING_LEFT}px`,
-                          width: `calc(100% - ${IMAGE_PADDING_LEFT}px)`,
-                          opacity: activeLayer === layer.num ? 1 : 0,
-                          transition: 'opacity 0.5s ease-in-out',
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right side: Content panel - 2/3 width */}
-            <div
-              className="w-2/3"
-              style={{
-                marginLeft: 'calc(33.333% + 4rem)',
-                opacity: activeLayer > 0 ? 1 : 0,
-                transition: 'opacity 0.4s ease-in-out',
-              }}
-            >
-              {activeLayer > 0 && (
-                <div
-                  style={{
-                    opacity: activeLayer > 0 ? 1 : 0,
-                    transform: `translateY(${activeLayer > 0 ? 0 : 20}px)`,
-                    transition:
-                      'opacity 0.5s ease-in-out, transform 0.5s ease-in-out',
-                  }}
-                >
-                  <h3
-                    className="text-2xl font-medium mb-4"
-                    style={{ color: colors.text.cream }}
-                  >
-                    {layerContent[activeLayer - 1].title}
-                  </h3>
-                  <p className="mb-6" style={{ color: colors.text.cream }}>
-                    {layerContent[activeLayer - 1].description}
-                  </p>
-                  {layerContent[activeLayer - 1].list && (
-                    <ul
-                      className="mb-6 ml-5"
-                      style={{
-                        color: colors.text.cream,
-                        listStyleType: 'disc',
-                      }}
-                    >
-                      {layerContent[activeLayer - 1].list.map((item, index) => (
-                        <li key={index} className="mb-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <CodeBlock
-                    code={layerContent[activeLayer - 1].code}
-                    filename={`${layerContent[activeLayer - 1].title.toLowerCase()}.ts`}
-                  />
-                  {layerContent[activeLayer - 1].images && (
-                    <div className="mt-6">
-                      {layerContent[activeLayer - 1].imageLabel && (
-                        <p
-                          className="mb-4 text-sm"
-                          style={{ color: colors.text.cream }}
-                        >
-                          {layerContent[activeLayer - 1].imageLabel}
-                        </p>
-                      )}
                       <div
-                        className="flex gap-4"
                         style={{
-                          display: 'flex',
-                          gap: '6rem',
+                          transform: `translateY(${contentScrollOffset}px)`,
+                          transition: 'none',
                         }}
                       >
-                        {layerContent[activeLayer - 1].images.map(
-                          (image, index) => (
+                        <h3
+                          className="text-2xl font-medium mb-4"
+                          style={{ color: colors.text.cream }}
+                        >
+                          {layerContent[prevLayerRef.current - 1].title}
+                        </h3>
+                        <p
+                          className="mb-6"
+                          style={{ color: colors.text.cream }}
+                        >
+                          {layerContent[prevLayerRef.current - 1].description}
+                        </p>
+                        {layerContent[prevLayerRef.current - 1].list && (
+                          <ul
+                            className="mb-6 ml-5"
+                            style={{
+                              color: colors.text.cream,
+                              listStyleType: 'disc',
+                            }}
+                          >
+                            {layerContent[prevLayerRef.current - 1].list.map(
+                              (item, index) => (
+                                <li key={index} className="mb-2">
+                                  {item}
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        )}
+                        <CodeBlock
+                          code={layerContent[prevLayerRef.current - 1].code}
+                          filename={`${layerContent[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                        />
+                        {layerContent[prevLayerRef.current - 1].images && (
+                          <div className="mt-6">
+                            {layerContent[prevLayerRef.current - 1]
+                              .imageLabel && (
+                              <p
+                                className="mb-4 text-sm"
+                                style={{ color: colors.text.cream }}
+                              >
+                                {
+                                  layerContent[prevLayerRef.current - 1]
+                                    .imageLabel
+                                }
+                              </p>
+                            )}
                             <div
-                              key={index}
+                              className="flex gap-4"
                               style={{
-                                flex: 1,
                                 display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
+                                gap: '6rem',
                               }}
                             >
-                              <img
-                                src={image}
-                                alt={`Provider ${index + 1}`}
-                                style={{
-                                  maxWidth: '100%',
-                                  height: 'auto',
-                                  objectFit: 'contain',
-                                }}
-                              />
+                              {layerContent[
+                                prevLayerRef.current - 1
+                              ].images.map((image, index) => (
+                                <div
+                                  key={index}
+                                  style={{
+                                    flex: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <img
+                                    src={image}
+                                    alt={`Provider ${index + 1}`}
+                                    style={{
+                                      maxWidth: '100%',
+                                      height: 'auto',
+                                      objectFit: 'contain',
+                                    }}
+                                  />
+                                </div>
+                              ))}
                             </div>
-                          ),
+                          </div>
                         )}
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
