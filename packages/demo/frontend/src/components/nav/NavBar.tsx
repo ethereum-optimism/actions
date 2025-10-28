@@ -59,15 +59,26 @@ function NavBar({
           <div className="flex items-center gap-4">
             {rightElement}
             {showDemo && (
-              <a
-                href="/earn"
-                className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
-                style={{ color: colors.text.cream }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-              >
-                <span>Demo</span>
-              </a>
+              <>
+                <a
+                  href="/docs"
+                  className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+                  style={{ color: colors.text.cream }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                >
+                  <span>Docs</span>
+                </a>
+                <a
+                  href="/earn"
+                  className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+                  style={{ color: colors.text.cream }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                >
+                  <span>Demo</span>
+                </a>
+              </>
             )}
             <a
               href="https://github.com/ethereum-optimism/actions"

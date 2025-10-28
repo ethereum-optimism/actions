@@ -1,5 +1,5 @@
 import { colors } from '@/constants/colors'
-import { TerminalIcon, GithubIcon } from '@/assets/icons'
+import { TerminalIcon, DocumentIcon } from '@/assets/icons'
 import PackageManagerSelector from '@/components/home/PackageManagerSelector'
 
 function Hero() {
@@ -86,14 +86,12 @@ function Hero() {
                 Demo
               </a>
               <a
-                href="https://github.com/ethereum-optimism/actions"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/docs"
                 className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
                 style={{ color: colors.text.cream }}
               >
-                <GithubIcon className="w-5 h-5" />
-                Github
+                <DocumentIcon className="w-5 h-5" />
+                Docs
               </a>
             </div>
           </div>

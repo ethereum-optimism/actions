@@ -8,7 +8,7 @@ import ConfigureMarketsSection from './ConfigureMarketsSection'
 import ConfigureChainsSection from './ConfigureChainsSection'
 import ConfigureSignersSection from './ConfigureSignersSection'
 import { colors } from '@/constants/colors'
-import { TerminalIcon, GithubIcon } from '@/assets/icons'
+import { TerminalIcon, DocumentIcon } from '@/assets/icons'
 
 function GettingStarted() {
   const [openAccordions, setOpenAccordions] = useState<Set<string>>(new Set())
@@ -28,15 +28,8 @@ function GettingStarted() {
   return (
     <>
       {/* Getting Started Subsection */}
-      <div id="getting-started" className="pt-24 pb-16">
+      <div id="getting-started" className="pb-16">
         <div className="max-w-4xl mx-auto">
-          <h2
-            className="text-3xl font-medium mb-8"
-            style={{ color: colors.text.cream }}
-          >
-            Getting Started
-          </h2>
-
           {/* Accordion Item 1: Install */}
           <InstallSection
             stepNumber={1}
@@ -94,12 +87,12 @@ function GettingStarted() {
           />
 
           {/* CTA Section */}
-          <div className="pt-16 text-center">
+          <div className="pt-8 pb-8 text-center">
             <h3
               className="text-2xl font-medium mb-6"
               style={{ color: colors.text.cream }}
             >
-              Ready to get started?
+              Ready to take Action?
             </h3>
             <div className="flex flex-row gap-4 justify-center">
               <a
@@ -117,14 +110,12 @@ function GettingStarted() {
                 Demo
               </a>
               <a
-                href="https://github.com/ethereum-optimism/actions"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/docs"
                 className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200"
                 style={{ color: colors.text.cream }}
               >
-                <GithubIcon className="w-5 h-5" />
-                Github
+                <DocumentIcon className="w-5 h-5" />
+                Docs
               </a>
             </div>
           </div>
