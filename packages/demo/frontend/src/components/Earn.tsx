@@ -1,6 +1,7 @@
 import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
+import Info from './Info'
 import { WalletProviderDropdown } from './WalletProviderDropdown'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 export interface EarnContentProps {
@@ -95,12 +96,9 @@ function Earn({
         </div>
       </header>
 
-      <main className="flex" style={{ height: 'calc(100vh - 65px)' }}>
+      <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)]">
         {/* Left Content Area */}
-        <div
-          className="flex-1 flex flex-col items-center p-8 overflow-y-auto"
-          style={{ maxWidth: 'calc(100% - 436px)' }}
-        >
+        <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
           <div className="w-full max-w-2xl">
             {/* Title Section */}
             <div className="mb-8 text-left">
@@ -112,6 +110,7 @@ function Earn({
                     fontStyle: 'normal',
                     fontWeight: 600,
                   }}
+                  className="sm:text-2xl"
                 >
                   Actions Demo
                 </h1>
@@ -132,6 +131,7 @@ function Earn({
                   color: '#666666',
                   fontSize: '16px',
                 }}
+                className="sm:text-base"
               >
                 Earn interest by lending USDC
               </p>
@@ -154,12 +154,31 @@ function Earn({
                 onMintUSDC={onMintUSDC}
                 onTransaction={onTransaction}
               />
+
+              {/* Activity Log - Mobile Card */}
+              <div className="lg:hidden">
+                <ActivityLog />
+              </div>
+
+              {/* Info - Mobile Card */}
+              <div className="lg:hidden">
+                <div
+                  className="p-6"
+                  style={{
+                    border: '1px solid #E0E2EB',
+                    borderRadius: '24px',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                >
+                  <Info />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Activity Log - Right Side */}
-        <div style={{ width: '436px' }}>
+        {/* Activity Log - Desktop Sidebar */}
+        <div className="hidden lg:h-[calc(100vh-65px)] lg:block lg:w-[436px]">
           <ActivityLog />
         </div>
       </main>
