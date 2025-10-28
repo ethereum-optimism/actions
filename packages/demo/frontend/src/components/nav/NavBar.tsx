@@ -6,6 +6,14 @@ interface NavBarProps {
   showDemo?: boolean
   visible?: boolean
   responsiveLogo?: boolean
+  progressBar?: {
+    show: boolean
+    activeLayer: number
+    progressPercent: number
+    progressColors: string[]
+    layers: { num: number; label: string }[]
+    onLayerClick: (layerNum: number) => void
+  }
 }
 
 function NavBar({
@@ -14,12 +22,13 @@ function NavBar({
   showDemo = false,
   visible = true,
   responsiveLogo = false,
+  progressBar,
 }: NavBarProps) {
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out"
       style={{
-        backgroundColor: 'rgba(29, 32, 33, 0.5)',
+        backgroundColor: colors.bg.dark,
         transform: visible ? 'translateY(0)' : 'translateY(-100%)',
       }}
     >
@@ -87,6 +96,113 @@ function NavBar({
           </div>
         </div>
       </div>
+
+      {/* Progress bar with labels */}
+      {progressBar && (
+        <div
+          style={{
+            transform: progressBar.show ? 'scaleY(1)' : 'scaleY(0)',
+            transformOrigin: 'top',
+            opacity: progressBar.show ? 1 : 0,
+            transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+            pointerEvents: progressBar.show ? 'auto' : 'none',
+            backgroundColor: colors.bg.dark,
+          }}
+        >
+          {/* Progress bar */}
+          <div
+            style={{
+              height: '4px',
+              backgroundColor: '#282828',
+              display: 'flex',
+              width: '100%',
+            }}
+          >
+            {progressBar.progressColors.map((color, index) => {
+              const sectionStart = (index / 7) * 100
+              const sectionVisible =
+                progressBar.progressPercent >= sectionStart
+                  ? Math.min(
+                      ((progressBar.progressPercent - sectionStart) /
+                        (100 / 7)) *
+                        100,
+                      100,
+                    )
+                  : 0
+
+              return (
+                <div
+                  key={index}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#282828',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      height: '100%',
+                      width: '100%',
+                      backgroundColor: color,
+                      transform: `scaleX(${sectionVisible / 100})`,
+                      transformOrigin: 'left',
+                      willChange: 'transform',
+                    }}
+                  />
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Labels */}
+          <div
+            style={{
+              display: 'flex',
+              width: '100%',
+              paddingTop: '8px',
+              paddingBottom: '8px',
+            }}
+          >
+            {progressBar.layers.map((layer) => (
+              <button
+                key={layer.num}
+                onClick={() => progressBar.onLayerClick(layer.num)}
+                style={{
+                  flex: 1,
+                  fontSize: '13px',
+                  color:
+                    progressBar.activeLayer === layer.num
+                      ? colors.text.cream
+                      : '#666',
+                  fontWeight:
+                    progressBar.activeLayer === layer.num ? '600' : '400',
+                  cursor: 'pointer',
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px',
+                  transition: 'color 0.2s ease-in-out',
+                }}
+                onMouseEnter={(e) => {
+                  if (progressBar.activeLayer !== layer.num) {
+                    e.currentTarget.style.color = '#999'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (progressBar.activeLayer !== layer.num) {
+                    e.currentTarget.style.color = '#666'
+                  }
+                }}
+              >
+                {layer.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   )
 }

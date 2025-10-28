@@ -1,10 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
 import Terminal from './components/Terminal'
 import Home from './components/home/Home'
 import { PrivyProvider } from './providers/PrivyProvider'
 import { EarnPage } from './pages/EarnPage'
 
 function App() {
+  // Prevent default scroll restoration to allow manual hash navigation
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+  }, [])
+
   return (
     <Router>
       <div className="w-full h-screen bg-terminal-bg">

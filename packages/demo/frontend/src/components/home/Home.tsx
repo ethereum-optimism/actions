@@ -10,6 +10,14 @@ import { colors } from '@/constants/colors'
 function Home() {
   const [showNav, setShowNav] = useState(false)
   const heroRef = useRef<HTMLDivElement>(null)
+  const [progressBarData, setProgressBarData] = useState<{
+    show: boolean
+    activeLayer: number
+    progressPercent: number
+    progressColors: string[]
+    layers: { num: number; label: string }[]
+    onLayerClick: (layerNum: number) => void
+  } | null>(null)
 
   useEffect(() => {
     // used to show/hide the navbar when scrolling
@@ -33,14 +41,18 @@ function Home() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.bg.dark }}>
-      <NavBar showDemo={true} visible={showNav} />
+      <NavBar
+        showDemo={true}
+        visible={showNav}
+        progressBar={progressBarData || undefined}
+      />
 
       <div ref={heroRef}>
         <Hero />
       </div>
 
       <main className="max-w-7xl mx-auto px-6">
-        <Overview />
+        <Overview onProgressUpdate={setProgressBarData} />
 
         <Features />
 

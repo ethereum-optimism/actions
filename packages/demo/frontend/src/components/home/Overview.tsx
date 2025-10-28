@@ -2,18 +2,38 @@ import { useRef, useState, useEffect } from 'react'
 import { ScrollyProvider, useScrolly } from 'react-scrolly-telling'
 import CodeBlock from './CodeBlock'
 import { colors } from '@/constants/colors'
+import PrivyLogo from '@/assets/privy-logo-white.svg'
+import DynamicLogo from '@/assets/dynamic-logo-white.svg'
+import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
 
 const layerContent = [
   {
     num: 1,
     title: 'Wallet',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Secure, embedded wallet infrastructure that handles authentication and key management.',
-    code: `// Initialize wallet with Actions SDK
-const wallet = new Wallet({
-  provider: WalletProvider.PRIVY,
-  config: { appId: 'your-app-id' }
-})`,
+      'Actions supports embedded wallet providers, creating smart wallets, and managing signers.',
+    images: [PrivyLogo, TurnkeyLogo, DynamicLogo],
+    imageLabel: 'Supports embedded wallet providers:',
+    list: [
+      'Create & manage smart wallets',
+      'Sponsor transactions with gas paymaster',
+      'Add & remove signers',
+    ],
+    code: `// Make onchain Actions from any embedded wallet
+const wallet = await actions.wallet.toActionsWallet({
+  embeddedWallet
+});
+
+// Create signers
+const signer = await actions.wallet.createSigner({
+  connectedWallet: embeddedWallet,
+});
+
+// Create smart contract wallets
+const smartWallet = await actions.wallet.createSmartWallet({
+  signer
+});
+`,
   },
   {
     num: 2,
@@ -124,16 +144,17 @@ const getLayerMargin = (layerNum: number, activeLayer: number) => {
   return baseMargin
 }
 
-function ScrollyStack() {
+function ScrollyStack({
+  onProgressUpdate,
+}: {
+  onProgressUpdate: OverviewProps['onProgressUpdate']
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const [imageHeight, setImageHeight] = useState(0)
   const [smoothScrollRatio, setSmoothScrollRatio] = useState(0)
 
-  const { scrollRatio } = useScrolly(containerRef, {
-    offsetTop: 0,
-    offsetBottom: 0,
-  })
+  const { scrollRatio } = useScrolly(containerRef)
 
   // Direct scroll listener for smooth progress bar updates
   useEffect(() => {
@@ -182,8 +203,9 @@ function ScrollyStack() {
 
   // Map scroll progress to active layer (0 = inactive, 1-7 = layers)
   // Small intro section (0-0.01) where stack is centered, then 7 equal sections
+  // When scrolled past (scrollRatio >= 1), deactivate all layers
   const activeLayer =
-    scrollRatio < 0.01
+    scrollRatio < 0.01 || scrollRatio >= 1
       ? 0
       : Math.min(Math.ceil(((scrollRatio - 0.01) / 0.99) * 7), 7)
 
@@ -220,78 +242,114 @@ function ScrollyStack() {
       ? 0
       : Math.min(((smoothScrollRatio - 0.01) / 0.99) * 100, 100)
 
-  // Show progress bar when in scrolly section, hide when outside
-  const showProgressBar = smoothScrollRatio > 0 && smoothScrollRatio < 1
+  // Show progress bar when in or past scrolly section, hide when before it
+  const showProgressBar = smoothScrollRatio > 0
+
+  const scrollToLayer = (layerIndex: number) => {
+    const container = containerRef.current
+    if (!container) return
+
+    // Calculate scroll position for this layer
+    // Layer 0 (intro) is at scrollRatio 0-0.01
+    // Layer 1-7 are divided equally in scrollRatio 0.01-1.0
+    const targetScrollRatio =
+      layerIndex === 0 ? 0 : 0.01 + ((layerIndex - 0.5) / 7) * 0.99
+
+    const containerHeight = container.offsetHeight
+    const viewportHeight = window.innerHeight
+    const scrollableDistance = containerHeight - viewportHeight
+    const targetScroll = targetScrollRatio * scrollableDistance
+
+    const containerTop = container.getBoundingClientRect().top + window.scrollY
+    window.scrollTo({
+      top: containerTop + targetScroll,
+      behavior: 'smooth',
+    })
+  }
+
+  // Update progress bar in parent
+  useEffect(() => {
+    onProgressUpdate({
+      show: showProgressBar,
+      activeLayer,
+      progressPercent,
+      progressColors,
+      layers,
+      onLayerClick: scrollToLayer,
+    })
+  }, [showProgressBar, activeLayer, progressPercent])
+
+  // Update URL hash based on active layer
+  useEffect(() => {
+    if (activeLayer > 0 && activeLayer <= layers.length) {
+      const layerName = layers[activeLayer - 1].label.toLowerCase()
+      window.history.replaceState(null, '', `#${layerName}`)
+    } else if (activeLayer === 0) {
+      // Clear hash when not on any layer
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [activeLayer])
+
+  // Handle initial hash navigation on page load
+  useEffect(() => {
+    const hash = window.location.hash.slice(1) // Remove the '#'
+    if (hash) {
+      const layerIndex = layers.findIndex(
+        (layer) => layer.label.toLowerCase() === hash.toLowerCase(),
+      )
+      if (layerIndex !== -1) {
+        const layerNum = layers[layerIndex].num
+
+        const scrollToHash = () => {
+          const container = containerRef.current
+          if (container && container.offsetHeight > 0) {
+            // Calculate scroll position
+            const targetScrollRatio =
+              layerNum === 0 ? 0 : 0.01 + ((layerNum - 0.5) / 7) * 0.99
+            const containerHeight = container.offsetHeight
+            const viewportHeight = window.innerHeight
+            const scrollableDistance = containerHeight - viewportHeight
+            const targetScroll = targetScrollRatio * scrollableDistance
+            const containerTop =
+              container.getBoundingClientRect().top + window.scrollY
+
+            // Set scroll position immediately without animation
+            window.scrollTo({
+              top: containerTop + targetScroll,
+              behavior: 'auto',
+            })
+          }
+        }
+
+        // Wait for all resources (images, fonts, etc.) to load
+        if (document.readyState === 'complete') {
+          // Page already loaded, scroll immediately
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              scrollToHash()
+            })
+          })
+        } else {
+          // Wait for page to fully load
+          window.addEventListener('load', () => {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                scrollToHash()
+              })
+            })
+          })
+        }
+      }
+    }
+  }, [])
 
   return (
     <div ref={containerRef} style={{ height: '1000vh' }}>
-      {/* Progress bar */}
-      <div
-        style={{
-          position: 'sticky',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '4px',
-          backgroundColor: '#282828',
-          zIndex: 1000,
-          transform: showProgressBar ? 'translateY(0)' : 'translateY(-100%)',
-          opacity: showProgressBar ? 1 : 0,
-          transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
-          pointerEvents: showProgressBar ? 'auto' : 'none',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            height: '100%',
-            width: '100%',
-          }}
-        >
-          {progressColors.map((color, index) => {
-            const sectionStart = (index / 7) * 100
-            const sectionVisible =
-              progressPercent >= sectionStart
-                ? Math.min(
-                    ((progressPercent - sectionStart) / (100 / 7)) * 100,
-                    100,
-                  )
-                : 0
-
-            return (
-              <div
-                key={index}
-                style={{
-                  flex: 1,
-                  backgroundColor: '#282828',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    height: '100%',
-                    width: '100%',
-                    backgroundColor: color,
-                    transform: `scaleX(${sectionVisible / 100})`,
-                    transformOrigin: 'left',
-                    willChange: 'transform',
-                  }}
-                />
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
       {/* Sticky container that holds the stack */}
       <div
         style={{
           position: 'sticky',
-          top: '10vh',
+          top: '140px',
           height: '80vh',
         }}
       >
@@ -390,10 +448,68 @@ function ScrollyStack() {
                   <p className="mb-6" style={{ color: colors.text.cream }}>
                     {layerContent[activeLayer - 1].description}
                   </p>
+                  {layerContent[activeLayer - 1].list && (
+                    <ul
+                      className="mb-6 ml-5"
+                      style={{
+                        color: colors.text.cream,
+                        listStyleType: 'disc',
+                      }}
+                    >
+                      {layerContent[activeLayer - 1].list.map((item, index) => (
+                        <li key={index} className="mb-2">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <CodeBlock
                     code={layerContent[activeLayer - 1].code}
                     filename={`${layerContent[activeLayer - 1].title.toLowerCase()}.ts`}
                   />
+                  {layerContent[activeLayer - 1].images && (
+                    <div className="mt-6">
+                      {layerContent[activeLayer - 1].imageLabel && (
+                        <p
+                          className="mb-4 text-sm"
+                          style={{ color: colors.text.cream }}
+                        >
+                          {layerContent[activeLayer - 1].imageLabel}
+                        </p>
+                      )}
+                      <div
+                        className="flex gap-4"
+                        style={{
+                          display: 'flex',
+                          gap: '6rem',
+                        }}
+                      >
+                        {layerContent[activeLayer - 1].images.map(
+                          (image, index) => (
+                            <div
+                              key={index}
+                              style={{
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <img
+                                src={image}
+                                alt={`Provider ${index + 1}`}
+                                style={{
+                                  maxWidth: '100%',
+                                  height: 'auto',
+                                  objectFit: 'contain',
+                                }}
+                              />
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -404,7 +520,18 @@ function ScrollyStack() {
   )
 }
 
-function Overview() {
+interface OverviewProps {
+  onProgressUpdate: (data: {
+    show: boolean
+    activeLayer: number
+    progressPercent: number
+    progressColors: string[]
+    layers: { num: number; label: string }[]
+    onLayerClick: (layerNum: number) => void
+  }) => void
+}
+
+function Overview({ onProgressUpdate }: OverviewProps) {
   return (
     <ScrollyProvider>
       <div className="py-16">
@@ -416,7 +543,7 @@ function Overview() {
             Overview
           </h2>
           <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
-          <p className="mb-4" style={{ color: colors.text.cream }}>
+          <p className="mb-16" style={{ color: colors.text.cream }}>
             Actions is an open source TypeScript SDK for letting your users
             easily perform onchain actions: <strong>Lend</strong>,{' '}
             <strong>Borrow</strong>, <strong>Swap</strong>, <strong>Pay</strong>
@@ -428,7 +555,7 @@ function Overview() {
         </div>
 
         {/* Scrolly-telling stack section */}
-        <ScrollyStack />
+        <ScrollyStack onProgressUpdate={onProgressUpdate} />
       </div>
     </ScrollyProvider>
   )

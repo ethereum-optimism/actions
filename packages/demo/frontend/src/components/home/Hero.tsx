@@ -1,11 +1,12 @@
 import { colors } from '@/constants/colors'
 import { TerminalIcon, GithubIcon } from '@/assets/icons'
+import PackageManagerSelector from '@/components/home/PackageManagerSelector'
 
 function Hero() {
   return (
     <>
       {/* ASCII Art - Isolated from other styles */}
-      <div className="pt-32 pb-8 flex justify-center px-6 overflow-x-auto">
+      <div className="pt-32 pb-6 flex justify-center px-6 overflow-x-auto">
         <div
           style={{
             fontFamily:
@@ -32,7 +33,7 @@ function Hero() {
  ░░░░░   ░░░░░  ░░░░░░     ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░
      `}</div>
       </div>
-      <div className="text-center pb-8">
+      <div className="text-center pb-6">
         <p className="text-gray-400 text-lg">
           By{' '}
           <a
@@ -49,10 +50,10 @@ function Hero() {
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-6">
-        <div className="text-center py-20">
+        <div className="text-center pt-12 pb-20">
           <div>
             <h1
-              className="text-4xl md:text-5xl font-normal mb-6 leading-tight"
+              className="text-4xl md:text-5xl font-normal mb-12 leading-tight"
               style={{
                 fontFamily:
                   '"VT323", "IBM VGA", "IBM BIOS", "Courier New", Courier, "Lucida Console", Monaco, monospace',
@@ -65,7 +66,11 @@ function Hero() {
               composable, and type-safe modules.
             </h1>
 
-            <div className="flex flex-row gap-4 justify-center mb-8">
+            <div className="max-w-2xl mx-auto mb-12">
+              <PackageManagerSelector showShadow={false} />
+            </div>
+
+            <div className="flex flex-row gap-4 justify-center">
               <a
                 href="/earn"
                 className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
