@@ -1,19 +1,24 @@
-import { DynamicEmbeddedWidget } from '@dynamic-labs/sdk-react-core'
-import { useState } from 'react'
-import { LoginLayout } from './LoginLayout'
-
+import { ROUTES } from '@/constants/routes'
+import {
+  DynamicEmbeddedWidget,
+  useDynamicContext,
+} from '@dynamic-labs/sdk-react-core'
 /**
  * Login component for Dynamic authentication
  * Displays a simple sign-in screen with the Dynamic login flow
  */
 export function LoginWithDynamic() {
-  const [modalOpen, setModalOpen] = useState(false)
-
+  const { sdkHasLoaded } = useDynamicContext()
   return (
-    <LoginLayout
-      onSignIn={() => setModalOpen(true)}
-      additionalContent={
-        modalOpen && (
+    <>
+      <div
+        className="min-h-screen"
+        style={{
+          backgroundColor: '#FFFFFF',
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        }}
+      >
+        {sdkHasLoaded && (
           <>
             {/* Backdrop */}
             <div
@@ -26,7 +31,7 @@ export function LoginWithDynamic() {
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 zIndex: 999,
               }}
-              onClick={() => setModalOpen(false)}
+              onClick={() => (window.location.href = ROUTES.EARN)}
             />
 
             {/* Widget Container */}
@@ -39,7 +44,6 @@ export function LoginWithDynamic() {
                 zIndex: 1000,
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
-                padding: '24px',
                 maxWidth: '500px',
                 width: '90%',
                 maxHeight: '90vh',
@@ -51,8 +55,8 @@ export function LoginWithDynamic() {
               <DynamicEmbeddedWidget background="default" />
             </div>
           </>
-        )
-      }
-    />
+        )}
+      </div>
+    </>
   )
 }

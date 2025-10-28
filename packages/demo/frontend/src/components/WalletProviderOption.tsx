@@ -14,10 +14,9 @@ export function WalletProviderOption({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all hover:bg-gray-50"
+      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${isSelected ? 'bg-[#F8FAFC]' : 'bg-white hover:bg-gray-50'}`}
       style={{
         border: isSelected ? '2px solid #3B82F6' : '1px solid #E5E7EB',
-        backgroundColor: isSelected ? '#F8FAFC' : '#FFFFFF',
       }}
     >
       <div className="flex items-center gap-3">

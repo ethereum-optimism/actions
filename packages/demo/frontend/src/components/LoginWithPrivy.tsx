@@ -1,12 +1,34 @@
-import { useLogin } from '@privy-io/react-auth'
-import { LoginLayout } from './LoginLayout'
+import { useEffect, useRef, useCallback } from 'react'
+import { useLogin, usePrivy } from '@privy-io/react-auth'
+import { ROUTES } from '@/constants/routes'
 
 /**
  * Login component for Privy authentication
- * Displays a simple sign-in screen with the Privy login flow
+ * Automatically triggers the Privy login modal on mount
  */
 export function LoginWithPrivy() {
-  const { login } = useLogin()
+  const handleError = useCallback(() => {
+    window.location.href = ROUTES.EARN
+  }, [])
 
-  return <LoginLayout onSignIn={login} />
+  const { login } = useLogin({ onError: handleError })
+  const { ready } = usePrivy()
+  const hasTriggeredLogin = useRef(false)
+
+  useEffect(() => {
+    if (ready && !hasTriggeredLogin.current) {
+      hasTriggeredLogin.current = true
+      login()
+    }
+  }, [ready, login])
+
+  return (
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: '#FFFFFF',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+      }}
+    ></div>
+  )
 }
