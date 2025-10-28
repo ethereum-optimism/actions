@@ -11,14 +11,9 @@ const layerContent = [
     num: 1,
     title: 'Wallet',
     description:
-      'Actions supports embedded wallet providers, creating smart wallets, and managing signers.',
+      'Actions supports embedded wallet providers, creating smart wallets, managing signers, and sponsoring transactions with a gas paymaster.',
     images: [PrivyLogo, TurnkeyLogo, DynamicLogo],
     imageLabel: 'Supports embedded wallet providers:',
-    list: [
-      'Create & manage smart wallets',
-      'Sponsor transactions with gas paymaster',
-      'Add & remove signers',
-    ],
     code: `// Make onchain Actions from any embedded wallet
 const wallet = await actions.wallet.toActionsWallet({
   embeddedWallet
@@ -258,9 +253,12 @@ function ScrollyStack({
     // Calculate scroll position for this layer
     // Layer 0 (intro) is at scrollRatio 0-0.01
     // Layer 1-7 are divided equally in scrollRatio 0.01-1.0
-    // Scroll to the beginning of each layer's section
+    // Scroll 5% into the section to ensure it activates reliably
+    const sectionSize = 0.99 / 7
     const targetScrollRatio =
-      layerIndex === 0 ? 0 : 0.01 + ((layerIndex - 1) / 7) * 0.99
+      layerIndex === 0
+        ? 0
+        : 0.01 + ((layerIndex - 1) / 7) * 0.99 + sectionSize * 0.05
 
     const containerHeight = container.offsetHeight
     const viewportHeight = window.innerHeight
@@ -392,9 +390,12 @@ function ScrollyStack({
         const scrollToHash = () => {
           const container = containerRef.current
           if (container && container.offsetHeight > 0) {
-            // Calculate scroll position - scroll to beginning of section
+            // Calculate scroll position - scroll 5% into section to ensure it activates
+            const sectionSize = 0.99 / 7
             const targetScrollRatio =
-              layerNum === 0 ? 0 : 0.01 + ((layerNum - 1) / 7) * 0.99
+              layerNum === 0
+                ? 0
+                : 0.01 + ((layerNum - 1) / 7) * 0.99 + sectionSize * 0.05
             const containerHeight = container.offsetHeight
             const viewportHeight = window.innerHeight
             const scrollableDistance = containerHeight - viewportHeight
