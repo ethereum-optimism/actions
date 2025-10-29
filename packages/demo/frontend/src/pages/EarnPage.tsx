@@ -3,11 +3,11 @@ import { PrivyProvider } from '../providers/PrivyProvider'
 import { ActivityLogProvider } from '../providers/ActivityLogProvider'
 import { DynamicProvider } from '@/providers/DynamicProvider'
 import { EarnWithDynamicWallet } from '@/components/EarnWithDynamicWallet'
+import { EarnWithTurnkeyWallet } from '@/components/EarnWithTurnkeyWallet'
 import { EarnWithPrivyServerWallet } from '@/components/EarnWithPrivyServerWallet'
-import {
-  WALLET_PROVIDERS,
-  DEFAULT_WALLET_PROVIDER,
-} from '@/constants/walletProviders'
+import { WALLET_PROVIDERS } from '@/constants/walletProviders'
+import { TurnkeyProvider } from '../providers/TurnkeyProvider'
+import { WelcomeWalletPicker } from '@/components/WelcomeWalletPicker'
 
 /**
  * Earn page that renders different wallet provider implementations
@@ -15,8 +15,7 @@ import {
  */
 export function EarnPage() {
   const [searchParams] = useSearchParams()
-  const walletProvider =
-    searchParams.get('walletProvider') || DEFAULT_WALLET_PROVIDER
+  const walletProvider = searchParams.get('walletProvider')
 
   if (walletProvider === WALLET_PROVIDERS.PRIVY) {
     return (
@@ -38,23 +37,15 @@ export function EarnPage() {
     )
   }
 
-  // Fallback for unsupported providers
-  return (
-    <div
-      className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: '#FFFFFF' }}
-    >
-      <div className="text-center">
-        <h1
-          className="text-2xl font-semibold mb-2"
-          style={{ color: '#1a1b1e' }}
-        >
-          Unsupported Wallet Provider
-        </h1>
-        <p style={{ color: '#666666' }}>
-          Provider "{walletProvider}" is not yet supported.
-        </p>
-      </div>
-    </div>
-  )
+  if (walletProvider === WALLET_PROVIDERS.TURNKEY) {
+    return (
+      <TurnkeyProvider>
+        <ActivityLogProvider>
+          <EarnWithTurnkeyWallet />
+        </ActivityLogProvider>
+      </TurnkeyProvider>
+    )
+  }
+
+  return <WelcomeWalletPicker />
 }

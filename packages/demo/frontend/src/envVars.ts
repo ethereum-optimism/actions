@@ -22,6 +22,14 @@ const envVarSchema = z.object({
     .string()
     .optional()
     .describe('Dynamic environment ID for wallet connection'),
+  VITE_TURNKEY_ORGANIZATION_ID: z
+    .string()
+    .default('dummy-turnkey-organization-id')
+    .describe('Turnkey organization ID for wallet connection'),
+  VITE_TURNKEY_AUTH_ID: z
+    .string()
+    .default('dummy-turnkey-auth-id')
+    .describe('Turnkey auth ID for wallet connection'),
   VITE_BASE_SEPOLIA_RPC_URL: z
     .string()
     .optional()

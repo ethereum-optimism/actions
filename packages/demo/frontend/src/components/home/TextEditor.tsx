@@ -28,15 +28,15 @@ function TextEditor({ filename, children, onCopy }: TextEditorProps) {
       >
         <div className="flex items-center space-x-2">
           <div
-            className="w-3 h-3 rounded-full shadow-sm"
+            className="w-3 h-3 rounded-full shadow-xs"
             style={{ backgroundColor: colors.macos.red }}
           ></div>
           <div
-            className="w-3 h-3 rounded-full shadow-sm"
+            className="w-3 h-3 rounded-full shadow-xs"
             style={{ backgroundColor: colors.macos.yellow }}
           ></div>
           <div
-            className="w-3 h-3 rounded-full shadow-sm"
+            className="w-3 h-3 rounded-full shadow-xs"
             style={{
               backgroundColor: colors.macos.green,
               boxShadow: '0 0 6px rgba(184, 187, 38, 0.4)',

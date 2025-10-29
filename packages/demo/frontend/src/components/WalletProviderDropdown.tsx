@@ -108,6 +108,7 @@ export function WalletProviderDropdown({
             border: '1px solid #E5E5E5',
             zIndex: 50,
             width: '400px',
+            maxWidth: 'calc(100vw - 32px)',
           }}
         >
           <div className="p-6">

@@ -284,7 +284,7 @@ describe('WalletNamespace', () => {
     })
   })
 
-  describe('hostedWalletToActionsWallet', () => {
+  describe('toActionsWallet', () => {
     it('should convert a hosted wallet to an Actions wallet', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
@@ -313,7 +313,7 @@ describe('WalletNamespace', () => {
         'toActionsWallet',
       )
 
-      const actionsWallet = await walletNamespace.hostedWalletToActionsWallet({
+      const actionsWallet = await walletNamespace.toActionsWallet({
         walletId: privyWallet.id,
         address: privyWallet.address,
       })

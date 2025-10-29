@@ -2054,7 +2054,7 @@ User ID: ${result.userId}`,
               value={currentInput}
               onChange={(e) => setCurrentInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="bg-transparent outline-none text-terminal-text caret-transparent flex-shrink-0"
+              className="bg-transparent outline-hidden text-terminal-text caret-transparent flex-shrink-0"
               style={{ width: `${Math.max(1, currentInput.length)}ch` }}
               autoComplete="off"
               spellCheck="false"

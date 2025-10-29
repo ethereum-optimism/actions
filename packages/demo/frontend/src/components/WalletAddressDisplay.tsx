@@ -29,7 +29,7 @@ export function WalletAddressDisplay({ address }: WalletAddressDisplayProps) {
         {truncateAddress(address)}
       </span>
       <button
-        className="p-1 hover:bg-gray-200 rounded transition-colors"
+        className="p-1 hover:bg-gray-200 rounded-sm transition-colors"
         onClick={handleCopy}
         aria-label={copied ? 'Copied!' : 'Copy address'}
       >

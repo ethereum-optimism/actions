@@ -115,7 +115,7 @@ export function EarnWithServerWallet({
   return (
     <Earn
       ready={ready}
-      selectedProvider={selectedProvider}
+      selectedProviderConfig={selectedProvider}
       walletAddress={walletAddress}
       logout={logout}
       usdcBalance={usdcBalance}

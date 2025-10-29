@@ -61,7 +61,7 @@ vi.mock('./config/actions.js', () => ({
           deployments: [{ chainId: 1, receipt: undefined, success: true }],
         }),
       ),
-      hostedWalletToActionsWallet: vi.fn(
+      toActionsWallet: vi.fn(
         async ({ address }: { walletId: string; address: string }) => {
           return {
             address: address,

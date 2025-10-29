@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  important: '#root',
   theme: {
     extend: {
       fontFamily: {
@@ -15,6 +16,7 @@ export default {
         blue: '#83a598',
         indigo: '#d3869b',
         purple: '#d3869b',
+        secondary: '#404454',
         terminal: {
           bg: '#1d2021',
           secondary: '#282828',
