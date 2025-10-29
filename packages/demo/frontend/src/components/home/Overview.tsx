@@ -284,6 +284,21 @@ function ScrollyStack({
     }
   }, [])
 
+  // Re-measure image heights on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (imageRef.current) {
+        setImageHeight(imageRef.current.offsetHeight)
+      }
+      if (mobileImageRef.current) {
+        setMobileImageHeight(mobileImageRef.current.offsetHeight)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   // Map scroll progress to active layer (0 = inactive, 1-7 = layers)
   // Small intro section (0-0.01) where stack is centered, then 7 equal sections
   // When scrolled past (scrollRatio >= 1), deactivate all layers
