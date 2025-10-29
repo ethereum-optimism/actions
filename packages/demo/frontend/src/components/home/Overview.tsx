@@ -497,35 +497,52 @@ function ScrollyStack({
         >
           <div className="max-w-6xl mx-auto px-4 lg:px-0">
             {/* Mobile Layout: Stack vertically */}
-            <div className="flex flex-col lg:hidden" style={{ height: '80vh' }}>
-              {/* Mobile: Active image at top (20% height) */}
+            <div
+              className="flex flex-col lg:hidden"
+              style={{ height: '80vh', position: 'relative' }}
+            >
+              {/* Mobile: All stack images in background */}
               <div
                 style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
                   height: '20%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  paddingBottom: '1rem',
+                  zIndex: 0,
                 }}
               >
-                {activeLayer > 0 && (
+                {layers.map((layer) => (
                   <img
-                    src={getImagePath(activeLayer, true)}
-                    alt={`Layer ${activeLayer} active`}
+                    key={layer.num}
+                    src={getImagePath(layer.num, activeLayer === layer.num)}
+                    alt={`Layer ${layer.num}`}
                     style={{
+                      position: 'absolute',
                       maxHeight: '100%',
-                      maxWidth: '100%',
+                      maxWidth: '90%',
                       objectFit: 'contain',
+                      opacity: activeLayer === layer.num ? 1 : 0.3,
+                      transition: 'opacity 0.5s ease-in-out',
+                      zIndex: activeLayer === layer.num ? layer.imageZIndex : 0,
                     }}
                   />
-                )}
+                ))}
               </div>
+
+              {/* Mobile: Spacer for image area */}
+              <div style={{ height: '20%' }} />
 
               {/* Mobile: Content below (80% height) */}
               <div
                 style={{
                   height: '80%',
                   overflow: 'hidden',
+                  position: 'relative',
+                  zIndex: 10,
                 }}
               >
                 {activeLayer > 0 && prevLayerRef.current > 0 && (
