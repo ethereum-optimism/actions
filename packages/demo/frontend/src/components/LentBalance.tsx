@@ -64,6 +64,7 @@ function LentBalance({
                     fontSize: '12px',
                     fontWeight: 500,
                     fontFamily: 'Inter',
+                    minWidth: '120px',
                   }}
                 >
                   Market
@@ -76,6 +77,7 @@ function LentBalance({
                     fontSize: '12px',
                     fontWeight: 500,
                     fontFamily: 'Inter',
+                    minWidth: '130px',
                   }}
                 >
                   Network
@@ -88,6 +90,7 @@ function LentBalance({
                     fontSize: '12px',
                     fontWeight: 500,
                     fontFamily: 'Inter',
+                    minWidth: '80px',
                   }}
                 >
                   Asset
@@ -100,6 +103,7 @@ function LentBalance({
                     fontSize: '12px',
                     fontWeight: 500,
                     fontFamily: 'Inter',
+                    minWidth: '70px',
                   }}
                 >
                   APY
