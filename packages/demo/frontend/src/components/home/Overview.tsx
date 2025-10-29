@@ -134,15 +134,17 @@ const BASE = {
   },
 ]
 
-// Mobile breakpoint constants
+// Mobile breakpoint constants (475-1023px)
 const MOBILE_GAP_SIZE = 250
-const MOBILE_LAYER_OVERLAP = -183
+const MOBILE_LAYER_OVERLAP = -140
 const MOBILE_IMAGE_PADDING_LEFT = 0
+const MOBILE_IMAGE_WIDTH = 300 // Fixed width for consistent height
 
-// Desktop breakpoint constants (lg and up)
+// Desktop breakpoint constants (1024px and up)
 const GAP_SIZE = 210
 const LAYER_OVERLAP = -178
 const IMAGE_PADDING_LEFT = 36
+const DESKTOP_IMAGE_WIDTH = 350 // Fixed width for consistent height
 
 const CONTENT_SCROLL_BUFFER_START = 0.33 // Content stays at top for first 33%
 const CONTENT_SCROLL_BUFFER_END = 0.33 // Content stays at bottom for last 33%
@@ -608,9 +610,8 @@ function ScrollyStack({
                           src={getImagePath(layer.num, false)}
                           alt={`Layer ${layer.num} trace`}
                           style={{
-                            maxHeight: '100%',
-                            maxWidth: '90%',
-                            objectFit: 'contain',
+                            width: `${MOBILE_IMAGE_WIDTH}px`,
+                            height: 'auto',
                             opacity: activeLayer === layer.num ? 0 : 1,
                             transition: 'opacity 0.5s ease-in-out',
                           }}
@@ -622,9 +623,8 @@ function ScrollyStack({
                             position: 'absolute',
                             top: 0,
                             left: `${MOBILE_IMAGE_PADDING_LEFT}px`,
-                            maxHeight: '100%',
-                            maxWidth: '90%',
-                            objectFit: 'contain',
+                            width: `${MOBILE_IMAGE_WIDTH}px`,
+                            height: 'auto',
                             opacity: activeLayer === layer.num ? 1 : 0,
                             transition: 'opacity 0.5s ease-in-out',
                           }}
@@ -791,8 +791,10 @@ function ScrollyStack({
                           ref={layer.num === 1 ? imageRef : null}
                           src={getImagePath(layer.num, false)}
                           alt={`Layer ${layer.num} trace`}
-                          className="w-full block"
+                          className="block"
                           style={{
+                            width: `${DESKTOP_IMAGE_WIDTH}px`,
+                            height: 'auto',
                             opacity: activeLayer === layer.num ? 0 : 1,
                             transition: 'opacity 0.5s ease-in-out',
                           }}
@@ -800,12 +802,13 @@ function ScrollyStack({
                         <img
                           src={getImagePath(layer.num, true)}
                           alt={`Layer ${layer.num} active`}
-                          className="w-full block"
+                          className="block"
                           style={{
                             position: 'absolute',
                             top: 0,
                             left: `${IMAGE_PADDING_LEFT}px`,
-                            width: `calc(100% - ${IMAGE_PADDING_LEFT}px)`,
+                            width: `${DESKTOP_IMAGE_WIDTH - IMAGE_PADDING_LEFT}px`,
+                            height: 'auto',
                             opacity: activeLayer === layer.num ? 1 : 0,
                             transition: 'opacity 0.5s ease-in-out',
                           }}
