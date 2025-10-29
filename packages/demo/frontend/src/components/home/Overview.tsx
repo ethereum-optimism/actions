@@ -713,7 +713,14 @@ function ScrollyStack({
                           opacity={contentOpacity}
                         />
                         {layerContent[prevLayerRef.current - 1].images && (
-                          <div className="mt-6">
+                          <div
+                            className="mt-6"
+                            style={{
+                              backgroundColor: 'rgba(26, 26, 26, 0.5)',
+                              padding: '16px',
+                              borderRadius: '8px',
+                            }}
+                          >
                             {layerContent[prevLayerRef.current - 1]
                               .imageLabel && (
                               <p
