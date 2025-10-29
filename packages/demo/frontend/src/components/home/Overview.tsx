@@ -209,6 +209,7 @@ function ScrollyStack({
   const imageRef = useRef<HTMLImageElement>(null)
   const mobileImageRef = useRef<HTMLImageElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const mobileContentRef = useRef<HTMLDivElement>(null)
   const [imageHeight, setImageHeight] = useState(0)
   const [mobileImageHeight, setMobileImageHeight] = useState(0)
   const [smoothScrollRatio, setSmoothScrollRatio] = useState(0)
@@ -411,7 +412,9 @@ function ScrollyStack({
 
   // Calculate content scroll offset based on progress within current slide
   const calculateContentScrollOffset = (layerNum: number) => {
-    const content = contentRef.current
+    // Detect if mobile or desktop layout is active
+    const isMobile = window.innerWidth < 1024 // lg breakpoint
+    const content = isMobile ? mobileContentRef.current : contentRef.current
     if (!content || layerNum === 0) return 0
 
     // Calculate progress within the current slide (0 to 1)
@@ -664,7 +667,7 @@ function ScrollyStack({
               >
                 {activeLayer > 0 && prevLayerRef.current > 0 && (
                   <div
-                    ref={contentRef}
+                    ref={mobileContentRef}
                     style={{
                       height: '100%',
                       overflow: 'hidden',
