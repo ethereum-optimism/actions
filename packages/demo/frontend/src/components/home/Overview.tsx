@@ -161,7 +161,6 @@ function Overview({ onProgressUpdate }: OverviewProps) {
           </p>
         </div>
 
-        {/* Scrolly-telling stack section */}
         <ScrollingStack content={content} onProgressUpdate={onProgressUpdate} />
       </div>
     </ScrollyProvider>

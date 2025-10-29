@@ -78,6 +78,52 @@ const getMobileLayerMargin = (layerNum: number, activeLayer: number) => {
   return baseMargin
 }
 
+// Helper: Calculate stack vertical offset to align active layer at top
+const calculateStackTranslateY = (
+  activeLayer: number,
+  imageHeight: number,
+  getMarginFn: (layerNum: number, activeLayer: number) => number,
+) => {
+  if (activeLayer === 0 || activeLayer === 1 || imageHeight === 0) return 0
+
+  // Sum the actual margins between layers
+  let marginSum = 0
+  for (let i = 2; i <= activeLayer; i++) {
+    marginSum += getMarginFn(i, activeLayer)
+  }
+
+  // To align tops of images, we need to account for:
+  // 1. The cumulative image heights of layers we're skipping
+  // 2. The cumulative margins between them
+  return -((activeLayer - 1) * imageHeight + marginSum)
+}
+
+// Helper: Measure image height once loaded
+const useMeasureImageHeight = (
+  imageRef: React.RefObject<HTMLImageElement>,
+  setHeight: (height: number) => void,
+) => {
+  useEffect(() => {
+    const measureImage = () => {
+      if (imageRef.current) {
+        setHeight(imageRef.current.offsetHeight)
+      }
+    }
+
+    const img = imageRef.current
+
+    if (img?.complete) {
+      measureImage()
+    } else {
+      img?.addEventListener('load', measureImage)
+    }
+
+    return () => {
+      img?.removeEventListener('load', measureImage)
+    }
+  }, [imageRef, setHeight])
+}
+
 export interface ScrollingStackProps {
   content: LayerContentItem[]
   onProgressUpdate: (data: {
@@ -129,47 +175,9 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Measure desktop image height once loaded
-  useEffect(() => {
-    const measureImage = () => {
-      if (imageRef.current) {
-        setImageHeight(imageRef.current.offsetHeight)
-      }
-    }
-
-    const img = imageRef.current
-
-    if (img?.complete) {
-      measureImage()
-    } else {
-      img?.addEventListener('load', measureImage)
-    }
-
-    return () => {
-      img?.removeEventListener('load', measureImage)
-    }
-  }, [])
-
-  // Measure mobile image height once loaded
-  useEffect(() => {
-    const measureImage = () => {
-      if (mobileImageRef.current) {
-        setMobileImageHeight(mobileImageRef.current.offsetHeight)
-      }
-    }
-
-    const img = mobileImageRef.current
-
-    if (img?.complete) {
-      measureImage()
-    } else {
-      img?.addEventListener('load', measureImage)
-    }
-
-    return () => {
-      img?.removeEventListener('load', measureImage)
-    }
-  }, [])
+  // Measure image heights once loaded
+  useMeasureImageHeight(imageRef, setImageHeight)
+  useMeasureImageHeight(mobileImageRef, setMobileImageHeight)
 
   // Re-measure image heights on window resize
   useEffect(() => {
@@ -194,38 +202,17 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
       ? 0
       : Math.min(Math.ceil(((scrollRatio - 0.01) / 0.99) * 7), 7)
 
-  // Calculate how far to move the stack up so active layer stays at top position
-  const getStackTranslateY = () => {
-    if (activeLayer === 0 || activeLayer === 1 || imageHeight === 0) return 0
-
-    // Sum the actual margins between layers
-    let marginSum = 0
-    for (let i = 2; i <= activeLayer; i++) {
-      marginSum += getLayerMargin(i, activeLayer)
-    }
-
-    // To align tops of images, we need to account for:
-    // 1. The cumulative image heights of layers we're skipping
-    // 2. The cumulative margins between them
-    return -((activeLayer - 1) * imageHeight + marginSum)
-  }
-
-  // Mobile version - calculate stack offset using mobile constants
-  const getMobileStackTranslateY = () => {
-    if (activeLayer === 0 || activeLayer === 1 || mobileImageHeight === 0)
-      return 0
-
-    // Sum the actual margins between layers
-    let marginSum = 0
-    for (let i = 2; i <= activeLayer; i++) {
-      marginSum += getMobileLayerMargin(i, activeLayer)
-    }
-
-    // To align tops of images, we need to account for:
-    // 1. The cumulative image heights of layers we're skipping
-    // 2. The cumulative margins between them
-    return -((activeLayer - 1) * mobileImageHeight + marginSum)
-  }
+  // Calculate stack offsets for alignment
+  const stackTranslateY = calculateStackTranslateY(
+    activeLayer,
+    imageHeight,
+    getLayerMargin,
+  )
+  const mobileStackTranslateY = calculateStackTranslateY(
+    activeLayer,
+    mobileImageHeight,
+    getMobileLayerMargin,
+  )
 
   const progressColors = [
     colors.red,
@@ -483,7 +470,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
               >
                 <div
                   style={{
-                    transform: `translateY(${getMobileStackTranslateY()}px)`,
+                    transform: `translateY(${mobileStackTranslateY}px)`,
                     transition: 'transform 0.4s ease-in-out',
                     display: 'flex',
                     flexDirection: 'column',
@@ -672,7 +659,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                 <div
                   className="flex flex-col"
                   style={{
-                    transform: `translateX(${activeLayer > 0 ? '0' : '-50%'}) translateY(${getStackTranslateY()}px)`,
+                    transform: `translateX(${activeLayer > 0 ? '0' : '-50%'}) translateY(${stackTranslateY}px)`,
                     transition: 'transform 0.4s ease-in-out',
                   }}
                 >
