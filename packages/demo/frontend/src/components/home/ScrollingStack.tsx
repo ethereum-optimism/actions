@@ -284,10 +284,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
     if (activeLayer > 0 && activeLayer <= layers.length) {
       const layerName = layers[activeLayer - 1].label.toLowerCase()
       window.history.replaceState(null, '', `#${layerName}`)
-    } else if (activeLayer === 0) {
-      // Clear hash when not on any layer
-      window.history.replaceState(null, '', window.location.pathname)
     }
+    // Don't clear hash when activeLayer is 0 - preserve user's hash for navigation
   }, [activeLayer])
 
   // Calculate content scroll offset based on progress within current slide
@@ -377,58 +375,73 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
   // Handle initial hash navigation on page load
   useEffect(() => {
     const hash = window.location.hash.slice(1) // Remove the '#'
-    if (hash) {
-      const layerIndex = layers.findIndex(
-        (layer) => layer.label.toLowerCase() === hash.toLowerCase(),
-      )
-      if (layerIndex !== -1) {
-        const layerNum = layers[layerIndex].num
+    if (!hash) return
 
-        const scrollToHash = () => {
-          const container = containerRef.current
-          if (container && container.offsetHeight > 0) {
-            // Calculate scroll position - scroll 5% into section to ensure it activates
-            const sectionSize = 0.99 / 7
-            const targetScrollRatio =
-              layerNum === 0
-                ? 0
-                : 0.01 + ((layerNum - 1) / 7) * 0.99 + sectionSize * 0.05
-            const containerHeight = container.offsetHeight
-            const viewportHeight = window.innerHeight
-            const scrollableDistance = containerHeight - viewportHeight
-            const targetScroll = targetScrollRatio * scrollableDistance
-            const containerTop =
-              container.getBoundingClientRect().top + window.scrollY
+    const layerIndex = layers.findIndex(
+      (layer) => layer.label.toLowerCase() === hash.toLowerCase(),
+    )
+    if (layerIndex === -1) return
 
-            // Set scroll position immediately without animation
-            window.scrollTo({
-              top: containerTop + targetScroll,
-              behavior: 'auto',
-            })
-          }
-        }
+    const layerNum = layers[layerIndex].num
 
-        // Wait for all resources (images, fonts, etc.) to load
-        if (document.readyState === 'complete') {
-          // Page already loaded, scroll immediately
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              scrollToHash()
-            })
-          })
-        } else {
-          // Wait for page to fully load
-          window.addEventListener('load', () => {
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                scrollToHash()
-              })
-            })
-          })
+    const scrollToHash = () => {
+      const container = containerRef.current
+      if (!container) return false
+
+      const containerHeight = container.offsetHeight
+      const viewportHeight = window.innerHeight
+
+      // Verify container has meaningful dimensions
+      if (containerHeight < viewportHeight * 2) return false
+
+      // Calculate scroll position - scroll 5% into section to ensure it activates
+      const sectionSize = 0.99 / content.length
+      const targetScrollRatio =
+        layerNum === 0
+          ? 0
+          : 0.01 + ((layerNum - 1) / content.length) * 0.99 + sectionSize * 0.05
+      const scrollableDistance = containerHeight - viewportHeight
+      const targetScroll = targetScrollRatio * scrollableDistance
+      const containerTop =
+        container.getBoundingClientRect().top + window.scrollY
+
+      // Set scroll position immediately without animation
+      window.scrollTo({
+        top: containerTop + targetScroll,
+        behavior: 'auto',
+      })
+
+      return true
+    }
+
+    const attemptScroll = () => {
+      // Try scrolling with retries until container is ready
+      const maxAttempts = 50
+      let attempts = 0
+
+      const tryScroll = () => {
+        attempts++
+        const success = scrollToHash()
+
+        if (!success && attempts < maxAttempts) {
+          requestAnimationFrame(tryScroll)
         }
       }
+
+      tryScroll()
     }
-  }, [])
+
+    // Wait for page load
+    if (document.readyState === 'complete') {
+      setTimeout(attemptScroll, 100)
+    } else {
+      const onLoad = () => {
+        setTimeout(attemptScroll, 100)
+      }
+      window.addEventListener('load', onLoad)
+      return () => window.removeEventListener('load', onLoad)
+    }
+  }, [content.length])
 
   return (
     <>
