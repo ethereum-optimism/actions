@@ -98,7 +98,7 @@ export class WalletNamespace<
    * @param params.address - Ethereum address of the hosted wallet
    * @returns Promise resolving to the Actions wallet instance
    */
-  async hostedWalletToActionsWallet(
+  async toActionsWallet(
     params: TToActionsMap[THostedProviderType],
   ): Promise<Wallet> {
     return this.provider.hostedWalletToActionsWallet(params)

@@ -14,7 +14,7 @@ const mockActions = {
     },
     getSmartWallet: vi.fn(),
     createSmartWallet: vi.fn(),
-    hostedWalletToActionsWallet: vi.fn(({ address }: { address: string }) => ({
+    toActionsWallet: vi.fn(({ address }: { address: string }) => ({
       address,
       signer: {
         address,

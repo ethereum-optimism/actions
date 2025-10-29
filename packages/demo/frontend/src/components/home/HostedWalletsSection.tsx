@@ -30,7 +30,7 @@ const embeddedWallet = wallets.find(
 )
 
 // ACTIONS: Let wallet make onchain Actions
-const actionsWallet = await actions.wallet.hostedWalletToActionsWallet({
+const actionsWallet = await actions.wallet.toActionsWallet({
   connectedWallet: embeddedWallet,
 })`
 
@@ -45,7 +45,7 @@ const privyWallet = await privyClient.walletApi.createWallet({
 })
 
 // ACTIONS: Let wallet make onchain Actions
-const wallet = await actions.wallet.hostedWalletToActionsWallet({
+const wallet = await actions.wallet.toActionsWallet({
   walletId: privyWallet.id,
   address: privyWallet.address,
 })`
@@ -75,7 +75,7 @@ const wallet = await createWallet({
 const walletAddress = wallet.accounts[0].address
 
 // ACTIONS: Let wallet make onchain Actions
-const actionsWallet = await actions.wallet.hostedWalletToActionsWallet({
+const actionsWallet = await actions.wallet.toActionsWallet({
   client: httpClient,
   organizationId: session.organizationId,
   signWith: walletAddress,
@@ -104,7 +104,7 @@ const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
 })
 
 // ACTIONS: Let wallet make onchain Actions
-const wallet = await actions.wallet.hostedWalletToActionsWallet({
+const wallet = await actions.wallet.toActionsWallet({
   organizationId: turnkeyWallet.activity.organizationId,
   signWith: turnkeyWallet.addresses[0],
 })`
