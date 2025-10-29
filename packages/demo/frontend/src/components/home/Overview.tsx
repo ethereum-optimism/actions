@@ -136,13 +136,13 @@ const BASE = {
 
 // Mobile breakpoint constants (475-1023px)
 const MOBILE_GAP_SIZE = 250
-const MOBILE_LAYER_OVERLAP = -140
+const MOBILE_LAYER_OVERLAP = -153.5
 const MOBILE_IMAGE_PADDING_LEFT = 0
 const MOBILE_IMAGE_WIDTH = 300 // Fixed width for consistent height
 
 // Desktop breakpoint constants (1024px and up)
 const GAP_SIZE = 210
-const LAYER_OVERLAP = -178
+const LAYER_OVERLAP = -160.5
 const IMAGE_PADDING_LEFT = 36
 const DESKTOP_IMAGE_WIDTH = 350 // Fixed width for consistent height
 
@@ -753,13 +753,13 @@ function ScrollyStack({
               className="hidden lg:flex items-start gap-16"
               style={{ position: 'relative', minHeight: '60vh' }}
             >
-              {/* Left side: Stack visualization - 1/3 width */}
+              {/* Left side: Stack visualization - fixed width */}
               <div
-                className="w-1/3"
                 style={{
                   position: 'absolute',
                   left: activeLayer > 0 ? '0' : '50%',
                   transition: 'left 0.4s ease-in-out',
+                  width: `${DESKTOP_IMAGE_WIDTH}px`,
                 }}
               >
                 <div
@@ -784,7 +784,7 @@ function ScrollyStack({
                           position: 'relative',
                           pointerEvents: 'none',
                           zIndex: layer.imageZIndex,
-                          width: '100%',
+                          width: `${DESKTOP_IMAGE_WIDTH}px`,
                         }}
                       >
                         <img
@@ -819,13 +819,13 @@ function ScrollyStack({
                 </div>
               </div>
 
-              {/* Right side: Content panel - 2/3 width */}
+              {/* Right side: Content panel */}
               <div
-                className="w-2/3"
                 style={{
-                  marginLeft: 'calc(33.333% + 4rem)',
+                  marginLeft: `${DESKTOP_IMAGE_WIDTH + 64}px`,
                   opacity: activeLayer > 0 ? 1 : 0,
                   transition: 'opacity 0.4s ease-in-out',
+                  flex: 1,
                 }}
               >
                 {activeLayer > 0 && prevLayerRef.current > 0 && (
