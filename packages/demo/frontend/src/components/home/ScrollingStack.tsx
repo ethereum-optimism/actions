@@ -752,11 +752,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                         }}
                       >
                         <div
+                          className="mb-6"
                           style={{
-                            backgroundColor: 'rgba(26, 26, 26, 0.5)',
-                            padding: '16px',
-                            borderRadius: '8px',
-                            marginBottom: '24px',
                             opacity: contentOpacity,
                             transition: 'opacity 0.15s ease-in-out',
                           }}
