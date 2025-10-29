@@ -4,7 +4,6 @@ import CodeBlock from './CodeBlock'
 import { colors } from '@/constants/colors'
 
 export interface LayerContentItem {
-  num: number
   title: string
   description: string
   code: string
@@ -26,16 +25,6 @@ const DESKTOP_IMAGE_WIDTH = 350 // Fixed width for consistent height
 
 const CONTENT_SCROLL_BUFFER_START = 0.33 // Content stays at top for first 33%
 const CONTENT_SCROLL_BUFFER_END = 0.33 // Content stays at bottom for last 33%
-
-const layers = [
-  { num: 1, label: 'Wallet', imageZIndex: 70 },
-  { num: 2, label: 'Lend', imageZIndex: 60 },
-  { num: 3, label: 'Borrow', imageZIndex: 50 },
-  { num: 4, label: 'Swap', imageZIndex: 40 },
-  { num: 5, label: 'Pay', imageZIndex: 30 },
-  { num: 6, label: 'Assets', imageZIndex: 20 },
-  { num: 7, label: 'Chains', imageZIndex: 10 },
-]
 
 const getImagePath = (layerNum: number, isActive: boolean) => {
   const folder = isActive ? 'active' : 'trace'
@@ -274,19 +263,22 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
       activeLayer,
       progressPercent,
       progressColors,
-      layers,
+      layers: content.map((item, index) => ({
+        num: index + 1,
+        label: item.title,
+      })),
       onLayerClick: scrollToLayer,
     })
-  }, [showProgressBar, activeLayer, progressPercent])
+  }, [showProgressBar, activeLayer, progressPercent, content])
 
   // Update URL hash based on active layer
   useEffect(() => {
-    if (activeLayer > 0 && activeLayer <= layers.length) {
-      const layerName = layers[activeLayer - 1].label.toLowerCase()
+    if (activeLayer > 0 && activeLayer <= content.length) {
+      const layerName = content[activeLayer - 1].title.toLowerCase()
       window.history.replaceState(null, '', `#${layerName}`)
     }
     // Don't clear hash when activeLayer is 0 - preserve user's hash for navigation
-  }, [activeLayer])
+  }, [activeLayer, content])
 
   // Calculate content scroll offset based on progress within current slide
   const calculateContentScrollOffset = (layerNum: number) => {
@@ -382,15 +374,15 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
     const hasImageHeight = isMobile ? mobileImageHeight > 0 : imageHeight > 0
     if (!hasImageHeight) return
 
-    const layerIndex = layers.findIndex(
-      (layer) => layer.label.toLowerCase() === hash.toLowerCase(),
+    const layerIndex = content.findIndex(
+      (item) => item.title.toLowerCase() === hash.toLowerCase(),
     )
     if (layerIndex === -1) return
 
     const container = containerRef.current
     if (!container) return
 
-    const layerNum = layers[layerIndex].num
+    const layerNum = layerIndex + 1
     const sectionSize = 0.99 / content.length
     const targetScrollRatio =
       layerNum === 0
@@ -466,52 +458,56 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                     alignItems: 'center',
                   }}
                 >
-                  {layers.map((layer) => (
-                    <div
-                      key={layer.num}
-                      style={{
-                        marginTop:
-                          layer.num === 1
-                            ? 0
-                            : `${getMobileLayerMargin(layer.num, activeLayer)}px`,
-                        transition: 'margin-top 0.3s ease-in-out',
-                      }}
-                    >
+                  {content.map((_item, index) => {
+                    const num = index + 1
+                    const imageZIndex = 70 - index * 10
+                    return (
                       <div
+                        key={num}
                         style={{
-                          paddingLeft: `${MOBILE_IMAGE_PADDING_LEFT}px`,
-                          position: 'relative',
-                          pointerEvents: 'none',
-                          zIndex: layer.imageZIndex,
+                          marginTop:
+                            num === 1
+                              ? 0
+                              : `${getMobileLayerMargin(num, activeLayer)}px`,
+                          transition: 'margin-top 0.3s ease-in-out',
                         }}
                       >
-                        <img
-                          ref={layer.num === 1 ? mobileImageRef : null}
-                          src={getImagePath(layer.num, false)}
-                          alt={`Layer ${layer.num} trace`}
+                        <div
                           style={{
-                            width: `${MOBILE_IMAGE_WIDTH}px`,
-                            height: 'auto',
-                            opacity: activeLayer === layer.num ? 0 : 1,
-                            transition: 'opacity 0.5s ease-in-out',
+                            paddingLeft: `${MOBILE_IMAGE_PADDING_LEFT}px`,
+                            position: 'relative',
+                            pointerEvents: 'none',
+                            zIndex: imageZIndex,
                           }}
-                        />
-                        <img
-                          src={getImagePath(layer.num, true)}
-                          alt={`Layer ${layer.num} active`}
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: `${MOBILE_IMAGE_PADDING_LEFT}px`,
-                            width: `${MOBILE_IMAGE_WIDTH}px`,
-                            height: 'auto',
-                            opacity: activeLayer === layer.num ? 1 : 0,
-                            transition: 'opacity 0.5s ease-in-out',
-                          }}
-                        />
+                        >
+                          <img
+                            ref={num === 1 ? mobileImageRef : null}
+                            src={getImagePath(num, false)}
+                            alt={`Layer ${num} trace`}
+                            style={{
+                              width: `${MOBILE_IMAGE_WIDTH}px`,
+                              height: 'auto',
+                              opacity: activeLayer === num ? 0 : 1,
+                              transition: 'opacity 0.5s ease-in-out',
+                            }}
+                          />
+                          <img
+                            src={getImagePath(num, true)}
+                            alt={`Layer ${num} active`}
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: `${MOBILE_IMAGE_PADDING_LEFT}px`,
+                              width: `${MOBILE_IMAGE_WIDTH}px`,
+                              height: 'auto',
+                              opacity: activeLayer === num ? 1 : 0,
+                              transition: 'opacity 0.5s ease-in-out',
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
@@ -652,53 +648,57 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                     transition: 'transform 0.4s ease-in-out',
                   }}
                 >
-                  {layers.map((layer) => (
-                    <div
-                      key={layer.num}
-                      className="flex items-center"
-                      style={{
-                        marginTop: `${getLayerMargin(layer.num, activeLayer)}px`,
-                        transition: 'margin-top 0.3s ease-in-out',
-                      }}
-                    >
+                  {content.map((_item, index) => {
+                    const num = index + 1
+                    const imageZIndex = 70 - index * 10
+                    return (
                       <div
+                        key={num}
+                        className="flex items-center"
                         style={{
-                          paddingLeft: `${IMAGE_PADDING_LEFT}px`,
-                          position: 'relative',
-                          pointerEvents: 'none',
-                          zIndex: layer.imageZIndex,
-                          width: `${DESKTOP_IMAGE_WIDTH}px`,
+                          marginTop: `${getLayerMargin(num, activeLayer)}px`,
+                          transition: 'margin-top 0.3s ease-in-out',
                         }}
                       >
-                        <img
-                          ref={layer.num === 1 ? imageRef : null}
-                          src={getImagePath(layer.num, false)}
-                          alt={`Layer ${layer.num} trace`}
-                          className="block"
+                        <div
                           style={{
+                            paddingLeft: `${IMAGE_PADDING_LEFT}px`,
+                            position: 'relative',
+                            pointerEvents: 'none',
+                            zIndex: imageZIndex,
                             width: `${DESKTOP_IMAGE_WIDTH}px`,
-                            height: 'auto',
-                            opacity: activeLayer === layer.num ? 0 : 1,
-                            transition: 'opacity 0.5s ease-in-out',
                           }}
-                        />
-                        <img
-                          src={getImagePath(layer.num, true)}
-                          alt={`Layer ${layer.num} active`}
-                          className="block"
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: `${IMAGE_PADDING_LEFT}px`,
-                            width: `${DESKTOP_IMAGE_WIDTH - IMAGE_PADDING_LEFT}px`,
-                            height: 'auto',
-                            opacity: activeLayer === layer.num ? 1 : 0,
-                            transition: 'opacity 0.5s ease-in-out',
-                          }}
-                        />
+                        >
+                          <img
+                            ref={num === 1 ? imageRef : null}
+                            src={getImagePath(num, false)}
+                            alt={`Layer ${num} trace`}
+                            className="block"
+                            style={{
+                              width: `${DESKTOP_IMAGE_WIDTH}px`,
+                              height: 'auto',
+                              opacity: activeLayer === num ? 0 : 1,
+                              transition: 'opacity 0.5s ease-in-out',
+                            }}
+                          />
+                          <img
+                            src={getImagePath(num, true)}
+                            alt={`Layer ${num} active`}
+                            className="block"
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: `${IMAGE_PADDING_LEFT}px`,
+                              width: `${DESKTOP_IMAGE_WIDTH - IMAGE_PADDING_LEFT}px`,
+                              height: 'auto',
+                              opacity: activeLayer === num ? 1 : 0,
+                              transition: 'opacity 0.5s ease-in-out',
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 

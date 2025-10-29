@@ -8,7 +8,6 @@ import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
 
 const content: LayerContentItem[] = [
   {
-    num: 1,
     title: 'Wallet',
     description:
       'Actions supports embedded wallet providers, creating smart wallets, managing signers, and sponsoring transactions with a gas paymaster.',
@@ -31,7 +30,6 @@ const smartWallet = await actions.wallet.createSmartWallet({
 `,
   },
   {
-    num: 2,
     title: 'Lend',
     description:
       'Let users earn yield by lending assets across chains and protocols. Configure preferred markets with allow & block lists',
@@ -46,7 +44,6 @@ const receipt = wallet.lend.openPosition({
 });`,
   },
   {
-    num: 3,
     title: 'Borrow',
     description:
       'Let users borrow assets against lent collateral. Configure preferred markets with allow & block lists',
@@ -61,7 +58,6 @@ const receipt = wallet.borrow.openPosition({
 });`,
   },
   {
-    num: 4,
     title: 'Swap',
     description:
       'Enable onchain trading between configurable protocols and assets.',
@@ -73,7 +69,6 @@ const receipt = wallet.swap.execute({
 });`,
   },
   {
-    num: 5,
     title: 'Pay',
     description: 'Simple interface for transfers and payments.',
     code: `// Easy, safe asset transfers
@@ -84,7 +79,6 @@ const receipt = wallet.send({
 })`,
   },
   {
-    num: 6,
     title: 'Assets',
     description: 'Configure which assets you want to support.',
     code: `// Import popular assets
@@ -109,7 +103,6 @@ export const CustomToken: Asset = {
 const usdcBalance = await wallet.getBalance(CustomToken);`,
   },
   {
-    num: 7,
     title: 'Chains',
     description:
       'Configure which chains you want to support. Abstract them away from your users.',
