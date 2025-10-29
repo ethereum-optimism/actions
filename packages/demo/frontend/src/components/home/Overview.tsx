@@ -134,10 +134,10 @@ const BASE = {
   },
 ]
 
-// Mobile breakpoint constants (reserved for future use)
-// const MOBILE_GAP_SIZE = 0
-// const MOBILE_LAYER_OVERLAP = 0
-// const MOBILE_IMAGE_PADDING_LEFT = 0
+// Mobile breakpoint constants
+const MOBILE_GAP_SIZE = 250
+const MOBILE_LAYER_OVERLAP = -183
+const MOBILE_IMAGE_PADDING_LEFT = 0
 
 // Desktop breakpoint constants (lg and up)
 const GAP_SIZE = 210
@@ -174,6 +174,24 @@ const getLayerMargin = (layerNum: number, activeLayer: number) => {
     }
     if (layerNum === activeLayer + 1 && layerNum <= 7) {
       return baseMargin + GAP_SIZE
+    }
+  }
+
+  return baseMargin
+}
+
+const getMobileLayerMargin = (layerNum: number, activeLayer: number) => {
+  if (layerNum === 1) return 0
+
+  const baseMargin = MOBILE_LAYER_OVERLAP
+
+  // Add gaps above and below the active layer
+  if (activeLayer > 0) {
+    if (layerNum === activeLayer && activeLayer !== 1) {
+      return baseMargin + MOBILE_GAP_SIZE
+    }
+    if (layerNum === activeLayer + 1 && layerNum <= 7) {
+      return baseMargin + MOBILE_GAP_SIZE
     }
   }
 
@@ -257,6 +275,22 @@ function ScrollyStack({
     let marginSum = 0
     for (let i = 2; i <= activeLayer; i++) {
       marginSum += getLayerMargin(i, activeLayer)
+    }
+
+    // To align tops of images, we need to account for:
+    // 1. The cumulative image heights of layers we're skipping
+    // 2. The cumulative margins between them
+    return -((activeLayer - 1) * imageHeight + marginSum)
+  }
+
+  // Mobile version - calculate stack offset using mobile constants
+  const getMobileStackTranslateY = () => {
+    if (activeLayer === 0 || activeLayer === 1 || imageHeight === 0) return 0
+
+    // Sum the actual margins between layers
+    let marginSum = 0
+    for (let i = 2; i <= activeLayer; i++) {
+      marginSum += getMobileLayerMargin(i, activeLayer)
     }
 
     // To align tops of images, we need to account for:
@@ -510,27 +544,71 @@ function ScrollyStack({
                   right: 0,
                   height: '20%',
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
                   justifyContent: 'center',
                   zIndex: 0,
+                  overflow: 'visible',
+                  paddingTop: '40px',
                 }}
               >
-                {layers.map((layer) => (
-                  <img
-                    key={layer.num}
-                    src={getImagePath(layer.num, activeLayer === layer.num)}
-                    alt={`Layer ${layer.num}`}
-                    style={{
-                      position: 'absolute',
-                      maxHeight: '100%',
-                      maxWidth: '90%',
-                      objectFit: 'contain',
-                      opacity: activeLayer === layer.num ? 1 : 0.3,
-                      transition: 'opacity 0.5s ease-in-out',
-                      zIndex: activeLayer === layer.num ? layer.imageZIndex : 0,
-                    }}
-                  />
-                ))}
+                <div
+                  style={{
+                    transform: `translateY(${getMobileStackTranslateY()}px)`,
+                    transition: 'transform 0.4s ease-in-out',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                  }}
+                >
+                  {layers.map((layer) => (
+                    <div
+                      key={layer.num}
+                      style={{
+                        marginTop:
+                          layer.num === 1
+                            ? 0
+                            : `${getMobileLayerMargin(layer.num, activeLayer)}px`,
+                        transition: 'margin-top 0.3s ease-in-out',
+                      }}
+                    >
+                      <div
+                        style={{
+                          paddingLeft: `${MOBILE_IMAGE_PADDING_LEFT}px`,
+                          position: 'relative',
+                          pointerEvents: 'none',
+                          zIndex: layer.imageZIndex,
+                        }}
+                      >
+                        <img
+                          ref={layer.num === 1 ? imageRef : null}
+                          src={getImagePath(layer.num, false)}
+                          alt={`Layer ${layer.num} trace`}
+                          style={{
+                            maxHeight: '100%',
+                            maxWidth: '90%',
+                            objectFit: 'contain',
+                            opacity: activeLayer === layer.num ? 0 : 1,
+                            transition: 'opacity 0.5s ease-in-out',
+                          }}
+                        />
+                        <img
+                          src={getImagePath(layer.num, true)}
+                          alt={`Layer ${layer.num} active`}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: `${MOBILE_IMAGE_PADDING_LEFT}px`,
+                            maxHeight: '100%',
+                            maxWidth: '90%',
+                            objectFit: 'contain',
+                            opacity: activeLayer === layer.num ? 1 : 0,
+                            transition: 'opacity 0.5s ease-in-out',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Mobile: Spacer for image area */}
@@ -572,18 +650,27 @@ function ScrollyStack({
                           transition: 'none',
                         }}
                       >
-                        <h3
-                          className="text-2xl font-medium mb-4"
-                          style={{ color: colors.text.cream }}
+                        <div
+                          style={{
+                            backgroundColor: 'rgba(26, 26, 26, 0.5)',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            marginBottom: '24px',
+                          }}
                         >
-                          {layerContent[prevLayerRef.current - 1].title}
-                        </h3>
-                        <p
-                          className="mb-6"
-                          style={{ color: colors.text.cream }}
-                        >
-                          {layerContent[prevLayerRef.current - 1].description}
-                        </p>
+                          <h3
+                            className="text-2xl font-medium mb-4"
+                            style={{ color: colors.text.cream }}
+                          >
+                            {layerContent[prevLayerRef.current - 1].title}
+                          </h3>
+                          <p
+                            className="mb-0"
+                            style={{ color: colors.text.cream }}
+                          >
+                            {layerContent[prevLayerRef.current - 1].description}
+                          </p>
+                        </div>
                         {layerContent[prevLayerRef.current - 1].list && (
                           <ul
                             className="mb-6 ml-5"
@@ -763,18 +850,27 @@ function ScrollyStack({
                           transition: 'none',
                         }}
                       >
-                        <h3
-                          className="text-2xl font-medium mb-4"
-                          style={{ color: colors.text.cream }}
+                        <div
+                          style={{
+                            backgroundColor: 'rgba(26, 26, 26, 0.5)',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            marginBottom: '24px',
+                          }}
                         >
-                          {layerContent[prevLayerRef.current - 1].title}
-                        </h3>
-                        <p
-                          className="mb-6"
-                          style={{ color: colors.text.cream }}
-                        >
-                          {layerContent[prevLayerRef.current - 1].description}
-                        </p>
+                          <h3
+                            className="text-2xl font-medium mb-4"
+                            style={{ color: colors.text.cream }}
+                          >
+                            {layerContent[prevLayerRef.current - 1].title}
+                          </h3>
+                          <p
+                            className="mb-0"
+                            style={{ color: colors.text.cream }}
+                          >
+                            {layerContent[prevLayerRef.current - 1].description}
+                          </p>
+                        </div>
                         {layerContent[prevLayerRef.current - 1].list && (
                           <ul
                             className="mb-6 ml-5"

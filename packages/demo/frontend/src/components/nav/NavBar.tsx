@@ -34,7 +34,7 @@ function NavBar({
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out"
+      className="fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out min-w-[475px]"
       style={{
         backgroundColor: colors.bg.dark,
         transform: visible ? 'translateY(0)' : 'translateY(-100%)',
