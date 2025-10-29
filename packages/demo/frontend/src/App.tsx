@@ -4,7 +4,7 @@ import Terminal from '@/components/Terminal'
 import Home from '@/components/home/Home'
 import { PrivyProvider } from '@/providers/PrivyProvider'
 import { EarnPage } from '@/pages/EarnPage'
-import DocsPage from '@/pages/DocsPage'
+import Docs from '@/pages/Docs'
 import { ROUTES } from '@/constants/routes'
 
 function App() {
@@ -20,7 +20,7 @@ function App() {
       <div className="w-full h-screen bg-terminal-bg min-w-[475px]">
         <Routes>
           <Route path={ROUTES.HOME} element={<Home />} />
-          <Route path={ROUTES.DOCS} element={<DocsPage />} />
+          <Route path={ROUTES.DOCS} element={<Docs />} />
           <Route
             path={ROUTES.DEMO}
             element={

@@ -3,7 +3,7 @@ import Footer from '@/components/nav/Footer'
 import GettingStarted from '@/components/home/GettingStarted'
 import { colors } from '@/constants/colors'
 
-function DocsPage() {
+function Docs() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.bg.dark }}>
       <NavBar showDemo={true} visible={true} />
@@ -33,4 +33,4 @@ function DocsPage() {
   )
 }
 
-export default DocsPage
+export default Docs
