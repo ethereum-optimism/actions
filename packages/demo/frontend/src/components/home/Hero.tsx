@@ -5,8 +5,8 @@ import PackageManagerSelector from '@/components/home/PackageManagerSelector'
 function Hero() {
   return (
     <>
-      {/* ASCII Art - Isolated from other styles */}
-      <div className="pt-32 pb-6 flex justify-center px-6 overflow-x-auto">
+      {/* ASCII Art - Large version for screens >= 878px */}
+      <div className="pt-32 pb-6 justify-center px-6 hidden min-[878px]:flex">
         <div
           style={{
             fontFamily:
@@ -18,6 +18,35 @@ function Hero() {
             fontVariantLigatures: 'none',
             fontFeatureSettings: '"liga" 0',
             fontSize: 'clamp(0.5rem, 2.5vw, 1.25rem)',
+            margin: 0,
+            padding: 0,
+            border: 'none',
+          }}
+        >{`
+    █████████             █████     ███
+   ███░░░░░███           ░░███     ░░░
+  ░███    ░███   ██████  ███████   ████   ██████  ████████    █████
+  ░███████████  ███░░███░░░███░   ░░███  ███░░███░░███░░███  ███░░
+  ░███░░░░░███ ░███ ░░░   ░███     ░███ ░███ ░███ ░███ ░███ ░░█████
+  ░███    ░███ ░███  ███  ░███ ███ ░███ ░███ ░███ ░███ ░███  ░░░░███
+  █████   █████░░██████   ░░█████  █████░░██████  ████ █████ ██████
+ ░░░░░   ░░░░░  ░░░░░░     ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░
+     `}</div>
+      </div>
+
+      {/* ASCII Art - Small version for screens < 878px */}
+      <div className="pt-32 pb-6 flex justify-center px-6 min-[878px]:hidden">
+        <div
+          style={{
+            fontFamily:
+              'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
+            color: colors.actionsRed,
+            whiteSpace: 'pre',
+            lineHeight: '0.75',
+            letterSpacing: '0',
+            fontVariantLigatures: 'none',
+            fontFeatureSettings: '"liga" 0',
+            fontSize: 'clamp(0.4rem, 2vw, 0.65rem)',
             margin: 0,
             padding: 0,
             border: 'none',
