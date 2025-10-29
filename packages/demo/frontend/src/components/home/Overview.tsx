@@ -205,8 +205,10 @@ function ScrollyStack({
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
+  const mobileImageRef = useRef<HTMLImageElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const [imageHeight, setImageHeight] = useState(0)
+  const [mobileImageHeight, setMobileImageHeight] = useState(0)
   const [smoothScrollRatio, setSmoothScrollRatio] = useState(0)
   const [contentOpacity, setContentOpacity] = useState(1)
   const prevLayerRef = useRef(0)
@@ -238,7 +240,7 @@ function ScrollyStack({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Measure image height once loaded
+  // Measure desktop image height once loaded
   useEffect(() => {
     const measureImage = () => {
       if (imageRef.current) {
@@ -247,6 +249,27 @@ function ScrollyStack({
     }
 
     const img = imageRef.current
+
+    if (img?.complete) {
+      measureImage()
+    } else {
+      img?.addEventListener('load', measureImage)
+    }
+
+    return () => {
+      img?.removeEventListener('load', measureImage)
+    }
+  }, [])
+
+  // Measure mobile image height once loaded
+  useEffect(() => {
+    const measureImage = () => {
+      if (mobileImageRef.current) {
+        setMobileImageHeight(mobileImageRef.current.offsetHeight)
+      }
+    }
+
+    const img = mobileImageRef.current
 
     if (img?.complete) {
       measureImage()
@@ -285,7 +308,8 @@ function ScrollyStack({
 
   // Mobile version - calculate stack offset using mobile constants
   const getMobileStackTranslateY = () => {
-    if (activeLayer === 0 || activeLayer === 1 || imageHeight === 0) return 0
+    if (activeLayer === 0 || activeLayer === 1 || mobileImageHeight === 0)
+      return 0
 
     // Sum the actual margins between layers
     let marginSum = 0
@@ -296,7 +320,7 @@ function ScrollyStack({
     // To align tops of images, we need to account for:
     // 1. The cumulative image heights of layers we're skipping
     // 2. The cumulative margins between them
-    return -((activeLayer - 1) * imageHeight + marginSum)
+    return -((activeLayer - 1) * mobileImageHeight + marginSum)
   }
 
   const progressColors = [
@@ -580,7 +604,7 @@ function ScrollyStack({
                         }}
                       >
                         <img
-                          ref={layer.num === 1 ? imageRef : null}
+                          ref={layer.num === 1 ? mobileImageRef : null}
                           src={getImagePath(layer.num, false)}
                           alt={`Layer ${layer.num} trace`}
                           style={{
@@ -665,25 +689,6 @@ function ScrollyStack({
                             {layerContent[prevLayerRef.current - 1].description}
                           </p>
                         </div>
-                        {layerContent[prevLayerRef.current - 1].list && (
-                          <ul
-                            className="mb-6 ml-5"
-                            style={{
-                              color: colors.text.cream,
-                              listStyleType: 'disc',
-                              opacity: contentOpacity,
-                              transition: 'opacity 0.15s ease-in-out',
-                            }}
-                          >
-                            {layerContent[prevLayerRef.current - 1].list.map(
-                              (item, index) => (
-                                <li key={index} className="mb-2">
-                                  {item}
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                        )}
                         <CodeBlock
                           code={layerContent[prevLayerRef.current - 1].code}
                           filename={`${layerContent[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
@@ -712,7 +717,7 @@ function ScrollyStack({
                             >
                               {layerContent[
                                 prevLayerRef.current - 1
-                              ].images.map((image, index) => (
+                              ].images?.map((image, index) => (
                                 <div
                                   key={index}
                                   style={{
@@ -859,25 +864,6 @@ function ScrollyStack({
                             {layerContent[prevLayerRef.current - 1].description}
                           </p>
                         </div>
-                        {layerContent[prevLayerRef.current - 1].list && (
-                          <ul
-                            className="mb-6 ml-5"
-                            style={{
-                              color: colors.text.cream,
-                              listStyleType: 'disc',
-                              opacity: contentOpacity,
-                              transition: 'opacity 0.15s ease-in-out',
-                            }}
-                          >
-                            {layerContent[prevLayerRef.current - 1].list.map(
-                              (item, index) => (
-                                <li key={index} className="mb-2">
-                                  {item}
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                        )}
                         <CodeBlock
                           code={layerContent[prevLayerRef.current - 1].code}
                           filename={`${layerContent[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
@@ -906,7 +892,7 @@ function ScrollyStack({
                             >
                               {layerContent[
                                 prevLayerRef.current - 1
-                              ].images.map((image, index) => (
+                              ].images?.map((image, index) => (
                                 <div
                                   key={index}
                                   style={{
