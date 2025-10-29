@@ -134,9 +134,16 @@ const BASE = {
   },
 ]
 
+// Mobile breakpoint constants (reserved for future use)
+// const MOBILE_GAP_SIZE = 0
+// const MOBILE_LAYER_OVERLAP = 0
+// const MOBILE_IMAGE_PADDING_LEFT = 0
+
+// Desktop breakpoint constants (lg and up)
 const GAP_SIZE = 210
 const LAYER_OVERLAP = -178
 const IMAGE_PADDING_LEFT = 36
+
 const CONTENT_SCROLL_BUFFER_START = 0.33 // Content stays at top for first 33%
 const CONTENT_SCROLL_BUFFER_END = 0.33 // Content stays at bottom for last 33%
 
@@ -488,9 +495,156 @@ function ScrollyStack({
             height: '80vh',
           }}
         >
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto px-4 lg:px-0">
+            {/* Mobile Layout: Stack vertically */}
+            <div className="flex flex-col lg:hidden" style={{ height: '80vh' }}>
+              {/* Mobile: Active image at top (20% height) */}
+              <div
+                style={{
+                  height: '20%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingBottom: '1rem',
+                }}
+              >
+                {activeLayer > 0 && (
+                  <img
+                    src={getImagePath(activeLayer, true)}
+                    alt={`Layer ${activeLayer} active`}
+                    style={{
+                      maxHeight: '100%',
+                      maxWidth: '100%',
+                      objectFit: 'contain',
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Mobile: Content below (80% height) */}
+              <div
+                style={{
+                  height: '80%',
+                  overflow: 'hidden',
+                }}
+              >
+                {activeLayer > 0 && prevLayerRef.current > 0 && (
+                  <div
+                    ref={contentRef}
+                    style={{
+                      height: '100%',
+                      overflow: 'hidden',
+                      opacity: contentOpacity,
+                      transition: 'opacity 0.15s ease-in-out',
+                    }}
+                  >
+                    <div
+                      key={prevLayerRef.current}
+                      style={{
+                        opacity: 1,
+                        animation:
+                          contentOpacity === 1
+                            ? 'slideUp 0.25s ease-out'
+                            : 'none',
+                        height: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          transform: `translateY(${contentScrollOffset}px)`,
+                          transition: 'none',
+                        }}
+                      >
+                        <h3
+                          className="text-2xl font-medium mb-4"
+                          style={{ color: colors.text.cream }}
+                        >
+                          {layerContent[prevLayerRef.current - 1].title}
+                        </h3>
+                        <p
+                          className="mb-6"
+                          style={{ color: colors.text.cream }}
+                        >
+                          {layerContent[prevLayerRef.current - 1].description}
+                        </p>
+                        {layerContent[prevLayerRef.current - 1].list && (
+                          <ul
+                            className="mb-6 ml-5"
+                            style={{
+                              color: colors.text.cream,
+                              listStyleType: 'disc',
+                            }}
+                          >
+                            {layerContent[prevLayerRef.current - 1].list.map(
+                              (item, index) => (
+                                <li key={index} className="mb-2">
+                                  {item}
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        )}
+                        <CodeBlock
+                          code={layerContent[prevLayerRef.current - 1].code}
+                          filename={`${layerContent[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                        />
+                        {layerContent[prevLayerRef.current - 1].images && (
+                          <div className="mt-6">
+                            {layerContent[prevLayerRef.current - 1]
+                              .imageLabel && (
+                              <p
+                                className="mb-4 text-sm"
+                                style={{ color: colors.text.cream }}
+                              >
+                                {
+                                  layerContent[prevLayerRef.current - 1]
+                                    .imageLabel
+                                }
+                              </p>
+                            )}
+                            <div
+                              className="flex gap-4"
+                              style={{
+                                display: 'flex',
+                                gap: '6rem',
+                              }}
+                            >
+                              {layerContent[
+                                prevLayerRef.current - 1
+                              ].images.map((image, index) => (
+                                <div
+                                  key={index}
+                                  style={{
+                                    flex: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <img
+                                    src={image}
+                                    alt={`Provider ${index + 1}`}
+                                    style={{
+                                      maxWidth: '100%',
+                                      height: 'auto',
+                                      objectFit: 'contain',
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop Layout: Side by side */}
             <div
-              className="flex items-start gap-16"
+              className="hidden lg:flex items-start gap-16"
               style={{ position: 'relative', minHeight: '60vh' }}
             >
               {/* Left side: Stack visualization - 1/3 width */}
