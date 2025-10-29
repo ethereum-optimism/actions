@@ -374,74 +374,43 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
 
   // Handle initial hash navigation on page load
   useEffect(() => {
-    const hash = window.location.hash.slice(1) // Remove the '#'
+    const hash = window.location.hash.slice(1)
     if (!hash) return
+
+    // Only attempt navigation once images are loaded and container has dimensions
+    const isMobile = window.innerWidth < 1024
+    const hasImageHeight = isMobile ? mobileImageHeight > 0 : imageHeight > 0
+    if (!hasImageHeight) return
 
     const layerIndex = layers.findIndex(
       (layer) => layer.label.toLowerCase() === hash.toLowerCase(),
     )
     if (layerIndex === -1) return
 
+    const container = containerRef.current
+    if (!container) return
+
     const layerNum = layers[layerIndex].num
+    const sectionSize = 0.99 / content.length
+    const targetScrollRatio =
+      layerNum === 0
+        ? 0
+        : 0.01 + ((layerNum - 1) / content.length) * 0.99 + sectionSize * 0.05
 
-    const scrollToHash = () => {
-      const container = containerRef.current
-      if (!container) return false
+    const containerHeight = container.offsetHeight
+    const viewportHeight = window.innerHeight
+    const scrollableDistance = containerHeight - viewportHeight
+    const targetScroll = targetScrollRatio * scrollableDistance
+    const containerTop = container.getBoundingClientRect().top + window.scrollY
 
-      const containerHeight = container.offsetHeight
-      const viewportHeight = window.innerHeight
-
-      // Verify container has meaningful dimensions
-      if (containerHeight < viewportHeight * 2) return false
-
-      // Calculate scroll position - scroll 5% into section to ensure it activates
-      const sectionSize = 0.99 / content.length
-      const targetScrollRatio =
-        layerNum === 0
-          ? 0
-          : 0.01 + ((layerNum - 1) / content.length) * 0.99 + sectionSize * 0.05
-      const scrollableDistance = containerHeight - viewportHeight
-      const targetScroll = targetScrollRatio * scrollableDistance
-      const containerTop =
-        container.getBoundingClientRect().top + window.scrollY
-
-      // Set scroll position immediately without animation
+    // Small delay to ensure layout is stable
+    setTimeout(() => {
       window.scrollTo({
         top: containerTop + targetScroll,
         behavior: 'auto',
       })
-
-      return true
-    }
-
-    const attemptScroll = () => {
-      // Try scrolling with retries until container is ready
-      const maxAttempts = 50
-      let attempts = 0
-
-      const tryScroll = () => {
-        attempts++
-        const success = scrollToHash()
-
-        if (!success && attempts < maxAttempts) {
-          requestAnimationFrame(tryScroll)
-        }
-      }
-
-      tryScroll()
-    }
-
-    // Wait for page load
-    if (document.readyState === 'complete') {
-      setTimeout(attemptScroll, 100)
-    } else {
-      const onLoad = () => {
-        setTimeout(attemptScroll, 100)
-      }
-      window.addEventListener('load', onLoad)
-      return () => window.removeEventListener('load', onLoad)
-    }
-  }, [content.length])
+    }, 100)
+  }, [imageHeight, mobileImageHeight, content.length])
 
   return (
     <>
