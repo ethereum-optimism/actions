@@ -1,7 +1,10 @@
 import { ScrollyProvider } from 'react-scrolly-telling'
 import { colors } from '@/constants/colors'
 import ScrollingStack from '@/components/home/ScrollingStack'
-import type { ScrollingStackProps, LayerContentItem } from '@/components/home/ScrollingStack'
+import type {
+  ScrollingStackProps,
+  LayerContentItem,
+} from '@/components/home/ScrollingStack'
 import PrivyLogo from '@/assets/privy-logo-white.svg'
 import DynamicLogo from '@/assets/dynamic-logo-white.svg'
 import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'

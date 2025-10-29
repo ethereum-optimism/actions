@@ -1,15 +1,12 @@
 import { colors } from '@/constants/colors'
 import { TerminalIcon, DocumentIcon, GithubIcon } from '@/assets/icons'
 
-interface TakeActionsProps {
+interface TakeActionProps {
   showGithub?: boolean
   compact?: boolean
 }
 
-function TakeActions({
-  showGithub = false,
-  compact = false,
-}: TakeActionsProps) {
+function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
   return (
     <div className={`pt-8 ${compact ? 'pb-8' : 'pb-64'} text-center`}>
       <h3
@@ -59,4 +56,4 @@ function TakeActions({
   )
 }
 
-export default TakeActions
+export default TakeAction

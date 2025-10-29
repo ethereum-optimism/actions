@@ -7,7 +7,7 @@ import ConfigureAssetsSection from '@/components/docs/ConfigureAssetsSection'
 import ConfigureMarketsSection from '@/components/docs/ConfigureMarketsSection'
 import ConfigureChainsSection from '@/components/docs/ConfigureChainsSection'
 import ConfigureSignersSection from '@/components/docs/ConfigureSignersSection'
-import TakeActions from '@/components/home/TakeActions'
+import TakeAction from '@/components/home/TakeAction'
 
 function GettingStarted() {
   const [openAccordions, setOpenAccordions] = useState<Set<string>>(new Set())
@@ -85,7 +85,7 @@ function GettingStarted() {
             onToggle={() => toggleAccordion('take-action')}
           />
 
-          <TakeActions showGithub={true} compact={true} />
+          <TakeAction showGithub={true} compact={true} />
         </div>
       </div>
     </>

@@ -3,7 +3,7 @@ import NavBar from '@/components/nav/NavBar'
 import Hero from '@/components/home/Hero'
 import Overview from '@/components/home/Overview'
 import Footer from '@/components/nav/Footer'
-import TakeActions from '@/components/home/TakeActions'
+import TakeAction from '@/components/home/TakeAction'
 import { colors } from '@/constants/colors'
 
 function Home() {
@@ -53,7 +53,7 @@ function Home() {
       <main className="max-w-7xl mx-auto px-6">
         <Overview onProgressUpdate={setProgressBarData} />
 
-        <TakeActions />
+        <TakeAction />
       </main>
 
       <Footer />
