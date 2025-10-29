@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useLayoutEffect } from 'react'
 import { useScrolly } from 'react-scrolly-telling'
-import CodeBlock from './CodeBlock'
+import CodeBlock from '@/components/home/CodeBlock'
 import { colors } from '@/constants/colors'
 
 export interface LayerContentItem {

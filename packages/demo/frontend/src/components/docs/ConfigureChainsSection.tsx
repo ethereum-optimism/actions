@@ -1,5 +1,5 @@
 import { colors } from '@/constants/colors'
-import CodeBlock from '../home/CodeBlock'
+import CodeBlock from '@/components/home/CodeBlock'
 
 interface ConfigureChainsSectionProps {
   stepNumber: number

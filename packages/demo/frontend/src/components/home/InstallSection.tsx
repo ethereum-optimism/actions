@@ -1,5 +1,5 @@
 import { colors } from '@/constants/colors'
-import PackageManagerSelector from './PackageManagerSelector'
+import PackageManagerSelector from '@/components/home/PackageManagerSelector'
 
 interface InstallSectionProps {
   stepNumber: number

@@ -1,7 +1,7 @@
 import { colors } from '@/constants/colors'
-import Code from './Code'
-import CopyButton from './CopyButton'
-import TerminalHeader from './TerminalHeader'
+import Code from '@/components/home/Code'
+import CopyButton from '@/components/home/CopyButton'
+import TerminalHeader from '@/components/home/TerminalHeader'
 
 interface CodeBlockProps {
   code: string

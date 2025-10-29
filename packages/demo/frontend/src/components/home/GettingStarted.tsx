@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import InstallSection from './InstallSection'
-import ConfigureActionsSection from '../docs/ConfigureActionsSection'
-import ConfigureWalletsSection from '../docs/ConfigureWalletsSection'
-import TakeActionSection from './TakeActionSection'
-import ConfigureAssetsSection from '../docs/ConfigureAssetsSection'
-import ConfigureMarketsSection from '../docs/ConfigureMarketsSection'
-import ConfigureChainsSection from '../docs/ConfigureChainsSection'
-import ConfigureSignersSection from '../docs/ConfigureSignersSection'
-import TakeActions from './TakeActions'
+import InstallSection from '@/components/home/InstallSection'
+import ConfigureActionsSection from '@/components/docs/ConfigureActionsSection'
+import ConfigureWalletsSection from '@/components/docs/ConfigureWalletsSection'
+import TakeActionSection from '@/components/home/TakeActionSection'
+import ConfigureAssetsSection from '@/components/docs/ConfigureAssetsSection'
+import ConfigureMarketsSection from '@/components/docs/ConfigureMarketsSection'
+import ConfigureChainsSection from '@/components/docs/ConfigureChainsSection'
+import ConfigureSignersSection from '@/components/docs/ConfigureSignersSection'
+import TakeActions from '@/components/home/TakeActions'
 
 function GettingStarted() {
   const [openAccordions, setOpenAccordions] = useState<Set<string>>(new Set())

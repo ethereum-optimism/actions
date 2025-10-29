@@ -3,7 +3,7 @@ import { colors } from '@/constants/colors'
 import PrivyLogo from '@/assets/privy-logo-white.svg'
 import DynamicLogo from '@/assets/dynamic-logo-white.svg'
 import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
-import TabbedCodeBlock from '../home/TabbedCodeBlock'
+import TabbedCodeBlock from '@/components/home/TabbedCodeBlock'
 
 interface ConfigureWalletsSectionProps {
   stepNumber: number
