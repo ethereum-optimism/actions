@@ -28,7 +28,7 @@ const CONTENT_SCROLL_BUFFER_END = 0.33 // Content stays at bottom for last 33%
 
 const getImagePath = (layerNum: number, isActive: boolean) => {
   const folder = isActive ? 'active' : 'trace'
-  return `/src/assets/stack/${folder}/${layerNum}.png`
+  return `/stack/${folder}/${layerNum}.png`
 }
 
 const getLayerMargin = (layerNum: number, activeLayer: number) => {
