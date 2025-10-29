@@ -15,6 +15,7 @@ export default {
         blue: '#83a598',
         indigo: '#d3869b',
         purple: '#d3869b',
+        secondary: '#404454',
         terminal: {
           bg: '#1d2021',
           secondary: '#282828',

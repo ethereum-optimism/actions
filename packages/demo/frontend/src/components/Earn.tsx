@@ -138,13 +138,6 @@ function Earn({
             </div>
 
             <div className="space-y-6">
-              <LentBalance
-                depositedAmount={depositedAmount}
-                apy={apy}
-                isLoadingPosition={isLoadingPosition}
-                isLoadingApy={isLoadingApy}
-                isInitialLoad={isInitialLoad}
-              />
               <Action
                 usdcBalance={usdcBalance}
                 isLoadingBalance={isLoadingBalance}
@@ -153,6 +146,13 @@ function Earn({
                 depositedAmount={depositedAmount}
                 onMintUSDC={onMintUSDC}
                 onTransaction={onTransaction}
+              />
+              <LentBalance
+                depositedAmount={depositedAmount}
+                apy={apy}
+                isLoadingPosition={isLoadingPosition}
+                isLoadingApy={isLoadingApy}
+                isInitialLoad={isInitialLoad}
               />
 
               {/* Activity Log - Mobile Card */}
