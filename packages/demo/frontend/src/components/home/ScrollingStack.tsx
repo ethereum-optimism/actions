@@ -2,137 +2,15 @@ import { useRef, useState, useEffect, useLayoutEffect } from 'react'
 import { useScrolly } from 'react-scrolly-telling'
 import CodeBlock from './CodeBlock'
 import { colors } from '@/constants/colors'
-import PrivyLogo from '@/assets/privy-logo-white.svg'
-import DynamicLogo from '@/assets/dynamic-logo-white.svg'
-import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
 
-const layerContent = [
-  {
-    num: 1,
-    title: 'Wallet',
-    description:
-      'Actions supports embedded wallet providers, creating smart wallets, managing signers, and sponsoring transactions with a gas paymaster.',
-    images: [PrivyLogo, TurnkeyLogo, DynamicLogo],
-    imageLabel: 'Supports embedded wallet providers:',
-    code: `// Make onchain Actions from any embedded wallet
-const wallet = await actions.wallet.toActionsWallet({
-  embeddedWallet
-});
-
-// Create signers
-const signer = await actions.wallet.createSigner({
-  connectedWallet: embeddedWallet,
-});
-
-// Create smart contract wallets
-const smartWallet = await actions.wallet.createSmartWallet({
-  signer
-});
-`,
-  },
-  {
-    num: 2,
-    title: 'Lend',
-    description:
-      'Let users earn yield by lending assets across chains and protocols. Configure preferred markets with allow & block lists',
-    code: `// Fetch live market data
-const markets = actions.lend.getMarkets(USDC);
-
-// Lend assets, earn yield
-const receipt = wallet.lend.openPosition({
-  amount: 1,
-  asset: USDC,
-  ...ExampleMorphoMarket
-});`,
-  },
-  {
-    num: 3,
-    title: 'Borrow',
-    description:
-      'Let users borrow assets against lent collateral. Configure preferred markets with allow & block lists',
-    code: `// Fetch live market data
-const markets = actions.borrow.getMarkets(USDC);
-
-// Borrow against lent collateral
-const receipt = wallet.borrow.openPosition({
-  amount: 1,
-  asset: ETH,
-  ...ExampleAaveMarket
-});`,
-  },
-  {
-    num: 4,
-    title: 'Swap',
-    description:
-      'Enable onchain trading between configurable protocols and assets.',
-    code: `// Swap between tokens
-const receipt = wallet.swap.execute({
-  amountIn: 1,
-  assetIn: USDC,
-  assetOut: ETH,
-});`,
-  },
-  {
-    num: 5,
-    title: 'Pay',
-    description: 'Simple interface for transfers and payments.',
-    code: `// Easy, safe asset transfers
-const receipt = wallet.send({
-  amount: 1,
-  asset: USDC,
-  to: 'vitalik.eth',
-})`,
-  },
-  {
-    num: 6,
-    title: 'Assets',
-    description: 'Configure which assets you want to support.',
-    code: `// Import popular assets
-import { USDC } from '@eth-optimism/actions-sdk/assets'
-
-// Define custom assets
-export const CustomToken: Asset = {
-  address: {
-    [mainnet.id]: '0x123...',
-    [unichain.id]: '0x456...',
-    [baseSepolia.id]: '0x789...',
-  },
-  metadata: {
-    decimals: 6,
-    name: 'Custom Token',
-    symbol: 'CUSTOM',
-  },
-  type: 'erc20',
+export interface LayerContentItem {
+  num: number
+  title: string
+  description: string
+  code: string
+  images?: string[]
+  imageLabel?: string
 }
-
-// Track balances
-const usdcBalance = await wallet.getBalance(CustomToken);`,
-  },
-  {
-    num: 7,
-    title: 'Chains',
-    description:
-      'Configure which chains you want to support. Abstract them away from your users.',
-    code: `// Define chains once in a global config
-const OPTIMISM = {
-  chainId: optimism.id,
-  rpcUrls: env.OPTIMISM_RPC_URL
-  bundler: { // Bundle and sponsor txs with a gas paymaster
-    type: 'simple' as const,
-    url: env.OPTIMISM_BUNDLER_URL,
-  },
-}
-
-const BASE = {
-  chainId: base.id,
-  rpcUrls: env.BASE_RPC_URL
-  bundler: { // Bundle and sponsor txs with a gas paymaster
-    type: 'simple' as const,
-    url: env.BASE_BUNDLER_URL,
-  },
-}`,
-  },
-]
 
 // Mobile breakpoint constants (475-1023px)
 const MOBILE_GAP_SIZE = 250
@@ -201,6 +79,7 @@ const getMobileLayerMargin = (layerNum: number, activeLayer: number) => {
 }
 
 export interface ScrollingStackProps {
+  content: LayerContentItem[]
   onProgressUpdate: (data: {
     show: boolean
     activeLayer: number
@@ -211,7 +90,7 @@ export interface ScrollingStackProps {
   }) => void
 }
 
-function ScrollingStack({ onProgressUpdate }: ScrollingStackProps) {
+function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const mobileImageRef = useRef<HTMLImageElement>(null)
@@ -349,13 +228,13 @@ function ScrollingStack({ onProgressUpdate }: ScrollingStackProps) {
   }
 
   const progressColors = [
-    '#fb4933', // Red
-    '#fe8019', // Orange
-    '#fabd2f', // Yellow
-    '#b8bb26', // Green
-    '#8ec07c', // Aqua
-    '#83a598', // Blue
-    '#d3869b', // Purple
+    colors.red,
+    colors.orange,
+    colors.yellow,
+    colors.green,
+    colors.aqua,
+    colors.blue,
+    colors.purple,
   ]
 
   // Calculate progress percentage (0-100), accounting for 0.01 intro section
@@ -705,21 +584,21 @@ function ScrollingStack({ onProgressUpdate }: ScrollingStackProps) {
                             className="text-2xl font-medium mb-4"
                             style={{ color: colors.text.cream }}
                           >
-                            {layerContent[prevLayerRef.current - 1].title}
+                            {content[prevLayerRef.current - 1].title}
                           </h3>
                           <p
                             className="mb-0"
                             style={{ color: colors.text.cream }}
                           >
-                            {layerContent[prevLayerRef.current - 1].description}
+                            {content[prevLayerRef.current - 1].description}
                           </p>
                         </div>
                         <CodeBlock
-                          code={layerContent[prevLayerRef.current - 1].code}
-                          filename={`${layerContent[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                          code={content[prevLayerRef.current - 1].code}
+                          filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
                           opacity={contentOpacity}
                         />
-                        {layerContent[prevLayerRef.current - 1].images && (
+                        {content[prevLayerRef.current - 1].images && (
                           <div
                             className="mt-6"
                             style={{
@@ -728,16 +607,12 @@ function ScrollingStack({ onProgressUpdate }: ScrollingStackProps) {
                               borderRadius: '8px',
                             }}
                           >
-                            {layerContent[prevLayerRef.current - 1]
-                              .imageLabel && (
+                            {content[prevLayerRef.current - 1].imageLabel && (
                               <p
                                 className="mb-4 text-sm"
                                 style={{ color: colors.text.cream }}
                               >
-                                {
-                                  layerContent[prevLayerRef.current - 1]
-                                    .imageLabel
-                                }
+                                {content[prevLayerRef.current - 1].imageLabel}
                               </p>
                             )}
                             <div
@@ -747,29 +622,29 @@ function ScrollingStack({ onProgressUpdate }: ScrollingStackProps) {
                                 gap: '6rem',
                               }}
                             >
-                              {layerContent[
-                                prevLayerRef.current - 1
-                              ].images?.map((image, index) => (
-                                <div
-                                  key={index}
-                                  style={{
-                                    flex: 1,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                  }}
-                                >
-                                  <img
-                                    src={image}
-                                    alt={`Provider ${index + 1}`}
+                              {content[prevLayerRef.current - 1].images?.map(
+                                (image, index) => (
+                                  <div
+                                    key={index}
                                     style={{
-                                      maxWidth: '100%',
-                                      height: 'auto',
-                                      objectFit: 'contain',
+                                      flex: 1,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
                                     }}
-                                  />
-                                </div>
-                              ))}
+                                  >
+                                    <img
+                                      src={image}
+                                      alt={`Provider ${index + 1}`}
+                                      style={{
+                                        maxWidth: '100%',
+                                        height: 'auto',
+                                        objectFit: 'contain',
+                                      }}
+                                    />
+                                  </div>
+                                ),
+                              )}
                             </div>
                           </div>
                         )}
@@ -890,32 +765,28 @@ function ScrollingStack({ onProgressUpdate }: ScrollingStackProps) {
                             className="text-2xl font-medium mb-4"
                             style={{ color: colors.text.cream }}
                           >
-                            {layerContent[prevLayerRef.current - 1].title}
+                            {content[prevLayerRef.current - 1].title}
                           </h3>
                           <p
                             className="mb-0"
                             style={{ color: colors.text.cream }}
                           >
-                            {layerContent[prevLayerRef.current - 1].description}
+                            {content[prevLayerRef.current - 1].description}
                           </p>
                         </div>
                         <CodeBlock
-                          code={layerContent[prevLayerRef.current - 1].code}
-                          filename={`${layerContent[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                          code={content[prevLayerRef.current - 1].code}
+                          filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
                           opacity={contentOpacity}
                         />
-                        {layerContent[prevLayerRef.current - 1].images && (
+                        {content[prevLayerRef.current - 1].images && (
                           <div className="mt-6">
-                            {layerContent[prevLayerRef.current - 1]
-                              .imageLabel && (
+                            {content[prevLayerRef.current - 1].imageLabel && (
                               <p
                                 className="mb-4 text-sm"
                                 style={{ color: colors.text.cream }}
                               >
-                                {
-                                  layerContent[prevLayerRef.current - 1]
-                                    .imageLabel
-                                }
+                                {content[prevLayerRef.current - 1].imageLabel}
                               </p>
                             )}
                             <div
@@ -925,29 +796,29 @@ function ScrollingStack({ onProgressUpdate }: ScrollingStackProps) {
                                 gap: '6rem',
                               }}
                             >
-                              {layerContent[
-                                prevLayerRef.current - 1
-                              ].images?.map((image, index) => (
-                                <div
-                                  key={index}
-                                  style={{
-                                    flex: 1,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                  }}
-                                >
-                                  <img
-                                    src={image}
-                                    alt={`Provider ${index + 1}`}
+                              {content[prevLayerRef.current - 1].images?.map(
+                                (image, index) => (
+                                  <div
+                                    key={index}
                                     style={{
-                                      maxWidth: '100%',
-                                      height: 'auto',
-                                      objectFit: 'contain',
+                                      flex: 1,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
                                     }}
-                                  />
-                                </div>
-                              ))}
+                                  >
+                                    <img
+                                      src={image}
+                                      alt={`Provider ${index + 1}`}
+                                      style={{
+                                        maxWidth: '100%',
+                                        height: 'auto',
+                                        objectFit: 'contain',
+                                      }}
+                                    />
+                                  </div>
+                                ),
+                              )}
                             </div>
                           </div>
                         )}
