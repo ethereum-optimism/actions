@@ -24,6 +24,14 @@ function NavBar({
   responsiveLogo = false,
   progressBar,
 }: NavBarProps) {
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const isHomePage = window.location.pathname === '/'
+    if (isHomePage) {
+      e.preventDefault()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out"
@@ -34,7 +42,7 @@ function NavBar({
     >
       <div className={fullWidth ? 'px-6 py-4' : 'max-w-7xl mx-auto px-6 py-4'}>
         <div className="flex items-center justify-between">
-          <a href="/" className="cursor-pointer">
+          <a href="/" className="cursor-pointer" onClick={handleLogoClick}>
             {responsiveLogo ? (
               <>
                 <img

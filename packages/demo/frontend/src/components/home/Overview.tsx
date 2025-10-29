@@ -64,7 +64,7 @@ const receipt = wallet.borrow.openPosition({
     num: 4,
     title: 'Swap',
     description:
-      'Enable onchain trading between configured protocols and assets.',
+      'Enable onchain trading between configurable protocols and assets.',
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,
@@ -113,7 +113,7 @@ const usdcBalance = await wallet.getBalance(CustomToken);`,
     title: 'Chains',
     description:
       'Configure which chains you want to support. Abstract them away from your users.',
-    code: `// Define chains in global config.
+    code: `// Define chains in a global config
 const OPTIMISM = {
   chainId: optimism.id,
   rpcUrls: env.OPTIMISM_RPC_URL
@@ -699,7 +699,7 @@ function Overview({ onProgressUpdate }: OverviewProps) {
             Overview
           </h2>
           <div className="h-px bg-gradient-to-r from-gray-600 via-gray-500 to-transparent mb-4"></div>
-          <p className="mb-16" style={{ color: colors.text.cream }}>
+          <p className="mb-32" style={{ color: colors.text.cream }}>
             Actions is an open source TypeScript SDK for letting your users
             easily perform onchain actions: <strong>Lend</strong>,{' '}
             <strong>Borrow</strong>, <strong>Swap</strong>, <strong>Pay</strong>
