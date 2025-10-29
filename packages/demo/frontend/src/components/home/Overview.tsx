@@ -113,13 +113,22 @@ const usdcBalance = await wallet.getBalance(CustomToken);`,
     title: 'Chains',
     description:
       'Configure which chains you want to support. Abstract them away from your users.',
-    code: `// Define chains in a global config
+    code: `// Define chains once in a global config
 const OPTIMISM = {
   chainId: optimism.id,
   rpcUrls: env.OPTIMISM_RPC_URL
   bundler: { // Bundle and sponsor txs with a gas paymaster
     type: 'simple' as const,
     url: env.OPTIMISM_BUNDLER_URL,
+  },
+}
+
+const BASE = {
+  chainId: base.id,
+  rpcUrls: env.BASE_RPC_URL
+  bundler: { // Bundle and sponsor txs with a gas paymaster
+    type: 'simple' as const,
+    url: env.BASE_BUNDLER_URL,
   },
 }`,
   },
