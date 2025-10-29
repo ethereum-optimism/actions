@@ -137,17 +137,24 @@ export interface ScrollingStackProps {
 }
 
 function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  // Desktop refs
   const imageRef = useRef<HTMLImageElement>(null)
-  const mobileImageRef = useRef<HTMLImageElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
-  const mobileContentRef = useRef<HTMLDivElement>(null)
-  const [imageHeight, setImageHeight] = useState(0)
-  const [mobileImageHeight, setMobileImageHeight] = useState(0)
-  const [smoothScrollRatio, setSmoothScrollRatio] = useState(0)
-  const [contentOpacity, setContentOpacity] = useState(1)
+  const containerRef = useRef<HTMLDivElement>(null)
   const prevLayerRef = useRef(0)
   const frozenScrollOffsetRef = useRef(0)
+
+  // Mobile refs
+  const mobileImageRef = useRef<HTMLImageElement>(null)
+  const mobileContentRef = useRef<HTMLDivElement>(null)
+
+  // Desktop state
+  const [imageHeight, setImageHeight] = useState(0)
+  const [smoothScrollRatio, setSmoothScrollRatio] = useState(0)
+  const [contentOpacity, setContentOpacity] = useState(1)
+
+  // Mobile state
+  const [mobileImageHeight, setMobileImageHeight] = useState(0)
 
   const { scrollRatio } = useScrolly(containerRef)
 
