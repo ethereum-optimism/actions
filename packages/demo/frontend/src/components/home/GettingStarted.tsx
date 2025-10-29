@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import InstallSection from './InstallSection'
-import ConfigureActionsSection from './ConfigureActionsSection'
-import ConfigureWalletsSection from './ConfigureWalletsSection'
+import ConfigureActionsSection from '../docs/ConfigureActionsSection'
+import ConfigureWalletsSection from '../docs/ConfigureWalletsSection'
 import TakeActionSection from './TakeActionSection'
-import ConfigureAssetsSection from './ConfigureAssetsSection'
-import ConfigureMarketsSection from './ConfigureMarketsSection'
-import ConfigureChainsSection from './ConfigureChainsSection'
-import ConfigureSignersSection from './ConfigureSignersSection'
+import ConfigureAssetsSection from '../docs/ConfigureAssetsSection'
+import ConfigureMarketsSection from '../docs/ConfigureMarketsSection'
+import ConfigureChainsSection from '../docs/ConfigureChainsSection'
+import ConfigureSignersSection from '../docs/ConfigureSignersSection'
 import TakeActions from './TakeActions'
 
 function GettingStarted() {

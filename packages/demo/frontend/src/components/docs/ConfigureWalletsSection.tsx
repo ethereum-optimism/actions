@@ -3,25 +3,23 @@ import { colors } from '@/constants/colors'
 import PrivyLogo from '@/assets/privy-logo-white.svg'
 import DynamicLogo from '@/assets/dynamic-logo-white.svg'
 import TurnkeyLogo from '@/assets/turnkey-logo-white.svg'
-import TabbedCodeBlock from './TabbedCodeBlock'
+import TabbedCodeBlock from '../home/TabbedCodeBlock'
 
-interface ConfigureSignersSectionProps {
+interface ConfigureWalletsSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
 }
 
-function ConfigureSignersSection({
+function ConfigureWalletsSection({
   stepNumber,
   isOpen,
   onToggle,
-}: ConfigureSignersSectionProps) {
+}: ConfigureWalletsSectionProps) {
   const [selectedWalletProvider, setSelectedWalletProvider] = useState('privy')
-  const [selectedSmartPrivyTab, setSelectedSmartPrivyTab] = useState('frontend')
-  const [selectedSmartDynamicTab, setSelectedSmartDynamicTab] =
-    useState('frontend')
-  const [selectedSmartTurnkeyTab, setSelectedSmartTurnkeyTab] =
-    useState('frontend')
+  const [selectedPrivyTab, setSelectedPrivyTab] = useState('frontend')
+  const [selectedDynamicTab, setSelectedDynamicTab] = useState('frontend')
+  const [selectedTurnkeyTab, setSelectedTurnkeyTab] = useState('frontend')
 
   const privyFrontendCode = `import { actions } from './config'
 import { useWallets } from '@privy-io/react-auth'
@@ -32,83 +30,58 @@ const embeddedWallet = wallets.find(
   (wallet) => wallet.walletClientType === 'privy',
 )
 
-// ACTIONS: Create signer from hosted wallet
-const signer = await actions.wallet.createSigner({
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
   connectedWallet: embeddedWallet,
-})
-
-// ACTIONS: Create smart wallet capable of Actions
-const { wallet } = await actions.wallet.createSmartWallet({
-  signer: signer
 })`
 
   const privyBackendCode = `import { actions } from './config'
 import { PrivyClient } from '@privy-io/node'
-import { getAddress } from 'viem'
+
+const privyClient = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
 
 // PRIVY: Create wallet
 const privyWallet = await privyClient.walletApi.createWallet({
   chainType: 'ethereum',
 })
 
-// ACTIONS: Create signer from hosted wallet
-const privySigner = await actions.wallet.createSigner({
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
   walletId: privyWallet.id,
-  address: getAddress(privyWallet.address),
-})
-
-// ACTIONS: Create smart wallet capable of Actions
-const { wallet } = await actions.wallet.createSmartWallet({
-  signer: privySigner
+  address: privyWallet.address,
 })`
 
-  const dynamicFrontendCode = `import { actions } from './config'
+  const dynamicCode = `import { actions } from './config'
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 
 // DYNAMIC: Fetch wallet
 const { primaryWallet } = useDynamicContext()
+const embeddedWallet = primaryWallet
 
-// ACTIONS: Create signer from hosted wallet
-const signer = await actions.wallet.createSigner({wallet: primaryWallet})
-
-// ACTIONS: Create smart wallet capable of Actions
-const { wallet } = await actions.wallet.createSmartWallet({
-  signer: signer
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToVerbsWallet({
+  wallet: embeddedWallet,
 })`
-
-  const dynamicBackendCode = ``
 
   const turnkeyFrontendCode = `import { actions } from './config'
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 
 // TURNKEY: Fetch wallet
-const { wallets, user, createWallet, refreshWallets, httpClient, session } = useTurnkey()
-useEffect(() => {
-  async function createEmbeddedWallet() {
-    const wallet = await createWallet({
-      walletName: \`My New Wallet \${Math.random().toString(36).substring(2, 15)}\`,
-      accounts: ["ADDRESS_FORMAT_ETHEREUM"],
-    })
-    refreshWallets()
-  }
+const { wallets, createWallet, refreshWallets, httpClient, session } = useTurnkey()
 
-const embeddedWallet = wallets.find(
-  (wallet) => wallet.accounts.some((account) => account.addressFormat === 'ADDRESS_FORMAT_ETHEREUM' && wallet.source === WalletSource.Embedded,
-)
+const embeddedWallet = await createWallet({
+  walletName: \`My New Wallet \${Math.random()}\`,
+  accounts: ["ADDRESS_FORMAT_ETHEREUM"],
+})
 
 const walletAddress = embeddedWallet.accounts[0].address
 
-// ACTIONS: Create signer from hosted wallet
-const signer = await actions.wallet.createSigner({
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
   client: httpClient,
   organizationId: session.organizationId,
   signWith: walletAddress,
-  ethereumAddress: walletAddress
-})
-
-// ACTIONS: Create smart wallet capable of Actions
-const { wallet } = await actions.wallet.createSmartWallet({
-  signer: signer
+  ethereumAddress: walletAddress,
 })`
 
   const turnkeyBackendCode = `import { actions } from './config'
@@ -132,15 +105,10 @@ const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
   }],
 })
 
-// ACTIONS: Create signer from hosted wallet
-const turnkeySigner = await actions.wallet.createSigner({
+// ACTIONS: Let wallet make onchain Actions
+const wallet = await actions.wallet.hostedWalletToActionsWallet({
   organizationId: turnkeyWallet.activity.organizationId,
   signWith: turnkeyWallet.addresses[0],
-})
-
-// ACTIONS: Create smart wallet capable of Actions
-const { wallet } = await actions.wallet.createSmartWallet({
-  signer: turnkeySigner
 })`
 
   return (
@@ -165,7 +133,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
             className="text-lg font-medium"
             style={{ color: colors.text.cream }}
           >
-            Configure Signers
+            Configure Wallets
           </h3>
         </div>
         <svg
@@ -194,7 +162,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
       >
         <div className="pt-6 pb-4">
           <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-            Use embedded wallets as signers of smart wallets you control.
+            Actions supports your existing embedded wallet provider.
           </p>
           <div
             className="rounded-lg overflow-hidden mb-8 shadow-2xl"
@@ -204,9 +172,13 @@ const { wallet } = await actions.wallet.createSmartWallet({
                 '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
             }}
           >
+            {/* Tab switcher with logos */}
             <div
               className="flex border-b"
-              style={{ borderColor: 'rgba(184, 187, 38, 0.15)' }}
+              style={{
+                backgroundColor: colors.bg.code,
+                borderColor: 'rgba(184, 187, 38, 0.15)',
+              }}
             >
               <button
                 onClick={() => setSelectedWalletProvider('privy')}
@@ -293,25 +265,23 @@ const { wallet } = await actions.wallet.createSmartWallet({
                   </div>
 
                   <div>
-                    <p
-                      className="text-base mb-2"
-                      style={{ color: colors.text.cream }}
-                    >
-                      2. Hosted user wallets can become signers for new,
-                      customizable smart wallets:
+                    <p className="mb-2" style={{ color: colors.text.cream }}>
+                      2. Create a frontend or backend user wallet and extend it
+                      with DeFi Actions:
                     </p>
                     <TabbedCodeBlock
                       tabs={[
                         { label: 'Frontend', code: privyFrontendCode },
                         { label: 'Backend', code: privyBackendCode },
                       ]}
-                      selectedTab={selectedSmartPrivyTab}
-                      onTabChange={setSelectedSmartPrivyTab}
+                      selectedTab={selectedPrivyTab}
+                      onTabChange={setSelectedPrivyTab}
                       filename="wallet.ts"
                     />
                   </div>
                 </div>
               )}
+
               {selectedWalletProvider === 'dynamic' && (
                 <div className="space-y-6">
                   <div>
@@ -321,7 +291,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
                     >
                       1.{' '}
                       <a
-                        href="https://docs.dynamic.xyz/quickstart"
+                        href="https://www.dynamic.xyz/docs/wallets/embedded-wallets/mpc/setup"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-400 hover:text-blue-300 underline"
@@ -333,25 +303,23 @@ const { wallet } = await actions.wallet.createSmartWallet({
                   </div>
 
                   <div>
-                    <p
-                      className="text-base mb-2"
-                      style={{ color: colors.text.cream }}
-                    >
-                      2. Hosted user wallets can become signers for new,
-                      customizable smart wallets:
+                    <p className="mb-2" style={{ color: colors.text.cream }}>
+                      2. Create a frontend user wallet and extend it with DeFi
+                      Actions:
                     </p>
                     <TabbedCodeBlock
                       tabs={[
-                        { label: 'Frontend', code: dynamicFrontendCode },
-                        { label: 'Backend', code: dynamicBackendCode },
+                        { label: 'Frontend', code: dynamicCode },
+                        { label: 'Backend', code: '' },
                       ]}
-                      selectedTab={selectedSmartDynamicTab}
-                      onTabChange={setSelectedSmartDynamicTab}
+                      selectedTab={selectedDynamicTab}
+                      onTabChange={setSelectedDynamicTab}
                       filename="wallet.ts"
                     />
                   </div>
                 </div>
               )}
+
               {selectedWalletProvider === 'turnkey' && (
                 <div className="space-y-6">
                   <div>
@@ -373,20 +341,17 @@ const { wallet } = await actions.wallet.createSmartWallet({
                   </div>
 
                   <div>
-                    <p
-                      className="text-base mb-2"
-                      style={{ color: colors.text.cream }}
-                    >
-                      2. Hosted user wallets can become signers for new,
-                      customizable smart wallets:
+                    <p className="mb-2" style={{ color: colors.text.cream }}>
+                      2. Create a frontend or backend user wallet and extend it
+                      with DeFi Actions:
                     </p>
                     <TabbedCodeBlock
                       tabs={[
                         { label: 'Frontend', code: turnkeyFrontendCode },
                         { label: 'Backend', code: turnkeyBackendCode },
                       ]}
-                      selectedTab={selectedSmartTurnkeyTab}
-                      onTabChange={setSelectedSmartTurnkeyTab}
+                      selectedTab={selectedTurnkeyTab}
+                      onTabChange={setSelectedTurnkeyTab}
                       filename="wallet.ts"
                     />
                   </div>
@@ -400,4 +365,4 @@ const { wallet } = await actions.wallet.createSmartWallet({
   )
 }
 
-export default ConfigureSignersSection
+export default ConfigureWalletsSection

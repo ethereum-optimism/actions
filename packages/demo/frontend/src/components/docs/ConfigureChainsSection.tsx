@@ -1,36 +1,28 @@
 import { colors } from '@/constants/colors'
-import CodeBlock from './CodeBlock'
+import CodeBlock from '../home/CodeBlock'
 
-interface ConfigureAssetsSectionProps {
+interface ConfigureChainsSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
 }
 
-function ConfigureAssetsSection({
+function ConfigureChainsSection({
   stepNumber,
   isOpen,
   onToggle,
-}: ConfigureAssetsSectionProps) {
-  const assetsCode = `// Import popular assets
-import { USDC } from '@eth-optimism/actions-sdk/assets'
-
-// Define custom assets
-export const CustomToken: Asset = {
-  address: {
-    [mainnet.id]: '0x123...',
-    [unichain.id]: '0x456...',
-    [baseSepolia.id]: '0x789...',
+}: ConfigureChainsSectionProps) {
+  const chainsCode = `// Define and abstract away supported chains
+const OPTIMISM = {
+  chainId: optimism.id,
+  rpcUrls: env.OPTIMISM_RPC_URL
+  bundler: {
+    type: 'simple' as const,
+    url: env.OPTIMISM_BUNDLER_URL,
   },
-  metadata: {
-    decimals: 6,
-    name: 'Custom Token',
-    symbol: 'CUSTOM',
-  },
-  type: 'erc20',
 }
 
-export const actions = createActions({lend: {assetAllowlist: [USDC, CustomToken]}, ...config})`
+export const actions = createActions({chains: [OPTIMISM], ...config})`
 
   return (
     <div className="mb-4">
@@ -54,7 +46,7 @@ export const actions = createActions({lend: {assetAllowlist: [USDC, CustomToken]
             className="text-lg font-medium"
             style={{ color: colors.text.cream }}
           >
-            Configure Assets
+            Configure Chains
           </h3>
         </div>
         <svg
@@ -83,22 +75,13 @@ export const actions = createActions({lend: {assetAllowlist: [USDC, CustomToken]
       >
         <div className="pt-6 pb-4">
           <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-            Import asset data from the{' '}
-            <a
-              href="https://github.com/ethereum-optimism/ethereum-optimism.github.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
-            >
-              Superchain Token List
-            </a>{' '}
-            or define custom assets.
+            Abstract away chains and sponsor preferred transactions.
           </p>
-          <CodeBlock code={assetsCode} filename="assets.ts" />
+          <CodeBlock code={chainsCode} filename="chains.ts" />
         </div>
       </div>
     </div>
   )
 }
 
-export default ConfigureAssetsSection
+export default ConfigureChainsSection
