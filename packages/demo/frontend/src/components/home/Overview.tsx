@@ -629,18 +629,10 @@ function ScrollyStack({
                     style={{
                       height: '100%',
                       overflow: 'hidden',
-                      opacity: contentOpacity,
-                      transition: 'opacity 0.15s ease-in-out',
                     }}
                   >
                     <div
-                      key={prevLayerRef.current}
                       style={{
-                        opacity: 1,
-                        animation:
-                          contentOpacity === 1
-                            ? 'slideUp 0.25s ease-out'
-                            : 'none',
                         height: '100%',
                       }}
                     >
@@ -656,6 +648,8 @@ function ScrollyStack({
                             padding: '16px',
                             borderRadius: '8px',
                             marginBottom: '24px',
+                            opacity: contentOpacity,
+                            transition: 'opacity 0.15s ease-in-out',
                           }}
                         >
                           <h3
@@ -677,6 +671,8 @@ function ScrollyStack({
                             style={{
                               color: colors.text.cream,
                               listStyleType: 'disc',
+                              opacity: contentOpacity,
+                              transition: 'opacity 0.15s ease-in-out',
                             }}
                           >
                             {layerContent[prevLayerRef.current - 1].list.map(
@@ -691,6 +687,7 @@ function ScrollyStack({
                         <CodeBlock
                           code={layerContent[prevLayerRef.current - 1].code}
                           filename={`${layerContent[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                          opacity={contentOpacity}
                         />
                         {layerContent[prevLayerRef.current - 1].images && (
                           <div className="mt-6">
@@ -830,20 +827,9 @@ function ScrollyStack({
                       overflow: 'hidden',
                       maxHeight: '80vh',
                       position: 'relative',
-                      opacity: contentOpacity,
-                      transition: 'opacity 0.15s ease-in-out',
                     }}
                   >
-                    <div
-                      key={prevLayerRef.current}
-                      style={{
-                        opacity: 1,
-                        animation:
-                          contentOpacity === 1
-                            ? 'slideUp 0.25s ease-out'
-                            : 'none',
-                      }}
-                    >
+                    <div>
                       <div
                         style={{
                           transform: `translateY(${contentScrollOffset}px)`,
@@ -856,6 +842,8 @@ function ScrollyStack({
                             padding: '16px',
                             borderRadius: '8px',
                             marginBottom: '24px',
+                            opacity: contentOpacity,
+                            transition: 'opacity 0.15s ease-in-out',
                           }}
                         >
                           <h3
@@ -877,6 +865,8 @@ function ScrollyStack({
                             style={{
                               color: colors.text.cream,
                               listStyleType: 'disc',
+                              opacity: contentOpacity,
+                              transition: 'opacity 0.15s ease-in-out',
                             }}
                           >
                             {layerContent[prevLayerRef.current - 1].list.map(
@@ -891,6 +881,7 @@ function ScrollyStack({
                         <CodeBlock
                           code={layerContent[prevLayerRef.current - 1].code}
                           filename={`${layerContent[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                          opacity={contentOpacity}
                         />
                         {layerContent[prevLayerRef.current - 1].images && (
                           <div className="mt-6">

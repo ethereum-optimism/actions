@@ -7,12 +7,14 @@ interface CodeBlockProps {
   code: string
   filename: string
   language?: string
+  opacity?: number
 }
 
 function CodeBlock({
   code,
   filename,
   language = 'typescript',
+  opacity = 1,
 }: CodeBlockProps) {
   return (
     <div
@@ -24,13 +26,20 @@ function CodeBlock({
           '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
       }}
     >
-      <TerminalHeader filename={filename} />
       <div
-        className="px-8 py-4 text-left relative"
-        style={{ backgroundColor: colors.bg.code }}
+        style={{
+          opacity,
+          transition: 'opacity 0.15s ease-in-out',
+        }}
       >
-        <Code code={code} language={language} />
-        <CopyButton text={code} />
+        <TerminalHeader filename={filename} />
+        <div
+          className="px-8 py-4 text-left relative"
+          style={{ backgroundColor: colors.bg.code }}
+        >
+          <Code code={code} language={language} />
+          <CopyButton text={code} />
+        </div>
       </div>
     </div>
   )
