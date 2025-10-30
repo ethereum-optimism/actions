@@ -13,19 +13,20 @@ export interface LayerContentItem {
 }
 
 // Mobile breakpoint constants (475-1023px)
-const MOBILE_GAP_SIZE = 250
+const MOBILE_SLIDE_HEIGHT = 400
+const MOBILE_GAP_SIZE = 210
 const MOBILE_LAYER_OVERLAP = -153.5
 const MOBILE_IMAGE_PADDING_LEFT = 0
 const MOBILE_IMAGE_WIDTH = 300 // Fixed width for consistent height
 
 // Desktop breakpoint constants (1024px and up)
-const SLIDE_HEIGHT = 800 // 800vh
+const DESKTOP_SLIDE_HEIGHT = 800 // 800vh
 const GAP_SIZE = 210
 const LAYER_OVERLAP = -160.5
 const IMAGE_PADDING_LEFT = 36
 const DESKTOP_IMAGE_WIDTH = 350 // Fixed width for consistent height
 
-const CONTENT_SCROLL_BUFFER_START = 0.1 // Content stays at top for first 10%
+const CONTENT_SCROLL_BUFFER_START = 0.2 // Content stays at top for first 10%
 const CONTENT_SCROLL_BUFFER_END = 0.0 // Content stays at bottom for last 10%
 
 const getImagePath = (layerNum: number, isActive: boolean) => {
@@ -146,6 +147,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
 
   // Mobile state
   const [mobileImageHeight, setMobileImageHeight] = useState(0)
+  const [totalHeight, setTotalHeight] = useState(DESKTOP_SLIDE_HEIGHT)
 
   const { scrollRatio } = useScrolly(containerRef)
 
@@ -191,6 +193,51 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Calculate slide heights on mobile based on content
+  useEffect(() => {
+    const isMobile = window.innerWidth < 1024
+    if (!isMobile) {
+      setTotalHeight(DESKTOP_SLIDE_HEIGHT)
+      return
+    }
+    if (!mobileContentRef.current) {
+      setTotalHeight(MOBILE_SLIDE_HEIGHT)
+      return
+    }
+
+    // Base height per slide in vh (minimum for each slide)
+    const baseSlideHeight = 100
+
+    // Calculate heights for each slide
+    const heights = content.map((item) => {
+      // Mock content to measure
+      const tempContent = document.createElement('div')
+      tempContent.style.cssText = `
+        position: absolute;
+        visibility: hidden;
+        width: ${mobileContentRef.current?.clientWidth || 300}px;
+      `
+      tempContent.innerHTML = `
+        <div style="background-color: rgba(26, 26, 26, 0.5); padding: 16px; border-radius: 8px;">
+          <p style="margin-bottom: 16px;">${item.description}</p>
+          <pre><code>${item.code}</code></pre>
+          ${item.images ? `<div style="height: 80px;"></div>` : ''}
+        </div>
+      `
+      document.body.appendChild(tempContent)
+      const contentHeight = tempContent.scrollHeight
+      document.body.removeChild(tempContent)
+
+      // Convert to vh equivalent and add buffer
+      const viewportHeight = window.innerHeight
+      const contentVh = (contentHeight / viewportHeight) * 100
+
+      return baseSlideHeight + contentVh
+    })
+
+    setTotalHeight(heights.reduce((sum, h) => sum + h, 100)) // +100 for intro
+  }, [content, mobileImageHeight])
 
   // Map scroll progress to active layer (0 = inactive, 1-7 = layers)
   // Small intro section (0-0.01) where stack is centered, then 7 equal sections
@@ -304,20 +351,22 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
     )
 
     // Calculate how much content can be scrolled
-    // On mobile, add the image gap (20% of viewport) since content can now extend into that area
-    const imageGapHeight = isMobile ? window.innerHeight * 0.2 : 0
-    // Also account for the fixed nav bar height
-    const navHeight =
-      document.querySelector('header')?.getBoundingClientRect().height || 0
-    // Add mobile-specific height buffer for slides that need extra space
-    const currentLayerContent = content[layerNum - 1]
-    const contentBuffer = currentLayerContent?.mobileHeightBuffer || 0
-    const scrollableHeight =
-      contentElement.scrollHeight -
-      contentElement.clientHeight +
-      imageGapHeight +
-      navHeight +
-      contentBuffer
+    let scrollableHeight =
+      contentElement.scrollHeight - contentElement.clientHeight
+
+    // On mobile, add extra heights since content extends into different areas
+    if (isMobile) {
+      // Add the image gap (20% of viewport) since content can now extend into that area
+      const imageGapHeight = window.innerHeight * 0.2
+      // Also account for the fixed nav bar height
+      const navHeight =
+        document.querySelector('header')?.getBoundingClientRect().height || 0
+      // Add mobile-specific height buffer for slides that need extra space
+      const currentLayerContent = content[layerNum - 1]
+      const contentBuffer = currentLayerContent?.mobileHeightBuffer || 0
+
+      scrollableHeight += imageGapHeight + navHeight + contentBuffer
+    }
 
     if (scrollableHeight > 0) {
       // First 10%: stay at top
@@ -437,7 +486,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
           }
         }
       `}</style>
-      <div ref={containerRef} style={{ height: `${SLIDE_HEIGHT}vh` }}>
+      <div ref={containerRef} style={{ height: `${totalHeight}vh` }}>
         {/* Sticky container that holds the stack */}
         <div
           style={{
