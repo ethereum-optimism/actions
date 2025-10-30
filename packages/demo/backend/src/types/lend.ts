@@ -26,11 +26,10 @@ export interface FormattedMarketResponse {
  * Position parameters for opening/closing
  */
 export interface PositionParams {
-  userId: string
+  idToken: string
   amount: number
   tokenAddress: Address
   marketId: LendMarketId
-  isUserWallet?: boolean
 }
 
 /**

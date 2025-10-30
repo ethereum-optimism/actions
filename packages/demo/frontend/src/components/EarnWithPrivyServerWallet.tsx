@@ -4,6 +4,7 @@ import {
   useSessionSigners,
   useUser,
   type WalletWithMetadata,
+  useIdentityToken,
 } from '@privy-io/react-auth'
 import { useCallback, useEffect, useMemo } from 'react'
 
@@ -28,6 +29,11 @@ export function EarnWithPrivyServerWallet() {
       ) as WalletWithMetadata[]) ?? [],
     [user],
   )
+
+  const { identityToken } = useIdentityToken()
+
+  const isReady =
+    !!user?.id && ready && ethereumEmbeddedWallets.length > 0 && !!identityToken
 
   const addSessionSigner = useCallback(
     async (walletAddress: string) => {
@@ -54,8 +60,11 @@ export function EarnWithPrivyServerWallet() {
 
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken()
-    return token ? { Authorization: `Bearer ${token}` } : undefined
-  }, [getAccessToken])
+
+    return token
+      ? { Authorization: `Bearer ${token}`, 'privy-id-token': identityToken }
+      : undefined
+  }, [getAccessToken, identityToken])
 
   // Add session signers for undelegated wallets
   useEffect(() => {
@@ -77,7 +86,7 @@ export function EarnWithPrivyServerWallet() {
       userId={user?.id}
       embeddedWalletExists={ethereumEmbeddedWallets.length > 0}
       userEmailAddress={user?.email?.address}
-      ready={ready}
+      ready={isReady}
       logout={logout}
       getAuthHeaders={getAuthHeaders}
     />

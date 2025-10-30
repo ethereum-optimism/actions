@@ -3,7 +3,10 @@ import { unichain } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
 import { Actions } from '@/actions.js'
-import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
+import {
+  createMockPrivyClient,
+  getMockAuthorizationContext,
+} from '@/test/MockPrivyClient.js'
 import type { LendMarketConfig, MorphoLendConfig } from '@/types/lend/index.js'
 import { externalTest } from '@/utils/test.js'
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
@@ -33,11 +36,16 @@ describe('Actions SDK', () => {
       this.register<'privy'>({
         type: 'privy',
         validateOptions(options): options is NodeOptionsMap['privy'] {
-          return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
+          const hasPrivyClient = !!(options as NodeOptionsMap['privy'])
+            ?.privyClient
+          const hasAuthorizationContext = !!(options as NodeOptionsMap['privy'])
+            ?.authorizationContext
+          return hasPrivyClient && hasAuthorizationContext
         },
         create({ chainManager }, options) {
           return new PrivyHostedWalletProvider(
             options.privyClient,
+            options.authorizationContext,
             chainManager,
           )
         },
@@ -67,6 +75,7 @@ describe('Actions SDK', () => {
                       'test-id',
                       'test-secret',
                     ),
+                    authorizationContext: getMockAuthorizationContext(),
                   },
                 },
               },
@@ -107,6 +116,7 @@ describe('Actions SDK', () => {
                       'test-id',
                       'test-secret',
                     ),
+                    authorizationContext: getMockAuthorizationContext(),
                   },
                 },
               },
@@ -166,6 +176,7 @@ describe('Actions SDK', () => {
                       'test-id',
                       'test-secret',
                     ),
+                    authorizationContext: getMockAuthorizationContext(),
                   },
                 },
               },
@@ -248,6 +259,7 @@ describe('Actions SDK', () => {
                       'test-id',
                       'test-secret',
                     ),
+                    authorizationContext: getMockAuthorizationContext(),
                   },
                 },
               },
@@ -291,6 +303,7 @@ describe('Actions SDK', () => {
                         'test-id',
                         'test-secret',
                       ),
+                      authorizationContext: getMockAuthorizationContext(),
                     },
                   },
                 },
@@ -324,6 +337,7 @@ describe('Actions SDK', () => {
                       'test-id',
                       'test-secret',
                     ),
+                    authorizationContext: getMockAuthorizationContext(),
                   },
                 },
               },
@@ -369,6 +383,7 @@ describe('Actions SDK', () => {
                         'test-id',
                         'test-secret',
                       ),
+                      authorizationContext: getMockAuthorizationContext(),
                     },
                   },
                 },
@@ -408,6 +423,7 @@ describe('Actions SDK', () => {
                         'test-id',
                         'test-secret',
                       ),
+                      authorizationContext: getMockAuthorizationContext(),
                     },
                   },
                 },
@@ -449,6 +465,7 @@ describe('Actions SDK', () => {
                       'test-id',
                       'test-secret',
                     ),
+                    authorizationContext: getMockAuthorizationContext(),
                   },
                 },
               },
@@ -492,6 +509,7 @@ describe('Actions SDK', () => {
                       'test-app-id',
                       'test-app-secret',
                     ),
+                    authorizationContext: getMockAuthorizationContext(),
                   },
                 },
               },
@@ -545,6 +563,7 @@ describe('Actions SDK', () => {
                         'test-app-id',
                         'test-app-secret',
                       ),
+                      authorizationContext: getMockAuthorizationContext(),
                     },
                   },
                 },
@@ -599,6 +618,7 @@ describe('Actions SDK', () => {
                         'test-app-id',
                         'test-app-secret',
                       ),
+                      authorizationContext: getMockAuthorizationContext(),
                     },
                   },
                 },
@@ -686,6 +706,7 @@ describe('Actions SDK', () => {
                         'test-app-id',
                         'test-app-secret',
                       ),
+                      authorizationContext: getMockAuthorizationContext(),
                     },
                   },
                 },
@@ -748,6 +769,7 @@ describe('Actions SDK', () => {
                         'test-app-id',
                         'test-app-secret',
                       ),
+                      authorizationContext: getMockAuthorizationContext(),
                     },
                   },
                 },
@@ -801,6 +823,7 @@ describe('Actions SDK', () => {
                       'test-app-id',
                       'test-app-secret',
                     ),
+                    authorizationContext: getMockAuthorizationContext(),
                   },
                 },
               },
@@ -852,6 +875,7 @@ describe('Actions SDK', () => {
                       'test-app-id',
                       'test-app-secret',
                     ),
+                    authorizationContext: getMockAuthorizationContext(),
                   },
                 },
               },

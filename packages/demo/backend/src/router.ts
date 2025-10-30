@@ -45,7 +45,6 @@ router.get(
   walletController.getLendPosition,
 )
 // Parameterized routes
-router.post('/wallet', authMiddleware, walletController.createWallet)
 router.get('/wallet', authMiddleware, walletController.getWallet)
 router.post('/wallet/fund', authMiddleware, walletController.fundWallet)
 

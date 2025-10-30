@@ -1,4 +1,4 @@
-import type { PrivyClient } from '@privy-io/server-auth'
+import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import type { LocalAccount } from 'viem'
 import { getAddress } from 'viem'
 
@@ -27,6 +27,7 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
    */
   constructor(
     private readonly privyClient: PrivyClient,
+    private readonly authorizationContext: AuthorizationContext,
     chainManager: ChainManager,
     lendProvider?: LendProvider<LendConfig>,
   ) {
@@ -38,6 +39,7 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
   ): Promise<Wallet> {
     return PrivyWallet.create({
       privyClient: this.privyClient,
+      authorizationContext: this.authorizationContext,
       walletId: params.walletId,
       address: getAddress(params.address),
       chainManager: this.chainManager,
@@ -60,6 +62,10 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
   async createSigner(
     params: NodeToActionsOptionsMap['privy'],
   ): Promise<LocalAccount> {
-    return createSigner({ ...params, privyClient: this.privyClient })
+    return createSigner({
+      ...params,
+      privyClient: this.privyClient,
+      authorizationContext: this.authorizationContext,
+    })
   }
 }

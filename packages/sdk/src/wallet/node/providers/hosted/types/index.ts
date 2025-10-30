@@ -1,4 +1,4 @@
-import type { PrivyClient } from '@privy-io/server-auth'
+import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import type { TurnkeySDKClientBase } from '@turnkey/core'
 import type { TurnkeyClient as TurnkeyHttpClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
@@ -29,8 +29,12 @@ export interface NodeOptionsMap {
   /**
    * Privy provider configuration
    * @property privyClient Server-side Privy client instance used to query/create wallets
+   * @property authorizationContext Authorization context for the Privy client
    */
-  privy: { privyClient: PrivyClient }
+  privy: {
+    privyClient: PrivyClient
+    authorizationContext: AuthorizationContext
+  }
   /**
    * Turnkey provider configuration
    * @property client Turnkey SDK/HTTP client used to sign and manage keys

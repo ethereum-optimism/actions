@@ -126,14 +126,13 @@ describe('Lend Service', () => {
 
       await expect(
         lendService.closePosition({
-          userId: 'invalid-wallet',
+          idToken: 'invalid-wallet',
           amount: 500,
           tokenAddress: '0x078d782b760474a361dda0af3839290b0ef57ad6',
           marketId: {
             address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9',
             chainId: 130,
           },
-          isUserWallet: false,
         }),
       ).rejects.toThrow('Wallet not found')
     })

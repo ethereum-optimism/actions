@@ -26,11 +26,16 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
     this.register<'privy'>({
       type: 'privy',
       validateOptions(options): options is NodeOptionsMap['privy'] {
-        return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
+        const hasPrivyClient = !!(options as NodeOptionsMap['privy'])
+          ?.privyClient
+        const hasAuthorizationContext = !!(options as NodeOptionsMap['privy'])
+          ?.authorizationContext
+        return hasPrivyClient && hasAuthorizationContext
       },
       create({ chainManager, lendProvider }, options) {
         return new PrivyHostedWalletProvider(
           options.privyClient,
+          options.authorizationContext,
           chainManager,
           lendProvider,
         )
