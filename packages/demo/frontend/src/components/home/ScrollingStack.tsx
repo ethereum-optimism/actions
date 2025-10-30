@@ -654,34 +654,23 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               </p>
                             )}
                             <div
-                              className="flex gap-4"
                               style={{
                                 display: 'flex',
                                 gap: '1rem',
-                                justifyContent: 'space-between',
+                                alignItems: 'center',
                               }}
                             >
                               {content[prevLayerRef.current - 1].images?.map(
                                 (image, index) => (
-                                  <div
+                                  <img
                                     key={index}
+                                    src={image}
+                                    alt={`Provider ${index + 1}`}
                                     style={{
-                                      width: 'calc(33.33% - 0.67rem)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
+                                      width: '30%',
+                                      height: 'auto',
                                     }}
-                                  >
-                                    <img
-                                      src={image}
-                                      alt={`Provider ${index + 1}`}
-                                      style={{
-                                        maxWidth: '100%',
-                                        height: 'auto',
-                                        objectFit: 'contain',
-                                      }}
-                                    />
-                                  </div>
+                                  />
                                 ),
                               )}
                             </div>
@@ -830,34 +819,23 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               </p>
                             )}
                             <div
-                              className="flex gap-4"
                               style={{
                                 display: 'flex',
                                 gap: '1rem',
-                                justifyContent: 'space-between',
+                                alignItems: 'center',
                               }}
                             >
                               {content[prevLayerRef.current - 1].images?.map(
                                 (image, index) => (
-                                  <div
+                                  <img
                                     key={index}
+                                    src={image}
+                                    alt={`Provider ${index + 1}`}
                                     style={{
-                                      width: 'calc(33.33% - 0.67rem)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
+                                      width: '30%',
+                                      height: 'auto',
                                     }}
-                                  >
-                                    <img
-                                      src={image}
-                                      alt={`Provider ${index + 1}`}
-                                      style={{
-                                        maxWidth: '100%',
-                                        height: 'auto',
-                                        objectFit: 'contain',
-                                      }}
-                                    />
-                                  </div>
+                                  />
                                 ),
                               )}
                             </div>
