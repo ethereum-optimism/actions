@@ -13,7 +13,7 @@ export interface LayerContentItem {
 }
 
 // Mobile breakpoint constants (475-1023px)
-const MOBILE_SLIDE_HEIGHT = 550
+const MOBILE_SLIDE_HEIGHT = 600
 const MOBILE_GAP_SIZE = 210
 const MOBILE_LAYER_OVERLAP = -153.5
 const MOBILE_IMAGE_PADDING_LEFT = 0
