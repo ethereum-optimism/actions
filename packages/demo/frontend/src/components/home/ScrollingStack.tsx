@@ -286,8 +286,10 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
   const calculateContentScrollOffset = (layerNum: number) => {
     // Detect if mobile or desktop layout is active
     const isMobile = window.innerWidth < 1024 // lg breakpoint
-    const content = isMobile ? mobileContentRef.current : contentRef.current
-    if (!content || layerNum === 0) return 0
+    const contentElement = isMobile
+      ? mobileContentRef.current
+      : contentRef.current
+    if (!contentElement || layerNum === 0) return 0
 
     // Calculate progress within the current slide (0 to 1)
     const slideStartRatio = 0.01 + ((layerNum - 1) / 7) * 0.99
@@ -311,9 +313,10 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
     const currentLayerContent = content[layerNum - 1]
     const contentBuffer = currentLayerContent?.mobileHeightBuffer || 0
     const scrollableHeight =
-      content.scrollHeight -
-      content.clientHeight +
+      contentElement.scrollHeight -
+      contentElement.clientHeight +
       imageGapHeight +
+      navHeight +
       contentBuffer
 
     if (scrollableHeight > 0) {
