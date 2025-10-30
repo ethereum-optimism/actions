@@ -26,7 +26,7 @@ const IMAGE_PADDING_LEFT = 36
 const DESKTOP_IMAGE_WIDTH = 350 // Fixed width for consistent height
 
 const CONTENT_SCROLL_BUFFER_START = 0.1 // Content stays at top for first 10%
-const CONTENT_SCROLL_BUFFER_END = 0.1 // Content stays at bottom for last 10%
+const CONTENT_SCROLL_BUFFER_END = 0.0 // Content stays at bottom for last 10%
 
 const getImagePath = (layerNum: number, isActive: boolean) => {
   const folder = isActive ? 'active' : 'trace'

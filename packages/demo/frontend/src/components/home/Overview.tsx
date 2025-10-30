@@ -16,7 +16,7 @@ const content: LayerContentItem[] = [
       'Actions supports embedded wallet providers, creating smart wallets, managing signers, and sponsoring transactions with a gas paymaster.',
     images: [PrivyLogo, TurnkeyLogo, DynamicLogo],
     imageLabel: 'Supports embedded wallet providers:',
-    mobileHeightBuffer: 200,
+    mobileHeightBuffer: 0,
     code: `// Make onchain Actions from any embedded wallet
 const wallet = await actions.wallet.toActionsWallet({
   embeddedWallet
@@ -85,7 +85,7 @@ const receipt = wallet.send({
   {
     title: 'Assets',
     description: 'Configure which assets you want to support.',
-    mobileHeightBuffer: 400,
+    mobileHeightBuffer: 0,
     code: `// Import popular assets
 import { USDC } from '@eth-optimism/actions-sdk/assets'
 
@@ -111,7 +111,7 @@ const usdcBalance = await wallet.getBalance(CustomToken);`,
     title: 'Chains',
     description:
       'Configure which chains you want to support. Abstract them away from your users.',
-    mobileHeightBuffer: 400,
+    mobileHeightBuffer: 0,
     code: `// Define chains once in a global config
 const OPTIMISM = {
   chainId: optimism.id,
