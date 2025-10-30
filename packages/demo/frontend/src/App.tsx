@@ -1,7 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Terminal from '@/components/Terminal'
 import Home from '@/components/home/Home'
-import { PrivyProvider } from '@/providers/PrivyProvider'
 import { EarnPage } from '@/pages/EarnPage'
 import Docs from '@/pages/Docs'
 import { ROUTES } from '@/constants/routes'
@@ -13,14 +11,7 @@ function App() {
         <Routes>
           <Route path={ROUTES.HOME} element={<Home />} />
           <Route path={ROUTES.DOCS} element={<Docs />} />
-          <Route
-            path={ROUTES.DEMO}
-            element={
-              <PrivyProvider>
-                <Terminal />
-              </PrivyProvider>
-            }
-          />
+          <Route path={ROUTES.DEMO} element={<EarnPage />} />
           <Route path={ROUTES.EARN} element={<EarnPage />} />
         </Routes>
       </div>

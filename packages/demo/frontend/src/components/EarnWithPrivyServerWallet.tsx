@@ -75,6 +75,7 @@ export function EarnWithPrivyServerWallet() {
     <EarnWithServerWallet
       selectedProvider={WALLET_PROVIDER_CONFIGS.privy}
       userId={user?.id}
+      embeddedWalletExists={ethereumEmbeddedWallets.length > 0}
       userEmailAddress={user?.email?.address}
       ready={ready}
       logout={logout}
