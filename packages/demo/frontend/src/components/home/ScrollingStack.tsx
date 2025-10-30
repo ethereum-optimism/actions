@@ -20,7 +20,7 @@ const MOBILE_IMAGE_PADDING_LEFT = 0
 const MOBILE_IMAGE_WIDTH = 300 // Fixed width for consistent height
 
 // Desktop breakpoint constants (1024px and up)
-const DESKTOP_SLIDE_HEIGHT = 700 // 800vh
+const DESKTOP_SLIDE_HEIGHT = 675 // 800vh
 const GAP_SIZE = 210
 const LAYER_OVERLAP = -160.5
 const IMAGE_PADDING_LEFT = 36
