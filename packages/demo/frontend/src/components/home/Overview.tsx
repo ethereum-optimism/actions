@@ -16,7 +16,7 @@ const content: LayerContentItem[] = [
       'Actions supports embedded wallet providers, creating smart wallets, managing signers, and sponsoring transactions with a gas paymaster.',
     images: [PrivyLogo, TurnkeyLogo, DynamicLogo],
     imageLabel: 'Supports embedded wallet providers:',
-    mobileHeightBuffer: 100,
+    mobileHeightBuffer: 0,
     code: `// Make onchain Actions from any embedded wallet
 const wallet = await actions.wallet.toActionsWallet({
   embeddedWallet
