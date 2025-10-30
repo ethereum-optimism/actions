@@ -1,70 +1,28 @@
 import { colors } from '@/constants/colors'
-import CodeBlock from './CodeBlock'
+import CodeBlock from '@/components/home/CodeBlock'
 
-interface ConfigureActionsSectionProps {
+interface ConfigureChainsSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
 }
 
-function ConfigureActionsSection({
+function ConfigureChainsSection({
   stepNumber,
   isOpen,
   onToggle,
-}: ConfigureActionsSectionProps) {
-  const configCode = `const config: ActionsConfig = {
-  // WalletConfig
-  wallet: {
-    hostedWalletConfig: {
-      provider: {
-        type: 'privy',
-        config: {
-          privyClient: privy,
-        },
-      },
-    },
-    smartWalletConfig: {
-      provider: {
-        type: 'default',
-        attributionSuffix: 'actions',
-      },
-    },
+}: ConfigureChainsSectionProps) {
+  const chainsCode = `// Define and abstract away supported chains
+const OPTIMISM = {
+  chainId: optimism.id,
+  rpcUrls: env.OPTIMISM_RPC_URL
+  bundler: {
+    type: 'simple' as const,
+    url: env.OPTIMISM_BUNDLER_URL,
   },
-
-  // LendConfig
-  lend: {
-    type: 'morpho',
-    assetAllowlist: [USDC, ETH, WBTC],
-    assetBlocklist: [],
-    marketAllowlist: [USDCMorphoMarket],
-    marketBlocklist: [],
-  },
-
-  // BorrowConfig
-  borrow: {
-    type: 'morpho',
-    assetAllowlist: [USDC, ETH, WBTC],
-    assetBlocklist: [],
-    marketAllowlist: [USDCMorphoMarket],
-    marketBlocklist: [],
-  },
-
-  // SwapConfig
-  swap: {
-    type: 'uniswap',
-    defaultSlippage: 100, // 100 bips or 1%
-    assetAllowList: [USDC, ETH, WBTC],
-    assetBlocklist: [],
-  },
-
-  // ChainConfig
-  chains: [
-    optimism,
-    unichain,
-  ]
 }
 
-export const actions = createActions(config)`
+export const actions = createActions({chains: [OPTIMISM], ...config})`
 
   return (
     <div className="mb-4">
@@ -88,7 +46,7 @@ export const actions = createActions(config)`
             className="text-lg font-medium"
             style={{ color: colors.text.cream }}
           >
-            Configure Actions
+            Configure Chains
           </h3>
         </div>
         <svg
@@ -117,13 +75,13 @@ export const actions = createActions(config)`
       >
         <div className="pt-6 pb-4">
           <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-            Pick which DeFi protocols and providers you want to support.
+            Abstract away chains and sponsor preferred transactions.
           </p>
-          <CodeBlock code={configCode} filename="config.ts" />
+          <CodeBlock code={chainsCode} filename="chains.ts" />
         </div>
       </div>
     </div>
   )
 }
 
-export default ConfigureActionsSection
+export default ConfigureChainsSection

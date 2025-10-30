@@ -89,6 +89,9 @@ function Code({ code, language = 'typescript' }: CodeProps) {
         .string-quote { color: ${colors.text.primary} !important; }
         .import-brace { color: ${colors.syntax.string} !important; }
         .func-brace { color: ${colors.syntax.number} !important; }
+        @media (max-width: 768px) {
+          pre code { font-size: 11px !important; line-height: 1.4; }
+        }
       `}</style>
       <pre
         style={{

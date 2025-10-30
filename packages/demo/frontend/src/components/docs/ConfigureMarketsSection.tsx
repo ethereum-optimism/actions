@@ -1,28 +1,30 @@
 import { colors } from '@/constants/colors'
-import CodeBlock from './CodeBlock'
+import CodeBlock from '@/components/home/CodeBlock'
 
-interface ConfigureChainsSectionProps {
+interface ConfigureMarketsSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
 }
 
-function ConfigureChainsSection({
+function ConfigureMarketsSection({
   stepNumber,
   isOpen,
   onToggle,
-}: ConfigureChainsSectionProps) {
-  const chainsCode = `// Define and abstract away supported chains
-const OPTIMISM = {
-  chainId: optimism.id,
-  rpcUrls: env.OPTIMISM_RPC_URL
-  bundler: {
-    type: 'simple' as const,
-    url: env.OPTIMISM_BUNDLER_URL,
-  },
+}: ConfigureMarketsSectionProps) {
+  const marketsCode = `// Fetch all markets
+const markets = actions.lend.getMarkets()
+
+// Specify your preferred ones
+export const GauntletUSDC: LendMarketConfig = {
+  address: '0xabc...',
+  chainId: unichain.id,
+  name: 'Gauntlet USDC',
+  asset: USDC,
+  lendProvider: 'morpho',
 }
 
-export const actions = createActions({chains: [OPTIMISM], ...config})`
+export const actions = createActions({lend: {marketAllowlist: [GauntletUSDC]}, ...config})`
 
   return (
     <div className="mb-4">
@@ -46,7 +48,7 @@ export const actions = createActions({chains: [OPTIMISM], ...config})`
             className="text-lg font-medium"
             style={{ color: colors.text.cream }}
           >
-            Configure Chains
+            Configure Markets
           </h3>
         </div>
         <svg
@@ -75,13 +77,13 @@ export const actions = createActions({chains: [OPTIMISM], ...config})`
       >
         <div className="pt-6 pb-4">
           <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-            Abstract away chains and sponsor preferred transactions.
+            Fetch the latest markets or enshrine your selected favorites.
           </p>
-          <CodeBlock code={chainsCode} filename="chains.ts" />
+          <CodeBlock code={marketsCode} filename="markets.ts" />
         </div>
       </div>
     </div>
   )
 }
 
-export default ConfigureChainsSection
+export default ConfigureMarketsSection

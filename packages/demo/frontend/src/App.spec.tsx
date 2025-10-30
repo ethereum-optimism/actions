@@ -15,8 +15,8 @@ describe('App', () => {
   it('renders home component at root', () => {
     render(<App />)
 
-    // Home page should have the Github and Demo buttons
-    expect(screen.getAllByText('Github').length).toBeGreaterThan(0)
+    // Home page should have the Docs and Demo buttons
+    expect(screen.getAllByText('Docs').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Demo').length).toBeGreaterThan(0)
     const appContainer = document.querySelector(
       '.w-full.h-screen.bg-terminal-bg',

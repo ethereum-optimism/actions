@@ -1,36 +1,70 @@
 import { colors } from '@/constants/colors'
-import CodeBlock from './CodeBlock'
+import CodeBlock from '@/components/home/CodeBlock'
 
-interface ConfigureAssetsSectionProps {
+interface ConfigureActionsSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
 }
 
-function ConfigureAssetsSection({
+function ConfigureActionsSection({
   stepNumber,
   isOpen,
   onToggle,
-}: ConfigureAssetsSectionProps) {
-  const assetsCode = `// Import popular assets
-import { USDC } from '@eth-optimism/actions-sdk/assets'
+}: ConfigureActionsSectionProps) {
+  const configCode = `const config: ActionsConfig = {
+  // WalletConfig
+  wallet: {
+    hostedWalletConfig: {
+      provider: {
+        type: 'privy',
+        config: {
+          privyClient: privy,
+        },
+      },
+    },
+    smartWalletConfig: {
+      provider: {
+        type: 'default',
+        attributionSuffix: 'actions',
+      },
+    },
+  },
 
-// Define custom assets
-export const CustomToken: Asset = {
-  address: {
-    [mainnet.id]: '0x123...',
-    [unichain.id]: '0x456...',
-    [baseSepolia.id]: '0x789...',
+  // LendConfig
+  lend: {
+    type: 'morpho',
+    assetAllowlist: [USDC, ETH, WBTC],
+    assetBlocklist: [],
+    marketAllowlist: [USDCMorphoMarket],
+    marketBlocklist: [],
   },
-  metadata: {
-    decimals: 6,
-    name: 'Custom Token',
-    symbol: 'CUSTOM',
+
+  // BorrowConfig
+  borrow: {
+    type: 'morpho',
+    assetAllowlist: [USDC, ETH, WBTC],
+    assetBlocklist: [],
+    marketAllowlist: [USDCMorphoMarket],
+    marketBlocklist: [],
   },
-  type: 'erc20',
+
+  // SwapConfig
+  swap: {
+    type: 'uniswap',
+    defaultSlippage: 100, // 100 bips or 1%
+    assetAllowList: [USDC, ETH, WBTC],
+    assetBlocklist: [],
+  },
+
+  // ChainConfig
+  chains: [
+    optimism,
+    unichain,
+  ]
 }
 
-export const actions = createActions({lend: {assetAllowlist: [USDC, CustomToken]}, ...config})`
+export const actions = createActions(config)`
 
   return (
     <div className="mb-4">
@@ -54,7 +88,7 @@ export const actions = createActions({lend: {assetAllowlist: [USDC, CustomToken]
             className="text-lg font-medium"
             style={{ color: colors.text.cream }}
           >
-            Configure Assets
+            Configure Actions
           </h3>
         </div>
         <svg
@@ -83,22 +117,13 @@ export const actions = createActions({lend: {assetAllowlist: [USDC, CustomToken]
       >
         <div className="pt-6 pb-4">
           <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-            Import asset data from the{' '}
-            <a
-              href="https://github.com/ethereum-optimism/ethereum-optimism.github.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
-            >
-              Superchain Token List
-            </a>{' '}
-            or define custom assets.
+            Pick which DeFi protocols and providers you want to support.
           </p>
-          <CodeBlock code={assetsCode} filename="assets.ts" />
+          <CodeBlock code={configCode} filename="config.ts" />
         </div>
       </div>
     </div>
   )
 }
 
-export default ConfigureAssetsSection
+export default ConfigureActionsSection

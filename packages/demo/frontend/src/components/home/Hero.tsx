@@ -1,11 +1,23 @@
 import { colors } from '@/constants/colors'
-import { TerminalIcon, GithubIcon } from '@/assets/icons'
+import { TerminalIcon, DocumentIcon } from '@/assets/icons'
+import PackageManagerSelector from '@/components/home/PackageManagerSelector'
+
+const ASCII_ART = `
+    █████████             █████     ███
+   ███░░░░░███           ░░███     ░░░
+  ░███    ░███   ██████  ███████   ████   ██████  ████████    █████
+  ░███████████  ███░░███░░░███░   ░░███  ███░░███░░███░░███  ███░░
+  ░███░░░░░███ ░███ ░░░   ░███     ░███ ░███ ░███ ░███ ░███ ░░█████
+  ░███    ░███ ░███  ███  ░███ ███ ░███ ░███ ░███ ░███ ░███  ░░░░███
+  █████   █████░░██████   ░░█████  █████░░██████  ████ █████ ██████
+ ░░░░░   ░░░░░  ░░░░░░     ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░
+     `
 
 function Hero() {
   return (
     <>
-      {/* ASCII Art - Isolated from other styles */}
-      <div className="pt-32 pb-8 flex justify-center px-6 overflow-x-auto">
+      {/* ASCII Art - Large version for screens >= 878px */}
+      <div className="pt-32 pb-6 justify-center px-6 hidden min-[878px]:flex">
         <div
           style={{
             fontFamily:
@@ -21,18 +33,33 @@ function Hero() {
             padding: 0,
             border: 'none',
           }}
-        >{`
-    █████████             █████     ███
-   ███░░░░░███           ░░███     ░░░
-  ░███    ░███   ██████  ███████   ████   ██████  ████████    █████
-  ░███████████  ███░░███░░░███░   ░░███  ███░░███░░███░░███  ███░░
-  ░███░░░░░███ ░███ ░░░   ░███     ░███ ░███ ░███ ░███ ░███ ░░█████
-  ░███    ░███ ░███  ███  ░███ ███ ░███ ░███ ░███ ░███ ░███  ░░░░███
-  █████   █████░░██████   ░░█████  █████░░██████  ████ █████ ██████
- ░░░░░   ░░░░░  ░░░░░░     ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░
-     `}</div>
+        >
+          {ASCII_ART}
+        </div>
       </div>
-      <div className="text-center pb-8">
+
+      {/* ASCII Art - Small version for screens < 878px */}
+      <div className="pt-32 pb-6 flex justify-center px-6 min-[878px]:hidden">
+        <div
+          style={{
+            fontFamily:
+              'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
+            color: colors.actionsRed,
+            whiteSpace: 'pre',
+            lineHeight: '0.75',
+            letterSpacing: '0',
+            fontVariantLigatures: 'none',
+            fontFeatureSettings: '"liga" 0',
+            fontSize: 'clamp(0.4rem, 2vw, 0.65rem)',
+            margin: 0,
+            padding: 0,
+            border: 'none',
+          }}
+        >
+          {ASCII_ART}
+        </div>
+      </div>
+      <div className="text-center pb-6">
         <p className="text-gray-400 text-lg">
           By{' '}
           <a
@@ -49,10 +76,10 @@ function Hero() {
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-6">
-        <div className="text-center py-20">
+        <div className="text-center pt-12 pb-20">
           <div>
             <h1
-              className="text-4xl md:text-5xl font-normal mb-6 leading-tight"
+              className="text-4xl md:text-5xl font-normal mb-12 leading-tight"
               style={{
                 fontFamily:
                   '"VT323", "IBM VGA", "IBM BIOS", "Courier New", Courier, "Lucida Console", Monaco, monospace',
@@ -65,7 +92,11 @@ function Hero() {
               composable, and type-safe modules.
             </h1>
 
-            <div className="flex flex-row gap-4 justify-center mb-8">
+            <div className="max-w-2xl mx-auto mb-12">
+              <PackageManagerSelector showShadow={false} />
+            </div>
+
+            <div className="flex flex-row gap-4 justify-center">
               <a
                 href="/earn"
                 className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
@@ -81,14 +112,12 @@ function Hero() {
                 Demo
               </a>
               <a
-                href="https://github.com/ethereum-optimism/actions"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/docs"
                 className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
                 style={{ color: colors.text.cream }}
               >
-                <GithubIcon className="w-5 h-5" />
-                Github
+                <DocumentIcon className="w-5 h-5" />
+                Docs
               </a>
             </div>
           </div>

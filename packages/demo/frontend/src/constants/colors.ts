@@ -1,6 +1,15 @@
 export const colors = {
-  // Actions brand red - kept as requested
+  // Optimism brand red
   actionsRed: '#FF0621',
+
+  // Gruvbox bright colors (top level)
+  red: '#fb4933', // bright red
+  orange: '#fe8019', // bright orange
+  yellow: '#fabd2f', // bright yellow
+  green: '#b8bb26', // bright green
+  aqua: '#8ec07c', // bright aqua
+  blue: '#83a598', // bright blue
+  purple: '#d3869b', // bright purple
 
   // Gruvbox dark medium palette
   bg: {
@@ -13,7 +22,6 @@ export const colors = {
     secondary: '#d5c4a1', // light2
     cream: '#F5F5DC', // beige - warm yellowish white
   },
-  blue: '#83a598', // bright blue for identifiers
   syntax: {
     keyword: '#fb4933', // bright red
     function: '#fe8019', // bright orange

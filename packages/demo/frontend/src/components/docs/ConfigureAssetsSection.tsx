@@ -1,30 +1,36 @@
 import { colors } from '@/constants/colors'
-import CodeBlock from './CodeBlock'
+import CodeBlock from '@/components/home/CodeBlock'
 
-interface ConfigureMarketsSectionProps {
+interface ConfigureAssetsSectionProps {
   stepNumber: number
   isOpen: boolean
   onToggle: () => void
 }
 
-function ConfigureMarketsSection({
+function ConfigureAssetsSection({
   stepNumber,
   isOpen,
   onToggle,
-}: ConfigureMarketsSectionProps) {
-  const marketsCode = `// Fetch all markets
-const markets = actions.lend.getMarkets()
+}: ConfigureAssetsSectionProps) {
+  const assetsCode = `// Import popular assets
+import { USDC } from '@eth-optimism/actions-sdk/assets'
 
-// Specify your preferred ones
-export const GauntletUSDC: LendMarketConfig = {
-  address: '0xabc...',
-  chainId: unichain.id,
-  name: 'Gauntlet USDC',
-  asset: USDC,
-  lendProvider: 'morpho',
+// Define custom assets
+export const CustomToken: Asset = {
+  address: {
+    [mainnet.id]: '0x123...',
+    [unichain.id]: '0x456...',
+    [baseSepolia.id]: '0x789...',
+  },
+  metadata: {
+    decimals: 6,
+    name: 'Custom Token',
+    symbol: 'CUSTOM',
+  },
+  type: 'erc20',
 }
 
-export const actions = createActions({lend: {marketAllowlist: [GauntletUSDC]}, ...config})`
+export const actions = createActions({lend: {assetAllowlist: [USDC, CustomToken]}, ...config})`
 
   return (
     <div className="mb-4">
@@ -48,7 +54,7 @@ export const actions = createActions({lend: {marketAllowlist: [GauntletUSDC]}, .
             className="text-lg font-medium"
             style={{ color: colors.text.cream }}
           >
-            Configure Markets
+            Configure Assets
           </h3>
         </div>
         <svg
@@ -77,13 +83,22 @@ export const actions = createActions({lend: {marketAllowlist: [GauntletUSDC]}, .
       >
         <div className="pt-6 pb-4">
           <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-            Fetch the latest markets or enshrine your selected favorites.
+            Import asset data from the{' '}
+            <a
+              href="https://github.com/ethereum-optimism/ethereum-optimism.github.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              Superchain Token List
+            </a>{' '}
+            or define custom assets.
           </p>
-          <CodeBlock code={marketsCode} filename="markets.ts" />
+          <CodeBlock code={assetsCode} filename="assets.ts" />
         </div>
       </div>
     </div>
   )
 }
 
-export default ConfigureMarketsSection
+export default ConfigureAssetsSection

@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import InstallSection from './InstallSection'
-import ConfigureActionsSection from './ConfigureActionsSection'
-import ConfigureWalletsSection from './ConfigureWalletsSection'
-import TakeActionSection from './TakeActionSection'
-import ConfigureAssetsSection from './ConfigureAssetsSection'
-import ConfigureMarketsSection from './ConfigureMarketsSection'
-import ConfigureChainsSection from './ConfigureChainsSection'
-import ConfigureSignersSection from './ConfigureSignersSection'
-import { colors } from '@/constants/colors'
-import { TerminalIcon, GithubIcon } from '@/assets/icons'
+import InstallSection from '@/components/home/InstallSection'
+import ConfigureActionsSection from '@/components/docs/ConfigureActionsSection'
+import ConfigureWalletsSection from '@/components/docs/ConfigureWalletsSection'
+import TakeActionSection from '@/components/home/TakeActionSection'
+import ConfigureAssetsSection from '@/components/docs/ConfigureAssetsSection'
+import ConfigureMarketsSection from '@/components/docs/ConfigureMarketsSection'
+import ConfigureChainsSection from '@/components/docs/ConfigureChainsSection'
+import ConfigureSignersSection from '@/components/docs/ConfigureSignersSection'
+import TakeAction from '@/components/home/TakeAction'
 
 function GettingStarted() {
   const [openAccordions, setOpenAccordions] = useState<Set<string>>(new Set())
@@ -28,15 +27,8 @@ function GettingStarted() {
   return (
     <>
       {/* Getting Started Subsection */}
-      <div id="getting-started" className="pt-24 pb-16">
+      <div id="getting-started" className="pb-16">
         <div className="max-w-4xl mx-auto">
-          <h2
-            className="text-3xl font-medium mb-8"
-            style={{ color: colors.text.cream }}
-          >
-            Getting Started
-          </h2>
-
           {/* Accordion Item 1: Install */}
           <InstallSection
             stepNumber={1}
@@ -93,41 +85,7 @@ function GettingStarted() {
             onToggle={() => toggleAccordion('take-action')}
           />
 
-          {/* CTA Section */}
-          <div className="pt-16 text-center">
-            <h3
-              className="text-2xl font-medium mb-6"
-              style={{ color: colors.text.cream }}
-            >
-              Ready to get started?
-            </h3>
-            <div className="flex flex-row gap-4 justify-center">
-              <a
-                href="/earn"
-                className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200"
-                style={{ backgroundColor: colors.text.cream }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = '#E5E5CC')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = colors.text.cream)
-                }
-              >
-                <TerminalIcon className="w-5 h-5" />
-                Demo
-              </a>
-              <a
-                href="https://github.com/ethereum-optimism/actions"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200"
-                style={{ color: colors.text.cream }}
-              >
-                <GithubIcon className="w-5 h-5" />
-                Github
-              </a>
-            </div>
-          </div>
+          <TakeAction showGithub={true} compact={true} />
         </div>
       </div>
     </>
