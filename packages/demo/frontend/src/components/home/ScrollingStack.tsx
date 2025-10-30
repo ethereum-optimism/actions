@@ -657,7 +657,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               className="flex gap-4"
                               style={{
                                 display: 'flex',
-                                gap: '6rem',
+                                gap: '1rem',
+                                justifyContent: 'space-between',
                               }}
                             >
                               {content[prevLayerRef.current - 1].images?.map(
@@ -665,7 +666,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                   <div
                                     key={index}
                                     style={{
-                                      flex: 1,
+                                      width: 'calc(33.33% - 0.67rem)',
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'center',
@@ -832,7 +833,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               className="flex gap-4"
                               style={{
                                 display: 'flex',
-                                gap: '6rem',
+                                gap: '1rem',
+                                justifyContent: 'space-between',
                               }}
                             >
                               {content[prevLayerRef.current - 1].images?.map(
@@ -840,7 +842,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                   <div
                                     key={index}
                                     style={{
-                                      flex: 1,
+                                      width: 'calc(33.33% - 0.67rem)',
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'center',
