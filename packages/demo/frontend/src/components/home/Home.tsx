@@ -18,6 +18,13 @@ function Home() {
     onLayerClick: (layerNum: number) => void
   } | null>(null)
 
+  // Prevent default scroll restoration to allow manual hash navigation
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+  }, [])
+
   useEffect(() => {
     // used to show/hide the navbar when scrolling
     const observer = new IntersectionObserver(
