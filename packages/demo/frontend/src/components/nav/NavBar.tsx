@@ -34,7 +34,7 @@ function NavBar({
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out min-w-[475px]"
+      className="fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out min-w-[400px]"
       style={{
         backgroundColor: colors.bg.dark,
         transform: visible ? 'translateY(0)' : 'translateY(-100%)',
@@ -179,6 +179,7 @@ function NavBar({
 
           {/* Labels */}
           <div
+            className="min-[470px]:px-0 px-2"
             style={{
               display: 'flex',
               width: '100%',
@@ -190,9 +191,9 @@ function NavBar({
               <button
                 key={layer.num}
                 onClick={() => progressBar.onLayerClick(layer.num)}
+                className="min-[470px]:text-[13px] text-[10px] min-[470px]:px-1 px-0"
                 style={{
                   flex: 1,
-                  fontSize: '13px',
                   color:
                     progressBar.activeLayer === layer.num
                       ? colors.text.cream
@@ -202,8 +203,12 @@ function NavBar({
                   cursor: 'pointer',
                   background: 'none',
                   border: 'none',
-                  padding: '4px',
+                  paddingTop: '4px',
+                  paddingBottom: '4px',
                   transition: 'color 0.2s ease-in-out',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
                 onMouseEnter={(e) => {
                   if (progressBar.activeLayer !== layer.num) {
