@@ -17,7 +17,7 @@ function App() {
 
   return (
     <Router>
-      <div className="w-full h-screen bg-terminal-bg min-w-[475px]">
+      <div className="w-full h-screen bg-terminal-bg min-w-[400px]">
         <Routes>
           <Route path={ROUTES.HOME} element={<Home />} />
           <Route path={ROUTES.DOCS} element={<Docs />} />
