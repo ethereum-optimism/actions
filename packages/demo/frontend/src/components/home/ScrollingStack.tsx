@@ -667,7 +667,9 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                     src={image}
                                     alt={`Provider ${index + 1}`}
                                     style={{
-                                      width: '30%',
+                                      flex: '1 1 0',
+                                      minWidth: 0,
+                                      maxWidth: '33%',
                                       height: 'auto',
                                     }}
                                   />
@@ -832,7 +834,9 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                     src={image}
                                     alt={`Provider ${index + 1}`}
                                     style={{
-                                      width: '30%',
+                                      flex: '1 1 0',
+                                      minWidth: 0,
+                                      maxWidth: '33%',
                                       height: 'auto',
                                     }}
                                   />
