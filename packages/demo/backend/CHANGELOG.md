@@ -1,5 +1,12 @@
 # @eth-optimism/actions-service
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [[`0487c6b`](https://github.com/ethereum-optimism/actions/commit/0487c6b4b9c6f8fcd024bf6f8aa5c476888aa79b)]:
+  - @eth-optimism/actions-sdk@0.0.4
+
 ## 0.0.3
 
 ### Patch Changes
