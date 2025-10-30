@@ -495,7 +495,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
             height: '80vh',
           }}
         >
-          <div className="max-w-6xl mx-auto px-4 lg:px-0">
+          <div className="max-w-6xl mx-auto px-1 lg:px-0">
             {/* Mobile Layout: Stack vertically */}
             <div
               className="flex flex-col lg:hidden"

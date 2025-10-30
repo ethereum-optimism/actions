@@ -18,7 +18,7 @@ function CodeBlock({
 }: CodeBlockProps) {
   return (
     <div
-      className="rounded-lg overflow-hidden mb-8 shadow-2xl"
+      className="rounded-lg overflow-hidden mb-4 md:mb-8 shadow-2xl"
       style={{
         backgroundColor: colors.bg.code,
         border: '1px solid rgba(80, 73, 69, 0.3)',
@@ -34,7 +34,7 @@ function CodeBlock({
       >
         <TerminalHeader filename={filename} />
         <div
-          className="px-8 py-4 text-left relative"
+          className="px-1 py-2 md:px-8 md:py-4 text-left relative"
           style={{ backgroundColor: colors.bg.code }}
         >
           <Code code={code} language={language} />
