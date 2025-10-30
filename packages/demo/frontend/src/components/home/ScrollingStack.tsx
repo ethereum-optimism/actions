@@ -9,6 +9,7 @@ export interface LayerContentItem {
   code: string
   images?: string[]
   imageLabel?: string
+  mobileHeightBuffer?: number
 }
 
 // Mobile breakpoint constants (475-1023px)
@@ -18,13 +19,14 @@ const MOBILE_IMAGE_PADDING_LEFT = 0
 const MOBILE_IMAGE_WIDTH = 300 // Fixed width for consistent height
 
 // Desktop breakpoint constants (1024px and up)
+const SLIDE_HEIGHT = 800 // 800vh
 const GAP_SIZE = 210
 const LAYER_OVERLAP = -160.5
 const IMAGE_PADDING_LEFT = 36
 const DESKTOP_IMAGE_WIDTH = 350 // Fixed width for consistent height
 
-const CONTENT_SCROLL_BUFFER_START = 0.33 // Content stays at top for first 33%
-const CONTENT_SCROLL_BUFFER_END = 0.33 // Content stays at bottom for last 33%
+const CONTENT_SCROLL_BUFFER_START = 0.1 // Content stays at top for first 10%
+const CONTENT_SCROLL_BUFFER_END = 0.1 // Content stays at bottom for last 10%
 
 const getImagePath = (layerNum: number, isActive: boolean) => {
   const folder = isActive ? 'active' : 'trace'
@@ -300,24 +302,38 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
     )
 
     // Calculate how much content can be scrolled
-    const scrollableHeight = content.scrollHeight - content.clientHeight
+    // On mobile, add the image gap (20% of viewport) since content can now extend into that area
+    const imageGapHeight = isMobile ? window.innerHeight * 0.2 : 0
+    // Also account for the fixed nav bar height
+    const navHeight =
+      document.querySelector('header')?.getBoundingClientRect().height || 0
+    // Add mobile-specific height buffer for slides that need extra space
+    const currentLayerContent = content[layerNum - 1]
+    const contentBuffer = currentLayerContent?.mobileHeightBuffer || 0
+    const scrollableHeight =
+      content.scrollHeight -
+      content.clientHeight +
+      imageGapHeight +
+      contentBuffer
 
     if (scrollableHeight > 0) {
-      // First 33%: stay at top
+      // First 10%: stay at top
       if (slideProgress < CONTENT_SCROLL_BUFFER_START) {
         return 0
       }
 
-      // Last 33%: stay at bottom
-      if (slideProgress > 1 - CONTENT_SCROLL_BUFFER_END) {
+      // Last 10%: stay at bottom
+      if (slideProgress >= 1 - CONTENT_SCROLL_BUFFER_END) {
         return -scrollableHeight
       }
 
-      // Middle 34%: scroll from top to bottom
+      // Middle 80%: scroll from top to bottom
       const scrollStart = CONTENT_SCROLL_BUFFER_START
       const scrollEnd = 1 - CONTENT_SCROLL_BUFFER_END
-      const scrollProgress =
-        (slideProgress - scrollStart) / (scrollEnd - scrollStart)
+      const scrollProgress = Math.min(
+        1,
+        (slideProgress - scrollStart) / (scrollEnd - scrollStart),
+      )
 
       // Return negative offset to scroll content upward as user scrolls down
       return -(scrollProgress * scrollableHeight)
@@ -418,7 +434,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
           }
         }
       `}</style>
-      <div ref={containerRef} style={{ height: '1000vh' }}>
+      <div ref={containerRef} style={{ height: `${SLIDE_HEIGHT}vh` }}>
         {/* Sticky container that holds the stack */}
         <div
           style={{
@@ -518,7 +534,6 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
               <div
                 style={{
                   height: '80%',
-                  overflow: 'hidden',
                   position: 'relative',
                   zIndex: 10,
                 }}
@@ -528,7 +543,6 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                     ref={mobileContentRef}
                     style={{
                       height: '100%',
-                      overflow: 'hidden',
                     }}
                   >
                     <div
