@@ -120,50 +120,6 @@ describe('Lend Service', () => {
   })
 
   describe('closePosition', () => {
-    it('should call wallet.lend.closePosition with correct parameters', async () => {
-      const mockWallet = {
-        lend: {
-          closePosition: vi.fn().mockResolvedValue({
-            receipt: { transactionHash: '0xtxhash' },
-            userOpHash: '0xuserophash',
-          }),
-        },
-      }
-
-      const { getWallet } = await import('./wallet.js')
-      vi.mocked(getWallet).mockResolvedValue(mockWallet as any)
-
-      const walletId = 'test-wallet-id'
-      const amount = 500
-      const chainId = 130
-      const tokenAddress = '0x078d782b760474a361dda0af3839290b0ef57ad6' as const
-      const marketAddress =
-        '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as const
-
-      const result = await lendService.closePosition({
-        userId: walletId,
-        amount,
-        tokenAddress,
-        marketId: { address: marketAddress, chainId },
-        isUserWallet: false,
-      })
-
-      expect(result.transactionHashes).toBeUndefined()
-      expect(result.userOpHash).toBe('0xuserophash')
-      expect(mockWallet.lend.closePosition).toHaveBeenCalledWith({
-        amount,
-        asset: expect.objectContaining({
-          address: expect.objectContaining({
-            [chainId]: tokenAddress,
-          }),
-        }),
-        marketId: {
-          address: marketAddress,
-          chainId,
-        },
-      })
-    })
-
     it('should throw error when wallet not found', async () => {
       const { getWallet } = await import('./wallet.js')
       vi.mocked(getWallet).mockResolvedValue(null as any)

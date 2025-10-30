@@ -1,8 +1,4 @@
-import type {
-  CreateWalletResponse,
-  GetAllWalletsResponse,
-  GetWalletResponse,
-} from '@eth-optimism/actions-service'
+import type { GetWalletResponse } from '@eth-optimism/actions-service'
 import type {
   LendMarketPosition,
   SupportedChainId,
@@ -13,12 +9,7 @@ import type {
 import type { Address } from 'viem'
 
 import { env } from '../envVars.js'
-import type {
-  LendExecutePositionParams,
-  MarketResponse,
-  PositionResponse,
-  TransactionResponse,
-} from '../types/index.js'
+import type { LendExecutePositionParams } from '../types/index.js'
 import type { Serialized } from '../util/serialize.js'
 
 class ActionsApiError extends Error {
@@ -66,47 +57,16 @@ class ActionsApiClient {
     return data
   }
 
-  async createWallet(
-    userId: string,
-    headers: HeadersInit = {},
-  ): Promise<CreateWalletResponse> {
-    return this.request<CreateWalletResponse>(`/wallet/${userId}`, {
-      method: 'POST',
-      headers,
-    })
-  }
-
-  async getWallet(
-    userId: string,
-    headers: HeadersInit = {},
-  ): Promise<GetWalletResponse> {
-    return this.request<GetWalletResponse>(`/wallet/${userId}`, {
+  async getWallet(headers: HeadersInit = {}): Promise<GetWalletResponse> {
+    return this.request<GetWalletResponse>(`/wallet`, {
       method: 'GET',
       headers,
     })
   }
 
-  async getAllWallets(
-    headers: HeadersInit = {},
-  ): Promise<GetAllWalletsResponse> {
-    return this.request<GetAllWalletsResponse>('/wallets', {
-      method: 'GET',
-      headers,
-    })
-  }
-
-  async getMarkets(
-    headers: HeadersInit = {},
-  ): Promise<{ markets: MarketResponse[] }> {
-    return this.request('/lend/markets', {
-      method: 'GET',
-      headers,
-    })
-  }
-
-  async getMarketsV1(headers: HeadersInit = {}): Promise<LendMarket[]> {
+  async getMarkets(headers: HeadersInit = {}): Promise<LendMarket[]> {
     const { result } = await this.request<{ result: Serialized<LendMarket[]> }>(
-      '/v1/lend/markets',
+      '/lend/markets',
       {
         method: 'GET',
         headers,
@@ -122,29 +82,7 @@ class ActionsApiClient {
     }))
   }
 
-  async getWalletBalance(
-    userId: string,
-    headers: HeadersInit = {},
-  ): Promise<{
-    balance: Array<{
-      symbol: string
-      totalBalance: string
-      totalFormattedBalance: string
-      chainBalances: Array<{
-        chainId: number
-        balance: string
-        tokenAddress: Address
-        formattedBalance: string
-      }>
-    }>
-  }> {
-    return this.request(`/wallet/${userId}/balance`, {
-      method: 'GET',
-      headers,
-    })
-  }
-
-  async getWalletBalanceV1(headers: HeadersInit = {}): Promise<TokenBalance[]> {
+  async getWalletBalance(headers: HeadersInit = {}): Promise<TokenBalance[]> {
     const { result } = await this.request<{
       result: Serialized<TokenBalance>[]
     }>('/wallet/balance', {
@@ -161,10 +99,7 @@ class ActionsApiClient {
     }))
   }
 
-  async fundWallet(
-    userId: string,
-    headers: HeadersInit = {},
-  ): Promise<{
+  async fundWallet(headers: HeadersInit = {}): Promise<{
     success: boolean
     to: string
     amount: string
@@ -172,48 +107,13 @@ class ActionsApiClient {
     userOpHash?: Address
     blockExplorerUrls?: string[]
   }> {
-    return this.request(`/wallet/${userId}/fund`, {
+    return this.request(`/wallet/fund`, {
       method: 'POST',
-      headers,
-    })
-  }
-
-  async sendTokens(
-    walletId: string,
-    amount: number,
-    recipientAddress: string,
-    headers: HeadersInit = {},
-  ): Promise<{
-    transaction: {
-      to: string
-      value: string
-      data: string
-    }
-  }> {
-    return this.request('/wallet/send', {
-      method: 'POST',
-      body: JSON.stringify({
-        walletId,
-        amount,
-        recipientAddress,
-      }),
       headers,
     })
   }
 
   async getPosition(
-    marketId: { chainId: number; address: Address },
-    walletId: string,
-  ): Promise<PositionResponse> {
-    return this.request(
-      `/lend/market/${marketId.chainId}/${marketId.address}/position/${walletId}`,
-      {
-        method: 'GET',
-      },
-    )
-  }
-
-  async getPositionV1(
     {
       marketId,
     }: {
@@ -234,50 +134,12 @@ class ActionsApiClient {
     }
   }
 
-  async openLendPositionV1(
-    { amount, asset, marketId }: LendExecutePositionParams,
-    headers: HeadersInit = {},
-  ): Promise<LendTransactionReceipt> {
-    const { result } = await this.request<{ result: LendTransactionReceipt }>(
-      '/v1/lend/position/open',
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          amount,
-          tokenAddress: asset.address[marketId.chainId],
-          marketId,
-        }),
-        headers,
-      },
-    )
-    return result
-  }
-
   async openLendPosition(
-    walletId: string,
-    amount: number,
-    tokenAddress: Address,
-    marketId: { chainId: number; address: Address },
-    headers: HeadersInit = {},
-  ): Promise<{ transaction: TransactionResponse }> {
-    return this.request('/lend/position/open', {
-      method: 'POST',
-      body: JSON.stringify({
-        walletId,
-        amount,
-        tokenAddress,
-        marketId,
-      }),
-      headers,
-    })
-  }
-
-  async closeLendPositionV1(
     { amount, asset, marketId }: LendExecutePositionParams,
     headers: HeadersInit = {},
   ): Promise<LendTransactionReceipt> {
     const { result } = await this.request<{ result: LendTransactionReceipt }>(
-      '/v1/lend/position/close',
+      '/lend/position/open',
       {
         method: 'POST',
         body: JSON.stringify({
@@ -292,22 +154,22 @@ class ActionsApiClient {
   }
 
   async closeLendPosition(
-    walletId: string,
-    amount: number,
-    tokenAddress: Address,
-    marketId: { chainId: number; address: Address },
+    { amount, asset, marketId }: LendExecutePositionParams,
     headers: HeadersInit = {},
-  ): Promise<{ transaction: TransactionResponse }> {
-    return this.request('/lend/position/close', {
-      method: 'POST',
-      body: JSON.stringify({
-        walletId,
-        amount,
-        tokenAddress,
-        marketId,
-      }),
-      headers,
-    })
+  ): Promise<LendTransactionReceipt> {
+    const { result } = await this.request<{ result: LendTransactionReceipt }>(
+      '/lend/position/close',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          amount,
+          tokenAddress: asset.address[marketId.chainId],
+          marketId,
+        }),
+        headers,
+      },
+    )
+    return result
   }
 }
 

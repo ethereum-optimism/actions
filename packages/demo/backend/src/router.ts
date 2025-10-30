@@ -38,48 +38,22 @@ router.get('/version', (c) => {
   }
 })
 
-// Example authenticated endpoint:
-// router.post('/wallet/:userId', authMiddleware, walletController.createWallet)
-
-router.get('/wallets', walletController.getAllWallets)
-router.get('/wallet/balance', authMiddleware, walletController.getBalanceV1)
-router.post('/wallet/send', walletController.sendTokens)
+router.get('/wallet/balance', authMiddleware, walletController.getBalance)
 router.get(
   '/wallet/lend/:chainId/:marketAddress/position',
   authMiddleware,
   walletController.getLendPosition,
 )
 // Parameterized routes
-router.post('/wallet/:userId', walletController.createWallet)
-router.get('/wallet/:userId', authMiddleware, walletController.getWallet)
-router.get(
-  '/wallet/:userId/balance',
-  authMiddleware,
-  walletController.getBalance,
-)
-router.post('/wallet/:userId/fund', authMiddleware, walletController.fundWallet)
+router.post('/wallet', authMiddleware, walletController.createWallet)
+router.get('/wallet', authMiddleware, walletController.getWallet)
+router.post('/wallet/fund', authMiddleware, walletController.fundWallet)
 
 // Lend endpoints
 router.get('/lend/markets', lendController.getMarkets)
-router.get('/v1/lend/markets', lendController.getMarketsV1)
-router.get('/lend/market/:chainId/:marketAddress', lendController.getMarket)
-router.get(
-  '/lend/market/:chainId/:marketAddress/position/:walletId',
-  lendController.getPosition,
-)
 router.post('/lend/position/open', authMiddleware, lendController.openPosition)
-router.post(
-  '/v1/lend/position/open',
-  authMiddleware,
-  lendController.openPositionV1,
-)
 router.post(
   '/lend/position/close',
   authMiddleware,
   lendController.closePosition,
-)
-router.post(
-  '/v1/lend/position/close',
-  authMiddleware,
-  lendController.closePositionV1,
 )
