@@ -1,4 +1,4 @@
-import type { PrivyClient } from '@privy-io/server-auth'
+import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import { type Address, type LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -15,12 +15,15 @@ export class PrivyWallet extends EOAWallet {
   public signer!: LocalAccount
   public readonly address: Address
   private privyClient: PrivyClient
-
+  private authorizationContext?: AuthorizationContext
   /**
-   * Create a new Privy wallet provider
-   * @param appId - Privy application ID
-   * @param appSecret - Privy application secret
-   * @param actions - Actions instance for accessing configured providers
+   * Create a new Privy wallet instance
+   * @param privyClient - Privy client instance for wallet operations
+   * @param authorizationContext - Authorization context for signing requests
+   * @param walletId - Privy wallet identifier
+   * @param address - Ethereum address of the wallet
+   * @param chainManager - Chain manager for multi-chain operations
+   * @param lendProvider - Optional lend provider for DeFi operations
    */
   private constructor(
     privyClient: PrivyClient,
@@ -28,15 +31,18 @@ export class PrivyWallet extends EOAWallet {
     address: Address,
     chainManager: ChainManager,
     lendProvider?: LendProvider<LendConfig>,
+    authorizationContext?: AuthorizationContext,
   ) {
     super(chainManager, lendProvider)
     this.privyClient = privyClient
+    this.authorizationContext = authorizationContext
     this.walletId = walletId
     this.address = address
   }
 
   static async create(params: {
     privyClient: PrivyClient
+    authorizationContext?: AuthorizationContext
     walletId: string
     address: Address
     chainManager: ChainManager
@@ -48,6 +54,7 @@ export class PrivyWallet extends EOAWallet {
       params.address,
       params.chainManager,
       params.lendProvider,
+      params.authorizationContext,
     )
     await wallet.initialize()
     return wallet
@@ -73,6 +80,7 @@ export class PrivyWallet extends EOAWallet {
       walletId: this.walletId,
       address: this.address,
       privyClient: this.privyClient,
+      authorizationContext: this.authorizationContext,
     })
   }
 }

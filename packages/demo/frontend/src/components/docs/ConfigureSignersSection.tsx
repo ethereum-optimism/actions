@@ -47,9 +47,10 @@ import { PrivyClient } from '@privy-io/node'
 import { getAddress } from 'viem'
 
 // PRIVY: Create wallet
-const privyWallet = await privyClient.walletApi.createWallet({
-  chainType: 'ethereum',
-})
+const privyWallet = await privyClient.wallets().create({
+  chain_type: 'ethereum',
+  owner: { user_id: 'privy:did:xxxxx' },
+});
 
 // ACTIONS: Create signer from hosted wallet
 const privySigner = await actions.wallet.createSigner({

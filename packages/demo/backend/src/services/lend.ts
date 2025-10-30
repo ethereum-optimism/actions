@@ -1,7 +1,6 @@
 import type {
   LendMarket,
   LendMarketId,
-  LendMarketPosition,
   LendTransactionReceipt,
   SupportedChainId,
 } from '@eth-optimism/actions-sdk'
@@ -50,30 +49,16 @@ export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
   return await actions.lend.getMarket(marketId)
 }
 
-export async function getPosition(
-  marketId: LendMarketId,
-  walletId: string,
-): Promise<LendMarketPosition> {
-  // Try to get wallet as authenticated user first (for Privy user IDs like did:privy:...)
-  const wallet = await getWallet(walletId)
-
-  if (!wallet) {
-    throw new Error(`Wallet not found for user ID: ${walletId}`)
-  }
-
-  return wallet.lend!.getPosition({ marketId })
-}
-
 async function executePosition(
   params: PositionParams,
   operation: 'open' | 'close',
 ): Promise<LendTransactionReceipt> {
-  const { userId, amount, tokenAddress, marketId } = params
+  const { idToken, amount, tokenAddress, marketId } = params
 
   try {
-    const wallet = await getWallet(userId)
+    const wallet = await getWallet(idToken)
     if (!wallet) {
-      const error = `Wallet not found for user ID: ${userId}`
+      const error = `Wallet not found`
       console.error('[executePositionV1] ERROR:', error)
       throw new Error(error)
     }

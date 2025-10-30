@@ -16,35 +16,11 @@ export interface WalletData {
 }
 
 /**
- * Response from GET /wallets endpoint
- */
-export interface GetAllWalletsResponse {
-  /** Array of wallet data */
-  wallets: WalletData[]
-  /** Total count of wallets returned */
-  count: number
-}
-
-/**
- * Response from POST /wallet/:userId endpoint
- */
-export interface CreateWalletResponse {
-  /** Wallet address */
-  privyAddress: string
-  /** Smart wallet address */
-  smartWalletAddress: string
-  /** User ID */
-  userId: string
-}
-
-/**
- * Response from GET /wallet/:userId endpoint
+ * Response from GET /wallet endpoint
  */
 export interface GetWalletResponse {
   /** Wallet address */
   address: Address
-  /** User ID */
-  userId: string
 }
 
 /**

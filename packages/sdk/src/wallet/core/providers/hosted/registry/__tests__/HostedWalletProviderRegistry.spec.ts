@@ -1,10 +1,13 @@
-import type { PrivyClient } from '@privy-io/server-auth'
+import type { PrivyClient } from '@privy-io/node'
 import { unichain } from 'viem/chains'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
+import {
+  createMockPrivyClient,
+  getMockAuthorizationContext,
+} from '@/test/MockPrivyClient.js'
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import type { NodeOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
@@ -23,7 +26,11 @@ class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
         return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
       },
       create({ chainManager }, options) {
-        return new PrivyHostedWalletProvider(options.privyClient, chainManager)
+        return new PrivyHostedWalletProvider({
+          privyClient: options.privyClient,
+          chainManager,
+          authorizationContext: options.authorizationContext,
+        })
       },
     })
   }
@@ -48,9 +55,12 @@ describe('HostedWalletProviderRegistry', () => {
     const factory = registry.getFactory('privy')
 
     expect(factory.type).toBe('privy')
-    expect(factory.validateOptions?.({ privyClient: mockPrivyClient })).toBe(
-      true,
-    )
+    expect(
+      factory.validateOptions?.({
+        privyClient: mockPrivyClient,
+        authorizationContext: getMockAuthorizationContext(),
+      }),
+    ).toBe(true)
     // Invalid shape should not pass validation
     expect(factory.validateOptions?.({})).toBe(false)
   })
@@ -61,7 +71,10 @@ describe('HostedWalletProviderRegistry', () => {
 
     const provider = factory.create(
       { chainManager: mockChainManager },
-      { privyClient: mockPrivyClient },
+      {
+        privyClient: mockPrivyClient,
+        authorizationContext: getMockAuthorizationContext(),
+      },
     )
 
     expect(provider).toBeInstanceOf(PrivyHostedWalletProvider)
