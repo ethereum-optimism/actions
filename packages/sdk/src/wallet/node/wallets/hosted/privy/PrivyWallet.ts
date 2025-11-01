@@ -1,4 +1,4 @@
-import type { PrivyClient } from '@privy-io/server-auth'
+import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import { type Address, type LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -15,7 +15,7 @@ export class PrivyWallet extends EOAWallet {
   public signer!: LocalAccount
   public readonly address: Address
   private privyClient: PrivyClient
-
+  private authorizationContext: AuthorizationContext
   /**
    * Create a new Privy wallet provider
    * @param appId - Privy application ID
@@ -24,6 +24,7 @@ export class PrivyWallet extends EOAWallet {
    */
   private constructor(
     privyClient: PrivyClient,
+    authorizationContext: AuthorizationContext,
     walletId: string,
     address: Address,
     chainManager: ChainManager,
@@ -31,12 +32,14 @@ export class PrivyWallet extends EOAWallet {
   ) {
     super(chainManager, lendProvider)
     this.privyClient = privyClient
+    this.authorizationContext = authorizationContext
     this.walletId = walletId
     this.address = address
   }
 
   static async create(params: {
     privyClient: PrivyClient
+    authorizationContext: AuthorizationContext
     walletId: string
     address: Address
     chainManager: ChainManager
@@ -44,6 +47,7 @@ export class PrivyWallet extends EOAWallet {
   }): Promise<PrivyWallet> {
     const wallet = new PrivyWallet(
       params.privyClient,
+      params.authorizationContext,
       params.walletId,
       params.address,
       params.chainManager,
@@ -73,6 +77,7 @@ export class PrivyWallet extends EOAWallet {
       walletId: this.walletId,
       address: this.address,
       privyClient: this.privyClient,
+      authorizationContext: this.authorizationContext,
     })
   }
 }

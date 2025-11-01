@@ -68,7 +68,7 @@ export function EarnWithFrontendWallet({
       wallet!.lend!.closePosition(positionParams),
     [wallet],
   )
-  const isReady = useCallback(() => !!wallet, [wallet])
+  const ready = !!wallet
 
   const {
     usdcBalance,
@@ -87,12 +87,12 @@ export function EarnWithFrontendWallet({
     mintUSDC,
     openPosition,
     closePosition,
-    isReady,
+    ready,
   })
 
   return (
     <Earn
-      ready={true}
+      ready={ready}
       selectedProviderConfig={WALLET_PROVIDER_CONFIGS[selectedProvider]}
       walletAddress={wallet?.address || null}
       logout={logout}

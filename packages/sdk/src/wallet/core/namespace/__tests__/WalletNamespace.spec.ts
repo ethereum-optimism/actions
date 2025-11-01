@@ -1,4 +1,4 @@
-import type { PrivyClient } from '@privy-io/server-auth'
+import type { PrivyClient } from '@privy-io/node'
 import { getAddress } from 'viem'
 import { unichain } from 'viem/chains'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,7 +7,11 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
-import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
+import {
+  createMockPrivyClient,
+  createMockPrivyWallet,
+  getMockAuthorizationContext,
+} from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
@@ -37,6 +41,7 @@ describe('WalletNamespace', () => {
     it('should provide access to hosted wallet provider', () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
+        getMockAuthorizationContext(),
         mockChainManager,
       )
       const smartWalletProvider = new DefaultSmartWalletProvider(
@@ -61,6 +66,7 @@ describe('WalletNamespace', () => {
       )
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
+        getMockAuthorizationContext(),
         mockChainManager,
       )
       const smartWalletProvider = new DefaultSmartWalletProvider(
@@ -81,6 +87,7 @@ describe('WalletNamespace', () => {
     it('should create a smart wallet and return deployment result', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
+        getMockAuthorizationContext(),
         mockChainManager,
       )
       const smartWalletProvider = new DefaultSmartWalletProvider(
@@ -95,9 +102,7 @@ describe('WalletNamespace', () => {
       const walletNamespace = new WalletNamespace(walletProvider)
 
       // Create a hosted wallet to use as signer
-      const privyWallet = await mockPrivyClient.walletApi.createWallet({
-        chainType: 'ethereum',
-      })
+      const privyWallet = createMockPrivyWallet()
       const hostedWallet =
         await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
@@ -123,6 +128,7 @@ describe('WalletNamespace', () => {
     it('should report deployment successes and failures', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
+        getMockAuthorizationContext(),
         mockChainManager,
       )
       const smartWalletProvider = new DefaultSmartWalletProvider(
@@ -136,9 +142,7 @@ describe('WalletNamespace', () => {
       const walletNamespace = new WalletNamespace(walletProvider)
 
       // Create a hosted wallet to use as signer
-      const privyWallet = await mockPrivyClient.walletApi.createWallet({
-        chainType: 'ethereum',
-      })
+      const privyWallet = createMockPrivyWallet()
       const hostedWallet =
         await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
@@ -208,6 +212,7 @@ describe('WalletNamespace', () => {
       )
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
+        getMockAuthorizationContext(),
         mockChainManager,
       )
       const smartWalletProvider = new DefaultSmartWalletProvider(
@@ -221,9 +226,7 @@ describe('WalletNamespace', () => {
       const getSmartWalletSpy = vi.spyOn(walletProvider, 'getSmartWallet')
       const walletNamespace = new WalletNamespace(walletProvider)
 
-      const privyWallet = await mockPrivyClient.walletApi.createWallet({
-        chainType: 'ethereum',
-      })
+      const privyWallet = createMockPrivyWallet()
       const hostedWallet =
         await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
@@ -251,6 +254,7 @@ describe('WalletNamespace', () => {
       )
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
+        getMockAuthorizationContext(),
         mockChainManager,
       )
       const smartWalletProvider = new DefaultSmartWalletProvider(
@@ -263,9 +267,7 @@ describe('WalletNamespace', () => {
       )
       const walletNamespace = new WalletNamespace(walletProvider)
 
-      const privyWallet = await mockPrivyClient.walletApi.createWallet({
-        chainType: 'ethereum',
-      })
+      const privyWallet = createMockPrivyWallet()
       const hostedWallet =
         await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
@@ -288,6 +290,7 @@ describe('WalletNamespace', () => {
     it('should convert a hosted wallet to an Actions wallet', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
+        getMockAuthorizationContext(),
         mockChainManager,
       )
       const smartWalletProvider = new DefaultSmartWalletProvider(
@@ -300,9 +303,7 @@ describe('WalletNamespace', () => {
       )
       const walletNamespace = new WalletNamespace(walletProvider)
 
-      const privyWallet = await mockPrivyClient.walletApi.createWallet({
-        chainType: 'ethereum',
-      })
+      const privyWallet = createMockPrivyWallet()
       const hostedWallet =
         await walletProvider.hostedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
@@ -332,6 +333,7 @@ describe('WalletNamespace', () => {
     it('should delegate to hosted wallet provider createSigner', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
+        getMockAuthorizationContext(),
         mockChainManager,
       )
       const smartWalletProvider = new DefaultSmartWalletProvider(
@@ -345,9 +347,7 @@ describe('WalletNamespace', () => {
       const createSignerSpy = vi.spyOn(walletProvider, 'createSigner')
       const walletNamespace = new WalletNamespace(walletProvider)
 
-      const privyWallet = await mockPrivyClient.walletApi.createWallet({
-        chainType: 'ethereum',
-      })
+      const privyWallet = createMockPrivyWallet()
       const params = {
         walletId: privyWallet.id,
         address: getAddress(privyWallet.address),
@@ -363,6 +363,7 @@ describe('WalletNamespace', () => {
     it('should return a LocalAccount that can be used as a smart wallet signer', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider(
         mockPrivyClient,
+        getMockAuthorizationContext(),
         mockChainManager,
       )
       const smartWalletProvider = new DefaultSmartWalletProvider(
@@ -375,9 +376,7 @@ describe('WalletNamespace', () => {
       )
       const walletNamespace = new WalletNamespace(walletProvider)
 
-      const privyWallet = await mockPrivyClient.walletApi.createWallet({
-        chainType: 'ethereum',
-      })
+      const privyWallet = createMockPrivyWallet()
       const signer = await walletNamespace.createSigner({
         walletId: privyWallet.id,
         address: getAddress(privyWallet.address),
