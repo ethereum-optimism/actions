@@ -460,6 +460,7 @@ export function Action({
         onClose={handleModalClose}
         transactionHash={transactionHash}
         blockExplorerUrl={blockExplorerUrl}
+        mode={mode}
       />
     </div>
   )
