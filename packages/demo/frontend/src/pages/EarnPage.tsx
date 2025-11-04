@@ -20,7 +20,7 @@ export function EarnPage() {
   if (walletProvider === WALLET_PROVIDERS.PRIVY) {
     return (
       <PrivyProvider>
-        <ActivityLogProvider>
+        <ActivityLogProvider walletProvider={walletProvider}>
           <EarnWithPrivyServerWallet />
         </ActivityLogProvider>
       </PrivyProvider>
@@ -30,7 +30,7 @@ export function EarnPage() {
   if (walletProvider === WALLET_PROVIDERS.DYNAMIC) {
     return (
       <DynamicProvider>
-        <ActivityLogProvider>
+        <ActivityLogProvider walletProvider={walletProvider}>
           <EarnWithDynamicWallet />
         </ActivityLogProvider>
       </DynamicProvider>
@@ -40,7 +40,7 @@ export function EarnPage() {
   if (walletProvider === WALLET_PROVIDERS.TURNKEY) {
     return (
       <TurnkeyProvider>
-        <ActivityLogProvider>
+        <ActivityLogProvider walletProvider={walletProvider}>
           <EarnWithTurnkeyWallet />
         </ActivityLogProvider>
       </TurnkeyProvider>
