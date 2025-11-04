@@ -31,11 +31,13 @@ function ActivityLogSidebar({
       </div>
 
       <div
-        className="flex-1 overflow-y-auto"
+        className="flex-1"
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: '#D1D5DB #F3F4F6',
           minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'visible',
         }}
       >
         {activities.length > 0 ? (
