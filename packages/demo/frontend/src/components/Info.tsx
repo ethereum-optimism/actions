@@ -42,7 +42,7 @@ function Info() {
 
       <div className="space-y-3">
         <a
-          href="/#getting-started"
+          href="/docs"
           className="flex items-center justify-between p-3 rounded-lg transition-all hover:bg-gray-50"
         >
           <div className="flex items-center gap-2">
