@@ -124,7 +124,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       const vaultBalances = await Promise.all(
         vaults.map(async (vault) => {
           try {
-            const vaultBalance = await getPosition(vault.marketId)
+            const vaultBalance = await getPosition(vault.marketId, false)
 
             // Only include vaults with non-zero balances
             if (vaultBalance.balance > 0n) {
