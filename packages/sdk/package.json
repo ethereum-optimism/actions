@@ -67,7 +67,7 @@
     "@dynamic-labs/waas-evm": ">=4.31.4",
     "@dynamic-labs/wallet-connector-core": ">=4.31.4",
     "@privy-io/react-auth": ">=2.24.0",
-    "@privy-io/server-auth": ">=1.31.1",
+    "@privy-io/node": ">=0.3.0",
     "@turnkey/core": ">=1.1.1",
     "@turnkey/http": ">=3.12.1",
     "@turnkey/sdk-server": ">=4.9.1",

@@ -37,11 +37,11 @@
     "attribution": "tsx scripts/attribution.ts"
   },
   "dependencies": {
-    "@eth-optimism/utils-app": "^0.0.6",
     "@eth-optimism/actions-sdk": "workspace:*",
+    "@eth-optimism/utils-app": "^0.0.6",
     "@eth-optimism/viem": "^0.4.13",
     "@hono/node-server": "^1.14.0",
-    "@privy-io/server-auth": "^1.31.1",
+    "@privy-io/node": "^0.3.0",
     "commander": "^13.1.0",
     "dotenv": "^16.4.5",
     "envalid": "^8.1.0",

@@ -1,5 +1,5 @@
-import type { PrivyClient } from '@privy-io/server-auth'
-import { createViemAccount } from '@privy-io/server-auth/viem'
+import type { AuthorizationContext } from '@privy-io/node'
+import { createViemAccount } from '@privy-io/node/viem'
 import {
   type Address,
   createWalletClient,
@@ -8,11 +8,15 @@ import {
   type WalletClient,
 } from 'viem'
 import { unichain } from 'viem/chains'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
+import {
+  createMockPrivyClient,
+  createMockPrivyWallet,
+  getMockAuthorizationContext,
+} from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
 import { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
 
@@ -28,9 +32,9 @@ vi.mock('viem/accounts', async () => ({
   toAccount: vi.fn(),
 }))
 
-vi.mock('@privy-io/server-auth/viem', async () => ({
+vi.mock('@privy-io/node/viem', async () => ({
   // @ts-ignore - importActual returns unknown
-  ...(await vi.importActual('@privy-io/server-auth/viem')),
+  ...(await vi.importActual('@privy-io/node/viem')),
   createViemAccount: vi.fn(),
 }))
 
@@ -48,10 +52,12 @@ const mockLocalAccount = {
 } as unknown as LocalAccount
 
 describe('PrivyWallet', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('should return the correct wallet ID', async () => {
-    const createdWallet = await mockPrivyClient.walletApi.createWallet({
-      chainType: 'ethereum',
-    })
+    const createdWallet = createMockPrivyWallet()
 
     const wallet = await createAndInitPrivyWallet({
       address: getAddress(createdWallet.address),
@@ -62,9 +68,7 @@ describe('PrivyWallet', () => {
   })
 
   it('should return the correct address', async () => {
-    const createdWallet = await mockPrivyClient.walletApi.createWallet({
-      chainType: 'ethereum',
-    })
+    const createdWallet = createMockPrivyWallet()
 
     const wallet = await createAndInitPrivyWallet({
       address: getAddress(createdWallet.address),
@@ -76,28 +80,29 @@ describe('PrivyWallet', () => {
 
   it('should create an account with correct configuration', async () => {
     // Create a wallet using the mock client first
-    const createdWallet = await mockPrivyClient.walletApi.createWallet({
-      chainType: 'ethereum',
-    })
+    const createdWallet = createMockPrivyWallet()
     vi.mocked(createViemAccount).mockResolvedValue(mockLocalAccount)
+    const authorizationContext = getMockAuthorizationContext()
     const wallet = await createAndInitPrivyWallet({
       address: getAddress(createdWallet.address),
       walletId: createdWallet.id,
+      authorizationContext,
     })
 
-    expect(createViemAccount).toHaveBeenCalledWith({
+    expect(createViemAccount).toHaveBeenCalledWith(mockPrivyClient, {
       walletId: createdWallet.id,
       address: createdWallet.address,
-      privy: mockPrivyClient,
+      authorizationContext,
     })
     expect(wallet.signer).toBe(mockLocalAccount)
   })
 
   it('should create a wallet client with correct configuration', async () => {
-    const createdWallet = await mockPrivyClient.walletApi.createWallet({
-      chainType: 'ethereum',
+    const createdWallet = createMockPrivyWallet()
+    const wallet = await createAndInitPrivyWallet({
+      walletId: createdWallet.id,
+      address: createdWallet.address,
     })
-    const wallet = await createAndInitPrivyWallet()
 
     const mockWalletClient = {
       account: mockLocalAccount,
@@ -116,27 +121,17 @@ describe('PrivyWallet', () => {
   })
 })
 
-async function createAndInitPrivyWallet(
-  params: {
-    privyClient?: PrivyClient
-    walletId?: string
-    address?: Address
-    chainManager?: ChainManager
-  } = {},
-) {
-  const {
-    privyClient = mockPrivyClient,
+async function createAndInitPrivyWallet(params: {
+  walletId: string
+  address: Address
+  authorizationContext?: AuthorizationContext
+}) {
+  const { walletId, address, authorizationContext } = params
+  return PrivyWallet.create({
+    privyClient: mockPrivyClient,
+    authorizationContext: authorizationContext ?? getMockAuthorizationContext(),
     walletId,
     address,
-    chainManager = mockChainManager,
-  } = params
-  const createdWallet = await privyClient.walletApi.createWallet({
-    chainType: 'ethereum',
-  })
-  return PrivyWallet.create({
-    privyClient,
-    walletId: walletId ?? createdWallet.id,
-    address: address ?? getAddress(createdWallet.address),
-    chainManager,
+    chainManager: mockChainManager,
   })
 }

@@ -41,9 +41,10 @@ import { PrivyClient } from '@privy-io/node'
 const privyClient = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
 
 // PRIVY: Create wallet
-const privyWallet = await privyClient.walletApi.createWallet({
-  chainType: 'ethereum',
-})
+const privyWallet = await privyClient.wallets().create({
+  chain_type: 'ethereum',
+  owner: { user_id: 'privy:did:xxxxx' },
+});
 
 // ACTIONS: Let wallet make onchain Actions
 const wallet = await actions.wallet.toActionsWallet({

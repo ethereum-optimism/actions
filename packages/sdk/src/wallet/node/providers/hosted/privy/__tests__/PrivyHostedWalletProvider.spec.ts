@@ -5,7 +5,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
+import {
+  createMockPrivyClient,
+  createMockPrivyWallet,
+  getMockAuthorizationContext,
+} from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
 import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
@@ -20,11 +24,13 @@ describe('PrivyHostedWalletProvider', () => {
   describe('toActionsWallet', () => {
     it('toActionsWallet creates an ActionsWallet with correct address and signer', async () => {
       const privy = createMockPrivyClient('app', 'secret')
-      const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
-
-      const hostedWallet = await privy.walletApi.createWallet({
-        chainType: 'ethereum',
+      const provider = new PrivyHostedWalletProvider({
+        privyClient: privy,
+        authorizationContext: getMockAuthorizationContext(),
+        chainManager: mockChainManager,
       })
+
+      const hostedWallet = createMockPrivyWallet()
 
       const actionsWallet = await provider.toActionsWallet({
         walletId: hostedWallet.id,
@@ -38,17 +44,23 @@ describe('PrivyHostedWalletProvider', () => {
 
     it('forwards params to PrivyWallet.create', async () => {
       const privy = createMockPrivyClient('app', 'secret')
-      const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
+      const authorizationContext = getMockAuthorizationContext()
+      const provider = new PrivyHostedWalletProvider({
+        privyClient: privy,
+        authorizationContext,
+        chainManager: mockChainManager,
+      })
       const spy = vi.spyOn(PrivyWallet, 'create')
 
       const id = 'mock-wallet-123'
-      const addr = getRandomAddress().toLowerCase()
+      const addr = getRandomAddress()
 
-      await provider.toActionsWallet({ walletId: id, address: addr as Address })
+      await provider.toActionsWallet({ walletId: id, address: addr })
 
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({
           privyClient: privy,
+          authorizationContext,
           walletId: id,
           address: getAddress(addr),
           chainManager: mockChainManager,
@@ -58,7 +70,11 @@ describe('PrivyHostedWalletProvider', () => {
 
     it('throws on invalid address', async () => {
       const privy = createMockPrivyClient('app', 'secret')
-      const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
+      const provider = new PrivyHostedWalletProvider({
+        privyClient: privy,
+        authorizationContext: getMockAuthorizationContext(),
+        chainManager: mockChainManager,
+      })
 
       await expect(
         provider.toActionsWallet({ walletId: 'id', address: '0x123' }),
@@ -68,19 +84,20 @@ describe('PrivyHostedWalletProvider', () => {
     it('forwards lendProvider when provided to constructor', async () => {
       const privy = createMockPrivyClient('app', 'secret')
       const mockLendProvider = {} as LendProvider<LendConfig>
-      const provider = new PrivyHostedWalletProvider(
-        privy,
-        mockChainManager,
-        mockLendProvider,
-      )
+      const provider = new PrivyHostedWalletProvider({
+        privyClient: privy,
+        authorizationContext: getMockAuthorizationContext(),
+        chainManager: mockChainManager,
+        lendProvider: mockLendProvider,
+      })
       const spy = vi.spyOn(PrivyWallet, 'create')
 
       const id = 'mock-wallet-123'
-      const addr = getRandomAddress().toLowerCase()
+      const addr = getRandomAddress()
 
       await provider.toActionsWallet({
         walletId: id,
-        address: addr as Address,
+        address: addr,
       })
 
       expect(spy).toHaveBeenCalledWith(
@@ -94,15 +111,17 @@ describe('PrivyHostedWalletProvider', () => {
   describe('createSigner', () => {
     it('should create a LocalAccount with correct address', async () => {
       const privy = createMockPrivyClient('app', 'secret')
-      const provider = new PrivyHostedWalletProvider(privy, mockChainManager)
-
-      const hostedWallet = await privy.walletApi.createWallet({
-        chainType: 'ethereum',
+      const provider = new PrivyHostedWalletProvider({
+        privyClient: privy,
+        authorizationContext: getMockAuthorizationContext(),
+        chainManager: mockChainManager,
       })
+
+      const hostedWallet = createMockPrivyWallet()
 
       const signer = await provider.createSigner({
         walletId: hostedWallet.id,
-        address: hostedWallet.address as Address,
+        address: hostedWallet.address,
       })
 
       expect(signer.address).toBe(hostedWallet.address)

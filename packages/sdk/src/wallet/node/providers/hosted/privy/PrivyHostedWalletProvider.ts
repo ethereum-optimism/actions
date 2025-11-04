@@ -1,4 +1,4 @@
-import type { PrivyClient } from '@privy-io/server-auth'
+import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import type { LocalAccount } from 'viem'
 import { getAddress } from 'viem'
 
@@ -21,16 +21,29 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
   'privy',
   NodeToActionsOptionsMap
 > {
+  private readonly privyClient: PrivyClient
+  private readonly authorizationContext?: AuthorizationContext
+
   /**
    * Create a new Privy wallet provider
-   * @param privyClient - Privy client instance
+   * @param params - Configuration parameters
+   * @param params.privyClient - Privy client instance
+   * @param params.chainManager - Chain manager for multi-chain operations
+   * @param params.lendProvider - Optional lend provider for DeFi operations
+   * @param params.authorizationContext - Optional authorization context for the Privy client.
+   * Used when Privy needs to sign requests.
+   * See https://docs.privy.io/controls/authorization-keys/using-owners/sign/automatic#using-the-authorization-context
+   * for more information on building and using the authorization context.
    */
-  constructor(
-    private readonly privyClient: PrivyClient,
-    chainManager: ChainManager,
-    lendProvider?: LendProvider<LendConfig>,
-  ) {
-    super(chainManager, lendProvider)
+  constructor(params: {
+    privyClient: PrivyClient
+    chainManager: ChainManager
+    lendProvider?: LendProvider<LendConfig>
+    authorizationContext?: AuthorizationContext
+  }) {
+    super(params.chainManager, params.lendProvider)
+    this.privyClient = params.privyClient
+    this.authorizationContext = params.authorizationContext
   }
 
   async toActionsWallet(
@@ -38,6 +51,7 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
   ): Promise<Wallet> {
     return PrivyWallet.create({
       privyClient: this.privyClient,
+      authorizationContext: this.authorizationContext,
       walletId: params.walletId,
       address: getAddress(params.address),
       chainManager: this.chainManager,
@@ -60,6 +74,10 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
   async createSigner(
     params: NodeToActionsOptionsMap['privy'],
   ): Promise<LocalAccount> {
-    return createSigner({ ...params, privyClient: this.privyClient })
+    return createSigner({
+      ...params,
+      privyClient: this.privyClient,
+      authorizationContext: this.authorizationContext,
+    })
   }
 }

@@ -29,11 +29,12 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
         return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
       },
       create({ chainManager, lendProvider }, options) {
-        return new PrivyHostedWalletProvider(
-          options.privyClient,
+        return new PrivyHostedWalletProvider({
+          privyClient: options.privyClient,
           chainManager,
           lendProvider,
-        )
+          authorizationContext: options.authorizationContext,
+        })
       },
     })
 

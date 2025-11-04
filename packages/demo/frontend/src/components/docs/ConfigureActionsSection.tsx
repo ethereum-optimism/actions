@@ -19,7 +19,13 @@ function ConfigureActionsSection({
       provider: {
         type: 'privy',
         config: {
-          privyClient: privy,
+          privyClient: new PrivyClient({
+            appId: env.PRIVY_APP_ID,
+            appSecret: env.PRIVY_APP_SECRET,
+          }),
+          authorizationContext: {
+            authorization_private_keys: [env.SESSION_SIGNER_PK],
+          },
         },
       },
     },

@@ -1,4 +1,4 @@
-import type { PrivyClient } from '@privy-io/server-auth'
+import type { PrivyClient } from '@privy-io/node'
 import type { Address } from 'viem'
 
 import { getRandomAddress } from '@/utils/testUtils.js'

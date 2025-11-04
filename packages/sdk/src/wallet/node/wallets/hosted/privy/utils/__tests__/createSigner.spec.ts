@@ -1,14 +1,18 @@
-import { createViemAccount } from '@privy-io/server-auth/viem'
-import type { Address, LocalAccount } from 'viem'
+import { createViemAccount } from '@privy-io/node/viem'
+import type { LocalAccount } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
+import {
+  createMockPrivyClient,
+  createMockPrivyWallet,
+  getMockAuthorizationContext,
+} from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
 
-vi.mock('@privy-io/server-auth/viem', async () => ({
+vi.mock('@privy-io/node/viem', async () => ({
   // @ts-ignore - importActual returns unknown
-  ...(await vi.importActual('@privy-io/server-auth/viem')),
+  ...(await vi.importActual('@privy-io/node/viem')),
   createViemAccount: vi.fn(),
 }))
 
@@ -26,22 +30,22 @@ describe('createSigner (Node Privy)', () => {
     signTypedData: vi.fn(),
   } as unknown as LocalAccount
 
-  it('should create a LocalAccount with correct configuration', async () => {
-    const createdWallet = await mockPrivyClient.walletApi.createWallet({
-      chainType: 'ethereum',
-    })
-    vi.mocked(createViemAccount).mockResolvedValue(mockLocalAccount)
+  it('should create a LocalAccount with correct configuration', () => {
+    const createdWallet = createMockPrivyWallet()
+    vi.mocked(createViemAccount).mockReturnValue(mockLocalAccount)
+    const authorizationContext = getMockAuthorizationContext()
 
-    const signer = await createSigner({
+    const signer = createSigner({
       privyClient: mockPrivyClient,
-      walletId: createdWallet.id,
-      address: createdWallet.address as Address,
-    })
-
-    expect(createViemAccount).toHaveBeenCalledWith({
+      authorizationContext: authorizationContext,
       walletId: createdWallet.id,
       address: createdWallet.address,
-      privy: mockPrivyClient,
+    })
+
+    expect(createViemAccount).toHaveBeenCalledWith(mockPrivyClient, {
+      walletId: createdWallet.id,
+      address: createdWallet.address,
+      authorizationContext,
     })
     expect(signer).toBe(mockLocalAccount)
   })

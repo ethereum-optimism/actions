@@ -1,11 +1,14 @@
-import type { PrivyClient } from '@privy-io/server-auth'
+import type { PrivyClient } from '@privy-io/node'
 import type { TurnkeyClient } from '@turnkey/http'
 import { unichain } from 'viem/chains'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockPrivyClient } from '@/test/MockPrivyClient.js'
+import {
+  createMockPrivyClient,
+  getMockAuthorizationContext,
+} from '@/test/MockPrivyClient.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import { NodeHostedWalletProviderRegistry } from '@/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.js'
 import { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
@@ -34,10 +37,21 @@ describe('NodeHostedWalletProviderRegistry', () => {
     expect(
       factory.validateOptions?.({
         privyClient: mockPrivyClient,
+        authorizationContext: getMockAuthorizationContext(),
+      } as NodeOptionsMap['privy']),
+    ).toBe(true)
+    expect(
+      factory.validateOptions?.({
+        privyClient: mockPrivyClient,
       } as NodeOptionsMap['privy']),
     ).toBe(true)
     // Invalid shape should not pass validation
     expect(factory.validateOptions?.({})).toBe(false)
+    expect(
+      factory.validateOptions?.({
+        authorizationContext: getMockAuthorizationContext(),
+      } as NodeOptionsMap['privy']),
+    ).toBe(false)
   })
 
   it('creates a PrivyHostedWalletProvider instance', () => {
@@ -46,6 +60,7 @@ describe('NodeHostedWalletProviderRegistry', () => {
 
     const provider = factory.create({ chainManager: mockChainManager }, {
       privyClient: mockPrivyClient,
+      authorizationContext: getMockAuthorizationContext(),
     } as NodeOptionsMap['privy'])
 
     expect(provider).toBeInstanceOf(PrivyHostedWalletProvider)
