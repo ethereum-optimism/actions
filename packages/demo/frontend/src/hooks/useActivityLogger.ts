@@ -16,7 +16,7 @@ export interface ActivityLogHandle {
  * const { logActivity } = useActivityLogger()
  *
  * const handleMint = async () => {
- *   const activity = logActivity('wallet.fund()', { amount: '100.00' })
+ *   const activity = logActivity('mint')
  *
  *   try {
  *     const result = await actionsApi.fundWallet(userId, headers)
@@ -34,22 +34,22 @@ export function useActivityLogger() {
   const { addActivity, updateActivity } = useActivityLog()
 
   /**
-   * Logs an activity by its apiMethod key
+   * Logs an activity by its action key
    *
-   * @param apiMethod - The API method key from ACTIVITY_CONFIG (e.g., 'wallet.fund()')
+   * @param action - The action key from ACTIVITY_CONFIG (e.g., 'mint', 'getBalance')
    * @returns An activity handle with confirm() and error() methods, or null if config not found
    */
   const logActivity = useCallback(
-    (apiMethod: string): ActivityLogHandle | null => {
-      const config = ACTIVITY_CONFIG[apiMethod]
+    (action: string): ActivityLogHandle | null => {
+      const config = ACTIVITY_CONFIG[action]
       if (!config) {
-        console.warn(`No activity config found for apiMethod: ${apiMethod}`)
+        console.warn(`No activity config found for action: ${action}`)
         return null
       }
 
       const id = addActivity({
         type: config.type,
-        action: config.action,
+        action: action,
         status: 'pending',
       })
 

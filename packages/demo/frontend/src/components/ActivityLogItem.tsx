@@ -1,5 +1,7 @@
 // TODO: Re-enable useState in next PR when expand functionality is restored
 // import { useState } from 'react'
+import { ACTIVITY_CONFIG } from '../constants/activityLogConfigs'
+
 interface ActivityLogItemProps {
   type: 'lend' | 'withdraw' | 'fund' | 'wallet'
   action: string
@@ -38,53 +40,6 @@ const TYPE_CONFIG = {
   },
 } as const
 
-// Helper to get action config by action name (for ActivityLogItem component)
-const ACTION_CONFIG: Record<
-  string,
-  { description: string; apiMethod: string; tooltip: string }
-> = {
-  getMarket: {
-    description: 'Get market',
-    apiMethod: 'actions.lend.getMarket()',
-    tooltip: 'Fetches available lending markets',
-  },
-  getPosition: {
-    description: 'Get position',
-    apiMethod: 'wallet.lend.getPosition()',
-    tooltip: "Returns a wallet's market positions",
-  },
-  deposit: {
-    description: 'Open lending position',
-    apiMethod: 'wallet.lend.openPosition()',
-    tooltip: 'Opens a new lending position',
-  },
-  withdraw: {
-    description: 'Close lending position',
-    apiMethod: 'wallet.lend.closePosition()',
-    tooltip: 'Closes an existing lending position',
-  },
-  mint: {
-    description: 'Mint demo USDC',
-    apiMethod: 'wallet.fund()',
-    tooltip: 'Funds a wallet with demo tokens',
-  },
-  getBalance: {
-    description: 'Get balance',
-    apiMethod: 'wallet.getBalance()',
-    tooltip: 'Retrieves wallet token balances',
-  },
-  send: {
-    description: 'Send tokens',
-    apiMethod: 'wallet.sendTokens()',
-    tooltip: 'Transfers tokens to another address',
-  },
-  create: {
-    description: 'Create smart wallet',
-    apiMethod: 'actions.wallet.createSmartWallet()',
-    tooltip: 'Creates a new smart wallet',
-  },
-}
-
 function ActivityLogItem({
   type,
   action,
@@ -101,7 +56,9 @@ function ActivityLogItem({
     bg: '#F3F4F6',
     stroke: '#6B7280',
   }
-  const actionConfig = ACTION_CONFIG[action]
+
+  // Look up the activity config by action key
+  const actionConfig = ACTIVITY_CONFIG[action]
 
   const description = actionConfig?.description || `${typeConfig.label} action`
   const apiMethod = actionConfig?.apiMethod || 'actions()'

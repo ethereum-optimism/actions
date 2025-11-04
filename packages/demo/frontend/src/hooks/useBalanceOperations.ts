@@ -66,7 +66,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   // Wrap operations with activity logging
   const getTokenBalances = useCallback(async () => {
-    const activity = logActivity('wallet.getBalance()')
+    const activity = logActivity('getBalance')
     try {
       const result = await getTokenBalancesRaw()
       activity?.confirm()
@@ -78,7 +78,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
   }, [getTokenBalancesRaw, logActivity])
 
   const getMarkets = useCallback(async () => {
-    const activity = logActivity('actions.lend.getMarkets()')
+    const activity = logActivity('getMarket')
     try {
       const result = await getMarketsRaw()
       activity?.confirm()
@@ -91,9 +91,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   const getPosition = useCallback(
     async (marketId: LendMarketId, withLogging: boolean = true) => {
-      const activity = withLogging
-        ? logActivity('wallet.lend.getPosition()')
-        : null
+      const activity = withLogging ? logActivity('getPosition') : null
       try {
         const result = await getPositionRaw(marketId)
         activity?.confirm()
@@ -107,7 +105,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
   )
 
   const mintUSDC = useCallback(async () => {
-    const activity = logActivity('wallet.fund()')
+    const activity = logActivity('mint')
     try {
       await mintUSDCRaw()
       activity?.confirm()
@@ -271,9 +269,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       const positionParams = { amount, asset, marketId }
 
       const activity =
-        operation === 'open'
-          ? logActivity('wallet.lend.openPosition()')
-          : logActivity('wallet.lend.closePosition()')
+        operation === 'open' ? logActivity('deposit') : logActivity('withdraw')
       const result =
         operation === 'open'
           ? await openPosition(positionParams).catch((error) => {

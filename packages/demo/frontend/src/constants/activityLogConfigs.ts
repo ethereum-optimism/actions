@@ -1,56 +1,64 @@
 export type ActivityConfigEntry = {
   type: 'lend' | 'withdraw' | 'fund' | 'wallet'
-  action: string
   description: string
+  apiMethod: string
+  tooltip: string
   isReadOnly?: boolean
 }
 
 /**
- * Activity configuration keyed by apiMethod
- * The apiMethod is the display string shown in the activity log (e.g., 'wallet.lend.openPosition()')
+ * Activity configuration keyed by short action name
  */
 export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
-  'actions.lend.getMarkets()': {
+  getMarket: {
     type: 'lend',
-    action: 'getMarket',
     description: 'Get market',
+    apiMethod: 'actions.lend.getMarket()',
+    tooltip: 'Fetches available lending markets',
     isReadOnly: true,
   },
-  'wallet.lend.getPosition()': {
+  getPosition: {
     type: 'lend',
-    action: 'getPosition',
     description: 'Get position',
+    apiMethod: 'wallet.lend.getPosition()',
+    tooltip: "Returns a wallet's market positions",
     isReadOnly: true,
   },
-  'wallet.lend.openPosition()': {
+  deposit: {
     type: 'lend',
-    action: 'deposit',
     description: 'Open lending position',
+    apiMethod: 'wallet.lend.openPosition()',
+    tooltip: 'Opens a new lending position',
   },
-  'wallet.lend.closePosition()': {
+  withdraw: {
     type: 'withdraw',
-    action: 'withdraw',
     description: 'Close lending position',
+    apiMethod: 'wallet.lend.closePosition()',
+    tooltip: 'Closes an existing lending position',
   },
-  'wallet.fund()': {
+  mint: {
     type: 'fund',
-    action: 'mint',
-    description: 'Mint demo USDC',
+    description: 'Mint USDC',
+    apiMethod: 'Demo Action',
+    tooltip: 'Funds a wallet with demo tokens',
   },
-  'wallet.getBalance()': {
+  getBalance: {
     type: 'wallet',
-    action: 'getBalance',
-    description: 'Get wallet balance',
+    description: 'Get balance',
+    apiMethod: 'wallet.getBalance()',
+    tooltip: 'Retrieves wallet token balances',
     isReadOnly: true,
   },
-  'wallet.sendBatch()': {
+  send: {
     type: 'wallet',
-    action: 'send',
     description: 'Send batch transaction',
+    apiMethod: 'wallet.sendTokens()',
+    tooltip: 'Transfers tokens to another address',
   },
-  'actions.wallet.createSmartWallet()': {
+  create: {
     type: 'wallet',
-    action: 'create',
     description: 'Create smart wallet',
+    apiMethod: 'actions.wallet.createSmartWallet()',
+    tooltip: 'Creates a new smart wallet',
   },
 }
