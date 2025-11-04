@@ -77,17 +77,20 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     }
   }, [getTokenBalancesRaw, logActivity])
 
-  const getMarkets = useCallback(async () => {
-    const activity = logActivity('getMarket')
-    try {
-      const result = await getMarketsRaw()
-      activity?.confirm()
-      return result
-    } catch (error) {
-      activity?.error()
-      throw error
-    }
-  }, [getMarketsRaw, logActivity])
+  const getMarkets = useCallback(
+    async (withLogging: boolean = true) => {
+      const activity = withLogging ? logActivity('getMarket') : null
+      try {
+        const result = await getMarketsRaw()
+        activity?.confirm()
+        return result
+      } catch (error) {
+        activity?.error()
+        throw error
+      }
+    },
+    [getMarketsRaw, logActivity],
+  )
 
   const getPosition = useCallback(
     async (marketId: LendMarketId, withLogging: boolean = true) => {
@@ -119,7 +122,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     try {
       setIsLoadingBalance(true)
       const tokenBalances = await getTokenBalances()
-      const vaults = await getMarkets()
+      const vaults = await getMarkets(false)
 
       const vaultBalances = await Promise.all(
         vaults.map(async (vault) => {
