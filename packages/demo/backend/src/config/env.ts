@@ -58,4 +58,11 @@ export const env = cleanEnv(process.env, {
   UNICHAIN_BUNDLER_URL: str({ devDefault: 'dummy' }),
   UNICHAIN_BUNDLER_SPONSORSHIP_POLICY: str({ devDefault: 'dummy' }),
   SESSION_SIGNER_PK: str(),
+  AUTH_MODULE_ADDRESS: str({
+    devDefault: 'dummy',
+  }),
+  OP_SEPOLIA_RPC_URL: str({ default: undefined }),
+  OP_SEPOLIA_BUNDLER_URL: str({ devDefault: 'dummy' }),
+  FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY: str({ devDefault: 'dummy' }),
+  OP_SEPOLIA_FAUCET_ADDRESS: str({ devDefault: 'dummy' }),
 })

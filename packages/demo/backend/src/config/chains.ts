@@ -1,4 +1,4 @@
-import { baseSepolia, unichain } from 'viem/chains'
+import { baseSepolia, optimismSepolia, unichain } from 'viem/chains'
 
 import { env } from './env.js'
 
@@ -17,5 +17,13 @@ export const BASE_SEPOLIA = {
   bundler: {
     type: 'simple' as const,
     url: env.BASE_SEPOLIA_BUNDER_URL,
+  },
+}
+export const OPTIMISM_SEPOLIA = {
+  chainId: optimismSepolia.id,
+  rpcUrls: env.OP_SEPOLIA_RPC_URL ? [env.OP_SEPOLIA_RPC_URL] : undefined,
+  bundler: {
+    type: 'pimlico' as const,
+    url: env.OP_SEPOLIA_BUNDLER_URL,
   },
 }
