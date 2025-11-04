@@ -92,7 +92,7 @@ export async function getLendPosition({
   return wallet.lend!.getPosition({ marketId })
 }
 
-export async function fundWallet(wallet: SmartWallet): Promise<{
+export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
   success: boolean
   to: string
   amount: string

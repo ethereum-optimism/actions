@@ -56,7 +56,7 @@ export function EarnWithServerWallet({
 
   const mintUSDC = useCallback(async () => {
     const headers = await getAuthHeaders()
-    await actionsApi.fundWallet(headers)
+    await actionsApi.mintDemoUsdcToWallet(headers)
   }, [getAuthHeaders])
 
   const openPosition = useCallback(

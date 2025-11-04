@@ -99,7 +99,7 @@ class ActionsApiClient {
     }))
   }
 
-  async fundWallet(headers: HeadersInit = {}): Promise<{
+  async mintDemoUsdcToWallet(headers: HeadersInit = {}): Promise<{
     success: boolean
     to: string
     amount: string
@@ -107,7 +107,7 @@ class ActionsApiClient {
     userOpHash?: Address
     blockExplorerUrls?: string[]
   }> {
-    return this.request(`/wallet/fund`, {
+    return this.request(`/wallet/usdc`, {
       method: 'POST',
       headers,
     })
@@ -169,6 +169,20 @@ class ActionsApiClient {
         headers,
       },
     )
+    return result
+  }
+
+  async dripEthToWallet(
+    walletAddress: Address,
+  ): Promise<{ userOpHash: string }> {
+    const { result } = await this.request<{
+      result: { userOpHash: string }
+    }>('/wallet/eth', {
+      method: 'POST',
+      body: JSON.stringify({
+        walletAddress,
+      }),
+    })
     return result
   }
 }

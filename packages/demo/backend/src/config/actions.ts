@@ -2,7 +2,7 @@ import { createActions } from '@eth-optimism/actions-sdk'
 import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
 import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 
-import { BASE_SEPOLIA, UNICHAIN } from './chains.js'
+import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
 import { GauntletUSDC, USDCDemoVault } from './markets.js'
 
@@ -33,7 +33,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
       defaultSlippage: 50,
       marketAllowlist: [GauntletUSDC, USDCDemoVault],
     },
-    chains: [UNICHAIN, BASE_SEPOLIA],
+    chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }
 }
 
