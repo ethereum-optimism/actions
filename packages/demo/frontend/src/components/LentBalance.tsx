@@ -1,5 +1,7 @@
 import morphoLogo from '../assets/morpho-logo-light.svg'
 import Shimmer from './Shimmer'
+import { useActivityHighlight } from '../contexts/ActivityHighlightContext'
+import { colors } from '../constants/colors'
 
 interface LentBalanceProps {
   depositedAmount: string | null
@@ -16,6 +18,7 @@ function LentBalance({
   isLoadingApy,
   isInitialLoad = false,
 }: LentBalanceProps) {
+  const { hoveredAction } = useActivityHighlight()
   const isEmpty = !isLoadingPosition && !isLoadingApy && depositedAmount === '0'
   // Format deposited amount to 4 decimals and return parts
   const formatDepositedAmount = (amount: string) => {
@@ -133,7 +136,16 @@ function LentBalance({
                 {/* Body */}
                 <tbody>
                   <tr>
-                    <td style={{ padding: '16px 8px' }}>
+                    <td
+                      className="transition-all"
+                      style={{
+                        padding: '16px 8px',
+                        backgroundColor:
+                          hoveredAction === 'getMarket'
+                            ? colors.highlight.background
+                            : 'transparent',
+                      }}
+                    >
                       {isInitialLoad ? (
                         <Shimmer
                           width="120px"
@@ -160,7 +172,16 @@ function LentBalance({
                         </div>
                       )}
                     </td>
-                    <td style={{ padding: '16px 8px' }}>
+                    <td
+                      className="transition-all"
+                      style={{
+                        padding: '16px 8px',
+                        backgroundColor:
+                          hoveredAction === 'getMarket'
+                            ? colors.highlight.background
+                            : 'transparent',
+                      }}
+                    >
                       {isInitialLoad ? (
                         <Shimmer
                           width="110px"
@@ -187,7 +208,16 @@ function LentBalance({
                         </div>
                       )}
                     </td>
-                    <td style={{ padding: '16px 8px' }}>
+                    <td
+                      className="transition-all"
+                      style={{
+                        padding: '16px 8px',
+                        backgroundColor:
+                          hoveredAction === 'getMarket'
+                            ? colors.highlight.background
+                            : 'transparent',
+                      }}
+                    >
                       {isInitialLoad ? (
                         <Shimmer
                           width="60px"
@@ -214,7 +244,17 @@ function LentBalance({
                         </div>
                       )}
                     </td>
-                    <td style={{ padding: '16px 8px', textAlign: 'right' }}>
+                    <td
+                      className="transition-all"
+                      style={{
+                        padding: '16px 8px',
+                        textAlign: 'right',
+                        backgroundColor:
+                          hoveredAction === 'getMarket'
+                            ? colors.highlight.background
+                            : 'transparent',
+                      }}
+                    >
                       {isInitialLoad || isLoadingApy ? (
                         <div
                           style={{
@@ -243,7 +283,17 @@ function LentBalance({
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '16px 8px', textAlign: 'right' }}>
+                    <td
+                      className="transition-all"
+                      style={{
+                        padding: '16px 8px',
+                        textAlign: 'right',
+                        backgroundColor:
+                          hoveredAction === 'getPosition'
+                            ? colors.highlight.background
+                            : 'transparent',
+                      }}
+                    >
                       {isInitialLoad || isLoadingPosition ? (
                         <div
                           style={{

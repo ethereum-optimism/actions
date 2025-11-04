@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import TransactionModal from './TransactionModal'
 import Shimmer from './Shimmer'
+import { useActivityHighlight } from '../contexts/ActivityHighlightContext'
+import { colors } from '../constants/colors'
 
 interface ActionProps {
   usdcBalance: string
@@ -31,6 +33,7 @@ export function Action({
   onMintUSDC,
   onTransaction,
 }: ActionProps) {
+  const { hoveredAction } = useActivityHighlight()
   const [isLoading, setIsLoading] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
@@ -111,7 +114,17 @@ export function Action({
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
-      <div className="py-6 px-6">
+      <div
+        className="py-6 px-6 transition-all"
+        style={{
+          backgroundColor:
+            hoveredAction === 'getBalance'
+              ? colors.highlight.background
+              : 'transparent',
+          borderTopLeftRadius: '24px',
+          borderTopRightRadius: '24px',
+        }}
+      >
         <div className="flex items-center justify-between">
           <h2
             className="font-semibold"

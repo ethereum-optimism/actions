@@ -1,6 +1,8 @@
 // TODO: Re-enable useState in next PR when expand functionality is restored
 import { useState } from 'react'
 import { ACTIVITY_CONFIG } from '../constants/activityLogConfigs'
+import { useActivityHighlight } from '../contexts/ActivityHighlightContext'
+import { colors } from '../constants/colors'
 
 interface ActivityLogItemProps {
   type: 'lend' | 'withdraw' | 'fund' | 'wallet'
@@ -51,6 +53,7 @@ function ActivityLogItem({
   // const [isExpanded, setIsExpanded] = useState(false)
   const isExpanded = false
   const [showStatusTooltip, setShowStatusTooltip] = useState(false)
+  const { setHoveredAction } = useActivityHighlight()
   const statusColor = STATUS_CONFIG[status]?.color || '#666666'
   const typeConfig = TYPE_CONFIG[type] || {
     label: type,
@@ -101,9 +104,20 @@ function ActivityLogItem({
       }}
     >
       <div
-        className="px-4 py-3 hover:bg-gray-50"
+        className="px-4 py-3 transition-all"
         style={{
           opacity: isFromPreviousSession ? 0.6 : 1,
+          borderLeft: '3px solid transparent',
+        }}
+        onMouseEnter={(e) => {
+          setHoveredAction(action)
+          e.currentTarget.style.borderLeftColor = colors.highlight.border
+          e.currentTarget.style.backgroundColor = colors.highlight.background
+        }}
+        onMouseLeave={(e) => {
+          setHoveredAction(null)
+          e.currentTarget.style.borderLeftColor = 'transparent'
+          e.currentTarget.style.backgroundColor = ''
         }}
       >
         <div className="flex items-start justify-between gap-3">
