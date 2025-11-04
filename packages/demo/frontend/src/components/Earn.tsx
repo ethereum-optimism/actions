@@ -143,8 +143,6 @@ function Earn({
                 <Action
                   usdcBalance={usdcBalance}
                   isLoadingBalance={isLoadingBalance}
-                  apy={apy}
-                  isLoadingApy={isLoadingApy}
                   depositedAmount={depositedAmount}
                   onMintUSDC={onMintUSDC}
                   onTransaction={onTransaction}

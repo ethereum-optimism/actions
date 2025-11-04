@@ -190,6 +190,7 @@ export function Action({
         >
           <button
             onClick={() => setMode('lend')}
+            className="transition-all"
             style={{
               flex: 1,
               padding: '10px 32px',
@@ -199,8 +200,12 @@ export function Action({
               fontWeight: 500,
               fontFamily: 'Inter',
               cursor: 'pointer',
-              transition: 'all 0.2s',
-              backgroundColor: mode === 'lend' ? '#FFFFFF' : 'transparent',
+              backgroundColor:
+                mode === 'lend'
+                  ? '#FFFFFF'
+                  : hoveredAction === 'deposit' && mode === 'withdraw'
+                    ? colors.highlight.background
+                    : 'transparent',
               color: mode === 'lend' ? '#000' : '#666',
               boxShadow:
                 mode === 'lend' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
@@ -210,6 +215,7 @@ export function Action({
           </button>
           <button
             onClick={() => setMode('withdraw')}
+            className="transition-all"
             style={{
               flex: 1,
               padding: '10px 32px',
@@ -219,8 +225,12 @@ export function Action({
               fontWeight: 500,
               fontFamily: 'Inter',
               cursor: 'pointer',
-              transition: 'all 0.2s',
-              backgroundColor: mode === 'withdraw' ? '#FFFFFF' : 'transparent',
+              backgroundColor:
+                mode === 'withdraw'
+                  ? '#FFFFFF'
+                  : hoveredAction === 'withdraw' && mode === 'lend'
+                    ? colors.highlight.background
+                    : 'transparent',
               color: mode === 'withdraw' ? '#000' : '#666',
               boxShadow:
                 mode === 'withdraw' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
@@ -230,7 +240,30 @@ export function Action({
           </button>
         </div>
 
-        <div>
+        <div
+          className="transition-all"
+          style={{
+            backgroundColor:
+              (hoveredAction === 'deposit' && mode === 'lend') ||
+              (hoveredAction === 'withdraw' && mode === 'withdraw')
+                ? colors.highlight.background
+                : 'transparent',
+            borderRadius: '12px',
+            padding:
+              (hoveredAction === 'deposit' && mode === 'lend') ||
+              (hoveredAction === 'withdraw' && mode === 'withdraw')
+                ? '16px'
+                : '0',
+            margin:
+              (hoveredAction === 'deposit' && mode === 'lend') ||
+              (hoveredAction === 'withdraw' && mode === 'withdraw')
+                ? '-16px'
+                : '0',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '32px',
+          }}
+        >
           <div
             style={{
               display: 'flex',
@@ -312,20 +345,10 @@ export function Action({
               </span>
             </div>
           </div>
-        </div>
 
-        <button
-          onClick={handleLendUSDC}
-          disabled={
-            isLoading ||
-            !amount ||
-            parseFloat(amount) <= 0 ||
-            parseFloat(amount) >
-              parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')
-          }
-          className="w-full py-3 px-4 font-medium transition-all"
-          style={{
-            backgroundColor:
+          <button
+            onClick={handleLendUSDC}
+            disabled={
               isLoading ||
               !amount ||
               parseFloat(amount) <= 0 ||
@@ -333,40 +356,52 @@ export function Action({
                 parseFloat(
                   mode === 'lend' ? usdcBalance : depositedAmount || '0',
                 )
-                ? '#D1D5DB'
-                : '#FF0420',
-            color:
-              isLoading ||
-              !amount ||
-              parseFloat(amount) <= 0 ||
-              parseFloat(amount) >
-                parseFloat(
-                  mode === 'lend' ? usdcBalance : depositedAmount || '0',
-                )
-                ? '#6B7280'
-                : '#FFFFFF',
-            fontSize: '16px',
-            borderRadius: '12px',
-            border: 'none',
-            cursor:
-              isLoading ||
-              !amount ||
-              parseFloat(amount) <= 0 ||
-              parseFloat(amount) >
-                parseFloat(
-                  mode === 'lend' ? usdcBalance : depositedAmount || '0',
-                )
-                ? 'not-allowed'
-                : 'pointer',
-            opacity: 1,
-          }}
-        >
-          {isLoading
-            ? 'Processing...'
-            : mode === 'lend'
-              ? 'Lend USDC'
-              : 'Withdraw USDC'}
-        </button>
+            }
+            className="w-full py-3 px-4 font-medium transition-all"
+            style={{
+              backgroundColor:
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) >
+                  parseFloat(
+                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                  )
+                  ? '#D1D5DB'
+                  : '#FF0420',
+              color:
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) >
+                  parseFloat(
+                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                  )
+                  ? '#6B7280'
+                  : '#FFFFFF',
+              fontSize: '16px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor:
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) >
+                  parseFloat(
+                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                  )
+                  ? 'not-allowed'
+                  : 'pointer',
+              opacity: 1,
+            }}
+          >
+            {isLoading
+              ? 'Processing...'
+              : mode === 'lend'
+                ? 'Lend USDC'
+                : 'Withdraw USDC'}
+          </button>
+        </div>
       </div>
 
       <TransactionModal
