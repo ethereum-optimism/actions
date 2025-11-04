@@ -203,33 +203,39 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       await mintUSDC()
 
       // Transaction succeeded - optimistically update balance with the minted amount (100 USDC)
-      const currentBalance = parseFloat(usdcBalance)
+      const currentBalance = parseFloat(usdcBalance) || 0
       const mintedAmount = 100
       const newOptimisticBalance = (currentBalance + mintedAmount).toFixed(2)
       setUsdcBalance(newOptimisticBalance)
       setIsLoadingBalance(false)
 
-      // Fetch actual balance to verify/correct the optimistic update
-      const balanceResult = await getTokenBalances()
-      const usdcToken = balanceResult.find(
-        (token) => token.symbol === 'USDC_DEMO',
-      )
+      // Fetch actual balance in background to verify - but don't reset if not found yet
+      setTimeout(async () => {
+        try {
+          const balanceResult = await getTokenBalances()
+          const usdcToken = balanceResult.find(
+            (token) => token.symbol === 'USDC_DEMO',
+          )
 
-      if (usdcToken && usdcToken.totalBalance > 0) {
-        const actualBalance = parseFloat(`${usdcToken.totalBalance}`) / 1e6
-        const flooredBalance = Math.floor(actualBalance * 100) / 100
-        const actualBalanceStr = flooredBalance.toFixed(2)
+          if (usdcToken && usdcToken.totalBalance > 0) {
+            const actualBalance = parseFloat(`${usdcToken.totalBalance}`) / 1e6
+            const flooredBalance = Math.floor(actualBalance * 100) / 100
+            const actualBalanceStr = flooredBalance.toFixed(2)
 
-        // Only update if different from optimistic value
-        if (actualBalanceStr !== newOptimisticBalance) {
-          setUsdcBalance(actualBalanceStr)
+            // Only update if different from optimistic value
+            if (actualBalanceStr !== newOptimisticBalance) {
+              setUsdcBalance(actualBalanceStr)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching balance after mint:', error)
         }
-      }
+      }, 2000)
     } catch (error) {
       console.error('Error minting USDC:', error)
       setIsLoadingBalance(false)
     }
-  }, [mintUSDC, isReady, fetchBalance, usdcBalance, getTokenBalances])
+  }, [mintUSDC, isReady, usdcBalance, getTokenBalances])
 
   // Auto-initialize balance on first ready state
   useEffect(() => {

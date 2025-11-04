@@ -129,46 +129,81 @@ export function Action({
           </h2>
           <div className="flex items-center gap-2">
             {isLoadingBalance ? (
-              <Shimmer width="60px" height="20px" borderRadius="4px" />
+              <Shimmer width="60px" height="26px" borderRadius="6px" />
             ) : !usdcBalance ||
               usdcBalance === '0.00' ||
               usdcBalance === '0' ||
               parseFloat(usdcBalance || '0') === 0 ? (
-              <button
-                onClick={onMintUSDC}
-                className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  color: '#1a1b1e',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  borderRadius: '6px',
-                  border: '1px solid #E0E2EB',
-                  cursor: 'pointer',
-                  fontFamily: 'Inter',
-                }}
-              >
-                Get 100 USDC
-              </button>
+              <>
+                <button
+                  onClick={onMintUSDC}
+                  className="flex items-center gap-1.5 transition-all hover:bg-gray-50"
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor:
+                      hoveredAction === 'mint'
+                        ? colors.highlight.background
+                        : '#FFFFFF',
+                    color: '#1a1b1e',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    borderRadius: '6px',
+                    border:
+                      hoveredAction === 'mint'
+                        ? `1px solid ${colors.highlight.border}`
+                        : '1px solid #E0E2EB',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter',
+                  }}
+                >
+                  Get 100 USDC
+                </button>
+                <img
+                  src="/usd-coin-usdc-logo.svg"
+                  alt="USDC"
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                  }}
+                />
+              </>
             ) : (
-              <span
-                style={{
-                  color: '#000',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-              >
-                ${usdcBalance}
-              </span>
+              <>
+                <div
+                  className="flex items-center gap-2 transition-all"
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor:
+                      hoveredAction === 'mint'
+                        ? colors.highlight.background
+                        : 'transparent',
+                    borderRadius: '6px',
+                    border:
+                      hoveredAction === 'mint'
+                        ? `1px solid ${colors.highlight.border}`
+                        : '1px solid transparent',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: '#000',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    ${usdcBalance}
+                  </span>
+                  <img
+                    src="/usd-coin-usdc-logo.svg"
+                    alt="USDC"
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                    }}
+                  />
+                </div>
+              </>
             )}
-            <img
-              src="/usd-coin-usdc-logo.svg"
-              alt="USDC"
-              style={{
-                width: '20px',
-                height: '20px',
-              }}
-            />
           </div>
         </div>
       </div>
