@@ -1,5 +1,5 @@
 // TODO: Re-enable useState in next PR when expand functionality is restored
-// import { useState } from 'react'
+import { useState } from 'react'
 import { ACTIVITY_CONFIG } from '../constants/activityLogConfigs'
 
 interface ActivityLogItemProps {
@@ -50,6 +50,7 @@ function ActivityLogItem({
   // TODO: Re-enable expand state in next PR when request/response data is improved
   // const [isExpanded, setIsExpanded] = useState(false)
   const isExpanded = false
+  const [showStatusTooltip, setShowStatusTooltip] = useState(false)
   const statusColor = STATUS_CONFIG[status]?.color || '#666666'
   const typeConfig = TYPE_CONFIG[type] || {
     label: type,
@@ -63,6 +64,30 @@ function ActivityLogItem({
   const description = actionConfig?.description || `${typeConfig.label} action`
   const apiMethod = actionConfig?.apiMethod || 'actions()'
   const tooltip = actionConfig?.tooltip
+  const isReadOnly = actionConfig?.isReadOnly
+
+  // Status tooltip based on whether it's a read or write operation
+  const getStatusTooltip = () => {
+    if (isReadOnly) {
+      switch (status) {
+        case 'confirmed':
+          return 'Request succeeded'
+        case 'pending':
+          return 'Awaiting request'
+        case 'error':
+          return 'Request failed'
+      }
+    } else {
+      switch (status) {
+        case 'confirmed':
+          return 'Transaction succeeded'
+        case 'pending':
+          return 'Transaction pending'
+        case 'error':
+          return 'Transaction failed'
+      }
+    }
+  }
 
   // Use real data when available
   const displayRequest = { request: 'john' }
@@ -101,9 +126,52 @@ function ActivityLogItem({
                 {description}
               </span>
               <div
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: statusColor }}
-              />
+                onMouseEnter={() => setShowStatusTooltip(true)}
+                onMouseLeave={() => setShowStatusTooltip(false)}
+                style={{
+                  position: 'relative',
+                  display: 'inline-flex',
+                  cursor: 'pointer',
+                }}
+              >
+                <div
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: statusColor }}
+                />
+                {showStatusTooltip && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%) translateY(-8px)',
+                      padding: '8px 12px',
+                      backgroundColor: 'rgba(0, 0, 0, 0.56)',
+                      color: '#FFFFFF',
+                      fontSize: '12px',
+                      borderRadius: '6px',
+                      whiteSpace: 'nowrap',
+                      zIndex: 10,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    {getStatusTooltip()}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 0,
+                        height: 0,
+                        borderLeft: '4px solid transparent',
+                        borderRight: '4px solid transparent',
+                        borderTop: '4px solid rgba(0, 0, 0, 0.56)',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Bottom row: API method call */}
