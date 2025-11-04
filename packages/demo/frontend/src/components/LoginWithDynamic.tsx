@@ -52,6 +52,39 @@ export function LoginWithDynamic() {
                   '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
               }}
             >
+              {/* Close button */}
+              <button
+                onClick={() =>
+                  (window.location.href = 'https://actions.money/earn')
+                }
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                  color: '#666',
+                  zIndex: 1,
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'
+                }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
               <DynamicEmbeddedWidget background="default" />
             </div>
           </>
