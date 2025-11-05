@@ -1,8 +1,8 @@
 import { createActions } from '@eth-optimism/actions-sdk'
 import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
-import { PrivyClient } from '@privy-io/server-auth'
+import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 
-import { BASE_SEPOLIA, UNICHAIN } from './chains.js'
+import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
 import { GauntletUSDC, USDCDemoVault } from './markets.js'
 
@@ -16,6 +16,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
           type: 'privy',
           config: {
             privyClient: getPrivyClient(),
+            authorizationContext: getAuthorizationContext(),
           },
         },
       },
@@ -32,7 +33,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
       defaultSlippage: 50,
       marketAllowlist: [GauntletUSDC, USDCDemoVault],
     },
-    chains: [UNICHAIN, BASE_SEPOLIA],
+    chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }
 }
 
@@ -51,9 +52,14 @@ export function getActions() {
 }
 
 export function getPrivyClient() {
-  const privy = new PrivyClient(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
-  if (env.SESSION_SIGNER_PK) {
-    privy.walletApi.updateAuthorizationKey(env.SESSION_SIGNER_PK)
+  return new PrivyClient({
+    appId: env.PRIVY_APP_ID,
+    appSecret: env.PRIVY_APP_SECRET,
+  })
+}
+
+export function getAuthorizationContext(): AuthorizationContext {
+  return {
+    authorization_private_keys: [env.SESSION_SIGNER_PK],
   }
-  return privy
 }

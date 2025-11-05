@@ -27,8 +27,6 @@ interface EarnWithServerWalletProps {
  * and passes data/callbacks to the presentational EarnContent component
  */
 export function EarnWithServerWallet({
-  userId,
-  embeddedWalletExists,
   ready,
   getAuthHeaders,
   logout,
@@ -58,7 +56,7 @@ export function EarnWithServerWallet({
 
   const mintUSDC = useCallback(async () => {
     const headers = await getAuthHeaders()
-    await actionsApi.fundWallet(headers)
+    await actionsApi.mintDemoUsdcToWallet(headers)
   }, [getAuthHeaders])
 
   const openPosition = useCallback(
@@ -75,11 +73,6 @@ export function EarnWithServerWallet({
       return actionsApi.closeLendPosition(positionParams, headers)
     },
     [getAuthHeaders],
-  )
-
-  const isReady = useCallback(
-    () => !!userId && embeddedWalletExists,
-    [userId, embeddedWalletExists],
   )
 
   const {
@@ -99,7 +92,7 @@ export function EarnWithServerWallet({
     mintUSDC,
     openPosition,
     closePosition,
-    isReady,
+    ready,
   })
 
   const fetchWalletAddress = useCallback(async () => {
@@ -109,10 +102,10 @@ export function EarnWithServerWallet({
   }, [getAuthHeaders])
 
   useEffect(() => {
-    if (isReady()) {
+    if (ready) {
       fetchWalletAddress()
     }
-  }, [isReady, fetchWalletAddress])
+  }, [ready, fetchWalletAddress])
 
   return (
     <Earn

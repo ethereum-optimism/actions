@@ -69,19 +69,18 @@ export async function openPosition(c: Context) {
       body: { amount, tokenAddress, marketId },
     } = validation.data
     const auth = c.get('auth') as AuthContext | undefined
-    if (!auth || !auth.userId) {
+    if (!auth || !auth.idToken) {
       return c.json({ error: 'Unauthorized' }, 401)
     }
 
     const result = await lendService.openPosition({
-      userId: auth.userId,
+      idToken: auth.idToken,
       amount,
       tokenAddress: tokenAddress as Address,
       marketId: {
         address: marketId.address as Address,
         chainId: marketId.chainId as SupportedChainId,
       },
-      isUserWallet: Boolean(auth?.userId),
     })
 
     return c.json({ result: serializeBigInt(result) })
@@ -113,19 +112,18 @@ export async function closePosition(c: Context) {
       body: { amount, tokenAddress, marketId },
     } = validation.data
     const auth = c.get('auth') as AuthContext | undefined
-    if (!auth || !auth.userId) {
+    if (!auth || !auth.idToken) {
       return c.json({ error: 'Unauthorized' }, 401)
     }
 
     const result = await lendService.closePosition({
-      userId: auth.userId,
+      idToken: auth.idToken,
       amount,
       tokenAddress: tokenAddress as Address,
       marketId: {
         address: marketId.address as Address,
         chainId: marketId.chainId as SupportedChainId,
       },
-      isUserWallet: Boolean(auth?.userId),
     })
 
     return c.json({ result: serializeBigInt(result) })

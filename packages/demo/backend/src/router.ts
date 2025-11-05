@@ -45,9 +45,13 @@ router.get(
   walletController.getLendPosition,
 )
 // Parameterized routes
-router.post('/wallet', authMiddleware, walletController.createWallet)
 router.get('/wallet', authMiddleware, walletController.getWallet)
-router.post('/wallet/fund', authMiddleware, walletController.fundWallet)
+router.post(
+  '/wallet/usdc',
+  authMiddleware,
+  walletController.mintDemoUsdcToWallet,
+)
+router.post('/wallet/eth', walletController.dripEthToWallet)
 
 // Lend endpoints
 router.get('/lend/markets', lendController.getMarkets)

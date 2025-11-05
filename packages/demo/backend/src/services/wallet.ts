@@ -7,7 +7,7 @@ import type {
   Wallet,
 } from '@eth-optimism/actions-sdk'
 import { getTokenBySymbol } from '@eth-optimism/actions-sdk'
-import type { WalletWithMetadata } from '@privy-io/server-auth'
+import type { User } from '@privy-io/node'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
@@ -28,45 +28,21 @@ export interface GetAllWalletsOptions {
   cursor?: string
 }
 
-export async function createWallet(): Promise<{
-  privyAddress: string
-  smartWalletAddress: string
-}> {
-  const actions = getActions()
-  const privyClient = getPrivyClient()
-  const privyWallet = await privyClient.walletApi.createWallet({
-    chainType: 'ethereum',
-  })
-  const privySigner = await actions.wallet.createSigner({
-    walletId: privyWallet.id,
-    address: getAddress(privyWallet.address),
-  })
-  const { wallet } = await actions.wallet.createSmartWallet({
-    signer: privySigner,
-  })
-  const smartWalletAddress = wallet.address
-  return {
-    privyAddress: wallet.signer.address,
-    smartWalletAddress,
-  }
-}
-
-export async function getWallet(userId: string): Promise<SmartWallet | null> {
+export async function getWallet(idToken: string): Promise<SmartWallet | null> {
   const actions = getActions()
   const privyClient = getPrivyClient()
 
-  // Get wallet via user ID (for authenticated users)
-  const privyUser = await privyClient.getUserById(userId)
+  const privyUser = await privyClient.users().get({ id_token: idToken })
   if (!privyUser) {
     return null
   }
 
   // Get the first embedded ethereum wallet from linked accounts
-  const walletAccount = privyUser.linkedAccounts?.find(
-    (account): account is WalletWithMetadata =>
+  const walletAccount = privyUser.linked_accounts.find(
+    (account): account is User.LinkedAccountEthereumEmbeddedWallet =>
       account.type === 'wallet' &&
-      account.walletClientType === 'privy' &&
-      account.chainType === 'ethereum',
+      account.wallet_client === 'privy' &&
+      account.chain_type === 'ethereum',
   )
 
   if (!walletAccount) {
@@ -116,7 +92,7 @@ export async function getLendPosition({
   return wallet.lend!.getPosition({ marketId })
 }
 
-export async function fundWallet(wallet: SmartWallet): Promise<{
+export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
   success: boolean
   to: string
   amount: string

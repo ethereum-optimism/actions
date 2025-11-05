@@ -1,5 +1,4 @@
-import type { GetViemAccountInputType } from '@privy-io/server-auth/viem'
-import { createViemAccount } from '@privy-io/server-auth/viem'
+import { createViemAccount } from '@privy-io/node/viem'
 import type { LocalAccount } from 'viem'
 
 import type {
@@ -15,18 +14,21 @@ import type {
  * @param params.walletId - Privy wallet identifier
  * @param params.address - Ethereum address of the wallet
  * @param params.privyClient - Privy client instance
- * @returns Promise resolving to a LocalAccount configured for signing operations
+ * @param params.authorizationContext - Optional authorization context for the Privy client.
+ * Used when Privy needs to sign requests.
+ * See https://docs.privy.io/controls/authorization-keys/using-owners/sign/automatic#using-the-authorization-context
+ * for more information on building and using the authorization context.
+ * @returns LocalAccount configured for signing operations
  * @throws Error if wallet retrieval fails or signing operations are not supported
  */
-export async function createSigner(
+export function createSigner(
   params: PrivyHostedWalletToActionsWalletOptions & NodeOptionsMap['privy'],
-): Promise<LocalAccount> {
-  const { walletId, address, privyClient } = params
-  const account = await createViemAccount({
+): LocalAccount {
+  const { walletId, address, privyClient, authorizationContext } = params
+  const account = createViemAccount(privyClient, {
     walletId,
     address,
-    // TODO: Fix this type error
-    privy: privyClient as unknown as GetViemAccountInputType['privy'],
+    authorizationContext,
   })
   return account
 }
