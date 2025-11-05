@@ -54,9 +54,7 @@ export function LoginWithDynamic() {
             >
               {/* Close button */}
               <button
-                onClick={() =>
-                  (window.location.href = 'https://actions.money/earn')
-                }
+                onClick={() => (window.location.href = ROUTES.EARN)}
                 style={{
                   position: 'absolute',
                   top: '16px',
