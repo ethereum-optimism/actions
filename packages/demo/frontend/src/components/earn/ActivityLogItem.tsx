@@ -42,6 +42,19 @@ const TYPE_CONFIG = {
   },
 } as const
 
+const STATUS_TOOLTIPS = {
+  readOnly: {
+    confirmed: 'Request succeeded',
+    pending: 'Awaiting request',
+    error: 'Request failed',
+  },
+  write: {
+    confirmed: 'Transaction succeeded',
+    pending: 'Transaction pending',
+    error: 'Transaction failed',
+  },
+} as const
+
 function ActivityLogItem({
   type,
   action,
@@ -81,28 +94,8 @@ function ActivityLogItem({
   const tooltip = actionConfig?.tooltip
   const isReadOnly = actionConfig?.isReadOnly
 
-  // Status tooltip based on whether it's a read or write operation
-  const getStatusTooltip = () => {
-    if (isReadOnly) {
-      switch (status) {
-        case 'confirmed':
-          return 'Request succeeded'
-        case 'pending':
-          return 'Awaiting request'
-        case 'error':
-          return 'Request failed'
-      }
-    } else {
-      switch (status) {
-        case 'confirmed':
-          return 'Transaction succeeded'
-        case 'pending':
-          return 'Transaction pending'
-        case 'error':
-          return 'Transaction failed'
-      }
-    }
-  }
+  const statusTooltip =
+    STATUS_TOOLTIPS[isReadOnly ? 'readOnly' : 'write'][status]
 
   // Use real data when available
   const displayRequest = { request: 'john' }
@@ -350,7 +343,7 @@ function ActivityLogItem({
             pointerEvents: 'none',
           }}
         >
-          {getStatusTooltip()}
+          {statusTooltip}
           <div
             style={{
               position: 'absolute',
