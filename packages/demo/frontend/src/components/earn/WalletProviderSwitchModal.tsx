@@ -1,4 +1,4 @@
-import { Modal, ModalContent, ModalActions, ModalButton } from './Modal'
+import { Modal, ModalContent, ModalActions, ModalButton } from '../Modal'
 
 interface WalletProviderSwitchModalProps {
   isOpen: boolean

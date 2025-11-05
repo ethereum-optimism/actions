@@ -1,7 +1,7 @@
 import ActivityLogItem from './ActivityLogItem'
-import ActivityLogIcon from './icons/ActivityLogIcon'
-import CloseIcon from './icons/CloseIcon'
-import type { ActivityEntry } from '../providers/ActivityLogProvider'
+import ActivityLogIcon from '../icons/ActivityLogIcon'
+import CloseIcon from '../icons/CloseIcon'
+import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
 interface ActivityLogPanelProps {
   activities: ActivityEntry[]

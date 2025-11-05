@@ -1,8 +1,8 @@
 // TODO: Re-enable useState in next PR when expand functionality is restored
 import { useState, useRef, useEffect } from 'react'
-import { ACTIVITY_CONFIG } from '../constants/activityLogConfigs'
-import { useActivityHighlight } from '../contexts/ActivityHighlightContext'
-import { colors } from '../constants/colors'
+import { ACTIVITY_CONFIG } from '../../constants/activityLogConfigs'
+import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
+import { colors } from '../../constants/colors'
 
 interface ActivityLogItemProps {
   type: 'lend' | 'withdraw' | 'fund' | 'wallet'

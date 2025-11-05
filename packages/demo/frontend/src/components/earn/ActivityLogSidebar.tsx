@@ -1,28 +1,23 @@
 import ActivityLogItem from './ActivityLogItem'
-import ActivityLogIcon from './icons/ActivityLogIcon'
-import type { ActivityEntry } from '../providers/ActivityLogProvider'
+import ActivityLogIcon from '../icons/ActivityLogIcon'
+import Info from './Info'
+import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
-interface ActivityLogCardProps {
+interface ActivityLogSidebarProps {
   activities: ActivityEntry[]
   formatTimestamp: (timestamp: string) => string
-  hasMoreActivities: boolean
-  onViewFullLog: () => void
 }
 
-function ActivityLogCard({
+function ActivityLogSidebar({
   activities,
   formatTimestamp,
-  hasMoreActivities,
-  onViewFullLog,
-}: ActivityLogCardProps) {
-  const displayedActivities = activities.slice(0, 3)
-
+}: ActivityLogSidebarProps) {
   return (
     <div
+      className="flex flex-col h-full"
       style={{
         backgroundColor: '#FFFFFF',
-        border: '1px solid #E0E2EB',
-        borderRadius: '24px',
+        borderLeft: '1px solid #E0E2EB',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
@@ -36,14 +31,17 @@ function ActivityLogCard({
       </div>
 
       <div
-        className="overflow-y-auto max-h-96"
+        className="flex-1"
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: '#D1D5DB #F3F4F6',
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'visible',
         }}
       >
         {activities.length > 0 ? (
-          displayedActivities.map((activity) => (
+          activities.map((activity) => (
             <ActivityLogItem
               key={activity.id}
               type={activity.type}
@@ -67,24 +65,14 @@ function ActivityLogCard({
         )}
       </div>
 
-      {hasMoreActivities && (
-        <div className="p-4 pt-0">
-          <button
-            onClick={onViewFullLog}
-            className="w-full py-3 text-center font-medium transition-colors"
-            style={{
-              color: '#1a1b1e',
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            View Full Log
-          </button>
+      <div className="mt-auto">
+        <div style={{ borderTop: '1px solid #E0E2EB' }} />
+        <div className="p-6 pt-6">
+          <Info />
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
-export default ActivityLogCard
+export default ActivityLogSidebar

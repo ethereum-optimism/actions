@@ -1,23 +1,28 @@
 import ActivityLogItem from './ActivityLogItem'
-import ActivityLogIcon from './icons/ActivityLogIcon'
-import Info from './Info'
-import type { ActivityEntry } from '../providers/ActivityLogProvider'
+import ActivityLogIcon from '../icons/ActivityLogIcon'
+import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
-interface ActivityLogSidebarProps {
+interface ActivityLogCardProps {
   activities: ActivityEntry[]
   formatTimestamp: (timestamp: string) => string
+  hasMoreActivities: boolean
+  onViewFullLog: () => void
 }
 
-function ActivityLogSidebar({
+function ActivityLogCard({
   activities,
   formatTimestamp,
-}: ActivityLogSidebarProps) {
+  hasMoreActivities,
+  onViewFullLog,
+}: ActivityLogCardProps) {
+  const displayedActivities = activities.slice(0, 3)
+
   return (
     <div
-      className="flex flex-col h-full"
       style={{
         backgroundColor: '#FFFFFF',
-        borderLeft: '1px solid #E0E2EB',
+        border: '1px solid #E0E2EB',
+        borderRadius: '24px',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
@@ -31,17 +36,14 @@ function ActivityLogSidebar({
       </div>
 
       <div
-        className="flex-1"
+        className="overflow-y-auto max-h-96"
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: '#D1D5DB #F3F4F6',
-          minHeight: 0,
-          overflowY: 'auto',
-          overflowX: 'visible',
         }}
       >
         {activities.length > 0 ? (
-          activities.map((activity) => (
+          displayedActivities.map((activity) => (
             <ActivityLogItem
               key={activity.id}
               type={activity.type}
@@ -65,14 +67,24 @@ function ActivityLogSidebar({
         )}
       </div>
 
-      <div className="mt-auto">
-        <div style={{ borderTop: '1px solid #E0E2EB' }} />
-        <div className="p-6 pt-6">
-          <Info />
+      {hasMoreActivities && (
+        <div className="p-4 pt-0">
+          <button
+            onClick={onViewFullLog}
+            className="w-full py-3 text-center font-medium transition-colors"
+            style={{
+              color: '#1a1b1e',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            View Full Log
+          </button>
         </div>
-      </div>
+      )}
     </div>
   )
 }
 
-export default ActivityLogSidebar
+export default ActivityLogCard

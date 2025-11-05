@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import TransactionModal from './TransactionModal'
 import Shimmer from './Shimmer'
-import { useActivityHighlight } from '../contexts/ActivityHighlightContext'
-import { colors } from '../constants/colors'
+import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
+import { colors } from '../../constants/colors'
 
 interface ActionProps {
   usdcBalance: string

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import morphoLogo from '../assets/morpho-logo-light.svg'
+import morphoLogo from '../../assets/morpho-logo-light.svg'
 import Shimmer from './Shimmer'
-import { useActivityHighlight } from '../contexts/ActivityHighlightContext'
-import { colors } from '../constants/colors'
+import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
+import { colors } from '../../constants/colors'
 
 interface LentBalanceProps {
   depositedAmount: string | null
