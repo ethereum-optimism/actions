@@ -24,7 +24,7 @@ export interface UseBalanceOperationsConfig {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarket['marketId']) => Promise<LendMarketPosition>
-  mintAsset: (assetSymbol: string, chainId: number) => Promise<void>
+  mintUSDC: () => Promise<void>
   openPosition: (
     positionParams: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
@@ -113,19 +113,16 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     [getPositionRaw, logActivity],
   )
 
-  const mintAsset = useCallback(
-    async (assetSymbol: string, chainId: number) => {
-      const activity = logActivity('wallet.fund()')
-      try {
-        await mintAssetRaw(assetSymbol, chainId)
-        activity?.confirm()
-      } catch (error) {
-        activity?.error()
-        throw error
-      }
-    },
-    [mintAssetRaw, logActivity],
-  )
+  const mintUSDC = useCallback(async () => {
+    const activity = logActivity('wallet.fund()')
+    try {
+      await mintUSDCRaw()
+      activity?.confirm()
+    } catch (error) {
+      activity?.error()
+      throw error
+    }
+  }, [mintUSDCRaw, logActivity])
 
   const fetchBalance = useCallback(async () => {
     try {
@@ -203,7 +200,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
   }, [getPosition, getMarkets, getTokenBalances, selectedAssetSymbol])
 
   // Function to mint demo asset
-  const handleMintAsset = useCallback(async () => {
+  const handleMintUSDC = useCallback(async () => {
     // Early exit if precondition not met
     if (!isReady() || !selectedMarketId) {
       return
@@ -211,7 +208,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
     try {
       setIsLoadingBalance(true)
-      await mintAsset(selectedAssetSymbol, selectedMarketId.chainId)
+      await mintUSDC()
 
       // Transaction succeeded - optimistically update balance with the minted amount (100 tokens)
       const currentBalance = parseFloat(assetBalance)
@@ -254,7 +251,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   // Auto-initialize balance on first ready state
   useEffect(() => {
-    if (!ready || hasInitialized.current) {
+    if (!isReady() || hasInitialized.current) {
       return
     }
 
@@ -499,7 +496,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
   return {
     assetBalance,
     isLoadingBalance,
-    handleMintAsset,
+    handleMintUSDC,
     isLoadingApy,
     apy,
     isInitialLoad,

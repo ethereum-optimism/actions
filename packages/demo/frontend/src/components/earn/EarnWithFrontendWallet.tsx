@@ -1,6 +1,11 @@
 import { encodeFunctionData } from 'viem'
+import { baseSepolia } from 'viem/chains'
 import { getTokenBySymbol } from '@eth-optimism/actions-sdk/react'
-import type { LendMarketId, Wallet } from '@eth-optimism/actions-sdk/react'
+import type {
+  LendMarketId,
+  Wallet,
+  SupportedChainId,
+} from '@eth-optimism/actions-sdk/react'
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi'
 import Earn from './Earn'
 import {
@@ -78,6 +83,7 @@ export function EarnWithFrontendWallet({
     },
     [wallet],
   )
+
   const openPosition = useCallback(
     async (positionParams: LendExecutePositionParams) =>
       wallet!.lend!.openPosition(positionParams),
@@ -93,7 +99,7 @@ export function EarnWithFrontendWallet({
   const {
     assetBalance,
     isLoadingBalance,
-    handleMintAsset,
+    handleMintUSDC,
     isLoadingApy,
     apy,
     isInitialLoad,
@@ -104,7 +110,7 @@ export function EarnWithFrontendWallet({
     getTokenBalances,
     getMarkets,
     getPosition,
-    mintAsset,
+    mintUSDC,
     openPosition,
     closePosition,
     isReady,
@@ -125,7 +131,7 @@ export function EarnWithFrontendWallet({
       depositedAmount={depositedAmount}
       isLoadingPosition={isLoadingPosition}
       isInitialLoad={isInitialLoad}
-      onMintUSDC={handleMintAsset}
+      onMintUSDC={handleMintUSDC}
       onTransaction={handleTransaction}
       onMarketChange={setSelectedMarket}
     />
