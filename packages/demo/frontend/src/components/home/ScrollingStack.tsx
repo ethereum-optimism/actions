@@ -10,6 +10,7 @@ export interface LayerContentItem {
   images?: string[]
   imageLabel?: string
   mobileHeightBuffer?: number
+  soonBadge?: boolean
 }
 
 // Mobile breakpoint constants (475-1023px)
@@ -631,11 +632,32 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             {content[prevLayerRef.current - 1].description}
                           </p>
                         </div>
-                        <CodeBlock
-                          code={content[prevLayerRef.current - 1].code}
-                          filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
-                          opacity={contentOpacity}
-                        />
+                        <div style={{ position: 'relative' }}>
+                          <div style={{ position: 'relative', zIndex: 0 }}>
+                            <CodeBlock
+                              code={content[prevLayerRef.current - 1].code}
+                              filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                              opacity={contentOpacity}
+                            />
+                          </div>
+                          <img
+                            src="/soon.png"
+                            alt="Coming Soon"
+                            style={{
+                              position: 'absolute',
+                              bottom: '10px',
+                              right: '5%',
+                              width: '200px',
+                              height: 'auto',
+                              zIndex: 1,
+                              opacity: content[prevLayerRef.current - 1]
+                                .soonBadge
+                                ? 0.3
+                                : 0,
+                              pointerEvents: 'none',
+                            }}
+                          />
+                        </div>
                         {content[prevLayerRef.current - 1].images && (
                           <div
                             className="mt-6"
@@ -805,11 +827,32 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             {content[prevLayerRef.current - 1].description}
                           </p>
                         </div>
-                        <CodeBlock
-                          code={content[prevLayerRef.current - 1].code}
-                          filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
-                          opacity={contentOpacity}
-                        />
+                        <div style={{ position: 'relative' }}>
+                          <div style={{ position: 'relative', zIndex: 0 }}>
+                            <CodeBlock
+                              code={content[prevLayerRef.current - 1].code}
+                              filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                              opacity={contentOpacity}
+                            />
+                          </div>
+                          <img
+                            src="/soon.png"
+                            alt="Coming Soon"
+                            style={{
+                              position: 'absolute',
+                              bottom: '10px',
+                              right: '5%',
+                              width: '220px',
+                              height: 'auto',
+                              zIndex: 1,
+                              opacity: content[prevLayerRef.current - 1]
+                                .soonBadge
+                                ? 0.3
+                                : 0,
+                              pointerEvents: 'none',
+                            }}
+                          />
+                        </div>
                         {content[prevLayerRef.current - 1].images && (
                           <div className="mt-6">
                             {content[prevLayerRef.current - 1].imageLabel && (

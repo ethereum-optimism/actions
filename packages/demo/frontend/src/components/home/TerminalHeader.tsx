@@ -9,7 +9,7 @@ function TerminalHeader({ filename }: TerminalHeaderProps) {
     <div
       className="px-4 py-3 border-b flex items-center justify-between"
       style={{
-        backgroundColor: colors.bg.header,
+        backgroundColor: 'rgba(40, 40, 40, 0.99)',
         borderColor: 'rgba(184, 187, 38, 0.15)',
         backdropFilter: 'blur(10px)',
       }}

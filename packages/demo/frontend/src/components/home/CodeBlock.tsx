@@ -20,7 +20,7 @@ function CodeBlock({
     <div
       className="rounded-lg overflow-hidden mb-4 md:mb-8 shadow-2xl"
       style={{
-        backgroundColor: colors.bg.code,
+        backgroundColor: 'rgba(40, 40, 40, 0.99)',
         border: '1px solid rgba(80, 73, 69, 0.3)',
         boxShadow:
           '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(184, 187, 38, 0.05)',
@@ -28,14 +28,13 @@ function CodeBlock({
     >
       <div
         style={{
-          opacity,
           transition: 'opacity 0.15s ease-in-out',
         }}
       >
         <TerminalHeader filename={filename} />
         <div
           className="px-1 py-2 md:px-8 md:py-4 text-left relative"
-          style={{ backgroundColor: colors.bg.code }}
+          style={{ backgroundColor: 'transparent' }}
         >
           <Code code={code} language={language} />
           <CopyButton text={code} />

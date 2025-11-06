@@ -51,6 +51,7 @@ const receipt = wallet.lend.openPosition({
     title: 'Borrow',
     description:
       'Let users borrow assets against lent collateral. Configure preferred markets with allow & block lists',
+    soonBadge: true,
     code: `// Fetch live market data
 const markets = actions.borrow.getMarkets(USDC);
 
@@ -65,6 +66,7 @@ const receipt = wallet.borrow.openPosition({
     title: 'Swap',
     description:
       'Enable onchain trading between configurable protocols and assets.',
+    soonBadge: true,
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,
@@ -75,6 +77,7 @@ const receipt = wallet.swap.execute({
   {
     title: 'Pay',
     description: 'Simple interface for transfers and payments.',
+    soonBadge: true,
     code: `// Easy, safe asset transfers
 const receipt = wallet.send({
   amount: 1,
