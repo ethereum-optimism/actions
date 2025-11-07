@@ -66,7 +66,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   // Wrap operations with activity logging
   const getTokenBalances = useCallback(async () => {
-    const activity = logActivity('wallet.getBalance()')
+    const activity = logActivity('getBalance')
     try {
       const result = await getTokenBalancesRaw()
       activity?.confirm()
@@ -77,23 +77,24 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     }
   }, [getTokenBalancesRaw, logActivity])
 
-  const getMarkets = useCallback(async () => {
-    const activity = logActivity('actions.lend.getMarkets()')
-    try {
-      const result = await getMarketsRaw()
-      activity?.confirm()
-      return result
-    } catch (error) {
-      activity?.error()
-      throw error
-    }
-  }, [getMarketsRaw, logActivity])
+  const getMarkets = useCallback(
+    async (withLogging: boolean = true) => {
+      const activity = withLogging ? logActivity('getMarket') : null
+      try {
+        const result = await getMarketsRaw()
+        activity?.confirm()
+        return result
+      } catch (error) {
+        activity?.error()
+        throw error
+      }
+    },
+    [getMarketsRaw, logActivity],
+  )
 
   const getPosition = useCallback(
     async (marketId: LendMarketId, withLogging: boolean = true) => {
-      const activity = withLogging
-        ? logActivity('wallet.lend.getPosition()')
-        : null
+      const activity = withLogging ? logActivity('getPosition') : null
       try {
         const result = await getPositionRaw(marketId)
         activity?.confirm()
@@ -107,7 +108,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
   )
 
   const mintUSDC = useCallback(async () => {
-    const activity = logActivity('wallet.fund()')
+    const activity = logActivity('mint')
     try {
       await mintUSDCRaw()
       activity?.confirm()
@@ -121,12 +122,12 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     try {
       setIsLoadingBalance(true)
       const tokenBalances = await getTokenBalances()
-      const vaults = await getMarkets()
+      const vaults = await getMarkets(false)
 
       const vaultBalances = await Promise.all(
         vaults.map(async (vault) => {
           try {
-            const vaultBalance = await getPosition(vault.marketId)
+            const vaultBalance = await getPosition(vault.marketId, false)
 
             // Only include vaults with non-zero balances
             if (vaultBalance.balance > 0n) {
@@ -202,28 +203,34 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       await mintUSDC()
 
       // Transaction succeeded - optimistically update balance with the minted amount (100 USDC)
-      const currentBalance = parseFloat(usdcBalance)
+      const currentBalance = parseFloat(usdcBalance) || 0
       const mintedAmount = 100
       const newOptimisticBalance = (currentBalance + mintedAmount).toFixed(2)
       setUsdcBalance(newOptimisticBalance)
       setIsLoadingBalance(false)
 
-      // Fetch actual balance to verify/correct the optimistic update
-      const balanceResult = await getTokenBalances()
-      const usdcToken = balanceResult.find(
-        (token) => token.symbol === 'USDC_DEMO',
-      )
+      // Fetch actual balance in background to verify - but don't reset if not found yet
+      setTimeout(async () => {
+        try {
+          const balanceResult = await getTokenBalances()
+          const usdcToken = balanceResult.find(
+            (token) => token.symbol === 'USDC_DEMO',
+          )
 
-      if (usdcToken && usdcToken.totalBalance > 0) {
-        const actualBalance = parseFloat(`${usdcToken.totalBalance}`) / 1e6
-        const flooredBalance = Math.floor(actualBalance * 100) / 100
-        const actualBalanceStr = flooredBalance.toFixed(2)
+          if (usdcToken && usdcToken.totalBalance > 0) {
+            const actualBalance = parseFloat(`${usdcToken.totalBalance}`) / 1e6
+            const flooredBalance = Math.floor(actualBalance * 100) / 100
+            const actualBalanceStr = flooredBalance.toFixed(2)
 
-        // Only update if different from optimistic value
-        if (actualBalanceStr !== newOptimisticBalance) {
-          setUsdcBalance(actualBalanceStr)
+            // Only update if different from optimistic value
+            if (actualBalanceStr !== newOptimisticBalance) {
+              setUsdcBalance(actualBalanceStr)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching balance after mint:', error)
         }
-      }
+      }, 2000)
     } catch (error) {
       console.error('Error minting USDC:', error)
       setIsLoadingBalance(false)
@@ -271,9 +278,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       const positionParams = { amount, asset, marketId }
 
       const activity =
-        operation === 'open'
-          ? logActivity('wallet.lend.openPosition()')
-          : logActivity('wallet.lend.closePosition()')
+        operation === 'open' ? logActivity('deposit') : logActivity('withdraw')
       const result =
         operation === 'open'
           ? await openPosition(positionParams).catch((error) => {

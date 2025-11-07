@@ -4,6 +4,7 @@ interface TransactionModalProps {
   onClose: () => void
   transactionHash?: string
   blockExplorerUrl?: string
+  mode?: 'lend' | 'withdraw'
 }
 
 function TransactionModal({
@@ -12,6 +13,7 @@ function TransactionModal({
   onClose,
   transactionHash,
   blockExplorerUrl,
+  mode,
 }: TransactionModalProps) {
   if (!isOpen) return null
 
@@ -49,7 +51,10 @@ function TransactionModal({
             </div>
           ),
           title: 'Transaction Successful',
-          description: 'Your USDC is now earning interest',
+          description:
+            mode === 'withdraw'
+              ? 'Your USDC is no longer earning interest'
+              : 'Your USDC is now earning interest',
           showClose: true,
         }
       case 'error':

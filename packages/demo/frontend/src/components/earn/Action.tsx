@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import TransactionModal from './TransactionModal'
 import Shimmer from './Shimmer'
+import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
+import { colors } from '../../constants/colors'
 
 interface ActionProps {
   usdcBalance: string
   isLoadingBalance: boolean
-  apy: number | null
-  isLoadingApy: boolean
   depositedAmount: string | null
   onMintUSDC?: () => void
   onTransaction: (
@@ -25,14 +25,12 @@ interface ActionProps {
 export function Action({
   usdcBalance,
   isLoadingBalance,
-  apy,
-  isLoadingApy,
   depositedAmount,
   onMintUSDC,
   onTransaction,
 }: ActionProps) {
+  const { hoveredAction } = useActivityHighlight()
   const [isLoading, setIsLoading] = useState(false)
-  const [showTooltip, setShowTooltip] = useState(false)
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -111,7 +109,17 @@ export function Action({
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
-      <div className="py-6 px-6">
+      <div
+        className="py-6 px-6 transition-all"
+        style={{
+          backgroundColor:
+            hoveredAction === 'getBalance'
+              ? colors.highlight.background
+              : 'transparent',
+          borderTopLeftRadius: '24px',
+          borderTopRightRadius: '24px',
+        }}
+      >
         <div className="flex items-center justify-between">
           <h2
             className="font-semibold"
@@ -121,46 +129,81 @@ export function Action({
           </h2>
           <div className="flex items-center gap-2">
             {isLoadingBalance ? (
-              <Shimmer width="60px" height="20px" borderRadius="4px" />
+              <Shimmer width="60px" height="26px" borderRadius="6px" />
             ) : !usdcBalance ||
               usdcBalance === '0.00' ||
               usdcBalance === '0' ||
               parseFloat(usdcBalance || '0') === 0 ? (
-              <button
-                onClick={onMintUSDC}
-                className="flex items-center gap-1.5 py-1.5 px-3 transition-all hover:bg-gray-50"
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  color: '#1a1b1e',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  borderRadius: '6px',
-                  border: '1px solid #E0E2EB',
-                  cursor: 'pointer',
-                  fontFamily: 'Inter',
-                }}
-              >
-                Get 100 USDC
-              </button>
+              <>
+                <button
+                  onClick={onMintUSDC}
+                  className="flex items-center gap-1.5 transition-all hover:bg-gray-50"
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor:
+                      hoveredAction === 'mint'
+                        ? colors.highlight.background
+                        : '#FFFFFF',
+                    color: '#1a1b1e',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    borderRadius: '6px',
+                    border:
+                      hoveredAction === 'mint'
+                        ? `1px solid ${colors.highlight.border}`
+                        : '1px solid #E0E2EB',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter',
+                  }}
+                >
+                  Get 100 USDC
+                </button>
+                <img
+                  src="/usd-coin-usdc-logo.svg"
+                  alt="USDC"
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                  }}
+                />
+              </>
             ) : (
-              <span
-                style={{
-                  color: '#000',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-              >
-                ${usdcBalance}
-              </span>
+              <>
+                <div
+                  className="flex items-center gap-2 transition-all"
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor:
+                      hoveredAction === 'mint'
+                        ? colors.highlight.background
+                        : 'transparent',
+                    borderRadius: '6px',
+                    border:
+                      hoveredAction === 'mint'
+                        ? `1px solid ${colors.highlight.border}`
+                        : '1px solid transparent',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: '#000',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    ${usdcBalance}
+                  </span>
+                  <img
+                    src="/usd-coin-usdc-logo.svg"
+                    alt="USDC"
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                    }}
+                  />
+                </div>
+              </>
             )}
-            <img
-              src="/usd-coin-usdc-logo.svg"
-              alt="USDC"
-              style={{
-                width: '20px',
-                height: '20px',
-              }}
-            />
           </div>
         </div>
       </div>
@@ -171,99 +214,6 @@ export function Action({
         className="py-6 px-6"
         style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}
       >
-        <div className="flex items-center justify-between">
-          <div
-            className="flex items-center gap-2"
-            style={{ position: 'relative' }}
-          >
-            <div
-              className="inline-flex items-center gap-1"
-              style={{ position: 'relative' }}
-            >
-              <span
-                style={{
-                  color: '#000',
-                  fontSize: '14px',
-                }}
-              >
-                APY
-              </span>
-              <div
-                onMouseEnter={() => setShowTooltip(true)}
-                onMouseLeave={() => setShowTooltip(false)}
-                style={{
-                  position: 'relative',
-                  display: 'inline-flex',
-                  cursor: 'pointer',
-                }}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#666666"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                {showTooltip && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      bottom: '100%',
-                      left: '50%',
-                      transform: 'translateX(-50%) translateY(-8px)',
-                      padding: '8px 12px',
-                      backgroundColor: 'rgba(0, 0, 0, 0.56)',
-                      color: '#FFFFFF',
-                      fontSize: '12px',
-                      borderRadius: '6px',
-                      whiteSpace: 'nowrap',
-                      zIndex: 10,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    }}
-                  >
-                    Annual Percentage Yield: the rate of return earned on an
-                    investment over one year
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        width: 0,
-                        height: 0,
-                        borderLeft: '4px solid transparent',
-                        borderRight: '4px solid transparent',
-                        borderTop: '4px solid rgba(0, 0, 0, 0.56)',
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          {isLoadingApy ? (
-            <Shimmer width="50px" height="20px" borderRadius="4px" />
-          ) : (
-            <span
-              style={{
-                color: '#000',
-                fontFamily: 'Inter',
-                fontSize: '14px',
-                fontWeight: 500,
-              }}
-            >
-              {apy !== null ? `${(apy * 100).toFixed(2)}%` : '0.00%'}
-            </span>
-          )}
-        </div>
-
         <div
           style={{
             display: 'flex',
@@ -275,6 +225,7 @@ export function Action({
         >
           <button
             onClick={() => setMode('lend')}
+            className="transition-all"
             style={{
               flex: 1,
               padding: '10px 32px',
@@ -284,8 +235,12 @@ export function Action({
               fontWeight: 500,
               fontFamily: 'Inter',
               cursor: 'pointer',
-              transition: 'all 0.2s',
-              backgroundColor: mode === 'lend' ? '#FFFFFF' : 'transparent',
+              backgroundColor:
+                mode === 'lend'
+                  ? '#FFFFFF'
+                  : hoveredAction === 'deposit' && mode === 'withdraw'
+                    ? colors.highlight.background
+                    : 'transparent',
               color: mode === 'lend' ? '#000' : '#666',
               boxShadow:
                 mode === 'lend' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
@@ -295,6 +250,7 @@ export function Action({
           </button>
           <button
             onClick={() => setMode('withdraw')}
+            className="transition-all"
             style={{
               flex: 1,
               padding: '10px 32px',
@@ -304,8 +260,12 @@ export function Action({
               fontWeight: 500,
               fontFamily: 'Inter',
               cursor: 'pointer',
-              transition: 'all 0.2s',
-              backgroundColor: mode === 'withdraw' ? '#FFFFFF' : 'transparent',
+              backgroundColor:
+                mode === 'withdraw'
+                  ? '#FFFFFF'
+                  : hoveredAction === 'withdraw' && mode === 'lend'
+                    ? colors.highlight.background
+                    : 'transparent',
               color: mode === 'withdraw' ? '#000' : '#666',
               boxShadow:
                 mode === 'withdraw' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
@@ -315,7 +275,30 @@ export function Action({
           </button>
         </div>
 
-        <div>
+        <div
+          className="transition-all"
+          style={{
+            backgroundColor:
+              (hoveredAction === 'deposit' && mode === 'lend') ||
+              (hoveredAction === 'withdraw' && mode === 'withdraw')
+                ? colors.highlight.background
+                : 'transparent',
+            borderRadius: '12px',
+            padding:
+              (hoveredAction === 'deposit' && mode === 'lend') ||
+              (hoveredAction === 'withdraw' && mode === 'withdraw')
+                ? '16px'
+                : '0',
+            margin:
+              (hoveredAction === 'deposit' && mode === 'lend') ||
+              (hoveredAction === 'withdraw' && mode === 'withdraw')
+                ? '-16px'
+                : '0',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '32px',
+          }}
+        >
           <div
             style={{
               display: 'flex',
@@ -397,20 +380,10 @@ export function Action({
               </span>
             </div>
           </div>
-        </div>
 
-        <button
-          onClick={handleLendUSDC}
-          disabled={
-            isLoading ||
-            !amount ||
-            parseFloat(amount) <= 0 ||
-            parseFloat(amount) >
-              parseFloat(mode === 'lend' ? usdcBalance : depositedAmount || '0')
-          }
-          className="w-full py-3 px-4 font-medium transition-all"
-          style={{
-            backgroundColor:
+          <button
+            onClick={handleLendUSDC}
+            disabled={
               isLoading ||
               !amount ||
               parseFloat(amount) <= 0 ||
@@ -418,40 +391,52 @@ export function Action({
                 parseFloat(
                   mode === 'lend' ? usdcBalance : depositedAmount || '0',
                 )
-                ? '#D1D5DB'
-                : '#FF0420',
-            color:
-              isLoading ||
-              !amount ||
-              parseFloat(amount) <= 0 ||
-              parseFloat(amount) >
-                parseFloat(
-                  mode === 'lend' ? usdcBalance : depositedAmount || '0',
-                )
-                ? '#6B7280'
-                : '#FFFFFF',
-            fontSize: '16px',
-            borderRadius: '12px',
-            border: 'none',
-            cursor:
-              isLoading ||
-              !amount ||
-              parseFloat(amount) <= 0 ||
-              parseFloat(amount) >
-                parseFloat(
-                  mode === 'lend' ? usdcBalance : depositedAmount || '0',
-                )
-                ? 'not-allowed'
-                : 'pointer',
-            opacity: 1,
-          }}
-        >
-          {isLoading
-            ? 'Processing...'
-            : mode === 'lend'
-              ? 'Lend USDC'
-              : 'Withdraw USDC'}
-        </button>
+            }
+            className="w-full py-3 px-4 font-medium transition-all"
+            style={{
+              backgroundColor:
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) >
+                  parseFloat(
+                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                  )
+                  ? '#D1D5DB'
+                  : '#FF0420',
+              color:
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) >
+                  parseFloat(
+                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                  )
+                  ? '#6B7280'
+                  : '#FFFFFF',
+              fontSize: '16px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor:
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) >
+                  parseFloat(
+                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                  )
+                  ? 'not-allowed'
+                  : 'pointer',
+              opacity: 1,
+            }}
+          >
+            {isLoading
+              ? 'Processing...'
+              : mode === 'lend'
+                ? 'Lend USDC'
+                : 'Withdraw USDC'}
+          </button>
+        </div>
       </div>
 
       <TransactionModal
@@ -460,6 +445,7 @@ export function Action({
         onClose={handleModalClose}
         transactionHash={transactionHash}
         blockExplorerUrl={blockExplorerUrl}
+        mode={mode}
       />
     </div>
   )

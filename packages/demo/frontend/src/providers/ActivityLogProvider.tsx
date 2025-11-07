@@ -12,10 +12,20 @@ export type ActivityEntry = {
   isFromPreviousSession?: boolean
 }
 
-const STORAGE_KEY = 'activity-log'
-const NEXT_ID_KEY = 'activity-log-next-id'
+export function ActivityLogProvider({
+  children,
+  walletProvider,
+}: {
+  children: ReactNode
+  walletProvider?: string
+}) {
+  const STORAGE_KEY = walletProvider
+    ? `activity-log-${walletProvider}`
+    : 'activity-log'
+  const NEXT_ID_KEY = walletProvider
+    ? `activity-log-next-id-${walletProvider}`
+    : 'activity-log-next-id'
 
-export function ActivityLogProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<ActivityEntry[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
@@ -55,7 +65,7 @@ export function ActivityLogProvider({ children }: { children: ReactNode }) {
     } catch {
       // Ignore errors
     }
-  }, [activities])
+  }, [activities, STORAGE_KEY, NEXT_ID_KEY])
 
   const addActivity = useCallback(
     (entry: Omit<ActivityEntry, 'id' | 'timestamp'>) => {
@@ -130,7 +140,7 @@ export function ActivityLogProvider({ children }: { children: ReactNode }) {
     } catch {
       // Ignore errors
     }
-  }, [])
+  }, [STORAGE_KEY, NEXT_ID_KEY])
 
   return (
     <ActivityLogContext.Provider

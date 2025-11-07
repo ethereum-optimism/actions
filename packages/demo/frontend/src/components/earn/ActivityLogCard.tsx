@@ -1,6 +1,6 @@
 import ActivityLogItem from './ActivityLogItem'
-import ActivityLogIcon from './icons/ActivityLogIcon'
-import type { ActivityEntry } from '../providers/ActivityLogProvider'
+import ActivityLogIcon from '../icons/ActivityLogIcon'
+import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
 interface ActivityLogCardProps {
   activities: ActivityEntry[]

@@ -16,24 +16,33 @@ function Info() {
       >
         <li className="flex items-start">
           <span className="mr-2">•</span>
-          <span>Actions creates a smart wallet for you.</span>
-        </li>
-        <li className="flex items-start">
-          <span className="mr-2">•</span>
-          <span>You can mint demo USDC into the wallet to try actions.</span>
+          <span>
+            Your chosen wallet provider created an embedded wallet for you email
+            address.
+          </span>
         </li>
         <li className="flex items-start">
           <span className="mr-2">•</span>
           <span>
-            When you click Lend USDC, Actions gets a quote and opens a lending
-            position on Base Sepolia.
+            Actions created a smart wallet and added your embedded wallet as a
+            signer.
           </span>
+        </li>
+        <li className="flex items-start">
+          <span className="mr-2">•</span>
+          <span>
+            This section logs all SDK calls in real-time as they execute.
+          </span>
+        </li>
+        <li className="flex items-start">
+          <span className="mr-2">•</span>
+          <span>Mint, lend, and withdraw USDC to test the SDK.</span>
         </li>
       </ul>
 
       <div className="space-y-3">
         <a
-          href="/#getting-started"
+          href="/docs"
           className="flex items-center justify-between p-3 rounded-lg transition-all hover:bg-gray-50"
         >
           <div className="flex items-center gap-2">
