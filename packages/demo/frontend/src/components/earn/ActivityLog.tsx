@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useActivityLog } from '../hooks/useActivityLog'
+import { useActivityLog } from '../../hooks/useActivityLog'
 import ActivityLogCard from './ActivityLogCard'
 import ActivityLogSidebar from './ActivityLogSidebar'
 import ActivityLogPanel from './ActivityLogPanel'

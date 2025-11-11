@@ -36,4 +36,8 @@ export const colors = {
     yellow: '#ffbd2e',
     green: '#b8bb26', // gruvbox bright green
   },
+  highlight: {
+    background: '#DBEAFE',
+    border: '#3B82F6',
+  },
 } as const
