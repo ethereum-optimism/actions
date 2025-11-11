@@ -55,19 +55,19 @@ export class WalletNamespace<
   /**
    * Create a new smart wallet
    * @description Creates a smart wallet and attempts to deploy it across all supported chains.
-   * The wallet address is deterministically calculated from owners and nonce. The signer must
-   * be included in the owners array. Deployment failures on individual chains do not prevent
+   * The wallet address is deterministically calculated from signers and nonce. The signer must
+   * be included in the signers array. Deployment failures on individual chains do not prevent
    * wallet creation - they are reported in the result.
    * @param params - Smart wallet creation parameters
-   * @param params.owners - Array of owners for the smart wallet (addresses or WebAuthn public keys)
-   * @param params.signer - Local account used for signing transactions (must be in owners array)
+   * @param params.signer - Primary local account used for signing transactions
+   * @param params.signers - Optional array of additional signers for the smart wallet
    * @param params.nonce - Optional nonce for smart wallet address generation (defaults to 0)
    * @param params.deploymentChainIds - Optional chain IDs to deploy the wallet to.
    * If not provided, the wallet will be deployed to all supported chains.
    * @returns Promise resolving to deployment result containing:
    * - `wallet`: The created SmartWallet instance
    * - `deployments`: Array of deployment results with chainId, receipt, success flag, and error
-   * @throws Error if signer is not included in the owners array
+   * @throws Error if signer is not included in the signers array
    */
   async createSmartWallet(
     params: CreateSmartWalletOptions,
@@ -110,14 +110,14 @@ export class WalletNamespace<
    * you already have a LocalAccount signer and want to access an existing smart wallet without
    * going through the hosted wallet provider. Use this instead of getSmartWalletWithHostedSigner
    * when you have direct control over the signer.
-   * @param signer - Local account to use for signing transactions on the smart wallet
-   * @param getWalletParams - Wallet retrieval parameters
-   * @param getWalletParams.deploymentOwners - Array of original deployment owners for smart wallet address calculation. Required if walletAddress not provided. Must match the exact owners array used during wallet deployment.
-   * @param getWalletParams.signerOwnerIndex - Current index of the signer in the smart wallet's current owners array (used for transaction signing). Defaults to 0 if not specified. This may differ from the original deployment index if owners have been modified.
-   * @param getWalletParams.walletAddress - Optional explicit smart wallet address (skips address calculation)
-   * @param getWalletParams.nonce - Optional nonce used during smart wallet creation
+   * @param params - Wallet retrieval parameters
+   * @param params.signer - Local account to use for signing transactions on the smart wallet
+   * @param params.signers - Optional array of additional signers for the smart wallet
+   * @param params.deploymentSigners - Optional array of signers used during wallet deployment
+   * @param params.walletAddress - Optional explicit smart wallet address (skips address calculation)
+   * @param params.nonce - Optional nonce used during smart wallet creation
    * @returns Promise resolving to the smart wallet instance with the provided signer
-   * @throws Error if neither walletAddress nor deploymentOwners provided
+   * @throws Error if neither walletAddress nor deploymentSigners provided
    */
   async getSmartWallet(params: GetSmartWalletOptions) {
     return this.provider.getSmartWallet(params)
