@@ -1,4 +1,3 @@
-import { colors } from '@/constants/colors'
 import Code from '@/components/home/Code'
 import CopyButton from '@/components/home/CopyButton'
 import TerminalHeader from '@/components/home/TerminalHeader'
@@ -7,14 +6,12 @@ interface CodeBlockProps {
   code: string
   filename: string
   language?: string
-  opacity?: number
 }
 
 function CodeBlock({
   code,
   filename,
   language = 'typescript',
-  opacity = 1,
 }: CodeBlockProps) {
   return (
     <div

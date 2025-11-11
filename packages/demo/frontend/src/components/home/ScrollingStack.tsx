@@ -637,7 +637,6 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             <CodeBlock
                               code={content[prevLayerRef.current - 1].code}
                               filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
-                              opacity={contentOpacity}
                             />
                           </div>
                           <img
@@ -832,7 +831,6 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             <CodeBlock
                               code={content[prevLayerRef.current - 1].code}
                               filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
-                              opacity={contentOpacity}
                             />
                           </div>
                           <img
