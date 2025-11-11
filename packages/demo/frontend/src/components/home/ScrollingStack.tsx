@@ -652,7 +652,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               zIndex: 1,
                               opacity: content[prevLayerRef.current - 1]
                                 .soonBadge
-                                ? 0.3
+                                ? 0.4
                                 : 0,
                               pointerEvents: 'none',
                             }}
@@ -847,7 +847,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               zIndex: 1,
                               opacity: content[prevLayerRef.current - 1]
                                 .soonBadge
-                                ? 0.3
+                                ? 0.4
                                 : 0,
                               pointerEvents: 'none',
                             }}
