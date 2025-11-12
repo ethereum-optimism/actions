@@ -74,6 +74,10 @@ Thanks for your help improving the project! We are so happy to have you!
 
 You can read our contribution guide [here](./CONTRIBUTING.md) to understand better how we work in the repo.
 
+## New Version Release
+
+Instructions for releasing a new sdk version are found [here](./CONTRIBUTING.md).
+
 ## License
 
 All other files within this repository are licensed under the [MIT License](https://github.com/ethereum-optimism/actions/blob/main/LICENSE) unless stated otherwise.
