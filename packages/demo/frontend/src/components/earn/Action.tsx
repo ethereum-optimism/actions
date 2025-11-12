@@ -382,20 +382,9 @@ export function Action({
             </div>
           </div>
 
-        <button
-          onClick={handleLendUSDC}
-          disabled={
-            isLoading ||
-            !amount ||
-            parseFloat(amount) <= 0 ||
-            parseFloat(amount) >
-              parseFloat(
-                mode === 'lend' ? assetBalance : depositedAmount || '0',
-              )
-          }
-          className="w-full py-3 px-4 font-medium transition-all"
-          style={{
-            backgroundColor:
+          <button
+            onClick={handleLendUSDC}
+            disabled={
               isLoading ||
               !amount ||
               parseFloat(amount) <= 0 ||
@@ -403,40 +392,52 @@ export function Action({
                 parseFloat(
                   mode === 'lend' ? assetBalance : depositedAmount || '0',
                 )
-                ? '#D1D5DB'
-                : '#FF0420',
-            color:
-              isLoading ||
-              !amount ||
-              parseFloat(amount) <= 0 ||
-              parseFloat(amount) >
-                parseFloat(
-                  mode === 'lend' ? assetBalance : depositedAmount || '0',
-                )
-                ? '#6B7280'
-                : '#FFFFFF',
-            fontSize: '16px',
-            borderRadius: '12px',
-            border: 'none',
-            cursor:
-              isLoading ||
-              !amount ||
-              parseFloat(amount) <= 0 ||
-              parseFloat(amount) >
-                parseFloat(
-                  mode === 'lend' ? assetBalance : depositedAmount || '0',
-                )
-                ? 'not-allowed'
-                : 'pointer',
-            opacity: 1,
-          }}
-        >
-          {isLoading
-            ? 'Processing...'
-            : mode === 'lend'
-              ? `Lend ${assetSymbol}`
-              : `Withdraw ${assetSymbol}`}
-        </button>
+            }
+            className="w-full py-3 px-4 font-medium transition-all"
+            style={{
+              backgroundColor:
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) >
+                  parseFloat(
+                    mode === 'lend' ? assetBalance : depositedAmount || '0',
+                  )
+                  ? '#D1D5DB'
+                  : '#FF0420',
+              color:
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) >
+                  parseFloat(
+                    mode === 'lend' ? assetBalance : depositedAmount || '0',
+                  )
+                  ? '#6B7280'
+                  : '#FFFFFF',
+              fontSize: '16px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor:
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) >
+                  parseFloat(
+                    mode === 'lend' ? assetBalance : depositedAmount || '0',
+                  )
+                  ? 'not-allowed'
+                  : 'pointer',
+              opacity: 1,
+            }}
+          >
+            {isLoading
+              ? 'Processing...'
+              : mode === 'lend'
+                ? `Lend ${assetSymbol}`
+                : `Withdraw ${assetSymbol}`}
+          </button>
+        </div>
       </div>
 
       <TransactionModal

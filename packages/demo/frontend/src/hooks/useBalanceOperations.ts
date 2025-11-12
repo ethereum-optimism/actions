@@ -24,7 +24,7 @@ export interface UseBalanceOperationsConfig {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarket['marketId']) => Promise<LendMarketPosition>
-  mintUSDC: () => Promise<void>
+  mintAsset: (assetSymbol: string, chainId: number) => Promise<void>
   openPosition: (
     positionParams: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
@@ -113,17 +113,6 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     [getPositionRaw, logActivity],
   )
 
-  const mintUSDC = useCallback(async () => {
-    const activity = logActivity('wallet.fund()')
-    try {
-      await mintUSDCRaw()
-      activity?.confirm()
-    } catch (error) {
-      activity?.error()
-      throw error
-    }
-  }, [mintUSDCRaw, logActivity])
-
   const fetchBalance = useCallback(async () => {
     try {
       setIsLoadingBalance(true)
@@ -208,7 +197,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
     try {
       setIsLoadingBalance(true)
-      await mintUSDC()
+      await mintAssetRaw(selectedAssetSymbol, selectedMarketId.chainId)
 
       // Transaction succeeded - optimistically update balance with the minted amount (100 tokens)
       const currentBalance = parseFloat(assetBalance)
@@ -240,7 +229,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       setIsLoadingBalance(false)
     }
   }, [
-    mintAsset,
+    mintAssetRaw,
     isReady,
     fetchBalance,
     assetBalance,
@@ -267,7 +256,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     }
 
     initialize()
-  }, [ready, fetchBalance])
+  }, [isReady, fetchBalance])
 
   // Refetch balance when selected asset changes
   useEffect(() => {
@@ -278,7 +267,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   const executePositon = useCallback(
     async (operation: 'open' | 'close', amount: number) => {
-      if (!ready || !marketData) {
+      if (!isReady() || !marketData) {
         throw new Error('User or market data not available')
       }
       const marketId = marketData.marketId
@@ -342,13 +331,13 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
       return { transaction }
     },
-    [ready, marketData],
+    [isReady, marketData],
   )
 
   // Handle transaction (lend or withdraw)
   const handleTransaction = useCallback(
     async (mode: 'lend' | 'withdraw', amount: number) => {
-      if (!ready || !marketData) {
+      if (!isReady() || !marketData) {
         throw new Error('User or market data not available')
       }
 
@@ -374,7 +363,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
       // Refresh position after successful transaction with a small delay to ensure state is updated
       setTimeout(async () => {
-        if (ready && marketData) {
+        if (isReady() && marketData) {
           try {
             await fetchPosition()
           } catch {
@@ -384,7 +373,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       }, 1000)
 
       // Also refresh wallet balance
-      if (ready) {
+      if (isReady()) {
         setTimeout(async () => {
           await fetchBalance()
         }, 2000)
@@ -395,7 +384,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
         blockExplorerUrl: explorerUrl,
       }
     },
-    [ready, marketData, fetchBalance],
+    [isReady, marketData, fetchBalance],
   )
 
   // Fetch market APY and data when selected market changes
@@ -451,7 +440,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   const fetchPosition = useCallback(
     async (backgroundPolling: boolean = false) => {
-      if (!ready || !marketChainId || !marketAddress) return
+      if (!isReady() || !marketChainId || !marketAddress) return
 
       try {
         if (!backgroundPolling) {
@@ -476,22 +465,22 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
         }
       }
     },
-    [ready, marketChainId, marketAddress, getPosition],
+    [isReady, marketChainId, marketAddress, getPosition],
   )
 
   // Fetch position when market data is available or user changes
   useEffect(() => {
-    if (ready && marketChainId && marketAddress) {
+    if (isReady() && marketChainId && marketAddress) {
       fetchPosition()
     }
-  }, [ready, marketChainId, marketAddress, fetchPosition])
+  }, [isReady, marketChainId, marketAddress, fetchPosition])
 
   useEffect(() => {
-    if (!ready || !marketChainId || !marketAddress) return
+    if (!isReady() || !marketChainId || !marketAddress) return
 
     const intervalId = setInterval(() => fetchPosition(true), 5000)
     return () => clearInterval(intervalId)
-  }, [ready, marketChainId, marketAddress, fetchPosition])
+  }, [isReady, marketChainId, marketAddress, fetchPosition])
 
   return {
     assetBalance,

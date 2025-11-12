@@ -27,11 +27,10 @@ interface EarnWithServerWalletProps {
  * and passes data/callbacks to the presentational EarnContent component
  */
 export function EarnWithServerWallet({
-  ready,
   getAuthHeaders,
   logout,
   selectedProvider,
-}: EarnWithServerWalletProps) {
+}: Omit<EarnWithServerWalletProps, 'ready'>) {
   // State for wallet balance and lend position
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
 
@@ -54,10 +53,15 @@ export function EarnWithServerWallet({
     [getAuthHeaders],
   )
 
-  const mintUSDC = useCallback(async () => {
-    const headers = await getAuthHeaders()
-    await actionsApi.mintDemoUsdcToWallet(headers)
-  }, [getAuthHeaders])
+  const mintAsset = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async (_assetSymbol: string, _chainId: number) => {
+      const headers = await getAuthHeaders()
+      // For now, server wallet only supports USDC minting
+      await actionsApi.mintDemoUsdcToWallet(headers)
+    },
+    [getAuthHeaders],
+  )
 
   const openPosition = useCallback(
     async (positionParams: LendExecutePositionParams) => {
@@ -75,8 +79,11 @@ export function EarnWithServerWallet({
     [getAuthHeaders],
   )
 
+  const ready = true // Server wallet is always ready
+  const isReady = () => ready
+
   const {
-    usdcBalance,
+    assetBalance,
     isLoadingBalance,
     handleMintUSDC,
     isLoadingApy,
@@ -89,10 +96,12 @@ export function EarnWithServerWallet({
     getTokenBalances,
     getMarkets,
     getPosition,
-    mintUSDC,
+    mintAsset,
     openPosition,
     closePosition,
-    ready,
+    isReady,
+    selectedMarketId: null,
+    selectedAssetSymbol: 'USDC_DEMO',
   })
 
   const fetchWalletAddress = useCallback(async () => {
@@ -113,7 +122,7 @@ export function EarnWithServerWallet({
       selectedProviderConfig={selectedProvider}
       walletAddress={walletAddress}
       logout={logout}
-      usdcBalance={usdcBalance}
+      usdcBalance={assetBalance}
       isLoadingBalance={isLoadingBalance}
       apy={apy}
       isLoadingApy={isLoadingApy}

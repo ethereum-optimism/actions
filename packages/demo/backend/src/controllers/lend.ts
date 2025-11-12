@@ -45,10 +45,7 @@ const ClosePositionRequestSchema = z.object({
 export async function getMarkets(c: Context) {
   try {
     const markets = await lendService.getMarkets()
-    const formattedMarkets = await Promise.all(
-      markets.map((market) => lendService.formatMarketResponse(market)),
-    )
-    return c.json({ markets: formattedMarkets })
+    return c.json({ markets })
   } catch (error) {
     console.error('[getMarkets] ERROR:', {
       error,

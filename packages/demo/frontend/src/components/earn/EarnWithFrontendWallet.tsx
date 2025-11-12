@@ -1,5 +1,4 @@
 import { encodeFunctionData } from 'viem'
-import { baseSepolia } from 'viem/chains'
 import { getTokenBySymbol } from '@eth-optimism/actions-sdk/react'
 import type {
   LendMarketId,
@@ -62,7 +61,7 @@ export function EarnWithFrontendWallet({
       if (!token) {
         throw new Error(`Token ${assetSymbol} not found`)
       }
-      const tokenAddress = token.address[chainId]
+      const tokenAddress = token.address[chainId as SupportedChainId]
       if (!tokenAddress) {
         throw new Error(
           `Token ${assetSymbol} not available on chain ${chainId}`,
@@ -79,7 +78,7 @@ export function EarnWithFrontendWallet({
           value: 0n,
         },
       ]
-      await wallet!.sendBatch(calls, chainId)
+      await wallet!.sendBatch(calls, chainId as SupportedChainId)
     },
     [wallet],
   )
@@ -95,6 +94,7 @@ export function EarnWithFrontendWallet({
     [wallet],
   )
   const ready = !!wallet
+  const isReady = () => ready
 
   const {
     assetBalance,
@@ -110,11 +110,14 @@ export function EarnWithFrontendWallet({
     getTokenBalances,
     getMarkets,
     getPosition,
-    mintUSDC,
+    mintAsset,
     openPosition,
     closePosition,
     isReady,
-    selectedMarketId: selectedMarket?.marketId,
+    selectedMarketId: selectedMarket?.marketId as
+      | LendMarketId
+      | null
+      | undefined,
     selectedAssetSymbol: selectedMarket?.assetSymbol,
   })
 

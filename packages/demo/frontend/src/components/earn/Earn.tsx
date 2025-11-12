@@ -25,6 +25,10 @@ export interface EarnContentProps {
     transactionHash?: string
     blockExplorerUrl?: string
   }>
+  onMarketChange?: (market: {
+    marketId: { chainId: number; address: string }
+    assetSymbol: string
+  }) => void
 }
 
 /**
@@ -141,10 +145,12 @@ function Earn({
 
               <div className="space-y-6">
                 <Action
-                  usdcBalance={usdcBalance}
+                  assetBalance={usdcBalance}
                   isLoadingBalance={isLoadingBalance}
                   depositedAmount={depositedAmount}
-                  onMintUSDC={onMintUSDC}
+                  assetSymbol="USDC"
+                  assetLogo="/usdc-logo.svg"
+                  onMintAsset={onMintUSDC}
                   onTransaction={onTransaction}
                 />
                 <LentBalance

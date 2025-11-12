@@ -10,11 +10,7 @@ import { baseSepolia, unichain } from 'viem/chains'
 
 import { getAaveActions, getMorphoActions } from '../config/actions.js'
 import { ALL_MARKETS } from '../config/markets.js'
-import type {
-  FormattedMarketResponse,
-  PositionParams,
-  PositionResponse,
-} from '../types/index.js'
+import type { PositionParams } from '../types/index.js'
 import { getWallet } from './wallet.js'
 
 function getActionsForMarket(marketId: LendMarketId) {

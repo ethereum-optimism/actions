@@ -5,7 +5,7 @@ import {
   type ReactActionsConfig,
   type ReactProviderTypes,
 } from '@eth-optimism/actions-sdk/react'
-import { baseSepolia, optimismSepolia } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 
 export function useActions<T extends ReactProviderTypes>({
   hostedWalletProviderType,
@@ -20,7 +20,7 @@ export function useActions<T extends ReactProviderTypes>({
           hostedWalletConfig: {
             provider: {
               type: hostedWalletProviderType,
-            } as const,
+            },
           },
           smartWalletConfig: {
             provider: {
@@ -47,14 +47,8 @@ export function useActions<T extends ReactProviderTypes>({
                 }
               : undefined,
           },
-          {
-            chainId: optimismSepolia.id,
-            rpcUrls: env.VITE_OPTIMISM_SEPOLIA_RPC_URL
-              ? [env.VITE_OPTIMISM_SEPOLIA_RPC_URL]
-              : undefined,
-          },
         ],
-      }) as ReactActionsConfig<T>,
+      }) as unknown as ReactActionsConfig<T>,
     [hostedWalletProviderType],
   )
 
