@@ -707,11 +707,13 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         minWidth: 0,
                                       }}
                                       onMouseEnter={(e) => {
-                                        const img = e.currentTarget.querySelector('img')
+                                        const img =
+                                          e.currentTarget.querySelector('img')
                                         if (img) img.style.opacity = '0.7'
                                       }}
                                       onMouseLeave={(e) => {
-                                        const img = e.currentTarget.querySelector('img')
+                                        const img =
+                                          e.currentTarget.querySelector('img')
                                         if (img) img.style.opacity = '1'
                                       }}
                                     >
@@ -928,11 +930,13 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         minWidth: 0,
                                       }}
                                       onMouseEnter={(e) => {
-                                        const img = e.currentTarget.querySelector('img')
+                                        const img =
+                                          e.currentTarget.querySelector('img')
                                         if (img) img.style.opacity = '0.7'
                                       }}
                                       onMouseLeave={(e) => {
-                                        const img = e.currentTarget.querySelector('img')
+                                        const img =
+                                          e.currentTarget.querySelector('img')
                                         if (img) img.style.opacity = '1'
                                       }}
                                     >
