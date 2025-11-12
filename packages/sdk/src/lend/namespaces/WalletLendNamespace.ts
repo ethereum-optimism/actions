@@ -39,6 +39,10 @@ export class WalletLendNamespace<
   /**
    * Open a lending position
    * @description Signs and sends a lend transaction from the wallet for the given amount and asset
+   * @param params - Lending position parameters
+   * @param params.marketId - Market identifier to open position in
+   * @param params.amount - Amount to lend
+   * @returns Promise resolving to transaction receipt
    */
   async openPosition(
     params: LendOpenPositionParams,
@@ -86,8 +90,10 @@ export class WalletLendNamespace<
 
   /**
    * Close a lending position (withdraw from market)
-   * @param closePositionParams - Position closing parameters
-   * @returns Promise resolving to transaction hash
+   * @param params - Position closing parameters
+   * @param params.marketId - Market identifier to close position in
+   * @param params.amount - Amount to withdraw
+   * @returns Promise resolving to transaction receipt
    */
   async closePosition(
     params: ClosePositionParams,

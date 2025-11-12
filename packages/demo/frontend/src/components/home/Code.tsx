@@ -79,6 +79,7 @@ function Code({ code, language = 'typescript' }: CodeProps) {
   return (
     <>
       <style>{`
+        .hljs { background: transparent !important; }
         .hljs-keyword { color: ${colors.syntax.keyword} !important; }
         .hljs-variable.constant_ { color: ${colors.syntax.string} !important; }
         code.hljs { color: ${colors.blue} !important; }
@@ -95,7 +96,7 @@ function Code({ code, language = 'typescript' }: CodeProps) {
       `}</style>
       <pre
         style={{
-          background: colors.bg.code,
+          background: 'transparent',
           margin: 0,
           padding: 0,
           fontVariantLigatures: 'none',

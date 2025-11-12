@@ -14,7 +14,11 @@ const content: LayerContentItem[] = [
     title: 'Wallet',
     description:
       'Actions supports embedded wallet providers, creating smart wallets, managing signers, and sponsoring transactions with a gas paymaster.',
-    images: [PrivyLogo, TurnkeyLogo, DynamicLogo],
+    images: [
+      { src: PrivyLogo, link: 'https://www.privy.io/' },
+      { src: TurnkeyLogo, link: 'https://www.turnkey.com/' },
+      { src: DynamicLogo, link: 'https://www.dynamic.xyz/' },
+    ],
     imageLabel: 'Supports embedded wallet providers:',
     mobileHeightBuffer: 0,
     code: `// Make onchain Actions from any embedded wallet
@@ -51,8 +55,9 @@ const receipt = wallet.lend.openPosition({
     title: 'Borrow',
     description:
       'Let users borrow assets against lent collateral. Configure preferred markets with allow & block lists',
+    soonBadge: true,
     code: `// Fetch live market data
-const markets = actions.borrow.getMarkets(USDC);
+const markets = actions.borrow.getMarkets(ETH);
 
 // Borrow against lent collateral
 const receipt = wallet.borrow.openPosition({
@@ -65,6 +70,7 @@ const receipt = wallet.borrow.openPosition({
     title: 'Swap',
     description:
       'Enable onchain trading between configurable protocols and assets.',
+    soonBadge: true,
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,

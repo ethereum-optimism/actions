@@ -7,9 +7,10 @@ export interface LayerContentItem {
   title: string
   description: string
   code: string
-  images?: string[]
+  images?: Array<{ src: string; link?: string }>
   imageLabel?: string
   mobileHeightBuffer?: number
+  soonBadge?: boolean
 }
 
 // Mobile breakpoint constants (475-1023px)
@@ -631,11 +632,32 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             {content[prevLayerRef.current - 1].description}
                           </p>
                         </div>
-                        <CodeBlock
-                          code={content[prevLayerRef.current - 1].code}
-                          filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
-                          opacity={contentOpacity}
-                        />
+                        <div style={{ position: 'relative' }}>
+                          <div style={{ position: 'relative', zIndex: 0 }}>
+                            <CodeBlock
+                              code={content[prevLayerRef.current - 1].code}
+                              filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                            />
+                          </div>
+                          <img
+                            src="/soon.png"
+                            alt="Coming Soon"
+                            className="hidden sm:block"
+                            style={{
+                              position: 'absolute',
+                              bottom: '10px',
+                              right: '5%',
+                              width: '200px',
+                              height: 'auto',
+                              zIndex: 1,
+                              opacity: content[prevLayerRef.current - 1]
+                                .soonBadge
+                                ? 0.4
+                                : 0,
+                              pointerEvents: 'none',
+                            }}
+                          />
+                        </div>
                         {content[prevLayerRef.current - 1].images && (
                           <div
                             className="mt-6"
@@ -656,24 +678,59 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             <div
                               style={{
                                 display: 'flex',
-                                gap: '1rem',
+                                gap: '3rem',
                                 alignItems: 'center',
                               }}
                             >
                               {content[prevLayerRef.current - 1].images?.map(
-                                (image, index) => (
-                                  <img
-                                    key={index}
-                                    src={image}
-                                    alt={`Provider ${index + 1}`}
-                                    style={{
-                                      flex: '1 1 0',
-                                      minWidth: 0,
-                                      maxWidth: '33%',
-                                      height: 'auto',
-                                    }}
-                                  />
-                                ),
+                                (image, index) => {
+                                  const img = (
+                                    <img
+                                      key={index}
+                                      src={image.src}
+                                      alt={`Provider ${index + 1}`}
+                                      style={{
+                                        width: '100%',
+                                        height: 'auto',
+                                        transition: 'opacity 0.2s ease',
+                                      }}
+                                    />
+                                  )
+                                  return image.link ? (
+                                    <a
+                                      key={index}
+                                      href={image.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        flex: '1 1 0',
+                                        minWidth: 0,
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        const img =
+                                          e.currentTarget.querySelector('img')
+                                        if (img) img.style.opacity = '0.7'
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        const img =
+                                          e.currentTarget.querySelector('img')
+                                        if (img) img.style.opacity = '1'
+                                      }}
+                                    >
+                                      {img}
+                                    </a>
+                                  ) : (
+                                    <div
+                                      key={index}
+                                      style={{
+                                        flex: '1 1 0',
+                                        minWidth: 0,
+                                      }}
+                                    >
+                                      {img}
+                                    </div>
+                                  )
+                                },
                               )}
                             </div>
                           </div>
@@ -776,6 +833,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                       overflow: 'hidden',
                       maxHeight: '80vh',
                       position: 'relative',
+                      paddingBottom: '120px',
                     }}
                   >
                     <div>
@@ -805,11 +863,31 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             {content[prevLayerRef.current - 1].description}
                           </p>
                         </div>
-                        <CodeBlock
-                          code={content[prevLayerRef.current - 1].code}
-                          filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
-                          opacity={contentOpacity}
-                        />
+                        <div style={{ position: 'relative' }}>
+                          <div style={{ position: 'relative', zIndex: 0 }}>
+                            <CodeBlock
+                              code={content[prevLayerRef.current - 1].code}
+                              filename={`${content[prevLayerRef.current - 1].title.toLowerCase()}.ts`}
+                            />
+                          </div>
+                          <img
+                            src="/soon.png"
+                            alt="Coming Soon"
+                            style={{
+                              position: 'absolute',
+                              bottom: '10px',
+                              right: '5%',
+                              width: '220px',
+                              height: 'auto',
+                              zIndex: 1,
+                              opacity: content[prevLayerRef.current - 1]
+                                .soonBadge
+                                ? 0.4
+                                : 0,
+                              pointerEvents: 'none',
+                            }}
+                          />
+                        </div>
                         {content[prevLayerRef.current - 1].images && (
                           <div className="mt-6">
                             {content[prevLayerRef.current - 1].imageLabel && (
@@ -823,24 +901,59 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             <div
                               style={{
                                 display: 'flex',
-                                gap: '1rem',
+                                gap: '3rem',
                                 alignItems: 'center',
                               }}
                             >
                               {content[prevLayerRef.current - 1].images?.map(
-                                (image, index) => (
-                                  <img
-                                    key={index}
-                                    src={image}
-                                    alt={`Provider ${index + 1}`}
-                                    style={{
-                                      flex: '1 1 0',
-                                      minWidth: 0,
-                                      maxWidth: '33%',
-                                      height: 'auto',
-                                    }}
-                                  />
-                                ),
+                                (image, index) => {
+                                  const img = (
+                                    <img
+                                      key={index}
+                                      src={image.src}
+                                      alt={`Provider ${index + 1}`}
+                                      style={{
+                                        width: '100%',
+                                        height: 'auto',
+                                        transition: 'opacity 0.2s ease',
+                                      }}
+                                    />
+                                  )
+                                  return image.link ? (
+                                    <a
+                                      key={index}
+                                      href={image.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        flex: '1 1 0',
+                                        minWidth: 0,
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        const img =
+                                          e.currentTarget.querySelector('img')
+                                        if (img) img.style.opacity = '0.7'
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        const img =
+                                          e.currentTarget.querySelector('img')
+                                        if (img) img.style.opacity = '1'
+                                      }}
+                                    >
+                                      {img}
+                                    </a>
+                                  ) : (
+                                    <div
+                                      key={index}
+                                      style={{
+                                        flex: '1 1 0',
+                                        minWidth: 0,
+                                      }}
+                                    >
+                                      {img}
+                                    </div>
+                                  )
+                                },
                               )}
                             </div>
                           </div>
