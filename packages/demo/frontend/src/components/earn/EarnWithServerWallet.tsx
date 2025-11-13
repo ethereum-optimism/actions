@@ -48,13 +48,12 @@ const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
       : '/aave-logo.svg'
 
   // Determine asset info
-  const assetSymbol = market.asset.metadata.symbol.replace('_DEMO', '')
-  const assetLogo =
-    assetSymbol === 'USDC'
-      ? '/usd-coin-usdc-logo.svg'
-      : assetSymbol === 'WETH'
-        ? '/eth.svg'
-        : '/usd-coin-usdc-logo.svg'
+  const assetSymbol = market.asset.metadata.symbol
+  const assetLogo = assetSymbol.includes('USDC')
+    ? '/usd-coin-usdc-logo.svg'
+    : assetSymbol.includes('WETH')
+      ? '/eth.svg'
+      : '/usd-coin-usdc-logo.svg'
 
   // Extract simple market name
   const marketName = market.name.split(' ')[0] || market.name

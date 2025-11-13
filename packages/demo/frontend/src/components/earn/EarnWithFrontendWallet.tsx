@@ -32,8 +32,7 @@ export interface EarnWithFrontendWalletProps {
   selectedProvider: FrontendWalletProviderType
 }
 
-// TEMPORARY: Helper functions to get both Morpho and Aave markets
-// TODO: Remove once SDK supports multiple providers in a single instance
+// Helper to create Actions config for a specific lend provider
 function createActionsConfig<T extends ReactProviderTypes>(
   hostedWalletProviderType: T,
   lendProvider: 'morpho' | 'aave',
@@ -118,13 +117,12 @@ const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
       : '/aave-logo.svg'
 
   // Determine asset info
-  const assetSymbol = market.asset.metadata.symbol.replace('_DEMO', '')
-  const assetLogo =
-    assetSymbol === 'USDC'
-      ? '/usd-coin-usdc-logo.svg'
-      : assetSymbol === 'WETH'
-        ? '/eth.svg'
-        : '/usd-coin-usdc-logo.svg'
+  const assetSymbol = market.asset.metadata.symbol
+  const assetLogo = assetSymbol.includes('USDC')
+    ? '/usd-coin-usdc-logo.svg'
+    : assetSymbol.includes('WETH')
+      ? '/eth.svg'
+      : '/usd-coin-usdc-logo.svg'
 
   // Extract simple market name
   const marketName = market.name.split(' ')[0] || market.name
@@ -150,19 +148,29 @@ export function EarnWithFrontendWallet({
 }: EarnWithFrontendWalletProps) {
   const hostedWalletProviderType =
     FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS[selectedProvider]
+
+  // Primary Actions instance (Morpho) - used for balance operations
   const morphoActions = useActionsMorpho(hostedWalletProviderType)
+
+  // Secondary Actions instance (Aave) - only used for Aave lend operations
   const aaveActions = useActionsAave(hostedWalletProviderType)
+
   const [selectedMarket, setSelectedMarket] = useState<MarketPosition | null>(
     null,
   )
   const [markets, setMarkets] = useState<MarketInfo[]>([])
   const [isLoadingMarkets, setIsLoadingMarkets] = useState(true)
 
-  // Memoize operation functions to prevent infinite loops
+  // Primary wallet - ALWAYS use for balance operations to prevent flickering
+  const primaryWallet = wallet
+
+  // Balance operations - ALWAYS use primary wallet only
   const getTokenBalances = useCallback(
-    async () => wallet!.getBalance(),
-    [wallet],
+    async () => primaryWallet!.getBalance(),
+    [primaryWallet],
   )
+
+  // Market fetching - get from both providers
   const getMarkets = useCallback(async () => {
     const [morphoMarkets, aaveMarkets] = await Promise.all([
       morphoActions.lend.getMarkets(),
@@ -170,9 +178,12 @@ export function EarnWithFrontendWallet({
     ])
     return [...morphoMarkets, ...aaveMarkets]
   }, [morphoActions, aaveActions])
+
+  // Position operations - use primary wallet
   const getPosition = useCallback(
-    async (marketId: LendMarketId) => wallet!.lend!.getPosition({ marketId }),
-    [wallet],
+    async (marketId: LendMarketId) =>
+      primaryWallet!.lend!.getPosition({ marketId }),
+    [primaryWallet],
   )
   const mintAsset = useCallback(
     async (assetSymbol: string, chainId: number) => {
@@ -208,15 +219,16 @@ export function EarnWithFrontendWallet({
     [wallet],
   )
 
+  // Lend operations - use primary wallet
   const openPosition = useCallback(
     async (positionParams: LendExecutePositionParams) =>
-      wallet!.lend!.openPosition(positionParams),
-    [wallet],
+      primaryWallet!.lend!.openPosition(positionParams),
+    [primaryWallet],
   )
   const closePosition = useCallback(
     async (positionParams: LendExecutePositionParams) =>
-      wallet!.lend!.closePosition(positionParams),
-    [wallet],
+      primaryWallet!.lend!.closePosition(positionParams),
+    [primaryWallet],
   )
   const ready = !!wallet
   const isReady = useCallback(() => ready, [ready])
@@ -260,7 +272,8 @@ export function EarnWithFrontendWallet({
     if (ready) {
       fetchMarkets()
     }
-  }, [ready, getMarkets, selectedMarket])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, getMarkets])
 
   const {
     assetBalance,

@@ -47,6 +47,18 @@ export function useActions<T extends ReactProviderTypes>({
                 }
               : undefined,
           },
+          {
+            chainId: optimismSepolia.id,
+            rpcUrls: env.VITE_OPTIMISM_SEPOLIA_RPC_URL
+              ? [env.VITE_BASE_SEPOLIA_RPC_URL]
+              : undefined,
+            bundler: env.VITE_BASE_SEPOLIA_BUNDER_URL
+              ? {
+                  type: 'simple',
+                  url: env.VITE_BASE_SEPOLIA_BUNDER_URL,
+                }
+              : undefined,
+          },
         ],
       }) as unknown as ReactActionsConfig<T>,
     [hostedWalletProviderType],

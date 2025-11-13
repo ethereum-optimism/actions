@@ -35,6 +35,7 @@ export function Action({
 }: ActionProps) {
   const { hoveredAction } = useActivityHighlight()
   const [isLoading, setIsLoading] = useState(false)
+  const displaySymbol = assetSymbol.replace('_DEMO', '')
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -151,7 +152,7 @@ export function Action({
                     fontFamily: 'Inter',
                   }}
                 >
-                  Get 100 {assetSymbol}
+                  Get 100 {displaySymbol}
                 </button>
                 <img
                   src={assetLogo}
@@ -371,7 +372,7 @@ export function Action({
                   fontFamily: 'Inter',
                 }}
               >
-                {assetSymbol}
+                {displaySymbol}
               </span>
             </div>
           </div>
@@ -428,8 +429,8 @@ export function Action({
             {isLoading
               ? 'Processing...'
               : mode === 'lend'
-                ? `Lend ${assetSymbol}`
-                : `Withdraw ${assetSymbol}`}
+                ? `Lend ${displaySymbol}`
+                : `Withdraw ${displaySymbol}`}
           </button>
         </div>
       </div>

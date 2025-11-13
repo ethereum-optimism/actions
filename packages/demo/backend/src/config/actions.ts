@@ -35,7 +35,7 @@ export function createMorphoActionsConfig(): NodeActionsConfig<'privy'> {
     lend: {
       provider: 'morpho',
       defaultSlippage: 50,
-      marketAllowlist: [GauntletUSDCDemo],
+      marketAllowlist: [GauntletUSDCDemo], // Only Morpho markets
     },
     chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }
@@ -47,7 +47,7 @@ export function createAaveActionsConfig(): NodeActionsConfig<'privy'> {
     lend: {
       provider: 'aave',
       defaultSlippage: 50,
-      marketAllowlist: [AaveWETH],
+      marketAllowlist: [AaveWETH], // Only Aave markets
     },
     chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }

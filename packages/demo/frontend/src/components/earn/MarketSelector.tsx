@@ -185,53 +185,54 @@ export function MarketSelector({
               .map((market, index) => {
                 return (
                   <button
-                  key={`${market.marketId.address}-${market.marketId.chainId}`}
-                  onClick={() => handleMarketClick(market)}
-                  className="w-full px-4 py-3 flex items-center transition-all hover:bg-gray-50"
-                  style={{
-                    borderTop: index > 0 ? '1px solid #E0E2EB' : 'none',
-                  }}
-                >
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="relative flex items-center">
+                    key={`${market.marketId.address}-${market.marketId.chainId}`}
+                    onClick={() => handleMarketClick(market)}
+                    className="w-full px-4 py-3 flex items-center transition-all hover:bg-gray-50"
+                    style={{
+                      borderTop: index > 0 ? '1px solid #E0E2EB' : 'none',
+                    }}
+                  >
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="relative flex items-center">
+                        <img
+                          src={market.assetLogo}
+                          alt={market.assetSymbol}
+                          className="h-6 w-6"
+                        />
+                        <img
+                          src={market.logo}
+                          alt={market.name}
+                          className="h-4 w-4 absolute -right-1 -bottom-1 bg-white rounded-full"
+                        />
+                      </div>
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: '#1a1b1e' }}
+                      >
+                        {market.name} {market.assetSymbol}
+                      </span>
+                      <span className="text-sm" style={{ color: '#666666' }}>
+                        on
+                      </span>
                       <img
-                        src={market.assetLogo}
-                        alt={market.assetSymbol}
-                        className="h-6 w-6"
+                        src={market.networkLogo}
+                        alt={market.networkName}
+                        className="h-5 w-5"
                       />
-                      <img
-                        src={market.logo}
-                        alt={market.name}
-                        className="h-4 w-4 absolute -right-1 -bottom-1 bg-white rounded-full"
-                      />
+                      <span className="text-sm" style={{ color: '#666666' }}>
+                        {market.networkName}
+                      </span>
+                      <span
+                        className="text-sm font-semibold ml-auto"
+                        style={{ color: '#1a1b1e' }}
+                      >
+                        {market.isLoadingApy ? '...' : formatApy(market.apy)}{' '}
+                        APY
+                      </span>
                     </div>
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: '#1a1b1e' }}
-                    >
-                      {market.name} {market.assetSymbol}
-                    </span>
-                    <span className="text-sm" style={{ color: '#666666' }}>
-                      on
-                    </span>
-                    <img
-                      src={market.networkLogo}
-                      alt={market.networkName}
-                      className="h-5 w-5"
-                    />
-                    <span className="text-sm" style={{ color: '#666666' }}>
-                      {market.networkName}
-                    </span>
-                    <span
-                      className="text-sm font-semibold ml-auto"
-                      style={{ color: '#1a1b1e' }}
-                    >
-                      {market.isLoadingApy ? '...' : formatApy(market.apy)} APY
-                    </span>
-                  </div>
-                </button>
-              )
-            })}
+                  </button>
+                )
+              })}
           </div>
         </div>
       )}

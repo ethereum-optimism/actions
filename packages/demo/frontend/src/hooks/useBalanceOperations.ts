@@ -257,7 +257,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
     initialize()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady])
+  }, [])
 
   // Refetch balance when selected asset changes
   useEffect(() => {
@@ -265,7 +265,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       fetchBalance()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAssetSymbol, isReady])
+  }, [selectedAssetSymbol])
 
   const executePositon = useCallback(
     async (operation: 'open' | 'close', amount: number) => {
