@@ -30,7 +30,7 @@ export function EarnWithServerWallet({
   getAuthHeaders,
   logout,
   selectedProvider,
-}: Omit<EarnWithServerWalletProps, 'ready'>) {
+}: EarnWithServerWalletProps) {
   // State for wallet balance and lend position
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
 

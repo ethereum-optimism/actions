@@ -5,6 +5,7 @@ import Info from './Info'
 import { WalletProviderDropdown } from './WalletProviderDropdown'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { ActivityHighlightProvider } from '@/contexts/ActivityHighlightContext'
+import type { MarketPosition } from '@/types/market'
 export interface EarnContentProps {
   ready: boolean
   logout: () => Promise<void>
@@ -25,10 +26,7 @@ export interface EarnContentProps {
     transactionHash?: string
     blockExplorerUrl?: string
   }>
-  onMarketChange?: (market: {
-    marketId: { chainId: number; address: string }
-    assetSymbol: string
-  }) => void
+  onMarketChange?: (market: MarketPosition | null) => void
 }
 
 /**
