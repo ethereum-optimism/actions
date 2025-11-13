@@ -72,50 +72,16 @@ function LentBalance({
             Lent Balance
           </h2>
           {isInitialLoad ? (
-            // Shimmer state - single row without table headers
-            <div className="animate-pulse" style={{ padding: '16px 8px' }}>
-              <div className="flex items-center gap-8">
-                <div className="flex items-center gap-2" style={{ minWidth: '120px' }}>
-                  <div
-                    className="rounded-full flex-shrink-0"
-                    style={{ width: '20px', height: '20px', backgroundColor: '#E0E2EB' }}
-                  />
-                  <div
-                    className="rounded"
-                    style={{ width: '80px', height: '14px', backgroundColor: '#E0E2EB' }}
-                  />
-                </div>
-                <div className="flex items-center gap-2" style={{ minWidth: '130px' }}>
-                  <div
-                    className="rounded-full flex-shrink-0"
-                    style={{ width: '20px', height: '20px', backgroundColor: '#E0E2EB' }}
-                  />
-                  <div
-                    className="rounded"
-                    style={{ width: '90px', height: '14px', backgroundColor: '#E0E2EB' }}
-                  />
-                </div>
-                <div className="flex items-center gap-2" style={{ minWidth: '80px' }}>
-                  <div
-                    className="rounded-full flex-shrink-0"
-                    style={{ width: '20px', height: '20px', backgroundColor: '#E0E2EB' }}
-                  />
-                  <div
-                    className="rounded"
-                    style={{ width: '50px', height: '14px', backgroundColor: '#E0E2EB' }}
-                  />
-                </div>
-                <div className="ml-auto flex gap-8">
-                  <div
-                    className="rounded"
-                    style={{ width: '50px', height: '14px', backgroundColor: '#E0E2EB' }}
-                  />
-                  <div
-                    className="rounded"
-                    style={{ width: '70px', height: '14px', backgroundColor: '#E0E2EB' }}
-                  />
-                </div>
-              </div>
+            // Shimmer state - matches empty state text height
+            <div className="animate-pulse flex items-start">
+              <div
+                className="rounded"
+                style={{
+                  width: '100%',
+                  height: '20px',
+                  backgroundColor: '#E0E2EB',
+                }}
+              />
             </div>
           ) : isEmpty ? (
             <div className="flex items-start font-normal text-sm leading-5 text-secondary">
