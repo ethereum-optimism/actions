@@ -134,7 +134,10 @@ export function Action({
           </h2>
           <div className="flex items-center gap-2">
             {isLoadingBalance ? (
-              <Shimmer width="60px" height="26px" borderRadius="6px" />
+              <div className="flex items-center gap-1.5">
+                <Shimmer width="120px" height="33px" borderRadius="6px" />
+                <Shimmer width="20px" height="20px" borderRadius="50%" />
+              </div>
             ) : parseFloat(assetBalance || '0') === 0 ? (
               <>
                 <button

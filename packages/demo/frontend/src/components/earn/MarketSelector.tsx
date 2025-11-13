@@ -73,11 +73,16 @@ export function MarketSelector({
             alt={market.assetSymbol}
             className="h-6 w-6"
           />
-          <img
-            src={market.logo}
-            alt={market.name}
-            className="h-4 w-4 absolute -right-1 -bottom-1 bg-white rounded-full"
-          />
+          <div
+            className="absolute -right-1 -bottom-1 bg-white rounded-full flex items-center justify-center"
+            style={{ width: '18px', height: '18px', padding: '2px' }}
+          >
+            <img
+              src={market.logo}
+              alt={market.name}
+              style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }}
+            />
+          </div>
         </div>
         <span className="text-sm font-medium" style={{ color: '#1a1b1e' }}>
           {market.name} {market.assetSymbol}
@@ -107,7 +112,15 @@ export function MarketSelector({
   if (isLoading || (markets.length === 0 && !selectedMarket)) {
     return (
       <div className="w-full">
-        <div className="animate-pulse flex items-center gap-3 w-full">
+        <div
+          className="animate-pulse flex items-center gap-3 w-full px-4 py-3"
+          style={{
+            border: '1px solid #E0E2EB',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '12px',
+            minHeight: '48px',
+          }}
+        >
           <div
             className="h-6 w-6 rounded-full flex-shrink-0"
             style={{ backgroundColor: '#E0E2EB' }}
@@ -199,11 +212,16 @@ export function MarketSelector({
                           alt={market.assetSymbol}
                           className="h-6 w-6"
                         />
-                        <img
-                          src={market.logo}
-                          alt={market.name}
-                          className="h-4 w-4 absolute -right-1 -bottom-1 bg-white rounded-full"
-                        />
+                        <div
+                          className="absolute -right-1 -bottom-1 bg-white rounded-full flex items-center justify-center"
+                          style={{ width: '18px', height: '18px', padding: '2px' }}
+                        >
+                          <img
+                            src={market.logo}
+                            alt={market.name}
+                            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }}
+                          />
+                        </div>
                       </div>
                       <span
                         className="text-sm font-medium"

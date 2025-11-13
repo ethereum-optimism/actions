@@ -45,7 +45,7 @@ const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
     market.name.toLowerCase().includes('gauntlet') ||
     market.name.toLowerCase().includes('morpho')
       ? '/morpho-logo.svg'
-      : '/aave-logo.svg'
+      : '/aave-logo-dark.svg'
 
   // Determine asset info
   const assetSymbol = market.asset.metadata.symbol

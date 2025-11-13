@@ -114,7 +114,7 @@ const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
     market.name.toLowerCase().includes('gauntlet') ||
     market.name.toLowerCase().includes('morpho')
       ? '/morpho-logo.svg'
-      : '/aave-logo.svg'
+      : '/aave-logo-dark.svg'
 
   // Determine asset info
   const assetSymbol = market.asset.metadata.symbol
@@ -160,6 +160,7 @@ export function EarnWithFrontendWallet({
   )
   const [markets, setMarkets] = useState<MarketInfo[]>([])
   const [isLoadingMarkets, setIsLoadingMarkets] = useState(true)
+  const [marketPositions, setMarketPositions] = useState<MarketPosition[]>([])
 
   // Primary wallet - ALWAYS use for balance operations to prevent flickering
   const primaryWallet = wallet
@@ -317,6 +318,36 @@ export function EarnWithFrontendWallet({
     })
   }, [])
 
+  // Update marketPositions when selected market's position changes
+  useEffect(() => {
+    if (!selectedMarket || !depositedAmount || !apy) return
+
+    setMarketPositions((prev) => {
+      const existingIndex = prev.findIndex(
+        (p) =>
+          p.marketId.address.toLowerCase() ===
+            selectedMarket.marketId.address.toLowerCase() &&
+          p.marketId.chainId === selectedMarket.marketId.chainId,
+      )
+
+      const updatedMarket = {
+        ...selectedMarket,
+        depositedAmount,
+        apy,
+      }
+
+      if (existingIndex >= 0) {
+        // Update existing market
+        const newPositions = [...prev]
+        newPositions[existingIndex] = updatedMarket
+        return newPositions
+      } else {
+        // Add new market
+        return [...prev, updatedMarket]
+      }
+    })
+  }, [selectedMarket, depositedAmount, apy])
+
   return (
     <Earn
       ready={ready}
@@ -337,6 +368,7 @@ export function EarnWithFrontendWallet({
       selectedMarket={selectedMarket}
       onMarketSelect={handleMarketSelect}
       isLoadingMarkets={isLoadingMarkets}
+      marketPositions={marketPositions}
     />
   )
 }
