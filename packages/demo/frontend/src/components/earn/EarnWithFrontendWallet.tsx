@@ -13,15 +13,134 @@ import {
   type FrontendWalletProviderType,
 } from '@/constants/walletProviders'
 import { useBalanceOperations } from '@/hooks/useBalanceOperations'
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useEffect, useMemo } from 'react'
 import type { LendExecutePositionParams } from '@/types/api'
-import { useActions } from '@/hooks/useActions'
 import type { MarketPosition } from '@/types/market'
+import type { MarketInfo } from './MarketSelector'
+import type { LendMarket } from '@eth-optimism/actions-sdk'
+import { baseSepolia, optimismSepolia } from 'viem/chains'
+import {
+  createActions,
+  type ReactActionsConfig,
+  type ReactProviderTypes,
+} from '@eth-optimism/actions-sdk/react'
+import { env } from '@/envVars'
 
 export interface EarnWithFrontendWalletProps {
   wallet: Wallet | null
   logout: () => Promise<void>
   selectedProvider: FrontendWalletProviderType
+}
+
+// TEMPORARY: Helper functions to get both Morpho and Aave markets
+// TODO: Remove once SDK supports multiple providers in a single instance
+function createActionsConfig<T extends ReactProviderTypes>(
+  hostedWalletProviderType: T,
+  lendProvider: 'morpho' | 'aave',
+): ReactActionsConfig<T> {
+  return {
+    wallet: {
+      hostedWalletConfig: {
+        provider: {
+          type: hostedWalletProviderType,
+        },
+      },
+      smartWalletConfig: {
+        provider: {
+          type: 'default',
+          attributionSuffix: 'actions',
+        },
+      },
+    },
+    lend: {
+      provider: lendProvider,
+      marketAllowlist: [],
+    },
+    chains: [
+      {
+        chainId: baseSepolia.id,
+        rpcUrls: env.VITE_BASE_SEPOLIA_RPC_URL
+          ? [env.VITE_BASE_SEPOLIA_RPC_URL]
+          : undefined,
+        bundler: env.VITE_BASE_SEPOLIA_BUNDER_URL
+          ? {
+              type: 'simple',
+              url: env.VITE_BASE_SEPOLIA_BUNDER_URL,
+            }
+          : undefined,
+      },
+      {
+        chainId: optimismSepolia.id,
+      },
+    ],
+  } as unknown as ReactActionsConfig<T>
+}
+
+function useActionsMorpho<T extends ReactProviderTypes>(
+  hostedWalletProviderType: T,
+) {
+  const config = useMemo(
+    () => createActionsConfig(hostedWalletProviderType, 'morpho'),
+    [hostedWalletProviderType],
+  )
+  return useMemo(() => createActions(config), [config])
+}
+
+function useActionsAave<T extends ReactProviderTypes>(
+  hostedWalletProviderType: T,
+) {
+  const config = useMemo(
+    () => createActionsConfig(hostedWalletProviderType, 'aave'),
+    [hostedWalletProviderType],
+  )
+  return useMemo(() => createActions(config), [config])
+}
+
+const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
+  const chainId = market.marketId.chainId
+
+  // Determine network info
+  let networkName = 'Unknown'
+  let networkLogo = '/base-logo.svg'
+  if (chainId === baseSepolia.id) {
+    networkName = 'Base Sepolia'
+    networkLogo = '/base-logo.svg'
+  } else if (chainId === optimismSepolia.id) {
+    networkName = 'Optimism Sepolia'
+    networkLogo = '/OP.svg'
+  }
+
+  // Determine provider logo
+  const providerLogo =
+    market.name.toLowerCase().includes('gauntlet') ||
+    market.name.toLowerCase().includes('morpho')
+      ? '/morpho-logo.svg'
+      : '/aave-logo.svg'
+
+  // Determine asset info
+  const assetSymbol = market.asset.metadata.symbol.replace('_DEMO', '')
+  const assetLogo =
+    assetSymbol === 'USDC'
+      ? '/usd-coin-usdc-logo.svg'
+      : assetSymbol === 'WETH'
+        ? '/eth.svg'
+        : '/usd-coin-usdc-logo.svg'
+
+  // Extract simple market name
+  const marketName = market.name.split(' ')[0] || market.name
+
+  return {
+    name: marketName,
+    logo: providerLogo,
+    networkName,
+    networkLogo,
+    assetSymbol,
+    assetLogo,
+    apy: market.apy.total,
+    isLoadingApy: false,
+    marketId: market.marketId,
+    provider: market.name.toLowerCase().includes('aave') ? 'aave' : 'morpho',
+  }
 }
 
 export function EarnWithFrontendWallet({
@@ -31,20 +150,26 @@ export function EarnWithFrontendWallet({
 }: EarnWithFrontendWalletProps) {
   const hostedWalletProviderType =
     FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS[selectedProvider]
-  const { actions } = useActions({ hostedWalletProviderType })
+  const morphoActions = useActionsMorpho(hostedWalletProviderType)
+  const aaveActions = useActionsAave(hostedWalletProviderType)
   const [selectedMarket, setSelectedMarket] = useState<MarketPosition | null>(
     null,
   )
+  const [markets, setMarkets] = useState<MarketInfo[]>([])
+  const [isLoadingMarkets, setIsLoadingMarkets] = useState(true)
 
   // Memoize operation functions to prevent infinite loops
   const getTokenBalances = useCallback(
     async () => wallet!.getBalance(),
     [wallet],
   )
-  const getMarkets = useCallback(
-    async () => actions.lend.getMarkets(),
-    [actions],
-  )
+  const getMarkets = useCallback(async () => {
+    const [morphoMarkets, aaveMarkets] = await Promise.all([
+      morphoActions.lend.getMarkets(),
+      aaveActions.lend.getMarkets(),
+    ])
+    return [...morphoMarkets, ...aaveMarkets]
+  }, [morphoActions, aaveActions])
   const getPosition = useCallback(
     async (marketId: LendMarketId) => wallet!.lend!.getPosition({ marketId }),
     [wallet],
@@ -96,6 +221,47 @@ export function EarnWithFrontendWallet({
   const ready = !!wallet
   const isReady = useCallback(() => ready, [ready])
 
+  // Fetch available markets on mount
+  useEffect(() => {
+    const fetchMarkets = async () => {
+      try {
+        setIsLoadingMarkets(true)
+        const rawMarkets = await getMarkets()
+        const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
+        setMarkets(marketInfoList)
+
+        // Set default selected market (first one, preferably Gauntlet/USDC)
+        if (marketInfoList.length > 0 && !selectedMarket) {
+          const defaultMarket =
+            marketInfoList.find((m) => m.name === 'Gauntlet') ||
+            marketInfoList[0]
+          setSelectedMarket({
+            marketName: defaultMarket.name,
+            marketLogo: defaultMarket.logo,
+            networkName: defaultMarket.networkName,
+            networkLogo: defaultMarket.networkLogo,
+            assetSymbol: defaultMarket.assetSymbol,
+            assetLogo: defaultMarket.assetLogo,
+            apy: defaultMarket.apy,
+            depositedAmount: null,
+            isLoadingApy: false,
+            isLoadingPosition: false,
+            marketId: defaultMarket.marketId,
+            provider: defaultMarket.provider,
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching markets:', error)
+      } finally {
+        setIsLoadingMarkets(false)
+      }
+    }
+
+    if (ready) {
+      fetchMarkets()
+    }
+  }, [ready, getMarkets, selectedMarket])
+
   const {
     assetBalance,
     isLoadingBalance,
@@ -121,6 +287,23 @@ export function EarnWithFrontendWallet({
     selectedAssetSymbol: selectedMarket?.assetSymbol,
   })
 
+  const handleMarketSelect = useCallback((market: MarketInfo) => {
+    setSelectedMarket({
+      marketName: market.name,
+      marketLogo: market.logo,
+      networkName: market.networkName,
+      networkLogo: market.networkLogo,
+      assetSymbol: market.assetSymbol,
+      assetLogo: market.assetLogo,
+      apy: market.apy,
+      depositedAmount: null,
+      isLoadingApy: false,
+      isLoadingPosition: false,
+      marketId: market.marketId,
+      provider: market.provider,
+    })
+  }, [])
+
   return (
     <Earn
       ready={ready}
@@ -137,6 +320,10 @@ export function EarnWithFrontendWallet({
       onMintUSDC={handleMintUSDC}
       onTransaction={handleTransaction}
       onMarketChange={setSelectedMarket}
+      markets={markets}
+      selectedMarket={selectedMarket}
+      onMarketSelect={handleMarketSelect}
+      isLoadingMarkets={isLoadingMarkets}
     />
   )
 }

@@ -6,6 +6,7 @@ import { WalletProviderDropdown } from './WalletProviderDropdown'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { ActivityHighlightProvider } from '@/contexts/ActivityHighlightContext'
 import type { MarketPosition } from '@/types/market'
+import { MarketSelector, type MarketInfo } from './MarketSelector'
 export interface EarnContentProps {
   ready: boolean
   logout: () => Promise<void>
@@ -27,6 +28,10 @@ export interface EarnContentProps {
     blockExplorerUrl?: string
   }>
   onMarketChange?: (market: MarketPosition | null) => void
+  markets?: MarketInfo[]
+  selectedMarket?: MarketPosition | null
+  onMarketSelect?: (market: MarketInfo) => void
+  isLoadingMarkets?: boolean
 }
 
 /**
@@ -47,6 +52,10 @@ function Earn({
   isInitialLoad,
   onMintUSDC,
   onTransaction,
+  markets = [],
+  selectedMarket,
+  onMarketSelect,
+  isLoadingMarkets = false,
 }: EarnContentProps) {
   // Show loading state while Privy is initializing
   if (!ready) {
@@ -142,12 +151,47 @@ function Earn({
               </div>
 
               <div className="space-y-6">
+                {/* Market Selector - Always visible */}
+                <div>
+                  <h3
+                    className="mb-3"
+                    style={{
+                      color: '#1a1b1e',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Select Market
+                  </h3>
+                  <MarketSelector
+                    markets={markets}
+                    selectedMarket={
+                      selectedMarket
+                        ? {
+                            name: selectedMarket.marketName,
+                            logo: selectedMarket.marketLogo,
+                            networkName: selectedMarket.networkName,
+                            networkLogo: selectedMarket.networkLogo,
+                            assetSymbol: selectedMarket.assetSymbol,
+                            assetLogo: selectedMarket.assetLogo,
+                            apy: selectedMarket.apy,
+                            isLoadingApy: selectedMarket.isLoadingApy,
+                            marketId: selectedMarket.marketId,
+                            provider: selectedMarket.provider,
+                          }
+                        : null
+                    }
+                    onMarketSelect={onMarketSelect || (() => {})}
+                    isLoading={isLoadingMarkets}
+                  />
+                </div>
+
                 <Action
                   assetBalance={usdcBalance}
                   isLoadingBalance={isLoadingBalance}
                   depositedAmount={depositedAmount}
-                  assetSymbol="USDC"
-                  assetLogo="/usdc-logo.svg"
+                  assetSymbol={selectedMarket?.assetSymbol || 'USDC'}
+                  assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
                   onMintAsset={onMintUSDC}
                   onTransaction={onTransaction}
                 />

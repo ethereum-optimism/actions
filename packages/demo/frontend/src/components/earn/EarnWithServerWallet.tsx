@@ -6,6 +6,10 @@ import { type LendMarketId } from '@eth-optimism/actions-sdk/react'
 import { useBalanceOperations } from '@/hooks/useBalanceOperations'
 import type { LendExecutePositionParams } from '@/types/api'
 import { actionsApi } from '@/api/actionsApi'
+import type { MarketPosition } from '@/types/market'
+import type { MarketInfo } from './MarketSelector'
+import type { LendMarket } from '@eth-optimism/actions-sdk'
+import { baseSepolia, optimismSepolia } from 'viem/chains'
 
 interface EarnWithServerWalletProps {
   ready: boolean
@@ -22,6 +26,53 @@ interface EarnWithServerWalletProps {
   selectedProvider: WalletProviderConfig
 }
 
+const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
+  const chainId = market.marketId.chainId
+
+  // Determine network info
+  let networkName = 'Unknown'
+  let networkLogo = '/base-logo.svg'
+  if (chainId === baseSepolia.id) {
+    networkName = 'Base Sepolia'
+    networkLogo = '/base-logo.svg'
+  } else if (chainId === optimismSepolia.id) {
+    networkName = 'Optimism Sepolia'
+    networkLogo = '/OP.svg'
+  }
+
+  // Determine provider logo
+  const providerLogo =
+    market.name.toLowerCase().includes('gauntlet') ||
+    market.name.toLowerCase().includes('morpho')
+      ? '/morpho-logo.svg'
+      : '/aave-logo.svg'
+
+  // Determine asset info
+  const assetSymbol = market.asset.metadata.symbol.replace('_DEMO', '')
+  const assetLogo =
+    assetSymbol === 'USDC'
+      ? '/usd-coin-usdc-logo.svg'
+      : assetSymbol === 'WETH'
+        ? '/eth.svg'
+        : '/usd-coin-usdc-logo.svg'
+
+  // Extract simple market name
+  const marketName = market.name.split(' ')[0] || market.name
+
+  return {
+    name: marketName,
+    logo: providerLogo,
+    networkName,
+    networkLogo,
+    assetSymbol,
+    assetLogo,
+    apy: market.apy.total,
+    isLoadingApy: false,
+    marketId: market.marketId,
+    provider: market.name.toLowerCase().includes('aave') ? 'aave' : 'morpho',
+  }
+}
+
 /**
  * Container component that handles Privy wallet provider logic
  * and passes data/callbacks to the presentational EarnContent component
@@ -33,6 +84,11 @@ export function EarnWithServerWallet({
 }: EarnWithServerWalletProps) {
   // State for wallet balance and lend position
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
+  const [selectedMarket, setSelectedMarket] = useState<MarketPosition | null>(
+    null,
+  )
+  const [markets, setMarkets] = useState<MarketInfo[]>([])
+  const [isLoadingMarkets, setIsLoadingMarkets] = useState(true)
 
   // Memoize operation functions to prevent infinite loops
   const getTokenBalances = useCallback(async () => {
@@ -82,6 +138,47 @@ export function EarnWithServerWallet({
   const ready = true // Server wallet is always ready
   const isReady = useCallback(() => ready, [])
 
+  // Fetch available markets on mount
+  useEffect(() => {
+    const fetchMarkets = async () => {
+      try {
+        setIsLoadingMarkets(true)
+        const rawMarkets = await getMarkets()
+        const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
+        setMarkets(marketInfoList)
+
+        // Set default selected market (first one, preferably Gauntlet/USDC)
+        if (marketInfoList.length > 0 && !selectedMarket) {
+          const defaultMarket =
+            marketInfoList.find((m) => m.name === 'Gauntlet') ||
+            marketInfoList[0]
+          setSelectedMarket({
+            marketName: defaultMarket.name,
+            marketLogo: defaultMarket.logo,
+            networkName: defaultMarket.networkName,
+            networkLogo: defaultMarket.networkLogo,
+            assetSymbol: defaultMarket.assetSymbol,
+            assetLogo: defaultMarket.assetLogo,
+            apy: defaultMarket.apy,
+            depositedAmount: null,
+            isLoadingApy: false,
+            isLoadingPosition: false,
+            marketId: defaultMarket.marketId,
+            provider: defaultMarket.provider,
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching markets:', error)
+      } finally {
+        setIsLoadingMarkets(false)
+      }
+    }
+
+    if (ready) {
+      fetchMarkets()
+    }
+  }, [ready, getMarkets, selectedMarket])
+
   const {
     assetBalance,
     isLoadingBalance,
@@ -100,8 +197,11 @@ export function EarnWithServerWallet({
     openPosition,
     closePosition,
     isReady,
-    selectedMarketId: null,
-    selectedAssetSymbol: 'USDC_DEMO',
+    selectedMarketId: selectedMarket?.marketId as
+      | LendMarketId
+      | null
+      | undefined,
+    selectedAssetSymbol: selectedMarket?.assetSymbol,
   })
 
   const fetchWalletAddress = useCallback(async () => {
@@ -115,6 +215,23 @@ export function EarnWithServerWallet({
       fetchWalletAddress()
     }
   }, [ready, fetchWalletAddress])
+
+  const handleMarketSelect = useCallback((market: MarketInfo) => {
+    setSelectedMarket({
+      marketName: market.name,
+      marketLogo: market.logo,
+      networkName: market.networkName,
+      networkLogo: market.networkLogo,
+      assetSymbol: market.assetSymbol,
+      assetLogo: market.assetLogo,
+      apy: market.apy,
+      depositedAmount: null,
+      isLoadingApy: false,
+      isLoadingPosition: false,
+      marketId: market.marketId,
+      provider: market.provider,
+    })
+  }, [])
 
   return (
     <Earn
@@ -131,6 +248,10 @@ export function EarnWithServerWallet({
       isInitialLoad={isInitialLoad}
       onMintUSDC={handleMintUSDC}
       onTransaction={handleTransaction}
+      markets={markets}
+      selectedMarket={selectedMarket}
+      onMarketSelect={handleMarketSelect}
+      isLoadingMarkets={isLoadingMarkets}
     />
   )
 }

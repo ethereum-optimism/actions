@@ -54,7 +54,7 @@ router.post(
 router.post('/wallet/eth', walletController.dripEthToWallet)
 
 // Lend endpoints
-router.get('/lend/markets', lendController.getMarkets)
+router.get('/lend/markets', lendController.getMarketsV1)
 router.post('/lend/position/open', authMiddleware, lendController.openPosition)
 router.post(
   '/lend/position/close',
