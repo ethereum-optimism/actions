@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { formatUnits, type Address } from 'viem'
-import { getAssetAddress, SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
+import { type Address } from 'viem'
+import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type {
   LendMarket,
@@ -117,56 +117,9 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     try {
       setIsLoadingBalance(true)
       const tokenBalances = await getTokenBalances()
-      const vaults = await getMarkets(false)
-
-      const vaultBalances = await Promise.all(
-        vaults.map(async (vault) => {
-          try {
-            const vaultBalance = await getPosition(vault.marketId, false)
-
-            // Only include vaults with non-zero balances
-            if (vaultBalance.balance > 0n) {
-              // Create a TokenBalance object for the vault
-              const formattedBalance = formatUnits(vaultBalance.balance, 6)
-
-              // Get asset address for the vault's chain
-              const assetAddress = getAssetAddress(
-                vault.asset,
-                vault.marketId.chainId,
-              )
-
-              return {
-                symbol: `${vault.name}`,
-                totalBalance: vaultBalance.balance,
-                totalFormattedBalance: formattedBalance,
-                chainBalances: [
-                  {
-                    chainId: vaultBalance.marketId.chainId,
-                    balance: vaultBalance.balance,
-                    tokenAddress: assetAddress,
-                    formattedBalance: formattedBalance,
-                  },
-                ],
-              } as TokenBalance
-            }
-            return null
-          } catch (error) {
-            console.error(error)
-            return null
-          }
-        }),
-      )
-
-      const validVaultBalances = vaultBalances.filter(
-        (balance): balance is NonNullable<typeof balance> => balance !== null,
-      )
-
-      const balanceResult = {
-        balance: [...tokenBalances, ...validVaultBalances],
-      }
 
       // Find balance for the selected asset
-      const assetToken = balanceResult.balance.find(
+      const assetToken = tokenBalances.find(
         (token) => token.symbol === selectedAssetSymbol,
       )
 
@@ -186,7 +139,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     } finally {
       setIsLoadingBalance(false)
     }
-  }, [getPosition, getMarkets, getTokenBalances, selectedAssetSymbol])
+  }, [getTokenBalances, selectedAssetSymbol])
 
   // Function to mint demo asset
   const handleMintUSDC = useCallback(async () => {
@@ -389,6 +342,14 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     [isReady, marketData, fetchBalance],
   )
 
+  // Clear state immediately when market changes
+  useEffect(() => {
+    setApy(null)
+    setDepositedAmount(null)
+    setIsLoadingApy(true)
+    setIsLoadingPosition(true)
+  }, [selectedMarketId])
+
   // Fetch market APY and data when selected market changes
   useEffect(() => {
     const fetchMarketApy = async () => {
@@ -403,7 +364,6 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       console.log('[getMarkets] Fetching market data...')
 
       try {
-        setIsLoadingApy(true)
         const markets = await getMarkets()
         const formattedMarkets = markets.map((market) =>
           formatMarketResponse(market),

@@ -32,6 +32,7 @@ export interface EarnContentProps {
   selectedMarket?: MarketPosition | null
   onMarketSelect?: (market: MarketInfo) => void
   isLoadingMarkets?: boolean
+  marketPositions?: MarketPosition[]
 }
 
 /**
@@ -45,10 +46,6 @@ function Earn({
   usdcBalance,
   isLoadingBalance,
   selectedProviderConfig,
-  apy,
-  isLoadingApy,
-  depositedAmount,
-  isLoadingPosition,
   isInitialLoad,
   onMintUSDC,
   onTransaction,
@@ -56,6 +53,7 @@ function Earn({
   selectedMarket,
   onMarketSelect,
   isLoadingMarkets = false,
+  marketPositions = [],
 }: EarnContentProps) {
   // Show loading state while Privy is initializing
   if (!ready) {
@@ -189,17 +187,14 @@ function Earn({
                 <Action
                   assetBalance={usdcBalance}
                   isLoadingBalance={isLoadingBalance}
-                  depositedAmount={depositedAmount}
+                  depositedAmount={selectedMarket?.depositedAmount || null}
                   assetSymbol={selectedMarket?.assetSymbol || 'USDC'}
                   assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
                   onMintAsset={onMintUSDC}
                   onTransaction={onTransaction}
                 />
                 <LentBalance
-                  depositedAmount={depositedAmount}
-                  apy={apy}
-                  isLoadingPosition={isLoadingPosition}
-                  isLoadingApy={isLoadingApy}
+                  marketPositions={marketPositions}
                   isInitialLoad={isInitialLoad}
                 />
 
