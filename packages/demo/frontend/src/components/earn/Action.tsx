@@ -138,21 +138,15 @@ export function Action({
               <>
                 <button
                   onClick={onMintAsset}
-                  className="flex items-center gap-1.5 transition-all hover:bg-gray-50"
+                  className="flex items-center gap-1.5 transition-all"
                   style={{
                     padding: '6px 12px',
-                    backgroundColor:
-                      hoveredAction === 'mint'
-                        ? colors.highlight.background
-                        : '#FFFFFF',
-                    color: '#1a1b1e',
+                    backgroundColor: '#FF0420',
+                    color: '#FFFFFF',
                     fontSize: '14px',
                     fontWeight: 500,
                     borderRadius: '6px',
-                    border:
-                      hoveredAction === 'mint'
-                        ? `1px solid ${colors.highlight.border}`
-                        : '1px solid #E0E2EB',
+                    border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'Inter',
                   }}
