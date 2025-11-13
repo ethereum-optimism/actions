@@ -139,7 +139,7 @@ export function MarketSelector({
         style={{
           border: '1px solid #E0E2EB',
           backgroundColor: '#FFFFFF',
-          borderRadius: '3px',
+          borderRadius: '6px',
         }}
       >
         {renderMarketContent(selectedMarket)}
@@ -168,7 +168,7 @@ export function MarketSelector({
           style={{
             backgroundColor: '#FFFFFF',
             border: '1px solid #E0E2EB',
-            borderRadius: '3px',
+            borderRadius: '6px',
             zIndex: 50,
           }}
         >
