@@ -256,14 +256,16 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     }
 
     initialize()
-  }, [isReady, fetchBalance])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady])
 
   // Refetch balance when selected asset changes
   useEffect(() => {
     if (isReady() && hasInitialized.current) {
       fetchBalance()
     }
-  }, [selectedAssetSymbol, fetchBalance, isReady])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAssetSymbol, isReady])
 
   const executePositon = useCallback(
     async (operation: 'open' | 'close', amount: number) => {
@@ -473,14 +475,16 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     if (isReady() && marketChainId && marketAddress) {
       fetchPosition()
     }
-  }, [isReady, marketChainId, marketAddress, fetchPosition])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady, marketChainId, marketAddress])
 
   useEffect(() => {
     if (!isReady() || !marketChainId || !marketAddress) return
 
     const intervalId = setInterval(() => fetchPosition(true), 5000)
     return () => clearInterval(intervalId)
-  }, [isReady, marketChainId, marketAddress, fetchPosition])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady, marketChainId, marketAddress])
 
   return {
     assetBalance,

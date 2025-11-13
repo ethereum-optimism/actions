@@ -80,7 +80,7 @@ export function EarnWithServerWallet({
   )
 
   const ready = true // Server wallet is always ready
-  const isReady = () => ready
+  const isReady = useCallback(() => ready, [])
 
   const {
     assetBalance,

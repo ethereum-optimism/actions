@@ -94,7 +94,7 @@ export function EarnWithFrontendWallet({
     [wallet],
   )
   const ready = !!wallet
-  const isReady = () => ready
+  const isReady = useCallback(() => ready, [ready])
 
   const {
     assetBalance,
