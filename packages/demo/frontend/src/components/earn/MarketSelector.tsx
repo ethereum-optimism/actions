@@ -139,7 +139,7 @@ export function MarketSelector({
         style={{
           border: '1px solid #E0E2EB',
           backgroundColor: '#FFFFFF',
-          borderRadius: '6px',
+          borderRadius: '12px',
         }}
       >
         {renderMarketContent(selectedMarket)}
@@ -164,27 +164,31 @@ export function MarketSelector({
 
       {isOpen && (
         <div
-          className="absolute left-0 right-0 mt-2 shadow-lg overflow-hidden"
+          className="absolute left-0 right-0 mt-1 shadow-lg overflow-hidden"
           style={{
             backgroundColor: '#FFFFFF',
             border: '1px solid #E0E2EB',
-            borderRadius: '6px',
+            borderRadius: '12px',
             zIndex: 50,
           }}
         >
           <div className="py-2">
-            {markets.map((market, index) => {
-              const isSelected =
-                selectedMarket?.marketId.address === market.marketId.address &&
-                selectedMarket?.marketId.chainId === market.marketId.chainId
-
-              return (
-                <button
+            {markets
+              .filter(
+                (market) =>
+                  !(
+                    selectedMarket?.marketId.address ===
+                      market.marketId.address &&
+                    selectedMarket?.marketId.chainId === market.marketId.chainId
+                  ),
+              )
+              .map((market, index) => {
+                return (
+                  <button
                   key={`${market.marketId.address}-${market.marketId.chainId}`}
                   onClick={() => handleMarketClick(market)}
                   className="w-full px-4 py-3 flex items-center transition-all hover:bg-gray-50"
                   style={{
-                    backgroundColor: isSelected ? '#F5F5F5' : 'transparent',
                     borderTop: index > 0 ? '1px solid #E0E2EB' : 'none',
                   }}
                 >
