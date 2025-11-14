@@ -49,19 +49,6 @@ export function Action({
     undefined,
   )
 
-  // Debug logging for renders
-  console.log('[Action RENDER]', {
-    assetBalance,
-    isLoadingBalance,
-    assetSymbol,
-    parseFloat: parseFloat(assetBalance || '0'),
-    isZero: parseFloat(assetBalance || '0') === 0,
-    willShowShimmer: isLoadingBalance,
-    willShowButton: !isLoadingBalance && parseFloat(assetBalance || '0') === 0,
-    willShowBalance: !isLoadingBalance && parseFloat(assetBalance || '0') > 0,
-    timestamp: Date.now(),
-  })
-
   const handleMaxClick = () => {
     const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
     const rounded = parseFloat(maxAmount).toFixed(2)

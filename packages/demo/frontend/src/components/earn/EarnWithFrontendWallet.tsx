@@ -279,7 +279,7 @@ export function EarnWithFrontendWallet({
   const {
     assetBalance,
     isLoadingBalance,
-    handleMintUSDC,
+    handleMintAsset,
     isLoadingApy,
     apy,
     isInitialLoad,
@@ -384,7 +384,7 @@ export function EarnWithFrontendWallet({
       depositedAmount={depositedAmount}
       isLoadingPosition={isLoadingPosition}
       isInitialLoad={isInitialLoad}
-      onMintUSDC={handleMintUSDC}
+      onMintUSDC={handleMintAsset}
       onTransaction={handleTransaction}
       onMarketChange={setSelectedMarket}
       markets={markets}

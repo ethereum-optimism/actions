@@ -1,18 +1,19 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
-import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
+import { useMemo } from 'react'
 import type {
-  Asset,
   LendMarket,
   LendMarketId,
   LendMarketPosition,
   LendTransactionReceipt,
 } from '@eth-optimism/actions-sdk'
+import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 import type { LendExecutePositionParams } from '@/types/api'
 import { useActivityLogger } from './useActivityLogger'
-import { useMarketPositions } from './useMarketPositions'
-import { useTransactionHandler } from './useTransactionHandler'
-import { useMarketInfo } from './useMarketInfo'
+import { useTokenBalances } from '@/queries/useTokenBalances'
+import { useMarketPosition } from '@/queries/useMarketPosition'
+import { useMarkets } from '@/queries/useMarkets'
+import { useMintAsset } from '@/mutations/useMintAsset'
+import { useOpenPosition, useClosePosition } from '@/mutations/useLendPosition'
 import { matchAssetBalance } from '@/utils/balanceMatching'
 
 export interface UseWalletBalanceConfig {
@@ -26,241 +27,166 @@ export interface UseWalletBalanceConfig {
   selectedMarketId?: LendMarketId | null
   selectedAssetSymbol?: string
   selectedMarketApy?: number | null
-  allMarkets?: LendMarket[]
 }
 
-/**
- * Main hook for wallet balance and market operations
- * Coordinates balance fetching, position management, and transactions
- */
 export function useWalletBalance(params: UseWalletBalanceConfig) {
   const {
     getTokenBalances: getTokenBalancesRaw,
-    getMarkets,
+    getMarkets: getMarketsRaw,
     getPosition: getPositionRaw,
     mintAsset: mintAssetRaw,
+    openPosition: openPositionRaw,
+    closePosition: closePositionRaw,
     isReady,
-    openPosition,
-    closePosition,
     selectedMarketId,
     selectedAssetSymbol = 'USDC',
     selectedMarketApy,
-    allMarkets = [],
   } = params
 
   const { logActivity } = useActivityLogger()
-  const [assetBalance, setAssetBalance] = useState<string>('0.00')
-  const [displayedBalance, setDisplayedBalance] = useState<string>('0.00') // What's actually shown to user
-  const [isLoadingBalance, setIsLoadingBalance] = useState(true) // Start with true to show shimmer on initial load
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const [allTokenBalances, setAllTokenBalances] = useState<TokenBalance[] | null>(null)
-  const [hasCalculatedInitialBalance, setHasCalculatedInitialBalance] = useState(false)
-  const hasLoadedBalances = useRef(false)
-  const previousMarketId = useRef<string | null>(null)
 
-  // Wrap API calls with activity logging
-  const getTokenBalances = useCallback(async () => {
-    const activity = logActivity('getBalance')
-    try {
-      const result = await getTokenBalancesRaw()
-      activity?.confirm()
-      return result
-    } catch (error) {
-      activity?.error()
-      throw error
-    }
-  }, [getTokenBalancesRaw, logActivity])
-
-  const getPosition = useCallback(
-    async (marketId: LendMarketId, withLogging: boolean = true) => {
-      const activity = withLogging ? logActivity('getPosition') : null
-      try {
-        const result = await getPositionRaw(marketId)
-        activity?.confirm()
-        return result
-      } catch (error) {
-        activity?.error()
-        throw error
-      }
-    },
-    [getPositionRaw, logActivity],
-  )
-
-  // Use position management hook
-  const { isLoadingPosition, depositedAmount, updatePosition, getMarketKey } = useMarketPositions({
-    getPosition,
+  // Queries
+  const {
+    data: tokenBalances,
+    isLoading: isLoadingBalances,
+    isFetching: isFetchingBalances,
+  } = useTokenBalances({
+    getTokenBalances: getTokenBalancesRaw,
     isReady,
-    allMarkets,
-    selectedMarketId,
-  })
-
-  // Use market info hook
-  const { apy, isLoadingApy, isInitialLoad, marketData } = useMarketInfo({
-    getMarkets,
-    isReady,
-    selectedMarketId,
-    selectedMarketApy,
-    selectedAssetSymbol,
     logActivity,
   })
 
-  // Fetch all token balances once and store them
-  const fetchAllBalances = useCallback(async () => {
-    try {
-      console.log('[fetchAllBalances] START - Setting isLoadingBalance=true')
-      setIsLoadingBalance(true)
-      console.log('[fetchAllBalances] Fetching all token balances...')
-      const tokenBalances = await getTokenBalances()
-      setAllTokenBalances(tokenBalances)
-      console.log(
-        '[fetchAllBalances] Loaded balances for:',
-        tokenBalances.map((t) => t.symbol),
-      )
-      console.log('[fetchAllBalances] COMPLETE - balances loaded, waiting for balance calculation')
-      // Don't set isLoadingBalance=false here - let the useEffect that calculates the balance do it
-    } catch (error) {
-      console.error('[fetchAllBalances] Error:', error)
-      setIsLoadingBalance(false)
-    }
-  }, [getTokenBalances])
-
-  // Mint asset (Get USDC / Get WETH button)
-  const handleMintAsset = useCallback(async () => {
-    if (!isReady() || !selectedMarketId) {
-      return
-    }
-
-    const activity = logActivity('mint')
-    try {
-      setIsLoadingBalance(true)
-      await mintAssetRaw(selectedAssetSymbol, selectedMarketId.chainId)
-      activity?.confirm()
-      await fetchAllBalances()
-      // Balance will be updated by the useEffect when allTokenBalances changes
-    } catch (error) {
-      activity?.error()
-      console.error('Error minting asset:', error)
-      setIsLoadingBalance(false)
-    }
-  }, [
-    mintAssetRaw,
+  const {
+    data: markets,
+    isLoading: isLoadingMarkets,
+    isFetching: isFetchingMarkets,
+  } = useMarkets({
+    getMarkets: getMarketsRaw,
     isReady,
-    fetchAllBalances,
-    selectedAssetSymbol,
-    selectedMarketId,
     logActivity,
-  ])
-
-  // Use transaction handler hook
-  const { handleTransaction } = useTransactionHandler({
-    isReady,
-    marketData,
-    openPosition,
-    closePosition,
-    logActivity,
-    onTransactionComplete: async (marketId: LendMarketId) => {
-      await updatePosition(marketId)
-      await fetchAllBalances()
-      // Balance will be updated by the useEffect when allTokenBalances changes
-    },
   })
 
-  // Fetch all balances once on mount
-  useEffect(() => {
-    if (!isReady() || hasLoadedBalances.current) {
-      return
+  const {
+    data: position,
+    isLoading: isLoadingPosition,
+    isFetching: isFetchingPosition,
+  } = useMarketPosition({
+    marketId: selectedMarketId,
+    getPosition: getPositionRaw,
+    isReady,
+    logActivity,
+  })
+
+  // Mutations
+  const mintAssetMutation = useMintAsset({
+    mintAsset: mintAssetRaw,
+    logActivity,
+  })
+
+  const openPositionMutation = useOpenPosition({
+    openPosition: openPositionRaw,
+    logActivity,
+  })
+
+  const closePositionMutation = useClosePosition({
+    closePosition: closePositionRaw,
+    logActivity,
+  })
+
+  // Computed market data
+  const marketData = useMemo(() => {
+    if (!markets || !selectedMarketId) return null
+
+    const market = markets.find(
+      (m) =>
+        m.marketId.address.toLowerCase() === selectedMarketId.address.toLowerCase() &&
+        m.marketId.chainId === selectedMarketId.chainId,
+    )
+
+    if (!market) return null
+
+    const assetAddress = (market.asset.address[market.marketId.chainId] ||
+      Object.values(market.asset.address)[0]) as Address
+
+    return {
+      marketId: market.marketId,
+      assetAddress,
+      asset: market.asset,
+      apy: selectedMarketApy ?? market.apy.total,
     }
+  }, [markets, selectedMarketId, selectedMarketApy])
 
-    console.log('[useWalletBalance] Fetching all balances once on mount')
-    hasLoadedBalances.current = true
-    fetchAllBalances().catch((error) => {
-      console.error('Error fetching balances:', error)
-      hasLoadedBalances.current = false
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady()])
+  // Computed balance
+  const assetBalance = useMemo(() => {
+    if (!tokenBalances || !marketData) return '0.00'
 
-  // Update displayed balance when market changes (no API call, just UI update)
-  useEffect(() => {
-    if (!allTokenBalances || !selectedAssetSymbol || !marketData) {
-      return
-    }
-
-    const currentMarketKey = `${marketData.marketId.chainId}-${marketData.marketId.address}`
-    const hasMarketChanged = previousMarketId.current && previousMarketId.current !== currentMarketKey
-
-    // Calculate the new balance immediately (don't rely on state updates)
-    const newBalance = matchAssetBalance({
-      allTokenBalances,
+    return matchAssetBalance({
+      allTokenBalances: tokenBalances,
       selectedAssetSymbol,
       marketData,
     })
+  }, [tokenBalances, marketData, selectedAssetSymbol])
 
-    console.log('[useWalletBalance] Balance calculation', {
-      hasMarketChanged,
-      from: previousMarketId.current,
-      to: currentMarketKey,
-      currentDisplayedBalance: displayedBalance,
-      currentAssetBalance: assetBalance,
-      newBalance,
+  // Handler functions
+  const handleMintAsset = async () => {
+    if (!selectedMarketId) return
+    await mintAssetMutation.mutateAsync({
+      assetSymbol: selectedAssetSymbol,
+      chainId: selectedMarketId.chainId,
     })
+  }
 
-    if (hasMarketChanged) {
-      // Show shimmer briefly when switching markets to prevent flash
-      console.log('[useWalletBalance] Market changed, showing transition shimmer')
-      setIsTransitioning(true)
-      setAssetBalance(newBalance)
-      // After shimmer delay, update the displayed balance and hide shimmer
-      setTimeout(() => {
-        console.log('[useWalletBalance] Transition complete, updating displayedBalance to:', newBalance)
-        setDisplayedBalance(newBalance)
-        setIsTransitioning(false)
-      }, 300) // Keep shimmer for smooth transition
-    } else {
-      console.log('[useWalletBalance] Updating displayed balance (no market change)')
-      setAssetBalance(newBalance)
-      setDisplayedBalance(newBalance)
+  const handleTransaction = async (mode: 'lend' | 'withdraw', amount: number) => {
+    if (!marketData) {
+      throw new Error('Market data not available')
     }
 
-    // Mark that we've calculated the initial balance and can stop showing loading shimmer
-    if (!hasCalculatedInitialBalance) {
-      console.log('[useWalletBalance] First balance calculation complete, setting isLoadingBalance=false')
-      setHasCalculatedInitialBalance(true)
-      setIsLoadingBalance(false)
+    const params: LendExecutePositionParams = {
+      marketId: marketData.marketId,
+      amount,
+      asset: marketData.asset,
     }
 
-    previousMarketId.current = currentMarketKey
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAssetSymbol, marketData, allTokenBalances])
+    const result =
+      mode === 'lend'
+        ? await openPositionMutation.mutateAsync(params)
+        : await closePositionMutation.mutateAsync(params)
 
-  // Sync displayed balance with actual balance when not transitioning and not on initial load
-  useEffect(() => {
-    if (!isTransitioning && hasCalculatedInitialBalance) {
-      console.log('[useWalletBalance] Syncing displayedBalance with assetBalance:', assetBalance)
-      setDisplayedBalance(assetBalance)
+    // Handle union type - result can be EOATransactionReceipt or SmartWalletTransactionReceipt
+    const txHash = 'userOpHash' in result ? result.userOpHash :
+                   Array.isArray(result) ? result[0]?.transactionHash :
+                   result.transactionHash
+
+    const explorerUrl = 'blockExplorerUrl' in result ? result.blockExplorerUrl :
+                       'blockExplorerUrls' in result && Array.isArray(result.blockExplorerUrls) ? result.blockExplorerUrls[0] :
+                       undefined
+
+    return {
+      transactionHash: txHash,
+      blockExplorerUrl: explorerUrl,
     }
-  }, [assetBalance, isTransitioning, hasCalculatedInitialBalance])
+  }
 
-  // Debug logging for all state changes
-  useEffect(() => {
-    console.log('[useWalletBalance STATE]', {
-      assetBalance,
-      displayedBalance,
-      isLoadingBalance,
-      isTransitioning,
-      timestamp: Date.now(),
-    })
-  }, [assetBalance, displayedBalance, isLoadingBalance, isTransitioning])
+  // Loading states - show loading if initial load OR actively mutating
+  const isLoadingBalance =
+    isLoadingBalances || isFetchingBalances || mintAssetMutation.isPending
+
+  const isLoadingApy = isLoadingMarkets || isFetchingMarkets
+  const isLoadingPositionState =
+    isLoadingPosition ||
+    isFetchingPosition ||
+    openPositionMutation.isPending ||
+    closePositionMutation.isPending
 
   return {
-    assetBalance: displayedBalance, // Return the displayed balance, not the actual one during transitions
-    isLoadingBalance: isLoadingBalance || isTransitioning,
+    assetBalance,
+    isLoadingBalance,
     handleMintAsset,
     isLoadingApy,
-    apy,
-    isInitialLoad,
-    isLoadingPosition,
-    depositedAmount,
+    apy: marketData?.apy ?? null,
+    isInitialLoad: isLoadingMarkets,
+    isLoadingPosition: isLoadingPositionState,
+    depositedAmount: position?.balanceFormatted ?? null,
     handleTransaction,
   }
 }

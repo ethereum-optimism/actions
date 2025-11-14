@@ -1,5 +1,6 @@
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
-import type { Address, LendMarketId } from '@eth-optimism/actions-sdk'
+import type { LendMarketId } from '@eth-optimism/actions-sdk'
+import type { Address } from 'viem'
 
 interface BalanceMatchingParams {
   allTokenBalances: TokenBalance[]

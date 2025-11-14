@@ -234,16 +234,6 @@ export function EarnWithServerWallet({
       | undefined,
     selectedAssetSymbol: selectedMarket?.assetSymbol,
     selectedMarketApy: selectedMarket?.apy,
-    allMarkets: markets.map((m) => ({
-      marketId: m.marketId,
-      name: m.name,
-      asset: {
-        address: {},
-        metadata: { decimals: 18, name: '', symbol: m.assetSymbol },
-        type: 'erc20' as const,
-      },
-      apy: { total: m.apy },
-    })),
   })
 
   const fetchWalletAddress = useCallback(async () => {
