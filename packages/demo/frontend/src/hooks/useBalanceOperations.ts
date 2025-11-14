@@ -218,29 +218,36 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       setIsLoadingBalance(true)
       await mintAssetRaw(selectedAssetSymbol, selectedMarketId.chainId)
 
-      // Transaction succeeded - optimistically update balance with the minted amount (100 tokens)
-      const currentBalance = parseFloat(assetBalance)
-      const mintedAmount = 100
-      const newOptimisticBalance = (currentBalance + mintedAmount).toFixed(2)
-      setAssetBalance(newOptimisticBalance)
-      setIsLoadingBalance(false)
+      // For WETH (faucet), skip optimistic update and just fetch actual balance
+      // For USDC, use optimistic update since we know the amount (100)
+      if (selectedAssetSymbol.includes('WETH')) {
+        // Just fetch the actual balance
+        await fetchBalance()
+      } else {
+        // Transaction succeeded - optimistically update balance with the minted amount (100 tokens)
+        const currentBalance = parseFloat(assetBalance)
+        const mintedAmount = 100
+        const newOptimisticBalance = (currentBalance + mintedAmount).toFixed(2)
+        setAssetBalance(newOptimisticBalance)
+        setIsLoadingBalance(false)
 
-      // Fetch actual balance to verify/correct the optimistic update
-      const balanceResult = await getTokenBalances()
-      const assetToken = balanceResult.find(
-        (token) => token.symbol === selectedAssetSymbol,
-      )
+        // Fetch actual balance to verify/correct the optimistic update
+        const balanceResult = await getTokenBalances()
+        const assetToken = balanceResult.find(
+          (token) => token.symbol === selectedAssetSymbol,
+        )
 
-      if (assetToken && assetToken.totalBalance > 0) {
-        const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
-        const actualBalance =
-          parseFloat(`${assetToken.totalBalance}`) / Math.pow(10, decimals)
-        const flooredBalance = Math.floor(actualBalance * 100) / 100
-        const actualBalanceStr = flooredBalance.toFixed(2)
+        if (assetToken && assetToken.totalBalance > 0) {
+          const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
+          const actualBalance =
+            parseFloat(`${assetToken.totalBalance}`) / Math.pow(10, decimals)
+          const flooredBalance = Math.floor(actualBalance * 100) / 100
+          const actualBalanceStr = flooredBalance.toFixed(2)
 
-        // Only update if different from optimistic value
-        if (actualBalanceStr !== newOptimisticBalance) {
-          setAssetBalance(actualBalanceStr)
+          // Only update if different from optimistic value
+          if (actualBalanceStr !== newOptimisticBalance) {
+            setAssetBalance(actualBalanceStr)
+          }
         }
       }
     } catch (error) {
@@ -495,7 +502,9 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       } catch {
         // Error fetching market APY - keep loading state
         // Don't set isInitialLoad to false - stay in shimmer state
-        console.log('[fetchMarketApy] Error fetching market data, keeping shimmer state')
+        console.log(
+          '[fetchMarketApy] Error fetching market data, keeping shimmer state',
+        )
       }
     }
 
@@ -525,7 +534,9 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       } catch {
         // Error fetching position - keep loading state to show shimmer
         // Don't set depositedAmount to '0.00' - this would show "No active markets"
-        console.log('[fetchPosition] Error fetching position, keeping shimmer state')
+        console.log(
+          '[fetchPosition] Error fetching position, keeping shimmer state',
+        )
       }
     },
     [getPosition, isReady, marketChainId, marketAddress],

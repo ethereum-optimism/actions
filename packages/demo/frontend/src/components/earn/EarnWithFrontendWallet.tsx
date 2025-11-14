@@ -320,7 +320,7 @@ export function EarnWithFrontendWallet({
 
   // Update marketPositions when selected market's position changes
   useEffect(() => {
-    if (!selectedMarket || !depositedAmount || !apy) return
+    if (!selectedMarket) return
 
     setMarketPositions((prev) => {
       const existingIndex = prev.findIndex(
@@ -336,15 +336,38 @@ export function EarnWithFrontendWallet({
         apy,
       }
 
+      // Check if this is a meaningful update
+      const hasDeposit =
+        depositedAmount &&
+        depositedAmount !== '0' &&
+        depositedAmount !== '0.00' &&
+        parseFloat(depositedAmount) > 0
+
       if (existingIndex >= 0) {
+        const existing = prev[existingIndex]
+        // Only update if the deposited amount or APY actually changed
+        if (
+          existing.depositedAmount === depositedAmount &&
+          existing.apy === apy
+        ) {
+          return prev // No change, return same reference to prevent re-render
+        }
+
+        // If deposited amount is now 0, remove from list
+        if (!hasDeposit) {
+          return prev.filter((_, i) => i !== existingIndex)
+        }
+
         // Update existing market
         const newPositions = [...prev]
         newPositions[existingIndex] = updatedMarket
         return newPositions
-      } else {
-        // Add new market
+      } else if (hasDeposit) {
+        // Only add new market if it has a deposit
         return [...prev, updatedMarket]
       }
+
+      return prev // No change needed
     })
   }, [selectedMarket, depositedAmount, apy])
 

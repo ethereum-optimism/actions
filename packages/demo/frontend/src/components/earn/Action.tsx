@@ -155,7 +155,10 @@ export function Action({
                     fontFamily: 'Inter',
                   }}
                 >
-                  Get 100 {displaySymbol}
+                  Get{' '}
+                  {displaySymbol.includes('WETH')
+                    ? 'WETH'
+                    : `100 ${displaySymbol}`}
                 </button>
                 <img
                   src={assetLogo}

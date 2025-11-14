@@ -104,13 +104,21 @@ export function EarnWithServerWallet({
   )
 
   const mintAsset = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_assetSymbol: string, _chainId: number) => {
+    async (assetSymbol: string) => {
       const headers = await getAuthHeaders()
-      // For now, server wallet only supports USDC minting
-      await actionsApi.mintDemoUsdcToWallet(headers)
+
+      if (assetSymbol.includes('WETH')) {
+        // Use faucet for WETH on OP Sepolia
+        if (!walletAddress) {
+          throw new Error('Wallet address not available')
+        }
+        await actionsApi.dripEthToWallet(walletAddress)
+      } else {
+        // Use USDC minting for other assets
+        await actionsApi.mintDemoUsdcToWallet(headers)
+      }
     },
-    [getAuthHeaders],
+    [getAuthHeaders, walletAddress],
   )
 
   const openPosition = useCallback(
@@ -225,7 +233,7 @@ export function EarnWithServerWallet({
 
   // Update marketPositions when selected market's position changes
   useEffect(() => {
-    if (!selectedMarket || !depositedAmount || !apy) return
+    if (!selectedMarket) return
 
     setMarketPositions((prev) => {
       const existingIndex = prev.findIndex(
@@ -241,15 +249,38 @@ export function EarnWithServerWallet({
         apy,
       }
 
+      // Check if this is a meaningful update
+      const hasDeposit =
+        depositedAmount &&
+        depositedAmount !== '0' &&
+        depositedAmount !== '0.00' &&
+        parseFloat(depositedAmount) > 0
+
       if (existingIndex >= 0) {
+        const existing = prev[existingIndex]
+        // Only update if the deposited amount or APY actually changed
+        if (
+          existing.depositedAmount === depositedAmount &&
+          existing.apy === apy
+        ) {
+          return prev // No change, return same reference to prevent re-render
+        }
+
+        // If deposited amount is now 0, remove from list
+        if (!hasDeposit) {
+          return prev.filter((_, i) => i !== existingIndex)
+        }
+
         // Update existing market
         const newPositions = [...prev]
         newPositions[existingIndex] = updatedMarket
         return newPositions
-      } else {
-        // Add new market
+      } else if (hasDeposit) {
+        // Only add new market if it has a deposit
         return [...prev, updatedMarket]
       }
+
+      return prev // No change needed
     })
   }, [selectedMarket, depositedAmount, apy])
 
