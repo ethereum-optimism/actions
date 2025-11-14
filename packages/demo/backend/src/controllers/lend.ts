@@ -43,11 +43,16 @@ const ClosePositionRequestSchema = z.object({
  * GET - Retrieve all available lending markets
  */
 export async function getMarkets(c: Context) {
+  const requestId = Math.random().toString(36).substring(7)
+  console.log(`[${new Date().toISOString()}] [${requestId}] getMarkets - START`)
   try {
     const markets = await lendService.getMarkets()
+    console.log(
+      `[${requestId}] getMarkets - SUCCESS, returning ${markets.length} markets`,
+    )
     return c.json({ markets })
   } catch (error) {
-    console.error('[getMarkets] ERROR:', {
+    console.error(`[${requestId}] getMarkets - ERROR:`, {
       error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
@@ -62,42 +67,33 @@ export async function getMarkets(c: Context) {
   }
 }
 
-/**
- * GET - Retrieve all available lending markets
- */
-export async function getMarketsV1(c: Context) {
-  try {
-    const markets = await lendService.getMarkets()
-    return c.json({ result: serializeBigInt(markets) })
-  } catch (error) {
-    console.error('[getMarketsV1] ERROR:', {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-    return c.json(
-      {
-        error: 'Failed to get markets',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      500,
-    )
-  }
-}
 
 /**
- *
+ * POST - Open a lending position
  */
 export async function openPosition(c: Context) {
+  const requestId = Math.random().toString(36).substring(7)
+  console.log(
+    `[${new Date().toISOString()}] [${requestId}] openPosition - START`,
+  )
   try {
     const validation = await validateRequest(c, OpenPositionRequestSchema)
-    if (!validation.success) return validation.response
+    if (!validation.success) {
+      console.log(`[${requestId}] openPosition - VALIDATION FAILED`)
+      return validation.response
+    }
 
     const {
       body: { amount, tokenAddress, marketId },
     } = validation.data
+
+    console.log(
+      `[${requestId}] openPosition - Amount: ${amount}, Token: ${tokenAddress}, Market: ${marketId.address} on chain ${marketId.chainId}`,
+    )
+
     const auth = c.get('auth') as AuthContext | undefined
     if (!auth || !auth.idToken) {
+      console.log(`[${requestId}] openPosition - UNAUTHORIZED`)
       return c.json({ error: 'Unauthorized' }, 401)
     }
 
@@ -111,9 +107,10 @@ export async function openPosition(c: Context) {
       },
     })
 
+    console.log(`[${requestId}] openPosition - SUCCESS`)
     return c.json({ result: serializeBigInt(result) })
   } catch (error) {
-    console.error('[openPositionV1] ERROR:', {
+    console.error(`[${requestId}] openPosition - ERROR:`, {
       error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
@@ -132,15 +129,28 @@ export async function openPosition(c: Context) {
  * POST - Close a lending position
  */
 export async function closePosition(c: Context) {
+  const requestId = Math.random().toString(36).substring(7)
+  console.log(
+    `[${new Date().toISOString()}] [${requestId}] closePosition - START`,
+  )
   try {
     const validation = await validateRequest(c, ClosePositionRequestSchema)
-    if (!validation.success) return validation.response
+    if (!validation.success) {
+      console.log(`[${requestId}] closePosition - VALIDATION FAILED`)
+      return validation.response
+    }
 
     const {
       body: { amount, tokenAddress, marketId },
     } = validation.data
+
+    console.log(
+      `[${requestId}] closePosition - Amount: ${amount}, Token: ${tokenAddress}, Market: ${marketId.address} on chain ${marketId.chainId}`,
+    )
+
     const auth = c.get('auth') as AuthContext | undefined
     if (!auth || !auth.idToken) {
+      console.log(`[${requestId}] closePosition - UNAUTHORIZED`)
       return c.json({ error: 'Unauthorized' }, 401)
     }
 
@@ -154,9 +164,10 @@ export async function closePosition(c: Context) {
       },
     })
 
+    console.log(`[${requestId}] closePosition - SUCCESS`)
     return c.json({ result: serializeBigInt(result) })
   } catch (error) {
-    console.error('[closePosition] ERROR:', {
+    console.error(`[${requestId}] closePosition - ERROR:`, {
       error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,

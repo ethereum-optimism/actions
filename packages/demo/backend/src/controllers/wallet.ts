@@ -100,8 +100,16 @@ export class WalletController {
    * GET - Lend position for a wallet
    */
   async getLendPosition(c: Context) {
+    const requestId = Math.random().toString(36).substring(7)
+    console.log(
+      `[${new Date().toISOString()}] [${requestId}] getLendPosition - START`,
+    )
+
     const validation = await validateRequest(c, LendPositionRequestSchema)
-    if (!validation.success) return validation.response
+    if (!validation.success) {
+      console.log(`[${requestId}] getLendPosition - VALIDATION FAILED`)
+      return validation.response
+    }
     const {
       params: { marketAddress, chainId },
     } = validation.data

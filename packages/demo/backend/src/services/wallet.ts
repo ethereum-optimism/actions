@@ -104,9 +104,14 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
 
   const amountInDecimals = BigInt(Math.floor(parseFloat('100') * 1000000))
 
+  const usdcDemoToken = getTokenBySymbol('USDC_DEMO')
+  if (!usdcDemoToken) {
+    throw new Error('USDC_DEMO token not found in supported tokens')
+  }
+
   const calls = [
     {
-      to: getTokenBySymbol('USDC_DEMO')!.address[baseSepolia.id]!,
+      to: usdcDemoToken.address[baseSepolia.id]!,
       data: encodeFunctionData({
         abi: mintableErc20Abi,
         functionName: 'mint',

@@ -23,7 +23,7 @@ function LentBalance({
       market.depositedAmount &&
       market.depositedAmount !== '0' &&
       market.depositedAmount !== '0.00' &&
-      parseFloat(market.depositedAmount) > 0
+      parseFloat(market.depositedAmount) > 0,
   )
 
   const isEmpty = !isInitialLoad && marketsWithDeposits.length === 0
@@ -177,7 +177,9 @@ function LentBalance({
                   {/* Body */}
                   <tbody>
                     {marketsWithDeposits.map((market) => (
-                      <tr key={`${market.marketId.address}-${market.marketId.chainId}`}>
+                      <tr
+                        key={`${market.marketId.address}-${market.marketId.chainId}`}
+                      >
                         <td
                           className="transition-all"
                           style={{
@@ -306,7 +308,11 @@ function LentBalance({
                             }}
                           >
                             $
-                            {formatDepositedAmount(market.depositedAmount || '0').main}
+                            {
+                              formatDepositedAmount(
+                                market.depositedAmount || '0',
+                              ).main
+                            }
                             <span
                               style={{
                                 color: '#9195A6',
@@ -314,8 +320,9 @@ function LentBalance({
                               }}
                             >
                               {
-                                formatDepositedAmount(market.depositedAmount || '0')
-                                  .secondary
+                                formatDepositedAmount(
+                                  market.depositedAmount || '0',
+                                ).secondary
                               }
                             </span>
                           </span>

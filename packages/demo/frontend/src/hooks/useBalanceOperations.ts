@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { type Address } from 'viem'
-import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type {
+  Asset,
   LendMarket,
   LendMarketId,
   LendMarketPosition,
@@ -35,8 +35,10 @@ export interface UseBalanceOperationsConfig {
   isReady: () => boolean
   /** The currently selected market for operations */
   selectedMarketId?: LendMarketId | null
-  /** Asset symbol for the selected market (e.g., 'USDC_DEMO', 'WETH') */
+  /** Asset symbol for the selected market (e.g., 'USDC', 'WETH') */
   selectedAssetSymbol?: string
+  /** Optional pre-loaded APY to skip market fetch */
+  selectedMarketApy?: number | null
 }
 
 export function useBalanceOperations(params: UseBalanceOperationsConfig) {
@@ -49,7 +51,8 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     openPosition,
     closePosition,
     selectedMarketId,
-    selectedAssetSymbol = 'USDC_DEMO',
+    selectedAssetSymbol = 'USDC',
+    selectedMarketApy,
   } = params
   const { logActivity } = useActivityLogger()
 
@@ -62,6 +65,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
   const [marketData, setMarketData] = useState<{
     marketId: LendMarketId
     assetAddress: Address
+    asset: Asset
   } | null>(null)
   const marketChainId = marketData?.marketId.chainId
   const marketAddress = marketData?.marketId.address
@@ -118,28 +122,89 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       setIsLoadingBalance(true)
       const tokenBalances = await getTokenBalances()
 
-      // Find balance for the selected asset
-      const assetToken = tokenBalances.find(
-        (token) => token.symbol === selectedAssetSymbol,
+      console.log('[fetchBalance] selectedAssetSymbol:', selectedAssetSymbol)
+      console.log('[fetchBalance] marketData:', marketData)
+      console.log(
+        '[fetchBalance] tokenBalances symbols:',
+        tokenBalances.map((t) => t.symbol),
       )
 
-      if (assetToken && BigInt(assetToken.totalBalance) > 0n) {
-        // Get decimals for the asset (USDC/USDC_DEMO uses 6, WETH uses 18)
+      // If we have market data, match by address and chain for precision
+      // Otherwise fall back to symbol matching
+      let assetToken: (typeof tokenBalances)[0] | undefined
+      let chainBalance:
+        | (typeof tokenBalances)[0]['chainBalances'][0]
+        | undefined
+
+      if (marketData?.assetAddress && marketData?.marketId?.chainId) {
+        const targetAddress = marketData.assetAddress.toLowerCase()
+        const targetChainId = marketData.marketId.chainId
+
+        console.log(
+          '[fetchBalance] Matching by address:',
+          targetAddress,
+          'on chain:',
+          targetChainId,
+        )
+
+        // Find the token that has a chainBalance matching both address and chainId
+        for (const token of tokenBalances) {
+          const matchingChainBalance = token.chainBalances.find(
+            (cb) =>
+              cb.tokenAddress.toLowerCase() === targetAddress &&
+              cb.chainId === targetChainId,
+          )
+          if (matchingChainBalance) {
+            assetToken = token
+            chainBalance = matchingChainBalance
+            break
+          }
+        }
+      } else {
+        // Fallback to symbol matching (less precise)
+        console.log(
+          '[fetchBalance] No marketData, falling back to symbol matching',
+        )
+        assetToken = tokenBalances.find(
+          (token) => token.symbol === selectedAssetSymbol,
+        )
+      }
+
+      if (assetToken && chainBalance && BigInt(chainBalance.balance) > 0n) {
+        // Use the specific chain balance
+        const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
+        const balance =
+          parseFloat(`${chainBalance.balance}`) / Math.pow(10, decimals)
+        const flooredBalance = Math.floor(balance * 100) / 100
+        console.log(
+          '[fetchBalance] Found token by address, setting balance to:',
+          flooredBalance.toFixed(2),
+        )
+        setAssetBalance(flooredBalance.toFixed(2))
+      } else if (assetToken && BigInt(assetToken.totalBalance) > 0n) {
+        // Fallback to total balance if no specific chain balance
         const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
         const balance =
           parseFloat(`${assetToken.totalBalance}`) / Math.pow(10, decimals)
-        // Floor to 2 decimals to ensure we never try to send more than we have
         const flooredBalance = Math.floor(balance * 100) / 100
+        console.log(
+          '[fetchBalance] Found token by symbol, setting balance to:',
+          flooredBalance.toFixed(2),
+        )
         setAssetBalance(flooredBalance.toFixed(2))
       } else {
+        console.log(
+          '[fetchBalance] Token not found or balance is 0, setting to 0.00',
+        )
         setAssetBalance('0.00')
       }
-    } catch {
+    } catch (error) {
+      console.log('[fetchBalance] Error:', error)
       setAssetBalance('0.00')
     } finally {
       setIsLoadingBalance(false)
     }
-  }, [getTokenBalances, selectedAssetSymbol])
+  }, [getTokenBalances, selectedAssetSymbol, marketData])
 
   // Function to mint demo asset
   const handleMintUSDC = useCallback(async () => {
@@ -193,7 +258,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   // Auto-initialize balance on first ready state
   useEffect(() => {
-    if (!isReady() || hasInitialized.current) {
+    if (!isReady() || hasInitialized.current || !selectedAssetSymbol) {
       return
     }
 
@@ -210,11 +275,18 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
     initialize()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [selectedAssetSymbol])
 
   // Refetch balance when selected asset changes
   useEffect(() => {
+    console.log(
+      '[useBalanceOperations] selectedAssetSymbol changed to:',
+      selectedAssetSymbol,
+    )
     if (isReady() && hasInitialized.current) {
+      console.log(
+        '[useBalanceOperations] Fetching balance due to asset symbol change',
+      )
       fetchBalance()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -225,18 +297,11 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       if (!isReady() || !marketData) {
         throw new Error('User or market data not available')
       }
-      const marketId = marketData.marketId
-      const tokenAddress = marketData.assetAddress
-
-      const asset = SUPPORTED_TOKENS.find(
-        (token) =>
-          token.address[marketId.chainId as SupportedChainId] === tokenAddress,
-      )
-      if (!asset) {
-        const error = `Asset not found for token address: ${tokenAddress}`
-        console.error('[executePosition] ERROR:', error)
-        throw new Error(error)
+      if (!marketData.asset) {
+        throw new Error('Market asset data not available')
       }
+      const marketId = marketData.marketId
+      const asset = marketData.asset
 
       const positionParams = { amount, asset, marketId }
 
@@ -353,6 +418,37 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
   // Fetch market APY and data when selected market changes
   useEffect(() => {
     const fetchMarketApy = async () => {
+      // Skip if APY already provided by parent
+      if (selectedMarketApy !== undefined && selectedMarketApy !== null) {
+        setApy(selectedMarketApy)
+        setIsLoadingApy(false)
+        setIsInitialLoad(false)
+
+        // Still need to fetch market data for asset address
+        if (selectedMarketId && selectedAssetSymbol) {
+          try {
+            const markets = await getMarkets()
+            const market = markets.find(
+              (m) =>
+                m.marketId.address.toLowerCase() === selectedMarketId.address.toLowerCase() &&
+                m.marketId.chainId === selectedMarketId.chainId,
+            )
+            if (market) {
+              const assetAddress = (market.asset.address[market.marketId.chainId] ||
+                Object.values(market.asset.address)[0]) as Address
+              setMarketData({
+                marketId: market.marketId,
+                assetAddress,
+                asset: market.asset,
+              })
+            }
+          } catch {
+            // Error fetching market data
+          }
+        }
+        return
+      }
+
       if (!selectedMarketId) {
         // Use default USDC Demo market on initial load
         if (hasInitiatedMarketFetch.current) {
@@ -387,6 +483,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
           setMarketData({
             marketId: market.marketId,
             assetAddress,
+            asset: market.asset,
           })
         }
       } catch {
@@ -398,7 +495,8 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     }
 
     fetchMarketApy()
-  }, [selectedMarketId, getMarkets])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMarketId, selectedMarketApy, selectedAssetSymbol])
 
   const fetchPosition = useCallback(
     async (backgroundPolling: boolean = false) => {
@@ -436,7 +534,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       fetchPosition()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, marketChainId, marketAddress])
+  }, [marketChainId, marketAddress])
 
   useEffect(() => {
     if (!isReady() || !marketChainId || !marketAddress) return
@@ -444,7 +542,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     const intervalId = setInterval(() => fetchPosition(true), 5000)
     return () => clearInterval(intervalId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, marketChainId, marketAddress])
+  }, [marketChainId, marketAddress])
 
   return {
     assetBalance,

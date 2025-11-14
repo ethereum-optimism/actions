@@ -80,6 +80,7 @@ export function EarnWithServerWallet({
   getAuthHeaders,
   logout,
   selectedProvider,
+  ready,
 }: EarnWithServerWalletProps) {
   // State for wallet balance and lend position
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
@@ -134,8 +135,7 @@ export function EarnWithServerWallet({
     [getAuthHeaders],
   )
 
-  const ready = true // Server wallet is always ready
-  const isReady = useCallback(() => ready, [])
+  const isReady = useCallback(() => ready, [ready])
 
   // Fetch available markets on mount
   useEffect(() => {
@@ -201,6 +201,7 @@ export function EarnWithServerWallet({
       | null
       | undefined,
     selectedAssetSymbol: selectedMarket?.assetSymbol,
+    selectedMarketApy: selectedMarket?.apy,
   })
 
   const fetchWalletAddress = useCallback(async () => {

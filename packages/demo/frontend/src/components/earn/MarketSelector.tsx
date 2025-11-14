@@ -80,7 +80,12 @@ export function MarketSelector({
             <img
               src={market.logo}
               alt={market.name}
-              style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                width: 'auto',
+                height: 'auto',
+              }}
             />
           </div>
         </div>
@@ -214,12 +219,21 @@ export function MarketSelector({
                         />
                         <div
                           className="absolute -right-1 -bottom-1 bg-white rounded-full flex items-center justify-center"
-                          style={{ width: '18px', height: '18px', padding: '2px' }}
+                          style={{
+                            width: '18px',
+                            height: '18px',
+                            padding: '2px',
+                          }}
                         >
                           <img
                             src={market.logo}
                             alt={market.name}
-                            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }}
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: '100%',
+                              width: 'auto',
+                              height: 'auto',
+                            }}
                           />
                         </div>
                       </div>

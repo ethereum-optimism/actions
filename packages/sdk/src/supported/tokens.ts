@@ -38,7 +38,7 @@ export const SUPPORTED_TOKENS: Asset[] = [
     },
     metadata: {
       symbol: 'USDC_DEMO',
-      name: 'USDC Demo',
+      name: 'USDC',
       decimals: 6,
     },
     type: 'erc20',
