@@ -5,6 +5,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
@@ -30,6 +31,8 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
     morpho?: LendProvider<LendProviderConfig>
     aave?: LendProvider<LendProviderConfig>
   }
+  /** Supported assets for this wallet provider */
+  private supportedAssets?: Asset[]
   /** Optional 16-byte attribution suffix appended to callData */
   private attributionSuffix?: Hex
 
@@ -37,6 +40,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    * Initialize the Smart Wallet Provider
    * @param chainManager - Manages supported blockchain networks
    * @param lendProviders - Providers for lending market operations
+   * @param supportedAssets - Optional list of supported assets
    * @param attributionSuffix - Optional attribution suffix
    */
   constructor(
@@ -45,11 +49,13 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     },
+    supportedAssets?: Asset[],
     attributionSuffix?: string,
   ) {
     super()
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
+    this.supportedAssets = supportedAssets
     if (attributionSuffix) {
       this.attributionSuffix =
         DefaultSmartWalletProvider.computeAttributionSuffix(attributionSuffix)
@@ -87,6 +93,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       signer,
       chainManager: this.chainManager,
       lendProviders: this.lendProviders,
+      supportedAssets: this.supportedAssets,
       nonce,
       attributionSuffix: this.attributionSuffix,
     })
@@ -175,6 +182,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       signer,
       chainManager: this.chainManager,
       lendProviders: this.lendProviders,
+      supportedAssets: this.supportedAssets,
       deploymentAddress: walletAddress,
       attributionSuffix: this.attributionSuffix,
     })

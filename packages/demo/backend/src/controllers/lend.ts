@@ -49,7 +49,10 @@ export async function getMarkets(c: Context) {
     console.log(
       `[${requestId}] getMarkets - SUCCESS, returning ${markets.length} markets`,
     )
-    console.log(`[${requestId}] getMarkets - Markets:`, JSON.stringify(markets, null, 2))
+    console.log(
+      `[${requestId}] getMarkets - Markets:`,
+      JSON.stringify(markets, null, 2),
+    )
     return c.json({ result: markets })
   } catch (error) {
     console.error(`[${requestId}] getMarkets - ERROR:`, {

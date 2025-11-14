@@ -3,6 +3,7 @@ import type { LocalAccount } from 'viem'
 import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
@@ -20,6 +21,7 @@ export abstract class HostedWalletProvider<
     morpho?: LendProvider<LendProviderConfig>
     aave?: LendProvider<LendProviderConfig>
   }
+  protected supportedAssets?: Asset[]
 
   protected constructor(
     chainManager: ChainManager,
@@ -27,9 +29,11 @@ export abstract class HostedWalletProvider<
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     },
+    supportedAssets?: Asset[],
   ) {
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
+    this.supportedAssets = supportedAssets
   }
   /**
    * Convert a hosted wallet to an Actions wallet

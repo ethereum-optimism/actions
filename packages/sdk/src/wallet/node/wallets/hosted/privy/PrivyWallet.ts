@@ -4,6 +4,7 @@ import { type Address, type LocalAccount } from 'viem'
 import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
 
@@ -25,6 +26,7 @@ export class PrivyWallet extends EOAWallet {
    * @param address - Ethereum address of the wallet
    * @param chainManager - Chain manager for multi-chain operations
    * @param lendProviders - Optional lend providers for DeFi operations
+   * @param supportedAssets - Optional list of supported assets
    */
   private constructor(
     privyClient: PrivyClient,
@@ -35,9 +37,10 @@ export class PrivyWallet extends EOAWallet {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     },
+    supportedAssets?: Asset[],
     authorizationContext?: AuthorizationContext,
   ) {
-    super(chainManager, lendProviders)
+    super(chainManager, lendProviders, supportedAssets)
     this.privyClient = privyClient
     this.authorizationContext = authorizationContext
     this.walletId = walletId
@@ -54,6 +57,7 @@ export class PrivyWallet extends EOAWallet {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     }
+    supportedAssets?: Asset[]
   }): Promise<PrivyWallet> {
     const wallet = new PrivyWallet(
       params.privyClient,
@@ -61,6 +65,7 @@ export class PrivyWallet extends EOAWallet {
       params.address,
       params.chainManager,
       params.lendProviders,
+      params.supportedAssets,
       params.authorizationContext,
     )
     await wallet.initialize()

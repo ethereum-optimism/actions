@@ -2,7 +2,6 @@ import type {
   EOATransactionReceipt,
   LendMarketId,
   SmartWallet,
-  TokenBalance,
   UserOperationTransactionReceipt,
   Wallet,
 } from '@eth-optimism/actions-sdk'

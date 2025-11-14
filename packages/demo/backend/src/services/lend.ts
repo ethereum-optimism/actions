@@ -1,9 +1,4 @@
-import type {
-  LendMarket,
-  LendMarketId,
-  LendTransactionReceipt,
-  SupportedChainId,
-} from '@eth-optimism/actions-sdk'
+import type { LendMarketId, SupportedChainId } from '@eth-optimism/actions-sdk'
 import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 import { chainById } from '@eth-optimism/viem/chains'
 import { baseSepolia, unichain } from 'viem/chains'

@@ -3,7 +3,11 @@ import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { ActionsConfig, AssetsConfig, LendProviderConfig } from '@/types/actions.js'
+import type {
+  ActionsConfig,
+  AssetsConfig,
+  LendProviderConfig,
+} from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
@@ -188,7 +192,11 @@ export class Actions<
       )
     }
     this.hostedWalletProvider = factory.create(
-      { chainManager: this.chainManager, lendProviders: this._lendProviders },
+      {
+        chainManager: this.chainManager,
+        lendProviders: this._lendProviders,
+        supportedAssets: this.getSupportedAssets(),
+      },
       options,
     )
 
@@ -199,6 +207,7 @@ export class Actions<
       this.smartWalletProvider = new DefaultSmartWalletProvider(
         this.chainManager,
         this._lendProviders,
+        this.getSupportedAssets(),
         config.smartWalletConfig.provider.attributionSuffix,
       )
     } else {

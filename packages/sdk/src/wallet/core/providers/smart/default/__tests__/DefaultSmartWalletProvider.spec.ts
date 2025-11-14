@@ -35,6 +35,7 @@ const mockSigner: LocalAccount = {
   address: getRandomAddress(),
   type: 'local',
 } as unknown as LocalAccount
+const supportedAssets = undefined
 
 describe('DefaultSmartWalletProvider', () => {
   const mockWallet: ReturnType<typeof createDefaultSmartWalletMock> =
@@ -414,6 +415,7 @@ describe('DefaultSmartWalletProvider', () => {
     const provider = new DefaultSmartWalletProvider(
       mockChainManager,
       { morpho: mockLendProvider },
+      supportedAssets,
       attributionSeed,
     )
 
@@ -440,6 +442,7 @@ describe('DefaultSmartWalletProvider', () => {
     const provider = new DefaultSmartWalletProvider(
       mockChainManager,
       { morpho: mockLendProvider },
+      supportedAssets,
       attributionSeed,
     )
 

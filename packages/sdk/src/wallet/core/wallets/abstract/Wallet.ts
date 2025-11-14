@@ -7,7 +7,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { LendProviderConfig } from '@/types/actions.js'
-import type { TokenBalance } from '@/types/asset.js'
+import type { Asset, TokenBalance } from '@/types/asset.js'
 import type { TransactionData } from '@/types/lend/index.js'
 import type {
   BatchTransactionReturnType,
@@ -29,6 +29,8 @@ export abstract class Wallet {
   }
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
+  /** List of supported assets for this wallet */
+  protected supportedAssets: Asset[]
   /** Promise to initialize the wallet */
   private initPromise?: Promise<void>
 
@@ -51,6 +53,7 @@ export abstract class Wallet {
    * Create a new wallet
    * @param chainManager - Chain manager for the wallet
    * @param lendProviders - Lend providers for the wallet
+   * @param supportedAssets - List of supported assets (defaults to all SUPPORTED_TOKENS)
    */
   protected constructor(
     chainManager: ChainManager,
@@ -58,9 +61,11 @@ export abstract class Wallet {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     },
+    supportedAssets?: Asset[],
   ) {
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
+    this.supportedAssets = supportedAssets || SUPPORTED_TOKENS
     if (this.lendProviders.morpho || this.lendProviders.aave) {
       this.lend = new WalletLendNamespace(this.lendProviders, this)
     }
@@ -69,11 +74,11 @@ export abstract class Wallet {
   /**
    * Get asset balances across all supported chains
    * @description Fetches ETH and ERC20 token balances for this wallet across all supported networks.
+   * Uses the configured supported assets from ActionsConfig.assets if provided.
    * @returns Promise resolving to array of token balances with chain breakdown
    */
   async getBalance(): Promise<TokenBalance[]> {
-    // TEMPORARY - will use optimism token list eventually
-    const tokenBalancePromises = SUPPORTED_TOKENS.map(async (asset) => {
+    const tokenBalancePromises = this.supportedAssets.map(async (asset) => {
       return fetchERC20Balance(this.chainManager, this.address, asset)
     })
     const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)

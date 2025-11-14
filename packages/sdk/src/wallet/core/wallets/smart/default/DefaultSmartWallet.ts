@@ -71,11 +71,12 @@ export class DefaultSmartWallet extends SmartWallet {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     },
+    supportedAssets?: Asset[],
     deploymentAddress?: Address,
     nonce?: bigint,
     attributionSuffix?: Hex,
   ) {
-    super(chainManager, lendProviders)
+    super(chainManager, lendProviders, supportedAssets)
 
     const { signersWithLocalAccount, signerIndex } =
       DefaultSmartWallet.ensureLocalAccountSigner(signers, signer)
@@ -120,6 +121,7 @@ export class DefaultSmartWallet extends SmartWallet {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     }
+    supportedAssets?: Asset[]
     deploymentAddress?: Address
     nonce?: bigint
     attributionSuffix?: Hex
@@ -130,6 +132,7 @@ export class DefaultSmartWallet extends SmartWallet {
       params.signer,
       params.chainManager,
       params.lendProviders,
+      params.supportedAssets,
       params.deploymentAddress,
       params.nonce,
       params.attributionSuffix,
