@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
@@ -55,6 +56,8 @@ function Earn({
   isLoadingMarkets = false,
   marketPositions = [],
 }: EarnContentProps) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
   // Show loading state while Privy is initializing
   if (!ready) {
     return (
@@ -242,8 +245,13 @@ function Earn({
           </div>
 
           {/* Activity Log - Desktop Sidebar */}
-          <div className="hidden lg:h-[calc(100vh-65px)] lg:block lg:w-[436px]">
-            <ActivityLog />
+          <div
+            className="hidden lg:h-[calc(100vh-65px)] lg:block transition-all duration-300 ease-in-out"
+            style={{
+              width: isSidebarCollapsed ? '0px' : '436px',
+            }}
+          >
+            <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
           </div>
         </main>
       </div>
