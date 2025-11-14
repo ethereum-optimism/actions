@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { env } from '@/envVars'
+import { USDC_DEMO, WETH } from '@/constants/assets'
 import {
   createActions,
   type ReactActionsConfig,
@@ -33,6 +34,9 @@ export function useActions<T extends ReactProviderTypes>({
           provider: 'morpho',
           // Remove marketAllowlist to disable validation for demo
           marketAllowlist: [],
+        },
+        assets: {
+          allow: [USDC_DEMO, WETH],
         },
         chains: [
           {
