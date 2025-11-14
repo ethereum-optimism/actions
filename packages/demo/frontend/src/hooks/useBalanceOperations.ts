@@ -198,11 +198,12 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
         )
         setAssetBalance('0.00')
       }
+      setIsLoadingBalance(false)
     } catch (error) {
       console.log('[fetchBalance] Error:', error)
-      setAssetBalance('0.00')
-    } finally {
-      setIsLoadingBalance(false)
+      // Keep loading state on error (shimmer) instead of showing 0.00
+      // This indicates we couldn't fetch the balance, not that balance is zero
+      // Don't call setIsLoadingBalance(false) here - stay in loading/shimmer state
     }
   }, [getTokenBalances, selectedAssetSymbol, marketData])
 
@@ -489,11 +490,12 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
             asset: market.asset,
           })
         }
-      } catch {
-        // Error fetching market APY
-      } finally {
         setIsLoadingApy(false)
         setIsInitialLoad(false)
+      } catch {
+        // Error fetching market APY - keep loading state
+        // Don't set isInitialLoad to false - stay in shimmer state
+        console.log('[fetchMarketApy] Error fetching market data, keeping shimmer state')
       }
     }
 
@@ -517,18 +519,16 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
           !backgroundPolling,
         )
         setDepositedAmount(position.balanceFormatted)
-      } catch {
-        // Silently fail polling - don't reset to 0.00
-        if (!backgroundPolling) {
-          setDepositedAmount('0.00')
-        }
-      } finally {
         if (!backgroundPolling) {
           setIsLoadingPosition(false)
         }
+      } catch {
+        // Error fetching position - keep loading state to show shimmer
+        // Don't set depositedAmount to '0.00' - this would show "No active markets"
+        console.log('[fetchPosition] Error fetching position, keeping shimmer state')
       }
     },
-    [isReady, marketChainId, marketAddress, getPosition],
+    [getPosition, isReady, marketChainId, marketAddress],
   )
 
   // Fetch position when market data is available or user changes
