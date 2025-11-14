@@ -4,9 +4,9 @@ import Earn from './Earn'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { type LendMarketId } from '@eth-optimism/actions-sdk/react'
 import { useBalanceOperations } from '@/hooks/useBalanceOperations'
+import { useMarketData } from '@/hooks/useMarketData'
 import type { LendExecutePositionParams } from '@/types/api'
 import { actionsApi } from '@/api/actionsApi'
-import type { MarketPosition } from '@/types/market'
 import type { MarketInfo } from './MarketSelector'
 import type { LendMarket } from '@eth-optimism/actions-sdk'
 import { baseSepolia, optimismSepolia } from 'viem/chains'
@@ -82,13 +82,7 @@ export function EarnWithServerWallet({
   selectedProvider,
   ready,
 }: EarnWithServerWalletProps) {
-  // State for wallet balance and lend position
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
-  const [selectedMarket, setSelectedMarket] = useState<MarketPosition | null>(
-    null,
-  )
-  const [markets, setMarkets] = useState<MarketInfo[]>([])
-  const [isLoadingMarkets, setIsLoadingMarkets] = useState(true)
 
   // Memoize operation functions to prevent infinite loops
   const getTokenBalances = useCallback(async () => {
@@ -136,6 +130,19 @@ export function EarnWithServerWallet({
   )
 
   const isReady = useCallback(() => ready, [ready])
+
+  // Market selection state management
+  const {
+    markets,
+    setMarkets,
+    marketPositions,
+    setMarketPositions,
+    selectedMarket,
+    setSelectedMarket,
+    isLoadingMarkets,
+    setIsLoadingMarkets,
+    handleMarketSelect,
+  } = useMarketData()
 
   // Fetch available markets on mount
   useEffect(() => {
@@ -216,22 +223,35 @@ export function EarnWithServerWallet({
     }
   }, [ready, fetchWalletAddress])
 
-  const handleMarketSelect = useCallback((market: MarketInfo) => {
-    setSelectedMarket({
-      marketName: market.name,
-      marketLogo: market.logo,
-      networkName: market.networkName,
-      networkLogo: market.networkLogo,
-      assetSymbol: market.assetSymbol,
-      assetLogo: market.assetLogo,
-      apy: market.apy,
-      depositedAmount: null,
-      isLoadingApy: false,
-      isLoadingPosition: false,
-      marketId: market.marketId,
-      provider: market.provider,
+  // Update marketPositions when selected market's position changes
+  useEffect(() => {
+    if (!selectedMarket || !depositedAmount || !apy) return
+
+    setMarketPositions((prev) => {
+      const existingIndex = prev.findIndex(
+        (p) =>
+          p.marketId.address.toLowerCase() ===
+            selectedMarket.marketId.address.toLowerCase() &&
+          p.marketId.chainId === selectedMarket.marketId.chainId,
+      )
+
+      const updatedMarket = {
+        ...selectedMarket,
+        depositedAmount,
+        apy,
+      }
+
+      if (existingIndex >= 0) {
+        // Update existing market
+        const newPositions = [...prev]
+        newPositions[existingIndex] = updatedMarket
+        return newPositions
+      } else {
+        // Add new market
+        return [...prev, updatedMarket]
+      }
     })
-  }, [])
+  }, [selectedMarket, depositedAmount, apy])
 
   return (
     <Earn
@@ -252,6 +272,7 @@ export function EarnWithServerWallet({
       selectedMarket={selectedMarket}
       onMarketSelect={handleMarketSelect}
       isLoadingMarkets={isLoadingMarkets}
+      marketPositions={marketPositions}
     />
   )
 }
