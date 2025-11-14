@@ -6,78 +6,50 @@ import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
 import { AaveWETH, GauntletUSDCDemo } from './markets.js'
 
-let morphoActionsInstance: ReturnType<typeof createActions<'privy'>>
-let aaveActionsInstance: ReturnType<typeof createActions<'privy'>>
+let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
-function createBaseWalletConfig() {
+function createActionsConfig(): NodeActionsConfig<'privy'> {
   return {
-    hostedWalletConfig: {
-      provider: {
-        type: 'privy' as const,
-        config: {
-          privyClient: getPrivyClient(),
-          authorizationContext: getAuthorizationContext(),
+    wallet: {
+      hostedWalletConfig: {
+        provider: {
+          type: 'privy' as const,
+          config: {
+            privyClient: getPrivyClient(),
+            authorizationContext: getAuthorizationContext(),
+          },
+        },
+      },
+      smartWalletConfig: {
+        provider: {
+          type: 'default' as const,
+          attributionSuffix: 'actions',
         },
       },
     },
-    smartWalletConfig: {
-      provider: {
-        type: 'default' as const,
-        attributionSuffix: 'actions',
+    lend: {
+      morpho: {
+        marketAllowlist: [GauntletUSDCDemo],
       },
-    },
-  }
-}
-
-export function createMorphoActionsConfig(): NodeActionsConfig<'privy'> {
-  return {
-    wallet: createBaseWalletConfig(),
-    lend: {
-      provider: 'morpho',
-      defaultSlippage: 50,
-      marketAllowlist: [GauntletUSDCDemo], // Only Morpho markets
-    },
-    chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
-  }
-}
-
-export function createAaveActionsConfig(): NodeActionsConfig<'privy'> {
-  return {
-    wallet: createBaseWalletConfig(),
-    lend: {
-      provider: 'aave',
-      defaultSlippage: 50,
-      marketAllowlist: [AaveWETH], // Only Aave markets
+      aave: {
+        marketAllowlist: [AaveWETH],
+      },
     },
     chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }
 }
 
 export function initializeActions(): void {
-  morphoActionsInstance = createActions(createMorphoActionsConfig())
-  aaveActionsInstance = createActions(createAaveActionsConfig())
-}
-
-export function getMorphoActions() {
-  if (!morphoActionsInstance) {
-    throw new Error(
-      'Morpho Actions SDK not initialized. Call initializeActions() first.',
-    )
-  }
-  return morphoActionsInstance
-}
-
-export function getAaveActions() {
-  if (!aaveActionsInstance) {
-    throw new Error(
-      'Aave Actions SDK not initialized. Call initializeActions() first.',
-    )
-  }
-  return aaveActionsInstance
+  actionsInstance = createActions(createActionsConfig())
 }
 
 export function getActions() {
-  return getMorphoActions()
+  if (!actionsInstance) {
+    throw new Error(
+      'Actions SDK not initialized. Call initializeActions() first.',
+    )
+  }
+  return actionsInstance
 }
 
 export function getPrivyClient() {

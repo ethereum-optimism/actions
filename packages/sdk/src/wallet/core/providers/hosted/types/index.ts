@@ -1,5 +1,8 @@
+import type { LendProvider } from '@/lend/core/LendProvider.js'
+import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
+import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 
 /**
@@ -10,7 +13,10 @@ import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstra
  */
 export interface HostedProviderDeps {
   chainManager: ChainManager
-  lendProvider?: LendProvider<LendConfig>
+  lendProviders?: {
+    morpho?: LendProvider<LendProviderConfig>
+    aave?: LendProvider<LendProviderConfig>
+  }
 }
 
 /**

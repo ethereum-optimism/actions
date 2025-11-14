@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import { PrivyWallet } from '@/wallet/react/wallets/hosted/privy/PrivyWallet.js'
 import * as createSignerUtil from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
@@ -40,6 +40,7 @@ describe('PrivyHostedWalletProvider (React)', () => {
       expect(PrivyWallet.create).toHaveBeenCalledWith({
         chainManager: mockChainManager,
         connectedWallet: mockConnectedWallet,
+        lendProviders: {},
       })
       expect(result).toBe(mockActionsWallet)
     })
@@ -48,10 +49,10 @@ describe('PrivyHostedWalletProvider (React)', () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const mockLendProvider = {} as any
+      const mockLendProvider = createMockLendProvider()
       const provider = new PrivyHostedWalletProvider(
         mockChainManager,
-        mockLendProvider as LendProvider<LendConfig>,
+        { morpho: mockLendProvider },
       )
       const mockActionsWallet = {
         __brand: 'actions-wallet',
@@ -67,7 +68,7 @@ describe('PrivyHostedWalletProvider (React)', () => {
 
       expect(PrivyWallet.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          lendProvider: mockLendProvider,
+          lendProviders: { morpho: mockLendProvider },
         }),
       )
     })

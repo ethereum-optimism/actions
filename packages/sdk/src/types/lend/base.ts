@@ -215,41 +215,15 @@ export interface LendOptions {
 }
 
 /**
- * Base lending provider configuration
- * @description Base configuration shared by all lending providers
+ * Individual lending provider configuration
+ * @description Configuration for a single lending provider
  */
-export interface BaseLendConfig {
-  /** Default slippage tolerance (basis points) */
-  defaultSlippage?: number
+export interface LendProviderConfig {
   /** Allowlist of markets available for lending */
   marketAllowlist?: LendMarketConfig[]
+  /** Blocklist of markets to exclude from lending */
+  marketBlocklist?: LendMarketConfig[]
 }
-
-/**
- * Morpho lending provider configuration
- * @description Configuration specific to Morpho lending provider
- */
-export interface MorphoLendConfig extends BaseLendConfig {
-  /** Lending provider name */
-  provider: 'morpho'
-  // Morpho-specific fields can be added here in the future
-}
-
-/**
- * Aave lending provider configuration
- * @description Configuration specific to Aave lending provider
- */
-export interface AaveLendConfig extends BaseLendConfig {
-  /** Lending provider name */
-  provider: 'aave'
-  // Aave-specific fields can be added here in the future
-}
-
-/**
- * Lending provider configuration
- * @description Union of all possible lending provider configurations
- */
-export type LendConfig = MorphoLendConfig | AaveLendConfig
 
 /**
  * Market position information

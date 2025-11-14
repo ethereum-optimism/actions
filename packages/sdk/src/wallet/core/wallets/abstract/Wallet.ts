@@ -1,17 +1,16 @@
 import type { Address, LocalAccount } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { LendProvider } from '@/lend/core/LendProvider.js'
+import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
+import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 import type { TokenBalance } from '@/types/asset.js'
-import type {
-  BaseLendConfig,
-  LendConfig,
-  LendProvider,
-  TransactionData,
-} from '@/types/lend/index.js'
+import type { TransactionData } from '@/types/lend/index.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
@@ -24,9 +23,12 @@ import type {
  */
 export abstract class Wallet {
   /** Lend namespace with all lending operations */
-  lend?: WalletLendNamespace<BaseLendConfig>
-  /** Provider for lending market operations */
-  protected lendProvider?: LendProvider<LendConfig>
+  lend?: WalletLendNamespace
+  /** Providers for lending market operations */
+  protected lendProviders: {
+    morpho?: LendProvider<LendProviderConfig>
+    aave?: LendProvider<LendProviderConfig>
+  }
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
   /** Promise to initialize the wallet */
@@ -50,16 +52,19 @@ export abstract class Wallet {
   /**
    * Create a new wallet
    * @param chainManager - Chain manager for the wallet
-   * @param lendProvider - Lend provider for the wallet
+   * @param lendProviders - Lend providers for the wallet
    */
   protected constructor(
     chainManager: ChainManager,
-    lendProvider?: LendProvider<LendConfig>,
+    lendProviders?: {
+      morpho?: LendProvider<LendProviderConfig>
+      aave?: LendProvider<LendProviderConfig>
+    },
   ) {
     this.chainManager = chainManager
-    this.lendProvider = lendProvider
-    if (this.lendProvider) {
-      this.lend = new WalletLendNamespace(this.lendProvider, this)
+    this.lendProviders = lendProviders || {}
+    if (this.lendProviders.morpho || this.lendProviders.aave) {
+      this.lend = new WalletLendNamespace(this.lendProviders, this)
     }
   }
 

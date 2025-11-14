@@ -29,8 +29,8 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       validateOptions(_options): _options is ReactOptionsMap['dynamic'] {
         return true
       },
-      create({ chainManager, lendProvider }, _options) {
-        return new DynamicHostedWalletProvider(chainManager, lendProvider)
+      create({ chainManager, lendProviders }, _options) {
+        return new DynamicHostedWalletProvider(chainManager, lendProviders)
       },
     })
 
@@ -39,8 +39,8 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       validateOptions(_options): _options is ReactOptionsMap['privy'] {
         return true
       },
-      create({ chainManager, lendProvider }, _options) {
-        return new PrivyHostedWalletProvider(chainManager, lendProvider)
+      create({ chainManager, lendProviders }, _options) {
+        return new PrivyHostedWalletProvider(chainManager, lendProviders)
       },
     })
 
@@ -49,8 +49,8 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       validateOptions(_options): _options is ReactOptionsMap['turnkey'] {
         return true
       },
-      create({ chainManager, lendProvider }, _options) {
-        return new TurnkeyHostedWalletProvider(chainManager, lendProvider)
+      create({ chainManager, lendProviders }, _options) {
+        return new TurnkeyHostedWalletProvider(chainManager, lendProviders)
       },
     })
   }

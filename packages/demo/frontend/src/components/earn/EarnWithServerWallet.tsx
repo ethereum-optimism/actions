@@ -63,7 +63,7 @@ const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
     logo: providerLogo,
     networkName,
     networkLogo,
-    assetSymbol,
+    assetSymbol, // Keep original symbol (e.g., 'USDC_DEMO') for internal matching
     assetLogo,
     apy: market.apy.total,
     isLoadingApy: false,

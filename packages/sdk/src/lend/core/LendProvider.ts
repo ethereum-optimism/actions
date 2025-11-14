@@ -3,8 +3,8 @@ import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 import type {
-  BaseLendConfig,
   ClosePositionParams,
   GetLendMarketParams,
   GetLendMarketsParams,
@@ -25,7 +25,7 @@ import { validateMarketAsset } from '@/utils/markets.js'
  * @description Base class for lending provider implementations
  */
 export abstract class LendProvider<
-  TConfig extends BaseLendConfig = BaseLendConfig,
+  TConfig extends LendProviderConfig = LendProviderConfig,
 > {
   /** Lending provider configuration */
   protected readonly _config: TConfig
@@ -237,7 +237,7 @@ export abstract class LendProvider<
     }
 
     const foundMarket = this._config.marketAllowlist.find(
-      (allowedMarket) =>
+      (allowedMarket: LendMarketConfig) =>
         allowedMarket.address.toLowerCase() ===
           marketId.address.toLowerCase() &&
         allowedMarket.chainId === marketId.chainId,
@@ -262,8 +262,8 @@ export abstract class LendProvider<
   ): LendMarketConfig[] {
     let configs = this._config.marketAllowlist || []
     if (chainId !== undefined)
-      configs = configs.filter((m) => m.chainId === chainId)
-    if (asset !== undefined) configs = configs.filter((m) => m.asset === asset)
+      configs = configs.filter((m: LendMarketConfig) => m.chainId === chainId)
+    if (asset !== undefined) configs = configs.filter((m: LendMarketConfig) => m.asset === asset)
     return configs
   }
 

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
@@ -49,10 +49,10 @@ describe('DynamicHostedWalletProvider', () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const mockLendProvider = {} as any
+      const mockLendProvider = createMockLendProvider()
       const provider = new DynamicHostedWalletProvider(
         mockChainManager,
-        mockLendProvider as LendProvider<LendConfig>,
+        { morpho: mockLendProvider },
       )
 
       const mockDynamicWallet = {
@@ -69,7 +69,7 @@ describe('DynamicHostedWalletProvider', () => {
 
       expect(DynamicWallet.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          lendProvider: mockLendProvider,
+          lendProviders: { morpho: mockLendProvider },
         }),
       )
     })

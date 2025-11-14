@@ -11,7 +11,7 @@ import {
   getMockAuthorizationContext,
 } from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
@@ -83,12 +83,12 @@ describe('PrivyHostedWalletProvider', () => {
 
     it('forwards lendProvider when provided to constructor', async () => {
       const privy = createMockPrivyClient('app', 'secret')
-      const mockLendProvider = {} as LendProvider<LendConfig>
+      const mockLendProvider = createMockLendProvider()
       const provider = new PrivyHostedWalletProvider({
         privyClient: privy,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
-        lendProvider: mockLendProvider,
+        lendProviders: { morpho: mockLendProvider },
       })
       const spy = vi.spyOn(PrivyWallet, 'create')
 
@@ -102,7 +102,7 @@ describe('PrivyHostedWalletProvider', () => {
 
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({
-          lendProvider: mockLendProvider,
+          lendProviders: { morpho: mockLendProvider },
         }),
       )
     })

@@ -5,9 +5,9 @@ import type { Address } from 'viem'
 
 import { getPoolAddress } from '@/lend/providers/aave/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   ApyBreakdown,
-  LendConfig,
   LendMarket,
   LendMarketConfig,
   LendMarketId,
@@ -52,7 +52,7 @@ interface GetReserveParams {
   /** Chain manager instance */
   chainManager: ChainManager
   /** Lend configuration containing market allowlist */
-  lendConfig?: LendConfig
+  lendConfig?: LendProviderConfig
 }
 
 /**
@@ -60,7 +60,7 @@ interface GetReserveParams {
  */
 interface GetReservesParams {
   chainManager: ChainManager
-  lendConfig: LendConfig
+  lendConfig: LendProviderConfig
   markets: LendMarketConfig[]
 }
 

@@ -1,9 +1,7 @@
-import { DEFAULT_ACTIONS_CONFIG } from '@/constants/config.js'
-import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
+import { AaveLendProvider, MorphoLendProvider, LendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { ActionsConfig } from '@/types/actions.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import type { ActionsConfig, LendProviderConfig } from '@/types/actions.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
@@ -38,8 +36,11 @@ export class Actions<
     SmartWalletProvider
   >
   private chainManager: ChainManager
-  private _lend?: ActionsLendNamespace<LendConfig>
-  private _lendProvider?: LendProvider<LendConfig>
+  private _lend?: ActionsLendNamespace
+  private _lendProviders: {
+    morpho?: LendProvider<LendProviderConfig>
+    aave?: LendProvider<LendProviderConfig>
+  } = {}
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
@@ -63,39 +64,25 @@ export class Actions<
     this.chainManager = new ChainManager(config.chains)
     this.hostedWalletProviderRegistry = deps.hostedWalletProviderRegistry
 
-    // Create lending provider if configured
+    // Create lending providers if configured
     if (config.lend) {
-      const lendConfig = config.lend
-      if (lendConfig.provider === 'morpho') {
-        this._lendProvider = new MorphoLendProvider(
-          {
-            ...lendConfig,
-            defaultSlippage:
-              lendConfig.defaultSlippage ??
-              DEFAULT_ACTIONS_CONFIG.lend.defaultSlippage,
-          },
+      if (config.lend.morpho) {
+        this._lendProviders.morpho = new MorphoLendProvider(
+          config.lend.morpho,
           this.chainManager,
         )
+      }
 
-        // Create read-only lend namespace
-        this._lend = new ActionsLendNamespace(this._lendProvider!)
-      } else if (lendConfig.provider === 'aave') {
-        this._lendProvider = new AaveLendProvider(
-          {
-            ...lendConfig,
-            defaultSlippage:
-              lendConfig.defaultSlippage ??
-              DEFAULT_ACTIONS_CONFIG.lend.defaultSlippage,
-          },
+      if (config.lend.aave) {
+        this._lendProviders.aave = new AaveLendProvider(
+          config.lend.aave,
           this.chainManager,
         )
+      }
 
-        // Create read-only lend namespace
-        this._lend = new ActionsLendNamespace(this._lendProvider!)
-      } else {
-        throw new Error(
-          `Unsupported lending provider: ${(lendConfig as any).provider}`,
-        )
+      // Create lend namespace if any providers are configured
+      if (this._lendProviders.morpho || this._lendProviders.aave) {
+        this._lend = new ActionsLendNamespace(this._lendProviders)
       }
     }
 
@@ -109,7 +96,7 @@ export class Actions<
    * @returns ActionsLendNamespace for lending operations
    * @throws Error if lend provider not configured
    */
-  get lend(): ActionsLendNamespace<LendConfig> {
+  get lend(): ActionsLendNamespace {
     if (!this._lend) {
       throw new Error(
         'Lend provider not configured. Please add lend configuration to ActionsConfig.',
@@ -119,11 +106,14 @@ export class Actions<
   }
 
   /**
-   * Get the lend provider instance
-   * @returns LendProvider instance if configured, undefined otherwise
+   * Get the lend provider instances
+   * @returns Object containing configured lend providers
    */
-  get lendProvider(): LendProvider<LendConfig> | undefined {
-    return this._lendProvider
+  get lendProviders(): {
+    morpho?: LendProvider<LendProviderConfig>
+    aave?: LendProvider<LendProviderConfig>
+  } {
+    return this._lendProviders
   }
 
   /**
@@ -157,7 +147,7 @@ export class Actions<
       )
     }
     this.hostedWalletProvider = factory.create(
-      { chainManager: this.chainManager, lendProvider: this.lendProvider },
+      { chainManager: this.chainManager, lendProviders: this._lendProviders },
       options,
     )
 
@@ -167,7 +157,7 @@ export class Actions<
     ) {
       this.smartWalletProvider = new DefaultSmartWalletProvider(
         this.chainManager,
-        this.lendProvider,
+        this._lendProviders,
         config.smartWalletConfig.provider.attributionSuffix,
       )
     } else {

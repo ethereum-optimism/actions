@@ -71,21 +71,33 @@ export class WalletController {
    * GET - Get wallet balance by user ID
    */
   async getBalance(c: Context) {
+    const requestId = Math.random().toString(36).substring(7)
+    console.log(
+      `[${new Date().toISOString()}] [${requestId}] getBalance - START`,
+    )
     try {
       const auth = c.get('auth') as AuthContext | undefined
 
       if (!auth || !auth.idToken) {
+        console.log(`[${requestId}] getBalance - UNAUTHORIZED`)
         return c.json({ error: 'Unauthorized' }, 401)
       }
 
       const wallet = await walletService.getWallet(auth.idToken)
       if (!wallet) {
+        console.log(`[${requestId}] getBalance - WALLET NOT FOUND`)
         throw new Error('Wallet not found')
       }
+      console.log(
+        `[${requestId}] getBalance - Fetching balance for wallet: ${wallet.address}`,
+      )
       const balance = await walletService.getWalletBalance(wallet)
+      console.log(
+        `[${requestId}] getBalance - SUCCESS, returning ${balance.length} token balances`,
+      )
       return c.json({ result: serializeBigInt(balance) })
     } catch (error) {
-      console.error(error)
+      console.error(`[${requestId}] getBalance - ERROR:`, error)
       return c.json(
         {
           error: 'Failed to get balance',
@@ -118,17 +130,29 @@ export class WalletController {
       chainId: Number(chainId) as SupportedChainId,
     }
 
+    console.log(
+      `[${requestId}] getLendPosition - Market: ${marketAddress} on chain ${chainId}`,
+    )
+
     const auth = c.get('auth') as AuthContext | undefined
 
     if (!auth || !auth.idToken) {
+      console.log(`[${requestId}] getLendPosition - UNAUTHORIZED`)
       return c.json({ error: 'Unauthorized' }, 401)
     }
 
     const wallet = await walletService.getWallet(auth.idToken)
     if (!wallet) {
+      console.log(`[${requestId}] getLendPosition - WALLET NOT FOUND`)
       throw new Error('Wallet not found')
     }
+    console.log(
+      `[${requestId}] getLendPosition - Fetching position for wallet: ${wallet.address}`,
+    )
     const position = await walletService.getLendPosition({ marketId, wallet })
+    console.log(
+      `[${requestId}] getLendPosition - SUCCESS, shares: ${position.shares}`,
+    )
     return c.json({ result: serializeBigInt(position) })
   }
 

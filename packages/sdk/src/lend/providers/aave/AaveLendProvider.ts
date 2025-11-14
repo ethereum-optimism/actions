@@ -2,8 +2,8 @@ import { encodeFunctionData, erc20Abi, formatUnits, parseAbi } from 'viem'
 
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 import type {
-  AaveLendConfig,
   GetLendMarketsParams,
   GetMarketBalanceParams,
   LendClosePositionParams,
@@ -36,7 +36,7 @@ export const SUPPORTED_CHAIN_IDS = getSupportedChainIds() as readonly number[]
  * Aave lending provider implementation
  * @description Lending provider implementation using Aave V3 protocol
  */
-export class AaveLendProvider extends LendProvider<AaveLendConfig> {
+export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
 
   private chainManager: ChainManager
@@ -46,7 +46,7 @@ export class AaveLendProvider extends LendProvider<AaveLendConfig> {
    * @param config - Aave lending configuration
    * @param chainManager - Chain manager for blockchain interactions
    */
-  constructor(config: AaveLendConfig, chainManager: ChainManager) {
+  constructor(config: LendProviderConfig, chainManager: ChainManager) {
     super(config)
     this.chainManager = chainManager
   }
@@ -119,7 +119,7 @@ export class AaveLendProvider extends LendProvider<AaveLendConfig> {
             value: 0n,
           },
         },
-        slippage: params.options?.slippage || this._config.defaultSlippage,
+        slippage: params.options?.slippage ?? 50,
       }
     } catch (error) {
       throw new Error(
@@ -182,7 +182,7 @@ export class AaveLendProvider extends LendProvider<AaveLendConfig> {
             value: 0n,
           },
         },
-        slippage: params.options?.slippage || this._config.defaultSlippage,
+        slippage: params.options?.slippage ?? 50,
       }
     } catch (error) {
       throw new Error(

@@ -3,8 +3,11 @@ import type { TurnkeyClient as TurnkeyHttpClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
 import type { LocalAccount } from 'viem'
 
+import type { LendProvider } from '@/lend/core/LendProvider.js'
+import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
+import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { NodeToActionsOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
@@ -33,9 +36,12 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       | TurnkeyServerClient
       | TurnkeySDKClientBase,
     chainManager: ChainManager,
-    lendProvider?: LendProvider<LendConfig>,
+    lendProviders?: {
+      morpho?: LendProvider<LendProviderConfig>
+      aave?: LendProvider<LendProviderConfig>
+    },
   ) {
-    super(chainManager, lendProvider)
+    super(chainManager, lendProviders)
   }
 
   /**
@@ -56,7 +62,7 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       signWith: params.signWith,
       ethereumAddress: params.ethereumAddress,
       chainManager: this.chainManager,
-      lendProvider: this.lendProvider,
+      lendProviders: this.lendProviders,
     })
   }
 
