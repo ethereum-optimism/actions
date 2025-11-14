@@ -175,7 +175,7 @@ export function Action({
               </div>
             ) : (
               <div
-                className="flex items-center gap-2 transition-all"
+                className="flex items-center gap-2"
                 style={{
                   padding: '6px 12px',
                   backgroundColor:
@@ -183,10 +183,9 @@ export function Action({
                       ? colors.highlight.background
                       : 'transparent',
                   borderRadius: '6px',
-                  border:
-                    hoveredAction === 'mint'
-                      ? `1px solid ${colors.highlight.border}`
-                      : '1px solid transparent',
+                  ...(hoveredAction === 'mint' && {
+                    border: `1px solid ${colors.highlight.border}`,
+                  }),
                   minHeight: '33px',
                   display: 'flex',
                   alignItems: 'center',

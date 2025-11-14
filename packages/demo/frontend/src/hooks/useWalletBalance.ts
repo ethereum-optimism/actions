@@ -168,8 +168,13 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
   }
 
   // Loading states - show loading if initial load OR actively mutating
+  // IMPORTANT: Also check if marketData is available, since balance calculation depends on it
   const isLoadingBalance =
-    isLoadingBalances || isFetchingBalances || mintAssetMutation.isPending
+    isLoadingBalances ||
+    isFetchingBalances ||
+    isLoadingMarkets ||
+    !marketData ||
+    mintAssetMutation.isPending
 
   const isLoadingApy = isLoadingMarkets || isFetchingMarkets
   const isLoadingPositionState =
