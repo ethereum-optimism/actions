@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { type Address } from 'viem'
 import Earn from './Earn'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
@@ -83,6 +83,7 @@ export function EarnWithServerWallet({
   ready,
 }: EarnWithServerWalletProps) {
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
+  const hasLoadedMarkets = useRef(false)
 
   // Memoize operation functions to prevent infinite loops
   const getTokenBalances = useCallback(async () => {
@@ -155,7 +156,15 @@ export function EarnWithServerWallet({
   // Fetch available markets on mount
   useEffect(() => {
     const fetchMarkets = async () => {
+      // Prevent duplicate fetches (e.g., from React Strict Mode)
+      if (hasLoadedMarkets.current) {
+        console.log('[EarnWithServerWallet] Markets already loaded, skipping')
+        return
+      }
+      hasLoadedMarkets.current = true
+
       try {
+        console.log('[EarnWithServerWallet] Fetching markets...')
         setIsLoadingMarkets(true)
         const rawMarkets = await getMarkets()
         const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
@@ -166,6 +175,12 @@ export function EarnWithServerWallet({
           const defaultMarket =
             marketInfoList.find((m) => m.name === 'Gauntlet') ||
             marketInfoList[0]
+          console.log(
+            '[EarnWithServerWallet] Setting default market:',
+            defaultMarket.name,
+            'assetSymbol:',
+            defaultMarket.assetSymbol,
+          )
           setSelectedMarket({
             marketName: defaultMarket.name,
             marketLogo: defaultMarket.logo,
@@ -183,6 +198,7 @@ export function EarnWithServerWallet({
         }
       } catch (error) {
         console.error('Error fetching markets:', error)
+        hasLoadedMarkets.current = false // Reset on error to allow retry
       } finally {
         setIsLoadingMarkets(false)
       }
@@ -191,7 +207,8 @@ export function EarnWithServerWallet({
     if (ready) {
       fetchMarkets()
     }
-  }, [ready, getMarkets, selectedMarket])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready])
 
   const {
     assetBalance,

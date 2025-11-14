@@ -188,28 +188,43 @@ export class WalletController {
    * POST - Drip ETH to a wallet from the faucet
    */
   async dripEthToWallet(c: Context) {
+    const requestId = Math.random().toString(36).substring(7)
+    console.log(
+      `[${new Date().toISOString()}] [${requestId}] dripEthToWallet - START`,
+    )
     const validation = await validateRequest(c, DripEthToWalletRequestSchema)
-    if (!validation.success) return validation.response
+    if (!validation.success) {
+      console.log(`[${requestId}] dripEthToWallet - VALIDATION FAILED`)
+      return validation.response
+    }
     const {
       body: { walletAddress },
     } = validation.data
+    console.log(
+      `[${requestId}] dripEthToWallet - Wallet: ${walletAddress}`,
+    )
     try {
+      console.log(`[${requestId}] dripEthToWallet - Checking eligibility`)
       const isWalletEligibleForFaucet =
         await faucetService.isWalletEligibleForFaucet(walletAddress as Address)
       if (!isWalletEligibleForFaucet) {
+        console.log(`[${requestId}] dripEthToWallet - NOT ELIGIBLE`)
         return c.json({ error: 'Wallet is not eligible for the faucet' }, 400)
       }
 
+      console.log(`[${requestId}] dripEthToWallet - Calling faucet service`)
       const result = await faucetService.dripEthToWallet(
         walletAddress as Address,
       )
       if (!result.success) {
+        console.log(`[${requestId}] dripEthToWallet - FAILED (result.success=false)`)
         return c.json({ error: 'Failed to drip ETH to wallet' }, 500)
       }
 
+      console.log(`[${requestId}] dripEthToWallet - SUCCESS, userOpHash: ${result.userOpHash}`)
       return c.json({ result: { userOpHash: result.userOpHash } })
     } catch (error) {
-      console.error(error)
+      console.error(`[${requestId}] dripEthToWallet - ERROR:`, error)
       return c.json(
         {
           error: 'Failed to drip ETH to wallet',

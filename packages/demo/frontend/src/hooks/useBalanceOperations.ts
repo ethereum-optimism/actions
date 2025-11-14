@@ -73,6 +73,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   const hasInitialized = useRef(false)
   const hasInitiatedMarketFetch = useRef(false)
+  const lastFetchedSymbol = useRef<string | null>(null)
 
   // Wrap operations with activity logging
   const getTokenBalances = useCallback(async () => {
@@ -147,17 +148,39 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
           targetChainId,
         )
 
-        // Find the token that has a chainBalance matching both address and chainId
-        for (const token of tokenBalances) {
-          const matchingChainBalance = token.chainBalances.find(
-            (cb) =>
-              cb.tokenAddress.toLowerCase() === targetAddress &&
-              cb.chainId === targetChainId,
+        // Special case: For WETH markets on OP Sepolia, check native ETH balance
+        // since the faucet provides native ETH, not WETH tokens
+        const isWethMarket = selectedAssetSymbol === 'WETH'
+        const isOpSepolia = targetChainId === 11155420
+
+        if (isWethMarket && isOpSepolia) {
+          console.log(
+            '[fetchBalance] WETH market on OP Sepolia - checking native ETH balance',
           )
-          if (matchingChainBalance) {
-            assetToken = token
-            chainBalance = matchingChainBalance
-            break
+          // Look for ETH token (native)
+          assetToken = tokenBalances.find((token) => token.symbol === 'ETH')
+          if (assetToken) {
+            chainBalance = assetToken.chainBalances.find(
+              (cb) => cb.chainId === targetChainId,
+            )
+            console.log(
+              '[fetchBalance] Found ETH balance:',
+              chainBalance?.balance,
+            )
+          }
+        } else {
+          // Normal case: Find the token that has a chainBalance matching both address and chainId
+          for (const token of tokenBalances) {
+            const matchingChainBalance = token.chainBalances.find(
+              (cb) =>
+                cb.tokenAddress.toLowerCase() === targetAddress &&
+                cb.chainId === targetChainId,
+            )
+            if (matchingChainBalance) {
+              assetToken = token
+              chainBalance = matchingChainBalance
+              break
+            }
           }
         }
       } else {
@@ -264,41 +287,48 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
     selectedMarketId,
   ])
 
-  // Auto-initialize balance on first ready state
+  // Fetch balance when asset symbol changes
   useEffect(() => {
-    if (!isReady() || hasInitialized.current || !selectedAssetSymbol) {
+    console.log(
+      '[useBalanceOperations BALANCE FETCH] isReady:',
+      isReady(),
+      'selectedAssetSymbol:',
+      selectedAssetSymbol,
+      'marketData available:',
+      !!marketData,
+      'lastFetchedSymbol:',
+      lastFetchedSymbol.current,
+    )
+
+    if (!isReady() || !selectedAssetSymbol) {
       return
     }
 
-    hasInitialized.current = true
-
-    const initialize = async () => {
-      try {
-        await fetchBalance()
-      } catch (error) {
-        console.error('Error fetching balance:', error)
-        hasInitialized.current = false // Reset on error so it can retry
-      }
+    // Skip if we already fetched for this symbol
+    if (lastFetchedSymbol.current === selectedAssetSymbol) {
+      console.log('[useBalanceOperations] Already fetched for this symbol, skipping')
+      return
     }
 
-    initialize()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAssetSymbol])
-
-  // Refetch balance when selected asset changes
-  useEffect(() => {
-    console.log(
-      '[useBalanceOperations] selectedAssetSymbol changed to:',
-      selectedAssetSymbol,
-    )
-    if (isReady() && hasInitialized.current) {
-      console.log(
-        '[useBalanceOperations] Fetching balance due to asset symbol change',
-      )
-      fetchBalance()
+    // Wait for marketData to be loaded before fetching balance
+    // This ensures we have the correct asset address for precise matching
+    if (!marketData && !hasInitialized.current) {
+      console.log('[useBalanceOperations] Waiting for marketData before first fetch')
+      return
     }
+
+    // Mark as initialized on first successful fetch
+    if (!hasInitialized.current) {
+      hasInitialized.current = true
+    }
+
+    console.log('[useBalanceOperations] Fetching balance now')
+    lastFetchedSymbol.current = selectedAssetSymbol
+    fetchBalance().catch((error) => {
+      console.error('Error fetching balance:', error)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAssetSymbol])
+  }, [selectedAssetSymbol, marketData])
 
   const executePositon = useCallback(
     async (operation: 'open' | 'close', amount: number) => {
@@ -418,10 +448,13 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
 
   // Clear state immediately when market changes
   useEffect(() => {
+    console.log('[useBalanceOperations] Market changed, clearing state and cache')
     setApy(null)
     setDepositedAmount(null)
     setIsLoadingApy(true)
     setIsLoadingPosition(true)
+    // Reset the fetch cache so balance will be refetched for new market
+    lastFetchedSymbol.current = null
   }, [selectedMarketId])
 
   // Fetch market APY and data when selected market changes
