@@ -49,6 +49,19 @@ export function Action({
     undefined,
   )
 
+  // Debug logging for renders
+  console.log('[Action RENDER]', {
+    assetBalance,
+    isLoadingBalance,
+    assetSymbol,
+    parseFloat: parseFloat(assetBalance || '0'),
+    isZero: parseFloat(assetBalance || '0') === 0,
+    willShowShimmer: isLoadingBalance,
+    willShowButton: !isLoadingBalance && parseFloat(assetBalance || '0') === 0,
+    willShowBalance: !isLoadingBalance && parseFloat(assetBalance || '0') > 0,
+    timestamp: Date.now(),
+  })
+
   const handleMaxClick = () => {
     const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
     const rounded = parseFloat(maxAmount).toFixed(2)
@@ -139,10 +152,10 @@ export function Action({
                 <Shimmer width="20px" height="20px" variant="circle" />
               </div>
             ) : parseFloat(assetBalance || '0') === 0 ? (
-              <>
+              <div className="flex items-center gap-2">
                 <button
                   onClick={onMintAsset}
-                  className="flex items-center gap-1.5 transition-all"
+                  className="transition-all"
                   style={{
                     padding: '6px 12px',
                     backgroundColor: '#FF0420',
@@ -153,6 +166,10 @@ export function Action({
                     border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'Inter',
+                    minHeight: '33px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
                   }}
                 >
                   Get{' '}
@@ -168,43 +185,46 @@ export function Action({
                     height: '20px',
                   }}
                 />
-              </>
+              </div>
             ) : (
-              <>
-                <div
-                  className="flex items-center gap-2 transition-all"
+              <div
+                className="flex items-center gap-2 transition-all"
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor:
+                    hoveredAction === 'mint'
+                      ? colors.highlight.background
+                      : 'transparent',
+                  borderRadius: '6px',
+                  border:
+                    hoveredAction === 'mint'
+                      ? `1px solid ${colors.highlight.border}`
+                      : '1px solid transparent',
+                  minHeight: '33px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <span
                   style={{
-                    padding: '6px 12px',
-                    backgroundColor:
-                      hoveredAction === 'mint'
-                        ? colors.highlight.background
-                        : 'transparent',
-                    borderRadius: '6px',
-                    border:
-                      hoveredAction === 'mint'
-                        ? `1px solid ${colors.highlight.border}`
-                        : '1px solid transparent',
+                    color: '#000',
+                    fontSize: '14px',
+                    fontWeight: 500,
                   }}
                 >
-                  <span
-                    style={{
-                      color: '#000',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    ${assetBalance}
-                  </span>
-                  <img
-                    src={assetLogo}
-                    alt={assetSymbol}
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                    }}
-                  />
-                </div>
-              </>
+                  {displaySymbol.includes('WETH') || displaySymbol.includes('ETH')
+                    ? assetBalance
+                    : `$${assetBalance}`}
+                </span>
+                <img
+                  src={assetLogo}
+                  alt={assetSymbol}
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                  }}
+                />
+              </div>
             )}
           </div>
         </div>

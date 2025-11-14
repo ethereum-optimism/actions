@@ -3,7 +3,7 @@ import { type Address } from 'viem'
 import Earn from './Earn'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { type LendMarketId } from '@eth-optimism/actions-sdk/react'
-import { useBalanceOperations } from '@/hooks/useBalanceOperations'
+import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useMarketData } from '@/hooks/useMarketData'
 import type { LendExecutePositionParams } from '@/types/api'
 import { actionsApi } from '@/api/actionsApi'
@@ -213,14 +213,14 @@ export function EarnWithServerWallet({
   const {
     assetBalance,
     isLoadingBalance,
-    handleMintUSDC,
+    handleMintAsset,
     isLoadingApy,
     apy,
     isInitialLoad,
     isLoadingPosition,
     depositedAmount,
     handleTransaction,
-  } = useBalanceOperations({
+  } = useWalletBalance({
     getTokenBalances,
     getMarkets,
     getPosition,
@@ -234,6 +234,16 @@ export function EarnWithServerWallet({
       | undefined,
     selectedAssetSymbol: selectedMarket?.assetSymbol,
     selectedMarketApy: selectedMarket?.apy,
+    allMarkets: markets.map((m) => ({
+      marketId: m.marketId,
+      name: m.name,
+      asset: {
+        address: {},
+        metadata: { decimals: 18, name: '', symbol: m.assetSymbol },
+        type: 'erc20' as const,
+      },
+      apy: { total: m.apy },
+    })),
   })
 
   const fetchWalletAddress = useCallback(async () => {
@@ -314,7 +324,7 @@ export function EarnWithServerWallet({
       depositedAmount={depositedAmount}
       isLoadingPosition={isLoadingPosition}
       isInitialLoad={isInitialLoad}
-      onMintUSDC={handleMintUSDC}
+      onMintUSDC={handleMintAsset}
       onTransaction={handleTransaction}
       markets={markets}
       selectedMarket={selectedMarket}

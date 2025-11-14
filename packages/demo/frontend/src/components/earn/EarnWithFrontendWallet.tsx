@@ -12,7 +12,7 @@ import {
   WALLET_PROVIDER_CONFIGS,
   type FrontendWalletProviderType,
 } from '@/constants/walletProviders'
-import { useBalanceOperations } from '@/hooks/useBalanceOperations'
+import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useCallback, useState, useEffect, useMemo } from 'react'
 import type { LendExecutePositionParams } from '@/types/api'
 import type { MarketPosition } from '@/types/market'
@@ -286,7 +286,7 @@ export function EarnWithFrontendWallet({
     isLoadingPosition,
     depositedAmount,
     handleTransaction,
-  } = useBalanceOperations({
+  } = useWalletBalance({
     getTokenBalances,
     getMarkets,
     getPosition,
