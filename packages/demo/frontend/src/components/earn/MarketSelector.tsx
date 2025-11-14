@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import Shimmer from './Shimmer'
 
 export interface MarketInfo {
   name: string
@@ -118,7 +119,7 @@ export function MarketSelector({
     return (
       <div className="w-full">
         <div
-          className="animate-pulse flex items-center gap-3 w-full px-4 py-3"
+          className="flex items-center gap-3 w-full px-4 py-3"
           style={{
             border: '1px solid #E0E2EB',
             backgroundColor: '#FFFFFF',
@@ -126,18 +127,9 @@ export function MarketSelector({
             minHeight: '48px',
           }}
         >
-          <div
-            className="h-6 w-6 rounded-full flex-shrink-0"
-            style={{ backgroundColor: '#E0E2EB' }}
-          />
-          <div
-            className="h-4 rounded flex-1"
-            style={{ backgroundColor: '#E0E2EB' }}
-          />
-          <div
-            className="h-4 w-20 rounded flex-shrink-0"
-            style={{ backgroundColor: '#E0E2EB' }}
-          />
+          <Shimmer width="24px" height="24px" variant="circle" />
+          <Shimmer width="100%" height="16px" variant="rectangle" />
+          <Shimmer width="40px" height="16px" variant="rectangle" />
         </div>
       </div>
     )

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import type { MarketPosition } from '@/types/market'
+import Shimmer from './Shimmer'
 
 interface LentBalanceProps {
   marketPositions: MarketPosition[]
@@ -73,15 +74,8 @@ function LentBalance({
           </h2>
           {isInitialLoad ? (
             // Shimmer state - matches empty state text height
-            <div className="animate-pulse flex items-start">
-              <div
-                className="rounded"
-                style={{
-                  width: '100%',
-                  height: '20px',
-                  backgroundColor: '#E0E2EB',
-                }}
-              />
+            <div className="flex items-start">
+              <Shimmer width="100%" height="20px" variant="rectangle" />
             </div>
           ) : isEmpty ? (
             <div className="flex items-start font-normal text-sm leading-5 text-secondary">
