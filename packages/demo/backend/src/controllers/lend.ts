@@ -4,7 +4,6 @@ import type { Address } from 'viem'
 import { z } from 'zod'
 
 import type { AuthContext } from '@/middleware/auth.js'
-import { serializeBigInt } from '@/utils/serializers.js'
 
 import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
@@ -50,7 +49,8 @@ export async function getMarkets(c: Context) {
     console.log(
       `[${requestId}] getMarkets - SUCCESS, returning ${markets.length} markets`,
     )
-    return c.json({ markets })
+    console.log(`[${requestId}] getMarkets - Markets:`, JSON.stringify(markets, null, 2))
+    return c.json({ result: markets })
   } catch (error) {
     console.error(`[${requestId}] getMarkets - ERROR:`, {
       error,
@@ -107,7 +107,7 @@ export async function openPosition(c: Context) {
     })
 
     console.log(`[${requestId}] openPosition - SUCCESS`)
-    return c.json({ result: serializeBigInt(result) })
+    return c.json({ result })
   } catch (error) {
     console.error(`[${requestId}] openPosition - ERROR:`, {
       error,
@@ -164,7 +164,7 @@ export async function closePosition(c: Context) {
     })
 
     console.log(`[${requestId}] closePosition - SUCCESS`)
-    return c.json({ result: serializeBigInt(result) })
+    return c.json({ result })
   } catch (error) {
     console.error(`[${requestId}] closePosition - ERROR:`, {
       error,

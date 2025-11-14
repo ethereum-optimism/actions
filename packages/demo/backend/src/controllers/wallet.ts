@@ -9,7 +9,6 @@ import type { GetWalletResponse } from '@/types/service.js'
 import { validateRequest } from '../helpers/validation.js'
 import * as faucetService from '../services/faucet.js'
 import * as walletService from '../services/wallet.js'
-import { serializeBigInt } from '../utils/serializers.js'
 
 const LendPositionRequestSchema = z.object({
   params: z.object({
@@ -95,7 +94,7 @@ export class WalletController {
       console.log(
         `[${requestId}] getBalance - SUCCESS, returning ${balance.length} token balances`,
       )
-      return c.json({ result: serializeBigInt(balance) })
+      return c.json({ result: balance })
     } catch (error) {
       console.error(`[${requestId}] getBalance - ERROR:`, error)
       return c.json(
@@ -153,7 +152,7 @@ export class WalletController {
     console.log(
       `[${requestId}] getLendPosition - SUCCESS, shares: ${position.shares}`,
     )
-    return c.json({ result: serializeBigInt(position) })
+    return c.json({ result: position })
   }
 
   /**

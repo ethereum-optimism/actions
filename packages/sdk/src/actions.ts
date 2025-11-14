@@ -2,7 +2,9 @@ import type { LendProvider } from '@/lend/index.js'
 import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { ActionsConfig, LendProviderConfig } from '@/types/actions.js'
+import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
+import type { ActionsConfig, AssetsConfig, LendProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
@@ -42,6 +44,7 @@ export class Actions<
     morpho?: LendProvider<LendProviderConfig>
     aave?: LendProvider<LendProviderConfig>
   } = {}
+  private _assetsConfig?: AssetsConfig
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
@@ -64,6 +67,7 @@ export class Actions<
   ) {
     this.chainManager = new ChainManager(config.chains)
     this.hostedWalletProviderRegistry = deps.hostedWalletProviderRegistry
+    this._assetsConfig = config.assets
 
     // Create lending providers if configured
     if (config.lend) {
@@ -115,6 +119,42 @@ export class Actions<
     aave?: LendProvider<LendProviderConfig>
   } {
     return this._lendProviders
+  }
+
+  /**
+   * Get the list of supported assets based on configuration
+   * @description Returns filtered assets based on allow/block lists in assets config.
+   * If no config provided, returns all SUPPORTED_TOKENS.
+   * @returns Array of supported assets
+   */
+  public getSupportedAssets(): Asset[] {
+    // If no assets config, return all supported tokens
+    if (!this._assetsConfig) {
+      return SUPPORTED_TOKENS
+    }
+
+    // If allow list provided, return only those
+    if (this._assetsConfig.allow && this._assetsConfig.allow.length > 0) {
+      return this._assetsConfig.allow
+    }
+
+    // If block list provided, filter out blocked assets
+    if (this._assetsConfig.block && this._assetsConfig.block.length > 0) {
+      const blockedAddresses = new Set(
+        this._assetsConfig.block.flatMap((asset) =>
+          Object.values(asset.address).map((addr) => addr.toLowerCase()),
+        ),
+      )
+      return SUPPORTED_TOKENS.filter((token) => {
+        const tokenAddresses = Object.values(token.address).map((addr) =>
+          addr.toLowerCase(),
+        )
+        return !tokenAddresses.some((addr) => blockedAddresses.has(addr))
+      })
+    }
+
+    // Default to all supported tokens
+    return SUPPORTED_TOKENS
   }
 
   /**

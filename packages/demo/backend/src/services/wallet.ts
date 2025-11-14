@@ -14,6 +14,7 @@ import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getActions, getPrivyClient } from '@/config/actions.js'
+import { serializeBigInt } from '@/utils/serializers.js'
 
 import { getBlockExplorerUrls } from './lend.js'
 
@@ -70,16 +71,14 @@ export async function getWallet(idToken: string): Promise<SmartWallet | null> {
   return wallet
 }
 
-export async function getWalletBalance(
-  wallet: SmartWallet,
-): Promise<TokenBalance[]> {
+export async function getWalletBalance(wallet: SmartWallet) {
   // Get regular token balances
   const tokenBalances = await wallet.getBalance().catch((error) => {
     console.error(error)
     throw error
   })
 
-  return tokenBalances
+  return serializeBigInt(tokenBalances)
 }
 
 export async function getLendPosition({
@@ -89,7 +88,8 @@ export async function getLendPosition({
   marketId: LendMarketId
   wallet: Wallet
 }) {
-  return wallet.lend!.getPosition({ marketId })
+  const position = await wallet.lend!.getPosition({ marketId })
+  return serializeBigInt(position)
 }
 
 export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{

@@ -10,6 +10,7 @@ import { baseSepolia, unichain } from 'viem/chains'
 
 import { getActions } from '../config/actions.js'
 import type { PositionParams } from '../types/index.js'
+import { serializeBigInt } from '../utils/serializers.js'
 import { getWallet } from './wallet.js'
 
 export async function getBlockExplorerUrls(
@@ -39,18 +40,20 @@ export async function getBlockExplorerUrls(
   return transactionHashes.map((hash) => `${url}/tx/${hash}`)
 }
 
-export async function getMarkets(): Promise<LendMarket[]> {
-  return getActions().lend.getMarkets()
+export async function getMarkets() {
+  const markets = await getActions().lend.getMarkets()
+  return serializeBigInt(markets)
 }
 
-export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
-  return await getActions().lend.getMarket(marketId)
+export async function getMarket(marketId: LendMarketId) {
+  const market = await getActions().lend.getMarket(marketId)
+  return serializeBigInt(market)
 }
 
 async function executePosition(
   params: PositionParams,
   operation: 'open' | 'close',
-): Promise<LendTransactionReceipt> {
+) {
   const { idToken, amount, tokenAddress, marketId } = params
 
   try {
@@ -78,7 +81,7 @@ async function executePosition(
         ? await wallet.lend!.openPosition(positionParams)
         : await wallet.lend!.closePosition(positionParams)
 
-    return result
+    return serializeBigInt(result)
   } catch (error) {
     console.error('[executePosition] ERROR:', {
       error,
@@ -89,14 +92,10 @@ async function executePosition(
   }
 }
 
-export async function openPosition(
-  params: PositionParams,
-): Promise<LendTransactionReceipt> {
+export async function openPosition(params: PositionParams) {
   return executePosition(params, 'open')
 }
 
-export async function closePosition(
-  params: PositionParams,
-): Promise<LendTransactionReceipt> {
+export async function closePosition(params: PositionParams) {
   return executePosition(params, 'close')
 }
