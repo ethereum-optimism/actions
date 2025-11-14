@@ -5,13 +5,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
+import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import {
   createMockPrivyClient,
   createMockPrivyWallet,
   getMockAuthorizationContext,
 } from '@/test/MockPrivyClient.js'
 import { getRandomAddress } from '@/test/utils.js'
-import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'

@@ -67,7 +67,6 @@ export async function getMarkets(c: Context) {
   }
 }
 
-
 /**
  * POST - Open a lending position
  */

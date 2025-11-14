@@ -32,7 +32,7 @@ export class ActionsLendNamespace {
   ): MorphoLendProvider | AaveLendProvider {
     const allProviders = [this.providers.morpho, this.providers.aave].filter(
       Boolean,
-    ) as (MorphoLendProvider | AaveLendProvider)[]
+    ) as Array<MorphoLendProvider | AaveLendProvider>
 
     for (const provider of allProviders) {
       const market = provider.config.marketAllowlist?.find(
@@ -56,7 +56,7 @@ export class ActionsLendNamespace {
   async getMarkets(params: GetLendMarketsParams = {}): Promise<LendMarket[]> {
     const allProviders = [this.providers.morpho, this.providers.aave].filter(
       Boolean,
-    ) as (MorphoLendProvider | AaveLendProvider)[]
+    ) as Array<MorphoLendProvider | AaveLendProvider>
 
     const results = await Promise.all(
       allProviders.map((p) => p.getMarkets(params)),
@@ -82,7 +82,7 @@ export class ActionsLendNamespace {
   supportedChainIds(): number[] {
     const allProviders = [this.providers.morpho, this.providers.aave].filter(
       Boolean,
-    ) as (MorphoLendProvider | AaveLendProvider)[]
+    ) as Array<MorphoLendProvider | AaveLendProvider>
 
     const allChains = allProviders.flatMap((p) => p.supportedChainIds())
     return [...new Set(allChains)]

@@ -1,4 +1,5 @@
-import { AaveLendProvider, MorphoLendProvider, LendProvider } from '@/lend/index.js'
+import type { LendProvider } from '@/lend/index.js'
+import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import type { ActionsConfig, LendProviderConfig } from '@/types/actions.js'

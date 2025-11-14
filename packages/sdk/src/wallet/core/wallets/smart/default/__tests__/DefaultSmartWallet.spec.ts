@@ -14,10 +14,7 @@ import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
 import type { LendProviderConfig } from '@/types/actions.js'
-import type {
-  LendProvider,
-  TransactionData,
-} from '@/types/lend/index.js'
+import type { LendProvider, TransactionData } from '@/types/lend/index.js'
 import {
   smartWalletAbi,
   smartWalletFactoryAbi,

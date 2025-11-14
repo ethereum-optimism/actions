@@ -89,10 +89,9 @@ describe('TurnkeyHostedWalletProvider', () => {
     it('forwards lendProvider when provided to constructor', async () => {
       const turnkeyClient = {} as unknown as TurnkeySDKClientBase
       const mockLendProvider = createMockLendProvider()
-      const provider = new TurnkeyHostedWalletProvider(
-        mockChainManager,
-        { morpho: mockLendProvider },
-      )
+      const provider = new TurnkeyHostedWalletProvider(mockChainManager, {
+        morpho: mockLendProvider,
+      })
       const spyTurnkeyWalletCreate = vi
         .spyOn(TurnkeyWallet, 'create')
         .mockResolvedValueOnce({

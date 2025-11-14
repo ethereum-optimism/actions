@@ -2,8 +2,8 @@ import type { Address } from 'viem'
 import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { Asset } from '@/types/asset.js'
 import type { LendProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   ClosePositionParams,
   GetLendMarketParams,
@@ -263,7 +263,8 @@ export abstract class LendProvider<
     let configs = this._config.marketAllowlist || []
     if (chainId !== undefined)
       configs = configs.filter((m: LendMarketConfig) => m.chainId === chainId)
-    if (asset !== undefined) configs = configs.filter((m: LendMarketConfig) => m.asset === asset)
+    if (asset !== undefined)
+      configs = configs.filter((m: LendMarketConfig) => m.asset === asset)
     return configs
   }
 

@@ -7,8 +7,8 @@ import type {
   LendMarketId,
   LendMarketPosition,
   LendTransactionReceipt,
-  SupportedChainId,
 } from '@eth-optimism/actions-sdk'
+import { getAssetAddress } from '@eth-optimism/actions-sdk'
 import { formatMarketResponse } from '@/utils/formatters'
 import { USDCDemoVault } from '@/constants/markets'
 import type { LendExecutePositionParams } from '@/types/api'
@@ -302,6 +302,7 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
       }
       const marketId = marketData.marketId
       const asset = marketData.asset
+      const tokenAddress = getAssetAddress(asset, marketId.chainId)
 
       const positionParams = { amount, asset, marketId }
 
@@ -430,12 +431,14 @@ export function useBalanceOperations(params: UseBalanceOperationsConfig) {
             const markets = await getMarkets()
             const market = markets.find(
               (m) =>
-                m.marketId.address.toLowerCase() === selectedMarketId.address.toLowerCase() &&
+                m.marketId.address.toLowerCase() ===
+                  selectedMarketId.address.toLowerCase() &&
                 m.marketId.chainId === selectedMarketId.chainId,
             )
             if (market) {
-              const assetAddress = (market.asset.address[market.marketId.chainId] ||
-                Object.values(market.asset.address)[0]) as Address
+              const assetAddress = (market.asset.address[
+                market.marketId.chainId
+              ] || Object.values(market.asset.address)[0]) as Address
               setMarketData({
                 marketId: market.marketId,
                 assetAddress,

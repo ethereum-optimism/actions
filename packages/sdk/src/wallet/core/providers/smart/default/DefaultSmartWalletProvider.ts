@@ -2,7 +2,7 @@ import type { Address, Hex, LocalAccount } from 'viem'
 import { keccak256, slice, toHex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { LendProvider } from '@/lend/core/LendProvider.js'
+import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'

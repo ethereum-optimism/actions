@@ -50,10 +50,9 @@ describe('PrivyHostedWalletProvider (React)', () => {
         supportedChains: [1],
       }) as unknown as ChainManager
       const mockLendProvider = createMockLendProvider()
-      const provider = new PrivyHostedWalletProvider(
-        mockChainManager,
-        { morpho: mockLendProvider },
-      )
+      const provider = new PrivyHostedWalletProvider(mockChainManager, {
+        morpho: mockLendProvider,
+      })
       const mockActionsWallet = {
         __brand: 'actions-wallet',
       } as unknown as PrivyWallet

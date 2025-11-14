@@ -3,11 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset } from '@/test/MockAssets.js'
 import { MockLendProvider } from '@/test/MockLendProvider.js'
-import type { LendProviderConfig } from '@/types/actions.js'
-import type {
-  LendMarketConfig,
-  LendMarketId,
-} from '@/types/lend/index.js'
+import type { LendMarketConfig, LendMarketId } from '@/types/lend/index.js'
 
 // Test helper class that exposes protected validation methods as public
 class TestLendProvider extends MockLendProvider {

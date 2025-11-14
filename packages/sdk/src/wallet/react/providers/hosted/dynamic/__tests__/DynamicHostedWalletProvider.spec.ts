@@ -50,10 +50,9 @@ describe('DynamicHostedWalletProvider', () => {
         supportedChains: [1],
       }) as unknown as ChainManager
       const mockLendProvider = createMockLendProvider()
-      const provider = new DynamicHostedWalletProvider(
-        mockChainManager,
-        { morpho: mockLendProvider },
-      )
+      const provider = new DynamicHostedWalletProvider(mockChainManager, {
+        morpho: mockLendProvider,
+      })
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',

@@ -150,7 +150,6 @@ describe('Actions SDK', () => {
         expect(actions.lend).toBeDefined()
       })
 
-
       it('should create Morpho provider with multiple markets in allowlist', () => {
         const mockMarkets: LendMarketConfig[] = [
           {

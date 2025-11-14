@@ -61,5 +61,4 @@ describe('ActionsLendNamespace', () => {
 
     expect(spy).toHaveBeenCalledOnce()
   })
-
 })

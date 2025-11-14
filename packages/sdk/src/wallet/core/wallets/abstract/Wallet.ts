@@ -2,8 +2,6 @@ import type { Address, LocalAccount } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { LendProvider } from '@/lend/core/LendProvider.js'
-import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
-import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'

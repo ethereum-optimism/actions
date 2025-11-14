@@ -53,7 +53,6 @@ describe('MorphoLendProvider', () => {
     it('should initialize with provided config', () => {
       expect(provider).toBeInstanceOf(MorphoLendProvider)
     })
-
   })
 
   describe('closePosition', () => {

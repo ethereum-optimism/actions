@@ -2,8 +2,6 @@ import type { ConnectedWallet } from '@privy-io/react-auth'
 import type { Address, LocalAccount } from 'viem'
 
 import type { LendProvider } from '@/lend/core/LendProvider.js'
-import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
-import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
