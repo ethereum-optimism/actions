@@ -200,9 +200,7 @@ export class WalletController {
     const {
       body: { walletAddress },
     } = validation.data
-    console.log(
-      `[${requestId}] dripEthToWallet - Wallet: ${walletAddress}`,
-    )
+    console.log(`[${requestId}] dripEthToWallet - Wallet: ${walletAddress}`)
     try {
       console.log(`[${requestId}] dripEthToWallet - Checking eligibility`)
       const isWalletEligibleForFaucet =
@@ -217,11 +215,15 @@ export class WalletController {
         walletAddress as Address,
       )
       if (!result.success) {
-        console.log(`[${requestId}] dripEthToWallet - FAILED (result.success=false)`)
+        console.log(
+          `[${requestId}] dripEthToWallet - FAILED (result.success=false)`,
+        )
         return c.json({ error: 'Failed to drip ETH to wallet' }, 500)
       }
 
-      console.log(`[${requestId}] dripEthToWallet - SUCCESS, userOpHash: ${result.userOpHash}`)
+      console.log(
+        `[${requestId}] dripEthToWallet - SUCCESS, userOpHash: ${result.userOpHash}`,
+      )
       return c.json({ result: { userOpHash: result.userOpHash } })
     } catch (error) {
       console.error(`[${requestId}] dripEthToWallet - ERROR:`, error)

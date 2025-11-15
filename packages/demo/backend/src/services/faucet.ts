@@ -37,7 +37,9 @@ export async function isWalletEligibleForFaucet(
     transport: env.OP_SEPOLIA_RPC_URL ? http(env.OP_SEPOLIA_RPC_URL) : http(),
   })
   const balance = await publicClient.getBalance({ address: walletAddress })
-  console.log(`[FAUCET] Wallet balance on OP Sepolia: ${balance} wei (${Number(balance) / 1e18} ETH)`)
+  console.log(
+    `[FAUCET] Wallet balance on OP Sepolia: ${balance} wei (${Number(balance) / 1e18} ETH)`,
+  )
   if (balance > 0) {
     console.log(`[FAUCET] Wallet NOT eligible - already has balance`)
     return false
@@ -97,13 +99,17 @@ export async function dripEthToWallet(walletAddress: Address) {
     deploymentSigners: [adminSigner],
   })
   console.log(`[FAUCET] Admin wallet address: ${adminSmartWallet.address}`)
-  console.log(`[FAUCET] Sending batch transaction to faucet contract: ${env.OP_SEPOLIA_FAUCET_ADDRESS}`)
+  console.log(
+    `[FAUCET] Sending batch transaction to faucet contract: ${env.OP_SEPOLIA_FAUCET_ADDRESS}`,
+  )
 
   const receipt = await adminSmartWallet.sendBatch(
     transactionData,
     optimismSepolia.id,
   )
-  console.log(`[FAUCET] Transaction complete, success: ${receipt.success}, userOpHash: ${receipt.userOpHash}`)
+  console.log(
+    `[FAUCET] Transaction complete, success: ${receipt.success}, userOpHash: ${receipt.userOpHash}`,
+  )
   return receipt
 }
 

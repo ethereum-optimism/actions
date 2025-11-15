@@ -26,9 +26,7 @@ export function matchAssetBalance({
   }
 
   let assetToken: (typeof allTokenBalances)[0] | undefined
-  let chainBalance:
-    | (typeof allTokenBalances)[0]['chainBalances'][0]
-    | undefined
+  let chainBalance: (typeof allTokenBalances)[0]['chainBalances'][0] | undefined
 
   if (marketData?.assetAddress && marketData?.marketId?.chainId) {
     const targetAddress = marketData.assetAddress.toLowerCase()

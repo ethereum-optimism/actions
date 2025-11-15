@@ -21,8 +21,12 @@ export interface UseWalletBalanceConfig {
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
   mintAsset: (assetSymbol: string, chainId: number) => Promise<void>
-  openPosition: (params: LendExecutePositionParams) => Promise<LendTransactionReceipt>
-  closePosition: (params: LendExecutePositionParams) => Promise<LendTransactionReceipt>
+  openPosition: (
+    params: LendExecutePositionParams,
+  ) => Promise<LendTransactionReceipt>
+  closePosition: (
+    params: LendExecutePositionParams,
+  ) => Promise<LendTransactionReceipt>
   isReady: () => boolean
   selectedMarketId?: LendMarketId | null
   selectedAssetSymbol?: string
@@ -99,7 +103,8 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
 
     const market = markets.find(
       (m) =>
-        m.marketId.address.toLowerCase() === selectedMarketId.address.toLowerCase() &&
+        m.marketId.address.toLowerCase() ===
+          selectedMarketId.address.toLowerCase() &&
         m.marketId.chainId === selectedMarketId.chainId,
     )
 
@@ -136,7 +141,10 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     })
   }
 
-  const handleTransaction = async (mode: 'lend' | 'withdraw', amount: number) => {
+  const handleTransaction = async (
+    mode: 'lend' | 'withdraw',
+    amount: number,
+  ) => {
     if (!marketData) {
       throw new Error('Market data not available')
     }
@@ -153,13 +161,20 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
         : await closePositionMutation.mutateAsync(params)
 
     // Handle union type - result can be EOATransactionReceipt or SmartWalletTransactionReceipt
-    const txHash = 'userOpHash' in result ? result.userOpHash :
-                   Array.isArray(result) ? result[0]?.transactionHash :
-                   result.transactionHash
+    const txHash =
+      'userOpHash' in result
+        ? result.userOpHash
+        : Array.isArray(result)
+          ? result[0]?.transactionHash
+          : result.transactionHash
 
-    const explorerUrl = 'blockExplorerUrl' in result ? result.blockExplorerUrl :
-                       'blockExplorerUrls' in result && Array.isArray(result.blockExplorerUrls) ? result.blockExplorerUrls[0] :
-                       undefined
+    const explorerUrl =
+      'blockExplorerUrl' in result
+        ? result.blockExplorerUrl
+        : 'blockExplorerUrls' in result &&
+            Array.isArray(result.blockExplorerUrls)
+          ? result.blockExplorerUrls[0]
+          : undefined
 
     return {
       transactionHash: txHash,

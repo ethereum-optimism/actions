@@ -2,7 +2,10 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { type Address } from 'viem'
 import Earn from './Earn'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
-import { type LendMarketId } from '@eth-optimism/actions-sdk/react'
+import {
+  type LendMarketId,
+  type SupportedChainId,
+} from '@eth-optimism/actions-sdk/react'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useMarketData } from '@/hooks/useMarketData'
 import type { LendExecutePositionParams } from '@/types/api'
@@ -170,6 +173,63 @@ export function EarnWithServerWallet({
         const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
         setMarkets(marketInfoList)
 
+        // Fetch positions for all markets in parallel
+        console.log(
+          '[EarnWithServerWallet] Fetching positions for all markets...',
+        )
+        const positionPromises = marketInfoList.map(async (market) => {
+          try {
+            const position = await getPosition({
+              address: market.marketId.address as Address,
+              chainId: market.marketId.chainId as SupportedChainId,
+            })
+            return {
+              market,
+              position,
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching position for market ${market.name}:`,
+              error,
+            )
+            return null
+          }
+        })
+
+        const positionResults = await Promise.all(positionPromises)
+
+        // Build initial market positions array with all markets that have deposits
+        const initialPositions = positionResults
+          .filter((result) => {
+            if (!result) return false
+            const hasDeposit = result.position.balance > 0n
+            return hasDeposit
+          })
+          .map((result) => {
+            const { market, position } = result!
+            return {
+              marketName: market.name,
+              marketLogo: market.logo,
+              networkName: market.networkName,
+              networkLogo: market.networkLogo,
+              assetSymbol: market.assetSymbol,
+              assetLogo: market.assetLogo,
+              apy: market.apy,
+              depositedAmount: position.balanceFormatted,
+              isLoadingApy: false,
+              isLoadingPosition: false,
+              marketId: market.marketId,
+              provider: market.provider,
+            }
+          })
+
+        setMarketPositions(initialPositions)
+        console.log(
+          '[EarnWithServerWallet] Loaded positions for',
+          initialPositions.length,
+          'markets with deposits',
+        )
+
         // Set default selected market (first one, preferably Gauntlet/USDC)
         if (marketInfoList.length > 0 && !selectedMarket) {
           const defaultMarket =
@@ -181,6 +241,13 @@ export function EarnWithServerWallet({
             'assetSymbol:',
             defaultMarket.assetSymbol,
           )
+
+          // Find if we already fetched position for this market
+          const defaultPosition = positionResults.find(
+            (r) =>
+              r?.market.marketId.address === defaultMarket.marketId.address,
+          )
+
           setSelectedMarket({
             marketName: defaultMarket.name,
             marketLogo: defaultMarket.logo,
@@ -189,7 +256,7 @@ export function EarnWithServerWallet({
             assetSymbol: defaultMarket.assetSymbol,
             assetLogo: defaultMarket.assetLogo,
             apy: defaultMarket.apy,
-            depositedAmount: null,
+            depositedAmount: defaultPosition?.position.balanceFormatted || null,
             isLoadingApy: false,
             isLoadingPosition: false,
             marketId: defaultMarket.marketId,

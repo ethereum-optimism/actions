@@ -3,16 +3,27 @@ import type { LendTransactionReceipt } from '@eth-optimism/actions-sdk'
 import type { LendExecutePositionParams } from '@/types/api'
 
 interface UseOpenPositionParams {
-  openPosition: (params: LendExecutePositionParams) => Promise<LendTransactionReceipt>
-  logActivity?: (action: string) => { confirm: () => void; error: () => void } | null
+  openPosition: (
+    params: LendExecutePositionParams,
+  ) => Promise<LendTransactionReceipt>
+  logActivity?: (
+    action: string,
+  ) => { confirm: () => void; error: () => void } | null
 }
 
 interface UseClosePositionParams {
-  closePosition: (params: LendExecutePositionParams) => Promise<LendTransactionReceipt>
-  logActivity?: (action: string) => { confirm: () => void; error: () => void } | null
+  closePosition: (
+    params: LendExecutePositionParams,
+  ) => Promise<LendTransactionReceipt>
+  logActivity?: (
+    action: string,
+  ) => { confirm: () => void; error: () => void } | null
 }
 
-export function useOpenPosition({ openPosition, logActivity }: UseOpenPositionParams) {
+export function useOpenPosition({
+  openPosition,
+  logActivity,
+}: UseOpenPositionParams) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -31,13 +42,20 @@ export function useOpenPosition({ openPosition, logActivity }: UseOpenPositionPa
       // Invalidate both balances and position for the affected market
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       queryClient.invalidateQueries({
-        queryKey: ['position', variables.marketId.address, variables.marketId.chainId],
+        queryKey: [
+          'position',
+          variables.marketId.address,
+          variables.marketId.chainId,
+        ],
       })
     },
   })
 }
 
-export function useClosePosition({ closePosition, logActivity }: UseClosePositionParams) {
+export function useClosePosition({
+  closePosition,
+  logActivity,
+}: UseClosePositionParams) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -56,7 +74,11 @@ export function useClosePosition({ closePosition, logActivity }: UseClosePositio
       // Invalidate both balances and position for the affected market
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       queryClient.invalidateQueries({
-        queryKey: ['position', variables.marketId.address, variables.marketId.chainId],
+        queryKey: [
+          'position',
+          variables.marketId.address,
+          variables.marketId.chainId,
+        ],
       })
     },
   })

@@ -198,7 +198,8 @@ export function Action({
                     fontWeight: 500,
                   }}
                 >
-                  {displaySymbol.includes('WETH') || displaySymbol.includes('ETH')
+                  {displaySymbol.includes('WETH') ||
+                  displaySymbol.includes('ETH')
                     ? assetBalance
                     : `$${assetBalance}`}
                 </span>

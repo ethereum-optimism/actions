@@ -97,27 +97,6 @@ function Earn({
                 <img src="/Optimism.svg" alt="Optimism" className="h-4" />
               </div>
               <div className="flex items-center gap-4">
-                <button
-                  onClick={logout}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#F2F3F8',
-                    color: '#404454',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#E0E2EB'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#F2F3F8'
-                  }}
-                >
-                  Logout
-                </button>
                 <WalletProviderDropdown
                   selectedProvider={selectedProviderConfig}
                   walletAddress={walletAddress}
@@ -125,6 +104,7 @@ function Earn({
                     await logout()
                     window.location.href = `/earn?walletProvider=${providerConfig.queryParam}`
                   }}
+                  onLogout={logout}
                 />
               </div>
             </div>

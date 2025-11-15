@@ -1,11 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
-import type { LendMarketId, LendMarketPosition } from '@eth-optimism/actions-sdk'
+import type {
+  LendMarketId,
+  LendMarketPosition,
+} from '@eth-optimism/actions-sdk'
 
 interface UseMarketPositionParams {
   marketId?: LendMarketId | null
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
   isReady: () => boolean
-  logActivity?: (action: string) => { confirm: () => void; error: () => void } | null
+  logActivity?: (
+    action: string,
+  ) => { confirm: () => void; error: () => void } | null
 }
 
 export function useMarketPosition({

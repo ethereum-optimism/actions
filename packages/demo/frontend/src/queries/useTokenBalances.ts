@@ -4,7 +4,9 @@ import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 interface UseTokenBalancesParams {
   getTokenBalances: () => Promise<TokenBalance[]>
   isReady: () => boolean
-  logActivity?: (action: string) => { confirm: () => void; error: () => void } | null
+  logActivity?: (
+    action: string,
+  ) => { confirm: () => void; error: () => void } | null
 }
 
 export function useTokenBalances({

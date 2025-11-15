@@ -4,10 +4,16 @@ import type { LendMarket } from '@eth-optimism/actions-sdk'
 interface UseMarketsParams {
   getMarkets: () => Promise<LendMarket[]>
   isReady: () => boolean
-  logActivity?: (action: string) => { confirm: () => void; error: () => void } | null
+  logActivity?: (
+    action: string,
+  ) => { confirm: () => void; error: () => void } | null
 }
 
-export function useMarkets({ getMarkets, isReady, logActivity }: UseMarketsParams) {
+export function useMarkets({
+  getMarkets,
+  isReady,
+  logActivity,
+}: UseMarketsParams) {
   return useQuery({
     queryKey: ['markets'],
     queryFn: async () => {
