@@ -42,7 +42,7 @@ describe('WalletProvider', () => {
       })
       const smartWalletProvider = new DefaultSmartWalletProvider(
         mockChainManager,
-        mockLendProvider,
+        { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
         hostedWalletProvider,
@@ -96,7 +96,7 @@ describe('WalletProvider', () => {
       })
       const smartWalletProvider = new DefaultSmartWalletProvider(
         mockChainManager,
-        mockLendProvider,
+        { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
         hostedWalletProvider,
@@ -151,7 +151,7 @@ describe('WalletProvider', () => {
       })
       const smartWalletProvider = new DefaultSmartWalletProvider(
         mockChainManager,
-        mockLendProvider,
+        { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
         hostedWalletProvider,
@@ -204,7 +204,7 @@ describe('WalletProvider', () => {
       })
       const smartWalletProvider = new DefaultSmartWalletProvider(
         mockChainManager,
-        mockLendProvider,
+        { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
         hostedWalletProvider,
@@ -237,7 +237,7 @@ describe('WalletProvider', () => {
       })
       const smartWalletProvider = new DefaultSmartWalletProvider(
         mockChainManager,
-        mockLendProvider,
+        { morpho: mockLendProvider },
       )
       const mockWalletAddress = getRandomAddress()
       const getWalletAddressSpy = vi
@@ -284,7 +284,7 @@ describe('WalletProvider', () => {
       })
       const smartWalletProvider = new DefaultSmartWalletProvider(
         mockChainManager,
-        mockLendProvider,
+        { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
         hostedWalletProvider,
@@ -318,7 +318,7 @@ describe('WalletProvider', () => {
       })
       const smartWalletProvider = new DefaultSmartWalletProvider(
         mockChainManager,
-        mockLendProvider,
+        { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
         hostedWalletProvider,
@@ -358,7 +358,7 @@ describe('WalletProvider', () => {
       })
       const smartWalletProvider = new DefaultSmartWalletProvider(
         mockChainManager,
-        mockLendProvider,
+        { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
         hostedWalletProvider,

@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
-import { USDCDemoVault } from '@/constants/markets'
 import { env } from '@/envVars'
+import { USDC_DEMO, WETH } from '@/constants/assets'
 import {
   createActions,
   type ReactActionsConfig,
   type ReactProviderTypes,
 } from '@eth-optimism/actions-sdk/react'
-import { baseSepolia } from 'viem/chains'
+import { baseSepolia, optimismSepolia } from 'viem/chains'
 
 export function useActions<T extends ReactProviderTypes>({
   hostedWalletProviderType,
@@ -21,7 +21,7 @@ export function useActions<T extends ReactProviderTypes>({
           hostedWalletConfig: {
             provider: {
               type: hostedWalletProviderType,
-            } as const,
+            },
           },
           smartWalletConfig: {
             provider: {
@@ -32,7 +32,11 @@ export function useActions<T extends ReactProviderTypes>({
         },
         lend: {
           provider: 'morpho',
-          marketAllowlist: [USDCDemoVault],
+          // Remove marketAllowlist to disable validation for demo
+          marketAllowlist: [],
+        },
+        assets: {
+          allow: [USDC_DEMO, WETH],
         },
         chains: [
           {
@@ -47,8 +51,20 @@ export function useActions<T extends ReactProviderTypes>({
                 }
               : undefined,
           },
+          {
+            chainId: optimismSepolia.id,
+            rpcUrls: env.VITE_OP_SEPOLIA_RPC_URL
+              ? [env.VITE_OP_SEPOLIA_RPC_URL]
+              : undefined,
+            bundler: env.VITE_OP_SEPOLIA_BUNDER_URL
+              ? {
+                  type: 'simple',
+                  url: env.VITE_OP_SEPOLIA_BUNDER_URL,
+                }
+              : undefined,
+          },
         ],
-      }) as ReactActionsConfig<T>,
+      }) as unknown as ReactActionsConfig<T>,
     [hostedWalletProviderType],
   )
 

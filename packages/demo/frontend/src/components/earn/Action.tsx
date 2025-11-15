@@ -5,10 +5,12 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 
 interface ActionProps {
-  usdcBalance: string
+  assetBalance: string
   isLoadingBalance: boolean
   depositedAmount: string | null
-  onMintUSDC?: () => void
+  assetSymbol: string
+  assetLogo: string
+  onMintAsset?: () => void
   onTransaction: (
     mode: 'lend' | 'withdraw',
     amount: number,
@@ -23,14 +25,17 @@ interface ActionProps {
  * Handles UI state and user interactions, delegates business logic to container
  */
 export function Action({
-  usdcBalance,
+  assetBalance,
   isLoadingBalance,
   depositedAmount,
-  onMintUSDC,
+  assetSymbol,
+  assetLogo,
+  onMintAsset,
   onTransaction,
 }: ActionProps) {
   const { hoveredAction } = useActivityHighlight()
   const [isLoading, setIsLoading] = useState(false)
+  const displaySymbol = assetSymbol.replace('_DEMO', '')
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -45,7 +50,7 @@ export function Action({
   )
 
   const handleMaxClick = () => {
-    const maxAmount = mode === 'lend' ? usdcBalance : depositedAmount || '0'
+    const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
     const rounded = parseFloat(maxAmount).toFixed(2)
     setAmount(rounded)
   }
@@ -66,7 +71,7 @@ export function Action({
     const amountValue = parseFloat(amount)
     const maxAmount =
       mode === 'lend'
-        ? parseFloat(usdcBalance)
+        ? parseFloat(assetBalance)
         : parseFloat(depositedAmount || '0')
     if (amountValue > maxAmount) {
       return
@@ -129,80 +134,84 @@ export function Action({
           </h2>
           <div className="flex items-center gap-2">
             {isLoadingBalance ? (
-              <Shimmer width="60px" height="26px" borderRadius="6px" />
-            ) : !usdcBalance ||
-              usdcBalance === '0.00' ||
-              usdcBalance === '0' ||
-              parseFloat(usdcBalance || '0') === 0 ? (
-              <>
+              <div className="flex items-center gap-1.5">
+                <Shimmer width="120px" height="33px" variant="rectangle" />
+                <Shimmer width="20px" height="20px" variant="circle" />
+              </div>
+            ) : parseFloat(assetBalance || '0') === 0 ? (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={onMintUSDC}
-                  className="flex items-center gap-1.5 transition-all hover:bg-gray-50"
+                  onClick={onMintAsset}
+                  className="transition-all"
                   style={{
                     padding: '6px 12px',
-                    backgroundColor:
-                      hoveredAction === 'mint'
-                        ? colors.highlight.background
-                        : '#FFFFFF',
-                    color: '#1a1b1e',
+                    backgroundColor: '#FF0420',
+                    color: '#FFFFFF',
                     fontSize: '14px',
                     fontWeight: 500,
                     borderRadius: '6px',
-                    border:
-                      hoveredAction === 'mint'
-                        ? `1px solid ${colors.highlight.border}`
-                        : '1px solid #E0E2EB',
+                    border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'Inter',
+                    minHeight: '33px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
                   }}
                 >
-                  Get 100 USDC
+                  Get{' '}
+                  {displaySymbol.includes('WETH')
+                    ? 'WETH'
+                    : `100 ${displaySymbol}`}
                 </button>
                 <img
-                  src="/usd-coin-usdc-logo.svg"
-                  alt="USDC"
+                  src={assetLogo}
+                  alt={assetSymbol}
                   style={{
                     width: '20px',
                     height: '20px',
                   }}
                 />
-              </>
+              </div>
             ) : (
-              <>
-                <div
-                  className="flex items-center gap-2 transition-all"
+              <div
+                className="flex items-center gap-2"
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor:
+                    hoveredAction === 'mint'
+                      ? colors.highlight.background
+                      : 'transparent',
+                  borderRadius: '6px',
+                  ...(hoveredAction === 'mint' && {
+                    border: `1px solid ${colors.highlight.border}`,
+                  }),
+                  minHeight: '33px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <span
                   style={{
-                    padding: '6px 12px',
-                    backgroundColor:
-                      hoveredAction === 'mint'
-                        ? colors.highlight.background
-                        : 'transparent',
-                    borderRadius: '6px',
-                    border:
-                      hoveredAction === 'mint'
-                        ? `1px solid ${colors.highlight.border}`
-                        : '1px solid transparent',
+                    color: '#000',
+                    fontSize: '14px',
+                    fontWeight: 500,
                   }}
                 >
-                  <span
-                    style={{
-                      color: '#000',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    ${usdcBalance}
-                  </span>
-                  <img
-                    src="/usd-coin-usdc-logo.svg"
-                    alt="USDC"
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                    }}
-                  />
-                </div>
-              </>
+                  {displaySymbol.includes('WETH') ||
+                  displaySymbol.includes('ETH')
+                    ? assetBalance
+                    : `$${assetBalance}`}
+                </span>
+                <img
+                  src={assetLogo}
+                  alt={assetSymbol}
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                  }}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -376,7 +385,7 @@ export function Action({
                   fontFamily: 'Inter',
                 }}
               >
-                USDC
+                {displaySymbol}
               </span>
             </div>
           </div>
@@ -389,7 +398,7 @@ export function Action({
               parseFloat(amount) <= 0 ||
               parseFloat(amount) >
                 parseFloat(
-                  mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                  mode === 'lend' ? assetBalance : depositedAmount || '0',
                 )
             }
             className="w-full py-3 px-4 font-medium transition-all"
@@ -400,7 +409,7 @@ export function Action({
                 parseFloat(amount) <= 0 ||
                 parseFloat(amount) >
                   parseFloat(
-                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                    mode === 'lend' ? assetBalance : depositedAmount || '0',
                   )
                   ? '#D1D5DB'
                   : '#FF0420',
@@ -410,7 +419,7 @@ export function Action({
                 parseFloat(amount) <= 0 ||
                 parseFloat(amount) >
                   parseFloat(
-                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                    mode === 'lend' ? assetBalance : depositedAmount || '0',
                   )
                   ? '#6B7280'
                   : '#FFFFFF',
@@ -423,7 +432,7 @@ export function Action({
                 parseFloat(amount) <= 0 ||
                 parseFloat(amount) >
                   parseFloat(
-                    mode === 'lend' ? usdcBalance : depositedAmount || '0',
+                    mode === 'lend' ? assetBalance : depositedAmount || '0',
                   )
                   ? 'not-allowed'
                   : 'pointer',
@@ -433,8 +442,8 @@ export function Action({
             {isLoading
               ? 'Processing...'
               : mode === 'lend'
-                ? 'Lend USDC'
-                : 'Withdraw USDC'}
+                ? `Lend ${displaySymbol}`
+                : `Withdraw ${displaySymbol}`}
           </button>
         </div>
       </div>

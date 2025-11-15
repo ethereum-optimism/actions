@@ -10,7 +10,7 @@ import {
   MockReceiverAddress,
   MockWETHMarket,
 } from '@/test/MockMarkets.js'
-import type { MorphoLendConfig } from '@/types/lend/index.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 
 // Mock the Morpho SDK modules
 vi.mock('@morpho-org/blue-sdk-viem', () => ({
@@ -36,13 +36,11 @@ vi.mock('@morpho-org/bundler-sdk-viem', () => ({
 
 describe('MorphoLendProvider', () => {
   let provider: MorphoLendProvider
-  let mockConfig: MorphoLendConfig
+  let mockConfig: LendProviderConfig
   let mockChainManager: ChainManager
 
   beforeEach(() => {
     mockConfig = {
-      provider: 'morpho',
-      defaultSlippage: 50,
       marketAllowlist: [MockGauntletUSDCMarket, MockWETHMarket],
     }
 
@@ -54,18 +52,6 @@ describe('MorphoLendProvider', () => {
   describe('constructor', () => {
     it('should initialize with provided config', () => {
       expect(provider).toBeInstanceOf(MorphoLendProvider)
-    })
-
-    it('should use default slippage when not provided', () => {
-      const configWithoutSlippage = {
-        ...mockConfig,
-        defaultSlippage: undefined,
-      }
-      const providerWithDefaults = new MorphoLendProvider(
-        configWithoutSlippage,
-        mockChainManager,
-      )
-      expect(providerWithDefaults).toBeInstanceOf(MorphoLendProvider)
     })
   })
 
@@ -275,10 +261,7 @@ describe('MorphoLendProvider', () => {
 
   describe('market allowlist configuration', () => {
     it('should work without market allowlist', () => {
-      const configWithoutAllowlist: MorphoLendConfig = {
-        provider: 'morpho',
-        defaultSlippage: 50,
-      }
+      const configWithoutAllowlist: LendProviderConfig = {}
 
       const providerWithoutAllowlist = new MorphoLendProvider(
         configWithoutAllowlist,
@@ -289,9 +272,7 @@ describe('MorphoLendProvider', () => {
     })
 
     it('should store market allowlist when provided', () => {
-      const configWithAllowlist: MorphoLendConfig = {
-        provider: 'morpho',
-        defaultSlippage: 50,
+      const configWithAllowlist: LendProviderConfig = {
         marketAllowlist: [MockGauntletUSDCMarket],
       }
 
@@ -307,37 +288,8 @@ describe('MorphoLendProvider', () => {
       expect(allowlist![0].name).toBe(MockGauntletUSDCMarket.name)
     })
 
-    it('should use default slippage from config', () => {
-      const customSlippage = 150
-      const configWithSlippage: MorphoLendConfig = {
-        provider: 'morpho',
-        defaultSlippage: customSlippage,
-      }
-
-      const providerWithSlippage = new MorphoLendProvider(
-        configWithSlippage,
-        mockChainManager,
-      )
-
-      expect(providerWithSlippage.config.defaultSlippage).toBe(customSlippage)
-    })
-
-    it('should use fallback default slippage when not provided', () => {
-      const configWithoutSlippage: MorphoLendConfig = {
-        provider: 'morpho',
-      }
-
-      const providerWithoutSlippage = new MorphoLendProvider(
-        configWithoutSlippage,
-        mockChainManager,
-      )
-
-      expect(providerWithoutSlippage.config.defaultSlippage || 50).toBe(50) // Default fallback
-    })
-
     it('should handle multiple markets in allowlist', () => {
-      const configWithMultipleMarkets: MorphoLendConfig = {
-        provider: 'morpho',
+      const configWithMultipleMarkets: LendProviderConfig = {
         marketAllowlist: [MockGauntletUSDCMarket, MockWETHMarket],
       }
 

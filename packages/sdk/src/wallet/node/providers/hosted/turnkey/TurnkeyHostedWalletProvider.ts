@@ -3,8 +3,10 @@ import type { TurnkeyClient as TurnkeyHttpClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
 import type { LocalAccount } from 'viem'
 
+import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import type { LendProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { NodeToActionsOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
@@ -26,6 +28,8 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
    * Create a new Turnkey wallet provider
    * @param client - Turnkey client instance (HTTP, server, or core SDK base)
    * @param chainManager - Chain manager used to resolve chains and RPC transports
+   * @param lendProviders - Optional lend providers for DeFi operations
+   * @param supportedAssets - Optional list of supported assets
    */
   constructor(
     private readonly client:
@@ -33,9 +37,13 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       | TurnkeyServerClient
       | TurnkeySDKClientBase,
     chainManager: ChainManager,
-    lendProvider?: LendProvider<LendConfig>,
+    lendProviders?: {
+      morpho?: LendProvider<LendProviderConfig>
+      aave?: LendProvider<LendProviderConfig>
+    },
+    supportedAssets?: Asset[],
   ) {
-    super(chainManager, lendProvider)
+    super(chainManager, lendProviders, supportedAssets)
   }
 
   /**
@@ -56,7 +64,8 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       signWith: params.signWith,
       ethereumAddress: params.ethereumAddress,
       chainManager: this.chainManager,
-      lendProvider: this.lendProvider,
+      lendProviders: this.lendProviders,
+      supportedAssets: this.supportedAssets,
     })
   }
 
