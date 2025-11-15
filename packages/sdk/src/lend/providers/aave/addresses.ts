@@ -58,3 +58,45 @@ export function isAaveChainSupported(chainId: number): boolean {
 export function getSupportedChainIds(): number[] {
   return Object.keys(POOL_ADDRESSES).map(Number)
 }
+
+/**
+ * Aave V3 WETHGateway addresses for Optimism Superchain networks
+ * @description Gateway contracts that handle native ETH wrapping and depositing
+ */
+
+/**
+ * Mainnet WETHGateway addresses
+ */
+export const WETH_GATEWAY_ADDRESSES_MAINNET: Record<number, Address> = {
+  // Optimism Mainnet
+  10: '0x5f2508cAE9923b02316254026CD43d7902866725',
+  // Base Mainnet
+  8453: '0xa0d9C1E9E48Ca30c8d8C3B5D69FF5dc1f6DFfC24',
+} as const
+
+/**
+ * Testnet WETHGateway addresses
+ */
+export const WETH_GATEWAY_ADDRESSES_TESTNET: Record<number, Address> = {
+  // Optimism Sepolia
+  11155420: '0x589750BA8aF186cE5B55391B0b7148cAD43a1619',
+  // Base Sepolia
+  84532: '0x0568130e794429D2eEBC4dafE18f25Ff1a1ed8b6',
+} as const
+
+/**
+ * All WETHGateway addresses (mainnet + testnet)
+ */
+export const WETH_GATEWAY_ADDRESSES: Record<number, Address> = {
+  ...WETH_GATEWAY_ADDRESSES_MAINNET,
+  ...WETH_GATEWAY_ADDRESSES_TESTNET,
+} as const
+
+/**
+ * Get WETHGateway address for a given chain ID
+ * @param chainId - Chain ID
+ * @returns WETHGateway address if supported, undefined otherwise
+ */
+export function getWETHGatewayAddress(chainId: number): Address | undefined {
+  return WETH_GATEWAY_ADDRESSES[chainId]
+}
