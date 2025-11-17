@@ -1,13 +1,9 @@
-import type { LocalAccount } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockLendProvider } from '@/test/MockLendProvider.js'
-import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
-import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
-import { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
-import * as createSignerUtil from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
+// Mock @dynamic-labs packages to avoid import syntax errors
+vi.mock('@dynamic-labs/wallet-connector-core', () => ({
+  Wallet: class {},
+}))
 
 // Mock DynamicWallet to avoid importing browser-related deps
 vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', async () => {
@@ -16,6 +12,19 @@ vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', async () => {
   )
   return { DynamicWallet: DynamicWalletMock }
 })
+
+// Mock createSigner to avoid importing @dynamic-labs
+vi.mock('@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js')
+
+import type { LocalAccount } from 'viem'
+
+import type { ChainManager } from '@/services/ChainManager.js'
+import { MockChainManager } from '@/test/MockChainManager.js'
+import { createMockLendProvider } from '@/test/MockLendProvider.js'
+import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
+import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
+import * as createSignerUtil from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
 
 describe('DynamicHostedWalletProvider', () => {
   describe('toActionsWallet', () => {
@@ -41,7 +50,7 @@ describe('DynamicHostedWalletProvider', () => {
       expect(DynamicWallet.create).toHaveBeenCalledWith({
         dynamicWallet: mockDynamicWallet,
         chainManager: mockChainManager,
-        lendProviders: undefined,
+        lendProviders: {},
       })
       expect(result).toBe(mockResult)
     })
