@@ -41,6 +41,7 @@ describe('DynamicHostedWalletProvider', () => {
       expect(DynamicWallet.create).toHaveBeenCalledWith({
         dynamicWallet: mockDynamicWallet,
         chainManager: mockChainManager,
+        lendProviders: undefined,
       })
       expect(result).toBe(mockResult)
     })
