@@ -3,6 +3,7 @@ import { formatReserves } from '@aave/math-utils'
 import { providers } from 'ethers'
 import type { Address } from 'viem'
 
+import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import { getPoolAddress } from '@/lend/providers/aave/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
@@ -253,6 +254,80 @@ export async function getReserves(
   } catch (error) {
     throw new Error(
       `Failed to get reserves: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+    )
+  }
+}
+
+/**
+ * Get aToken address for a given underlying asset
+ * @param params - Parameters including asset address, chain ID, and chain manager
+ * @returns Promise resolving to aToken address
+ * @description Queries the Aave Pool to get the aToken address for the underlying asset
+ */
+export async function getATokenAddress(params: {
+  underlyingAsset: Address
+  chainId: (typeof SUPPORTED_CHAIN_IDS)[number]
+  chainManager: ChainManager
+}): Promise<Address> {
+  const poolAddress = getPoolAddress(params.chainId)
+  if (!poolAddress) {
+    throw new Error(`Aave V3 not deployed on chain ${params.chainId}`)
+  }
+
+  const uiPoolDataProviderAddress =
+    UI_POOL_DATA_PROVIDER_ADDRESSES[params.chainId]
+  const poolAddressesProvider = POOL_ADDRESSES_PROVIDER[params.chainId]
+
+  if (!uiPoolDataProviderAddress || !poolAddressesProvider) {
+    throw new Error(
+      `UiPoolDataProvider not configured for chain ${params.chainId}`,
+    )
+  }
+
+  try {
+    // Get viem public client for this chain
+    const publicClient = params.chainManager.getPublicClient(params.chainId)
+
+    // Create ethers provider from viem's RPC URL
+    const rpcUrl =
+      publicClient.chain?.rpcUrls.default.http[0] ||
+      publicClient.chain?.rpcUrls.public?.http[0]
+    if (!rpcUrl) {
+      throw new Error(`No RPC URL available for chain ${params.chainId}`)
+    }
+    const ethersProvider = new providers.JsonRpcProvider(rpcUrl)
+
+    // Create UiPoolDataProvider instance
+    const uiPoolDataProvider = new UiPoolDataProvider({
+      uiPoolDataProviderAddress,
+      provider: ethersProvider,
+      chainId: params.chainId,
+    })
+
+    // Fetch reserve data
+    const reservesData = await uiPoolDataProvider.getReservesHumanized({
+      lendingPoolAddressProvider: poolAddressesProvider,
+    })
+
+    // Find the specific reserve for this asset
+    const reserve = reservesData.reservesData.find(
+      (r) =>
+        r.underlyingAsset.toLowerCase() === params.underlyingAsset.toLowerCase(),
+    )
+
+    if (!reserve) {
+      throw new Error(
+        `Reserve not found for asset ${params.underlyingAsset} on chain ${params.chainId}`,
+      )
+    }
+
+    // Return the aToken address
+    return reserve.aTokenAddress as Address
+  } catch (error) {
+    throw new Error(
+      `Failed to get aToken address for ${params.underlyingAsset}: ${
         error instanceof Error ? error.message : 'Unknown error'
       }`,
     )

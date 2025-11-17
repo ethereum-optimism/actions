@@ -53,8 +53,8 @@ function TransactionModal({
           title: 'Transaction Successful',
           description:
             mode === 'withdraw'
-              ? 'Your USDC is no longer earning interest'
-              : 'Your USDC is now earning interest',
+              ? 'Your funds are now in your wallet'
+              : 'Your funds are now earning interest',
           showClose: true,
         }
       case 'error':

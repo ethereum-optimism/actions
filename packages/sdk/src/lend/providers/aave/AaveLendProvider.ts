@@ -266,6 +266,13 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     poolAddress: Address,
     marketInfo: LendMarket,
   ): Promise<LendTransaction> {
+    console.log('[_closeWETHPosition] Starting WETH withdrawal:', {
+      marketId: params.marketId,
+      amount: params.amount.toString(),
+      walletAddress: params.walletAddress,
+      poolAddress,
+    })
+
     const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
     if (!gatewayAddress) {
       throw new Error(
@@ -273,14 +280,30 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       )
     }
 
-    // aWETH token address is the same as market address for Aave
-    const aWETHAddress = params.marketId.address
+    console.log('[_closeWETHPosition] WETHGateway address:', gatewayAddress)
+
+    // Get the aToken address for the underlying WETH asset
+    // Note: params.marketId.address is the underlying WETH address, not the aToken
+    const { getATokenAddress } = await import('./sdk.js')
+    const aWETHAddress = await getATokenAddress({
+      underlyingAsset: params.marketId.address,
+      chainId: params.marketId.chainId,
+      chainManager: this.chainManager,
+    })
+
+    console.log('[_closeWETHPosition] aWETH address:', aWETHAddress)
 
     // First: User must approve aWETH to WETHGateway
     const approvalCallData = encodeFunctionData({
       abi: erc20Abi,
       functionName: 'approve',
       args: [gatewayAddress, params.amount],
+    })
+
+    console.log('[_closeWETHPosition] Approval transaction:', {
+      to: aWETHAddress,
+      spender: gatewayAddress,
+      amount: params.amount.toString(),
     })
 
     // Second: Call withdrawETH on gateway
@@ -292,6 +315,13 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         params.amount, // amount
         params.walletAddress, // to (receives native ETH)
       ],
+    })
+
+    console.log('[_closeWETHPosition] Withdraw transaction:', {
+      to: gatewayAddress,
+      poolAddress,
+      amount: params.amount.toString(),
+      recipient: params.walletAddress,
     })
 
     return {

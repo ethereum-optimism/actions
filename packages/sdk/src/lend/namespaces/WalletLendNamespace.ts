@@ -37,18 +37,45 @@ export class WalletLendNamespace {
   private getProviderForMarket(
     marketId: LendMarketId,
   ): MorphoLendProvider | AaveLendProvider {
+    console.log('[getProviderForMarket] Looking for provider for market:', {
+      address: marketId.address,
+      chainId: marketId.chainId,
+    })
+
     const allProviders = [this.providers.morpho, this.providers.aave].filter(
       Boolean,
     ) as Array<MorphoLendProvider | AaveLendProvider>
 
+    console.log('[getProviderForMarket] Available providers:', {
+      morpho: !!this.providers.morpho,
+      aave: !!this.providers.aave,
+      morphoAllowlist: this.providers.morpho?.config.marketAllowlist,
+      aaveAllowlist: this.providers.aave?.config.marketAllowlist,
+    })
+
     for (const provider of allProviders) {
+      const providerName =
+        provider === this.providers.morpho ? 'morpho' : 'aave'
+      console.log(`[getProviderForMarket] Checking ${providerName} provider`)
+
       const market = provider.config.marketAllowlist?.find(
         (m: LendMarketId) =>
           m.address.toLowerCase() === marketId.address.toLowerCase() &&
           m.chainId === marketId.chainId,
       )
-      if (market) return provider
+
+      if (market) {
+        console.log(
+          `[getProviderForMarket] Found match in ${providerName}:`,
+          market,
+        )
+        return provider
+      }
     }
+
+    console.error(
+      `[getProviderForMarket] No provider found for market ${marketId.address} on chain ${marketId.chainId}`,
+    )
 
     throw new Error(
       `No provider configured for market ${marketId.address} on chain ${marketId.chainId}`,
@@ -176,6 +203,14 @@ export class WalletLendNamespace {
     if (!transactionData) {
       throw new Error(
         'No transaction data returned from close position provider',
+      )
+    }
+
+    // If both approval and closePosition are present, batch them
+    if (transactionData.approval && transactionData.closePosition) {
+      return await this.wallet.sendBatch(
+        [transactionData.approval, transactionData.closePosition],
+        params.marketId.chainId,
       )
     }
 
