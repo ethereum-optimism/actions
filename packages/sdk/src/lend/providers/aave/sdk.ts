@@ -270,7 +270,9 @@ const POOL_GET_RESERVE_DATA_ABI = [
     name: 'getReserveData',
     outputs: [
       {
-        components: [{ name: 'data', type: 'uint256', internalType: 'uint256' }],
+        components: [
+          { name: 'data', type: 'uint256', internalType: 'uint256' },
+        ],
         name: 'configuration',
         type: 'tuple',
         internalType: 'struct DataTypes.ReserveConfigurationMap',
