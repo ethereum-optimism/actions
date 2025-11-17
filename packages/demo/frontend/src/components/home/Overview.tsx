@@ -48,7 +48,7 @@ const markets = actions.lend.getMarkets(USDC);
 const receipt = wallet.lend.openPosition({
   amount: 1,
   asset: USDC,
-  ...ExampleMorphoMarket
+  ...ExampleMarket
 });`,
   },
   {
@@ -63,7 +63,7 @@ const markets = actions.borrow.getMarkets(ETH);
 const receipt = wallet.borrow.openPosition({
   amount: 1,
   asset: ETH,
-  ...ExampleAaveMarket
+  ...ExampleMarket
 });`,
   },
   {
