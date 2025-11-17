@@ -37,27 +37,11 @@ export class WalletLendNamespace {
   private getProviderForMarket(
     marketId: LendMarketId,
   ): MorphoLendProvider | AaveLendProvider {
-    console.log('[getProviderForMarket] Looking for provider for market:', {
-      address: marketId.address,
-      chainId: marketId.chainId,
-    })
-
     const allProviders = [this.providers.morpho, this.providers.aave].filter(
       Boolean,
     ) as Array<MorphoLendProvider | AaveLendProvider>
 
-    console.log('[getProviderForMarket] Available providers:', {
-      morpho: !!this.providers.morpho,
-      aave: !!this.providers.aave,
-      morphoAllowlist: this.providers.morpho?.config.marketAllowlist,
-      aaveAllowlist: this.providers.aave?.config.marketAllowlist,
-    })
-
     for (const provider of allProviders) {
-      const providerName =
-        provider === this.providers.morpho ? 'morpho' : 'aave'
-      console.log(`[getProviderForMarket] Checking ${providerName} provider`)
-
       const market = provider.config.marketAllowlist?.find(
         (m: LendMarketId) =>
           m.address.toLowerCase() === marketId.address.toLowerCase() &&
@@ -65,17 +49,9 @@ export class WalletLendNamespace {
       )
 
       if (market) {
-        console.log(
-          `[getProviderForMarket] Found match in ${providerName}:`,
-          market,
-        )
         return provider
       }
     }
-
-    console.error(
-      `[getProviderForMarket] No provider found for market ${marketId.address} on chain ${marketId.chainId}`,
-    )
 
     throw new Error(
       `No provider configured for market ${marketId.address} on chain ${marketId.chainId}`,
@@ -192,6 +168,12 @@ export class WalletLendNamespace {
   async closePosition(
     params: ClosePositionParams,
   ): Promise<LendTransactionReceipt> {
+    console.log('[WalletLendNamespace.closePosition] Starting withdrawal:', {
+      marketId: params.marketId,
+      amount: params.amount.toString(),
+      walletAddress: this.wallet.address,
+    })
+
     const provider = this.getProviderForMarket(params.marketId)
 
     const closeTransaction = await provider.closePosition({
@@ -208,19 +190,27 @@ export class WalletLendNamespace {
 
     // If both approval and closePosition are present, batch them
     if (transactionData.approval && transactionData.closePosition) {
-      return await this.wallet.sendBatch(
+      console.log(
+        '[WalletLendNamespace.closePosition] Sending batched approval + withdrawal',
+      )
+      const receipt = await this.wallet.sendBatch(
         [transactionData.approval, transactionData.closePosition],
         params.marketId.chainId,
       )
+      console.log('[WalletLendNamespace.closePosition] Transaction complete')
+      return receipt
     }
 
     if (!transactionData.closePosition) {
       throw new Error('No closePosition transaction data returned')
     }
 
-    return await this.wallet.send(
+    console.log('[WalletLendNamespace.closePosition] Sending withdrawal')
+    const receipt = await this.wallet.send(
       transactionData.closePosition,
       params.marketId.chainId,
     )
+    console.log('[WalletLendNamespace.closePosition] Transaction complete')
+    return receipt
   }
 }

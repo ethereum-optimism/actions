@@ -261,6 +261,69 @@ export async function getReserves(
 }
 
 /**
+ * Aave V3 Pool ABI for getReserveData
+ * @description Minimal ABI for querying reserve data from Aave V3 Pool
+ */
+const POOL_GET_RESERVE_DATA_ABI = [
+  {
+    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
+    name: 'getReserveData',
+    outputs: [
+      {
+        components: [{ name: 'data', type: 'uint256', internalType: 'uint256' }],
+        name: 'configuration',
+        type: 'tuple',
+        internalType: 'struct DataTypes.ReserveConfigurationMap',
+      },
+      { name: 'liquidityIndex', type: 'uint128', internalType: 'uint128' },
+      {
+        name: 'currentLiquidityRate',
+        type: 'uint128',
+        internalType: 'uint128',
+      },
+      { name: 'variableBorrowIndex', type: 'uint128', internalType: 'uint128' },
+      {
+        name: 'currentVariableBorrowRate',
+        type: 'uint128',
+        internalType: 'uint128',
+      },
+      {
+        name: 'currentStableBorrowRate',
+        type: 'uint128',
+        internalType: 'uint128',
+      },
+      { name: 'lastUpdateTimestamp', type: 'uint40', internalType: 'uint40' },
+      { name: 'id', type: 'uint16', internalType: 'uint16' },
+      { name: 'aTokenAddress', type: 'address', internalType: 'address' },
+      {
+        name: 'stableDebtTokenAddress',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: 'variableDebtTokenAddress',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: 'interestRateStrategyAddress',
+        type: 'address',
+        internalType: 'address',
+      },
+      { name: 'accruedToTreasury', type: 'uint128', internalType: 'uint128' },
+      { name: 'unbacked', type: 'uint128', internalType: 'uint128' },
+      {
+        name: 'isolationModeTotalDebt',
+        type: 'uint128',
+        internalType: 'uint128',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
+
+/**
  * Get aToken address for a given underlying asset
  * @param params - Parameters including asset address, chain ID, and chain manager
  * @returns Promise resolving to aToken address
@@ -276,55 +339,31 @@ export async function getATokenAddress(params: {
     throw new Error(`Aave V3 not deployed on chain ${params.chainId}`)
   }
 
-  const uiPoolDataProviderAddress =
-    UI_POOL_DATA_PROVIDER_ADDRESSES[params.chainId]
-  const poolAddressesProvider = POOL_ADDRESSES_PROVIDER[params.chainId]
-
-  if (!uiPoolDataProviderAddress || !poolAddressesProvider) {
-    throw new Error(
-      `UiPoolDataProvider not configured for chain ${params.chainId}`,
-    )
-  }
-
   try {
     // Get viem public client for this chain
     const publicClient = params.chainManager.getPublicClient(params.chainId)
 
-    // Create ethers provider from viem's RPC URL
-    const rpcUrl =
-      publicClient.chain?.rpcUrls.default.http[0] ||
-      publicClient.chain?.rpcUrls.public?.http[0]
-    if (!rpcUrl) {
-      throw new Error(`No RPC URL available for chain ${params.chainId}`)
-    }
-    const ethersProvider = new providers.JsonRpcProvider(rpcUrl)
-
-    // Create UiPoolDataProvider instance
-    const uiPoolDataProvider = new UiPoolDataProvider({
-      uiPoolDataProviderAddress,
-      provider: ethersProvider,
-      chainId: params.chainId,
+    // Query the Pool contract directly for reserve data
+    const reserveData = await publicClient.readContract({
+      address: poolAddress,
+      abi: POOL_GET_RESERVE_DATA_ABI,
+      functionName: 'getReserveData',
+      args: [params.underlyingAsset],
     })
 
-    // Fetch reserve data
-    const reservesData = await uiPoolDataProvider.getReservesHumanized({
-      lendingPoolAddressProvider: poolAddressesProvider,
-    })
+    // The return is a tuple where index 8 is aTokenAddress
+    const aTokenAddress = reserveData[8]
 
-    // Find the specific reserve for this asset
-    const reserve = reservesData.reservesData.find(
-      (r) =>
-        r.underlyingAsset.toLowerCase() === params.underlyingAsset.toLowerCase(),
-    )
-
-    if (!reserve) {
+    if (
+      !aTokenAddress ||
+      aTokenAddress === '0x0000000000000000000000000000000000000000'
+    ) {
       throw new Error(
-        `Reserve not found for asset ${params.underlyingAsset} on chain ${params.chainId}`,
+        `No aToken found for asset ${params.underlyingAsset} on chain ${params.chainId}`,
       )
     }
 
-    // Return the aToken address
-    return reserve.aTokenAddress as Address
+    return aTokenAddress
   } catch (error) {
     throw new Error(
       `Failed to get aToken address for ${params.underlyingAsset}: ${

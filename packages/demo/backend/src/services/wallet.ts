@@ -13,9 +13,8 @@ import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getActions, getPrivyClient } from '@/config/actions.js'
+import { getTransactionUrl, getUserOperationUrl } from '@/utils/explorers.js'
 import { serializeBigInt } from '@/utils/serializers.js'
-
-import { getBlockExplorerUrls } from './lend.js'
 
 /**
  * Options for getting all wallets
@@ -136,11 +135,16 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
   }
 
   // Get block explorer URLs
-  const blockExplorerUrls = await getBlockExplorerUrls(
-    baseSepolia.id,
-    transactionHashes,
-    userOpHash,
-  )
+  const blockExplorerUrls: string[] = []
+  if (userOpHash) {
+    blockExplorerUrls.push(getUserOperationUrl(baseSepolia.id, userOpHash))
+  } else if (transactionHashes && transactionHashes.length > 0) {
+    blockExplorerUrls.push(
+      ...transactionHashes.map((hash) =>
+        getTransactionUrl(baseSepolia.id, hash),
+      ),
+    )
+  }
 
   return {
     success: true,

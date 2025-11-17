@@ -38,21 +38,10 @@ export function Action({
   const displaySymbol = assetSymbol.replace('_DEMO', '')
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [amount, setAmount] = useState('')
-
-  console.log('[Action] Props:', {
-    assetBalance,
-    depositedAmount,
-    assetSymbol,
-    mode,
-    amount,
-  })
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<
     'loading' | 'success' | 'error'
   >('loading')
-  const [transactionHash, setTransactionHash] = useState<string | undefined>(
-    undefined,
-  )
   const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(
     undefined,
   )
@@ -88,13 +77,11 @@ export function Action({
     setIsLoading(true)
     setModalOpen(true)
     setModalStatus('loading')
-    setTransactionHash(undefined)
     setBlockExplorerUrl(undefined)
 
     try {
       const result = await onTransaction(mode, amountValue)
 
-      setTransactionHash(result.transactionHash)
       setBlockExplorerUrl(result.blockExplorerUrl)
       setModalStatus('success')
       setAmount('')
@@ -108,7 +95,6 @@ export function Action({
   const handleModalClose = () => {
     setModalOpen(false)
     setModalStatus('loading')
-    setTransactionHash(undefined)
     setBlockExplorerUrl(undefined)
   }
 
@@ -409,26 +395,6 @@ export function Action({
                 parseFloat(amount) <= 0 ||
                 parseFloat(amount) > parseFloat(maxAmount)
 
-              console.log('[Action] Button disabled check:', {
-                mode,
-                isLoading,
-                amount,
-                maxAmount,
-                depositedAmount,
-                isDisabled,
-                reason: isDisabled
-                  ? isLoading
-                    ? 'loading'
-                    : !amount
-                      ? 'no amount'
-                      : parseFloat(amount) <= 0
-                        ? 'amount <= 0'
-                        : parseFloat(amount) > parseFloat(maxAmount)
-                          ? 'amount > max'
-                          : 'unknown'
-                  : 'enabled',
-              })
-
               return isDisabled
             })()}
             className="w-full py-3 px-4 font-medium transition-all"
@@ -482,7 +448,6 @@ export function Action({
         isOpen={modalOpen}
         status={modalStatus}
         onClose={handleModalClose}
-        transactionHash={transactionHash}
         blockExplorerUrl={blockExplorerUrl}
         mode={mode}
       />
