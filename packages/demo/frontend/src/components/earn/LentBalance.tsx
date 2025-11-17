@@ -18,14 +18,20 @@ function LentBalance({
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
   const apyRef = useRef<HTMLDivElement>(null)
 
-  // Filter to only show markets with deposits > 0
-  const marketsWithDeposits = marketPositions.filter(
-    (market) =>
-      market.depositedAmount &&
-      market.depositedAmount !== '0' &&
-      market.depositedAmount !== '0.00' &&
-      parseFloat(market.depositedAmount) > 0,
-  )
+  // Filter to only show markets with deposits > 0 and sort alphabetically by asset symbol
+  const marketsWithDeposits = marketPositions
+    .filter(
+      (market) =>
+        market.depositedAmount &&
+        market.depositedAmount !== '0' &&
+        market.depositedAmount !== '0.00' &&
+        parseFloat(market.depositedAmount) > 0,
+    )
+    .sort((a, b) => {
+      const assetA = a.assetSymbol?.replace('_DEMO', '') || ''
+      const assetB = b.assetSymbol?.replace('_DEMO', '') || ''
+      return assetA.localeCompare(assetB)
+    })
 
   const isEmpty = !isInitialLoad && marketsWithDeposits.length === 0
 
