@@ -9,7 +9,7 @@ import { AaveWETH, GauntletUSDCDemo } from './markets.js'
 
 let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
-function createActionsConfig(): NodeActionsConfig<'privy'> {
+export function createActionsConfig(): NodeActionsConfig<'privy'> {
   return {
     wallet: {
       hostedWalletConfig: {
@@ -24,6 +24,7 @@ function createActionsConfig(): NodeActionsConfig<'privy'> {
       smartWalletConfig: {
         provider: {
           type: 'default' as const,
+          // converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'
           attributionSuffix: 'actions',
         },
       },
@@ -43,8 +44,9 @@ function createActionsConfig(): NodeActionsConfig<'privy'> {
   }
 }
 
-export function initializeActions(): void {
-  actionsInstance = createActions(createActionsConfig())
+export function initializeActions(config?: NodeActionsConfig<'privy'>): void {
+  const actionsConfig = config || createActionsConfig()
+  actionsInstance = createActions(actionsConfig)
 }
 
 export function getActions() {
