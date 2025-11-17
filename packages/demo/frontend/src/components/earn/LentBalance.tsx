@@ -28,8 +28,8 @@ function LentBalance({
         parseFloat(market.depositedAmount) > 0,
     )
     .sort((a, b) => {
-      const assetA = a.assetSymbol?.replace('_DEMO', '') || ''
-      const assetB = b.assetSymbol?.replace('_DEMO', '') || ''
+      const assetA = a.assetSymbol || ''
+      const assetB = b.assetSymbol || ''
       return assetA.localeCompare(assetB)
     })
 
@@ -169,7 +169,7 @@ function LentBalance({
                           minWidth: '100px',
                         }}
                       >
-                        Value
+                        Amount
                       </th>
                     </tr>
                   </thead>
