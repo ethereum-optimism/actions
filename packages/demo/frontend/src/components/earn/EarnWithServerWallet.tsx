@@ -117,9 +117,11 @@ export function EarnWithServerWallet({
           throw new Error('Wallet address not available')
         }
         await actionsApi.dripEthToWallet(walletAddress)
+        // Note: dripEthToWallet doesn't return blockExplorerUrls yet
+        return
       } else {
         // Use USDC minting for other assets
-        await actionsApi.mintDemoUsdcToWallet(headers)
+        return await actionsApi.mintDemoUsdcToWallet(headers)
       }
     },
     [getAuthHeaders, walletAddress],

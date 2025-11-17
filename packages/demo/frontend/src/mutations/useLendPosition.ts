@@ -6,18 +6,20 @@ interface UseOpenPositionParams {
   openPosition: (
     params: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
-  logActivity?: (
-    action: string,
-  ) => { confirm: () => void; error: () => void } | null
+  logActivity?: (action: string) => {
+    confirm: (data?: { blockExplorerUrl?: string }) => void
+    error: () => void
+  } | null
 }
 
 interface UseClosePositionParams {
   closePosition: (
     params: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
-  logActivity?: (
-    action: string,
-  ) => { confirm: () => void; error: () => void } | null
+  logActivity?: (action: string) => {
+    confirm: (data?: { blockExplorerUrl?: string }) => void
+    error: () => void
+  } | null
 }
 
 export function useOpenPosition({
@@ -31,7 +33,15 @@ export function useOpenPosition({
       const activity = logActivity?.('deposit')
       try {
         const result = await openPosition(params)
-        activity?.confirm()
+
+        // Extract block explorer URL from the result
+        const blockExplorerUrl =
+          'blockExplorerUrls' in result &&
+          Array.isArray(result.blockExplorerUrls)
+            ? result.blockExplorerUrls[0]
+            : undefined
+
+        activity?.confirm({ blockExplorerUrl })
         return result
       } catch (error) {
         activity?.error()
@@ -63,7 +73,15 @@ export function useClosePosition({
       const activity = logActivity?.('withdraw')
       try {
         const result = await closePosition(params)
-        activity?.confirm()
+
+        // Extract block explorer URL from the result
+        const blockExplorerUrl =
+          'blockExplorerUrls' in result &&
+          Array.isArray(result.blockExplorerUrls)
+            ? result.blockExplorerUrls[0]
+            : undefined
+
+        activity?.confirm({ blockExplorerUrl })
         return result
       } catch (error) {
         activity?.error()

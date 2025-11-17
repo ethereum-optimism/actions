@@ -1,10 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 interface UseMintAssetParams {
-  mintAsset: (assetSymbol: string, chainId: number) => Promise<void>
-  logActivity?: (
-    action: string,
-  ) => { confirm: () => void; error: () => void } | null
+  mintAsset: (
+    assetSymbol: string,
+    chainId: number,
+  ) => Promise<{ blockExplorerUrls?: string[] } | void>
+  logActivity?: (action: string) => {
+    confirm: (data?: { blockExplorerUrl?: string }) => void
+    error: () => void
+  } | null
 }
 
 export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
@@ -20,8 +24,15 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
     }) => {
       const activity = logActivity?.('mint')
       try {
-        await mintAsset(assetSymbol, chainId)
-        activity?.confirm()
+        const result = await mintAsset(assetSymbol, chainId)
+
+        // Extract block explorer URL from the result if available
+        const blockExplorerUrl =
+          result && 'blockExplorerUrls' in result && result.blockExplorerUrls
+            ? result.blockExplorerUrls[0]
+            : undefined
+
+        activity?.confirm({ blockExplorerUrl })
       } catch (error) {
         activity?.error()
         throw error

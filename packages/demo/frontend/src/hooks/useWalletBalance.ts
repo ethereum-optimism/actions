@@ -20,7 +20,10 @@ export interface UseWalletBalanceConfig {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
-  mintAsset: (assetSymbol: string, chainId: number) => Promise<void>
+  mintAsset: (
+    assetSymbol: string,
+    chainId: number,
+  ) => Promise<{ blockExplorerUrls?: string[] } | void>
   openPosition: (
     params: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
