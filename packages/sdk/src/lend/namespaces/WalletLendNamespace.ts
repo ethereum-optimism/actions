@@ -168,12 +168,6 @@ export class WalletLendNamespace {
   async closePosition(
     params: ClosePositionParams,
   ): Promise<LendTransactionReceipt> {
-    console.log('[WalletLendNamespace.closePosition] Starting withdrawal:', {
-      marketId: params.marketId,
-      amount: params.amount.toString(),
-      walletAddress: this.wallet.address,
-    })
-
     const provider = this.getProviderForMarket(params.marketId)
 
     const closeTransaction = await provider.closePosition({
@@ -190,27 +184,19 @@ export class WalletLendNamespace {
 
     // If both approval and closePosition are present, batch them
     if (transactionData.approval && transactionData.closePosition) {
-      console.log(
-        '[WalletLendNamespace.closePosition] Sending batched approval + withdrawal',
-      )
-      const receipt = await this.wallet.sendBatch(
+      return await this.wallet.sendBatch(
         [transactionData.approval, transactionData.closePosition],
         params.marketId.chainId,
       )
-      console.log('[WalletLendNamespace.closePosition] Transaction complete')
-      return receipt
     }
 
     if (!transactionData.closePosition) {
       throw new Error('No closePosition transaction data returned')
     }
 
-    console.log('[WalletLendNamespace.closePosition] Sending withdrawal')
-    const receipt = await this.wallet.send(
+    return await this.wallet.send(
       transactionData.closePosition,
       params.marketId.chainId,
     )
-    console.log('[WalletLendNamespace.closePosition] Transaction complete')
-    return receipt
   }
 }

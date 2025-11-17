@@ -31,29 +31,21 @@ type AuthParams = {
 export async function isWalletEligibleForFaucet(
   walletAddress: Address,
 ): Promise<boolean> {
-  console.log(`[FAUCET] Checking eligibility for wallet: ${walletAddress}`)
   const publicClient = createPublicClient({
     chain: optimismSepolia,
     transport: env.OP_SEPOLIA_RPC_URL ? http(env.OP_SEPOLIA_RPC_URL) : http(),
   })
   const balance = await publicClient.getBalance({ address: walletAddress })
-  console.log(
-    `[FAUCET] Wallet balance on OP Sepolia: ${balance} wei (${Number(balance) / 1e18} ETH)`,
-  )
   if (balance > 0) {
-    console.log(`[FAUCET] Wallet NOT eligible - already has balance`)
     return false
   }
   // TODO: When aave lending is implemented, check if the wallet already has a position open
   // and return false if it does.
 
-  console.log(`[FAUCET] Wallet is eligible`)
   return true
 }
 
 export async function dripEthToWallet(walletAddress: Address) {
-  console.log(`[FAUCET] Starting drip for wallet: ${walletAddress}`)
-
   const id = keccak256(walletAddress)
   const faucetAuthModuleAddress = env.AUTH_MODULE_ADDRESS as Address
   const domain = {
@@ -63,10 +55,8 @@ export async function dripEthToWallet(walletAddress: Address) {
     verifyingContract: faucetAuthModuleAddress,
   }
   const nonce = generateNonce()
-  console.log(`[FAUCET] Generated nonce: ${nonce}`)
 
   const dripParams = createDripParams(walletAddress, nonce)
-  console.log(`[FAUCET] Creating auth params`)
   const authParams = await createAuthParams(
     walletAddress,
     faucetAuthModuleAddress,
@@ -74,7 +64,6 @@ export async function dripEthToWallet(walletAddress: Address) {
     nonce,
     domain,
   )
-  console.log(`[FAUCET] Auth params created, encoding function data`)
 
   const dripCallData = encodeFunctionData({
     abi: faucetAbi,
@@ -89,7 +78,6 @@ export async function dripEthToWallet(walletAddress: Address) {
     },
   ]
 
-  console.log(`[FAUCET] Getting admin smart wallet`)
   const actions = getActions()
   const adminSigner = privateKeyToAccount(
     env.FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY as Hex,
@@ -98,17 +86,10 @@ export async function dripEthToWallet(walletAddress: Address) {
     signer: adminSigner,
     deploymentSigners: [adminSigner],
   })
-  console.log(`[FAUCET] Admin wallet address: ${adminSmartWallet.address}`)
-  console.log(
-    `[FAUCET] Sending batch transaction to faucet contract: ${env.OP_SEPOLIA_FAUCET_ADDRESS}`,
-  )
 
   const receipt = await adminSmartWallet.sendBatch(
     transactionData,
     optimismSepolia.id,
-  )
-  console.log(
-    `[FAUCET] Transaction complete, success: ${receipt.success}, userOpHash: ${receipt.userOpHash}`,
   )
   return receipt
 }
