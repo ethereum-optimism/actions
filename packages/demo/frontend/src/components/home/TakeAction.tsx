@@ -43,7 +43,9 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
           </a>
         ) : (
           <a
-            href="/docs"
+            href="https://docs.optimism.io/app-developers/quickstarts/actions"
+            target="_blank"
+            rel="noopener noreferrer"
             className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200"
             style={{ color: colors.text.cream }}
           >
