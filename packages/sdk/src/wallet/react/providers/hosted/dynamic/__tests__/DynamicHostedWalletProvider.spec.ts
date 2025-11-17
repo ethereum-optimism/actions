@@ -16,6 +16,7 @@ vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', async () => {
 // Mock createSigner to avoid importing @dynamic-labs
 vi.mock('@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js')
 
+/* eslint-disable import/first */
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -25,6 +26,7 @@ import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dyn
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
 import * as createSignerUtil from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
+/* eslint-enable import/first */
 
 describe('DynamicHostedWalletProvider', () => {
   describe('toActionsWallet', () => {
