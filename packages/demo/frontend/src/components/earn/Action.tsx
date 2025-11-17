@@ -38,6 +38,14 @@ export function Action({
   const displaySymbol = assetSymbol.replace('_DEMO', '')
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [amount, setAmount] = useState('')
+
+  console.log('[Action] Props:', {
+    assetBalance,
+    depositedAmount,
+    assetSymbol,
+    mode,
+    amount,
+  })
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<
     'loading' | 'success' | 'error'
@@ -392,15 +400,37 @@ export function Action({
 
           <button
             onClick={handleLendUSDC}
-            disabled={
-              isLoading ||
-              !amount ||
-              parseFloat(amount) <= 0 ||
-              parseFloat(amount) >
-                parseFloat(
-                  mode === 'lend' ? assetBalance : depositedAmount || '0',
-                )
-            }
+            disabled={(() => {
+              const maxAmount =
+                mode === 'lend' ? assetBalance : depositedAmount || '0'
+              const isDisabled =
+                isLoading ||
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                parseFloat(amount) > parseFloat(maxAmount)
+
+              console.log('[Action] Button disabled check:', {
+                mode,
+                isLoading,
+                amount,
+                maxAmount,
+                depositedAmount,
+                isDisabled,
+                reason: isDisabled
+                  ? isLoading
+                    ? 'loading'
+                    : !amount
+                      ? 'no amount'
+                      : parseFloat(amount) <= 0
+                        ? 'amount <= 0'
+                        : parseFloat(amount) > parseFloat(maxAmount)
+                          ? 'amount > max'
+                          : 'unknown'
+                  : 'enabled',
+              })
+
+              return isDisabled
+            })()}
             className="w-full py-3 px-4 font-medium transition-all"
             style={{
               backgroundColor:

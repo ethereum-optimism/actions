@@ -319,6 +319,9 @@ export function EarnWithServerWallet({
   useEffect(() => {
     if (!selectedMarket) return
 
+    // Only update if we have actual position data (not initial/loading state)
+    if (depositedAmount === null) return
+
     setMarketPositions((prev) => {
       const existingIndex = prev.findIndex(
         (p) =>

@@ -46,6 +46,7 @@ function Earn({
   walletAddress,
   usdcBalance,
   isLoadingBalance,
+  depositedAmount,
   selectedProviderConfig,
   isInitialLoad,
   onMintUSDC,
@@ -191,7 +192,7 @@ function Earn({
                 <Action
                   assetBalance={usdcBalance}
                   isLoadingBalance={isLoadingBalance}
-                  depositedAmount={selectedMarket?.depositedAmount || null}
+                  depositedAmount={depositedAmount}
                   assetSymbol={selectedMarket?.assetSymbol || 'USDC'}
                   assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
                   onMintAsset={onMintUSDC}
