@@ -37,10 +37,16 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
         throw error
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       console.log('[useMintAsset] Mutation successful, invalidating queries')
       // Invalidate token balances to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+
+      // Wait for chain to process, then refetch again
+      setTimeout(() => {
+        console.log('[useMintAsset] Refetching balances after delay')
+        queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+      }, 3000)
     },
     onError: (error) => {
       console.error('[useMintAsset] Mutation failed', { error })

@@ -99,7 +99,7 @@ export function createActionsConfig<T extends ReactProviderTypes>(
           : undefined,
         bundler: env.VITE_OP_SEPOLIA_BUNDLER_URL
           ? {
-              type: 'simple',
+              type: 'pimlico' as const,
               url: env.VITE_OP_SEPOLIA_BUNDLER_URL,
             }
           : undefined,

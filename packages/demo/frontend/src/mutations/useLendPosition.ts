@@ -30,9 +30,16 @@ export function useOpenPosition({
 
   return useMutation({
     mutationFn: async (params: LendExecutePositionParams) => {
+      console.log('[useOpenPosition] Starting deposit', {
+        marketId: params.marketId,
+        amount: params.amount,
+        asset: params.asset.metadata.symbol,
+      })
       const activity = logActivity?.('deposit')
       try {
+        console.log('[useOpenPosition] Calling openPosition')
         const result = await openPosition(params)
+        console.log('[useOpenPosition] Deposit successful', { result })
 
         // Extract block explorer URL from the result
         const blockExplorerUrl =
@@ -44,6 +51,12 @@ export function useOpenPosition({
         activity?.confirm({ blockExplorerUrl })
         return result
       } catch (error) {
+        console.error('[useOpenPosition] Deposit failed', {
+          error,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+          params,
+        })
         activity?.error()
         throw error
       }

@@ -20,6 +20,7 @@ import { convertLendMarketToMarketInfo } from '@/utils/marketConversion'
 import { createActions } from '@eth-optimism/actions-sdk/react'
 import { useMarketData } from '@/hooks/useMarketData'
 import { createActionsConfig } from '@/config/actions'
+import { actionsApi } from '@/api/actionsApi'
 
 export interface EarnWithFrontendWalletProps {
   wallet: Wallet | null
@@ -99,6 +100,15 @@ export function EarnWithFrontendWallet({
         throw new Error('No market selected')
       }
 
+      // For WETH, use ETH faucet endpoint instead of minting token
+      if (asset.metadata.symbol.includes('WETH')) {
+        console.log('[EarnWithFrontendWallet] Using ETH faucet for WETH', {
+          walletAddress,
+        })
+        await actionsApi.dripEthToWallet(walletAddress)
+        return
+      }
+
       const amountInDecimals = BigInt(
         Math.floor(parseFloat('100') * Math.pow(10, asset.metadata.decimals)),
       )
@@ -137,7 +147,16 @@ export function EarnWithFrontendWallet({
         calls,
       })
       const result = await wallet!.sendBatch(calls, chainId as SupportedChainId)
-      console.log('[EarnWithFrontendWallet] Mint transaction sent', { result })
+      console.log('[EarnWithFrontendWallet] Mint transaction sent', {
+        result,
+        resultType: typeof result,
+        resultKeys: Object.keys(result),
+        hasBlockExplorerUrl: 'blockExplorerUrl' in result,
+        hasBlockExplorerUrls: 'blockExplorerUrls' in result,
+        userOpHash: 'userOpHash' in result ? result.userOpHash : undefined,
+        transactionHash:
+          'transactionHash' in result ? result.transactionHash : undefined,
+      })
 
       // Extract blockExplorerUrls from result
       if ('blockExplorerUrl' in result && result.blockExplorerUrl) {
@@ -153,8 +172,24 @@ export function EarnWithFrontendWallet({
 
   // Lend operations - use primary wallet
   const openPosition = useCallback(
-    async (positionParams: LendExecutePositionParams) =>
-      primaryWallet!.lend!.openPosition(positionParams),
+    async (positionParams: LendExecutePositionParams) => {
+      console.log('[EarnWithFrontendWallet] openPosition called', {
+        positionParams,
+      })
+      try {
+        const result = await primaryWallet!.lend!.openPosition(positionParams)
+        console.log('[EarnWithFrontendWallet] openPosition result', { result })
+        return result
+      } catch (error) {
+        console.error('[EarnWithFrontendWallet] openPosition error', {
+          error,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+          positionParams,
+        })
+        throw error
+      }
+    },
     [primaryWallet],
   )
   const closePosition = useCallback(
