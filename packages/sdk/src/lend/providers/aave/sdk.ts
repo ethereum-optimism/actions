@@ -2,6 +2,7 @@ import { UiPoolDataProvider } from '@aave/contract-helpers'
 import { formatReserves } from '@aave/math-utils'
 import { providers } from 'ethers'
 import type { Address } from 'viem'
+import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 
 import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import { getPoolAddress } from '@/lend/providers/aave/addresses.js'
@@ -20,28 +21,20 @@ import { getAssetAddress } from '@/utils/assets.js'
  * @description Contract addresses for UiPoolDataProvider on each supported chain
  */
 const UI_POOL_DATA_PROVIDER_ADDRESSES: Record<number, Address> = {
-  // Optimism Mainnet
-  10: '0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654',
-  // Base Mainnet
-  8453: '0xd82a47fdebB5bf5329b09441C3DaB4b5df2153Ad',
-  // Optimism Sepolia
-  11155420: '0x86E2938daE289763D4e09a7e42c5cCcA62Cf9809',
-  // Base Sepolia
-  84532: '0xBc9f5b7E248451CdD7cA54e717a2BFe1F32b566b',
+  [optimism.id]: '0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654',
+  [base.id]: '0xd82a47fdebB5bf5329b09441C3DaB4b5df2153Ad',
+  [optimismSepolia.id]: '0x86E2938daE289763D4e09a7e42c5cCcA62Cf9809',
+  [baseSepolia.id]: '0xBc9f5b7E248451CdD7cA54e717a2BFe1F32b566b',
 } as const
 
 /**
  * Pool Addresses Provider addresses for each chain
  */
 const POOL_ADDRESSES_PROVIDER: Record<number, Address> = {
-  // Optimism Mainnet
-  10: '0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb',
-  // Base Mainnet
-  8453: '0xe20fCBdBfFC4Dd138cE8b2E6FBb6CB49777ad64D',
-  // Optimism Sepolia
-  11155420: '0x36616cf17557639614c1cdDb356b1B83fc0B2132',
-  // Base Sepolia
-  84532: '0xE4C23309117Aa30342BFaae6c95c6478e0A4Ad00',
+  [optimism.id]: '0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb',
+  [base.id]: '0xe20fCBdBfFC4Dd138cE8b2E6FBb6CB49777ad64D',
+  [optimismSepolia.id]: '0x36616cf17557639614c1cdDb356b1B83fc0B2132',
+  [baseSepolia.id]: '0xE4C23309117Aa30342BFaae6c95c6478e0A4Ad00',
 } as const
 
 /**

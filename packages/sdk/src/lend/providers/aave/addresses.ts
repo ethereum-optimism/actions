@@ -1,4 +1,5 @@
 import type { Address } from 'viem'
+import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 
 /**
  * Aave V3 Pool addresses for Optimism Superchain networks
@@ -9,20 +10,16 @@ import type { Address } from 'viem'
  * Mainnet Pool addresses
  */
 export const POOL_ADDRESSES_MAINNET: Record<number, Address> = {
-  // Optimism Mainnet
-  10: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-  // Base Mainnet
-  8453: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
+  [optimism.id]: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+  [base.id]: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
 } as const
 
 /**
  * Testnet Pool addresses
  */
 export const POOL_ADDRESSES_TESTNET: Record<number, Address> = {
-  // Optimism Sepolia
-  11155420: '0xb50201558b00496a145fe76f7424749556e326d8',
-  // Base Sepolia
-  84532: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27',
+  [optimismSepolia.id]: '0xb50201558b00496a145fe76f7424749556e326d8',
+  [baseSepolia.id]: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27',
 } as const
 
 /**
@@ -68,20 +65,16 @@ export function getSupportedChainIds(): number[] {
  * Mainnet WETHGateway addresses
  */
 export const WETH_GATEWAY_ADDRESSES_MAINNET: Record<number, Address> = {
-  // Optimism Mainnet
-  10: '0x5f2508cAE9923b02316254026CD43d7902866725',
-  // Base Mainnet
-  8453: '0xa0d9C1E9E48Ca30c8d8C3B5D69FF5dc1f6DFfC24',
+  [optimism.id]: '0x5f2508cAE9923b02316254026CD43d7902866725',
+  [base.id]: '0xa0d9C1E9E48Ca30c8d8C3B5D69FF5dc1f6DFfC24',
 } as const
 
 /**
  * Testnet WETHGateway addresses
  */
 export const WETH_GATEWAY_ADDRESSES_TESTNET: Record<number, Address> = {
-  // Optimism Sepolia
-  11155420: '0x589750BA8aF186cE5B55391B0b7148cAD43a1619',
-  // Base Sepolia
-  84532: '0x0568130e794429D2eEBC4dafE18f25Ff1a1ed8b6',
+  [optimismSepolia.id]: '0x589750BA8aF186cE5B55391B0b7148cAD43a1619',
+  [baseSepolia.id]: '0x0568130e794429D2eEBC4dafE18f25Ff1a1ed8b6',
 } as const
 
 /**
