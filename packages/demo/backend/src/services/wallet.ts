@@ -2,6 +2,7 @@ import type {
   EOATransactionReceipt,
   LendMarketId,
   SmartWallet,
+  TokenBalance,
   UserOperationTransactionReceipt,
   Wallet,
 } from '@eth-optimism/actions-sdk'
@@ -69,7 +70,9 @@ export async function getWallet(idToken: string): Promise<SmartWallet | null> {
   return wallet
 }
 
-export async function getWalletBalance(wallet: SmartWallet) {
+export async function getWalletBalance(
+  wallet: SmartWallet,
+): Promise<TokenBalance[]> {
   // Get regular token balances
   const tokenBalances = await wallet.getBalance().catch((error) => {
     console.error(error)

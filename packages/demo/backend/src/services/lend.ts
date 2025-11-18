@@ -12,12 +12,14 @@ import { serializeBigInt } from '../utils/serializers.js'
 import { getWallet } from './wallet.js'
 
 export async function getMarkets() {
-  const markets = await getActions().lend.getMarkets()
+  const actions = getActions()
+  const markets = await actions.lend.getMarkets()
   return serializeBigInt(markets)
 }
 
 export async function getMarket(marketId: LendMarketId) {
-  const market = await getActions().lend.getMarket(marketId)
+  const actions = getActions()
+  const market = await actions.lend.getMarket(marketId)
   return serializeBigInt(market)
 }
 
@@ -72,10 +74,14 @@ async function executePosition(
   }
 }
 
-export async function openPosition(params: PositionParams) {
+export async function openPosition(
+  params: PositionParams,
+): Promise<LendTransactionReceipt> {
   return executePosition(params, 'open')
 }
 
-export async function closePosition(params: PositionParams) {
+export async function closePosition(
+  params: PositionParams,
+): Promise<LendTransactionReceipt> {
   return executePosition(params, 'close')
 }
