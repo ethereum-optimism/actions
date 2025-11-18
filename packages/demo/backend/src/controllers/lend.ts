@@ -4,6 +4,7 @@ import type { Address } from 'viem'
 import { z } from 'zod'
 
 import type { AuthContext } from '@/middleware/auth.js'
+import { serializeBigInt } from '@/utils/serializers.js'
 
 import { validateRequest } from '../helpers/validation.js'
 import * as lendService from '../services/lend.js'
@@ -44,7 +45,7 @@ const ClosePositionRequestSchema = z.object({
 export async function getMarkets(c: Context) {
   try {
     const markets = await lendService.getMarkets()
-    return c.json({ result: markets })
+    return c.json({ result: serializeBigInt(markets) })
   } catch (error) {
     return c.json(
       {
@@ -83,7 +84,7 @@ export async function openPosition(c: Context) {
       },
     })
 
-    return c.json({ result })
+    return c.json({ result: serializeBigInt(result) })
   } catch (error) {
     console.error('[openPositionV1] ERROR:', {
       error,
@@ -126,7 +127,7 @@ export async function closePosition(c: Context) {
       },
     })
 
-    return c.json({ result })
+    return c.json({ result: serializeBigInt(result) })
   } catch (error) {
     console.error('[closePosition] ERROR:', {
       error,

@@ -1,4 +1,5 @@
 import type {
+  LendMarket,
   LendMarketId,
   LendTransactionReceipt,
   SupportedChainId,
@@ -8,23 +9,20 @@ import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 import { getActions } from '../config/actions.js'
 import type { PositionParams } from '../types/index.js'
 import { getBlockExplorerUrls } from '../utils/explorers.js'
-import { serializeBigInt } from '../utils/serializers.js'
 import { getWallet } from './wallet.js'
 
 type LendTransactionReceiptWithUrls = LendTransactionReceipt & {
   blockExplorerUrls: string[]
 }
 
-export async function getMarkets() {
+export async function getMarkets(): Promise<LendMarket[]> {
   const actions = getActions()
-  const markets = await actions.lend.getMarkets()
-  return serializeBigInt(markets)
+  return await actions.lend.getMarkets()
 }
 
-export async function getMarket(marketId: LendMarketId) {
+export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
   const actions = getActions()
-  const market = await actions.lend.getMarket(marketId)
-  return serializeBigInt(market)
+  return await actions.lend.getMarket(marketId)
 }
 
 async function executePosition(
@@ -58,14 +56,13 @@ async function executePosition(
         ? await wallet.lend!.openPosition(positionParams)
         : await wallet.lend!.closePosition(positionParams)
 
-    const serializedResult = serializeBigInt(result)
     const blockExplorerUrls = getBlockExplorerUrls({
       chainId: marketId.chainId,
-      ...serializedResult,
+      ...result,
     })
 
     return {
-      ...serializedResult,
+      ...result,
       blockExplorerUrls,
     } as LendTransactionReceiptWithUrls
   } catch (error) {
