@@ -85,10 +85,10 @@ export function createActionsConfig<T extends ReactProviderTypes>(
         rpcUrls: env.VITE_BASE_SEPOLIA_RPC_URL
           ? [env.VITE_BASE_SEPOLIA_RPC_URL]
           : undefined,
-        bundler: env.VITE_BASE_SEPOLIA_BUNDER_URL
+        bundler: env.VITE_BASE_SEPOLIA_BUNDLER_URL
           ? {
               type: 'simple',
-              url: env.VITE_BASE_SEPOLIA_BUNDER_URL,
+              url: env.VITE_BASE_SEPOLIA_BUNDLER_URL,
             }
           : undefined,
       },
@@ -97,10 +97,10 @@ export function createActionsConfig<T extends ReactProviderTypes>(
         rpcUrls: env.VITE_OP_SEPOLIA_RPC_URL
           ? [env.VITE_OP_SEPOLIA_RPC_URL]
           : undefined,
-        bundler: env.VITE_OP_SEPOLIA_BUNDER_URL
+        bundler: env.VITE_OP_SEPOLIA_BUNDLER_URL
           ? {
               type: 'simple',
-              url: env.VITE_OP_SEPOLIA_BUNDER_URL,
+              url: env.VITE_OP_SEPOLIA_BUNDLER_URL,
             }
           : undefined,
       },
