@@ -153,10 +153,7 @@ export function Action({
                     gap: '6px',
                   }}
                 >
-                  Get{' '}
-                  {displaySymbol.includes('WETH')
-                    ? 'WETH'
-                    : `100 ${displaySymbol}`}
+                  Get {displaySymbol}
                 </button>
                 <img
                   src={assetLogo}
