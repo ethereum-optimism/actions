@@ -55,10 +55,10 @@ async function executePosition(
         : await wallet.lend!.closePosition(positionParams)
 
     const serializedResult = serializeBigInt(result)
-    const blockExplorerUrls = getBlockExplorerUrls(
-      marketId.chainId,
-      serializedResult,
-    )
+    const blockExplorerUrls = getBlockExplorerUrls({
+      chainId: marketId.chainId,
+      ...serializedResult,
+    })
 
     return {
       ...serializedResult,

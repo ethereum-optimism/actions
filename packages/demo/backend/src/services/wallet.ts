@@ -137,7 +137,8 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
     transactionHashes = [(result as EOATransactionReceipt).transactionHash]
   }
 
-  const blockExplorerUrls = getBlockExplorerUrls(baseSepolia.id, {
+  const blockExplorerUrls = getBlockExplorerUrls({
+    chainId: baseSepolia.id,
     userOpHash,
     transactionHashes,
   })

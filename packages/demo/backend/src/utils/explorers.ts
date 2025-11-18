@@ -32,25 +32,22 @@ export function getUserOperationUrl(
   return `${baseUrl}/op/${userOpHash}`
 }
 
-export function getBlockExplorerUrls(
-  chainId: SupportedChainId,
-  result: {
-    userOpHash?: string
-    transactionHash?: string
-    transactionHashes?: string[]
-  },
-): string[] {
+export function getBlockExplorerUrls(params: {
+  chainId: SupportedChainId
+  userOpHash?: string
+  transactionHash?: string
+  transactionHashes?: string[]
+}): string[] {
+  const { chainId, userOpHash, transactionHash, transactionHashes } = params
   const blockExplorerUrls: string[] = []
-  if (result.userOpHash) {
-    blockExplorerUrls.push(getUserOperationUrl(chainId, result.userOpHash))
-  } else if (result.transactionHashes && result.transactionHashes.length > 0) {
+  if (userOpHash) {
+    blockExplorerUrls.push(getUserOperationUrl(chainId, userOpHash))
+  } else if (transactionHashes && transactionHashes.length > 0) {
     blockExplorerUrls.push(
-      ...result.transactionHashes.map((hash) =>
-        getTransactionUrl(chainId, hash),
-      ),
+      ...transactionHashes.map((hash) => getTransactionUrl(chainId, hash)),
     )
-  } else if (result.transactionHash) {
-    blockExplorerUrls.push(getTransactionUrl(chainId, result.transactionHash))
+  } else if (transactionHash) {
+    blockExplorerUrls.push(getTransactionUrl(chainId, transactionHash))
   }
   return blockExplorerUrls
 }
