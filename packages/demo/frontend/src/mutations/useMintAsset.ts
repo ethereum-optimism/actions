@@ -14,9 +14,14 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
 
   return useMutation({
     mutationFn: async ({ asset }: { asset: Asset }) => {
+      console.log('[useMintAsset] Mutation started', {
+        asset: asset.metadata.symbol,
+      })
       const activity = logActivity?.('mint')
       try {
+        console.log('[useMintAsset] Calling mintAsset function')
         const result = await mintAsset(asset)
+        console.log('[useMintAsset] Mint result', { result })
 
         // Extract block explorer URL from the result if available
         const blockExplorerUrl =
@@ -24,15 +29,21 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
             ? result.blockExplorerUrls[0]
             : undefined
 
+        console.log('[useMintAsset] Block explorer URL', { blockExplorerUrl })
         activity?.confirm({ blockExplorerUrl })
       } catch (error) {
+        console.error('[useMintAsset] Error minting asset', { error })
         activity?.error()
         throw error
       }
     },
     onSuccess: () => {
+      console.log('[useMintAsset] Mutation successful, invalidating queries')
       // Invalidate token balances to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+    },
+    onError: (error) => {
+      console.error('[useMintAsset] Mutation failed', { error })
     },
   })
 }

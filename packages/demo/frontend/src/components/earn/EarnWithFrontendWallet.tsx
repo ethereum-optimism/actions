@@ -1,10 +1,10 @@
 import { encodeFunctionData, type Address } from 'viem'
-import { baseSepolia, optimismSepolia } from 'viem/chains'
 import type {
   LendMarketId,
   Wallet,
   SupportedChainId,
   Asset,
+  ReactProviderTypes,
 } from '@eth-optimism/actions-sdk/react'
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi'
 import Earn from './Earn'
@@ -17,13 +17,9 @@ import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { LendExecutePositionParams } from '@/types/api'
 import { convertLendMarketToMarketInfo } from '@/utils/marketConversion'
-import {
-  createActions,
-  type ReactActionsConfig,
-  type ReactProviderTypes,
-} from '@eth-optimism/actions-sdk/react'
-import { env } from '@/envVars'
+import { createActions } from '@eth-optimism/actions-sdk/react'
 import { useMarketData } from '@/hooks/useMarketData'
+import { createActionsConfig } from '@/config/actions'
 
 export interface EarnWithFrontendWalletProps {
   wallet: Wallet | null
@@ -31,55 +27,7 @@ export interface EarnWithFrontendWalletProps {
   selectedProvider: FrontendWalletProviderType
 }
 
-// Helper to create Actions config matching backend structure
-function createActionsConfig<T extends ReactProviderTypes>(
-  hostedWalletProviderType: T,
-): ReactActionsConfig<T> {
-  return {
-    wallet: {
-      hostedWalletConfig: {
-        provider: {
-          type: hostedWalletProviderType,
-        },
-      },
-      smartWalletConfig: {
-        provider: {
-          type: 'default',
-          attributionSuffix: 'actions',
-        },
-      },
-    },
-    lend: {
-      morpho: {
-        marketAllowlist: [],
-      },
-      aave: {
-        marketAllowlist: [],
-      },
-    },
-    chains: [
-      {
-        chainId: baseSepolia.id,
-        rpcUrls: env.VITE_BASE_SEPOLIA_RPC_URL
-          ? [env.VITE_BASE_SEPOLIA_RPC_URL]
-          : undefined,
-        bundler: env.VITE_BASE_SEPOLIA_BUNDER_URL
-          ? {
-              type: 'simple',
-              url: env.VITE_BASE_SEPOLIA_BUNDER_URL,
-            }
-          : undefined,
-      },
-      {
-        chainId: optimismSepolia.id,
-      },
-    ],
-  } as unknown as ReactActionsConfig<T>
-}
-
-function useActions<T extends ReactProviderTypes>(
-  hostedWalletProviderType: T,
-) {
+function useActions<T extends ReactProviderTypes>(hostedWalletProviderType: T) {
   const config = useMemo(
     () => createActionsConfig(hostedWalletProviderType),
     [hostedWalletProviderType],
@@ -137,21 +85,42 @@ export function EarnWithFrontendWallet({
     [primaryWallet],
   )
   const mintAsset = useCallback(
-    async (asset: Asset) => {
+    async (asset: Asset): Promise<{ blockExplorerUrls?: string[] } | void> => {
+      console.log('[EarnWithFrontendWallet] mintAsset called', {
+        asset: asset.metadata.symbol,
+        wallet: wallet?.address,
+        selectedMarket: selectedMarket?.marketName,
+      })
+
       const walletAddress = wallet!.address
       const chainId = selectedMarket?.marketId.chainId
       if (!chainId) {
+        console.error('[EarnWithFrontendWallet] No market selected')
         throw new Error('No market selected')
       }
+
       const amountInDecimals = BigInt(
         Math.floor(parseFloat('100') * Math.pow(10, asset.metadata.decimals)),
       )
       const tokenAddress = asset.address[chainId as SupportedChainId]
+
+      console.log('[EarnWithFrontendWallet] Mint details', {
+        walletAddress,
+        chainId,
+        tokenAddress,
+        amount: amountInDecimals.toString(),
+        assetSymbol: asset.metadata.symbol,
+      })
+
       if (!tokenAddress) {
+        console.error(
+          `[EarnWithFrontendWallet] Asset ${asset.metadata.symbol} not available on chain ${chainId}`,
+        )
         throw new Error(
           `Asset ${asset.metadata.symbol} not available on chain ${chainId}`,
         )
       }
+
       const calls = [
         {
           to: tokenAddress,
@@ -163,7 +132,21 @@ export function EarnWithFrontendWallet({
           value: 0n,
         },
       ]
-      await wallet!.sendBatch(calls, chainId as SupportedChainId)
+
+      console.log('[EarnWithFrontendWallet] Sending batch transaction', {
+        calls,
+      })
+      const result = await wallet!.sendBatch(calls, chainId as SupportedChainId)
+      console.log('[EarnWithFrontendWallet] Mint transaction sent', { result })
+
+      // Extract blockExplorerUrls from result
+      if ('blockExplorerUrl' in result && result.blockExplorerUrl) {
+        return { blockExplorerUrls: [result.blockExplorerUrl as string] }
+      }
+      if ('blockExplorerUrls' in result && result.blockExplorerUrls) {
+        return { blockExplorerUrls: result.blockExplorerUrls as string[] }
+      }
+      return undefined
     },
     [wallet, selectedMarket],
   )
