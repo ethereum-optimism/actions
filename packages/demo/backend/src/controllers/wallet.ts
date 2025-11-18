@@ -84,6 +84,7 @@ export class WalletController {
       const balance = await walletService.getWalletBalance(wallet)
       return c.json({ result: balance })
     } catch (error) {
+      console.error(error)
       return c.json(
         {
           error: 'Failed to get balance',
@@ -99,9 +100,7 @@ export class WalletController {
    */
   async getLendPosition(c: Context) {
     const validation = await validateRequest(c, LendPositionRequestSchema)
-    if (!validation.success) {
-      return validation.response
-    }
+    if (!validation.success) return validation.response
     const {
       params: { marketAddress, chainId },
     } = validation.data
@@ -158,9 +157,7 @@ export class WalletController {
    */
   async dripEthToWallet(c: Context) {
     const validation = await validateRequest(c, DripEthToWalletRequestSchema)
-    if (!validation.success) {
-      return validation.response
-    }
+    if (!validation.success) return validation.response
     const {
       body: { walletAddress },
     } = validation.data
@@ -180,6 +177,7 @@ export class WalletController {
 
       return c.json({ result: { userOpHash: result.userOpHash } })
     } catch (error) {
+      console.error(error)
       return c.json(
         {
           error: 'Failed to drip ETH to wallet',

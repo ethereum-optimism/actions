@@ -1,9 +1,13 @@
-import type { LendMarketId, SupportedChainId } from '@eth-optimism/actions-sdk'
+import type {
+  LendMarketId,
+  LendTransactionReceipt,
+  SupportedChainId,
+} from '@eth-optimism/actions-sdk'
 import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '../config/actions.js'
 import type { PositionParams } from '../types/index.js'
-import { getTransactionUrl, getUserOperationUrl } from '../utils/explorers.js'
+import { getBlockExplorerUrls } from '../utils/explorers.js'
 import { serializeBigInt } from '../utils/serializers.js'
 import { getWallet } from './wallet.js'
 
@@ -20,7 +24,7 @@ export async function getMarket(marketId: LendMarketId) {
 async function executePosition(
   params: PositionParams,
   operation: 'open' | 'close',
-) {
+): Promise<LendTransactionReceipt> {
   const { idToken, amount, tokenAddress, marketId } = params
 
   try {
@@ -49,21 +53,10 @@ async function executePosition(
         : await wallet.lend!.closePosition(positionParams)
 
     const serializedResult = serializeBigInt(result)
-
-    // Add block explorer URLs
-    const blockExplorerUrls: string[] = []
-    if ('userOpHash' in serializedResult && serializedResult.userOpHash) {
-      blockExplorerUrls.push(
-        getUserOperationUrl(marketId.chainId, serializedResult.userOpHash),
-      )
-    } else if (
-      'transactionHash' in serializedResult &&
-      serializedResult.transactionHash
-    ) {
-      blockExplorerUrls.push(
-        getTransactionUrl(marketId.chainId, serializedResult.transactionHash),
-      )
-    }
+    const blockExplorerUrls = getBlockExplorerUrls(
+      marketId.chainId,
+      serializedResult,
+    )
 
     return {
       ...serializedResult,

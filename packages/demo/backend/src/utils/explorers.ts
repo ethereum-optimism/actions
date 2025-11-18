@@ -31,3 +31,26 @@ export function getUserOperationUrl(
   const baseUrl = getBlockExplorerBaseUrl(chainId)
   return `${baseUrl}/op/${userOpHash}`
 }
+
+export function getBlockExplorerUrls(
+  chainId: SupportedChainId,
+  result: {
+    userOpHash?: string
+    transactionHash?: string
+    transactionHashes?: string[]
+  },
+): string[] {
+  const blockExplorerUrls: string[] = []
+  if (result.userOpHash) {
+    blockExplorerUrls.push(getUserOperationUrl(chainId, result.userOpHash))
+  } else if (result.transactionHashes && result.transactionHashes.length > 0) {
+    blockExplorerUrls.push(
+      ...result.transactionHashes.map((hash) =>
+        getTransactionUrl(chainId, hash),
+      ),
+    )
+  } else if (result.transactionHash) {
+    blockExplorerUrls.push(getTransactionUrl(chainId, result.transactionHash))
+  }
+  return blockExplorerUrls
+}

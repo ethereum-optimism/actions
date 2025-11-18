@@ -62,9 +62,7 @@ export async function getMarkets(c: Context) {
 export async function openPosition(c: Context) {
   try {
     const validation = await validateRequest(c, OpenPositionRequestSchema)
-    if (!validation.success) {
-      return validation.response
-    }
+    if (!validation.success) return validation.response
 
     const {
       body: { amount, tokenAddress, marketId },
@@ -87,6 +85,10 @@ export async function openPosition(c: Context) {
 
     return c.json({ result })
   } catch (error) {
+    console.error('[openPositionV1] ERROR:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
     return c.json(
       {
         error: 'Failed to open position',
@@ -103,9 +105,7 @@ export async function openPosition(c: Context) {
 export async function closePosition(c: Context) {
   try {
     const validation = await validateRequest(c, ClosePositionRequestSchema)
-    if (!validation.success) {
-      return validation.response
-    }
+    if (!validation.success) return validation.response
 
     const {
       body: { amount, tokenAddress, marketId },
@@ -128,6 +128,10 @@ export async function closePosition(c: Context) {
 
     return c.json({ result })
   } catch (error) {
+    console.error('[closePosition] ERROR:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
     return c.json(
       {
         error: 'Failed to close position',

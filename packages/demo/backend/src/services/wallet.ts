@@ -13,7 +13,7 @@ import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getActions, getPrivyClient } from '@/config/actions.js'
-import { getTransactionUrl, getUserOperationUrl } from '@/utils/explorers.js'
+import { getBlockExplorerUrls } from '@/utils/explorers.js'
 import { serializeBigInt } from '@/utils/serializers.js'
 
 /**
@@ -134,17 +134,10 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
     transactionHashes = [(result as EOATransactionReceipt).transactionHash]
   }
 
-  // Get block explorer URLs
-  const blockExplorerUrls: string[] = []
-  if (userOpHash) {
-    blockExplorerUrls.push(getUserOperationUrl(baseSepolia.id, userOpHash))
-  } else if (transactionHashes && transactionHashes.length > 0) {
-    blockExplorerUrls.push(
-      ...transactionHashes.map((hash) =>
-        getTransactionUrl(baseSepolia.id, hash),
-      ),
-    )
-  }
+  const blockExplorerUrls = getBlockExplorerUrls(baseSepolia.id, {
+    userOpHash,
+    transactionHashes,
+  })
 
   return {
     success: true,
