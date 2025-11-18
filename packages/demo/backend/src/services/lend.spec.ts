@@ -51,7 +51,13 @@ describe('Lend Service', () => {
 
       const result = await lendService.getMarkets()
 
-      expect(result).toEqual(mockMarkets)
+      expect(result).toEqual([
+        {
+          ...mockMarkets[0],
+          totalAssets: '1000000',
+          totalShares: '1000000',
+        },
+      ])
       expect(mockLendProvider.getMarkets).toHaveBeenCalledOnce()
     })
 
@@ -94,7 +100,11 @@ describe('Lend Service', () => {
 
       const result = await lendService.getMarket({ address: marketId, chainId })
 
-      expect(result).toEqual(mockMarketInfo)
+      expect(result).toEqual({
+        ...mockMarketInfo,
+        totalAssets: '1000000',
+        totalShares: '1000000',
+      })
       expect(mockLendProvider.getMarket).toHaveBeenCalledWith({
         address: marketId,
         chainId,
