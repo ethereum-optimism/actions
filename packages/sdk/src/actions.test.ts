@@ -91,6 +91,45 @@ describe('Actions SDK', () => {
         expect(actions.lend.supportedChainIds()).toContain(130) // Unichain
       })
 
+      it('should create Morpho provider with empty config', () => {
+        const actions = new Actions<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
+          {
+            chains: [{ chainId: unichain.id }],
+            lend: {
+              morpho: {},
+            },
+            wallet: {
+              hostedWalletConfig: {
+                provider: {
+                  type: 'privy',
+                  config: {
+                    privyClient: createMockPrivyClient(
+                      'test-id',
+                      'test-secret',
+                    ),
+                    authorizationContext: getMockAuthorizationContext(),
+                  },
+                },
+              },
+              smartWalletConfig: {
+                provider: { type: 'default' },
+              },
+            },
+          },
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
+
+        expect(actions.lend).toBeDefined()
+        expect(actions.lend.supportedChainIds()).toContain(130) // Unichain
+      })
+
       it('should create Morpho provider with market allowlist', () => {
         const mockMarket: LendMarketConfig = {
           address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
@@ -148,6 +187,9 @@ describe('Actions SDK', () => {
         )
 
         expect(actions.lend).toBeDefined()
+        // Verify Morpho provider is created with market allowlist
+        const morphoProvider = actions['lendProviders']['morpho']
+        expect(morphoProvider).toBeDefined()
       })
 
       it('should create Morpho provider with multiple markets in allowlist', () => {
@@ -227,6 +269,9 @@ describe('Actions SDK', () => {
         )
 
         expect(actions.lend).toBeDefined()
+        // Verify Morpho provider is created with multiple markets
+        const morphoProvider = actions['lendProviders']['morpho']
+        expect(morphoProvider).toBeDefined()
       })
 
       it('should work without lend configuration', () => {
