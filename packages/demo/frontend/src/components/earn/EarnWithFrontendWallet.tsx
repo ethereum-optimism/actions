@@ -1,9 +1,9 @@
 import { encodeFunctionData } from 'viem'
-import { getTokenBySymbol } from '@eth-optimism/actions-sdk/react'
 import type {
   LendMarketId,
   Wallet,
   SupportedChainId,
+  Asset,
 } from '@eth-optimism/actions-sdk/react'
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi'
 import Earn from './Earn'
@@ -116,7 +116,7 @@ const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
       ? '/morpho-logo.svg'
       : '/aave-logo-dark.svg'
 
-  // Determine asset info
+  // Determine asset logo
   const assetSymbol = market.asset.metadata.symbol
   const assetLogo = assetSymbol.includes('USDC')
     ? '/usd-coin-usdc-logo.svg'
@@ -132,7 +132,7 @@ const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
     logo: providerLogo,
     networkName,
     networkLogo,
-    assetSymbol,
+    asset: market.asset,
     assetLogo,
     apy: market.apy.total,
     isLoadingApy: false,
@@ -187,21 +187,19 @@ export function EarnWithFrontendWallet({
     [primaryWallet],
   )
   const mintAsset = useCallback(
-    async (assetSymbol: string, chainId: number) => {
+    async (asset: Asset) => {
       const walletAddress = wallet!.address
-      // USDC uses 6 decimals, WETH uses 18 decimals
-      const decimals = assetSymbol.includes('USDC') ? 6 : 18
-      const amountInDecimals = BigInt(
-        Math.floor(parseFloat('100') * Math.pow(10, decimals)),
-      )
-      const token = getTokenBySymbol(assetSymbol)
-      if (!token) {
-        throw new Error(`Token ${assetSymbol} not found`)
+      const chainId = selectedMarket?.marketId.chainId
+      if (!chainId) {
+        throw new Error('No market selected')
       }
-      const tokenAddress = token.address[chainId as SupportedChainId]
+      const amountInDecimals = BigInt(
+        Math.floor(parseFloat('100') * Math.pow(10, asset.metadata.decimals)),
+      )
+      const tokenAddress = asset.address[chainId as SupportedChainId]
       if (!tokenAddress) {
         throw new Error(
-          `Token ${assetSymbol} not available on chain ${chainId}`,
+          `Asset ${asset.metadata.symbol} not available on chain ${chainId}`,
         )
       }
       const calls = [
@@ -217,7 +215,7 @@ export function EarnWithFrontendWallet({
       ]
       await wallet!.sendBatch(calls, chainId as SupportedChainId)
     },
-    [wallet],
+    [wallet, selectedMarket],
   )
 
   // Lend operations - use primary wallet
@@ -253,7 +251,7 @@ export function EarnWithFrontendWallet({
             marketLogo: defaultMarket.logo,
             networkName: defaultMarket.networkName,
             networkLogo: defaultMarket.networkLogo,
-            assetSymbol: defaultMarket.assetSymbol,
+            asset: defaultMarket.asset,
             assetLogo: defaultMarket.assetLogo,
             apy: defaultMarket.apy,
             depositedAmount: null,
@@ -273,8 +271,7 @@ export function EarnWithFrontendWallet({
     if (ready) {
       fetchMarkets()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, getMarkets])
+  }, [ready, getMarkets, selectedMarket, setSelectedMarket])
 
   const {
     assetBalance,
@@ -298,7 +295,7 @@ export function EarnWithFrontendWallet({
       | LendMarketId
       | null
       | undefined,
-    selectedAssetSymbol: selectedMarket?.assetSymbol,
+    selectedAsset: selectedMarket?.asset,
   })
 
   const handleMarketSelect = useCallback((market: MarketInfo) => {
@@ -307,7 +304,7 @@ export function EarnWithFrontendWallet({
       marketLogo: market.logo,
       networkName: market.networkName,
       networkLogo: market.networkLogo,
-      assetSymbol: market.assetSymbol,
+      asset: market.asset,
       assetLogo: market.assetLogo,
       apy: market.apy,
       depositedAmount: null,

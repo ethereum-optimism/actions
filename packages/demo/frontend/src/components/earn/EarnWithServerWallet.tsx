@@ -5,6 +5,7 @@ import type { WalletProviderConfig } from '@/constants/walletProviders'
 import {
   type LendMarketId,
   type SupportedChainId,
+  type Asset,
 } from '@eth-optimism/actions-sdk/react'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useMarketData } from '@/hooks/useMarketData'
@@ -50,7 +51,7 @@ const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
       ? '/morpho-logo.svg'
       : '/aave-logo-dark.svg'
 
-  // Determine asset info
+  // Determine asset logo
   const assetSymbol = market.asset.metadata.symbol
   const assetLogo = assetSymbol.includes('USDC')
     ? '/usd-coin-usdc-logo.svg'
@@ -66,7 +67,7 @@ const convertLendMarketToMarketInfo = (market: LendMarket): MarketInfo => {
     logo: providerLogo,
     networkName,
     networkLogo,
-    assetSymbol, // Keep original symbol (e.g., 'USDC_DEMO') for internal matching
+    asset: market.asset,
     assetLogo,
     apy: market.apy.total,
     isLoadingApy: false,
@@ -108,19 +109,16 @@ export function EarnWithServerWallet({
   )
 
   const mintAsset = useCallback(
-    async (assetSymbol: string) => {
+    async (asset: Asset) => {
       const headers = await getAuthHeaders()
 
-      if (assetSymbol.includes('WETH')) {
-        // Use faucet for WETH on OP Sepolia
+      if (asset.metadata.symbol.includes('WETH')) {
         if (!walletAddress) {
           throw new Error('Wallet address not available')
         }
         await actionsApi.dripEthToWallet(walletAddress)
-        // Note: dripEthToWallet doesn't return blockExplorerUrls yet
         return
       } else {
-        // Use USDC minting for other assets
         return await actionsApi.mintDemoUsdcToWallet(headers)
       }
     },
@@ -214,7 +212,7 @@ export function EarnWithServerWallet({
               marketLogo: market.logo,
               networkName: market.networkName,
               networkLogo: market.networkLogo,
-              assetSymbol: market.assetSymbol,
+              asset: market.asset,
               assetLogo: market.assetLogo,
               apy: market.apy,
               depositedAmount: position.balanceFormatted,
@@ -240,8 +238,8 @@ export function EarnWithServerWallet({
           console.log(
             '[EarnWithServerWallet] Setting default market:',
             defaultMarket.name,
-            'assetSymbol:',
-            defaultMarket.assetSymbol,
+            'asset:',
+            defaultMarket.asset.metadata.symbol,
           )
 
           // Find if we already fetched position for this market
@@ -255,7 +253,7 @@ export function EarnWithServerWallet({
             marketLogo: defaultMarket.logo,
             networkName: defaultMarket.networkName,
             networkLogo: defaultMarket.networkLogo,
-            assetSymbol: defaultMarket.assetSymbol,
+            asset: defaultMarket.asset,
             assetLogo: defaultMarket.assetLogo,
             apy: defaultMarket.apy,
             depositedAmount: defaultPosition?.position.balanceFormatted || null,
@@ -276,8 +274,15 @@ export function EarnWithServerWallet({
     if (ready) {
       fetchMarkets()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready])
+  }, [
+    ready,
+    getMarkets,
+    getPosition,
+    setMarkets,
+    setMarketPositions,
+    setSelectedMarket,
+    setIsLoadingMarkets,
+  ])
 
   const {
     assetBalance,
@@ -301,7 +306,7 @@ export function EarnWithServerWallet({
       | LendMarketId
       | null
       | undefined,
-    selectedAssetSymbol: selectedMarket?.assetSymbol,
+    selectedAsset: selectedMarket?.asset,
     selectedMarketApy: selectedMarket?.apy,
   })
 

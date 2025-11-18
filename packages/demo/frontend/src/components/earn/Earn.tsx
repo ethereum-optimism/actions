@@ -175,7 +175,7 @@ function Earn({
                             logo: selectedMarket.marketLogo,
                             networkName: selectedMarket.networkName,
                             networkLogo: selectedMarket.networkLogo,
-                            assetSymbol: selectedMarket.assetSymbol,
+                            asset: selectedMarket.asset,
                             assetLogo: selectedMarket.assetLogo,
                             apy: selectedMarket.apy,
                             isLoadingApy: selectedMarket.isLoadingApy,
@@ -193,7 +193,7 @@ function Earn({
                   assetBalance={usdcBalance}
                   isLoadingBalance={isLoadingBalance}
                   depositedAmount={depositedAmount}
-                  assetSymbol={selectedMarket?.assetSymbol || 'USDC'}
+                  assetSymbol={selectedMarket?.asset.metadata.symbol || 'USDC'}
                   assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
                   onMintAsset={onMintUSDC}
                   onTransaction={onTransaction}

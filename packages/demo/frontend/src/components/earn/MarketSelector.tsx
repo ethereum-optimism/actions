@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import type { Asset } from '@eth-optimism/actions-sdk'
 import Shimmer from './Shimmer'
 
 export interface MarketInfo {
@@ -6,7 +7,7 @@ export interface MarketInfo {
   logo: string
   networkName: string
   networkLogo: string
-  assetSymbol: string
+  asset: Asset
   assetLogo: string
   apy: number | null
   isLoadingApy?: boolean
@@ -71,7 +72,7 @@ export function MarketSelector({
         <div className="relative flex items-center">
           <img
             src={market.assetLogo}
-            alt={market.assetSymbol}
+            alt={market.asset.metadata.symbol}
             className="h-6 w-6"
           />
           <div
@@ -91,7 +92,7 @@ export function MarketSelector({
           </div>
         </div>
         <span className="text-sm font-medium" style={{ color: '#1a1b1e' }}>
-          {market.name} {market.assetSymbol}
+          {market.name} {market.asset.metadata.symbol}
         </span>
         <span className="text-sm" style={{ color: '#666666' }}>
           on
@@ -206,7 +207,7 @@ export function MarketSelector({
                       <div className="relative flex items-center">
                         <img
                           src={market.assetLogo}
-                          alt={market.assetSymbol}
+                          alt={market.asset.metadata.symbol}
                           className="h-6 w-6"
                         />
                         <div
@@ -233,7 +234,7 @@ export function MarketSelector({
                         className="text-sm font-medium"
                         style={{ color: '#1a1b1e' }}
                       >
-                        {market.name} {market.assetSymbol}
+                        {market.name} {market.asset.metadata.symbol}
                       </span>
                       <span className="text-sm" style={{ color: '#666666' }}>
                         on

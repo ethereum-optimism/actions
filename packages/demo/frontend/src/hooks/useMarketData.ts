@@ -20,7 +20,7 @@ export function useMarketData() {
       marketLogo: market.logo,
       networkName: market.networkName,
       networkLogo: market.networkLogo,
-      assetSymbol: market.assetSymbol,
+      asset: market.asset,
       assetLogo: market.assetLogo,
       apy: market.apy,
       depositedAmount: null,

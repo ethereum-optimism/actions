@@ -1,10 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Asset } from '@eth-optimism/actions-sdk'
 
 interface UseMintAssetParams {
-  mintAsset: (
-    assetSymbol: string,
-    chainId: number,
-  ) => Promise<{ blockExplorerUrls?: string[] } | void>
+  mintAsset: (asset: Asset) => Promise<{ blockExplorerUrls?: string[] } | void>
   logActivity?: (action: string) => {
     confirm: (data?: { blockExplorerUrl?: string }) => void
     error: () => void
@@ -15,16 +13,10 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({
-      assetSymbol,
-      chainId,
-    }: {
-      assetSymbol: string
-      chainId: number
-    }) => {
+    mutationFn: async ({ asset }: { asset: Asset }) => {
       const activity = logActivity?.('mint')
       try {
-        const result = await mintAsset(assetSymbol, chainId)
+        const result = await mintAsset(asset)
 
         // Extract block explorer URL from the result if available
         const blockExplorerUrl =

@@ -28,8 +28,8 @@ function LentBalance({
         parseFloat(market.depositedAmount) > 0,
     )
     .sort((a, b) => {
-      const assetA = a.assetSymbol || ''
-      const assetB = b.assetSymbol || ''
+      const assetA = a.asset.metadata.symbol || ''
+      const assetB = b.asset.metadata.symbol || ''
       return assetA.localeCompare(assetB)
     })
 
@@ -249,7 +249,7 @@ function LentBalance({
                           <div className="flex items-center gap-2">
                             <img
                               src={market.assetLogo}
-                              alt={market.assetSymbol}
+                              alt={market.asset.metadata.symbol}
                               style={{ width: '20px', height: '20px' }}
                             />
                             <span
@@ -260,7 +260,10 @@ function LentBalance({
                                 fontFamily: 'Inter',
                               }}
                             >
-                              {market.assetSymbol?.replace('_DEMO', '')}
+                              {market.asset.metadata.symbol.replace(
+                                '_DEMO',
+                                '',
+                              )}
                             </span>
                           </div>
                         </td>
@@ -307,7 +310,7 @@ function LentBalance({
                               fontFamily: 'Inter',
                             }}
                           >
-                            {market.assetSymbol !== 'WETH' && '$'}
+                            {market.asset.metadata.symbol !== 'WETH' && '$'}
                             {
                               formatDepositedAmount(
                                 market.depositedAmount || '0',

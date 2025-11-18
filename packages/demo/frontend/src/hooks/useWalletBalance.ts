@@ -4,6 +4,7 @@ import type {
   LendMarketId,
   LendMarketPosition,
   LendTransactionReceipt,
+  Asset,
 } from '@eth-optimism/actions-sdk'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
@@ -20,10 +21,7 @@ export interface UseWalletBalanceConfig {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
-  mintAsset: (
-    assetSymbol: string,
-    chainId: number,
-  ) => Promise<{ blockExplorerUrls?: string[] } | void>
+  mintAsset: (asset: Asset) => Promise<{ blockExplorerUrls?: string[] } | void>
   openPosition: (
     params: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
@@ -32,7 +30,7 @@ export interface UseWalletBalanceConfig {
   ) => Promise<LendTransactionReceipt>
   isReady: () => boolean
   selectedMarketId?: LendMarketId | null
-  selectedAssetSymbol?: string
+  selectedAsset?: Asset
   selectedMarketApy?: number | null
 }
 
@@ -46,7 +44,7 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     closePosition: closePositionRaw,
     isReady,
     selectedMarketId,
-    selectedAssetSymbol = 'USDC',
+    selectedAsset,
     selectedMarketApy,
   } = params
 
@@ -126,21 +124,20 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
 
   // Computed balance
   const assetBalance = useMemo(() => {
-    if (!tokenBalances || !marketData) return '0.00'
+    if (!tokenBalances || !marketData || !selectedAsset) return '0.00'
 
     return matchAssetBalance({
       allTokenBalances: tokenBalances,
-      selectedAssetSymbol,
+      selectedAssetSymbol: selectedAsset.metadata.symbol,
       marketData,
     })
-  }, [tokenBalances, marketData, selectedAssetSymbol])
+  }, [tokenBalances, marketData, selectedAsset])
 
   // Handler functions
   const handleMintAsset = async () => {
-    if (!selectedMarketId) return
+    if (!selectedAsset) return
     await mintAssetMutation.mutateAsync({
-      assetSymbol: selectedAssetSymbol,
-      chainId: selectedMarketId.chainId,
+      asset: selectedAsset,
     })
   }
 
