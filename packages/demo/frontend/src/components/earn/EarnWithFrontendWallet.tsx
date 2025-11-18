@@ -31,10 +31,9 @@ export interface EarnWithFrontendWalletProps {
   selectedProvider: FrontendWalletProviderType
 }
 
-// Helper to create Actions config for a specific lend provider
+// Helper to create Actions config matching backend structure
 function createActionsConfig<T extends ReactProviderTypes>(
   hostedWalletProviderType: T,
-  lendProvider: 'morpho' | 'aave',
 ): ReactActionsConfig<T> {
   return {
     wallet: {
@@ -51,8 +50,12 @@ function createActionsConfig<T extends ReactProviderTypes>(
       },
     },
     lend: {
-      provider: lendProvider,
-      marketAllowlist: [],
+      morpho: {
+        marketAllowlist: [],
+      },
+      aave: {
+        marketAllowlist: [],
+      },
     },
     chains: [
       {
@@ -74,21 +77,11 @@ function createActionsConfig<T extends ReactProviderTypes>(
   } as unknown as ReactActionsConfig<T>
 }
 
-function useActionsMorpho<T extends ReactProviderTypes>(
+function useActions<T extends ReactProviderTypes>(
   hostedWalletProviderType: T,
 ) {
   const config = useMemo(
-    () => createActionsConfig(hostedWalletProviderType, 'morpho'),
-    [hostedWalletProviderType],
-  )
-  return useMemo(() => createActions(config), [config])
-}
-
-function useActionsAave<T extends ReactProviderTypes>(
-  hostedWalletProviderType: T,
-) {
-  const config = useMemo(
-    () => createActionsConfig(hostedWalletProviderType, 'aave'),
+    () => createActionsConfig(hostedWalletProviderType),
     [hostedWalletProviderType],
   )
   return useMemo(() => createActions(config), [config])
@@ -107,11 +100,8 @@ export function EarnWithFrontendWallet({
   const hostedWalletProviderType =
     FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS[selectedProvider]
 
-  // Primary Actions instance (Morpho) - used for balance operations
-  const morphoActions = useActionsMorpho(hostedWalletProviderType)
-
-  // Secondary Actions instance (Aave) - only used for Aave lend operations
-  const aaveActions = useActionsAave(hostedWalletProviderType)
+  // Single Actions instance supporting both Morpho and Aave
+  const actions = useActions(hostedWalletProviderType)
 
   // Market selection state management
   const {
@@ -135,14 +125,10 @@ export function EarnWithFrontendWallet({
     [primaryWallet],
   )
 
-  // Market fetching - get from both providers
+  // Market fetching - get from all configured providers
   const getMarkets = useCallback(async () => {
-    const [morphoMarkets, aaveMarkets] = await Promise.all([
-      morphoActions.lend.getMarkets(),
-      aaveActions.lend.getMarkets(),
-    ])
-    return [...morphoMarkets, ...aaveMarkets]
-  }, [morphoActions, aaveActions])
+    return await actions.lend.getMarkets()
+  }, [actions])
 
   // Position operations - use primary wallet
   const getPosition = useCallback(
