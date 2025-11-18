@@ -11,6 +11,10 @@ import { getBlockExplorerUrls } from '../utils/explorers.js'
 import { serializeBigInt } from '../utils/serializers.js'
 import { getWallet } from './wallet.js'
 
+type LendTransactionReceiptWithUrls = LendTransactionReceipt & {
+  blockExplorerUrls: string[]
+}
+
 export async function getMarkets() {
   const actions = getActions()
   const markets = await actions.lend.getMarkets()
@@ -26,7 +30,7 @@ export async function getMarket(marketId: LendMarketId) {
 async function executePosition(
   params: PositionParams,
   operation: 'open' | 'close',
-): Promise<LendTransactionReceipt> {
+): Promise<LendTransactionReceiptWithUrls> {
   const { idToken, amount, tokenAddress, marketId } = params
 
   try {
@@ -63,7 +67,7 @@ async function executePosition(
     return {
       ...serializedResult,
       blockExplorerUrls,
-    }
+    } as LendTransactionReceiptWithUrls
   } catch (error) {
     console.error('[executePosition] ERROR:', {
       error,
@@ -76,12 +80,12 @@ async function executePosition(
 
 export async function openPosition(
   params: PositionParams,
-): Promise<LendTransactionReceipt> {
+): Promise<LendTransactionReceiptWithUrls> {
   return executePosition(params, 'open')
 }
 
 export async function closePosition(
   params: PositionParams,
-): Promise<LendTransactionReceipt> {
+): Promise<LendTransactionReceiptWithUrls> {
   return executePosition(params, 'close')
 }
