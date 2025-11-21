@@ -29,4 +29,4 @@ export const AaveWETH: LendMarketConfig = {
 }
 
 // Export all markets for easy consumption
-export const ALL_MARKETS = [GauntletUSDC, GauntletUSDCDemo, AaveWETH]
+export const ALL_MARKETS = [GauntletUSDCDemo, AaveWETH]

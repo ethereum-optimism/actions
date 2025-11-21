@@ -18,6 +18,11 @@ interface ActionProps {
     transactionHash?: string
     blockExplorerUrl?: string
   }>
+  marketId?: {
+    address: string
+    chainId: number
+  }
+  provider?: 'morpho' | 'aave'
 }
 
 /**
@@ -32,6 +37,8 @@ export function Action({
   assetLogo,
   onMintAsset,
   onTransaction,
+  marketId,
+  provider,
 }: ActionProps) {
   const { hoveredAction } = useActivityHighlight()
   const [isLoading, setIsLoading] = useState(false)
@@ -45,6 +52,13 @@ export function Action({
   const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(
     undefined,
   )
+
+  // Check if this is the illiquid Aave OP Sepolia ETH market
+  const isIlliquidAaveMarket =
+    provider === 'aave' &&
+    marketId?.chainId === 11155420 &&
+    marketId?.address.toLowerCase() ===
+      '0x4200000000000000000000000000000000000006'
 
   const handleMaxClick = () => {
     const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
@@ -214,6 +228,28 @@ export function Action({
         className="py-6 px-6"
         style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}
       >
+        {isIlliquidAaveMarket && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 16px',
+              backgroundColor: '#FEF3C7',
+              border: '1px solid #FCD34D',
+              borderRadius: '8px',
+              fontSize: '14px',
+              color: '#92400E',
+              fontWeight: 500,
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>⚠️</span>
+            <span>
+              OP Sepolia Aave ETH Market is illiquid causing tx failure. Fix
+              coming soon.
+            </span>
+          </div>
+        )}
         <div
           style={{
             display: 'flex',

@@ -197,6 +197,8 @@ function Earn({
                   assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
                   onMintAsset={onMintUSDC}
                   onTransaction={onTransaction}
+                  marketId={selectedMarket?.marketId}
+                  provider={selectedMarket?.provider}
                 />
                 <LentBalance
                   marketPositions={marketPositions}
