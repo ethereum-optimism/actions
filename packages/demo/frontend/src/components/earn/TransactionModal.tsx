@@ -2,6 +2,7 @@ interface TransactionModalProps {
   isOpen: boolean
   status: 'loading' | 'success' | 'error'
   onClose: () => void
+  transactionHash?: string
   blockExplorerUrl?: string
   mode?: 'lend' | 'withdraw'
 }
@@ -10,6 +11,7 @@ function TransactionModal({
   isOpen,
   status,
   onClose,
+  transactionHash,
   blockExplorerUrl,
   mode,
 }: TransactionModalProps) {
@@ -51,8 +53,8 @@ function TransactionModal({
           title: 'Transaction Successful',
           description:
             mode === 'withdraw'
-              ? 'Your funds are now in your wallet'
-              : 'Your funds are now earning interest',
+              ? 'Your USDC is no longer earning interest'
+              : 'Your USDC is now earning interest',
           showClose: true,
         }
       case 'error':
@@ -151,9 +153,12 @@ function TransactionModal({
             </p>
           )}
 
-          {status === 'success' && blockExplorerUrl && (
+          {status === 'success' && (blockExplorerUrl || transactionHash) && (
             <a
-              href={blockExplorerUrl}
+              href={
+                blockExplorerUrl ||
+                `https://sepolia.basescan.org/tx/${transactionHash}`
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 mb-6 hover:opacity-80 transition-opacity"

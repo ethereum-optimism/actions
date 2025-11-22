@@ -9,9 +9,9 @@ import {
 } from '@/lend/providers/morpho/api.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   ApyBreakdown,
+  LendConfig,
   LendMarket,
   LendMarketConfig,
   LendMarketId,
@@ -139,7 +139,7 @@ interface GetVaultParams {
   /** Chain manager instance */
   chainManager: ChainManager
   /** Lend configuration containing market allowlist */
-  lendConfig?: LendProviderConfig
+  lendConfig?: LendConfig
 }
 
 /**
@@ -243,7 +243,7 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
 
 interface GetVaultsParams {
   chainManager: ChainManager
-  lendConfig: LendProviderConfig
+  lendConfig: LendConfig
   markets: LendMarketConfig[]
 }
 

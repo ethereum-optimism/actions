@@ -28,12 +28,11 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
       validateOptions(options): options is NodeOptionsMap['privy'] {
         return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
       },
-      create({ chainManager, lendProviders, supportedAssets }, options) {
+      create({ chainManager, lendProvider }, options) {
         return new PrivyHostedWalletProvider({
           privyClient: options.privyClient,
           chainManager,
-          lendProviders,
-          supportedAssets,
+          lendProvider,
           authorizationContext: options.authorizationContext,
         })
       },
@@ -45,12 +44,11 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
         const o = options as NodeOptionsMap['turnkey']
         return Boolean(o?.client)
       },
-      create({ chainManager, lendProviders, supportedAssets }, options) {
+      create({ chainManager, lendProvider }, options) {
         return new TurnkeyHostedWalletProvider(
           options.client,
           chainManager,
-          lendProviders,
-          supportedAssets,
+          lendProvider,
         )
       },
     })

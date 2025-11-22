@@ -7,8 +7,7 @@ import {
   createMockPrivyClient,
   getMockAuthorizationContext,
 } from '@/test/MockPrivyClient.js'
-import type { LendProviderConfig } from '@/types/actions.js'
-import type { LendMarketConfig } from '@/types/lend/index.js'
+import type { LendMarketConfig, MorphoLendConfig } from '@/types/lend/index.js'
 import { externalTest } from '@/utils/test.js'
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
 import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
@@ -52,7 +51,7 @@ describe('Actions SDK', () => {
 
   describe('Configuration', () => {
     describe('Morpho Provider Configuration', () => {
-      it('should create Morpho provider when morpho config is provided', () => {
+      it('should create Morpho provider when provider is set to morpho', () => {
         const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
@@ -61,7 +60,7 @@ describe('Actions SDK', () => {
           {
             chains: [{ chainId: unichain.id }],
             lend: {
-              morpho: {},
+              provider: 'morpho',
             },
             wallet: {
               hostedWalletConfig: {
@@ -91,7 +90,8 @@ describe('Actions SDK', () => {
         expect(actions.lend.supportedChainIds()).toContain(130) // Unichain
       })
 
-      it('should create Morpho provider with empty config', () => {
+      it('should create Morpho provider with custom default slippage', () => {
+        const customSlippage = 150
         const actions = new Actions<
           TestWalletProvider['providerTypes'],
           TestWalletProvider,
@@ -100,7 +100,8 @@ describe('Actions SDK', () => {
           {
             chains: [{ chainId: unichain.id }],
             lend: {
-              morpho: {},
+              provider: 'morpho',
+              defaultSlippage: customSlippage,
             },
             wallet: {
               hostedWalletConfig: {
@@ -127,7 +128,8 @@ describe('Actions SDK', () => {
         )
 
         expect(actions.lend).toBeDefined()
-        expect(actions.lend.supportedChainIds()).toContain(130) // Unichain
+        expect(actions.lend.config.defaultSlippage).toBe(customSlippage)
+        expect(actions.lend.config.provider).toBe('morpho')
       })
 
       it('should create Morpho provider with market allowlist', () => {
@@ -158,9 +160,8 @@ describe('Actions SDK', () => {
           {
             chains: [{ chainId: unichain.id }],
             lend: {
-              morpho: {
-                marketAllowlist: [mockMarket],
-              },
+              provider: 'morpho',
+              marketAllowlist: [mockMarket],
             },
             wallet: {
               hostedWalletConfig: {
@@ -187,9 +188,11 @@ describe('Actions SDK', () => {
         )
 
         expect(actions.lend).toBeDefined()
-        // Verify Morpho provider is created with market allowlist
-        const morphoProvider = actions['lendProviders']['morpho']
-        expect(morphoProvider).toBeDefined()
+        const allowlist = actions.lend.config.marketAllowlist
+        expect(allowlist).toBeDefined()
+        expect(allowlist).toHaveLength(1)
+        expect(allowlist![0].address).toBe(mockMarket.address)
+        expect(allowlist![0].name).toBe(mockMarket.name)
       })
 
       it('should create Morpho provider with multiple markets in allowlist', () => {
@@ -240,9 +243,8 @@ describe('Actions SDK', () => {
           {
             chains: [{ chainId: unichain.id }],
             lend: {
-              morpho: {
-                marketAllowlist: mockMarkets,
-              },
+              provider: 'morpho',
+              marketAllowlist: mockMarkets,
             },
             wallet: {
               hostedWalletConfig: {
@@ -269,9 +271,49 @@ describe('Actions SDK', () => {
         )
 
         expect(actions.lend).toBeDefined()
-        // Verify Morpho provider is created with multiple markets
-        const morphoProvider = actions['lendProviders']['morpho']
-        expect(morphoProvider).toBeDefined()
+        const allowlist = actions.lend.config.marketAllowlist
+        expect(allowlist).toBeDefined()
+        expect(allowlist).toHaveLength(2)
+        expect(allowlist![0].name).toBe('Gauntlet USDC')
+        expect(allowlist![1].name).toBe('Test WETH Market')
+      })
+
+      it('should throw error for unsupported lending provider', () => {
+        expect(() => {
+          new Actions<
+            TestWalletProvider['providerTypes'],
+            TestWalletProvider,
+            'privy'
+          >(
+            {
+              chains: [{ chainId: unichain.id }],
+              lend: {
+                provider: 'invalid' as any,
+              },
+              wallet: {
+                hostedWalletConfig: {
+                  provider: {
+                    type: 'privy',
+                    config: {
+                      privyClient: createMockPrivyClient(
+                        'test-id',
+                        'test-secret',
+                      ),
+                      authorizationContext: getMockAuthorizationContext(),
+                    },
+                  },
+                },
+                smartWalletConfig: {
+                  provider: { type: 'default' },
+                },
+              },
+            },
+            {
+              hostedWalletProviderRegistry:
+                new TestHostedWalletProviderRegistry(),
+            },
+          )
+        }).toThrow('Unsupported lending provider: invalid')
       })
 
       it('should work without lend configuration', () => {
@@ -306,14 +348,16 @@ describe('Actions SDK', () => {
           },
         )
 
-        expect(actions['lendProviders']).toEqual({})
+        expect(actions['lendProvider']).toBeUndefined()
         expect(() => actions.lend).toThrow('Lend provider not configured')
       })
     })
 
     describe('Lending Configuration Types', () => {
       it('should accept valid MorphoLendConfig', () => {
-        const morphoConfig: LendProviderConfig = {
+        const config: MorphoLendConfig = {
+          provider: 'morpho',
+          defaultSlippage: 100,
           marketAllowlist: [],
         }
 
@@ -325,7 +369,7 @@ describe('Actions SDK', () => {
           >(
             {
               chains: [{ chainId: unichain.id }],
-              lend: { morpho: morphoConfig },
+              lend: config,
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -353,7 +397,9 @@ describe('Actions SDK', () => {
       })
 
       it('should accept minimal MorphoLendConfig', () => {
-        const morphoConfig: LendProviderConfig = {}
+        const config: MorphoLendConfig = {
+          provider: 'morpho',
+        }
 
         expect(() => {
           new Actions<
@@ -363,7 +409,7 @@ describe('Actions SDK', () => {
           >(
             {
               chains: [{ chainId: unichain.id }],
-              lend: { morpho: morphoConfig },
+              lend: config,
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -404,7 +450,7 @@ describe('Actions SDK', () => {
               { chainId: 84532 }, // Base Sepolia
             ],
             lend: {
-              morpho: {},
+              provider: 'morpho',
             },
             wallet: {
               hostedWalletConfig: {
@@ -447,7 +493,8 @@ describe('Actions SDK', () => {
           {
             chains: [{ chainId: unichain.id }],
             lend: {
-              morpho: {},
+              provider: 'morpho',
+              defaultSlippage: 50,
             },
             wallet: {
               hostedWalletConfig: {
@@ -499,7 +546,10 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
+              lend: {
+                provider: 'morpho',
+                defaultSlippage: 50,
+              },
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -551,7 +601,10 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
+              lend: {
+                provider: 'morpho',
+                defaultSlippage: 50,
+              },
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -636,7 +689,10 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
+              lend: {
+                provider: 'morpho',
+                defaultSlippage: 50,
+              },
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -696,7 +752,10 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
+              lend: {
+                provider: 'morpho',
+                defaultSlippage: 50,
+              },
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -748,7 +807,8 @@ describe('Actions SDK', () => {
               },
             ],
             lend: {
-              morpho: {},
+              provider: 'morpho',
+              defaultSlippage: 50,
             },
             wallet: {
               hostedWalletConfig: {
@@ -799,7 +859,8 @@ describe('Actions SDK', () => {
               },
             ],
             lend: {
-              morpho: {},
+              provider: 'morpho',
+              defaultSlippage: 50,
             },
             wallet: {
               hostedWalletConfig: {

@@ -4,11 +4,7 @@ import ActivityLogCard from './ActivityLogCard'
 import ActivityLogSidebar from './ActivityLogSidebar'
 import ActivityLogPanel from './ActivityLogPanel'
 
-interface ActivityLogProps {
-  onCollapsedChange?: (collapsed: boolean) => void
-}
-
-function ActivityLog({ onCollapsedChange }: ActivityLogProps) {
+function ActivityLog() {
   const { activities } = useActivityLog()
   const [isFullLogOpen, setIsFullLogOpen] = useState(false)
 
@@ -47,7 +43,6 @@ function ActivityLog({ onCollapsedChange }: ActivityLogProps) {
         <ActivityLogSidebar
           activities={activities}
           formatTimestamp={formatTimestamp}
-          onCollapsedChange={onCollapsedChange}
         />
       </div>
 

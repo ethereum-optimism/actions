@@ -1,8 +1,7 @@
 import type { LocalAccount } from 'viem'
 
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
@@ -22,12 +21,9 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
    */
   constructor(
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
+    lendProvider?: LendProvider<LendConfig>,
   ) {
-    super(chainManager, lendProviders)
+    super(chainManager, lendProvider)
   }
 
   async toActionsWallet(
@@ -37,7 +33,7 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
     const wallet = await PrivyWallet.create({
       chainManager: this.chainManager,
       connectedWallet,
-      lendProviders: this.lendProviders,
+      lendProvider: this.lendProvider,
     })
     return wallet
   }

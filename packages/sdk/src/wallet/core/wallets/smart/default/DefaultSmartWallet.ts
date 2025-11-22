@@ -13,11 +13,13 @@ import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { TransactionConfirmedButRevertedError } from '@/core/error/errors.js'
 import { retryOnStaleRead } from '@/core/utils/retryOnStaleRead.js'
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
-import type { TransactionData } from '@/types/lend/index.js'
+import type {
+  LendConfig,
+  LendProvider,
+  TransactionData,
+} from '@/types/lend/index.js'
 import { parseAssetAmount } from '@/utils/assets.js'
 import { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
@@ -58,7 +60,7 @@ export class DefaultSmartWallet extends SmartWallet {
    * @param owners - Array of wallet owners (addresses or WebAuthn accounts)
    * @param signer - Local account for signing transactions
    * @param chainManager - Network management service
-   * @param lendProviders - Lending operations providers
+   * @param lendProvider - Lending operations provider
    * @param deploymentAddress - Known wallet address (if already deployed)
    * @param ownerIndex - Index of signer in owners array
    * @param nonce - Nonce for address generation
@@ -67,16 +69,12 @@ export class DefaultSmartWallet extends SmartWallet {
     signers: Signer[],
     signer: LocalAccount,
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
-    supportedAssets?: Asset[],
+    lendProvider?: LendProvider<LendConfig>,
     deploymentAddress?: Address,
     nonce?: bigint,
     attributionSuffix?: Hex,
   ) {
-    super(chainManager, lendProviders, supportedAssets)
+    super(chainManager, lendProvider)
 
     const { signersWithLocalAccount, signerIndex } =
       DefaultSmartWallet.ensureLocalAccountSigner(signers, signer)
@@ -117,11 +115,7 @@ export class DefaultSmartWallet extends SmartWallet {
     signer: LocalAccount
     chainManager: ChainManager
     signers?: Signer[]
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    }
-    supportedAssets?: Asset[]
+    lendProvider?: LendProvider<LendConfig>
     deploymentAddress?: Address
     nonce?: bigint
     attributionSuffix?: Hex
@@ -131,8 +125,7 @@ export class DefaultSmartWallet extends SmartWallet {
       signers,
       params.signer,
       params.chainManager,
-      params.lendProviders,
-      params.supportedAssets,
+      params.lendProvider,
       params.deploymentAddress,
       params.nonce,
       params.attributionSuffix,

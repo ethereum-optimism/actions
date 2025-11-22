@@ -1,16 +1,14 @@
-import { getTokenBySymbol, type Asset } from '@eth-optimism/actions-sdk/react'
-import { optimismSepolia } from 'viem/op-stack'
+import type { Asset } from '@eth-optimism/actions-sdk/react'
+import { baseSepolia } from 'viem/op-stack'
 
-export const USDC_DEMO = getTokenBySymbol('USDC_DEMO')!
-
-export const WETH: Asset = {
+export const USDC_DEMO: Asset = {
   address: {
-    [optimismSepolia.id]: '0x4200000000000000000000000000000000000006',
+    [baseSepolia.id]: '0x87c25229afbc30418d0144e8dfb2bcf8efd92c6c',
   },
   metadata: {
-    decimals: 18,
-    name: 'ETH',
-    symbol: 'WETH',
+    decimals: 6,
+    name: 'USDC Demo',
+    symbol: 'USDC_DEMO',
   },
   type: 'erc20',
 }
