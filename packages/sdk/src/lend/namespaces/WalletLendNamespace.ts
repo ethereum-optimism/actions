@@ -1,14 +1,8 @@
 import type { LendProvider } from '@/lend/core/LendProvider.js'
-import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
-import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
-import type { LendProviderConfig } from '@/types/actions.js'
 import type {
+  BaseLendConfig,
   ClosePositionParams,
-  GetLendMarketParams,
-  GetLendMarketsParams,
   GetPositionParams,
-  LendMarket,
-  LendMarketId,
   LendMarketPosition,
   LendOpenPositionParams,
   LendTransactionReceipt,
@@ -19,84 +13,28 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
  * Wallet Lend Namespace
  * @description Full lending operations available on wallet.lend
  */
-export class WalletLendNamespace {
+export class WalletLendNamespace<
+  TConfig extends BaseLendConfig = BaseLendConfig,
+> {
   constructor(
-    protected readonly providers: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
+    protected readonly provider: LendProvider<TConfig>,
     private readonly wallet: Wallet,
   ) {}
 
-  /**
-   * Route a market to the correct provider
-   * @param marketId - Market identifier to route
-   * @returns The provider that handles this market
-   * @throws Error if no provider is found for the market
-   */
-  private getProviderForMarket(
-    marketId: LendMarketId,
-  ): MorphoLendProvider | AaveLendProvider {
-    const allProviders = [this.providers.morpho, this.providers.aave].filter(
-      Boolean,
-    ) as Array<MorphoLendProvider | AaveLendProvider>
-
-    for (const provider of allProviders) {
-      const market = provider.config.marketAllowlist?.find(
-        (m: LendMarketId) =>
-          m.address.toLowerCase() === marketId.address.toLowerCase() &&
-          m.chainId === marketId.chainId,
-      )
-
-      if (market) {
-        return provider
-      }
-    }
-
-    throw new Error(
-      `No provider configured for market ${marketId.address} on chain ${marketId.chainId}`,
-    )
+  get config(): TConfig {
+    return this.provider.config
   }
 
-  /**
-   * Get all markets across all configured providers
-   * @param params - Optional filtering parameters
-   * @returns Promise resolving to array of markets from all providers
-   */
-  async getMarkets(params: GetLendMarketsParams = {}): Promise<LendMarket[]> {
-    const allProviders = [this.providers.morpho, this.providers.aave].filter(
-      Boolean,
-    ) as Array<MorphoLendProvider | AaveLendProvider>
+  // Inherited methods from ActionsLendNamespace
+  getMarkets = (...args: Parameters<LendProvider<TConfig>['getMarkets']>) =>
+    this.provider.getMarkets(...args)
 
-    const results = await Promise.all(
-      allProviders.map((p) => p.getMarkets(params)),
-    )
+  getMarket = (...args: Parameters<LendProvider<TConfig>['getMarket']>) =>
+    this.provider.getMarket(...args)
 
-    return results.flat()
-  }
-
-  /**
-   * Get a specific market by routing to the correct provider
-   * @param params - Market identifier
-   * @returns Promise resolving to market information
-   */
-  async getMarket(params: GetLendMarketParams): Promise<LendMarket> {
-    const provider = this.getProviderForMarket(params)
-    return provider.getMarket(params)
-  }
-
-  /**
-   * Get supported chain IDs across all providers
-   * @returns Array of unique chain IDs supported by any provider
-   */
-  supportedChainIds(): number[] {
-    const allProviders = [this.providers.morpho, this.providers.aave].filter(
-      Boolean,
-    ) as Array<MorphoLendProvider | AaveLendProvider>
-
-    const allChains = allProviders.flatMap((p) => p.supportedChainIds())
-    return [...new Set(allChains)]
-  }
+  supportedChainIds = (
+    ...args: Parameters<LendProvider<TConfig>['supportedChainIds']>
+  ) => this.provider.supportedChainIds(...args)
 
   /**
    * Open a lending position
@@ -109,9 +47,7 @@ export class WalletLendNamespace {
   async openPosition(
     params: LendOpenPositionParams,
   ): Promise<LendTransactionReceipt> {
-    const provider = this.getProviderForMarket(params.marketId)
-
-    const lendTransaction = await provider.openPosition({
+    const lendTransaction = await this.provider.openPosition({
       ...params,
       walletAddress: this.wallet.address,
     })
@@ -145,13 +81,7 @@ export class WalletLendNamespace {
    * @returns Promise resolving to position information
    */
   async getPosition(params: GetPositionParams): Promise<LendMarketPosition> {
-    if (!params.marketId) {
-      throw new Error('marketId is required')
-    }
-
-    const provider = this.getProviderForMarket(params.marketId)
-
-    return provider.getPosition(
+    return this.provider.getPosition(
       this.wallet.address,
       params.marketId,
       params.asset,
@@ -168,9 +98,7 @@ export class WalletLendNamespace {
   async closePosition(
     params: ClosePositionParams,
   ): Promise<LendTransactionReceipt> {
-    const provider = this.getProviderForMarket(params.marketId)
-
-    const closeTransaction = await provider.closePosition({
+    const closeTransaction = await this.provider.closePosition({
       ...params,
       walletAddress: this.wallet.address,
     })
@@ -179,14 +107,6 @@ export class WalletLendNamespace {
     if (!transactionData) {
       throw new Error(
         'No transaction data returned from close position provider',
-      )
-    }
-
-    // If both approval and closePosition are present, batch them
-    if (transactionData.approval && transactionData.closePosition) {
-      return await this.wallet.sendBatch(
-        [transactionData.approval, transactionData.closePosition],
-        params.marketId.chainId,
       )
     }
 

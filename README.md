@@ -1,6 +1,6 @@
 # Actions
 
-[Actions SDK](https://actions.money) and demo application by [Optimism](https://optimism.io)
+Actions SDK and demo applications for the Optimism ecosystem
 
 ## Structure
 

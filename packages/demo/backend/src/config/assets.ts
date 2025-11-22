@@ -1,11 +1,5 @@
 import type { Asset } from '@eth-optimism/actions-sdk'
-import {
-  base,
-  baseSepolia,
-  mainnet,
-  optimismSepolia,
-  unichain,
-} from 'viem/chains'
+import { base, baseSepolia, mainnet, unichain } from 'viem/chains'
 
 export const USDC: Asset = {
   address: {
@@ -27,7 +21,7 @@ export const USDC_DEMO: Asset = {
   },
   metadata: {
     decimals: 6,
-    name: 'USDC',
+    name: 'USDC Demo',
     symbol: 'USDC_DEMO',
   },
   type: 'erc20',
@@ -42,18 +36,6 @@ export const MORPHO: Asset = {
     decimals: 18,
     name: 'Morpho Token',
     symbol: 'MORPHO',
-  },
-  type: 'erc20',
-}
-
-export const WETH: Asset = {
-  address: {
-    [optimismSepolia.id]: '0x4200000000000000000000000000000000000006',
-  },
-  metadata: {
-    decimals: 18,
-    name: 'Wrapped Ether',
-    symbol: 'WETH',
   },
   type: 'erc20',
 }

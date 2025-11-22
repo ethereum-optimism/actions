@@ -6,7 +6,6 @@ import { SUPPORTED_CHAIN_IDS as ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/lend/providers/morpho/sdk.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -16,6 +15,7 @@ import type {
   LendMarketPosition,
   LendOpenPositionInternalParams,
   LendTransaction,
+  MorphoLendConfig,
 } from '@/types/lend/index.js'
 import { getAssetAddress } from '@/utils/assets.js'
 
@@ -36,7 +36,7 @@ export const SUPPORTED_CHAIN_IDS = [
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
-export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
+export class MorphoLendProvider extends LendProvider<MorphoLendConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
 
   private chainManager: ChainManager
@@ -46,7 +46,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
    * @param config - Morpho lending configuration
    * @param chainManager - Chain manager for blockchain interactions
    */
-  constructor(config: LendProviderConfig, chainManager: ChainManager) {
+  constructor(config: MorphoLendConfig, chainManager: ChainManager) {
     super(config)
     this.chainManager = chainManager
   }
@@ -102,7 +102,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
             value: 0n,
           },
         },
-        slippage: params.options?.slippage ?? 50,
+        slippage: params.options?.slippage || this._config.defaultSlippage,
       }
     } catch (error) {
       throw new Error(
@@ -155,7 +155,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
             value: 0n,
           },
         },
-        slippage: params.options?.slippage ?? 50,
+        slippage: params.options?.slippage || this._config.defaultSlippage,
       }
     } catch (error) {
       throw new Error(

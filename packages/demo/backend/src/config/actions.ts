@@ -2,10 +2,9 @@ import { createActions } from '@eth-optimism/actions-sdk'
 import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
 import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 
-import { USDC_DEMO, WETH } from './assets.js'
 import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
-import { AaveWETH, GauntletUSDCDemo } from './markets.js'
+import { GauntletUSDC, USDCDemoVault } from './markets.js'
 
 let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
@@ -14,7 +13,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
     wallet: {
       hostedWalletConfig: {
         provider: {
-          type: 'privy' as const,
+          type: 'privy',
           config: {
             privyClient: getPrivyClient(),
             authorizationContext: getAuthorizationContext(),
@@ -23,22 +22,16 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
       },
       smartWalletConfig: {
         provider: {
-          type: 'default' as const,
+          type: 'default',
           // converts to '0xee4a2159c53ceed04edf4ce23cc97c5c'
           attributionSuffix: 'actions',
         },
       },
     },
     lend: {
-      morpho: {
-        marketAllowlist: [GauntletUSDCDemo],
-      },
-      aave: {
-        marketAllowlist: [AaveWETH],
-      },
-    },
-    assets: {
-      allow: [USDC_DEMO, WETH],
+      provider: 'morpho',
+      defaultSlippage: 50,
+      marketAllowlist: [GauntletUSDC, USDCDemoVault],
     },
     chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }

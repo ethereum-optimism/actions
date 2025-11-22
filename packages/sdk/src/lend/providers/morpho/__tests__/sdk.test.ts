@@ -164,7 +164,6 @@ describe('Vault Utilities', () => {
         usdc_demo: 0,
         morpho: 0,
         eth: 0,
-        weth: 0,
         other: 0,
         totalRewards: 0,
       })

@@ -1,39 +1,29 @@
 import { useState, useRef, useEffect } from 'react'
+import morphoLogo from '../../assets/morpho-logo-light.svg'
+import Shimmer from './Shimmer'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
-import type { MarketPosition } from '@/types/market'
-import Shimmer from './Shimmer'
 
 interface LentBalanceProps {
-  marketPositions: MarketPosition[]
+  depositedAmount: string | null
+  apy: number | null
+  isLoadingPosition: boolean
+  isLoadingApy: boolean
   isInitialLoad?: boolean
 }
 
 function LentBalance({
-  marketPositions,
+  depositedAmount,
+  apy,
+  isLoadingPosition,
+  isLoadingApy,
   isInitialLoad = false,
 }: LentBalanceProps) {
   const { hoveredAction } = useActivityHighlight()
   const [showApyTooltip, setShowApyTooltip] = useState(false)
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
   const apyRef = useRef<HTMLDivElement>(null)
-
-  // Filter to only show markets with deposits > 0 and sort alphabetically by asset symbol
-  const marketsWithDeposits = marketPositions
-    .filter(
-      (market) =>
-        market.depositedAmount &&
-        market.depositedAmount !== '0' &&
-        market.depositedAmount !== '0.00' &&
-        parseFloat(market.depositedAmount) > 0,
-    )
-    .sort((a, b) => {
-      const assetA = a.asset.metadata.symbol || ''
-      const assetB = b.asset.metadata.symbol || ''
-      return assetA.localeCompare(assetB)
-    })
-
-  const isEmpty = !isInitialLoad && marketsWithDeposits.length === 0
+  const isEmpty = !isLoadingPosition && !isLoadingApy && depositedAmount === '0'
 
   useEffect(() => {
     if (showApyTooltip && apyRef.current) {
@@ -78,12 +68,7 @@ function LentBalance({
           >
             Lent Balance
           </h2>
-          {isInitialLoad ? (
-            // Shimmer state - matches empty state text height
-            <div className="flex items-start">
-              <Shimmer width="100%" height="20px" variant="rectangle" />
-            </div>
-          ) : isEmpty ? (
+          {isEmpty ? (
             <div className="flex items-start font-normal text-sm leading-5 text-secondary">
               No active markets yet. Lend to see your balances here.
             </div>
@@ -169,31 +154,35 @@ function LentBalance({
                           minWidth: '100px',
                         }}
                       >
-                        Amount
+                        Value
                       </th>
                     </tr>
                   </thead>
 
                   {/* Body */}
                   <tbody>
-                    {marketsWithDeposits.map((market) => (
-                      <tr
-                        key={`${market.marketId.address}-${market.marketId.chainId}`}
+                    <tr>
+                      <td
+                        className="transition-all"
+                        style={{
+                          padding: '16px 8px',
+                          backgroundColor:
+                            hoveredAction === 'getMarket'
+                              ? colors.highlight.background
+                              : 'transparent',
+                        }}
                       >
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            backgroundColor:
-                              hoveredAction === 'getMarket'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
+                        {isInitialLoad ? (
+                          <Shimmer
+                            width="120px"
+                            height="20px"
+                            borderRadius="4px"
+                          />
+                        ) : (
                           <div className="flex items-center gap-2">
                             <img
-                              src={market.marketLogo}
-                              alt={market.marketName}
+                              src={morphoLogo}
+                              alt="Morpho"
                               style={{ width: '20px', height: '20px' }}
                             />
                             <span
@@ -204,24 +193,32 @@ function LentBalance({
                                 fontFamily: 'Inter',
                               }}
                             >
-                              {market.marketName}
+                              Gauntlet
                             </span>
                           </div>
-                        </td>
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            backgroundColor:
-                              hoveredAction === 'getMarket'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
+                        )}
+                      </td>
+                      <td
+                        className="transition-all"
+                        style={{
+                          padding: '16px 8px',
+                          backgroundColor:
+                            hoveredAction === 'getMarket'
+                              ? colors.highlight.background
+                              : 'transparent',
+                        }}
+                      >
+                        {isInitialLoad ? (
+                          <Shimmer
+                            width="110px"
+                            height="20px"
+                            borderRadius="4px"
+                          />
+                        ) : (
                           <div className="flex items-center gap-2">
                             <img
-                              src={market.networkLogo}
-                              alt={market.networkName}
+                              src="/base-logo.svg"
+                              alt="Base"
                               style={{ width: '20px', height: '20px' }}
                             />
                             <span
@@ -232,24 +229,32 @@ function LentBalance({
                                 fontFamily: 'Inter',
                               }}
                             >
-                              {market.networkName}
+                              Base Sepolia
                             </span>
                           </div>
-                        </td>
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            backgroundColor:
-                              hoveredAction === 'getMarket'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
+                        )}
+                      </td>
+                      <td
+                        className="transition-all"
+                        style={{
+                          padding: '16px 8px',
+                          backgroundColor:
+                            hoveredAction === 'getMarket'
+                              ? colors.highlight.background
+                              : 'transparent',
+                        }}
+                      >
+                        {isInitialLoad ? (
+                          <Shimmer
+                            width="60px"
+                            height="20px"
+                            borderRadius="4px"
+                          />
+                        ) : (
                           <div className="flex items-center gap-2">
                             <img
-                              src={market.assetLogo}
-                              alt={market.asset.metadata.symbol}
+                              src="/usd-coin-usdc-logo.svg"
+                              alt="USDC"
                               style={{ width: '20px', height: '20px' }}
                             />
                             <span
@@ -260,24 +265,36 @@ function LentBalance({
                                 fontFamily: 'Inter',
                               }}
                             >
-                              {market.asset.metadata.symbol.replace(
-                                '_DEMO',
-                                '',
-                              )}
+                              USDC
                             </span>
                           </div>
-                        </td>
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            textAlign: 'right',
-                            backgroundColor:
-                              hoveredAction === 'getMarket'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
+                        )}
+                      </td>
+                      <td
+                        className="transition-all"
+                        style={{
+                          padding: '16px 8px',
+                          textAlign: 'right',
+                          backgroundColor:
+                            hoveredAction === 'getMarket'
+                              ? colors.highlight.background
+                              : 'transparent',
+                        }}
+                      >
+                        {isInitialLoad || isLoadingApy ? (
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'flex-end',
+                            }}
+                          >
+                            <Shimmer
+                              width="50px"
+                              height="20px"
+                              borderRadius="4px"
+                            />
+                          </div>
+                        ) : (
                           <span
                             style={{
                               color: '#1a1b1e',
@@ -286,22 +303,37 @@ function LentBalance({
                               fontFamily: 'Inter',
                             }}
                           >
-                            {market.apy !== null
-                              ? `${(market.apy * 100).toFixed(2)}%`
+                            {apy !== null
+                              ? `${(apy * 100).toFixed(2)}%`
                               : '0.00%'}
                           </span>
-                        </td>
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            textAlign: 'right',
-                            backgroundColor:
-                              hoveredAction === 'getPosition'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
+                        )}
+                      </td>
+                      <td
+                        className="transition-all"
+                        style={{
+                          padding: '16px 8px',
+                          textAlign: 'right',
+                          backgroundColor:
+                            hoveredAction === 'getPosition'
+                              ? colors.highlight.background
+                              : 'transparent',
+                        }}
+                      >
+                        {isInitialLoad || isLoadingPosition ? (
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'flex-end',
+                            }}
+                          >
+                            <Shimmer
+                              width="70px"
+                              height="20px"
+                              borderRadius="4px"
+                            />
+                          </div>
+                        ) : (
                           <span
                             style={{
                               color: '#1a1b1e',
@@ -310,12 +342,8 @@ function LentBalance({
                               fontFamily: 'Inter',
                             }}
                           >
-                            {market.asset.metadata.symbol !== 'WETH' && '$'}
-                            {
-                              formatDepositedAmount(
-                                market.depositedAmount || '0',
-                              ).main
-                            }
+                            $
+                            {formatDepositedAmount(depositedAmount || '0').main}
                             <span
                               style={{
                                 color: '#9195A6',
@@ -323,15 +351,14 @@ function LentBalance({
                               }}
                             >
                               {
-                                formatDepositedAmount(
-                                  market.depositedAmount || '0',
-                                ).secondary
+                                formatDepositedAmount(depositedAmount || '0')
+                                  .secondary
                               }
                             </span>
                           </span>
-                        </td>
-                      </tr>
-                    ))}
+                        )}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>

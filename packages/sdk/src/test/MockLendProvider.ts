@@ -2,7 +2,6 @@ import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
 import { LendProvider } from '@/lend/core/LendProvider.js'
-import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   ClosePositionParams,
@@ -10,6 +9,7 @@ import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
   LendClosePositionParams,
+  LendConfig,
   LendMarket,
   LendMarketId,
   LendMarketPosition,
@@ -29,7 +29,7 @@ export interface MockLendProviderConfig {
  * Mock Lend Provider for testing
  * @description Provides a mock implementation of LendProvider following MockChainManager pattern
  */
-export class MockLendProvider extends LendProvider<LendProviderConfig> {
+export class MockLendProvider extends LendProvider<LendConfig> {
   public openPosition: MockedFunction<
     (params: LendOpenPositionParams) => Promise<LendTransaction>
   >
@@ -71,10 +71,10 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
   private mockConfig: MockLendProviderConfig
 
   constructor(
-    config?: LendProviderConfig,
+    config?: LendConfig,
     mockConfig?: Partial<MockLendProviderConfig>,
   ) {
-    super(config || {})
+    super(config || { provider: 'morpho' })
 
     this.mockConfig = {
       supportedChains: mockConfig?.supportedChains ?? [84532],
@@ -220,7 +220,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
-      slippage: options?.slippage ?? 50,
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         approval: {
           to: assetAddress,
@@ -253,7 +253,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
-      slippage: options?.slippage ?? 50,
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         approval: {
           to: assetAddress,
@@ -347,7 +347,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
       asset: assetAddress,
       marketId: marketId.address,
       apy: 0,
-      slippage: options?.slippage ?? 50,
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         closePosition: {
           to: marketId.address,
@@ -370,7 +370,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
       asset,
       marketId: marketId || 'mock-market',
       apy: 0,
-      slippage: options?.slippage ?? 50,
+      slippage: options?.slippage || this._config.defaultSlippage || 50,
       transactionData: {
         closePosition: {
           to:
@@ -390,7 +390,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
  * @returns MockLendProvider instance
  */
 export function createMockLendProvider(
-  config?: LendProviderConfig,
+  config?: LendConfig,
   mockConfig?: Partial<MockLendProviderConfig>,
 ): MockLendProvider {
   return new MockLendProvider(config, mockConfig)

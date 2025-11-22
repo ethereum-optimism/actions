@@ -1,10 +1,8 @@
 import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import { type Address, type LocalAccount } from 'viem'
 
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
-import type { Asset } from '@/types/asset.js'
+import type { LendConfig, LendProvider } from '@/types/lend/index.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
 
@@ -25,22 +23,17 @@ export class PrivyWallet extends EOAWallet {
    * @param walletId - Privy wallet identifier
    * @param address - Ethereum address of the wallet
    * @param chainManager - Chain manager for multi-chain operations
-   * @param lendProviders - Optional lend providers for DeFi operations
-   * @param supportedAssets - Optional list of supported assets
+   * @param lendProvider - Optional lend provider for DeFi operations
    */
   private constructor(
     privyClient: PrivyClient,
     walletId: string,
     address: Address,
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
-    supportedAssets?: Asset[],
+    lendProvider?: LendProvider<LendConfig>,
     authorizationContext?: AuthorizationContext,
   ) {
-    super(chainManager, lendProviders, supportedAssets)
+    super(chainManager, lendProvider)
     this.privyClient = privyClient
     this.authorizationContext = authorizationContext
     this.walletId = walletId
@@ -53,19 +46,14 @@ export class PrivyWallet extends EOAWallet {
     walletId: string
     address: Address
     chainManager: ChainManager
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    }
-    supportedAssets?: Asset[]
+    lendProvider?: LendProvider<LendConfig>
   }): Promise<PrivyWallet> {
     const wallet = new PrivyWallet(
       params.privyClient,
       params.walletId,
       params.address,
       params.chainManager,
-      params.lendProviders,
-      params.supportedAssets,
+      params.lendProvider,
       params.authorizationContext,
     )
     await wallet.initialize()
