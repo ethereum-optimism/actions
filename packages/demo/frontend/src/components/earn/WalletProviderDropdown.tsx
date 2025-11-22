@@ -11,6 +11,7 @@ interface WalletProviderDropdownProps {
   walletAddress: string | null
   onProviderSelect?: (providerName: WalletProviderConfig) => void
   selectedProvider: WalletProviderConfig
+  onLogout?: () => Promise<void>
 }
 
 const WALLET_PROVIDERS_LIST = Object.values(WALLET_PROVIDER_CONFIGS)
@@ -19,6 +20,7 @@ export function WalletProviderDropdown({
   walletAddress,
   onProviderSelect,
   selectedProvider,
+  onLogout,
 }: WalletProviderDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [showSwitchModal, setShowSwitchModal] = useState(false)
@@ -137,6 +139,31 @@ export function WalletProviderDropdown({
             </div>
 
             {walletAddress && <WalletAddressDisplay address={walletAddress} />}
+
+            {onLogout && (
+              <button
+                onClick={async () => {
+                  setIsOpen(false)
+                  await onLogout()
+                }}
+                className="w-full mt-4 py-2 rounded-lg transition-all"
+                style={{
+                  backgroundColor: '#F2F3F8',
+                  color: '#404454',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  border: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#E0E2EB'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#F2F3F8'
+                }}
+              >
+                Logout
+              </button>
+            )}
           </div>
         </div>
       )}

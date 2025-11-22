@@ -55,6 +55,7 @@ export async function dripEthToWallet(walletAddress: Address) {
     verifyingContract: faucetAuthModuleAddress,
   }
   const nonce = generateNonce()
+
   const dripParams = createDripParams(walletAddress, nonce)
   const authParams = await createAuthParams(
     walletAddress,
@@ -63,6 +64,7 @@ export async function dripEthToWallet(walletAddress: Address) {
     nonce,
     domain,
   )
+
   const dripCallData = encodeFunctionData({
     abi: faucetAbi,
     functionName: 'drip',
@@ -75,6 +77,7 @@ export async function dripEthToWallet(walletAddress: Address) {
       value: 0n,
     },
   ]
+
   const actions = getActions()
   const adminSigner = privateKeyToAccount(
     env.FAUCET_AUTH_MODULE_ADMIN_PRIVATE_KEY as Hex,
@@ -83,6 +86,7 @@ export async function dripEthToWallet(walletAddress: Address) {
     signer: adminSigner,
     deploymentSigners: [adminSigner],
   })
+
   const receipt = await adminSmartWallet.sendBatch(
     transactionData,
     optimismSepolia.id,

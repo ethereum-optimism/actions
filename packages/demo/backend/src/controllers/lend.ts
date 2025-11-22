@@ -58,7 +58,7 @@ export async function getMarkets(c: Context) {
 }
 
 /**
- *
+ * POST - Open a lending position
  */
 export async function openPosition(c: Context) {
   try {
@@ -68,6 +68,7 @@ export async function openPosition(c: Context) {
     const {
       body: { amount, tokenAddress, marketId },
     } = validation.data
+
     const auth = c.get('auth') as AuthContext | undefined
     if (!auth || !auth.idToken) {
       return c.json({ error: 'Unauthorized' }, 401)
@@ -88,7 +89,6 @@ export async function openPosition(c: Context) {
     console.error('[openPositionV1] ERROR:', {
       error,
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
     })
     return c.json(
       {
@@ -111,6 +111,7 @@ export async function closePosition(c: Context) {
     const {
       body: { amount, tokenAddress, marketId },
     } = validation.data
+
     const auth = c.get('auth') as AuthContext | undefined
     if (!auth || !auth.idToken) {
       return c.json({ error: 'Unauthorized' }, 401)
@@ -131,7 +132,6 @@ export async function closePosition(c: Context) {
     console.error('[closePosition] ERROR:', {
       error,
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
     })
     return c.json(
       {

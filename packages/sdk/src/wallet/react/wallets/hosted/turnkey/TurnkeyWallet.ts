@@ -1,8 +1,9 @@
 import type { TurnkeySDKClientBase } from '@turnkey/react-wallet-kit'
 import type { Address, LocalAccount } from 'viem'
 
+import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/turnkey/utils/createSigner.js'
 
@@ -39,7 +40,10 @@ export class TurnkeyWallet extends EOAWallet {
     organizationId: string
     signWith: string
     ethereumAddress?: string
-    lendProvider?: LendProvider<LendConfig>
+    lendProviders?: {
+      morpho?: LendProvider<LendProviderConfig>
+      aave?: LendProvider<LendProviderConfig>
+    }
   }) {
     const {
       chainManager,
@@ -47,9 +51,9 @@ export class TurnkeyWallet extends EOAWallet {
       organizationId,
       signWith,
       ethereumAddress,
-      lendProvider,
+      lendProviders,
     } = params
-    super(chainManager, lendProvider)
+    super(chainManager, lendProviders)
     this.client = client
     this.organizationId = organizationId
     this.signWith = signWith
@@ -62,7 +66,10 @@ export class TurnkeyWallet extends EOAWallet {
     organizationId: string
     signWith: string
     ethereumAddress?: string
-    lendProvider?: LendProvider<LendConfig>
+    lendProviders?: {
+      morpho?: LendProvider<LendProviderConfig>
+      aave?: LendProvider<LendProviderConfig>
+    }
   }): Promise<TurnkeyWallet> {
     const wallet = new TurnkeyWallet(params)
     await wallet.initialize()

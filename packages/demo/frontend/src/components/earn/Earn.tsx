@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
@@ -5,6 +6,8 @@ import Info from './Info'
 import { WalletProviderDropdown } from './WalletProviderDropdown'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { ActivityHighlightProvider } from '@/contexts/ActivityHighlightContext'
+import type { MarketPosition } from '@/types/market'
+import { MarketSelector, type MarketInfo } from './MarketSelector'
 export interface EarnContentProps {
   ready: boolean
   logout: () => Promise<void>
@@ -25,6 +28,12 @@ export interface EarnContentProps {
     transactionHash?: string
     blockExplorerUrl?: string
   }>
+  onMarketChange?: (market: MarketPosition | null) => void
+  markets?: MarketInfo[]
+  selectedMarket?: MarketPosition | null
+  onMarketSelect?: (market: MarketInfo) => void
+  isLoadingMarkets?: boolean
+  marketPositions?: MarketPosition[]
 }
 
 /**
@@ -37,15 +46,19 @@ function Earn({
   walletAddress,
   usdcBalance,
   isLoadingBalance,
-  selectedProviderConfig,
-  apy,
-  isLoadingApy,
   depositedAmount,
-  isLoadingPosition,
+  selectedProviderConfig,
   isInitialLoad,
   onMintUSDC,
   onTransaction,
+  markets = [],
+  selectedMarket,
+  onMarketSelect,
+  isLoadingMarkets = false,
+  marketPositions = [],
 }: EarnContentProps) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
   // Show loading state while Privy is initializing
   if (!ready) {
     return (
@@ -92,6 +105,7 @@ function Earn({
                     await logout()
                     window.location.href = `/earn?walletProvider=${providerConfig.queryParam}`
                   }}
+                  onLogout={logout}
                 />
               </div>
             </div>
@@ -140,18 +154,54 @@ function Earn({
               </div>
 
               <div className="space-y-6">
+                {/* Market Selector - Always visible */}
+                <div>
+                  <h3
+                    className="mb-3"
+                    style={{
+                      color: '#1a1b1e',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Select Market
+                  </h3>
+                  <MarketSelector
+                    markets={markets}
+                    selectedMarket={
+                      selectedMarket
+                        ? {
+                            name: selectedMarket.marketName,
+                            logo: selectedMarket.marketLogo,
+                            networkName: selectedMarket.networkName,
+                            networkLogo: selectedMarket.networkLogo,
+                            asset: selectedMarket.asset,
+                            assetLogo: selectedMarket.assetLogo,
+                            apy: selectedMarket.apy,
+                            isLoadingApy: selectedMarket.isLoadingApy,
+                            marketId: selectedMarket.marketId,
+                            provider: selectedMarket.provider,
+                          }
+                        : null
+                    }
+                    onMarketSelect={onMarketSelect || (() => {})}
+                    isLoading={isLoadingMarkets}
+                  />
+                </div>
+
                 <Action
-                  usdcBalance={usdcBalance}
+                  assetBalance={usdcBalance}
                   isLoadingBalance={isLoadingBalance}
                   depositedAmount={depositedAmount}
-                  onMintUSDC={onMintUSDC}
+                  assetSymbol={selectedMarket?.asset.metadata.symbol || 'USDC'}
+                  assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
+                  onMintAsset={onMintUSDC}
                   onTransaction={onTransaction}
+                  marketId={selectedMarket?.marketId}
+                  provider={selectedMarket?.provider}
                 />
                 <LentBalance
-                  depositedAmount={depositedAmount}
-                  apy={apy}
-                  isLoadingPosition={isLoadingPosition}
-                  isLoadingApy={isLoadingApy}
+                  marketPositions={marketPositions}
                   isInitialLoad={isInitialLoad}
                 />
 
@@ -178,8 +228,13 @@ function Earn({
           </div>
 
           {/* Activity Log - Desktop Sidebar */}
-          <div className="hidden lg:h-[calc(100vh-65px)] lg:block lg:w-[436px]">
-            <ActivityLog />
+          <div
+            className="hidden lg:h-[calc(100vh-65px)] lg:block transition-all duration-300 ease-in-out"
+            style={{
+              width: isSidebarCollapsed ? '0px' : '436px',
+            }}
+          >
+            <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
           </div>
         </main>
       </div>

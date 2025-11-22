@@ -13,11 +13,8 @@ import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { MockChainManager } from '@/test/MockChainManager.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type {
-  LendConfig,
-  LendProvider,
-  TransactionData,
-} from '@/types/lend/index.js'
+import type { LendProviderConfig } from '@/types/actions.js'
+import type { LendProvider, TransactionData } from '@/types/lend/index.js'
 import {
   smartWalletAbi,
   smartWalletFactoryAbi,
@@ -754,7 +751,7 @@ async function createAndInitDefaultSmartWallet(
     signers?: Address[]
     signer?: LocalAccount
     chainManager?: ChainManager
-    lendProvider?: LendProvider<LendConfig>
+    lendProvider?: LendProvider<LendProviderConfig>
     deploymentAddress?: Address
     nonce?: bigint
     attributionSuffix?: Hex
@@ -773,7 +770,7 @@ async function createAndInitDefaultSmartWallet(
     signers,
     signer,
     chainManager,
-    lendProvider,
+    lendProviders: lendProvider ? { morpho: lendProvider } : undefined,
     deploymentAddress,
     nonce,
     attributionSuffix,

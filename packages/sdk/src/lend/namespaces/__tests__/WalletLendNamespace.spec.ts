@@ -12,9 +12,29 @@ describe('WalletLendNamespace', () => {
   const mockWalletAddress = getRandomAddress()
   let mockProvider: LendProvider
   let mockWallet: SmartWallet
+  let mockMarketId: { address: any; chainId: 130 }
 
   beforeEach(() => {
-    mockProvider = createMockLendProvider()
+    // Create a consistent market ID for all tests
+    mockMarketId = { address: getRandomAddress(), chainId: 130 as const }
+
+    // Create mock provider with the market in its allowlist
+    mockProvider = createMockLendProvider({
+      marketAllowlist: [
+        {
+          address: mockMarketId.address,
+          chainId: mockMarketId.chainId,
+          name: 'Test Market',
+          asset: {
+            address: { 130: getRandomAddress() },
+            metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+            type: 'erc20' as const,
+          },
+          lendProvider: 'morpho',
+        },
+      ],
+    })
+
     // Create a mock SmartWallet with send and sendBatch methods
     mockWallet = createSmartWalletMock({
       address: mockWalletAddress,
@@ -32,13 +52,19 @@ describe('WalletLendNamespace', () => {
   })
 
   it('should create an instance with a lend provider and wallet', () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+    const namespace = new WalletLendNamespace(
+      { morpho: mockProvider as any },
+      mockWallet,
+    )
 
     expect(namespace).toBeInstanceOf(WalletLendNamespace)
   })
 
   it('should inherit read operations from ActionsLendNamespace', async () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+    const namespace = new WalletLendNamespace(
+      { morpho: mockProvider as any },
+      mockWallet,
+    )
     const mockMarkets = [
       {
         marketId: {
@@ -75,19 +101,22 @@ describe('WalletLendNamespace', () => {
     const result = await namespace.getMarkets()
 
     expect(mockProvider.getMarkets).toHaveBeenCalled()
-    expect(result).toBe(mockMarkets)
+    expect(result).toStrictEqual(mockMarkets)
   })
 
   describe('openPosition', () => {
     it('should call provider openPosition with wallet address as receiver', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+      const namespace = new WalletLendNamespace(
+        { morpho: mockProvider as any },
+        mockWallet,
+      )
       const mockAsset = {
         address: { 130: getRandomAddress() },
         metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
         type: 'erc20' as const,
       }
       const amount = 1000
-      const marketId = { address: getRandomAddress(), chainId: 130 as const }
+      const marketId = mockMarketId
       const mockTransaction = {
         amount: 1000000000n,
         asset: mockAsset.address[130],
@@ -128,10 +157,13 @@ describe('WalletLendNamespace', () => {
 
   describe('closePosition', () => {
     it('should call provider closePosition and execute transaction for SmartWallet', async () => {
-      const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+      const namespace = new WalletLendNamespace(
+        { morpho: mockProvider as any },
+        mockWallet,
+      )
       const closeParams = {
         amount: 100,
-        marketId: { address: getRandomAddress(), chainId: 130 as const },
+        marketId: mockMarketId,
       }
 
       const mockTransaction = {
@@ -169,20 +201,26 @@ describe('WalletLendNamespace', () => {
   })
 
   it('should store the wallet reference', () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+    const namespace = new WalletLendNamespace(
+      { morpho: mockProvider as any },
+      mockWallet,
+    )
 
     expect(namespace['wallet']).toBe(mockWallet)
     expect(namespace['wallet'].address).toBe(mockWalletAddress)
   })
 
   it('should execute transaction with approval when present', async () => {
-    const namespace = new WalletLendNamespace(mockProvider, mockWallet)
+    const namespace = new WalletLendNamespace(
+      { morpho: mockProvider as any },
+      mockWallet,
+    )
     const mockAsset = {
       address: { 130: getRandomAddress() },
       metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
       type: 'erc20' as const,
     }
-    const marketId = { address: getRandomAddress(), chainId: 130 as const }
+    const marketId = mockMarketId
     const approval: TransactionData = {
       to: mockAsset.address[130],
       value: 0n,

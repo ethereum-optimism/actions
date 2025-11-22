@@ -1,7 +1,8 @@
 import { type Address, type LocalAccount } from 'viem'
 
+import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
@@ -23,21 +24,27 @@ export class DynamicWallet extends EOAWallet {
   private constructor(
     chainManager: ChainManager,
     dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet'],
-    lendProvider?: LendProvider<LendConfig>,
+    lendProviders?: {
+      morpho?: LendProvider<LendProviderConfig>
+      aave?: LendProvider<LendProviderConfig>
+    },
   ) {
-    super(chainManager, lendProvider)
+    super(chainManager, lendProviders)
     this.dynamicWallet = dynamicWallet
   }
 
   static async create(params: {
     dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
     chainManager: ChainManager
-    lendProvider?: LendProvider<LendConfig>
+    lendProviders?: {
+      morpho?: LendProvider<LendProviderConfig>
+      aave?: LendProvider<LendProviderConfig>
+    }
   }): Promise<DynamicWallet> {
     const wallet = new DynamicWallet(
       params.chainManager,
       params.dynamicWallet,
-      params.lendProvider,
+      params.lendProviders,
     )
     await wallet.initialize()
     return wallet

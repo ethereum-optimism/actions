@@ -1,11 +1,17 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { type Address } from 'viem'
 import Earn from './Earn'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
-import { type LendMarketId } from '@eth-optimism/actions-sdk/react'
-import { useBalanceOperations } from '@/hooks/useBalanceOperations'
+import {
+  type LendMarketId,
+  type SupportedChainId,
+  type Asset,
+} from '@eth-optimism/actions-sdk/react'
+import { useWalletBalance } from '@/hooks/useWalletBalance'
+import { useMarketData } from '@/hooks/useMarketData'
 import type { LendExecutePositionParams } from '@/types/api'
 import { actionsApi } from '@/api/actionsApi'
+import { convertLendMarketToMarketInfo } from '@/utils/marketConversion'
 
 interface EarnWithServerWalletProps {
   ready: boolean
@@ -23,17 +29,17 @@ interface EarnWithServerWalletProps {
 }
 
 /**
- * Container component that handles Privy wallet provider logic
- * and passes data/callbacks to the presentational EarnContent component
+ * Container component that handles server wallet provider logic
+ * and passes data/callbacks to the presentational Earn component
  */
 export function EarnWithServerWallet({
-  ready,
   getAuthHeaders,
   logout,
   selectedProvider,
+  ready,
 }: EarnWithServerWalletProps) {
-  // State for wallet balance and lend position
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
+  const hasLoadedMarkets = useRef(false)
 
   // Memoize operation functions to prevent infinite loops
   const getTokenBalances = useCallback(async () => {
@@ -54,10 +60,22 @@ export function EarnWithServerWallet({
     [getAuthHeaders],
   )
 
-  const mintUSDC = useCallback(async () => {
-    const headers = await getAuthHeaders()
-    await actionsApi.mintDemoUsdcToWallet(headers)
-  }, [getAuthHeaders])
+  const mintAsset = useCallback(
+    async (asset: Asset) => {
+      const headers = await getAuthHeaders()
+
+      if (asset.metadata.symbol.includes('WETH')) {
+        if (!walletAddress) {
+          throw new Error('Wallet address not available')
+        }
+        await actionsApi.dripEthToWallet(walletAddress)
+        return
+      } else {
+        return await actionsApi.mintDemoUsdcToWallet(headers)
+      }
+    },
+    [getAuthHeaders, walletAddress],
+  )
 
   const openPosition = useCallback(
     async (positionParams: LendExecutePositionParams) => {
@@ -75,24 +93,173 @@ export function EarnWithServerWallet({
     [getAuthHeaders],
   )
 
+  const isReady = useCallback(() => ready, [ready])
+
+  // Market selection state management
   const {
-    usdcBalance,
+    markets,
+    setMarkets,
+    marketPositions,
+    setMarketPositions,
+    selectedMarket,
+    setSelectedMarket,
+    isLoadingMarkets,
+    setIsLoadingMarkets,
+    handleMarketSelect,
+  } = useMarketData()
+
+  // Fetch available markets on mount
+  useEffect(() => {
+    const fetchMarkets = async () => {
+      // Prevent duplicate fetches (e.g., from React Strict Mode)
+      if (hasLoadedMarkets.current) {
+        console.log('[EarnWithServerWallet] Markets already loaded, skipping')
+        return
+      }
+      hasLoadedMarkets.current = true
+
+      try {
+        console.log('[EarnWithServerWallet] Fetching markets...')
+        setIsLoadingMarkets(true)
+        const rawMarkets = await getMarkets()
+        const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
+        setMarkets(marketInfoList)
+
+        // Fetch positions for all markets in parallel
+        console.log(
+          '[EarnWithServerWallet] Fetching positions for all markets...',
+        )
+        const positionPromises = marketInfoList.map(async (market) => {
+          try {
+            const position = await getPosition({
+              address: market.marketId.address as Address,
+              chainId: market.marketId.chainId as SupportedChainId,
+            })
+            return {
+              market,
+              position,
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching position for market ${market.name}:`,
+              error,
+            )
+            return null
+          }
+        })
+
+        const positionResults = await Promise.all(positionPromises)
+
+        // Build initial market positions array with all markets that have deposits
+        const initialPositions = positionResults
+          .filter((result) => {
+            if (!result) return false
+            const hasDeposit = result.position.balance > 0n
+            return hasDeposit
+          })
+          .map((result) => {
+            const { market, position } = result!
+            return {
+              marketName: market.name,
+              marketLogo: market.logo,
+              networkName: market.networkName,
+              networkLogo: market.networkLogo,
+              asset: market.asset,
+              assetLogo: market.assetLogo,
+              apy: market.apy,
+              depositedAmount: position.balanceFormatted,
+              isLoadingApy: false,
+              isLoadingPosition: false,
+              marketId: market.marketId,
+              provider: market.provider,
+            }
+          })
+
+        setMarketPositions(initialPositions)
+        console.log(
+          '[EarnWithServerWallet] Loaded positions for',
+          initialPositions.length,
+          'markets with deposits',
+        )
+
+        // Set default selected market (first one, preferably Gauntlet/USDC)
+        if (marketInfoList.length > 0 && !selectedMarket) {
+          const defaultMarket =
+            marketInfoList.find((m) => m.name === 'Gauntlet') ||
+            marketInfoList[0]
+          console.log(
+            '[EarnWithServerWallet] Setting default market:',
+            defaultMarket.name,
+            'asset:',
+            defaultMarket.asset.metadata.symbol,
+          )
+
+          // Find if we already fetched position for this market
+          const defaultPosition = positionResults.find(
+            (r) =>
+              r?.market.marketId.address === defaultMarket.marketId.address,
+          )
+
+          setSelectedMarket({
+            marketName: defaultMarket.name,
+            marketLogo: defaultMarket.logo,
+            networkName: defaultMarket.networkName,
+            networkLogo: defaultMarket.networkLogo,
+            asset: defaultMarket.asset,
+            assetLogo: defaultMarket.assetLogo,
+            apy: defaultMarket.apy,
+            depositedAmount: defaultPosition?.position.balanceFormatted || null,
+            isLoadingApy: false,
+            isLoadingPosition: false,
+            marketId: defaultMarket.marketId,
+            provider: defaultMarket.provider,
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching markets:', error)
+        hasLoadedMarkets.current = false // Reset on error to allow retry
+      } finally {
+        setIsLoadingMarkets(false)
+      }
+    }
+
+    if (ready) {
+      fetchMarkets()
+    }
+  }, [
+    ready,
+    getMarkets,
+    getPosition,
+    setMarkets,
+    setMarketPositions,
+    setSelectedMarket,
+    setIsLoadingMarkets,
+  ])
+
+  const {
+    assetBalance,
     isLoadingBalance,
-    handleMintUSDC,
+    handleMintAsset,
     isLoadingApy,
     apy,
     isInitialLoad,
     isLoadingPosition,
     depositedAmount,
     handleTransaction,
-  } = useBalanceOperations({
+  } = useWalletBalance({
     getTokenBalances,
     getMarkets,
     getPosition,
-    mintUSDC,
+    mintAsset,
     openPosition,
     closePosition,
-    ready,
+    isReady,
+    selectedMarketId: selectedMarket?.marketId as
+      | LendMarketId
+      | null
+      | undefined,
+    selectedAsset: selectedMarket?.asset,
+    selectedMarketApy: selectedMarket?.apy,
   })
 
   const fetchWalletAddress = useCallback(async () => {
@@ -107,21 +274,82 @@ export function EarnWithServerWallet({
     }
   }, [ready, fetchWalletAddress])
 
+  // Update marketPositions when selected market's position changes
+  useEffect(() => {
+    if (!selectedMarket) return
+
+    // Only update if we have actual position data (not initial/loading state)
+    if (depositedAmount === null) return
+
+    setMarketPositions((prev) => {
+      const existingIndex = prev.findIndex(
+        (p) =>
+          p.marketId.address.toLowerCase() ===
+            selectedMarket.marketId.address.toLowerCase() &&
+          p.marketId.chainId === selectedMarket.marketId.chainId,
+      )
+
+      const updatedMarket = {
+        ...selectedMarket,
+        depositedAmount,
+        apy,
+      }
+
+      // Check if this is a meaningful update
+      const hasDeposit =
+        depositedAmount &&
+        depositedAmount !== '0' &&
+        depositedAmount !== '0.00' &&
+        parseFloat(depositedAmount) > 0
+
+      if (existingIndex >= 0) {
+        const existing = prev[existingIndex]
+        // Only update if the deposited amount or APY actually changed
+        if (
+          existing.depositedAmount === depositedAmount &&
+          existing.apy === apy
+        ) {
+          return prev // No change, return same reference to prevent re-render
+        }
+
+        // If deposited amount is now 0, remove from list
+        if (!hasDeposit) {
+          return prev.filter((_, i) => i !== existingIndex)
+        }
+
+        // Update existing market
+        const newPositions = [...prev]
+        newPositions[existingIndex] = updatedMarket
+        return newPositions
+      } else if (hasDeposit) {
+        // Only add new market if it has a deposit
+        return [...prev, updatedMarket]
+      }
+
+      return prev // No change needed
+    })
+  }, [selectedMarket, depositedAmount, apy])
+
   return (
     <Earn
       ready={ready}
       selectedProviderConfig={selectedProvider}
       walletAddress={walletAddress}
       logout={logout}
-      usdcBalance={usdcBalance}
+      usdcBalance={assetBalance}
       isLoadingBalance={isLoadingBalance}
       apy={apy}
       isLoadingApy={isLoadingApy}
       depositedAmount={depositedAmount}
       isLoadingPosition={isLoadingPosition}
       isInitialLoad={isInitialLoad}
-      onMintUSDC={handleMintUSDC}
+      onMintUSDC={handleMintAsset}
       onTransaction={handleTransaction}
+      markets={markets}
+      selectedMarket={selectedMarket}
+      onMarketSelect={handleMarketSelect}
+      isLoadingMarkets={isLoadingMarkets}
+      marketPositions={marketPositions}
     />
   )
 }

@@ -34,10 +34,18 @@ const envVarSchema = z.object({
     .string()
     .optional()
     .describe('Base Sepolia RPC URL for wallet connection'),
-  VITE_BASE_SEPOLIA_BUNDER_URL: z
+  VITE_BASE_SEPOLIA_BUNDLER_URL: z
     .string()
     .optional()
     .describe('Base Sepolia Bundler URL for wallet connection'),
+  VITE_OP_SEPOLIA_RPC_URL: z
+    .string()
+    .optional()
+    .describe('Optimism Sepolia RPC URL for wallet connection'),
+  VITE_OP_SEPOLIA_BUNDLER_URL: z
+    .string()
+    .optional()
+    .describe('Optimism Sepolia Bundler URL for wallet connection'),
 })
 
 export const env = envVarSchema.parse(import.meta.env)

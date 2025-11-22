@@ -5,38 +5,14 @@ import type {
   SupportedChainId,
 } from '@eth-optimism/actions-sdk'
 import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
-import { chainById } from '@eth-optimism/viem/chains'
-import { baseSepolia, unichain } from 'viem/chains'
 
 import { getActions } from '../config/actions.js'
 import type { PositionParams } from '../types/index.js'
+import { getBlockExplorerUrls } from '../utils/explorers.js'
 import { getWallet } from './wallet.js'
 
-export async function getBlockExplorerUrls(
-  chainId: SupportedChainId,
-  transactionHashes?: string[],
-  userOpHash?: string,
-): Promise<string[]> {
-  const chain = chainById[chainId]
-  if (!chain) {
-    throw new Error(`Chain not found for chainId: ${chainId}`)
-  }
-
-  let url = `${chain.blockExplorers?.default.url}`
-  if (chain.id === unichain.id) {
-    url = `https://unichain.blockscout.com`
-  }
-  if (chain.id === baseSepolia.id) {
-    url = `https://base-sepolia.blockscout.com`
-  }
-
-  if (userOpHash) {
-    return [`${url}/op/${userOpHash}`]
-  }
-  if (!transactionHashes) {
-    throw new Error('Transaction hashes not found')
-  }
-  return transactionHashes.map((hash) => `${url}/tx/${hash}`)
+type LendTransactionReceiptWithUrls = LendTransactionReceipt & {
+  blockExplorerUrls: string[]
 }
 
 export async function getMarkets(): Promise<LendMarket[]> {
@@ -52,7 +28,7 @@ export async function getMarket(marketId: LendMarketId): Promise<LendMarket> {
 async function executePosition(
   params: PositionParams,
   operation: 'open' | 'close',
-): Promise<LendTransactionReceipt> {
+): Promise<LendTransactionReceiptWithUrls> {
   const { idToken, amount, tokenAddress, marketId } = params
 
   try {
@@ -80,7 +56,15 @@ async function executePosition(
         ? await wallet.lend!.openPosition(positionParams)
         : await wallet.lend!.closePosition(positionParams)
 
-    return result
+    const blockExplorerUrls = getBlockExplorerUrls({
+      chainId: marketId.chainId,
+      ...result,
+    })
+
+    return {
+      ...result,
+      blockExplorerUrls,
+    } as LendTransactionReceiptWithUrls
   } catch (error) {
     console.error('[executePosition] ERROR:', {
       error,
@@ -93,12 +77,12 @@ async function executePosition(
 
 export async function openPosition(
   params: PositionParams,
-): Promise<LendTransactionReceipt> {
+): Promise<LendTransactionReceiptWithUrls> {
   return executePosition(params, 'open')
 }
 
 export async function closePosition(
   params: PositionParams,
-): Promise<LendTransactionReceipt> {
+): Promise<LendTransactionReceiptWithUrls> {
   return executePosition(params, 'close')
 }

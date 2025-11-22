@@ -1,9 +1,14 @@
-import { DEFAULT_ACTIONS_CONFIG } from '@/constants/config.js'
-import { MorphoLendProvider } from '@/lend/index.js'
+import type { LendProvider } from '@/lend/index.js'
+import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { ActionsConfig } from '@/types/actions.js'
-import type { LendConfig, LendProvider } from '@/types/lend/index.js'
+import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
+import type {
+  ActionsConfig,
+  AssetsConfig,
+  LendProviderConfig,
+} from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
@@ -38,8 +43,12 @@ export class Actions<
     SmartWalletProvider
   >
   private chainManager: ChainManager
-  private _lend?: ActionsLendNamespace<LendConfig>
-  private _lendProvider?: LendProvider<LendConfig>
+  private _lend?: ActionsLendNamespace
+  private _lendProviders: {
+    morpho?: LendProvider<LendProviderConfig>
+    aave?: LendProvider<LendProviderConfig>
+  } = {}
+  private _assetsConfig?: AssetsConfig
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
@@ -62,24 +71,27 @@ export class Actions<
   ) {
     this.chainManager = new ChainManager(config.chains)
     this.hostedWalletProviderRegistry = deps.hostedWalletProviderRegistry
+    this._assetsConfig = config.assets
 
-    // Create lending provider if configured
+    // Create lending providers if configured
     if (config.lend) {
-      if (config.lend.provider === 'morpho') {
-        this._lendProvider = new MorphoLendProvider(
-          {
-            ...config.lend,
-            defaultSlippage:
-              config.lend.defaultSlippage ??
-              DEFAULT_ACTIONS_CONFIG.lend.defaultSlippage,
-          },
+      if (config.lend.morpho) {
+        this._lendProviders.morpho = new MorphoLendProvider(
+          config.lend.morpho,
           this.chainManager,
         )
+      }
 
-        // Create read-only lend namespace
-        this._lend = new ActionsLendNamespace(this._lendProvider!)
-      } else {
-        throw new Error(`Unsupported lending provider: ${config.lend.provider}`)
+      if (config.lend.aave) {
+        this._lendProviders.aave = new AaveLendProvider(
+          config.lend.aave,
+          this.chainManager,
+        )
+      }
+
+      // Create lend namespace if any providers are configured
+      if (this._lendProviders.morpho || this._lendProviders.aave) {
+        this._lend = new ActionsLendNamespace(this._lendProviders)
       }
     }
 
@@ -93,7 +105,7 @@ export class Actions<
    * @returns ActionsLendNamespace for lending operations
    * @throws Error if lend provider not configured
    */
-  get lend(): ActionsLendNamespace<LendConfig> {
+  get lend(): ActionsLendNamespace {
     if (!this._lend) {
       throw new Error(
         'Lend provider not configured. Please add lend configuration to ActionsConfig.',
@@ -103,11 +115,50 @@ export class Actions<
   }
 
   /**
-   * Get the lend provider instance
-   * @returns LendProvider instance if configured, undefined otherwise
+   * Get the lend provider instances
+   * @returns Object containing configured lend providers
    */
-  get lendProvider(): LendProvider<LendConfig> | undefined {
-    return this._lendProvider
+  get lendProviders(): {
+    morpho?: LendProvider<LendProviderConfig>
+    aave?: LendProvider<LendProviderConfig>
+  } {
+    return this._lendProviders
+  }
+
+  /**
+   * Get the list of supported assets based on configuration
+   * @description Returns filtered assets based on allow/block lists in assets config.
+   * If no config provided, returns all SUPPORTED_TOKENS.
+   * @returns Array of supported assets
+   */
+  public getSupportedAssets(): Asset[] {
+    // If no assets config, return all supported tokens
+    if (!this._assetsConfig) {
+      return SUPPORTED_TOKENS
+    }
+
+    // If allow list provided, return only those
+    if (this._assetsConfig.allow && this._assetsConfig.allow.length > 0) {
+      return this._assetsConfig.allow
+    }
+
+    // If block list provided, filter out blocked assets
+    if (this._assetsConfig.block && this._assetsConfig.block.length > 0) {
+      const blockedAddresses = new Set(
+        this._assetsConfig.block.flatMap((asset) =>
+          Object.values(asset.address).map((addr) => addr.toLowerCase()),
+        ),
+      )
+      return SUPPORTED_TOKENS.filter((token) => {
+        const tokenAddresses = Object.values(token.address).map((addr) =>
+          addr.toLowerCase(),
+        )
+        return !tokenAddresses.some((addr) => blockedAddresses.has(addr))
+      })
+    }
+
+    // Default to all supported tokens
+    return SUPPORTED_TOKENS
   }
 
   /**
@@ -141,7 +192,11 @@ export class Actions<
       )
     }
     this.hostedWalletProvider = factory.create(
-      { chainManager: this.chainManager, lendProvider: this.lendProvider },
+      {
+        chainManager: this.chainManager,
+        lendProviders: this._lendProviders,
+        supportedAssets: this.getSupportedAssets(),
+      },
       options,
     )
 
@@ -151,7 +206,8 @@ export class Actions<
     ) {
       this.smartWalletProvider = new DefaultSmartWalletProvider(
         this.chainManager,
-        this.lendProvider,
+        this._lendProviders,
+        this.getSupportedAssets(),
         config.smartWalletConfig.provider.attributionSuffix,
       )
     } else {

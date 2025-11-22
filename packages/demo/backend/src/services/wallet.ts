@@ -14,8 +14,8 @@ import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getActions, getPrivyClient } from '@/config/actions.js'
-
-import { getBlockExplorerUrls } from './lend.js'
+import { getBlockExplorerUrls } from '@/utils/explorers.js'
+import { serializeBigInt } from '@/utils/serializers.js'
 
 /**
  * Options for getting all wallets
@@ -79,7 +79,7 @@ export async function getWalletBalance(
     throw error
   })
 
-  return tokenBalances
+  return serializeBigInt(tokenBalances)
 }
 
 export async function getLendPosition({
@@ -89,7 +89,8 @@ export async function getLendPosition({
   marketId: LendMarketId
   wallet: Wallet
 }) {
-  return wallet.lend!.getPosition({ marketId })
+  const position = await wallet.lend!.getPosition({ marketId })
+  return serializeBigInt(position)
 }
 
 export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
@@ -104,9 +105,14 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
 
   const amountInDecimals = BigInt(Math.floor(parseFloat('100') * 1000000))
 
+  const usdcDemoToken = getTokenBySymbol('USDC_DEMO')
+  if (!usdcDemoToken) {
+    throw new Error('USDC_DEMO token not found in supported tokens')
+  }
+
   const calls = [
     {
-      to: getTokenBySymbol('USDC_DEMO')!.address[baseSepolia.id]!,
+      to: usdcDemoToken.address[baseSepolia.id]!,
       data: encodeFunctionData({
         abi: mintableErc20Abi,
         functionName: 'mint',
@@ -131,12 +137,11 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
     transactionHashes = [(result as EOATransactionReceipt).transactionHash]
   }
 
-  // Get block explorer URLs
-  const blockExplorerUrls = await getBlockExplorerUrls(
-    baseSepolia.id,
-    transactionHashes,
+  const blockExplorerUrls = getBlockExplorerUrls({
+    chainId: baseSepolia.id,
     userOpHash,
-  )
+    transactionHashes,
+  })
 
   return {
     success: true,

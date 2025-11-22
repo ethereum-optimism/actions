@@ -1,6 +1,21 @@
+import type { Asset } from '@/types/asset.js'
 import type { ChainConfig } from '@/types/chain.js'
-import type { LendConfig } from '@/types/lend/index.js'
+import type { LendProviderConfig } from '@/types/lend/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
+
+// Re-export LendProviderConfig for convenience
+export type { LendProviderConfig }
+
+/**
+ * Lending configuration
+ * @description Configuration for all lending providers
+ */
+export interface LendConfig {
+  /** Morpho lending provider configuration */
+  morpho?: LendProviderConfig
+  /** Aave lending provider configuration */
+  aave?: LendProviderConfig
+}
 
 /**
  * Network configuration for lending providers
@@ -9,6 +24,17 @@ import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js
 export interface LendNetworkConfig {
   chainId: number
   name: string
+}
+
+/**
+ * Assets configuration
+ * @description Configuration for supported assets
+ */
+export interface AssetsConfig {
+  /** Allowlist of assets to support (optional - defaults to all SUPPORTED_TOKENS) */
+  allow?: Asset[]
+  /** Blocklist of assets to exclude (optional) */
+  block?: Asset[]
 }
 
 /**
@@ -21,8 +47,10 @@ export interface ActionsConfig<
 > {
   /** Wallet configuration */
   wallet: WalletConfig<THostedWalletProviderType, TConfigMap>
-  /** Lending provider configuration (optional) */
+  /** Lending providers configuration (optional) */
   lend?: LendConfig
+  /** Assets configuration (optional) */
+  assets?: AssetsConfig
   /** Chains to use for the SDK */
   chains: ChainConfig[]
 }

@@ -9,7 +9,6 @@ import type { GetWalletResponse } from '@/types/service.js'
 import { validateRequest } from '../helpers/validation.js'
 import * as faucetService from '../services/faucet.js'
 import * as walletService from '../services/wallet.js'
-import { serializeBigInt } from '../utils/serializers.js'
 
 const LendPositionRequestSchema = z.object({
   params: z.object({
@@ -83,7 +82,7 @@ export class WalletController {
         throw new Error('Wallet not found')
       }
       const balance = await walletService.getWalletBalance(wallet)
-      return c.json({ result: serializeBigInt(balance) })
+      return c.json({ result: balance })
     } catch (error) {
       console.error(error)
       return c.json(
@@ -121,7 +120,7 @@ export class WalletController {
       throw new Error('Wallet not found')
     }
     const position = await walletService.getLendPosition({ marketId, wallet })
-    return c.json({ result: serializeBigInt(position) })
+    return c.json({ result: position })
   }
 
   /**
