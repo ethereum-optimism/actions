@@ -25,6 +25,8 @@ interface MarketSelectorProps {
   isLoading?: boolean
 }
 
+const cleanSymbol = (symbol: string) => symbol.replace('_DEMO', '')
+
 export function MarketSelector({
   markets,
   selectedMarket,
@@ -92,7 +94,7 @@ export function MarketSelector({
           </div>
         </div>
         <span className="text-sm font-medium" style={{ color: '#1a1b1e' }}>
-          {market.name} {market.asset.metadata.symbol}
+          {market.name} {cleanSymbol(market.asset.metadata.symbol)}
         </span>
         <span className="text-sm" style={{ color: '#666666' }}>
           on
@@ -234,7 +236,8 @@ export function MarketSelector({
                         className="text-sm font-medium"
                         style={{ color: '#1a1b1e' }}
                       >
-                        {market.name} {market.asset.metadata.symbol}
+                        {market.name}{' '}
+                        {cleanSymbol(market.asset.metadata.symbol)}
                       </span>
                       <span className="text-sm" style={{ color: '#666666' }}>
                         on
