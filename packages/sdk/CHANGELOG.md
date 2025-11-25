@@ -1,5 +1,12 @@
 # @eth-optimism/actions-sdk
 
+## 0.1.0
+
+### Minor Changes
+
+- [#234](https://github.com/ethereum-optimism/actions/pull/234) [`bd3fdcf`](https://github.com/ethereum-optimism/actions/commit/bd3fdcfbb1e6901dcaaf5ee81e7f5fce2b341dc6) Thanks [@its-everdred](https://github.com/its-everdred)! - - Add Aave LendProvider support
+  - Add support for multiple LendProviders
+
 ## 0.0.4
 
 ### Patch Changes
