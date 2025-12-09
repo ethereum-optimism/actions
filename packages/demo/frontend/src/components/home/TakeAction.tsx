@@ -1,30 +1,76 @@
 import { colors } from '@/constants/colors'
 import { TerminalIcon, DocumentIcon, GithubIcon } from '@/assets/icons'
 
+const TILE_IMAGES = [
+  '/stack/active/1.png',
+  '/stack/active/2.png',
+  '/stack/active/3.png',
+  '/stack/active/4.png',
+  '/stack/active/5.png',
+  '/stack/active/6.png',
+  '/stack/active/7.png',
+]
+
+const TILE_POSITIONS = [
+  { left: 380, top: 340, z: 9 },
+  { left: 600, top: 450, z: 10 },
+  { left: 820, top: 340, z: 9 },
+  { left: 160, top: 230, z: 8 },
+  { left: 600, top: 230, z: 8 },
+  { left: 160, top: 450, z: 12 },
+  { left: -60, top: 340, z: 11 },
+]
+
 interface TakeActionProps {
   showGithub?: boolean
   compact?: boolean
 }
 
 function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
+  const tileSize = 500 // Large for full background
+
   return (
-    <div className={`pt-8 ${compact ? 'pb-8' : 'pb-64'} text-center`}>
+    <div className={`pt-8 ${compact ? 'pb-8' : 'pb-64'} text-center relative`}>
+      {/* Background tiles */}
+      <div
+        className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-visible"
+        style={{ opacity: 0.15, transform: 'translate(-110px, -200px)' }}
+      >
+        <div className="relative" style={{ width: 1500, height: 875 }}>
+          {TILE_POSITIONS.map(({ left, top, z }, index) => (
+            <img
+              key={index}
+              src={TILE_IMAGES[index]}
+              alt=""
+              className="absolute pixelated"
+              style={{
+                width: tileSize,
+                height: 'auto',
+                left: left * 1.25,
+                top: top * 1.25,
+                zIndex: z,
+              }}
+            />
+          ))}
+        </div>
+      </div>
       <h3
-        className="text-2xl font-medium mb-6"
+        className="text-2xl font-medium mb-6 relative z-10"
         style={{ color: colors.text.cream }}
       >
         Ready to take Action?
       </h3>
-      <div className="flex flex-row gap-4 justify-center">
+      <div className="flex flex-row gap-4 justify-center relative z-10">
         <a
           href="/earn"
           className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200"
-          style={{ backgroundColor: colors.text.cream }}
+          style={{ backgroundColor: 'rgba(245, 245, 220, 0.9)' }}
           onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = '#E5E5CC')
+            (e.currentTarget.style.backgroundColor =
+              'rgba(229, 229, 204, 0.95)')
           }
           onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = colors.text.cream)
+            (e.currentTarget.style.backgroundColor = 'rgba(245, 245, 220, 0.9)')
           }
         >
           <TerminalIcon className="w-5 h-5" />
@@ -35,8 +81,11 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
             href="https://github.com/ethereum-optimism/actions"
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200"
-            style={{ color: colors.text.cream }}
+            className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700/80 inline-flex items-center justify-center gap-2 transition-colors duration-200"
+            style={{
+              color: colors.text.cream,
+              backgroundColor: 'rgba(29, 32, 33, 0.7)',
+            }}
           >
             <GithubIcon className="w-5 h-5" />
             Github
@@ -46,8 +95,11 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
             href="https://docs.optimism.io/app-developers/quickstarts/actions"
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200"
-            style={{ color: colors.text.cream }}
+            className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700/80 inline-flex items-center justify-center gap-2 transition-colors duration-200"
+            style={{
+              color: colors.text.cream,
+              backgroundColor: 'rgba(29, 32, 33, 0.7)',
+            }}
           >
             <DocumentIcon className="w-5 h-5" />
             Docs

@@ -4,8 +4,11 @@ function Footer() {
   return (
     <>
       <footer
-        className="border-t border-gray-800 py-8 text-center text-sm"
-        style={{ color: colors.text.cream }}
+        className="border-t border-gray-800 py-8 text-center text-sm relative"
+        style={{
+          color: colors.text.cream,
+          backgroundColor: 'rgba(29, 32, 33, 0.9)',
+        }}
       >
         <div className="max-w-7xl mx-auto px-6">
           <p className="flex items-center justify-center gap-2 flex-wrap">
@@ -25,8 +28,8 @@ function Footer() {
 
       {/* Disclaimer */}
       <div
-        className="max-w-7xl mx-auto px-6 pt-0 pb-8"
-        style={{ backgroundColor: colors.bg.dark }}
+        className="max-w-7xl mx-auto px-6 pt-0 pb-8 relative"
+        style={{ backgroundColor: 'rgba(29, 32, 33, 0.9)' }}
       >
         <p
           style={{

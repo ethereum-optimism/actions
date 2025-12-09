@@ -664,7 +664,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             }}
                           />
                         </div>
-                        {content[prevLayerRef.current - 1].images && (
+                        {(content[prevLayerRef.current - 1].images ||
+                          content[prevLayerRef.current - 1].imageLabel) && (
                           <div
                             className="mt-6"
                             style={{
@@ -675,70 +676,90 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                           >
                             {content[prevLayerRef.current - 1].imageLabel && (
                               <p
-                                className="mb-4 text-sm"
+                                className={
+                                  content[prevLayerRef.current - 1].images
+                                    ? 'mb-4 text-sm'
+                                    : 'mb-0 text-sm'
+                                }
                                 style={{ color: colors.text.cream }}
                               >
                                 {content[prevLayerRef.current - 1].imageLabel}
                               </p>
                             )}
-                            <div
-                              style={{
-                                display: 'flex',
-                                gap: '3rem',
-                                alignItems: 'center',
-                              }}
-                            >
-                              {content[prevLayerRef.current - 1].images?.map(
-                                (image, index) => {
-                                  const img = (
-                                    <img
-                                      key={index}
-                                      src={image.src}
-                                      alt={`Provider ${index + 1}`}
-                                      style={{
-                                        width: '100%',
-                                        height: 'auto',
-                                        transition: 'opacity 0.2s ease',
-                                      }}
-                                    />
-                                  )
-                                  return image.link ? (
-                                    <a
-                                      key={index}
-                                      href={image.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      style={{
-                                        flex: '1 1 0',
-                                        minWidth: 0,
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        const img =
-                                          e.currentTarget.querySelector('img')
-                                        if (img) img.style.opacity = '0.7'
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        const img =
-                                          e.currentTarget.querySelector('img')
-                                        if (img) img.style.opacity = '1'
-                                      }}
-                                    >
-                                      {img}
-                                    </a>
-                                  ) : (
-                                    <div
-                                      key={index}
-                                      style={{
-                                        flex: '1 1 0',
-                                        minWidth: 0,
-                                      }}
-                                    >
-                                      {img}
-                                    </div>
-                                  )
-                                },
-                              )}
-                            </div>
+                            {content[prevLayerRef.current - 1].images && (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  gap: '3rem',
+                                  alignItems: 'center',
+                                  justifyContent:
+                                    content[prevLayerRef.current - 1].images
+                                      ?.length === 2
+                                      ? 'center'
+                                      : 'flex-start',
+                                }}
+                              >
+                                {content[prevLayerRef.current - 1].images?.map(
+                                  (image, index) => {
+                                    const imageCount =
+                                      content[prevLayerRef.current - 1].images
+                                        ?.length || 3
+                                    const img = (
+                                      <img
+                                        key={index}
+                                        src={image.src}
+                                        alt={`Provider ${index + 1}`}
+                                        style={{
+                                          width: '100%',
+                                          height: 'auto',
+                                          transition: 'opacity 0.2s ease',
+                                        }}
+                                      />
+                                    )
+                                    return image.link ? (
+                                      <a
+                                        key={index}
+                                        href={image.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                          flex:
+                                            imageCount === 2
+                                              ? '0 0 30%'
+                                              : '1 1 0',
+                                          minWidth: 0,
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          const img =
+                                            e.currentTarget.querySelector('img')
+                                          if (img) img.style.opacity = '0.7'
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          const img =
+                                            e.currentTarget.querySelector('img')
+                                          if (img) img.style.opacity = '1'
+                                        }}
+                                      >
+                                        {img}
+                                      </a>
+                                    ) : (
+                                      <div
+                                        key={index}
+                                        style={{
+                                          flex:
+                                            imageCount === 2
+                                              ? '0 0 30%'
+                                              : '1 1 0',
+                                          minWidth: 0,
+                                        }}
+                                      >
+                                        {img}
+                                      </div>
+                                    )
+                                  },
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -894,74 +915,95 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             }}
                           />
                         </div>
-                        {content[prevLayerRef.current - 1].images && (
+                        {(content[prevLayerRef.current - 1].images ||
+                          content[prevLayerRef.current - 1].imageLabel) && (
                           <div className="mt-6">
                             {content[prevLayerRef.current - 1].imageLabel && (
                               <p
-                                className="mb-4 text-sm"
+                                className={
+                                  content[prevLayerRef.current - 1].images
+                                    ? 'mb-4 text-sm'
+                                    : 'mb-0 text-sm'
+                                }
                                 style={{ color: colors.text.cream }}
                               >
                                 {content[prevLayerRef.current - 1].imageLabel}
                               </p>
                             )}
-                            <div
-                              style={{
-                                display: 'flex',
-                                gap: '3rem',
-                                alignItems: 'center',
-                              }}
-                            >
-                              {content[prevLayerRef.current - 1].images?.map(
-                                (image, index) => {
-                                  const img = (
-                                    <img
-                                      key={index}
-                                      src={image.src}
-                                      alt={`Provider ${index + 1}`}
-                                      style={{
-                                        width: '100%',
-                                        height: 'auto',
-                                        transition: 'opacity 0.2s ease',
-                                      }}
-                                    />
-                                  )
-                                  return image.link ? (
-                                    <a
-                                      key={index}
-                                      href={image.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      style={{
-                                        flex: '1 1 0',
-                                        minWidth: 0,
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        const img =
-                                          e.currentTarget.querySelector('img')
-                                        if (img) img.style.opacity = '0.7'
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        const img =
-                                          e.currentTarget.querySelector('img')
-                                        if (img) img.style.opacity = '1'
-                                      }}
-                                    >
-                                      {img}
-                                    </a>
-                                  ) : (
-                                    <div
-                                      key={index}
-                                      style={{
-                                        flex: '1 1 0',
-                                        minWidth: 0,
-                                      }}
-                                    >
-                                      {img}
-                                    </div>
-                                  )
-                                },
-                              )}
-                            </div>
+                            {content[prevLayerRef.current - 1].images && (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  gap: '3rem',
+                                  alignItems: 'center',
+                                  justifyContent:
+                                    content[prevLayerRef.current - 1].images
+                                      ?.length === 2
+                                      ? 'center'
+                                      : 'flex-start',
+                                }}
+                              >
+                                {content[prevLayerRef.current - 1].images?.map(
+                                  (image, index) => {
+                                    const imageCount =
+                                      content[prevLayerRef.current - 1].images
+                                        ?.length || 3
+                                    const img = (
+                                      <img
+                                        key={index}
+                                        src={image.src}
+                                        alt={`Provider ${index + 1}`}
+                                        style={{
+                                          width: '100%',
+                                          height: 'auto',
+                                          transition: 'opacity 0.2s ease',
+                                        }}
+                                      />
+                                    )
+                                    return image.link ? (
+                                      <a
+                                        key={index}
+                                        href={image.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                          flex:
+                                            imageCount === 2
+                                              ? '0 0 30%'
+                                              : '1 1 0',
+                                          minWidth: 0,
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          const img =
+                                            e.currentTarget.querySelector('img')
+                                          if (img) img.style.opacity = '0.7'
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          const img =
+                                            e.currentTarget.querySelector('img')
+                                          if (img) img.style.opacity = '1'
+                                        }}
+                                      >
+                                        {img}
+                                      </a>
+                                    ) : (
+                                      <div
+                                        key={index}
+                                        style={{
+                                          flex:
+                                            imageCount === 2
+                                              ? '0 0 30%'
+                                              : '1 1 0',
+                                          minWidth: 0,
+                                        }}
+                                      >
+                                        {img}
+                                      </div>
+                                    )
+                                  },
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

@@ -41,6 +41,11 @@ const smartWallet = await actions.wallet.createSmartWallet({
     title: 'Lend',
     description:
       'Let users earn yield by lending assets across chains and protocols. Configure preferred markets with allow & block lists',
+    images: [
+      { src: '/aave-full.svg', link: 'https://aave.com/' },
+      { src: '/morpho-full.svg', link: 'https://morpho.org/' },
+    ],
+    imageLabel: 'Supports lending providers:',
     code: `// Fetch live market data
 const markets = actions.lend.getMarkets(USDC);
 
@@ -56,6 +61,7 @@ const receipt = wallet.lend.openPosition({
     description:
       'Let users borrow assets against lent collateral. Configure preferred markets with allow & block lists',
     soonBadge: true,
+    imageLabel: 'Supported borrow providers: Coming soon™',
     code: `// Fetch live market data
 const markets = actions.borrow.getMarkets(ETH);
 
@@ -71,6 +77,7 @@ const receipt = wallet.borrow.openPosition({
     description:
       'Enable onchain trading between configurable protocols and assets.',
     soonBadge: true,
+    imageLabel: 'Supported swap providers: Coming soon™',
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,
