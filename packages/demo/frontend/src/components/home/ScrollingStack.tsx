@@ -620,13 +620,13 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                           }}
                         >
                           <h3
-                            className="text-2xl font-medium mb-4"
+                            className="text-5xl font-medium mb-4 font-display"
                             style={{ color: colors.text.cream }}
                           >
                             {content[prevLayerRef.current - 1].title}
                           </h3>
                           <p
-                            className="mb-0"
+                            className="mb-0 font-sans"
                             style={{ color: colors.text.cream }}
                           >
                             {content[prevLayerRef.current - 1].description}
@@ -851,13 +851,13 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                           }}
                         >
                           <h3
-                            className="text-2xl font-medium mb-4"
+                            className="text-5xl font-medium mb-4 font-display"
                             style={{ color: colors.text.cream }}
                           >
                             {content[prevLayerRef.current - 1].title}
                           </h3>
                           <p
-                            className="mb-0"
+                            className="mb-0 font-sans"
                             style={{ color: colors.text.cream }}
                           >
                             {content[prevLayerRef.current - 1].description}

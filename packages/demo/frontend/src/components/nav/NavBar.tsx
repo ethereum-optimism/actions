@@ -69,7 +69,7 @@ function NavBar({
                   href="https://docs.optimism.io/app-developers/quickstarts/actions"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+                  className="flex items-center space-x-2 px-2 py-2 text-sm font-sans transition-colors duration-200"
                   style={{ color: colors.text.cream }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
@@ -78,7 +78,7 @@ function NavBar({
                 </a>
                 <a
                   href="/earn"
-                  className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+                  className="flex items-center space-x-2 px-2 py-2 text-sm font-sans transition-colors duration-200"
                   style={{ color: colors.text.cream }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
@@ -91,7 +91,7 @@ function NavBar({
               href="https://github.com/ethereum-optimism/actions"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+              className="flex items-center space-x-2 px-2 py-2 text-sm font-sans transition-colors duration-200"
               style={{ color: colors.text.cream }}
               onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
@@ -178,7 +178,7 @@ function NavBar({
               <button
                 key={layer.num}
                 onClick={() => progressBar.onLayerClick(layer.num)}
-                className="min-[470px]:text-[13px] text-[10px] min-[470px]:px-1 px-0"
+                className="min-[470px]:text-[13px] text-[10px] min-[470px]:px-1 px-0 font-sans"
                 style={{
                   flex: 1,
                   color:
