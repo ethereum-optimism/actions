@@ -27,13 +27,13 @@ export function ArtPage() {
   // Hardcoded absolute positions for each tile (left, top, zIndex)
   // Positioned to create isometric grid with gap
   const tilePositions = [
-    { left: 600, top: 450, z: 10 }, // 1 - front center
-    { left: 380, top: 340, z: 9 }, // 2 - back-left of 1
-    { left: 820, top: 340, z: 9 }, // 3 - back-right of 1
-    { left: 160, top: 230, z: 8 }, // 4 - back-left of 2
-    { left: 600, top: 230, z: 8 }, // 5 - back center
-    { left: 160, top: 450, z: 12 }, // 6 - bottom-left of 2 (in front of 7)
-    { left: -60, top: 340, z: 11 }, // 7 - bottom-left of 4
+    { left: 380, top: 340, z: 9 },
+    { left: 600, top: 450, z: 10 },
+    { left: 820, top: 340, z: 9 },
+    { left: 160, top: 230, z: 8 },
+    { left: 600, top: 230, z: 8 },
+    { left: 160, top: 450, z: 12 },
+    { left: -60, top: 340, z: 11 },
   ]
 
   return (
@@ -49,10 +49,24 @@ export function ArtPage() {
           fontVariantLigatures: 'none',
           fontFeatureSettings: '"liga" 0',
           fontSize: 'clamp(0.5rem, 2.5vw, 1.25rem)',
-          marginBottom: '-12rem',
+          marginBottom: '-10rem',
         }}
       >
         {ASCII_ART}
+      </div>
+      <div className="text-center pb-6" style={{ marginBottom: '-8rem' }}>
+        <p className="text-gray-400 text-lg">
+          By{' '}
+          <a
+            href="https://www.optimism.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: colors.actionsRed, fontWeight: 'bold' }}
+            className="hover:opacity-80"
+          >
+            Optimism
+          </a>
+        </p>
       </div>
       <div
         className="relative"
