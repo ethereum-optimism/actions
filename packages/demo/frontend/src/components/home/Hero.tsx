@@ -59,19 +59,16 @@ function Hero() {
           {ASCII_ART}
         </div>
       </div>
-      <div className="text-center pb-6">
-        <p className="text-gray-400 text-lg">
-          By{' '}
-          <a
-            href="https://www.optimism.io/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: colors.actionsRed, fontWeight: 'bold' }}
-            className="hover:opacity-80"
-          >
-            Optimism
-          </a>
-        </p>
+      <div className="text-center pb-6 flex items-center justify-center gap-2">
+        <span className="text-gray-400 text-lg">By</span>
+        <a
+          href="https://www.optimism.io/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:opacity-80 inline-block"
+        >
+          <img src="/Optimism.svg" alt="Optimism" className="h-4 w-auto" />
+        </a>
       </div>
 
       {/* Hero Section */}

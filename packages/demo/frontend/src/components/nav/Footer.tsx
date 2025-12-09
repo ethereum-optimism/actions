@@ -8,18 +8,17 @@ function Footer() {
         style={{ color: colors.text.cream }}
       >
         <div className="max-w-7xl mx-auto px-6">
-          <p>
-            © 2025 Actions by{' '}
+          <p className="flex items-center justify-center gap-2 flex-wrap">
+            <span>© 2025 Actions by</span>
             <a
               href="https://www.optimism.io/"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: colors.actionsRed, fontWeight: 'bold' }}
-              className="hover:opacity-80"
+              className="hover:opacity-80 inline-block"
             >
-              Optimism
+              <img src="/Optimism.svg" alt="Optimism" className="h-3 w-auto" />
             </a>
-            . Open source. MIT License.
+            <span>. Open source. MIT License.</span>
           </p>
         </div>
       </footer>

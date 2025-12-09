@@ -51,17 +51,13 @@ function NavBar({
                   className="h-8 w-auto md:hidden"
                 />
                 <img
-                  src="/actions-logo.png"
-                  alt="Actions"
-                  className="h-8 w-auto hidden md:block"
+                  src="/Optimism.svg"
+                  alt="Optimism"
+                  className="h-4 w-auto hidden md:block"
                 />
               </>
             ) : (
-              <img
-                src="/actions-logo.png"
-                alt="Actions"
-                className="h-8 w-auto"
-              />
+              <img src="/Optimism.svg" alt="Optimism" className="h-4 w-auto" />
             )}
           </a>
           <div className="flex items-center gap-4">
