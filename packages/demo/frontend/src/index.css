@@ -3,11 +3,39 @@ layer(base);
 
 @import 'tailwindcss';
 
+/*
+ * LL Riforma Font License
+ * Licensed for optimism.io and subdomains
+ */
+@font-face {
+  font-family: 'LL Riforma';
+  src: url('/fonts/RiformaLL-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LL Riforma';
+  src: url('/fonts/RiformaLL-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LL Riforma';
+  src: url('/fonts/RiformaLL-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @config '../tailwind.config.js';
 
 @layer base {
   button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  [role='button']:not(:disabled) {
     cursor: pointer;
   }
 }
@@ -76,6 +104,8 @@ layer(base);
   pre,
   code {
     font-variant-ligatures: none;
-    font-feature-settings: "liga" 0, "calt" 0;
+    font-feature-settings:
+      'liga' 0,
+      'calt' 0;
   }
 }

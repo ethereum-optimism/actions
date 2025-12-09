@@ -6,6 +6,8 @@ export default {
     extend: {
       fontFamily: {
         mono: ['JetBrains Mono', 'Monaco', 'Menlo', 'Consolas', 'monospace'],
+        sans: ['LL Riforma', 'system-ui', 'sans-serif'],
+        display: ['VT323', 'monospace'],
       },
       colors: {
         red: '#FF0621',

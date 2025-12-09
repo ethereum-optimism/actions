@@ -1,4 +1,5 @@
 import { colors } from '@/constants/colors'
+import { ExternalLinkIcon } from '@/assets/icons'
 
 interface NavBarProps {
   fullWidth?: boolean
@@ -46,22 +47,18 @@ function NavBar({
             {responsiveLogo ? (
               <>
                 <img
-                  src="/Actions-logo-A.png"
-                  alt="Actions"
+                  src="/favicon.png"
+                  alt="Optimism"
                   className="h-8 w-auto md:hidden"
                 />
                 <img
-                  src="/actions-logo.png"
-                  alt="Actions"
-                  className="h-8 w-auto hidden md:block"
+                  src="/Optimism.svg"
+                  alt="Optimism"
+                  className="h-4 w-auto hidden md:block"
                 />
               </>
             ) : (
-              <img
-                src="/actions-logo.png"
-                alt="Actions"
-                className="h-8 w-auto"
-              />
+              <img src="/Optimism.svg" alt="Optimism" className="h-4 w-auto" />
             )}
           </a>
           <div className="flex items-center gap-4">
@@ -72,7 +69,7 @@ function NavBar({
                   href="https://docs.optimism.io/app-developers/quickstarts/actions"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+                  className="flex items-center space-x-2 px-2 py-2 text-sm font-sans transition-colors duration-200"
                   style={{ color: colors.text.cream }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
@@ -81,7 +78,7 @@ function NavBar({
                 </a>
                 <a
                   href="/earn"
-                  className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+                  className="flex items-center space-x-2 px-2 py-2 text-sm font-sans transition-colors duration-200"
                   style={{ color: colors.text.cream }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
@@ -94,25 +91,13 @@ function NavBar({
               href="https://github.com/ethereum-optimism/actions"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-2 px-2 py-2 text-sm transition-colors duration-200"
+              className="flex items-center space-x-2 px-2 py-2 text-sm font-sans transition-colors duration-200"
               style={{ color: colors.text.cream }}
               onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
             >
               <span>GitHub</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
+              <ExternalLinkIcon className="w-4 h-4" />
             </a>
           </div>
         </div>
@@ -193,7 +178,7 @@ function NavBar({
               <button
                 key={layer.num}
                 onClick={() => progressBar.onLayerClick(layer.num)}
-                className="min-[470px]:text-[13px] text-[10px] min-[470px]:px-1 px-0"
+                className="min-[470px]:text-[13px] text-[10px] min-[470px]:px-1 px-0 font-sans"
                 style={{
                   flex: 1,
                   color:
