@@ -49,24 +49,23 @@ export function ArtPage() {
           fontVariantLigatures: 'none',
           fontFeatureSettings: '"liga" 0',
           fontSize: 'clamp(0.5rem, 2.5vw, 1.25rem)',
-          marginBottom: '-10rem',
         }}
       >
         {ASCII_ART}
       </div>
-      <div className="text-center pb-6" style={{ marginBottom: '-8rem' }}>
-        <p className="text-gray-400 text-lg">
-          By{' '}
-          <a
-            href="https://www.optimism.io/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: colors.actionsRed, fontWeight: 'bold' }}
-            className="hover:opacity-80"
-          >
-            Optimism
-          </a>
-        </p>
+      <div
+        className="text-center pb-2 flex items-center justify-center gap-2"
+        style={{ marginBottom: '-10rem' }}
+      >
+        <span className="text-gray-400 text-lg">By</span>
+        <a
+          href="https://www.optimism.io/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:opacity-80 inline-block"
+        >
+          <img src="/Optimism.svg" alt="Optimism" className="h-4 w-auto" />
+        </a>
       </div>
       <div
         className="relative"
