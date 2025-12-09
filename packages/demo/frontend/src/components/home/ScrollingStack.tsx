@@ -355,18 +355,24 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
     let scrollableHeight =
       contentElement.scrollHeight - contentElement.clientHeight
 
-    // On mobile, add extra heights since content extends into different areas
+    // On mobile, check if content actually extends below the visible area
     if (isMobile) {
-      // Add the image gap (20% of viewport) since content can now extend into that area
-      const imageGapHeight = window.innerHeight * 0.2
-      // Also account for the fixed nav bar height
-      const navHeight =
-        document.querySelector('header')?.getBoundingClientRect().height || 0
-      // Add mobile-specific height buffer for slides that need extra space
-      const currentLayerContent = content[layerNum - 1]
-      const contentBuffer = currentLayerContent?.mobileHeightBuffer || 0
+      // Get the actual content container's bounding rect
+      const contentRect = contentElement.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
 
-      scrollableHeight += imageGapHeight + navHeight + contentBuffer
+      // Calculate how much content is below the fold (if any)
+      const contentBottom = contentRect.top + contentElement.scrollHeight
+      const belowFold = contentBottom - viewportHeight
+
+      // Only scroll if content is actually below the fold
+      if (belowFold <= 0) {
+        // Content fits within viewport - no scrolling needed
+        return 0
+      }
+
+      // Use the actual overflow amount as scrollable height
+      scrollableHeight = belowFold
     }
 
     if (scrollableHeight > 0) {
