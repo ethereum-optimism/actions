@@ -2,15 +2,17 @@ export function TerminalIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      fill="none"
-      stroke="currentColor"
+      width="24"
+      height="24"
       viewBox="0 0 24 24"
+      fill="none"
     >
       <path
+        d="M7.25 7.75L9 9.5L7.25 11.25M10.75 11.25H12.75M3.75 3.75H20.25V20.25H3.75V3.75Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={2}
-        d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
       />
     </svg>
   )
@@ -20,15 +22,57 @@ export function DocumentIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      fill="none"
-      stroke="currentColor"
+      width="24"
+      height="24"
       viewBox="0 0 24 24"
+      fill="none"
     >
       <path
+        d="M19.25 12V16.75H7C5.75736 16.75 4.75 17.7574 4.75 19C4.75 20.2426 5.75736 21.25 7 21.25H10M8.75 7H15.25M8.75 11H12.25M6.75 2.75H19.25V21.25H6.75C5.64543 21.25 4.75 20.3546 4.75 19.25V4.75C4.75 3.64543 5.64543 2.75 6.75 2.75Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+    </svg>
+  )
+}
+
+export function ExternalLinkIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <path
+        d="M18.25 15.25V5.75M18.25 5.75H8.75M18.25 5.75L6 18"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function CopyIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <path
+        d="M15.25 8.75V2.75H2.75V15.25H8.75M8.75 8.75H21.25V21.25H8.75V8.75Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   )
