@@ -47,8 +47,8 @@ function NavBar({
             {responsiveLogo ? (
               <>
                 <img
-                  src="/Actions-logo-A.png"
-                  alt="Actions"
+                  src="/favicon.png"
+                  alt="Optimism"
                   className="h-8 w-auto md:hidden"
                 />
                 <img
