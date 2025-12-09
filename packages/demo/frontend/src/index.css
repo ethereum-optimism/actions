@@ -84,6 +84,11 @@ layer(base);
   @apply text-terminal-accent;
 }
 
+@utility pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
 @layer base {
   * {
     @apply border-terminal-border;

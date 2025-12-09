@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Home from '@/components/home/Home'
 import { EarnPage } from '@/pages/EarnPage'
 import Docs from '@/pages/Docs'
+import { ArtPage } from '@/pages/ArtPage'
 import { ROUTES } from '@/constants/routes'
 
 const queryClient = new QueryClient({
@@ -26,6 +27,7 @@ function App() {
             <Route path={ROUTES.DOCS} element={<Docs />} />
             <Route path={ROUTES.DEMO} element={<EarnPage />} />
             <Route path={ROUTES.EARN} element={<EarnPage />} />
+            <Route path={ROUTES.ART} element={<ArtPage />} />
           </Routes>
         </div>
       </Router>
