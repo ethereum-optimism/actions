@@ -66,6 +66,63 @@ forge script script/ImpersonateFund.s.sol \
 
 
 
+### DeployMorphoMarket.s.sol
+
+Forge deployment script that creates a complete Morpho lending market for demo purposes. This script deploys tokens, creates a market, deploys a vault, and sets up yield generation - all in one transaction.
+
+**What it creates:**
+- `DemoUSDC` - Mintable ERC20 loan token (6 decimals)
+- `DemoOP` - Mintable ERC20 collateral token (18 decimals)
+- `FixedPriceOracle` - Returns 1:1 price (1 USDC per 1 OP)
+- Morpho Blue market with 94.5% LLTV
+- MetaMorpho vault ("Actions Demo USDC Vault" / "dUSDC") with unlimited deposit cap
+- Yield-generating borrow position (99% utilization for high APY)
+
+**Prerequisites:**
+1. Create a new wallet and save the private key as `DEMO_MARKET_SETUP_PRIVATE_KEY` in your `.env` file
+2. Fund the wallet with at least **0.1 ETH** on Base Sepolia (covers deployment + buffer for retries)
+   - Use a faucet like https://www.alchemy.com/faucets/base-sepolia
+3. Set `BASE_SEPOLIA_RPC_URL` in your `.env` file
+
+**Environment Variables:**
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DEMO_MARKET_SETUP_PRIVATE_KEY` | Private key for deployment wallet (owns all contracts) | Yes |
+| `BASE_SEPOLIA_RPC_URL` | RPC URL for Base Sepolia (e.g., `https://sepolia.base.org`) | Yes |
+
+**Usage:**
+```bash
+cd packages/demo/contracts
+
+# Deploy the complete Morpho market setup
+forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
+  --broadcast \
+  --private-key $DEMO_MARKET_SETUP_PRIVATE_KEY
+```
+
+**Estimated Gas Cost:** ~5-6M gas (~0.01 ETH at current Base Sepolia prices)
+
+**Output:**
+The script outputs all deployed contract addresses. Save these to update the SDK and demo app configs:
+- Loan Token (USDC_DEMO)
+- Collateral Token (OP_DEMO)
+- Oracle
+- Vault
+
+**Post-Deployment:**
+After running the script, update these config files with the new addresses:
+- `packages/sdk/src/supported/tokens.ts` - Add USDC_DEMO and OP_DEMO token addresses
+- `packages/demo/backend/src/config/assets.ts` - Add asset configurations
+- `packages/demo/backend/src/config/markets.ts` - Add new vault address
+- `packages/demo/frontend/src/constants/markets.ts` - Update frontend market config
+
+**How Yield Works:**
+The script creates a borrow position with 99% utilization, causing high interest rates. This interest accrues to vault depositors in real-time. Users see their balances grow when querying the vault - no ongoing maintenance required.
+
+---
+
 ## Quick Start Scripts
 
 For convenience, the following npm scripts are available:
