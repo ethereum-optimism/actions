@@ -10,3 +10,6 @@ docs/
 
 # Dotenv file
 .env
+
+# Deployment state (testnet two-phase deployment)
+.morpho-market-deployment.json
