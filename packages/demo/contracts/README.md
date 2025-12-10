@@ -68,7 +68,7 @@ forge script script/ImpersonateFund.s.sol \
 
 ### DeployMorphoMarket.s.sol
 
-Forge deployment script that creates a complete Morpho lending market for demo purposes. This script deploys tokens, creates a market, deploys a vault, and sets up yield generation - all in one transaction.
+Forge deployment script that creates a complete Morpho lending market for demo purposes. This script deploys tokens, creates a market, deploys a vault, and sets up yield generation.
 
 **What it creates:**
 - `DemoUSDC` - Mintable ERC20 loan token (6 decimals)
@@ -91,18 +91,63 @@ Forge deployment script that creates a complete Morpho lending market for demo p
 | `DEMO_MARKET_SETUP_PRIVATE_KEY` | Private key for deployment wallet (owns all contracts) | Yes |
 | `BASE_SEPOLIA_RPC_URL` | RPC URL for Base Sepolia (e.g., `https://sepolia.base.org`) | Yes |
 
-**Usage:**
+**Why Two Steps?**
+
+The MetaMorpho V1.0 factory on Base Sepolia requires a minimum 1-day timelock. This means after submitting a supply cap, you must wait 1 day before accepting it. The deployment is split into two scripts:
+
+1. **Step 1 (`DeployMorphoMarket`)**: Deploys tokens, oracle, market, vault, and submits the supply cap
+2. **Step 2 (`DeployMorphoMarketStep2`)**: Accepts the cap, configures the vault, and creates the yield position
+
+**Usage (Local Anvil Fork - Instant):**
+
+For testing on a local anvil fork, you can warp time to skip the timelock:
+
 ```bash
 cd packages/demo/contracts
 
-# Deploy the complete Morpho market setup
+# Start anvil fork
+anvil --fork-url https://sepolia.base.org --port 8545 &
+
+# Step 1: Deploy contracts and submit cap
 forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast \
+  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+# Warp time forward 1 day
+cast rpc evm_increaseTime 86401 --rpc-url http://127.0.0.1:8545
+cast rpc evm_mine --rpc-url http://127.0.0.1:8545
+
+# Step 2: Accept cap and finalize (use addresses from step 1 output)
+VAULT_ADDRESS=0x... USDC_ADDRESS=0x... OP_ADDRESS=0x... ORACLE_ADDRESS=0x... \
+forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarketStep2 \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast \
+  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+```
+
+**Usage (Real Testnet - Requires 1 Day Wait):**
+
+```bash
+cd packages/demo/contracts
+
+# Step 1: Deploy contracts and submit cap
+forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarketStep1 \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
+  --broadcast \
+  --private-key $DEMO_MARKET_SETUP_PRIVATE_KEY
+
+# ⏳ WAIT 1 DAY for timelock to expire
+
+# Step 2: Accept cap and finalize (use addresses from step 1 output)
+VAULT_ADDRESS=0x... USDC_ADDRESS=0x... OP_ADDRESS=0x... ORACLE_ADDRESS=0x... \
+forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarketStep2 \
   --rpc-url $BASE_SEPOLIA_RPC_URL \
   --broadcast \
   --private-key $DEMO_MARKET_SETUP_PRIVATE_KEY
 ```
 
-**Estimated Gas Cost:** ~5-6M gas (~0.01 ETH at current Base Sepolia prices)
+**Estimated Gas Cost:** ~8-10M gas total (~0.02 ETH across both steps)
 
 **Output:**
 The script outputs all deployed contract addresses. Save these to update the SDK and demo app configs:

@@ -16,12 +16,8 @@ interface IMorpho {
     function createMarket(MarketParams memory marketParams) external;
 
     /// @notice Supplies collateral to a market
-    function supplyCollateral(
-        MarketParams memory marketParams,
-        uint256 assets,
-        address onBehalf,
-        bytes calldata data
-    ) external;
+    function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes calldata data)
+        external;
 
     /// @notice Borrows assets from a market
     function borrow(
