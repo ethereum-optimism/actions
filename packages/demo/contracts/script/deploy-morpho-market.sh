@@ -100,20 +100,24 @@ deploy_local() {
     # Cleanup on exit
     trap "kill $ANVIL_PID 2>/dev/null" EXIT
 
+    # Get starting balance for gas calculation
+    DEPLOYER_ADDRESS=$(cast wallet address "$PRIVATE_KEY")
+    START_BALANCE=$(cast balance "$DEPLOYER_ADDRESS" --rpc-url "$RPC_URL")
+
     log_step "Step 1: Deploying contracts and submitting cap..."
     cd "$CONTRACTS_DIR"
 
-    # Run step 1 and capture output (no --silent to get console.log output)
-    OUTPUT=$(forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
+    # Run step 1 and capture output
+    OUTPUT=$(forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarketStep1 \
         --rpc-url "$RPC_URL" \
         --broadcast \
         --private-key "$PRIVATE_KEY" 2>&1) || log_error "Step 1 failed: $OUTPUT"
 
     # Extract addresses from forge console.log output
-    VAULT_ADDRESS=$(echo "$OUTPUT" | grep "MetaMorpho vault deployed at:" | grep -o "0x[a-fA-F0-9]\{40\}")
-    USDC_ADDRESS=$(echo "$OUTPUT" | grep "DemoUSDC deployed at:" | grep -o "0x[a-fA-F0-9]\{40\}")
-    OP_ADDRESS=$(echo "$OUTPUT" | grep "DemoOP deployed at:" | grep -o "0x[a-fA-F0-9]\{40\}")
-    ORACLE_ADDRESS=$(echo "$OUTPUT" | grep "FixedPriceOracle deployed at:" | grep -o "0x[a-fA-F0-9]\{40\}")
+    VAULT_ADDRESS=$(echo "$OUTPUT" | grep "Vault:" | grep -o "0x[a-fA-F0-9]\{40\}")
+    USDC_ADDRESS=$(echo "$OUTPUT" | grep "DemoUSDC:" | grep -o "0x[a-fA-F0-9]\{40\}")
+    OP_ADDRESS=$(echo "$OUTPUT" | grep "DemoOP:" | grep -o "0x[a-fA-F0-9]\{40\}")
+    ORACLE_ADDRESS=$(echo "$OUTPUT" | grep "Oracle:" | grep -o "0x[a-fA-F0-9]\{40\}")
 
     if [[ -z "$VAULT_ADDRESS" ]]; then
         log_error "Failed to extract vault address from output"
@@ -141,13 +145,22 @@ deploy_local() {
 
     log_success "Vault finalized with yield generation"
 
+    # Calculate gas used (in gas units, not ETH - anvil has 0 gas price)
+    END_BALANCE=$(cast balance "$DEPLOYER_ADDRESS" --rpc-url "$RPC_URL")
+    GAS_USED_WEI=$((START_BALANCE - END_BALANCE))
+
+    # Extract total gas from forge output (more accurate than balance diff on anvil)
+    STEP1_GAS=$(echo "$OUTPUT" | grep -o "Gas used: [0-9]*" | head -1 | grep -o "[0-9]*" || echo "0")
+
     # Verify deployment
     log_step "Verifying deployment..."
     TOTAL_ASSETS=$(cast call "$VAULT_ADDRESS" "totalAssets()(uint256)" --rpc-url "$RPC_URL")
     log_success "Vault total assets: $TOTAL_ASSETS (expected: 1000000000000)"
 
     echo ""
-    log_success "=== LOCAL DEPLOYMENT COMPLETE ==="
+    echo -e "${GREEN}========================================${NC}"
+    echo -e "${GREEN}   LOCAL TEST PASSED${NC}"
+    echo -e "${GREEN}========================================${NC}"
     echo ""
     echo "Deployed Addresses:"
     echo "  USDC_DEMO:  $USDC_ADDRESS"
@@ -155,7 +168,11 @@ deploy_local() {
     echo "  Oracle:     $ORACLE_ADDRESS"
     echo "  Vault:      $VAULT_ADDRESS"
     echo ""
-    echo "Local test passed. Safe to run: pnpm deploy:testnet"
+    echo "Next steps:"
+    echo "  1. Fund DEMO_MARKET_SETUP_PRIVATE_KEY wallet with ~0.001 ETH on Base Sepolia"
+    echo "     (Estimated cost: ~8M gas × 2 steps ≈ 0.0002 ETH at typical gas prices)"
+    echo "  2. Run: pnpm deploy:morpho:testnet"
+    echo ""
 
     # Cleanup
     kill $ANVIL_PID 2>/dev/null
@@ -188,13 +205,20 @@ deploy_testnet() {
         SUPPLY_QUEUE_LENGTH=$(cast call "$VAULT_ADDRESS" "supplyQueueLength()(uint256)" --rpc-url "$RPC_URL" 2>/dev/null) || SUPPLY_QUEUE_LENGTH="0"
 
         if [[ "$SUPPLY_QUEUE_LENGTH" != "0" ]]; then
-            log_success "Market already fully deployed!"
+            echo ""
+            echo -e "${GREEN}========================================${NC}"
+            echo -e "${GREEN}   MARKET ALREADY DEPLOYED${NC}"
+            echo -e "${GREEN}========================================${NC}"
             echo ""
             echo "Deployed Addresses:"
             echo "  USDC_DEMO:  $USDC_ADDRESS"
             echo "  OP_DEMO:    $OP_ADDRESS"
             echo "  Oracle:     $ORACLE_ADDRESS"
             echo "  Vault:      $VAULT_ADDRESS"
+            echo ""
+            echo "Verify on Base Sepolia Explorer:"
+            echo "  Vault: https://sepolia.basescan.org/address/$VAULT_ADDRESS"
+            echo ""
             exit 0
         fi
 
@@ -237,13 +261,19 @@ deploy_testnet() {
             rm -f "$STATE_FILE"
 
             echo ""
-            log_success "=== TESTNET DEPLOYMENT COMPLETE ==="
+            echo -e "${GREEN}========================================${NC}"
+            echo -e "${GREEN}   TESTNET DEPLOYMENT COMPLETE${NC}"
+            echo -e "${GREEN}========================================${NC}"
             echo ""
             echo "Deployed Addresses:"
             echo "  USDC_DEMO:  $USDC_ADDRESS"
             echo "  OP_DEMO:    $OP_ADDRESS"
             echo "  Oracle:     $ORACLE_ADDRESS"
             echo "  Vault:      $VAULT_ADDRESS"
+            echo ""
+            echo "Verify on Base Sepolia Explorer:"
+            echo "  Vault: https://sepolia.basescan.org/address/$VAULT_ADDRESS"
+            echo ""
             exit 0
         fi
     fi
@@ -272,7 +302,9 @@ deploy_testnet() {
     log_success "Step 1 complete"
 
     echo ""
-    log_info "=== 24-HOUR WAITING PERIOD STARTED ==="
+    echo -e "${YELLOW}========================================${NC}"
+    echo -e "${YELLOW}   24-HOUR WAITING PERIOD STARTED${NC}"
+    echo -e "${YELLOW}========================================${NC}"
     echo ""
     echo "Deployed Addresses (saved to $STATE_FILE):"
     echo "  USDC_DEMO:  $USDC_ADDRESS"
@@ -280,8 +312,12 @@ deploy_testnet() {
     echo "  Oracle:     $ORACLE_ADDRESS"
     echo "  Vault:      $VAULT_ADDRESS"
     echo ""
+    echo "Verify on Base Sepolia Explorer:"
+    echo "  Vault: https://sepolia.basescan.org/address/$VAULT_ADDRESS"
+    echo ""
     echo "The MetaMorpho factory requires a 1-day timelock before accepting supply caps."
     echo "Run this same command again after 24 hours to complete deployment."
+    echo ""
 }
 
 # Main
