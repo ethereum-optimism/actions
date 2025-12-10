@@ -64,6 +64,11 @@ get_state_value() {
     read_state | grep -o "\"$key\":\"[^\"]*\"" | cut -d'"' -f4
 }
 
+# Strip scientific notation from cast output (e.g., "1765495484[1.765e9]" -> "1765495484")
+strip_cast_notation() {
+    echo "$1" | sed 's/\[.*\]//' | tr -d ' '
+}
+
 # Check if step 1 is complete by checking for pending cap
 check_pending_cap() {
     local vault="$1"
@@ -73,9 +78,9 @@ check_pending_cap() {
     local result
     result=$(cast call "$vault" "pendingCap(bytes32)(uint192,uint64)" "$market_id" --rpc-url "$RPC_URL" 2>/dev/null) || return 1
 
-    # Parse validAt (second value)
+    # Parse validAt (second value) and strip scientific notation
     local valid_at
-    valid_at=$(echo "$result" | tail -1 | tr -d ' ')
+    valid_at=$(strip_cast_notation "$(echo "$result" | tail -1)")
 
     if [[ "$valid_at" != "0" ]]; then
         echo "$valid_at"
@@ -231,7 +236,7 @@ deploy_testnet() {
         VALID_AT=$(check_pending_cap "$VAULT_ADDRESS" "$MARKET_ID")
 
         if [[ -n "$VALID_AT" ]]; then
-            CURRENT_TIME=$(cast block-number --rpc-url "$RPC_URL" | xargs -I{} cast block {} --rpc-url "$RPC_URL" | grep timestamp | awk '{print $2}')
+            CURRENT_TIME=$(strip_cast_notation "$(cast block latest --rpc-url "$RPC_URL" -f timestamp)")
 
             if [[ "$CURRENT_TIME" -lt "$VALID_AT" ]]; then
                 WAIT_SECONDS=$((VALID_AT - CURRENT_TIME))
