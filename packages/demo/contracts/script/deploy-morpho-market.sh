@@ -31,9 +31,14 @@ if [[ "$MODE" == "local" ]]; then
     PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
     log_info "Mode: LOCAL (anvil fork with time warp)"
 else
+    # Load env from backend if not already set
+    BACKEND_ENV="$SCRIPT_DIR/../../backend/.env"
+    if [[ -f "$BACKEND_ENV" ]]; then
+        source "$BACKEND_ENV"
+    fi
     RPC_URL="${BASE_SEPOLIA_RPC_URL:-https://sepolia.base.org}"
     if [[ -z "$DEMO_MARKET_SETUP_PRIVATE_KEY" ]]; then
-        log_error "DEMO_MARKET_SETUP_PRIVATE_KEY not set. Add it to your .env file."
+        log_error "DEMO_MARKET_SETUP_PRIVATE_KEY not set. Add it to packages/demo/backend/.env"
     fi
     PRIVATE_KEY="$DEMO_MARKET_SETUP_PRIVATE_KEY"
     log_info "Mode: TESTNET (Base Sepolia)"
