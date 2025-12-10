@@ -12,7 +12,7 @@ This monorepo contains the following packages:
 
 - [`packages/demo/backend`](./packages/demo/backend) - A hono service demonstrating the Actions SDK in a backend environment.
 
-- [`packages/demo/contracts`](./packages/demo/contracts) - Demo smart contracts including a Faucet contract with deployment and funding scripts for local development.
+- [`packages/demo/contracts`](./packages/demo/contracts) - Demo smart contracts including a Faucet contract and a [Morpho market deployment script](./packages/demo/contracts/README.md#deploymorphomarkets-sol) for setting up lending markets on testnets.
 
 ## Setup
 
