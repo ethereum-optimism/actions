@@ -1,5 +1,6 @@
 import { WalletProviderOption } from './WalletProviderOption'
 import { WALLET_PROVIDER_CONFIGS } from '@/constants/walletProviders'
+import { trackEvent } from '@/utils/analytics'
 
 const WALLET_PROVIDERS_LIST = Object.values(WALLET_PROVIDER_CONFIGS)
 
@@ -38,9 +39,12 @@ export function WelcomeWalletPicker() {
                 name={provider.name}
                 logoSrc={provider.logoSrc}
                 isSelected={false}
-                onClick={() =>
-                  (window.location.href = `/earn?walletProvider=${provider.queryParam}`)
-                }
+                onClick={() => {
+                  trackEvent('wallet_provider_select', {
+                    provider: provider.name,
+                  })
+                  window.location.href = `/earn?walletProvider=${provider.queryParam}`
+                }}
               />
             ))}
           </div>

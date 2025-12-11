@@ -12,6 +12,7 @@ import { LoginWithPrivy } from './LoginWithPrivy'
 import { env } from '@/envVars'
 import { EarnWithServerWallet } from './EarnWithServerWallet'
 import { WALLET_PROVIDER_CONFIGS } from '@/constants/walletProviders'
+import { trackEvent, identifyUser } from '@/utils/analytics'
 
 export function EarnWithPrivyServerWallet() {
   const { ready, authenticated, getAccessToken } = usePrivy()
@@ -88,6 +89,20 @@ export function EarnWithPrivyServerWallet() {
       addSessionSigner(wallet.address)
     })
   }, [ethereumEmbeddedWallets, addSessionSigner])
+
+  // Track successful login
+  useEffect(() => {
+    if (authenticated && user?.id) {
+      identifyUser(user.id, {
+        email: user.email?.address,
+        provider: 'privy',
+      })
+      trackEvent('login_success', {
+        provider: 'privy',
+        hasEmail: !!user.email?.address,
+      })
+    }
+  }, [authenticated, user?.id, user?.email?.address])
 
   if (!authenticated) {
     return <LoginWithPrivy />
