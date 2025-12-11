@@ -52,7 +52,15 @@
   },
   "pnpm": {
     "overrides": {
-      "nx>axios": "^1.12.0"
+      "nx>axios": "^1.12.0",
+      "viem": "2.33.0",
+      "zod": "4.0.5"
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "viem": "2.33.0",
+        "zod": "4.0.5"
+      }
     }
   },
   "engines": {
