@@ -59,9 +59,13 @@ function Home() {
 
       <main className="max-w-7xl mx-auto px-6">
         <Overview onProgressUpdate={setProgressBarData} />
-
-        <TakeAction />
       </main>
+
+      <div className="overflow-x-clip">
+        <div className="max-w-7xl mx-auto px-6">
+          <TakeAction />
+        </div>
+      </div>
 
       <Footer />
     </div>
