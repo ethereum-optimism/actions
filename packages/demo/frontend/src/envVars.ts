@@ -46,6 +46,10 @@ const envVarSchema = z.object({
     .string()
     .optional()
     .describe('Optimism Sepolia Bundler URL for wallet connection'),
+  VITE_MIXPANEL_TOKEN: z
+    .string()
+    .optional()
+    .describe('Mixpanel project token for analytics'),
 })
 
 export const env = envVarSchema.parse(import.meta.env)

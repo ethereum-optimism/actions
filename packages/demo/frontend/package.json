@@ -9,7 +9,7 @@
     "directory": "packages/demo/frontend"
   },
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' tsc -b && vite build",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "dev": "vite",
     "preview": "vite preview",
@@ -30,6 +30,7 @@
     "buffer": "^6.0.3",
     "eventemitter3": "^5.0.1",
     "highlight.js": "^11.11.1",
+    "mixpanel-browser": "^2.72.0",
     "react": "^18",
     "react-dom": "^18",
     "react-router": "7",
