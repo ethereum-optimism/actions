@@ -156,7 +156,7 @@ function Overview({ onProgressUpdate }: OverviewProps) {
       <div className="py-16">
         <div className="max-w-4xl mx-auto mb-8">
           <h2
-            className="text-3xl font-medium mb-4"
+            className="text-3xl font-medium mb-4 font-display"
             style={{ color: colors.text.cream }}
           >
             Overview

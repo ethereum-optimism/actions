@@ -55,7 +55,7 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
         </div>
       </div>
       <h3
-        className="text-2xl font-medium mb-6 relative z-10"
+        className="text-2xl font-medium mb-6 relative z-10 font-display"
         style={{ color: colors.text.cream }}
       >
         Ready to take Action?
