@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { colors } from '@/constants/colors'
 import { CopyIcon } from '@/assets/icons'
+import { trackEvent } from '@/utils/analytics'
 
 interface PackageManagerSelectorProps {
   showShadow?: boolean
@@ -40,7 +41,10 @@ function PackageManagerSelector({
         {Object.keys(packageManagers).map((pm) => (
           <button
             key={pm}
-            onClick={() => setSelectedPackageManager(pm)}
+            onClick={() => {
+              setSelectedPackageManager(pm)
+              trackEvent('package_manager_select', { packageManager: pm })
+            }}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
               selectedPackageManager === pm
                 ? 'border-b-2'
@@ -78,13 +82,17 @@ function PackageManagerSelector({
         </pre>
         {/* Copy button */}
         <button
-          onClick={() =>
+          onClick={() => {
             navigator.clipboard.writeText(
               packageManagers[
                 selectedPackageManager as keyof typeof packageManagers
               ],
             )
-          }
+            trackEvent('code_copy', {
+              snippet: 'install_command',
+              packageManager: selectedPackageManager,
+            })
+          }}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
           aria-label="Copy command"
         >

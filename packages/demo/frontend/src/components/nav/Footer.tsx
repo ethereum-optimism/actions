@@ -1,4 +1,5 @@
 import { colors } from '@/constants/colors'
+import { trackEvent } from '@/utils/analytics'
 
 function Footer() {
   return (
@@ -18,6 +19,12 @@ function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className="hover:opacity-80 inline-block"
+              onClick={() =>
+                trackEvent('cta_click', {
+                  cta: 'optimism_logo',
+                  location: 'footer',
+                })
+              }
             >
               <img src="/Optimism.svg" alt="Optimism" className="h-3 w-auto" />
             </a>

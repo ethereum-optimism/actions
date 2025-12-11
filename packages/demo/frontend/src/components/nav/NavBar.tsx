@@ -1,5 +1,6 @@
 import { colors } from '@/constants/colors'
 import { ExternalLinkIcon } from '@/assets/icons'
+import { trackEvent } from '@/utils/analytics'
 
 interface NavBarProps {
   fullWidth?: boolean
@@ -73,6 +74,9 @@ function NavBar({
                   style={{ color: colors.text.cream }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                  onClick={() =>
+                    trackEvent('cta_click', { cta: 'docs', location: 'navbar' })
+                  }
                 >
                   <span>Docs</span>
                 </a>
@@ -82,6 +86,9 @@ function NavBar({
                   style={{ color: colors.text.cream }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                  onClick={() =>
+                    trackEvent('cta_click', { cta: 'demo', location: 'navbar' })
+                  }
                 >
                   <span>Demo</span>
                 </a>
@@ -95,6 +102,9 @@ function NavBar({
               style={{ color: colors.text.cream }}
               onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+              onClick={() =>
+                trackEvent('cta_click', { cta: 'github', location: 'navbar' })
+              }
             >
               <span>GitHub</span>
               <ExternalLinkIcon className="w-4 h-4" />

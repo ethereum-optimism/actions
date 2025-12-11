@@ -1,6 +1,7 @@
 import { colors } from '@/constants/colors'
 import { TerminalIcon, DocumentIcon } from '@/assets/icons'
 import PackageManagerSelector from '@/components/home/PackageManagerSelector'
+import { trackEvent } from '@/utils/analytics'
 
 const ASCII_ART = `
     █████████             █████     ███
@@ -66,6 +67,9 @@ function Hero() {
           target="_blank"
           rel="noopener noreferrer"
           className="hover:opacity-80 inline-block"
+          onClick={() =>
+            trackEvent('cta_click', { cta: 'optimism_logo', location: 'hero' })
+          }
         >
           <img src="/Optimism.svg" alt="Optimism" className="h-4 w-auto" />
         </a>
@@ -104,6 +108,9 @@ function Hero() {
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.backgroundColor = colors.text.cream)
                 }
+                onClick={() =>
+                  trackEvent('cta_click', { cta: 'demo', location: 'hero' })
+                }
               >
                 <TerminalIcon className="w-5 h-5" />
                 Demo
@@ -114,6 +121,9 @@ function Hero() {
                 rel="noopener noreferrer"
                 className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
                 style={{ color: colors.text.cream }}
+                onClick={() =>
+                  trackEvent('cta_click', { cta: 'docs', location: 'hero' })
+                }
               >
                 <DocumentIcon className="w-5 h-5" />
                 Docs
