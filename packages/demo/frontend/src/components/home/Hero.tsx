@@ -60,7 +60,7 @@ function Hero() {
         </div>
       </div>
       <div className="text-center pb-6 flex items-center justify-center gap-2">
-        <span className="text-gray-400 text-lg">By</span>
+        <span className="text-gray-400 text-lg font-sans">By</span>
         <a
           href="https://www.optimism.io/"
           target="_blank"
@@ -96,7 +96,7 @@ function Hero() {
             <div className="flex flex-row gap-4 justify-center">
               <a
                 href="/earn"
-                className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
+                className="text-black px-8 py-3 rounded-lg font-medium font-sans inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
                 style={{ backgroundColor: colors.text.cream }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.backgroundColor = '#E5E5CC')
@@ -112,7 +112,7 @@ function Hero() {
                 href="https://docs.optimism.io/app-developers/quickstarts/actions"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
+                className="border border-gray-600 px-8 py-3 rounded-lg font-medium font-sans hover:bg-gray-700 inline-flex items-center justify-center gap-2 transition-colors duration-200 flex-1 sm:flex-initial"
                 style={{ color: colors.text.cream }}
               >
                 <DocumentIcon className="w-5 h-5" />

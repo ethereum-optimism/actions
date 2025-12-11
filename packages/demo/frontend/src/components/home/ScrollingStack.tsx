@@ -678,8 +678,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               <p
                                 className={
                                   content[prevLayerRef.current - 1].images
-                                    ? 'mb-4 text-sm'
-                                    : 'mb-0 text-sm'
+                                    ? 'mb-4 text-sm font-sans'
+                                    : 'mb-0 text-sm font-sans'
                                 }
                                 style={{ color: colors.text.cream }}
                               >
@@ -922,8 +922,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               <p
                                 className={
                                   content[prevLayerRef.current - 1].images
-                                    ? 'mb-4 text-sm'
-                                    : 'mb-0 text-sm'
+                                    ? 'mb-4 text-sm font-sans'
+                                    : 'mb-0 text-sm font-sans'
                                 }
                                 style={{ color: colors.text.cream }}
                               >
