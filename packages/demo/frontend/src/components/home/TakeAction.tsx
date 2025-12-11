@@ -49,6 +49,11 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
                 left: left * 1.25,
                 top: top * 1.25,
                 zIndex: z,
+                opacity: 0,
+                transition: 'opacity 0.5s ease-in',
+              }}
+              onLoad={(e) => {
+                e.currentTarget.style.opacity = '1'
               }}
             />
           ))}
