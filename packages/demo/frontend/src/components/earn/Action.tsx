@@ -3,6 +3,7 @@ import TransactionModal from './TransactionModal'
 import Shimmer from './Shimmer'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
+import { trackEvent } from '@/utils/analytics'
 
 interface ActionProps {
   assetBalance: string
@@ -88,6 +89,13 @@ export function Action({
       return
     }
 
+    trackEvent('transaction_initiated', {
+      action: mode,
+      asset: assetSymbol,
+      amount: amountValue,
+      provider,
+    })
+
     setIsLoading(true)
     setModalOpen(true)
     setModalStatus('loading')
@@ -99,8 +107,21 @@ export function Action({
       setBlockExplorerUrl(result.blockExplorerUrl)
       setModalStatus('success')
       setAmount('')
+
+      trackEvent('transaction_success', {
+        action: mode,
+        asset: assetSymbol,
+        amount: amountValue,
+        provider,
+      })
     } catch {
       setModalStatus('error')
+      trackEvent('transaction_error', {
+        action: mode,
+        asset: assetSymbol,
+        amount: amountValue,
+        provider,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -149,7 +170,10 @@ export function Action({
             ) : parseFloat(assetBalance || '0') === 0 ? (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={onMintAsset}
+                  onClick={() => {
+                    trackEvent('mint_asset', { asset: assetSymbol })
+                    onMintAsset?.()
+                  }}
                   className="transition-all"
                   style={{
                     padding: '6px 12px',
