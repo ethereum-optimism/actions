@@ -81,6 +81,7 @@ jobs:
   publish-to-npm:
     docker:
       - image: cimg/node:20.11
+    resource_class: large
     parameters:
       prepare-snapshot:
         type: boolean
@@ -91,7 +92,7 @@ jobs:
           name: Build projects
           environment:
             NPM_TOKEN: nada
-          command: pnpm nx run-many --target=build
+          command: NODE_OPTIONS='--max-old-space-size=4096' pnpm nx run-many --target=build
       - run:
           name: Check NPM Token
           command: |
@@ -122,11 +123,12 @@ jobs:
   check:
     docker:
       - image: cimg/node:20.11
+    resource_class: large
     steps:
       - setup
       - run:
           name: Run Build
-          command: pnpm nx run-many --target=build
+          command: NODE_OPTIONS='--max-old-space-size=4096' pnpm nx run-many --target=build
       - run:
           name: Run TypeChecker
           command: pnpm typecheck
