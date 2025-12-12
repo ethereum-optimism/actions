@@ -49,13 +49,18 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
                 left: left * 1.25,
                 top: top * 1.25,
                 zIndex: z,
+                opacity: 0,
+                transition: 'opacity 0.5s ease-in',
+              }}
+              onLoad={(e) => {
+                e.currentTarget.style.opacity = '1'
               }}
             />
           ))}
         </div>
       </div>
       <h3
-        className="text-2xl font-medium mb-6 relative z-10"
+        className="text-2xl font-medium mb-6 relative z-10 font-display"
         style={{ color: colors.text.cream }}
       >
         Ready to take Action?
@@ -63,7 +68,7 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
       <div className="flex flex-row gap-4 justify-center relative z-10">
         <a
           href="/earn"
-          className="text-black px-8 py-3 rounded-lg font-medium inline-flex items-center justify-center gap-2 transition-colors duration-200"
+          className="text-black px-8 py-3 rounded-lg font-medium font-sans inline-flex items-center justify-center gap-2 transition-colors duration-200"
           style={{ backgroundColor: 'rgba(245, 245, 220, 0.9)' }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.backgroundColor =
@@ -81,7 +86,7 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
             href="https://github.com/ethereum-optimism/actions"
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700/80 inline-flex items-center justify-center gap-2 transition-colors duration-200"
+            className="border border-gray-600 px-8 py-3 rounded-lg font-medium font-sans hover:bg-gray-700/80 inline-flex items-center justify-center gap-2 transition-colors duration-200"
             style={{
               color: colors.text.cream,
               backgroundColor: 'rgba(29, 32, 33, 0.7)',
@@ -95,7 +100,7 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
             href="https://docs.optimism.io/app-developers/quickstarts/actions"
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-gray-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-700/80 inline-flex items-center justify-center gap-2 transition-colors duration-200"
+            className="border border-gray-600 px-8 py-3 rounded-lg font-medium font-sans hover:bg-gray-700/80 inline-flex items-center justify-center gap-2 transition-colors duration-200"
             style={{
               color: colors.text.cream,
               backgroundColor: 'rgba(29, 32, 33, 0.7)',
