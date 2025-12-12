@@ -20,9 +20,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          privy: ['@privy-io/react-auth'],
-          dynamic: ['@dynamic-labs/sdk-react-core', '@dynamic-labs/ethereum'],
-          turnkey: ['@turnkey/react-wallet-kit'],
           viem: ['viem'],
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
         },
