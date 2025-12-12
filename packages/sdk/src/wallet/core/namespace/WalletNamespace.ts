@@ -18,10 +18,8 @@ import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWall
 export class WalletNamespace<
   THostedProviderType extends string,
   TToActionsMap extends Record<THostedProviderType, unknown>,
-  H extends HostedWalletProvider<
-    THostedProviderType,
-    TToActionsMap
-  > = HostedWalletProvider<THostedProviderType, TToActionsMap>,
+  H extends HostedWalletProvider<THostedProviderType, TToActionsMap> =
+    HostedWalletProvider<THostedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   private provider: WalletProvider<THostedProviderType, TToActionsMap, H, S>

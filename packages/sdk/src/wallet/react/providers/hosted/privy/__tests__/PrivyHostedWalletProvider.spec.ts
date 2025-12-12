@@ -11,9 +11,8 @@ import * as createSignerUtil from '@/wallet/react/wallets/hosted/privy/utils/cre
 
 // Mock PrivyWallet to avoid importing browser-related deps
 vi.mock('@/wallet/react/wallets/hosted/privy/PrivyWallet.js', async () => {
-  const { PrivyWalletMock } = await import(
-    '@/wallet/react/wallets/hosted/privy/__mocks__/PrivyWalletMock.js'
-  )
+  const { PrivyWalletMock } =
+    await import('@/wallet/react/wallets/hosted/privy/__mocks__/PrivyWalletMock.js')
   return { PrivyWallet: PrivyWalletMock }
 })
 

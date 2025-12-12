@@ -7,9 +7,8 @@ vi.mock('@dynamic-labs/wallet-connector-core', () => ({
 
 // Mock DynamicWallet to avoid importing browser-related deps
 vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', async () => {
-  const { DynamicWalletMock } = await import(
-    '@/wallet/react/wallets/hosted/dynamic/__mocks__/DynamicWalletMock.js'
-  )
+  const { DynamicWalletMock } =
+    await import('@/wallet/react/wallets/hosted/dynamic/__mocks__/DynamicWalletMock.js')
   return { DynamicWallet: DynamicWalletMock }
 })
 

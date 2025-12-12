@@ -1,0 +1,8 @@
+[build]
+  command = "pnpm --filter @eth-optimism/actions-sdk build && pnpm --filter actions-ui build"
+  publish = "packages/demo/frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NODE_OPTIONS = "--max-old-space-size=8192"
+

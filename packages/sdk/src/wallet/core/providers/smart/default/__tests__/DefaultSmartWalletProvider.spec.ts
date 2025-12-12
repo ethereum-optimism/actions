@@ -165,9 +165,8 @@ describe('DefaultSmartWalletProvider', () => {
     const nonce = BigInt(123)
 
     // Mock deploy to fail for all chains
-    const { SmartWalletDeploymentError } = await import(
-      '@/wallet/core/wallets/smart/error/errors.js'
-    )
+    const { SmartWalletDeploymentError } =
+      await import('@/wallet/core/wallets/smart/error/errors.js')
     vi.mocked(mockWallet.deploy)
       .mockRejectedValueOnce(
         new SmartWalletDeploymentError('Deployment failed', 1),
@@ -209,9 +208,8 @@ describe('DefaultSmartWalletProvider', () => {
     const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
 
-    const { SmartWalletDeploymentError } = await import(
-      '@/wallet/core/wallets/smart/error/errors.js'
-    )
+    const { SmartWalletDeploymentError } =
+      await import('@/wallet/core/wallets/smart/error/errors.js')
 
     // Mock deploy to succeed for chain 1, fail for chain 130
     vi.mocked(mockWallet.deploy)

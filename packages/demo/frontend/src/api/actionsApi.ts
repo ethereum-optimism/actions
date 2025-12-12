@@ -1,4 +1,3 @@
-import type { GetWalletResponse } from '@eth-optimism/actions-service'
 import type {
   LendMarketPosition,
   SupportedChainId,
@@ -7,6 +6,10 @@ import type {
   LendTransactionReceipt,
 } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
+
+interface GetWalletResponse {
+  address: Address
+}
 
 import { env } from '../envVars.js'
 import type { LendExecutePositionParams } from '../types/index.js'

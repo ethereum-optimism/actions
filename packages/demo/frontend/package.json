@@ -9,7 +9,7 @@
     "directory": "packages/demo/frontend"
   },
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' tsc -b && vite build",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "dev": "vite",
     "preview": "vite preview",
@@ -22,7 +22,6 @@
     "@dynamic-labs/ethereum": "4.31.4",
     "@dynamic-labs/sdk-react-core": "4.31.4",
     "@eth-optimism/actions-sdk": "workspace:*",
-    "@eth-optimism/actions-service": "workspace:*",
     "@eth-optimism/viem": "^0.4.13",
     "@privy-io/react-auth": "^2.24.0",
     "@tanstack/react-query": "^5.90.9",
@@ -30,6 +29,7 @@
     "buffer": "^6.0.3",
     "eventemitter3": "^5.0.1",
     "highlight.js": "^11.11.1",
+    "mixpanel-browser": "^2.72.0",
     "react": "^18",
     "react-dom": "^18",
     "react-router": "7",
