@@ -561,7 +561,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             alt={`Layer ${num} trace`}
                             style={{
                               width: `${MOBILE_IMAGE_WIDTH}px`,
-                              height: 'auto',
+                              aspectRatio: '540 / 348',
                               opacity: activeLayer === num ? 0 : 1,
                               transition: 'opacity 0.5s ease-in-out',
                             }}
@@ -574,7 +574,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               top: 0,
                               left: `${MOBILE_IMAGE_PADDING_LEFT}px`,
                               width: `${MOBILE_IMAGE_WIDTH}px`,
-                              height: 'auto',
+                              aspectRatio: '540 / 348',
                               opacity: activeLayer === num ? 1 : 0,
                               transition: 'opacity 0.5s ease-in-out',
                             }}
@@ -678,8 +678,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               <p
                                 className={
                                   content[prevLayerRef.current - 1].images
-                                    ? 'mb-4 text-sm'
-                                    : 'mb-0 text-sm'
+                                    ? 'mb-4 text-sm font-sans'
+                                    : 'mb-0 text-sm font-sans'
                                 }
                                 style={{ color: colors.text.cream }}
                               >
@@ -818,7 +818,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                             className="block"
                             style={{
                               width: `${DESKTOP_IMAGE_WIDTH}px`,
-                              height: 'auto',
+                              aspectRatio: '540 / 348',
                               opacity: activeLayer === num ? 0 : 1,
                               transition: 'opacity 0.5s ease-in-out',
                             }}
@@ -832,7 +832,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               top: 0,
                               left: `${IMAGE_PADDING_LEFT}px`,
                               width: `${DESKTOP_IMAGE_WIDTH - IMAGE_PADDING_LEFT}px`,
-                              height: 'auto',
+                              aspectRatio: '540 / 348',
                               opacity: activeLayer === num ? 1 : 0,
                               transition: 'opacity 0.5s ease-in-out',
                             }}
@@ -922,8 +922,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               <p
                                 className={
                                   content[prevLayerRef.current - 1].images
-                                    ? 'mb-4 text-sm'
-                                    : 'mb-0 text-sm'
+                                    ? 'mb-4 text-sm font-sans'
+                                    : 'mb-0 text-sm font-sans'
                                 }
                                 style={{ color: colors.text.cream }}
                               >

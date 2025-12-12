@@ -12,7 +12,7 @@ function Footer() {
         }}
       >
         <div className="max-w-7xl mx-auto px-6">
-          <p className="flex items-center justify-center gap-2 flex-wrap">
+          <p className="flex items-center justify-center gap-2 flex-wrap font-sans">
             <span>© 2025 Actions by</span>
             <a
               href="https://www.optimism.io/"
@@ -39,6 +39,7 @@ function Footer() {
         style={{ backgroundColor: 'rgba(29, 32, 33, 0.9)' }}
       >
         <p
+          className="font-sans"
           style={{
             fontSize: '10px',
             lineHeight: '1.6',
@@ -55,6 +56,7 @@ function Footer() {
           connection with the software.
         </p>
         <p
+          className="font-sans"
           style={{
             fontSize: '10px',
             lineHeight: '1.6',
