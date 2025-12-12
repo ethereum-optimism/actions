@@ -26,7 +26,11 @@ export async function validateRequest<T>(
     }
 
     const requestData: RequestData = {}
-    const schemaShape = (schema as z.ZodObject<z.ZodRawShape>).shape || {}
+    // Access shape property safely - works with both zod 3.x and 4.x
+    const schemaShape =
+      'shape' in schema && typeof schema.shape === 'object'
+        ? (schema.shape as Record<string, unknown>)
+        : {}
 
     if ('params' in schemaShape) requestData.params = params
     if ('query' in schemaShape) requestData.query = query
