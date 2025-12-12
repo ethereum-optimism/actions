@@ -13,9 +13,8 @@ import { ReactHostedWalletProviderRegistry } from '@/wallet/react/providers/regi
 vi.mock(
   '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js',
   async () => {
-    const { DynamicHostedWalletProviderMock } = await import(
-      '@/wallet/react/providers/hosted/dynamic/__mocks__/DynamicHostedWalletProviderMock.js'
-    )
+    const { DynamicHostedWalletProviderMock } =
+      await import('@/wallet/react/providers/hosted/dynamic/__mocks__/DynamicHostedWalletProviderMock.js')
     return { DynamicHostedWalletProvider: DynamicHostedWalletProviderMock }
   },
 )
@@ -24,9 +23,8 @@ vi.mock(
 vi.mock(
   '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js',
   async () => {
-    const { PrivyHostedWalletProviderMock } = await import(
-      '@/wallet/react/providers/hosted/privy/__mocks__/PrivyHostedWalletProviderMock.js'
-    )
+    const { PrivyHostedWalletProviderMock } =
+      await import('@/wallet/react/providers/hosted/privy/__mocks__/PrivyHostedWalletProviderMock.js')
     return { PrivyHostedWalletProvider: PrivyHostedWalletProviderMock }
   },
 )

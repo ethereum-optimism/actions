@@ -268,8 +268,10 @@ export interface LendOpenPositionParams extends LendOpenPositionBaseParams {
 /**
  * Internal parameters for provider _openPosition method with amount already converted to wei
  */
-export interface LendOpenPositionInternalParams
-  extends Omit<LendOpenPositionBaseParams, 'walletAddress'> {
+export interface LendOpenPositionInternalParams extends Omit<
+  LendOpenPositionBaseParams,
+  'walletAddress'
+> {
   /** Amount to lend in wei */
   amountWei: bigint
   /** Wallet address for receiving shares and as owner (required in internal params) */
