@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -14,5 +13,20 @@ export default defineConfig({
   optimizeDeps: {
     include: ['eventemitter3'],
     exclude: ['@base-org/account'],
+  },
+  build: {
+    minify: 'esbuild',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          privy: ['@privy-io/react-auth'],
+          dynamic: ['@dynamic-labs/sdk-react-core', '@dynamic-labs/ethereum'],
+          turnkey: ['@turnkey/react-wallet-kit'],
+          viem: ['viem'],
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
   },
 })
