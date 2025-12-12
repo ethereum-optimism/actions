@@ -51,6 +51,7 @@
     "overrides": {
       "nx>axios": "^1.12.0",
       "viem": "2.33.0",
+      "zod@3.22.4": "3.25.76",
       "@dynamic-labs/wallet-connector-core": "4.31.4",
       "@dynamic-labs/wallet-book": "4.31.4",
       "@dynamic-labs/ethereum-core": "4.31.4",
@@ -62,7 +63,8 @@
     },
     "peerDependencyRules": {
       "allowedVersions": {
-        "viem": "2.33.0"
+        "viem": "2.33.0",
+        "zod": "3.25.76"
       }
     }
   },
