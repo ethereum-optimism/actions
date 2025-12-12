@@ -19,7 +19,6 @@
   "scripts": {
     "clean": "pnpm -r clean",
     "dev": "mprocs --config mprocs.yml",
-    "dev:supersim": "pnpm supersim fork --chains unichain --logs.directory supersim-logs",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
     "release:publish": "pnpm install --frozen-lockfile && pnpm nx run-many --target=build && changeset publish",
@@ -46,14 +45,20 @@
     "nx": "^21.3.2",
     "prettier": "^3.0.0",
     "resolve-tspaths": "^0.8.18",
-    "supersim": "^0.1.0-alpha.58",
-    "tsx": "^4.0.0",
-    "wait-port": "^1.1.0"
+    "tsx": "^4.0.0"
   },
   "pnpm": {
     "overrides": {
       "nx>axios": "^1.12.0",
-      "viem": "2.33.0"
+      "viem": "2.33.0",
+      "@dynamic-labs/wallet-connector-core": "4.31.4",
+      "@dynamic-labs/wallet-book": "4.31.4",
+      "@dynamic-labs/ethereum-core": "4.31.4",
+      "@dynamic-labs/utils": "4.31.4",
+      "@dynamic-labs/types": "4.31.4",
+      "@dynamic-labs/logger": "4.31.4",
+      "@dynamic-labs/iconic": "4.31.4",
+      "@dynamic-labs/rpc-providers": "4.31.4"
     },
     "peerDependencyRules": {
       "allowedVersions": {
