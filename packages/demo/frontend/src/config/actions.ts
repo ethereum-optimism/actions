@@ -11,7 +11,7 @@ import { env } from '@/envVars'
 // Asset definitions matching backend config
 export const USDC_DEMO: Asset = {
   address: {
-    [baseSepolia.id]: '0x87c25229afbc30418d0144e8dfb2bcf8efd92c6c',
+    [baseSepolia.id]: '0xb1b0FE886cE376F28987Ad24b1759a8f0A7dd839',
   },
   metadata: {
     decimals: 6,
@@ -35,7 +35,7 @@ export const WETH: Asset = {
 
 // Market definitions matching backend config
 export const GauntletUSDCDemo: LendMarketConfig = {
-  address: '0x297E324C46309E93112610ebf35559685b4E3547' as Address,
+  address: '0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1' as Address,
   chainId: baseSepolia.id,
   name: 'Gauntlet USDC',
   asset: USDC_DEMO,
