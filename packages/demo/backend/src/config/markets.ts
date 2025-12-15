@@ -13,7 +13,7 @@ export const GauntletUSDC: LendMarketConfig = {
 }
 
 export const GauntletUSDCDemo: LendMarketConfig = {
-  address: '0x297E324C46309E93112610ebf35559685b4E3547' as Address,
+  address: '0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1' as Address,
   chainId: baseSepolia.id,
   name: 'Gauntlet USDC',
   asset: USDC_DEMO,
