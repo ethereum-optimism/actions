@@ -1,12 +1,15 @@
 import type { AccrualPosition } from '@morpho-org/blue-sdk'
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
-import type { Address } from 'viem'
-import { parseEther } from 'viem'
+import type { Address, PublicClient } from 'viem'
 
 import {
   fetchRewards,
   type RewardsBreakdown,
 } from '@/lend/providers/morpho/api.js'
+import {
+  getMorphoContracts,
+  SECONDS_PER_YEAR,
+} from '@/lend/providers/morpho/contracts.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { LendProviderConfig } from '@/types/actions.js'
@@ -15,7 +18,150 @@ import type {
   LendMarket,
   LendMarketConfig,
   LendMarketId,
+  MorphoContracts,
 } from '@/types/lend/index.js'
+
+// ABIs for direct on-chain queries
+const metaMorphoAbi = [
+  {
+    name: 'totalAssets',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'totalSupply',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'fee',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint96' }],
+  },
+  {
+    name: 'owner',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+  },
+  {
+    name: 'curator',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+  },
+  {
+    name: 'supplyQueueLength',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'supplyQueue',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'index', type: 'uint256' }],
+    outputs: [{ type: 'bytes32' }],
+  },
+  {
+    name: 'config',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'id', type: 'bytes32' }],
+    outputs: [
+      { name: 'cap', type: 'uint184' },
+      { name: 'enabled', type: 'bool' },
+      { name: 'removableAt', type: 'uint64' },
+    ],
+  },
+] as const
+
+const morphoBlueAbi = [
+  {
+    name: 'market',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'id', type: 'bytes32' }],
+    outputs: [
+      { name: 'totalSupplyAssets', type: 'uint128' },
+      { name: 'totalSupplyShares', type: 'uint128' },
+      { name: 'totalBorrowAssets', type: 'uint128' },
+      { name: 'totalBorrowShares', type: 'uint128' },
+      { name: 'lastUpdate', type: 'uint128' },
+      { name: 'fee', type: 'uint128' },
+    ],
+  },
+  {
+    name: 'idToMarketParams',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'id', type: 'bytes32' }],
+    outputs: [
+      { name: 'loanToken', type: 'address' },
+      { name: 'collateralToken', type: 'address' },
+      { name: 'oracle', type: 'address' },
+      { name: 'irm', type: 'address' },
+      { name: 'lltv', type: 'uint256' },
+    ],
+  },
+  {
+    name: 'position',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'id', type: 'bytes32' },
+      { name: 'user', type: 'address' },
+    ],
+    outputs: [
+      { name: 'supplyShares', type: 'uint256' },
+      { name: 'borrowShares', type: 'uint128' },
+      { name: 'collateral', type: 'uint128' },
+    ],
+  },
+] as const
+
+const irmAbi = [
+  {
+    name: 'borrowRateView',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      {
+        name: 'marketParams',
+        type: 'tuple',
+        components: [
+          { name: 'loanToken', type: 'address' },
+          { name: 'collateralToken', type: 'address' },
+          { name: 'oracle', type: 'address' },
+          { name: 'irm', type: 'address' },
+          { name: 'lltv', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'market',
+        type: 'tuple',
+        components: [
+          { name: 'totalSupplyAssets', type: 'uint128' },
+          { name: 'totalSupplyShares', type: 'uint128' },
+          { name: 'totalBorrowAssets', type: 'uint128' },
+          { name: 'totalBorrowShares', type: 'uint128' },
+          { name: 'lastUpdate', type: 'uint128' },
+          { name: 'fee', type: 'uint128' },
+        ],
+      },
+    ],
+    outputs: [{ type: 'uint256' }],
+  },
+] as const
 
 /**
  * Fetch and calculate rewards breakdown from Morpho GraphQL API
@@ -92,24 +238,165 @@ export function calculateBaseApy(vault: any): number {
 }
 
 /**
- * TEMPORARY - To be removed in https://github.com/ethereum-optimism/actions/issues/112
- * Create mock vault data for Base Sepolia (testnet)
+ * Fetch real on-chain vault data using direct contract queries
+ * Used when Morpho SDK doesn't support the chain (e.g., testnets)
  * @param marketId - Market identifier
  * @param marketConfig - Market configuration from allowlist
- * @returns Mock vault data with realistic values
+ * @param publicClient - Viem public client for the chain
+ * @param contracts - Morpho contract addresses for this chain
+ * @returns Promise resolving to vault data with real on-chain APY
  */
-function createMockVaultData(
+async function fetchVaultDataOnChain(
   marketId: LendMarketId,
   marketConfig: LendMarketConfig,
-): LendMarket {
-  const mockApyBreakdown: ApyBreakdown = {
-    total: 0.0542, // 5.42% net APY
-    native: 0.058, // 5.8% gross APY
-    totalRewards: 0.0235, // Total rewards APR
-    usdc: 0.0125, // USDC rewards
-    morpho: 0.008, // MORPHO token rewards
-    other: 0.003, // Other protocol rewards
-    performanceFee: 0.065, // 6.5% performance fee
+  publicClient: PublicClient,
+  contracts: MorphoContracts,
+): Promise<LendMarket> {
+  // Fetch vault basic info
+  const [totalAssets, totalSupply, fee, owner, curator, supplyQueueLength] =
+    await Promise.all([
+      publicClient.readContract({
+        address: marketId.address,
+        abi: metaMorphoAbi,
+        functionName: 'totalAssets',
+      }),
+      publicClient.readContract({
+        address: marketId.address,
+        abi: metaMorphoAbi,
+        functionName: 'totalSupply',
+      }),
+      publicClient.readContract({
+        address: marketId.address,
+        abi: metaMorphoAbi,
+        functionName: 'fee',
+      }),
+      publicClient.readContract({
+        address: marketId.address,
+        abi: metaMorphoAbi,
+        functionName: 'owner',
+      }),
+      publicClient.readContract({
+        address: marketId.address,
+        abi: metaMorphoAbi,
+        functionName: 'curator',
+      }),
+      publicClient.readContract({
+        address: marketId.address,
+        abi: metaMorphoAbi,
+        functionName: 'supplyQueueLength',
+      }),
+    ])
+
+  // Calculate weighted APY from all markets in the supply queue
+  let totalWeightedApy = 0n
+  let totalSupplyInMarkets = 0n
+
+  for (let i = 0n; i < supplyQueueLength; i++) {
+    const marketIdHash = await publicClient.readContract({
+      address: marketId.address,
+      abi: metaMorphoAbi,
+      functionName: 'supplyQueue',
+      args: [i],
+    })
+
+    // Get market params and state
+    const [marketParams, marketState, vaultPosition] = await Promise.all([
+      publicClient.readContract({
+        address: contracts.morphoBlue,
+        abi: morphoBlueAbi,
+        functionName: 'idToMarketParams',
+        args: [marketIdHash],
+      }),
+      publicClient.readContract({
+        address: contracts.morphoBlue,
+        abi: morphoBlueAbi,
+        functionName: 'market',
+        args: [marketIdHash],
+      }),
+      publicClient.readContract({
+        address: contracts.morphoBlue,
+        abi: morphoBlueAbi,
+        functionName: 'position',
+        args: [marketIdHash, marketId.address],
+      }),
+    ])
+
+    const [
+      supplyAssets,
+      supplyShares,
+      borrowAssets,
+      borrowShares,
+      lastUpdate,
+      marketFee,
+    ] = marketState
+    const [vaultSupplyShares] = vaultPosition
+
+    // Skip if vault has no position in this market
+    if (vaultSupplyShares === 0n) continue
+
+    // Calculate vault's share of supply in this market
+    const vaultSupplyAssets =
+      supplyShares > 0n
+        ? (vaultSupplyShares * supplyAssets) / supplyShares
+        : 0n
+
+    if (vaultSupplyAssets === 0n || supplyAssets === 0n) continue
+
+    // Get borrow rate from IRM
+    const borrowRate = await publicClient.readContract({
+      address: contracts.irm,
+      abi: irmAbi,
+      functionName: 'borrowRateView',
+      args: [
+        {
+          loanToken: marketParams[0],
+          collateralToken: marketParams[1],
+          oracle: marketParams[2],
+          irm: marketParams[3],
+          lltv: marketParams[4],
+        },
+        {
+          totalSupplyAssets: supplyAssets,
+          totalSupplyShares: supplyShares,
+          totalBorrowAssets: borrowAssets,
+          totalBorrowShares: borrowShares,
+          lastUpdate: lastUpdate,
+          fee: marketFee,
+        },
+      ],
+    })
+
+    // Calculate supply APY: borrow_rate * utilization * seconds_per_year
+    // borrowRate is per-second rate in WAD (1e18)
+    const utilization =
+      supplyAssets > 0n ? (borrowAssets * BigInt(1e18)) / supplyAssets : 0n
+
+    // Supply APY = borrow rate per second * utilization * seconds per year
+    // Result is in WAD format (1e18 = 100%)
+    const marketSupplyApy =
+      (borrowRate * utilization * SECONDS_PER_YEAR) / BigInt(1e18)
+
+    // Weighted by vault's position in this market
+    totalWeightedApy += marketSupplyApy * vaultSupplyAssets
+    totalSupplyInMarkets += vaultSupplyAssets
+  }
+
+  // Calculate final APY
+  const performanceFee = Number(fee) / 1e18
+  let nativeApy = 0
+  let netApy = 0
+
+  if (totalSupplyInMarkets > 0n) {
+    const weightedApyWad = totalWeightedApy / totalSupplyInMarkets
+    nativeApy = Number(weightedApyWad) / 1e18 // Convert from WAD
+    netApy = nativeApy * (1 - performanceFee)
+  }
+
+  const apyBreakdown: ApyBreakdown = {
+    total: netApy,
+    native: nativeApy,
+    totalRewards: 0, // No rewards API for direct on-chain queries
+    performanceFee: performanceFee,
   }
 
   return {
@@ -117,15 +404,15 @@ function createMockVaultData(
     name: marketConfig.name,
     asset: marketConfig.asset,
     supply: {
-      totalAssets: parseEther('125000'), // ~$125K TVL
-      totalShares: parseEther('120000'), // Slightly lower shares (some yield accrued)
+      totalAssets: totalAssets,
+      totalShares: totalSupply,
     },
-    apy: mockApyBreakdown,
+    apy: apyBreakdown,
     metadata: {
-      owner: '0x742d35Cc6464C42C0b15De2C4c98F7E8c3e0F1d9' as Address, // Mock owner
-      curator: '0x8f3Cf7ad23Cd3CaDbD9735aff958023239c6A063' as Address, // Mock curator
-      fee: mockApyBreakdown.performanceFee,
-      lastUpdate: Math.floor(Date.now() / 1000) - 300, // 5 minutes ago
+      owner: owner,
+      curator: curator,
+      fee: performanceFee,
+      lastUpdate: Math.floor(Date.now() / 1000),
     },
   }
 }
@@ -176,9 +463,18 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     )
   }
 
-  // Morpho sdk doesn't support base sepolia, so we need to use the mock vault
-  if (params.marketId.chainId === 84532) {
-    return createMockVaultData(params.marketId, marketConfig)
+  // For chains not supported by Morpho SDK (e.g., testnets), use direct on-chain queries
+  const contracts = getMorphoContracts(params.marketId.chainId)
+  if (contracts) {
+    const publicClient = params.chainManager.getPublicClient(
+      params.marketId.chainId,
+    )
+    return fetchVaultDataOnChain(
+      params.marketId,
+      marketConfig,
+      publicClient,
+      contracts,
+    )
   }
 
   try {
