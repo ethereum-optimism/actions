@@ -56,7 +56,7 @@ export const SUPPORTED_TOKENS: Asset[] = [
   },
   {
     address: {
-      [baseSepolia.id]: '0x87c25229afbc30418d0144e8dfb2bcf8efd92c6c',
+      [baseSepolia.id]: '0xb1b0FE886cE376F28987Ad24b1759a8f0A7dd839',
     },
     metadata: {
       symbol: 'USDC_DEMO',
