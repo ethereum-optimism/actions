@@ -77,7 +77,7 @@ forge script script/ImpersonateFund.s.sol \
 
 ### DeployMorphoMarket.s.sol
 
-Forge deployment script that creates a complete Morpho lending market for demo purposes. This script deploys tokens, creates a market, deploys a vault, and sets up yield generation.
+Forge deployment script that creates a complete Morpho lending market for demo purposes. Uses MetaMorpho V1.1 factory for instant single-transaction deployment.
 
 **What it creates:**
 
@@ -85,39 +85,34 @@ Forge deployment script that creates a complete Morpho lending market for demo p
 - `DemoOP` - Mintable ERC20 collateral token (18 decimals)
 - `FixedPriceOracle` - Returns 1:1 price (1 USDC per 1 OP)
 - Morpho Blue market with 94.5% LLTV
-- MetaMorpho vault ("Actions Demo USDC Vault" / "dUSDC") with unlimited deposit cap
-- Yield-generating borrow position (99% utilization for high APY)
+- MetaMorpho V1.1 vault ("Actions Demo USDC Vault" / "dUSDC")
+- Yield-generating borrow position (99.9% utilization)
 
 **Quick Start:**
 
 ```bash
-# Test locally (instant, with time warp)
+# Test locally
 pnpm deploy:morpho:local
 
-# Deploy to Base Sepolia (requires 24h wait between runs)
+# Deploy to Base Sepolia
 pnpm deploy:morpho:testnet
 ```
 
-The MetaMorpho V1.0 factory on Base Sepolia requires a minimum 1-day timelock. This means after submitting a supply cap, you must wait 1 day before accepting it.
-
 **Local Testing (`pnpm deploy:morpho:local`):**
 
-Starts an anvil fork of Base Sepolia, deploys all contracts, warps time forward 24 hours, and completes the full deployment. Use this to verify everything works before deploying to testnet.
+Starts an anvil fork of Base Sepolia and deploys all contracts in a single transaction.
 
 **Testnet Deployment (`pnpm deploy:morpho:testnet`):**
 
 Prerequisites:
 
-1. Set `DEMO_MARKET_SETUP_PRIVATE_KEY` in your `.env` file
-2. Fund the wallet with ~0.02 ETH on Base Sepolia
-3. Optionally set `BASE_SEPOLIA_RPC_URL` (defaults to `https://sepolia.base.org`)
+1. Set `DEMO_MARKET_SETUP_PRIVATE_KEY` in `packages/demo/backend/.env`
+2. Fund the wallet with ~0.001 ETH on Base Sepolia
 
-The script is idempotent - run the same command twice:
+The script is idempotent:
 
-1. **First run**: Deploys contracts and submits supply cap. Outputs "24-HOUR WAITING PERIOD STARTED".
-2. **Second run (after 24h)**: Detects existing deployment, accepts cap, and finalizes vault.
-
-If run during the waiting period, the script shows remaining time and exits.
+1. **First run**: Deploys all contracts and sets up yield generation
+2. **Subsequent runs**: Shows vault status (total assets, interest earned, utilization, APY)
 
 **Environment Variables:**
 
@@ -127,23 +122,20 @@ If run during the waiting period, the script shows remaining time and exits.
 | `BASE_SEPOLIA_RPC_URL`          | RPC URL for Base Sepolia          | No (defaults to public RPC) |
 
 **Output:**
-The script outputs all deployed contract addresses:
 
-- Loan Token (USDC_DEMO)
-- Collateral Token (OP_DEMO)
-- Oracle
-- Vault
+- Deployed contract addresses (USDC_DEMO, OP_DEMO, Oracle, Vault)
+- Vault status: total assets, interest earned, utilization %, supply APY %
+- Block explorer links (testnet only)
 
 **Post-Deployment:**
-After running the script, update these config files with the new addresses:
+Update these config files with the new addresses:
 
 - `packages/sdk/src/supported/tokens.ts` - Add USDC_DEMO and OP_DEMO token addresses
 - `packages/demo/backend/src/config/assets.ts` - Add asset configurations
 - `packages/demo/backend/src/config/markets.ts` - Add new vault address
-- `packages/demo/frontend/src/constants/markets.ts` - Update frontend market config
 
 **How Yield Works:**
-The script creates a borrow position with 99% utilization, causing high interest rates. This interest accrues to vault depositors in real-time. Users see their balances grow when querying the vault - no ongoing maintenance required.
+The script creates a borrow position at 99.9% utilization. Interest accrues to vault depositors in real-time. The APY adapts over time based on sustained utilization.
 
 ---
 
