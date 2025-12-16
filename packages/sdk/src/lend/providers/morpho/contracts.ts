@@ -6,7 +6,8 @@ import type { MorphoContractsRegistry } from '@/types/lend/contracts.js'
  * Morpho Blue uses the same core contract address across all chains
  * via CREATE2 deterministic deployment
  */
-const MORPHO_BLUE_ADDRESS = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as const
+const MORPHO_BLUE_ADDRESS =
+  '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as const
 
 /**
  * Morpho contract addresses per chain

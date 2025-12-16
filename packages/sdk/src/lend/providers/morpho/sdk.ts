@@ -336,9 +336,7 @@ async function fetchVaultDataOnChain(
 
     // Calculate vault's share of supply in this market
     const vaultSupplyAssets =
-      supplyShares > 0n
-        ? (vaultSupplyShares * supplyAssets) / supplyShares
-        : 0n
+      supplyShares > 0n ? (vaultSupplyShares * supplyAssets) / supplyShares : 0n
 
     if (vaultSupplyAssets === 0n || supplyAssets === 0n) continue
 
