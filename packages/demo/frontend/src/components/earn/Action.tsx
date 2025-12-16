@@ -61,9 +61,24 @@ export function Action({
     marketId?.address.toLowerCase() ===
       '0x4200000000000000000000000000000000000006'
 
+  // Max withdrawal for illiquid Aave market
+  const AAVE_MAX_WITHDRAW = 0.0001
+
+  // Determine display precision based on asset type
+  const isWethAsset =
+    assetSymbol === 'WETH' || assetSymbol.includes('ETH')
+  const displayPrecision = isWethAsset ? 4 : 2
+
   const handleMaxClick = () => {
-    const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
-    const rounded = parseFloat(maxAmount).toFixed(2)
+    let maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
+
+    // For illiquid Aave market in withdraw mode, cap at max withdrawal limit
+    if (isIlliquidAaveMarket && mode === 'withdraw') {
+      const deposited = parseFloat(depositedAmount || '0')
+      maxAmount = Math.min(deposited, AAVE_MAX_WITHDRAW).toString()
+    }
+
+    const rounded = parseFloat(maxAmount).toFixed(displayPrecision)
     setAmount(rounded)
   }
 
@@ -252,7 +267,7 @@ export function Action({
         className="py-6 px-6"
         style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}
       >
-        {isIlliquidAaveMarket && (
+        {isIlliquidAaveMarket && mode === 'withdraw' && (
           <div
             style={{
               display: 'flex',
@@ -269,8 +284,8 @@ export function Action({
           >
             <span style={{ fontSize: '16px' }}>⚠️</span>
             <span>
-              OP Sepolia Aave ETH Market is illiquid causing tx failure. Fix
-              coming soon.
+              Aave's Testnet ETH Market is illiquid causing withdrawals over{' '}
+              {AAVE_MAX_WITHDRAW} to fail.
             </span>
           </div>
         )}
@@ -446,49 +461,76 @@ export function Action({
             disabled={(() => {
               const maxAmount =
                 mode === 'lend' ? assetBalance : depositedAmount || '0'
+              const amountValue = parseFloat(amount)
+
+              // For illiquid Aave market, limit withdrawals
+              const exceedsAaveLimit =
+                isIlliquidAaveMarket &&
+                mode === 'withdraw' &&
+                amountValue > AAVE_MAX_WITHDRAW
+
               const isDisabled =
                 isLoading ||
                 !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) > parseFloat(maxAmount)
+                amountValue <= 0 ||
+                amountValue > parseFloat(maxAmount) ||
+                exceedsAaveLimit
 
               return isDisabled
             })()}
             className="w-full py-3 px-4 font-medium transition-all"
             style={{
-              backgroundColor:
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) >
-                  parseFloat(
-                    mode === 'lend' ? assetBalance : depositedAmount || '0',
-                  )
-                  ? '#D1D5DB'
-                  : '#FF0420',
-              color:
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) >
-                  parseFloat(
-                    mode === 'lend' ? assetBalance : depositedAmount || '0',
-                  )
-                  ? '#6B7280'
-                  : '#FFFFFF',
+              backgroundColor: (() => {
+                const maxAmount =
+                  mode === 'lend' ? assetBalance : depositedAmount || '0'
+                const amountValue = parseFloat(amount)
+                const exceedsAaveLimit =
+                  isIlliquidAaveMarket &&
+                  mode === 'withdraw' &&
+                  amountValue > AAVE_MAX_WITHDRAW
+                const isDisabled =
+                  isLoading ||
+                  !amount ||
+                  amountValue <= 0 ||
+                  amountValue > parseFloat(maxAmount) ||
+                  exceedsAaveLimit
+                return isDisabled ? '#D1D5DB' : '#FF0420'
+              })(),
+              color: (() => {
+                const maxAmount =
+                  mode === 'lend' ? assetBalance : depositedAmount || '0'
+                const amountValue = parseFloat(amount)
+                const exceedsAaveLimit =
+                  isIlliquidAaveMarket &&
+                  mode === 'withdraw' &&
+                  amountValue > AAVE_MAX_WITHDRAW
+                const isDisabled =
+                  isLoading ||
+                  !amount ||
+                  amountValue <= 0 ||
+                  amountValue > parseFloat(maxAmount) ||
+                  exceedsAaveLimit
+                return isDisabled ? '#6B7280' : '#FFFFFF'
+              })(),
               fontSize: '16px',
               borderRadius: '12px',
               border: 'none',
-              cursor:
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) >
-                  parseFloat(
-                    mode === 'lend' ? assetBalance : depositedAmount || '0',
-                  )
-                  ? 'not-allowed'
-                  : 'pointer',
+              cursor: (() => {
+                const maxAmount =
+                  mode === 'lend' ? assetBalance : depositedAmount || '0'
+                const amountValue = parseFloat(amount)
+                const exceedsAaveLimit =
+                  isIlliquidAaveMarket &&
+                  mode === 'withdraw' &&
+                  amountValue > AAVE_MAX_WITHDRAW
+                const isDisabled =
+                  isLoading ||
+                  !amount ||
+                  amountValue <= 0 ||
+                  amountValue > parseFloat(maxAmount) ||
+                  exceedsAaveLimit
+                return isDisabled ? 'not-allowed' : 'pointer'
+              })(),
               opacity: 1,
             }}
           >
