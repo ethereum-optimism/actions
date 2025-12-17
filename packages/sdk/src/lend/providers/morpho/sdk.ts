@@ -98,178 +98,177 @@ export function calculateBaseApy(vault: any): number {
   }
 }
 
-/**
- * Fetch real on-chain vault data using direct contract queries
- * Used when Morpho SDK doesn't support the chain (e.g., testnets)
- * @param marketId - Market identifier
- * @param marketConfig - Market configuration from allowlist
- * @param publicClient - Viem public client for the chain
- * @param contracts - Morpho contract addresses for this chain
- * @returns Promise resolving to vault data with real on-chain APY
- */
-async function fetchVaultDataOnChain(
-  marketId: LendMarketId,
-  marketConfig: LendMarketConfig,
-  publicClient: PublicClient,
-  contracts: MorphoContracts,
-): Promise<LendMarket> {
-  // Fetch vault basic info
+async function fetchVaultInfo(vaultAddress: Address, client: PublicClient) {
   const [totalAssets, totalSupply, fee, owner, curator, supplyQueueLength] =
     await Promise.all([
-      publicClient.readContract({
-        address: marketId.address,
+      client.readContract({
+        address: vaultAddress,
         abi: metaMorphoAbi,
         functionName: 'totalAssets',
       }),
-      publicClient.readContract({
-        address: marketId.address,
+      client.readContract({
+        address: vaultAddress,
         abi: metaMorphoAbi,
         functionName: 'totalSupply',
       }),
-      publicClient.readContract({
-        address: marketId.address,
+      client.readContract({
+        address: vaultAddress,
         abi: metaMorphoAbi,
         functionName: 'fee',
       }),
-      publicClient.readContract({
-        address: marketId.address,
+      client.readContract({
+        address: vaultAddress,
         abi: metaMorphoAbi,
         functionName: 'owner',
       }),
-      publicClient.readContract({
-        address: marketId.address,
+      client.readContract({
+        address: vaultAddress,
         abi: metaMorphoAbi,
         functionName: 'curator',
       }),
-      publicClient.readContract({
-        address: marketId.address,
+      client.readContract({
+        address: vaultAddress,
         abi: metaMorphoAbi,
         functionName: 'supplyQueueLength',
       }),
     ])
+  return { totalAssets, totalSupply, fee, owner, curator, supplyQueueLength }
+}
 
-  // Calculate weighted APY from all markets in the supply queue
+async function fetchMarketAllocation(
+  vaultAddress: Address,
+  marketIdHash: `0x${string}`,
+  contracts: MorphoContracts,
+  client: PublicClient,
+): Promise<{ vaultSupplyAssets: bigint; supplyApy: bigint } | null> {
+  const [marketParams, marketState, vaultPosition] = await Promise.all([
+    client.readContract({
+      address: contracts.morphoBlue,
+      abi: blueAbi,
+      functionName: 'idToMarketParams',
+      args: [marketIdHash],
+    }),
+    client.readContract({
+      address: contracts.morphoBlue,
+      abi: blueAbi,
+      functionName: 'market',
+      args: [marketIdHash],
+    }),
+    client.readContract({
+      address: contracts.morphoBlue,
+      abi: blueAbi,
+      functionName: 'position',
+      args: [marketIdHash, vaultAddress],
+    }),
+  ])
+
+  const [
+    supplyAssets,
+    supplyShares,
+    borrowAssets,
+    borrowShares,
+    lastUpdate,
+    marketFee,
+  ] = marketState
+  const [vaultSupplyShares] = vaultPosition
+
+  if (vaultSupplyShares === 0n) return null
+  const vaultSupplyAssets =
+    supplyShares > 0n ? (vaultSupplyShares * supplyAssets) / supplyShares : 0n
+  if (vaultSupplyAssets === 0n || supplyAssets === 0n) return null
+
+  const borrowRate = await client.readContract({
+    address: contracts.irm,
+    abi: adaptiveCurveIrmAbi,
+    functionName: 'borrowRateView',
+    args: [
+      {
+        loanToken: marketParams[0],
+        collateralToken: marketParams[1],
+        oracle: marketParams[2],
+        irm: marketParams[3],
+        lltv: marketParams[4],
+      },
+      {
+        totalSupplyAssets: supplyAssets,
+        totalSupplyShares: supplyShares,
+        totalBorrowAssets: borrowAssets,
+        totalBorrowShares: borrowShares,
+        lastUpdate,
+        fee: marketFee,
+      },
+    ],
+  })
+
+  const utilization =
+    supplyAssets > 0n ? (borrowAssets * BigInt(1e18)) / supplyAssets : 0n
+  const supplyApy = (borrowRate * utilization * SECONDS_PER_YEAR) / BigInt(1e18)
+  return { vaultSupplyAssets, supplyApy }
+}
+
+async function calculateVaultApy(
+  vaultAddress: Address,
+  supplyQueueLength: bigint,
+  contracts: MorphoContracts,
+  client: PublicClient,
+): Promise<number> {
   let totalWeightedApy = 0n
-  let totalSupplyInMarkets = 0n
+  let totalSupply = 0n
 
   for (let i = 0n; i < supplyQueueLength; i++) {
-    const marketIdHash = await publicClient.readContract({
-      address: marketId.address,
+    const marketIdHash = (await client.readContract({
+      address: vaultAddress,
       abi: metaMorphoAbi,
       functionName: 'supplyQueue',
       args: [i],
-    })
+    })) as `0x${string}`
 
-    // Get market params and state
-    const [marketParams, marketState, vaultPosition] = await Promise.all([
-      publicClient.readContract({
-        address: contracts.morphoBlue,
-        abi: blueAbi,
-        functionName: 'idToMarketParams',
-        args: [marketIdHash],
-      }),
-      publicClient.readContract({
-        address: contracts.morphoBlue,
-        abi: blueAbi,
-        functionName: 'market',
-        args: [marketIdHash],
-      }),
-      publicClient.readContract({
-        address: contracts.morphoBlue,
-        abi: blueAbi,
-        functionName: 'position',
-        args: [marketIdHash, marketId.address],
-      }),
-    ])
-
-    const [
-      supplyAssets,
-      supplyShares,
-      borrowAssets,
-      borrowShares,
-      lastUpdate,
-      marketFee,
-    ] = marketState
-    const [vaultSupplyShares] = vaultPosition
-
-    // Skip if vault has no position in this market
-    if (vaultSupplyShares === 0n) continue
-
-    // Calculate vault's share of supply in this market
-    const vaultSupplyAssets =
-      supplyShares > 0n ? (vaultSupplyShares * supplyAssets) / supplyShares : 0n
-
-    if (vaultSupplyAssets === 0n || supplyAssets === 0n) continue
-
-    // Get borrow rate from IRM
-    const borrowRate = await publicClient.readContract({
-      address: contracts.irm,
-      abi: adaptiveCurveIrmAbi,
-      functionName: 'borrowRateView',
-      args: [
-        {
-          loanToken: marketParams[0],
-          collateralToken: marketParams[1],
-          oracle: marketParams[2],
-          irm: marketParams[3],
-          lltv: marketParams[4],
-        },
-        {
-          totalSupplyAssets: supplyAssets,
-          totalSupplyShares: supplyShares,
-          totalBorrowAssets: borrowAssets,
-          totalBorrowShares: borrowShares,
-          lastUpdate: lastUpdate,
-          fee: marketFee,
-        },
-      ],
-    })
-
-    // Calculate supply APY: borrow_rate * utilization * seconds_per_year
-    // borrowRate is per-second rate in WAD (1e18)
-    const utilization =
-      supplyAssets > 0n ? (borrowAssets * BigInt(1e18)) / supplyAssets : 0n
-
-    // Supply APY = borrow rate per second * utilization * seconds per year
-    // Result is in WAD format (1e18 = 100%)
-    const marketSupplyApy =
-      (borrowRate * utilization * SECONDS_PER_YEAR) / BigInt(1e18)
-
-    // Weighted by vault's position in this market
-    totalWeightedApy += marketSupplyApy * vaultSupplyAssets
-    totalSupplyInMarkets += vaultSupplyAssets
+    const allocation = await fetchMarketAllocation(
+      vaultAddress,
+      marketIdHash,
+      contracts,
+      client,
+    )
+    if (!allocation) continue
+    totalWeightedApy += allocation.supplyApy * allocation.vaultSupplyAssets
+    totalSupply += allocation.vaultSupplyAssets
   }
 
-  // Calculate final APY
-  const performanceFee = Number(fee) / 1e18
-  let nativeApy = 0
-  let netApy = 0
+  return totalSupply > 0n ? Number(totalWeightedApy / totalSupply) / 1e18 : 0
+}
 
-  if (totalSupplyInMarkets > 0n) {
-    const weightedApyWad = totalWeightedApy / totalSupplyInMarkets
-    nativeApy = Number(weightedApyWad) / 1e18 // Convert from WAD
-    netApy = nativeApy * (1 - performanceFee)
-  }
-
-  const apyBreakdown: ApyBreakdown = {
-    total: netApy,
-    native: nativeApy,
-    totalRewards: 0, // No rewards API for direct on-chain queries
-    performanceFee: performanceFee,
-  }
+/**
+ * Fetch vault data via direct on-chain queries (for testnets)
+ */
+async function fetchVaultDataOnChain(
+  marketId: LendMarketId,
+  marketConfig: LendMarketConfig,
+  client: PublicClient,
+  contracts: MorphoContracts,
+): Promise<LendMarket> {
+  const info = await fetchVaultInfo(marketId.address, client)
+  const nativeApy = await calculateVaultApy(
+    marketId.address,
+    info.supplyQueueLength,
+    contracts,
+    client,
+  )
+  const performanceFee = Number(info.fee) / 1e18
 
   return {
     marketId,
     name: marketConfig.name,
     asset: marketConfig.asset,
-    supply: {
-      totalAssets: totalAssets,
-      totalShares: totalSupply,
+    supply: { totalAssets: info.totalAssets, totalShares: info.totalSupply },
+    apy: {
+      total: nativeApy * (1 - performanceFee),
+      native: nativeApy,
+      totalRewards: 0,
+      performanceFee,
     },
-    apy: apyBreakdown,
     metadata: {
-      owner: owner,
-      curator: curator,
+      owner: info.owner,
+      curator: info.curator,
       fee: performanceFee,
       lastUpdate: Math.floor(Date.now() / 1000),
     },
