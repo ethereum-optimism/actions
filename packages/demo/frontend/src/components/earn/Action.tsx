@@ -65,8 +65,7 @@ export function Action({
   const AAVE_MAX_WITHDRAW = 0.0001
 
   // Determine display precision based on asset type
-  const isWethAsset =
-    assetSymbol === 'WETH' || assetSymbol.includes('ETH')
+  const isWethAsset = assetSymbol === 'WETH' || assetSymbol.includes('ETH')
   const displayPrecision = isWethAsset ? 4 : 2
 
   const handleMaxClick = () => {
