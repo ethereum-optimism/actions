@@ -1,15 +1,17 @@
 import type { AccrualPosition } from '@morpho-org/blue-sdk'
-import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
+import {
+  adaptiveCurveIrmAbi,
+  blueAbi,
+  fetchAccrualVault,
+  metaMorphoAbi,
+} from '@morpho-org/blue-sdk-viem'
 import type { Address, PublicClient } from 'viem'
 
 import {
   fetchRewards,
   type RewardsBreakdown,
 } from '@/lend/providers/morpho/api.js'
-import {
-  getMorphoContracts,
-  SECONDS_PER_YEAR,
-} from '@/lend/providers/morpho/contracts.js'
+import { getMorphoContracts } from '@/lend/providers/morpho/contracts.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { LendProviderConfig } from '@/types/actions.js'
@@ -20,148 +22,7 @@ import type {
   LendMarketId,
   MorphoContracts,
 } from '@/types/lend/index.js'
-
-// ABIs for direct on-chain queries
-const metaMorphoAbi = [
-  {
-    name: 'totalAssets',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'uint256' }],
-  },
-  {
-    name: 'totalSupply',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'uint256' }],
-  },
-  {
-    name: 'fee',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'uint96' }],
-  },
-  {
-    name: 'owner',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'address' }],
-  },
-  {
-    name: 'curator',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'address' }],
-  },
-  {
-    name: 'supplyQueueLength',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'uint256' }],
-  },
-  {
-    name: 'supplyQueue',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'index', type: 'uint256' }],
-    outputs: [{ type: 'bytes32' }],
-  },
-  {
-    name: 'config',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'id', type: 'bytes32' }],
-    outputs: [
-      { name: 'cap', type: 'uint184' },
-      { name: 'enabled', type: 'bool' },
-      { name: 'removableAt', type: 'uint64' },
-    ],
-  },
-] as const
-
-const morphoBlueAbi = [
-  {
-    name: 'market',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'id', type: 'bytes32' }],
-    outputs: [
-      { name: 'totalSupplyAssets', type: 'uint128' },
-      { name: 'totalSupplyShares', type: 'uint128' },
-      { name: 'totalBorrowAssets', type: 'uint128' },
-      { name: 'totalBorrowShares', type: 'uint128' },
-      { name: 'lastUpdate', type: 'uint128' },
-      { name: 'fee', type: 'uint128' },
-    ],
-  },
-  {
-    name: 'idToMarketParams',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'id', type: 'bytes32' }],
-    outputs: [
-      { name: 'loanToken', type: 'address' },
-      { name: 'collateralToken', type: 'address' },
-      { name: 'oracle', type: 'address' },
-      { name: 'irm', type: 'address' },
-      { name: 'lltv', type: 'uint256' },
-    ],
-  },
-  {
-    name: 'position',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'id', type: 'bytes32' },
-      { name: 'user', type: 'address' },
-    ],
-    outputs: [
-      { name: 'supplyShares', type: 'uint256' },
-      { name: 'borrowShares', type: 'uint128' },
-      { name: 'collateral', type: 'uint128' },
-    ],
-  },
-] as const
-
-const irmAbi = [
-  {
-    name: 'borrowRateView',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      {
-        name: 'marketParams',
-        type: 'tuple',
-        components: [
-          { name: 'loanToken', type: 'address' },
-          { name: 'collateralToken', type: 'address' },
-          { name: 'oracle', type: 'address' },
-          { name: 'irm', type: 'address' },
-          { name: 'lltv', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'market',
-        type: 'tuple',
-        components: [
-          { name: 'totalSupplyAssets', type: 'uint128' },
-          { name: 'totalSupplyShares', type: 'uint128' },
-          { name: 'totalBorrowAssets', type: 'uint128' },
-          { name: 'totalBorrowShares', type: 'uint128' },
-          { name: 'lastUpdate', type: 'uint128' },
-          { name: 'fee', type: 'uint128' },
-        ],
-      },
-    ],
-    outputs: [{ type: 'uint256' }],
-  },
-] as const
+import { SECONDS_PER_YEAR } from '@/utils/constants.js'
 
 /**
  * Fetch and calculate rewards breakdown from Morpho GraphQL API
@@ -303,19 +164,19 @@ async function fetchVaultDataOnChain(
     const [marketParams, marketState, vaultPosition] = await Promise.all([
       publicClient.readContract({
         address: contracts.morphoBlue,
-        abi: morphoBlueAbi,
+        abi: blueAbi,
         functionName: 'idToMarketParams',
         args: [marketIdHash],
       }),
       publicClient.readContract({
         address: contracts.morphoBlue,
-        abi: morphoBlueAbi,
+        abi: blueAbi,
         functionName: 'market',
         args: [marketIdHash],
       }),
       publicClient.readContract({
         address: contracts.morphoBlue,
-        abi: morphoBlueAbi,
+        abi: blueAbi,
         functionName: 'position',
         args: [marketIdHash, marketId.address],
       }),
@@ -343,7 +204,7 @@ async function fetchVaultDataOnChain(
     // Get borrow rate from IRM
     const borrowRate = await publicClient.readContract({
       address: contracts.irm,
-      abi: irmAbi,
+      abi: adaptiveCurveIrmAbi,
       functionName: 'borrowRateView',
       args: [
         {

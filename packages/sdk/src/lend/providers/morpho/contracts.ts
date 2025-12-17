@@ -19,11 +19,6 @@ export const MORPHO_CONTRACTS: MorphoContractsRegistry = {
 }
 
 /**
- * Seconds per year for APY calculations
- */
-export const SECONDS_PER_YEAR = 31536000n
-
-/**
  * Get Morpho contracts for a chain
  * @param chainId - Chain ID
  * @returns Morpho contracts if supported, undefined otherwise
