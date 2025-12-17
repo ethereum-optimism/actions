@@ -66,7 +66,6 @@ export function matchAssetBalance({
     )
   }
 
-  // WETH uses 4 decimal places (0.0001), USDC uses 2 decimal places (0.01)
   const isWeth =
     selectedAssetSymbol === 'WETH' || selectedAssetSymbol.includes('ETH')
   const displayPrecision = isWeth ? 4 : 2

@@ -1,4 +1,4 @@
-import type { AccrualPosition } from '@morpho-org/blue-sdk'
+import { type AccrualPosition, ChainId } from '@morpho-org/blue-sdk'
 import {
   adaptiveCurveIrmAbi,
   blueAbi,
@@ -306,6 +306,13 @@ function findMarketInAllowlist(
 }
 
 /**
+ * Check if chain is supported by Morpho SDK
+ */
+function isSdkSupportedChain(chainId: number): boolean {
+  return ChainId[chainId] !== undefined
+}
+
+/**
  * Get detailed vault information with enhanced rewards data
  * @param params - Named parameters object
  * @returns Promise resolving to detailed vault information
@@ -322,12 +329,53 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     )
   }
 
-  // For chains not supported by Morpho SDK (e.g., testnets), use direct on-chain queries
+  const publicClient = params.chainManager.getPublicClient(
+    params.marketId.chainId,
+  )
+
+  // Try SDK first for supported chains (mainnets)
+  if (isSdkSupportedChain(params.marketId.chainId)) {
+    try {
+      const vault = await fetchAccrualVault(
+        params.marketId.address,
+        publicClient,
+      )
+
+      // Fetch rewards data from API
+      const rewardsBreakdown = await fetchAndCalculateRewards(
+        params.marketId.address,
+      ).catch((error) => {
+        console.error('Failed to fetch rewards data:', error)
+        return { usdc: 0, morpho: 0, other: 0, totalRewards: 0 }
+      })
+
+      const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
+      const currentTimestampSeconds = Math.floor(Date.now() / 1000)
+
+      return {
+        marketId: params.marketId,
+        name: marketConfig.name,
+        asset: marketConfig.asset,
+        supply: {
+          totalAssets: vault.totalAssets,
+          totalShares: vault.totalSupply,
+        },
+        apy: apyBreakdown,
+        metadata: {
+          owner: vault.owner,
+          curator: vault.curator,
+          fee: apyBreakdown.performanceFee,
+          lastUpdate: currentTimestampSeconds,
+        },
+      }
+    } catch (error) {
+      console.error('SDK fetch failed, trying on-chain fallback:', error)
+    }
+  }
+
+  // Fallback to direct on-chain queries for testnets or if SDK fails
   const contracts = getMorphoContracts(params.marketId.chainId)
   if (contracts) {
-    const publicClient = params.chainManager.getPublicClient(
-      params.marketId.chainId,
-    )
     return fetchVaultDataOnChain(
       params.marketId,
       marketConfig,
@@ -336,64 +384,10 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     )
   }
 
-  try {
-    // Fetch live vault data from Morpho SDK
-    const vault = await fetchAccrualVault(
-      params.marketId.address,
-      params.chainManager.getPublicClient(params.marketId.chainId),
-    ).catch((error) => {
-      console.error('Failed to fetch vault info:', error)
-      return {
-        totalAssets: 0n,
-        totalSupply: 0n,
-        owner: '0x' as Address,
-        curator: '0x' as Address,
-      }
-    })
-
-    // Fetch rewards data from API
-    const rewardsBreakdown = await fetchAndCalculateRewards(
-      params.marketId.address,
-    ).catch((error) => {
-      console.error('Failed to fetch rewards data:', error)
-      return {
-        usdc: 0,
-        morpho: 0,
-        other: 0,
-        totalRewards: 0,
-      }
-    })
-
-    // Calculate APY breakdown
-    const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
-
-    // Return comprehensive vault information
-    const currentTimestampSeconds = Math.floor(Date.now() / 1000)
-
-    return {
-      marketId: params.marketId,
-      name: marketConfig.name,
-      asset: marketConfig.asset,
-      supply: {
-        totalAssets: vault.totalAssets,
-        totalShares: vault.totalSupply,
-      },
-      apy: apyBreakdown,
-      metadata: {
-        owner: vault.owner,
-        curator: vault.curator,
-        fee: apyBreakdown.performanceFee,
-        lastUpdate: currentTimestampSeconds,
-      },
-    }
-  } catch (error) {
-    console.error('Failed to get vault info:', error)
-    throw new Error(
-      `Failed to get vault info for ${params.marketId.address}: ${
-        error instanceof Error ? error.message : 'Unknown error'
-      }`,
-    )
-  }
+  // No SDK support and no contracts configured
+  throw new Error(
+    `Chain ${params.marketId.chainId} not supported by Morpho SDK and no contracts configured`,
+  )
 }
 
 interface GetVaultsParams {

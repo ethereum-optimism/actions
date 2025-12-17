@@ -11,8 +11,6 @@
     "impersonate:whale": "cast rpc anvil_impersonateAccount 0x5752e57DcfA070e3822d69498185B706c293C792 --rpc-url http://127.0.0.1:9545",
     "impersonate:fund:faucet": "pnpm impersonate:whale && forge script script/ImpersonateFund.s.sol --rpc-url http://127.0.0.1:9545 --broadcast --unlocked 0x5752e57DcfA070e3822d69498185B706c293C792 --sender 0x5752e57DcfA070e3822d69498185B706c293C792",
     "deploy:impersonate:fund:faucet": "FUND_FAUCET_ETH=true pnpm deploy:faucet:supersim && pnpm impersonate:fund:faucet",
-    "deploy:morpho:local": "./script/deploy-morpho-market.sh local",
-    "deploy:morpho:testnet": "./script/deploy-morpho-market.sh testnet",
     "test": "forge install && forge test",
     "lint": "solhint {src,script,test}/**/*.sol && forge fmt --check src test scripts",
     "lint:fix": "solhint --fix --quiet --noPrompt {src,script,test}/**/*.sol && forge fmt src test script"
