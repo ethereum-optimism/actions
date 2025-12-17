@@ -1,32 +1,19 @@
-import { base, baseSepolia, mainnet, unichain } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 
 import type { MorphoContractsRegistry } from '@/types/lend/contracts.js'
 
 /**
- * Morpho Blue uses the same core contract address across all chains
- * via CREATE2 deterministic deployment
+ * Morpho Blue core contract - same address on all chains via CREATE2
  */
-const MORPHO_BLUE_ADDRESS =
-  '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as const
+const MORPHO_BLUE = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as const
 
 /**
- * Morpho contract addresses per chain
+ * Contract addresses for chains NOT supported by Morpho SDK (testnets).
+ * Mainnet/Base use the SDK which provides richer data including rewards.
  */
 export const MORPHO_CONTRACTS: MorphoContractsRegistry = {
-  [mainnet.id]: {
-    morphoBlue: MORPHO_BLUE_ADDRESS,
-    irm: '0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC',
-  },
-  [base.id]: {
-    morphoBlue: MORPHO_BLUE_ADDRESS,
-    irm: '0x46415998764C29aB2a25CbeA6254146D50D22687',
-  },
   [baseSepolia.id]: {
-    morphoBlue: MORPHO_BLUE_ADDRESS,
-    irm: '0x46415998764C29aB2a25CbeA6254146D50D22687',
-  },
-  [unichain.id]: {
-    morphoBlue: MORPHO_BLUE_ADDRESS,
+    morphoBlue: MORPHO_BLUE,
     irm: '0x46415998764C29aB2a25CbeA6254146D50D22687',
   },
 }
