@@ -88,44 +88,18 @@ Forge deployment script that creates a complete Morpho lending market for demo p
 - MetaMorpho V1.1 vault ("Actions Demo USDC Vault" / "dUSDC")
 - Yield-generating borrow position (99.9% utilization)
 
-**Quick Start:**
+**Deploy to Base Sepolia:**
 
 ```bash
-# Test locally
-pnpm deploy:morpho:local
-
-# Deploy to Base Sepolia
-pnpm deploy:morpho:testnet
+forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
+  --rpc-url https://sepolia.base.org \
+  --broadcast \
+  --private-key <your_private_key>
 ```
-
-**Local Testing (`pnpm deploy:morpho:local`):**
-
-Starts an anvil fork of Base Sepolia and deploys all contracts in a single transaction.
-
-**Testnet Deployment (`pnpm deploy:morpho:testnet`):**
-
-Prerequisites:
-
-1. Set `DEMO_MARKET_SETUP_PRIVATE_KEY` in `packages/demo/backend/.env`
-2. Fund the wallet with ~0.001 ETH on Base Sepolia
-
-The script is idempotent:
-
-1. **First run**: Deploys all contracts and sets up yield generation
-2. **Subsequent runs**: Shows vault status (total assets, interest earned, utilization, APY)
-
-**Environment Variables:**
-
-| Variable                        | Description                       | Required                    |
-| ------------------------------- | --------------------------------- | --------------------------- |
-| `DEMO_MARKET_SETUP_PRIVATE_KEY` | Private key for deployment wallet | Yes (testnet)               |
-| `BASE_SEPOLIA_RPC_URL`          | RPC URL for Base Sepolia          | No (defaults to public RPC) |
 
 **Output:**
 
 - Deployed contract addresses (USDC_DEMO, OP_DEMO, Oracle, Vault)
-- Vault status: total assets, interest earned, utilization %, supply APY %
-- Block explorer links (testnet only)
 
 **Post-Deployment:**
 Update these config files with the new addresses:
