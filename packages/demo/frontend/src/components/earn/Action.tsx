@@ -270,18 +270,18 @@ export function Action({
               alignItems: 'center',
               gap: '8px',
               padding: '12px 16px',
-              backgroundColor: '#FEF3C7',
-              border: '1px solid #FCD34D',
+              backgroundColor: '#EFF6FF',
+              border: '1px solid #BFDBFE',
               borderRadius: '8px',
               fontSize: '14px',
-              color: '#92400E',
+              color: '#1E40AF',
               fontWeight: 500,
             }}
           >
-            <span style={{ fontSize: '16px' }}>⚠️</span>
+            <span style={{ fontSize: '16px' }}>ℹ️</span>
             <span>
-              Aave's Testnet ETH Market is illiquid causing withdrawals over{' '}
-              {AAVE_MAX_WITHDRAW} to fail.
+              For the purposes of this demo, this testnet market only allows{' '}
+              {AAVE_MAX_WITHDRAW} withdrawals.
             </span>
           </div>
         )}
@@ -452,90 +452,49 @@ export function Action({
             </div>
           </div>
 
-          <button
-            onClick={handleLendUSDC}
-            disabled={(() => {
-              const maxAmount =
-                mode === 'lend' ? assetBalance : depositedAmount || '0'
-              const amountValue = parseFloat(amount)
+          {(() => {
+            const maxAmount =
+              mode === 'lend' ? assetBalance : depositedAmount || '0'
+            const amountValue = parseFloat(amount)
+            const exceedsAaveLimit =
+              isIlliquidAaveMarket &&
+              mode === 'withdraw' &&
+              amountValue > AAVE_MAX_WITHDRAW
+            const isDisabled =
+              isLoading ||
+              !amount ||
+              amountValue <= 0 ||
+              amountValue > parseFloat(maxAmount) ||
+              exceedsAaveLimit
 
-              // For illiquid Aave market, limit withdrawals
-              const exceedsAaveLimit =
-                isIlliquidAaveMarket &&
-                mode === 'withdraw' &&
-                amountValue > AAVE_MAX_WITHDRAW
-
-              const isDisabled =
-                isLoading ||
-                !amount ||
-                amountValue <= 0 ||
-                amountValue > parseFloat(maxAmount) ||
-                exceedsAaveLimit
-
-              return isDisabled
-            })()}
-            className="w-full py-3 px-4 font-medium transition-all"
-            style={{
-              backgroundColor: (() => {
-                const maxAmount =
-                  mode === 'lend' ? assetBalance : depositedAmount || '0'
-                const amountValue = parseFloat(amount)
-                const exceedsAaveLimit =
-                  isIlliquidAaveMarket &&
-                  mode === 'withdraw' &&
-                  amountValue > AAVE_MAX_WITHDRAW
-                const isDisabled =
-                  isLoading ||
-                  !amount ||
-                  amountValue <= 0 ||
-                  amountValue > parseFloat(maxAmount) ||
+            return (
+              <button
+                onClick={handleLendUSDC}
+                disabled={isDisabled}
+                title={
                   exceedsAaveLimit
-                return isDisabled ? '#D1D5DB' : '#FF0420'
-              })(),
-              color: (() => {
-                const maxAmount =
-                  mode === 'lend' ? assetBalance : depositedAmount || '0'
-                const amountValue = parseFloat(amount)
-                const exceedsAaveLimit =
-                  isIlliquidAaveMarket &&
-                  mode === 'withdraw' &&
-                  amountValue > AAVE_MAX_WITHDRAW
-                const isDisabled =
-                  isLoading ||
-                  !amount ||
-                  amountValue <= 0 ||
-                  amountValue > parseFloat(maxAmount) ||
-                  exceedsAaveLimit
-                return isDisabled ? '#6B7280' : '#FFFFFF'
-              })(),
-              fontSize: '16px',
-              borderRadius: '12px',
-              border: 'none',
-              cursor: (() => {
-                const maxAmount =
-                  mode === 'lend' ? assetBalance : depositedAmount || '0'
-                const amountValue = parseFloat(amount)
-                const exceedsAaveLimit =
-                  isIlliquidAaveMarket &&
-                  mode === 'withdraw' &&
-                  amountValue > AAVE_MAX_WITHDRAW
-                const isDisabled =
-                  isLoading ||
-                  !amount ||
-                  amountValue <= 0 ||
-                  amountValue > parseFloat(maxAmount) ||
-                  exceedsAaveLimit
-                return isDisabled ? 'not-allowed' : 'pointer'
-              })(),
-              opacity: 1,
-            }}
-          >
-            {isLoading
-              ? 'Processing...'
-              : mode === 'lend'
-                ? `Lend ${displaySymbol}`
-                : `Withdraw ${displaySymbol}`}
-          </button>
+                    ? 'Cannot withdraw more than 0.0001 at a time.'
+                    : undefined
+                }
+                className="w-full py-3 px-4 font-medium transition-all"
+                style={{
+                  backgroundColor: isDisabled ? '#D1D5DB' : '#FF0420',
+                  color: isDisabled ? '#6B7280' : '#FFFFFF',
+                  fontSize: '16px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  opacity: 1,
+                }}
+              >
+                {isLoading
+                  ? 'Processing...'
+                  : mode === 'lend'
+                    ? `Lend ${displaySymbol}`
+                    : `Withdraw ${displaySymbol}`}
+              </button>
+            )
+          })()}
         </div>
       </div>
 
