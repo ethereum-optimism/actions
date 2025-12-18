@@ -68,16 +68,30 @@ export function Action({
   const isWethAsset = assetSymbol === 'WETH'
   const displayPrecision = isWethAsset ? 4 : 2
 
+  // Derived values for form validation
+  const amountValue = parseFloat(amount) || 0
+  const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
+  const exceedsAaveLimit =
+    isIlliquidAaveMarket &&
+    mode === 'withdraw' &&
+    amountValue > AAVE_MAX_WITHDRAW
+  const isActionDisabled =
+    isLoading ||
+    !amount ||
+    amountValue <= 0 ||
+    amountValue > parseFloat(maxAmount) ||
+    exceedsAaveLimit
+
   const handleMaxClick = () => {
-    let maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
+    let clickMaxAmount = maxAmount
 
     // For illiquid Aave market in withdraw mode, cap at max withdrawal limit
     if (isIlliquidAaveMarket && mode === 'withdraw') {
       const deposited = parseFloat(depositedAmount || '0')
-      maxAmount = Math.min(deposited, AAVE_MAX_WITHDRAW).toString()
+      clickMaxAmount = Math.min(deposited, AAVE_MAX_WITHDRAW).toString()
     }
 
-    const rounded = parseFloat(maxAmount).toFixed(displayPrecision)
+    const rounded = parseFloat(clickMaxAmount).toFixed(displayPrecision)
     setAmount(rounded)
   }
 
@@ -90,16 +104,7 @@ export function Action({
   }
 
   const handleLendUSDC = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      return
-    }
-
-    const amountValue = parseFloat(amount)
-    const maxAmount =
-      mode === 'lend'
-        ? parseFloat(assetBalance)
-        : parseFloat(depositedAmount || '0')
-    if (amountValue > maxAmount) {
+    if (isActionDisabled) {
       return
     }
 
@@ -452,49 +457,31 @@ export function Action({
             </div>
           </div>
 
-          {(() => {
-            const maxAmount =
-              mode === 'lend' ? assetBalance : depositedAmount || '0'
-            const amountValue = parseFloat(amount)
-            const exceedsAaveLimit =
-              isIlliquidAaveMarket &&
-              mode === 'withdraw' &&
-              amountValue > AAVE_MAX_WITHDRAW
-            const isDisabled =
-              isLoading ||
-              !amount ||
-              amountValue <= 0 ||
-              amountValue > parseFloat(maxAmount) ||
+          <button
+            onClick={handleLendUSDC}
+            disabled={isActionDisabled}
+            title={
               exceedsAaveLimit
-
-            return (
-              <button
-                onClick={handleLendUSDC}
-                disabled={isDisabled}
-                title={
-                  exceedsAaveLimit
-                    ? 'Cannot withdraw more than 0.0001 at a time.'
-                    : undefined
-                }
-                className="w-full py-3 px-4 font-medium transition-all"
-                style={{
-                  backgroundColor: isDisabled ? '#D1D5DB' : '#FF0420',
-                  color: isDisabled ? '#6B7280' : '#FFFFFF',
-                  fontSize: '16px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  cursor: isDisabled ? 'not-allowed' : 'pointer',
-                  opacity: 1,
-                }}
-              >
-                {isLoading
-                  ? 'Processing...'
-                  : mode === 'lend'
-                    ? `Lend ${displaySymbol}`
-                    : `Withdraw ${displaySymbol}`}
-              </button>
-            )
-          })()}
+                ? 'Cannot withdraw more than 0.0001 at a time.'
+                : undefined
+            }
+            className="w-full py-3 px-4 font-medium transition-all"
+            style={{
+              backgroundColor: isActionDisabled ? '#D1D5DB' : '#FF0420',
+              color: isActionDisabled ? '#6B7280' : '#FFFFFF',
+              fontSize: '16px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: isActionDisabled ? 'not-allowed' : 'pointer',
+              opacity: 1,
+            }}
+          >
+            {isLoading
+              ? 'Processing...'
+              : mode === 'lend'
+                ? `Lend ${displaySymbol}`
+                : `Withdraw ${displaySymbol}`}
+          </button>
         </div>
       </div>
 
