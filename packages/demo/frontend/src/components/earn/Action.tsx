@@ -65,7 +65,7 @@ export function Action({
   const AAVE_MAX_WITHDRAW = 0.0001
 
   // Determine display precision based on asset type
-  const isWethAsset = assetSymbol === 'WETH' || assetSymbol.includes('ETH')
+  const isWethAsset = assetSymbol === 'WETH'
   const displayPrecision = isWethAsset ? 4 : 2
 
   const handleMaxClick = () => {
@@ -241,10 +241,7 @@ export function Action({
                     fontWeight: 500,
                   }}
                 >
-                  {displaySymbol.includes('WETH') ||
-                  displaySymbol.includes('ETH')
-                    ? assetBalance
-                    : `$${assetBalance}`}
+                  {displaySymbol === 'WETH' ? assetBalance : `$${assetBalance}`}
                 </span>
                 <img
                   src={assetLogo}

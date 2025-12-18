@@ -66,8 +66,7 @@ export function matchAssetBalance({
     )
   }
 
-  const isWeth =
-    selectedAssetSymbol === 'WETH' || selectedAssetSymbol.includes('ETH')
+  const isWeth = selectedAssetSymbol === 'WETH'
   const displayPrecision = isWeth ? 4 : 2
   const precisionMultiplier = Math.pow(10, displayPrecision)
 
