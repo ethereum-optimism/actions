@@ -53,6 +53,8 @@ export function Action({
   const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(
     undefined,
   )
+  const [showFaucetInfo, setShowFaucetInfo] = useState(false)
+  const [hasUsedWethFaucet, setHasUsedWethFaucet] = useState(false)
 
   // Check if this is the illiquid Aave OP Sepolia ETH market
   const isIlliquidAaveMarket =
@@ -190,30 +192,72 @@ export function Action({
               </div>
             ) : parseFloat(assetBalance || '0') === 0 ? (
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    trackEvent('mint_asset', { asset: assetSymbol })
-                    onMintAsset?.()
-                  }}
-                  className="transition-all"
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: '#FF0420',
-                    color: '#FFFFFF',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '6px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontFamily: 'Inter',
-                    minHeight: '33px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
+                <div
+                  className="relative"
+                  onMouseEnter={() =>
+                    isWethAsset && hasUsedWethFaucet && setShowFaucetInfo(true)
+                  }
+                  onMouseLeave={() => setShowFaucetInfo(false)}
                 >
-                  Get {displaySymbol}
-                </button>
+                  <button
+                    onClick={() => {
+                      trackEvent('mint_asset', { asset: assetSymbol })
+                      if (isWethAsset) {
+                        setHasUsedWethFaucet(true)
+                      }
+                      onMintAsset?.()
+                    }}
+                    disabled={isWethAsset && hasUsedWethFaucet}
+                    className="transition-all"
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor:
+                        isWethAsset && hasUsedWethFaucet
+                          ? '#D1D5DB'
+                          : '#FF0420',
+                      color:
+                        isWethAsset && hasUsedWethFaucet
+                          ? '#6B7280'
+                          : '#FFFFFF',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      borderRadius: '6px',
+                      border: 'none',
+                      cursor:
+                        isWethAsset && hasUsedWethFaucet
+                          ? 'not-allowed'
+                          : 'pointer',
+                      fontFamily: 'Inter',
+                      minHeight: '33px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    Get {displaySymbol}
+                  </button>
+                  {showFaucetInfo && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        marginBottom: '8px',
+                        padding: '8px 12px',
+                        backgroundColor: '#1a1b1e',
+                        color: '#FFFFFF',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        borderRadius: '6px',
+                        whiteSpace: 'nowrap',
+                        zIndex: 10,
+                      }}
+                    >
+                      Demo WETH already provided.
+                    </div>
+                  )}
+                </div>
                 <img
                   src={assetLogo}
                   alt={assetSymbol}
