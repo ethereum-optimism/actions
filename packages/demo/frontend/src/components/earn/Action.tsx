@@ -61,9 +61,37 @@ export function Action({
     marketId?.address.toLowerCase() ===
       '0x4200000000000000000000000000000000000006'
 
+  // Max withdrawal for illiquid Aave market
+  const AAVE_MAX_WITHDRAW = 0.0001
+
+  // Determine display precision based on asset type
+  const isWethAsset = assetSymbol === 'WETH'
+  const displayPrecision = isWethAsset ? 4 : 2
+
+  // Derived values for form validation
+  const amountValue = parseFloat(amount) || 0
+  const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
+  const exceedsAaveLimit =
+    isIlliquidAaveMarket &&
+    mode === 'withdraw' &&
+    amountValue > AAVE_MAX_WITHDRAW
+  const isActionDisabled =
+    isLoading ||
+    !amount ||
+    amountValue <= 0 ||
+    amountValue > parseFloat(maxAmount) ||
+    exceedsAaveLimit
+
   const handleMaxClick = () => {
-    const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
-    const rounded = parseFloat(maxAmount).toFixed(2)
+    let clickMaxAmount = maxAmount
+
+    // For illiquid Aave market in withdraw mode, cap at max withdrawal limit
+    if (isIlliquidAaveMarket && mode === 'withdraw') {
+      const deposited = parseFloat(depositedAmount || '0')
+      clickMaxAmount = Math.min(deposited, AAVE_MAX_WITHDRAW).toString()
+    }
+
+    const rounded = parseFloat(clickMaxAmount).toFixed(displayPrecision)
     setAmount(rounded)
   }
 
@@ -76,16 +104,7 @@ export function Action({
   }
 
   const handleLendUSDC = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      return
-    }
-
-    const amountValue = parseFloat(amount)
-    const maxAmount =
-      mode === 'lend'
-        ? parseFloat(assetBalance)
-        : parseFloat(depositedAmount || '0')
-    if (amountValue > maxAmount) {
+    if (isActionDisabled) {
       return
     }
 
@@ -227,10 +246,7 @@ export function Action({
                     fontWeight: 500,
                   }}
                 >
-                  {displaySymbol.includes('WETH') ||
-                  displaySymbol.includes('ETH')
-                    ? assetBalance
-                    : `$${assetBalance}`}
+                  {displaySymbol === 'WETH' ? assetBalance : `$${assetBalance}`}
                 </span>
                 <img
                   src={assetLogo}
@@ -252,25 +268,25 @@ export function Action({
         className="py-6 px-6"
         style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}
       >
-        {isIlliquidAaveMarket && (
+        {isIlliquidAaveMarket && mode === 'withdraw' && (
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               padding: '12px 16px',
-              backgroundColor: '#FEF3C7',
-              border: '1px solid #FCD34D',
+              backgroundColor: '#EFF6FF',
+              border: '1px solid #BFDBFE',
               borderRadius: '8px',
               fontSize: '14px',
-              color: '#92400E',
+              color: '#1E40AF',
               fontWeight: 500,
             }}
           >
-            <span style={{ fontSize: '16px' }}>⚠️</span>
+            <span style={{ fontSize: '16px' }}>ℹ️</span>
             <span>
-              OP Sepolia Aave ETH Market is illiquid causing tx failure. Fix
-              coming soon.
+              For the purposes of this demo, this testnet market only allows{' '}
+              {AAVE_MAX_WITHDRAW} withdrawals.
             </span>
           </div>
         )}
@@ -443,52 +459,20 @@ export function Action({
 
           <button
             onClick={handleLendUSDC}
-            disabled={(() => {
-              const maxAmount =
-                mode === 'lend' ? assetBalance : depositedAmount || '0'
-              const isDisabled =
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) > parseFloat(maxAmount)
-
-              return isDisabled
-            })()}
+            disabled={isActionDisabled}
+            title={
+              exceedsAaveLimit
+                ? 'Cannot withdraw more than 0.0001 at a time.'
+                : undefined
+            }
             className="w-full py-3 px-4 font-medium transition-all"
             style={{
-              backgroundColor:
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) >
-                  parseFloat(
-                    mode === 'lend' ? assetBalance : depositedAmount || '0',
-                  )
-                  ? '#D1D5DB'
-                  : '#FF0420',
-              color:
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) >
-                  parseFloat(
-                    mode === 'lend' ? assetBalance : depositedAmount || '0',
-                  )
-                  ? '#6B7280'
-                  : '#FFFFFF',
+              backgroundColor: isActionDisabled ? '#D1D5DB' : '#FF0420',
+              color: isActionDisabled ? '#6B7280' : '#FFFFFF',
               fontSize: '16px',
               borderRadius: '12px',
               border: 'none',
-              cursor:
-                isLoading ||
-                !amount ||
-                parseFloat(amount) <= 0 ||
-                parseFloat(amount) >
-                  parseFloat(
-                    mode === 'lend' ? assetBalance : depositedAmount || '0',
-                  )
-                  ? 'not-allowed'
-                  : 'pointer',
+              cursor: isActionDisabled ? 'not-allowed' : 'pointer',
               opacity: 1,
             }}
           >

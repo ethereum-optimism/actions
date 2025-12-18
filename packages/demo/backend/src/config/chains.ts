@@ -16,7 +16,7 @@ export const BASE_SEPOLIA = {
   rpcUrls: env.BASE_SEPOLIA_RPC_URL ? [env.BASE_SEPOLIA_RPC_URL] : undefined,
   bundler: {
     type: 'simple' as const,
-    url: env.BASE_SEPOLIA_BUNDER_URL,
+    url: env.BASE_SEPOLIA_BUNDLER_URL,
   },
 }
 export const OPTIMISM_SEPOLIA = {

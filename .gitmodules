@@ -1,3 +1,6 @@
 [submodule "packages/demo/contracts/lib/forge-std"]
 	path = packages/demo/contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "packages/demo/contracts/lib/solady"]
+	path = packages/demo/contracts/lib/solady
+	url = https://github.com/Vectorized/solady

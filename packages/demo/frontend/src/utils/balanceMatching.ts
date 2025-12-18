@@ -66,21 +66,27 @@ export function matchAssetBalance({
     )
   }
 
+  const isWeth = selectedAssetSymbol === 'WETH'
+  const displayPrecision = isWeth ? 4 : 2
+  const precisionMultiplier = Math.pow(10, displayPrecision)
+
   if (assetToken && chainBalance && BigInt(chainBalance.balance) > 0n) {
     // Use the specific chain balance
     const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
     const balance =
       parseFloat(`${chainBalance.balance}`) / Math.pow(10, decimals)
-    const flooredBalance = Math.floor(balance * 100) / 100
-    return flooredBalance.toFixed(2)
+    const flooredBalance =
+      Math.floor(balance * precisionMultiplier) / precisionMultiplier
+    return flooredBalance.toFixed(displayPrecision)
   } else if (assetToken && BigInt(assetToken.totalBalance) > 0n) {
     // Fallback to total balance if no specific chain balance
     const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
     const balance =
       parseFloat(`${assetToken.totalBalance}`) / Math.pow(10, decimals)
-    const flooredBalance = Math.floor(balance * 100) / 100
-    return flooredBalance.toFixed(2)
+    const flooredBalance =
+      Math.floor(balance * precisionMultiplier) / precisionMultiplier
+    return flooredBalance.toFixed(displayPrecision)
   } else {
-    return '0.00'
+    return isWeth ? '0.0000' : '0.00'
   }
 }

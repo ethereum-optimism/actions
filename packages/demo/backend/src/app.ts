@@ -47,6 +47,7 @@ class ActionsApp extends App {
           // Allow production domains
           if (origin === 'https://actions-ui.netlify.app') return origin
           if (origin === 'https://actions.money') return origin
+          if (origin === 'https://actions.optimism.io') return origin
 
           // Allow Netlify deploy previews (e.g., https://deploy-preview-123--actions-ui.netlify.app)
           if (
