@@ -491,6 +491,7 @@ export function Action({
         onClose={handleModalClose}
         blockExplorerUrl={blockExplorerUrl}
         mode={mode}
+        assetSymbol={assetSymbol}
       />
     </div>
   )
