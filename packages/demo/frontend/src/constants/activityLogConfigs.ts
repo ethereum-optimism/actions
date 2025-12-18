@@ -38,7 +38,7 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
   },
   mint: {
     type: 'fund',
-    description: 'Mint USDC',
+    description: 'Mint asset',
     apiMethod: 'Demo Action',
     tooltip: 'Funds a wallet with demo tokens',
   },
