@@ -4,6 +4,7 @@ interface TransactionModalProps {
   onClose: () => void
   blockExplorerUrl?: string
   mode?: 'lend' | 'withdraw'
+  assetSymbol?: string
 }
 
 function TransactionModal({
@@ -12,6 +13,7 @@ function TransactionModal({
   onClose,
   blockExplorerUrl,
   mode,
+  assetSymbol,
 }: TransactionModalProps) {
   if (!isOpen) return null
 
@@ -75,7 +77,10 @@ function TransactionModal({
             </div>
           ),
           title: 'Transaction Failed',
-          description: '',
+          description:
+            mode === 'withdraw' && assetSymbol === 'WETH'
+              ? 'Testnet liquidity issue, try again later.'
+              : '',
           showClose: true,
         }
     }
