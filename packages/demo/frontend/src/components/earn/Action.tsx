@@ -68,19 +68,21 @@ export function Action({
   const isWethAsset = assetSymbol === 'WETH'
   const displayPrecision = isWethAsset ? 4 : 2
 
+  // For illiquid Aave market, lock withdraw amount to fixed value
+  const isLockedWithdrawAmount = isIlliquidAaveMarket && mode === 'withdraw'
+  const lockedAmount = AAVE_MAX_WITHDRAW.toString()
+  const effectiveAmount = isLockedWithdrawAmount ? lockedAmount : amount
+
   // Derived values for form validation
-  const amountValue = parseFloat(amount) || 0
+  const amountValue = parseFloat(effectiveAmount) || 0
   const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
-  const exceedsAaveLimit =
-    isIlliquidAaveMarket &&
-    mode === 'withdraw' &&
-    amountValue > AAVE_MAX_WITHDRAW
+  const hasDeposit = parseFloat(depositedAmount || '0') > 0
   const isActionDisabled =
     isLoading ||
-    !amount ||
+    !effectiveAmount ||
     amountValue <= 0 ||
     amountValue > parseFloat(maxAmount) ||
-    exceedsAaveLimit
+    (isLockedWithdrawAmount && !hasDeposit)
 
   const handleMaxClick = () => {
     let clickMaxAmount = maxAmount
@@ -268,28 +270,6 @@ export function Action({
         className="py-6 px-6"
         style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}
       >
-        {isIlliquidAaveMarket && mode === 'withdraw' && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '12px 16px',
-              backgroundColor: '#EFF6FF',
-              border: '1px solid #BFDBFE',
-              borderRadius: '8px',
-              fontSize: '14px',
-              color: '#1E40AF',
-              fontWeight: 500,
-            }}
-          >
-            <span style={{ fontSize: '16px' }}>ℹ️</span>
-            <span>
-              For the purposes of this demo, this testnet market only allows{' '}
-              {AAVE_MAX_WITHDRAW} withdrawals.
-            </span>
-          </div>
-        )}
         <div
           style={{
             display: 'flex',
@@ -393,21 +373,23 @@ export function Action({
             >
               {mode === 'lend' ? 'Amount to lend' : 'Amount to withdraw'}
             </label>
-            <button
-              onClick={handleMaxClick}
-              style={{
-                padding: '4px 8px',
-                borderRadius: '6px',
-                border: 'none',
-                fontSize: '16px',
-                fontWeight: 400,
-                color: '#3374DB',
-                cursor: 'pointer',
-                backgroundColor: 'transparent',
-              }}
-            >
-              Max
-            </button>
+            {!isLockedWithdrawAmount && (
+              <button
+                onClick={handleMaxClick}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  color: '#3374DB',
+                  cursor: 'pointer',
+                  backgroundColor: 'transparent',
+                }}
+              >
+                Max
+              </button>
+            )}
           </div>
           <div
             style={{
@@ -423,16 +405,18 @@ export function Action({
             <input
               type="text"
               placeholder="0"
-              value={amount}
+              value={effectiveAmount}
               onChange={handleAmountChange}
+              disabled={isLockedWithdrawAmount}
               style={{
                 flex: 1,
                 border: 'none',
                 outline: 'none',
                 fontSize: '16px',
-                color: '#000',
+                color: isLockedWithdrawAmount ? '#9195A6' : '#000',
                 backgroundColor: 'transparent',
                 fontFamily: 'Inter',
+                cursor: isLockedWithdrawAmount ? 'not-allowed' : 'text',
               }}
             />
             <div
@@ -460,11 +444,6 @@ export function Action({
           <button
             onClick={handleLendUSDC}
             disabled={isActionDisabled}
-            title={
-              exceedsAaveLimit
-                ? 'Cannot withdraw more than 0.0001 at a time.'
-                : undefined
-            }
             className="w-full py-3 px-4 font-medium transition-all"
             style={{
               backgroundColor: isActionDisabled ? '#D1D5DB' : '#FF0420',
@@ -482,6 +461,28 @@ export function Action({
                 ? `Lend ${displaySymbol}`
                 : `Withdraw ${displaySymbol}`}
           </button>
+          {isLockedWithdrawAmount && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 16px',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '8px',
+                fontSize: '14px',
+                color: '#1E40AF',
+                fontWeight: 500,
+              }}
+            >
+              <span style={{ fontSize: '16px' }}>ℹ️</span>
+              <span>
+                For the purposes of this demo, this testnet market only allows{' '}
+                {AAVE_MAX_WITHDRAW} withdrawals.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
