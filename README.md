@@ -1,52 +1,57 @@
-# Actions
+# Actions SDK
 
-[Actions SDK](https://actions.money) and demo application by [Optimism](https://optimism.io)
+[Actions SDK](https://actions.optimism.io) and [demo app](https://actions.optimism.io/earn) by [Optimism](https://optimism.io).
+
+> ⚠️ This is a developer preview! Actions is not yet ready for production use.
+
+## Adding Actions to your app
+
+- [Quickstart](https://docs.optimism.io/app-developers/quickstarts/actions)
+- [Integrating Wallets](https://docs.optimism.io/app-developers/reference/actions/integrating-wallets)
+- [Wallet Functions](https://docs.optimism.io/app-developers/reference/actions/wallet-definitions)
+- [Lend Functions](https://docs.optimism.io/app-developers/reference/actions/lend-documentation)
 
 ## Structure
 
 This monorepo contains the following packages:
 
-- [`packages/sdk`](./packages/sdk) - The core Actions TypeScript SDK - A library of bare-bones abstractions for building onchain.
+- [`packages/sdk`](./packages/sdk) - The core Actions SDK - A Typescript library of lightweight abstractions for building onchain.
 
-- [`packages/demo/frontend`](./packages/demo/frontend) - A React+vite web application providing a user interface for interacting with Actions functionality.
+- [`packages/demo/frontend`](./packages/demo/frontend) - A React+vite splash page + [demo](https://actions.optimism.io/earn) app displaying supported wallets and DeFi protocols.
 
 - [`packages/demo/backend`](./packages/demo/backend) - A hono service demonstrating the Actions SDK in a backend environment.
 
 - [`packages/demo/contracts`](./packages/demo/contracts) - Demo smart contracts including a Faucet contract and a [Morpho market deployment script](./packages/demo/contracts/README.md#deploymorphomarkets-sol) for setting up lending markets on testnets.
 
-## Setup
+## Demo
+
+### Setup
+
+1.  **Install dependencies**
 
 ```bash
 pnpm install
 ```
 
-## Demo
-
-### Setup
-
-1. **Init env vars**
+2. **Add env vars**
 
    Copy all example environment files to create local configuration:
 
    ```bash
    cp packages/demo/backend/.env.example packages/demo/backend/.env
    cp packages/demo/frontend/.env.example packages/demo/frontend/.env
-   cp packages/sdk/.env.test.local.example packages/sdk/.env.test.local
    ```
 
-2. **Configure Providers**
-
-   Create a Privy account at [privy.io](https://privy.io) and update the environment files:
+3. **Configure Providers**
+   1. Sign up for a wallet provider and add secrets. Note that certain provider support both back and frontend signing.
 
    ```bash
    # Edit packages/demo/backend/.env
    PRIVY_APP_ID=your_privy_app_id_here
    PRIVY_APP_SECRET=your_privy_app_secret_here
-
-   # Optionally, for SDK tests: Edit packages/sdk/.env.test.local
-   PRIVY_APP_ID=your_privy_app_id_here
-   PRIVY_APP_SECRET=your_privy_app_secret_here
    ```
+
+   2. For gas sponsorship, sign up for a bundler. For this demo we use [Pimlico](https://docs.pimlico.io/references/permissionless/tutorial/tutorial-1).
 
    The remaining environment variables are pre-configured for local development.
 
@@ -60,8 +65,6 @@ pnpm dev
 
 This uses `mprocs` to orchestrate multiple processes:
 
-- **Supersim**: Starts a local Ethereum L2 development environment
-- **Contract Deployment**: Deploys and funds the demo faucet contract
 - **Backend**: Starts the Actions SDK backend service
 - **Frontend**: Starts the React web application
 
