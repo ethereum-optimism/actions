@@ -1,8 +1,8 @@
 # Actions SDK
 
-[Actions SDK](https://actions.optimism.io) and [demo app](https://actions.optimism.io/earn) by [Optimism](https://optimism.io).
-
 > ⚠️ This is a developer preview! Actions is not yet ready for production use.
+
+[Actions SDK](https://actions.optimism.io) and [demo app](https://actions.optimism.io/earn) by [Optimism](https://optimism.io).
 
 ## Adding Actions to your app
 
