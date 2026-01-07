@@ -95,11 +95,9 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         },
         slippage: params.options?.slippage,
       })
-    } catch (error) {
+    } catch {
       throw new Error(
-        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}`,
       )
     }
   }
@@ -148,12 +146,8 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         },
         slippage: params.options?.slippage,
       })
-    } catch (error) {
-      throw new Error(
-        `Failed to close position: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      )
+    } catch {
+      throw new Error('Failed to close position')
     }
   }
 
@@ -238,11 +232,9 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         sharesFormatted,
         marketId: params.marketId,
       }
-    } catch (error) {
+    } catch {
       throw new Error(
-        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}`,
       )
     }
   }

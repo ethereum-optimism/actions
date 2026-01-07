@@ -233,7 +233,7 @@ describe('MorphoLendProvider', () => {
           marketId,
           walletAddress: MockReceiverAddress,
         }),
-      ).rejects.toThrow('Market fetch failed')
+      ).rejects.toThrow('Failed to open position')
     })
 
     it('should use custom slippage when provided', async () => {

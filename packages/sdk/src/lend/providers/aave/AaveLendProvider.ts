@@ -98,11 +98,9 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
       // Standard ERC-20 flow
       return this._openERC20Position(params, poolAddress, marketInfo)
-    } catch (error) {
+    } catch {
       throw new Error(
-        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}`,
       )
     }
   }
@@ -137,12 +135,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
       // Standard ERC-20 flow
       return this._closeERC20Position(params, poolAddress, marketInfo)
-    } catch (error) {
-      throw new Error(
-        `Failed to close position: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      )
+    } catch {
+      throw new Error('Failed to close position')
     }
   }
 
@@ -236,11 +230,9 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         sharesFormatted: balanceFormatted,
         marketId: params.marketId,
       }
-    } catch (error) {
+    } catch {
       throw new Error(
-        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}`,
       )
     }
   }
