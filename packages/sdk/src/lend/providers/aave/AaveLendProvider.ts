@@ -280,7 +280,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
-        openPosition: {
+        position: {
           to: gatewayAddress,
           data: depositCallData,
           value: params.amountWei, // Send ETH as msg.value
@@ -328,7 +328,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           poolAddress,
           params.amountWei,
         ),
-        openPosition: {
+        position: {
           to: poolAddress,
           data: supplyCallData,
           value: 0n,
@@ -385,7 +385,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           gatewayAddress,
           params.amount,
         ),
-        closePosition: {
+        position: {
           to: gatewayAddress,
           data: withdrawCallData,
           value: 0n,
@@ -426,7 +426,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
-        closePosition: {
+        position: {
           to: poolAddress,
           data: withdrawCallData,
           value: 0n,

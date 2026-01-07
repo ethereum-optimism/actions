@@ -125,7 +125,7 @@ describe('WalletLendNamespace', () => {
         marketId: marketId.address,
         apy: 0.05,
         transactionData: {
-          openPosition: {
+          position: {
             to: marketId.address,
             value: 0n,
             data: '0x' as const,
@@ -174,7 +174,7 @@ describe('WalletLendNamespace', () => {
         marketId: closeParams.marketId.address,
         apy: 0.05,
         transactionData: {
-          closePosition: {
+          position: {
             to: closeParams.marketId.address,
             value: 0n,
             data: '0x' as const,
@@ -192,7 +192,7 @@ describe('WalletLendNamespace', () => {
         options: undefined,
       })
       expect(mockWallet.send).toHaveBeenCalledWith(
-        mockTransaction.transactionData.closePosition,
+        mockTransaction.transactionData.position,
         130,
       )
       expect(result).toEqual({
@@ -228,7 +228,7 @@ describe('WalletLendNamespace', () => {
       value: 0n,
       data: '0xapproval' as const,
     }
-    const openPosition: TransactionData = {
+    const position: TransactionData = {
       to: marketId.address,
       value: 0n,
       data: '0xdeposit' as const,
@@ -239,7 +239,7 @@ describe('WalletLendNamespace', () => {
       marketId: marketId.address,
       apy: 0.05,
       timestamp: Date.now(),
-      transactionData: { approval, openPosition },
+      transactionData: { approval, position },
       slippage: 50,
     }
 
@@ -252,7 +252,7 @@ describe('WalletLendNamespace', () => {
     })
 
     expect(mockWallet.sendBatch).toHaveBeenCalledWith(
-      [approval, openPosition],
+      [approval, position],
       130,
     )
     expect(result).toEqual({

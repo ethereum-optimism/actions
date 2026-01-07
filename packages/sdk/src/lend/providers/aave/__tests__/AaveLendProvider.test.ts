@@ -136,7 +136,7 @@ describe('AaveLendProvider', () => {
       expect(lendTransaction).toHaveProperty('apy')
       expect(lendTransaction).toHaveProperty('transactionData')
       expect(lendTransaction.transactionData).toHaveProperty('approval')
-      expect(lendTransaction.transactionData).toHaveProperty('openPosition')
+      expect(lendTransaction.transactionData).toHaveProperty('position')
       expect(typeof lendTransaction.apy).toBe('number')
       expect(lendTransaction.apy).toBeGreaterThan(0)
     })
@@ -164,9 +164,9 @@ describe('AaveLendProvider', () => {
         BigInt('1000000000000000000'),
       )
       expect(lendTransaction.transactionData).not.toHaveProperty('approval')
-      expect(lendTransaction.transactionData).toHaveProperty('openPosition')
+      expect(lendTransaction.transactionData).toHaveProperty('position')
       // WETH deposits send ETH as msg.value
-      expect(lendTransaction.transactionData?.openPosition?.value).toBe(
+      expect(lendTransaction.transactionData.position.value).toBe(
         BigInt('1000000000000000000'),
       )
     })
@@ -246,9 +246,7 @@ describe('AaveLendProvider', () => {
       expect(withdrawTransaction).toHaveProperty('marketId', marketId.address)
       expect(withdrawTransaction).toHaveProperty('apy')
       expect(withdrawTransaction).toHaveProperty('transactionData')
-      expect(withdrawTransaction.transactionData).toHaveProperty(
-        'closePosition',
-      )
+      expect(withdrawTransaction.transactionData).toHaveProperty('position')
       expect(withdrawTransaction.transactionData).not.toHaveProperty('approval')
       expect(typeof withdrawTransaction.apy).toBe('number')
       expect(withdrawTransaction.apy).toBeGreaterThan(0)
@@ -281,9 +279,7 @@ describe('AaveLendProvider', () => {
       )
       // WETH withdrawals require approving aWETH to WETHGateway
       expect(withdrawTransaction.transactionData).toHaveProperty('approval')
-      expect(withdrawTransaction.transactionData).toHaveProperty(
-        'closePosition',
-      )
+      expect(withdrawTransaction.transactionData).toHaveProperty('position')
     })
 
     it('should handle withdrawal errors', async () => {

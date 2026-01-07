@@ -107,9 +107,7 @@ describe('MorphoLendProvider', () => {
       expect(withdrawTransaction).toHaveProperty('marketId', marketId.address)
       expect(withdrawTransaction).toHaveProperty('apy')
       expect(withdrawTransaction).toHaveProperty('transactionData')
-      expect(withdrawTransaction.transactionData).toHaveProperty(
-        'closePosition',
-      )
+      expect(withdrawTransaction.transactionData).toHaveProperty('position')
       expect(withdrawTransaction.transactionData).not.toHaveProperty('approval')
       expect(typeof withdrawTransaction.apy).toBe('number')
       expect(withdrawTransaction.apy).toBeGreaterThan(0)
@@ -209,7 +207,7 @@ describe('MorphoLendProvider', () => {
       expect(lendTransaction).toHaveProperty('apy')
       expect(lendTransaction).toHaveProperty('transactionData')
       expect(lendTransaction.transactionData).toHaveProperty('approval')
-      expect(lendTransaction.transactionData).toHaveProperty('openPosition')
+      expect(lendTransaction.transactionData).toHaveProperty('position')
       expect(typeof lendTransaction.apy).toBe('number')
       expect(lendTransaction.apy).toBeGreaterThan(0)
     })

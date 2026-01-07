@@ -83,13 +83,12 @@ export interface LendTransaction {
   marketId: string
   /** Estimated APY at time of lending */
   apy: number
-  /** Transaction data for execution (optional) */
-  transactionData?: {
+  /** Transaction data for execution */
+  transactionData: {
     /** Approval transaction (if needed) */
     approval?: TransactionData
-    /** Main operation transaction (openPosition or closePosition) */
-    openPosition?: TransactionData
-    closePosition?: TransactionData
+    /** Main position transaction */
+    position: TransactionData
   }
   /** Slippage tolerance used */
   slippage?: number

@@ -1,8 +1,10 @@
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   ClosePositionParams,
   GetPositionParams,
   LendMarketPosition,
   LendOpenPositionParams,
+  LendTransaction,
   LendTransactionReceipt,
 } from '@/types/lend/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
@@ -39,25 +41,7 @@ export class WalletLendNamespace extends BaseLendNamespace {
       walletAddress: this.wallet.address,
     })
 
-    const { transactionData } = lendTransaction
-    if (!transactionData) {
-      throw new Error('No transaction data returned from lend provider')
-    }
-
-    if (transactionData.approval && transactionData.openPosition) {
-      return await this.wallet.sendBatch(
-        [transactionData.approval, transactionData.openPosition],
-        params.marketId.chainId,
-      )
-    }
-
-    if (!transactionData.openPosition) {
-      throw new Error('No openPosition transaction data returned')
-    }
-    return await this.wallet.send(
-      transactionData.openPosition,
-      params.marketId.chainId,
-    )
+    return this.executeTransaction(lendTransaction, params.marketId.chainId)
   }
 
   /**
@@ -98,28 +82,25 @@ export class WalletLendNamespace extends BaseLendNamespace {
       walletAddress: this.wallet.address,
     })
 
-    const { transactionData } = closeTransaction
-    if (!transactionData) {
-      throw new Error(
-        'No transaction data returned from close position provider',
+    return this.executeTransaction(closeTransaction, params.marketId.chainId)
+  }
+
+  /**
+   * Execute a lend transaction with optional approval batching
+   */
+  private async executeTransaction(
+    transaction: LendTransaction,
+    chainId: SupportedChainId,
+  ): Promise<LendTransactionReceipt> {
+    const { transactionData } = transaction
+
+    if (transactionData.approval) {
+      return this.wallet.sendBatch(
+        [transactionData.approval, transactionData.position],
+        chainId,
       )
     }
 
-    // If both approval and closePosition are present, batch them
-    if (transactionData.approval && transactionData.closePosition) {
-      return await this.wallet.sendBatch(
-        [transactionData.approval, transactionData.closePosition],
-        params.marketId.chainId,
-      )
-    }
-
-    if (!transactionData.closePosition) {
-      throw new Error('No closePosition transaction data returned')
-    }
-
-    return await this.wallet.send(
-      transactionData.closePosition,
-      params.marketId.chainId,
-    )
+    return this.wallet.send(transactionData.position, chainId)
   }
 }

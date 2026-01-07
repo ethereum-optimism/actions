@@ -87,7 +87,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
             params.marketId.address,
             params.amountWei,
           ),
-          openPosition: {
+          position: {
             to: params.marketId.address,
             data: depositCallData,
             value: 0n,
@@ -138,7 +138,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
         transactionData: {
-          closePosition: {
+          position: {
             to: params.marketId.address,
             data: withdrawCallData,
             value: 0n,

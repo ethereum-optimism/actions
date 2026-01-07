@@ -3,14 +3,14 @@ import type { Address } from 'viem'
 import type { LendTransaction, TransactionData } from '@/types/lend/index.js'
 
 /**
- * Creates a mock lend transaction for testing openPosition
+ * Creates a mock lend transaction for testing
  */
-export function createMockOpenTransaction(params: {
+export function createMockLendTransaction(params: {
   amount: bigint
   asset: Address
   marketId: Address
   approval?: TransactionData
-  openPosition?: TransactionData
+  position: TransactionData
 }): LendTransaction {
   return {
     amount: params.amount,
@@ -19,28 +19,7 @@ export function createMockOpenTransaction(params: {
     apy: 0.05,
     transactionData: {
       approval: params.approval,
-      openPosition: params.openPosition,
-    },
-    slippage: 50,
-  }
-}
-
-/**
- * Creates a mock lend transaction for testing closePosition
- */
-export function createMockCloseTransaction(params: {
-  amount: bigint
-  asset: Address
-  marketId: Address
-  closePosition: TransactionData
-}): LendTransaction {
-  return {
-    amount: params.amount,
-    asset: params.asset,
-    marketId: params.marketId,
-    apy: 0.05,
-    transactionData: {
-      closePosition: params.closePosition,
+      position: params.position,
     },
     slippage: 50,
   }

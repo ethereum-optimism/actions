@@ -233,7 +233,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
           data: '0x095ea7b3' as Address,
           value: 0n,
         },
-        openPosition: {
+        position: {
           to: marketId.address,
           data: '0x6e553f65' as Address,
           value: 0n,
@@ -266,7 +266,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
           data: '0x095ea7b3' as Address,
           value: 0n,
         },
-        openPosition: {
+        position: {
           to: marketId.address,
           data: '0x6e553f65' as Address,
           value: 0n,
@@ -355,7 +355,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
       apy: 0,
       slippage: options?.slippage ?? 50,
       transactionData: {
-        closePosition: {
+        position: {
           to: marketId.address,
           data: '0xb460af94' as Address,
           value: 0n,
@@ -378,7 +378,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
       apy: 0,
       slippage: options?.slippage ?? 50,
       transactionData: {
-        closePosition: {
+        position: {
           to:
             (marketId as Address) ||
             ('0x1234567890123456789012345678901234567890' as Address),
