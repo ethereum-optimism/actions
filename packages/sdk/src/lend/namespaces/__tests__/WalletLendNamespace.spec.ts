@@ -1,18 +1,20 @@
+import type { Address } from 'viem'
 import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstraction'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
+import type { MockLendProvider } from '@/test/MockLendProvider.js'
 import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider, TransactionData } from '@/types/lend/index.js'
+import type { TransactionData } from '@/types/lend/index.js'
 import { createMock as createSmartWalletMock } from '@/wallet/core/wallets/smart/abstract/__mocks__/SmartWallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 describe('WalletLendNamespace', () => {
   const mockWalletAddress = getRandomAddress()
-  let mockProvider: LendProvider
+  let mockProvider: MockLendProvider
   let mockWallet: SmartWallet
-  let mockMarketId: { address: any; chainId: 130 }
+  let mockMarketId: { address: Address; chainId: 130 }
 
   beforeEach(() => {
     // Create a consistent market ID for all tests
@@ -53,7 +55,7 @@ describe('WalletLendNamespace', () => {
 
   it('should create an instance with a lend provider and wallet', () => {
     const namespace = new WalletLendNamespace(
-      { morpho: mockProvider as any },
+      { morpho: mockProvider },
       mockWallet,
     )
 
@@ -62,7 +64,7 @@ describe('WalletLendNamespace', () => {
 
   it('should inherit read operations from ActionsLendNamespace', async () => {
     const namespace = new WalletLendNamespace(
-      { morpho: mockProvider as any },
+      { morpho: mockProvider },
       mockWallet,
     )
     const mockMarkets = [
@@ -107,7 +109,7 @@ describe('WalletLendNamespace', () => {
   describe('openPosition', () => {
     it('should call provider openPosition with wallet address as receiver', async () => {
       const namespace = new WalletLendNamespace(
-        { morpho: mockProvider as any },
+        { morpho: mockProvider },
         mockWallet,
       )
       const mockAsset = {
@@ -158,7 +160,7 @@ describe('WalletLendNamespace', () => {
   describe('closePosition', () => {
     it('should call provider closePosition and execute transaction for SmartWallet', async () => {
       const namespace = new WalletLendNamespace(
-        { morpho: mockProvider as any },
+        { morpho: mockProvider },
         mockWallet,
       )
       const closeParams = {
@@ -202,7 +204,7 @@ describe('WalletLendNamespace', () => {
 
   it('should store the wallet reference', () => {
     const namespace = new WalletLendNamespace(
-      { morpho: mockProvider as any },
+      { morpho: mockProvider },
       mockWallet,
     )
 
@@ -212,7 +214,7 @@ describe('WalletLendNamespace', () => {
 
   it('should execute transaction with approval when present', async () => {
     const namespace = new WalletLendNamespace(
-      { morpho: mockProvider as any },
+      { morpho: mockProvider },
       mockWallet,
     )
     const mockAsset = {
