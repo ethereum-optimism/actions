@@ -2,6 +2,7 @@ import type { Address } from 'viem'
 import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -30,6 +31,9 @@ export abstract class LendProvider<
   /** Lending provider configuration */
   protected readonly _config: TConfig
 
+  /** Chain manager for blockchain interactions */
+  protected readonly chainManager: ChainManager
+
   /**
    * Supported chain IDs
    * @description Array of chain IDs that this provider supports
@@ -39,9 +43,11 @@ export abstract class LendProvider<
   /**
    * Create a new lending provider
    * @param config - Provider-specific lending configuration
+   * @param chainManager - Chain manager for blockchain interactions
    */
-  protected constructor(config: TConfig) {
+  protected constructor(config: TConfig, chainManager: ChainManager) {
     this._config = config
+    this.chainManager = chainManager
   }
 
   public get config(): TConfig {

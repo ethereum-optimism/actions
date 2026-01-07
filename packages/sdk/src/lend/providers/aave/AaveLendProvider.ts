@@ -58,16 +58,13 @@ export const SUPPORTED_CHAIN_IDS = getSupportedChainIds() as readonly number[]
 export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
 
-  private chainManager: ChainManager
-
   /**
    * Create a new Aave lending provider
    * @param config - Aave lending configuration
    * @param chainManager - Chain manager for blockchain interactions
    */
   constructor(config: LendProviderConfig, chainManager: ChainManager) {
-    super(config)
-    this.chainManager = chainManager
+    super(config, chainManager)
   }
 
   /**

@@ -39,16 +39,13 @@ export const SUPPORTED_CHAIN_IDS = [
 export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
 
-  private chainManager: ChainManager
-
   /**
    * Create a new Morpho lending provider
    * @param config - Morpho lending configuration
    * @param chainManager - Chain manager for blockchain interactions
    */
   constructor(config: LendProviderConfig, chainManager: ChainManager) {
-    super(config)
-    this.chainManager = chainManager
+    super(config, chainManager)
   }
 
   /**
