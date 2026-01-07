@@ -1,6 +1,6 @@
 import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
+import { erc20Abi, formatUnits } from 'viem'
 
 import { SUPPORTED_CHAIN_IDS as ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import { LendProvider } from '@/lend/core/LendProvider.js'
@@ -76,23 +76,17 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       const receiver = params.walletAddress
       const depositCallData = MetaMorphoAction.deposit(assets, receiver)
 
-      const approvalCallData = encodeFunctionData({
-        abi: erc20Abi,
-        functionName: 'approve',
-        args: [params.marketId.address, params.amountWei],
-      })
-
       return {
         amount: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
         transactionData: {
-          approval: {
-            to: assetAddress,
-            data: approvalCallData,
-            value: 0n,
-          },
+          approval: this.buildApprovalTx(
+            assetAddress,
+            params.marketId.address,
+            params.amountWei,
+          ),
           openPosition: {
             to: params.marketId.address,
             data: depositCallData,

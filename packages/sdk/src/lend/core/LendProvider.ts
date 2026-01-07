@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { parseUnits } from 'viem'
+import { encodeFunctionData, erc20Abi, parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -18,6 +18,7 @@ import type {
   LendOpenPositionInternalParams,
   LendOpenPositionParams,
   LendTransaction,
+  TransactionData,
 } from '@/types/lend/index.js'
 import { validateMarketAsset } from '@/utils/markets.js'
 
@@ -272,6 +273,31 @@ export abstract class LendProvider<
     if (asset !== undefined)
       configs = configs.filter((m: LendMarketConfig) => m.asset === asset)
     return configs
+  }
+
+  /**
+   * Build an ERC20 approval transaction
+   * @param tokenAddress - Address of the token to approve
+   * @param spender - Address to approve spending for
+   * @param amount - Amount to approve
+   * @returns Transaction data for the approval
+   */
+  protected buildApprovalTx(
+    tokenAddress: Address,
+    spender: Address,
+    amount: bigint,
+  ): TransactionData {
+    const approvalCallData = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [spender, amount],
+    })
+
+    return {
+      to: tokenAddress,
+      data: approvalCallData,
+      value: 0n,
+    }
   }
 
   /**

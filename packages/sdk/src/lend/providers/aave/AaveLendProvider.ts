@@ -313,13 +313,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       throw new Error(`Asset not supported on chain ${params.marketId.chainId}`)
     }
 
-    // Generate approval transaction
-    const approvalCallData = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [poolAddress, params.amountWei],
-    })
-
     // Generate supply transaction
     const supplyCallData = encodeFunctionData({
       abi: POOL_ABI,
@@ -338,11 +331,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
-        approval: {
-          to: assetAddress,
-          data: approvalCallData,
-          value: 0n,
-        },
+        approval: this.buildApprovalTx(assetAddress, poolAddress, params.amountWei),
         openPosition: {
           to: poolAddress,
           data: supplyCallData,
@@ -378,14 +367,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       chainManager: this.chainManager,
     })
 
-    // First: User must approve aWETH to WETHGateway
-    const approvalCallData = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [gatewayAddress, params.amount],
-    })
-
-    // Second: Call withdrawETH on gateway
+    // Call withdrawETH on gateway
     const withdrawCallData = encodeFunctionData({
       abi: WETH_GATEWAY_ABI,
       functionName: 'withdrawETH',
@@ -402,11 +384,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
-        approval: {
-          to: aWETHAddress,
-          data: approvalCallData,
-          value: 0n,
-        },
+        approval: this.buildApprovalTx(aWETHAddress, gatewayAddress, params.amount),
         closePosition: {
           to: gatewayAddress,
           data: withdrawCallData,
