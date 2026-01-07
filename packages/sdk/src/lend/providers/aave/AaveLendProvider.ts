@@ -282,7 +282,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
-    return {
+    return this.buildLendTransaction({
       amount: params.amountWei,
       asset: WETH_ADDRESS,
       marketId: params.marketId.address,
@@ -294,8 +294,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: params.amountWei, // Send ETH as msg.value
         },
       },
-      slippage: params.options?.slippage ?? 50,
-    }
+      slippage: params.options?.slippage,
+    })
   }
 
   /**
@@ -325,21 +325,25 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
-    return {
+    return this.buildLendTransaction({
       amount: params.amountWei,
       asset: assetAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
-        approval: this.buildApprovalTx(assetAddress, poolAddress, params.amountWei),
+        approval: this.buildApprovalTx(
+          assetAddress,
+          poolAddress,
+          params.amountWei,
+        ),
         openPosition: {
           to: poolAddress,
           data: supplyCallData,
           value: 0n,
         },
       },
-      slippage: params.options?.slippage ?? 50,
-    }
+      slippage: params.options?.slippage,
+    })
   }
 
   /**
@@ -378,21 +382,25 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
-    return {
+    return this.buildLendTransaction({
       amount: params.amount,
       asset: WETH_ADDRESS,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
-        approval: this.buildApprovalTx(aWETHAddress, gatewayAddress, params.amount),
+        approval: this.buildApprovalTx(
+          aWETHAddress,
+          gatewayAddress,
+          params.amount,
+        ),
         closePosition: {
           to: gatewayAddress,
           data: withdrawCallData,
           value: 0n,
         },
       },
-      slippage: params.options?.slippage ?? 50,
-    }
+      slippage: params.options?.slippage,
+    })
   }
 
   /**
@@ -420,7 +428,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
-    return {
+    return this.buildLendTransaction({
       amount: params.amount,
       asset: assetAddress,
       marketId: params.marketId.address,
@@ -432,7 +440,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: 0n,
         },
       },
-      slippage: params.options?.slippage ?? 50,
-    }
+      slippage: params.options?.slippage,
+    })
   }
 }

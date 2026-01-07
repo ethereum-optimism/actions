@@ -76,7 +76,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       const receiver = params.walletAddress
       const depositCallData = MetaMorphoAction.deposit(assets, receiver)
 
-      return {
+      return this.buildLendTransaction({
         amount: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
@@ -93,8 +93,8 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
             value: 0n,
           },
         },
-        slippage: params.options?.slippage ?? 50,
-      }
+        slippage: params.options?.slippage,
+      })
     } catch (error) {
       throw new Error(
         `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}: ${
@@ -134,7 +134,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         owner,
       )
 
-      return {
+      return this.buildLendTransaction({
         amount: params.amount,
         asset: assetAddress,
         marketId: params.marketId.address,
@@ -146,8 +146,8 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
             value: 0n,
           },
         },
-        slippage: params.options?.slippage ?? 50,
-      }
+        slippage: params.options?.slippage,
+      })
     } catch (error) {
       throw new Error(
         `Failed to close position: ${

@@ -164,7 +164,10 @@ describe('Morpho API Integration', () => {
 
       expect(rewards.usdc).toBe(0.025)
       expect(rewards.morpho).toBe(0.01)
-      expect(rewards.totalRewards).toBeCloseTo(0.025 + 0.01 + 0.005 * (1000000 / 1500000), 6)
+      expect(rewards.totalRewards).toBeCloseTo(
+        0.025 + 0.01 + 0.005 * (1000000 / 1500000),
+        6,
+      )
     })
 
     it('should return zeros for vault with no rewards', () => {
@@ -275,69 +278,53 @@ describe('Morpho API Integration', () => {
 
   // External tests that make real network requests (only run with EXTERNAL_TEST=true)
   describe.runIf(externalTest())('External API Tests', () => {
-    it(
-      'should fetch raw vault data from Morpho GraphQL API',
-      async () => {
-        const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
+    it('should fetch raw vault data from Morpho GraphQL API', async () => {
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
 
-        expect(vaultData).toBeDefined()
-        expect(vaultData).not.toBeNull()
-        expect(vaultData.address.toLowerCase()).toBe(
-          GAUNTLET_USDC_VAULT.toLowerCase(),
-        )
-        expect(vaultData.state).toBeDefined()
-      },
-      30000,
-    )
+      expect(vaultData).toBeDefined()
+      expect(vaultData).not.toBeNull()
+      expect(vaultData.address.toLowerCase()).toBe(
+        GAUNTLET_USDC_VAULT.toLowerCase(),
+      )
+      expect(vaultData.state).toBeDefined()
+    }, 30000)
 
-    it(
-      'should fetch and calculate rewards breakdown',
-      async () => {
-        const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT)
+    it('should fetch and calculate rewards breakdown', async () => {
+      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT)
 
-        expect(rewards).toBeDefined()
-        expect(typeof rewards.usdc).toBe('number')
-        expect(typeof rewards.morpho).toBe('number')
-        expect(typeof rewards.other).toBe('number')
-        expect(typeof rewards.totalRewards).toBe('number')
+      expect(rewards).toBeDefined()
+      expect(typeof rewards.usdc).toBe('number')
+      expect(typeof rewards.morpho).toBe('number')
+      expect(typeof rewards.other).toBe('number')
+      expect(typeof rewards.totalRewards).toBe('number')
 
-        expect(rewards.usdc).toBeGreaterThanOrEqual(0)
-        expect(rewards.morpho).toBeGreaterThanOrEqual(0)
-        expect(rewards.other).toBeGreaterThanOrEqual(0)
-        expect(rewards.totalRewards).toBeGreaterThanOrEqual(0)
+      expect(rewards.usdc).toBeGreaterThanOrEqual(0)
+      expect(rewards.morpho).toBeGreaterThanOrEqual(0)
+      expect(rewards.other).toBeGreaterThanOrEqual(0)
+      expect(rewards.totalRewards).toBeGreaterThanOrEqual(0)
 
-        const expectedTotal = rewards.usdc + rewards.morpho + rewards.other
-        expect(rewards.totalRewards).toBeCloseTo(expectedTotal, 6)
-      },
-      30000,
-    )
+      const expectedTotal = rewards.usdc + rewards.morpho + rewards.other
+      expect(rewards.totalRewards).toBeCloseTo(expectedTotal, 6)
+    }, 30000)
 
-    it(
-      'should handle non-existent vault gracefully',
-      async () => {
-        const nonExistentVault =
-          '0x0000000000000000000000000000000000000000' as Address
+    it('should handle non-existent vault gracefully', async () => {
+      const nonExistentVault =
+        '0x0000000000000000000000000000000000000000' as Address
 
-        const vaultData = await fetchRewards(nonExistentVault)
-        expect(vaultData).toBeNull()
-      },
-      30000,
-    )
+      const vaultData = await fetchRewards(nonExistentVault)
+      expect(vaultData).toBeNull()
+    }, 30000)
 
-    it(
-      'should validate GraphQL response structure',
-      async () => {
-        const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
+    it('should validate GraphQL response structure', async () => {
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
 
-        expect(vaultData).toMatchObject({
-          address: expect.any(String),
-          state: expect.objectContaining({
-            rewards: expect.any(Array),
-            allocation: expect.any(Array),
-          }),
-        })
-      },
-      30000,
-    )
+      expect(vaultData).toMatchObject({
+        address: expect.any(String),
+        state: expect.objectContaining({
+          rewards: expect.any(Array),
+          allocation: expect.any(Array),
+        }),
+      })
+    }, 30000)
   })
 })
