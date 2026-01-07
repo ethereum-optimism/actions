@@ -5,6 +5,10 @@ vi.mock('@dynamic-labs/wallet-connector-core', () => ({
   Wallet: class {},
 }))
 
+vi.mock('@dynamic-labs/ethereum', () => ({
+  isEthereumWallet: vi.fn(),
+}))
+
 // Mock DynamicWallet to avoid importing browser-related deps
 vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', async () => {
   const { DynamicWalletMock } =
