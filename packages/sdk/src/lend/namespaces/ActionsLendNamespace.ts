@@ -22,33 +22,6 @@ export class ActionsLendNamespace {
   ) {}
 
   /**
-   * Route a market to the correct provider
-   * @param marketId - Market identifier to route
-   * @returns The provider that handles this market
-   * @throws Error if no provider is found for the market
-   */
-  private getProviderForMarket(
-    marketId: LendMarketId,
-  ): MorphoLendProvider | AaveLendProvider {
-    const allProviders = [this.providers.morpho, this.providers.aave].filter(
-      Boolean,
-    ) as Array<MorphoLendProvider | AaveLendProvider>
-
-    for (const provider of allProviders) {
-      const market = provider.config.marketAllowlist?.find(
-        (m: LendMarketId) =>
-          m.address.toLowerCase() === marketId.address.toLowerCase() &&
-          m.chainId === marketId.chainId,
-      )
-      if (market) return provider
-    }
-
-    throw new Error(
-      `No provider configured for market ${marketId.address} on chain ${marketId.chainId}`,
-    )
-  }
-
-  /**
    * Get all markets across all configured providers
    * @param params - Optional filtering parameters
    * @returns Promise resolving to array of markets from all providers
@@ -86,5 +59,32 @@ export class ActionsLendNamespace {
 
     const allChains = allProviders.flatMap((p) => p.supportedChainIds())
     return [...new Set(allChains)]
+  }
+
+  /**
+   * Route a market to the correct provider
+   * @param marketId - Market identifier to route
+   * @returns The provider that handles this market
+   * @throws Error if no provider is found for the market
+   */
+  private getProviderForMarket(
+    marketId: LendMarketId,
+  ): MorphoLendProvider | AaveLendProvider {
+    const allProviders = [this.providers.morpho, this.providers.aave].filter(
+      Boolean,
+    ) as Array<MorphoLendProvider | AaveLendProvider>
+
+    for (const provider of allProviders) {
+      const market = provider.config.marketAllowlist?.find(
+        (m: LendMarketId) =>
+          m.address.toLowerCase() === marketId.address.toLowerCase() &&
+          m.chainId === marketId.chainId,
+      )
+      if (market) return provider
+    }
+
+    throw new Error(
+      `No provider configured for market ${marketId.address} on chain ${marketId.chainId}`,
+    )
   }
 }

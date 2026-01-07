@@ -71,16 +71,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   }
 
   /**
-   * Check if market is a WETH market
-   * @param marketId - Market identifier
-   * @returns true if market is for WETH
-   * @description WETH is a predeploy at the same address on all OP Stack chains
-   */
-  private isWETHMarket(marketId: LendMarketId): boolean {
-    return marketId.address.toLowerCase() === WETH_ADDRESS.toLowerCase()
-  }
-
-  /**
    * Open a lending position in an Aave market
    * @description Opens a lending position by supplying assets to an Aave reserve
    * @param params - Position opening parameters
@@ -118,6 +108,154 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         }`,
       )
     }
+  }
+
+  /**
+   * Close a position in an Aave market
+   * @description Withdraws assets from an Aave reserve
+   * @param params - Position closing operation parameters
+   * @returns Promise resolving to withdrawal transaction details
+   */
+  protected async _closePosition(
+    params: LendClosePositionParams,
+  ): Promise<LendTransaction> {
+    try {
+      // Get Pool address for this chain
+      const poolAddress = getPoolAddress(params.marketId.chainId)
+      if (!poolAddress) {
+        throw new Error(
+          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
+        )
+      }
+
+      const marketInfo = await this.getMarket({
+        address: params.marketId.address,
+        chainId: params.marketId.chainId,
+      })
+
+      // Check if this is a WETH market
+      if (this.isWETHMarket(params.marketId)) {
+        return this._closeWETHPosition(params, poolAddress, marketInfo)
+      }
+
+      // Standard ERC-20 flow
+      return this._closeERC20Position(params, poolAddress, marketInfo)
+    } catch (error) {
+      throw new Error(
+        `Failed to close position: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
+  }
+
+  /**
+   * Get detailed market information
+   * @param marketId - Market identifier containing address and chainId
+   * @returns Promise resolving to market information
+   */
+  protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
+    return getReserve({
+      marketId,
+      chainManager: this.chainManager,
+      lendConfig: this._config,
+    })
+  }
+
+  /**
+   * Get list of available lending markets
+   * @param params - Filtering parameters
+   * @returns Promise resolving to array of market information
+   */
+  protected async _getMarkets(
+    params: GetLendMarketsParams,
+  ): Promise<LendMarket[]> {
+    const marketConfigs = params.markets || []
+
+    return getReserves({
+      chainManager: this.chainManager,
+      lendConfig: this._config,
+      markets: marketConfigs,
+    })
+  }
+
+  /**
+   * Get position for a specific wallet address
+   * @param params - Parameters for fetching position
+   * @returns Promise resolving to position information
+   */
+  protected async _getPosition(
+    params: GetMarketBalanceParams,
+  ): Promise<LendMarketPosition> {
+    try {
+      const publicClient = this.chainManager.getPublicClient(
+        params.marketId.chainId,
+      )
+      const market = await this._getMarket(params.marketId)
+      const poolAddress = getPoolAddress(params.marketId.chainId)
+
+      if (!poolAddress) {
+        throw new Error(
+          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
+        )
+      }
+
+      // Get the aToken address from Pool.getReserveData
+      const assetAddress = getAssetAddress(
+        market.asset,
+        params.marketId.chainId,
+      )
+
+      const reserveData = (await publicClient.readContract({
+        address: poolAddress,
+        abi: parseAbi([
+          'struct ReserveData { uint256 configuration; uint128 liquidityIndex; uint128 currentLiquidityRate; uint128 variableBorrowIndex; uint128 currentVariableBorrowRate; uint128 currentStableBorrowRate; uint40 lastUpdateTimestamp; uint16 id; address aTokenAddress; address stableDebtTokenAddress; address variableDebtTokenAddress; address interestRateStrategyAddress; uint128 accruedToTreasury; uint128 unbacked; uint128 isolationModeTotalDebt; }',
+          'function getReserveData(address asset) view returns (ReserveData)',
+        ]),
+        functionName: 'getReserveData',
+        args: [assetAddress],
+      })) as {
+        aTokenAddress: Address
+      }
+
+      const aTokenAddress = reserveData.aTokenAddress
+
+      const balance = await publicClient.readContract({
+        address: aTokenAddress,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [params.walletAddress],
+      })
+
+      const balanceFormatted = formatUnits(
+        balance,
+        market.asset.metadata.decimals,
+      )
+
+      return {
+        balance,
+        balanceFormatted,
+        shares: balance, // In Aave, aTokens are 1:1 with underlying
+        sharesFormatted: balanceFormatted,
+        marketId: params.marketId,
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      )
+    }
+  }
+
+  /**
+   * Check if market is a WETH market
+   * @param marketId - Market identifier
+   * @returns true if market is for WETH
+   * @description WETH is a predeploy at the same address on all OP Stack chains
+   */
+  private isWETHMarket(marketId: LendMarketId): boolean {
+    return marketId.address.toLowerCase() === WETH_ADDRESS.toLowerCase()
   }
 
   /**
@@ -215,45 +353,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         },
       },
       slippage: params.options?.slippage ?? 50,
-    }
-  }
-
-  /**
-   * Close a position in an Aave market
-   * @description Withdraws assets from an Aave reserve
-   * @param params - Position closing operation parameters
-   * @returns Promise resolving to withdrawal transaction details
-   */
-  protected async _closePosition(
-    params: LendClosePositionParams,
-  ): Promise<LendTransaction> {
-    try {
-      // Get Pool address for this chain
-      const poolAddress = getPoolAddress(params.marketId.chainId)
-      if (!poolAddress) {
-        throw new Error(
-          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
-        )
-      }
-
-      const marketInfo = await this.getMarket({
-        address: params.marketId.address,
-        chainId: params.marketId.chainId,
-      })
-
-      // Check if this is a WETH market
-      if (this.isWETHMarket(params.marketId)) {
-        return this._closeWETHPosition(params, poolAddress, marketInfo)
-      }
-
-      // Standard ERC-20 flow
-      return this._closeERC20Position(params, poolAddress, marketInfo)
-    } catch (error) {
-      throw new Error(
-        `Failed to close position: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      )
     }
   }
 
@@ -359,105 +458,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         },
       },
       slippage: params.options?.slippage ?? 50,
-    }
-  }
-
-  /**
-   * Get detailed market information
-   * @param marketId - Market identifier containing address and chainId
-   * @returns Promise resolving to market information
-   */
-  protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
-    return getReserve({
-      marketId,
-      chainManager: this.chainManager,
-      lendConfig: this._config,
-    })
-  }
-
-  /**
-   * Get list of available lending markets
-   * @param params - Filtering parameters
-   * @returns Promise resolving to array of market information
-   */
-  protected async _getMarkets(
-    params: GetLendMarketsParams,
-  ): Promise<LendMarket[]> {
-    const marketConfigs = params.markets || []
-
-    return getReserves({
-      chainManager: this.chainManager,
-      lendConfig: this._config,
-      markets: marketConfigs,
-    })
-  }
-
-  /**
-   * Get position for a specific wallet address
-   * @param params - Parameters for fetching position
-   * @returns Promise resolving to position information
-   */
-  protected async _getPosition(
-    params: GetMarketBalanceParams,
-  ): Promise<LendMarketPosition> {
-    try {
-      const publicClient = this.chainManager.getPublicClient(
-        params.marketId.chainId,
-      )
-      const market = await this._getMarket(params.marketId)
-      const poolAddress = getPoolAddress(params.marketId.chainId)
-
-      if (!poolAddress) {
-        throw new Error(
-          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
-        )
-      }
-
-      // Get the aToken address from Pool.getReserveData
-      const assetAddress = getAssetAddress(
-        market.asset,
-        params.marketId.chainId,
-      )
-
-      const reserveData = (await publicClient.readContract({
-        address: poolAddress,
-        abi: parseAbi([
-          'struct ReserveData { uint256 configuration; uint128 liquidityIndex; uint128 currentLiquidityRate; uint128 variableBorrowIndex; uint128 currentVariableBorrowRate; uint128 currentStableBorrowRate; uint40 lastUpdateTimestamp; uint16 id; address aTokenAddress; address stableDebtTokenAddress; address variableDebtTokenAddress; address interestRateStrategyAddress; uint128 accruedToTreasury; uint128 unbacked; uint128 isolationModeTotalDebt; }',
-          'function getReserveData(address asset) view returns (ReserveData)',
-        ]),
-        functionName: 'getReserveData',
-        args: [assetAddress],
-      })) as {
-        aTokenAddress: Address
-      }
-
-      const aTokenAddress = reserveData.aTokenAddress
-
-      const balance = await publicClient.readContract({
-        address: aTokenAddress,
-        abi: erc20Abi,
-        functionName: 'balanceOf',
-        args: [params.walletAddress],
-      })
-
-      const balanceFormatted = formatUnits(
-        balance,
-        market.asset.metadata.decimals,
-      )
-
-      return {
-        balance,
-        balanceFormatted,
-        shares: balance, // In Aave, aTokens are 1:1 with underlying
-        sharesFormatted: balanceFormatted,
-        marketId: params.marketId,
-      }
-    } catch (error) {
-      throw new Error(
-        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      )
     }
   }
 }
