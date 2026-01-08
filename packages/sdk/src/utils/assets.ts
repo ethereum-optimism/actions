@@ -55,7 +55,7 @@ export function isAssetSupportedOnChain(
  * @param asset - Asset definition
  * @param chainId - Chain ID
  * @returns Asset address on the specified chain
- * @throws Error if asset is not supported on the chain
+ * @throws Error if asset is not supported on the chain or is a native asset
  */
 export function getAssetAddress(
   asset: Asset,
@@ -65,6 +65,11 @@ export function getAssetAddress(
   if (!address) {
     throw new Error(
       `Asset ${asset.metadata.symbol} is not supported on chain ${chainId}`,
+    )
+  }
+  if (address === 'native') {
+    throw new Error(
+      `Asset ${asset.metadata.symbol} is a native asset and has no contract address. Use asset.type === 'native' to check.`,
     )
   }
   return address

@@ -105,12 +105,12 @@ export function findTokenByAddress(
  * Get token address for a specific chain
  * @param symbol Token symbol
  * @param chainId Chain ID
- * @returns Token address or null if not supported on that chain
+ * @returns Token address, 'native' for native assets, or null if not supported
  */
 export function getTokenAddress(
   symbol: string,
   chainId: SupportedChainId,
-): Address | null {
+): Address | 'native' | null {
   const token = SUPPORTED_TOKENS.find((t) => t.metadata.symbol === symbol)
   return token?.address[chainId] || null
 }

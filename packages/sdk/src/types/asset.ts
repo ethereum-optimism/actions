@@ -6,8 +6,8 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
  * Asset type inspired by EIP 7811 but adapted for multi-chain asset definitions
  */
 export interface Asset {
-  /** Multi-chain address mapping */
-  address: Partial<Record<SupportedChainId, Address>>
+  /** Multi-chain address mapping. Native assets use 'native' string to prevent accidental contract calls. */
+  address: Partial<Record<SupportedChainId, Address | 'native'>>
   /** Asset metadata */
   metadata: {
     decimals: number
@@ -28,7 +28,7 @@ export interface TokenBalance {
   chainBalances: Array<{
     chainId: SupportedChainId
     balance: bigint
-    tokenAddress: Address
+    tokenAddress: Address | 'native'
     formattedBalance: string
   }>
 }

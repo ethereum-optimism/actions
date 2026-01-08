@@ -58,13 +58,11 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
     params: LendOpenPositionInternalParams,
   ): Promise<LendTransaction> {
     try {
-      // Get asset address for the chain
-      const assetAddress = params.asset.address[params.marketId.chainId]
-      if (!assetAddress) {
-        throw new Error(
-          `Asset not supported on chain ${params.marketId.chainId}`,
-        )
-      }
+      // Get asset address for the chain (throws for native assets)
+      const assetAddress = getAssetAddress(
+        params.asset,
+        params.marketId.chainId,
+      )
 
       // Get vault information for APY
       const vaultInfo = await this.getMarket({
