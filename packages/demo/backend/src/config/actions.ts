@@ -1,11 +1,11 @@
-import { createActions } from '@eth-optimism/actions-sdk'
+import { createActions, ETH } from '@eth-optimism/actions-sdk'
 import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
 import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 
-import { USDC_DEMO, WETH } from './assets.js'
+import { USDC_DEMO } from './assets.js'
 import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
-import { AaveWETH, GauntletUSDCDemo } from './markets.js'
+import { AaveETH, GauntletUSDCDemo } from './markets.js'
 
 let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
@@ -34,11 +34,11 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
         marketAllowlist: [GauntletUSDCDemo],
       },
       aave: {
-        marketAllowlist: [AaveWETH],
+        marketAllowlist: [AaveETH],
       },
     },
     assets: {
-      allow: [USDC_DEMO, WETH],
+      allow: [USDC_DEMO, ETH],
     },
     chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }
