@@ -1,4 +1,10 @@
-import type { Asset, LendMarketConfig } from '@eth-optimism/actions-sdk/react'
+import {
+  ETH,
+  getAssetAddress,
+  type LendMarketConfig,
+  WETH,
+} from '@eth-optimism/actions-sdk/react'
+import type { Asset } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 import { baseSepolia, optimismSepolia } from 'viem/chains'
 
@@ -14,18 +20,6 @@ export const USDC_DEMO: Asset = {
   type: 'erc20',
 }
 
-export const WETH: Asset = {
-  address: {
-    [optimismSepolia.id]: '0x4200000000000000000000000000000000000006',
-  },
-  metadata: {
-    decimals: 18,
-    name: 'Wrapped Ether',
-    symbol: 'WETH',
-  },
-  type: 'erc20',
-}
-
 export const GauntletUSDCDemo: LendMarketConfig = {
   address: '0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1' as Address,
   chainId: baseSepolia.id,
@@ -34,10 +28,13 @@ export const GauntletUSDCDemo: LendMarketConfig = {
   lendProvider: 'morpho',
 }
 
-export const AaveWETH: LendMarketConfig = {
-  address: '0x4200000000000000000000000000000000000006' as Address,
+export const AaveETH: LendMarketConfig = {
+  address: getAssetAddress(WETH, optimismSepolia.id),
   chainId: optimismSepolia.id,
   name: 'Aave ETH',
-  asset: WETH,
+  asset: ETH, // Developer configures ETH, SDK handles WETH internally
   lendProvider: 'aave',
 }
+
+// Re-export for backwards compatibility
+export { ETH, WETH }
