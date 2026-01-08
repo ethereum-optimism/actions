@@ -301,21 +301,6 @@ export abstract class LendProvider<
   }
 
   /**
-   * Build a lending transaction response
-   * @param params - Transaction parameters
-   * @returns LendTransaction
-   */
-  protected buildLendTransaction(params: {
-    amount: bigint
-    asset: Address
-    marketId: Address
-    apy: number
-    transactionData: LendTransaction['transactionData']
-  }): LendTransaction {
-    return params
-  }
-
-  /**
    * Abstract methods that must be implemented by providers
    */
 

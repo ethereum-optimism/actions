@@ -274,7 +274,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
-    return this.buildLendTransaction({
+    return {
       amount: params.amountWei,
       asset: WETH_ADDRESS,
       marketId: params.marketId.address,
@@ -286,7 +286,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: params.amountWei, // Send ETH as msg.value
         },
       },
-    })
+    }
   }
 
   /**
@@ -316,7 +316,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
-    return this.buildLendTransaction({
+    return {
       amount: params.amountWei,
       asset: assetAddress,
       marketId: params.marketId.address,
@@ -333,7 +333,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: 0n,
         },
       },
-    })
+    }
   }
 
   /**
@@ -372,7 +372,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
-    return this.buildLendTransaction({
+    return {
       amount: params.amount,
       asset: WETH_ADDRESS,
       marketId: params.marketId.address,
@@ -389,7 +389,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: 0n,
         },
       },
-    })
+    }
   }
 
   /**
@@ -417,7 +417,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
-    return this.buildLendTransaction({
+    return {
       amount: params.amount,
       asset: assetAddress,
       marketId: params.marketId.address,
@@ -429,6 +429,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: 0n,
         },
       },
-    })
+    }
   }
 }
