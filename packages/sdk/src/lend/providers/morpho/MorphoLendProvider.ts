@@ -93,7 +93,6 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
             value: 0n,
           },
         },
-        slippage: params.options?.slippage,
       })
     } catch {
       throw new Error(
@@ -144,7 +143,6 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
             value: 0n,
           },
         },
-        slippage: params.options?.slippage,
       })
     } catch {
       throw new Error('Failed to close position')

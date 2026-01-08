@@ -21,6 +21,5 @@ export function createMockLendTransaction(params: {
       approval: params.approval,
       position: params.position,
     },
-    slippage: 50,
   }
 }

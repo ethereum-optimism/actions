@@ -131,7 +131,6 @@ describe('WalletLendNamespace', () => {
             data: '0x' as const,
           },
         },
-        slippage: 50,
       }
 
       vi.mocked(mockProvider.openPosition).mockResolvedValue(mockTransaction)
@@ -240,7 +239,6 @@ describe('WalletLendNamespace', () => {
       apy: 0.05,
       timestamp: Date.now(),
       transactionData: { approval, position },
-      slippage: 50,
     }
 
     vi.mocked(mockProvider.openPosition).mockResolvedValue(mockTransaction)
@@ -251,10 +249,7 @@ describe('WalletLendNamespace', () => {
       marketId,
     })
 
-    expect(mockWallet.sendBatch).toHaveBeenCalledWith(
-      [approval, position],
-      130,
-    )
+    expect(mockWallet.sendBatch).toHaveBeenCalledWith([approval, position], 130)
     expect(result).toEqual({
       receipt: { success: true },
       userOpHash: '0xmockbatchhash',

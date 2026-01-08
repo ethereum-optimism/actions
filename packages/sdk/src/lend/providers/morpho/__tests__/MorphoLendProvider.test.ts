@@ -233,28 +233,6 @@ describe('MorphoLendProvider', () => {
         }),
       ).rejects.toThrow('Failed to open position')
     })
-
-    it('should use custom slippage when provided', async () => {
-      const amount = 1000
-      const asset = MockGauntletUSDCMarket.asset
-      const marketId = {
-        address: MockGauntletUSDCMarket.address,
-        chainId: MockGauntletUSDCMarket.chainId,
-      }
-      const customSlippage = 100 // 1%
-
-      const lendTransaction = await provider.openPosition({
-        amount,
-        asset,
-        marketId,
-        walletAddress: MockReceiverAddress,
-        options: {
-          slippage: customSlippage,
-        },
-      })
-
-      expect(lendTransaction).toHaveProperty('amount', BigInt('1000000000'))
-    })
   })
 
   describe('market allowlist configuration', () => {

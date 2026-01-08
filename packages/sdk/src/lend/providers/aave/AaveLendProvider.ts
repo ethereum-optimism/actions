@@ -286,7 +286,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: params.amountWei, // Send ETH as msg.value
         },
       },
-      slippage: params.options?.slippage,
     })
   }
 
@@ -334,7 +333,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: 0n,
         },
       },
-      slippage: params.options?.slippage,
     })
   }
 
@@ -391,7 +389,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: 0n,
         },
       },
-      slippage: params.options?.slippage,
     })
   }
 
@@ -432,7 +429,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
           value: 0n,
         },
       },
-      slippage: params.options?.slippage,
     })
   }
 }

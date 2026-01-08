@@ -303,7 +303,7 @@ export abstract class LendProvider<
   /**
    * Build a lending transaction response
    * @param params - Transaction parameters
-   * @returns LendTransaction with default slippage applied
+   * @returns LendTransaction
    */
   protected buildLendTransaction(params: {
     amount: bigint
@@ -311,16 +311,8 @@ export abstract class LendProvider<
     marketId: Address
     apy: number
     transactionData: LendTransaction['transactionData']
-    slippage?: number
   }): LendTransaction {
-    return {
-      amount: params.amount,
-      asset: params.asset,
-      marketId: params.marketId,
-      apy: params.apy,
-      transactionData: params.transactionData,
-      slippage: params.slippage ?? 50,
-    }
+    return params
   }
 
   /**

@@ -90,8 +90,6 @@ export interface LendTransaction {
     /** Main position transaction */
     position: TransactionData
   }
-  /** Slippage tolerance used */
-  slippage?: number
 }
 
 /**
@@ -203,8 +201,6 @@ export interface LendMarket {
  * @description Configuration options for lending operations
  */
 export interface LendOptions {
-  /** Maximum slippage tolerance (basis points) */
-  slippage?: number
   /** Deadline for transaction (timestamp) */
   deadline?: number
   /** Gas limit override */

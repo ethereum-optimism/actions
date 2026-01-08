@@ -192,28 +192,6 @@ describe('AaveLendProvider', () => {
         }),
       ).rejects.toThrow('Failed to open position')
     })
-
-    it('should use custom slippage when provided', async () => {
-      const amount = 1000
-      const asset = MockAaveUSDCAsset
-      const marketId = {
-        address: MockAaveUSDCMarket.address,
-        chainId: MockAaveUSDCMarket.chainId,
-      }
-      const customSlippage = 100 // 1%
-
-      const lendTransaction = await provider.openPosition({
-        amount,
-        asset,
-        marketId,
-        walletAddress: MockReceiverAddress,
-        options: {
-          slippage: customSlippage,
-        },
-      })
-
-      expect(lendTransaction.slippage).toBe(customSlippage)
-    })
   })
 
   describe('closePosition', () => {
