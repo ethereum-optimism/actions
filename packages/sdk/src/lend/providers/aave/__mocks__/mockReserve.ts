@@ -43,7 +43,8 @@ export function createMockAaveReserve(): LendMarket {
 }
 
 /**
- * Creates mock WETH reserve data for testing
+ * Creates mock ETH reserve data for testing (native asset)
+ * @description Uses type: 'native' to test native ETH handling via WETHGateway
  */
 export function createMockWETHReserve(): LendMarket {
   return {
@@ -51,17 +52,17 @@ export function createMockWETHReserve(): LendMarket {
       address: '0x4200000000000000000000000000000000000006' as Address, // WETH on OP Stack
       chainId: 8453,
     },
-    name: 'Aave WETH Base',
+    name: 'Aave ETH Base',
     asset: {
       metadata: {
-        name: 'Wrapped Ether',
-        symbol: 'WETH',
+        name: 'Ethereum',
+        symbol: 'ETH',
         decimals: 18,
       },
       address: {
-        8453: '0x4200000000000000000000000000000000000006' as Address,
+        8453: 'native',
       },
-      type: 'erc20',
+      type: 'native',
     },
     supply: {
       totalAssets: BigInt(5000e18),
