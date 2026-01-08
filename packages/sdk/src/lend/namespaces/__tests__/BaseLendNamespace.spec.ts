@@ -1,10 +1,10 @@
 import type { Address } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getRandomAddress } from '@/__mocks__/utils.js'
+import type { MockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
 import { BaseLendNamespace } from '@/lend/namespaces/BaseLendNamespace.js'
-import type { MockLendProvider } from '@/test/MockLendProvider.js'
-import { createMockLendProvider } from '@/test/MockLendProvider.js'
-import { getRandomAddress } from '@/test/utils.js'
 
 // Concrete implementation for testing
 class TestLendNamespace extends BaseLendNamespace {}

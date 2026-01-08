@@ -2,11 +2,11 @@ import type { Address } from 'viem'
 import { unichain } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
-import { Actions } from '@/actions.js'
 import {
   createMockPrivyClient,
   getMockAuthorizationContext,
-} from '@/test/MockPrivyClient.js'
+} from '@/__mocks__/MockPrivyClient.js'
+import { Actions } from '@/actions.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { LendMarketConfig } from '@/types/lend/index.js'
 import { externalTest } from '@/utils/test.js'

@@ -2,8 +2,8 @@ import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
 import { LendProvider } from '@/lend/core/LendProvider.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {

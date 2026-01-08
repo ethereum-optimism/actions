@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { MockReceiverAddress } from '@/lend/__mocks__/MockMarkets.js'
 import {
   createMockAaveReserve,
   createMockWETHReserve,
 } from '@/lend/providers/aave/__mocks__/mockReserve.js'
 import { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
 import * as aaveSdk from '@/lend/providers/aave/sdk.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
-import { MockReceiverAddress } from '@/test/MockMarkets.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset, LendMarketConfig } from '@/types/index.js'
 

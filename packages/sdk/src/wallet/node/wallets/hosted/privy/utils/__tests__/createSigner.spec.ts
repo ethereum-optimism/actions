@@ -6,8 +6,8 @@ import {
   createMockPrivyClient,
   createMockPrivyWallet,
   getMockAuthorizationContext,
-} from '@/test/MockPrivyClient.js'
-import { getRandomAddress } from '@/test/utils.js'
+} from '@/__mocks__/MockPrivyClient.js'
+import { getRandomAddress } from '@/__mocks__/utils.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
 
 vi.mock('@privy-io/node/viem', async () => ({
