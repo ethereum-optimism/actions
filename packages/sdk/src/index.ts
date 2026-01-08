@@ -7,6 +7,7 @@ export {
   getTokenAddress,
   getTokenBySymbol,
   SUPPORTED_TOKENS,
+  WETH,
 } from '@/supported/tokens.js'
 export type {
   ActionsConfig,
