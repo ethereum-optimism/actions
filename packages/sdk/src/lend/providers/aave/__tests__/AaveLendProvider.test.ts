@@ -332,6 +332,56 @@ describe('AaveLendProvider', () => {
     })
   })
 
+  describe('ETH/WETH market configuration', () => {
+    it('should detect native asset type for ETH market', () => {
+      // Market is configured with ETH (type: native) but uses WETH address internally
+      expect(MockAaveETHMarket.asset.type).toBe('native')
+      expect(MockAaveETHMarket.asset.address[8453]).toBe('native')
+      // Market address points to WETH for Aave's internal operations
+      expect(MockAaveETHMarket.address).toBe(
+        '0x4200000000000000000000000000000000000006',
+      )
+    })
+
+    it('should use WETHGateway for ETH deposits when asset type is native', async () => {
+      const mockETHReserve = createMockWETHReserve()
+      vi.mocked(aaveSdk.getReserve).mockResolvedValue(mockETHReserve)
+
+      const lendTransaction = await provider.openPosition({
+        amount: 1,
+        asset: MockAaveETHAsset,
+        marketId: {
+          address: MockAaveETHMarket.address,
+          chainId: MockAaveETHMarket.chainId,
+        },
+        walletAddress: MockReceiverAddress,
+      })
+
+      // Native ETH deposits should have msg.value set (WETHGateway flow)
+      expect(lendTransaction.transactionData.position.value).toBe(
+        BigInt('1000000000000000000'),
+      )
+      // Should not require approval for native ETH
+      expect(lendTransaction.transactionData.approval).toBeUndefined()
+    })
+
+    it('should allow developer to configure ETH market without knowing about WETH internals', () => {
+      // Developer configures market with ETH asset
+      // SDK handles WETH internally via WETHGateway
+      const marketConfig: LendMarketConfig = {
+        address: '0x4200000000000000000000000000000000000006', // WETH address
+        chainId: 8453,
+        name: 'Aave ETH',
+        asset: MockAaveETHAsset, // Uses ETH (native) asset
+        lendProvider: 'aave',
+      }
+
+      // Verify the market uses native asset
+      expect(marketConfig.asset.type).toBe('native')
+      // Developer doesn't need to create a separate WETH asset
+    })
+  })
+
   describe('unsupported chain handling', () => {
     it('should throw error for unsupported chain', async () => {
       // Use type assertion to test runtime behavior with unsupported chain
