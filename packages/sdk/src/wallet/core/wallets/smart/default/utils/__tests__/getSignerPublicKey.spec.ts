@@ -2,7 +2,7 @@ import type { Address, Hex, LocalAccount } from 'viem'
 import type { WebAuthnAccount } from 'viem/account-abstraction'
 import { describe, expect, it } from 'vitest'
 
-import { getRandomAddress } from '@/test/utils.js'
+import { getRandomAddress } from '@/__mocks__/utils.js'
 import { getSignerPublicKey } from '@/wallet/core/wallets/smart/default/utils/getSignerPublicKey.js'
 
 describe('getSignerPublicKey', () => {

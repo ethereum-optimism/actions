@@ -3,7 +3,7 @@ import { pad } from 'viem'
 import type { WebAuthnAccount } from 'viem/account-abstraction'
 import { describe, expect, it } from 'vitest'
 
-import { getRandomAddress } from '@/test/utils.js'
+import { getRandomAddress } from '@/__mocks__/utils.js'
 import { findSignerInArray } from '@/wallet/core/wallets/smart/default/utils/findSignerInArray.js'
 
 describe('findSignerInArray', () => {

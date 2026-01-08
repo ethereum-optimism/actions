@@ -58,26 +58,13 @@ export const SUPPORTED_CHAIN_IDS = getSupportedChainIds() as readonly number[]
 export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
 
-  private chainManager: ChainManager
-
   /**
    * Create a new Aave lending provider
    * @param config - Aave lending configuration
    * @param chainManager - Chain manager for blockchain interactions
    */
   constructor(config: LendProviderConfig, chainManager: ChainManager) {
-    super(config)
-    this.chainManager = chainManager
-  }
-
-  /**
-   * Check if market is a WETH market
-   * @param marketId - Market identifier
-   * @returns true if market is for WETH
-   * @description WETH is a predeploy at the same address on all OP Stack chains
-   */
-  private isWETHMarket(marketId: LendMarketId): boolean {
-    return marketId.address.toLowerCase() === WETH_ADDRESS.toLowerCase()
+    super(config, chainManager)
   }
 
   /**
@@ -111,110 +98,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
       // Standard ERC-20 flow
       return this._openERC20Position(params, poolAddress, marketInfo)
-    } catch (error) {
+    } catch {
       throw new Error(
-        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}`,
       )
-    }
-  }
-
-  /**
-   * Open position for WETH market using WETHGateway
-   * @description Deposits native ETH via WETHGateway which wraps and deposits in one tx
-   */
-  private async _openWETHPosition(
-    params: LendOpenPositionInternalParams,
-    poolAddress: Address,
-    marketInfo: LendMarket,
-  ): Promise<LendTransaction> {
-    const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
-    if (!gatewayAddress) {
-      throw new Error(
-        `WETHGateway not available on chain ${params.marketId.chainId}`,
-      )
-    }
-
-    // Generate depositETH transaction
-    const depositCallData = encodeFunctionData({
-      abi: WETH_GATEWAY_ABI,
-      functionName: 'depositETH',
-      args: [
-        poolAddress, // pool address
-        params.walletAddress, // onBehalfOf (receives aWETH)
-        0, // referralCode (0 = no referral)
-      ],
-    })
-
-    return {
-      amount: params.amountWei,
-      asset: WETH_ADDRESS,
-      marketId: params.marketId.address,
-      apy: marketInfo.apy.total,
-      transactionData: {
-        openPosition: {
-          to: gatewayAddress,
-          data: depositCallData,
-          value: params.amountWei, // Send ETH as msg.value
-        },
-      },
-      slippage: params.options?.slippage ?? 50,
-    }
-  }
-
-  /**
-   * Open position for standard ERC-20 tokens
-   * @description Standard approve + supply flow for non-WETH assets
-   */
-  private async _openERC20Position(
-    params: LendOpenPositionInternalParams,
-    poolAddress: Address,
-    marketInfo: LendMarket,
-  ): Promise<LendTransaction> {
-    // Get asset address for the chain
-    const assetAddress = params.asset.address[params.marketId.chainId]
-    if (!assetAddress) {
-      throw new Error(`Asset not supported on chain ${params.marketId.chainId}`)
-    }
-
-    // Generate approval transaction
-    const approvalCallData = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [poolAddress, params.amountWei],
-    })
-
-    // Generate supply transaction
-    const supplyCallData = encodeFunctionData({
-      abi: POOL_ABI,
-      functionName: 'supply',
-      args: [
-        assetAddress, // asset
-        params.amountWei, // amount
-        params.walletAddress, // onBehalfOf
-        0, // referralCode
-      ],
-    })
-
-    return {
-      amount: params.amountWei,
-      asset: assetAddress,
-      marketId: params.marketId.address,
-      apy: marketInfo.apy.total,
-      transactionData: {
-        approval: {
-          to: assetAddress,
-          data: approvalCallData,
-          value: 0n,
-        },
-        openPosition: {
-          to: poolAddress,
-          data: supplyCallData,
-          value: 0n,
-        },
-      },
-      slippage: params.options?.slippage ?? 50,
     }
   }
 
@@ -248,117 +135,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
       // Standard ERC-20 flow
       return this._closeERC20Position(params, poolAddress, marketInfo)
-    } catch (error) {
-      throw new Error(
-        `Failed to close position: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      )
-    }
-  }
-
-  /**
-   * Close position for WETH market using WETHGateway
-   * @description Withdraws aWETH, unwraps to ETH, and sends to user
-   */
-  private async _closeWETHPosition(
-    params: LendClosePositionParams,
-    poolAddress: Address,
-    marketInfo: LendMarket,
-  ): Promise<LendTransaction> {
-    const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
-    if (!gatewayAddress) {
-      throw new Error(
-        `WETHGateway not available on chain ${params.marketId.chainId}`,
-      )
-    }
-
-    // Get the aToken address for the underlying WETH asset
-    // Note: params.marketId.address is the underlying WETH address, not the aToken
-    const { getATokenAddress } = await import('./sdk.js')
-    const aWETHAddress = await getATokenAddress({
-      underlyingAsset: params.marketId.address,
-      chainId: params.marketId.chainId,
-      chainManager: this.chainManager,
-    })
-
-    // First: User must approve aWETH to WETHGateway
-    const approvalCallData = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [gatewayAddress, params.amount],
-    })
-
-    // Second: Call withdrawETH on gateway
-    const withdrawCallData = encodeFunctionData({
-      abi: WETH_GATEWAY_ABI,
-      functionName: 'withdrawETH',
-      args: [
-        poolAddress, // pool
-        params.amount, // amount
-        params.walletAddress, // to (receives native ETH)
-      ],
-    })
-
-    return {
-      amount: params.amount,
-      asset: WETH_ADDRESS,
-      marketId: params.marketId.address,
-      apy: marketInfo.apy.total,
-      transactionData: {
-        approval: {
-          to: aWETHAddress,
-          data: approvalCallData,
-          value: 0n,
-        },
-        closePosition: {
-          to: gatewayAddress,
-          data: withdrawCallData,
-          value: 0n,
-        },
-      },
-      slippage: params.options?.slippage ?? 50,
-    }
-  }
-
-  /**
-   * Close position for standard ERC-20 tokens
-   */
-  private async _closeERC20Position(
-    params: LendClosePositionParams,
-    poolAddress: Address,
-    marketInfo: LendMarket,
-  ): Promise<LendTransaction> {
-    // Get asset address for the market's chain
-    const assetAddress = getAssetAddress(
-      marketInfo.asset,
-      params.marketId.chainId,
-    )
-
-    // Generate withdraw transaction
-    const withdrawCallData = encodeFunctionData({
-      abi: POOL_ABI,
-      functionName: 'withdraw',
-      args: [
-        assetAddress, // asset
-        params.amount, // amount
-        params.walletAddress, // to
-      ],
-    })
-
-    return {
-      amount: params.amount,
-      asset: assetAddress,
-      marketId: params.marketId.address,
-      apy: marketInfo.apy.total,
-      transactionData: {
-        closePosition: {
-          to: poolAddress,
-          data: withdrawCallData,
-          value: 0n,
-        },
-      },
-      slippage: params.options?.slippage ?? 50,
+    } catch {
+      throw new Error('Failed to close position')
     }
   }
 
@@ -452,12 +230,205 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         sharesFormatted: balanceFormatted,
         marketId: params.marketId,
       }
-    } catch (error) {
+    } catch {
       throw new Error(
-        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}`,
       )
+    }
+  }
+
+  /**
+   * Check if market is a WETH market
+   * @param marketId - Market identifier
+   * @returns true if market is for WETH
+   * @description WETH is a predeploy at the same address on all OP Stack chains
+   */
+  private isWETHMarket(marketId: LendMarketId): boolean {
+    return marketId.address.toLowerCase() === WETH_ADDRESS.toLowerCase()
+  }
+
+  /**
+   * Open position for WETH market using WETHGateway
+   * @description Deposits native ETH via WETHGateway which wraps and deposits in one tx
+   */
+  private async _openWETHPosition(
+    params: LendOpenPositionInternalParams,
+    poolAddress: Address,
+    marketInfo: LendMarket,
+  ): Promise<LendTransaction> {
+    const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
+    if (!gatewayAddress) {
+      throw new Error(
+        `WETHGateway not available on chain ${params.marketId.chainId}`,
+      )
+    }
+
+    // Generate depositETH transaction
+    const depositCallData = encodeFunctionData({
+      abi: WETH_GATEWAY_ABI,
+      functionName: 'depositETH',
+      args: [
+        poolAddress, // pool address
+        params.walletAddress, // onBehalfOf (receives aWETH)
+        0, // referralCode (0 = no referral)
+      ],
+    })
+
+    return {
+      amount: params.amountWei,
+      asset: WETH_ADDRESS,
+      marketId: params.marketId.address,
+      apy: marketInfo.apy.total,
+      transactionData: {
+        position: {
+          to: gatewayAddress,
+          data: depositCallData,
+          value: params.amountWei, // Send ETH as msg.value
+        },
+      },
+    }
+  }
+
+  /**
+   * Open position for standard ERC-20 tokens
+   * @description Standard approve + supply flow for non-WETH assets
+   */
+  private async _openERC20Position(
+    params: LendOpenPositionInternalParams,
+    poolAddress: Address,
+    marketInfo: LendMarket,
+  ): Promise<LendTransaction> {
+    // Get asset address for the chain
+    const assetAddress = params.asset.address[params.marketId.chainId]
+    if (!assetAddress) {
+      throw new Error(`Asset not supported on chain ${params.marketId.chainId}`)
+    }
+
+    // Generate supply transaction
+    const supplyCallData = encodeFunctionData({
+      abi: POOL_ABI,
+      functionName: 'supply',
+      args: [
+        assetAddress, // asset
+        params.amountWei, // amount
+        params.walletAddress, // onBehalfOf
+        0, // referralCode
+      ],
+    })
+
+    return {
+      amount: params.amountWei,
+      asset: assetAddress,
+      marketId: params.marketId.address,
+      apy: marketInfo.apy.total,
+      transactionData: {
+        approval: this.buildApprovalTx(
+          assetAddress,
+          poolAddress,
+          params.amountWei,
+        ),
+        position: {
+          to: poolAddress,
+          data: supplyCallData,
+          value: 0n,
+        },
+      },
+    }
+  }
+
+  /**
+   * Close position for WETH market using WETHGateway
+   * @description Withdraws aWETH, unwraps to ETH, and sends to user
+   */
+  private async _closeWETHPosition(
+    params: LendClosePositionParams,
+    poolAddress: Address,
+    marketInfo: LendMarket,
+  ): Promise<LendTransaction> {
+    const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
+    if (!gatewayAddress) {
+      throw new Error(
+        `WETHGateway not available on chain ${params.marketId.chainId}`,
+      )
+    }
+
+    // Get the aToken address for the underlying WETH asset
+    // Note: params.marketId.address is the underlying WETH address, not the aToken
+    const { getATokenAddress } = await import('./sdk.js')
+    const aWETHAddress = await getATokenAddress({
+      underlyingAsset: params.marketId.address,
+      chainId: params.marketId.chainId,
+      chainManager: this.chainManager,
+    })
+
+    // Call withdrawETH on gateway
+    const withdrawCallData = encodeFunctionData({
+      abi: WETH_GATEWAY_ABI,
+      functionName: 'withdrawETH',
+      args: [
+        poolAddress, // pool
+        params.amount, // amount
+        params.walletAddress, // to (receives native ETH)
+      ],
+    })
+
+    return {
+      amount: params.amount,
+      asset: WETH_ADDRESS,
+      marketId: params.marketId.address,
+      apy: marketInfo.apy.total,
+      transactionData: {
+        approval: this.buildApprovalTx(
+          aWETHAddress,
+          gatewayAddress,
+          params.amount,
+        ),
+        position: {
+          to: gatewayAddress,
+          data: withdrawCallData,
+          value: 0n,
+        },
+      },
+    }
+  }
+
+  /**
+   * Close position for standard ERC-20 tokens
+   */
+  private async _closeERC20Position(
+    params: LendClosePositionParams,
+    poolAddress: Address,
+    marketInfo: LendMarket,
+  ): Promise<LendTransaction> {
+    // Get asset address for the market's chain
+    const assetAddress = getAssetAddress(
+      marketInfo.asset,
+      params.marketId.chainId,
+    )
+
+    // Generate withdraw transaction
+    const withdrawCallData = encodeFunctionData({
+      abi: POOL_ABI,
+      functionName: 'withdraw',
+      args: [
+        assetAddress, // asset
+        params.amount, // amount
+        params.walletAddress, // to
+      ],
+    })
+
+    return {
+      amount: params.amount,
+      asset: assetAddress,
+      marketId: params.marketId.address,
+      apy: marketInfo.apy.total,
+      transactionData: {
+        position: {
+          to: poolAddress,
+          data: withdrawCallData,
+          value: 0n,
+        },
+      },
     }
   }
 }

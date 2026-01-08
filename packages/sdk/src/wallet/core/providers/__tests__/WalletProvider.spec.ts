@@ -2,16 +2,16 @@ import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstrac
 import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import {
   createMockPrivyClient,
   createMockPrivyWallet,
   getMockAuthorizationContext,
-} from '@/test/MockPrivyClient.js'
-import { getRandomAddress } from '@/test/utils.js'
+} from '@/__mocks__/MockPrivyClient.js'
+import { getRandomAddress } from '@/__mocks__/utils.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
 import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'

@@ -14,11 +14,11 @@ import type {
 } from 'viem/account-abstraction'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getRandomAddress } from '@/__mocks__/utils.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockLendProvider } from '@/test/MockLendProvider.js'
-import { getRandomAddress } from '@/test/utils.js'
 import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
 import { createMock as createDefaultSmartWalletMock } from '@/wallet/core/wallets/smart/default/__mocks__/DefaultSmartWallet.js'
 import {

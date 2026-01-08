@@ -2,7 +2,7 @@ import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import type { Address } from 'viem'
 import { generatePrivateKey } from 'viem/accounts'
 
-import { getRandomAddress } from '@/test/utils.js'
+import { getRandomAddress } from '@/__mocks__/utils.js'
 
 /**
  * Mock Privy Client for testing

@@ -10,14 +10,14 @@ import {
 import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
 import {
   createMockPrivyClient,
   createMockPrivyWallet,
   getMockAuthorizationContext,
-} from '@/test/MockPrivyClient.js'
-import { getRandomAddress } from '@/test/utils.js'
+} from '@/__mocks__/MockPrivyClient.js'
+import { getRandomAddress } from '@/__mocks__/utils.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
 
 vi.mock('viem', async () => ({

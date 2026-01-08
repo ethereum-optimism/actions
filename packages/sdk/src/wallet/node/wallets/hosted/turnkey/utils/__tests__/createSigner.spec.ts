@@ -5,7 +5,7 @@ import { createAccount } from '@turnkey/viem'
 import type { LocalAccount } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
-import { getRandomAddress } from '@/test/utils.js'
+import { getRandomAddress } from '@/__mocks__/utils.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
 
 vi.mock('@turnkey/viem', async () => ({

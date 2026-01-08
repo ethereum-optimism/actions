@@ -5,9 +5,9 @@ import { toAccount } from 'viem/accounts'
 import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getRandomAddress } from '@/__mocks__/utils.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
-import { getRandomAddress } from '@/test/utils.js'
 import { PrivyWallet } from '@/wallet/react/wallets/hosted/privy/PrivyWallet.js'
 
 vi.mock('viem', async () => ({

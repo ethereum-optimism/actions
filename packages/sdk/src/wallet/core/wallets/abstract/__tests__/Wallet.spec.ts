@@ -2,12 +2,12 @@ import type { LocalAccount } from 'viem'
 import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getRandomAddress } from '@/__mocks__/utils.js'
 import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
-import { getRandomAddress } from '@/test/utils.js'
 import { TestWallet } from '@/wallet/core/wallets/abstract/__mocks__/TestWallet.js'
 
 vi.mock('@/services/tokenBalance.js', async () => {
