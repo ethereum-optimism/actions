@@ -1,8 +1,13 @@
-import type { LendMarketConfig } from '@eth-optimism/actions-sdk'
+import {
+  ETH,
+  getAssetAddress,
+  type LendMarketConfig,
+  WETH,
+} from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { baseSepolia, optimismSepolia, unichain } from 'viem/chains'
 
-import { USDC, USDC_DEMO, WETH } from './assets.js'
+import { USDC, USDC_DEMO } from './assets.js'
 
 export const GauntletUSDC: LendMarketConfig = {
   address: '0x38f4f3B6533de0023b9DCd04b02F93d36ad1F9f9' as Address,
@@ -20,13 +25,13 @@ export const GauntletUSDCDemo: LendMarketConfig = {
   lendProvider: 'morpho',
 }
 
-export const AaveWETH: LendMarketConfig = {
-  address: '0x4200000000000000000000000000000000000006' as Address,
+export const AaveETH: LendMarketConfig = {
+  address: getAssetAddress(WETH, optimismSepolia.id),
   chainId: optimismSepolia.id,
   name: 'Aave ETH',
-  asset: WETH,
+  asset: ETH, // Developer configures ETH, SDK handles WETH internally
   lendProvider: 'aave',
 }
 
 // Export all markets for easy consumption
-export const ALL_MARKETS = [GauntletUSDCDemo, AaveWETH]
+export const ALL_MARKETS = [GauntletUSDCDemo, AaveETH]
