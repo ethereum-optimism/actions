@@ -275,11 +275,11 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     poolAddress: Address,
     marketInfo: LendMarket,
   ): Promise<LendTransaction> {
-    // Get asset address for the chain
-    const assetAddress = params.asset.address[params.marketId.chainId]
-    if (!assetAddress) {
-      throw new Error(`Asset not supported on chain ${params.marketId.chainId}`)
-    }
+    // Get asset address for the chain (throws for native assets)
+    const assetAddress = getAssetAddress(
+      params.asset,
+      params.marketId.chainId,
+    )
 
     // Generate supply transaction
     const supplyCallData = encodeFunctionData({
