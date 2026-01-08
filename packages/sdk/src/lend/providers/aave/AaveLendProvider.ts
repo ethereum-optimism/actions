@@ -276,10 +276,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     marketInfo: LendMarket,
   ): Promise<LendTransaction> {
     // Get asset address for the chain (throws for native assets)
-    const assetAddress = getAssetAddress(
-      params.asset,
-      params.marketId.chainId,
-    )
+    const assetAddress = getAssetAddress(params.asset, params.marketId.chainId)
 
     // Generate supply transaction
     const supplyCallData = encodeFunctionData({
