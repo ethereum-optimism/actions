@@ -69,7 +69,7 @@ export function getAssetAddress(
   }
   if (address === 'native') {
     throw new Error(
-      `Asset ${asset.metadata.symbol} is a native asset and has no contract address. Use asset.type === 'native' to check.`,
+      `Asset ${asset.metadata.symbol} is a native asset and has no contract address.`,
     )
   }
   return address
