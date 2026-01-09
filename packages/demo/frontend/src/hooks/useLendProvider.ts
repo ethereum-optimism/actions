@@ -18,7 +18,7 @@ import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
  * Operations interface for wallet interactions
  * This abstraction allows both frontend and server wallet implementations
  */
-export interface EarnOperations {
+export interface LendProviderOperations {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
@@ -31,21 +31,21 @@ export interface EarnOperations {
   ) => Promise<LendTransactionReceipt>
 }
 
-interface UseEarnDataParams {
-  operations: EarnOperations
+interface UseLendProviderParams {
+  operations: LendProviderOperations
   ready: boolean
   logPrefix?: string
 }
 
 /**
- * Shared hook for Earn page data management
+ * Shared hook for lend provider data management
  * Handles market fetching, position tracking, and wallet balance operations
  */
-export function useEarnData({
+export function useLendProvider({
   operations,
   ready,
-  logPrefix = '[useEarnData]',
-}: UseEarnDataParams) {
+  logPrefix = '[useLendProvider]',
+}: UseLendProviderParams) {
   const hasLoadedMarkets = useRef(false)
 
   // Market selection state management

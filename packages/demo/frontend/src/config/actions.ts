@@ -1,10 +1,11 @@
-import type {
-  ReactActionsConfig,
-  ReactProviderTypes,
+import {
+  ETH,
+  type ReactActionsConfig,
+  type ReactProviderTypes,
 } from '@eth-optimism/actions-sdk/react'
 import { baseSepolia, optimismSepolia } from 'viem/chains'
 import { env } from '@/envVars'
-import { USDC_DEMO, ETH, GauntletUSDCDemo, AaveETH } from '@/constants/markets'
+import { USDC_DEMO, GauntletUSDCDemo, AaveETH } from '@/constants/markets'
 
 // Helper to create Actions config matching backend structure
 export function createActionsConfig<T extends ReactProviderTypes>(

@@ -34,5 +34,3 @@ export const AaveETH: LendMarketConfig = {
   asset: ETH,
   lendProvider: 'aave',
 }
-
-export { ETH, WETH }
