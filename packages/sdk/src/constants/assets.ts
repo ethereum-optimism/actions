@@ -76,3 +76,34 @@ export const USDC: Asset = {
   },
   type: 'erc20',
 }
+
+/**
+ * Demo USDC token for testing
+ */
+export const USDC_DEMO: Asset = {
+  address: {
+    [baseSepolia.id]: '0xb1b0FE886cE376F28987Ad24b1759a8f0A7dd839',
+  },
+  metadata: {
+    symbol: 'USDC_DEMO',
+    name: 'USDC',
+    decimals: 6,
+  },
+  type: 'erc20',
+}
+
+/**
+ * Morpho Token
+ */
+export const MORPHO: Asset = {
+  address: {
+    [mainnet.id]: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
+    [base.id]: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
+  },
+  metadata: {
+    symbol: 'MORPHO',
+    name: 'Morpho Token',
+    decimals: 18,
+  },
+  type: 'erc20',
+}

@@ -1,38 +1,10 @@
 import type { Address } from 'viem'
-import { base, baseSepolia, mainnet } from 'viem/chains'
 
-import { ETH, USDC, WETH } from '@/constants/assets.js'
+import { ETH, MORPHO, USDC, USDC_DEMO, WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 
-export const SUPPORTED_TOKENS: Asset[] = [
-  ETH,
-  WETH,
-  USDC,
-  {
-    address: {
-      [baseSepolia.id]: '0xb1b0FE886cE376F28987Ad24b1759a8f0A7dd839',
-    },
-    metadata: {
-      symbol: 'USDC_DEMO',
-      name: 'USDC',
-      decimals: 6,
-    },
-    type: 'erc20',
-  },
-  {
-    address: {
-      [mainnet.id]: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
-      [base.id]: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
-    },
-    metadata: {
-      symbol: 'MORPHO',
-      name: 'Morpho Token',
-      decimals: 18,
-    },
-    type: 'erc20',
-  },
-]
+export const SUPPORTED_TOKENS: Asset[] = [ETH, WETH, USDC, USDC_DEMO, MORPHO]
 
 /**
  * Get token by address and chain ID

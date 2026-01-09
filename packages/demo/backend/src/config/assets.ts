@@ -1,19 +1,5 @@
 import type { Asset } from '@eth-optimism/actions-sdk'
-import { base, baseSepolia, mainnet, unichain } from 'viem/chains'
-
-export const USDC: Asset = {
-  address: {
-    [mainnet.id]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-    [unichain.id]: '0x078d782b760474a361dda0af3839290b0ef57ad6',
-    [baseSepolia.id]: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-  },
-  metadata: {
-    decimals: 6,
-    name: 'USDC',
-    symbol: 'USDC',
-  },
-  type: 'erc20',
-}
+import { baseSepolia } from 'viem/chains'
 
 export const USDC_DEMO: Asset = {
   address: {
@@ -23,19 +9,6 @@ export const USDC_DEMO: Asset = {
     decimals: 6,
     name: 'USDC',
     symbol: 'USDC_DEMO',
-  },
-  type: 'erc20',
-}
-
-export const MORPHO: Asset = {
-  address: {
-    [mainnet.id]: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
-    [base.id]: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
-  },
-  metadata: {
-    decimals: 18,
-    name: 'Morpho Token',
-    symbol: 'MORPHO',
   },
   type: 'erc20',
 }
