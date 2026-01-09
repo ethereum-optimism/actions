@@ -1,26 +1,14 @@
 import type { Address } from 'viem'
-import { base, baseSepolia, mainnet, unichain } from 'viem/chains'
+import { base, baseSepolia, mainnet } from 'viem/chains'
 
-import { ETH, WETH } from '@/constants/assets.js'
+import { ETH, USDC, WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 
 export const SUPPORTED_TOKENS: Asset[] = [
   ETH,
   WETH,
-  {
-    address: {
-      [mainnet.id]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-      [unichain.id]: '0x078d782b760474a361dda0af3839290b0ef57ad6',
-      [baseSepolia.id]: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-    },
-    metadata: {
-      symbol: 'USDC',
-      name: 'USDC',
-      decimals: 6,
-    },
-    type: 'erc20',
-  },
+  USDC,
   {
     address: {
       [baseSepolia.id]: '0xb1b0FE886cE376F28987Ad24b1759a8f0A7dd839',
