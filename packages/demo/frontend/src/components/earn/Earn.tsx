@@ -7,14 +7,14 @@ import { WalletProviderDropdown } from './WalletProviderDropdown'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { ActivityHighlightProvider } from '@/contexts/ActivityHighlightContext'
 import {
-  EarnDataProvider,
-  useEarnDataContext,
-} from '@/contexts/EarnDataContext'
+  LendProviderContextProvider,
+  useLendProviderContext,
+} from '@/contexts/LendProviderContext'
 import { MarketSelector } from './MarketSelector'
-import type { EarnOperations } from '@/hooks/useEarnData'
+import type { LendProviderOperations } from '@/hooks/useLendProvider'
 
 export interface EarnProps {
-  operations: EarnOperations
+  operations: LendProviderOperations
   ready: boolean
   logout: () => Promise<void>
   walletAddress: string | null
@@ -49,7 +49,7 @@ function Earn({
   }
 
   return (
-    <EarnDataProvider
+    <LendProviderContextProvider
       operations={operations}
       ready={ready}
       logPrefix={logPrefix}
@@ -61,7 +61,7 @@ function Earn({
           providerConfig={providerConfig}
         />
       </ActivityHighlightProvider>
-    </EarnDataProvider>
+    </LendProviderContextProvider>
   )
 }
 
@@ -92,7 +92,7 @@ function EarnContent({
     isInitialLoad,
     handleMintAsset,
     handleTransaction,
-  } = useEarnDataContext()
+  } = useLendProviderContext()
 
   return (
     <div

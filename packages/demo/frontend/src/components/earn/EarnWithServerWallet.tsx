@@ -4,7 +4,7 @@ import Earn from './Earn'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import type { Asset } from '@eth-optimism/actions-sdk/react'
 import { actionsApi } from '@/api/actionsApi'
-import type { EarnOperations } from '@/hooks/useEarnData'
+import type { LendProviderOperations } from '@/hooks/useLendProvider'
 
 interface EarnWithServerWalletProps {
   ready: boolean
@@ -25,7 +25,7 @@ export function EarnWithServerWallet({
 }: EarnWithServerWalletProps) {
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
 
-  const operations = useMemo<EarnOperations>(
+  const operations = useMemo<LendProviderOperations>(
     () => ({
       getTokenBalances: async () => {
         const headers = await getAuthHeaders()
