@@ -16,7 +16,7 @@ import { useMemo } from 'react'
 import { createActions } from '@eth-optimism/actions-sdk/react'
 import { createActionsConfig } from '@/config/actions'
 import { actionsApi } from '@/api/actionsApi'
-import { useEarnData, type EarnOperations } from '@/hooks/useEarnData'
+import type { EarnOperations } from '@/hooks/useEarnData'
 
 export interface EarnWithFrontendWalletProps {
   wallet: Wallet | null
@@ -33,8 +33,8 @@ function useActions<T extends ReactProviderTypes>(hostedWalletProviderType: T) {
 }
 
 /**
- * Container component that handles frontend wallet provider logic
- * and passes data/callbacks to the presentational Earn component
+ * Wrapper for frontend wallet providers (Dynamic, Turnkey)
+ * Builds operations object and delegates to Earn
  */
 export function EarnWithFrontendWallet({
   wallet,
@@ -43,21 +43,14 @@ export function EarnWithFrontendWallet({
 }: EarnWithFrontendWalletProps) {
   const hostedWalletProviderType =
     FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS[selectedProvider]
-
-  // Single Actions instance supporting both Morpho and Aave
   const actions = useActions(hostedWalletProviderType)
 
-  const ready = !!wallet
-
-  // Create operations object for the shared hook
   const operations = useMemo<EarnOperations>(
     () => ({
       getTokenBalances: async () => wallet!.getBalance(),
       getMarkets: async () => actions.lend.getMarkets(),
       getPosition: async (marketId) => wallet!.lend!.getPosition({ marketId }),
-      mintAsset: async (
-        asset: Asset,
-      ): Promise<{ blockExplorerUrls?: string[] } | void> => {
+      mintAsset: async (asset: Asset) => {
         const walletAddress = wallet!.address
         const chainId = asset.address
           ? Object.keys(asset.address).find(
@@ -65,11 +58,8 @@ export function EarnWithFrontendWallet({
             )
           : undefined
 
-        if (!chainId) {
-          throw new Error('No chain available for asset')
-        }
+        if (!chainId) throw new Error('No chain available for asset')
 
-        // For WETH, use ETH faucet endpoint instead of minting token
         if (asset.metadata.symbol.includes('WETH')) {
           await actionsApi.dripEthToWallet(walletAddress)
           return
@@ -87,31 +77,27 @@ export function EarnWithFrontendWallet({
           )
         }
 
-        const calls = [
-          {
-            to: tokenAddress as Address,
-            data: encodeFunctionData({
-              abi: mintableErc20Abi,
-              functionName: 'mint',
-              args: [walletAddress, amountInDecimals],
-            }),
-            value: 0n,
-          },
-        ]
-
         const result = await wallet!.sendBatch(
-          calls,
+          [
+            {
+              to: tokenAddress as Address,
+              data: encodeFunctionData({
+                abi: mintableErc20Abi,
+                functionName: 'mint',
+                args: [walletAddress, amountInDecimals],
+              }),
+              value: 0n,
+            },
+          ],
           parseInt(chainId) as SupportedChainId,
         )
 
-        // Extract blockExplorerUrls from result
         if ('blockExplorerUrl' in result && result.blockExplorerUrl) {
           return { blockExplorerUrls: [result.blockExplorerUrl as string] }
         }
         if ('blockExplorerUrls' in result && result.blockExplorerUrls) {
           return { blockExplorerUrls: result.blockExplorerUrls as string[] }
         }
-        return undefined
       },
       openPosition: async (params) => wallet!.lend!.openPosition(params),
       closePosition: async (params) => wallet!.lend!.closePosition(params),
@@ -119,49 +105,14 @@ export function EarnWithFrontendWallet({
     [wallet, actions],
   )
 
-  const {
-    markets,
-    selectedMarket,
-    setSelectedMarket,
-    handleMarketSelect,
-    isLoadingMarkets,
-    marketPositions,
-    assetBalance,
-    isLoadingBalance,
-    apy,
-    isLoadingApy,
-    depositedAmount,
-    isLoadingPosition,
-    isInitialLoad,
-    handleMintAsset,
-    handleTransaction,
-  } = useEarnData({
-    operations,
-    ready,
-    logPrefix: '[EarnWithFrontendWallet]',
-  })
-
   return (
     <Earn
-      ready={ready}
-      selectedProviderConfig={WALLET_PROVIDER_CONFIGS[selectedProvider]}
-      walletAddress={wallet?.address || null}
+      operations={operations}
+      ready={!!wallet}
       logout={logout}
-      usdcBalance={assetBalance}
-      isLoadingBalance={isLoadingBalance}
-      apy={apy}
-      isLoadingApy={isLoadingApy}
-      depositedAmount={depositedAmount}
-      isLoadingPosition={isLoadingPosition}
-      isInitialLoad={isInitialLoad}
-      onMintUSDC={handleMintAsset}
-      onTransaction={handleTransaction}
-      onMarketChange={setSelectedMarket}
-      markets={markets}
-      selectedMarket={selectedMarket}
-      onMarketSelect={handleMarketSelect}
-      isLoadingMarkets={isLoadingMarkets}
-      marketPositions={marketPositions}
+      walletAddress={wallet?.address || null}
+      providerConfig={WALLET_PROVIDER_CONFIGS[selectedProvider]}
+      logPrefix="[EarnWithFrontendWallet]"
     />
   )
 }

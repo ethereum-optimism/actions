@@ -1,29 +1,21 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { type Address } from 'viem'
+import type { Address } from 'viem'
 import Earn from './Earn'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import type { Asset } from '@eth-optimism/actions-sdk/react'
 import { actionsApi } from '@/api/actionsApi'
-import { useEarnData, type EarnOperations } from '@/hooks/useEarnData'
+import type { EarnOperations } from '@/hooks/useEarnData'
 
 interface EarnWithServerWalletProps {
   ready: boolean
   logout: () => Promise<void>
-  userId?: string
-  embeddedWalletExists: boolean
-  getAuthHeaders: () => Promise<
-    | {
-        Authorization: string
-      }
-    | undefined
-  >
-  userEmailAddress?: string
+  getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
   selectedProvider: WalletProviderConfig
 }
 
 /**
- * Container component that handles server wallet provider logic
- * and passes data/callbacks to the presentational Earn component
+ * Wrapper for server wallet providers (Privy)
+ * Builds operations object using API calls and delegates to Earn
  */
 export function EarnWithServerWallet({
   getAuthHeaders,
@@ -33,7 +25,6 @@ export function EarnWithServerWallet({
 }: EarnWithServerWalletProps) {
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
 
-  // Create operations object for the shared hook
   const operations = useMemo<EarnOperations>(
     () => ({
       getTokenBalances: async () => {
@@ -50,16 +41,12 @@ export function EarnWithServerWallet({
       },
       mintAsset: async (asset: Asset) => {
         const headers = await getAuthHeaders()
-
         if (asset.metadata.symbol.includes('WETH')) {
-          if (!walletAddress) {
-            throw new Error('Wallet address not available')
-          }
+          if (!walletAddress) throw new Error('Wallet address not available')
           await actionsApi.dripEthToWallet(walletAddress)
           return
-        } else {
-          return await actionsApi.mintDemoUsdcToWallet(headers)
         }
+        return actionsApi.mintDemoUsdcToWallet(headers)
       },
       openPosition: async (params) => {
         const headers = await getAuthHeaders()
@@ -73,28 +60,6 @@ export function EarnWithServerWallet({
     [getAuthHeaders, walletAddress],
   )
 
-  const {
-    markets,
-    selectedMarket,
-    handleMarketSelect,
-    isLoadingMarkets,
-    marketPositions,
-    assetBalance,
-    isLoadingBalance,
-    apy,
-    isLoadingApy,
-    depositedAmount,
-    isLoadingPosition,
-    isInitialLoad,
-    handleMintAsset,
-    handleTransaction,
-  } = useEarnData({
-    operations,
-    ready,
-    logPrefix: '[EarnWithServerWallet]',
-  })
-
-  // Fetch wallet address
   const fetchWalletAddress = useCallback(async () => {
     const headers = await getAuthHeaders()
     const { address } = await actionsApi.getWallet(headers)
@@ -102,31 +67,17 @@ export function EarnWithServerWallet({
   }, [getAuthHeaders])
 
   useEffect(() => {
-    if (ready) {
-      fetchWalletAddress()
-    }
+    if (ready) fetchWalletAddress()
   }, [ready, fetchWalletAddress])
 
   return (
     <Earn
+      operations={operations}
       ready={ready}
-      selectedProviderConfig={selectedProvider}
-      walletAddress={walletAddress}
       logout={logout}
-      usdcBalance={assetBalance}
-      isLoadingBalance={isLoadingBalance}
-      apy={apy}
-      isLoadingApy={isLoadingApy}
-      depositedAmount={depositedAmount}
-      isLoadingPosition={isLoadingPosition}
-      isInitialLoad={isInitialLoad}
-      onMintUSDC={handleMintAsset}
-      onTransaction={handleTransaction}
-      markets={markets}
-      selectedMarket={selectedMarket}
-      onMarketSelect={handleMarketSelect}
-      isLoadingMarkets={isLoadingMarkets}
-      marketPositions={marketPositions}
+      walletAddress={walletAddress}
+      providerConfig={selectedProvider}
+      logPrefix="[EarnWithServerWallet]"
     />
   )
 }
