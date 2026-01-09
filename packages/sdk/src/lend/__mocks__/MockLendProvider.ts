@@ -191,7 +191,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     params: LendClosePositionParams,
   ): Promise<LendTransaction> {
     const assetAddress = params.asset?.address[params.marketId.chainId]
-    if (!assetAddress) {
+    if (!assetAddress || assetAddress === 'native') {
       throw new Error(`Asset not supported on chain ${params.marketId.chainId}`)
     }
 
@@ -210,7 +210,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
   }: LendOpenPositionParams): Promise<LendTransaction> {
     // Get asset address for the chain
     const assetAddress = asset.address[marketId.chainId]
-    if (!assetAddress) {
+    if (!assetAddress || assetAddress === 'native') {
       throw new Error(`Asset not supported on chain ${marketId.chainId}`)
     }
 
@@ -244,7 +244,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
   }: LendOpenPositionInternalParams): Promise<LendTransaction> {
     // Get asset address for the chain
     const assetAddress = asset.address[marketId.chainId]
-    if (!assetAddress) {
+    if (!assetAddress || assetAddress === 'native') {
       throw new Error(`Asset not supported on chain ${marketId.chainId}`)
     }
 
@@ -336,9 +336,11 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     marketId,
   }: ClosePositionParams): Promise<LendTransaction> {
     // If asset provided, use its address for the chain; otherwise use a mock asset
-    const assetAddress =
-      asset?.address[marketId.chainId] ||
-      ('0x1234567890123456789012345678901234567890' as Address)
+    const rawAddress = asset?.address[marketId.chainId]
+    const assetAddress: Address =
+      rawAddress && rawAddress !== 'native'
+        ? rawAddress
+        : ('0x1234567890123456789012345678901234567890' as Address)
 
     return {
       amount: BigInt(amount),

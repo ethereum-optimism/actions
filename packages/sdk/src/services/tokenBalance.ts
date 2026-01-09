@@ -1,7 +1,6 @@
 import type { Address } from 'viem'
 import { erc20Abi, formatEther, formatUnits } from 'viem'
 
-import { ETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
@@ -25,7 +24,7 @@ export async function fetchETHBalance(
     return {
       chainId,
       balance,
-      tokenAddress: ETH.address[chainId]!,
+      tokenAddress: 'native' as const,
       formattedBalance: formatEther(balance),
     }
   })
@@ -92,7 +91,7 @@ async function fetchERC20BalanceForChain(
   chainId: SupportedChainId,
   walletAddress: Address,
   chainManager: ChainManager,
-): Promise<{ balance: bigint; tokenAddress: Address }> {
+): Promise<{ balance: bigint; tokenAddress: Address | 'native' }> {
   const tokenAddress = asset.address[chainId]
   if (!tokenAddress) {
     throw new Error(
@@ -103,20 +102,20 @@ async function fetchERC20BalanceForChain(
   const publicClient = chainManager.getPublicClient(chainId)
 
   // Handle native ETH balance
-  if (asset.type === 'native') {
+  if (asset.type === 'native' || tokenAddress === 'native') {
     return {
       balance: await publicClient.getBalance({
         address: walletAddress,
       }),
-      tokenAddress: ETH.address[chainId]!,
+      tokenAddress: 'native',
     }
   }
 
   const balance = await publicClient.readContract({
-    address: tokenAddress as Address,
+    address: tokenAddress,
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: [walletAddress],
   })
-  return { balance, tokenAddress: tokenAddress as Address }
+  return { balance, tokenAddress }
 }

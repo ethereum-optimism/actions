@@ -4,6 +4,7 @@ import { providers } from 'ethers'
 import type { Address } from 'viem'
 import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 
+import { WETH } from '@/constants/assets.js'
 import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import { getPoolAddress } from '@/lend/providers/aave/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -163,10 +164,11 @@ export async function getReserve(
     })
 
     // Find the specific reserve for this asset
-    const assetAddress = getAssetAddress(
-      marketConfig.asset,
-      params.marketId.chainId,
-    )
+    // For native ETH assets, use WETH address since Aave uses WETH internally
+    const assetAddress =
+      marketConfig.asset.type === 'native'
+        ? getAssetAddress(WETH, params.marketId.chainId)
+        : getAssetAddress(marketConfig.asset, params.marketId.chainId)
 
     const reserve = reservesData.reservesData.find(
       (r) => r.underlyingAsset.toLowerCase() === assetAddress.toLowerCase(),

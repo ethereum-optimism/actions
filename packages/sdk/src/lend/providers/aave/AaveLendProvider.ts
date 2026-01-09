@@ -1,9 +1,11 @@
 import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits, parseAbi } from 'viem'
 
+import { WETH } from '@/constants/assets.js'
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -22,12 +24,6 @@ import {
   getWETHGatewayAddress,
 } from './addresses.js'
 import { getReserve, getReserves } from './sdk.js'
-
-/**
- * WETH predeploy address on OP Stack chains
- * @description WETH is deployed at the same address on all OP Stack chains (Optimism, Base, etc.)
- */
-const WETH_ADDRESS = '0x4200000000000000000000000000000000000006'
 
 /**
  * Aave Pool ABI - only the functions we need
@@ -91,9 +87,9 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         chainId: params.marketId.chainId,
       })
 
-      // Check if this is a WETH market
-      if (this.isWETHMarket(params.marketId)) {
-        return this._openWETHPosition(params, poolAddress, marketInfo)
+      // Check if this is a native ETH market
+      if (this.isNativeAsset(params.asset)) {
+        return this._openNativePosition(params, poolAddress, marketInfo)
       }
 
       // Standard ERC-20 flow
@@ -128,9 +124,9 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         chainId: params.marketId.chainId,
       })
 
-      // Check if this is a WETH market
-      if (this.isWETHMarket(params.marketId)) {
-        return this._closeWETHPosition(params, poolAddress, marketInfo)
+      // Check if this is a native ETH market
+      if (this.isNativeAsset(marketInfo.asset)) {
+        return this._closeNativePosition(params, poolAddress, marketInfo)
       }
 
       // Standard ERC-20 flow
@@ -192,10 +188,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       }
 
       // Get the aToken address from Pool.getReserveData
-      const assetAddress = getAssetAddress(
-        market.asset,
-        params.marketId.chainId,
-      )
+      // For native assets, use WETH address since Aave uses WETH internally
+      const assetAddress = this.isNativeAsset(market.asset)
+        ? getAssetAddress(WETH, params.marketId.chainId)
+        : getAssetAddress(market.asset, params.marketId.chainId)
 
       const reserveData = (await publicClient.readContract({
         address: poolAddress,
@@ -238,20 +234,19 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   }
 
   /**
-   * Check if market is a WETH market
-   * @param marketId - Market identifier
-   * @returns true if market is for WETH
-   * @description WETH is a predeploy at the same address on all OP Stack chains
+   * Check if asset is native ETH
+   * @param asset - Asset to check
+   * @returns true if asset is native ETH
    */
-  private isWETHMarket(marketId: LendMarketId): boolean {
-    return marketId.address.toLowerCase() === WETH_ADDRESS.toLowerCase()
+  private isNativeAsset(asset: Asset): boolean {
+    return asset.type === 'native'
   }
 
   /**
-   * Open position for WETH market using WETHGateway
+   * Open position for native ETH using WETHGateway
    * @description Deposits native ETH via WETHGateway which wraps and deposits in one tx
    */
-  private async _openWETHPosition(
+  private async _openNativePosition(
     params: LendOpenPositionInternalParams,
     poolAddress: Address,
     marketInfo: LendMarket,
@@ -262,6 +257,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         `WETHGateway not available on chain ${params.marketId.chainId}`,
       )
     }
+
+    const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
 
     // Generate depositETH transaction
     const depositCallData = encodeFunctionData({
@@ -276,7 +273,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: params.amountWei,
-      asset: WETH_ADDRESS,
+      asset: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
@@ -298,11 +295,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     poolAddress: Address,
     marketInfo: LendMarket,
   ): Promise<LendTransaction> {
-    // Get asset address for the chain
-    const assetAddress = params.asset.address[params.marketId.chainId]
-    if (!assetAddress) {
-      throw new Error(`Asset not supported on chain ${params.marketId.chainId}`)
-    }
+    // Get asset address for the chain (throws for native assets)
+    const assetAddress = getAssetAddress(params.asset, params.marketId.chainId)
 
     // Generate supply transaction
     const supplyCallData = encodeFunctionData({
@@ -337,10 +331,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   }
 
   /**
-   * Close position for WETH market using WETHGateway
+   * Close position for native ETH using WETHGateway
    * @description Withdraws aWETH, unwraps to ETH, and sends to user
    */
-  private async _closeWETHPosition(
+  private async _closeNativePosition(
     params: LendClosePositionParams,
     poolAddress: Address,
     marketInfo: LendMarket,
@@ -352,11 +346,13 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       )
     }
 
+    const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
+
     // Get the aToken address for the underlying WETH asset
     // Note: params.marketId.address is the underlying WETH address, not the aToken
     const { getATokenAddress } = await import('./sdk.js')
     const aWETHAddress = await getATokenAddress({
-      underlyingAsset: params.marketId.address,
+      underlyingAsset: wethAddress,
       chainId: params.marketId.chainId,
       chainManager: this.chainManager,
     })
@@ -374,7 +370,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: params.amount,
-      asset: WETH_ADDRESS,
+      asset: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
