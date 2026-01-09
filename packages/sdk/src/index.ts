@@ -1,5 +1,5 @@
 export type { Actions } from '@/actions.js'
-export { ETH } from '@/constants/assets.js'
+export { ETH, WETH } from '@/constants/assets.js'
 export type { SupportedChainId } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'
 export { LendProvider, MorphoLendProvider } from '@/lend/index.js'
@@ -7,7 +7,6 @@ export {
   getTokenAddress,
   getTokenBySymbol,
   SUPPORTED_TOKENS,
-  WETH,
 } from '@/supported/tokens.js'
 export type {
   ActionsConfig,
