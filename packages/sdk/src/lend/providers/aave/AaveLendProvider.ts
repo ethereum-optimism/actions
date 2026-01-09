@@ -1,9 +1,9 @@
 import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits, parseAbi } from 'viem'
 
+import { WETH } from '@/constants/assets.js'
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { WETH } from '@/supported/tokens.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {

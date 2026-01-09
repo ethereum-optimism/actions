@@ -4,10 +4,10 @@ import { providers } from 'ethers'
 import type { Address } from 'viem'
 import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 
+import { WETH } from '@/constants/assets.js'
 import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import { getPoolAddress } from '@/lend/providers/aave/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { WETH } from '@/supported/tokens.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   ApyBreakdown,

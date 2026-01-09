@@ -24,3 +24,23 @@ export const ETH: Asset = {
   },
   type: 'native',
 }
+
+/**
+ * Wrapped ETH token definition
+ * @description WETH is the ERC-20 wrapped version of native ETH
+ */
+export const WETH: Asset = {
+  address: {
+    [mainnet.id]: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+    [base.id]: '0x4200000000000000000000000000000000000006',
+    [baseSepolia.id]: '0x4200000000000000000000000000000000000006',
+    [optimismSepolia.id]: '0x4200000000000000000000000000000000000006',
+    [unichain.id]: '0x4200000000000000000000000000000000000006',
+  },
+  metadata: {
+    symbol: 'WETH',
+    name: 'Wrapped Ether',
+    decimals: 18,
+  },
+  type: 'erc20',
+}
