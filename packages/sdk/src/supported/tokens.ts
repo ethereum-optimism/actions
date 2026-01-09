@@ -47,12 +47,12 @@ export const SUPPORTED_TOKENS: Asset[] = [
 ]
 
 /**
- * Find token by address and chain ID
+ * Get token by address and chain ID
  * @param address Token address
  * @param chainId Chain ID
  * @returns Token symbol or null if not found
  */
-export function findTokenByAddress(
+export function getTokenByAddress(
   address: Address,
   chainId: SupportedChainId,
 ): string | null {
