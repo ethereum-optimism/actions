@@ -122,7 +122,7 @@ export function EarnWithFrontendWallet({
         assetSymbol: asset.metadata.symbol,
       })
 
-      if (!tokenAddress) {
+      if (!tokenAddress || tokenAddress === 'native') {
         console.error(
           `[EarnWithFrontendWallet] Asset ${asset.metadata.symbol} not available on chain ${chainId}`,
         )
@@ -133,7 +133,7 @@ export function EarnWithFrontendWallet({
 
       const calls = [
         {
-          to: tokenAddress,
+          to: tokenAddress as Address,
           data: encodeFunctionData({
             abi: mintableErc20Abi,
             functionName: 'mint',
