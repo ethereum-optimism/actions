@@ -4,6 +4,7 @@ import Shimmer from './Shimmer'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
+import { isEthSymbol } from '@/utils/assetUtils'
 
 interface ActionProps {
   assetBalance: string
@@ -56,7 +57,7 @@ export function Action({
     undefined,
   )
   const [showFaucetInfo, setShowFaucetInfo] = useState(false)
-  const [hasUsedWethFaucet, setHasUsedWethFaucet] = useState(false)
+  const [hasUsedEthFaucet, setHasUsedEthFaucet] = useState(false)
 
   // Check if this is the illiquid Aave OP Sepolia ETH market
   const isIlliquidAaveMarket =
@@ -69,8 +70,8 @@ export function Action({
   const AAVE_MAX_WITHDRAW = 0.0001
 
   // Determine display precision based on asset type
-  const isWethAsset = assetSymbol === 'WETH'
-  const displayPrecision = isWethAsset ? 4 : 2
+  const isEthAsset = isEthSymbol(assetSymbol)
+  const displayPrecision = isEthAsset ? 4 : 2
 
   // For illiquid Aave market, lock withdraw amount to fixed value
   const isLockedWithdrawAmount = isIlliquidAaveMarket && mode === 'withdraw'
@@ -197,30 +198,30 @@ export function Action({
                 <div
                   className="relative"
                   onMouseEnter={() =>
-                    isWethAsset && hasUsedWethFaucet && setShowFaucetInfo(true)
+                    isEthAsset && hasUsedEthFaucet && setShowFaucetInfo(true)
                   }
                   onMouseLeave={() => setShowFaucetInfo(false)}
                 >
                   <button
                     onClick={() => {
                       trackEvent('mint_asset', { asset: assetSymbol })
-                      if (isWethAsset) {
-                        setHasUsedWethFaucet(true)
+                      if (isEthAsset) {
+                        setHasUsedEthFaucet(true)
                       }
                       onMintAsset?.()
                     }}
                     disabled={
-                      isMintingAsset || (isWethAsset && hasUsedWethFaucet)
+                      isMintingAsset || (isEthAsset && hasUsedEthFaucet)
                     }
                     className="transition-all"
                     style={{
                       padding: '6px 12px',
                       backgroundColor:
-                        isMintingAsset || (isWethAsset && hasUsedWethFaucet)
+                        isMintingAsset || (isEthAsset && hasUsedEthFaucet)
                           ? '#D1D5DB'
                           : '#FF0420',
                       color:
-                        isMintingAsset || (isWethAsset && hasUsedWethFaucet)
+                        isMintingAsset || (isEthAsset && hasUsedEthFaucet)
                           ? '#6B7280'
                           : '#FFFFFF',
                       fontSize: '14px',
@@ -228,7 +229,7 @@ export function Action({
                       borderRadius: '6px',
                       border: 'none',
                       cursor:
-                        isMintingAsset || (isWethAsset && hasUsedWethFaucet)
+                        isMintingAsset || (isEthAsset && hasUsedEthFaucet)
                           ? 'not-allowed'
                           : 'pointer',
                       fontFamily: 'Inter',
@@ -258,7 +259,7 @@ export function Action({
                         zIndex: 10,
                       }}
                     >
-                      Demo WETH already provided.
+                      Demo ETH already provided.
                     </div>
                   )}
                 </div>
@@ -296,9 +297,9 @@ export function Action({
                     fontWeight: 500,
                   }}
                 >
-                  {displaySymbol === 'WETH' || displaySymbol === 'ETH'
-                    ? assetBalance
-                    : `$${assetBalance}`}
+                  {assetSymbol.includes('USDC')
+                    ? `$${assetBalance}`
+                    : assetBalance}
                 </span>
                 <img
                   src={assetLogo}

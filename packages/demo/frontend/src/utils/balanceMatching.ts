@@ -1,6 +1,7 @@
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type { LendMarketId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
+import { isEthSymbol } from './assetUtils'
 
 interface BalanceMatchingParams {
   allTokenBalances: TokenBalance[]
@@ -31,12 +32,8 @@ export function matchAssetBalance({
     const targetAddress = marketData.assetAddress.toLowerCase()
     const targetChainId = marketData.marketId.chainId
 
-    // Special case: For WETH markets on OP Sepolia, check native ETH balance
-    // since the faucet provides native ETH, not WETH tokens
-    const isWethMarket = selectedAssetSymbol === 'WETH'
-    const isOpSepolia = targetChainId === 11155420
-
-    if (isWethMarket && isOpSepolia) {
+    // Special case: For ETH markets, check native ETH balance
+    if (isEthSymbol(selectedAssetSymbol)) {
       // Look for ETH token (native)
       assetToken = allTokenBalances.find((token) => token.symbol === 'ETH')
       if (assetToken) {
@@ -66,8 +63,8 @@ export function matchAssetBalance({
     )
   }
 
-  const isWeth = selectedAssetSymbol === 'WETH'
-  const displayPrecision = isWeth ? 4 : 2
+  const isEth = isEthSymbol(selectedAssetSymbol)
+  const displayPrecision = isEth ? 4 : 2
   const precisionMultiplier = Math.pow(10, displayPrecision)
 
   if (assetToken && chainBalance && BigInt(chainBalance.balance) > 0n) {
@@ -87,6 +84,6 @@ export function matchAssetBalance({
       Math.floor(balance * precisionMultiplier) / precisionMultiplier
     return flooredBalance.toFixed(displayPrecision)
   } else {
-    return isWeth ? '0.0000' : '0.00'
+    return isEth ? '0.0000' : '0.00'
   }
 }

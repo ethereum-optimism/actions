@@ -150,6 +150,18 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     }
   }, [assetBalance, balanceBeforeMutation])
 
+  // Fallback: clear loading state after timeout if balance hasn't changed
+  // Handles edge cases like on-chain failures that aren't detected client-side
+  useEffect(() => {
+    if (balanceBeforeMutation === null) return
+
+    const timeout = setTimeout(() => {
+      setBalanceBeforeMutation(null)
+    }, 5000)
+
+    return () => clearTimeout(timeout)
+  }, [balanceBeforeMutation])
+
   // Handler functions
   const handleMintAsset = async () => {
     if (!selectedAsset) return
@@ -175,10 +187,17 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       asset: marketData.asset,
     }
 
-    const result =
-      mode === 'lend'
-        ? await openPositionMutation.mutateAsync(params)
-        : await closePositionMutation.mutateAsync(params)
+    let result
+    try {
+      result =
+        mode === 'lend'
+          ? await openPositionMutation.mutateAsync(params)
+          : await closePositionMutation.mutateAsync(params)
+    } catch (error) {
+      // Clear loading state on error since balance won't change
+      setBalanceBeforeMutation(null)
+      throw error
+    }
 
     // Handle union type - result can be EOATransactionReceipt or SmartWalletTransactionReceipt
     const txHash =

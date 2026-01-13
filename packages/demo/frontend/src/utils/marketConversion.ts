@@ -1,6 +1,7 @@
 import type { LendMarket } from '@eth-optimism/actions-sdk'
 import { baseSepolia, optimismSepolia } from 'viem/chains'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
+import { isEthSymbol } from './assetUtils'
 
 export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
   const chainId = market.marketId.chainId
@@ -27,7 +28,7 @@ export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
   const assetSymbol = market.asset.metadata.symbol
   const assetLogo = assetSymbol.includes('USDC')
     ? '/usd-coin-usdc-logo.svg'
-    : assetSymbol.includes('WETH') || assetSymbol === 'ETH'
+    : isEthSymbol(assetSymbol)
       ? '/eth.svg'
       : '/usd-coin-usdc-logo.svg'
 
