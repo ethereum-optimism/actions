@@ -13,7 +13,7 @@ export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
     networkLogo = '/base-logo.svg'
   } else if (chainId === optimismSepolia.id) {
     networkName = 'OP Sepolia'
-    networkLogo = '/OP.svg'
+    networkLogo = '/OPMainnet_Circle.svg'
   }
 
   // Determine provider logo
