@@ -88,6 +88,7 @@ function EarnContent({
     marketPositions,
     assetBalance,
     isLoadingBalance,
+    isMintingAsset,
     depositedAmount,
     isInitialLoad,
     handleMintAsset,
@@ -207,6 +208,7 @@ function EarnContent({
               <Action
                 assetBalance={assetBalance}
                 isLoadingBalance={isLoadingBalance}
+                isMintingAsset={isMintingAsset}
                 depositedAmount={depositedAmount}
                 assetSymbol={selectedMarket?.asset.metadata.symbol || 'USDC'}
                 assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}

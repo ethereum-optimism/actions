@@ -16,6 +16,7 @@ interface LendProviderContextValue {
   // Balance data
   assetBalance: string
   isLoadingBalance: boolean
+  isMintingAsset: boolean
   // Position data
   depositedAmount: string | null
   isLoadingPosition: boolean
@@ -53,6 +54,7 @@ export function LendProviderContextProvider({
     marketPositions: lendData.marketPositions,
     assetBalance: lendData.assetBalance,
     isLoadingBalance: lendData.isLoadingBalance,
+    isMintingAsset: lendData.isMintingAsset,
     depositedAmount: lendData.depositedAmount,
     isLoadingPosition: lendData.isLoadingPosition,
     isInitialLoad: lendData.isInitialLoad,

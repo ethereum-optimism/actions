@@ -190,6 +190,7 @@ export function useLendProvider({
   const {
     assetBalance,
     isLoadingBalance,
+    isMintingAsset,
     handleMintAsset,
     isLoadingApy,
     apy,
@@ -279,6 +280,7 @@ export function useLendProvider({
     // Balance data
     assetBalance,
     isLoadingBalance,
+    isMintingAsset,
     apy,
     isLoadingApy,
     depositedAmount,

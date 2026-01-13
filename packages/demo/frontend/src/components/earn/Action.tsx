@@ -8,6 +8,7 @@ import { trackEvent } from '@/utils/analytics'
 interface ActionProps {
   assetBalance: string
   isLoadingBalance: boolean
+  isMintingAsset: boolean
   depositedAmount: string | null
   assetSymbol: string
   assetLogo: string
@@ -33,6 +34,7 @@ interface ActionProps {
 export function Action({
   assetBalance,
   isLoadingBalance,
+  isMintingAsset,
   depositedAmount,
   assetSymbol,
   assetLogo,
@@ -185,12 +187,12 @@ export function Action({
             Wallet Balance
           </h2>
           <div className="flex items-center gap-2">
-            {isLoadingBalance ? (
+            {isLoadingBalance && !isMintingAsset ? (
               <div className="flex items-center gap-1.5">
                 <Shimmer width="120px" height="33px" variant="rectangle" />
                 <Shimmer width="20px" height="20px" variant="circle" />
               </div>
-            ) : parseFloat(assetBalance || '0') === 0 ? (
+            ) : parseFloat(assetBalance || '0') === 0 || isMintingAsset ? (
               <div className="flex items-center gap-2">
                 <div
                   className="relative"
@@ -207,16 +209,18 @@ export function Action({
                       }
                       onMintAsset?.()
                     }}
-                    disabled={isWethAsset && hasUsedWethFaucet}
+                    disabled={
+                      isMintingAsset || (isWethAsset && hasUsedWethFaucet)
+                    }
                     className="transition-all"
                     style={{
                       padding: '6px 12px',
                       backgroundColor:
-                        isWethAsset && hasUsedWethFaucet
+                        isMintingAsset || (isWethAsset && hasUsedWethFaucet)
                           ? '#D1D5DB'
                           : '#FF0420',
                       color:
-                        isWethAsset && hasUsedWethFaucet
+                        isMintingAsset || (isWethAsset && hasUsedWethFaucet)
                           ? '#6B7280'
                           : '#FFFFFF',
                       fontSize: '14px',
@@ -224,7 +228,7 @@ export function Action({
                       borderRadius: '6px',
                       border: 'none',
                       cursor:
-                        isWethAsset && hasUsedWethFaucet
+                        isMintingAsset || (isWethAsset && hasUsedWethFaucet)
                           ? 'not-allowed'
                           : 'pointer',
                       fontFamily: 'Inter',
@@ -234,7 +238,7 @@ export function Action({
                       gap: '6px',
                     }}
                   >
-                    Get {displaySymbol}
+                    {isMintingAsset ? 'Minting...' : `Get ${displaySymbol}`}
                   </button>
                   {showFaucetInfo && (
                     <div
