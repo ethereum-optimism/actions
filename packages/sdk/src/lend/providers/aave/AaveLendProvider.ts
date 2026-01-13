@@ -74,7 +74,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
       // Check if this is a native ETH market
       if (this.isNativeAsset(params.asset)) {
-        return this._openNativePosition(params, poolAddress, marketInfo)
+        return this._openETHPosition(params, poolAddress, marketInfo)
       }
 
       // Standard ERC-20 flow
@@ -111,7 +111,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
       // Check if this is a native ETH market
       if (this.isNativeAsset(marketInfo.asset)) {
-        return this._closeNativePosition(params, poolAddress, marketInfo)
+        return this._closeETHPosition(params, poolAddress, marketInfo)
       }
 
       // Standard ERC-20 flow
@@ -223,7 +223,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
    * Open position for native ETH using WETHGateway
    * @description Deposits native ETH via WETHGateway which wraps and deposits in one tx
    */
-  private async _openNativePosition(
+  private async _openETHPosition(
     params: LendOpenPositionInternalParams,
     poolAddress: Address,
     marketInfo: LendMarket,
@@ -311,7 +311,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
    * Close position for native ETH using WETHGateway
    * @description Withdraws aWETH, unwraps to ETH, and sends to user
    */
-  private async _closeNativePosition(
+  private async _closeETHPosition(
     params: LendClosePositionParams,
     poolAddress: Address,
     marketInfo: LendMarket,
