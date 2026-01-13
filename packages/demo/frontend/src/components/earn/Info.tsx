@@ -17,8 +17,8 @@ function Info() {
         <li className="flex items-start">
           <span className="mr-2">•</span>
           <span>
-            Your chosen wallet provider created an embedded wallet for you email
-            address.
+            Your chosen wallet provider created an embedded wallet for your
+            email address.
           </span>
         </li>
         <li className="flex items-start">

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
 import type {
   LendMarket,
   LendMarketId,
@@ -52,12 +52,15 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
   const { logActivity } = useActivityLogger()
 
   // Queries
-  const { data: tokenBalances, isLoading: isLoadingBalances } =
-    useTokenBalances({
-      getTokenBalances: getTokenBalancesRaw,
-      isReady,
-      logActivity,
-    })
+  const {
+    data: tokenBalances,
+    isLoading: isLoadingBalances,
+    isFetching: isFetchingBalances,
+  } = useTokenBalances({
+    getTokenBalances: getTokenBalancesRaw,
+    isReady,
+    logActivity,
+  })
 
   const {
     data: markets,
@@ -131,42 +134,40 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     })
   }, [tokenBalances, marketData, selectedAsset])
 
-  // Track balance before mutation - cleared only when balance actually changes
-  const [balanceBeforeMutation, setBalanceBeforeMutation] = useState<
-    string | null
-  >(null)
+  // Track balance before lend/withdraw to ensure we don't show stale data
+  const balanceBeforeLend = useRef<string | null>(null)
 
-  const isMutating =
-    mintAssetMutation.isPending ||
-    openPositionMutation.isPending ||
-    closePositionMutation.isPending
-
-  // Clear when balance changes from the pre-mutation value
+  // Reset mutation states and clear balance tracking when balance actually changes
   useEffect(() => {
-    if (
-      balanceBeforeMutation !== null &&
-      assetBalance !== balanceBeforeMutation
-    ) {
-      setBalanceBeforeMutation(null)
+    const balanceChanged =
+      balanceBeforeLend.current !== null &&
+      assetBalance !== balanceBeforeLend.current
+
+    if (!isFetchingBalances && balanceChanged) {
+      balanceBeforeLend.current = null
+      if (openPositionMutation.isSuccess) {
+        openPositionMutation.reset()
+      }
+      if (closePositionMutation.isSuccess) {
+        closePositionMutation.reset()
+      }
     }
-  }, [assetBalance, balanceBeforeMutation])
 
-  // Fallback: clear loading state after timeout if balance hasn't changed
-  // Handles edge cases like on-chain failures that aren't detected client-side
-  useEffect(() => {
-    if (balanceBeforeMutation === null) return
-
-    const timeout = setTimeout(() => {
-      setBalanceBeforeMutation(null)
-    }, 5000)
-
-    return () => clearTimeout(timeout)
-  }, [balanceBeforeMutation])
+    // Reset mint mutation when not fetching (mint doesn't need balance comparison)
+    if (!isFetchingBalances && mintAssetMutation.isSuccess) {
+      mintAssetMutation.reset()
+    }
+  }, [
+    isFetchingBalances,
+    assetBalance,
+    mintAssetMutation,
+    openPositionMutation,
+    closePositionMutation,
+  ])
 
   // Handler functions
   const handleMintAsset = async () => {
     if (!selectedAsset) return
-    setBalanceBeforeMutation(assetBalance)
     await mintAssetMutation.mutateAsync({
       asset: selectedAsset,
     })
@@ -180,7 +181,8 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       throw new Error('Market data not available')
     }
 
-    setBalanceBeforeMutation(assetBalance)
+    // Track balance before transaction to ensure we show loading until it changes
+    balanceBeforeLend.current = assetBalance
 
     const params: LendExecutePositionParams = {
       marketId: marketData.marketId,
@@ -188,17 +190,10 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       asset: marketData.asset,
     }
 
-    let result
-    try {
-      result =
-        mode === 'lend'
-          ? await openPositionMutation.mutateAsync(params)
-          : await closePositionMutation.mutateAsync(params)
-    } catch (error) {
-      // Clear loading state on error since balance won't change
-      setBalanceBeforeMutation(null)
-      throw error
-    }
+    const result =
+      mode === 'lend'
+        ? await openPositionMutation.mutateAsync(params)
+        : await closePositionMutation.mutateAsync(params)
 
     // Handle union type - result can be EOATransactionReceipt or SmartWalletTransactionReceipt
     const userOpHash = 'userOpHash' in result ? result.userOpHash : undefined
@@ -221,14 +216,27 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     }
   }
 
-  // Show shimmer during load/mutations, or when waiting for balance to update
-  const isWaitingForBalanceUpdate = balanceBeforeMutation !== null
+  // Show loading while mutations are pending OR while refetching after a successful mutation
+  const isMutationRefetching =
+    (mintAssetMutation.isSuccess ||
+      openPositionMutation.isSuccess ||
+      closePositionMutation.isSuccess) &&
+    isFetchingBalances
+
+  // For lend/withdraw: also show loading until balance actually changes from pre-transaction value
+  const isWaitingForBalanceChange =
+    balanceBeforeLend.current !== null &&
+    assetBalance === balanceBeforeLend.current
+
   const isLoadingBalance =
     isLoadingBalances ||
     isLoadingMarkets ||
     !marketData ||
-    isMutating ||
-    isWaitingForBalanceUpdate
+    mintAssetMutation.isPending ||
+    openPositionMutation.isPending ||
+    closePositionMutation.isPending ||
+    isMutationRefetching ||
+    isWaitingForBalanceChange
 
   const isLoadingApy = isLoadingMarkets || isFetchingMarkets
   const isLoadingPositionState =
@@ -237,8 +245,10 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     openPositionMutation.isPending ||
     closePositionMutation.isPending
 
-  // Track minting state: true while mint is in progress (mutation or waiting for balance)
-  const isMintingAsset = mintAssetMutation.isPending
+  // Track minting state: true while mint is in progress OR refetching after mint success
+  const isMintingAsset =
+    mintAssetMutation.isPending ||
+    (mintAssetMutation.isSuccess && isFetchingBalances)
 
   return {
     assetBalance,

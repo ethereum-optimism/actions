@@ -71,7 +71,6 @@ export function useOpenPosition({
       }
     },
     onSuccess: (_, variables) => {
-      // Invalidate both balances and position for the affected market
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       queryClient.invalidateQueries({
         queryKey: [
@@ -81,7 +80,7 @@ export function useOpenPosition({
         ],
       })
 
-      // Wait for chain to process, then refetch again
+      // Delayed refetch in case chain indexing is slow
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
         queryClient.invalidateQueries({
@@ -91,7 +90,7 @@ export function useOpenPosition({
             variables.marketId.chainId,
           ],
         })
-      }, 3000)
+      }, 2000)
     },
   })
 }
@@ -131,7 +130,6 @@ export function useClosePosition({
       }
     },
     onSuccess: (_, variables) => {
-      // Invalidate both balances and position for the affected market
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       queryClient.invalidateQueries({
         queryKey: [
@@ -141,7 +139,7 @@ export function useClosePosition({
         ],
       })
 
-      // Wait for chain to process, then refetch again
+      // Delayed refetch in case chain indexing is slow
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
         queryClient.invalidateQueries({
@@ -151,7 +149,7 @@ export function useClosePosition({
             variables.marketId.chainId,
           ],
         })
-      }, 3000)
+      }, 2000)
     },
   })
 }
