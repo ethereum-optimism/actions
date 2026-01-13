@@ -5,7 +5,6 @@ import { WETH } from '@/constants/assets.js'
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
-import type { Asset } from '@/types/asset.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
