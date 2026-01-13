@@ -27,7 +27,7 @@ export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
   const assetSymbol = market.asset.metadata.symbol
   const assetLogo = assetSymbol.includes('USDC')
     ? '/usd-coin-usdc-logo.svg'
-    : assetSymbol.includes('WETH')
+    : assetSymbol.includes('WETH') || assetSymbol === 'ETH'
       ? '/eth.svg'
       : '/usd-coin-usdc-logo.svg'
 

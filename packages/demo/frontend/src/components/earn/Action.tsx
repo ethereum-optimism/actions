@@ -296,7 +296,9 @@ export function Action({
                     fontWeight: 500,
                   }}
                 >
-                  {displaySymbol === 'WETH' ? assetBalance : `$${assetBalance}`}
+                  {displaySymbol === 'WETH' || displaySymbol === 'ETH'
+                    ? assetBalance
+                    : `$${assetBalance}`}
                 </span>
                 <img
                   src={assetLogo}

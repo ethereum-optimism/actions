@@ -60,7 +60,7 @@ export function EarnWithFrontendWallet({
 
         if (!chainId) throw new Error('No chain available for asset')
 
-        if (asset.metadata.symbol.includes('WETH')) {
+        if (asset.metadata.symbol === 'ETH' && asset.type === 'native') {
           await actionsApi.dripEthToWallet(walletAddress)
           return
         }
