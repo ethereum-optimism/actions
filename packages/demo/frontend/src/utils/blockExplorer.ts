@@ -1,4 +1,7 @@
-import type { SupportedChainId } from '@eth-optimism/actions-sdk'
+import type {
+  SupportedChainId,
+  LendTransactionReceipt,
+} from '@eth-optimism/actions-sdk'
 import { baseSepolia, optimismSepolia } from 'viem/chains'
 
 const BLOCK_EXPLORER_URLS: Record<number, string> = {
@@ -7,24 +10,42 @@ const BLOCK_EXPLORER_URLS: Record<number, string> = {
 }
 
 /**
- * Get block explorer URLs for transaction hashes or user operation hash
+ * Extract transaction hash and userOp hash from a LendTransactionReceipt
  */
-export async function getBlockExplorerUrls(
+export function extractHashes(result: LendTransactionReceipt): {
+  txHash?: string
+  userOpHash?: string
+} {
+  const userOpHash = 'userOpHash' in result ? result.userOpHash : undefined
+  const txHash = Array.isArray(result)
+    ? result[0]?.transactionHash
+    : 'receipt' in result
+      ? result.receipt.transactionHash
+      : result.transactionHash
+
+  return { txHash, userOpHash }
+}
+
+/**
+ * Get block explorer URL for a transaction result
+ */
+export function getBlockExplorerUrl(
   chainId: SupportedChainId,
-  transactionHashes?: string[],
-  userOpHash?: string,
-): Promise<string[]> {
-  const url = BLOCK_EXPLORER_URLS[chainId]
-  if (!url) {
+  result: LendTransactionReceipt,
+): string | undefined {
+  const baseUrl = BLOCK_EXPLORER_URLS[chainId]
+  if (!baseUrl) {
     console.warn(`Block explorer not configured for chainId: ${chainId}`)
-    return []
+    return undefined
   }
 
+  const { txHash, userOpHash } = extractHashes(result)
+
   if (userOpHash) {
-    return [`${url}/op/${userOpHash}`]
+    return `${baseUrl}/op/${userOpHash}`
   }
-  if (transactionHashes && transactionHashes.length > 0) {
-    return transactionHashes.map((hash) => `${url}/tx/${hash}`)
+  if (txHash) {
+    return `${baseUrl}/tx/${txHash}`
   }
-  return []
+  return undefined
 }

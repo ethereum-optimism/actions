@@ -14,7 +14,7 @@ interface EarnWithServerWalletProps {
 }
 
 /**
- * Wrapper for server wallet providers (Privy)
+ * Wrapper for server wallet providers
  * Builds operations object using API calls and delegates to Earn
  */
 export function EarnWithServerWallet({

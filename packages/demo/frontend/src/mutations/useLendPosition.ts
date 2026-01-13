@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { LendTransactionReceipt } from '@eth-optimism/actions-sdk'
 import type { LendExecutePositionParams } from '@/types/api'
-import { getBlockExplorerUrls } from '@/utils/blockExplorer'
+import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 
 interface UseOpenPositionParams {
   openPosition: (
@@ -42,22 +42,11 @@ export function useOpenPosition({
         const result = await openPosition(params)
         console.log('[useOpenPosition] Deposit successful', { result })
 
-        // Construct block explorer URL from chain and hash
-        const userOpHash =
-          'userOpHash' in result ? result.userOpHash : undefined
-        const txHash = Array.isArray(result)
-          ? result[0]?.transactionHash
-          : 'receipt' in result
-            ? result.receipt.transactionHash
-            : result.transactionHash
-
-        const explorerUrls = await getBlockExplorerUrls(
+        const blockExplorerUrl = getBlockExplorerUrl(
           params.marketId.chainId,
-          txHash ? [txHash] : undefined,
-          userOpHash,
+          result,
         )
-
-        activity?.confirm({ blockExplorerUrl: explorerUrls[0] })
+        activity?.confirm({ blockExplorerUrl })
         return result
       } catch (error) {
         console.error('[useOpenPosition] Deposit failed', {
@@ -107,22 +96,11 @@ export function useClosePosition({
       try {
         const result = await closePosition(params)
 
-        // Construct block explorer URL from chain and hash
-        const userOpHash =
-          'userOpHash' in result ? result.userOpHash : undefined
-        const txHash = Array.isArray(result)
-          ? result[0]?.transactionHash
-          : 'receipt' in result
-            ? result.receipt.transactionHash
-            : result.transactionHash
-
-        const explorerUrls = await getBlockExplorerUrls(
+        const blockExplorerUrl = getBlockExplorerUrl(
           params.marketId.chainId,
-          txHash ? [txHash] : undefined,
-          userOpHash,
+          result,
         )
-
-        activity?.confirm({ blockExplorerUrl: explorerUrls[0] })
+        activity?.confirm({ blockExplorerUrl })
         return result
       } catch (error) {
         activity?.error()
