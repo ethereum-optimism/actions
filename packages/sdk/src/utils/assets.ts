@@ -38,6 +38,15 @@ export function formatAssetAmount(amount: bigint, decimals: number): number {
 }
 
 /**
+ * Check if asset is a native asset (e.g. ETH)
+ * @param asset - Asset definition
+ * @returns Whether the asset is native
+ */
+export function isNativeAsset(asset: Asset): boolean {
+  return asset.type === 'native'
+}
+
+/**
  * Check if asset is supported on a specific chain
  * @param asset - Asset definition
  * @param chainId - Chain ID

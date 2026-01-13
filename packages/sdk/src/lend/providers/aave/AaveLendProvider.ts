@@ -16,7 +16,7 @@ import type {
   LendOpenPositionInternalParams,
   LendTransaction,
 } from '@/types/lend/index.js'
-import { getAssetAddress } from '@/utils/assets.js'
+import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 import { POOL_ABI, WETH_GATEWAY_ABI } from './abis/pool.js'
 import {
@@ -73,7 +73,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       })
 
       // Check if this is a native ETH market
-      if (this.isNativeAsset(params.asset)) {
+      if (isNativeAsset(params.asset)) {
         return this._openETHPosition(params, poolAddress, marketInfo)
       }
 
@@ -110,7 +110,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       })
 
       // Check if this is a native ETH market
-      if (this.isNativeAsset(marketInfo.asset)) {
+      if (isNativeAsset(marketInfo.asset)) {
         return this._closeETHPosition(params, poolAddress, marketInfo)
       }
 
@@ -174,7 +174,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
       // Get the aToken address from Pool.getReserveData
       // For native assets, use WETH address since Aave uses WETH internally
-      const assetAddress = this.isNativeAsset(market.asset)
+      const assetAddress = isNativeAsset(market.asset)
         ? getAssetAddress(WETH, params.marketId.chainId)
         : getAssetAddress(market.asset, params.marketId.chainId)
 
@@ -208,15 +208,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}`,
       )
     }
-  }
-
-  /**
-   * Check if asset is native ETH
-   * @param asset - Asset to check
-   * @returns true if asset is native ETH
-   */
-  private isNativeAsset(asset: Asset): boolean {
-    return asset.type === 'native'
   }
 
   /**
