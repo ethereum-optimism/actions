@@ -1,5 +1,10 @@
 import type { SupportedChainId } from '@eth-optimism/actions-sdk'
-import { baseSepolia, chainById, unichain } from '@eth-optimism/viem/chains'
+import { baseSepolia, optimismSepolia } from 'viem/chains'
+
+const BLOCK_EXPLORER_URLS: Record<number, string> = {
+  [baseSepolia.id]: 'https://base-sepolia.blockscout.com',
+  [optimismSepolia.id]: 'https://optimism-sepolia.blockscout.com',
+}
 
 /**
  * Get block explorer URLs for transaction hashes or user operation hash
@@ -9,24 +14,17 @@ export async function getBlockExplorerUrls(
   transactionHashes?: string[],
   userOpHash?: string,
 ): Promise<string[]> {
-  const chain = chainById[chainId]
-  if (!chain) {
-    throw new Error(`Chain not found for chainId: ${chainId}`)
-  }
-
-  let url = `${chain.blockExplorers?.default.url}`
-  if (chain.id === unichain.id) {
-    url = `https://unichain.blockscout.com`
-  }
-  if (chain.id === baseSepolia.id) {
-    url = `https://base-sepolia.blockscout.com`
+  const url = BLOCK_EXPLORER_URLS[chainId]
+  if (!url) {
+    console.warn(`Block explorer not configured for chainId: ${chainId}`)
+    return []
   }
 
   if (userOpHash) {
     return [`${url}/op/${userOpHash}`]
   }
-  if (!transactionHashes) {
-    throw new Error('Transaction hashes not found')
+  if (transactionHashes && transactionHashes.length > 0) {
+    return transactionHashes.map((hash) => `${url}/tx/${hash}`)
   }
-  return transactionHashes.map((hash) => `${url}/tx/${hash}`)
+  return []
 }

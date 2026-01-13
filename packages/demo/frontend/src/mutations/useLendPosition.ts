@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { LendTransactionReceipt } from '@eth-optimism/actions-sdk'
 import type { LendExecutePositionParams } from '@/types/api'
+import { getBlockExplorerUrls } from '@/utils/blockExplorer'
 
 interface UseOpenPositionParams {
   openPosition: (
@@ -41,14 +42,22 @@ export function useOpenPosition({
         const result = await openPosition(params)
         console.log('[useOpenPosition] Deposit successful', { result })
 
-        // Extract block explorer URL from the result
-        const blockExplorerUrl =
-          'blockExplorerUrls' in result &&
-          Array.isArray(result.blockExplorerUrls)
-            ? result.blockExplorerUrls[0]
-            : undefined
+        // Construct block explorer URL from chain and hash
+        const userOpHash =
+          'userOpHash' in result ? result.userOpHash : undefined
+        const txHash = Array.isArray(result)
+          ? result[0]?.transactionHash
+          : 'receipt' in result
+            ? result.receipt.transactionHash
+            : result.transactionHash
 
-        activity?.confirm({ blockExplorerUrl })
+        const explorerUrls = await getBlockExplorerUrls(
+          params.marketId.chainId,
+          txHash ? [txHash] : undefined,
+          userOpHash,
+        )
+
+        activity?.confirm({ blockExplorerUrl: explorerUrls[0] })
         return result
       } catch (error) {
         console.error('[useOpenPosition] Deposit failed', {
@@ -99,14 +108,22 @@ export function useClosePosition({
       try {
         const result = await closePosition(params)
 
-        // Extract block explorer URL from the result
-        const blockExplorerUrl =
-          'blockExplorerUrls' in result &&
-          Array.isArray(result.blockExplorerUrls)
-            ? result.blockExplorerUrls[0]
-            : undefined
+        // Construct block explorer URL from chain and hash
+        const userOpHash =
+          'userOpHash' in result ? result.userOpHash : undefined
+        const txHash = Array.isArray(result)
+          ? result[0]?.transactionHash
+          : 'receipt' in result
+            ? result.receipt.transactionHash
+            : result.transactionHash
 
-        activity?.confirm({ blockExplorerUrl })
+        const explorerUrls = await getBlockExplorerUrls(
+          params.marketId.chainId,
+          txHash ? [txHash] : undefined,
+          userOpHash,
+        )
+
+        activity?.confirm({ blockExplorerUrl: explorerUrls[0] })
         return result
       } catch (error) {
         activity?.error()

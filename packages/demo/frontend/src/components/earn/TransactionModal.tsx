@@ -78,8 +78,8 @@ function TransactionModal({
           ),
           title: 'Transaction Failed',
           description:
-            mode === 'withdraw' && assetSymbol === 'WETH'
-              ? 'Testnet liquidity issue, try again later.'
+            mode === 'withdraw' && assetSymbol === 'ETH'
+              ? 'This is a common testnet liquidity issue, try again later.'
               : '',
           showClose: true,
         }

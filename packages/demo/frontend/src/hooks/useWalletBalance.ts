@@ -16,6 +16,7 @@ import { useMarkets } from '@/queries/useMarkets'
 import { useMintAsset } from '@/mutations/useMintAsset'
 import { useOpenPosition, useClosePosition } from '@/mutations/useLendPosition'
 import { matchAssetBalance } from '@/utils/balanceMatching'
+import { getBlockExplorerUrls } from '@/utils/blockExplorer'
 
 export interface UseWalletBalanceConfig {
   getTokenBalances: () => Promise<TokenBalance[]>
@@ -200,24 +201,23 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     }
 
     // Handle union type - result can be EOATransactionReceipt or SmartWalletTransactionReceipt
-    const txHash =
-      'userOpHash' in result
-        ? result.userOpHash
-        : Array.isArray(result)
-          ? result[0]?.transactionHash
-          : result.transactionHash
+    const userOpHash = 'userOpHash' in result ? result.userOpHash : undefined
+    const txHash = Array.isArray(result)
+      ? result[0]?.transactionHash
+      : 'receipt' in result
+        ? result.receipt.transactionHash
+        : result.transactionHash
 
-    const explorerUrl =
-      'blockExplorerUrl' in result
-        ? result.blockExplorerUrl
-        : 'blockExplorerUrls' in result &&
-            Array.isArray(result.blockExplorerUrls)
-          ? result.blockExplorerUrls[0]
-          : undefined
+    // Construct block explorer URL from chain and hash
+    const explorerUrls = await getBlockExplorerUrls(
+      marketData.marketId.chainId,
+      txHash ? [txHash] : undefined,
+      userOpHash,
+    )
 
     return {
-      transactionHash: txHash,
-      blockExplorerUrl: explorerUrl,
+      transactionHash: txHash || userOpHash,
+      blockExplorerUrl: explorerUrls[0],
     }
   }
 

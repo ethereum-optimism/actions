@@ -310,7 +310,7 @@ function LentBalance({
                               fontFamily: 'Inter',
                             }}
                           >
-                            {market.asset.metadata.symbol !== 'WETH' && '$'}
+                            {market.asset.metadata.symbol !== 'ETH' && '$'}
                             {
                               formatDepositedAmount(
                                 market.depositedAmount || '0',

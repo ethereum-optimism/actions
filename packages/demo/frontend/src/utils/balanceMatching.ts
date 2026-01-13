@@ -14,7 +14,7 @@ interface BalanceMatchingParams {
 
 /**
  * Extract the balance for a specific asset from token balances
- * Special handling for WETH on OP Sepolia (uses native ETH balance)
+ * Special handling for ETH markets (uses native ETH balance)
  */
 export function matchAssetBalance({
   allTokenBalances,

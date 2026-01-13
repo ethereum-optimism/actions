@@ -41,7 +41,7 @@ export function EarnWithServerWallet({
       },
       mintAsset: async (asset: Asset) => {
         const headers = await getAuthHeaders()
-        if (asset.metadata.symbol.includes('WETH')) {
+        if (asset.metadata.symbol === 'ETH' && asset.type === 'native') {
           if (!walletAddress) throw new Error('Wallet address not available')
           await actionsApi.dripEthToWallet(walletAddress)
           return
