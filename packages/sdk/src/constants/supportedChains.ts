@@ -7,6 +7,7 @@ import {
   sepolia,
   unichain,
   unichainSepolia,
+  worldchain,
 } from 'viem/chains'
 
 export const SUPPORTED_CHAIN_IDS = [
@@ -18,6 +19,7 @@ export const SUPPORTED_CHAIN_IDS = [
   baseSepolia.id,
   unichain.id,
   unichainSepolia.id,
+  worldchain.id,
 ] as const
 
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number]

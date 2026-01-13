@@ -7,6 +7,7 @@ import {
   sepolia,
   unichain,
   unichainSepolia,
+  worldchain,
 } from 'viem/chains'
 
 import type { Asset } from '@/types/asset.js'
@@ -68,6 +69,7 @@ export const USDC: Asset = {
     [baseSepolia.id]: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
     [unichain.id]: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
     [unichainSepolia.id]: '0x31d0220469e10c4E71834a79b1f276d740d3768F',
+    [worldchain.id]: '0x79A02482A880bCe3F13E09da970dC34dB4cD24D1',
   },
   metadata: {
     symbol: 'USDC',
