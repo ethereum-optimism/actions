@@ -68,20 +68,17 @@ export function useLendProvider({
     const fetchMarkets = async () => {
       // Prevent duplicate fetches (e.g., from React Strict Mode)
       if (hasLoadedMarkets.current) {
-        console.log(`${logPrefix} Markets already loaded, skipping`)
         return
       }
       hasLoadedMarkets.current = true
 
       try {
-        console.log(`${logPrefix} Fetching markets...`)
         setIsLoadingMarkets(true)
         const rawMarkets = await operations.getMarkets()
         const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
         setMarkets(marketInfoList)
 
         // Fetch positions for all markets in parallel
-        console.log(`${logPrefix} Fetching positions for all markets...`)
         const positionPromises = marketInfoList.map(async (market) => {
           try {
             const position = await operations.getPosition({
@@ -125,23 +122,12 @@ export function useLendProvider({
           })
 
         setMarketPositions(initialPositions)
-        console.log(
-          `${logPrefix} Loaded positions for`,
-          initialPositions.length,
-          'markets with deposits',
-        )
 
         // Set default selected market (first one, preferably Gauntlet/USDC)
         if (marketInfoList.length > 0 && !selectedMarket) {
           const defaultMarket =
             marketInfoList.find((m) => m.name === 'Gauntlet') ||
             marketInfoList[0]
-          console.log(
-            `${logPrefix} Setting default market:`,
-            defaultMarket.name,
-            'asset:',
-            defaultMarket.asset.metadata.symbol,
-          )
 
           // Find if we already fetched position for this market
           const defaultPosition = positionResults.find(

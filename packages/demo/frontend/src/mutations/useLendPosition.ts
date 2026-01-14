@@ -31,16 +31,9 @@ export function useOpenPosition({
 
   return useMutation({
     mutationFn: async (params: LendExecutePositionParams) => {
-      console.log('[useOpenPosition] Starting deposit', {
-        marketId: params.marketId,
-        amount: params.amount,
-        asset: params.asset.metadata.symbol,
-      })
       const activity = logActivity?.('deposit')
       try {
-        console.log('[useOpenPosition] Calling openPosition')
         const result = await openPosition(params)
-        console.log('[useOpenPosition] Deposit successful', { result })
 
         const blockExplorerUrl = getBlockExplorerUrl(
           params.marketId.chainId,
