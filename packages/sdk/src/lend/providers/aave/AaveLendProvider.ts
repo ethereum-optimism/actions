@@ -17,17 +17,13 @@ import type {
 } from '@/types/lend/index.js'
 import { getAssetAddress } from '@/utils/assets.js'
 
-import {
-  POOL_ABI,
-  POOL_RESERVE_DATA_ABI,
-  WETH_GATEWAY_ABI,
-} from './abis/pool.js'
+import { POOL_ABI, WETH_GATEWAY_ABI } from './abis/pool.js'
 import {
   getPoolAddress,
   getSupportedChainIds,
   getWETHGatewayAddress,
 } from './addresses.js'
-import { getReserve, getReserves } from './sdk.js'
+import { getATokenAddress, getReserve, getReserves } from './sdk.js'
 
 /**
  * Supported chain IDs for Aave lending
@@ -175,22 +171,17 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         )
       }
 
-      // Get the aToken address from Pool.getReserveData
+      // Get the aToken address for this asset
       const assetAddress = getAssetAddress(
         market.asset,
         params.marketId.chainId,
       )
 
-      const reserveData = (await publicClient.readContract({
-        address: poolAddress,
-        abi: POOL_RESERVE_DATA_ABI,
-        functionName: 'getReserveData',
-        args: [assetAddress],
-      })) as {
-        aTokenAddress: Address
-      }
-
-      const aTokenAddress = reserveData.aTokenAddress
+      const aTokenAddress = await getATokenAddress({
+        underlyingAsset: assetAddress,
+        chainId: params.marketId.chainId,
+        chainManager: this.chainManager,
+      })
 
       const balance = await publicClient.readContract({
         address: aTokenAddress,
@@ -340,7 +331,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     // Get the aToken address for the underlying WETH asset
     // Note: params.marketId.address is the underlying WETH address, not the aToken
-    const { getATokenAddress } = await import('./sdk.js')
     const aWETHAddress = await getATokenAddress({
       underlyingAsset: params.marketId.address,
       chainId: params.marketId.chainId,
