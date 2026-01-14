@@ -1,5 +1,10 @@
 import { colors } from '@/constants/colors'
-import { TerminalIcon, DocumentIcon, GithubIcon } from '@/assets/icons'
+import {
+  TerminalIcon,
+  DocumentIcon,
+  GithubIcon,
+  ChatBubbleIcon,
+} from '@/assets/icons'
 
 const TILE_IMAGES = [
   '/stack/active/1.png',
@@ -110,6 +115,27 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
             Docs
           </a>
         )}
+      </div>
+      <div className="mt-12 relative z-10">
+        <p
+          className="text-sm mb-4 font-sans"
+          style={{ color: colors.text.cream }}
+        >
+          Are you a Fintech using Actions?
+        </p>
+        <a
+          href="https://www.optimism.io/learn-more?utm_source=actions_site&utm_medium=actions_site&utm_id=actions&variant=actions"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="border border-gray-600 px-6 py-2 rounded-lg font-medium font-sans hover:bg-gray-700/80 inline-flex items-center justify-center gap-2 transition-colors duration-200"
+          style={{
+            color: colors.text.cream,
+            backgroundColor: 'rgba(29, 32, 33, 0.7)',
+          }}
+        >
+          <ChatBubbleIcon className="w-5 h-5" />
+          Let us know
+        </a>
       </div>
     </div>
   )
