@@ -116,8 +116,10 @@ describe('BaseLendNamespace', () => {
 
       const chainIds = namespace.supportedChainIds()
 
-      expect(Array.isArray(chainIds)).toBe(true)
-      expect(chainIds.length).toBeGreaterThan(0)
+      expect(chainIds).toContain(1)
+      expect(chainIds).toContain(130)
+      expect(chainIds).toContain(8453)
+      expect(chainIds).toContain(84532)
     })
 
     it('should deduplicate chain IDs', () => {
