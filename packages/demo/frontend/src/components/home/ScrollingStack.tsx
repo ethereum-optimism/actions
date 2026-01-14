@@ -355,24 +355,19 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
     let scrollableHeight =
       contentElement.scrollHeight - contentElement.clientHeight
 
-    // On mobile, check if content actually extends below the visible area
+    // On mobile, check if content actually overflows the container
     if (isMobile) {
-      // Get the actual content container's bounding rect
-      const contentRect = contentElement.getBoundingClientRect()
-      const viewportHeight = window.innerHeight
+      const containerHeight = contentElement.clientHeight
+      const contentHeight = contentElement.scrollHeight
 
-      // Calculate how much content is below the fold (if any)
-      const contentBottom = contentRect.top + contentElement.scrollHeight
-      const belowFold = contentBottom - viewportHeight
-
-      // Only scroll if content is actually below the fold
-      if (belowFold <= 0) {
-        // Content fits within viewport - no scrolling needed
+      // Only scroll if content actually overflows the container
+      // Add tolerance for shadows/margins that don't need to be scrolled into view
+      const shadowTolerance = 60
+      if (contentHeight <= containerHeight + shadowTolerance) {
         return 0
       }
 
-      // Use the actual overflow amount as scrollable height
-      scrollableHeight = belowFold
+      scrollableHeight = contentHeight - containerHeight - shadowTolerance
     }
 
     if (scrollableHeight > 0) {
@@ -515,13 +510,13 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                   top: 0,
                   left: 0,
                   right: 0,
-                  height: '20%',
+                  height: '15%',
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'center',
                   zIndex: 0,
                   overflow: 'visible',
-                  paddingTop: '40px',
+                  paddingTop: '20px',
                 }}
               >
                 <div
@@ -587,12 +582,12 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
               </div>
 
               {/* Mobile: Spacer for image area */}
-              <div style={{ height: '20%' }} />
+              <div style={{ height: '15%' }} />
 
-              {/* Mobile: Content below (80% height) */}
+              {/* Mobile: Content below (85% height) */}
               <div
                 style={{
-                  height: '80%',
+                  height: '85%',
                   position: 'relative',
                   zIndex: 10,
                 }}
@@ -618,21 +613,21 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                         <div
                           style={{
                             backgroundColor: 'rgba(26, 26, 26, 0.5)',
-                            padding: '16px',
+                            padding: '12px',
                             borderRadius: '8px',
-                            marginBottom: '24px',
+                            marginBottom: '12px',
                             opacity: contentOpacity,
                             transition: 'opacity 0.15s ease-in-out',
                           }}
                         >
                           <h3
-                            className="text-5xl font-medium mb-4 font-display"
+                            className="text-4xl font-medium mb-2 font-display"
                             style={{ color: colors.text.cream }}
                           >
                             {content[prevLayerRef.current - 1].title}
                           </h3>
                           <p
-                            className="mb-0 font-sans"
+                            className="mb-0 font-sans text-sm"
                             style={{ color: colors.text.cream }}
                           >
                             {content[prevLayerRef.current - 1].description}
