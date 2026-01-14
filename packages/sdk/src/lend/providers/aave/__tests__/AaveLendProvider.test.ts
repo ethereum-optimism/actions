@@ -92,10 +92,11 @@ describe('AaveLendProvider', () => {
     it('should return array of supported chain IDs', () => {
       const chainIds = provider.supportedChainIds()
 
-      expect(Array.isArray(chainIds)).toBe(true)
+      expect(chainIds).toHaveLength(4)
       expect(chainIds).toContain(10) // Optimism
       expect(chainIds).toContain(8453) // Base
-      expect(chainIds.length).toBeGreaterThan(0)
+      expect(chainIds).toContain(11155420) // Optimism Sepolia
+      expect(chainIds).toContain(84532) // Base Sepolia
     })
 
     it('should return unique chain IDs', () => {
