@@ -5,6 +5,7 @@ import type { Address } from 'viem'
 import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 
 import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import { POOL_GET_RESERVE_DATA_ABI } from '@/lend/providers/aave/abis/pool.js'
 import { getPoolAddress } from '@/lend/providers/aave/addresses.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
@@ -252,71 +253,6 @@ export async function getReserves(
     )
   }
 }
-
-/**
- * Aave V3 Pool ABI for getReserveData
- * @description Minimal ABI for querying reserve data from Aave V3 Pool
- */
-const POOL_GET_RESERVE_DATA_ABI = [
-  {
-    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
-    name: 'getReserveData',
-    outputs: [
-      {
-        components: [
-          { name: 'data', type: 'uint256', internalType: 'uint256' },
-        ],
-        name: 'configuration',
-        type: 'tuple',
-        internalType: 'struct DataTypes.ReserveConfigurationMap',
-      },
-      { name: 'liquidityIndex', type: 'uint128', internalType: 'uint128' },
-      {
-        name: 'currentLiquidityRate',
-        type: 'uint128',
-        internalType: 'uint128',
-      },
-      { name: 'variableBorrowIndex', type: 'uint128', internalType: 'uint128' },
-      {
-        name: 'currentVariableBorrowRate',
-        type: 'uint128',
-        internalType: 'uint128',
-      },
-      {
-        name: 'currentStableBorrowRate',
-        type: 'uint128',
-        internalType: 'uint128',
-      },
-      { name: 'lastUpdateTimestamp', type: 'uint40', internalType: 'uint40' },
-      { name: 'id', type: 'uint16', internalType: 'uint16' },
-      { name: 'aTokenAddress', type: 'address', internalType: 'address' },
-      {
-        name: 'stableDebtTokenAddress',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'variableDebtTokenAddress',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'interestRateStrategyAddress',
-        type: 'address',
-        internalType: 'address',
-      },
-      { name: 'accruedToTreasury', type: 'uint128', internalType: 'uint128' },
-      { name: 'unbacked', type: 'uint128', internalType: 'uint128' },
-      {
-        name: 'isolationModeTotalDebt',
-        type: 'uint128',
-        internalType: 'uint128',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const
 
 /**
  * Get aToken address for a given underlying asset

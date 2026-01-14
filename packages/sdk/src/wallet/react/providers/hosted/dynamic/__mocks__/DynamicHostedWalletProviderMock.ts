@@ -2,8 +2,8 @@ import type { LocalAccount } from 'viem'
 import { unichain } from 'viem/op-stack'
 import { vi } from 'vitest'
 
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {

@@ -1,6 +1,6 @@
 import { ChainId } from '@morpho-org/blue-sdk'
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
+import { erc20Abi, formatUnits } from 'viem'
 
 import { SUPPORTED_CHAIN_IDS as ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import { LendProvider } from '@/lend/core/LendProvider.js'
@@ -39,16 +39,13 @@ export const SUPPORTED_CHAIN_IDS = [
 export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
 
-  private chainManager: ChainManager
-
   /**
    * Create a new Morpho lending provider
    * @param config - Morpho lending configuration
    * @param chainManager - Chain manager for blockchain interactions
    */
   constructor(config: LendProviderConfig, chainManager: ChainManager) {
-    super(config)
-    this.chainManager = chainManager
+    super(config, chainManager)
   }
 
   /**
@@ -79,36 +76,27 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       const receiver = params.walletAddress
       const depositCallData = MetaMorphoAction.deposit(assets, receiver)
 
-      const approvalCallData = encodeFunctionData({
-        abi: erc20Abi,
-        functionName: 'approve',
-        args: [params.marketId.address, params.amountWei],
-      })
-
       return {
         amount: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
         transactionData: {
-          approval: {
-            to: assetAddress,
-            data: approvalCallData,
-            value: 0n,
-          },
-          openPosition: {
+          approval: this.buildApprovalTx(
+            assetAddress,
+            params.marketId.address,
+            params.amountWei,
+          ),
+          position: {
             to: params.marketId.address,
             data: depositCallData,
             value: 0n,
           },
         },
-        slippage: params.options?.slippage ?? 50,
       }
-    } catch (error) {
+    } catch {
       throw new Error(
-        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}`,
       )
     }
   }
@@ -149,20 +137,15 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
         transactionData: {
-          closePosition: {
+          position: {
             to: params.marketId.address,
             data: withdrawCallData,
             value: 0n,
           },
         },
-        slippage: params.options?.slippage ?? 50,
       }
-    } catch (error) {
-      throw new Error(
-        `Failed to close position: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      )
+    } catch {
+      throw new Error('Failed to close position')
     }
   }
 
@@ -247,11 +230,9 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         sharesFormatted,
         marketId: params.marketId,
       }
-    } catch (error) {
+    } catch {
       throw new Error(
-        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}`,
       )
     }
   }

@@ -2,11 +2,11 @@ import type { Address } from 'viem'
 import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { MockUSDCAsset } from '@/__mocks__/MockAssets.js'
 import { ETH } from '@/constants/assets.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import { MockUSDCAsset } from '@/test/MockAssets.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
 import type { Asset } from '@/types/asset.js'
 
 describe('TokenBalance', () => {

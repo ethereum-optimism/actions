@@ -1,7 +1,8 @@
 import type { Address } from 'viem'
-import { parseUnits } from 'viem'
+import { encodeFunctionData, erc20Abi, parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -17,6 +18,7 @@ import type {
   LendOpenPositionInternalParams,
   LendOpenPositionParams,
   LendTransaction,
+  TransactionData,
 } from '@/types/lend/index.js'
 import { validateMarketAsset } from '@/utils/markets.js'
 
@@ -30,6 +32,9 @@ export abstract class LendProvider<
   /** Lending provider configuration */
   protected readonly _config: TConfig
 
+  /** Chain manager for blockchain interactions */
+  protected readonly chainManager: ChainManager
+
   /**
    * Supported chain IDs
    * @description Array of chain IDs that this provider supports
@@ -39,9 +44,11 @@ export abstract class LendProvider<
   /**
    * Create a new lending provider
    * @param config - Provider-specific lending configuration
+   * @param chainManager - Chain manager for blockchain interactions
    */
-  protected constructor(config: TConfig) {
+  protected constructor(config: TConfig, chainManager: ChainManager) {
     this._config = config
+    this.chainManager = chainManager
   }
 
   public get config(): TConfig {
@@ -266,6 +273,31 @@ export abstract class LendProvider<
     if (asset !== undefined)
       configs = configs.filter((m: LendMarketConfig) => m.asset === asset)
     return configs
+  }
+
+  /**
+   * Build an ERC20 approval transaction
+   * @param tokenAddress - Address of the token to approve
+   * @param spender - Address to approve spending for
+   * @param amount - Amount to approve
+   * @returns Transaction data for the approval
+   */
+  protected buildApprovalTx(
+    tokenAddress: Address,
+    spender: Address,
+    amount: bigint,
+  ): TransactionData {
+    const approvalCallData = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [spender, amount],
+    })
+
+    return {
+      to: tokenAddress,
+      data: approvalCallData,
+      value: 0n,
+    }
   }
 
   /**

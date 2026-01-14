@@ -1,4 +1,4 @@
-import { getRandomAddress } from '@/test/utils.js'
+import { getRandomAddress } from '@/__mocks__/utils.js'
 import type { Asset } from '@/types/asset.js'
 
 /**

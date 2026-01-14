@@ -1,15 +1,15 @@
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createMockMorphoVault } from '@/lend/providers/morpho/__mocks__/mockVault.js'
-import { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
-import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
 import {
   MockGauntletUSDCMarket,
   MockReceiverAddress,
   MockWETHMarket,
-} from '@/test/MockMarkets.js'
+} from '@/lend/__mocks__/MockMarkets.js'
+import { createMockMorphoVault } from '@/lend/providers/morpho/__mocks__/mockVault.js'
+import { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 
 // Mock the Morpho SDK modules
@@ -107,9 +107,7 @@ describe('MorphoLendProvider', () => {
       expect(withdrawTransaction).toHaveProperty('marketId', marketId.address)
       expect(withdrawTransaction).toHaveProperty('apy')
       expect(withdrawTransaction).toHaveProperty('transactionData')
-      expect(withdrawTransaction.transactionData).toHaveProperty(
-        'closePosition',
-      )
+      expect(withdrawTransaction.transactionData).toHaveProperty('position')
       expect(withdrawTransaction.transactionData).not.toHaveProperty('approval')
       expect(typeof withdrawTransaction.apy).toBe('number')
       expect(withdrawTransaction.apy).toBeGreaterThan(0)
@@ -209,7 +207,7 @@ describe('MorphoLendProvider', () => {
       expect(lendTransaction).toHaveProperty('apy')
       expect(lendTransaction).toHaveProperty('transactionData')
       expect(lendTransaction.transactionData).toHaveProperty('approval')
-      expect(lendTransaction.transactionData).toHaveProperty('openPosition')
+      expect(lendTransaction.transactionData).toHaveProperty('position')
       expect(typeof lendTransaction.apy).toBe('number')
       expect(lendTransaction.apy).toBeGreaterThan(0)
     })
@@ -233,29 +231,7 @@ describe('MorphoLendProvider', () => {
           marketId,
           walletAddress: MockReceiverAddress,
         }),
-      ).rejects.toThrow('Market fetch failed')
-    })
-
-    it('should use custom slippage when provided', async () => {
-      const amount = 1000
-      const asset = MockGauntletUSDCMarket.asset
-      const marketId = {
-        address: MockGauntletUSDCMarket.address,
-        chainId: MockGauntletUSDCMarket.chainId,
-      }
-      const customSlippage = 100 // 1%
-
-      const lendTransaction = await provider.openPosition({
-        amount,
-        asset,
-        marketId,
-        walletAddress: MockReceiverAddress,
-        options: {
-          slippage: customSlippage,
-        },
-      })
-
-      expect(lendTransaction).toHaveProperty('amount', BigInt('1000000000'))
+      ).rejects.toThrow('Failed to open position')
     })
   })
 

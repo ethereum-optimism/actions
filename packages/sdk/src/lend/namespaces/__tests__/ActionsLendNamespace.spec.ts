@@ -1,13 +1,14 @@
+import type { Address } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getRandomAddress } from '@/__mocks__/utils.js'
+import type { MockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
-import { createMockLendProvider } from '@/test/MockLendProvider.js'
-import { getRandomAddress } from '@/test/utils.js'
-import type { LendProvider } from '@/types/lend/index.js'
 
 describe('ActionsLendNamespace', () => {
-  let mockProvider: LendProvider
-  let mockMarketId: { address: any; chainId: 130 }
+  let mockProvider: MockLendProvider
+  let mockMarketId: { address: Address; chainId: 130 }
 
   beforeEach(() => {
     mockMarketId = { address: getRandomAddress(), chainId: 130 as const }
@@ -30,13 +31,13 @@ describe('ActionsLendNamespace', () => {
   })
 
   it('should create an instance with a lend provider', () => {
-    const namespace = new ActionsLendNamespace({ morpho: mockProvider as any })
+    const namespace = new ActionsLendNamespace({ morpho: mockProvider })
 
     expect(namespace).toBeInstanceOf(ActionsLendNamespace)
   })
 
   it('should delegate getMarkets to provider', async () => {
-    const namespace = new ActionsLendNamespace({ morpho: mockProvider as any })
+    const namespace = new ActionsLendNamespace({ morpho: mockProvider })
     const spy = vi.spyOn(mockProvider, 'getMarkets')
 
     await namespace.getMarkets()
@@ -45,7 +46,7 @@ describe('ActionsLendNamespace', () => {
   })
 
   it('should delegate getMarket to provider with correct parameters', async () => {
-    const namespace = new ActionsLendNamespace({ morpho: mockProvider as any })
+    const namespace = new ActionsLendNamespace({ morpho: mockProvider })
     const spy = vi.spyOn(mockProvider, 'getMarket')
 
     await namespace.getMarket(mockMarketId)
@@ -54,7 +55,7 @@ describe('ActionsLendNamespace', () => {
   })
 
   it('should delegate supportedChainIds to provider', () => {
-    const namespace = new ActionsLendNamespace({ morpho: mockProvider as any })
+    const namespace = new ActionsLendNamespace({ morpho: mockProvider })
     const spy = vi.spyOn(mockProvider, 'supportedChainIds')
 
     namespace.supportedChainIds()

@@ -5,6 +5,10 @@ vi.mock('@dynamic-labs/wallet-connector-core', () => ({
   Wallet: class {},
 }))
 
+vi.mock('@dynamic-labs/ethereum', () => ({
+  isEthereumWallet: vi.fn(),
+}))
+
 // Mock DynamicWallet to avoid importing browser-related deps
 vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', async () => {
   const { DynamicWalletMock } =
@@ -18,9 +22,9 @@ vi.mock('@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js')
 /* eslint-disable import/first */
 import type { LocalAccount } from 'viem'
 
+import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { MockChainManager } from '@/test/MockChainManager.js'
-import { createMockLendProvider } from '@/test/MockLendProvider.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
