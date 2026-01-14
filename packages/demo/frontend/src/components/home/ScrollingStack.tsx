@@ -487,13 +487,21 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
             transform: translateY(0);
           }
         }
+        .sticky-stack-container {
+          top: 80px;
+        }
+        @media (min-width: 1024px) {
+          .sticky-stack-container {
+            top: 140px;
+          }
+        }
       `}</style>
       <div ref={containerRef} style={{ height: `${totalHeight}vh` }}>
         {/* Sticky container that holds the stack */}
         <div
+          className="sticky-stack-container"
           style={{
             position: 'sticky',
-            top: '140px',
             height: '80vh',
           }}
         >
@@ -516,7 +524,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                   justifyContent: 'center',
                   zIndex: 0,
                   overflow: 'visible',
-                  paddingTop: '20px',
+                  paddingTop: '30px',
                 }}
               >
                 <div
@@ -621,7 +629,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                           }}
                         >
                           <h3
-                            className="text-4xl font-medium mb-2 font-display"
+                            className="text-3xl font-medium mb-2 font-display"
                             style={{ color: colors.text.cream }}
                           >
                             {content[prevLayerRef.current - 1].title}
@@ -643,12 +651,11 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                           <img
                             src="/soon.png"
                             alt="Coming Soon"
-                            className="hidden sm:block"
+                            className="w-32 sm:w-48"
                             style={{
                               position: 'absolute',
                               bottom: '10px',
                               right: '5%',
-                              width: '200px',
                               height: 'auto',
                               zIndex: 1,
                               opacity: content[prevLayerRef.current - 1]
