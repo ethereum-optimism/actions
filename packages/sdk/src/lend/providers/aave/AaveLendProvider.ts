@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { encodeFunctionData, erc20Abi, formatUnits, parseAbi } from 'viem'
+import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -17,6 +17,11 @@ import type {
 import { getAssetAddress } from '@/utils/assets.js'
 
 import {
+  POOL_ABI,
+  POOL_RESERVE_DATA_ABI,
+  WETH_GATEWAY_ABI,
+} from './abis/pool.js'
+import {
   getPoolAddress,
   getSupportedChainIds,
   getWETHGatewayAddress,
@@ -28,22 +33,6 @@ import { getReserve, getReserves } from './sdk.js'
  * @description WETH is deployed at the same address on all OP Stack chains (Optimism, Base, etc.)
  */
 const WETH_ADDRESS = '0x4200000000000000000000000000000000000006'
-
-/**
- * Aave Pool ABI - only the functions we need
- */
-const POOL_ABI = parseAbi([
-  'function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)',
-  'function withdraw(address asset, uint256 amount, address to) returns (uint256)',
-])
-
-/**
- * Aave WETHGateway ABI - for native ETH deposits/withdrawals
- */
-const WETH_GATEWAY_ABI = parseAbi([
-  'function depositETH(address pool, address onBehalfOf, uint16 referralCode) payable',
-  'function withdrawETH(address pool, uint256 amount, address to)',
-])
 
 /**
  * Supported chain IDs for Aave lending
@@ -199,10 +188,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
       const reserveData = (await publicClient.readContract({
         address: poolAddress,
-        abi: parseAbi([
-          'struct ReserveData { uint256 configuration; uint128 liquidityIndex; uint128 currentLiquidityRate; uint128 variableBorrowIndex; uint128 currentVariableBorrowRate; uint128 currentStableBorrowRate; uint40 lastUpdateTimestamp; uint16 id; address aTokenAddress; address stableDebtTokenAddress; address variableDebtTokenAddress; address interestRateStrategyAddress; uint128 accruedToTreasury; uint128 unbacked; uint128 isolationModeTotalDebt; }',
-          'function getReserveData(address asset) view returns (ReserveData)',
-        ]),
+        abi: POOL_RESERVE_DATA_ABI,
         functionName: 'getReserveData',
         args: [assetAddress],
       })) as {
