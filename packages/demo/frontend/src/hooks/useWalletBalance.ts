@@ -51,6 +51,10 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
 
   const { logActivity } = useActivityLogger()
 
+  // Track balance before operations to ensure we don't show stale data
+  const balanceBeforeLend = useRef<string | null>(null)
+  const balanceBeforeMint = useRef<string | null>(null)
+
   // Queries
   const {
     data: tokenBalances,
@@ -60,6 +64,9 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     getTokenBalances: getTokenBalancesRaw,
     isReady,
     logActivity,
+    // Log balance fetch after mutations (when we're waiting for balance to change)
+    shouldLogFetch: () =>
+      balanceBeforeMint.current !== null || balanceBeforeLend.current !== null,
   })
 
   const {
@@ -133,10 +140,6 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       marketData,
     })
   }, [tokenBalances, marketData, selectedAsset])
-
-  // Track balance before operations to ensure we don't show stale data
-  const balanceBeforeLend = useRef<string | null>(null)
-  const balanceBeforeMint = useRef<string | null>(null)
 
   // Reset mutation states and clear balance tracking when balance actually changes
   useEffect(() => {
