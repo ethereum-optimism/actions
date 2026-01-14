@@ -121,7 +121,7 @@ function TakeAction({ showGithub = false, compact = false }: TakeActionProps) {
           className="text-sm mb-4 font-sans"
           style={{ color: colors.text.cream }}
         >
-          Are you a Fintech using Actions?
+          Are you a Fintech considering Actions?
         </p>
         <a
           href="https://www.optimism.io/learn-more?utm_source=actions_site&utm_medium=actions_site&utm_id=actions&variant=actions"
