@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
+import { WETH } from '@/constants/assets.js'
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
@@ -27,12 +28,6 @@ import {
   getWETHGatewayAddress,
 } from './addresses.js'
 import { getReserve, getReserves } from './sdk.js'
-
-/**
- * WETH predeploy address on OP Stack chains
- * @description WETH is deployed at the same address on all OP Stack chains (Optimism, Base, etc.)
- */
-const WETH_ADDRESS = '0x4200000000000000000000000000000000000006'
 
 /**
  * Supported chain IDs for Aave lending
@@ -227,10 +222,13 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
    * Check if market is a WETH market
    * @param marketId - Market identifier
    * @returns true if market is for WETH
-   * @description WETH is a predeploy at the same address on all OP Stack chains
    */
   private isWETHMarket(marketId: LendMarketId): boolean {
-    return marketId.address.toLowerCase() === WETH_ADDRESS.toLowerCase()
+    const wethAddress = WETH.address[marketId.chainId]
+    return (
+      wethAddress !== undefined &&
+      marketId.address.toLowerCase() === wethAddress.toLowerCase()
+    )
   }
 
   /**
@@ -260,9 +258,11 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
+    const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
+
     return {
       amount: params.amountWei,
-      asset: WETH_ADDRESS,
+      asset: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
@@ -358,9 +358,11 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       ],
     })
 
+    const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
+
     return {
       amount: params.amount,
-      asset: WETH_ADDRESS,
+      asset: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
