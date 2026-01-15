@@ -14,14 +14,9 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
 
   return useMutation({
     mutationFn: async ({ asset }: { asset: Asset }) => {
-      console.log('[useMintAsset] Mutation started', {
-        asset: asset.metadata.symbol,
-      })
       const activity = logActivity?.('mint')
       try {
-        console.log('[useMintAsset] Calling mintAsset function')
         const result = await mintAsset(asset)
-        console.log('[useMintAsset] Mint result', { result })
 
         // Extract block explorer URL from the result if available
         const blockExplorerUrl =
@@ -29,7 +24,6 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
             ? result.blockExplorerUrls[0]
             : undefined
 
-        console.log('[useMintAsset] Block explorer URL', { blockExplorerUrl })
         activity?.confirm({ blockExplorerUrl })
       } catch (error) {
         console.error('[useMintAsset] Error minting asset', { error })
@@ -37,16 +31,14 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
         throw error
       }
     },
-    onSuccess: async () => {
-      console.log('[useMintAsset] Mutation successful, invalidating queries')
-      // Invalidate token balances to trigger refetch
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
 
-      // Wait for chain to process, then refetch again
+      // Delayed refetch in case chain indexing is slow
+      // Won't show loading because mutation state is reset after first refetch
       setTimeout(() => {
-        console.log('[useMintAsset] Refetching balances after delay')
         queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
-      }, 3000)
+      }, 2000)
     },
     onError: (error) => {
       console.error('[useMintAsset] Mutation failed', { error })

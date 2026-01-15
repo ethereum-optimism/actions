@@ -32,16 +32,16 @@ const MockAaveUSDCAsset: Asset = {
   type: 'erc20',
 }
 
-const MockAaveWETHAsset: Asset = {
+const MockAaveETHAsset: Asset = {
   address: {
-    8453: '0x4200000000000000000000000000000000000006',
+    8453: 'native',
   },
   metadata: {
     decimals: 18,
-    name: 'Wrapped Ether',
-    symbol: 'WETH',
+    name: 'Ethereum',
+    symbol: 'ETH',
   },
-  type: 'erc20',
+  type: 'native',
 }
 
 // Mock market configurations for Aave
@@ -53,11 +53,11 @@ const MockAaveUSDCMarket: LendMarketConfig = {
   lendProvider: 'aave',
 }
 
-const MockAaveWETHMarket: LendMarketConfig = {
-  address: '0x4200000000000000000000000000000000000006', // WETH predeploy
+const MockAaveETHMarket: LendMarketConfig = {
+  address: '0x4200000000000000000000000000000000000006', // WETH predeploy (market uses WETH internally)
   chainId: 8453,
-  name: 'Aave WETH Base',
-  asset: MockAaveWETHAsset,
+  name: 'Aave ETH Base',
+  asset: MockAaveETHAsset,
   lendProvider: 'aave',
 }
 
@@ -68,7 +68,7 @@ describe('AaveLendProvider', () => {
 
   beforeEach(() => {
     mockConfig = {
-      marketAllowlist: [MockAaveUSDCMarket, MockAaveWETHMarket],
+      marketAllowlist: [MockAaveUSDCMarket, MockAaveETHMarket],
     }
 
     mockChainManager = new MockChainManager({
@@ -142,15 +142,15 @@ describe('AaveLendProvider', () => {
       expect(lendTransaction.apy).toBeGreaterThan(0)
     })
 
-    it('should create WETH deposit without approval', async () => {
-      const mockWETHReserve = createMockWETHReserve()
-      vi.mocked(aaveSdk.getReserve).mockResolvedValue(mockWETHReserve)
+    it('should create native ETH deposit without approval', async () => {
+      const mockETHReserve = createMockWETHReserve()
+      vi.mocked(aaveSdk.getReserve).mockResolvedValue(mockETHReserve)
 
       const amount = 1
-      const asset = MockAaveWETHAsset
+      const asset = MockAaveETHAsset
       const marketId = {
-        address: MockAaveWETHMarket.address,
-        chainId: MockAaveWETHMarket.chainId,
+        address: MockAaveETHMarket.address,
+        chainId: MockAaveETHMarket.chainId,
       }
 
       const lendTransaction = await provider.openPosition({
@@ -166,7 +166,7 @@ describe('AaveLendProvider', () => {
       )
       expect(lendTransaction.transactionData).not.toHaveProperty('approval')
       expect(lendTransaction.transactionData).toHaveProperty('position')
-      // WETH deposits send ETH as msg.value
+      // Native ETH deposits send ETH as msg.value via WETHGateway
       expect(lendTransaction.transactionData.position.value).toBe(
         BigInt('1000000000000000000'),
       )
@@ -231,18 +231,18 @@ describe('AaveLendProvider', () => {
       expect(withdrawTransaction.apy).toBeGreaterThan(0)
     })
 
-    it('should create WETH withdrawal with approval', async () => {
-      const mockWETHReserve = createMockWETHReserve()
-      vi.mocked(aaveSdk.getReserve).mockResolvedValue(mockWETHReserve)
+    it('should create native ETH withdrawal with approval', async () => {
+      const mockETHReserve = createMockWETHReserve()
+      vi.mocked(aaveSdk.getReserve).mockResolvedValue(mockETHReserve)
       vi.mocked(aaveSdk.getATokenAddress).mockResolvedValue(
         '0xD4a0e0b9149BCee3C920d2E00b5dE09138fd8bb7',
       )
 
       const amount = 1
-      const asset = MockAaveWETHAsset
+      const asset = MockAaveETHAsset
       const marketId = {
-        address: MockAaveWETHMarket.address,
-        chainId: MockAaveWETHMarket.chainId,
+        address: MockAaveETHMarket.address,
+        chainId: MockAaveETHMarket.chainId,
       }
 
       const withdrawTransaction = await provider.closePosition({
@@ -256,7 +256,7 @@ describe('AaveLendProvider', () => {
         'amount',
         BigInt('1000000000000000000'),
       )
-      // WETH withdrawals require approving aWETH to WETHGateway
+      // Native ETH withdrawals require approving aWETH to WETHGateway
       expect(withdrawTransaction.transactionData).toHaveProperty('approval')
       expect(withdrawTransaction.transactionData).toHaveProperty('position')
     })
@@ -316,7 +316,7 @@ describe('AaveLendProvider', () => {
 
     it('should handle multiple markets in allowlist', () => {
       const configWithMultipleMarkets: LendProviderConfig = {
-        marketAllowlist: [MockAaveUSDCMarket, MockAaveWETHMarket],
+        marketAllowlist: [MockAaveUSDCMarket, MockAaveETHMarket],
       }
 
       const providerInstance = new AaveLendProvider(
@@ -328,7 +328,57 @@ describe('AaveLendProvider', () => {
       expect(allowlist).toBeDefined()
       expect(allowlist).toHaveLength(2)
       expect(allowlist![0].name).toBe(MockAaveUSDCMarket.name)
-      expect(allowlist![1].name).toBe(MockAaveWETHMarket.name)
+      expect(allowlist![1].name).toBe(MockAaveETHMarket.name)
+    })
+  })
+
+  describe('ETH/WETH market configuration', () => {
+    it('should detect native asset type for ETH market', () => {
+      // Market is configured with ETH (type: native) but uses WETH address internally
+      expect(MockAaveETHMarket.asset.type).toBe('native')
+      expect(MockAaveETHMarket.asset.address[8453]).toBe('native')
+      // Market address points to WETH for Aave's internal operations
+      expect(MockAaveETHMarket.address).toBe(
+        '0x4200000000000000000000000000000000000006',
+      )
+    })
+
+    it('should use WETHGateway for ETH deposits when asset type is native', async () => {
+      const mockETHReserve = createMockWETHReserve()
+      vi.mocked(aaveSdk.getReserve).mockResolvedValue(mockETHReserve)
+
+      const lendTransaction = await provider.openPosition({
+        amount: 1,
+        asset: MockAaveETHAsset,
+        marketId: {
+          address: MockAaveETHMarket.address,
+          chainId: MockAaveETHMarket.chainId,
+        },
+        walletAddress: MockReceiverAddress,
+      })
+
+      // Native ETH deposits should have msg.value set (WETHGateway flow)
+      expect(lendTransaction.transactionData.position.value).toBe(
+        BigInt('1000000000000000000'),
+      )
+      // Should not require approval for native ETH
+      expect(lendTransaction.transactionData.approval).toBeUndefined()
+    })
+
+    it('should allow developer to configure ETH market without knowing about WETH internals', () => {
+      // Developer configures market with ETH asset
+      // SDK handles WETH internally via WETHGateway
+      const marketConfig: LendMarketConfig = {
+        address: '0x4200000000000000000000000000000000000006', // WETH address
+        chainId: 8453,
+        name: 'Aave ETH',
+        asset: MockAaveETHAsset, // Uses ETH (native) asset
+        lendProvider: 'aave',
+      }
+
+      // Verify the market uses native asset
+      expect(marketConfig.asset.type).toBe('native')
+      // Developer doesn't need to create a separate WETH asset
     })
   })
 

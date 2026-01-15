@@ -1,5 +1,5 @@
 import { colors } from '@/constants/colors'
-import { TerminalIcon, DocumentIcon } from '@/assets/icons'
+import { TerminalIcon, DocumentIcon, SparkleIcon } from '@/assets/icons'
 import PackageManagerSelector from '@/components/home/PackageManagerSelector'
 import { trackEvent } from '@/utils/analytics'
 
@@ -73,6 +73,19 @@ function Hero() {
         >
           <img src="/Optimism.svg" alt="Optimism" className="h-4 w-auto" />
         </a>
+      </div>
+      <div className="text-center pb-6 flex items-center justify-center">
+        <span
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-sans font-medium"
+          style={{
+            backgroundColor: 'rgba(255, 6, 33, 0.15)',
+            border: '1px solid rgba(255, 6, 33, 0.4)',
+            color: colors.text.cream,
+          }}
+        >
+          <SparkleIcon className="w-3.5 h-3.5" />
+          Developer Preview
+        </span>
       </div>
 
       {/* Hero Section */}

@@ -1,6 +1,7 @@
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import type { LendMarketId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
+import { isEthSymbol } from './assetUtils'
 
 interface BalanceMatchingParams {
   allTokenBalances: TokenBalance[]
@@ -13,7 +14,7 @@ interface BalanceMatchingParams {
 
 /**
  * Extract the balance for a specific asset from token balances
- * Special handling for WETH on OP Sepolia (uses native ETH balance)
+ * Special handling for ETH markets (uses native ETH balance)
  */
 export function matchAssetBalance({
   allTokenBalances,
@@ -28,24 +29,14 @@ export function matchAssetBalance({
   let chainBalance: (typeof allTokenBalances)[0]['chainBalances'][0] | undefined
 
   if (marketData?.assetAddress && marketData?.marketId?.chainId) {
-    const targetAddress = marketData.assetAddress.toLowerCase()
     const targetChainId = marketData.marketId.chainId
 
-    // Special case: For WETH markets on OP Sepolia, check native ETH balance
-    // since the faucet provides native ETH, not WETH tokens
-    const isWethMarket = selectedAssetSymbol === 'WETH'
-    const isOpSepolia = targetChainId === 11155420
-
-    if (isWethMarket && isOpSepolia) {
-      // Look for ETH token (native)
-      assetToken = allTokenBalances.find((token) => token.symbol === 'ETH')
-      if (assetToken) {
-        chainBalance = assetToken.chainBalances.find(
-          (cb) => cb.chainId === targetChainId,
-        )
-      }
+    // For ETH markets, match by symbol (native token has no address)
+    // For ERC20 tokens, match by address and chainId
+    if (isEthSymbol(selectedAssetSymbol)) {
+      assetToken = allTokenBalances.find((token) => isEthSymbol(token.symbol))
     } else {
-      // Normal case: Find the token that has a chainBalance matching both address and chainId
+      const targetAddress = marketData.assetAddress.toLowerCase()
       for (const token of allTokenBalances) {
         const matchingChainBalance = token.chainBalances.find(
           (cb) =>
@@ -59,6 +50,13 @@ export function matchAssetBalance({
         }
       }
     }
+
+    // Get chain-specific balance if we found the token
+    if (assetToken && !chainBalance) {
+      chainBalance = assetToken.chainBalances.find(
+        (cb) => cb.chainId === targetChainId,
+      )
+    }
   } else {
     // Fallback to symbol matching (less precise)
     assetToken = allTokenBalances.find(
@@ -66,8 +64,8 @@ export function matchAssetBalance({
     )
   }
 
-  const isWeth = selectedAssetSymbol === 'WETH'
-  const displayPrecision = isWeth ? 4 : 2
+  const isEth = isEthSymbol(selectedAssetSymbol)
+  const displayPrecision = isEth ? 4 : 2
   const precisionMultiplier = Math.pow(10, displayPrecision)
 
   if (assetToken && chainBalance && BigInt(chainBalance.balance) > 0n) {
@@ -87,6 +85,6 @@ export function matchAssetBalance({
       Math.floor(balance * precisionMultiplier) / precisionMultiplier
     return flooredBalance.toFixed(displayPrecision)
   } else {
-    return isWeth ? '0.0000' : '0.00'
+    return isEth ? '0.0000' : '0.00'
   }
 }

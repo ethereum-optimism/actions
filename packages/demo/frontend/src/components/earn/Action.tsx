@@ -4,10 +4,12 @@ import Shimmer from './Shimmer'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
+import { isEthSymbol } from '@/utils/assetUtils'
 
 interface ActionProps {
   assetBalance: string
   isLoadingBalance: boolean
+  isMintingAsset: boolean
   depositedAmount: string | null
   assetSymbol: string
   assetLogo: string
@@ -33,6 +35,7 @@ interface ActionProps {
 export function Action({
   assetBalance,
   isLoadingBalance,
+  isMintingAsset,
   depositedAmount,
   assetSymbol,
   assetLogo,
@@ -54,7 +57,7 @@ export function Action({
     undefined,
   )
   const [showFaucetInfo, setShowFaucetInfo] = useState(false)
-  const [hasUsedWethFaucet, setHasUsedWethFaucet] = useState(false)
+  const [hasUsedEthFaucet, setHasUsedEthFaucet] = useState(false)
 
   // Check if this is the illiquid Aave OP Sepolia ETH market
   const isIlliquidAaveMarket =
@@ -67,8 +70,8 @@ export function Action({
   const AAVE_MAX_WITHDRAW = 0.0001
 
   // Determine display precision based on asset type
-  const isWethAsset = assetSymbol === 'WETH'
-  const displayPrecision = isWethAsset ? 4 : 2
+  const isEthAsset = isEthSymbol(assetSymbol)
+  const displayPrecision = isEthAsset ? 4 : 2
 
   // For illiquid Aave market, lock withdraw amount to fixed value
   const isLockedWithdrawAmount = isIlliquidAaveMarket && mode === 'withdraw'
@@ -185,38 +188,40 @@ export function Action({
             Wallet Balance
           </h2>
           <div className="flex items-center gap-2">
-            {isLoadingBalance ? (
+            {isLoadingBalance && !isMintingAsset ? (
               <div className="flex items-center gap-1.5">
                 <Shimmer width="120px" height="33px" variant="rectangle" />
                 <Shimmer width="20px" height="20px" variant="circle" />
               </div>
-            ) : parseFloat(assetBalance || '0') === 0 ? (
+            ) : parseFloat(assetBalance || '0') === 0 || isMintingAsset ? (
               <div className="flex items-center gap-2">
                 <div
                   className="relative"
                   onMouseEnter={() =>
-                    isWethAsset && hasUsedWethFaucet && setShowFaucetInfo(true)
+                    isEthAsset && hasUsedEthFaucet && setShowFaucetInfo(true)
                   }
                   onMouseLeave={() => setShowFaucetInfo(false)}
                 >
                   <button
                     onClick={() => {
                       trackEvent('mint_asset', { asset: assetSymbol })
-                      if (isWethAsset) {
-                        setHasUsedWethFaucet(true)
+                      if (isEthAsset) {
+                        setHasUsedEthFaucet(true)
                       }
                       onMintAsset?.()
                     }}
-                    disabled={isWethAsset && hasUsedWethFaucet}
+                    disabled={
+                      isMintingAsset || (isEthAsset && hasUsedEthFaucet)
+                    }
                     className="transition-all"
                     style={{
                       padding: '6px 12px',
                       backgroundColor:
-                        isWethAsset && hasUsedWethFaucet
+                        isMintingAsset || (isEthAsset && hasUsedEthFaucet)
                           ? '#D1D5DB'
                           : '#FF0420',
                       color:
-                        isWethAsset && hasUsedWethFaucet
+                        isMintingAsset || (isEthAsset && hasUsedEthFaucet)
                           ? '#6B7280'
                           : '#FFFFFF',
                       fontSize: '14px',
@@ -224,7 +229,7 @@ export function Action({
                       borderRadius: '6px',
                       border: 'none',
                       cursor:
-                        isWethAsset && hasUsedWethFaucet
+                        isMintingAsset || (isEthAsset && hasUsedEthFaucet)
                           ? 'not-allowed'
                           : 'pointer',
                       fontFamily: 'Inter',
@@ -234,7 +239,7 @@ export function Action({
                       gap: '6px',
                     }}
                   >
-                    Get {displaySymbol}
+                    {isMintingAsset ? 'Minting...' : `Get ${displaySymbol}`}
                   </button>
                   {showFaucetInfo && (
                     <div
@@ -254,7 +259,7 @@ export function Action({
                         zIndex: 10,
                       }}
                     >
-                      Demo WETH already provided.
+                      Demo ETH already provided.
                     </div>
                   )}
                 </div>
@@ -292,7 +297,9 @@ export function Action({
                     fontWeight: 500,
                   }}
                 >
-                  {displaySymbol === 'WETH' ? assetBalance : `$${assetBalance}`}
+                  {assetSymbol.includes('USDC')
+                    ? `$${assetBalance}`
+                    : assetBalance}
                 </span>
                 <img
                   src={assetLogo}

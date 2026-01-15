@@ -53,8 +53,3 @@ const envVarSchema = z.object({
 })
 
 export const env = envVarSchema.parse(import.meta.env)
-
-// Log environment configuration on boot
-console.log('🚀 Actions Frontend Environment:')
-console.log('  MODE:', import.meta.env.MODE)
-console.log('  VITE_ACTIONS_API_URL:', env.VITE_ACTIONS_API_URL)

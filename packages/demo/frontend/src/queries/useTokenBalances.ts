@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 
 interface UseTokenBalancesParams {
@@ -7,17 +7,25 @@ interface UseTokenBalancesParams {
   logActivity?: (
     action: string,
   ) => { confirm: () => void; error: () => void } | null
+  /** Returns true when we should log this fetch (e.g., after a mutation) */
+  shouldLogFetch?: () => boolean
 }
 
 export function useTokenBalances({
   getTokenBalances,
   isReady,
   logActivity,
+  shouldLogFetch,
 }: UseTokenBalancesParams) {
+  const queryClient = useQueryClient()
+
   return useQuery({
     queryKey: ['tokenBalances'],
     queryFn: async () => {
-      const activity = logActivity?.('getBalance')
+      // Log on initial fetch OR when explicitly requested (e.g., after mutations)
+      const existingData = queryClient.getQueryData(['tokenBalances'])
+      const shouldLog = !existingData || shouldLogFetch?.()
+      const activity = shouldLog ? logActivity?.('getBalance') : null
       try {
         const result = await getTokenBalances()
         activity?.confirm()

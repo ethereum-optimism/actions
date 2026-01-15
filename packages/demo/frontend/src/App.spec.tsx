@@ -10,7 +10,6 @@ vi.mock('./providers/PrivyProvider', () => ({
   ),
 }))
 
-// TODO Add basic system tests
 describe('App', () => {
   it('renders home component at root', () => {
     render(<App />)

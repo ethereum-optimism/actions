@@ -26,14 +26,9 @@ const wallet = await actions.wallet.toActionsWallet({
   embeddedWallet
 });
 
-// Create signers
-const signer = await actions.wallet.createSigner({
-  connectedWallet: embeddedWallet,
-});
-
 // Create smart contract wallets
 const smartWallet = await actions.wallet.createSmartWallet({
-  signer
+  signer: embeddedWallet
 });
 `,
   },

@@ -1,6 +1,7 @@
 import type { LendMarket } from '@eth-optimism/actions-sdk'
 import { baseSepolia, optimismSepolia } from 'viem/chains'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
+import { isEthSymbol } from './assetUtils'
 
 export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
   const chainId = market.marketId.chainId
@@ -12,8 +13,8 @@ export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
     networkName = 'Base Sepolia'
     networkLogo = '/base-logo.svg'
   } else if (chainId === optimismSepolia.id) {
-    networkName = 'Optimism Sepolia'
-    networkLogo = '/OP.svg'
+    networkName = 'OP Sepolia'
+    networkLogo = '/OPMainnet_Circle.svg'
   }
 
   // Determine provider logo
@@ -27,7 +28,7 @@ export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
   const assetSymbol = market.asset.metadata.symbol
   const assetLogo = assetSymbol.includes('USDC')
     ? '/usd-coin-usdc-logo.svg'
-    : assetSymbol.includes('WETH')
+    : isEthSymbol(assetSymbol)
       ? '/eth.svg'
       : '/usd-coin-usdc-logo.svg'
 

@@ -6,7 +6,7 @@ import type {
   UserOperationTransactionReceipt,
   Wallet,
 } from '@eth-optimism/actions-sdk'
-import { getTokenBySymbol } from '@eth-optimism/actions-sdk'
+import { getAssetAddress, getTokenBySymbol } from '@eth-optimism/actions-sdk'
 import type { User } from '@privy-io/node'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
@@ -112,7 +112,7 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
 
   const calls = [
     {
-      to: usdcDemoToken.address[baseSepolia.id]!,
+      to: getAssetAddress(usdcDemoToken, baseSepolia.id),
       data: encodeFunctionData({
         abi: mintableErc20Abi,
         functionName: 'mint',

@@ -6,60 +6,33 @@ import Info from './Info'
 import { WalletProviderDropdown } from './WalletProviderDropdown'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { ActivityHighlightProvider } from '@/contexts/ActivityHighlightContext'
-import type { MarketPosition } from '@/types/market'
-import { MarketSelector, type MarketInfo } from './MarketSelector'
-export interface EarnContentProps {
+import {
+  LendProviderContextProvider,
+  useLendProviderContext,
+} from '@/contexts/LendProviderContext'
+import { MarketSelector } from './MarketSelector'
+import type { LendProviderOperations } from '@/hooks/useLendProvider'
+
+export interface EarnProps {
+  operations: LendProviderOperations
   ready: boolean
   logout: () => Promise<void>
   walletAddress: string | null
-  usdcBalance: string
-  isLoadingBalance: boolean
-  apy: number | null
-  isLoadingApy: boolean
-  depositedAmount: string | null
-  isLoadingPosition: boolean
-  isInitialLoad: boolean
-  selectedProviderConfig: WalletProviderConfig
-  onMintUSDC: () => void
-  onTransaction: (
-    mode: 'lend' | 'withdraw',
-    amount: number,
-  ) => Promise<{
-    transactionHash?: string
-    blockExplorerUrl?: string
-  }>
-  onMarketChange?: (market: MarketPosition | null) => void
-  markets?: MarketInfo[]
-  selectedMarket?: MarketPosition | null
-  onMarketSelect?: (market: MarketInfo) => void
-  isLoadingMarkets?: boolean
-  marketPositions?: MarketPosition[]
+  providerConfig: WalletProviderConfig
+  logPrefix?: string
 }
 
 /**
- * Presentational component for the Earn page
- * Handles layout and user dropdown - all business logic delegated to container
+ * Main Earn component - wraps content with data provider
  */
 function Earn({
+  operations,
   ready,
   logout,
   walletAddress,
-  usdcBalance,
-  isLoadingBalance,
-  depositedAmount,
-  selectedProviderConfig,
-  isInitialLoad,
-  onMintUSDC,
-  onTransaction,
-  markets = [],
-  selectedMarket,
-  onMarketSelect,
-  isLoadingMarkets = false,
-  marketPositions = [],
-}: EarnContentProps) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-
-  // Show loading state while Privy is initializing
+  providerConfig,
+  logPrefix,
+}: EarnProps) {
   if (!ready) {
     return (
       <div
@@ -76,169 +49,211 @@ function Earn({
   }
 
   return (
-    <ActivityHighlightProvider>
-      <div
-        className="min-h-screen"
+    <LendProviderContextProvider
+      operations={operations}
+      ready={ready}
+      logPrefix={logPrefix}
+    >
+      <ActivityHighlightProvider>
+        <EarnContent
+          logout={logout}
+          walletAddress={walletAddress}
+          providerConfig={providerConfig}
+        />
+      </ActivityHighlightProvider>
+    </LendProviderContextProvider>
+  )
+}
+
+interface EarnContentProps {
+  logout: () => Promise<void>
+  walletAddress: string | null
+  providerConfig: WalletProviderConfig
+}
+
+/**
+ * Inner content component - consumes context for data
+ */
+function EarnContent({
+  logout,
+  walletAddress,
+  providerConfig,
+}: EarnContentProps) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const {
+    markets,
+    selectedMarket,
+    handleMarketSelect,
+    isLoadingMarkets,
+    marketPositions,
+    assetBalance,
+    isLoadingBalance,
+    isMintingAsset,
+    depositedAmount,
+    isInitialLoad,
+    handleMintAsset,
+    handleTransaction,
+  } = useLendProviderContext()
+
+  return (
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: '#FFFFFF',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+      }}
+    >
+      {/* Header */}
+      <header
+        className="w-full"
         style={{
           backgroundColor: '#FFFFFF',
-          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+          borderBottom: '1px solid #E0E2EB',
         }}
       >
-        {/* Custom Header */}
-        <header
-          className="w-full"
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderBottom: '1px solid #E0E2EB',
-          }}
-        >
-          <div className="w-full px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <img src="/Optimism.svg" alt="Optimism" className="h-4" />
-              </div>
-              <div className="flex items-center gap-4">
-                <WalletProviderDropdown
-                  selectedProvider={selectedProviderConfig}
-                  walletAddress={walletAddress}
-                  onProviderSelect={async (providerConfig) => {
-                    await logout()
-                    window.location.href = `/earn?walletProvider=${providerConfig.queryParam}`
-                  }}
-                  onLogout={logout}
-                />
-              </div>
+        <div className="w-full px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <img src="/Optimism.svg" alt="Optimism" className="h-4" />
+            </div>
+            <div className="flex items-center gap-4">
+              <WalletProviderDropdown
+                selectedProvider={providerConfig}
+                walletAddress={walletAddress}
+                onProviderSelect={async (config) => {
+                  await logout()
+                  window.location.href = `/earn?walletProvider=${config.queryParam}`
+                }}
+                onLogout={logout}
+              />
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)]">
-          {/* Left Content Area */}
-          <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
-            <div className="w-full max-w-2xl">
-              {/* Title Section */}
-              <div className="mb-8 text-left">
-                <div className="flex items-center gap-2 mb-2">
-                  <h1
-                    style={{
-                      color: '#1a1b1e',
-                      fontSize: '24px',
-                      fontStyle: 'normal',
-                      fontWeight: 600,
-                    }}
-                    className="sm:text-2xl"
-                  >
-                    Actions Demo
-                  </h1>
-                  <span
-                    className="px-2 py-2 text-xs font-medium rounded-sm"
-                    style={{
-                      backgroundColor: '#F2F3F8',
-                      color: '#404454',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                    }}
-                  >
-                    Sandbox
-                  </span>
-                </div>
-                <p
+      <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)]">
+        {/* Left Content Area */}
+        <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
+          <div className="w-full max-w-2xl">
+            {/* Title Section */}
+            <div className="mb-8 text-left">
+              <div className="flex items-center gap-2 mb-2">
+                <h1
                   style={{
-                    color: '#666666',
-                    fontSize: '16px',
+                    color: '#1a1b1e',
+                    fontSize: '24px',
+                    fontStyle: 'normal',
+                    fontWeight: 600,
                   }}
-                  className="sm:text-base"
+                  className="sm:text-2xl"
                 >
-                  Earn interest by lending USDC
-                </p>
+                  Actions Demo
+                </h1>
+                <span
+                  className="px-2 py-2 text-xs font-medium rounded-sm"
+                  style={{
+                    backgroundColor: '#F2F3F8',
+                    color: '#404454',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                  }}
+                >
+                  Sandbox
+                </span>
+              </div>
+              <p
+                style={{ color: '#666666', fontSize: '16px' }}
+                className="sm:text-base"
+              >
+                Earn interest by lending USDC
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Market Selector */}
+              <div>
+                <h3
+                  className="mb-3"
+                  style={{
+                    color: '#1a1b1e',
+                    fontSize: '16px',
+                    fontWeight: 600,
+                  }}
+                >
+                  Select Market
+                </h3>
+                <MarketSelector
+                  markets={markets}
+                  selectedMarket={
+                    selectedMarket
+                      ? {
+                          name: selectedMarket.marketName,
+                          logo: selectedMarket.marketLogo,
+                          networkName: selectedMarket.networkName,
+                          networkLogo: selectedMarket.networkLogo,
+                          asset: selectedMarket.asset,
+                          assetLogo: selectedMarket.assetLogo,
+                          apy: selectedMarket.apy,
+                          isLoadingApy: selectedMarket.isLoadingApy,
+                          marketId: selectedMarket.marketId,
+                          provider: selectedMarket.provider,
+                        }
+                      : null
+                  }
+                  onMarketSelect={handleMarketSelect}
+                  isLoading={isLoadingMarkets}
+                />
               </div>
 
-              <div className="space-y-6">
-                {/* Market Selector - Always visible */}
-                <div>
-                  <h3
-                    className="mb-3"
-                    style={{
-                      color: '#1a1b1e',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Select Market
-                  </h3>
-                  <MarketSelector
-                    markets={markets}
-                    selectedMarket={
-                      selectedMarket
-                        ? {
-                            name: selectedMarket.marketName,
-                            logo: selectedMarket.marketLogo,
-                            networkName: selectedMarket.networkName,
-                            networkLogo: selectedMarket.networkLogo,
-                            asset: selectedMarket.asset,
-                            assetLogo: selectedMarket.assetLogo,
-                            apy: selectedMarket.apy,
-                            isLoadingApy: selectedMarket.isLoadingApy,
-                            marketId: selectedMarket.marketId,
-                            provider: selectedMarket.provider,
-                          }
-                        : null
-                    }
-                    onMarketSelect={onMarketSelect || (() => {})}
-                    isLoading={isLoadingMarkets}
-                  />
-                </div>
+              <Action
+                assetBalance={assetBalance}
+                isLoadingBalance={isLoadingBalance}
+                isMintingAsset={isMintingAsset}
+                depositedAmount={depositedAmount}
+                assetSymbol={selectedMarket?.asset.metadata.symbol || 'USDC'}
+                assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
+                onMintAsset={handleMintAsset}
+                onTransaction={handleTransaction}
+                marketId={selectedMarket?.marketId}
+                provider={selectedMarket?.provider}
+              />
 
-                <Action
-                  assetBalance={usdcBalance}
-                  isLoadingBalance={isLoadingBalance}
-                  depositedAmount={depositedAmount}
-                  assetSymbol={selectedMarket?.asset.metadata.symbol || 'USDC'}
-                  assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
-                  onMintAsset={onMintUSDC}
-                  onTransaction={onTransaction}
-                  marketId={selectedMarket?.marketId}
-                  provider={selectedMarket?.provider}
-                />
-                <LentBalance
-                  marketPositions={marketPositions}
-                  isInitialLoad={isInitialLoad}
-                />
+              <LentBalance
+                marketPositions={marketPositions}
+                isInitialLoad={isInitialLoad}
+              />
 
-                {/* Activity Log - Mobile Card */}
-                <div className="lg:hidden">
-                  <ActivityLog />
-                </div>
+              {/* Activity Log - Mobile */}
+              <div className="lg:hidden">
+                <ActivityLog />
+              </div>
 
-                {/* Info - Mobile Card */}
-                <div className="lg:hidden">
-                  <div
-                    className="p-6"
-                    style={{
-                      border: '1px solid #E0E2EB',
-                      borderRadius: '24px',
-                      backgroundColor: '#FFFFFF',
-                    }}
-                  >
-                    <Info />
-                  </div>
+              {/* Info - Mobile */}
+              <div className="lg:hidden">
+                <div
+                  className="p-6"
+                  style={{
+                    border: '1px solid #E0E2EB',
+                    borderRadius: '24px',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                >
+                  <Info />
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Activity Log - Desktop Sidebar */}
-          <div
-            className="hidden lg:h-[calc(100vh-65px)] lg:block transition-all duration-300 ease-in-out"
-            style={{
-              width: isSidebarCollapsed ? '0px' : '436px',
-            }}
-          >
-            <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
-          </div>
-        </main>
-      </div>
-    </ActivityHighlightProvider>
+        {/* Activity Log - Desktop Sidebar */}
+        <div
+          className="hidden lg:h-[calc(100vh-65px)] lg:block transition-all duration-300 ease-in-out"
+          style={{ width: isSidebarCollapsed ? '0px' : '436px' }}
+        >
+          <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
+        </div>
+      </main>
+    </div>
   )
 }
 

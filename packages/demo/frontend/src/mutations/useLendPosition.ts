@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { LendTransactionReceipt } from '@eth-optimism/actions-sdk'
 import type { LendExecutePositionParams } from '@/types/api'
+import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 
 interface UseOpenPositionParams {
   openPosition: (
@@ -30,24 +31,14 @@ export function useOpenPosition({
 
   return useMutation({
     mutationFn: async (params: LendExecutePositionParams) => {
-      console.log('[useOpenPosition] Starting deposit', {
-        marketId: params.marketId,
-        amount: params.amount,
-        asset: params.asset.metadata.symbol,
-      })
       const activity = logActivity?.('deposit')
       try {
-        console.log('[useOpenPosition] Calling openPosition')
         const result = await openPosition(params)
-        console.log('[useOpenPosition] Deposit successful', { result })
 
-        // Extract block explorer URL from the result
-        const blockExplorerUrl =
-          'blockExplorerUrls' in result &&
-          Array.isArray(result.blockExplorerUrls)
-            ? result.blockExplorerUrls[0]
-            : undefined
-
+        const blockExplorerUrl = getBlockExplorerUrl(
+          params.marketId.chainId,
+          result,
+        )
         activity?.confirm({ blockExplorerUrl })
         return result
       } catch (error) {
@@ -62,7 +53,6 @@ export function useOpenPosition({
       }
     },
     onSuccess: (_, variables) => {
-      // Invalidate both balances and position for the affected market
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       queryClient.invalidateQueries({
         queryKey: [
@@ -72,7 +62,7 @@ export function useOpenPosition({
         ],
       })
 
-      // Wait for chain to process, then refetch again
+      // Delayed refetch in case chain indexing is slow
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
         queryClient.invalidateQueries({
@@ -82,7 +72,7 @@ export function useOpenPosition({
             variables.marketId.chainId,
           ],
         })
-      }, 3000)
+      }, 2000)
     },
   })
 }
@@ -99,13 +89,10 @@ export function useClosePosition({
       try {
         const result = await closePosition(params)
 
-        // Extract block explorer URL from the result
-        const blockExplorerUrl =
-          'blockExplorerUrls' in result &&
-          Array.isArray(result.blockExplorerUrls)
-            ? result.blockExplorerUrls[0]
-            : undefined
-
+        const blockExplorerUrl = getBlockExplorerUrl(
+          params.marketId.chainId,
+          result,
+        )
         activity?.confirm({ blockExplorerUrl })
         return result
       } catch (error) {
@@ -114,7 +101,6 @@ export function useClosePosition({
       }
     },
     onSuccess: (_, variables) => {
-      // Invalidate both balances and position for the affected market
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       queryClient.invalidateQueries({
         queryKey: [
@@ -124,7 +110,7 @@ export function useClosePosition({
         ],
       })
 
-      // Wait for chain to process, then refetch again
+      // Delayed refetch in case chain indexing is slow
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
         queryClient.invalidateQueries({
@@ -134,7 +120,7 @@ export function useClosePosition({
             variables.marketId.chainId,
           ],
         })
-      }, 3000)
+      }, 2000)
     },
   })
 }

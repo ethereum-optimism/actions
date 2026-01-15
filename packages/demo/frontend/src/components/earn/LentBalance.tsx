@@ -89,8 +89,132 @@ function LentBalance({
             </div>
           ) : (
             <>
-              {/* Table */}
-              <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+              {/* Mobile Card Layout */}
+              <div className="md:hidden flex flex-col gap-3">
+                {marketsWithDeposits.map((market, index) => (
+                  <div
+                    key={`mobile-${market.marketId.address}-${market.marketId.chainId}`}
+                    className="transition-all"
+                    style={{
+                      borderTop: index > 0 ? '1px solid #E0E2EB' : 'none',
+                      paddingTop: index > 0 ? '12px' : '0',
+                    }}
+                  >
+                    {/* Row 1: Asset + APY (left), Amount (right) */}
+                    <div className="flex items-center justify-between mb-1">
+                      <div
+                        className="flex items-center gap-2 transition-all rounded px-1 -mx-1"
+                        style={{
+                          backgroundColor:
+                            hoveredAction === 'getMarket'
+                              ? colors.highlight.background
+                              : 'transparent',
+                        }}
+                      >
+                        <img
+                          src={market.assetLogo}
+                          alt={market.asset.metadata.symbol}
+                          style={{ width: '20px', height: '20px' }}
+                        />
+                        <span
+                          style={{
+                            color: '#1a1b1e',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            fontFamily: 'Inter',
+                          }}
+                        >
+                          {market.asset.metadata.symbol.replace('_DEMO', '')}
+                        </span>
+                        <span
+                          style={{
+                            color: '#9195A6',
+                            fontSize: '12px',
+                            fontFamily: 'Inter',
+                          }}
+                        >
+                          {market.apy !== null
+                            ? `${(market.apy * 100).toFixed(2)}%`
+                            : '0.00%'}
+                        </span>
+                      </div>
+                      <span
+                        className="transition-all rounded px-1"
+                        style={{
+                          color: '#1a1b1e',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          fontFamily: 'Inter',
+                          backgroundColor:
+                            hoveredAction === 'getPosition'
+                              ? colors.highlight.background
+                              : 'transparent',
+                        }}
+                      >
+                        {market.asset.metadata.symbol !== 'ETH' && '$'}
+                        {
+                          formatDepositedAmount(market.depositedAmount || '0')
+                            .main
+                        }
+                        <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                          {
+                            formatDepositedAmount(market.depositedAmount || '0')
+                              .secondary
+                          }
+                        </span>
+                      </span>
+                    </div>
+                    {/* Row 2: Market · Network */}
+                    <div
+                      className="flex items-center gap-1 transition-all rounded px-1 -mx-1"
+                      style={{
+                        backgroundColor:
+                          hoveredAction === 'getMarket'
+                            ? colors.highlight.background
+                            : 'transparent',
+                      }}
+                    >
+                      <img
+                        src={market.marketLogo}
+                        alt={market.marketName}
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span
+                        style={{
+                          color: '#9195A6',
+                          fontSize: '12px',
+                          fontFamily: 'Inter',
+                        }}
+                      >
+                        {market.marketName}
+                      </span>
+                      <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                        ·
+                      </span>
+                      <img
+                        src={market.networkLogo}
+                        alt={market.networkName}
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span
+                        style={{
+                          color: '#9195A6',
+                          fontSize: '12px',
+                          fontFamily: 'Inter',
+                        }}
+                      >
+                        {market.networkName}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table */}
+              <div
+                className="hidden md:block"
+                style={{ overflowX: 'auto', overflowY: 'visible' }}
+              >
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   {/* Header */}
                   <thead>
@@ -178,7 +302,7 @@ function LentBalance({
                   <tbody>
                     {marketsWithDeposits.map((market) => (
                       <tr
-                        key={`${market.marketId.address}-${market.marketId.chainId}`}
+                        key={`desktop-${market.marketId.address}-${market.marketId.chainId}`}
                       >
                         <td
                           className="transition-all"
@@ -310,7 +434,7 @@ function LentBalance({
                               fontFamily: 'Inter',
                             }}
                           >
-                            {market.asset.metadata.symbol !== 'WETH' && '$'}
+                            {market.asset.metadata.symbol !== 'ETH' && '$'}
                             {
                               formatDepositedAmount(
                                 market.depositedAmount || '0',

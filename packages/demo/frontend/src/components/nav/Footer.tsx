@@ -28,7 +28,7 @@ function Footer() {
             >
               <img src="/Optimism.svg" alt="Optimism" className="h-3 w-auto" />
             </a>
-            <span>. Open source. MIT License.</span>
+            <span>Open source. MIT License.</span>
           </p>
         </div>
       </footer>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
 import type {
   LendMarket,
   LendMarketId,
@@ -16,6 +16,7 @@ import { useMarkets } from '@/queries/useMarkets'
 import { useMintAsset } from '@/mutations/useMintAsset'
 import { useOpenPosition, useClosePosition } from '@/mutations/useLendPosition'
 import { matchAssetBalance } from '@/utils/balanceMatching'
+import { getBlockExplorerUrl, extractHashes } from '@/utils/blockExplorer'
 
 export interface UseWalletBalanceConfig {
   getTokenBalances: () => Promise<TokenBalance[]>
@@ -50,6 +51,10 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
 
   const { logActivity } = useActivityLogger()
 
+  // Track balance before operations to ensure we don't show stale data
+  const balanceBeforeLend = useRef<string | null>(null)
+  const balanceBeforeMint = useRef<string | null>(null)
+
   // Queries
   const {
     data: tokenBalances,
@@ -59,6 +64,9 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     getTokenBalances: getTokenBalancesRaw,
     isReady,
     logActivity,
+    // Log balance fetch after mutations (when we're waiting for balance to change)
+    shouldLogFetch: () =>
+      balanceBeforeMint.current !== null || balanceBeforeLend.current !== null,
   })
 
   const {
@@ -133,9 +141,46 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     })
   }, [tokenBalances, marketData, selectedAsset])
 
+  // Reset mutation states and clear balance tracking when balance actually changes
+  useEffect(() => {
+    const lendBalanceChanged =
+      balanceBeforeLend.current !== null &&
+      assetBalance !== balanceBeforeLend.current
+
+    const mintBalanceChanged =
+      balanceBeforeMint.current !== null &&
+      assetBalance !== balanceBeforeMint.current
+
+    if (!isFetchingBalances && lendBalanceChanged) {
+      balanceBeforeLend.current = null
+      if (openPositionMutation.isSuccess) {
+        openPositionMutation.reset()
+      }
+      if (closePositionMutation.isSuccess) {
+        closePositionMutation.reset()
+      }
+    }
+
+    // Reset mint mutation only when balance has changed from pre-mint value
+    if (!isFetchingBalances && mintBalanceChanged) {
+      balanceBeforeMint.current = null
+      if (mintAssetMutation.isSuccess) {
+        mintAssetMutation.reset()
+      }
+    }
+  }, [
+    isFetchingBalances,
+    assetBalance,
+    mintAssetMutation,
+    openPositionMutation,
+    closePositionMutation,
+  ])
+
   // Handler functions
   const handleMintAsset = async () => {
     if (!selectedAsset) return
+    // Track balance before mint to ensure we show minting state until balance changes
+    balanceBeforeMint.current = assetBalance
     await mintAssetMutation.mutateAsync({
       asset: selectedAsset,
     })
@@ -149,6 +194,9 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       throw new Error('Market data not available')
     }
 
+    // Track balance before transaction to ensure we show loading until it changes
+    balanceBeforeLend.current = assetBalance
+
     const params: LendExecutePositionParams = {
       marketId: marketData.marketId,
       amount,
@@ -160,41 +208,44 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
         ? await openPositionMutation.mutateAsync(params)
         : await closePositionMutation.mutateAsync(params)
 
-    // Handle union type - result can be EOATransactionReceipt or SmartWalletTransactionReceipt
-    const txHash =
-      'userOpHash' in result
-        ? result.userOpHash
-        : Array.isArray(result)
-          ? result[0]?.transactionHash
-          : result.transactionHash
-
-    const explorerUrl =
-      'blockExplorerUrl' in result
-        ? result.blockExplorerUrl
-        : 'blockExplorerUrls' in result &&
-            Array.isArray(result.blockExplorerUrls)
-          ? result.blockExplorerUrls[0]
-          : undefined
+    const { txHash, userOpHash } = extractHashes(result)
+    const blockExplorerUrl = getBlockExplorerUrl(
+      marketData.marketId.chainId,
+      result,
+    )
 
     return {
-      transactionHash: txHash,
-      blockExplorerUrl: explorerUrl,
+      transactionHash: txHash || userOpHash,
+      blockExplorerUrl,
     }
   }
 
-  // Show shimmer during load/mutations, or when refetching a zero balance
-  const currentBalance = parseFloat(assetBalance || '0')
-  const isMutating =
-    mintAssetMutation.isPending ||
-    openPositionMutation.isPending ||
-    closePositionMutation.isPending
+  // Show loading while mutations are pending OR while refetching after a successful mutation
+  const isMutationRefetching =
+    (mintAssetMutation.isSuccess ||
+      openPositionMutation.isSuccess ||
+      closePositionMutation.isSuccess) &&
+    isFetchingBalances
+
+  // Show loading until balance actually changes from pre-transaction value
+  const isWaitingForLendBalanceChange =
+    balanceBeforeLend.current !== null &&
+    assetBalance === balanceBeforeLend.current
+
+  const isWaitingForMintBalanceChange =
+    balanceBeforeMint.current !== null &&
+    assetBalance === balanceBeforeMint.current
 
   const isLoadingBalance =
     isLoadingBalances ||
     isLoadingMarkets ||
     !marketData ||
-    isMutating ||
-    (isFetchingBalances && currentBalance === 0)
+    mintAssetMutation.isPending ||
+    openPositionMutation.isPending ||
+    closePositionMutation.isPending ||
+    isMutationRefetching ||
+    isWaitingForLendBalanceChange ||
+    isWaitingForMintBalanceChange
 
   const isLoadingApy = isLoadingMarkets || isFetchingMarkets
   const isLoadingPositionState =
@@ -203,9 +254,14 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     openPositionMutation.isPending ||
     closePositionMutation.isPending
 
+  // Track minting state: true while mint is in progress OR until balance changes
+  const isMintingAsset =
+    mintAssetMutation.isPending || isWaitingForMintBalanceChange
+
   return {
     assetBalance,
     isLoadingBalance,
+    isMintingAsset,
     handleMintAsset,
     isLoadingApy,
     apy: marketData?.apy ?? null,
