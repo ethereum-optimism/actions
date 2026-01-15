@@ -79,10 +79,12 @@ Thanks for your help improving the project! We are so happy to have you!
 
 You can read our contribution guide [here](./CONTRIBUTING.md) to understand better how we work in the repo.
 
-## New Version Release
-
-Instructions for releasing a new sdk version are found [here](./CONTRIBUTING.md).
-
 ## License
 
-All other files within this repository are licensed under the [MIT License](https://github.com/ethereum-optimism/actions/blob/main/LICENSE) unless stated otherwise.
+© 2025 Actions by Optimism. All other files within this repository are licensed under the [MIT License](https://github.com/ethereum-optimism/actions/blob/main/LICENSE) unless stated otherwise.
+
+## Disclaimer
+
+This software is provided "as is," without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software.
+
+You are responsible for any regulatory implications related to your activities as it pertains to the software, including compliance with any law, rule or regulation (collectively, "Law"), including without limitation, any applicable economic sanctions Laws, export control Laws, securities Laws, anti-money laundering Laws, or privacy Laws. By using this software, you are subject to Optimism's full [Terms of Service](https://www.optimism.io/terms) and the [Optimism Community Agreement](https://www.optimism.io/community-agreement).
