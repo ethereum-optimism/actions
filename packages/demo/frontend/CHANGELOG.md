@@ -1,5 +1,16 @@
 # actions-ui
 
+## 0.1.0
+
+### Minor Changes
+
+- [#273](https://github.com/ethereum-optimism/actions/pull/273) [`c927f30`](https://github.com/ethereum-optimism/actions/commit/c927f30107b9dd4160f895ec729f1a3320603b3e) Thanks [@its-everdred](https://github.com/its-everdred)! - Improve LendProvider, Asset, Markets
+
+### Patch Changes
+
+- Updated dependencies [[`c927f30`](https://github.com/ethereum-optimism/actions/commit/c927f30107b9dd4160f895ec729f1a3320603b3e)]:
+  - @eth-optimism/actions-sdk@0.2.0
+
 ## 0.0.3
 
 ### Patch Changes
