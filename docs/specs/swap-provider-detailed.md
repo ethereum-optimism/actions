@@ -246,13 +246,13 @@ export interface SwapRoute {
   /** Ordered list of assets in the route path */
   path: Asset[]
   /** Pool information for each hop */
-  pools: SwapPoolInfo[]
+  pools: SwapMarketInfo[]
 }
 
 /**
  * Pool information for a swap hop
  */
-export interface SwapPoolInfo {
+export interface SwapMarketInfo {
   /** Pool address or identifier */
   address: Address
   /** Fee tier in pips */
@@ -336,6 +336,42 @@ export interface SwapReceipt {
 }
 ```
 
+### Pool Discovery Types
+
+```typescript
+// packages/sdk/src/types/swap/base.ts (continued)
+
+/**
+ * Parameters for getting swap pools
+ */
+export interface GetSwapMarketsParams {
+  /** Filter by chain ID */
+  chainId?: SupportedChainId
+  /** Filter by asset (returns pools containing this asset) */
+  asset?: Asset
+}
+
+/**
+ * Swap pool information
+ */
+export interface SwapMarket {
+  /** Pool identifier (address or poolId hash) */
+  poolId: string
+  /** Chain ID */
+  chainId: SupportedChainId
+  /** Token pair in the pool */
+  assets: [Asset, Asset]
+  /** Fee tier in pips (500 = 0.05%) */
+  fee: number
+  /** Total value locked in USD */
+  tvl?: bigint
+  /** 24-hour trading volume in USD */
+  volume24h?: bigint
+  /** Provider name */
+  provider: 'uniswap'
+}
+```
+
 ### Provider Method Types
 
 ```typescript
@@ -354,6 +390,11 @@ export interface SwapProviderMethods {
    * Provider implementation of price method
    */
   _getPrice(params: SwapPriceParams): Promise<SwapPrice>
+
+  /**
+   * Provider implementation of getMarkets method
+   */
+  _getMarkets(params: GetSwapMarketsParams): Promise<SwapMarket[]>
 
   /**
    * Check if provider supports the given chain
@@ -486,6 +527,19 @@ export abstract class SwapProvider<
   }
 
   /**
+   * Get available swap pools
+   * @param params - Optional filtering by chainId or asset
+   * @returns Array of swap pools
+   */
+  async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
+    // If chainId specified, validate it's supported
+    if (params.chainId) {
+      this.validateChainSupported(params.chainId)
+    }
+    return this._getMarkets(params)
+  }
+
+  /**
    * Get supported chain IDs for this provider
    */
   abstract supportedChainIds(): SupportedChainId[]
@@ -506,6 +560,8 @@ export abstract class SwapProvider<
   ): Promise<SwapTransaction>
 
   protected abstract _getPrice(params: SwapPriceParams): Promise<SwapPrice>
+
+  protected abstract _getMarkets(params: GetSwapMarketsParams): Promise<SwapMarket[]>
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Protected validation helpers
@@ -734,6 +790,92 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
     })
   }
 
+  protected async _getMarkets(params: GetSwapMarketsParams): Promise<SwapMarket[]> {
+    const chainIds = params.chainId
+      ? [params.chainId]
+      : this.supportedChainIds()
+
+    const results = await Promise.all(
+      chainIds.map((chainId) => this.fetchMarketsForChain(chainId, params.asset))
+    )
+
+    return results.flat()
+  }
+
+  /**
+   * Fetch pools from Uniswap V4 Subgraph for a specific chain
+   */
+  private async fetchMarketsForChain(
+    chainId: SupportedChainId,
+    asset?: Asset
+  ): Promise<SwapMarket[]> {
+    const subgraphUrl = getSubgraphUrl(chainId)
+    if (!subgraphUrl) return []
+
+    // Query the Uniswap V4 subgraph
+    const query = `
+      query GetPools($first: Int!, $skip: Int!, $where: Pool_filter) {
+        pools(first: $first, skip: $skip, where: $where, orderBy: totalValueLockedUSD, orderDirection: desc) {
+          id
+          token0 { id, symbol, decimals }
+          token1 { id, symbol, decimals }
+          feeTier
+          totalValueLockedUSD
+          volumeUSD
+        }
+      }
+    `
+
+    // Build filter if asset specified
+    const where = asset
+      ? { or: [
+          { token0_: { symbol: asset.metadata.symbol } },
+          { token1_: { symbol: asset.metadata.symbol } }
+        ]}
+      : undefined
+
+    const response = await fetch(subgraphUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        variables: { first: 100, skip: 0, where },
+      }),
+    })
+
+    const data = await response.json()
+    return this.transformSubgraphMarkets(data.data.pools, chainId)
+  }
+
+  private transformSubgraphMarkets(pools: any[], chainId: SupportedChainId): SwapMarket[] {
+    return pools.map((pool) => ({
+      poolId: pool.id,
+      chainId,
+      assets: [
+        this.tokenToAsset(pool.token0),
+        this.tokenToAsset(pool.token1),
+      ] as [Asset, Asset],
+      fee: Number(pool.feeTier),
+      tvl: BigInt(Math.floor(parseFloat(pool.totalValueLockedUSD) * 1e6)),
+      volume24h: BigInt(Math.floor(parseFloat(pool.volumeUSD) * 1e6)),
+      provider: 'uniswap' as const,
+    }))
+  }
+
+  private tokenToAsset(token: { id: string; symbol: string; decimals: string }): Asset {
+    // Convert subgraph token to Asset format
+    // Implementation maps to known assets or creates dynamic asset
+    return {
+      type: 'erc20',
+      address: { [this.supportedChainIds()[0]]: token.id as Address },
+      metadata: {
+        name: token.symbol,
+        symbol: token.symbol,
+        decimals: Number(token.decimals),
+      },
+    }
+  }
+
   private async checkTokenAllowance(
     token: Address,
     owner: Address,
@@ -784,7 +926,7 @@ import { encodeFunctionData, decodeFunctionResult } from 'viem'
 
 import type { Asset } from '@/types/asset.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { SwapPrice, SwapRoute, SwapPoolInfo } from '@/types/swap/base.js'
+import type { SwapPrice, SwapRoute, SwapMarketInfo } from '@/types/swap/base.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 import { formatUnits } from 'viem'
 
@@ -1217,6 +1359,26 @@ export function getUniswapAddresses(chainId: SupportedChainId): UniswapAddresses
 export function getSupportedChainIds(): SupportedChainId[] {
   return Object.keys(UNISWAP_ADDRESSES).map(Number) as SupportedChainId[]
 }
+
+/**
+ * Uniswap V4 Subgraph URLs per chain
+ * @description Used for pool discovery via The Graph
+ * @see https://docs.uniswap.org/api/subgraph/overview
+ */
+const SUBGRAPH_URLS: Partial<Record<SupportedChainId, string>> = {
+  // Base Sepolia - testnet subgraph (if available)
+  // Note: Testnets may not have official subgraphs; may need custom deployment
+  [baseSepolia.id]: undefined, // TODO: Deploy testnet subgraph or use on-chain fallback
+  // Mainnet subgraphs use The Graph hosted service
+  // Format: https://gateway.thegraph.com/api/{API_KEY}/subgraphs/id/{SUBGRAPH_ID}
+}
+
+/**
+ * Get Uniswap V4 Subgraph URL for a chain
+ */
+export function getSubgraphUrl(chainId: SupportedChainId): string | undefined {
+  return SUBGRAPH_URLS[chainId]
+}
 ```
 
 ---
@@ -1250,6 +1412,18 @@ export abstract class BaseSwapNamespace {
   async price(params: SwapPriceParams): Promise<SwapPrice> {
     const provider = this.getProviderForChain(params.chainId)
     return provider.getPrice(params)
+  }
+
+  /**
+   * Get available swap pools across all providers
+   * @param params - Optional filtering by chainId or asset
+   * @returns Promise resolving to array of pools from all providers
+   */
+  async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
+    const results = await Promise.all(
+      this.getAllProviders().map((p) => p.getMarkets(params))
+    )
+    return results.flat()
   }
 
   /**
@@ -1293,11 +1467,10 @@ import { BaseSwapNamespace } from './BaseSwapNamespace.js'
 
 /**
  * Actions swap namespace (read-only, no wallet required)
- * @description Provides price() for getting quotes without a wallet
+ * @description Provides price() and getMarkets() for read-only access without a wallet
  */
 export class ActionsSwapNamespace extends BaseSwapNamespace {
-  // Inherits price() and supportedChainIds() from BaseSwapNamespace
-  // No additional methods needed for read-only access
+  // Inherits price(), getMarkets(), and supportedChainIds() from BaseSwapNamespace
 }
 ```
 

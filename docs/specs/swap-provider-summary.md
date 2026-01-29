@@ -108,9 +108,60 @@ interface SwapPrice {
 
 interface SwapRoute {
   path: Asset[]                  // Ordered list of assets in route
-  pools: SwapPoolInfo[]          // Pool info for each hop
+  pools: SwapMarketInfo[]          // Pool info for each hop
 }
 ```
+
+---
+
+### `actions.swap.getMarkets(params)`
+
+Get available swap markets across all providers. Available on `actions.swap` (no wallet required).
+
+```typescript
+// Get all pools on a specific chain
+const pools = await actions.swap.getMarkets({ chainId: 84532 })
+
+// Get all pools for a specific asset across all chains
+const usdcPools = await actions.swap.getMarkets({ asset: USDC })
+
+// Get all pools (no filter)
+const allPools = await actions.swap.getMarkets()
+```
+
+**Parameters:**
+
+```typescript
+interface GetSwapMarketsParams {
+  /** Filter by chain ID */
+  chainId?: number
+  /** Filter by asset (returns pools containing this asset) */
+  asset?: Asset
+}
+```
+
+**Returns:** `SwapMarket[]`
+
+```typescript
+interface SwapMarket {
+  /** Pool identifier */
+  poolId: string
+  /** Chain ID */
+  chainId: number
+  /** Token pair */
+  assets: [Asset, Asset]
+  /** Fee tier in pips (500 = 0.05%) */
+  fee: number
+  /** Total value locked */
+  tvl?: bigint
+  /** 24h volume */
+  volume24h?: bigint
+  /** Provider name */
+  provider: 'uniswap'
+}
+```
+
+**Data source:** Pools are fetched via [Uniswap V4 Subgraph](https://docs.uniswap.org/api/subgraph/overview) (The Graph).
 
 ---
 
