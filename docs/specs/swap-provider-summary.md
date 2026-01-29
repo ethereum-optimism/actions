@@ -108,7 +108,7 @@ interface SwapPrice {
 
 interface SwapRoute {
   path: Asset[]                  // Ordered list of assets in route
-  pools: SwapMarketInfo[]          // Pool info for each hop
+  pools: SwapMarketInfo[]          // Market info for each hop
 }
 ```
 
@@ -119,14 +119,14 @@ interface SwapRoute {
 Get available swap markets across all providers. Available on `actions.swap` (no wallet required).
 
 ```typescript
-// Get all pools on a specific chain
-const pools = await actions.swap.getMarkets({ chainId: 84532 })
+// Get all markets on a specific chain
+const markets = await actions.swap.getMarkets({ chainId: 84532 })
 
-// Get all pools for a specific asset across all chains
-const usdcPools = await actions.swap.getMarkets({ asset: USDC })
+// Get all markets for a specific asset across all chains
+const usdcMarkets = await actions.swap.getMarkets({ asset: USDC })
 
-// Get all pools (no filter)
-const allPools = await actions.swap.getMarkets()
+// Get all markets (no filter)
+const allMarkets = await actions.swap.getMarkets()
 ```
 
 **Parameters:**
@@ -135,19 +135,44 @@ const allPools = await actions.swap.getMarkets()
 interface GetSwapMarketsParams {
   /** Filter by chain ID */
   chainId?: number
-  /** Filter by asset (returns pools containing this asset) */
+  /** Filter by asset (returns markets containing this asset) */
   asset?: Asset
 }
 ```
 
 **Returns:** `SwapMarket[]`
 
+---
+
+### `actions.swap.getMarket(params)`
+
+Get current info for a specific swap market.
+
+```typescript
+const market = await actions.swap.getMarket({
+  poolId: '0x...',    // Pool ID hash
+  chainId: 84532,
+})
+```
+
+**Parameters:**
+
+```typescript
+// Unique identifier for a swap market (mirrors LendMarketId)
+type SwapMarketId = {
+  poolId: string                 // Pool ID hash (keccak256 of PoolKey)
+  chainId: number
+}
+
+type GetSwapMarketParams = SwapMarketId
+```
+
+**Returns:** `SwapMarket`
+
 ```typescript
 interface SwapMarket {
-  /** Pool identifier */
-  poolId: string
-  /** Chain ID */
-  chainId: number
+  /** Market identifier */
+  marketId: SwapMarketId
   /** Token pair */
   assets: [Asset, Asset]
   /** Fee tier in pips (500 = 0.05%) */
@@ -206,27 +231,10 @@ interface SwapProviderConfig {
 
 ### Pair Configuration
 
-Supports two formats for specifying trading pairs:
-
 ```typescript
-// Simple format: asset pair
-interface SwapPairSimple {
-  assets: [Asset, Asset]
+interface SwapPairConfig {
+  assets: [Asset, Asset]   // Token pair (order doesn't matter)
   chainId: number
-}
-
-// Explicit format: specific pool (V4 PoolKey)
-interface SwapPairExplicit {
-  poolKey: PoolKey
-  chainId: number
-}
-
-interface PoolKey {
-  currency0: Address
-  currency1: Address
-  fee: number              // Fee in pips (500 = 0.05%)
-  tickSpacing: number
-  hooks: Address           // Zero address for no hooks
 }
 ```
 
@@ -238,7 +246,7 @@ interface PoolKey {
 - **Universal Router** - Routes across V2/V3/V4 automatically for best pricing; handles multi-hop and split routes
 - **Transparent approvals** - Permit2 flow handled internally; SDK batches approval + swap transactions
 - **Slippage cascade** - Provider default (0.5%) → Config override → Execute param override
-- **Pair restrictions** - Optional allowlist/blocklist; supports simple pairs or explicit V4 PoolKeys
+- **Pair restrictions** - Optional allowlist/blocklist by asset pairs
 
 ---
 
