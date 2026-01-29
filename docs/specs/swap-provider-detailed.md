@@ -89,57 +89,14 @@ export interface SwapProviderConfig {
 }
 
 /**
- * Swap pair configuration - simplified format
- * @description Define a trading pair by assets
+ * Swap pair configuration
+ * @description Define allowed/blocked trading pairs by assets
  */
-export interface SwapPairSimple {
-  /** Token pair [assetIn, assetOut] - order doesn't matter for allowlist */
+export interface SwapPairConfig {
+  /** Token pair - order doesn't matter for allowlist/blocklist */
   assets: [Asset, Asset]
-  /** Chain ID where this pair is allowed */
+  /** Chain ID where this pair is allowed/blocked */
   chainId: SupportedChainId
-}
-
-/**
- * Swap pair configuration - explicit pool format
- * @description Define a specific pool by its PoolKey (Uniswap V4)
- */
-export interface SwapPairExplicit {
-  /** Full pool key for explicit pool targeting */
-  poolKey: PoolKey
-  /** Chain ID where this pool exists */
-  chainId: SupportedChainId
-}
-
-/**
- * Union type for swap pair configuration
- * @description Supports both simplified asset pairs and explicit pool keys
- */
-export type SwapPairConfig = SwapPairSimple | SwapPairExplicit
-
-/**
- * Uniswap V4 PoolKey structure
- * @description Uniquely identifies a Uniswap V4 pool
- */
-export interface PoolKey {
-  /** Lower-sorted currency address (use zero address for native ETH) */
-  currency0: Address
-  /** Higher-sorted currency address */
-  currency1: Address
-  /** Pool fee in pips (500 = 0.05%, 3000 = 0.30%, 10000 = 1%) */
-  fee: number
-  /** Tick spacing for the pool */
-  tickSpacing: number
-  /** Hook contract address (zero address for no hooks) */
-  hooks: Address
-}
-
-/**
- * Type guard to check if config is explicit pool format
- */
-export function isExplicitPairConfig(
-  config: SwapPairConfig
-): config is SwapPairExplicit {
-  return 'poolKey' in config
 }
 ```
 
@@ -245,15 +202,15 @@ export interface SwapPriceParams {
 export interface SwapRoute {
   /** Ordered list of assets in the route path */
   path: Asset[]
-  /** Pool information for each hop */
+  /** Market information for each hop */
   pools: SwapMarketInfo[]
 }
 
 /**
- * Pool information for a swap hop
+ * Market information for a swap hop
  */
 export interface SwapMarketInfo {
-  /** Pool address or identifier */
+  /** Market address or identifier */
   address: Address
   /** Fee tier in pips */
   fee: number
@@ -342,24 +299,38 @@ export interface SwapReceipt {
 // packages/sdk/src/types/swap/base.ts (continued)
 
 /**
- * Parameters for getting swap pools
+ * Swap market identifier
+ * @description Unique identifier for a swap market (mirrors LendMarketId pattern)
+ */
+export type SwapMarketId = {
+  /** Pool identifier (keccak256 hash of PoolKey) */
+  poolId: string
+  /** Chain ID where this market exists */
+  chainId: SupportedChainId
+}
+
+/**
+ * Parameters for getting a specific swap market
+ */
+export type GetSwapMarketParams = SwapMarketId
+
+/**
+ * Parameters for getting swap markets
  */
 export interface GetSwapMarketsParams {
   /** Filter by chain ID */
   chainId?: SupportedChainId
-  /** Filter by asset (returns pools containing this asset) */
+  /** Filter by asset (returns markets containing this asset) */
   asset?: Asset
 }
 
 /**
- * Swap pool information
+ * Swap market information
  */
 export interface SwapMarket {
-  /** Pool identifier (address or poolId hash) */
-  poolId: string
-  /** Chain ID */
-  chainId: SupportedChainId
-  /** Token pair in the pool */
+  /** Market identifier (contains marketId and chainId) */
+  marketId: SwapMarketId
+  /** Token pair in the market */
   assets: [Asset, Asset]
   /** Fee tier in pips (500 = 0.05%) */
   fee: number
@@ -390,6 +361,11 @@ export interface SwapProviderMethods {
    * Provider implementation of price method
    */
   _getPrice(params: SwapPriceParams): Promise<SwapPrice>
+
+  /**
+   * Provider implementation of getMarket method
+   */
+  _getMarket(params: GetSwapMarketParams): Promise<SwapMarket>
 
   /**
    * Provider implementation of getMarkets method
@@ -427,7 +403,6 @@ import type {
   SwapTransaction,
   SwapPairConfig,
 } from '@/types/swap/base.js'
-import { isExplicitPairConfig } from '@/types/swap/base.js'
 import { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 
 /** Default slippage tolerance (0.5%) */
@@ -527,9 +502,19 @@ export abstract class SwapProvider<
   }
 
   /**
-   * Get available swap pools
+   * Get a specific swap market by ID
+   * @param params - Market identifier and chain
+   * @returns Market information
+   */
+  async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
+    this.validateChainSupported(params.chainId)
+    return this._getMarket(params)
+  }
+
+  /**
+   * Get available swap markets
    * @param params - Optional filtering by chainId or asset
-   * @returns Array of swap pools
+   * @returns Array of swap markets
    */
   async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
     // If chainId specified, validate it's supported
@@ -560,6 +545,8 @@ export abstract class SwapProvider<
   ): Promise<SwapTransaction>
 
   protected abstract _getPrice(params: SwapPriceParams): Promise<SwapPrice>
+
+  protected abstract _getMarket(params: GetSwapMarketParams): Promise<SwapMarket>
 
   protected abstract _getMarkets(params: GetSwapMarketsParams): Promise<SwapMarket[]>
 
@@ -613,19 +600,7 @@ export abstract class SwapProvider<
     return list.some((config) => {
       if (config.chainId !== chainId) return false
 
-      if (isExplicitPairConfig(config)) {
-        // For explicit pool config, check currencies match (order matters in PoolKey)
-        const inAddress = getAssetAddress(assetIn, chainId).toLowerCase()
-        const outAddress = getAssetAddress(assetOut, chainId).toLowerCase()
-        const c0 = config.poolKey.currency0.toLowerCase()
-        const c1 = config.poolKey.currency1.toLowerCase()
-        return (
-          (inAddress === c0 && outAddress === c1) ||
-          (inAddress === c1 && outAddress === c0)
-        )
-      }
-
-      // Simple pair config - order doesn't matter
+      // Compare asset symbols (order doesn't matter)
       const [asset0, asset1] = config.assets
       const symbolIn = assetIn.metadata.symbol.toLowerCase()
       const symbolOut = assetOut.metadata.symbol.toLowerCase()
@@ -790,6 +765,45 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
     })
   }
 
+  protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
+    const { poolId, chainId } = params
+    const subgraphUrl = getSubgraphUrl(chainId)
+
+    if (!subgraphUrl) {
+      throw new Error(`Subgraph not available for chain ${chainId}`)
+    }
+
+    // Query specific pool by ID from subgraph
+    const query = `
+      query GetPool($id: ID!) {
+        pool(id: $id) {
+          id
+          token0 { id, symbol, decimals }
+          token1 { id, symbol, decimals }
+          feeTier
+          totalValueLockedUSD
+          volumeUSD
+        }
+      }
+    `
+
+    const response = await fetch(subgraphUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        variables: { id: poolId },
+      }),
+    })
+
+    const data = await response.json()
+    if (!data.data.pool) {
+      throw new Error(`Market with poolId ${poolId} not found on chain ${chainId}`)
+    }
+
+    return this.transformSubgraphMarkets([data.data.pool], chainId)[0]
+  }
+
   protected async _getMarkets(params: GetSwapMarketsParams): Promise<SwapMarket[]> {
     const chainIds = params.chainId
       ? [params.chainId]
@@ -803,7 +817,7 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
   }
 
   /**
-   * Fetch pools from Uniswap V4 Subgraph for a specific chain
+   * Fetch markets from Uniswap V4 Subgraph for a specific chain
    */
   private async fetchMarketsForChain(
     chainId: SupportedChainId,
@@ -849,8 +863,10 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
 
   private transformSubgraphMarkets(pools: any[], chainId: SupportedChainId): SwapMarket[] {
     return pools.map((pool) => ({
-      poolId: pool.id,
-      chainId,
+      marketId: {
+        poolId: pool.id,  // Pool ID hash from subgraph
+        chainId,
+      },
       assets: [
         this.tokenToAsset(pool.token0),
         this.tokenToAsset(pool.token1),
@@ -1415,9 +1431,19 @@ export abstract class BaseSwapNamespace {
   }
 
   /**
-   * Get available swap pools across all providers
+   * Get a specific swap market
+   * @param params - Market identifier
+   * @returns Market information
+   */
+  async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
+    const provider = this.getProviderForChain(params.chainId)
+    return provider.getMarket(params)
+  }
+
+  /**
+   * Get available swap markets across all providers
    * @param params - Optional filtering by chainId or asset
-   * @returns Promise resolving to array of pools from all providers
+   * @returns Promise resolving to array of markets from all providers
    */
   async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
     const results = await Promise.all(
@@ -1467,10 +1493,10 @@ import { BaseSwapNamespace } from './BaseSwapNamespace.js'
 
 /**
  * Actions swap namespace (read-only, no wallet required)
- * @description Provides price() and getMarkets() for read-only access without a wallet
+ * @description Provides price(), getMarket(), and getMarkets() for read-only access without a wallet
  */
 export class ActionsSwapNamespace extends BaseSwapNamespace {
-  // Inherits price(), getMarkets(), and supportedChainIds() from BaseSwapNamespace
+  // Inherits price(), getMarket(), getMarkets(), and supportedChainIds() from BaseSwapNamespace
 }
 ```
 
@@ -1663,7 +1689,7 @@ export abstract class Wallet {
       "marketId": null
     },
     "uniswap": {
-      "poolId": null,
+      "marketId": null,
       "positionId": null
     },
     "deployedAt": null,
