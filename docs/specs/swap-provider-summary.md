@@ -10,7 +10,7 @@ The SDK uses an **adapter pattern** that supports multiple swap providers. Devel
 
 ## Wallet Namespace API
 
-### `wallet.swap.execute(params, chainId)`
+### `wallet.swap.execute(params)`
 
 Execute a token swap.
 
@@ -19,7 +19,8 @@ const receipt = await wallet.swap.execute({
   amountIn: 100,           // Human-readable amount (e.g., 100 USDC)
   assetIn: USDC,
   assetOut: ETH,
-}, chainId)
+  chainId: 84532,
+})
 ```
 
 **Parameters:**
@@ -34,9 +35,11 @@ interface SwapExecuteParams {
   assetIn: Asset
   /** Token to buy */
   assetOut: Asset
+  /** Chain to execute swap on */
+  chainId: number
   /** Slippage tolerance (e.g., 0.005 for 0.5%). Overrides config default. */
   slippage?: number
-  /** Unix timestamp deadline. Defaults to now + 20 minutes. */
+  /** Unix timestamp deadline. Defaults to now + 1 minute. */
   deadline?: number
   /** Recipient address. Defaults to wallet address. */
   recipient?: Address
@@ -180,54 +183,19 @@ interface PoolKey {
 
 ## Design Decisions
 
-### Adapter Pattern
-- `SwapProvider` abstract base class defines the interface
-- `UniswapSwapProvider` implements Uniswap-specific logic
-- Future providers (1inch, 0x, etc.) implement the same interface
-- Mirrors existing `LendProvider` pattern with Morpho/Aave adapters
-
-### Universal Router
-- Single Uniswap integration via Universal Router
-- Automatically routes across V2, V3, and V4 pools for best pricing
-- No need for separate version-specific providers
-- Auto Router handles multi-hop and split routes
-
-### Transparent Approvals
-- Permit2 approval flow handled internally
-- SDK checks existing allowances before each swap
-- Batches approval + swap transactions when needed
-- Developers only call `execute()` - no separate approval step
-
-### Slippage Cascade
-- Provider default (0.5%) → Config override → Execute param override
-- Each level can override the previous
-
-### Pair Restrictions
-- Optional allowlist/blocklist for trading pairs
-- Supports both simple asset pairs and explicit V4 PoolKeys
-- If no allowlist configured, all supported assets allowed
+- **Adapter pattern** - `SwapProvider` base class with `UniswapSwapProvider` implementation (mirrors `LendProvider` pattern)
+- **Universal Router** - Routes across V2/V3/V4 automatically for best pricing; handles multi-hop and split routes
+- **Transparent approvals** - Permit2 flow handled internally; SDK batches approval + swap transactions
+- **Slippage cascade** - Provider default (0.5%) → Config override → Execute param override
+- **Pair restrictions** - Optional allowlist/blocklist; supports simple pairs or explicit V4 PoolKeys
 
 ---
 
 ## Testnet Support
 
-### Base Sepolia (Chain ID: 84532)
-
-Initial implementation targets Base Sepolia with Uniswap V4:
-
-| Contract | Address |
-|----------|---------|
-| PoolManager | `0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408` |
-| Universal Router | `0x492e6456d9528771018deb9e87ef7750ef184104` |
-| Quoter | `0x4a6513c898fe1b2d0e78d3b0e0a4a151589b1cba` |
-| Permit2 | `0x000000000022D473030F116dDEE9F6B43aC78BA3` |
-
-### Demo Pool Setup
-
-A deployment script will create a V4 pool with:
-- **Pair:** DemoUSDC / DemoOP (mintable test tokens)
-- **Fee tier:** 500 (0.05% - lowest tier)
-- **Initial liquidity:** 100k each token
+- **Target chain:** Base Sepolia (84532)
+- **Contracts:** PoolManager, Universal Router, Quoter, Permit2 (V4 deployed)
+- **Demo pool:** DemoUSDC/DemoOP pair, 0.05% fee tier, 100k initial liquidity each
 
 ---
 
@@ -274,7 +242,8 @@ const receipt = await wallet.swap.execute({
   amountIn: 100,
   assetIn: USDC,
   assetOut: ETH,
-}, 84532)
+  chainId: 84532,
+})
 
 console.log(`Swapped! Tx: ${receipt.receipt.transactionHash}`)
 ```

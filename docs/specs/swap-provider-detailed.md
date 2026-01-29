@@ -198,9 +198,11 @@ export interface SwapExecuteParams {
   assetIn: Asset
   /** Token to buy */
   assetOut: Asset
+  /** Chain to execute swap on */
+  chainId: SupportedChainId
   /** Slippage tolerance override (e.g., 0.01 for 1%). Overrides provider and config defaults. */
   slippage?: number
-  /** Transaction deadline as Unix timestamp. Defaults to now + 20 minutes. */
+  /** Transaction deadline as Unix timestamp. Defaults to now + 1 minute. */
   deadline?: number
   /** Recipient address. Defaults to wallet address. */
   recipient?: Address
@@ -391,7 +393,7 @@ import { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 const DEFAULT_SLIPPAGE = 0.005
 
 /** Default deadline offset (20 minutes) */
-const DEFAULT_DEADLINE_OFFSET = 20 * 60
+const DEFAULT_DEADLINE_OFFSET = 60 // 1 minute
 
 /**
  * Abstract base class for swap providers
@@ -1329,25 +1331,20 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
 
   /**
    * Execute a token swap
-   * @param params - Swap parameters
-   * @param chainId - Chain to execute on
+   * @param params - Swap parameters including chainId
    * @returns Swap receipt with transaction details
    */
-  async execute(
-    params: SwapExecuteParams,
-    chainId: SupportedChainId
-  ): Promise<SwapReceipt> {
-    const provider = this.getProviderForChain(chainId)
+  async execute(params: SwapExecuteParams): Promise<SwapReceipt> {
+    const provider = this.getProviderForChain(params.chainId)
 
     // Build swap transaction
     const swapTx = await provider.execute({
       ...params,
       walletAddress: this.wallet.address,
-      chainId,
     })
 
     // Execute transaction(s)
-    const receipt = await this.executeTransaction(swapTx, chainId)
+    const receipt = await this.executeTransaction(swapTx, params.chainId)
 
     return {
       receipt,
@@ -1750,7 +1747,10 @@ export async function executeSwap(
     throw new Error('Swap not configured for this wallet')
   }
 
-  const receipt = await wallet.swap.execute(params, SUPPORTED_CHAIN_ID)
+  const receipt = await wallet.swap.execute({
+    ...params,
+    chainId: SUPPORTED_CHAIN_ID,
+  })
 
   // Add explorer URL
   const txHash = 'userOpHash' in receipt.receipt
@@ -1935,7 +1935,8 @@ Update the home page to reflect swap functionality:
      amountIn: 100,
      assetIn: USDC,
      assetOut: ETH,
-   }, chainId)
+     chainId: 84532,
+   })
    ```
 
 3. **Update feature descriptions**
