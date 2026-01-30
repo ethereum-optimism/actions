@@ -1,7 +1,7 @@
 import type { Address, PublicClient } from 'viem'
 import { encodeFunctionData, maxUint48, maxUint160, maxUint256 } from 'viem'
 
-import type { TransactionData } from '@/types/swap/index.js'
+import type { TransactionData } from '@/types/transaction.js'
 
 /**
  * Permit2 ABI (subset for approvals)

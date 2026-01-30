@@ -8,6 +8,7 @@ export {
   getTokenBySymbol,
   SUPPORTED_TOKENS,
 } from '@/supported/tokens.js'
+export { SwapProvider, UniswapSwapProvider } from '@/swap/index.js'
 export type {
   ActionsConfig,
   ApyBreakdown,
@@ -24,6 +25,17 @@ export type {
   LendProviderConfig,
   LendTransaction,
   LendTransactionReceipt,
+  SwapConfig,
+  SwapExecuteParams,
+  SwapMarket,
+  SwapMarketId,
+  SwapPairConfig,
+  SwapPrice,
+  SwapPriceParams,
+  SwapProviderConfig,
+  SwapReceipt,
+  SwapRoute,
+  SwapTransaction,
   TokenBalance,
   TransactionData,
   UserOperationTransactionReceipt,

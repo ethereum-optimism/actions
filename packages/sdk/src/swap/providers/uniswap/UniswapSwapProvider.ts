@@ -12,8 +12,8 @@ import type {
   SwapPriceParams,
   SwapProviderConfig,
   SwapTransaction,
-  TransactionData,
 } from '@/types/swap/index.js'
+import type { TransactionData } from '@/types/transaction.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 import {

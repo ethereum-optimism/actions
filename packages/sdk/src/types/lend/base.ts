@@ -1,7 +1,9 @@
-import type { Address, Hex } from 'viem'
+import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
+// Import and re-export shared transaction type for backwards compatibility
+import type { TransactionData } from '@/types/transaction.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
@@ -10,6 +12,7 @@ import type {
 export { LendProvider } from '@/lend/core/LendProvider.js'
 export { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 export { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
+export type { TransactionData }
 
 /**
  * Lending market identifier
@@ -44,19 +47,6 @@ export type LendMarketConfig = LendMarketId & LendMarketConfigMetadata
  * @description Requires market identifier (address and chainId)
  */
 export type GetLendMarketParams = LendMarketId
-
-/**
- * Transaction data for execution
- * @description Raw transaction data for wallet execution
- */
-export interface TransactionData {
-  /** Target contract address */
-  to: Address
-  /** Encoded function call data */
-  data: Hex
-  /** ETH value to send */
-  value: bigint
-}
 
 /**
  * Supply metrics for a lending market
