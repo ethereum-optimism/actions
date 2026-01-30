@@ -3,10 +3,14 @@ import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
+import type { SwapProvider } from '@/swap/index.js'
+import { UniswapSwapProvider } from '@/swap/index.js'
+import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
 import type {
   ActionsConfig,
   AssetsConfig,
   LendProviderConfig,
+  SwapProviderConfig,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
@@ -47,6 +51,10 @@ export class Actions<
   private _lendProviders: {
     morpho?: LendProvider<LendProviderConfig>
     aave?: LendProvider<LendProviderConfig>
+  } = {}
+  private _swap?: ActionsSwapNamespace
+  private _swapProviders: {
+    uniswap?: SwapProvider<SwapProviderConfig>
   } = {}
   private _assetsConfig?: AssetsConfig
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
@@ -95,6 +103,21 @@ export class Actions<
       }
     }
 
+    // Create swap providers if configured
+    if (config.swap) {
+      if (config.swap.uniswap) {
+        this._swapProviders.uniswap = new UniswapSwapProvider(
+          config.swap.uniswap,
+          this.chainManager,
+        )
+      }
+
+      // Create swap namespace if any providers are configured
+      if (this._swapProviders.uniswap) {
+        this._swap = new ActionsSwapNamespace(this._swapProviders)
+      }
+    }
+
     this.wallet = this.createWalletNamespace(config.wallet)
   }
 
@@ -123,6 +146,32 @@ export class Actions<
     aave?: LendProvider<LendProviderConfig>
   } {
     return this._lendProviders
+  }
+
+  /**
+   * Get swap operations interface
+   * @description Access to swap operations like price quotes and markets.
+   * Throws an error if no swap provider is configured in ActionsConfig.
+   * @returns ActionsSwapNamespace for swap operations
+   * @throws Error if swap provider not configured
+   */
+  get swap(): ActionsSwapNamespace {
+    if (!this._swap) {
+      throw new Error(
+        'Swap provider not configured. Please add swap configuration to ActionsConfig.',
+      )
+    }
+    return this._swap
+  }
+
+  /**
+   * Get the swap provider instances
+   * @returns Object containing configured swap providers
+   */
+  get swapProviders(): {
+    uniswap?: SwapProvider<SwapProviderConfig>
+  } {
+    return this._swapProviders
   }
 
   /**
