@@ -1,12 +1,12 @@
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { SwapProviderConfig } from '@/types/swap/index.js'
+import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
   SwapMarket,
   SwapPrice,
   SwapPriceParams,
+  SwapProviderConfig,
 } from '@/types/swap/index.js'
 
 export type SwapProviders = {
@@ -62,7 +62,7 @@ export abstract class BaseSwapNamespace {
     return Array.from(chainIds)
   }
 
-  protected getAllProviders(): SwapProvider<SwapProviderConfig>[] {
+  protected getAllProviders(): Array<SwapProvider<SwapProviderConfig>> {
     return Object.values(this.providers).filter(
       (p): p is SwapProvider<SwapProviderConfig> => p !== undefined,
     )

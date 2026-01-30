@@ -110,7 +110,8 @@ export abstract class SwapProvider<
       assetOut: params.assetOut,
       slippage: params.slippage ?? this.defaultSlippage,
       deadline:
-        params.deadline ?? Math.floor(Date.now() / 1000) + DEFAULT_DEADLINE_OFFSET,
+        params.deadline ??
+        Math.floor(Date.now() / 1000) + DEFAULT_DEADLINE_OFFSET,
       recipient: params.recipient ?? params.walletAddress,
       walletAddress: params.walletAddress,
       chainId: params.chainId,
@@ -173,7 +174,9 @@ export abstract class SwapProvider<
 
   protected abstract _getPrice(params: SwapPriceParams): Promise<SwapPrice>
 
-  protected abstract _getMarket(params: GetSwapMarketParams): Promise<SwapMarket>
+  protected abstract _getMarket(
+    params: GetSwapMarketParams,
+  ): Promise<SwapMarket>
 
   protected abstract _getMarkets(
     params: GetSwapMarketsParams,
@@ -201,7 +204,12 @@ export abstract class SwapProvider<
 
     // Check blocklist first
     if (pairBlocklist?.length) {
-      const isBlocked = this.isPairInList(assetIn, assetOut, chainId, pairBlocklist)
+      const isBlocked = this.isPairInList(
+        assetIn,
+        assetOut,
+        chainId,
+        pairBlocklist,
+      )
       if (isBlocked) {
         throw new Error(
           `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is blocked on chain ${chainId}`,
@@ -211,7 +219,12 @@ export abstract class SwapProvider<
 
     // Check allowlist if configured
     if (pairAllowlist?.length) {
-      const isAllowed = this.isPairInList(assetIn, assetOut, chainId, pairAllowlist)
+      const isAllowed = this.isPairInList(
+        assetIn,
+        assetOut,
+        chainId,
+        pairAllowlist,
+      )
       if (!isAllowed) {
         throw new Error(
           `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is not in the allowlist for chain ${chainId}`,
