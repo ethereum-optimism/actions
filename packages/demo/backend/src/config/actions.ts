@@ -37,6 +37,11 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
         marketAllowlist: [AaveETH],
       },
     },
+    swap: {
+      uniswap: {
+        defaultSlippage: 0.005, // 0.5%
+      },
+    },
     assets: {
       allow: [USDC_DEMO, ETH],
     },
