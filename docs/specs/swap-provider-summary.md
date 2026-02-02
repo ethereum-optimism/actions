@@ -114,16 +114,46 @@ interface SwapRoute {
 
 ---
 
-### `actions.swap.getMarkets(params)`
+### `actions.swap.prices(params)`
 
-Get available swap markets across all providers. Available on `actions.swap` (no wallet required).
+Get price quotes from ALL configured providers for comparison. Available on both `wallet.swap` and `actions.swap`.
 
 ```typescript
-// Get all markets on a specific chain
-const markets = await actions.swap.getMarkets({ chainId: 84532 })
+// Compare prices across all providers (Uniswap, 1inch, 0x, etc.)
+const quotes = await actions.swap.prices({
+  assetIn: USDC,
+  assetOut: ETH,
+  amountIn: 1000,
+  chainId: 84532,
+})
 
-// Get all markets for a specific asset across all chains
-const usdcMarkets = await actions.swap.getMarkets({ asset: USDC })
+// Results sorted by best output amount
+console.log(quotes[0].provider)    // "oneInch" (best rate)
+console.log(quotes[0].amountOut)   // 0.42n ETH
+console.log(quotes[1].provider)    // "uniswap"
+console.log(quotes[1].amountOut)   // 0.41n ETH
+```
+
+**Returns:** `SwapPriceWithProvider[]` (sorted by best output)
+
+```typescript
+interface SwapPriceWithProvider extends SwapPrice {
+  provider: string   // Provider name (e.g., 'uniswap', 'oneInch')
+}
+```
+
+---
+
+### `actions.swap.getMarkets(params)`
+
+Get available swap markets across ALL configured providers. Available on `actions.swap` (no wallet required).
+
+```typescript
+// Get all USDC markets across ALL providers (Uniswap + 1inch + 0x + ...)
+const markets = await actions.swap.getMarkets({ asset: USDC })
+
+// Get all markets on a specific chain
+const baseMarkets = await actions.swap.getMarkets({ chainId: 84532 })
 
 // Get all markets (no filter)
 const allMarkets = await actions.swap.getMarkets()
@@ -213,9 +243,13 @@ const actions = createActions({
 
 ### SwapConfig Type
 
+Multiple providers can be configured simultaneously. The SDK aggregates results across all providers for methods like `getMarkets()` and `prices()`.
+
 ```typescript
 interface SwapConfig {
   uniswap?: SwapProviderConfig
+  oneInch?: SwapProviderConfig
+  zeroX?: SwapProviderConfig
   // Future providers added here
 }
 
@@ -242,6 +276,7 @@ interface SwapPairConfig {
 
 ## Design Decisions
 
+- **Multi-provider aggregation** - Configure multiple providers (Uniswap, 1inch, 0x); SDK aggregates results for `getMarkets()` and `prices()`
 - **Adapter pattern** - `SwapProvider` base class with `UniswapSwapProvider` implementation (mirrors `LendProvider` pattern)
 - **Universal Router** - Routes across V2/V3/V4 automatically for best pricing; handles multi-hop and split routes
 - **Transparent approvals** - Permit2 flow handled internally; SDK batches approval + swap transactions

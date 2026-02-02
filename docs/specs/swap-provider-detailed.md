@@ -62,6 +62,49 @@ This implementation mirrors the established LendProvider pattern:
 | `ActionsLendNamespace` | `ActionsSwapNamespace` |
 | `WalletLendNamespace` | `WalletSwapNamespace` |
 
+### Multi-Provider Aggregation
+
+The SwapProvider system is designed to support multiple providers simultaneously. When multiple providers are configured (e.g., Uniswap + 1inch + 0x), the namespaces aggregate results:
+
+| Method | Behavior |
+|--------|----------|
+| `getMarkets({ asset })` | Returns markets from ALL providers containing the asset |
+| `prices(params)` | Returns price quotes from ALL providers, sorted by best output |
+| `price(params)` | Returns quote from first available provider for the chain |
+| `supportedChainIds()` | Returns union of chains supported by ANY provider |
+| `execute(params)` | Uses the provider specified in the swap transaction |
+
+**Example: Aggregated Market Discovery**
+
+```typescript
+// Configure multiple providers
+const actions = createActions({
+  swap: {
+    uniswap: { /* config */ },
+    oneInch: { /* config */ },
+    zeroX: { /* config */ },
+  },
+  // ...
+})
+
+// Get all USDC markets across all providers
+const markets = await actions.swap.getMarkets({ asset: USDC })
+// Returns: Uniswap pools + 1inch routes + 0x orderbook markets
+
+// Compare prices across providers
+const prices = await actions.swap.prices({
+  assetIn: USDC,
+  assetOut: ETH,
+  amountIn: 1000,
+  chainId: 8453,
+})
+// Returns: [
+//   { provider: 'oneInch', amountOut: 0.42n, ... },
+//   { provider: 'uniswap', amountOut: 0.41n, ... },
+//   { provider: 'zeroX', amountOut: 0.40n, ... },
+// ]
+```
+
 ---
 
 ## Types and Interfaces
@@ -109,12 +152,18 @@ import type { SwapProviderConfig } from '@/types/swap/index.js'
 
 /**
  * Swap configuration
- * @description Configuration for all swap providers
+ * @description Configuration for all swap providers. Multiple providers can be
+ * configured simultaneously - the SDK will aggregate results across all providers
+ * for methods like getMarkets() and prices().
  */
 export interface SwapConfig {
   /** Uniswap swap provider configuration */
   uniswap?: SwapProviderConfig
-  // Future providers: 1inch?, 0x?, etc.
+  /** 1inch swap provider configuration */
+  oneInch?: SwapProviderConfig
+  /** 0x swap provider configuration */
+  zeroX?: SwapProviderConfig
+  // Future providers added here
 }
 
 /**
@@ -238,6 +287,16 @@ export interface SwapPrice {
   route: SwapRoute
   /** Estimated gas cost in wei */
   gasEstimate?: bigint
+}
+
+/**
+ * Swap price with provider attribution
+ * @description Extended price quote that includes which provider returned the quote.
+ * Used by prices() to compare quotes across multiple providers.
+ */
+export interface SwapPriceWithProvider extends SwapPrice {
+  /** Provider name that returned this quote (e.g., 'uniswap', 'oneInch') */
+  provider: string
 }
 
 /**
@@ -1411,23 +1470,58 @@ import type { SwapProviderConfig } from '@/types/swap/base.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { SwapPriceParams, SwapPrice } from '@/types/swap/base.js'
 
+/**
+ * Swap providers registry
+ * @description Multiple swap providers can be configured simultaneously.
+ * Methods like getMarkets() aggregate results across all connected providers.
+ */
 export type SwapProviders = {
   uniswap?: SwapProvider<SwapProviderConfig>
-  // Future: oneInch?, zeroX?, etc.
+  oneInch?: SwapProvider<SwapProviderConfig>
+  zeroX?: SwapProvider<SwapProviderConfig>
+  // Future providers added here
 }
 
 /**
  * Base swap namespace with shared read-only operations
+ * @description Aggregates operations across all configured swap providers.
+ * When multiple providers are configured, methods like getMarkets() and prices()
+ * query all providers and combine results.
  */
 export abstract class BaseSwapNamespace {
   constructor(protected readonly providers: SwapProviders) {}
 
   /**
-   * Get price quote for a swap
+   * Get price quote for a swap from first available provider
+   * @description Returns quote from the first provider that supports the chain.
+   * For comparing prices across providers, use prices() instead.
    */
   async price(params: SwapPriceParams): Promise<SwapPrice> {
     const provider = this.getProviderForChain(params.chainId)
     return provider.getPrice(params)
+  }
+
+  /**
+   * Get price quotes from all providers for comparison
+   * @description Queries all providers that support the chain and returns
+   * quotes with provider attribution. Useful for finding best price.
+   * @param params - Swap price parameters
+   * @returns Array of prices with provider information, sorted by best output amount
+   */
+  async prices(params: SwapPriceParams): Promise<SwapPriceWithProvider[]> {
+    const providers = this.getProvidersForChain(params.chainId)
+    const results = await Promise.allSettled(
+      providers.map(async ({ name, provider }) => ({
+        ...await provider.getPrice(params),
+        provider: name,
+      }))
+    )
+    return results
+      .filter((r): r is PromiseFulfilledResult<SwapPriceWithProvider> =>
+        r.status === 'fulfilled'
+      )
+      .map(r => r.value)
+      .sort((a, b) => Number(b.amountOut - a.amountOut)) // Best output first
   }
 
   /**
@@ -1442,6 +1536,9 @@ export abstract class BaseSwapNamespace {
 
   /**
    * Get available swap markets across all providers
+   * @description Aggregates markets from ALL configured providers.
+   * Example: actions.swap.getMarkets({ asset: USDC }) returns USDC markets
+   * from Uniswap, 1inch, 0x, etc.
    * @param params - Optional filtering by chainId or asset
    * @returns Promise resolving to array of markets from all providers
    */
@@ -1454,6 +1551,7 @@ export abstract class BaseSwapNamespace {
 
   /**
    * Get all supported chain IDs across all providers
+   * @description Union of chain IDs supported by any configured provider
    */
   supportedChainIds(): SupportedChainId[] {
     const chainIds = new Set<SupportedChainId>()
@@ -1469,6 +1567,17 @@ export abstract class BaseSwapNamespace {
     return Object.values(this.providers).filter(
       (p): p is SwapProvider<SwapProviderConfig> => p !== undefined
     )
+  }
+
+  protected getProvidersForChain(
+    chainId: SupportedChainId
+  ): Array<{ name: string; provider: SwapProvider<SwapProviderConfig> }> {
+    return Object.entries(this.providers)
+      .filter(([_, p]) => p !== undefined && p.isChainSupported(chainId))
+      .map(([name, provider]) => ({
+        name,
+        provider: provider as SwapProvider<SwapProviderConfig>
+      }))
   }
 
   protected getProviderForChain(
