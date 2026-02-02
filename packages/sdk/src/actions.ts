@@ -244,6 +244,7 @@ export class Actions<
       {
         chainManager: this.chainManager,
         lendProviders: this._lendProviders,
+        swapProviders: this._swapProviders,
         supportedAssets: this.getSupportedAssets(),
       },
       options,
@@ -256,6 +257,7 @@ export class Actions<
       this.smartWalletProvider = new DefaultSmartWalletProvider(
         this.chainManager,
         this._lendProviders,
+        this._swapProviders,
         this.getSupportedAssets(),
         config.smartWalletConfig.provider.attributionSuffix,
       )
