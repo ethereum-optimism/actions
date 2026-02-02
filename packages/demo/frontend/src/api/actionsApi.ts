@@ -188,6 +188,146 @@ class ActionsApiClient {
     })
     return result
   }
+
+  async getSwapMarkets(
+    chainId?: SupportedChainId,
+    headers: HeadersInit = {},
+  ): Promise<
+    Array<{
+      marketId: { poolId: string; chainId: number }
+      assets: [unknown, unknown]
+      fee: number
+      tvl?: bigint
+      volume24h?: bigint
+      provider: string
+    }>
+  > {
+    const params = chainId ? `?chainId=${chainId}` : ''
+    const { result } = await this.request<{
+      result: Array<{
+        marketId: { poolId: string; chainId: number }
+        assets: [unknown, unknown]
+        fee: number
+        tvl?: string
+        volume24h?: string
+        provider: string
+      }>
+    }>(`/swap/markets${params}`, {
+      method: 'GET',
+      headers,
+    })
+    return result.map((market) => ({
+      ...market,
+      tvl: market.tvl ? BigInt(market.tvl) : undefined,
+      volume24h: market.volume24h ? BigInt(market.volume24h) : undefined,
+    }))
+  }
+
+  async getSwapPrice(
+    {
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      amountIn,
+    }: {
+      tokenInAddress: Address
+      tokenOutAddress: Address
+      chainId: SupportedChainId
+      amountIn?: number
+    },
+    headers: HeadersInit = {},
+  ): Promise<{
+    price: string
+    priceInverse: string
+    amountIn: bigint
+    amountOut: bigint
+    amountOutFormatted: string
+    priceImpact: number
+    gasEstimate?: bigint
+  }> {
+    const params = new URLSearchParams({
+      tokenInAddress,
+      tokenOutAddress,
+      chainId: chainId.toString(),
+    })
+    if (amountIn !== undefined) {
+      params.set('amountIn', amountIn.toString())
+    }
+
+    const { result } = await this.request<{
+      result: {
+        price: string
+        priceInverse: string
+        amountIn: string
+        amountOut: string
+        amountOutFormatted: string
+        priceImpact: number
+        gasEstimate?: string
+      }
+    }>(`/swap/price?${params}`, {
+      method: 'GET',
+      headers,
+    })
+    return {
+      price: result.price,
+      priceInverse: result.priceInverse,
+      amountIn: BigInt(result.amountIn),
+      amountOut: BigInt(result.amountOut),
+      amountOutFormatted: result.amountOutFormatted,
+      priceImpact: result.priceImpact,
+      gasEstimate: result.gasEstimate ? BigInt(result.gasEstimate) : undefined,
+    }
+  }
+
+  async executeSwap(
+    {
+      amountIn,
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      slippage,
+    }: {
+      amountIn: number
+      tokenInAddress: Address
+      tokenOutAddress: Address
+      chainId: SupportedChainId
+      slippage?: number
+    },
+    headers: HeadersInit = {},
+  ): Promise<{
+    amountIn: bigint
+    amountOut: bigint
+    price: string
+    priceImpact: number
+    blockExplorerUrls?: string[]
+  }> {
+    const { result } = await this.request<{
+      result: {
+        amountIn: string
+        amountOut: string
+        price: string
+        priceImpact: number
+        blockExplorerUrls?: string[]
+      }
+    }>('/swap/execute', {
+      method: 'POST',
+      body: JSON.stringify({
+        amountIn,
+        tokenInAddress,
+        tokenOutAddress,
+        chainId,
+        slippage,
+      }),
+      headers,
+    })
+    return {
+      amountIn: BigInt(result.amountIn),
+      amountOut: BigInt(result.amountOut),
+      price: result.price,
+      priceImpact: result.priceImpact,
+      blockExplorerUrls: result.blockExplorerUrls,
+    }
+  }
 }
 
 export const actionsApi = new ActionsApiClient()

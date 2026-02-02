@@ -3,7 +3,7 @@ interface TransactionModalProps {
   status: 'loading' | 'success' | 'error'
   onClose: () => void
   blockExplorerUrl?: string
-  mode?: 'lend' | 'withdraw'
+  mode?: 'lend' | 'withdraw' | 'swap'
   assetSymbol?: string
 }
 
@@ -54,7 +54,9 @@ function TransactionModal({
           description:
             mode === 'withdraw'
               ? 'Your funds are now in your wallet'
-              : 'Your funds are now earning interest',
+              : mode === 'swap'
+                ? 'Your swap has been completed'
+                : 'Your funds are now earning interest',
           showClose: true,
         }
       case 'error':
