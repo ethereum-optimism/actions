@@ -71,13 +71,14 @@ const receipt = wallet.borrow.openPosition({
     title: 'Swap',
     description:
       'Enable onchain trading between configurable protocols and assets.',
-    soonBadge: true,
-    imageLabel: 'Supported swap providers: Coming soon™',
+    images: [{ src: '/uniswap-logo.svg', link: 'https://uniswap.org/' }],
+    imageLabel: 'Supports swap providers:',
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,
   assetIn: USDC,
   assetOut: ETH,
+  chainId: 8453, // Base
 });`,
   },
   {
