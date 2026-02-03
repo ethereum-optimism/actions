@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import type { Address } from 'viem'
+import type { SupportedChainId } from '@eth-optimism/actions-sdk/react'
 import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
@@ -12,6 +14,10 @@ import {
 } from '@/contexts/LendProviderContext'
 import { MarketSelector } from './MarketSelector'
 import type { LendProviderOperations } from '@/hooks/useLendProvider'
+import { ActionTabs, type ActionType } from './ActionTabs'
+import { SwapAction } from './SwapAction'
+import { useSwap } from '@/hooks/useSwap'
+import { actionsApi } from '@/api/actionsApi'
 
 export interface EarnProps {
   operations: LendProviderOperations
@@ -19,6 +25,7 @@ export interface EarnProps {
   logout: () => Promise<void>
   walletAddress: string | null
   providerConfig: WalletProviderConfig
+  getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
   logPrefix?: string
 }
 
@@ -31,6 +38,7 @@ function Earn({
   logout,
   walletAddress,
   providerConfig,
+  getAuthHeaders,
   logPrefix,
 }: EarnProps) {
   if (!ready) {
@@ -59,6 +67,7 @@ function Earn({
           logout={logout}
           walletAddress={walletAddress}
           providerConfig={providerConfig}
+          getAuthHeaders={getAuthHeaders}
         />
       </ActivityHighlightProvider>
     </LendProviderContextProvider>
@@ -69,6 +78,7 @@ interface EarnContentProps {
   logout: () => Promise<void>
   walletAddress: string | null
   providerConfig: WalletProviderConfig
+  getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
 }
 
 /**
@@ -78,8 +88,11 @@ function EarnContent({
   logout,
   walletAddress,
   providerConfig,
+  getAuthHeaders,
 }: EarnContentProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [activeTab, setActiveTab] = useState<ActionType>('lend')
+
   const {
     markets,
     selectedMarket,
@@ -94,6 +107,144 @@ function EarnContent({
     handleMintAsset,
     handleTransaction,
   } = useLendProviderContext()
+
+  // Swap functionality
+  const { isExecuting: isSwapping } = useSwap()
+
+  const handleSwap = useCallback(
+    async ({
+      amountIn,
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+    }: {
+      amountIn: number
+      tokenInAddress: Address
+      tokenOutAddress: Address
+      chainId: SupportedChainId
+    }) => {
+      const headers = await getAuthHeaders()
+      const result = await actionsApi.executeSwap(
+        {
+          amountIn,
+          tokenInAddress,
+          tokenOutAddress,
+          chainId,
+        },
+        headers,
+      )
+      return {
+        blockExplorerUrl: result.blockExplorerUrls?.[0],
+      }
+    },
+    [getAuthHeaders],
+  )
+
+  const handleGetPrice = useCallback(
+    async ({
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      amountIn,
+    }: {
+      tokenInAddress: Address
+      tokenOutAddress: Address
+      chainId: SupportedChainId
+      amountIn?: number
+    }) => {
+      try {
+        const headers = await getAuthHeaders()
+        const price = await actionsApi.getSwapPrice(
+          {
+            tokenInAddress,
+            tokenOutAddress,
+            chainId,
+            amountIn,
+          },
+          headers,
+        )
+        return {
+          price: price.price,
+          priceImpact: price.priceImpact,
+          amountOutFormatted: price.amountOutFormatted,
+        }
+      } catch {
+        return null
+      }
+    },
+    [getAuthHeaders],
+  )
+
+  // Get balances for swap
+  const [tokenBalances, setTokenBalances] = useState<
+    Array<{
+      asset: import('@eth-optimism/actions-sdk/react').Asset
+      logo: string
+      balance: string
+      chainId: SupportedChainId
+    }>
+  >([])
+  const [isLoadingBalances, setIsLoadingBalances] = useState(false)
+
+  // Fetch balances for swap when tab switches
+  const fetchBalances = useCallback(async () => {
+    if (activeTab !== 'swap') return
+
+    setIsLoadingBalances(true)
+    try {
+      const headers = await getAuthHeaders()
+      const balances = await actionsApi.getWalletBalance(headers)
+
+      // Get assets from the selected market or markets
+      const assetsMap = new Map<
+        string,
+        import('@eth-optimism/actions-sdk/react').Asset
+      >()
+
+      // Collect all unique assets from markets
+      markets.forEach((market) => {
+        if (market.asset) {
+          assetsMap.set(market.asset.metadata.symbol, market.asset)
+        }
+      })
+
+      // Match balances with assets
+      const formatted = balances
+        .map((balance) => {
+          const asset = assetsMap.get(balance.symbol)
+          if (!asset) return null
+
+          return {
+            asset,
+            logo:
+              balance.symbol === 'USDC_DEMO'
+                ? '/usdc-logo.svg'
+                : '/op-logo.svg',
+            balance: balance.totalFormattedBalance,
+            chainId: balance.chainBalances[0]?.chainId || 84532,
+          }
+        })
+        .filter((item) => item !== null) as Array<{
+        asset: import('@eth-optimism/actions-sdk/react').Asset
+        logo: string
+        balance: string
+        chainId: import('@eth-optimism/actions-sdk/react').SupportedChainId
+      }>
+
+      setTokenBalances(formatted)
+    } catch (error) {
+      console.error('Failed to fetch token balances:', error)
+    } finally {
+      setIsLoadingBalances(false)
+    }
+  }, [activeTab, getAuthHeaders, markets])
+
+  // Fetch balances when switching to swap tab
+  useEffect(() => {
+    if (activeTab === 'swap') {
+      fetchBalances()
+    }
+  }, [activeTab, fetchBalances])
 
   return (
     <div
@@ -165,63 +316,86 @@ function EarnContent({
                 style={{ color: '#666666', fontSize: '16px' }}
                 className="sm:text-base"
               >
-                Earn interest by lending USDC
+                {activeTab === 'lend'
+                  ? 'Earn interest by lending USDC'
+                  : activeTab === 'swap'
+                    ? 'Swap between tokens'
+                    : 'Perform onchain actions'}
               </p>
             </div>
 
             <div className="space-y-6">
-              {/* Market Selector */}
-              <div>
-                <h3
-                  className="mb-3"
-                  style={{
-                    color: '#1a1b1e',
-                    fontSize: '16px',
-                    fontWeight: 600,
-                  }}
-                >
-                  Select Market
-                </h3>
-                <MarketSelector
-                  markets={markets}
-                  selectedMarket={
-                    selectedMarket
-                      ? {
-                          name: selectedMarket.marketName,
-                          logo: selectedMarket.marketLogo,
-                          networkName: selectedMarket.networkName,
-                          networkLogo: selectedMarket.networkLogo,
-                          asset: selectedMarket.asset,
-                          assetLogo: selectedMarket.assetLogo,
-                          apy: selectedMarket.apy,
-                          isLoadingApy: selectedMarket.isLoadingApy,
-                          marketId: selectedMarket.marketId,
-                          provider: selectedMarket.provider,
-                        }
-                      : null
-                  }
-                  onMarketSelect={handleMarketSelect}
-                  isLoading={isLoadingMarkets}
+              {/* Action Tabs */}
+              <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+              {activeTab === 'lend' && (
+                <>
+                  {/* Market Selector */}
+                  <div>
+                    <h3
+                      className="mb-3"
+                      style={{
+                        color: '#1a1b1e',
+                        fontSize: '16px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Select Market
+                    </h3>
+                    <MarketSelector
+                      markets={markets}
+                      selectedMarket={
+                        selectedMarket
+                          ? {
+                              name: selectedMarket.marketName,
+                              logo: selectedMarket.marketLogo,
+                              networkName: selectedMarket.networkName,
+                              networkLogo: selectedMarket.networkLogo,
+                              asset: selectedMarket.asset,
+                              assetLogo: selectedMarket.assetLogo,
+                              apy: selectedMarket.apy,
+                              isLoadingApy: selectedMarket.isLoadingApy,
+                              marketId: selectedMarket.marketId,
+                              provider: selectedMarket.provider,
+                            }
+                          : null
+                      }
+                      onMarketSelect={handleMarketSelect}
+                      isLoading={isLoadingMarkets}
+                    />
+                  </div>
+
+                  <Action
+                    assetBalance={assetBalance}
+                    isLoadingBalance={isLoadingBalance}
+                    isMintingAsset={isMintingAsset}
+                    depositedAmount={depositedAmount}
+                    assetSymbol={
+                      selectedMarket?.asset.metadata.symbol || 'USDC'
+                    }
+                    assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
+                    onMintAsset={handleMintAsset}
+                    onTransaction={handleTransaction}
+                    marketId={selectedMarket?.marketId}
+                    provider={selectedMarket?.provider}
+                  />
+
+                  <LentBalance
+                    marketPositions={marketPositions}
+                    isInitialLoad={isInitialLoad}
+                  />
+                </>
+              )}
+
+              {activeTab === 'swap' && (
+                <SwapAction
+                  assets={tokenBalances}
+                  isLoadingBalances={isLoadingBalances}
+                  onSwap={handleSwap}
+                  onGetPrice={handleGetPrice}
+                  isExecuting={isSwapping}
                 />
-              </div>
-
-              <Action
-                assetBalance={assetBalance}
-                isLoadingBalance={isLoadingBalance}
-                isMintingAsset={isMintingAsset}
-                depositedAmount={depositedAmount}
-                assetSymbol={selectedMarket?.asset.metadata.symbol || 'USDC'}
-                assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
-                onMintAsset={handleMintAsset}
-                onTransaction={handleTransaction}
-                marketId={selectedMarket?.marketId}
-                provider={selectedMarket?.provider}
-              />
-
-              <LentBalance
-                marketPositions={marketPositions}
-                isInitialLoad={isInitialLoad}
-              />
+              )}
 
               {/* Activity Log - Mobile */}
               <div className="lg:hidden">

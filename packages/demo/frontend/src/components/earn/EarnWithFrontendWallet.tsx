@@ -105,6 +105,13 @@ export function EarnWithFrontendWallet({
     [wallet, actions],
   )
 
+  const getAuthHeaders = useMemo(
+    () => async () => {
+      return undefined
+    },
+    [],
+  )
+
   return (
     <Earn
       operations={operations}
@@ -112,6 +119,7 @@ export function EarnWithFrontendWallet({
       logout={logout}
       walletAddress={wallet?.address || null}
       providerConfig={WALLET_PROVIDER_CONFIGS[selectedProvider]}
+      getAuthHeaders={getAuthHeaders}
       logPrefix="[EarnWithFrontendWallet]"
     />
   )

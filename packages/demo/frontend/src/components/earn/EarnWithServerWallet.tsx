@@ -77,6 +77,7 @@ export function EarnWithServerWallet({
       logout={logout}
       walletAddress={walletAddress}
       providerConfig={selectedProvider}
+      getAuthHeaders={getAuthHeaders}
       logPrefix="[EarnWithServerWallet]"
     />
   )
