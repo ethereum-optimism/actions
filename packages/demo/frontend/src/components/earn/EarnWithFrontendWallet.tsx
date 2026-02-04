@@ -120,6 +120,7 @@ export function EarnWithFrontendWallet({
       walletAddress={wallet?.address || null}
       providerConfig={WALLET_PROVIDER_CONFIGS[selectedProvider]}
       getAuthHeaders={getAuthHeaders}
+      actions={actions}
       logPrefix="[EarnWithFrontendWallet]"
     />
   )

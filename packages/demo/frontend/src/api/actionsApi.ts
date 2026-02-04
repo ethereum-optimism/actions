@@ -189,6 +189,18 @@ class ActionsApiClient {
     return result
   }
 
+  async getAssets(
+    headers: HeadersInit = {},
+  ): Promise<Array<import('@eth-optimism/actions-sdk/react').Asset>> {
+    const { result } = await this.request<{
+      result: Array<import('@eth-optimism/actions-sdk/react').Asset>
+    }>('/assets', {
+      method: 'GET',
+      headers,
+    })
+    return result
+  }
+
   async getSwapMarkets(
     chainId?: SupportedChainId,
     headers: HeadersInit = {},

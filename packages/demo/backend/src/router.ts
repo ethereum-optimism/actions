@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
+import * as assetsController from './controllers/assets.js'
 import * as lendController from './controllers/lend.js'
 import * as swapController from './controllers/swap.js'
 import { WalletController } from './controllers/wallet.js'
@@ -62,6 +63,9 @@ router.post(
   authMiddleware,
   lendController.closePosition,
 )
+
+// Assets endpoints
+router.get('/assets', assetsController.getAssets)
 
 // Swap endpoints
 router.get('/swap/markets', swapController.getMarkets)

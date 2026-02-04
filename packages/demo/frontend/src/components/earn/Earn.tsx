@@ -17,6 +17,7 @@ import type { LendProviderOperations } from '@/hooks/useLendProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
 import { useSwap } from '@/hooks/useSwap'
+import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { actionsApi } from '@/api/actionsApi'
 
 export interface EarnProps {
@@ -26,6 +27,7 @@ export interface EarnProps {
   walletAddress: string | null
   providerConfig: WalletProviderConfig
   getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
+  actions?: { getSupportedAssets: () => import('@eth-optimism/actions-sdk/react').Asset[] }
   logPrefix?: string
 }
 
@@ -39,6 +41,7 @@ function Earn({
   walletAddress,
   providerConfig,
   getAuthHeaders,
+  actions,
   logPrefix,
 }: EarnProps) {
   if (!ready) {
@@ -68,6 +71,8 @@ function Earn({
           walletAddress={walletAddress}
           providerConfig={providerConfig}
           getAuthHeaders={getAuthHeaders}
+          actions={actions}
+          operations={operations}
         />
       </ActivityHighlightProvider>
     </LendProviderContextProvider>
@@ -79,6 +84,8 @@ interface EarnContentProps {
   walletAddress: string | null
   providerConfig: WalletProviderConfig
   getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
+  actions?: { getSupportedAssets: () => import('@eth-optimism/actions-sdk/react').Asset[] }
+  operations: LendProviderOperations
 }
 
 /**
@@ -89,6 +96,8 @@ function EarnContent({
   walletAddress,
   providerConfig,
   getAuthHeaders,
+  actions,
+  operations,
 }: EarnContentProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<ActionType>('lend')
@@ -175,76 +184,29 @@ function EarnContent({
     [getAuthHeaders],
   )
 
-  // Get balances for swap
-  const [tokenBalances, setTokenBalances] = useState<
-    Array<{
-      asset: import('@eth-optimism/actions-sdk/react').Asset
-      logo: string
-      balance: string
-      chainId: SupportedChainId
-    }>
-  >([])
-  const [isLoadingBalances, setIsLoadingBalances] = useState(false)
+  // Get token balances fetcher from operations
+  const getTokenBalances = useCallback(async () => {
+    return operations.getTokenBalances()
+  }, [operations])
 
-  // Fetch balances for swap when tab switches
-  const fetchBalances = useCallback(async () => {
-    if (activeTab !== 'swap') return
+  // Fetch swap assets using shared hook
+  const {
+    assets: swapAssets,
+    isLoading: isLoadingSwapAssets,
+    refetch: refetchSwapAssets,
+  } = useSwapAssets({
+    actions,
+    getAuthHeaders,
+    getTokenBalances,
+    enabled: activeTab === 'swap',
+  })
 
-    setIsLoadingBalances(true)
-    try {
-      const headers = await getAuthHeaders()
-      const balances = await actionsApi.getWalletBalance(headers)
-
-      // Get assets from the selected market or markets
-      const assetsMap = new Map<
-        string,
-        import('@eth-optimism/actions-sdk/react').Asset
-      >()
-
-      // Collect all unique assets from markets
-      markets.forEach((market) => {
-        if (market.asset) {
-          assetsMap.set(market.asset.metadata.symbol, market.asset)
-        }
-      })
-
-      // Match balances with assets
-      const formatted = balances
-        .map((balance) => {
-          const asset = assetsMap.get(balance.symbol)
-          if (!asset) return null
-
-          return {
-            asset,
-            logo:
-              balance.symbol === 'USDC_DEMO'
-                ? '/usdc-logo.svg'
-                : '/op-logo.svg',
-            balance: balance.totalFormattedBalance,
-            chainId: balance.chainBalances[0]?.chainId || 84532,
-          }
-        })
-        .filter((item) => item !== null) as Array<{
-        asset: import('@eth-optimism/actions-sdk/react').Asset
-        logo: string
-        balance: string
-        chainId: import('@eth-optimism/actions-sdk/react').SupportedChainId
-      }>
-
-      setTokenBalances(formatted)
-    } catch (error) {
-      console.error('Failed to fetch token balances:', error)
-    } finally {
-      setIsLoadingBalances(false)
-    }
-  }, [activeTab, getAuthHeaders, markets])
-
-  // Fetch balances when switching to swap tab
+  // Refetch swap assets when switching to swap tab
   useEffect(() => {
     if (activeTab === 'swap') {
-      fetchBalances()
+      refetchSwapAssets()
     }
-  }, [activeTab, fetchBalances])
+  }, [activeTab, refetchSwapAssets])
 
   return (
     <div
@@ -389,8 +351,8 @@ function EarnContent({
 
               {activeTab === 'swap' && (
                 <SwapAction
-                  assets={tokenBalances}
-                  isLoadingBalances={isLoadingBalances}
+                  assets={swapAssets}
+                  isLoadingBalances={isLoadingSwapAssets}
                   onSwap={handleSwap}
                   onGetPrice={handleGetPrice}
                   isExecuting={isSwapping}
