@@ -65,7 +65,7 @@ interface SendReceipt {
 interface BridgeReceipt extends SendReceipt {
   fromChainId: number
   toChainId: number
-  bridgeProvider: string         // Provider used (e.g., 'native', 'across')
+  bridgeProvider: string         // Provider used (e.g., 'native', 'thirdParty')
   estimatedArrival?: number      // Unix timestamp for estimated arrival
   trackingUrl?: string           // URL to track bridge transaction
 }
@@ -146,8 +146,8 @@ const quotes = await actions.bridge.quotes({
 
 // Results sorted by best output amount (lowest fees)
 console.log(quotes[0].provider)    // "native" (best)
-console.log(quotes[0].amountOut)   // 999.5 USDC
-console.log(quotes[1].provider)    // "across"
+console.log(quotes[0].amountOut)   // 1000 USDC (0% fee)
+console.log(quotes[1].provider)    // "thirdParty"
 console.log(quotes[1].amountOut)   // 999.0 USDC
 ```
 
@@ -200,42 +200,35 @@ const actions = createActions({
 
   // Bridge configuration
   bridge: {
-    native: {
-      // Optimism Native Bridge configuration
-      enabled: true,
-    },
-    across: {
-      // Across Protocol configuration
-      enabled: true,
-      maxFeePercent: 0.01,  // 1% max fee
-    },
+    type: 'native',  // Default: Optimism Native Bridge
+    // Or configure a third-party provider
+    // type: 'custom',
+    // client: customBridgeClient,
   },
 })
 ```
 
 ### BridgeConfig Type
 
-Multiple providers can be configured simultaneously. The SDK aggregates results across all providers for methods like `supportedRoutes()` and `quotes()`.
+Developers can use the native bridge (default) or provide a custom bridge client following the provider pattern.
 
 ```typescript
 interface BridgeConfig {
-  /** Optimism Native Bridge */
-  native?: BridgeProviderConfig
-  /** Across Protocol */
-  across?: BridgeProviderConfig
-  /** Additional providers */
-  // Future providers added here
-}
+  /** Bridge provider type ('native' or 'custom') */
+  type?: 'native' | 'custom'
 
-interface BridgeProviderConfig {
-  /** Enable this provider */
-  enabled?: boolean
-  /** Maximum acceptable fee as percentage (e.g., 0.01 for 1%) */
-  maxFeePercent?: number
-  /** Route allowlist (optional) */
-  routeAllowlist?: BridgeRouteConfig[]
-  /** Route blocklist (optional) */
-  routeBlocklist?: BridgeRouteConfig[]
+  /** Custom bridge client instance (required if type === 'custom') */
+  client?: BridgeClient
+
+  /** Provider-specific configuration */
+  config?: {
+    /** Maximum acceptable fee as percentage (e.g., 0.01 for 1%) */
+    maxFeePercent?: number
+    /** Route allowlist (optional) */
+    routeAllowlist?: BridgeRouteConfig[]
+    /** Route blocklist (optional) */
+    routeBlocklist?: BridgeRouteConfig[]
+  }
 }
 
 interface BridgeRouteConfig {
@@ -246,36 +239,45 @@ interface BridgeRouteConfig {
   /** Destination chain */
   toChainId: number
 }
+
+/**
+ * Interface that custom bridge clients must implement
+ */
+interface BridgeClient {
+  getQuote(params: BridgeQuoteParams): Promise<BridgeQuote>
+  buildTransaction(params: any): Promise<BridgeTransactionData>
+  getSupportedRoutes?(): BridgeRoute[]
+}
 ```
 
 ---
 
 ## Design Decisions
 
-- **Multi-provider aggregation** - Configure multiple providers (Native, Across, etc.); SDK aggregates results for `supportedRoutes()` and `quotes()`
-- **Adapter pattern** - `BridgeProvider` base class with `NativeBridgeProvider`, `AcrossBridgeProvider` implementations
+- **Provider pattern** - Developers instantiate bridge clients and pass to Actions SDK (Actions never handles API keys)
+- **Adapter pattern** - `BridgeProvider` base class with `NativeBridgeProvider` default and extensible custom implementations
 - **Transparent integration** - Bridge triggered automatically when `fromChainId !== toChainId` in `send()`
-- **Automatic provider selection** - Best provider chosen based on fees and speed when not specified
+- **Smart chain detection** - Auto-detect source chain from wallet balances when not specified
 - **Fee protection** - Optional max fee percentage to prevent expensive bridges
 - **Route restrictions** - Optional allowlist/blocklist by asset and chain pairs
 
 ---
 
-## Supported Providers
+## Bridge Providers
 
-### Native Bridge (Optimism/Base)
+### Native Bridge (Built-in Default)
 
-- **Routes:** OP Mainnet ↔ Base, OP Sepolia ↔ Base Sepolia
+The Actions SDK includes a built-in implementation of the Optimism Native Bridge:
+
+- **Routes:** OP Mainnet ↔ Base, OP Sepolia ↔ Base Sepolia, Ethereum ↔ OP/Base
 - **Fee:** 0% (gas only)
 - **Time:** ~10 minutes (L1 → L2), ~7 days (L2 → L1 with fault proofs)
-- **Assets:** ETH, USDC, USDT, and all native tokens
+- **Assets:** ETH, USDC, USDT, and all Superchain-native tokens
+- **Configuration:** Zero config required - works out of the box
 
-### Across Protocol
+### Custom Bridge Providers
 
-- **Routes:** Multi-chain (Ethereum, OP, Base, Arbitrum, etc.)
-- **Fee:** Dynamic (typically 0.01-0.1%)
-- **Time:** ~1-5 minutes
-- **Assets:** ETH, USDC, USDT, WETH, DAI
+Third-party bridge providers can be integrated by implementing the `BridgeClient` interface and passing the client instance to Actions configuration. See the provider pattern documentation for implementation details.
 
 ---
 
@@ -284,23 +286,20 @@ interface BridgeRouteConfig {
 ```typescript
 import { createActions, USDC } from '@eth-optimism/actions-sdk'
 
-// Initialize SDK with bridge config
+// Initialize SDK (bridge defaults to native)
 const actions = createActions({
   wallet: { /* ... */ },
   chains: [
     { chainId: 84532, rpcUrl: '...' }, // Base Sepolia
     { chainId: 11155420, rpcUrl: '...' }, // OP Sepolia
   ],
-  bridge: {
-    native: { enabled: true },
-    across: { enabled: true, maxFeePercent: 0.01 },
-  },
+  // bridge config optional - defaults to native bridge
 })
 
 // Get wallet instance
 const wallet = await actions.wallet.getSmartWallet({ signer })
 
-// Get bridge quote
+// Optional: Get bridge quote before execution
 const quote = await actions.bridge.quote({
   asset: USDC,
   amount: 100,
