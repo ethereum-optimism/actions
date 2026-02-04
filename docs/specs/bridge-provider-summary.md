@@ -193,28 +193,35 @@ interface BridgeRoute {
 
 ### ActionsConfig
 
+Bridge configuration defaults to the native Optimism bridge. Developers can optionally configure a custom third-party provider for L2 ↔ L2 transfers.
+
 ```typescript
 const actions = createActions({
   wallet: { /* ... */ },
-  chains: [ /* ... */ ],
+  chains: [
+    { chainId: 1, rpcUrl: '...' },      // Ethereum L1
+    { chainId: 10, rpcUrl: '...' },     // OP Mainnet
+    { chainId: 8453, rpcUrl: '...' },   // Base
+  ],
 
-  // Bridge configuration
+  // Bridge defaults to native (L1 ↔ L2 only) - config optional
   bridge: {
-    type: 'native',  // Default: Optimism Native Bridge
-    // Or configure a third-party provider
-    // type: 'custom',
-    // client: customBridgeClient,
+    type: 'native',  // Optional - this is the default
   },
+
+  // Or configure a third-party provider for L2 ↔ L2
+  // bridge: {
+  //   type: 'custom',
+  //   client: customBridgeClient,
+  // },
 })
 ```
 
 ### BridgeConfig Type
 
-Developers can use the native bridge (default) or provide a custom bridge client following the provider pattern.
-
 ```typescript
 interface BridgeConfig {
-  /** Bridge provider type ('native' or 'custom') */
+  /** Bridge provider type (defaults to 'native') */
   type?: 'native' | 'custom'
 
   /** Custom bridge client instance (required if type === 'custom') */
@@ -255,9 +262,11 @@ interface BridgeClient {
 ## Design Decisions
 
 - **Provider pattern** - Developers instantiate bridge clients and pass to Actions SDK (Actions never handles API keys)
-- **Adapter pattern** - `BridgeProvider` base class with `NativeBridgeProvider` default and extensible custom implementations
+- **Adapter pattern** - `BridgeProvider` base class with `NativeBridgeProvider` (default) and extensible custom implementations
+- **Default to native** - Native bridge is the default for L1 ↔ L2 transfers, custom providers available for L2 ↔ L2
 - **Transparent integration** - Bridge triggered automatically when `fromChainId !== toChainId` in `send()`
 - **Smart chain detection** - Auto-detect source chain from wallet balances when not specified
+- **Superchain registry** - Built-in bridge addresses for all Superchain networks, extensible for custom chains
 - **Fee protection** - Optional max fee percentage to prevent expensive bridges
 - **Route restrictions** - Optional allowlist/blocklist by asset and chain pairs
 
@@ -265,35 +274,55 @@ interface BridgeClient {
 
 ## Bridge Providers
 
-### Native Bridge (Built-in Default)
+### Native Bridge (Optimism Standard Bridge)
 
-The Actions SDK includes a built-in implementation of the Optimism Native Bridge:
+The Actions SDK includes a built-in implementation of the Optimism Native Bridge for L1 ↔ L2 transfers.
 
-- **Routes:** OP Mainnet ↔ Base, OP Sepolia ↔ Base Sepolia, Ethereum ↔ OP/Base
-- **Fee:** 0% (gas only)
+**Important:** The native bridge only supports transfers between Ethereum L1 and individual L2 chains. It does NOT support direct L2 ↔ L2 transfers (e.g., Base → OP Mainnet). For L2 ↔ L2 bridging, use a custom bridge provider.
+
+- **Routes:** Ethereum L1 ↔ Each L2 (OP Mainnet, Base, OP Sepolia, Base Sepolia, Mode, Fraxtal, etc.)
+- **Fee:** 0% bridge fee (gas only)
 - **Time:** ~10 minutes (L1 → L2), ~7 days (L2 → L1 with fault proofs)
 - **Assets:** ETH, USDC, USDT, and all Superchain-native tokens
-- **Configuration:** Zero config required - works out of the box
+- **L2 Contract:** `0x4200000000000000000000000000000000000010` (standard predeploy across all OP Stack chains)
+- **L1 Contracts:** Chain-specific StandardBridge addresses (sourced from [Superchain Registry](https://github.com/ethereum-optimism/superchain-registry))
+
+#### Superchain Bridge Addresses
+
+The SDK includes L1StandardBridge addresses for all Superchain networks:
+
+| Network | Chain ID | L1StandardBridge |
+|---------|----------|------------------|
+| OP Mainnet | 10 | `0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1` |
+| Base | 8453 | `0x3154Cf16ccdb4C6d922629664174b904d80F2C35` |
+| OP Sepolia | 11155420 | `0xFBb0621E0B23b5478B630BD55a5f21f67730B0F1` |
+| Base Sepolia | 84532 | `0xfd0Bf71F60660E2f608ed56e1659C450eB113120` |
+| Mode | 34443 | `0x735aDBbE72226BD52e818E7181953f42E3b0FF21` |
+| Fraxtal | 252 | `0x34C0bD5877A5Ee7099D0f5688D65F4bB9158BDE2` |
+
+For additional Superchain networks, the SDK will fetch addresses from the [Superchain Registry](https://github.com/ethereum-optimism/superchain-registry).
 
 ### Custom Bridge Providers
 
-Third-party bridge providers can be integrated by implementing the `BridgeClient` interface and passing the client instance to Actions configuration. See the provider pattern documentation for implementation details.
+For L2 ↔ L2 transfers and advanced routing, developers can integrate third-party bridge aggregators by implementing the `BridgeClient` interface and passing the client instance to Actions configuration.
 
 ---
 
 ## Usage Example
 
+### Using Native Bridge (L1 ↔ L2) - Default
+
 ```typescript
 import { createActions, USDC } from '@eth-optimism/actions-sdk'
 
-// Initialize SDK (bridge defaults to native)
+// Initialize SDK - native bridge is default
 const actions = createActions({
   wallet: { /* ... */ },
   chains: [
-    { chainId: 84532, rpcUrl: '...' }, // Base Sepolia
-    { chainId: 11155420, rpcUrl: '...' }, // OP Sepolia
+    { chainId: 11155111, rpcUrl: '...' }, // Ethereum Sepolia (L1)
+    { chainId: 11155420, rpcUrl: '...' }, // OP Sepolia (L2)
   ],
-  // bridge config optional - defaults to native bridge
+  // bridge config optional - defaults to native
 })
 
 // Get wallet instance
@@ -303,25 +332,59 @@ const wallet = await actions.wallet.getSmartWallet({ signer })
 const quote = await actions.bridge.quote({
   asset: USDC,
   amount: 100,
-  fromChainId: 84532,
-  toChainId: 11155420,
+  fromChainId: 11155111,  // L1
+  toChainId: 11155420,     // L2
 })
 
 console.log(`Bridge via ${quote.provider}`)
 console.log(`Fee: ${quote.feePercent * 100}%`)
 console.log(`Time: ~${quote.estimatedTime}s`)
 
-// Execute cross-chain transfer
+// Execute cross-chain transfer (L1 → L2)
 const receipt = await wallet.send({
   amount: 100,
   asset: USDC,
   to: '0x...',
-  fromChainId: 84532,
+  fromChainId: 11155111,
   toChainId: 11155420,
 })
 
 console.log(`Bridged! Tx: ${receipt.receipt.transactionHash}`)
 console.log(`Track: ${receipt.trackingUrl}`)
+```
+
+### Using Custom Bridge (L2 ↔ L2)
+
+```typescript
+import { createActions } from '@eth-optimism/actions-sdk'
+import { BridgeClient } from 'third-party-bridge-sdk'
+
+// Initialize custom bridge client
+const bridgeClient = new BridgeClient({
+  apiKey: process.env.BRIDGE_API_KEY!,
+})
+
+// Initialize SDK with custom bridge
+const actions = createActions({
+  wallet: { /* ... */ },
+  chains: [
+    { chainId: 84532, rpcUrl: '...' },   // Base Sepolia
+    { chainId: 11155420, rpcUrl: '...' }, // OP Sepolia
+  ],
+  bridge: {
+    type: 'custom',
+    client: bridgeClient,  // Custom bridge for L2 ↔ L2
+  },
+})
+
+// Now can bridge between L2s
+const receipt = await wallet.send({
+  amount: 100,
+  asset: USDC,
+  to: '0x...',
+  fromChainId: 84532,    // Base Sepolia
+  toChainId: 11155420,   // OP Sepolia
+})
 ```
 
 ---

@@ -62,16 +62,26 @@ This implementation mirrors the established provider pattern:
 
 Following the wallet provider pattern, bridge clients are **instantiated by developers** and passed to Actions SDK. This keeps API keys out of Actions SDK.
 
-### Example: Native Bridge (No Client Needed)
+The native bridge is the **default** and requires no configuration. For L2 ↔ L2 transfers or advanced routing, developers can configure custom bridge providers.
+
+### Example: Native Bridge (Default - No Client Needed)
+
+The native bridge handles L1 ↔ L2 transfers using Optimism's StandardBridge contracts. It is the default and requires no configuration.
 
 ```typescript
 const actions = createActions({
   wallet: { /* ... */ },
-  // No bridge config = native bridge (default)
+  chains: [
+    { chainId: 1, rpcUrl: '...' },    // Ethereum L1
+    { chainId: 10, rpcUrl: '...' },   // OP Mainnet
+  ],
+  // bridge defaults to native - no config needed
 })
 ```
 
 ### Example: Custom Bridge Provider
+
+Custom bridges support L2 ↔ L2 transfers and advanced routing through third-party aggregators.
 
 ```typescript
 import { CustomBridgeClient } from 'third-party-bridge-sdk'
@@ -84,6 +94,10 @@ const bridgeClient = new CustomBridgeClient({
 // Pass client to Actions
 const actions = createActions({
   wallet: { /* ... */ },
+  chains: [
+    { chainId: 10, rpcUrl: '...' },     // OP Mainnet
+    { chainId: 8453, rpcUrl: '...' },   // Base
+  ],
   bridge: {
     type: 'custom',
     client: bridgeClient,  // ← Actions never sees API key
@@ -849,6 +863,103 @@ const ERC20_ABI = [
   },
 ] as const
 ```
+
+---
+
+### Superchain Bridge Addresses
+
+The SDK includes StandardBridge contract addresses for all Superchain networks, sourced from the [Superchain Registry](https://github.com/ethereum-optimism/superchain-registry).
+
+#### L2StandardBridge (Predeploy)
+
+All OP Stack chains use a standardized predeploy address for the L2StandardBridge:
+
+```typescript
+// packages/sdk/src/bridge/providers/native/addresses.ts
+
+/**
+ * L2StandardBridge predeploy address - same across all OP Stack chains
+ * See: https://docs.optimism.io/stack/protocol/predeploys
+ */
+export const L2_STANDARD_BRIDGE = '0x4200000000000000000000000000000000000010' as const
+```
+
+#### L1StandardBridge Addresses
+
+Each L2 chain has a unique L1StandardBridge contract on Ethereum:
+
+```typescript
+// packages/sdk/src/bridge/providers/native/addresses.ts
+
+/**
+ * L1StandardBridge addresses for each Superchain network
+ * Source: https://github.com/ethereum-optimism/superchain-registry
+ */
+export const L1_STANDARD_BRIDGES: Record<number, Address> = {
+  // Mainnet chains
+  10: '0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1',     // OP Mainnet
+  8453: '0x3154Cf16ccdb4C6d922629664174b904d80F2C35',   // Base
+  34443: '0x735aDBbE72226BD52e818E7181953f42E3b0FF21',  // Mode
+  252: '0x34C0bD5877A5Ee7099D0f5688D65F4bB9158BDE2',    // Fraxtal
+  42220: '0x9C4955b92F34148dbcfDCD82e9c9eCe5CF2badfe',  // Celo (OP Stack)
+
+  // Testnet chains
+  11155420: '0xFBb0621E0B23b5478B630BD55a5f21f67730B0F1', // OP Sepolia
+  84532: '0xfd0Bf71F60660E2f608ed56e1659C450eB113120',   // Base Sepolia
+} as const
+
+/**
+ * Get bridge addresses for a given chain
+ */
+export function getNativeBridgeAddresses(chainId: number): {
+  l1Bridge: Address
+  l2Bridge: Address
+} {
+  const l1Bridge = L1_STANDARD_BRIDGES[chainId]
+  if (!l1Bridge) {
+    throw new Error(`No native bridge found for chain ${chainId}`)
+  }
+
+  return {
+    l1Bridge,
+    l2Bridge: L2_STANDARD_BRIDGE,
+  }
+}
+```
+
+#### Supported Routes
+
+The native bridge only supports **L1 ↔ L2** transfers, NOT direct L2 ↔ L2 transfers:
+
+```typescript
+// packages/sdk/src/bridge/providers/native/addresses.ts
+
+/**
+ * Supported native bridge routes
+ * Note: Native bridge only supports L1 ↔ L2, not L2 ↔ L2
+ */
+export const SUPPORTED_ROUTES: BridgeRoute[] = [
+  // Mainnet routes (all L1 ↔ L2)
+  { fromChainId: 1, toChainId: 10, provider: 'native' },     // ETH → OP Mainnet
+  { fromChainId: 10, toChainId: 1, provider: 'native' },     // OP Mainnet → ETH
+  { fromChainId: 1, toChainId: 8453, provider: 'native' },   // ETH → Base
+  { fromChainId: 8453, toChainId: 1, provider: 'native' },   // Base → ETH
+  { fromChainId: 1, toChainId: 34443, provider: 'native' },  // ETH → Mode
+  { fromChainId: 34443, toChainId: 1, provider: 'native' },  // Mode → ETH
+
+  // Testnet routes (all L1 ↔ L2)
+  { fromChainId: 11155111, toChainId: 11155420, provider: 'native' }, // Sepolia → OP Sepolia
+  { fromChainId: 11155420, toChainId: 11155111, provider: 'native' }, // OP Sepolia → Sepolia
+  { fromChainId: 11155111, toChainId: 84532, provider: 'native' },    // Sepolia → Base Sepolia
+  { fromChainId: 84532, toChainId: 11155111, provider: 'native' },    // Base Sepolia → Sepolia
+
+  // Note: For L2 ↔ L2 (e.g., Base → OP Mainnet), use a custom bridge provider
+]
+```
+
+**Important:** To bridge from Base to OP Mainnet (or any L2 ↔ L2), developers must use a custom bridge provider that supports direct L2-to-L2 routing (e.g., Socket, Across, etc.).
+
+---
 
 ### Custom Bridge Provider (Example Implementation)
 
