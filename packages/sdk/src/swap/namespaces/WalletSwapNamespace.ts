@@ -1,3 +1,5 @@
+import { formatUnits } from 'viem'
+
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   SwapExecuteParams,
@@ -41,6 +43,14 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
       receipt,
       amountIn: swapTx.amountIn,
       amountOut: swapTx.amountOut,
+      amountInFormatted: formatUnits(
+        swapTx.amountIn,
+        swapTx.assetIn.metadata.decimals,
+      ),
+      amountOutFormatted: formatUnits(
+        swapTx.amountOut,
+        swapTx.assetOut.metadata.decimals,
+      ),
       assetIn: swapTx.assetIn,
       assetOut: swapTx.assetOut,
       price: swapTx.price,

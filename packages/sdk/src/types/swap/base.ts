@@ -64,12 +64,13 @@ export interface GetSwapMarketsParams {
 
 /**
  * Parameters for executing a swap
- * @description At least one of amountIn or amountOut must be provided
+ * @description Exactly one of amountIn or amountOut must be provided.
+ * Both values should be human-readable numbers (e.g., 100 for 100 USDC).
  */
 export interface SwapExecuteParams {
-  /** Amount of input token (human-readable). Mutually exclusive with amountOut for determining swap type. */
+  /** Amount of input token (human-readable). For exact-in swaps. Mutually exclusive with amountOut. */
   amountIn?: number
-  /** Amount of output token (human-readable). If provided without amountIn, executes exact output swap. */
+  /** Amount of output token (human-readable). For exact-out swaps. Mutually exclusive with amountIn. */
   amountOut?: number
   /** Token to sell */
   assetIn: Asset
@@ -102,15 +103,17 @@ export interface SwapExecuteInternalParams {
 
 /**
  * Parameters for getting a swap price quote
+ * @description Specify either amountIn (for exact-in) or amountOut (for exact-out),
+ * not both. Amounts should be human-readable numbers (e.g., 100 for 100 USDC).
  */
 export interface SwapPriceParams {
   /** Token to get price for (required) */
   assetIn: Asset
   /** Token to price against. Defaults to USDC if not provided. */
   assetOut?: Asset
-  /** Amount of input token. Defaults to 1 unit. */
+  /** Amount of input token (human-readable). Defaults to 1 unit. For exact-in quotes. */
   amountIn?: number
-  /** Amount of output token. For reverse quotes. */
+  /** Amount of output token (human-readable). For exact-out quotes. */
   amountOut?: number
   /** Chain to get price on */
   chainId: SupportedChainId
@@ -150,6 +153,8 @@ export interface SwapPrice {
   amountIn: bigint
   /** Expected output amount in wei */
   amountOut: bigint
+  /** Human-readable input amount */
+  amountInFormatted: string
   /** Human-readable output amount */
   amountOutFormatted: string
   /** Price impact as decimal (0.01 = 1%) */
@@ -202,6 +207,10 @@ export interface SwapReceipt {
   amountIn: bigint
   /** Actual output amount in wei */
   amountOut: bigint
+  /** Human-readable input amount */
+  amountInFormatted: string
+  /** Human-readable output amount */
+  amountOutFormatted: string
   /** Input asset */
   assetIn: Asset
   /** Output asset */

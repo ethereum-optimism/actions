@@ -178,6 +178,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     priceInverse,
     amountIn,
     amountOut,
+    amountInFormatted: formatUnits(amountIn, assetIn.metadata.decimals),
     amountOutFormatted: formatUnits(amountOut, assetOut.metadata.decimals),
     priceImpact,
     route,

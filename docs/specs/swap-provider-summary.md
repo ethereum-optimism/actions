@@ -8,6 +8,43 @@ The SDK uses an **adapter pattern** that supports multiple swap providers. Devel
 
 ---
 
+## Common Types
+
+### Asset
+
+An `Asset` is an object representing a token with its addresses across different chains and metadata:
+
+```typescript
+interface Asset {
+  /** Token addresses by chain ID */
+  address: Record<number, Address>
+  /** Token metadata */
+  metadata: {
+    name: string
+    symbol: string
+    decimals: number
+  }
+  /** Token type (erc20 or native) */
+  type: 'erc20' | 'native'
+}
+
+// Example: USDC asset
+const USDC: Asset = {
+  address: {
+    8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',  // Base
+    84532: '0xb1b0FE886cE376F28987Ad24b1759a8f0A7dd839', // Base Sepolia
+  },
+  metadata: {
+    name: 'USD Coin',
+    symbol: 'USDC',
+    decimals: 6,
+  },
+  type: 'erc20',
+}
+```
+
+---
+
 ## Wallet Namespace API
 
 ### `wallet.swap.execute(params)`
@@ -27,13 +64,13 @@ const receipt = await wallet.swap.execute({
 
 ```typescript
 interface SwapExecuteParams {
-  /** Amount of input token (human-readable). Required if amountOut not provided. */
+  /** Amount of input token (human-readable, e.g., 100 for 100 USDC). For exact-in swaps. Mutually exclusive with amountOut. */
   amountIn?: number
-  /** Amount of output token for exact output swaps. Required if amountIn not provided. */
+  /** Amount of output token (human-readable, e.g., 0.5 for 0.5 ETH). For exact-out swaps. Mutually exclusive with amountIn. */
   amountOut?: number
-  /** Token to sell */
+  /** Token to sell (Asset object with address map and metadata) */
   assetIn: Asset
-  /** Token to buy */
+  /** Token to buy (Asset object with address map and metadata) */
   assetOut: Asset
   /** Chain to execute swap on */
   chainId: number
@@ -53,6 +90,8 @@ interface SwapReceipt {
   receipt: TransactionReceipt    // Blockchain transaction receipt
   amountIn: bigint               // Actual input amount (wei)
   amountOut: bigint              // Actual output amount (wei)
+  amountInFormatted: string      // Human-readable input amount (e.g., "100")
+  amountOutFormatted: string     // Human-readable output amount (e.g., "0.5")
   assetIn: Asset
   assetOut: Asset
   price: string                  // Execution price (human-readable)
@@ -79,13 +118,13 @@ const quote = await wallet.swap.price({
 
 ```typescript
 interface SwapPriceParams {
-  /** Token to get price for */
+  /** Token to get price for (Asset object with address map and metadata) */
   assetIn: Asset
-  /** Token to price against. Defaults to USDC. */
+  /** Token to price against. Defaults to USDC. (Asset object) */
   assetOut?: Asset
-  /** Input amount. Defaults to 1 unit. */
+  /** Input amount (human-readable, e.g., 100). Defaults to 1 unit. For exact-in quotes. Mutually exclusive with amountOut. */
   amountIn?: number
-  /** Output amount for reverse quotes. */
+  /** Output amount (human-readable, e.g., 0.5). For exact-out quotes. Mutually exclusive with amountIn. */
   amountOut?: number
   /** Chain to get price on */
   chainId: number
@@ -100,7 +139,8 @@ interface SwapPrice {
   priceInverse: string           // Inverse rate
   amountIn: bigint               // Input amount (wei)
   amountOut: bigint              // Expected output (wei)
-  amountOutFormatted: string     // Human-readable output
+  amountInFormatted: string      // Human-readable input (e.g., "100")
+  amountOutFormatted: string     // Human-readable output (e.g., "0.5")
   priceImpact: number            // Price impact as decimal
   route: SwapRoute               // Path taken for multi-hop swaps
   gasEstimate?: bigint           // Estimated gas (wei)
@@ -108,7 +148,7 @@ interface SwapPrice {
 
 interface SwapRoute {
   path: Asset[]                  // Ordered list of assets in route
-  pools: SwapMarketInfo[]          // Market info for each hop
+  pools: SwapMarketInfo[]        // Market info for each hop
 }
 ```
 

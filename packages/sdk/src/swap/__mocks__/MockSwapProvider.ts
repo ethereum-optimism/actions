@@ -153,6 +153,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       priceInverse: '0.666666',
       amountIn,
       amountOut,
+      amountInFormatted: '1.0',
       amountOutFormatted: '1.5',
       priceImpact: this.mockProviderConfig.defaultPriceImpact,
       route: {
