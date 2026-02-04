@@ -8,10 +8,11 @@ This specification defines the BridgeProvider abstraction for cross-chain token 
 
 - Enable cross-chain token transfers through a minimal API enhancement
 - Follow established patterns from LendProvider and SwapProvider for consistency
-- Support multiple bridge providers (Native Bridge, Across Protocol, etc.)
+- Support multiple bridge providers through extensible architecture
 - Provide quotes before execution to show fees and timing
 - Handle token approvals transparently
 - Integrate seamlessly with existing `wallet.send()` API
+- **Never expose API keys to Actions SDK** - developers instantiate clients
 
 ---
 
@@ -27,32 +28,21 @@ packages/sdk/src/
 │   │   └── __tests__/
 │   │       └── BridgeProvider.test.ts
 │   ├── providers/
-│   │   ├── native/
-│   │   │   ├── NativeBridgeProvider.ts    # Optimism/Base native bridge
-│   │   │   ├── sdk.ts                     # Bridge SDK wrapper
-│   │   │   ├── addresses.ts               # Contract addresses per chain
-│   │   │   └── __tests__/
-│   │   │       └── NativeBridgeProvider.test.ts
-│   │   └── across/
-│   │       ├── AcrossBridgeProvider.ts    # Across Protocol
-│   │       ├── sdk.ts                     # Across SDK wrapper
-│   │       ├── addresses.ts               # Contract addresses
+│   │   └── native/
+│   │       ├── NativeBridgeProvider.ts    # Optimism/Base native bridge
+│   │       ├── sdk.ts                     # Bridge SDK wrapper
+│   │       ├── addresses.ts               # Contract addresses per chain
 │   │       └── __tests__/
-│   │           └── AcrossBridgeProvider.test.ts
-│   ├── namespaces/
-│   │   ├── BaseBridgeNamespace.ts         # Shared read-only operations
-│   │   ├── ActionsBridgeNamespace.ts      # actions.bridge (no wallet)
-│   │   ├── WalletBridgeNamespace.ts       # wallet.bridge (with signing)
-│   │   └── __tests__/
-│   │       ├── ActionsBridgeNamespace.test.ts
-│   │       └── WalletBridgeNamespace.test.ts
+│   │           └── NativeBridgeProvider.test.ts
+│   ├── types/
+│   │   ├── client.ts                      # BridgeClient interface
+│   │   ├── config.ts                      # Configuration types
+│   │   └── index.ts                       # Re-exports
 │   └── __mocks__/
 │       └── MockBridgeProvider.ts
 ├── types/
 │   └── bridge/
 │       ├── base.ts                       # Core bridge types
-│       ├── native.ts                     # Native bridge types
-│       ├── across.ts                     # Across-specific types
 │       └── index.ts                      # Re-exports
 ```
 
@@ -64,43 +54,123 @@ This implementation mirrors the established provider pattern:
 |--------------|--------------|----------------|
 | `LendProvider` abstract class | `SwapProvider` abstract class | `BridgeProvider` abstract class |
 | `MorphoLendProvider` | `UniswapSwapProvider` | `NativeBridgeProvider` |
-| `AaveLendProvider` | - | `AcrossBridgeProvider` |
-| `ActionsLendNamespace` | `ActionsSwapNamespace` | `ActionsBridgeNamespace` |
-| `WalletLendNamespace` | `WalletSwapNamespace` | `WalletBridgeNamespace` |
+| `AaveLendProvider` | - | `CustomBridgeProvider` |
 
-### Multi-Provider Aggregation
+---
 
-The BridgeProvider system supports multiple providers simultaneously:
+## Provider Pattern: Client Injection
 
-| Method | Behavior |
-|--------|----------|
-| `supportedRoutes()` | Returns routes from ALL providers |
-| `quotes(params)` | Returns quotes from ALL providers, sorted by best output |
-| `quote(params)` | Returns quote from best provider for the route |
-| `execute(params)` | Uses specified provider or auto-selects best |
+Following the wallet provider pattern, bridge clients are **instantiated by developers** and passed to Actions SDK. This keeps API keys out of Actions SDK.
+
+### Example: Native Bridge (No Client Needed)
+
+```typescript
+const actions = createActions({
+  wallet: { /* ... */ },
+  // No bridge config = native bridge (default)
+})
+```
+
+### Example: Custom Bridge Provider
+
+```typescript
+import { CustomBridgeClient } from 'third-party-bridge-sdk'
+
+// Developer instantiates client with their API key
+const bridgeClient = new CustomBridgeClient({
+  apiKey: process.env.BRIDGE_API_KEY!,
+})
+
+// Pass client to Actions
+const actions = createActions({
+  wallet: { /* ... */ },
+  bridge: {
+    type: 'custom',
+    client: bridgeClient,  // ← Actions never sees API key
+  }
+})
+```
 
 ---
 
 ## Types and Interfaces
 
+### Bridge Client Interface
+
+```typescript
+// packages/sdk/src/bridge/types/client.ts
+
+export interface BridgeClient {
+  /**
+   * Get quote for a cross-chain transfer
+   */
+  getQuote(params: BridgeQuoteRequest): Promise<BridgeQuoteResponse>
+
+  /**
+   * Build transaction for execution
+   */
+  buildTransaction(params: BridgeBuildTxRequest): Promise<BridgeTransactionResponse>
+
+  /**
+   * Get supported routes (optional - can be cached)
+   */
+  getSupportedRoutes?(): Promise<BridgeRouteInfo[]>
+}
+
+// Provider-agnostic requests/responses
+export interface BridgeQuoteRequest {
+  fromChainId: number
+  toChainId: number
+  fromTokenAddress: string
+  toTokenAddress: string
+  fromAmount: string
+  userAddress: string
+}
+
+export interface BridgeQuoteResponse {
+  fromAmount: string
+  toAmount: string
+  estimatedTime: number  // seconds
+  gasFees?: {
+    gasAmount: string
+    gasLimit: string
+  }
+  route: any  // Provider-specific route data
+}
+
+export interface BridgeBuildTxRequest {
+  route: any  // Provider-specific route from quote
+}
+
+export interface BridgeTransactionResponse {
+  txTarget: string      // Contract to call
+  txData: string        // Calldata
+  value?: string        // ETH value
+  approvalData?: {
+    approvalTokenAddress: string
+    allowanceTarget: string
+    approvalData: string
+  }
+}
+```
+
 ### Configuration Types
 
 ```typescript
-// packages/sdk/src/types/bridge/base.ts
+// packages/sdk/src/types/bridge/config.ts
 
 import type { Address } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
+import type { BridgeClient } from '@/bridge/types/client.js'
 
 /**
  * Bridge provider configuration
  */
 export interface BridgeProviderConfig {
-  /** Enable this bridge provider */
-  enabled?: boolean
-  /** Maximum acceptable fee as percentage (e.g., 0.01 for 1%). Rejects quotes above this. */
+  /** Maximum acceptable fee as percentage (e.g., 0.01 for 1%) */
   maxFeePercent?: number
-  /** Allowlist of bridge routes (optional - defaults to all supported routes) */
+  /** Allowlist of bridge routes (optional) */
   routeAllowlist?: BridgeRouteConfig[]
   /** Blocklist of bridge routes to exclude */
   routeBlocklist?: BridgeRouteConfig[]
@@ -124,17 +194,21 @@ export interface BridgeRouteConfig {
 ```typescript
 // packages/sdk/src/types/actions.ts (additions)
 
-import type { BridgeProviderConfig } from '@/types/bridge/index.js'
+import type { BridgeClient } from '@/bridge/types/client.js'
+import type { BridgeProviderConfig } from '@/types/bridge/config.js'
 
 /**
  * Bridge configuration
  */
 export interface BridgeConfig {
-  /** Optimism/Base Native Bridge */
-  native?: BridgeProviderConfig
-  /** Across Protocol bridge */
-  across?: BridgeProviderConfig
-  // Future providers added here
+  /** Bridge provider type ('native' or 'custom') */
+  type?: 'native' | 'custom'
+
+  /** Custom bridge client instance (required if type === 'custom') */
+  client?: BridgeClient
+
+  /** Provider configuration */
+  config?: BridgeProviderConfig
 }
 
 /**
@@ -156,7 +230,7 @@ export interface ActionsConfig<
 ### Bridge Operation Types
 
 ```typescript
-// packages/sdk/src/types/bridge/base.ts (continued)
+// packages/sdk/src/types/bridge/base.ts
 
 import type {
   TransactionReturnType,
@@ -188,6 +262,7 @@ export interface BridgeQuoteInternalParams {
   fromChainId: SupportedChainId
   toChainId: SupportedChainId
   to?: Address
+  walletAddress: Address
 }
 
 /**
@@ -224,8 +299,6 @@ export interface BridgeExecuteParams {
   fromChainId: SupportedChainId
   /** Destination chain */
   toChainId: SupportedChainId
-  /** Preferred provider (optional, auto-selects best if not specified) */
-  provider?: string
 }
 
 /**
@@ -344,9 +417,6 @@ export interface SendParams {
   fromChainId?: SupportedChainId
   /** Destination chain ID. Triggers bridge when different from fromChainId. */
   toChainId?: SupportedChainId
-
-  /** Preferred bridge provider (optional, auto-selects if not specified) */
-  bridgeProvider?: string
 }
 
 /**
@@ -407,7 +477,7 @@ export abstract class BridgeProvider<
     return this._config
   }
 
-  /** Provider name (e.g., 'native', 'across') */
+  /** Provider name (e.g., 'native', 'custom') */
   abstract readonly name: string
 
   /**
@@ -424,6 +494,7 @@ export abstract class BridgeProvider<
     const quote = await this._getQuote({
       ...params,
       amountWei,
+      walletAddress: params.to, // Will be overridden in execute
     })
 
     // Validate fee doesn't exceed max
@@ -654,6 +725,7 @@ export class NativeBridgeProvider extends BridgeProvider<BridgeProviderConfig> {
       fromChainId,
       toChainId,
       to,
+      walletAddress,
     })
 
     // Build bridge transaction
@@ -771,469 +843,128 @@ const ERC20_ABI = [
     stateMutability: 'nonpayable',
     inputs: [
       { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
+      { name: '_amount', type: 'uint256' },
     ],
     outputs: [{ type: 'bool' }],
   },
 ] as const
 ```
 
-### Bridge Addresses
+### Custom Bridge Provider (Example Implementation)
 
 ```typescript
-// packages/sdk/src/bridge/providers/native/addresses.ts
+// packages/sdk/src/bridge/providers/custom/CustomBridgeProvider.ts
 
-import type { Address } from 'viem'
-import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { BridgeRoute } from '@/types/bridge/base.js'
-import { ETH, USDC, USDT } from '@/supported/tokens.js'
-
-interface NativeBridgeAddresses {
-  bridge: Address
-  messenger: Address
-}
-
-const NATIVE_BRIDGE_ADDRESSES: Partial<
-  Record<SupportedChainId, NativeBridgeAddresses>
-> = {
-  // Base Sepolia (L2)
-  84532: {
-    bridge: '0x4200000000000000000000000000000000000010', // L2StandardBridge
-    messenger: '0x4200000000000000000000000000000000000007', // L2CrossDomainMessenger
-  },
-  // OP Sepolia (L2)
-  11155420: {
-    bridge: '0x4200000000000000000000000000000000000010', // L2StandardBridge
-    messenger: '0x4200000000000000000000000000000000000007', // L2CrossDomainMessenger
-  },
-  // Ethereum Sepolia (L1)
-  11155111: {
-    bridge: '0xfd0Bf71F60660E2f608ed56e1659C450eB113120', // L1StandardBridge (Base)
-    messenger: '0xC34855F4De64F1840e5686e64278da901e261f20', // L1CrossDomainMessenger
-  },
-  // Add mainnet addresses as needed
-}
+import { BridgeProvider } from '@/bridge/core/BridgeProvider.js'
+import type { BridgeClient } from '@/bridge/types/client.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 
 /**
- * Get native bridge contract addresses for a chain
+ * Custom Bridge Provider using injected client
+ * @description Wraps a third-party bridge client implementing BridgeClient interface
  */
-export function getNativeBridgeAddresses(
-  chainId: SupportedChainId
-): NativeBridgeAddresses {
-  const addresses = NATIVE_BRIDGE_ADDRESSES[chainId]
-  if (!addresses) {
-    throw new Error(`Native bridge not available on chain ${chainId}`)
-  }
-  return addresses
-}
+export class CustomBridgeProvider extends BridgeProvider {
+  readonly name = 'custom'
+  private readonly client: BridgeClient
 
-/**
- * Supported native bridge routes
- */
-export const SUPPORTED_ROUTES: BridgeRoute[] = [
-  // Base Sepolia ↔ OP Sepolia
-  { asset: ETH, fromChainId: 84532, toChainId: 11155420, provider: 'native' },
-  { asset: USDC, fromChainId: 84532, toChainId: 11155420, provider: 'native' },
-  { asset: USDT, fromChainId: 84532, toChainId: 11155420, provider: 'native' },
-  { asset: ETH, fromChainId: 11155420, toChainId: 84532, provider: 'native' },
-  { asset: USDC, fromChainId: 11155420, toChainId: 84532, provider: 'native' },
-  { asset: USDT, fromChainId: 11155420, toChainId: 84532, provider: 'native' },
-  // Add mainnet routes as needed
-]
-```
-
-### Bridge SDK Helpers
-
-```typescript
-// packages/sdk/src/bridge/providers/native/sdk.ts
-
-import type { PublicClient } from 'viem'
-import type { Asset } from '@/types/asset.js'
-import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { Address } from 'viem'
-
-/**
- * Estimate gas for native bridge transaction
- */
-export async function estimateBridgeGas(params: {
-  asset: Asset
-  amount: bigint
-  fromChainId: SupportedChainId
-  toChainId: SupportedChainId
-  publicClient: PublicClient
-  bridgeAddress: Address
-}): Promise<bigint> {
-  // Simplified gas estimation
-  // Real implementation would simulate the transaction
-  return 200_000n
-}
-
-/**
- * Estimate bridge time based on direction
- */
-export function estimateBridgeTime(
-  fromChainId: SupportedChainId,
-  toChainId: SupportedChainId
-): number {
-  // L1 → L2: ~10 minutes
-  // L2 → L1: ~7 days (with fault proofs)
-  // L2 → L2: Not supported via native bridge
-
-  // Simplified: assume L1 is Sepolia (11155111)
-  const isL1ToL2 = fromChainId === 11155111
-  const isL2ToL1 = toChainId === 11155111
-
-  if (isL1ToL2) return 600 // 10 minutes
-  if (isL2ToL1) return 604800 // 7 days
-
-  throw new Error('Unsupported route for native bridge')
-}
-```
-
----
-
-## Namespace Implementation
-
-### BaseBridgeNamespace
-
-```typescript
-// packages/sdk/src/bridge/namespaces/BaseBridgeNamespace.ts
-
-import type { BridgeProvider } from '@/bridge/core/BridgeProvider.js'
-import type { BridgeProviderConfig } from '@/types/bridge/base.js'
-import type {
-  BridgeQuoteParams,
-  BridgeQuote,
-  BridgeRoute,
-} from '@/types/bridge/base.js'
-
-/**
- * Bridge providers registry
- */
-export type BridgeProviders = {
-  native?: BridgeProvider<BridgeProviderConfig>
-  across?: BridgeProvider<BridgeProviderConfig>
-  // Future providers
-}
-
-/**
- * Base bridge namespace with shared read-only operations
- */
-export abstract class BaseBridgeNamespace {
-  constructor(protected readonly providers: BridgeProviders) {}
-
-  /**
-   * Get quote from best provider for a route
-   */
-  async quote(params: BridgeQuoteParams): Promise<BridgeQuote> {
-    const provider = this.getBestProviderForRoute(
-      params.asset,
-      params.fromChainId,
-      params.toChainId
-    )
-    return provider.quote(params)
-  }
-
-  /**
-   * Get quotes from all providers for comparison
-   */
-  async quotes(params: BridgeQuoteParams): Promise<BridgeQuote[]> {
-    const providers = this.getProvidersForRoute(
-      params.asset,
-      params.fromChainId,
-      params.toChainId
-    )
-
-    const results = await Promise.allSettled(
-      providers.map((p) => p.quote(params))
-    )
-
-    return results
-      .filter((r): r is PromiseFulfilledResult<BridgeQuote> =>
-        r.status === 'fulfilled'
-      )
-      .map((r) => r.value)
-      .sort((a, b) => Number(b.amountOut - a.amountOut)) // Best output first
-  }
-
-  /**
-   * Get all supported routes across all providers
-   */
-  supportedRoutes(): BridgeRoute[] {
-    const allRoutes = this.getAllProviders().flatMap((p) =>
-      p.supportedRoutes()
-    )
-    return allRoutes
-  }
-
-  protected getAllProviders(): BridgeProvider<BridgeProviderConfig>[] {
-    return Object.values(this.providers).filter(
-      (p): p is BridgeProvider<BridgeProviderConfig> => p !== undefined
-    )
-  }
-
-  protected getProvidersForRoute(
-    asset: Asset,
-    fromChainId: SupportedChainId,
-    toChainId: SupportedChainId
-  ): BridgeProvider<BridgeProviderConfig>[] {
-    return this.getAllProviders().filter((p) =>
-      p.isRouteSupported(asset, fromChainId, toChainId)
-    )
-  }
-
-  protected getBestProviderForRoute(
-    asset: Asset,
-    fromChainId: SupportedChainId,
-    toChainId: SupportedChainId
-  ): BridgeProvider<BridgeProviderConfig> {
-    const providers = this.getProvidersForRoute(asset, fromChainId, toChainId)
-    if (providers.length === 0) {
-      throw new Error(
-        `No bridge provider available for ${asset.metadata.symbol} ` +
-        `from chain ${fromChainId} to ${toChainId}`
-      )
-    }
-    // For now, return first provider
-    // Future: get quotes and compare
-    return providers[0]
-  }
-}
-```
-
-### ActionsBridgeNamespace
-
-```typescript
-// packages/sdk/src/bridge/namespaces/ActionsBridgeNamespace.ts
-
-import { BaseBridgeNamespace } from './BaseBridgeNamespace.js'
-
-/**
- * Actions bridge namespace (read-only, no wallet required)
- */
-export class ActionsBridgeNamespace extends BaseBridgeNamespace {
-  // Inherits quote(), quotes(), and supportedRoutes() from BaseBridgeNamespace
-}
-```
-
-### WalletBridgeNamespace
-
-```typescript
-// packages/sdk/src/bridge/namespaces/WalletBridgeNamespace.ts
-
-import type { Address } from 'viem'
-
-import { BaseBridgeNamespace, type BridgeProviders } from './BaseBridgeNamespace.js'
-import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type {
-  BridgeExecuteParams,
-  BridgeReceipt,
-  BridgeTransaction,
-} from '@/types/bridge/base.js'
-import { parseUnits } from 'viem'
-
-/**
- * Wallet bridge namespace (execution with signing)
- */
-export class WalletBridgeNamespace extends BaseBridgeNamespace {
   constructor(
-    providers: BridgeProviders,
-    private readonly wallet: Wallet
+    config: BridgeProviderConfig,
+    chainManager: ChainManager,
+    client: BridgeClient  // ← Injected by developer
   ) {
-    super(providers)
+    super(config, chainManager)
+    this.client = client
   }
 
-  /**
-   * Execute a cross-chain bridge transfer
-   */
-  async execute(params: BridgeExecuteParams): Promise<BridgeReceipt> {
-    // Select provider
-    const provider = params.provider
-      ? this.getProviderByName(params.provider)
-      : this.getBestProviderForRoute(
-          params.asset,
-          params.fromChainId,
-          params.toChainId
-        )
+  protected async _getQuote(
+    params: BridgeQuoteInternalParams
+  ): Promise<BridgeQuote> {
+    // Use injected client
+    const response = await this.client.getQuote({
+      fromChainId: params.fromChainId,
+      toChainId: params.toChainId,
+      fromTokenAddress: getAssetAddress(params.asset, params.fromChainId),
+      toTokenAddress: getAssetAddress(params.asset, params.toChainId),
+      fromAmount: params.amountWei.toString(),
+      userAddress: params.walletAddress,
+    })
 
-    // Convert amount to wei
-    const amountWei = parseUnits(
-      params.amount.toString(),
-      params.asset.metadata.decimals
-    )
+    // Transform response to Actions format
+    return {
+      amountIn: BigInt(response.fromAmount),
+      amountOut: BigInt(response.toAmount),
+      fee: BigInt(response.fromAmount) - BigInt(response.toAmount),
+      feePercent: this.calculateFeePercent(response),
+      estimatedTime: response.estimatedTime,
+      gasEstimate: response.gasFees
+        ? BigInt(response.gasFees.gasAmount)
+        : undefined,
+      provider: 'custom',
+    }
+  }
 
-    // Build bridge transaction
-    const bridgeTx = await provider.execute({
-      amountWei,
+  protected async _execute(
+    params: BridgeExecuteInternalParams
+  ): Promise<BridgeTransaction> {
+    // Get quote first to get route
+    const quote = await this._getQuote(params)
+
+    // Build transaction using injected client
+    const txData = await this.client.buildTransaction({
+      route: quote.meta?.route,
+    })
+
+    // Transform to Actions format
+    return {
+      amountIn: params.amountWei,
+      amountOut: quote.amountOut,
       asset: params.asset,
       to: params.to,
       fromChainId: params.fromChainId,
       toChainId: params.toChainId,
-      walletAddress: this.wallet.address,
-    })
-
-    // Execute transaction(s)
-    const receipt = await this.executeTransaction(bridgeTx)
-
-    return {
-      receipt,
-      amountIn: bridgeTx.amountIn,
-      amountOut: bridgeTx.amountOut,
-      asset: bridgeTx.asset,
-      to: bridgeTx.to,
-      fromChainId: bridgeTx.fromChainId,
-      toChainId: bridgeTx.toChainId,
-      fee: bridgeTx.fee,
-      provider: bridgeTx.provider,
-      estimatedArrival: bridgeTx.estimatedArrival,
-      trackingUrl: this.getTrackingUrl(bridgeTx),
+      fee: quote.fee,
+      estimatedArrival: Math.floor(Date.now() / 1000) + quote.estimatedTime,
+      transactionData: {
+        approval: txData.approvalData ? {
+          to: txData.approvalData.approvalTokenAddress,
+          data: txData.approvalData.approvalData,
+          value: 0n,
+        } : undefined,
+        bridge: {
+          to: txData.txTarget,
+          data: txData.txData,
+          value: BigInt(txData.value || 0),
+        },
+      },
+      provider: 'custom',
     }
   }
 
-  private async executeTransaction(
-    bridgeTx: BridgeTransaction
-  ): Promise<BridgeReceipt['receipt']> {
-    const { transactionData, fromChainId } = bridgeTx
-    const txs = []
-
-    // Add approval if needed
-    if (transactionData.approval) {
-      txs.push(transactionData.approval)
-    }
-
-    // Add bridge transaction
-    txs.push(transactionData.bridge)
-
-    // Execute as batch if multiple transactions
-    if (txs.length > 1) {
-      return this.wallet.sendBatch(txs, fromChainId)
-    }
-    return this.wallet.send(transactionData.bridge, fromChainId)
+  supportedRoutes(): BridgeRoute[] {
+    // Could call client.getSupportedRoutes() if available
+    // Or return cached/hardcoded list
+    return []
   }
 
-  private getProviderByName(name: string): BridgeProvider {
-    const provider = this.getAllProviders().find((p) => p.name === name)
-    if (!provider) {
-      throw new Error(`Bridge provider '${name}' not found`)
-    }
-    return provider
-  }
-
-  private getTrackingUrl(bridgeTx: BridgeTransaction): string | undefined {
-    // Provider-specific tracking URLs
-    if (bridgeTx.provider === 'native') {
-      // Optimism bridge tracker
-      return `https://superscan.network/tx/${bridgeTx.fromChainId}/pending`
-    }
-    if (bridgeTx.provider === 'across') {
-      // Across bridge tracker
-      return 'https://across.to/transactions'
-    }
-    return undefined
+  private calculateFeePercent(response: BridgeQuoteResponse): number {
+    const amountIn = BigInt(response.fromAmount)
+    const amountOut = BigInt(response.toAmount)
+    const fee = amountIn - amountOut
+    return Number(fee * 10000n / amountIn) / 10000
   }
 }
 ```
 
 ---
 
-## Wallet Integration
+## Enhanced wallet.send() Implementation
 
-### Enhanced send() Method
+See the design review document for the complete `wallet.send()` implementation with smart chain detection logic.
 
-```typescript
-// packages/sdk/src/wallet/core/wallets/abstract/Wallet.ts (additions)
-
-import { WalletBridgeNamespace } from '@/bridge/namespaces/WalletBridgeNamespace.js'
-import type { BridgeProviders } from '@/bridge/namespaces/BaseBridgeNamespace.js'
-import type { SendParams, SendReceipt } from './types/index.js'
-import type { BridgeReceipt } from '@/types/bridge/base.js'
-import { parseUnits } from 'viem'
-
-export abstract class Wallet {
-  // ... existing code ...
-
-  private _bridge?: WalletBridgeNamespace
-
-  protected initializeBridge(providers: BridgeProviders): void {
-    if (Object.keys(providers).length > 0) {
-      this._bridge = new WalletBridgeNamespace(providers, this)
-    }
-  }
-
-  /**
-   * Bridge namespace for cross-chain transfers
-   */
-  get bridge(): WalletBridgeNamespace | undefined {
-    return this._bridge
-  }
-
-  /**
-   * Enhanced send method with bridge support
-   * @description Send tokens on a single chain or bridge across chains.
-   * When fromChainId and toChainId are provided and different, automatically
-   * routes through the bridge system.
-   */
-  async sendEnhanced(
-    params: SendParams
-  ): Promise<SendReceipt | BridgeReceipt> {
-    // Determine if this is a bridge transaction
-    const isBridge =
-      params.fromChainId !== undefined &&
-      params.toChainId !== undefined &&
-      params.fromChainId !== params.toChainId
-
-    if (isBridge) {
-      // Bridge transaction
-      if (!this._bridge) {
-        throw new Error('Bridge not configured for this wallet')
-      }
-
-      return this._bridge.execute({
-        amount: params.amount,
-        asset: params.asset,
-        to: params.to,
-        fromChainId: params.fromChainId!,
-        toChainId: params.toChainId!,
-        bridgeProvider: params.bridgeProvider,
-      })
-    } else {
-      // Single-chain transaction
-      const chainId = params.chainId ?? params.fromChainId
-      if (!chainId) {
-        throw new Error('chainId or fromChainId must be provided')
-      }
-
-      const amountWei = parseUnits(
-        params.amount.toString(),
-        params.asset.metadata.decimals
-      )
-
-      const assetAddress = getAssetAddress(params.asset, chainId)
-
-      const txData: TransactionData = {
-        to: assetAddress,
-        data: encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: 'transfer',
-          args: [params.to, amountWei],
-        }),
-        value: 0n,
-      }
-
-      const receipt = await this.send(txData, chainId)
-
-      return {
-        receipt,
-        amount: amountWei,
-        asset: params.asset,
-        to: params.to,
-        chainId,
-      }
-    }
-  }
-}
-```
+Key features:
+- Auto-detect source chain from wallet balances
+- Detect bridge when `fromChainId !== toChainId`
+- Execute same-chain or bridge transfer accordingly
 
 ---
 
@@ -1242,226 +973,53 @@ export abstract class Wallet {
 ```typescript
 // packages/sdk/src/actions.ts (additions)
 
-import type { BridgeConfig } from '@/types/actions.js'
-import { NativeBridgeProvider } from '@/bridge/providers/native/NativeBridgeProvider.js'
-import { ActionsBridgeNamespace } from '@/bridge/namespaces/ActionsBridgeNamespace.js'
-import type { BridgeProviders } from '@/bridge/namespaces/BaseBridgeNamespace.js'
-
 export class Actions {
-  // ... existing code ...
+  private _bridgeProvider?: BridgeProvider
 
-  private _bridgeProviders: BridgeProviders = {}
-  private _bridge?: ActionsBridgeNamespace
+  constructor(config: ActionsConfig, deps: Dependencies) {
+    // ... existing setup ...
 
-  constructor(config: ActionsConfig, deps: { hostedWalletProviderRegistry }) {
-    // ... existing initialization ...
+    // Initialize bridge provider
+    if (config.bridge) {
+      this._bridgeProvider = this.createBridgeProvider(config.bridge)
+    } else {
+      // Default to native bridge
+      this._bridgeProvider = new NativeBridgeProvider({}, this.chainManager)
+    }
+  }
 
-    // Initialize bridge providers
-    if (config.bridge?.native?.enabled) {
-      this._bridgeProviders.native = new NativeBridgeProvider(
-        config.bridge.native,
+  private createBridgeProvider(
+    config: BridgeConfig
+  ): BridgeProvider {
+    if (!config.type || config.type === 'native') {
+      return new NativeBridgeProvider(
+        config.config || {},
         this.chainManager
       )
     }
-    if (config.bridge?.across?.enabled) {
-      this._bridgeProviders.across = new AcrossBridgeProvider(
-        config.bridge.across,
-        this.chainManager
+
+    if (config.type === 'custom') {
+      if (!config.client) {
+        throw new Error(
+          'Custom bridge client required. ' +
+          'Initialize bridge client and pass to config.bridge.client'
+        )
+      }
+
+      return new CustomBridgeProvider(
+        config.config || {},
+        this.chainManager,
+        config.client  // ← Pass developer's client
       )
     }
 
-    // Create bridge namespace if any providers configured
-    if (Object.keys(this._bridgeProviders).length > 0) {
-      this._bridge = new ActionsBridgeNamespace(this._bridgeProviders)
-    }
-
-    // ... pass to wallet provider ...
+    throw new Error(`Unknown bridge type: ${config.type}`)
   }
 
-  /**
-   * Bridge namespace for cross-chain transfers (read-only)
-   */
-  get bridge(): ActionsBridgeNamespace | undefined {
-    return this._bridge
-  }
-
-  // Expose bridge providers for wallet creation
-  get bridgeProviders(): BridgeProviders {
-    return this._bridgeProviders
+  get bridgeProvider(): BridgeProvider | undefined {
+    return this._bridgeProvider
   }
 }
-```
-
----
-
-## Demo Backend Integration
-
-### Bridge Service
-
-```typescript
-// packages/demo/backend/src/services/bridge.ts
-
-import type {
-  BridgeQuoteParams,
-  BridgeQuote,
-} from '@eth-optimism/actions-sdk'
-
-import { actions } from '@/config/actions.js'
-
-/**
- * Get bridge quote
- */
-export async function getBridgeQuote(
-  params: BridgeQuoteParams
-): Promise<BridgeQuote> {
-  if (!actions.bridge) {
-    throw new Error('Bridge not configured')
-  }
-
-  return actions.bridge.quote(params)
-}
-
-/**
- * Get bridge quotes from all providers
- */
-export async function getBridgeQuotes(
-  params: BridgeQuoteParams
-): Promise<BridgeQuote[]> {
-  if (!actions.bridge) {
-    throw new Error('Bridge not configured')
-  }
-
-  return actions.bridge.quotes(params)
-}
-```
-
-### Enhanced Send Service
-
-```typescript
-// packages/demo/backend/src/services/send.ts
-
-import type { SmartWallet, SendParams } from '@eth-optimism/actions-sdk'
-import { getWallet } from '@/services/wallet.js'
-import { getBlockExplorerUrl } from '@/utils/explorer.js'
-
-/**
- * Send tokens (single-chain or cross-chain)
- */
-export async function sendTokens(
-  idToken: string,
-  params: SendParams
-) {
-  const wallet = await getWallet(idToken)
-
-  const receipt = await wallet.sendEnhanced(params)
-
-  // Add explorer URL
-  const txHash = 'userOpHash' in receipt.receipt
-    ? receipt.receipt.receipt.transactionHash
-    : receipt.receipt.transactionHash
-
-  const chainId = 'fromChainId' in receipt
-    ? receipt.fromChainId
-    : receipt.chainId
-
-  return {
-    ...receipt,
-    explorerUrl: getBlockExplorerUrl(txHash, chainId),
-  }
-}
-```
-
-### Bridge Controller
-
-```typescript
-// packages/demo/backend/src/controllers/bridge.ts
-
-import { Hono } from 'hono'
-import { z } from 'zod'
-import { zValidator } from '@hono/zod-validator'
-
-import { getBridgeQuote, getBridgeQuotes } from '@/services/bridge.js'
-import { SUPPORTED_TOKENS } from '@/config/assets.js'
-
-const bridgeRouter = new Hono()
-
-const quoteSchema = z.object({
-  assetSymbol: z.string(),
-  amount: z.number().positive(),
-  fromChainId: z.number(),
-  toChainId: z.number(),
-  to: z.string().optional(),
-})
-
-// Get single quote (best provider)
-bridgeRouter.get(
-  '/quote',
-  zValidator('query', quoteSchema),
-  async (c) => {
-    const query = c.req.valid('query')
-
-    const asset = SUPPORTED_TOKENS.find(
-      (t) => t.metadata.symbol === query.assetSymbol
-    )
-
-    if (!asset) {
-      return c.json({ error: 'Invalid asset symbol' }, 400)
-    }
-
-    const quote = await getBridgeQuote({
-      asset,
-      amount: query.amount,
-      fromChainId: query.fromChainId,
-      toChainId: query.toChainId,
-      to: query.to,
-    })
-
-    return c.json({
-      ...quote,
-      amountIn: quote.amountIn.toString(),
-      amountOut: quote.amountOut.toString(),
-      fee: quote.fee.toString(),
-      gasEstimate: quote.gasEstimate?.toString(),
-    })
-  }
-)
-
-// Get quotes from all providers
-bridgeRouter.get(
-  '/quotes',
-  zValidator('query', quoteSchema),
-  async (c) => {
-    const query = c.req.valid('query')
-
-    const asset = SUPPORTED_TOKENS.find(
-      (t) => t.metadata.symbol === query.assetSymbol
-    )
-
-    if (!asset) {
-      return c.json({ error: 'Invalid asset symbol' }, 400)
-    }
-
-    const quotes = await getBridgeQuotes({
-      asset,
-      amount: query.amount,
-      fromChainId: query.fromChainId,
-      toChainId: query.toChainId,
-      to: query.to,
-    })
-
-    return c.json(
-      quotes.map((q) => ({
-        ...q,
-        amountIn: q.amountIn.toString(),
-        amountOut: q.amountOut.toString(),
-        fee: q.fee.toString(),
-        gasEstimate: q.gasEstimate?.toString(),
-      }))
-    )
-  }
-)
-
-export { bridgeRouter }
 ```
 
 ---
@@ -1537,49 +1095,35 @@ describe('NativeBridgeProvider', () => {
 
 - [ ] `BridgeProvider` abstract class implemented
 - [ ] `NativeBridgeProvider` implemented for OP/Base bridge
-- [ ] `ActionsBridgeNamespace` provides `quote()`, `quotes()`, `supportedRoutes()`
-- [ ] `WalletBridgeNamespace` provides `execute()`
-- [ ] `wallet.sendEnhanced()` detects and routes cross-chain transfers
+- [ ] `BridgeClient` interface defined for custom providers
+- [ ] `CustomBridgeProvider` with client injection pattern
+- [ ] `wallet.send()` detects and routes cross-chain transfers
+- [ ] Smart chain detection from wallet balances
 - [ ] Transaction batching works for approval + bridge
 - [ ] Route validation (allowlist/blocklist) works
 - [ ] Fee validation (maxFeePercent) works
 - [ ] All SDK tests passing
 
-### Backend
+### Demo
 
-- [ ] `/bridge/quote` endpoint returns single quote
-- [ ] `/bridge/quotes` endpoint returns all provider quotes
-- [ ] `/send/execute` endpoint supports cross-chain transfers
-- [ ] Bridge config added to actions initialization
-
-### Frontend
-
-- [ ] Enhanced "Pay" tab with chain selectors
-- [ ] Bridge quote preview showing fees and time
-- [ ] Loading states during quote/bridge
-- [ ] Success/error feedback with tracking URLs
+- [ ] Example custom bridge provider implementation
+- [ ] Documentation for integrating third-party bridges
+- [ ] Demo shows both native and custom provider usage
 
 ---
 
-## Implementation Notes
+## Future Considerations
 
-### Code Style
-
-Follow existing SDK patterns from LendProvider and SwapProvider.
-
-### Dependencies
-
-New packages:
-```json
-{
-  "@eth-optimism/sdk": "^3.x",
-  "@across-protocol/sdk": "^1.x"
-}
-```
-
-### Future Considerations
-
-- Additional bridge providers (Hop, Stargate, LayerZero)
+- Additional native bridge provider implementations (Hop, Across direct SDKs)
+- Multi-provider support (try multiple providers, select best)
 - Intent-based bridging
-- Automatic path finding for multi-hop bridges
 - Bridge transaction tracking and status updates
+- Automatic path finding for multi-hop bridges
+
+---
+
+## References
+
+- [Optimism Native Bridge Documentation](https://docs.optimism.io/app-developers/bridging/standard-bridge)
+- [OP Stack Bridges Specification](https://specs.optimism.io/protocol/bridges.html)
+- Provider pattern from existing LendProvider and SwapProvider implementations
