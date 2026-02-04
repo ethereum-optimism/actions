@@ -28,8 +28,8 @@ interface BridgeClient {
 interface BridgeQuoteParams {
   asset: Asset
   amount: number           // Human-readable
-  fromChainId: number
-  toChainId: number
+  originChainId: number
+  destinationChainId: number
   to?: Address            // Recipient (optional, defaults to sender)
 }
 
@@ -66,8 +66,8 @@ interface BridgeTransactionData {
 
 | Actions SDK | Bungee API | Transform |
 |-------------|------------|-----------|
-| `fromChainId` | `originChainId` | `number` → `string` |
-| `toChainId` | `destinationChainId` | `number` → `string` |
+| `originChainId` | `originChainId` | `number` → `string` |
+| `destinationChainId` | `destinationChainId` | `number` → `string` |
 | `asset` | `inputToken` + `outputToken` | Get token address per chain |
 | `amount` | `inputAmount` | Human → wei → `string` |
 | `to` | `receiverAddress` | Pass through |
@@ -117,8 +117,8 @@ Derive `BridgeRoute[]` by combining chains that support sending and receiving:
 ```typescript
 interface BridgeRoute {
   asset: Asset
-  fromChainId: number
-  toChainId: number
+  originChainId: number
+  destinationChainId: number
   provider: string  // "bungee"
 }
 ```
@@ -142,15 +142,15 @@ export class BungeeAPIAdapter implements BridgeClient {
   }
 
   async getQuote(params: BridgeQuoteParams): Promise<BridgeQuote> {
-    const { asset, amount, fromChainId, toChainId, to } = params
+    const { asset, amount, originChainId, destinationChainId, to } = params
 
     // Convert to Bungee format
     const queryParams = {
       userAddress: this.walletAddress,
-      originChainId: fromChainId.toString(),
-      destinationChainId: toChainId.toString(),
-      inputToken: getAssetAddress(asset, fromChainId),
-      outputToken: getAssetAddress(asset, toChainId),
+      originChainId: originChainId.toString(),
+      destinationChainId: destinationChainId.toString(),
+      inputToken: getAssetAddress(asset, originChainId),
+      outputToken: getAssetAddress(asset, destinationChainId),
       inputAmount: parseUnits(amount, asset.decimals).toString(),
       receiverAddress: to || this.walletAddress,
     }
@@ -223,8 +223,8 @@ await wallet.send({
   amount: 100,
   asset: USDC,
   to: '0x...',
-  fromChainId: 8453,  // Base
-  toChainId: 10,      // OP Mainnet
+  originChainId: 8453,  // Base
+  destinationChainId: 10,      // OP Mainnet
 })
 ```
 

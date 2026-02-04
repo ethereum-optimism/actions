@@ -28,8 +28,8 @@ const receipt = await wallet.send({
   amount: 100,
   asset: USDC,
   to: '0x...',
-  fromChainId: 84532,  // Base Sepolia
-  toChainId: 11155420, // OP Sepolia
+  originChainId: 84532,  // Base Sepolia
+  destinationChainId: 11155420, // OP Sepolia
 })
 ```
 
@@ -44,10 +44,10 @@ interface SendParams {
   /** Recipient address */
   to: Address
   /** Source chain ID. Required for cross-chain transfers. */
-  fromChainId?: number
-  /** Destination chain ID. If provided with fromChainId, triggers bridge. */
-  toChainId?: number
-  /** Chain ID for single-chain transfers (legacy, mutually exclusive with fromChainId/toChainId) */
+  originChainId?: number
+  /** Destination chain ID. If provided with originChainId, triggers bridge. */
+  destinationChainId?: number
+  /** Chain ID for single-chain transfers (legacy, mutually exclusive with originChainId/destinationChainId) */
   chainId?: number
 }
 ```
@@ -63,8 +63,8 @@ interface SendReceipt {
 }
 
 interface BridgeReceipt extends SendReceipt {
-  fromChainId: number
-  toChainId: number
+  originChainId: number
+  destinationChainId: number
   bridgeProvider: string         // Provider used (e.g., 'native', 'thirdParty')
   estimatedArrival?: number      // Unix timestamp for estimated arrival
   trackingUrl?: string           // URL to track bridge transaction
@@ -83,8 +83,8 @@ Get a quote for a cross-chain transfer before execution.
 const quote = await actions.bridge.quote({
   asset: USDC,
   amount: 100,
-  fromChainId: 84532,
-  toChainId: 11155420,
+  originChainId: 84532,
+  destinationChainId: 11155420,
 })
 
 console.log(`Fee: ${quote.fee}`)
@@ -100,9 +100,9 @@ interface BridgeQuoteParams {
   /** Amount to bridge (human-readable) */
   amount: number
   /** Source chain */
-  fromChainId: number
+  originChainId: number
   /** Destination chain */
-  toChainId: number
+  destinationChainId: number
   /** Recipient address (optional, defaults to sender) */
   to?: Address
 }
@@ -140,8 +140,8 @@ Get quotes from ALL configured providers for comparison.
 const quotes = await actions.bridge.quotes({
   asset: USDC,
   amount: 1000,
-  fromChainId: 84532,
-  toChainId: 11155420,
+  originChainId: 84532,
+  destinationChainId: 11155420,
 })
 
 // Results sorted by best output amount (lowest fees)
@@ -166,8 +166,8 @@ const routes = await actions.bridge.supportedRoutes()
 const usdcRoutes = routes.filter(r => r.asset.metadata.symbol === 'USDC')
 console.log(usdcRoutes)
 // [
-//   { asset: USDC, fromChainId: 84532, toChainId: 11155420, provider: 'native' },
-//   { asset: USDC, fromChainId: 84532, toChainId: 8453, provider: 'native' },
+//   { asset: USDC, originChainId: 84532, destinationChainId: 11155420, provider: 'native' },
+//   { asset: USDC, originChainId: 84532, destinationChainId: 8453, provider: 'native' },
 //   ...
 // ]
 ```
@@ -179,9 +179,9 @@ interface BridgeRoute {
   /** Asset that can be bridged */
   asset: Asset
   /** Source chain */
-  fromChainId: number
+  originChainId: number
   /** Destination chain */
-  toChainId: number
+  destinationChainId: number
   /** Provider supporting this route */
   provider: string
 }
@@ -242,9 +242,9 @@ interface BridgeRouteConfig {
   /** Asset to bridge */
   asset: Asset
   /** Source chain */
-  fromChainId: number
+  originChainId: number
   /** Destination chain */
-  toChainId: number
+  destinationChainId: number
 }
 
 /**
@@ -264,7 +264,7 @@ interface BridgeClient {
 - **Provider pattern** - Developers instantiate bridge clients and pass to Actions SDK (Actions never handles API keys)
 - **Adapter pattern** - `BridgeProvider` base class with `NativeBridgeProvider` (default) and extensible custom implementations
 - **Default to native** - Native bridge is the default for L1 ↔ L2 transfers, custom providers available for L2 ↔ L2
-- **Transparent integration** - Bridge triggered automatically when `fromChainId !== toChainId` in `send()`
+- **Transparent integration** - Bridge triggered automatically when `originChainId !== destinationChainId` in `send()`
 - **Smart chain detection** - Auto-detect source chain from wallet balances when not specified
 - **Superchain registry** - Built-in bridge addresses for all Superchain networks, extensible for custom chains
 - **Fee protection** - Optional max fee percentage to prevent expensive bridges
@@ -332,8 +332,8 @@ const wallet = await actions.wallet.getSmartWallet({ signer })
 const quote = await actions.bridge.quote({
   asset: USDC,
   amount: 100,
-  fromChainId: 11155111,  // L1
-  toChainId: 11155420,     // L2
+  originChainId: 11155111,  // L1
+  destinationChainId: 11155420,     // L2
 })
 
 console.log(`Bridge via ${quote.provider}`)
@@ -345,8 +345,8 @@ const receipt = await wallet.send({
   amount: 100,
   asset: USDC,
   to: '0x...',
-  fromChainId: 11155111,
-  toChainId: 11155420,
+  originChainId: 11155111,
+  destinationChainId: 11155420,
 })
 
 console.log(`Bridged! Tx: ${receipt.receipt.transactionHash}`)
@@ -382,8 +382,8 @@ const receipt = await wallet.send({
   amount: 100,
   asset: USDC,
   to: '0x...',
-  fromChainId: 84532,    // Base Sepolia
-  toChainId: 11155420,   // OP Sepolia
+  originChainId: 84532,    // Base Sepolia
+  destinationChainId: 11155420,   // OP Sepolia
 })
 ```
 

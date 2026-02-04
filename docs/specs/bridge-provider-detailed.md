@@ -133,8 +133,8 @@ export interface BridgeClient {
 
 // Provider-agnostic requests/responses
 export interface BridgeQuoteRequest {
-  fromChainId: number
-  toChainId: number
+  originChainId: number
+  destinationChainId: number
   fromTokenAddress: string
   toTokenAddress: string
   fromAmount: string
@@ -197,9 +197,9 @@ export interface BridgeRouteConfig {
   /** Asset to bridge */
   asset: Asset
   /** Source chain */
-  fromChainId: SupportedChainId
+  originChainId: SupportedChainId
   /** Destination chain */
-  toChainId: SupportedChainId
+  destinationChainId: SupportedChainId
 }
 ```
 
@@ -260,9 +260,9 @@ export interface BridgeQuoteParams {
   /** Amount to bridge (human-readable) */
   amount: number
   /** Source chain */
-  fromChainId: SupportedChainId
+  originChainId: SupportedChainId
   /** Destination chain */
-  toChainId: SupportedChainId
+  destinationChainId: SupportedChainId
   /** Recipient address (optional, defaults to sender) */
   to?: Address
 }
@@ -273,8 +273,8 @@ export interface BridgeQuoteParams {
 export interface BridgeQuoteInternalParams {
   asset: Asset
   amountWei: bigint
-  fromChainId: SupportedChainId
-  toChainId: SupportedChainId
+  originChainId: SupportedChainId
+  destinationChainId: SupportedChainId
   to?: Address
   walletAddress: Address
 }
@@ -310,9 +310,9 @@ export interface BridgeExecuteParams {
   /** Recipient address */
   to: Address
   /** Source chain */
-  fromChainId: SupportedChainId
+  originChainId: SupportedChainId
   /** Destination chain */
-  toChainId: SupportedChainId
+  destinationChainId: SupportedChainId
 }
 
 /**
@@ -322,8 +322,8 @@ export interface BridgeExecuteInternalParams {
   amountWei: bigint
   asset: Asset
   to: Address
-  fromChainId: SupportedChainId
-  toChainId: SupportedChainId
+  originChainId: SupportedChainId
+  destinationChainId: SupportedChainId
   walletAddress: Address
 }
 
@@ -350,9 +350,9 @@ export interface BridgeTransaction {
   /** Recipient address */
   to: Address
   /** Source chain */
-  fromChainId: SupportedChainId
+  originChainId: SupportedChainId
   /** Destination chain */
-  toChainId: SupportedChainId
+  destinationChainId: SupportedChainId
   /** Bridge fee (wei) */
   fee: bigint
   /** Estimated arrival time (Unix timestamp) */
@@ -378,9 +378,9 @@ export interface BridgeReceipt {
   /** Recipient */
   to: Address
   /** Source chain */
-  fromChainId: SupportedChainId
+  originChainId: SupportedChainId
   /** Destination chain */
-  toChainId: SupportedChainId
+  destinationChainId: SupportedChainId
   /** Bridge fee (wei) */
   fee: bigint
   /** Provider used */
@@ -398,9 +398,9 @@ export interface BridgeRoute {
   /** Asset that can be bridged */
   asset: Asset
   /** Source chain */
-  fromChainId: SupportedChainId
+  originChainId: SupportedChainId
   /** Destination chain */
-  toChainId: SupportedChainId
+  destinationChainId: SupportedChainId
   /** Provider supporting this route */
   provider: string
 }
@@ -423,14 +423,14 @@ export interface SendParams {
   to: Address
 
   // Single-chain transfer (existing)
-  /** Chain ID for single-chain transfer. Mutually exclusive with fromChainId/toChainId. */
+  /** Chain ID for single-chain transfer. Mutually exclusive with originChainId/destinationChainId. */
   chainId?: SupportedChainId
 
   // Cross-chain transfer (new)
   /** Source chain ID. Required for cross-chain transfers. */
-  fromChainId?: SupportedChainId
-  /** Destination chain ID. Triggers bridge when different from fromChainId. */
-  toChainId?: SupportedChainId
+  originChainId?: SupportedChainId
+  /** Destination chain ID. Triggers bridge when different from originChainId. */
+  destinationChainId?: SupportedChainId
 }
 
 /**
@@ -498,7 +498,7 @@ export abstract class BridgeProvider<
    * Get a quote for a bridge transfer
    */
   async quote(params: BridgeQuoteParams): Promise<BridgeQuote> {
-    this.validateRoute(params.asset, params.fromChainId, params.toChainId)
+    this.validateRoute(params.asset, params.originChainId, params.destinationChainId)
 
     const amountWei = parseUnits(
       params.amount.toString(),
@@ -528,17 +528,17 @@ export abstract class BridgeProvider<
    * Execute a bridge transfer
    */
   async execute(params: BridgeExecuteInternalParams): Promise<BridgeTransaction> {
-    this.validateRoute(params.asset, params.fromChainId, params.toChainId)
+    this.validateRoute(params.asset, params.originChainId, params.destinationChainId)
 
     // Validate asset is supported on both chains
-    if (!isAssetSupportedOnChain(params.asset, params.fromChainId)) {
+    if (!isAssetSupportedOnChain(params.asset, params.originChainId)) {
       throw new Error(
-        `Asset ${params.asset.metadata.symbol} not supported on chain ${params.fromChainId}`
+        `Asset ${params.asset.metadata.symbol} not supported on chain ${params.originChainId}`
       )
     }
-    if (!isAssetSupportedOnChain(params.asset, params.toChainId)) {
+    if (!isAssetSupportedOnChain(params.asset, params.destinationChainId)) {
       throw new Error(
-        `Asset ${params.asset.metadata.symbol} not supported on chain ${params.toChainId}`
+        `Asset ${params.asset.metadata.symbol} not supported on chain ${params.destinationChainId}`
       )
     }
 
@@ -555,14 +555,14 @@ export abstract class BridgeProvider<
    */
   isRouteSupported(
     asset: Asset,
-    fromChainId: SupportedChainId,
-    toChainId: SupportedChainId
+    originChainId: SupportedChainId,
+    destinationChainId: SupportedChainId
   ): boolean {
     return this.supportedRoutes().some(
       (route) =>
         route.asset.metadata.symbol === asset.metadata.symbol &&
-        route.fromChainId === fromChainId &&
-        route.toChainId === toChainId
+        route.originChainId === originChainId &&
+        route.destinationChainId === destinationChainId
     )
   }
 
@@ -584,18 +584,18 @@ export abstract class BridgeProvider<
 
   protected validateRoute(
     asset: Asset,
-    fromChainId: SupportedChainId,
-    toChainId: SupportedChainId
+    originChainId: SupportedChainId,
+    destinationChainId: SupportedChainId
   ): void {
     // Can't bridge to same chain
-    if (fromChainId === toChainId) {
+    if (originChainId === destinationChainId) {
       throw new Error('Cannot bridge to the same chain')
     }
 
     // Check if route is supported by provider
-    if (!this.isRouteSupported(asset, fromChainId, toChainId)) {
+    if (!this.isRouteSupported(asset, originChainId, destinationChainId)) {
       throw new Error(
-        `Route not supported: ${asset.metadata.symbol} from chain ${fromChainId} to ${toChainId}`
+        `Route not supported: ${asset.metadata.symbol} from chain ${originChainId} to ${destinationChainId}`
       )
     }
 
@@ -603,13 +603,13 @@ export abstract class BridgeProvider<
     if (this._config.routeBlocklist?.length) {
       const isBlocked = this.isRouteInList(
         asset,
-        fromChainId,
-        toChainId,
+        originChainId,
+        destinationChainId,
         this._config.routeBlocklist
       )
       if (isBlocked) {
         throw new Error(
-          `Route blocked: ${asset.metadata.symbol} from chain ${fromChainId} to ${toChainId}`
+          `Route blocked: ${asset.metadata.symbol} from chain ${originChainId} to ${destinationChainId}`
         )
       }
     }
@@ -618,13 +618,13 @@ export abstract class BridgeProvider<
     if (this._config.routeAllowlist?.length) {
       const isAllowed = this.isRouteInList(
         asset,
-        fromChainId,
-        toChainId,
+        originChainId,
+        destinationChainId,
         this._config.routeAllowlist
       )
       if (!isAllowed) {
         throw new Error(
-          `Route not in allowlist: ${asset.metadata.symbol} from chain ${fromChainId} to ${toChainId}`
+          `Route not in allowlist: ${asset.metadata.symbol} from chain ${originChainId} to ${destinationChainId}`
         )
       }
     }
@@ -632,15 +632,15 @@ export abstract class BridgeProvider<
 
   private isRouteInList(
     asset: Asset,
-    fromChainId: SupportedChainId,
-    toChainId: SupportedChainId,
+    originChainId: SupportedChainId,
+    destinationChainId: SupportedChainId,
     list: BridgeRouteConfig[]
   ): boolean {
     return list.some(
       (config) =>
         config.asset.metadata.symbol === asset.metadata.symbol &&
-        config.fromChainId === fromChainId &&
-        config.toChainId === toChainId
+        config.originChainId === originChainId &&
+        config.destinationChainId === destinationChainId
     )
   }
 }
@@ -689,7 +689,7 @@ export class NativeBridgeProvider extends BridgeProvider<BridgeProviderConfig> {
   protected async _getQuote(
     params: BridgeQuoteInternalParams
   ): Promise<BridgeQuote> {
-    const { asset, amountWei, fromChainId, toChainId } = params
+    const { asset, amountWei, originChainId, destinationChainId } = params
 
     // Native bridge has 0% fees (only gas)
     const amountOut = amountWei
@@ -697,19 +697,19 @@ export class NativeBridgeProvider extends BridgeProvider<BridgeProviderConfig> {
     const feePercent = 0
 
     // Estimate gas
-    const addresses = getNativeBridgeAddresses(fromChainId)
-    const publicClient = this.chainManager.getPublicClient(fromChainId)
+    const addresses = getNativeBridgeAddresses(originChainId)
+    const publicClient = this.chainManager.getPublicClient(originChainId)
     const gasEstimate = await estimateBridgeGas({
       asset,
       amount: amountWei,
-      fromChainId,
-      toChainId,
+      originChainId,
+      destinationChainId,
       publicClient,
       bridgeAddress: addresses.bridge,
     })
 
     // Estimate time based on direction
-    const estimatedTime = estimateBridgeTime(fromChainId, toChainId)
+    const estimatedTime = estimateBridgeTime(originChainId, destinationChainId)
 
     return {
       amountIn: amountWei,
@@ -725,19 +725,19 @@ export class NativeBridgeProvider extends BridgeProvider<BridgeProviderConfig> {
   protected async _execute(
     params: BridgeExecuteInternalParams
   ): Promise<BridgeTransaction> {
-    const { amountWei, asset, to, fromChainId, toChainId, walletAddress } = params
+    const { amountWei, asset, to, originChainId, destinationChainId, walletAddress } = params
 
-    const addresses = getNativeBridgeAddresses(fromChainId)
+    const addresses = getNativeBridgeAddresses(originChainId)
     const assetAddress = isNativeAsset(asset)
       ? undefined
-      : getAssetAddress(asset, fromChainId)
+      : getAssetAddress(asset, originChainId)
 
     // Get quote for amounts
     const quote = await this._getQuote({
       asset,
       amountWei,
-      fromChainId,
-      toChainId,
+      originChainId,
+      destinationChainId,
       to,
       walletAddress,
     })
@@ -760,7 +760,7 @@ export class NativeBridgeProvider extends BridgeProvider<BridgeProviderConfig> {
     } else {
       // Bridge ERC20
       // Check if approval needed
-      const publicClient = this.chainManager.getPublicClient(fromChainId)
+      const publicClient = this.chainManager.getPublicClient(originChainId)
       const allowance = await publicClient.readContract({
         address: assetAddress!,
         abi: ERC20_ABI,
@@ -798,8 +798,8 @@ export class NativeBridgeProvider extends BridgeProvider<BridgeProviderConfig> {
       amountOut: quote.amountOut,
       asset,
       to,
-      fromChainId,
-      toChainId,
+      originChainId,
+      destinationChainId,
       fee: 0n,
       estimatedArrival,
       transactionData: {
@@ -940,18 +940,18 @@ The native bridge only supports **L1 ↔ L2** transfers, NOT direct L2 ↔ L2 tr
  */
 export const SUPPORTED_ROUTES: BridgeRoute[] = [
   // Mainnet routes (all L1 ↔ L2)
-  { fromChainId: 1, toChainId: 10, provider: 'native' },     // ETH → OP Mainnet
-  { fromChainId: 10, toChainId: 1, provider: 'native' },     // OP Mainnet → ETH
-  { fromChainId: 1, toChainId: 8453, provider: 'native' },   // ETH → Base
-  { fromChainId: 8453, toChainId: 1, provider: 'native' },   // Base → ETH
-  { fromChainId: 1, toChainId: 34443, provider: 'native' },  // ETH → Mode
-  { fromChainId: 34443, toChainId: 1, provider: 'native' },  // Mode → ETH
+  { originChainId: 1, destinationChainId: 10, provider: 'native' },     // ETH → OP Mainnet
+  { originChainId: 10, destinationChainId: 1, provider: 'native' },     // OP Mainnet → ETH
+  { originChainId: 1, destinationChainId: 8453, provider: 'native' },   // ETH → Base
+  { originChainId: 8453, destinationChainId: 1, provider: 'native' },   // Base → ETH
+  { originChainId: 1, destinationChainId: 34443, provider: 'native' },  // ETH → Mode
+  { originChainId: 34443, destinationChainId: 1, provider: 'native' },  // Mode → ETH
 
   // Testnet routes (all L1 ↔ L2)
-  { fromChainId: 11155111, toChainId: 11155420, provider: 'native' }, // Sepolia → OP Sepolia
-  { fromChainId: 11155420, toChainId: 11155111, provider: 'native' }, // OP Sepolia → Sepolia
-  { fromChainId: 11155111, toChainId: 84532, provider: 'native' },    // Sepolia → Base Sepolia
-  { fromChainId: 84532, toChainId: 11155111, provider: 'native' },    // Base Sepolia → Sepolia
+  { originChainId: 11155111, destinationChainId: 11155420, provider: 'native' }, // Sepolia → OP Sepolia
+  { originChainId: 11155420, destinationChainId: 11155111, provider: 'native' }, // OP Sepolia → Sepolia
+  { originChainId: 11155111, destinationChainId: 84532, provider: 'native' },    // Sepolia → Base Sepolia
+  { originChainId: 84532, destinationChainId: 11155111, provider: 'native' },    // Base Sepolia → Sepolia
 
   // Note: For L2 ↔ L2 (e.g., Base → OP Mainnet), use a custom bridge provider
 ]
@@ -992,10 +992,10 @@ export class CustomBridgeProvider extends BridgeProvider {
   ): Promise<BridgeQuote> {
     // Use injected client
     const response = await this.client.getQuote({
-      fromChainId: params.fromChainId,
-      toChainId: params.toChainId,
-      fromTokenAddress: getAssetAddress(params.asset, params.fromChainId),
-      toTokenAddress: getAssetAddress(params.asset, params.toChainId),
+      originChainId: params.originChainId,
+      destinationChainId: params.destinationChainId,
+      fromTokenAddress: getAssetAddress(params.asset, params.originChainId),
+      toTokenAddress: getAssetAddress(params.asset, params.destinationChainId),
       fromAmount: params.amountWei.toString(),
       userAddress: params.walletAddress,
     })
@@ -1031,8 +1031,8 @@ export class CustomBridgeProvider extends BridgeProvider {
       amountOut: quote.amountOut,
       asset: params.asset,
       to: params.to,
-      fromChainId: params.fromChainId,
-      toChainId: params.toChainId,
+      originChainId: params.originChainId,
+      destinationChainId: params.destinationChainId,
       fee: quote.fee,
       estimatedArrival: Math.floor(Date.now() / 1000) + quote.estimatedTime,
       transactionData: {
@@ -1074,7 +1074,7 @@ See the design review document for the complete `wallet.send()` implementation w
 
 Key features:
 - Auto-detect source chain from wallet balances
-- Detect bridge when `fromChainId !== toChainId`
+- Detect bridge when `originChainId !== destinationChainId`
 - Execute same-chain or bridge transfer accordingly
 
 ---
@@ -1146,7 +1146,7 @@ export class Actions {
 
 describe('BridgeProvider', () => {
   describe('quote()', () => {
-    it('should throw if fromChainId === toChainId')
+    it('should throw if originChainId === destinationChainId')
     it('should throw if route not supported by provider')
     it('should throw if route is blocklisted')
     it('should throw if route not in allowlist (when configured)')
