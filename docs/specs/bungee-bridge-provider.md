@@ -6,7 +6,62 @@
 
 Bungee will serve as the recommended custom bridge provider for Actions SDK, enabling L2 ↔ L2 transfers that the native Optimism bridge doesn't support.
 
-**Integration Approach:** Actions SDK provides a `BungeeAPIAdapter` that wraps Bungee's REST API and implements the `BridgeClient` interface.
+**Note:** Bungee does not provide an official SDK - integration is via REST API only.
+
+---
+
+## Open Question: API Key Handling
+
+Since Bungee does not provide an official SDK, we need to decide how developers provide API keys.
+
+### Option 1: SDK Adapter
+
+Actions SDK provides `BungeeAPIAdapter` that encapsulates the API key:
+
+```typescript
+import { BungeeAPIAdapter } from '@eth-optimism/actions-sdk/bridge/adapters'
+
+const actions = createActions({
+  bridge: {
+    type: 'custom',
+    client: new BungeeAPIAdapter({
+      apiKey: process.env.BUNGEE_API_KEY!
+    })
+  }
+})
+```
+
+**Pros:**
+- Smaller audit scope - developers only need to review `BungeeAPIAdapter` class to verify API key isn't exposed
+- Key is encapsulated within adapter (no getter/read methods)
+- Better extensibility if Bungee releases official SDK later
+
+**Cons:**
+- Additional abstraction layer
+- Actions SDK still handles API key (within adapter)
+
+### Option 2: Raw API Key Config
+
+Developers pass API key directly to Actions config:
+
+```typescript
+const actions = createActions({
+  bridge: {
+    type: 'bungee',
+    apiKey: process.env.BUNGEE_API_KEY!,
+    baseURL: 'https://dedicated-backend.bungee.exchange'
+  }
+})
+```
+
+**Pros:**
+- Simpler configuration
+- No adapter abstraction needed
+
+**Cons:**
+- Larger audit scope - developers must review entire Actions SDK to verify `bridge.apiKey` isn't leaked
+- API key flows through more of the SDK codebase
+- Less flexibility for custom implementations
 
 ---
 
