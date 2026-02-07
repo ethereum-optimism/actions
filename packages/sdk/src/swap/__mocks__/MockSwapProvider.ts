@@ -105,12 +105,12 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this.validateChainSupported(chainId)
   }
 
-  public testValidatePairAllowed(
+  public testValidateMarketAllowed(
     assetIn: any,
     assetOut: any,
     chainId: SupportedChainId,
   ): void {
-    return this.validatePairAllowed(assetIn, assetOut, chainId)
+    return this.validateMarketAllowed(assetIn, assetOut, chainId)
   }
 
   private createMockSwapTransaction(
