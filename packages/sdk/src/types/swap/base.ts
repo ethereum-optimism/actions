@@ -19,21 +19,22 @@ export { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
 export interface SwapProviderConfig {
   /** Default slippage tolerance (e.g., 0.005 for 0.5%) */
   defaultSlippage?: number
-  /** Allowlist of trading pairs (optional - defaults to all supported assets) */
-  pairAllowlist?: SwapPairConfig[]
-  /** Blocklist of trading pairs to exclude */
-  pairBlocklist?: SwapPairConfig[]
+  /** Allowlist of swap markets (optional - defaults to all supported assets) */
+  marketAllowlist?: SwapMarketFilter[]
+  /** Blocklist of swap markets to exclude */
+  marketBlocklist?: SwapMarketFilter[]
 }
 
 /**
- * Swap pair configuration
- * @description Define allowed/blocked trading pairs by assets
+ * Swap market filter
+ * @description Define allowed/blocked trading markets by assets.
+ * 2 assets = one explicit pair. 3+ = all pairs between them.
  */
-export interface SwapPairConfig {
-  /** Token pair - order doesn't matter for allowlist/blocklist */
-  assets: [Asset, Asset]
-  /** Chain ID where this pair is allowed/blocked */
-  chainId: SupportedChainId
+export interface SwapMarketFilter {
+  /** 2 assets = one explicit pair. 3+ = all pairs between them. */
+  assets: [Asset, Asset, ...Asset[]]
+  /** Restrict to a specific chain. Omit = all configured chains. */
+  chainId?: SupportedChainId
 }
 
 /**
