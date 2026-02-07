@@ -10,7 +10,7 @@ import type {
   SwapExecuteInternalParams,
   SwapExecuteParams,
   SwapMarket,
-  SwapPairConfig,
+  SwapMarketFilter,
   SwapPrice,
   SwapPriceParams,
   SwapProviderConfig,
@@ -70,8 +70,8 @@ export abstract class SwapProvider<
     // Validate chain support
     this.validateChainSupported(params.chainId)
 
-    // Validate pair is allowed
-    this.validatePairAllowed(params.assetIn, params.assetOut, params.chainId)
+    // Validate market is allowed
+    this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
 
     // Validate assets are supported on chain
     if (!isAssetSupportedOnChain(params.assetIn, params.chainId)) {
@@ -195,20 +195,20 @@ export abstract class SwapProvider<
     }
   }
 
-  protected validatePairAllowed(
+  protected validateMarketAllowed(
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
   ): void {
-    const { pairAllowlist, pairBlocklist } = this._config
+    const { marketBlocklist, marketAllowlist } = this._config
 
     // Check blocklist first
-    if (pairBlocklist?.length) {
+    if (marketBlocklist?.length) {
       const isBlocked = this.isPairInList(
         assetIn,
         assetOut,
         chainId,
-        pairBlocklist,
+        marketBlocklist,
       )
       if (isBlocked) {
         throw new Error(
@@ -218,12 +218,12 @@ export abstract class SwapProvider<
     }
 
     // Check allowlist if configured
-    if (pairAllowlist?.length) {
+    if (marketAllowlist?.length) {
       const isAllowed = this.isPairInList(
         assetIn,
         assetOut,
         chainId,
-        pairAllowlist,
+        marketAllowlist,
       )
       if (!isAllowed) {
         throw new Error(
@@ -237,21 +237,29 @@ export abstract class SwapProvider<
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
-    list: SwapPairConfig[],
+    list: SwapMarketFilter[],
   ): boolean {
-    return list.some((config) => {
-      if (config.chainId !== chainId) return false
+    const symbolIn = assetIn.metadata.symbol.toLowerCase()
+    const symbolOut = assetOut.metadata.symbol.toLowerCase()
 
-      // Compare asset symbols (order doesn't matter)
-      const [asset0, asset1] = config.assets
-      const symbolIn = assetIn.metadata.symbol.toLowerCase()
-      const symbolOut = assetOut.metadata.symbol.toLowerCase()
-      const s0 = asset0.metadata.symbol.toLowerCase()
-      const s1 = asset1.metadata.symbol.toLowerCase()
-      return (
-        (symbolIn === s0 && symbolOut === s1) ||
-        (symbolIn === s1 && symbolOut === s0)
-      )
+    return list.some((filter) => {
+      // If filter specifies a chainId and it doesn't match, skip
+      if (filter.chainId !== undefined && filter.chainId !== chainId)
+        return false
+
+      // Generate all unique pairs from filter.assets and check for match
+      const symbols = filter.assets.map((a) => a.metadata.symbol.toLowerCase())
+      for (let i = 0; i < symbols.length; i++) {
+        for (let j = i + 1; j < symbols.length; j++) {
+          if (
+            (symbolIn === symbols[i] && symbolOut === symbols[j]) ||
+            (symbolIn === symbols[j] && symbolOut === symbols[i])
+          ) {
+            return true
+          }
+        }
+      }
+      return false
     })
   }
 }
