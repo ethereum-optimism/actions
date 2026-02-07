@@ -10,6 +10,7 @@ import {IMorpho, IMetaMorpho, IMetaMorphoFactory, MarketParams} from "../src/int
 /// @title DeployMorphoMarket
 /// @notice Deploys a complete Morpho lending market with yield generation in a single transaction.
 ///         Uses MetaMorpho V1.1 factory which allows 0 timelock for instant cap acceptance.
+///         Optionally accepts DEMO_USDC_ADDRESS and DEMO_OP_ADDRESS env vars to reuse existing tokens.
 contract DeployMorphoMarket is Script {
     address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     address constant METAMORPHO_FACTORY_V1_1 = 0x2c3FE6D71F8d54B063411Abb446B49f13725F784;
@@ -22,12 +23,27 @@ contract DeployMorphoMarket is Script {
     function run() public {
         vm.startBroadcast();
 
-        // Deploy tokens
-        DemoUSDC usdc = new DemoUSDC();
-        console.log("DemoUSDC:", address(usdc));
+        // Use existing tokens from env vars, or deploy new ones
+        DemoUSDC usdc;
+        DemoOP op;
 
-        DemoOP op = new DemoOP();
-        console.log("DemoOP:", address(op));
+        address existingUsdc = vm.envOr("DEMO_USDC_ADDRESS", address(0));
+        if (existingUsdc != address(0)) {
+            usdc = DemoUSDC(existingUsdc);
+            console.log("DemoUSDC (existing):", existingUsdc);
+        } else {
+            usdc = new DemoUSDC();
+            console.log("DemoUSDC:", address(usdc));
+        }
+
+        address existingOp = vm.envOr("DEMO_OP_ADDRESS", address(0));
+        if (existingOp != address(0)) {
+            op = DemoOP(existingOp);
+            console.log("DemoOP (existing):", existingOp);
+        } else {
+            op = new DemoOP();
+            console.log("DemoOP:", address(op));
+        }
 
         // Deploy oracle
         FixedPriceOracle oracle = new FixedPriceOracle();
