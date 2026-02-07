@@ -104,7 +104,8 @@ export function useSwapAssets({
 
       setAssets(formattedAssets)
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch assets')
+      const error =
+        err instanceof Error ? err : new Error('Failed to fetch assets')
       setError(error)
       console.error('Failed to fetch swap assets:', error)
     } finally {

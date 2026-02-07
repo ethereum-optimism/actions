@@ -27,7 +27,9 @@ export interface EarnProps {
   walletAddress: string | null
   providerConfig: WalletProviderConfig
   getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
-  actions?: { getSupportedAssets: () => import('@eth-optimism/actions-sdk/react').Asset[] }
+  actions?: {
+    getSupportedAssets: () => import('@eth-optimism/actions-sdk/react').Asset[]
+  }
   logPrefix?: string
 }
 
@@ -84,7 +86,9 @@ interface EarnContentProps {
   walletAddress: string | null
   providerConfig: WalletProviderConfig
   getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
-  actions?: { getSupportedAssets: () => import('@eth-optimism/actions-sdk/react').Asset[] }
+  actions?: {
+    getSupportedAssets: () => import('@eth-optimism/actions-sdk/react').Asset[]
+  }
   operations: LendProviderOperations
 }
 
