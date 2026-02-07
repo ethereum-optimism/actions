@@ -2,7 +2,7 @@ import { createActions, ETH } from '@eth-optimism/actions-sdk'
 import type { NodeActionsConfig } from '@eth-optimism/actions-sdk/node'
 import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 
-import { USDC_DEMO } from './assets.js'
+import { OP_DEMO, USDC_DEMO } from './assets.js'
 import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
 import { AaveETH, GauntletUSDCDemo } from './markets.js'
@@ -40,10 +40,11 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
     swap: {
       uniswap: {
         defaultSlippage: 0.005, // 0.5%
+        marketAllowlist: [{ assets: [USDC_DEMO, OP_DEMO] }],
       },
     },
     assets: {
-      allow: [USDC_DEMO, ETH],
+      allow: [USDC_DEMO, OP_DEMO, ETH],
     },
     chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
   }

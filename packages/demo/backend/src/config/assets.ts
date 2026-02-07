@@ -12,3 +12,15 @@ export const USDC_DEMO: Asset = {
   },
   type: 'erc20',
 }
+
+export const OP_DEMO: Asset = {
+  address: {
+    [baseSepolia.id]: '0x0000000000000000000000000000000000000000',
+  },
+  metadata: {
+    decimals: 18,
+    name: 'OP',
+    symbol: 'OP_DEMO',
+  },
+  type: 'erc20',
+}
