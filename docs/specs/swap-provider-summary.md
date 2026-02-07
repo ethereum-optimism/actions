@@ -273,7 +273,7 @@ const actions = createActions({
   swap: {
     uniswap: {
       defaultSlippage: 0.005,    // 0.5% default
-      pairAllowlist: [           // Optional: restrict pairs
+      marketAllowlist: [           // Optional: restrict markets
         { assets: [USDC, ETH], chainId: 84532 },
       ],
     },
@@ -296,19 +296,21 @@ interface SwapConfig {
 interface SwapProviderConfig {
   /** Default slippage tolerance (e.g., 0.005 for 0.5%) */
   defaultSlippage?: number
-  /** Allowlist of trading pairs (optional) */
-  pairAllowlist?: SwapPairConfig[]
-  /** Blocklist of trading pairs to exclude */
-  pairBlocklist?: SwapPairConfig[]
+  /** Allowlist of swap markets (optional) */
+  marketAllowlist?: SwapMarketFilter[]
+  /** Blocklist of swap markets to exclude */
+  marketBlocklist?: SwapMarketFilter[]
 }
 ```
 
-### Pair Configuration
+### Market Filter Configuration
 
 ```typescript
-interface SwapPairConfig {
-  assets: [Asset, Asset]   // Token pair (order doesn't matter)
-  chainId: number
+interface SwapMarketFilter {
+  /** 2 assets = one explicit pair. 3+ = all pairs between them. */
+  assets: [Asset, Asset, ...Asset[]]
+  /** Restrict to a specific chain. Omit = all configured chains. */
+  chainId?: number
 }
 ```
 
@@ -321,7 +323,7 @@ interface SwapPairConfig {
 - **Universal Router** - Routes across V2/V3/V4 automatically for best pricing; handles multi-hop and split routes
 - **Transparent approvals** - Permit2 flow handled internally; SDK batches approval + swap transactions
 - **Slippage cascade** - Provider default (0.5%) → Config override → Execute param override
-- **Pair restrictions** - Optional allowlist/blocklist by asset pairs
+- **Market restrictions** - Optional allowlist/blocklist by asset markets (supports multi-asset expansion)
 
 ---
 

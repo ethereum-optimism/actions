@@ -125,21 +125,22 @@ import type { Asset } from '@/types/asset.js'
 export interface SwapProviderConfig {
   /** Default slippage tolerance (e.g., 0.005 for 0.5%) */
   defaultSlippage?: number
-  /** Allowlist of trading pairs (optional - defaults to all supported assets) */
-  pairAllowlist?: SwapPairConfig[]
-  /** Blocklist of trading pairs to exclude */
-  pairBlocklist?: SwapPairConfig[]
+  /** Allowlist of swap markets (optional - defaults to all supported assets) */
+  marketAllowlist?: SwapMarketFilter[]
+  /** Blocklist of swap markets to exclude */
+  marketBlocklist?: SwapMarketFilter[]
 }
 
 /**
- * Swap pair configuration
- * @description Define allowed/blocked trading pairs by assets
+ * Swap market filter
+ * @description Define allowed/blocked trading markets by assets.
+ * 2 assets = one explicit pair. 3+ = all pairs between them.
  */
-export interface SwapPairConfig {
-  /** Token pair - order doesn't matter for allowlist/blocklist */
-  assets: [Asset, Asset]
-  /** Chain ID where this pair is allowed/blocked */
-  chainId: SupportedChainId
+export interface SwapMarketFilter {
+  /** 2 assets = one explicit pair. 3+ = all pairs between them. */
+  assets: [Asset, Asset, ...Asset[]]
+  /** Restrict to a specific chain. Omit = all configured chains. */
+  chainId?: SupportedChainId
 }
 ```
 
@@ -460,7 +461,7 @@ import type {
   SwapPriceParams,
   SwapPrice,
   SwapTransaction,
-  SwapPairConfig,
+  SwapMarketFilter,
 } from '@/types/swap/base.js'
 import { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 
@@ -514,8 +515,8 @@ export abstract class SwapProvider<
     // Validate chain support
     this.validateChainSupported(params.chainId)
 
-    // Validate pair is allowed
-    this.validatePairAllowed(params.assetIn, params.assetOut, params.chainId)
+    // Validate market is allowed
+    this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
 
     // Validate assets are supported on chain
     if (!isAssetSupportedOnChain(params.assetIn, params.chainId)) {
@@ -622,16 +623,16 @@ export abstract class SwapProvider<
     }
   }
 
-  protected validatePairAllowed(
+  protected validateMarketAllowed(
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId
   ): void {
-    const { pairAllowlist, pairBlocklist } = this._config
+    const { marketBlocklist, marketAllowlist } = this._config
 
     // Check blocklist first
-    if (pairBlocklist?.length) {
-      const isBlocked = this.isPairInList(assetIn, assetOut, chainId, pairBlocklist)
+    if (marketBlocklist?.length) {
+      const isBlocked = this.isPairInList(assetIn, assetOut, chainId, marketBlocklist)
       if (isBlocked) {
         throw new Error(
           `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is blocked on chain ${chainId}`
@@ -640,8 +641,8 @@ export abstract class SwapProvider<
     }
 
     // Check allowlist if configured
-    if (pairAllowlist?.length) {
-      const isAllowed = this.isPairInList(assetIn, assetOut, chainId, pairAllowlist)
+    if (marketAllowlist?.length) {
+      const isAllowed = this.isPairInList(assetIn, assetOut, chainId, marketAllowlist)
       if (!isAllowed) {
         throw new Error(
           `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is not in the allowlist for chain ${chainId}`
@@ -654,21 +655,28 @@ export abstract class SwapProvider<
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
-    list: SwapPairConfig[]
+    list: SwapMarketFilter[]
   ): boolean {
-    return list.some((config) => {
-      if (config.chainId !== chainId) return false
+    const symbolIn = assetIn.metadata.symbol.toLowerCase()
+    const symbolOut = assetOut.metadata.symbol.toLowerCase()
 
-      // Compare asset symbols (order doesn't matter)
-      const [asset0, asset1] = config.assets
-      const symbolIn = assetIn.metadata.symbol.toLowerCase()
-      const symbolOut = assetOut.metadata.symbol.toLowerCase()
-      const s0 = asset0.metadata.symbol.toLowerCase()
-      const s1 = asset1.metadata.symbol.toLowerCase()
-      return (
-        (symbolIn === s0 && symbolOut === s1) ||
-        (symbolIn === s1 && symbolOut === s0)
-      )
+    return list.some((filter) => {
+      // If filter specifies a chainId and it doesn't match, skip
+      if (filter.chainId !== undefined && filter.chainId !== chainId) return false
+
+      // Generate all unique pairs from filter.assets and check for match
+      const symbols = filter.assets.map((a) => a.metadata.symbol.toLowerCase())
+      for (let i = 0; i < symbols.length; i++) {
+        for (let j = i + 1; j < symbols.length; j++) {
+          if (
+            (symbolIn === symbols[i] && symbolOut === symbols[j]) ||
+            (symbolIn === symbols[j] && symbolOut === symbols[i])
+          ) {
+            return true
+          }
+        }
+      }
+      return false
     })
   }
 }
@@ -2211,11 +2219,8 @@ export const actions = createActions({
   swap: {
     uniswap: {
       defaultSlippage: 0.005, // 0.5%
-      pairAllowlist: [
-        {
-          assets: [USDC_DEMO, OP_DEMO],
-          chainId: baseSepolia.id,
-        },
+      marketAllowlist: [
+        { assets: [USDC_DEMO, OP_DEMO] },
       ],
     },
   },
@@ -2580,7 +2585,7 @@ describe('SwapProvider', () => {
     it('should call _getPrice with params')
   })
 
-  describe('validatePairAllowed()', () => {
+  describe('validateMarketAllowed()', () => {
     it('should allow any pair when no allowlist configured')
     it('should allow pairs in allowlist')
     it('should reject pairs not in allowlist')
