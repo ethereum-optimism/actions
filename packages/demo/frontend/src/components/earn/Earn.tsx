@@ -19,8 +19,7 @@ import { SwapAction } from './SwapAction'
 import { useSwap } from '@/hooks/useSwap'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { actionsApi } from '@/api/actionsApi'
-import { TotalBalanceDropdown } from './TotalBalanceDropdown'
-import { useTotalBalance } from '@/hooks/useTotalBalance'
+import { useLendBalance } from '@/hooks/useLendBalance'
 
 export interface EarnProps {
   operations: LendProviderOperations
@@ -123,6 +122,27 @@ function EarnContent({
     handleTransaction,
   } = useLendProviderContext()
 
+  // Lend balance tracking (interest calculation)
+  const { recordTransaction, getInterest } = useLendBalance(
+    providerConfig.queryParam,
+  )
+
+  // Wrap handleTransaction to also record to the lend balance ledger
+  const handleTransactionWithTracking = useCallback(
+    async (mode: 'lend' | 'withdraw', amount: number) => {
+      const result = await handleTransaction(mode, amount)
+      if (selectedMarket?.marketId) {
+        recordTransaction(
+          selectedMarket.marketId,
+          mode === 'lend' ? 'deposit' : 'withdraw',
+          amount,
+        )
+      }
+      return result
+    },
+    [handleTransaction, recordTransaction, selectedMarket?.marketId],
+  )
+
   // Swap functionality
   const { isExecuting: isSwapping } = useSwap()
 
@@ -195,7 +215,7 @@ function EarnContent({
     return operations.getTokenBalances()
   }, [operations])
 
-  // Fetch swap assets — always enabled for balance dropdown
+  // Fetch swap assets using shared hook
   const {
     assets: swapAssets,
     isLoading: isLoadingSwapAssets,
@@ -204,7 +224,7 @@ function EarnContent({
     actions,
     getAuthHeaders,
     getTokenBalances,
-    enabled: true,
+    enabled: activeTab === 'swap',
   })
 
   // Refetch swap assets when switching to swap tab
@@ -213,27 +233,6 @@ function EarnContent({
       refetchSwapAssets()
     }
   }, [activeTab, refetchSwapAssets])
-
-  // Total balance for navbar dropdown
-  const totalBalanceTokens = swapAssets.map((a) => ({
-    symbol: a.asset.metadata.symbol,
-    balance: a.balance,
-    logo: a.logo,
-    chainId: a.chainId,
-    address: a.asset.address[a.chainId] as Address,
-  }))
-
-  const usdcAsset = swapAssets.find((a) =>
-    a.asset.metadata.symbol.includes('USDC'),
-  )
-
-  const { entries: balanceEntries, totalUsd, isLoading: isLoadingTotalBalance } =
-    useTotalBalance({
-      tokenBalances: totalBalanceTokens,
-      getPrice: handleGetPrice,
-      usdcAddress: (usdcAsset?.asset.address[usdcAsset.chainId] ?? '0x') as Address,
-      usdcChainId: usdcAsset?.chainId ?? 84532,
-    })
 
   return (
     <div
@@ -253,16 +252,10 @@ function EarnContent({
       >
         <div className="w-full px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2">
               <img src="/Optimism.svg" alt="Optimism" className="h-4" />
-              <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
             <div className="flex items-center gap-4">
-              <TotalBalanceDropdown
-                entries={balanceEntries}
-                totalUsd={totalUsd}
-                isLoading={isLoadingTotalBalance}
-              />
               <WalletProviderDropdown
                 selectedProvider={providerConfig}
                 walletAddress={walletAddress}
@@ -281,7 +274,47 @@ function EarnContent({
         {/* Left Content Area */}
         <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
           <div className="w-full max-w-2xl">
+            {/* Title Section */}
+            <div className="mb-8 text-left">
+              <div className="flex items-center gap-2 mb-2">
+                <h1
+                  style={{
+                    color: '#1a1b1e',
+                    fontSize: '24px',
+                    fontStyle: 'normal',
+                    fontWeight: 600,
+                  }}
+                  className="sm:text-2xl"
+                >
+                  Actions Demo
+                </h1>
+                <span
+                  className="px-2 py-2 text-xs font-medium rounded-sm"
+                  style={{
+                    backgroundColor: '#F2F3F8',
+                    color: '#404454',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                  }}
+                >
+                  Sandbox
+                </span>
+              </div>
+              <p
+                style={{ color: '#666666', fontSize: '16px' }}
+                className="sm:text-base"
+              >
+                {activeTab === 'lend'
+                  ? 'Earn interest by lending USDC'
+                  : activeTab === 'swap'
+                    ? 'Swap between tokens'
+                    : 'Perform onchain actions'}
+              </p>
+            </div>
+
             <div className="space-y-6">
+              {/* Action Tabs */}
+              <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
               {activeTab === 'lend' && (
                 <>
@@ -330,7 +363,7 @@ function EarnContent({
                     }
                     assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
                     onMintAsset={handleMintAsset}
-                    onTransaction={handleTransaction}
+                    onTransaction={handleTransactionWithTracking}
                     marketId={selectedMarket?.marketId}
                     provider={selectedMarket?.provider}
                   />
@@ -338,6 +371,7 @@ function EarnContent({
                   <LentBalance
                     marketPositions={marketPositions}
                     isInitialLoad={isInitialLoad}
+                    getInterest={getInterest}
                   />
                 </>
               )}

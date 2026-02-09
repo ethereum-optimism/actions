@@ -7,11 +7,16 @@ import Shimmer from './Shimmer'
 interface LentBalanceProps {
   marketPositions: MarketPosition[]
   isInitialLoad?: boolean
+  getInterest?: (
+    marketId: { address: string; chainId: number },
+    currentOnChainBalance: string,
+  ) => number
 }
 
 function LentBalance({
   marketPositions,
   isInitialLoad = false,
+  getInterest,
 }: LentBalanceProps) {
   const { hoveredAction } = useActivityHighlight()
   const [showApyTooltip, setShowApyTooltip] = useState(false)
@@ -68,6 +73,7 @@ function LentBalance({
           backgroundColor: '#FFFFFF',
           border: '1px solid #E0E2EB',
           borderRadius: '24px',
+          boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
         }}
       >
@@ -290,10 +296,23 @@ function LentBalance({
                           fontSize: '12px',
                           fontWeight: 500,
                           fontFamily: 'Inter',
+                          minWidth: '80px',
+                        }}
+                      >
+                        Interest
+                      </th>
+                      <th
+                        style={{
+                          textAlign: 'right',
+                          padding: '12px 8px',
+                          color: '#9195A6',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          fontFamily: 'Inter',
                           minWidth: '100px',
                         }}
                       >
-                        Amount
+                        Value
                       </th>
                     </tr>
                   </thead>
@@ -414,6 +433,38 @@ function LentBalance({
                               ? `${(market.apy * 100).toFixed(2)}%`
                               : '0.00%'}
                           </span>
+                        </td>
+                        <td
+                          className="transition-all"
+                          style={{
+                            padding: '16px 8px',
+                            textAlign: 'right',
+                            backgroundColor:
+                              hoveredAction === 'getPosition'
+                                ? colors.highlight.background
+                                : 'transparent',
+                          }}
+                        >
+                          {(() => {
+                            const interest = getInterest
+                              ? getInterest(
+                                  market.marketId,
+                                  market.depositedAmount || '0',
+                                )
+                              : 0
+                            return (
+                              <span
+                                style={{
+                                  color: '#22C55E',
+                                  fontSize: '14px',
+                                  fontWeight: 500,
+                                  fontFamily: 'Inter',
+                                }}
+                              >
+                                +{interest.toFixed(3)}
+                              </span>
+                            )
+                          })()}
                         </td>
                         <td
                           className="transition-all"
