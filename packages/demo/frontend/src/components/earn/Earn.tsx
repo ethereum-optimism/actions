@@ -19,6 +19,8 @@ import { SwapAction } from './SwapAction'
 import { useSwap } from '@/hooks/useSwap'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { actionsApi } from '@/api/actionsApi'
+import { TotalBalanceDropdown } from './TotalBalanceDropdown'
+import { useTotalBalance } from '@/hooks/useTotalBalance'
 
 export interface EarnProps {
   operations: LendProviderOperations
@@ -193,7 +195,7 @@ function EarnContent({
     return operations.getTokenBalances()
   }, [operations])
 
-  // Fetch swap assets using shared hook
+  // Fetch swap assets — always enabled for balance dropdown
   const {
     assets: swapAssets,
     isLoading: isLoadingSwapAssets,
@@ -202,7 +204,7 @@ function EarnContent({
     actions,
     getAuthHeaders,
     getTokenBalances,
-    enabled: activeTab === 'swap',
+    enabled: true,
   })
 
   // Refetch swap assets when switching to swap tab
@@ -211,6 +213,27 @@ function EarnContent({
       refetchSwapAssets()
     }
   }, [activeTab, refetchSwapAssets])
+
+  // Total balance for navbar dropdown
+  const totalBalanceTokens = swapAssets.map((a) => ({
+    symbol: a.asset.metadata.symbol,
+    balance: a.balance,
+    logo: a.logo,
+    chainId: a.chainId,
+    address: a.asset.address[a.chainId] as Address,
+  }))
+
+  const usdcAsset = swapAssets.find((a) =>
+    a.asset.metadata.symbol.includes('USDC'),
+  )
+
+  const { entries: balanceEntries, totalUsd, isLoading: isLoadingTotalBalance } =
+    useTotalBalance({
+      tokenBalances: totalBalanceTokens,
+      getPrice: handleGetPrice,
+      usdcAddress: (usdcAsset?.asset.address[usdcAsset.chainId] ?? '0x') as Address,
+      usdcChainId: usdcAsset?.chainId ?? 84532,
+    })
 
   return (
     <div
@@ -235,6 +258,11 @@ function EarnContent({
               <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
             <div className="flex items-center gap-4">
+              <TotalBalanceDropdown
+                entries={balanceEntries}
+                totalUsd={totalUsd}
+                isLoading={isLoadingTotalBalance}
+              />
               <WalletProviderDropdown
                 selectedProvider={providerConfig}
                 walletAddress={walletAddress}
