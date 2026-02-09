@@ -1,6 +1,6 @@
 # Actions SDK
 
-> Actions SDK is an open source TypeScript toolkit by Optimism that simplifies integrating DeFi into applications. It provides modular providers for embedded wallets and DeFi actions (lend, borrow, swap, pay) across Superchain networks. Built on viem with ERC-4337 smart wallet support and gas sponsorship.
+> Actions SDK is an open source TypeScript toolkit by Optimism that simplifies integrating DeFi into applications. It provides modular providers for embedded wallets and DeFi actions (lend, borrow, swap, pay) across Superchain networks. Built on viem with ERC-4337 smart wallet support and gas sponsorship. For full guided integration instructions, see [AGENTS.md](https://raw.githubusercontent.com/ethereum-optimism/actions/main/AGENTS.md).
 
 - [npm package](https://www.npmjs.com/package/@eth-optimism/actions-sdk): `@eth-optimism/actions-sdk`
 - [Source code](https://github.com/ethereum-optimism/actions): GitHub monorepo
