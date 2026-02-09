@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import ActivityLogItem from './ActivityLogItem'
-import ActivityLogIcon from '../icons/ActivityLogIcon'
+import ActivityFeedList from './ActivityFeedList'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
 interface ActivityLogCardProps {
@@ -15,6 +16,7 @@ function ActivityLogCard({
   hasMoreActivities,
   onViewFullLog,
 }: ActivityLogCardProps) {
+  const [activeTab, setActiveTab] = useState<'log' | 'activity'>('log')
   const displayedActivities = activities.slice(0, 3)
 
   return (
@@ -23,18 +25,57 @@ function ActivityLogCard({
         backgroundColor: '#FFFFFF',
         border: '1px solid #E0E2EB',
         borderRadius: '24px',
+        boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
-      <div className="p-6 pb-0">
-        <div className="flex items-center gap-2 mb-4">
-          <ActivityLogIcon />
-          <h2 className="text-lg font-semibold" style={{ color: '#1a1b1e' }}>
-            Under the Hood
-          </h2>
+      {/* Tab Header */}
+      <div style={{ borderBottom: '1px solid #E0E2EB' }}>
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab('log')}
+            style={{
+              flex: 1,
+              padding: '16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 500,
+              color: activeTab === 'log' ? '#1a1b1e' : '#9195A6',
+              borderBottom:
+                activeTab === 'log'
+                  ? '2px solid #1a1b1e'
+                  : '2px solid transparent',
+              fontFamily: 'Inter',
+            }}
+          >
+            Log
+          </button>
+          <button
+            onClick={() => setActiveTab('activity')}
+            style={{
+              flex: 1,
+              padding: '16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 500,
+              color: activeTab === 'activity' ? '#1a1b1e' : '#9195A6',
+              borderBottom:
+                activeTab === 'activity'
+                  ? '2px solid #1a1b1e'
+                  : '2px solid transparent',
+              fontFamily: 'Inter',
+            }}
+          >
+            Activity
+          </button>
         </div>
       </div>
 
+      {/* Content */}
       <div
         className="overflow-y-auto max-h-96"
         style={{
@@ -42,32 +83,39 @@ function ActivityLogCard({
           scrollbarColor: '#D1D5DB #F3F4F6',
         }}
       >
-        {activities.length > 0 ? (
-          displayedActivities.map((activity) => (
-            <ActivityLogItem
-              key={activity.id}
-              type={activity.type}
-              action={activity.action}
-              timestamp={formatTimestamp(activity.timestamp)}
-              status={activity.status}
-              blockExplorerUrl={activity.blockExplorerUrl}
-              isFromPreviousSession={activity.isFromPreviousSession}
-            />
-          ))
+        {activeTab === 'log' ? (
+          activities.length > 0 ? (
+            displayedActivities.map((activity) => (
+              <ActivityLogItem
+                key={activity.id}
+                type={activity.type}
+                action={activity.action}
+                timestamp={formatTimestamp(activity.timestamp)}
+                status={activity.status}
+                blockExplorerUrl={activity.blockExplorerUrl}
+                isFromPreviousSession={activity.isFromPreviousSession}
+              />
+            ))
+          ) : (
+            <div
+              style={{
+                color: '#9CA3AF',
+                textAlign: 'center',
+                padding: '2rem',
+              }}
+            >
+              No activity yet
+            </div>
+          )
         ) : (
-          <div
-            style={{
-              color: '#9CA3AF',
-              textAlign: 'center',
-              padding: '2rem',
-            }}
-          >
-            No activity yet
-          </div>
+          <ActivityFeedList
+            activities={activities}
+            formatTimestamp={formatTimestamp}
+          />
         )}
       </div>
 
-      {hasMoreActivities && (
+      {activeTab === 'log' && hasMoreActivities && (
         <div className="p-4 pt-0">
           <button
             onClick={onViewFullLog}

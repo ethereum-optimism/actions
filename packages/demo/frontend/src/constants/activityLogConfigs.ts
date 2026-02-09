@@ -1,5 +1,5 @@
 export type ActivityConfigEntry = {
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'swap'
   description: string
   apiMethod: string
   tooltip: string
@@ -60,5 +60,18 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
     description: 'Create smart wallet',
     apiMethod: 'actions.wallet.createSmartWallet()',
     tooltip: 'Creates a new smart wallet',
+  },
+  swap: {
+    type: 'swap',
+    description: 'Execute swap',
+    apiMethod: 'wallet.swap.executeSwap()',
+    tooltip: 'Swaps one token for another',
+  },
+  getSwapPrice: {
+    type: 'swap',
+    description: 'Get swap price',
+    apiMethod: 'actions.swap.getPrice()',
+    tooltip: 'Fetches swap price quote',
+    isReadOnly: true,
   },
 }

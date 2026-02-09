@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import ActivityLogItem from './ActivityLogItem'
-import ActivityLogIcon from '../icons/ActivityLogIcon'
+import ActivityFeedList from './ActivityFeedList'
 import ArrowLine from '../icons/ArrowLine'
-import Info from './Info'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
 interface ActivityLogSidebarProps {
@@ -17,17 +16,16 @@ function ActivityLogSidebar({
   onCollapsedChange,
 }: ActivityLogSidebarProps) {
   const [showButton, setShowButton] = useState(false)
+  const [activeTab, setActiveTab] = useState<'log' | 'activity'>('log')
 
   const handleCollapse = (collapsed: boolean) => {
     onCollapsedChange?.(collapsed)
 
     if (collapsed) {
-      // Show button shortly after sidebar starts collapsing
       setTimeout(() => {
         setShowButton(true)
       }, 150)
     } else {
-      // Hide button immediately when expanding
       setShowButton(false)
     }
   }
@@ -45,9 +43,9 @@ function ActivityLogSidebar({
           right: 0,
           transform: showButton ? 'translateX(0)' : 'translateX(100%)',
         }}
-        aria-label="Expand Under the Hood"
+        aria-label="Expand sidebar"
       >
-        <ActivityLogIcon width={20} height={20} color="#636779" />
+        <ArrowLine width={20} height={20} direction="left" />
       </button>
       <div
         className="flex flex-col h-full transition-all duration-300 ease-in-out relative overflow-hidden"
@@ -58,31 +56,64 @@ function ActivityLogSidebar({
           width: '436px',
         }}
       >
+        {/* Tab Header */}
         <div
           className="flex-shrink-0"
-          style={{ padding: '1.5rem', paddingBottom: 0 }}
+          style={{ borderBottom: '1px solid #E0E2EB' }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <ActivityLogIcon />
-              <h2
-                className="text-lg font-semibold"
-                style={{ color: '#1a1b1e' }}
-              >
-                Under the Hood
-              </h2>
-            </div>
+          <div className="flex items-center">
+            <button
+              onClick={() => setActiveTab('log')}
+              style={{
+                flex: 1,
+                padding: '16px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: activeTab === 'log' ? '#1a1b1e' : '#9195A6',
+                borderBottom:
+                  activeTab === 'log'
+                    ? '2px solid #1a1b1e'
+                    : '2px solid transparent',
+                fontFamily: 'Inter',
+              }}
+            >
+              Log
+            </button>
+            <button
+              onClick={() => setActiveTab('activity')}
+              style={{
+                flex: 1,
+                padding: '16px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: activeTab === 'activity' ? '#1a1b1e' : '#9195A6',
+                borderBottom:
+                  activeTab === 'activity'
+                    ? '2px solid #1a1b1e'
+                    : '2px solid transparent',
+                fontFamily: 'Inter',
+              }}
+            >
+              Activity
+            </button>
             <button
               onClick={() => handleCollapse(true)}
               className="p-2 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
-              style={{ color: '#636779' }}
-              aria-label="Collapse Under the Hood"
+              style={{ color: '#636779', marginRight: '12px' }}
+              aria-label="Collapse sidebar"
             >
               <ArrowLine width={20} height={20} direction="right" />
             </button>
           </div>
         </div>
 
+        {/* Content */}
         <div
           className="flex-1"
           style={{
@@ -93,41 +124,36 @@ function ActivityLogSidebar({
             overflowX: 'visible',
           }}
         >
-          {activities.length > 0 ? (
-            activities.map((activity) => (
-              <ActivityLogItem
-                key={activity.id}
-                type={activity.type}
-                action={activity.action}
-                timestamp={formatTimestamp(activity.timestamp)}
-                status={activity.status}
-                blockExplorerUrl={activity.blockExplorerUrl}
-                isFromPreviousSession={activity.isFromPreviousSession}
-              />
-            ))
+          {activeTab === 'log' ? (
+            activities.length > 0 ? (
+              activities.map((activity) => (
+                <ActivityLogItem
+                  key={activity.id}
+                  type={activity.type}
+                  action={activity.action}
+                  timestamp={formatTimestamp(activity.timestamp)}
+                  status={activity.status}
+                  blockExplorerUrl={activity.blockExplorerUrl}
+                  isFromPreviousSession={activity.isFromPreviousSession}
+                />
+              ))
+            ) : (
+              <div
+                style={{
+                  color: '#9CA3AF',
+                  textAlign: 'center',
+                  padding: '2rem',
+                }}
+              >
+                No activity yet
+              </div>
+            )
           ) : (
-            <div
-              style={{
-                color: '#9CA3AF',
-                textAlign: 'center',
-                padding: '2rem',
-              }}
-            >
-              No activity yet
-            </div>
+            <ActivityFeedList
+              activities={activities}
+              formatTimestamp={formatTimestamp}
+            />
           )}
-        </div>
-
-        <div className="mt-auto">
-          <div style={{ borderTop: '1px solid #E0E2EB' }} />
-          <div
-            style={{
-              padding: '1.5rem',
-              paddingTop: '1.5rem',
-            }}
-          >
-            <Info />
-          </div>
         </div>
       </div>
     </>

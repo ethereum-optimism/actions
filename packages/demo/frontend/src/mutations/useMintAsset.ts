@@ -3,7 +3,10 @@ import type { Asset } from '@eth-optimism/actions-sdk'
 
 interface UseMintAssetParams {
   mintAsset: (asset: Asset) => Promise<{ blockExplorerUrls?: string[] } | void>
-  logActivity?: (action: string) => {
+  logActivity?: (
+    action: string,
+    metadata?: Record<string, unknown>,
+  ) => {
     confirm: (data?: { blockExplorerUrl?: string }) => void
     error: () => void
   } | null

@@ -20,6 +20,7 @@ import { useSwap } from '@/hooks/useSwap'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { actionsApi } from '@/api/actionsApi'
 import { useLendBalance } from '@/hooks/useLendBalance'
+import { useActivityLogger } from '@/hooks/useActivityLogger'
 
 export interface EarnProps {
   operations: LendProviderOperations
@@ -145,6 +146,7 @@ function EarnContent({
 
   // Swap functionality
   const { isExecuting: isSwapping } = useSwap()
+  const { logActivity } = useActivityLogger()
 
   const handleSwap = useCallback(
     async ({
@@ -152,27 +154,45 @@ function EarnContent({
       tokenInAddress,
       tokenOutAddress,
       chainId,
+      metadata,
     }: {
       amountIn: number
       tokenInAddress: Address
       tokenOutAddress: Address
       chainId: SupportedChainId
+      metadata?: {
+        assetInSymbol: string
+        assetOutSymbol: string
+        amountOut: string
+      }
     }) => {
-      const headers = await getAuthHeaders()
-      const result = await actionsApi.executeSwap(
-        {
-          amountIn,
-          tokenInAddress,
-          tokenOutAddress,
-          chainId,
-        },
-        headers,
-      )
-      return {
-        blockExplorerUrl: result.blockExplorerUrls?.[0],
+      const activity = logActivity('swap', {
+        amount: amountIn,
+        assetSymbol: metadata?.assetInSymbol,
+        toAssetSymbol: metadata?.assetOutSymbol,
+        toAmount: metadata?.amountOut,
+      })
+
+      try {
+        const headers = await getAuthHeaders()
+        const result = await actionsApi.executeSwap(
+          {
+            amountIn,
+            tokenInAddress,
+            tokenOutAddress,
+            chainId,
+          },
+          headers,
+        )
+        const blockExplorerUrl = result.blockExplorerUrls?.[0]
+        activity?.confirm({ blockExplorerUrl })
+        return { blockExplorerUrl }
+      } catch (error) {
+        activity?.error()
+        throw error
       }
     },
-    [getAuthHeaders],
+    [getAuthHeaders, logActivity],
   )
 
   const handleGetPrice = useCallback(

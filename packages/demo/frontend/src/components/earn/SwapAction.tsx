@@ -22,6 +22,11 @@ interface SwapActionProps {
     tokenInAddress: Address
     tokenOutAddress: Address
     chainId: SupportedChainId
+    metadata?: {
+      assetInSymbol: string
+      assetOutSymbol: string
+      amountOut: string
+    }
   }) => Promise<{
     blockExplorerUrl?: string
   }>
@@ -577,6 +582,11 @@ export function SwapAction({
         tokenInAddress: assetIn.asset.address[assetIn.chainId] as Address,
         tokenOutAddress: assetOut.asset.address[assetOut.chainId] as Address,
         chainId: assetIn.chainId,
+        metadata: {
+          assetInSymbol: displaySymbol(assetIn.asset.metadata.symbol),
+          assetOutSymbol: displaySymbol(assetOut.asset.metadata.symbol),
+          amountOut: priceQuote?.amountOutFormatted || '',
+        },
       })
 
       setBlockExplorerUrl(result.blockExplorerUrl)

@@ -2,14 +2,26 @@ import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
 
 import { ActivityLogContext } from '../contexts/ActivityLogContext'
 
+export interface ActivityMetadata {
+  amount?: number
+  assetSymbol?: string
+  assetLogo?: string
+  toAssetSymbol?: string
+  toAssetLogo?: string
+  toAmount?: string
+  marketName?: string
+  marketLogo?: string
+}
+
 export type ActivityEntry = {
   id: number
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'swap'
   action: string
   timestamp: string
   status: 'pending' | 'confirmed' | 'error'
   blockExplorerUrl?: string
   isFromPreviousSession?: boolean
+  metadata?: ActivityMetadata
 }
 
 export function ActivityLogProvider({
