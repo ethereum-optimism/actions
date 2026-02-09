@@ -1,0 +1,39 @@
+# Actions SDK
+
+> Actions SDK is an open source TypeScript toolkit by Optimism that simplifies integrating DeFi into applications. It provides modular providers for embedded wallets and DeFi actions (lend, borrow, swap, pay) across Superchain networks. Built on viem with ERC-4337 smart wallet support and gas sponsorship.
+
+- [npm package](https://www.npmjs.com/package/@eth-optimism/actions-sdk): `@eth-optimism/actions-sdk`
+- [Source code](https://github.com/ethereum-optimism/actions): GitHub monorepo
+
+## Docs
+
+- [Quickstart](https://docs.optimism.io/app-developers/quickstarts/actions): Install the SDK, choose a wallet provider, and perform your first DeFi action
+- [Configuring Actions](https://docs.optimism.io/app-developers/guides/configuring-actions): Configure wallet providers, assets, markets, chains, and DeFi providers
+- [Integrating Wallets](https://docs.optimism.io/app-developers/reference/actions/integrating-wallets): Embedded wallet providers, gas sponsorship, and smart wallets
+- [Wallet Reference](https://docs.optimism.io/app-developers/reference/actions/wallet-definitions): Wallet and SmartWallet class methods
+- [Lend Reference](https://docs.optimism.io/app-developers/reference/actions/lend-documentation): Lend provider reference for opening and closing positions
+
+## Integration Guide
+
+- [AGENTS.md](https://raw.githubusercontent.com/ethereum-optimism/actions/main/AGENTS.md): Step-by-step integration playbook for AI coding agents with interactive decision points, code examples, and configuration scaffolding
+
+## Code Examples
+
+- [Demo Backend](https://github.com/ethereum-optimism/actions/tree/main/packages/demo/backend): Hono backend demonstrating SDK usage in Node.js
+- [Demo Frontend](https://github.com/ethereum-optimism/actions/tree/main/packages/demo/frontend): React + Vite frontend demonstrating SDK usage with multiple wallet providers
+
+## Website Sections
+
+- [Wallet Providers](https://actions.optimism.io/#wallet): Supported embedded wallet providers
+- [Lend](https://actions.optimism.io/#lend): Lending action overview
+- [Borrow](https://actions.optimism.io/#borrow): Borrowing action overview
+- [Swap](https://actions.optimism.io/#swap): Token swap action overview
+- [Pay](https://actions.optimism.io/#pay): Payment action overview
+- [Assets](https://actions.optimism.io/#assets): Supported tokens
+- [Chains](https://actions.optimism.io/#chains): Supported networks
+
+## Optional
+
+- [Actions Website](https://actions.optimism.io): Landing page with example code and links
+- [Actions Demo](https://actions.optimism.io/earn): Live demo for end user testing
+- [Optimism Docs](https://docs.optimism.io): Full Optimism developer documentation
