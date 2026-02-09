@@ -243,23 +243,19 @@ export abstract class SwapProvider<
     const symbolOut = assetOut.metadata.symbol.toLowerCase()
 
     return list.some((filter) => {
-      // If filter specifies a chainId and it doesn't match, skip
       if (filter.chainId !== undefined && filter.chainId !== chainId)
         return false
 
-      // Generate all unique pairs from filter.assets and check for match
-      const symbols = filter.assets.map((a) => a.metadata.symbol.toLowerCase())
-      for (let i = 0; i < symbols.length; i++) {
-        for (let j = i + 1; j < symbols.length; j++) {
-          if (
-            (symbolIn === symbols[i] && symbolOut === symbols[j]) ||
-            (symbolIn === symbols[j] && symbolOut === symbols[i])
-          ) {
-            return true
-          }
-        }
-      }
-      return false
+      return this.filterContainsPair(symbolIn, symbolOut, filter.assets)
     })
+  }
+
+  private filterContainsPair(
+    symbolIn: string,
+    symbolOut: string,
+    assets: Asset[],
+  ): boolean {
+    const symbols = assets.map((a) => a.metadata.symbol.toLowerCase())
+    return symbols.includes(symbolIn) && symbols.includes(symbolOut)
   }
 }
