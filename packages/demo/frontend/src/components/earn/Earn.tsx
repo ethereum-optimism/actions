@@ -230,8 +230,9 @@ function EarnContent({
       >
         <div className="w-full px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-8">
               <img src="/Optimism.svg" alt="Optimism" className="h-4" />
+              <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
             <div className="flex items-center gap-4">
               <WalletProviderDropdown
@@ -252,47 +253,7 @@ function EarnContent({
         {/* Left Content Area */}
         <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
           <div className="w-full max-w-2xl">
-            {/* Title Section */}
-            <div className="mb-8 text-left">
-              <div className="flex items-center gap-2 mb-2">
-                <h1
-                  style={{
-                    color: '#1a1b1e',
-                    fontSize: '24px',
-                    fontStyle: 'normal',
-                    fontWeight: 600,
-                  }}
-                  className="sm:text-2xl"
-                >
-                  Actions Demo
-                </h1>
-                <span
-                  className="px-2 py-2 text-xs font-medium rounded-sm"
-                  style={{
-                    backgroundColor: '#F2F3F8',
-                    color: '#404454',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                  }}
-                >
-                  Sandbox
-                </span>
-              </div>
-              <p
-                style={{ color: '#666666', fontSize: '16px' }}
-                className="sm:text-base"
-              >
-                {activeTab === 'lend'
-                  ? 'Earn interest by lending USDC'
-                  : activeTab === 'swap'
-                    ? 'Swap between tokens'
-                    : 'Perform onchain actions'}
-              </p>
-            </div>
-
             <div className="space-y-6">
-              {/* Action Tabs */}
-              <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
               {activeTab === 'lend' && (
                 <>
