@@ -5,6 +5,7 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
 import { isEthSymbol } from '@/utils/assetUtils'
+import { CtaButton } from './CtaButton'
 
 interface ActionProps {
   assetBalance: string
@@ -380,22 +381,9 @@ export function Action({
           </div>
 
           {/* CTA Button */}
-          <button
-            onClick={handleCtaClick}
-            disabled={ctaDisabled}
-            className="w-full py-3 px-4 font-medium transition-all"
-            style={{
-              backgroundColor: ctaDisabled ? '#D1D5DB' : '#FF0420',
-              color: ctaDisabled ? '#6B7280' : '#FFFFFF',
-              fontSize: '16px',
-              borderRadius: '12px',
-              border: 'none',
-              cursor: ctaDisabled ? 'not-allowed' : 'pointer',
-              opacity: 1,
-            }}
-          >
+          <CtaButton onClick={handleCtaClick} disabled={ctaDisabled}>
             {ctaText}
-          </button>
+          </CtaButton>
 
           {isLockedWithdrawAmount && (
             <div

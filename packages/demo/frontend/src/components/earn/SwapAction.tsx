@@ -5,6 +5,7 @@ import type { Address } from 'viem'
 import TransactionModal from './TransactionModal'
 import Shimmer from './Shimmer'
 import { Toast } from './Toast'
+import { CtaButton } from './CtaButton'
 import { trackEvent } from '@/utils/analytics'
 
 interface SwapAsset {
@@ -434,21 +435,9 @@ function ReviewSwapModal({
         )}
 
         {/* Swap button */}
-        <button
-          onClick={onConfirm}
-          disabled={isExecuting}
-          className="w-full py-4 px-4 font-semibold transition-all"
-          style={{
-            backgroundColor: isExecuting ? '#D1D5DB' : '#FF0420',
-            color: isExecuting ? '#6B7280' : '#FFFFFF',
-            fontSize: '16px',
-            borderRadius: '12px',
-            border: 'none',
-            cursor: isExecuting ? 'not-allowed' : 'pointer',
-          }}
-        >
+        <CtaButton onClick={onConfirm} disabled={isExecuting}>
           {isExecuting ? 'Swapping...' : 'Swap'}
-        </button>
+        </CtaButton>
       </div>
     </div>
   )
@@ -857,25 +846,13 @@ export function SwapAction({
 
         {/* Review Button */}
         <div className="px-6 pb-6">
-          <button
-            onClick={handleReview}
-            disabled={isReviewDisabled}
-            className="w-full py-4 px-4 font-semibold transition-all"
-            style={{
-              backgroundColor: isReviewDisabled ? '#D1D5DB' : '#FF0420',
-              color: isReviewDisabled ? '#6B7280' : '#FFFFFF',
-              fontSize: '16px',
-              borderRadius: '12px',
-              border: 'none',
-              cursor: isReviewDisabled ? 'not-allowed' : 'pointer',
-            }}
-          >
+          <CtaButton onClick={handleReview} disabled={isReviewDisabled}>
             {isExecuting
               ? 'Swapping...'
               : isLoadingPrice
                 ? 'Getting Quote...'
                 : 'Review'}
-          </button>
+          </CtaButton>
         </div>
       </div>
 
