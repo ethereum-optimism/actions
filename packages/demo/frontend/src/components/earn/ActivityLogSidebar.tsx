@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ActivityLogItem from './ActivityLogItem'
 import ActivityLogIcon from '../icons/ActivityLogIcon'
+import ArrowLine from '../icons/ArrowLine'
 import { ActivityFeedList } from './ActivityFeedList'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
@@ -68,7 +69,7 @@ function ActivityLogSidebar({
           }}
           aria-label="Collapse sidebar"
         >
-          <ActivityLogIcon width={20} height={20} color="#636779" />
+          <ArrowLine width={20} height={20} color="#636779" direction="right" />
         </button>
       )}
 
