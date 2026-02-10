@@ -78,6 +78,34 @@ export function useLendBalance(walletProvider?: string) {
     [],
   )
 
+  // Seed ledger for markets that have on-chain balances but no tracking history.
+  // Assumes the existing balance is the net deposited baseline.
+  const seedMarkets = useCallback(
+    (
+      markets: Array<{
+        marketId: { address: string; chainId: number }
+        balance: number
+      }>,
+    ) => {
+      setLedger((prev) => {
+        let updated = false
+        const next = { ...prev }
+        for (const market of markets) {
+          const key = makeMarketKey(
+            market.marketId.address,
+            market.marketId.chainId,
+          )
+          if (!next[key] && market.balance > 0) {
+            next[key] = { entries: [], netDeposited: market.balance }
+            updated = true
+          }
+        }
+        return updated ? next : prev
+      })
+    },
+    [],
+  )
+
   const getInterest = useCallback(
     (
       marketId: { address: string; chainId: number },
@@ -91,11 +119,10 @@ export function useLendBalance(walletProvider?: string) {
       if (isNaN(current) || current <= 0) return 0
 
       const interest = current - market.netDeposited
-      // Only return positive interest (rounding errors could give tiny negatives)
       return interest > 0.000001 ? interest : 0
     },
     [ledger],
   )
 
-  return { recordTransaction, getInterest }
+  return { recordTransaction, getInterest, seedMarkets }
 }

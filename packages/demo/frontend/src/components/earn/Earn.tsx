@@ -125,9 +125,21 @@ function EarnContent({
   } = useLendProviderContext()
 
   // Lend balance tracking (interest calculation)
-  const { recordTransaction, getInterest } = useLendBalance(
+  const { recordTransaction, getInterest, seedMarkets } = useLendBalance(
     providerConfig.queryParam,
   )
+
+  // Seed ledger for existing positions that have no tracking history
+  useEffect(() => {
+    if (marketPositions.length > 0) {
+      seedMarkets(
+        marketPositions.map((p) => ({
+          marketId: p.marketId,
+          balance: parseFloat(p.depositedAmount || '0'),
+        })),
+      )
+    }
+  }, [marketPositions, seedMarkets])
 
   // Wrap handleTransaction to also record to the lend balance ledger
   const handleTransactionWithTracking = useCallback(
