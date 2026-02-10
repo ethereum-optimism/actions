@@ -66,7 +66,10 @@ function buildDepositSummary(entry: ActivityEntry): SummarySegment[] {
     }
     return segments
   }
-  return [{ type: 'text', value: 'Lent USDC' }]
+  return [
+    { type: 'text', value: 'Lent ' },
+    { type: 'token', logo: '/usdc-logo.svg', symbol: 'USDC' },
+  ]
 }
 
 function buildWithdrawSummary(entry: ActivityEntry): SummarySegment[] {
@@ -89,7 +92,10 @@ function buildWithdrawSummary(entry: ActivityEntry): SummarySegment[] {
     }
     return segments
   }
-  return [{ type: 'text', value: 'Withdrew USDC' }]
+  return [
+    { type: 'text', value: 'Withdrew ' },
+    { type: 'token', logo: '/usdc-logo.svg', symbol: 'USDC' },
+  ]
 }
 
 function buildMintSummary(entry: ActivityEntry): SummarySegment[] {
@@ -108,7 +114,10 @@ function buildMintSummary(entry: ActivityEntry): SummarySegment[] {
         : [{ type: 'text' as const, value: displaySymbol(m.assetSymbol) }]),
     ]
   }
-  return [{ type: 'text', value: 'Minted tokens' }]
+  return [
+    { type: 'text', value: 'Minted ' },
+    { type: 'token', logo: '/usdc-logo.svg', symbol: 'USDC' },
+  ]
 }
 
 const SUMMARY_BUILDERS: Record<

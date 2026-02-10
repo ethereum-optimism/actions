@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import ActivityLogItem from './ActivityLogItem'
 import ActivityLogIcon from '../icons/ActivityLogIcon'
-import ArrowLine from '../icons/ArrowLine'
 import { ActivityFeedList } from './ActivityFeedList'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
@@ -18,10 +17,12 @@ function ActivityLogSidebar({
   formatTimestamp,
   onCollapsedChange,
 }: ActivityLogSidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [showButton, setShowButton] = useState(false)
   const [activeTab, setActiveTab] = useState<SidebarTab>('log')
 
   const handleCollapse = (collapsed: boolean) => {
+    setIsCollapsed(collapsed)
     onCollapsedChange?.(collapsed)
 
     if (collapsed) {
@@ -35,6 +36,7 @@ function ActivityLogSidebar({
 
   return (
     <>
+      {/* Show button (when collapsed) - slides in from right edge */}
       <button
         onClick={() => handleCollapse(false)}
         className="fixed top-24 p-3 hover:bg-gray-100 rounded-l-lg transition-all duration-300 ease-in-out shadow-md z-50"
@@ -50,6 +52,26 @@ function ActivityLogSidebar({
       >
         <ActivityLogIcon width={20} height={20} color="#636779" />
       </button>
+
+      {/* Hide button (when expanded) - static, to the left of the sidebar */}
+      {!isCollapsed && (
+        <button
+          onClick={() => handleCollapse(true)}
+          className="fixed p-3 hover:bg-gray-100 rounded-l-lg z-50"
+          style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E0E2EB',
+            borderRight: 'none',
+            color: '#636779',
+            right: '436px',
+            top: '96px',
+          }}
+          aria-label="Collapse sidebar"
+        >
+          <ActivityLogIcon width={20} height={20} color="#636779" />
+        </button>
+      )}
+
       <div
         className="flex flex-col h-full transition-all duration-300 ease-in-out relative overflow-hidden"
         style={{
@@ -60,55 +82,49 @@ function ActivityLogSidebar({
         }}
       >
         {/* Tab Header */}
-        <div className="flex-shrink-0" style={{ padding: '0 1.5rem' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex" style={{ gap: 0 }}>
-              <button
-                onClick={() => setActiveTab('log')}
-                style={{
-                  padding: '16px 24px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  fontSize: '16px',
-                  fontWeight: activeTab === 'log' ? 600 : 400,
-                  color: activeTab === 'log' ? '#1a1b1e' : '#9195A6',
-                  cursor: 'pointer',
-                  borderBottom:
-                    activeTab === 'log'
-                      ? '3px solid #1a1b1e'
-                      : '3px solid transparent',
-                  fontFamily: 'Inter',
-                }}
-              >
-                Log
-              </button>
-              <button
-                onClick={() => setActiveTab('activity')}
-                style={{
-                  padding: '16px 24px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  fontSize: '16px',
-                  fontWeight: activeTab === 'activity' ? 600 : 400,
-                  color: activeTab === 'activity' ? '#1a1b1e' : '#9195A6',
-                  cursor: 'pointer',
-                  borderBottom:
-                    activeTab === 'activity'
-                      ? '3px solid #1a1b1e'
-                      : '3px solid transparent',
-                  fontFamily: 'Inter',
-                }}
-              >
-                Activity
-              </button>
-            </div>
+        <div className="flex-shrink-0">
+          <div className="flex">
             <button
-              onClick={() => handleCollapse(true)}
-              className="p-2 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
-              style={{ color: '#636779' }}
-              aria-label="Collapse sidebar"
+              onClick={() => setActiveTab('log')}
+              style={{
+                flex: 1,
+                padding: '16px 0',
+                border: 'none',
+                backgroundColor: 'transparent',
+                fontSize: '16px',
+                fontWeight: activeTab === 'log' ? 600 : 400,
+                color: activeTab === 'log' ? '#1a1b1e' : '#9195A6',
+                cursor: 'pointer',
+                borderBottom:
+                  activeTab === 'log'
+                    ? '3px solid #1a1b1e'
+                    : '3px solid transparent',
+                fontFamily: 'Inter',
+                textAlign: 'center',
+              }}
             >
-              <ArrowLine width={20} height={20} direction="right" />
+              Log
+            </button>
+            <button
+              onClick={() => setActiveTab('activity')}
+              style={{
+                flex: 1,
+                padding: '16px 0',
+                border: 'none',
+                backgroundColor: 'transparent',
+                fontSize: '16px',
+                fontWeight: activeTab === 'activity' ? 600 : 400,
+                color: activeTab === 'activity' ? '#1a1b1e' : '#9195A6',
+                cursor: 'pointer',
+                borderBottom:
+                  activeTab === 'activity'
+                    ? '3px solid #1a1b1e'
+                    : '3px solid transparent',
+                fontFamily: 'Inter',
+                textAlign: 'center',
+              }}
+            >
+              Activity
             </button>
           </div>
           <div style={{ borderBottom: '1px solid #E0E2EB' }} />

@@ -4,7 +4,7 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 
 interface ActivityLogItemProps {
-  type: 'lend' | 'withdraw' | 'fund' | 'wallet'
+  type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'swap'
   action: string
   timestamp: string
   status: 'pending' | 'confirmed' | 'error'
@@ -38,6 +38,11 @@ const TYPE_CONFIG = {
     label: 'Wallet',
     bg: '#FEF3C7',
     stroke: '#F59E0B',
+  },
+  swap: {
+    label: 'Swap',
+    bg: '#E0E7FF',
+    stroke: '#6366F1',
   },
 } as const
 

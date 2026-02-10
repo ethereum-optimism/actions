@@ -4,7 +4,6 @@ import type { SupportedChainId } from '@eth-optimism/actions-sdk/react'
 import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
-import Info from './Info'
 import { WalletProviderDropdown } from './WalletProviderDropdown'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { ActivityHighlightProvider } from '@/contexts/ActivityHighlightContext'
@@ -21,6 +20,8 @@ import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { actionsApi } from '@/api/actionsApi'
 import { useLendBalance } from '@/hooks/useLendBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
+import { TotalBalanceDropdown } from './TotalBalanceDropdown'
+import { useTotalBalance } from '@/hooks/useTotalBalance'
 
 export interface EarnProps {
   operations: LendProviderOperations
@@ -219,7 +220,7 @@ function EarnContent({
     return operations.getTokenBalances()
   }, [operations])
 
-  // Fetch swap assets using shared hook
+  // Fetch swap assets (always enabled for navbar balance)
   const {
     assets: swapAssets,
     isLoading: isLoadingSwapAssets,
@@ -228,7 +229,7 @@ function EarnContent({
     actions,
     getAuthHeaders,
     getTokenBalances,
-    enabled: activeTab === 'swap',
+    enabled: true,
   })
 
   // Refetch swap assets when switching to swap tab
@@ -237,6 +238,16 @@ function EarnContent({
       refetchSwapAssets()
     }
   }, [activeTab, refetchSwapAssets])
+
+  // Total balance for navbar dropdown
+  const {
+    tokenBalances,
+    totalUsd,
+    isLoading: isLoadingTotalBalance,
+  } = useTotalBalance({
+    assets: swapAssets,
+    getPrice: handleGetPrice,
+  })
 
   return (
     <div
@@ -256,10 +267,16 @@ function EarnContent({
       >
         <div className="w-full px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-8">
               <img src="/Optimism.svg" alt="Optimism" className="h-4" />
+              <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
             <div className="flex items-center gap-4">
+              <TotalBalanceDropdown
+                totalUsd={totalUsd}
+                tokenBalances={tokenBalances}
+                isLoading={isLoadingTotalBalance}
+              />
               <WalletProviderDropdown
                 selectedProvider={providerConfig}
                 walletAddress={walletAddress}
@@ -278,48 +295,7 @@ function EarnContent({
         {/* Left Content Area */}
         <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
           <div className="w-full max-w-2xl">
-            {/* Title Section */}
-            <div className="mb-8 text-left">
-              <div className="flex items-center gap-2 mb-2">
-                <h1
-                  style={{
-                    color: '#1a1b1e',
-                    fontSize: '24px',
-                    fontStyle: 'normal',
-                    fontWeight: 600,
-                  }}
-                  className="sm:text-2xl"
-                >
-                  Actions Demo
-                </h1>
-                <span
-                  className="px-2 py-2 text-xs font-medium rounded-sm"
-                  style={{
-                    backgroundColor: '#F2F3F8',
-                    color: '#404454',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                  }}
-                >
-                  Sandbox
-                </span>
-              </div>
-              <p
-                style={{ color: '#666666', fontSize: '16px' }}
-                className="sm:text-base"
-              >
-                {activeTab === 'lend'
-                  ? 'Earn interest by lending USDC'
-                  : activeTab === 'swap'
-                    ? 'Swap between tokens'
-                    : 'Perform onchain actions'}
-              </p>
-            </div>
-
             <div className="space-y-6">
-              {/* Action Tabs */}
-              <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
               {activeTab === 'lend' && (
                 <>
                   {/* Market Selector */}
@@ -394,20 +370,6 @@ function EarnContent({
               {/* Activity Log - Mobile */}
               <div className="lg:hidden">
                 <ActivityLog />
-              </div>
-
-              {/* Info - Mobile */}
-              <div className="lg:hidden">
-                <div
-                  className="p-6"
-                  style={{
-                    border: '1px solid #E0E2EB',
-                    borderRadius: '24px',
-                    backgroundColor: '#FFFFFF',
-                  }}
-                >
-                  <Info />
-                </div>
               </div>
             </div>
           </div>
