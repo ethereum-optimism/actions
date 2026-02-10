@@ -198,7 +198,9 @@ function ActivityLogSidebar({
         >
           <div className="flex" style={{ padding: '0' }}>
             <a
-              href="/docs"
+              href="https://docs.optimism.io/app-developers/quickstarts/actions"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 transition-colors hover:opacity-70"
               style={{
                 flex: 1,
