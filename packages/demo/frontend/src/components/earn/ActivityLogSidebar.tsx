@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import ActivityLogItem from './ActivityLogItem'
-import ActivityFeedList from './ActivityFeedList'
+import ActivityLogIcon from '../icons/ActivityLogIcon'
 import ArrowLine from '../icons/ArrowLine'
+import { ActivityFeedList } from './ActivityFeedList'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
+
+type SidebarTab = 'log' | 'activity'
 
 interface ActivityLogSidebarProps {
   activities: ActivityEntry[]
@@ -16,7 +19,7 @@ function ActivityLogSidebar({
   onCollapsedChange,
 }: ActivityLogSidebarProps) {
   const [showButton, setShowButton] = useState(false)
-  const [activeTab, setActiveTab] = useState<'log' | 'activity'>('log')
+  const [activeTab, setActiveTab] = useState<SidebarTab>('log')
 
   const handleCollapse = (collapsed: boolean) => {
     onCollapsedChange?.(collapsed)
@@ -43,9 +46,9 @@ function ActivityLogSidebar({
           right: 0,
           transform: showButton ? 'translateX(0)' : 'translateX(100%)',
         }}
-        aria-label="Expand sidebar"
+        aria-label="Expand Log"
       >
-        <ArrowLine width={20} height={20} direction="left" />
+        <ActivityLogIcon width={20} height={20} color="#636779" />
       </button>
       <div
         className="flex flex-col h-full transition-all duration-300 ease-in-out relative overflow-hidden"
@@ -57,60 +60,58 @@ function ActivityLogSidebar({
         }}
       >
         {/* Tab Header */}
-        <div
-          className="flex-shrink-0"
-          style={{ borderBottom: '1px solid #E0E2EB' }}
-        >
-          <div className="flex items-center">
-            <button
-              onClick={() => setActiveTab('log')}
-              style={{
-                flex: 1,
-                padding: '16px',
-                border: 'none',
-                backgroundColor: 'transparent',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: activeTab === 'log' ? '#1a1b1e' : '#9195A6',
-                borderBottom:
-                  activeTab === 'log'
-                    ? '2px solid #1a1b1e'
-                    : '2px solid transparent',
-                fontFamily: 'Inter',
-              }}
-            >
-              Log
-            </button>
-            <button
-              onClick={() => setActiveTab('activity')}
-              style={{
-                flex: 1,
-                padding: '16px',
-                border: 'none',
-                backgroundColor: 'transparent',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: activeTab === 'activity' ? '#1a1b1e' : '#9195A6',
-                borderBottom:
-                  activeTab === 'activity'
-                    ? '2px solid #1a1b1e'
-                    : '2px solid transparent',
-                fontFamily: 'Inter',
-              }}
-            >
-              Activity
-            </button>
+        <div className="flex-shrink-0" style={{ padding: '0 1.5rem' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex" style={{ gap: 0 }}>
+              <button
+                onClick={() => setActiveTab('log')}
+                style={{
+                  padding: '16px 24px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  fontSize: '16px',
+                  fontWeight: activeTab === 'log' ? 600 : 400,
+                  color: activeTab === 'log' ? '#1a1b1e' : '#9195A6',
+                  cursor: 'pointer',
+                  borderBottom:
+                    activeTab === 'log'
+                      ? '3px solid #1a1b1e'
+                      : '3px solid transparent',
+                  fontFamily: 'Inter',
+                }}
+              >
+                Log
+              </button>
+              <button
+                onClick={() => setActiveTab('activity')}
+                style={{
+                  padding: '16px 24px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  fontSize: '16px',
+                  fontWeight: activeTab === 'activity' ? 600 : 400,
+                  color: activeTab === 'activity' ? '#1a1b1e' : '#9195A6',
+                  cursor: 'pointer',
+                  borderBottom:
+                    activeTab === 'activity'
+                      ? '3px solid #1a1b1e'
+                      : '3px solid transparent',
+                  fontFamily: 'Inter',
+                }}
+              >
+                Activity
+              </button>
+            </div>
             <button
               onClick={() => handleCollapse(true)}
               className="p-2 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
-              style={{ color: '#636779', marginRight: '12px' }}
+              style={{ color: '#636779' }}
               aria-label="Collapse sidebar"
             >
               <ArrowLine width={20} height={20} direction="right" />
             </button>
           </div>
+          <div style={{ borderBottom: '1px solid #E0E2EB' }} />
         </div>
 
         {/* Content */}
@@ -154,6 +155,64 @@ function ActivityLogSidebar({
               formatTimestamp={formatTimestamp}
             />
           )}
+        </div>
+
+        {/* Minimal Footer */}
+        <div
+          className="flex-shrink-0"
+          style={{ borderTop: '1px solid #E0E2EB' }}
+        >
+          <div
+            className="flex items-center justify-between"
+            style={{ padding: '12px 24px' }}
+          >
+            <a
+              href="/docs"
+              className="flex items-center gap-2 transition-colors hover:opacity-70"
+              style={{
+                textDecoration: 'none',
+                color: '#666666',
+                fontSize: '13px',
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Docs &middot; Get Started
+            </a>
+            <a
+              href="https://github.com/ethereum-optimism/actions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 transition-colors hover:opacity-70"
+              style={{
+                textDecoration: 'none',
+                color: '#666666',
+                fontSize: '13px',
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+              </svg>
+              GitHub
+            </a>
+          </div>
         </div>
       </div>
     </>

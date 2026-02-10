@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import ActivityLogItem from './ActivityLogItem'
-import ActivityFeedList from './ActivityFeedList'
+import { ActivityFeedList } from './ActivityFeedList'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
+
+type CardTab = 'log' | 'activity'
 
 interface ActivityLogCardProps {
   activities: ActivityEntry[]
@@ -16,7 +18,7 @@ function ActivityLogCard({
   hasMoreActivities,
   onViewFullLog,
 }: ActivityLogCardProps) {
-  const [activeTab, setActiveTab] = useState<'log' | 'activity'>('log')
+  const [activeTab, setActiveTab] = useState<CardTab>('log')
   const displayedActivities = activities.slice(0, 3)
 
   return (
@@ -25,28 +27,26 @@ function ActivityLogCard({
         backgroundColor: '#FFFFFF',
         border: '1px solid #E0E2EB',
         borderRadius: '24px',
-        boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
       {/* Tab Header */}
-      <div style={{ borderBottom: '1px solid #E0E2EB' }}>
-        <div className="flex">
+      <div style={{ padding: '0 24px' }}>
+        <div className="flex" style={{ gap: 0 }}>
           <button
             onClick={() => setActiveTab('log')}
             style={{
-              flex: 1,
-              padding: '16px',
+              padding: '14px 20px',
               border: 'none',
               backgroundColor: 'transparent',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 500,
+              fontSize: '15px',
+              fontWeight: activeTab === 'log' ? 600 : 400,
               color: activeTab === 'log' ? '#1a1b1e' : '#9195A6',
+              cursor: 'pointer',
               borderBottom:
                 activeTab === 'log'
-                  ? '2px solid #1a1b1e'
-                  : '2px solid transparent',
+                  ? '3px solid #1a1b1e'
+                  : '3px solid transparent',
               fontFamily: 'Inter',
             }}
           >
@@ -55,27 +55,26 @@ function ActivityLogCard({
           <button
             onClick={() => setActiveTab('activity')}
             style={{
-              flex: 1,
-              padding: '16px',
+              padding: '14px 20px',
               border: 'none',
               backgroundColor: 'transparent',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 500,
+              fontSize: '15px',
+              fontWeight: activeTab === 'activity' ? 600 : 400,
               color: activeTab === 'activity' ? '#1a1b1e' : '#9195A6',
+              cursor: 'pointer',
               borderBottom:
                 activeTab === 'activity'
-                  ? '2px solid #1a1b1e'
-                  : '2px solid transparent',
+                  ? '3px solid #1a1b1e'
+                  : '3px solid transparent',
               fontFamily: 'Inter',
             }}
           >
             Activity
           </button>
         </div>
+        <div style={{ borderBottom: '1px solid #E0E2EB' }} />
       </div>
 
-      {/* Content */}
       <div
         className="overflow-y-auto max-h-96"
         style={{

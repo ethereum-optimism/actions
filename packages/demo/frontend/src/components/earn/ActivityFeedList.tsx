@@ -1,19 +1,22 @@
-import type { ActivityEntry } from '../../providers/ActivityLogProvider'
-import ActivityFeedItem from './ActivityFeedItem'
+import type { ActivityEntry } from '@/providers/ActivityLogProvider'
+import { ActivityFeedItem } from './ActivityFeedItem'
+import {
+  getActivitySummary,
+  isSignedTransaction,
+} from '@/utils/activitySummary'
 
 interface ActivityFeedListProps {
   activities: ActivityEntry[]
   formatTimestamp: (timestamp: string) => string
 }
 
-function ActivityFeedList({
+export function ActivityFeedList({
   activities,
   formatTimestamp,
 }: ActivityFeedListProps) {
-  // Only show activities that have transactions (blockExplorerUrl)
-  const transactionActivities = activities.filter((a) => !!a.blockExplorerUrl)
+  const signedTransactions = activities.filter(isSignedTransaction)
 
-  if (transactionActivities.length === 0) {
+  if (signedTransactions.length === 0) {
     return (
       <div
         style={{
@@ -30,15 +33,15 @@ function ActivityFeedList({
 
   return (
     <div>
-      {transactionActivities.map((activity) => (
+      {signedTransactions.map((activity) => (
         <ActivityFeedItem
           key={activity.id}
-          activity={activity}
-          formatTimestamp={formatTimestamp}
+          summary={getActivitySummary(activity)}
+          timestamp={formatTimestamp(activity.timestamp)}
+          blockExplorerUrl={activity.blockExplorerUrl}
+          status={activity.status}
         />
       ))}
     </div>
   )
 }
-
-export default ActivityFeedList
