@@ -191,6 +191,7 @@ export function Action({
         {/* Lend / Withdraw Toggle */}
         <div
           style={{
+            position: 'relative',
             display: 'flex',
             width: '100%',
             backgroundColor: '#F5F5F7',
@@ -198,11 +199,25 @@ export function Action({
             padding: '3px',
           }}
         >
+          {/* Sliding indicator */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '3px',
+              bottom: '3px',
+              left: mode === 'lend' ? '3px' : '50%',
+              width: 'calc(50% - 3px)',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              transition: 'left 200ms ease-in-out',
+            }}
+          />
           <button
             onClick={() => setMode('lend')}
-            className="transition-all"
             style={{
               flex: 1,
+              position: 'relative',
               padding: '10px 32px',
               border: 'none',
               borderRadius: '8px',
@@ -210,24 +225,18 @@ export function Action({
               fontWeight: 500,
               fontFamily: 'Inter',
               cursor: 'pointer',
-              backgroundColor:
-                mode === 'lend'
-                  ? '#FFFFFF'
-                  : hoveredAction === 'deposit' && mode === 'withdraw'
-                    ? colors.highlight.background
-                    : 'transparent',
+              backgroundColor: 'transparent',
               color: mode === 'lend' ? '#000' : '#666',
-              boxShadow:
-                mode === 'lend' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
+              transition: 'color 200ms ease-in-out',
             }}
           >
             Lend
           </button>
           <button
             onClick={() => setMode('withdraw')}
-            className="transition-all"
             style={{
               flex: 1,
+              position: 'relative',
               padding: '10px 32px',
               border: 'none',
               borderRadius: '8px',
@@ -235,15 +244,9 @@ export function Action({
               fontWeight: 500,
               fontFamily: 'Inter',
               cursor: 'pointer',
-              backgroundColor:
-                mode === 'withdraw'
-                  ? '#FFFFFF'
-                  : hoveredAction === 'withdraw' && mode === 'lend'
-                    ? colors.highlight.background
-                    : 'transparent',
+              backgroundColor: 'transparent',
               color: mode === 'withdraw' ? '#000' : '#666',
-              boxShadow:
-                mode === 'withdraw' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
+              transition: 'color 200ms ease-in-out',
             }}
           >
             Withdraw
