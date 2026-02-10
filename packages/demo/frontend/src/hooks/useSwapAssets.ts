@@ -130,10 +130,10 @@ export function useSwapAssets({
  */
 function getAssetLogo(symbol: string): string {
   const logoMap: Record<string, string> = {
-    USDC_DEMO: '/usdc-logo.svg',
-    ETH: '/eth-logo.svg',
-    OP_DEMO: '/op-logo.svg',
+    USDC_DEMO: '/usd-coin-usdc-logo.svg',
+    ETH: '/eth.svg',
+    OP_DEMO: '/OP.svg',
   }
 
-  return logoMap[symbol] || '/usdc-logo.svg'
+  return logoMap[symbol] || '/usd-coin-usdc-logo.svg'
 }

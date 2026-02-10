@@ -24,9 +24,7 @@ const defaultProps = {
 describe('Action', () => {
   it('shows Get button when balance is zero and not minting', () => {
     render(<Action {...defaultProps} />)
-    expect(
-      screen.getByRole('button', { name: 'Get USDC' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Get USDC' })).toBeInTheDocument()
   })
 
   it('shows Minting... text and disables button when minting', () => {

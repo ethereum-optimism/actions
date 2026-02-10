@@ -68,7 +68,7 @@ function buildDepositSummary(entry: ActivityEntry): SummarySegment[] {
   }
   return [
     { type: 'text', value: 'Lent ' },
-    { type: 'token', logo: '/usdc-logo.svg', symbol: 'USDC' },
+    { type: 'token', logo: '/usd-coin-usdc-logo.svg', symbol: 'USDC' },
   ]
 }
 
@@ -94,7 +94,7 @@ function buildWithdrawSummary(entry: ActivityEntry): SummarySegment[] {
   }
   return [
     { type: 'text', value: 'Withdrew ' },
-    { type: 'token', logo: '/usdc-logo.svg', symbol: 'USDC' },
+    { type: 'token', logo: '/usd-coin-usdc-logo.svg', symbol: 'USDC' },
   ]
 }
 
@@ -116,7 +116,7 @@ function buildMintSummary(entry: ActivityEntry): SummarySegment[] {
   }
   return [
     { type: 'text', value: 'Minted ' },
-    { type: 'token', logo: '/usdc-logo.svg', symbol: 'USDC' },
+    { type: 'token', logo: '/usd-coin-usdc-logo.svg', symbol: 'USDC' },
   ]
 }
 
