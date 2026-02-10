@@ -196,17 +196,17 @@ function ActivityLogSidebar({
           className="flex-shrink-0"
           style={{ borderTop: '1px solid #E0E2EB' }}
         >
-          <div
-            className="flex items-center justify-between"
-            style={{ padding: '12px 24px' }}
-          >
+          <div className="flex" style={{ padding: '0' }}>
             <a
               href="/docs"
-              className="flex items-center gap-2 transition-colors hover:opacity-70"
+              className="flex items-center justify-center gap-2 transition-colors hover:opacity-70"
               style={{
+                flex: 1,
                 textDecoration: 'none',
                 color: '#666666',
                 fontSize: '13px',
+                padding: '12px 0',
+                borderRight: '1px solid #E0E2EB',
               }}
             >
               <svg
@@ -223,17 +223,19 @@ function ActivityLogSidebar({
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              Docs &middot; Get Started
+              Docs
             </a>
             <a
               href="https://github.com/ethereum-optimism/actions"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 transition-colors hover:opacity-70"
+              className="flex items-center justify-center gap-2 transition-colors hover:opacity-70"
               style={{
+                flex: 1,
                 textDecoration: 'none',
                 color: '#666666',
                 fontSize: '13px',
+                padding: '12px 0',
               }}
             >
               <svg
