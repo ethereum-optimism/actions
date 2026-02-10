@@ -40,13 +40,19 @@ function ActivityLogSidebar({
       {/* Show button (when collapsed) - slides in from right edge */}
       <button
         onClick={() => handleCollapse(false)}
-        className="fixed top-24 p-3 hover:bg-gray-100 rounded-l-lg transition-all duration-300 ease-in-out shadow-md z-50"
+        className="fixed hover:bg-gray-100 rounded-l-lg transition-all duration-300 ease-in-out shadow-md z-50"
         style={{
           backgroundColor: '#FFFFFF',
           border: '1px solid #E0E2EB',
           borderRight: 'none',
           color: '#636779',
           right: 0,
+          top: '57px',
+          height: '55px',
+          width: '44px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           transform: showButton ? 'translateX(0)' : 'translateX(100%)',
         }}
         aria-label="Expand Log"
@@ -54,27 +60,8 @@ function ActivityLogSidebar({
         <ActivityLogIcon width={20} height={20} color="#636779" />
       </button>
 
-      {/* Hide button (when expanded) - static, to the left of the sidebar */}
-      {!isCollapsed && (
-        <button
-          onClick={() => handleCollapse(true)}
-          className="fixed p-3 hover:bg-gray-100 rounded-l-lg z-50"
-          style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E0E2EB',
-            borderRight: 'none',
-            color: '#636779',
-            right: '436px',
-            top: '96px',
-          }}
-          aria-label="Collapse sidebar"
-        >
-          <ArrowLine width={20} height={20} color="#636779" direction="right" />
-        </button>
-      )}
-
       <div
-        className="flex flex-col h-full transition-all duration-300 ease-in-out relative overflow-hidden"
+        className="flex flex-col h-full transition-all duration-300 ease-in-out relative"
         style={{
           backgroundColor: '#FFFFFF',
           borderLeft: '1px solid #E0E2EB',
@@ -83,7 +70,37 @@ function ActivityLogSidebar({
         }}
       >
         {/* Tab Header */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0" style={{ position: 'relative' }}>
+          {/* Collapse button - positioned to the left of sidebar, animates with it */}
+          {!isCollapsed && (
+            <button
+              onClick={() => handleCollapse(true)}
+              className="hover:bg-gray-100 rounded-l-lg shadow-md"
+              style={{
+                position: 'absolute',
+                right: '100%',
+                top: 0,
+                bottom: 0,
+                width: '44px',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E0E2EB',
+                borderRight: 'none',
+                color: '#636779',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+              aria-label="Collapse sidebar"
+            >
+              <ArrowLine
+                width={20}
+                height={20}
+                color="#636779"
+                direction="right"
+              />
+            </button>
+          )}
           <div className="flex">
             <button
               onClick={() => setActiveTab('log')}
