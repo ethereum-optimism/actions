@@ -123,11 +123,10 @@ export function useLendProvider({
 
         setMarketPositions(initialPositions)
 
-        // Set default selected market (first one, preferably Gauntlet/USDC)
+        // Set default selected market (first one, preferably Morpho/USDC)
         if (marketInfoList.length > 0 && !selectedMarket) {
           const defaultMarket =
-            marketInfoList.find((m) => m.name === 'Gauntlet') ||
-            marketInfoList[0]
+            marketInfoList.find((m) => m.name === 'Morpho') || marketInfoList[0]
 
           // Find if we already fetched position for this market
           const defaultPosition = positionResults.find(

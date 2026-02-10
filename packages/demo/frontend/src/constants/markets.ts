@@ -12,7 +12,7 @@ export { USDC_DEMO }
 export const GauntletUSDCDemo: LendMarketConfig = {
   address: '0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1' as const,
   chainId: baseSepolia.id,
-  name: 'Gauntlet USDC',
+  name: 'Morpho USDC',
   asset: USDC_DEMO,
   lendProvider: 'morpho',
 }

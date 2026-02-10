@@ -10,21 +10,20 @@ interface ActivityFeedItemProps {
 
 function SummaryRenderer({ segments }: { segments: SummarySegment[] }) {
   return (
-    <span style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+    <span>
       {segments.map((segment, i) =>
         segment.type === 'token' ? (
-          <span
-            key={i}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-          >
+          <span key={i}>
             <img
               src={segment.logo}
               alt={segment.symbol}
               style={{
-                width: '16px',
-                height: '16px',
+                width: '14px',
+                height: '14px',
                 borderRadius: '50%',
-                display: 'block',
+                display: 'inline',
+                verticalAlign: '-2px',
+                marginRight: '3px',
               }}
             />
             {segment.symbol}

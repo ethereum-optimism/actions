@@ -127,6 +127,7 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       assetAddress,
       asset: market.asset,
       apy: selectedMarketApy ?? market.apy.total,
+      name: market.name.split(' ')[0] || market.name,
     }
   }, [markets, selectedMarketId, selectedMarketApy])
 
@@ -197,10 +198,11 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     // Track balance before transaction to ensure we show loading until it changes
     balanceBeforeLend.current = assetBalance
 
-    const params: LendExecutePositionParams = {
+    const params = {
       marketId: marketData.marketId,
       amount,
       asset: marketData.asset,
+      marketName: marketData.name,
     }
 
     const result =

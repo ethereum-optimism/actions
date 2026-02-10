@@ -3,6 +3,10 @@ import type { LendTransactionReceipt } from '@eth-optimism/actions-sdk'
 import type { LendExecutePositionParams } from '@/types/api'
 import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 
+interface LendMutationParams extends LendExecutePositionParams {
+  marketName?: string
+}
+
 interface UseOpenPositionParams {
   openPosition: (
     params: LendExecutePositionParams,
@@ -42,10 +46,11 @@ export function useOpenPosition({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (params: LendExecutePositionParams) => {
+    mutationFn: async (params: LendMutationParams) => {
       const activity = logActivity?.('deposit', {
         amount: params.amount.toString(),
         assetSymbol: params.asset.metadata.symbol,
+        marketName: params.marketName,
       })
       try {
         const result = await openPosition(params)
@@ -99,10 +104,11 @@ export function useClosePosition({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (params: LendExecutePositionParams) => {
+    mutationFn: async (params: LendMutationParams) => {
       const activity = logActivity?.('withdraw', {
         amount: params.amount.toString(),
         assetSymbol: params.asset.metadata.symbol,
+        marketName: params.marketName,
       })
       try {
         const result = await closePosition(params)

@@ -391,8 +391,12 @@ function EarnContent({
 
         {/* Activity Log - Desktop Sidebar */}
         <div
-          className="hidden lg:h-[calc(100vh-65px)] lg:block transition-all duration-300 ease-in-out"
-          style={{ width: isSidebarCollapsed ? '0px' : '436px' }}
+          className="hidden lg:h-[calc(100vh-65px)] lg:block"
+          style={{
+            width: isSidebarCollapsed ? '0px' : '436px',
+            transition: 'width 300ms ease-in-out',
+            overflow: 'visible',
+          }}
         >
           <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
         </div>
