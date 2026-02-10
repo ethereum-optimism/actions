@@ -2,7 +2,7 @@ import type { ActivityEntry } from '@/providers/ActivityLogProvider'
 
 export type SummarySegment =
   | { type: 'text'; value: string }
-  | { type: 'token'; logo: string; symbol: string }
+  | { type: 'token'; logo: string; symbol: string; round?: boolean }
 
 export interface ActivitySummary {
   segments: SummarySegment[]
@@ -20,13 +20,31 @@ const SYMBOL_LOGO: Record<string, string> = {
   OP: '/OP.svg',
 }
 
+const MARKET_LOGO: Record<string, string> = {
+  Morpho: '/morpho-logo.svg',
+  Aave: '/aave-logo.svg',
+}
+
 function tokenSegment(symbol: string, logo?: string): SummarySegment {
   const resolved =
     logo || SYMBOL_LOGO[symbol] || SYMBOL_LOGO[displaySymbol(symbol)]
   if (resolved) {
-    return { type: 'token', logo: resolved, symbol: displaySymbol(symbol) }
+    return {
+      type: 'token',
+      logo: resolved,
+      symbol: displaySymbol(symbol),
+      round: true,
+    }
   }
   return { type: 'text', value: displaySymbol(symbol) }
+}
+
+function marketSegment(name: string): SummarySegment {
+  const logo = MARKET_LOGO[name]
+  if (logo) {
+    return { type: 'token', logo, symbol: name, round: false }
+  }
+  return { type: 'text', value: name }
 }
 
 function buildSwapSummary(entry: ActivityEntry): SummarySegment[] {
@@ -50,7 +68,8 @@ function buildDepositSummary(entry: ActivityEntry): SummarySegment[] {
       tokenSegment(m.assetSymbol, m.assetLogo),
     ]
     if (m.marketName) {
-      segments.push({ type: 'text', value: ` to ${m.marketName}` })
+      segments.push({ type: 'text', value: ' to ' })
+      segments.push(marketSegment(m.marketName))
     }
     return segments
   }
@@ -65,7 +84,8 @@ function buildWithdrawSummary(entry: ActivityEntry): SummarySegment[] {
       tokenSegment(m.assetSymbol, m.assetLogo),
     ]
     if (m.marketName) {
-      segments.push({ type: 'text', value: ` from ${m.marketName}` })
+      segments.push({ type: 'text', value: ' from ' })
+      segments.push(marketSegment(m.marketName))
     }
     return segments
   }

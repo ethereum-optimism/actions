@@ -20,7 +20,7 @@ function SummaryRenderer({ segments }: { segments: SummarySegment[] }) {
               style={{
                 width: '14px',
                 height: '14px',
-                borderRadius: '50%',
+                borderRadius: segment.round !== false ? '50%' : '0',
                 display: 'inline',
                 verticalAlign: '-2px',
                 marginRight: '3px',
@@ -120,6 +120,20 @@ export function ActivityFeedItem({
           <div className="flex justify-between">
             <span style={{ color: '#9195A6' }}>Time</span>
             <span style={{ color: '#1a1b1e' }}>{timestamp}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: '#9195A6' }}>Network</span>
+            <span
+              className="flex items-center gap-1"
+              style={{ color: '#1a1b1e' }}
+            >
+              <img
+                src="/base-logo.svg"
+                alt="Base"
+                style={{ width: '14px', height: '14px' }}
+              />
+              Base Sepolia
+            </span>
           </div>
           {blockExplorerUrl && (
             <div className="flex justify-between">
