@@ -84,13 +84,14 @@ export function useSwapAssets({
         assetMap.set(asset.metadata.symbol, asset)
       })
 
-      // Step 4: Match balances with configured assets
+      // Step 4: Match balances with configured assets, dedup by symbol
+      const seen = new Set<string>()
       const formattedAssets = balances
         .map((balance): SwapAsset | null => {
           const asset = assetMap.get(balance.symbol)
-          if (!asset) return null
+          if (!asset || seen.has(balance.symbol)) return null
+          seen.add(balance.symbol)
 
-          // Get logo based on symbol
           const logo = getAssetLogo(balance.symbol)
 
           return {

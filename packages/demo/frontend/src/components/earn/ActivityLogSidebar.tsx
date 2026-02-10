@@ -47,7 +47,7 @@ function ActivityLogSidebar({
           borderRight: 'none',
           color: '#636779',
           right: 0,
-          top: '57px',
+          top: '56px',
           height: '55px',
           width: '44px',
           display: 'flex',
@@ -79,7 +79,7 @@ function ActivityLogSidebar({
               style={{
                 position: 'absolute',
                 right: '100%',
-                top: 0,
+                top: '-1px',
                 bottom: 0,
                 width: '44px',
                 backgroundColor: '#FFFFFF',

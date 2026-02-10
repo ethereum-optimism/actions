@@ -127,7 +127,7 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       assetAddress,
       asset: market.asset,
       apy: selectedMarketApy ?? market.apy.total,
-      name: market.name.split(' ')[0] || market.name,
+      name: market.name.toLowerCase().includes('aave') ? 'Aave' : 'Morpho',
     }
   }, [markets, selectedMarketId, selectedMarketApy])
 

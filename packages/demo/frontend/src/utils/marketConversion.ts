@@ -32,8 +32,9 @@ export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
       ? '/eth.svg'
       : '/usd-coin-usdc-logo.svg'
 
-  // Extract simple market name
-  const marketName = market.name.split(' ')[0] || market.name
+  // Derive display name from provider
+  const isAave = market.name.toLowerCase().includes('aave')
+  const marketName = isAave ? 'Aave' : 'Morpho'
 
   return {
     name: marketName,
@@ -45,6 +46,6 @@ export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
     apy: market.apy.total,
     isLoadingApy: false,
     marketId: market.marketId,
-    provider: market.name.toLowerCase().includes('aave') ? 'aave' : 'morpho',
+    provider: isAave ? 'aave' : 'morpho',
   }
 }
