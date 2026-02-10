@@ -265,9 +265,12 @@ function EarnContent({
           borderBottom: '1px solid #E0E2EB',
         }}
       >
-        <div className="w-full px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
+        <div className="w-full px-8">
+          <div
+            className="flex items-center justify-between"
+            style={{ height: '56px' }}
+          >
+            <div className="flex items-center gap-8" style={{ height: '100%' }}>
               <img src="/Optimism.svg" alt="Optimism" className="h-4" />
               <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
@@ -341,7 +344,6 @@ function EarnContent({
                     assetSymbol={
                       selectedMarket?.asset.metadata.symbol || 'USDC'
                     }
-                    assetLogo={selectedMarket?.assetLogo || '/usdc-logo.svg'}
                     onMintAsset={handleMintAsset}
                     onTransaction={handleTransactionWithTracking}
                     marketId={selectedMarket?.marketId}

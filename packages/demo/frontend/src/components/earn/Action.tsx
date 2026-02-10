@@ -12,7 +12,6 @@ interface ActionProps {
   isMintingAsset: boolean
   depositedAmount: string | null
   assetSymbol: string
-  assetLogo: string
   onMintAsset?: () => void
   onTransaction: (
     mode: 'lend' | 'withdraw',
@@ -28,17 +27,12 @@ interface ActionProps {
   provider?: 'morpho' | 'aave'
 }
 
-/**
- * Presentational component for the Action card
- * Handles UI state and user interactions, delegates business logic to container
- */
 export function Action({
   assetBalance,
   isLoadingBalance,
   isMintingAsset,
   depositedAmount,
   assetSymbol,
-  assetLogo,
   onMintAsset,
   onTransaction,
   marketId,
@@ -56,8 +50,6 @@ export function Action({
   const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(
     undefined,
   )
-  const [showFaucetInfo, setShowFaucetInfo] = useState(false)
-  const [hasUsedEthFaucet, setHasUsedEthFaucet] = useState(false)
 
   // Check if this is the illiquid Aave OP Sepolia ETH market
   const isIlliquidAaveMarket =
@@ -78,21 +70,26 @@ export function Action({
   const lockedAmount = AAVE_MAX_WITHDRAW.toString()
   const effectiveAmount = isLockedWithdrawAmount ? lockedAmount : amount
 
+  // Balance state
+  const balanceValue = parseFloat(assetBalance || '0')
+  const hasBalance = balanceValue > 0
+  const needsMint = !hasBalance && mode === 'lend'
+
   // Derived values for form validation
   const amountValue = parseFloat(effectiveAmount) || 0
   const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
   const hasDeposit = parseFloat(depositedAmount || '0') > 0
-  const isActionDisabled =
-    isLoading ||
-    !effectiveAmount ||
-    amountValue <= 0 ||
-    amountValue > parseFloat(maxAmount) ||
-    (isLockedWithdrawAmount && !hasDeposit)
+  const isActionDisabled = needsMint
+    ? false // "Get USDC" is always clickable
+    : isLoading ||
+      !effectiveAmount ||
+      amountValue <= 0 ||
+      amountValue > parseFloat(maxAmount) ||
+      (isLockedWithdrawAmount && !hasDeposit)
 
   const handleMaxClick = () => {
     let clickMaxAmount = maxAmount
 
-    // For illiquid Aave market in withdraw mode, cap at max withdrawal limit
     if (isIlliquidAaveMarket && mode === 'withdraw') {
       const deposited = parseFloat(depositedAmount || '0')
       clickMaxAmount = Math.min(deposited, AAVE_MAX_WITHDRAW).toString()
@@ -104,16 +101,20 @@ export function Action({
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    // Allow only numbers and decimals
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setAmount(value)
     }
   }
 
-  const handleLendUSDC = async () => {
-    if (isActionDisabled) {
+  const handleCtaClick = async () => {
+    // Dynamic CTA: mint when no balance, lend/withdraw otherwise
+    if (needsMint) {
+      trackEvent('mint_asset', { asset: assetSymbol })
+      onMintAsset?.()
       return
     }
+
+    if (isActionDisabled) return
 
     trackEvent('transaction_initiated', {
       action: mode,
@@ -159,6 +160,19 @@ export function Action({
     setBlockExplorerUrl(undefined)
   }
 
+  // CTA button text
+  const ctaText = isLoading
+    ? 'Processing...'
+    : isMintingAsset
+      ? 'Minting...'
+      : needsMint
+        ? `Get ${displaySymbol}`
+        : mode === 'lend'
+          ? `Lend ${displaySymbol}`
+          : `Withdraw ${displaySymbol}`
+
+  const ctaDisabled = isMintingAsset || (needsMint ? false : isActionDisabled)
+
   return (
     <div
       className="w-full"
@@ -171,157 +185,10 @@ export function Action({
       }}
     >
       <div
-        className="py-6 px-6 transition-all"
-        style={{
-          backgroundColor:
-            hoveredAction === 'getBalance'
-              ? colors.highlight.background
-              : 'transparent',
-          borderTopLeftRadius: '24px',
-          borderTopRightRadius: '24px',
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <h2
-            className="font-semibold"
-            style={{ color: '#1a1b1e', fontSize: '16px' }}
-          >
-            Wallet Balance
-          </h2>
-          <div className="flex items-center gap-2">
-            {isLoadingBalance && !isMintingAsset ? (
-              <div className="flex items-center gap-1.5">
-                <Shimmer width="120px" height="33px" variant="rectangle" />
-                <Shimmer width="20px" height="20px" variant="circle" />
-              </div>
-            ) : parseFloat(assetBalance || '0') === 0 || isMintingAsset ? (
-              <div className="flex items-center gap-2">
-                <div
-                  className="relative"
-                  onMouseEnter={() =>
-                    isEthAsset && hasUsedEthFaucet && setShowFaucetInfo(true)
-                  }
-                  onMouseLeave={() => setShowFaucetInfo(false)}
-                >
-                  <button
-                    onClick={() => {
-                      trackEvent('mint_asset', { asset: assetSymbol })
-                      if (isEthAsset) {
-                        setHasUsedEthFaucet(true)
-                      }
-                      onMintAsset?.()
-                    }}
-                    disabled={
-                      isMintingAsset || (isEthAsset && hasUsedEthFaucet)
-                    }
-                    className="transition-all"
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor:
-                        isMintingAsset || (isEthAsset && hasUsedEthFaucet)
-                          ? '#D1D5DB'
-                          : '#FF0420',
-                      color:
-                        isMintingAsset || (isEthAsset && hasUsedEthFaucet)
-                          ? '#6B7280'
-                          : '#FFFFFF',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      borderRadius: '6px',
-                      border: 'none',
-                      cursor:
-                        isMintingAsset || (isEthAsset && hasUsedEthFaucet)
-                          ? 'not-allowed'
-                          : 'pointer',
-                      fontFamily: 'Inter',
-                      minHeight: '33px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    {isMintingAsset ? 'Minting...' : `Get ${displaySymbol}`}
-                  </button>
-                  {showFaucetInfo && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: '100%',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        marginBottom: '8px',
-                        padding: '8px 12px',
-                        backgroundColor: '#1a1b1e',
-                        color: '#FFFFFF',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        borderRadius: '6px',
-                        whiteSpace: 'nowrap',
-                        zIndex: 10,
-                      }}
-                    >
-                      Demo ETH already provided.
-                    </div>
-                  )}
-                </div>
-                <img
-                  src={assetLogo}
-                  alt={assetSymbol}
-                  style={{
-                    width: '20px',
-                    height: '20px',
-                  }}
-                />
-              </div>
-            ) : (
-              <div
-                className="flex items-center gap-2"
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor:
-                    hoveredAction === 'mint'
-                      ? colors.highlight.background
-                      : 'transparent',
-                  borderRadius: '6px',
-                  ...(hoveredAction === 'mint' && {
-                    border: `1px solid ${colors.highlight.border}`,
-                  }),
-                  minHeight: '33px',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <span
-                  style={{
-                    color: '#000',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                  }}
-                >
-                  {assetSymbol.includes('USDC')
-                    ? `$${assetBalance}`
-                    : assetBalance}
-                </span>
-                <img
-                  src={assetLogo}
-                  alt={assetSymbol}
-                  style={{
-                    width: '20px',
-                    height: '20px',
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ borderBottom: '1px solid #E0E2EB' }}></div>
-
-      <div
         className="py-6 px-6"
         style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}
       >
+        {/* Lend / Withdraw Toggle */}
         <div
           style={{
             display: 'flex',
@@ -383,6 +250,7 @@ export function Action({
           </button>
         </div>
 
+        {/* Amount Section */}
         <div
           className="transition-all"
           style={{
@@ -407,6 +275,7 @@ export function Action({
             gap: '32px',
           }}
         >
+          {/* Label + Balance */}
           <div
             style={{
               display: 'flex',
@@ -426,23 +295,37 @@ export function Action({
               {mode === 'lend' ? 'Amount to lend' : 'Amount to withdraw'}
             </label>
             {!isLockedWithdrawAmount && (
-              <button
-                onClick={handleMaxClick}
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '16px',
-                  fontWeight: 400,
-                  color: '#3374DB',
-                  cursor: 'pointer',
-                  backgroundColor: 'transparent',
-                }}
-              >
-                Max
-              </button>
+              <div className="flex items-center gap-1">
+                {isLoadingBalance ? (
+                  <Shimmer width="80px" height="16px" variant="rectangle" />
+                ) : (
+                  <>
+                    <span style={{ color: '#9195A6', fontSize: '14px' }}>
+                      {mode === 'lend'
+                        ? `${parseFloat(assetBalance).toFixed(displayPrecision)} ${displaySymbol}`
+                        : `${parseFloat(depositedAmount || '0').toFixed(displayPrecision)} ${displaySymbol}`}
+                    </span>
+                    <button
+                      onClick={handleMaxClick}
+                      style={{
+                        padding: '0 4px',
+                        border: 'none',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#3374DB',
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                      }}
+                    >
+                      Max
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
+
+          {/* Input */}
           <div
             style={{
               position: 'relative',
@@ -493,26 +376,24 @@ export function Action({
             </div>
           </div>
 
+          {/* CTA Button */}
           <button
-            onClick={handleLendUSDC}
-            disabled={isActionDisabled}
+            onClick={handleCtaClick}
+            disabled={ctaDisabled}
             className="w-full py-3 px-4 font-medium transition-all"
             style={{
-              backgroundColor: isActionDisabled ? '#D1D5DB' : '#FF0420',
-              color: isActionDisabled ? '#6B7280' : '#FFFFFF',
+              backgroundColor: ctaDisabled ? '#D1D5DB' : '#FF0420',
+              color: ctaDisabled ? '#6B7280' : '#FFFFFF',
               fontSize: '16px',
               borderRadius: '12px',
               border: 'none',
-              cursor: isActionDisabled ? 'not-allowed' : 'pointer',
+              cursor: ctaDisabled ? 'not-allowed' : 'pointer',
               opacity: 1,
             }}
           >
-            {isLoading
-              ? 'Processing...'
-              : mode === 'lend'
-                ? `Lend ${displaySymbol}`
-                : `Withdraw ${displaySymbol}`}
+            {ctaText}
           </button>
+
           {isLockedWithdrawAmount && (
             <div
               style={{

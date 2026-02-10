@@ -17,7 +17,6 @@ const defaultProps = {
   isMintingAsset: false,
   depositedAmount: null,
   assetSymbol: 'USDC',
-  assetLogo: '/usdc-logo.svg',
   onMintAsset: vi.fn(),
   onTransaction: vi.fn(),
 }
@@ -25,7 +24,9 @@ const defaultProps = {
 describe('Action', () => {
   it('shows Get button when balance is zero and not minting', () => {
     render(<Action {...defaultProps} />)
-    expect(screen.getByRole('button', { name: 'Get USDC' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Get USDC' }),
+    ).toBeInTheDocument()
   })
 
   it('shows Minting... text and disables button when minting', () => {
@@ -49,9 +50,12 @@ describe('Action', () => {
     expect(screen.queryByTestId('shimmer')).not.toBeInTheDocument()
   })
 
-  it('shows balance when balance is non-zero', () => {
+  it('shows balance and Lend button when balance is non-zero', () => {
     render(<Action {...defaultProps} assetBalance="100.00" />)
-    expect(screen.getByText('$100.00')).toBeInTheDocument()
+    expect(screen.getByText('100.00 USDC')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Lend USDC' }),
+    ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Get USDC' }),
     ).not.toBeInTheDocument()
