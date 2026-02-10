@@ -1,10 +1,37 @@
 import { useState } from 'react'
+import type { ActivitySummary, SummarySegment } from '@/utils/activitySummary'
 
 interface ActivityFeedItemProps {
-  summary: string
+  summary: ActivitySummary
   timestamp: string
   blockExplorerUrl?: string
   status: 'pending' | 'confirmed' | 'error'
+}
+
+function SummaryRenderer({ segments }: { segments: SummarySegment[] }) {
+  return (
+    <span className="inline-flex items-center flex-wrap gap-0">
+      {segments.map((segment, i) =>
+        segment.type === 'token' ? (
+          <span key={i} className="inline-flex items-center gap-1">
+            <img
+              src={segment.logo}
+              alt={segment.symbol}
+              style={{
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                verticalAlign: 'middle',
+              }}
+            />
+            <span>{segment.symbol}</span>
+          </span>
+        ) : (
+          <span key={i}>{segment.value}</span>
+        ),
+      )}
+    </span>
+  )
 }
 
 export function ActivityFeedItem({
@@ -30,17 +57,12 @@ export function ActivityFeedItem({
           cursor: 'pointer',
           fontFamily: 'Inter',
           textAlign: 'left',
+          fontSize: '14px',
+          color: '#1a1b1e',
+          fontWeight: 400,
         }}
       >
-        <span
-          style={{
-            fontSize: '14px',
-            color: '#1a1b1e',
-            fontWeight: 400,
-          }}
-        >
-          {summary}
-        </span>
+        <SummaryRenderer segments={summary.segments} />
         <svg
           width="16"
           height="16"

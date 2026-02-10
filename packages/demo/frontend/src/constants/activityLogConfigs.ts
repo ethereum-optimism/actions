@@ -63,15 +63,8 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
   },
   swap: {
     type: 'swap',
-    description: 'Execute swap',
-    apiMethod: 'wallet.swap.executeSwap()',
-    tooltip: 'Swaps one token for another',
-  },
-  getSwapPrice: {
-    type: 'swap',
-    description: 'Get swap price',
-    apiMethod: 'actions.swap.getPrice()',
-    tooltip: 'Fetches swap price quote',
-    isReadOnly: true,
+    description: 'Swap tokens',
+    apiMethod: 'wallet.swap.execute()',
+    tooltip: 'Swaps tokens via DEX',
   },
 }

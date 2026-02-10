@@ -3,14 +3,15 @@ import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
 import { ActivityLogContext } from '../contexts/ActivityLogContext'
 
 export interface ActivityMetadata {
-  amount?: number
+  amount?: string
   assetSymbol?: string
   assetLogo?: string
-  toAssetSymbol?: string
-  toAssetLogo?: string
-  toAmount?: string
   marketName?: string
   marketLogo?: string
+  // Swap-specific
+  amountOut?: string
+  assetOutSymbol?: string
+  assetOutLogo?: string
 }
 
 export type ActivityEntry = {

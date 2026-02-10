@@ -5,9 +5,12 @@ interface UseMintAssetParams {
   mintAsset: (asset: Asset) => Promise<{ blockExplorerUrls?: string[] } | void>
   logActivity?: (
     action: string,
-    metadata?: Record<string, unknown>,
+    metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
   ) => {
-    confirm: (data?: { blockExplorerUrl?: string }) => void
+    confirm: (data?: {
+      blockExplorerUrl?: string
+      metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata
+    }) => void
     error: () => void
   } | null
 }

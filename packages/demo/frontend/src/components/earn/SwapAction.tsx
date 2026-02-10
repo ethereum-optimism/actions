@@ -22,11 +22,6 @@ interface SwapActionProps {
     tokenInAddress: Address
     tokenOutAddress: Address
     chainId: SupportedChainId
-    metadata?: {
-      assetInSymbol: string
-      assetOutSymbol: string
-      amountOut: string
-    }
   }) => Promise<{
     blockExplorerUrl?: string
   }>
@@ -41,6 +36,16 @@ interface SwapActionProps {
     amountOutFormatted: string
   } | null>
   isExecuting: boolean
+  onLogActivity?: (
+    action: string,
+    metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
+  ) => {
+    confirm: (data?: {
+      blockExplorerUrl?: string
+      metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata
+    }) => void
+    error: () => void
+  } | null
 }
 
 const TOKEN_NAMES: Record<string, string> = {
@@ -457,6 +462,7 @@ export function SwapAction({
   onSwap,
   onGetPrice,
   isExecuting,
+  onLogActivity,
 }: SwapActionProps) {
   const [assetInIndex, setAssetInIndex] = useState(0)
   const [assetOutIndex, setAssetOutIndex] = useState(1)
@@ -571,6 +577,15 @@ export function SwapAction({
       amount: parseFloat(amountIn),
     })
 
+    const activity = onLogActivity?.('swap', {
+      amount: amountIn,
+      assetSymbol: assetIn.asset.metadata.symbol,
+      assetLogo: assetIn.logo,
+      amountOut: outAmount,
+      assetOutSymbol: assetOut.asset.metadata.symbol,
+      assetOutLogo: assetOut.logo,
+    })
+
     setReviewOpen(false)
     setTxModalOpen(true)
     setTxModalStatus('loading')
@@ -582,16 +597,13 @@ export function SwapAction({
         tokenInAddress: assetIn.asset.address[assetIn.chainId] as Address,
         tokenOutAddress: assetOut.asset.address[assetOut.chainId] as Address,
         chainId: assetIn.chainId,
-        metadata: {
-          assetInSymbol: displaySymbol(assetIn.asset.metadata.symbol),
-          assetOutSymbol: displaySymbol(assetOut.asset.metadata.symbol),
-          amountOut: priceQuote?.amountOutFormatted || '',
-        },
       })
 
       setBlockExplorerUrl(result.blockExplorerUrl)
       setTxModalStatus('success')
       setTxModalOpen(false)
+
+      activity?.confirm({ blockExplorerUrl: result.blockExplorerUrl })
 
       setToast({
         visible: true,
@@ -608,6 +620,7 @@ export function SwapAction({
         amount: parseFloat(amountIn),
       })
     } catch {
+      activity?.error()
       setTxModalStatus('error')
       trackEvent('swap_error', {
         assetIn: assetIn.asset.metadata.symbol,

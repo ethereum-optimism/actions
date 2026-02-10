@@ -9,11 +9,11 @@ interface UseOpenPositionParams {
   ) => Promise<LendTransactionReceipt>
   logActivity?: (
     action: string,
-    metadata?: Record<string, unknown>,
+    metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
   ) => {
     confirm: (data?: {
       blockExplorerUrl?: string
-      metadata?: Record<string, unknown>
+      metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata
     }) => void
     error: () => void
   } | null
@@ -25,11 +25,11 @@ interface UseClosePositionParams {
   ) => Promise<LendTransactionReceipt>
   logActivity?: (
     action: string,
-    metadata?: Record<string, unknown>,
+    metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
   ) => {
     confirm: (data?: {
       blockExplorerUrl?: string
-      metadata?: Record<string, unknown>
+      metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata
     }) => void
     error: () => void
   } | null
@@ -43,11 +43,9 @@ export function useOpenPosition({
 
   return useMutation({
     mutationFn: async (params: LendExecutePositionParams) => {
-      const assetSymbol =
-        params.asset?.metadata?.symbol?.replace('_DEMO', '') || 'USDC'
       const activity = logActivity?.('deposit', {
-        amount: params.amount,
-        assetSymbol,
+        amount: params.amount.toString(),
+        assetSymbol: params.asset.metadata.symbol,
       })
       try {
         const result = await openPosition(params)
@@ -102,11 +100,9 @@ export function useClosePosition({
 
   return useMutation({
     mutationFn: async (params: LendExecutePositionParams) => {
-      const assetSymbol =
-        params.asset?.metadata?.symbol?.replace('_DEMO', '') || 'USDC'
       const activity = logActivity?.('withdraw', {
-        amount: params.amount,
-        assetSymbol,
+        amount: params.amount.toString(),
+        assetSymbol: params.asset.metadata.symbol,
       })
       try {
         const result = await closePosition(params)
