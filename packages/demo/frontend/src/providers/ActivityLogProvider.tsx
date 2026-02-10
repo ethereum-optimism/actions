@@ -28,15 +28,16 @@ export type ActivityEntry = {
 export function ActivityLogProvider({
   children,
   walletProvider,
+  walletAddress,
 }: {
   children: ReactNode
   walletProvider?: string
+  walletAddress?: string | null
 }) {
-  const STORAGE_KEY = walletProvider
-    ? `activity-log-${walletProvider}`
-    : 'activity-log'
-  const NEXT_ID_KEY = walletProvider
-    ? `activity-log-next-id-${walletProvider}`
+  const suffix = [walletProvider, walletAddress].filter(Boolean).join('-')
+  const STORAGE_KEY = suffix ? `activity-log-${suffix}` : 'activity-log'
+  const NEXT_ID_KEY = suffix
+    ? `activity-log-next-id-${suffix}`
     : 'activity-log-next-id'
 
   const [activities, setActivities] = useState<ActivityEntry[]>(() => {

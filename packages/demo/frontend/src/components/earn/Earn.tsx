@@ -7,6 +7,7 @@ import ActivityLog from './ActivityLog'
 import { WalletProviderDropdown } from './WalletProviderDropdown'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { ActivityHighlightProvider } from '@/contexts/ActivityHighlightContext'
+import { ActivityLogProvider } from '@/providers/ActivityLogProvider'
 import {
   LendProviderContextProvider,
   useLendProviderContext,
@@ -65,22 +66,27 @@ function Earn({
   }
 
   return (
-    <LendProviderContextProvider
-      operations={operations}
-      ready={ready}
-      logPrefix={logPrefix}
+    <ActivityLogProvider
+      walletProvider={providerConfig.queryParam}
+      walletAddress={walletAddress}
     >
-      <ActivityHighlightProvider>
-        <EarnContent
-          logout={logout}
-          walletAddress={walletAddress}
-          providerConfig={providerConfig}
-          getAuthHeaders={getAuthHeaders}
-          actions={actions}
-          operations={operations}
-        />
-      </ActivityHighlightProvider>
-    </LendProviderContextProvider>
+      <LendProviderContextProvider
+        operations={operations}
+        ready={ready}
+        logPrefix={logPrefix}
+      >
+        <ActivityHighlightProvider>
+          <EarnContent
+            logout={logout}
+            walletAddress={walletAddress}
+            providerConfig={providerConfig}
+            getAuthHeaders={getAuthHeaders}
+            actions={actions}
+            operations={operations}
+          />
+        </ActivityHighlightProvider>
+      </LendProviderContextProvider>
+    </ActivityLogProvider>
   )
 }
 
