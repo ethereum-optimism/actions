@@ -244,12 +244,16 @@ function EarnContent({
     enabled: true,
   })
 
-  // Refetch swap assets when switching to swap tab
+  // Refetch swap assets when switching to swap tab or when balances change
   useEffect(() => {
     if (activeTab === 'swap') {
       refetchSwapAssets()
     }
   }, [activeTab, refetchSwapAssets])
+
+  useEffect(() => {
+    refetchSwapAssets()
+  }, [assetBalance, refetchSwapAssets])
 
   // Total balance for navbar dropdown
   const {

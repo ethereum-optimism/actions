@@ -33,51 +33,46 @@ export function TotalBalanceDropdown({
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 rounded-lg transition-all hover:bg-gray-50"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '8px 16px',
-          border: '1px solid #E0E2EB',
-          borderRadius: '12px',
-          backgroundColor: '#FFFFFF',
+          padding: '4px 12px',
+          border: '1px solid #E5E5E5',
+          backgroundColor: isOpen ? '#F5F5F5' : 'transparent',
           cursor: 'pointer',
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
         }}
       >
         <div style={{ textAlign: 'left' }}>
           <div
-            style={{ fontSize: '12px', color: '#9195A6', lineHeight: '16px' }}
+            style={{ fontSize: '11px', color: '#9195A6', lineHeight: '14px' }}
           >
             Total Balance
           </div>
           <div
             style={{
-              fontSize: '16px',
-              fontWeight: 600,
+              fontSize: '14px',
               color: '#1a1b1e',
-              lineHeight: '20px',
+              lineHeight: '18px',
             }}
           >
             {isLoading ? '...' : formatUsd(totalUsd)}
           </div>
         </div>
         <svg
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
+          className="w-4 h-4 transition-transform"
           style={{
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0)',
+            color: '#666666',
           }}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
         >
           <path
-            d="M3 4.5L6 7.5L9 4.5"
-            stroke="#666666"
-            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
           />
         </svg>
       </button>
