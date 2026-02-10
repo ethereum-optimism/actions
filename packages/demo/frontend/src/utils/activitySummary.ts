@@ -12,35 +12,31 @@ function displaySymbol(symbol: string): string {
   return symbol.replace('_DEMO', '')
 }
 
+const SYMBOL_LOGO: Record<string, string> = {
+  USDC_DEMO: '/usd-coin-usdc-logo.svg',
+  USDC: '/usd-coin-usdc-logo.svg',
+  ETH: '/eth.svg',
+  OP_DEMO: '/OP.svg',
+  OP: '/OP.svg',
+}
+
+function tokenSegment(symbol: string, logo?: string): SummarySegment {
+  const resolved =
+    logo || SYMBOL_LOGO[symbol] || SYMBOL_LOGO[displaySymbol(symbol)]
+  if (resolved) {
+    return { type: 'token', logo: resolved, symbol: displaySymbol(symbol) }
+  }
+  return { type: 'text', value: displaySymbol(symbol) }
+}
+
 function buildSwapSummary(entry: ActivityEntry): SummarySegment[] {
   const m = entry.metadata
   if (m?.amount && m.assetSymbol && m.amountOut && m.assetOutSymbol) {
     return [
       { type: 'text', value: `Swapped ${m.amount} ` },
-      ...(m.assetLogo
-        ? [
-            {
-              type: 'token' as const,
-              logo: m.assetLogo,
-              symbol: displaySymbol(m.assetSymbol),
-            },
-          ]
-        : [{ type: 'text' as const, value: displaySymbol(m.assetSymbol) }]),
+      tokenSegment(m.assetSymbol, m.assetLogo),
       { type: 'text', value: ` → ${m.amountOut} ` },
-      ...(m.assetOutLogo
-        ? [
-            {
-              type: 'token' as const,
-              logo: m.assetOutLogo,
-              symbol: displaySymbol(m.assetOutSymbol),
-            },
-          ]
-        : [
-            {
-              type: 'text' as const,
-              value: displaySymbol(m.assetOutSymbol),
-            },
-          ]),
+      tokenSegment(m.assetOutSymbol, m.assetOutLogo),
     ]
   }
   return [{ type: 'text', value: 'Swapped tokens' }]
@@ -51,25 +47,14 @@ function buildDepositSummary(entry: ActivityEntry): SummarySegment[] {
   if (m?.amount && m.assetSymbol) {
     const segments: SummarySegment[] = [
       { type: 'text', value: `Lent ${m.amount} ` },
-      ...(m.assetLogo
-        ? [
-            {
-              type: 'token' as const,
-              logo: m.assetLogo,
-              symbol: displaySymbol(m.assetSymbol),
-            },
-          ]
-        : [{ type: 'text' as const, value: displaySymbol(m.assetSymbol) }]),
+      tokenSegment(m.assetSymbol, m.assetLogo),
     ]
     if (m.marketName) {
       segments.push({ type: 'text', value: ` to ${m.marketName}` })
     }
     return segments
   }
-  return [
-    { type: 'text', value: 'Lent ' },
-    { type: 'token', logo: '/usd-coin-usdc-logo.svg', symbol: 'USDC' },
-  ]
+  return [{ type: 'text', value: 'Lent ' }, tokenSegment('USDC')]
 }
 
 function buildWithdrawSummary(entry: ActivityEntry): SummarySegment[] {
@@ -77,25 +62,14 @@ function buildWithdrawSummary(entry: ActivityEntry): SummarySegment[] {
   if (m?.amount && m.assetSymbol) {
     const segments: SummarySegment[] = [
       { type: 'text', value: `Withdrew ${m.amount} ` },
-      ...(m.assetLogo
-        ? [
-            {
-              type: 'token' as const,
-              logo: m.assetLogo,
-              symbol: displaySymbol(m.assetSymbol),
-            },
-          ]
-        : [{ type: 'text' as const, value: displaySymbol(m.assetSymbol) }]),
+      tokenSegment(m.assetSymbol, m.assetLogo),
     ]
     if (m.marketName) {
       segments.push({ type: 'text', value: ` from ${m.marketName}` })
     }
     return segments
   }
-  return [
-    { type: 'text', value: 'Withdrew ' },
-    { type: 'token', logo: '/usd-coin-usdc-logo.svg', symbol: 'USDC' },
-  ]
+  return [{ type: 'text', value: 'Withdrew ' }, tokenSegment('USDC')]
 }
 
 function buildMintSummary(entry: ActivityEntry): SummarySegment[] {
@@ -103,21 +77,10 @@ function buildMintSummary(entry: ActivityEntry): SummarySegment[] {
   if (m?.assetSymbol) {
     return [
       { type: 'text', value: 'Minted ' },
-      ...(m.assetLogo
-        ? [
-            {
-              type: 'token' as const,
-              logo: m.assetLogo,
-              symbol: displaySymbol(m.assetSymbol),
-            },
-          ]
-        : [{ type: 'text' as const, value: displaySymbol(m.assetSymbol) }]),
+      tokenSegment(m.assetSymbol, m.assetLogo),
     ]
   }
-  return [
-    { type: 'text', value: 'Minted ' },
-    { type: 'token', logo: '/usd-coin-usdc-logo.svg', symbol: 'USDC' },
-  ]
+  return [{ type: 'text', value: 'Minted ' }, tokenSegment('USDC')]
 }
 
 const SUMMARY_BUILDERS: Record<
