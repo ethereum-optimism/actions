@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type {
   Asset,
   SupportedChainId,
@@ -57,6 +57,8 @@ export function useSwapAssets({
   const [assets, setAssets] = useState<SwapAsset[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  const marketAllowlistRef = useRef(marketAllowlist)
+  marketAllowlistRef.current = marketAllowlist
 
   const fetchAssets = useCallback(async () => {
     if (!enabled) return
@@ -82,9 +84,9 @@ export function useSwapAssets({
       }
 
       // Step 2: Filter to swap allowlist if provided
-      if (marketAllowlist?.length) {
+      if (marketAllowlistRef.current?.length) {
         const allowed = new Set(
-          marketAllowlist.map((a) => a.metadata.symbol),
+          marketAllowlistRef.current.map((a) => a.metadata.symbol),
         )
         configuredAssets = configuredAssets.filter((a) =>
           allowed.has(a.metadata.symbol),
@@ -128,7 +130,7 @@ export function useSwapAssets({
     } finally {
       setIsLoading(false)
     }
-  }, [actions, getAuthHeaders, getTokenBalances, enabled, marketAllowlist])
+  }, [actions, getAuthHeaders, getTokenBalances, enabled])
 
   useEffect(() => {
     fetchAssets()
