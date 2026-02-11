@@ -33,6 +33,11 @@ interface UseSwapAssetsParams {
    * Whether the component is ready to fetch
    */
   enabled: boolean
+  /**
+   * Restrict to only these assets (from swap config marketAllowlist).
+   * If omitted, all configured assets are shown.
+   */
+  marketAllowlist?: Asset[]
 }
 
 /**
@@ -47,6 +52,7 @@ export function useSwapAssets({
   getAuthHeaders,
   getTokenBalances,
   enabled,
+  marketAllowlist,
 }: UseSwapAssetsParams) {
   const [assets, setAssets] = useState<SwapAsset[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -75,16 +81,26 @@ export function useSwapAssets({
         )
       }
 
-      // Step 2: Get user balances
+      // Step 2: Filter to swap allowlist if provided
+      if (marketAllowlist?.length) {
+        const allowed = new Set(
+          marketAllowlist.map((a) => a.metadata.symbol),
+        )
+        configuredAssets = configuredAssets.filter((a) =>
+          allowed.has(a.metadata.symbol),
+        )
+      }
+
+      // Step 3: Get user balances
       const balances = await getTokenBalances()
 
-      // Step 3: Build asset map for quick lookup
+      // Step 4: Build asset map for quick lookup
       const assetMap = new Map<string, Asset>()
       configuredAssets.forEach((asset) => {
         assetMap.set(asset.metadata.symbol, asset)
       })
 
-      // Step 4: Match balances with configured assets, dedup by symbol
+      // Step 5: Match balances with configured assets, dedup by symbol
       const seen = new Set<string>()
       const formattedAssets = balances
         .map((balance): SwapAsset | null => {
@@ -112,7 +128,7 @@ export function useSwapAssets({
     } finally {
       setIsLoading(false)
     }
-  }, [actions, getAuthHeaders, getTokenBalances, enabled])
+  }, [actions, getAuthHeaders, getTokenBalances, enabled, marketAllowlist])
 
   useEffect(() => {
     fetchAssets()

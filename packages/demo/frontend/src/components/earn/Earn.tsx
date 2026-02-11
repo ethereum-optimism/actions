@@ -19,6 +19,7 @@ import { SwapAction } from './SwapAction'
 import { useSwap } from '@/hooks/useSwap'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { actionsApi } from '@/api/actionsApi'
+import { OP_DEMO, USDC_DEMO } from '@/constants/markets'
 import { useLendBalance } from '@/hooks/useLendBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { TotalBalanceDropdown } from './TotalBalanceDropdown'
@@ -248,6 +249,7 @@ function EarnContent({
     getAuthHeaders,
     getTokenBalances,
     enabled: true,
+    marketAllowlist: [USDC_DEMO, OP_DEMO],
   })
 
   // Refetch swap assets when switching to swap tab or when balances change
