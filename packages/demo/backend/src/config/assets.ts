@@ -15,7 +15,7 @@ export const USDC_DEMO: Asset = {
 
 export const OP_DEMO: Asset = {
   address: {
-    [baseSepolia.id]: '0x0000000000000000000000000000000000000000',
+    [baseSepolia.id]: '0xD6169405013E92387b78457Fa77d377cE8cD3EE8',
   },
   metadata: {
     decimals: 18,

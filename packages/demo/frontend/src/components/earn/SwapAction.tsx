@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Asset, SupportedChainId } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 
@@ -455,6 +455,21 @@ export function SwapAction({
 }: SwapActionProps) {
   const [assetInIndex, setAssetInIndex] = useState(0)
   const [assetOutIndex, setAssetOutIndex] = useState(1)
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (assets.length >= 2 && !initialized.current) {
+      initialized.current = true
+      const usdcIdx = assets.findIndex((a) =>
+        a.asset.metadata.symbol.includes('USDC'),
+      )
+      if (usdcIdx >= 0) {
+        setAssetInIndex(usdcIdx)
+        setAssetOutIndex(usdcIdx === 0 ? 1 : 0)
+      }
+    }
+  }, [assets])
+
   const [amountIn, setAmountIn] = useState('')
   const [priceQuote, setPriceQuote] = useState<{
     price: string

@@ -1,10 +1,10 @@
 import type { Address } from 'viem'
 
-import { ETH, MORPHO, USDC, USDC_DEMO, WETH } from '@/constants/assets.js'
+import { ETH, MORPHO, OP_DEMO, USDC, USDC_DEMO, WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 
-export const SUPPORTED_TOKENS: Asset[] = [ETH, WETH, USDC, USDC_DEMO, MORPHO]
+export const SUPPORTED_TOKENS: Asset[] = [ETH, WETH, USDC, USDC_DEMO, OP_DEMO, MORPHO]
 
 /**
  * Get token by address and chain ID

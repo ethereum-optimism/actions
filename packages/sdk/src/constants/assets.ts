@@ -95,6 +95,21 @@ export const USDC_DEMO: Asset = {
 }
 
 /**
+ * Demo OP token for testing
+ */
+export const OP_DEMO: Asset = {
+  address: {
+    [baseSepolia.id]: '0xD6169405013E92387b78457Fa77d377cE8cD3EE8',
+  },
+  metadata: {
+    symbol: 'OP_DEMO',
+    name: 'OP',
+    decimals: 18,
+  },
+  type: 'erc20',
+}
+
+/**
  * Morpho Token
  */
 export const MORPHO: Asset = {
