@@ -7,6 +7,11 @@ import { trackEvent } from '@/utils/analytics'
 import { isEthSymbol } from '@/utils/assetUtils'
 import { CtaButton } from './CtaButton'
 
+function floorToFixed(value: number, decimals: number): string {
+  const factor = 10 ** decimals
+  return (Math.floor(value * factor) / factor).toFixed(decimals)
+}
+
 interface ActionProps {
   assetBalance: string
   isLoadingBalance: boolean
@@ -89,15 +94,14 @@ export function Action({
       (isLockedWithdrawAmount && !hasDeposit)
 
   const handleMaxClick = () => {
-    let clickMaxAmount = maxAmount
+    let value = parseFloat(maxAmount)
 
     if (isIlliquidAaveMarket && mode === 'withdraw') {
       const deposited = parseFloat(depositedAmount || '0')
-      clickMaxAmount = Math.min(deposited, AAVE_MAX_WITHDRAW).toString()
+      value = Math.min(deposited, AAVE_MAX_WITHDRAW)
     }
 
-    const rounded = parseFloat(clickMaxAmount).toFixed(displayPrecision)
-    setAmount(rounded)
+    setAmount(floorToFixed(value, displayPrecision))
   }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,8 +310,8 @@ export function Action({
                   <>
                     <span style={{ color: '#9195A6', fontSize: '14px' }}>
                       {mode === 'lend'
-                        ? `${parseFloat(assetBalance).toFixed(displayPrecision)} ${displaySymbol}`
-                        : `${parseFloat(depositedAmount || '0').toFixed(displayPrecision)} ${displaySymbol}`}
+                        ? `${floorToFixed(parseFloat(assetBalance), displayPrecision)} ${displaySymbol}`
+                        : `${floorToFixed(parseFloat(depositedAmount || '0'), displayPrecision)} ${displaySymbol}`}
                     </span>
                     <button
                       onClick={handleMaxClick}
