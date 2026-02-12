@@ -543,8 +543,6 @@ export function SwapAction({
     undefined,
   )
 
-  const [isFeesExpanded, setIsFeesExpanded] = useState(false)
-
   // Toast state
   const [toast, setToast] = useState<{
     visible: boolean
@@ -929,27 +927,17 @@ export function SwapAction({
                 ? 'Getting Quote...'
                 : 'Review'}
           </CtaButton>
-        </div>
-      </div>
-
-      {/* Exchange Rate & Fees */}
-      {priceQuote && assetIn && assetOut && (
-        <div style={{ marginTop: '8px' }}>
-          <button
-            onClick={() => setIsFeesExpanded(!isFeesExpanded)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 4px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              cursor: 'pointer',
-              fontFamily: 'Inter',
-            }}
-          >
-            <span style={{ fontSize: '14px', color: '#666666' }}>
+          {/* Exchange Rate */}
+          {priceQuote && assetIn && assetOut && (
+            <div
+              style={{
+                marginTop: '12px',
+                fontSize: '14px',
+                color: '#666666',
+                fontFamily: 'Inter',
+                textAlign: 'left',
+              }}
+            >
               1 {displaySymbol(assetIn.asset.metadata.symbol)} ={' '}
               {formatSwapAmount(priceQuote.price).main}
               {formatSwapAmount(priceQuote.price).secondary && (
@@ -958,63 +946,10 @@ export function SwapAction({
                 </span>
               )}{' '}
               {displaySymbol(assetOut.asset.metadata.symbol)}
-            </span>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              style={{
-                transform: isFeesExpanded ? 'rotate(180deg)' : undefined,
-                transition: 'transform 200ms',
-              }}
-            >
-              <path
-                d="M3 4.5L6 7.5L9 4.5"
-                stroke="#666666"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-
-          {isFeesExpanded && (
-            <div
-              style={{
-                padding: '4px 4px 8px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                fontSize: '14px',
-              }}
-            >
-              <div className="flex justify-between">
-                <span style={{ color: '#666666' }}>Fee (0.05%)</span>
-                <span style={{ color: '#1a1b1e' }}>
-                  ~$
-                  {(parseFloat(amountIn || '0') * 0.0005).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span style={{ color: '#666666' }}>Price impact</span>
-                <span
-                  style={{
-                    color:
-                      priceQuote.priceImpact > 0.01 ? '#F59E0B' : '#1a1b1e',
-                  }}
-                >
-                  {(priceQuote.priceImpact * 100).toFixed(3)}%
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span style={{ color: '#666666' }}>Max slippage</span>
-                <span style={{ color: '#1a1b1e' }}>0.5%</span>
-              </div>
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Token Select Modal */}
       <TokenSelectModal
