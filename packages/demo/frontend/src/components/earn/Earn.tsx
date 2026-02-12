@@ -170,34 +170,19 @@ function EarnContent({
   // Swap functionality
   const { isExecuting: isSwapping } = useSwap()
 
-  const handleSwap = useCallback(
-    async ({
-      amountIn,
-      assetIn,
-      assetOut,
-      chainId,
-    }: {
-      amountIn: number
-      assetIn: import('@eth-optimism/actions-sdk/react').Asset
-      assetOut: import('@eth-optimism/actions-sdk/react').Asset
-      chainId: SupportedChainId
-    }) => {
-      return operations.executeSwap({ amountIn, assetIn, assetOut, chainId })
-    },
-    [operations],
-  )
-
   const handleGetPrice = useCallback(
     async ({
       tokenInAddress,
       tokenOutAddress,
       chainId,
       amountIn,
+      amountOut,
     }: {
       tokenInAddress: Address
       tokenOutAddress: Address
       chainId: SupportedChainId
       amountIn?: number
+      amountOut?: number
     }) => {
       try {
         const headers = await getAuthHeaders()
@@ -207,12 +192,14 @@ function EarnContent({
             tokenOutAddress,
             chainId,
             amountIn,
+            amountOut,
           },
           headers,
         )
         return {
           price: price.price,
           priceImpact: price.priceImpact,
+          amountInFormatted: price.amountInFormatted,
           amountOutFormatted: price.amountOutFormatted,
         }
       } catch {
@@ -250,6 +237,30 @@ function EarnContent({
   useEffect(() => {
     refetchSwapAssets()
   }, [assetBalance, refetchSwapAssets])
+
+  const handleSwap = useCallback(
+    async ({
+      amountIn,
+      assetIn,
+      assetOut,
+      chainId,
+    }: {
+      amountIn: number
+      assetIn: import('@eth-optimism/actions-sdk/react').Asset
+      assetOut: import('@eth-optimism/actions-sdk/react').Asset
+      chainId: SupportedChainId
+    }) => {
+      const result = await operations.executeSwap({
+        amountIn,
+        assetIn,
+        assetOut,
+        chainId,
+      })
+      refetchSwapAssets()
+      return result
+    },
+    [operations, refetchSwapAssets],
+  )
 
   // Total balance for navbar dropdown
   const {

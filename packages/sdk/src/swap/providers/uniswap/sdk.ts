@@ -1,5 +1,5 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { encodeFunctionData, formatUnits } from 'viem'
+import { encodeAbiParameters, encodeFunctionData, formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
@@ -218,21 +218,64 @@ export interface EncodeSwapParams {
   universalRouterAddress: Address
 }
 
+// V4 Universal Router command
+const V4_SWAP = 0x10
+
+// V4 action types
+const SWAP_EXACT_IN_SINGLE = 0x06
+const SWAP_EXACT_OUT_SINGLE = 0x07
+const SETTLE_ALL = 0x0c
+const TAKE_ALL = 0x0f
+
+/** ABI type for ExactInputSingleParams */
+const EXACT_INPUT_SINGLE_PARAMS = [
+  {
+    type: 'tuple',
+    components: [
+      {
+        name: 'poolKey',
+        type: 'tuple',
+        components: [...POOL_KEY_COMPONENTS],
+      },
+      { name: 'zeroForOne', type: 'bool' },
+      { name: 'amountIn', type: 'uint128' },
+      { name: 'amountOutMinimum', type: 'uint128' },
+      { name: 'hookData', type: 'bytes' },
+    ],
+  },
+] as const
+
+/** ABI type for ExactOutputSingleParams */
+const EXACT_OUTPUT_SINGLE_PARAMS = [
+  {
+    type: 'tuple',
+    components: [
+      {
+        name: 'poolKey',
+        type: 'tuple',
+        components: [...POOL_KEY_COMPONENTS],
+      },
+      { name: 'zeroForOne', type: 'bool' },
+      { name: 'amountOut', type: 'uint128' },
+      { name: 'amountInMaximum', type: 'uint128' },
+      { name: 'hookData', type: 'bytes' },
+    ],
+  },
+] as const
+
+/** ABI type for SETTLE_ALL / TAKE_ALL params */
+const CURRENCY_AMOUNT_PARAMS = [
+  { type: 'address' },
+  { type: 'uint256' },
+] as const
+
 /**
- * Encode Universal Router swap calldata
- * @description Builds calldata for executing a swap through Universal Router
+ * Encode Universal Router V4 swap calldata
+ * @description Builds calldata for executing a V4 swap through Universal Router
  */
 export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
-  const {
-    amountInWei,
-    assetIn,
-    assetOut,
-    slippage,
-    deadline,
-    recipient,
-    chainId,
-    quote,
-  } = params
+  const { amountInWei, assetIn, assetOut, slippage, deadline, chainId, quote } =
+    params
 
   const tokenIn = isNativeAsset(assetIn)
     ? getWethAddress(chainId)
@@ -244,93 +287,84 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
 
   const isExactInput = amountInWei !== undefined
   const fee = 500
+  const tickSpacing = 10
 
-  // Calculate minimum output with slippage
-  const minAmountOut = isExactInput
-    ? (quote.amountOut * BigInt(Math.floor((1 - slippage) * 10000))) / 10000n
-    : quote.amountOut
+  // V4 requires sorted tokens: currency0 < currency1
+  const [currency0, currency1] =
+    tokenIn.toLowerCase() < tokenOut.toLowerCase()
+      ? [tokenIn, tokenOut]
+      : [tokenOut, tokenIn]
+  const zeroForOne = tokenIn.toLowerCase() === currency0.toLowerCase()
 
-  // V3_SWAP_EXACT_IN command (0x00)
-  const command = isExactInput ? 0x00 : 0x01
+  const poolKey = {
+    currency0,
+    currency1,
+    fee,
+    tickSpacing,
+    hooks: '0x0000000000000000000000000000000000000000' as Address,
+  }
 
-  // Encode the path: tokenIn, fee, tokenOut
-  const path = encodePath([tokenIn, tokenOut], [fee])
+  let actions: Hex
+  let actionParams: Hex[]
 
-  // Encode swap input based on swap type
-  const swapInput = isExactInput
-    ? encodeExactInputSwap(recipient, amountInWei, minAmountOut, path)
-    : encodeExactOutputSwap(
-        recipient,
-        quote.amountOut,
-        quote.amountIn +
-          (quote.amountIn * BigInt(Math.floor(slippage * 10000))) / 10000n,
-        path,
-      )
+  if (isExactInput) {
+    const minAmountOut =
+      (quote.amountOut * BigInt(Math.floor((1 - slippage) * 10000))) / 10000n
+
+    actions =
+      `0x${[SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
+
+    actionParams = [
+      encodeAbiParameters(EXACT_INPUT_SINGLE_PARAMS, [
+        {
+          poolKey,
+          zeroForOne,
+          amountIn: amountInWei,
+          amountOutMinimum: minAmountOut,
+          hookData: '0x',
+        },
+      ]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, amountInWei]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenOut, minAmountOut]),
+    ]
+  } else {
+    const maxAmountIn =
+      quote.amountIn +
+      (quote.amountIn * BigInt(Math.floor(slippage * 10000))) / 10000n
+
+    actions =
+      `0x${[SWAP_EXACT_OUT_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
+
+    actionParams = [
+      encodeAbiParameters(EXACT_OUTPUT_SINGLE_PARAMS, [
+        {
+          poolKey,
+          zeroForOne,
+          amountOut: quote.amountOut,
+          amountInMaximum: maxAmountIn,
+          hookData: '0x',
+        },
+      ]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, maxAmountIn]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenOut, quote.amountOut]),
+    ]
+  }
+
+  // Encode V4_SWAP input: abi.encode(bytes actions, bytes[] params)
+  const v4SwapInput = encodeAbiParameters(
+    [{ type: 'bytes' }, { type: 'bytes[]' }],
+    [actions, actionParams],
+  )
 
   return encodeFunctionData({
     abi: UNIVERSAL_ROUTER_ABI,
     functionName: 'execute',
     args: [
-      `0x${command.toString(16).padStart(2, '0')}` as Hex,
-      [swapInput],
+      `0x${V4_SWAP.toString(16).padStart(2, '0')}` as Hex,
+      [v4SwapInput],
       BigInt(deadline),
     ],
   })
-}
-
-/**
- * Encode a V3 path
- */
-function encodePath(tokens: Address[], fees: number[]): Hex {
-  let path = tokens[0].slice(2)
-  for (let i = 0; i < fees.length; i++) {
-    path += fees[i].toString(16).padStart(6, '0')
-    path += tokens[i + 1].slice(2)
-  }
-  return `0x${path}` as Hex
-}
-
-/**
- * Encode exact input swap parameters
- */
-function encodeExactInputSwap(
-  recipient: Address,
-  amountIn: bigint,
-  minAmountOut: bigint,
-  path: Hex,
-): Hex {
-  // ABI encode: (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
-  const encoded =
-    recipient.slice(2).padStart(64, '0') +
-    amountIn.toString(16).padStart(64, '0') +
-    minAmountOut.toString(16).padStart(64, '0') +
-    (160).toString(16).padStart(64, '0') + // offset to path
-    '01'.padStart(64, '0') + // payerIsUser = true
-    ((path.length - 2) / 2).toString(16).padStart(64, '0') + // path length
-    path.slice(2).padEnd(64, '0') // path data
-
-  return `0x${encoded}` as Hex
-}
-
-/**
- * Encode exact output swap parameters
- */
-function encodeExactOutputSwap(
-  recipient: Address,
-  amountOut: bigint,
-  maxAmountIn: bigint,
-  path: Hex,
-): Hex {
-  const encoded =
-    recipient.slice(2).padStart(64, '0') +
-    amountOut.toString(16).padStart(64, '0') +
-    maxAmountIn.toString(16).padStart(64, '0') +
-    (160).toString(16).padStart(64, '0') +
-    '01'.padStart(64, '0') +
-    ((path.length - 2) / 2).toString(16).padStart(64, '0') +
-    path.slice(2).padEnd(64, '0')
-
-  return `0x${encoded}` as Hex
 }
 
 function calculatePrice(

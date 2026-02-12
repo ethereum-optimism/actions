@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import type { Asset, SupportedChainId } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 
@@ -31,9 +32,11 @@ interface SwapActionProps {
     tokenOutAddress: Address
     chainId: SupportedChainId
     amountIn?: number
+    amountOut?: number
   }) => Promise<{
     price: string
     priceImpact: number
+    amountInFormatted: string
     amountOutFormatted: string
   } | null>
   isExecuting: boolean
@@ -103,7 +106,10 @@ function TokenSelectModal({
     <div
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         zIndex: 50,
         display: 'flex',
         alignItems: 'center',
@@ -313,7 +319,10 @@ function ReviewSwapModal({
     <div
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         zIndex: 50,
         display: 'flex',
         alignItems: 'center',
@@ -523,9 +532,12 @@ export function SwapAction({
   }, [assets])
 
   const [amountIn, setAmountIn] = useState('')
+  const [amountOut, setAmountOut] = useState('')
+  const [editDirection, setEditDirection] = useState<'in' | 'out'>('in')
   const [priceQuote, setPriceQuote] = useState<{
     price: string
     priceImpact: number
+    amountInFormatted: string
     amountOutFormatted: string
   } | null>(null)
   const [isLoadingPrice, setIsLoadingPrice] = useState(false)
@@ -553,23 +565,40 @@ export function SwapAction({
   const assetIn = assets[assetInIndex]
   const assetOut = assets[assetOutIndex]
 
-  // Fetch price when amount changes
-  useEffect(() => {
-    const fetchPrice = async () => {
-      if (!amountIn || parseFloat(amountIn) <= 0 || !assetIn || !assetOut) {
-        setPriceQuote(null)
-        return
-      }
+  // Only depend on the amount the user is actively editing to avoid re-fetch loops
+  const activeAmount = editDirection === 'in' ? amountIn : amountOut
 
-      setIsLoadingPrice(true)
+  // Fetch price when amount changes (bidirectional)
+  useEffect(() => {
+    if (
+      !activeAmount ||
+      parseFloat(activeAmount) <= 0 ||
+      !assetIn ||
+      !assetOut
+    ) {
+      setPriceQuote(null)
+      return
+    }
+
+    setIsLoadingPrice(true)
+    const fetchPrice = async () => {
       try {
         const quote = await onGetPrice({
           tokenInAddress: assetIn.asset.address[assetIn.chainId] as Address,
           tokenOutAddress: assetOut.asset.address[assetOut.chainId] as Address,
           chainId: assetIn.chainId,
-          amountIn: parseFloat(amountIn),
+          ...(editDirection === 'in'
+            ? { amountIn: parseFloat(activeAmount) }
+            : { amountOut: parseFloat(activeAmount) }),
         })
         setPriceQuote(quote)
+        if (quote) {
+          if (editDirection === 'in') {
+            setAmountOut(quote.amountOutFormatted)
+          } else {
+            setAmountIn(quote.amountInFormatted)
+          }
+        }
       } catch {
         setPriceQuote(null)
       } finally {
@@ -579,24 +608,40 @@ export function SwapAction({
 
     const debounce = setTimeout(fetchPrice, 500)
     return () => clearTimeout(debounce)
-  }, [amountIn, assetIn, assetOut, onGetPrice])
+  }, [activeAmount, editDirection, assetIn, assetOut, onGetPrice])
 
   const handleFlipAssets = () => {
     setAssetInIndex(assetOutIndex)
     setAssetOutIndex(assetInIndex)
-    setAmountIn('')
+    const prevIn = amountIn
+    const prevOut = amountOut
+    setAmountIn(prevOut)
+    setAmountOut(prevIn)
+    setEditDirection('in')
     setPriceQuote(null)
   }
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAmountInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setEditDirection('in')
       setAmountIn(value)
+      if (!value) setAmountOut('')
+    }
+  }
+
+  const handleAmountOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setEditDirection('out')
+      setAmountOut(value)
+      if (!value) setAmountIn('')
     }
   }
 
   const handleMaxClick = () => {
     if (assetIn) {
+      setEditDirection('in')
       setAmountIn(assetIn.balance)
     }
   }
@@ -610,7 +655,9 @@ export function SwapAction({
         if (index === assetInIndex) setAssetInIndex(assetOutIndex)
         setAssetOutIndex(index)
       }
+      setAmountOut('')
       setPriceQuote(null)
+      setEditDirection('in')
     },
     [tokenSelectTarget, assetInIndex, assetOutIndex],
   )
@@ -625,7 +672,7 @@ export function SwapAction({
 
     const inSymbol = displaySymbol(assetIn.asset.metadata.symbol)
     const outSymbol = displaySymbol(assetOut.asset.metadata.symbol)
-    const outAmount = priceQuote?.amountOutFormatted || ''
+    const outAmount = amountOut || ''
 
     trackEvent('swap_initiated', {
       assetIn: assetIn.asset.metadata.symbol,
@@ -668,6 +715,7 @@ export function SwapAction({
       })
 
       setAmountIn('')
+      setAmountOut('')
       setPriceQuote(null)
 
       trackEvent('swap_success', {
@@ -675,7 +723,8 @@ export function SwapAction({
         assetOut: assetOut.asset.metadata.symbol,
         amount: parseFloat(amountIn),
       })
-    } catch {
+    } catch (err) {
+      console.error('[SwapAction] swap failed:', err)
       activity?.error()
       setTxModalStatus('error')
       trackEvent('swap_error', {
@@ -702,8 +751,7 @@ export function SwapAction({
     !priceQuote
 
   const sellUsd = assetIn ? formatUsd(amountIn) : null
-  const buyUsd =
-    assetOut && priceQuote ? formatUsd(priceQuote.amountOutFormatted) : null
+  const buyUsd = assetOut && amountOut ? formatUsd(amountOut) : null
 
   if (assets.length < 2) {
     return (
@@ -778,8 +826,11 @@ export function SwapAction({
                 <input
                   type="text"
                   placeholder="0"
-                  value={amountIn}
-                  onChange={handleAmountChange}
+                  value={
+                    isLoadingPrice && editDirection === 'out' ? '...' : amountIn
+                  }
+                  onChange={handleAmountInChange}
+                  disabled={isLoadingPrice && editDirection === 'out'}
                   style={{
                     width: '100%',
                     border: 'none',
@@ -866,35 +917,25 @@ export function SwapAction({
             </div>
             <div className="flex items-center justify-between">
               <div style={{ flex: 1 }}>
-                <div
+                <input
+                  type="text"
+                  placeholder="0"
+                  value={
+                    isLoadingPrice && editDirection === 'in' ? '...' : amountOut
+                  }
+                  onChange={handleAmountOutChange}
+                  disabled={isLoadingPrice && editDirection === 'in'}
                   style={{
                     width: '100%',
+                    border: 'none',
+                    outline: 'none',
                     fontSize: '32px',
                     fontWeight: 500,
                     color: '#000',
+                    backgroundColor: 'transparent',
                     fontFamily: 'Inter',
-                    minHeight: '40px',
                   }}
-                >
-                  {isLoadingPrice ? (
-                    '...'
-                  ) : priceQuote ? (
-                    <>
-                      {formatSwapAmount(priceQuote.amountOutFormatted).main}
-                      {formatSwapAmount(priceQuote.amountOutFormatted)
-                        .secondary && (
-                        <span style={{ color: '#9195A6', fontSize: '20px' }}>
-                          {
-                            formatSwapAmount(priceQuote.amountOutFormatted)
-                              .secondary
-                          }
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <span style={{ color: '#9195A6' }}>0</span>
-                  )}
-                </div>
+                />
                 {buyUsd && (
                   <span
                     style={{
@@ -951,46 +992,48 @@ export function SwapAction({
         </div>
       </div>
 
-      {/* Token Select Modal */}
-      <TokenSelectModal
-        isOpen={tokenSelectTarget !== null}
-        onClose={() => setTokenSelectTarget(null)}
-        assets={assets}
-        onSelect={handleTokenSelect}
-      />
+      {/* Portaled modals to avoid mobile overflow clipping */}
+      {createPortal(
+        <>
+          <TokenSelectModal
+            isOpen={tokenSelectTarget !== null}
+            onClose={() => setTokenSelectTarget(null)}
+            assets={assets}
+            onSelect={handleTokenSelect}
+          />
 
-      {/* Review Swap Modal */}
-      {assetIn && assetOut && priceQuote && (
-        <ReviewSwapModal
-          isOpen={reviewOpen}
-          onClose={() => setReviewOpen(false)}
-          onConfirm={handleConfirmSwap}
-          assetIn={assetIn}
-          assetOut={assetOut}
-          amountIn={amountIn}
-          amountOut={priceQuote.amountOutFormatted}
-          priceQuote={priceQuote}
-          isExecuting={isExecuting}
-        />
+          {assetIn && assetOut && priceQuote && (
+            <ReviewSwapModal
+              isOpen={reviewOpen}
+              onClose={() => setReviewOpen(false)}
+              onConfirm={handleConfirmSwap}
+              assetIn={assetIn}
+              assetOut={assetOut}
+              amountIn={amountIn}
+              amountOut={amountOut}
+              priceQuote={priceQuote}
+              isExecuting={isExecuting}
+            />
+          )}
+
+          <TransactionModal
+            isOpen={txModalOpen}
+            status={txModalStatus}
+            onClose={handleTxModalClose}
+            blockExplorerUrl={blockExplorerUrl}
+            mode="swap"
+            assetSymbol={`${displaySymbol(assetIn?.asset.metadata.symbol || '')} → ${displaySymbol(assetOut?.asset.metadata.symbol || '')}`}
+          />
+
+          <Toast
+            isVisible={toast.visible}
+            onClose={() => setToast((t) => ({ ...t, visible: false }))}
+            title={toast.title}
+            description={toast.description}
+          />
+        </>,
+        document.body,
       )}
-
-      {/* Transaction Loading/Error Modal */}
-      <TransactionModal
-        isOpen={txModalOpen}
-        status={txModalStatus}
-        onClose={handleTxModalClose}
-        blockExplorerUrl={blockExplorerUrl}
-        mode="swap"
-        assetSymbol={`${displaySymbol(assetIn?.asset.metadata.symbol || '')} → ${displaySymbol(assetOut?.asset.metadata.symbol || '')}`}
-      />
-
-      {/* Success Toast */}
-      <Toast
-        isVisible={toast.visible}
-        onClose={() => setToast((t) => ({ ...t, visible: false }))}
-        title={toast.title}
-        description={toast.description}
-      />
     </>
   )
 }

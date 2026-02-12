@@ -22,6 +22,10 @@ const PriceRequestSchema = z.object({
       .string()
       .optional()
       .transform((v) => (v ? Number(v) : undefined)),
+    amountOut: z
+      .string()
+      .optional()
+      .transform((v) => (v ? Number(v) : undefined)),
   }),
 })
 
@@ -79,7 +83,7 @@ export async function getPrice(c: Context) {
     const validation = await validateRequest(c, PriceRequestSchema)
     if (!validation.success) return validation.response
 
-    const { tokenInAddress, tokenOutAddress, chainId, amountIn } =
+    const { tokenInAddress, tokenOutAddress, chainId, amountIn, amountOut } =
       validation.data.query
 
     const price = await swapService.getPrice({
@@ -87,6 +91,7 @@ export async function getPrice(c: Context) {
       tokenOutAddress: tokenOutAddress as Address,
       chainId: chainId as SupportedChainId,
       amountIn,
+      amountOut,
     })
 
     return c.json({ result: serializeBigInt(price) })

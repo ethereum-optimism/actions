@@ -31,7 +31,7 @@ import { encodeUniversalRouterSwap, getQuote } from './sdk.js'
 
 /**
  * Uniswap swap provider using Universal Router
- * @description Routes swaps across V2, V3, and V4 pools automatically for best pricing.
+ * @description Routes swaps through V4 pools via the Uniswap Universal Router.
  * Uses Permit2 for token approvals.
  */
 export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {

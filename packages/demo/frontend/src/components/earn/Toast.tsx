@@ -27,8 +27,8 @@ export function Toast({
     <div
       style={{
         position: 'fixed',
-        top: '24px',
-        right: '24px',
+        bottom: '24px',
+        left: '24px',
         zIndex: 100,
         animation: 'toast-in 0.3s ease-out',
       }}
@@ -96,7 +96,7 @@ export function Toast({
       </div>
       <style>{`
         @keyframes toast-in {
-          from { opacity: 0; transform: translateY(-8px); }
+          from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>

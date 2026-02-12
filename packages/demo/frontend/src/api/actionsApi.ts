@@ -241,11 +241,13 @@ class ActionsApiClient {
       tokenOutAddress,
       chainId,
       amountIn,
+      amountOut,
     }: {
       tokenInAddress: Address
       tokenOutAddress: Address
       chainId: SupportedChainId
       amountIn?: number
+      amountOut?: number
     },
     headers: HeadersInit = {},
   ): Promise<{
@@ -253,6 +255,7 @@ class ActionsApiClient {
     priceInverse: string
     amountIn: bigint
     amountOut: bigint
+    amountInFormatted: string
     amountOutFormatted: string
     priceImpact: number
     gasEstimate?: bigint
@@ -265,6 +268,9 @@ class ActionsApiClient {
     if (amountIn !== undefined) {
       params.set('amountIn', amountIn.toString())
     }
+    if (amountOut !== undefined) {
+      params.set('amountOut', amountOut.toString())
+    }
 
     const { result } = await this.request<{
       result: {
@@ -272,6 +278,7 @@ class ActionsApiClient {
         priceInverse: string
         amountIn: string
         amountOut: string
+        amountInFormatted: string
         amountOutFormatted: string
         priceImpact: number
         gasEstimate?: string
@@ -285,6 +292,7 @@ class ActionsApiClient {
       priceInverse: result.priceInverse,
       amountIn: BigInt(result.amountIn),
       amountOut: BigInt(result.amountOut),
+      amountInFormatted: result.amountInFormatted,
       amountOutFormatted: result.amountOutFormatted,
       priceImpact: result.priceImpact,
       gasEstimate: result.gasEstimate ? BigInt(result.gasEstimate) : undefined,

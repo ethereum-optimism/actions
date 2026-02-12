@@ -25,6 +25,7 @@ export interface PriceParams {
   tokenOutAddress: Address
   chainId: SupportedChainId
   amountIn?: number
+  amountOut?: number
 }
 
 type SwapReceiptWithUrls = SwapReceipt & {
@@ -39,7 +40,8 @@ export async function getMarkets(
 }
 
 export async function getPrice(params: PriceParams): Promise<SwapPrice> {
-  const { tokenInAddress, tokenOutAddress, chainId, amountIn } = params
+  const { tokenInAddress, tokenOutAddress, chainId, amountIn, amountOut } =
+    params
   const actions = getActions()
 
   const assetIn = SUPPORTED_TOKENS.find(
@@ -60,7 +62,7 @@ export async function getPrice(params: PriceParams): Promise<SwapPrice> {
     assetIn,
     assetOut,
     chainId,
-    amountIn: amountIn ?? 1,
+    ...(amountOut !== undefined ? { amountOut } : { amountIn: amountIn ?? 1 }),
   })
 }
 

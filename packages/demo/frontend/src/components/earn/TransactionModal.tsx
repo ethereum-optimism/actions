@@ -93,7 +93,7 @@ function TransactionModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', minHeight: '100dvh' }}
       onClick={(e) => {
         if (e.target === e.currentTarget && content.showClose) {
           onClose()
