@@ -65,11 +65,10 @@ function displaySymbol(symbol: string): string {
   return symbol.replace('_DEMO', '')
 }
 
-function formatUsd(amount: string, symbol: string): string | null {
+function formatUsd(amount: string): string | null {
   const parsed = parseFloat(amount)
   if (!parsed || parsed <= 0) return null
-  if (displaySymbol(symbol) === 'USDC') return `$${parsed.toFixed(2)}`
-  return null
+  return `$${parsed.toFixed(2)}`
 }
 
 // --- Token Select Modal ---
@@ -295,7 +294,7 @@ function ReviewSwapModal({
 
   const symbolIn = displaySymbol(assetIn.asset.metadata.symbol)
   const symbolOut = displaySymbol(assetOut.asset.metadata.symbol)
-  const usdIn = formatUsd(amountIn, assetIn.asset.metadata.symbol)
+  const usdIn = formatUsd(amountIn)
 
   return (
     <div
@@ -398,6 +397,11 @@ function ReviewSwapModal({
               style={{ width: '32px', height: '32px', borderRadius: '50%' }}
             />
           </div>
+          {formatUsd(amountOut) && (
+            <span style={{ fontSize: '14px', color: '#9195A6' }}>
+              {formatUsd(amountOut)}
+            </span>
+          )}
         </div>
 
         {/* Details */}
@@ -430,6 +434,16 @@ function ReviewSwapModal({
                   ? `-${(priceQuote.priceImpact * 100).toFixed(3)}%`
                   : `${(priceQuote.priceImpact * 100).toFixed(3)}%`}
               </span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: '#666666' }}>Minimum received</span>
+              <span style={{ color: '#1a1b1e' }}>
+                {(parseFloat(amountOut) * 0.995).toFixed(6)} {symbolOut}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: '#666666' }}>Max slippage</span>
+              <span style={{ color: '#1a1b1e' }}>0.5%</span>
             </div>
           </div>
         )}
@@ -490,6 +504,8 @@ export function SwapAction({
   const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(
     undefined,
   )
+
+  const [isFeesExpanded, setIsFeesExpanded] = useState(false)
 
   // Toast state
   const [toast, setToast] = useState<{
@@ -649,13 +665,9 @@ export function SwapAction({
     amountValue > maxAmount ||
     !priceQuote
 
-  const sellUsd = assetIn
-    ? formatUsd(amountIn, assetIn.asset.metadata.symbol)
-    : null
+  const sellUsd = assetIn ? formatUsd(amountIn) : null
   const buyUsd =
-    assetOut && priceQuote
-      ? formatUsd(priceQuote.amountOutFormatted, assetOut.asset.metadata.symbol)
-      : null
+    assetOut && priceQuote ? formatUsd(priceQuote.amountOutFormatted) : null
 
   if (assets.length < 2) {
     return (
@@ -804,16 +816,18 @@ export function SwapAction({
               border: '1px dashed #E0E2EB',
             }}
           >
-            <span
-              style={{
-                color: '#9195A6',
-                fontSize: '14px',
-                display: 'block',
-                marginBottom: '12px',
-              }}
+            <div
+              className="flex items-center justify-between"
+              style={{ marginBottom: '12px' }}
             >
-              Buy
-            </span>
+              <span style={{ color: '#9195A6', fontSize: '14px' }}>Buy</span>
+              {assetOut && (
+                <span style={{ color: '#9195A6', fontSize: '14px' }}>
+                  {assetOut.balance || '0'}{' '}
+                  {displaySymbol(assetOut.asset.metadata.symbol)}
+                </span>
+              )}
+            </div>
             <div className="flex items-center justify-between">
               <div style={{ flex: 1 }}>
                 <input
@@ -870,6 +884,84 @@ export function SwapAction({
           </CtaButton>
         </div>
       </div>
+
+      {/* Exchange Rate & Fees */}
+      {priceQuote && assetIn && assetOut && (
+        <div style={{ marginTop: '8px' }}>
+          <button
+            onClick={() => setIsFeesExpanded(!isFeesExpanded)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 4px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              fontFamily: 'Inter',
+            }}
+          >
+            <span style={{ fontSize: '14px', color: '#666666' }}>
+              1 {displaySymbol(assetIn.asset.metadata.symbol)} ={' '}
+              {priceQuote.price} {displaySymbol(assetOut.asset.metadata.symbol)}
+            </span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              style={{
+                transform: isFeesExpanded ? 'rotate(180deg)' : undefined,
+                transition: 'transform 200ms',
+              }}
+            >
+              <path
+                d="M3 4.5L6 7.5L9 4.5"
+                stroke="#666666"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          {isFeesExpanded && (
+            <div
+              style={{
+                padding: '4px 4px 8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                fontSize: '14px',
+              }}
+            >
+              <div className="flex justify-between">
+                <span style={{ color: '#666666' }}>Fee (0.05%)</span>
+                <span style={{ color: '#1a1b1e' }}>
+                  ~$
+                  {(parseFloat(amountIn || '0') * 0.0005).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span style={{ color: '#666666' }}>Price impact</span>
+                <span
+                  style={{
+                    color:
+                      priceQuote.priceImpact > 0.01 ? '#F59E0B' : '#1a1b1e',
+                  }}
+                >
+                  {(priceQuote.priceImpact * 100).toFixed(3)}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span style={{ color: '#666666' }}>Max slippage</span>
+                <span style={{ color: '#1a1b1e' }}>0.5%</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Token Select Modal */}
       <TokenSelectModal
