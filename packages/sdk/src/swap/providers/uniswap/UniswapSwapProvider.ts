@@ -46,6 +46,13 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
     const addresses = getUniswapAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
 
+    const filter = this.resolveMarketFilter(assetIn, assetOut, chainId)
+    if (!filter?.fee || !filter?.tickSpacing) {
+      throw new Error(
+        `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
+      )
+    }
+
     // Get quote first for price info
     const quote = await getQuote({
       assetIn,
@@ -55,6 +62,8 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
       chainId,
       publicClient,
       quoterAddress: addresses.quoter,
+      fee: filter.fee,
+      tickSpacing: filter.tickSpacing,
     })
 
     // Build the swap calldata
@@ -69,6 +78,8 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
       chainId,
       quote,
       universalRouterAddress: addresses.universalRouter,
+      fee: filter.fee,
+      tickSpacing: filter.tickSpacing,
     })
 
     // Determine if approvals are needed (not for native ETH input)
@@ -136,6 +147,17 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
     const addresses = getUniswapAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
 
+    if (!assetOut) {
+      throw new Error('assetOut is required')
+    }
+
+    const filter = this.resolveMarketFilter(assetIn, assetOut, chainId)
+    if (!filter?.fee || !filter?.tickSpacing) {
+      throw new Error(
+        `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
+      )
+    }
+
     // Default to 1 unit if no amount specified
     const amountInWei =
       params.amountIn !== undefined
@@ -143,15 +165,11 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
         : BigInt(10 ** assetIn.metadata.decimals)
 
     const amountOutWei =
-      params.amountOut !== undefined && assetOut
+      params.amountOut !== undefined
         ? BigInt(
             Math.floor(params.amountOut * 10 ** assetOut.metadata.decimals),
           )
         : undefined
-
-    if (!assetOut) {
-      throw new Error('assetOut is required')
-    }
 
     return getQuote({
       assetIn,
@@ -161,6 +179,8 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
       chainId,
       publicClient,
       quoterAddress: addresses.quoter,
+      fee: filter.fee,
+      tickSpacing: filter.tickSpacing,
     })
   }
 

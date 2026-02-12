@@ -92,6 +92,10 @@ export interface GetQuoteParams {
   chainId: SupportedChainId
   publicClient: PublicClient
   quoterAddress: Address
+  /** Fee tier in pips (e.g. 100 = 0.01%) */
+  fee: number
+  /** Tick spacing for the pool */
+  tickSpacing: number
 }
 
 /**
@@ -106,6 +110,8 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     chainId,
     publicClient,
     quoterAddress,
+    fee,
+    tickSpacing,
   } = params
 
   const tokenIn = isNativeAsset(assetIn)
@@ -117,8 +123,6 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     : getAssetAddress(assetOut, chainId)
 
   const isExactInput = amountInWei !== undefined
-  const fee = 500 // 0.05% fee tier
-  const tickSpacing = 10
 
   // V4 requires sorted tokens: currency0 < currency1
   const [currency0, currency1] =
@@ -216,6 +220,10 @@ export interface EncodeSwapParams {
   chainId: SupportedChainId
   quote: SwapPrice
   universalRouterAddress: Address
+  /** Fee tier in pips (e.g. 100 = 0.01%) */
+  fee: number
+  /** Tick spacing for the pool */
+  tickSpacing: number
 }
 
 // V4 Universal Router command
@@ -274,8 +282,17 @@ const CURRENCY_AMOUNT_PARAMS = [
  * @description Builds calldata for executing a V4 swap through Universal Router
  */
 export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
-  const { amountInWei, assetIn, assetOut, slippage, deadline, chainId, quote } =
-    params
+  const {
+    amountInWei,
+    assetIn,
+    assetOut,
+    slippage,
+    deadline,
+    chainId,
+    quote,
+    fee,
+    tickSpacing,
+  } = params
 
   const tokenIn = isNativeAsset(assetIn)
     ? getWethAddress(chainId)
@@ -286,8 +303,6 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
     : getAssetAddress(assetOut, chainId)
 
   const isExactInput = amountInWei !== undefined
-  const fee = 500
-  const tickSpacing = 10
 
   // V4 requires sorted tokens: currency0 < currency1
   const [currency0, currency1] =
