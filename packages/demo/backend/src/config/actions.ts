@@ -40,7 +40,9 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
     swap: {
       uniswap: {
         defaultSlippage: 0.005, // 0.5%
-        marketAllowlist: [{ assets: [USDC_DEMO, OP_DEMO] }],
+        marketAllowlist: [
+          { assets: [USDC_DEMO, OP_DEMO], fee: 100, tickSpacing: 2 },
+        ],
       },
     },
     assets: {

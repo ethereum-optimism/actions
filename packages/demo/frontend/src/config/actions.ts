@@ -44,7 +44,9 @@ export function createActionsConfig<T extends ReactProviderTypes>(
     swap: {
       uniswap: {
         defaultSlippage: 0.005,
-        marketAllowlist: [{ assets: [USDC_DEMO, OP_DEMO] }],
+        marketAllowlist: [
+          { assets: [USDC_DEMO, OP_DEMO], fee: 100, tickSpacing: 2 },
+        ],
       },
     },
     chains: [
