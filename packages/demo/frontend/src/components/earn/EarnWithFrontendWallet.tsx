@@ -101,6 +101,20 @@ export function EarnWithFrontendWallet({
       },
       openPosition: async (params) => wallet!.lend!.openPosition(params),
       closePosition: async (params) => wallet!.lend!.closePosition(params),
+      executeSwap: async ({ amountIn, assetIn, assetOut, chainId }) => {
+        const receipt = await wallet!.swap!.execute({
+          amountIn,
+          assetIn,
+          assetOut,
+          chainId,
+        })
+        // Extract block explorer URL from receipt
+        const txReceipt = receipt.receipt
+        if ('blockExplorerUrl' in txReceipt) {
+          return { blockExplorerUrl: txReceipt.blockExplorerUrl as string }
+        }
+        return {}
+      },
     }),
     [wallet, actions],
   )

@@ -20,8 +20,8 @@ interface SwapActionProps {
   isLoadingBalances: boolean
   onSwap: (params: {
     amountIn: number
-    tokenInAddress: Address
-    tokenOutAddress: Address
+    assetIn: Asset
+    assetOut: Asset
     chainId: SupportedChainId
   }) => Promise<{
     blockExplorerUrl?: string
@@ -650,8 +650,8 @@ export function SwapAction({
     try {
       const result = await onSwap({
         amountIn: parseFloat(amountIn),
-        tokenInAddress: assetIn.asset.address[assetIn.chainId] as Address,
-        tokenOutAddress: assetOut.asset.address[assetOut.chainId] as Address,
+        assetIn: assetIn.asset,
+        assetOut: assetOut.asset,
         chainId: assetIn.chainId,
       })
 

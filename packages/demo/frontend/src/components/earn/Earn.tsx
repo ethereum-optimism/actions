@@ -173,30 +173,18 @@ function EarnContent({
   const handleSwap = useCallback(
     async ({
       amountIn,
-      tokenInAddress,
-      tokenOutAddress,
+      assetIn,
+      assetOut,
       chainId,
     }: {
       amountIn: number
-      tokenInAddress: Address
-      tokenOutAddress: Address
+      assetIn: import('@eth-optimism/actions-sdk/react').Asset
+      assetOut: import('@eth-optimism/actions-sdk/react').Asset
       chainId: SupportedChainId
     }) => {
-      const headers = await getAuthHeaders()
-      const result = await actionsApi.executeSwap(
-        {
-          amountIn,
-          tokenInAddress,
-          tokenOutAddress,
-          chainId,
-        },
-        headers,
-      )
-      return {
-        blockExplorerUrl: result.blockExplorerUrls?.[0],
-      }
+      return operations.executeSwap({ amountIn, assetIn, assetOut, chainId })
     },
-    [getAuthHeaders],
+    [operations],
   )
 
   const handleGetPrice = useCallback(

@@ -29,6 +29,12 @@ export interface LendProviderOperations {
   closePosition: (
     params: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
+  executeSwap: (params: {
+    amountIn: number
+    assetIn: Asset
+    assetOut: Asset
+    chainId: SupportedChainId
+  }) => Promise<{ blockExplorerUrl?: string }>
 }
 
 interface UseLendProviderParams {

@@ -56,6 +56,24 @@ export function EarnWithServerWallet({
         const headers = await getAuthHeaders()
         return actionsApi.closeLendPosition(params, headers)
       },
+      executeSwap: async ({ amountIn, assetIn, assetOut, chainId }) => {
+        const headers = await getAuthHeaders()
+        const tokenInAddress = assetIn.address[chainId]
+        const tokenOutAddress = assetOut.address[chainId]
+        if (!tokenInAddress || !tokenOutAddress) {
+          throw new Error('Token address not found for chain')
+        }
+        const result = await actionsApi.executeSwap(
+          {
+            amountIn,
+            tokenInAddress: tokenInAddress as Address,
+            tokenOutAddress: tokenOutAddress as Address,
+            chainId,
+          },
+          headers,
+        )
+        return { blockExplorerUrl: result.blockExplorerUrls?.[0] }
+      },
     }),
     [getAuthHeaders, walletAddress],
   )
