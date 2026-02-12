@@ -71,6 +71,19 @@ function formatUsd(amount: string): string | null {
   return `$${parsed.toFixed(2)}`
 }
 
+function formatSwapAmount(amount: string): { main: string; secondary: string } {
+  const num = parseFloat(amount)
+  if (isNaN(num) || num === 0) return { main: '0', secondary: '' }
+
+  const [whole, decimal = ''] = amount.split('.')
+  if (decimal.length <= 4) return { main: amount, secondary: '' }
+
+  return {
+    main: `${whole}.${decimal.substring(0, 4)}`,
+    secondary: decimal.substring(4),
+  }
+}
+
 // --- Token Select Modal ---
 
 function TokenSelectModal({
@@ -389,7 +402,12 @@ function ReviewSwapModal({
             <span
               style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}
             >
-              {amountOut}
+              {formatSwapAmount(amountOut).main}
+              {formatSwapAmount(amountOut).secondary && (
+                <span style={{ color: '#9195A6', fontSize: '20px' }}>
+                  {formatSwapAmount(amountOut).secondary}
+                </span>
+              )}
             </span>
             <img
               src={assetOut.logo}
@@ -420,7 +438,13 @@ function ReviewSwapModal({
             <div className="flex justify-between">
               <span style={{ color: '#666666' }}>Exchange rate</span>
               <span style={{ color: '#1a1b1e' }}>
-                1 {symbolIn} = {priceQuote.price} {symbolOut}
+                1 {symbolIn} = {formatSwapAmount(priceQuote.price).main}
+                {formatSwapAmount(priceQuote.price).secondary && (
+                  <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                    {formatSwapAmount(priceQuote.price).secondary}
+                  </span>
+                )}{' '}
+                {symbolOut}
               </span>
             </div>
             <div className="flex justify-between">
@@ -438,7 +462,21 @@ function ReviewSwapModal({
             <div className="flex justify-between">
               <span style={{ color: '#666666' }}>Minimum received</span>
               <span style={{ color: '#1a1b1e' }}>
-                {(parseFloat(amountOut) * 0.995).toFixed(6)} {symbolOut}
+                {
+                  formatSwapAmount((parseFloat(amountOut) * 0.995).toFixed(6))
+                    .main
+                }
+                {formatSwapAmount((parseFloat(amountOut) * 0.995).toFixed(6))
+                  .secondary && (
+                  <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                    {
+                      formatSwapAmount(
+                        (parseFloat(amountOut) * 0.995).toFixed(6),
+                      ).secondary
+                    }
+                  </span>
+                )}{' '}
+                {symbolOut}
               </span>
             </div>
             <div className="flex justify-between">
@@ -830,26 +868,35 @@ export function SwapAction({
             </div>
             <div className="flex items-center justify-between">
               <div style={{ flex: 1 }}>
-                <input
-                  type="text"
-                  placeholder="0"
-                  value={
-                    isLoadingPrice
-                      ? '...'
-                      : priceQuote?.amountOutFormatted || ''
-                  }
-                  readOnly
+                <div
                   style={{
                     width: '100%',
-                    border: 'none',
-                    outline: 'none',
                     fontSize: '32px',
                     fontWeight: 500,
                     color: '#000',
-                    backgroundColor: 'transparent',
                     fontFamily: 'Inter',
+                    minHeight: '40px',
                   }}
-                />
+                >
+                  {isLoadingPrice ? (
+                    '...'
+                  ) : priceQuote ? (
+                    <>
+                      {formatSwapAmount(priceQuote.amountOutFormatted).main}
+                      {formatSwapAmount(priceQuote.amountOutFormatted)
+                        .secondary && (
+                        <span style={{ color: '#9195A6', fontSize: '20px' }}>
+                          {
+                            formatSwapAmount(priceQuote.amountOutFormatted)
+                              .secondary
+                          }
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span style={{ color: '#9195A6' }}>0</span>
+                  )}
+                </div>
                 {buyUsd && (
                   <span
                     style={{
@@ -904,7 +951,13 @@ export function SwapAction({
           >
             <span style={{ fontSize: '14px', color: '#666666' }}>
               1 {displaySymbol(assetIn.asset.metadata.symbol)} ={' '}
-              {priceQuote.price} {displaySymbol(assetOut.asset.metadata.symbol)}
+              {formatSwapAmount(priceQuote.price).main}
+              {formatSwapAmount(priceQuote.price).secondary && (
+                <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                  {formatSwapAmount(priceQuote.price).secondary}
+                </span>
+              )}{' '}
+              {displaySymbol(assetOut.asset.metadata.symbol)}
             </span>
             <svg
               width="12"
