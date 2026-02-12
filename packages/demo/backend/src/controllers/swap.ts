@@ -91,6 +91,11 @@ export async function getPrice(c: Context) {
 
     return c.json({ result: serializeBigInt(price) })
   } catch (error) {
+    console.error('[getPrice] ERROR:', {
+      error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     return c.json(
       {
         error: 'Failed to get swap price',

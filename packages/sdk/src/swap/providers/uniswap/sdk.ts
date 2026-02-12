@@ -9,7 +9,18 @@ import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 import { getWethAddress } from './addresses.js'
 
 /**
- * Quoter V2 ABI (subset for quoting)
+ * PoolKey tuple components (shared across V4 ABI definitions)
+ */
+const POOL_KEY_COMPONENTS = [
+  { name: 'currency0', type: 'address' },
+  { name: 'currency1', type: 'address' },
+  { name: 'fee', type: 'uint24' },
+  { name: 'tickSpacing', type: 'int24' },
+  { name: 'hooks', type: 'address' },
+] as const
+
+/**
+ * V4 Quoter ABI (subset for quoting)
  */
 const QUOTER_ABI = [
   {
@@ -21,18 +32,15 @@ const QUOTER_ABI = [
         name: 'params',
         type: 'tuple',
         components: [
-          { name: 'tokenIn', type: 'address' },
-          { name: 'tokenOut', type: 'address' },
-          { name: 'amountIn', type: 'uint256' },
-          { name: 'fee', type: 'uint24' },
-          { name: 'sqrtPriceLimitX96', type: 'uint160' },
+          { name: 'poolKey', type: 'tuple', components: POOL_KEY_COMPONENTS },
+          { name: 'zeroForOne', type: 'bool' },
+          { name: 'exactAmount', type: 'uint128' },
+          { name: 'hookData', type: 'bytes' },
         ],
       },
     ],
     outputs: [
       { name: 'amountOut', type: 'uint256' },
-      { name: 'sqrtPriceX96After', type: 'uint160' },
-      { name: 'initializedTicksCrossed', type: 'uint32' },
       { name: 'gasEstimate', type: 'uint256' },
     ],
   },
@@ -45,18 +53,15 @@ const QUOTER_ABI = [
         name: 'params',
         type: 'tuple',
         components: [
-          { name: 'tokenIn', type: 'address' },
-          { name: 'tokenOut', type: 'address' },
-          { name: 'amount', type: 'uint256' },
-          { name: 'fee', type: 'uint24' },
-          { name: 'sqrtPriceLimitX96', type: 'uint160' },
+          { name: 'poolKey', type: 'tuple', components: POOL_KEY_COMPONENTS },
+          { name: 'zeroForOne', type: 'bool' },
+          { name: 'exactAmount', type: 'uint128' },
+          { name: 'hookData', type: 'bytes' },
         ],
       },
     ],
     outputs: [
       { name: 'amountIn', type: 'uint256' },
-      { name: 'sqrtPriceX96After', type: 'uint160' },
-      { name: 'initializedTicksCrossed', type: 'uint32' },
       { name: 'gasEstimate', type: 'uint256' },
     ],
   },
@@ -113,6 +118,22 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
 
   const isExactInput = amountInWei !== undefined
   const fee = 500 // 0.05% fee tier
+  const tickSpacing = 10
+
+  // V4 requires sorted tokens: currency0 < currency1
+  const [currency0, currency1] =
+    tokenIn.toLowerCase() < tokenOut.toLowerCase()
+      ? [tokenIn, tokenOut]
+      : [tokenOut, tokenIn]
+  const zeroForOne = tokenIn.toLowerCase() === currency0.toLowerCase()
+
+  const poolKey = {
+    currency0,
+    currency1,
+    fee,
+    tickSpacing,
+    hooks: '0x0000000000000000000000000000000000000000' as Address,
+  }
 
   let amountIn: bigint
   let amountOut: bigint
@@ -125,18 +146,17 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
       functionName: 'quoteExactInputSingle',
       args: [
         {
-          tokenIn,
-          tokenOut,
-          amountIn: amountInWei,
-          fee,
-          sqrtPriceLimitX96: 0n,
+          poolKey,
+          zeroForOne,
+          exactAmount: amountInWei,
+          hookData: '0x' as `0x${string}`,
         },
       ],
     })
 
     amountIn = amountInWei
     amountOut = result.result[0]
-    gasEstimate = result.result[3]
+    gasEstimate = result.result[1]
   } else {
     const result = await publicClient.simulateContract({
       address: quoterAddress,
@@ -144,18 +164,17 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
       functionName: 'quoteExactOutputSingle',
       args: [
         {
-          tokenIn,
-          tokenOut,
-          amount: amountOutWei!,
-          fee,
-          sqrtPriceLimitX96: 0n,
+          poolKey,
+          zeroForOne,
+          exactAmount: amountOutWei!,
+          hookData: '0x' as `0x${string}`,
         },
       ],
     })
 
     amountIn = result.result[0]
     amountOut = amountOutWei!
-    gasEstimate = result.result[3]
+    gasEstimate = result.result[1]
   }
 
   const price = calculatePrice(amountIn, amountOut, assetIn, assetOut)
