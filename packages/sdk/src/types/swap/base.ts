@@ -35,6 +35,10 @@ export interface SwapMarketFilter {
   assets: [Asset, Asset, ...Asset[]]
   /** Restrict to a specific chain. Omit = all configured chains. */
   chainId?: SupportedChainId
+  /** Fee tier in pips (e.g. 100 = 0.01%) */
+  fee?: number
+  /** Tick spacing for the pool */
+  tickSpacing?: number
 }
 
 /**

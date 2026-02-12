@@ -153,11 +153,6 @@ export abstract class SwapProvider<
   }
 
   /**
-   * Get supported chain IDs for this provider
-   */
-  abstract supportedChainIds(): SupportedChainId[]
-
-  /**
    * Check if a chain is supported
    */
   isChainSupported(chainId: SupportedChainId): boolean {
@@ -165,25 +160,7 @@ export abstract class SwapProvider<
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // Protected abstract methods (implement in provider)
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  protected abstract _execute(
-    params: SwapExecuteInternalParams,
-  ): Promise<SwapTransaction>
-
-  protected abstract _getPrice(params: SwapPriceParams): Promise<SwapPrice>
-
-  protected abstract _getMarket(
-    params: GetSwapMarketParams,
-  ): Promise<SwapMarket>
-
-  protected abstract _getMarkets(
-    params: GetSwapMarketsParams,
-  ): Promise<SwapMarket[]>
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Protected validation helpers
+  // Protected helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
   protected validateChainSupported(chainId: SupportedChainId): void {
@@ -204,7 +181,7 @@ export abstract class SwapProvider<
 
     // Check blocklist first
     if (marketBlocklist?.length) {
-      const isBlocked = this.isPairInList(
+      const isBlocked = this.findMatchingFilter(
         assetIn,
         assetOut,
         chainId,
@@ -219,7 +196,7 @@ export abstract class SwapProvider<
 
     // Check allowlist if configured
     if (marketAllowlist?.length) {
-      const isAllowed = this.isPairInList(
+      const isAllowed = this.findMatchingFilter(
         assetIn,
         assetOut,
         chainId,
@@ -233,16 +210,33 @@ export abstract class SwapProvider<
     }
   }
 
-  private isPairInList(
+  /**
+   * Resolve the first matching market filter for a pair
+   */
+  protected resolveMarketFilter(
+    assetIn: Asset,
+    assetOut: Asset,
+    chainId: SupportedChainId,
+  ): SwapMarketFilter | undefined {
+    const { marketAllowlist } = this._config
+    if (!marketAllowlist?.length) return undefined
+    return this.findMatchingFilter(assetIn, assetOut, chainId, marketAllowlist)
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Private helpers
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  private findMatchingFilter(
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
     list: SwapMarketFilter[],
-  ): boolean {
+  ): SwapMarketFilter | undefined {
     const symbolIn = assetIn.metadata.symbol.toLowerCase()
     const symbolOut = assetOut.metadata.symbol.toLowerCase()
 
-    return list.some((filter) => {
+    return list.find((filter) => {
       if (filter.chainId !== undefined && filter.chainId !== chainId)
         return false
 
@@ -258,4 +252,27 @@ export abstract class SwapProvider<
     const symbols = assets.map((a) => a.metadata.symbol.toLowerCase())
     return symbols.includes(symbolIn) && symbols.includes(symbolOut)
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Abstract methods (implement in provider)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Get supported chain IDs for this provider
+   */
+  abstract supportedChainIds(): SupportedChainId[]
+
+  protected abstract _execute(
+    params: SwapExecuteInternalParams,
+  ): Promise<SwapTransaction>
+
+  protected abstract _getPrice(params: SwapPriceParams): Promise<SwapPrice>
+
+  protected abstract _getMarket(
+    params: GetSwapMarketParams,
+  ): Promise<SwapMarket>
+
+  protected abstract _getMarkets(
+    params: GetSwapMarketsParams,
+  ): Promise<SwapMarket[]>
 }
