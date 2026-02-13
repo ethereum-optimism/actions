@@ -345,7 +345,16 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
         params.marketId.address,
       ).catch((error) => {
         console.error('Failed to fetch rewards data:', error)
-        return { eth: 0, weth: 0, usdc: 0, usdc_demo: 0, op_demo: 0, morpho: 0, other: 0, totalRewards: 0 }
+        return {
+          eth: 0,
+          weth: 0,
+          usdc: 0,
+          usdc_demo: 0,
+          op_demo: 0,
+          morpho: 0,
+          other: 0,
+          totalRewards: 0,
+        }
       })
 
       const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
