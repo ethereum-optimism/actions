@@ -65,13 +65,18 @@ function LentBalance({
     }
   }
 
+  const isCardHighlighted =
+    hoveredAction === 'getMarket' || hoveredAction === 'getPosition'
+
   return (
     <>
       <div
-        className="w-full"
+        className="w-full transition-all"
         style={{
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E0E2EB',
+          backgroundColor: isCardHighlighted
+            ? colors.highlight.background
+            : '#FFFFFF',
+          border: `1px solid ${isCardHighlighted ? colors.highlight.border : '#E0E2EB'}`,
           borderRadius: '24px',
           boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',

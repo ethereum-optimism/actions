@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import type { TokenBalanceRow } from '@/hooks/useTotalBalance'
+import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
+import { colors } from '@/constants/colors'
+
+const WALLET_ACTIONS = new Set(['getBalance', 'create', 'createHosted', 'send'])
 
 interface TotalBalanceDropdownProps {
   totalUsd: number
@@ -65,6 +69,9 @@ export function TotalBalanceDropdown({
   isLoading,
   fullWidth,
 }: TotalBalanceDropdownProps) {
+  const { hoveredAction } = useActivityHighlight()
+  const isHighlighted = !!hoveredAction && WALLET_ACTIONS.has(hoveredAction)
+
   const [isOpen, setIsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -85,14 +92,19 @@ export function TotalBalanceDropdown({
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
+        className="transition-all"
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
           padding: '4px 12px',
-          border: '1px solid #E5E5E5',
+          border: `1px solid ${isHighlighted ? colors.highlight.border : '#E5E5E5'}`,
           borderRadius: '8px',
-          backgroundColor: isOpen ? '#F5F5F5' : 'transparent',
+          backgroundColor: isHighlighted
+            ? colors.highlight.background
+            : isOpen
+              ? '#F5F5F5'
+              : 'transparent',
           cursor: 'pointer',
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           transition: 'background-color 0.15s',
