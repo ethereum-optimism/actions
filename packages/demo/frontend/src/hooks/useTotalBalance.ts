@@ -72,17 +72,19 @@ export function useTotalBalance({ assets, getPrice }: UseTotalBalanceParams) {
 
   // Derive balances from assets + cached prices (reactive to balance changes)
   const tokenBalances = useMemo<TokenBalanceRow[]>(() => {
-    return assets.map((asset) => {
-      const balance = parseFloat(asset.balance) || 0
-      const symbol = displaySymbol(asset.asset.metadata.symbol)
+    return assets
+      .map((asset) => {
+        const balance = parseFloat(asset.balance) || 0
+        const symbol = displaySymbol(asset.asset.metadata.symbol)
 
-      if (isStablecoin(asset.asset.metadata.symbol)) {
-        return { symbol, logo: asset.logo, balance, usdValue: balance }
-      }
+        if (isStablecoin(asset.asset.metadata.symbol)) {
+          return { symbol, logo: asset.logo, balance, usdValue: balance }
+        }
 
-      const price = prices.get(asset.asset.metadata.symbol) ?? 0
-      return { symbol, logo: asset.logo, balance, usdValue: balance * price }
-    })
+        const price = prices.get(asset.asset.metadata.symbol) ?? 0
+        return { symbol, logo: asset.logo, balance, usdValue: balance * price }
+      })
+      .filter((token) => token.balance > 0)
   }, [assets, prices])
 
   const totalUsd = useMemo(

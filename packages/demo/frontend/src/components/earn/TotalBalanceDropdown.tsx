@@ -11,6 +11,53 @@ function formatUsd(value: number): string {
   return `$${value.toFixed(2)}`
 }
 
+/**
+ * Format a balance with up to 4 decimal places.
+ * First 2 decimals are normal, remaining are smaller and gray.
+ * If all decimals are zero, show as integer.
+ */
+function FormattedBalance({
+  value,
+  symbol,
+}: {
+  value: number
+  symbol: string
+}) {
+  // Round to 4 decimals
+  const rounded = Math.round(value * 10000) / 10000
+  const str = rounded.toFixed(4)
+  const [intPart, decPart] = str.split('.')
+
+  // If all decimals are zero, show integer
+  if (decPart === '0000') {
+    return (
+      <>
+        {intPart} {symbol}
+      </>
+    )
+  }
+
+  const first2 = decPart.slice(0, 2)
+  const rest = decPart.slice(2)
+
+  // If trailing decimals are zero, only show first 2
+  if (rest === '00') {
+    return (
+      <>
+        {intPart}.{first2} {symbol}
+      </>
+    )
+  }
+
+  return (
+    <>
+      {intPart}.{first2}
+      <span style={{ color: '#9195A6', fontSize: '12px' }}>{rest}</span>{' '}
+      {symbol}
+    </>
+  )
+}
+
 export function TotalBalanceDropdown({
   totalUsd,
   tokenBalances,
@@ -33,13 +80,17 @@ export function TotalBalanceDropdown({
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-lg transition-all hover:bg-gray-50"
         style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
           padding: '4px 12px',
           border: '1px solid #E5E5E5',
+          borderRadius: '8px',
           backgroundColor: isOpen ? '#F5F5F5' : 'transparent',
           cursor: 'pointer',
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+          transition: 'background-color 0.15s',
         }}
       >
         <div style={{ textAlign: 'left' }}>
@@ -59,14 +110,15 @@ export function TotalBalanceDropdown({
           </div>
         </div>
         <svg
-          className="w-4 h-4 transition-transform"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#666666"
           style={{
             transform: isOpen ? 'rotate(180deg)' : 'rotate(0)',
-            color: '#666666',
+            transition: 'transform 0.15s',
           }}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
         >
           <path
             strokeLinecap="round"
@@ -96,13 +148,17 @@ export function TotalBalanceDropdown({
           {tokenBalances.map((token) => (
             <div
               key={token.symbol}
-              className="flex items-center justify-between"
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 padding: '10px 12px',
                 borderRadius: '8px',
               }}
             >
-              <div className="flex items-center gap-3">
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+              >
                 <img
                   src={token.logo}
                   alt={token.symbol}
@@ -119,7 +175,10 @@ export function TotalBalanceDropdown({
                     color: '#1a1b1e',
                   }}
                 >
-                  {token.balance} {token.symbol}
+                  <FormattedBalance
+                    value={token.balance}
+                    symbol={token.symbol}
+                  />
                 </span>
               </div>
               <span
