@@ -160,11 +160,12 @@ describe('Vault Utilities', () => {
       const result = calculateRewardsBreakdown(apiVault)
 
       expect(result).toEqual({
-        usdc: 0,
-        usdc_demo: 0,
-        morpho: 0,
         eth: 0,
         weth: 0,
+        usdc: 0,
+        usdc_demo: 0,
+        op_demo: 0,
+        morpho: 0,
         other: 0,
         totalRewards: 0,
       })

@@ -3,7 +3,11 @@ import type { Address } from 'viem'
 const MORPHO_API_ENDPOINT = 'https://api.morpho.org/graphql'
 
 export interface RewardsBreakdown {
+  eth: number
+  weth: number
   usdc: number
+  usdc_demo: number
+  op_demo: number
   morpho: number
   other: number
   totalRewards: number
