@@ -48,13 +48,21 @@ function marketSegment(name: string): SummarySegment {
   return { type: 'text', value: name }
 }
 
+function truncateAmount(value: string, maxDecimals = 4): string {
+  const num = parseFloat(value)
+  if (isNaN(num)) return value
+  const [whole, decimal] = value.split('.')
+  if (!decimal || decimal.length <= maxDecimals) return value
+  return `${whole}.${decimal.slice(0, maxDecimals)}...`
+}
+
 function buildSwapSummary(entry: ActivityEntry): SummarySegment[] {
   const m = entry.metadata
   if (m?.amount && m.assetSymbol && m.amountOut && m.assetOutSymbol) {
     return [
-      { type: 'text', value: `Swapped ${m.amount} ` },
+      { type: 'text', value: `Swapped ${truncateAmount(m.amount)} ` },
       tokenSegment(m.assetSymbol, m.assetLogo),
-      { type: 'text', value: ` for ${m.amountOut} ` },
+      { type: 'text', value: ` for ${truncateAmount(m.amountOut)} ` },
       tokenSegment(m.assetOutSymbol, m.assetOutLogo),
       { type: 'text', value: ' on ' },
       marketSegment('Uniswap'),

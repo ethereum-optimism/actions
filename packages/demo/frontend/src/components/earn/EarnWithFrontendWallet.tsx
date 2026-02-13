@@ -6,6 +6,7 @@ import type {
   ReactProviderTypes,
 } from '@eth-optimism/actions-sdk/react'
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi'
+import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 import Earn from './Earn'
 import {
   FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS,
@@ -108,12 +109,12 @@ export function EarnWithFrontendWallet({
           assetOut,
           chainId,
         })
-        // Extract block explorer URL from receipt
         const txReceipt = receipt.receipt
-        if ('blockExplorerUrl' in txReceipt) {
-          return { blockExplorerUrl: txReceipt.blockExplorerUrl as string }
-        }
-        return {}
+        const blockExplorerUrl = getBlockExplorerUrl(
+          chainId,
+          txReceipt as Parameters<typeof getBlockExplorerUrl>[1],
+        )
+        return { blockExplorerUrl }
       },
     }),
     [wallet, actions],
