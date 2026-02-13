@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import TransactionModal from './TransactionModal'
 import { Toast } from './Toast'
@@ -52,21 +52,12 @@ export function Action({
   const [mode, setMode] = useState<'lend' | 'withdraw'>('lend')
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
-  const [modalStatus, setModalStatus] = useState<
-    'loading' | 'success' | 'error'
-  >('loading')
-  const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(
-    undefined,
-  )
+  const [modalStatus, setModalStatus] = useState<'loading' | 'error'>('loading')
   const [toast, setToast] = useState<{
     visible: boolean
     title: string
     description: string
   }>({ visible: false, title: '', description: '' })
-  const lastTxRef = useRef<{
-    mode: 'lend' | 'withdraw'
-    description: string
-  } | null>(null)
 
   // Check if this is the illiquid Aave OP Sepolia ETH market
   const isIlliquidAaveMarket =
@@ -142,17 +133,16 @@ export function Action({
     setIsLoading(true)
     setModalOpen(true)
     setModalStatus('loading')
-    setBlockExplorerUrl(undefined)
 
     try {
-      const result = await onTransaction(mode, amountValue)
+      await onTransaction(mode, amountValue)
 
-      setBlockExplorerUrl(result.blockExplorerUrl)
-      setModalStatus('success')
-      lastTxRef.current = {
-        mode,
+      setModalOpen(false)
+      setToast({
+        visible: true,
+        title: mode === 'lend' ? 'Lent' : 'Withdrawn',
         description: `${amountValue} ${displaySymbol}`,
-      }
+      })
       setAmount('')
 
       trackEvent('transaction_success', {
@@ -175,18 +165,8 @@ export function Action({
   }
 
   const handleModalClose = () => {
-    if (modalStatus === 'success' && lastTxRef.current) {
-      const { mode: txMode, description } = lastTxRef.current
-      setToast({
-        visible: true,
-        title: txMode === 'lend' ? 'Lent' : 'Withdrawn',
-        description,
-      })
-      lastTxRef.current = null
-    }
     setModalOpen(false)
     setModalStatus('loading')
-    setBlockExplorerUrl(undefined)
   }
 
   // CTA button text
@@ -442,7 +422,6 @@ export function Action({
         isOpen={modalOpen}
         status={modalStatus}
         onClose={handleModalClose}
-        blockExplorerUrl={blockExplorerUrl}
         mode={mode}
         assetSymbol={assetSymbol}
       />

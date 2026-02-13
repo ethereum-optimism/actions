@@ -19,8 +19,13 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
       style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
@@ -32,8 +37,12 @@ export function Modal({
       }}
     >
       <div
-        className="relative bg-white rounded-2xl shadow-xl"
         style={{
+          position: 'relative',
+          backgroundColor: '#FFFFFF',
+          borderRadius: '16px',
+          boxShadow:
+            '0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
           width: '90%',
           maxWidth,
           padding: '24px',
@@ -60,10 +69,26 @@ export function ModalContent({
   children,
 }: ModalContentProps) {
   return (
-    <div className="flex flex-col items-center text-center gap-3">
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        gap: '12px',
+      }}
+    >
       {icon && <div>{icon}</div>}
 
-      <div className="flex flex-col items-center gap-1 px-9">
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '0 36px',
+        }}
+      >
         <h2
           style={{
             color: '#1a1b1e',

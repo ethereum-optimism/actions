@@ -489,7 +489,6 @@ export function SwapAction({
   const [assetInIndex, setAssetInIndex] = useState(0)
   const [assetOutIndex, setAssetOutIndex] = useState(1)
   const initialized = useRef(false)
-  const lastSwapRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (assets.length >= 2 && !initialized.current) {
@@ -521,11 +520,8 @@ export function SwapAction({
   >(null)
   const [reviewOpen, setReviewOpen] = useState(false)
   const [txModalOpen, setTxModalOpen] = useState(false)
-  const [txModalStatus, setTxModalStatus] = useState<
-    'loading' | 'success' | 'error'
-  >('loading')
-  const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(
-    undefined,
+  const [txModalStatus, setTxModalStatus] = useState<'loading' | 'error'>(
+    'loading',
   )
 
   // Toast state
@@ -665,7 +661,6 @@ export function SwapAction({
     setReviewOpen(false)
     setTxModalOpen(true)
     setTxModalStatus('loading')
-    setBlockExplorerUrl(undefined)
 
     try {
       const result = await onSwap({
@@ -675,12 +670,14 @@ export function SwapAction({
         chainId: assetIn.chainId,
       })
 
-      setBlockExplorerUrl(result.blockExplorerUrl)
-      setTxModalStatus('success')
-
       activity?.confirm({ blockExplorerUrl: result.blockExplorerUrl })
 
-      lastSwapRef.current = `${amountIn} ${inSymbol} for ${outAmount} ${outSymbol}`
+      setTxModalOpen(false)
+      setToast({
+        visible: true,
+        title: 'Swapped',
+        description: `${amountIn} ${inSymbol} for ${outAmount} ${outSymbol}`,
+      })
 
       setAmountIn('')
       setAmountOut('')
@@ -704,18 +701,8 @@ export function SwapAction({
   }
 
   const handleTxModalClose = () => {
-    // Show toast when closing a successful swap modal
-    if (txModalStatus === 'success' && lastSwapRef.current) {
-      setToast({
-        visible: true,
-        title: 'Swapped',
-        description: lastSwapRef.current,
-      })
-      lastSwapRef.current = null
-    }
     setTxModalOpen(false)
     setTxModalStatus('loading')
-    setBlockExplorerUrl(undefined)
   }
 
   const amountValue = parseFloat(amountIn) || 0
@@ -1009,9 +996,7 @@ export function SwapAction({
         isOpen={txModalOpen}
         status={txModalStatus}
         onClose={handleTxModalClose}
-        blockExplorerUrl={blockExplorerUrl}
         mode="swap"
-        assetSymbol={`${displaySymbol(assetIn?.asset.metadata.symbol || '')} → ${displaySymbol(assetOut?.asset.metadata.symbol || '')}`}
       />
 
       {createPortal(
