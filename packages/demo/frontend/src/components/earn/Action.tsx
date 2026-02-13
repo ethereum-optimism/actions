@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import TransactionModal from './TransactionModal'
+import { Toast } from './Toast'
 import Shimmer from './Shimmer'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
@@ -56,6 +58,15 @@ export function Action({
   const [blockExplorerUrl, setBlockExplorerUrl] = useState<string | undefined>(
     undefined,
   )
+  const [toast, setToast] = useState<{
+    visible: boolean
+    title: string
+    description: string
+  }>({ visible: false, title: '', description: '' })
+  const lastTxRef = useRef<{
+    mode: 'lend' | 'withdraw'
+    description: string
+  } | null>(null)
 
   // Check if this is the illiquid Aave OP Sepolia ETH market
   const isIlliquidAaveMarket =
@@ -138,6 +149,10 @@ export function Action({
 
       setBlockExplorerUrl(result.blockExplorerUrl)
       setModalStatus('success')
+      lastTxRef.current = {
+        mode,
+        description: `${amountValue} ${displaySymbol}`,
+      }
       setAmount('')
 
       trackEvent('transaction_success', {
@@ -160,6 +175,15 @@ export function Action({
   }
 
   const handleModalClose = () => {
+    if (modalStatus === 'success' && lastTxRef.current) {
+      const { mode: txMode, description } = lastTxRef.current
+      setToast({
+        visible: true,
+        title: txMode === 'lend' ? 'Lent' : 'Withdrawn',
+        description,
+      })
+      lastTxRef.current = null
+    }
     setModalOpen(false)
     setModalStatus('loading')
     setBlockExplorerUrl(undefined)
@@ -422,6 +446,16 @@ export function Action({
         mode={mode}
         assetSymbol={assetSymbol}
       />
+
+      {createPortal(
+        <Toast
+          isVisible={toast.visible}
+          onClose={() => setToast((t) => ({ ...t, visible: false }))}
+          title={toast.title}
+          description={toast.description}
+        />,
+        document.body,
+      )}
     </div>
   )
 }
