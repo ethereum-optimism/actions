@@ -23,6 +23,7 @@ const SYMBOL_LOGO: Record<string, string> = {
 const MARKET_LOGO: Record<string, string> = {
   Morpho: '/morpho-logo.svg',
   Aave: '/aave-logo.svg',
+  Uniswap: '/uniswap-logo.svg',
 }
 
 function tokenSegment(symbol: string, logo?: string): SummarySegment {
@@ -53,8 +54,10 @@ function buildSwapSummary(entry: ActivityEntry): SummarySegment[] {
     return [
       { type: 'text', value: `Swapped ${m.amount} ` },
       tokenSegment(m.assetSymbol, m.assetLogo),
-      { type: 'text', value: ` → ${m.amountOut} ` },
+      { type: 'text', value: ` for ${m.amountOut} ` },
       tokenSegment(m.assetOutSymbol, m.assetOutLogo),
+      { type: 'text', value: ' on ' },
+      marketSegment('Uniswap'),
     ]
   }
   return [{ type: 'text', value: 'Swapped tokens' }]
