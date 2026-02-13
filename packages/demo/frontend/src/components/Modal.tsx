@@ -20,7 +20,11 @@ export function Modal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget && allowBackdropClose) {
           onClose()

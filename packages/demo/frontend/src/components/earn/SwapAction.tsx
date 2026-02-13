@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import type { Asset, SupportedChainId } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 
+import { Modal } from '../Modal'
 import TransactionModal from './TransactionModal'
 import Shimmer from './Shimmer'
 import { Toast } from './Toast'
@@ -104,38 +105,9 @@ function TokenSelectModal({
   assets: SwapAsset[]
   onSelect: (index: number) => void
 }) {
-  if (!isOpen) return null
-
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '16px',
-          width: '100%',
-          maxWidth: '420px',
-          maxHeight: '80vh',
-          overflow: 'auto',
-          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="420px">
+      <div style={{ margin: '-24px' }}>
         <div
           className="flex items-center justify-between"
           style={{ padding: '20px 24px 16px' }}
@@ -238,7 +210,7 @@ function TokenSelectModal({
           })}
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -314,8 +286,6 @@ function ReviewSwapModal({
   priceQuote: { price: string; priceImpact: number } | null
   isExecuting: boolean
 }) {
-  if (!isOpen) return null
-
   const symbolIn = displaySymbol(assetIn.asset.metadata.symbol)
   const symbolOut = displaySymbol(assetOut.asset.metadata.symbol)
 
@@ -337,207 +307,172 @@ function ReviewSwapModal({
   const usdIn = formatUsd(amountIn, usdPerIn)
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-      }}
-      onClick={onClose}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="420px">
+      {/* Header */}
       <div
         style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          width: '100%',
-          maxWidth: '420px',
-          padding: '24px',
-          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '24px',
         }}
-        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        <div style={{ width: '24px' }} />
+        <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1a1b1e' }}>
+          Review swap
+        </h2>
+        <button
+          onClick={onClose}
+          style={{
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            padding: '4px',
+            color: '#666666',
+            fontSize: '20px',
+            lineHeight: 1,
+          }}
+        >
+          &times;
+        </button>
+      </div>
+
+      {/* You pay */}
+      <div style={{ marginBottom: '4px' }}>
+        <span style={{ fontSize: '14px', color: '#9195A6' }}>You pay</span>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '24px',
           }}
         >
-          <div style={{ width: '24px' }} />
-          <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1a1b1e' }}>
-            Review swap
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              color: '#666666',
-              fontSize: '20px',
-              lineHeight: 1,
-            }}
-          >
-            &times;
-          </button>
-        </div>
-
-        {/* You pay */}
-        <div style={{ marginBottom: '4px' }}>
-          <span style={{ fontSize: '14px', color: '#9195A6' }}>You pay</span>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <span
-              style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}
-            >
-              {amountIn}
-            </span>
-            <img
-              src={assetIn.logo}
-              alt={symbolIn}
-              style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-            />
-          </div>
-          {usdIn && (
-            <span style={{ fontSize: '14px', color: '#9195A6' }}>{usdIn}</span>
-          )}
-        </div>
-
-        {/* Arrow */}
-        <div style={{ padding: '8px 0' }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M8 3V13M8 13L4 9M8 13L12 9"
-              stroke="#9195A6"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-
-        {/* You receive */}
-        <div style={{ marginBottom: '24px' }}>
-          <span style={{ fontSize: '14px', color: '#9195A6' }}>
-            You receive
+          <span style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}>
+            {amountIn}
           </span>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <span
-              style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}
-            >
-              {formatSwapAmount(amountOut).main}
-              {formatSwapAmount(amountOut).secondary && (
-                <span style={{ color: '#9195A6', fontSize: '20px' }}>
-                  {formatSwapAmount(amountOut).secondary}
-                </span>
-              )}
-            </span>
-            <img
-              src={assetOut.logo}
-              alt={symbolOut}
-              style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-            />
-          </div>
-          {formatUsd(amountOut, usdPerOut) && (
-            <span style={{ fontSize: '14px', color: '#9195A6' }}>
-              {formatUsd(amountOut, usdPerOut)}
-            </span>
-          )}
+          <img
+            src={assetIn.logo}
+            alt={symbolIn}
+            style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+          />
         </div>
-
-        {/* Details */}
-        {priceQuote && (
-          <div
-            style={{
-              borderTop: '1px solid #E0E2EB',
-              paddingTop: '16px',
-              marginBottom: '24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-              fontSize: '14px',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#666666' }}>Exchange rate</span>
-              <span style={{ color: '#1a1b1e' }}>
-                1 {symbolIn} = {formatSwapAmount(priceQuote.price).main}
-                {formatSwapAmount(priceQuote.price).secondary && (
-                  <span style={{ color: '#9195A6', fontSize: '12px' }}>
-                    {formatSwapAmount(priceQuote.price).secondary}
-                  </span>
-                )}{' '}
-                {symbolOut}
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#666666' }}>Price impact</span>
-              <span
-                style={{
-                  color: priceQuote.priceImpact > 0.01 ? '#F59E0B' : '#1a1b1e',
-                }}
-              >
-                {priceQuote.priceImpact > 0
-                  ? `-${(priceQuote.priceImpact * 100).toFixed(3)}%`
-                  : `${(priceQuote.priceImpact * 100).toFixed(3)}%`}
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#666666' }}>Minimum received</span>
-              <span style={{ color: '#1a1b1e' }}>
-                {
-                  formatSwapAmount((parseFloat(amountOut) * 0.995).toFixed(6))
-                    .main
-                }
-                {formatSwapAmount((parseFloat(amountOut) * 0.995).toFixed(6))
-                  .secondary && (
-                  <span style={{ color: '#9195A6', fontSize: '12px' }}>
-                    {
-                      formatSwapAmount(
-                        (parseFloat(amountOut) * 0.995).toFixed(6),
-                      ).secondary
-                    }
-                  </span>
-                )}{' '}
-                {symbolOut}
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#666666' }}>Max slippage</span>
-              <span style={{ color: '#1a1b1e' }}>0.5%</span>
-            </div>
-          </div>
+        {usdIn && (
+          <span style={{ fontSize: '14px', color: '#9195A6' }}>{usdIn}</span>
         )}
-
-        {/* Swap button */}
-        <CtaButton onClick={onConfirm} disabled={isExecuting}>
-          {isExecuting ? 'Swapping...' : 'Swap'}
-        </CtaButton>
       </div>
-    </div>
+
+      {/* Arrow */}
+      <div style={{ padding: '8px 0' }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M8 3V13M8 13L4 9M8 13L12 9"
+            stroke="#9195A6"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+
+      {/* You receive */}
+      <div style={{ marginBottom: '24px' }}>
+        <span style={{ fontSize: '14px', color: '#9195A6' }}>You receive</span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}>
+            {formatSwapAmount(amountOut).main}
+            {formatSwapAmount(amountOut).secondary && (
+              <span style={{ color: '#9195A6', fontSize: '20px' }}>
+                {formatSwapAmount(amountOut).secondary}
+              </span>
+            )}
+          </span>
+          <img
+            src={assetOut.logo}
+            alt={symbolOut}
+            style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+          />
+        </div>
+        {formatUsd(amountOut, usdPerOut) && (
+          <span style={{ fontSize: '14px', color: '#9195A6' }}>
+            {formatUsd(amountOut, usdPerOut)}
+          </span>
+        )}
+      </div>
+
+      {/* Details */}
+      {priceQuote && (
+        <div
+          style={{
+            borderTop: '1px solid #E0E2EB',
+            paddingTop: '16px',
+            marginBottom: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            fontSize: '14px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#666666' }}>Exchange rate</span>
+            <span style={{ color: '#1a1b1e' }}>
+              1 {symbolIn} = {formatSwapAmount(priceQuote.price).main}
+              {formatSwapAmount(priceQuote.price).secondary && (
+                <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                  {formatSwapAmount(priceQuote.price).secondary}
+                </span>
+              )}{' '}
+              {symbolOut}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#666666' }}>Price impact</span>
+            <span
+              style={{
+                color: priceQuote.priceImpact > 0.01 ? '#F59E0B' : '#1a1b1e',
+              }}
+            >
+              {priceQuote.priceImpact > 0
+                ? `-${(priceQuote.priceImpact * 100).toFixed(3)}%`
+                : `${(priceQuote.priceImpact * 100).toFixed(3)}%`}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#666666' }}>Minimum received</span>
+            <span style={{ color: '#1a1b1e' }}>
+              {
+                formatSwapAmount((parseFloat(amountOut) * 0.995).toFixed(6))
+                  .main
+              }
+              {formatSwapAmount((parseFloat(amountOut) * 0.995).toFixed(6))
+                .secondary && (
+                <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                  {
+                    formatSwapAmount((parseFloat(amountOut) * 0.995).toFixed(6))
+                      .secondary
+                  }
+                </span>
+              )}{' '}
+              {symbolOut}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#666666' }}>Max slippage</span>
+            <span style={{ color: '#1a1b1e' }}>0.5%</span>
+          </div>
+        </div>
+      )}
+
+      {/* Swap button */}
+      <CtaButton onClick={onConfirm} disabled={isExecuting}>
+        {isExecuting ? 'Swapping...' : 'Swap'}
+      </CtaButton>
+    </Modal>
   )
 }
 
@@ -554,6 +489,7 @@ export function SwapAction({
   const [assetInIndex, setAssetInIndex] = useState(0)
   const [assetOutIndex, setAssetOutIndex] = useState(1)
   const initialized = useRef(false)
+  const lastSwapRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (assets.length >= 2 && !initialized.current) {
@@ -741,15 +677,10 @@ export function SwapAction({
 
       setBlockExplorerUrl(result.blockExplorerUrl)
       setTxModalStatus('success')
-      setTxModalOpen(false)
 
       activity?.confirm({ blockExplorerUrl: result.blockExplorerUrl })
 
-      setToast({
-        visible: true,
-        title: 'Swapped',
-        description: `${amountIn} ${inSymbol} for ${outAmount} ${outSymbol}`,
-      })
+      lastSwapRef.current = `${amountIn} ${inSymbol} for ${outAmount} ${outSymbol}`
 
       setAmountIn('')
       setAmountOut('')
@@ -773,6 +704,15 @@ export function SwapAction({
   }
 
   const handleTxModalClose = () => {
+    // Show toast when closing a successful swap modal
+    if (txModalStatus === 'success' && lastSwapRef.current) {
+      setToast({
+        visible: true,
+        title: 'Swapped',
+        description: lastSwapRef.current,
+      })
+      lastSwapRef.current = null
+    }
     setTxModalOpen(false)
     setTxModalStatus('loading')
     setBlockExplorerUrl(undefined)
@@ -1044,46 +984,43 @@ export function SwapAction({
         </div>
       </div>
 
-      {/* Portaled modals to avoid mobile overflow clipping */}
+      <TokenSelectModal
+        isOpen={tokenSelectTarget !== null}
+        onClose={() => setTokenSelectTarget(null)}
+        assets={assets}
+        onSelect={handleTokenSelect}
+      />
+
+      {assetIn && assetOut && priceQuote && (
+        <ReviewSwapModal
+          isOpen={reviewOpen}
+          onClose={() => setReviewOpen(false)}
+          onConfirm={handleConfirmSwap}
+          assetIn={assetIn}
+          assetOut={assetOut}
+          amountIn={amountIn}
+          amountOut={amountOut}
+          priceQuote={priceQuote}
+          isExecuting={isExecuting}
+        />
+      )}
+
+      <TransactionModal
+        isOpen={txModalOpen}
+        status={txModalStatus}
+        onClose={handleTxModalClose}
+        blockExplorerUrl={blockExplorerUrl}
+        mode="swap"
+        assetSymbol={`${displaySymbol(assetIn?.asset.metadata.symbol || '')} → ${displaySymbol(assetOut?.asset.metadata.symbol || '')}`}
+      />
+
       {createPortal(
-        <>
-          <TokenSelectModal
-            isOpen={tokenSelectTarget !== null}
-            onClose={() => setTokenSelectTarget(null)}
-            assets={assets}
-            onSelect={handleTokenSelect}
-          />
-
-          {assetIn && assetOut && priceQuote && (
-            <ReviewSwapModal
-              isOpen={reviewOpen}
-              onClose={() => setReviewOpen(false)}
-              onConfirm={handleConfirmSwap}
-              assetIn={assetIn}
-              assetOut={assetOut}
-              amountIn={amountIn}
-              amountOut={amountOut}
-              priceQuote={priceQuote}
-              isExecuting={isExecuting}
-            />
-          )}
-
-          <TransactionModal
-            isOpen={txModalOpen}
-            status={txModalStatus}
-            onClose={handleTxModalClose}
-            blockExplorerUrl={blockExplorerUrl}
-            mode="swap"
-            assetSymbol={`${displaySymbol(assetIn?.asset.metadata.symbol || '')} → ${displaySymbol(assetOut?.asset.metadata.symbol || '')}`}
-          />
-
-          <Toast
-            isVisible={toast.visible}
-            onClose={() => setToast((t) => ({ ...t, visible: false }))}
-            title={toast.title}
-            description={toast.description}
-          />
-        </>,
+        <Toast
+          isVisible={toast.visible}
+          onClose={() => setToast((t) => ({ ...t, visible: false }))}
+          title={toast.title}
+          description={toast.description}
+        />,
         document.body,
       )}
     </>
