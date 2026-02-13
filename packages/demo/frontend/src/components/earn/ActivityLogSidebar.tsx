@@ -71,35 +71,36 @@ function ActivityLogSidebar({
       >
         {/* Tab Header */}
         <div className="flex-shrink-0" style={{ position: 'relative' }}>
-          {/* Collapse button - fixed position so it's not clipped by parent overflow:hidden */}
-          {!isCollapsed && (
-            <button
-              onClick={() => handleCollapse(true)}
-              className="fixed hover:bg-gray-100 rounded-l-lg z-40"
-              style={{
-                right: '436px',
-                top: '56px',
-                height: '55px',
-                width: '44px',
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E0E2EB',
-                borderRight: 'none',
-                color: '#636779',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-              aria-label="Collapse sidebar"
-            >
-              <ArrowLine
-                width={20}
-                height={20}
-                color="#636779"
-                direction="right"
-              />
-            </button>
-          )}
+          {/* Collapse button - slides with sidebar */}
+          <button
+            onClick={() => handleCollapse(true)}
+            className="fixed hover:bg-gray-100 rounded-l-lg z-40"
+            style={{
+              right: isCollapsed ? '0px' : '436px',
+              top: '56px',
+              height: '55px',
+              width: '44px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E2EB',
+              borderRight: 'none',
+              color: '#636779',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'right 300ms ease-in-out',
+              opacity: isCollapsed ? 0 : 1,
+              pointerEvents: isCollapsed ? 'none' : 'auto',
+            }}
+            aria-label="Collapse sidebar"
+          >
+            <ArrowLine
+              width={20}
+              height={20}
+              color="#636779"
+              direction="right"
+            />
+          </button>
           <div className="flex">
             <button
               onClick={() => setActiveTab('log')}
