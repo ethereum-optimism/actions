@@ -5,7 +5,10 @@ import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
 import { WalletProviderDropdown } from './WalletProviderDropdown'
-import type { WalletProviderConfig } from '@/constants/walletProviders'
+import {
+  WALLET_PROVIDER_CONFIGS,
+  type WalletProviderConfig,
+} from '@/constants/walletProviders'
 import { ActivityHighlightProvider } from '@/contexts/ActivityHighlightContext'
 import { ActivityLogProvider } from '@/providers/ActivityLogProvider'
 import {
@@ -116,6 +119,9 @@ function EarnContent({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<ActionType>('lend')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileExpandedSection, setMobileExpandedSection] = useState<
+    'balance' | 'wallet' | null
+  >(null)
 
   const {
     markets,
@@ -289,6 +295,8 @@ function EarnContent({
         style={{
           backgroundColor: '#FFFFFF',
           borderBottom: '1px solid #E0E2EB',
+          position: 'relative',
+          zIndex: 40,
         }}
       >
         <div className="w-full px-4 md:px-8">
@@ -328,7 +336,10 @@ function EarnContent({
                 backgroundColor: 'transparent',
                 cursor: 'pointer',
               }}
-              onClick={() => setMobileMenuOpen((o) => !o)}
+              onClick={() => {
+                setMobileMenuOpen((o) => !o)
+                setMobileExpandedSection(null)
+              }}
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -365,53 +376,242 @@ function EarnContent({
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu - overlay style to avoid whitespace */}
         {mobileMenuOpen && (
           <div
             className="md:hidden"
             style={{
-              borderTop: '1px solid #E0E2EB',
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: '57px',
+              zIndex: 40,
+              backgroundColor: '#FFFFFF',
+              borderBottom: '1px solid #E0E2EB',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
             }}
           >
-            <ActionTabs
-              activeTab={activeTab}
-              onTabChange={(tab) => {
-                setActiveTab(tab)
-                setMobileMenuOpen(false)
-              }}
-            />
+            {/* Stacked nav items */}
             <div
               style={{
-                paddingTop: '8px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
               }}
             >
-              <TotalBalanceDropdown
-                totalUsd={totalUsd}
-                tokenBalances={tokenBalances}
-                isLoading={isLoadingTotalBalance}
-              />
-              <WalletProviderDropdown
-                selectedProvider={providerConfig}
-                walletAddress={walletAddress}
-                onProviderSelect={async (config) => {
-                  await logout()
-                  window.location.href = `/earn?walletProvider=${config.queryParam}`
-                }}
-                onLogout={logout}
-              />
+              {[
+                { id: 'lend' as const, label: 'Lend' },
+                { id: 'swap' as const, label: 'Swap' },
+                { id: 'balance' as const, label: 'Balance' },
+                { id: 'wallet' as const, label: 'Wallet' },
+              ].map((item) => {
+                const isActive =
+                  item.id === 'lend' || item.id === 'swap'
+                    ? activeTab === item.id
+                    : mobileExpandedSection === item.id
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (item.id === 'lend' || item.id === 'swap') {
+                        setActiveTab(item.id)
+                        setMobileExpandedSection(null)
+                        setMobileMenuOpen(false)
+                      } else {
+                        setMobileExpandedSection(
+                          mobileExpandedSection === item.id ? null : item.id,
+                        )
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px 24px',
+                      border: 'none',
+                      borderBottom: '1px solid #F3F4F6',
+                      backgroundColor: isActive ? '#F9FAFB' : 'transparent',
+                      fontSize: '18px',
+                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? '#1a1b1e' : '#9195A6',
+                      cursor: 'pointer',
+                      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                )
+              })}
             </div>
+
+            {/* Expanded Balance section */}
+            {mobileExpandedSection === 'balance' && (
+              <div
+                style={{
+                  padding: '16px',
+                  backgroundColor: '#F9FAFB',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '13px',
+                    color: '#9195A6',
+                    marginBottom: '8px',
+                    fontFamily: 'Inter',
+                  }}
+                >
+                  Total:{' '}
+                  {isLoadingTotalBalance ? '...' : `$${totalUsd.toFixed(2)}`}
+                </div>
+                {tokenBalances.map((token) => (
+                  <div
+                    key={token.symbol}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 0',
+                      borderBottom: '1px solid #F3F4F6',
+                      fontFamily: 'Inter',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                      }}
+                    >
+                      <img
+                        src={token.logo}
+                        alt={token.symbol}
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: 500,
+                          color: '#1a1b1e',
+                        }}
+                      >
+                        {token.balance.toFixed(4)} {token.symbol}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '16px', color: '#666666' }}>
+                      ${token.usdValue.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Expanded Wallet section */}
+            {mobileExpandedSection === 'wallet' && (
+              <div
+                style={{
+                  padding: '16px',
+                  backgroundColor: '#F9FAFB',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '13px',
+                    color: '#9195A6',
+                    marginBottom: '12px',
+                    fontFamily: 'Inter',
+                  }}
+                >
+                  Wallet Provider
+                </div>
+                {Object.values(WALLET_PROVIDER_CONFIGS).map((p) => {
+                  const isSelected = providerConfig.name === p.name
+                  return (
+                    <button
+                      key={p.name}
+                      onClick={async () => {
+                        if (!isSelected) {
+                          await logout()
+                          window.location.href = `/earn?walletProvider=${p.queryParam}`
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        width: '100%',
+                        padding: '12px 0',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: isSelected ? 'default' : 'pointer',
+                        fontFamily: 'Inter',
+                        borderBottom: '1px solid #F3F4F6',
+                      }}
+                    >
+                      <img
+                        src={p.logoSrc}
+                        alt={p.name}
+                        style={{ height: '20px' }}
+                      />
+                      <span
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: isSelected ? 600 : 400,
+                          color: '#1a1b1e',
+                        }}
+                      >
+                        {p.name}
+                      </span>
+                      {isSelected && (
+                        <span style={{ color: '#22C55E', fontSize: '14px' }}>
+                          Active
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+                {walletAddress && (
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      padding: '8px 0',
+                      fontSize: '13px',
+                      color: '#9195A6',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                  </div>
+                )}
+                <button
+                  onClick={async () => {
+                    setMobileMenuOpen(false)
+                    await logout()
+                  }}
+                  style={{
+                    width: '100%',
+                    marginTop: '8px',
+                    padding: '10px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    backgroundColor: '#F2F3F8',
+                    color: '#404454',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    fontFamily: 'Inter',
+                  }}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         )}
       </header>
 
-      <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)]">
+      <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)] overflow-x-hidden">
         {/* Left Content Area */}
         <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
           <div className="w-full max-w-2xl">
@@ -500,7 +700,7 @@ function EarnContent({
           style={{
             width: isSidebarCollapsed ? '0px' : '436px',
             transition: 'width 300ms ease-in-out',
-            overflow: 'visible',
+            overflow: 'hidden',
           }}
         >
           <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />

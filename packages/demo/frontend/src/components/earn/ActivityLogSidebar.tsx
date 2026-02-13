@@ -71,16 +71,15 @@ function ActivityLogSidebar({
       >
         {/* Tab Header */}
         <div className="flex-shrink-0" style={{ position: 'relative' }}>
-          {/* Collapse button - positioned to the left of sidebar, animates with it */}
+          {/* Collapse button - fixed position so it's not clipped by parent overflow:hidden */}
           {!isCollapsed && (
             <button
               onClick={() => handleCollapse(true)}
-              className="hover:bg-gray-100 rounded-l-lg"
+              className="fixed hover:bg-gray-100 rounded-l-lg z-50"
               style={{
-                position: 'absolute',
-                right: '100%',
-                top: '-1px',
-                bottom: 0,
+                right: '436px',
+                top: '56px',
+                height: '55px',
                 width: '44px',
                 backgroundColor: '#FFFFFF',
                 border: '1px solid #E0E2EB',
