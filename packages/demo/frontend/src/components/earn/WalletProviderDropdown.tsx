@@ -69,8 +69,9 @@ export function WalletProviderDropdown({
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:bg-gray-50"
+        className="flex items-center gap-2 rounded-lg transition-all hover:bg-gray-50"
         style={{
+          padding: '10px 12px',
           border: '1px solid #E5E5E5',
           backgroundColor: isOpen ? '#F5F5F5' : 'transparent',
         }}

@@ -115,6 +115,7 @@ function EarnContent({
 }: EarnContentProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<ActionType>('lend')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const {
     markets,
@@ -256,7 +257,9 @@ function EarnContent({
         assetOut,
         chainId,
       })
+      // Refetch immediately, then again after a short delay for RPC propagation
       refetchSwapAssets()
+      setTimeout(() => refetchSwapAssets(), 2000)
       return result
     },
     [operations, refetchSwapAssets],
@@ -288,16 +291,107 @@ function EarnContent({
           borderBottom: '1px solid #E0E2EB',
         }}
       >
-        <div className="w-full px-8">
+        <div className="w-full px-4 md:px-8">
           <div
             className="flex items-center justify-between"
             style={{ height: '56px' }}
           >
             <div className="flex items-center gap-8" style={{ height: '100%' }}>
               <img src="/Optimism.svg" alt="Optimism" className="h-4" />
-              <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
+              <div className="hidden md:flex" style={{ height: '100%' }}>
+                <ActionTabs activeTab={activeTab} onTabChange={setActiveTab} />
+              </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-4">
+              <TotalBalanceDropdown
+                totalUsd={totalUsd}
+                tokenBalances={tokenBalances}
+                isLoading={isLoadingTotalBalance}
+              />
+              <WalletProviderDropdown
+                selectedProvider={providerConfig}
+                walletAddress={walletAddress}
+                onProviderSelect={async (config) => {
+                  await logout()
+                  window.location.href = `/earn?walletProvider=${config.queryParam}`
+                }}
+                onLogout={logout}
+              />
+            </div>
+            {/* Mobile hamburger */}
+            <button
+              className="md:hidden flex items-center justify-center"
+              style={{
+                width: '40px',
+                height: '40px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                cursor: 'pointer',
+              }}
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? (
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#1a1b1e"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#1a1b1e"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div
+            className="md:hidden"
+            style={{
+              borderTop: '1px solid #E0E2EB',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            <ActionTabs
+              activeTab={activeTab}
+              onTabChange={(tab) => {
+                setActiveTab(tab)
+                setMobileMenuOpen(false)
+              }}
+            />
+            <div
+              style={{
+                paddingTop: '8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
               <TotalBalanceDropdown
                 totalUsd={totalUsd}
                 tokenBalances={tokenBalances}
@@ -314,7 +408,7 @@ function EarnContent({
               />
             </div>
           </div>
-        </div>
+        )}
       </header>
 
       <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)]">
