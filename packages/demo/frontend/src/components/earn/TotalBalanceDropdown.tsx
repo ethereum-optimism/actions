@@ -5,6 +5,7 @@ interface TotalBalanceDropdownProps {
   totalUsd: number
   tokenBalances: TokenBalanceRow[]
   isLoading: boolean
+  fullWidth?: boolean
 }
 
 function formatUsd(value: number): string {
@@ -62,6 +63,7 @@ export function TotalBalanceDropdown({
   totalUsd,
   tokenBalances,
   isLoading,
+  fullWidth,
 }: TotalBalanceDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -77,7 +79,10 @@ export function TotalBalanceDropdown({
   }, [])
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div
+      ref={ref}
+      style={{ position: 'relative', ...(fullWidth ? { flex: 1 } : {}) }}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -91,9 +96,10 @@ export function TotalBalanceDropdown({
           cursor: 'pointer',
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           transition: 'background-color 0.15s',
+          ...(fullWidth ? { width: '100%' } : {}),
         }}
       >
-        <div style={{ textAlign: 'left' }}>
+        <div style={{ textAlign: 'left', flex: 1 }}>
           <div
             style={{ fontSize: '11px', color: '#9195A6', lineHeight: '14px' }}
           >

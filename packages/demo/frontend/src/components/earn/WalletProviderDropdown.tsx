@@ -12,6 +12,7 @@ interface WalletProviderDropdownProps {
   onProviderSelect?: (providerName: WalletProviderConfig) => void
   selectedProvider: WalletProviderConfig
   onLogout?: () => Promise<void>
+  fullWidth?: boolean
 }
 
 const WALLET_PROVIDERS_LIST = Object.values(WALLET_PROVIDER_CONFIGS)
@@ -21,6 +22,7 @@ export function WalletProviderDropdown({
   onProviderSelect,
   selectedProvider,
   onLogout,
+  fullWidth,
 }: WalletProviderDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [showSwitchModal, setShowSwitchModal] = useState(false)
@@ -66,7 +68,11 @@ export function WalletProviderDropdown({
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div
+      className="relative"
+      ref={dropdownRef}
+      style={fullWidth ? { flex: 1 } : undefined}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 rounded-lg transition-all hover:bg-gray-50"
@@ -74,6 +80,7 @@ export function WalletProviderDropdown({
           padding: '10px 12px',
           border: '1px solid #E5E5E5',
           backgroundColor: isOpen ? '#F5F5F5' : 'transparent',
+          ...(fullWidth ? { width: '100%' } : {}),
         }}
       >
         <img
@@ -81,7 +88,10 @@ export function WalletProviderDropdown({
           alt={selectedProvider.name}
           className="h-5"
         />
-        <span className="text-sm" style={{ color: '#1a1b1e' }}>
+        <span
+          className="text-sm"
+          style={{ color: '#1a1b1e', flex: 1, textAlign: 'left' }}
+        >
           {selectedProvider.name}
         </span>
         <svg
@@ -89,6 +99,7 @@ export function WalletProviderDropdown({
           style={{
             transform: isOpen ? 'rotate(180deg)' : 'rotate(0)',
             color: '#666666',
+            marginLeft: 'auto',
           }}
           fill="none"
           stroke="currentColor"

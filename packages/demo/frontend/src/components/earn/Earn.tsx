@@ -5,10 +5,7 @@ import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
 import { WalletProviderDropdown } from './WalletProviderDropdown'
-import {
-  WALLET_PROVIDER_CONFIGS,
-  type WalletProviderConfig,
-} from '@/constants/walletProviders'
+import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { ActivityHighlightProvider } from '@/contexts/ActivityHighlightContext'
 import { ActivityLogProvider } from '@/providers/ActivityLogProvider'
 import {
@@ -119,9 +116,16 @@ function EarnContent({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<ActionType>('lend')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mobileExpandedSection, setMobileExpandedSection] = useState<
-    'balance' | 'wallet' | null
-  >(null)
+
+  // Auto-close mobile menu when resizing to desktop
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    const handler = () => {
+      if (mq.matches) setMobileMenuOpen(false)
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   const {
     markets,
@@ -336,10 +340,7 @@ function EarnContent({
                 backgroundColor: 'transparent',
                 cursor: 'pointer',
               }}
-              onClick={() => {
-                setMobileMenuOpen((o) => !o)
-                setMobileExpandedSection(null)
-              }}
+              onClick={() => setMobileMenuOpen((o) => !o)}
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -376,237 +377,128 @@ function EarnContent({
           </div>
         </div>
 
-        {/* Mobile menu - overlay style to avoid whitespace */}
+        {/* Mobile menu - fullscreen overlay with blur */}
         {mobileMenuOpen && (
           <div
             className="md:hidden"
             style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: '57px',
-              zIndex: 40,
-              backgroundColor: '#FFFFFF',
-              borderBottom: '1px solid #E0E2EB',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+              position: 'fixed',
+              inset: 0,
+              zIndex: 45,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              display: 'flex',
+              flexDirection: 'column',
+              fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
             }}
           >
-            {/* Stacked nav items */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              {[
-                { id: 'lend' as const, label: 'Lend' },
-                { id: 'swap' as const, label: 'Swap' },
-                { id: 'balance' as const, label: 'Balance' },
-                { id: 'wallet' as const, label: 'Wallet' },
-              ].map((item) => {
-                const isActive =
-                  item.id === 'lend' || item.id === 'swap'
-                    ? activeTab === item.id
-                    : mobileExpandedSection === item.id
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      if (item.id === 'lend' || item.id === 'swap') {
-                        setActiveTab(item.id)
-                        setMobileExpandedSection(null)
-                        setMobileMenuOpen(false)
-                      } else {
-                        setMobileExpandedSection(
-                          mobileExpandedSection === item.id ? null : item.id,
-                        )
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '14px 24px',
-                      border: 'none',
-                      borderBottom: '1px solid #F3F4F6',
-                      backgroundColor: isActive ? '#F9FAFB' : 'transparent',
-                      fontSize: '18px',
-                      fontWeight: isActive ? 600 : 400,
-                      color: isActive ? '#1a1b1e' : '#9195A6',
-                      cursor: 'pointer',
-                      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Expanded Balance section */}
-            {mobileExpandedSection === 'balance' && (
+            <div style={{ backgroundColor: '#FFFFFF' }}>
+              {/* Header row: logo + close */}
               <div
                 style={{
-                  padding: '16px',
-                  backgroundColor: '#F9FAFB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px 20px',
+                  borderBottom: '1px solid #E0E2EB',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#9195A6',
-                    marginBottom: '8px',
-                    fontFamily: 'Inter',
+                <img
+                  src="/Optimism.svg"
+                  alt="Optimism"
+                  style={{ height: '16px' }}
+                />
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false)
                   }}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  aria-label="Close menu"
                 >
-                  Total:{' '}
-                  {isLoadingTotalBalance ? '...' : `$${totalUsd.toFixed(2)}`}
-                </div>
-                {tokenBalances.map((token) => (
-                  <div
-                    key={token.symbol}
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#1a1b1e"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Nav items */}
+              <div style={{ padding: '8px 0' }}>
+                {(['lend', 'swap'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => {
+                      setActiveTab(tab)
+                      setMobileMenuOpen(false)
+                    }}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '12px 0',
-                      borderBottom: '1px solid #F3F4F6',
+                      display: 'block',
+                      width: '100%',
+                      padding: '16px 24px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      fontSize: '20px',
+                      fontWeight: activeTab === tab ? 600 : 400,
+                      color: activeTab === tab ? '#1a1b1e' : '#9195A6',
+                      cursor: 'pointer',
+                      textAlign: 'left',
                       fontFamily: 'Inter',
                     }}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                      }}
-                    >
-                      <img
-                        src={token.logo}
-                        alt={token.symbol}
-                        style={{
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '50%',
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontSize: '16px',
-                          fontWeight: 500,
-                          color: '#1a1b1e',
-                        }}
-                      >
-                        {token.balance.toFixed(4)} {token.symbol}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '16px', color: '#666666' }}>
-                      ${token.usdValue.toFixed(2)}
-                    </span>
-                  </div>
+                    {tab === 'lend' ? 'Lend' : 'Swap'}
+                  </button>
                 ))}
               </div>
-            )}
 
-            {/* Expanded Wallet section */}
-            {mobileExpandedSection === 'wallet' && (
+              {/* Balance + Wallet pills */}
               <div
                 style={{
-                  padding: '16px',
-                  backgroundColor: '#F9FAFB',
+                  padding: '8px 24px 20px',
+                  display: 'flex',
+                  gap: '12px',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#9195A6',
-                    marginBottom: '12px',
-                    fontFamily: 'Inter',
-                  }}
-                >
-                  Wallet Provider
+                <div style={{ flex: 1, display: 'flex' }}>
+                  <TotalBalanceDropdown
+                    totalUsd={totalUsd}
+                    tokenBalances={tokenBalances}
+                    isLoading={isLoadingTotalBalance}
+                    fullWidth
+                  />
                 </div>
-                {Object.values(WALLET_PROVIDER_CONFIGS).map((p) => {
-                  const isSelected = providerConfig.name === p.name
-                  return (
-                    <button
-                      key={p.name}
-                      onClick={async () => {
-                        if (!isSelected) {
-                          await logout()
-                          window.location.href = `/earn?walletProvider=${p.queryParam}`
-                        }
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        width: '100%',
-                        padding: '12px 0',
-                        border: 'none',
-                        backgroundColor: 'transparent',
-                        cursor: isSelected ? 'default' : 'pointer',
-                        fontFamily: 'Inter',
-                        borderBottom: '1px solid #F3F4F6',
-                      }}
-                    >
-                      <img
-                        src={p.logoSrc}
-                        alt={p.name}
-                        style={{ height: '20px' }}
-                      />
-                      <span
-                        style={{
-                          fontSize: '16px',
-                          fontWeight: isSelected ? 600 : 400,
-                          color: '#1a1b1e',
-                        }}
-                      >
-                        {p.name}
-                      </span>
-                      {isSelected && (
-                        <span style={{ color: '#22C55E', fontSize: '14px' }}>
-                          Active
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-                {walletAddress && (
-                  <div
-                    style={{
-                      marginTop: '12px',
-                      padding: '8px 0',
-                      fontSize: '13px',
-                      color: '#9195A6',
-                      fontFamily: 'monospace',
+                <div style={{ flex: 1, display: 'flex' }}>
+                  <WalletProviderDropdown
+                    selectedProvider={providerConfig}
+                    walletAddress={walletAddress}
+                    onProviderSelect={async (config) => {
+                      await logout()
+                      window.location.href = `/earn?walletProvider=${config.queryParam}`
                     }}
-                  >
-                    {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                  </div>
-                )}
-                <button
-                  onClick={async () => {
-                    setMobileMenuOpen(false)
-                    await logout()
-                  }}
-                  style={{
-                    width: '100%',
-                    marginTop: '8px',
-                    padding: '10px',
-                    border: 'none',
-                    borderRadius: '8px',
-                    backgroundColor: '#F2F3F8',
-                    color: '#404454',
-                    fontSize: '15px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    fontFamily: 'Inter',
-                  }}
-                >
-                  Logout
-                </button>
+                    onLogout={logout}
+                    fullWidth
+                  />
+                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
       </header>
