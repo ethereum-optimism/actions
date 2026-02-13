@@ -17,8 +17,12 @@ function makeMarketKey(address: string, chainId: number): string {
   return `${address.toLowerCase()}-${chainId}`
 }
 
-function getStorageKey(walletProvider?: string): string {
-  return walletProvider ? `lend-balance-${walletProvider}` : 'lend-balance'
+function getStorageKey(
+  walletProvider?: string,
+  walletAddress?: string | null,
+): string {
+  const parts = ['lend-balance', walletProvider, walletAddress].filter(Boolean)
+  return parts.join('-')
 }
 
 function loadLedger(storageKey: string): LedgerState {
@@ -38,8 +42,11 @@ function saveLedger(storageKey: string, ledger: LedgerState): void {
   }
 }
 
-export function useLendBalance(walletProvider?: string) {
-  const storageKey = getStorageKey(walletProvider)
+export function useLendBalance(
+  walletProvider?: string,
+  walletAddress?: string | null,
+) {
+  const storageKey = getStorageKey(walletProvider, walletAddress)
   const [ledger, setLedger] = useState<LedgerState>(() =>
     loadLedger(storageKey),
   )

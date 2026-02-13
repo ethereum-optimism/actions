@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Address } from 'viem'
 import type { SupportedChainId } from '@eth-optimism/actions-sdk/react'
 import { Action } from './Action'
@@ -51,6 +52,17 @@ function Earn({
   actions,
   logPrefix,
 }: EarnProps) {
+  const queryClient = useQueryClient()
+  const prevWalletRef = useRef(walletAddress)
+
+  // Clear stale query cache when wallet address changes (logout → re-login)
+  useEffect(() => {
+    if (prevWalletRef.current !== walletAddress) {
+      prevWalletRef.current = walletAddress
+      queryClient.clear()
+    }
+  }, [walletAddress, queryClient])
+
   if (!ready) {
     return (
       <div
@@ -145,6 +157,7 @@ function EarnContent({
   // Lend balance tracking (interest calculation)
   const { recordTransaction, getInterest, seedMarkets } = useLendBalance(
     providerConfig.queryParam,
+    walletAddress,
   )
 
   // Seed ledger for existing positions that have no tracking history
