@@ -68,10 +68,14 @@ function displaySymbol(symbol: string): string {
   return symbol.replace('_DEMO', '')
 }
 
-function formatUsd(amount: string): string | null {
+function formatUsd(amount: string, usdPerToken = 1): string | null {
   const parsed = parseFloat(amount)
   if (!parsed || parsed <= 0) return null
-  return `$${parsed.toFixed(2)}`
+  return `$${(parsed * usdPerToken).toFixed(2)}`
+}
+
+function isStablecoin(symbol: string): boolean {
+  return displaySymbol(symbol).toUpperCase() === 'USDC'
 }
 
 function formatSwapAmount(amount: string): { main: string; secondary: string } {
@@ -160,10 +164,9 @@ function TokenSelectModal({
             const symbol = displaySymbol(asset.asset.metadata.symbol)
             const name = getTokenName(asset.asset.metadata.symbol)
             const balance = asset.balance
-            const usdValue =
-              symbol === 'USDC'
-                ? `$${parseFloat(balance).toFixed(2)}`
-                : `$${parseFloat(balance).toFixed(2)}`
+            const usdValue = isStablecoin(asset.asset.metadata.symbol)
+              ? `$${parseFloat(balance).toFixed(2)}`
+              : null
 
             return (
               <button
@@ -222,11 +225,13 @@ function TokenSelectModal({
                       color: '#1a1b1e',
                     }}
                   >
-                    {usdValue}
+                    {usdValue ?? balance}
                   </div>
-                  <div style={{ fontSize: '14px', color: '#9195A6' }}>
-                    {balance}
-                  </div>
+                  {usdValue && (
+                    <div style={{ fontSize: '14px', color: '#9195A6' }}>
+                      {balance}
+                    </div>
+                  )}
                 </div>
               </button>
             )
@@ -313,7 +318,23 @@ function ReviewSwapModal({
 
   const symbolIn = displaySymbol(assetIn.asset.metadata.symbol)
   const symbolOut = displaySymbol(assetOut.asset.metadata.symbol)
-  const usdIn = formatUsd(amountIn)
+
+  // Compute USD values: stablecoins are 1:1, others derived from the USDC side
+  const inIsStable = isStablecoin(assetIn.asset.metadata.symbol)
+  const outIsStable = isStablecoin(assetOut.asset.metadata.symbol)
+  const parsedIn = parseFloat(amountIn) || 0
+  const parsedOut = parseFloat(amountOut) || 0
+  const usdPerIn = inIsStable
+    ? 1
+    : outIsStable && parsedIn > 0
+      ? parsedOut / parsedIn
+      : 1
+  const usdPerOut = outIsStable
+    ? 1
+    : inIsStable && parsedOut > 0
+      ? parsedIn / parsedOut
+      : 1
+  const usdIn = formatUsd(amountIn, usdPerIn)
 
   return (
     <div
@@ -346,8 +367,12 @@ function ReviewSwapModal({
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between"
-          style={{ marginBottom: '24px' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '24px',
+          }}
         >
           <div style={{ width: '24px' }} />
           <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1a1b1e' }}>
@@ -372,7 +397,13 @@ function ReviewSwapModal({
         {/* You pay */}
         <div style={{ marginBottom: '4px' }}>
           <span style={{ fontSize: '14px', color: '#9195A6' }}>You pay</span>
-          <div className="flex items-center justify-between">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
             <span
               style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}
             >
@@ -407,7 +438,13 @@ function ReviewSwapModal({
           <span style={{ fontSize: '14px', color: '#9195A6' }}>
             You receive
           </span>
-          <div className="flex items-center justify-between">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
             <span
               style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}
             >
@@ -424,9 +461,9 @@ function ReviewSwapModal({
               style={{ width: '32px', height: '32px', borderRadius: '50%' }}
             />
           </div>
-          {formatUsd(amountOut) && (
+          {formatUsd(amountOut, usdPerOut) && (
             <span style={{ fontSize: '14px', color: '#9195A6' }}>
-              {formatUsd(amountOut)}
+              {formatUsd(amountOut, usdPerOut)}
             </span>
           )}
         </div>
@@ -444,7 +481,7 @@ function ReviewSwapModal({
               fontSize: '14px',
             }}
           >
-            <div className="flex justify-between">
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#666666' }}>Exchange rate</span>
               <span style={{ color: '#1a1b1e' }}>
                 1 {symbolIn} = {formatSwapAmount(priceQuote.price).main}
@@ -456,7 +493,7 @@ function ReviewSwapModal({
                 {symbolOut}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#666666' }}>Price impact</span>
               <span
                 style={{
@@ -468,7 +505,7 @@ function ReviewSwapModal({
                   : `${(priceQuote.priceImpact * 100).toFixed(3)}%`}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#666666' }}>Minimum received</span>
               <span style={{ color: '#1a1b1e' }}>
                 {
@@ -488,7 +525,7 @@ function ReviewSwapModal({
                 {symbolOut}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#666666' }}>Max slippage</span>
               <span style={{ color: '#1a1b1e' }}>0.5%</span>
             </div>
@@ -750,8 +787,23 @@ export function SwapAction({
     amountValue > maxAmount ||
     !priceQuote
 
-  const sellUsd = assetIn ? formatUsd(amountIn) : null
-  const buyUsd = assetOut && amountOut ? formatUsd(amountOut) : null
+  // Compute USD-per-token for each side
+  const sellIsStable = assetIn && isStablecoin(assetIn.asset.metadata.symbol)
+  const buyIsStable = assetOut && isStablecoin(assetOut.asset.metadata.symbol)
+  const parsedSellAmt = parseFloat(amountIn) || 0
+  const parsedBuyAmt = parseFloat(amountOut) || 0
+  const sellUsdRate = sellIsStable
+    ? 1
+    : buyIsStable && parsedSellAmt > 0
+      ? parsedBuyAmt / parsedSellAmt
+      : 1
+  const buyUsdRate = buyIsStable
+    ? 1
+    : sellIsStable && parsedBuyAmt > 0
+      ? parsedSellAmt / parsedBuyAmt
+      : 1
+  const sellUsd = assetIn ? formatUsd(amountIn, sellUsdRate) : null
+  const buyUsd = assetOut && amountOut ? formatUsd(amountOut, buyUsdRate) : null
 
   if (assets.length < 2) {
     return (
