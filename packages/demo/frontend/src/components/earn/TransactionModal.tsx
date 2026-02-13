@@ -1,23 +1,15 @@
 import { createPortal } from 'react-dom'
-import { Modal, ModalContent, ModalButton } from '../Modal'
+import { Modal, ModalContent } from '../Modal'
 
 interface TransactionModalProps {
   isOpen: boolean
   status: 'loading' | 'error'
   onClose: () => void
-  mode?: 'lend' | 'withdraw' | 'swap'
-  assetSymbol?: string
 }
 
 const spinnerKeyframes = `@keyframes txm-spin { to { transform: rotate(360deg); } }`
 
-function TransactionModal({
-  isOpen,
-  status,
-  onClose,
-  mode,
-  assetSymbol,
-}: TransactionModalProps) {
+function TransactionModal({ isOpen, status, onClose }: TransactionModalProps) {
   if (!isOpen) return null
 
   const icon =
@@ -83,9 +75,7 @@ function TransactionModal({
   const description =
     status === 'loading'
       ? 'Please wait while your transaction is being processed...'
-      : mode === 'withdraw' && assetSymbol === 'ETH'
-        ? 'This is a common testnet liquidity issue, try again later.'
-        : ''
+      : 'Try again later.'
 
   return createPortal(
     <Modal
@@ -124,13 +114,7 @@ function TransactionModal({
         </button>
       )}
 
-      <ModalContent icon={icon} title={title} description={description}>
-        {status === 'error' && (
-          <div style={{ width: '100%', marginTop: '12px' }}>
-            <ModalButton onClick={onClose}>Close</ModalButton>
-          </div>
-        )}
-      </ModalContent>
+      <ModalContent icon={icon} title={title} description={description} />
     </Modal>,
     document.body,
   )

@@ -422,8 +422,6 @@ export function Action({
         isOpen={modalOpen}
         status={modalStatus}
         onClose={handleModalClose}
-        mode={mode}
-        assetSymbol={assetSymbol}
       />
 
       {createPortal(

@@ -9,6 +9,8 @@ import Shimmer from './Shimmer'
 import { Toast } from './Toast'
 import { CtaButton } from './CtaButton'
 import { trackEvent } from '@/utils/analytics'
+import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
+import { colors } from '@/constants/colors'
 
 interface SwapAsset {
   asset: Asset
@@ -486,6 +488,9 @@ export function SwapAction({
   isExecuting,
   onLogActivity,
 }: SwapActionProps) {
+  const { hoveredAction } = useActivityHighlight()
+  const isSwapHighlighted = hoveredAction === 'swap'
+
   const [assetInIndex, setAssetInIndex] = useState(0)
   const [assetOutIndex, setAssetOutIndex] = useState(1)
   const initialized = useRef(false)
@@ -753,10 +758,12 @@ export function SwapAction({
   return (
     <>
       <div
-        className="w-full"
+        className="w-full transition-all"
         style={{
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E0E2EB',
+          backgroundColor: isSwapHighlighted
+            ? colors.highlight.background
+            : '#FFFFFF',
+          border: `1px solid ${isSwapHighlighted ? colors.highlight.border : '#E0E2EB'}`,
           borderRadius: '24px',
           boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
@@ -996,7 +1003,6 @@ export function SwapAction({
         isOpen={txModalOpen}
         status={txModalStatus}
         onClose={handleTxModalClose}
-        mode="swap"
       />
 
       {createPortal(
