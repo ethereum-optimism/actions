@@ -18,8 +18,8 @@ import { baseSepolia } from 'viem/chains'
 import { OP_DEMO, USDC_DEMO } from '../src/config/assets.js'
 
 const POOL_MANAGER = '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408'
-const FEE = 500
-const TICK_SPACING = 10
+const FEE = 100
+const TICK_SPACING = 2
 
 const usdcAddress = USDC_DEMO.address[baseSepolia.id]
 const opAddress = OP_DEMO.address[baseSepolia.id]
@@ -112,27 +112,12 @@ async function main(): Promise<void> {
   })
 
   if (usdcBalance > 0n) {
-    console.log('\nPool already deployed and funded!')
-    logPoolInfo()
-    console.log(`\nUSDC_DEMO in pool: ${Number(usdcBalance) / 1e6}`)
-
-    const opBalance = await client.readContract({
-      address: opAddress as `0x${string}`,
-      abi: [
-        {
-          inputs: [{ name: 'account', type: 'address' }],
-          name: 'balanceOf',
-          outputs: [{ name: '', type: 'uint256' }],
-          stateMutability: 'view',
-          type: 'function',
-        },
-      ],
-      functionName: 'balanceOf',
-      args: [POOL_MANAGER],
-    })
-    console.log(`OP_DEMO in pool:   ${Number(opBalance) / 1e18}`)
-    logNextSteps()
-    return
+    console.log(
+      `\nNote: PoolManager already holds ${Number(usdcBalance) / 1e6} USDC_DEMO (may be from a different pool).`,
+    )
+    console.log(
+      'Proceeding with deployment — initialize will revert if this exact pool already exists.\n',
+    )
   }
 
   // Deploy

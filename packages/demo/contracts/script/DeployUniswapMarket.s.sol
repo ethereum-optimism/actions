@@ -23,12 +23,12 @@ contract DeployUniswapMarket is Script {
     address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     // Pool parameters
-    uint24 constant FEE = 500; // 0.05%
-    int24 constant TICK_SPACING = 10;
+    uint24 constant FEE = 100; // 0.01%
+    int24 constant TICK_SPACING = 2;
 
     // Liquidity amounts
-    uint256 constant USDC_AMOUNT = 100_000e6; // 100k USDC
-    uint256 constant OP_AMOUNT = 100_000e18; // 100k OP
+    uint256 constant USDC_AMOUNT = 1_000_000e6; // 1M USDC
+    uint256 constant OP_AMOUNT = 1_000_000e18; // 1M OP
 
     function run() public {
         address usdcAddr = vm.envAddress("DEMO_USDC_ADDRESS");
@@ -46,11 +46,8 @@ contract DeployUniswapMarket is Script {
             hooks: IHooks(address(0))
         });
 
-        // Calculate sqrtPriceX96 for 1:1 human price (1 OP = 1 USDC)
-        // USDC has 6 decimals, OP has 18 decimals
-        // price = token1/token0 in raw units
-        // For 1:1 human price: if token0=USDC(6dec), token1=OP(18dec) → raw price = 1e18/1e6 = 1e12
-        // sqrtPriceX96 = sqrt(price) * 2^96
+        // Calculate sqrtPriceX96 for 1 OP = 0.18 USDC
+        // sqrtPriceX96 = sqrt(price_in_raw_units) * 2^96
         uint160 sqrtPriceX96 = _computeSqrtPriceX96(usdcAddr, opAddr, token0);
 
         vm.startBroadcast();
@@ -113,21 +110,19 @@ contract DeployUniswapMarket is Script {
         vm.stopBroadcast();
     }
 
-    /// @dev Compute sqrtPriceX96 for 1:1 human price accounting for decimal difference
+    /// @dev Compute sqrtPriceX96 for 1 OP = 0.18 USDC accounting for decimal difference
     function _computeSqrtPriceX96(address usdc, address, address token0) internal pure returns (uint160) {
-        // 1 OP (18 dec) = 1 USDC (6 dec) at human parity
+        // 1 OP (18 dec) = 0.18 USDC (6 dec)
         // V4 price = amount of token1 per token0 in raw units
         if (token0 == usdc) {
-            // price = rawOP / rawUSDC for 1:1 human = 1e18 / 1e6 = 1e12
-            // sqrtPrice = sqrt(1e12) = 1e6
-            // sqrtPriceX96 = 1e6 * 2^96
-            return 79228162514264337593543950336000000;
+            // 1 USDC = 5.5556 OP → raw price = 5.5556e12
+            // sqrtPriceX96 = sqrt(5.5556e12) * 2^96
+            return 186742601293858871787747742452809728;
         } else {
             // token0 = OP, token1 = USDC
-            // price = rawUSDC / rawOP for 1:1 human = 1e6 / 1e18 = 1e-12
-            // sqrtPrice = sqrt(1e-12) = 1e-6
-            // sqrtPriceX96 = 2^96 / 1e6
-            return 79228162514264337593543;
+            // 1 OP = 0.18 USDC → raw price = 1.8e-13
+            // sqrtPriceX96 = sqrt(1.8e-13) * 2^96
+            return 33613662584877347604918;
         }
     }
 }
