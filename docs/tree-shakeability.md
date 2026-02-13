@@ -150,8 +150,81 @@ Split into `@eth-optimism/actions-sdk-core`, `@eth-optimism/actions-sdk-aave`, e
 1. **No config shape change** — `ActionsConfig` remains the same. The developer's mental model doesn't change.
 2. **Leverages existing patterns** — The registry/factory pattern already decouples provider creation from the `Actions` class. Making `HostedProviderFactory.create()` async and using `await import()` inside each factory is a natural extension.
 3. **Well-contained breaking change** — `createActions` becoming async (`Promise<Actions>`) is a single call site change for consumers. Most initialization code is already async (wallet setup, chain connections).
-4. **Solves both problems completely** — Optional peer deps fix install-time warnings/bloat. Dynamic imports fix bundle-time bloat by ensuring bundlers only include provider code that's actually imported at runtime.
-5. **Incremental adoption** — Can be rolled out in stages (peer deps first, then dynamic imports) if needed.
+4. **Incremental adoption** — Can be rolled out in stages (peer deps first, then dynamic imports) if needed.
+
+### Tradeoffs & DX Impact
+
+This approach introduces a meaningful change to the consumer install experience. It's important to understand what changes and why.
+
+#### Fundamental constraint: config cannot control installs
+
+npm/pnpm dependency resolution happens at `npm install` time — before any code runs. The SDK's `ActionsConfig` is a runtime concept. There is no mechanism in the npm ecosystem for a package to say "if the consumer configures Morpho, install `@morpho-org/*` automatically." The only options are:
+
+- **Hard `dependencies`**: always installed for every consumer (current behavior for Aave/Morpho/ethers)
+- **`peerDependencies`**: consumer must install manually; npm 7+ auto-installs non-optional peers, pnpm does not
+- **`peerDependencies` + `optional: true`**: never auto-installed, no warnings if missing
+
+#### Before vs After: what a Turnkey + Morpho developer does
+
+**Before (current published version):**
+
+```bash
+npm install @eth-optimism/actions-sdk \
+  @turnkey/core @turnkey/http @turnkey/sdk-server @turnkey/viem
+```
+
+Aave, ethers v5, and Morpho packages auto-install as hard `dependencies` — even though this developer doesn't use Aave. Turnkey packages are peer deps and must be installed manually (same as before).
+
+```ts
+const actions = createActions({ /* ... */ })  // synchronous
+```
+
+**After (this branch):**
+
+```bash
+npm install @eth-optimism/actions-sdk \
+  @turnkey/core @turnkey/http @turnkey/sdk-server @turnkey/viem \
+  @morpho-org/blue-sdk @morpho-org/blue-sdk-viem @morpho-org/morpho-ts
+```
+
+All protocol and wallet dependencies are now optional peers. The consumer must explicitly install every provider's dependencies. Aave and ethers are no longer installed. However, Morpho packages (previously auto-installed) must now be installed manually too.
+
+```ts
+const actions = await createActions({ /* ... */ })  // now async
+```
+
+If a developer forgets to install a required dependency, they get a clear error at runtime:
+
+```
+Error: Morpho lend provider requires @morpho-org/blue-sdk, @morpho-org/blue-sdk-viem,
+and @morpho-org/morpho-ts. Install them with:
+  pnpm add @morpho-org/blue-sdk @morpho-org/blue-sdk-viem @morpho-org/morpho-ts
+```
+
+#### Bundle-time: where dynamic imports help and where they don't
+
+Dynamic `import()` behaves differently depending on the runtime environment:
+
+**Node.js (no bundler):** Dynamic imports work as expected. Only the configured providers are loaded at runtime. If Aave packages aren't installed and the config doesn't request Aave, no error occurs — the `import()` is never called.
+
+**Frontend bundler (esbuild, webpack, Vite/Rollup):** The bundler resolves dynamic import targets at **build time**, not runtime. This means:
+
+- If `@morpho-org/*` is installed, the bundler follows `await import('./MorphoLendProvider.js')` → `MorphoLendProvider.js` → `@morpho-org/blue-sdk` and includes it in the output (either inlined or as a separate chunk depending on code-splitting support).
+- If `@aave/*` is NOT installed, the bundler cannot resolve the Aave provider's transitive deps and will either error or leave the import as a runtime expression.
+
+**The real frontend bundle win is indirect**: because unused deps aren't in `node_modules`, the bundler can't include them. The dynamic import pattern makes this safe by deferring the resolution so that missing packages cause a runtime error (with a helpful message) rather than a build-time crash across all entry points.
+
+#### Summary of tradeoffs
+
+| | Before | After |
+|---|---|---|
+| **Install command** | Only wallet peer deps manually installed; protocol deps auto-install | All provider deps manually installed |
+| **Unused deps installed** | Yes (Aave + ethers for Morpho-only users) | No |
+| **Peer dep warnings** | Yes (all 10 wallet packages) | No (all optional) |
+| **`createActions` API** | Synchronous | Async (`Promise<Actions>`) — breaking change |
+| **Bundle (Node.js)** | All provider code loaded | Only configured providers loaded |
+| **Bundle (frontend)** | All installed provider code bundled via static imports | Only installed provider code bundled; unused providers absent from `node_modules` |
+| **Missing dep experience** | Build-time crash with opaque module-not-found error | Runtime error with explicit install instructions |
 
 ---
 
