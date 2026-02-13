@@ -40,7 +40,7 @@ function ActivityLogSidebar({
       {/* Show button (when collapsed) - slides in from right edge */}
       <button
         onClick={() => handleCollapse(false)}
-        className="fixed hover:bg-gray-100 rounded-l-lg transition-transform duration-300 ease-in-out z-50"
+        className="fixed hover:bg-gray-100 rounded-l-lg transition-transform duration-300 ease-in-out z-40"
         style={{
           backgroundColor: '#FFFFFF',
           border: '1px solid #E0E2EB',
@@ -75,7 +75,7 @@ function ActivityLogSidebar({
           {!isCollapsed && (
             <button
               onClick={() => handleCollapse(true)}
-              className="fixed hover:bg-gray-100 rounded-l-lg z-50"
+              className="fixed hover:bg-gray-100 rounded-l-lg z-40"
               style={{
                 right: '436px',
                 top: '56px',
