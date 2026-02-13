@@ -110,9 +110,19 @@ export async function executeSwap(
       slippage,
     })
 
+    // Extract transaction hash from nested receipt
+    const receipt = result.receipt
+    const transactionHash =
+      'transactionHash' in receipt
+        ? (receipt.transactionHash as string)
+        : undefined
+    const userOpHash =
+      'userOpHash' in receipt ? (receipt.userOpHash as string) : undefined
+
     const blockExplorerUrls = getBlockExplorerUrls({
       chainId,
-      ...result,
+      transactionHash,
+      userOpHash,
     })
 
     return {
