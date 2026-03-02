@@ -239,33 +239,3 @@ export interface SwapMarket {
   /** Provider name */
   provider: 'uniswap'
 }
-
-/**
- * Protected method signatures for SwapProvider implementations
- */
-export interface SwapProviderMethods {
-  /**
-   * Provider implementation of execute method
-   */
-  _execute(params: SwapExecuteInternalParams): Promise<SwapTransaction>
-
-  /**
-   * Provider implementation of price method
-   */
-  _getPrice(params: SwapPriceParams): Promise<SwapPrice>
-
-  /**
-   * Provider implementation of getMarket method
-   */
-  _getMarket(params: GetSwapMarketParams): Promise<SwapMarket>
-
-  /**
-   * Provider implementation of getMarkets method
-   */
-  _getMarkets(params: GetSwapMarketsParams): Promise<SwapMarket[]>
-
-  /**
-   * Check if provider supports the given chain
-   */
-  _isChainSupported(chainId: SupportedChainId): boolean
-}
