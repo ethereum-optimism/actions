@@ -84,6 +84,58 @@ const UNIVERSAL_ROUTER_ABI = [
   },
 ] as const
 
+/**
+ * Resolved V4 pool parameters
+ */
+interface ResolvedPoolParams {
+  tokenIn: Address
+  tokenOut: Address
+  zeroForOne: boolean
+  poolKey: {
+    currency0: Address
+    currency1: Address
+    fee: number
+    tickSpacing: number
+    hooks: Address
+  }
+}
+
+/**
+ * Resolve token addresses, currency sorting, and pool key for a V4 swap
+ */
+function resolvePoolParams(
+  assetIn: Asset,
+  assetOut: Asset,
+  chainId: SupportedChainId,
+  fee: number,
+  tickSpacing: number,
+): ResolvedPoolParams {
+  const tokenIn = isNativeAsset(assetIn)
+    ? getWethAddress(chainId)
+    : getAssetAddress(assetIn, chainId)
+
+  const tokenOut = isNativeAsset(assetOut)
+    ? getWethAddress(chainId)
+    : getAssetAddress(assetOut, chainId)
+
+  // V4 requires sorted tokens: currency0 < currency1
+  const [currency0, currency1] =
+    tokenIn.toLowerCase() < tokenOut.toLowerCase()
+      ? [tokenIn, tokenOut]
+      : [tokenOut, tokenIn]
+  const zeroForOne = tokenIn.toLowerCase() === currency0.toLowerCase()
+
+  const poolKey = {
+    currency0,
+    currency1,
+    fee,
+    tickSpacing,
+    hooks: '0x0000000000000000000000000000000000000000' as Address,
+  }
+
+  return { tokenIn, tokenOut, zeroForOne, poolKey }
+}
+
 export interface GetQuoteParams {
   assetIn: Asset
   assetOut: Asset
@@ -114,30 +166,15 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     tickSpacing,
   } = params
 
-  const tokenIn = isNativeAsset(assetIn)
-    ? getWethAddress(chainId)
-    : getAssetAddress(assetIn, chainId)
-
-  const tokenOut = isNativeAsset(assetOut)
-    ? getWethAddress(chainId)
-    : getAssetAddress(assetOut, chainId)
-
-  const isExactInput = amountInWei !== undefined
-
-  // V4 requires sorted tokens: currency0 < currency1
-  const [currency0, currency1] =
-    tokenIn.toLowerCase() < tokenOut.toLowerCase()
-      ? [tokenIn, tokenOut]
-      : [tokenOut, tokenIn]
-  const zeroForOne = tokenIn.toLowerCase() === currency0.toLowerCase()
-
-  const poolKey = {
-    currency0,
-    currency1,
+  const { tokenIn, tokenOut, zeroForOne, poolKey } = resolvePoolParams(
+    assetIn,
+    assetOut,
+    chainId,
     fee,
     tickSpacing,
-    hooks: '0x0000000000000000000000000000000000000000' as Address,
-  }
+  )
+
+  const isExactInput = amountInWei !== undefined
 
   let amountIn: bigint
   let amountOut: bigint
@@ -294,30 +331,15 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
     tickSpacing,
   } = params
 
-  const tokenIn = isNativeAsset(assetIn)
-    ? getWethAddress(chainId)
-    : getAssetAddress(assetIn, chainId)
-
-  const tokenOut = isNativeAsset(assetOut)
-    ? getWethAddress(chainId)
-    : getAssetAddress(assetOut, chainId)
-
-  const isExactInput = amountInWei !== undefined
-
-  // V4 requires sorted tokens: currency0 < currency1
-  const [currency0, currency1] =
-    tokenIn.toLowerCase() < tokenOut.toLowerCase()
-      ? [tokenIn, tokenOut]
-      : [tokenOut, tokenIn]
-  const zeroForOne = tokenIn.toLowerCase() === currency0.toLowerCase()
-
-  const poolKey = {
-    currency0,
-    currency1,
+  const { tokenIn, tokenOut, zeroForOne, poolKey } = resolvePoolParams(
+    assetIn,
+    assetOut,
+    chainId,
     fee,
     tickSpacing,
-    hooks: '0x0000000000000000000000000000000000000000' as Address,
-  }
+  )
+
+  const isExactInput = amountInWei !== undefined
 
   let actions: Hex
   let actionParams: Hex[]
