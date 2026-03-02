@@ -1,6 +1,9 @@
 import type {
+  Asset,
   LendMarketPosition,
   SupportedChainId,
+  SwapMarket,
+  SwapPrice,
   TokenBalance,
   LendMarket,
   LendTransactionReceipt,
@@ -191,9 +194,9 @@ class ActionsApiClient {
 
   async getAssets(
     headers: HeadersInit = {},
-  ): Promise<Array<import('@eth-optimism/actions-sdk/react').Asset>> {
+  ): Promise<Asset[]> {
     const { result } = await this.request<{
-      result: Array<import('@eth-optimism/actions-sdk/react').Asset>
+      result: Asset[]
     }>('/assets', {
       method: 'GET',
       headers,
@@ -204,26 +207,10 @@ class ActionsApiClient {
   async getSwapMarkets(
     chainId?: SupportedChainId,
     headers: HeadersInit = {},
-  ): Promise<
-    Array<{
-      marketId: { poolId: string; chainId: number }
-      assets: [unknown, unknown]
-      fee: number
-      tvl?: bigint
-      volume24h?: bigint
-      provider: string
-    }>
-  > {
+  ): Promise<SwapMarket[]> {
     const params = chainId ? `?chainId=${chainId}` : ''
     const { result } = await this.request<{
-      result: Array<{
-        marketId: { poolId: string; chainId: number }
-        assets: [unknown, unknown]
-        fee: number
-        tvl?: string
-        volume24h?: string
-        provider: string
-      }>
+      result: Serialized<SwapMarket>[]
     }>(`/swap/markets${params}`, {
       method: 'GET',
       headers,
@@ -250,16 +237,7 @@ class ActionsApiClient {
       amountOut?: number
     },
     headers: HeadersInit = {},
-  ): Promise<{
-    price: string
-    priceInverse: string
-    amountIn: bigint
-    amountOut: bigint
-    amountInFormatted: string
-    amountOutFormatted: string
-    priceImpact: number
-    gasEstimate?: bigint
-  }> {
+  ): Promise<SwapPrice> {
     const params = new URLSearchParams({
       tokenInAddress,
       tokenOutAddress,
@@ -273,40 +251,21 @@ class ActionsApiClient {
     }
 
     const { result } = await this.request<{
-      result: {
-        price: string
-        priceInverse: string
-        amountIn: string
-        amountOut: string
-        amountInFormatted: string
-        amountOutFormatted: string
-        priceImpact: number
-        gasEstimate?: string
-      }
+      result: Serialized<SwapPrice>
     }>(`/swap/price?${params}`, {
       method: 'GET',
       headers,
     })
     return {
-      price: result.price,
-      priceInverse: result.priceInverse,
+      ...result,
       amountIn: BigInt(result.amountIn),
       amountOut: BigInt(result.amountOut),
-      amountInFormatted: result.amountInFormatted,
-      amountOutFormatted: result.amountOutFormatted,
-      priceImpact: result.priceImpact,
       gasEstimate: result.gasEstimate ? BigInt(result.gasEstimate) : undefined,
-    }
+    } as SwapPrice
   }
 
   async executeSwap(
-    {
-      amountIn,
-      tokenInAddress,
-      tokenOutAddress,
-      chainId,
-      slippage,
-    }: {
+    params: {
       amountIn: number
       tokenInAddress: Address
       tokenOutAddress: Address
@@ -321,6 +280,7 @@ class ActionsApiClient {
     priceImpact: number
     blockExplorerUrls?: string[]
   }> {
+    const { amountIn, tokenInAddress, tokenOutAddress, chainId, slippage } = params
     const { result } = await this.request<{
       result: {
         amountIn: string
