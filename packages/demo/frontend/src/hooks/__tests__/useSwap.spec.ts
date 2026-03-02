@@ -1,7 +1,10 @@
 import { renderHook, act } from '@testing-library/react'
+import type { SupportedChainId } from '@eth-optimism/actions-sdk/react'
+import type { Address } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useSwap } from '../useSwap'
+import type { SwapPriceResult, SwapExecuteResult } from '../useSwap'
 
 vi.mock('@/api/actionsApi', () => ({
   actionsApi: {
@@ -10,10 +13,14 @@ vi.mock('@/api/actionsApi', () => ({
   },
 }))
 
+const TOKEN_IN = '0x1111111111111111111111111111111111111111' as Address
+const TOKEN_OUT = '0x2222222222222222222222222222222222222222' as Address
+const CHAIN_ID = 84532 as SupportedChainId
+
 describe('useSwap', () => {
   it('fetches price successfully', async () => {
     const { actionsApi } = await import('@/api/actionsApi')
-    const mockPrice = {
+    const mockPrice: SwapPriceResult = {
       price: '0.005',
       priceInverse: '200',
       amountIn: 100000000n,
@@ -21,18 +28,18 @@ describe('useSwap', () => {
       amountOutFormatted: '0.5',
       priceImpact: 0.001,
     }
-    vi.mocked(actionsApi.getSwapPrice).mockResolvedValue(mockPrice as any)
+    vi.mocked(actionsApi.getSwapPrice).mockResolvedValue(mockPrice)
 
     const { result } = renderHook(() => useSwap())
 
     expect(result.current.isLoadingPrice).toBe(false)
 
-    let price: any
+    let price: SwapPriceResult | null = null
     await act(async () => {
       price = await result.current.fetchPrice({
-        tokenInAddress: '0x1111' as any,
-        tokenOutAddress: '0x2222' as any,
-        chainId: 84532 as any,
+        tokenInAddress: TOKEN_IN,
+        tokenOutAddress: TOKEN_OUT,
+        chainId: CHAIN_ID,
       })
     })
 
@@ -48,12 +55,12 @@ describe('useSwap', () => {
 
     const { result } = renderHook(() => useSwap())
 
-    let price: any
+    let price: SwapPriceResult | null = null
     await act(async () => {
       price = await result.current.fetchPrice({
-        tokenInAddress: '0x1111' as any,
-        tokenOutAddress: '0x2222' as any,
-        chainId: 84532 as any,
+        tokenInAddress: TOKEN_IN,
+        tokenOutAddress: TOKEN_OUT,
+        chainId: CHAIN_ID,
       })
     })
 
@@ -63,23 +70,23 @@ describe('useSwap', () => {
 
   it('executes swap successfully', async () => {
     const { actionsApi } = await import('@/api/actionsApi')
-    const mockResult = {
+    const mockResult: SwapExecuteResult = {
       amountIn: 100000000n,
       amountOut: 500000000000000000n,
       price: '0.005',
       priceImpact: 0.001,
     }
-    vi.mocked(actionsApi.executeSwap).mockResolvedValue(mockResult as any)
+    vi.mocked(actionsApi.executeSwap).mockResolvedValue(mockResult)
 
     const { result } = renderHook(() => useSwap())
 
-    let swapResult: any
+    let swapResult: SwapExecuteResult | undefined
     await act(async () => {
       swapResult = await result.current.executeSwap({
         amountIn: 100,
-        tokenInAddress: '0x1111' as any,
-        tokenOutAddress: '0x2222' as any,
-        chainId: 84532 as any,
+        tokenInAddress: TOKEN_IN,
+        tokenOutAddress: TOKEN_OUT,
+        chainId: CHAIN_ID,
       })
     })
 
@@ -99,9 +106,9 @@ describe('useSwap', () => {
       try {
         await result.current.executeSwap({
           amountIn: 100,
-          tokenInAddress: '0x1111' as any,
-          tokenOutAddress: '0x2222' as any,
-          chainId: 84532 as any,
+          tokenInAddress: TOKEN_IN,
+          tokenOutAddress: TOKEN_OUT,
+          chainId: CHAIN_ID,
         })
       } catch {
         // Expected to throw

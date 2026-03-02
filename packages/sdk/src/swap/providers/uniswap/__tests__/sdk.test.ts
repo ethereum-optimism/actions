@@ -104,7 +104,10 @@ describe('getQuote', () => {
     const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
     const args = (call as any).args[0]
     // currency0 should be the lower address
-    expect(args.poolKey.currency0.toLowerCase() < args.poolKey.currency1.toLowerCase()).toBe(true)
+    expect(
+      args.poolKey.currency0.toLowerCase() <
+        args.poolKey.currency1.toLowerCase(),
+    ).toBe(true)
   })
 })
 

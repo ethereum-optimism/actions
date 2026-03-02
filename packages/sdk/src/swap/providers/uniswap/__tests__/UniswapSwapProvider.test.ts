@@ -13,13 +13,17 @@ const CHAIN_ID = baseSepolia.id as SupportedChainId
 
 const USDC: Asset = {
   type: 'erc20',
-  address: { [CHAIN_ID]: '0x1111111111111111111111111111111111111111' as Address },
+  address: {
+    [CHAIN_ID]: '0x1111111111111111111111111111111111111111' as Address,
+  },
   metadata: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
 }
 
 const OP: Asset = {
   type: 'erc20',
-  address: { [CHAIN_ID]: '0x3333333333333333333333333333333333333333' as Address },
+  address: {
+    [CHAIN_ID]: '0x3333333333333333333333333333333333333333' as Address,
+  },
   metadata: { name: 'Optimism', symbol: 'OP', decimals: 18 },
 }
 
@@ -28,14 +32,16 @@ function createMockChainManager(): ChainManager {
     simulateContract: vi.fn().mockResolvedValue({
       result: [500000000000000000n, 150000n],
     }),
-    readContract: vi.fn().mockImplementation(({ args }: { args: unknown[] }) => {
-      // Permit2 allowance has 3 args: (owner, token, spender)
-      // ERC20 allowance has 2 args: (owner, spender)
-      if (args?.length === 3) {
-        return Promise.resolve([0n, 0, 0])
-      }
-      return Promise.resolve(0n)
-    }),
+    readContract: vi
+      .fn()
+      .mockImplementation(({ args }: { args: unknown[] }) => {
+        // Permit2 allowance has 3 args: (owner, token, spender)
+        // ERC20 allowance has 2 args: (owner, spender)
+        if (args?.length === 3) {
+          return Promise.resolve([0n, 0, 0])
+        }
+        return Promise.resolve(0n)
+      }),
   } as unknown as PublicClient
 
   return {
@@ -101,9 +107,7 @@ describe('UniswapSwapProvider', () => {
 
     it('throws without fee/tickSpacing in market filter', async () => {
       const provider = createProvider({
-        marketAllowlist: [
-          { assets: [USDC, OP], chainId: CHAIN_ID },
-        ],
+        marketAllowlist: [{ assets: [USDC, OP], chainId: CHAIN_ID }],
       })
 
       await expect(

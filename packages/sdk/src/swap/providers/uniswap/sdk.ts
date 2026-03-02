@@ -484,9 +484,13 @@ async function calculatePriceImpact(params: {
     const outDecimals = assetOut.metadata.decimals
 
     const midPrice =
-      Number(refAmountOut) / 10 ** outDecimals / (Number(oneUnit) / 10 ** inDecimals)
+      Number(refAmountOut) /
+      10 ** outDecimals /
+      (Number(oneUnit) / 10 ** inDecimals)
     const execPrice =
-      Number(amountOut) / 10 ** outDecimals / (Number(amountIn) / 10 ** inDecimals)
+      Number(amountOut) /
+      10 ** outDecimals /
+      (Number(amountIn) / 10 ** inDecimals)
 
     if (midPrice === 0) return 0
 

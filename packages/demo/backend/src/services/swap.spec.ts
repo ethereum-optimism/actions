@@ -1,7 +1,6 @@
+import type { SupportedChainId } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { SupportedChainId } from '@eth-optimism/actions-sdk'
 
 import * as swapService from './swap.js'
 

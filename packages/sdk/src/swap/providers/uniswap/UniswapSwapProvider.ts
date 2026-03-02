@@ -28,10 +28,7 @@ import {
   checkTokenAllowance,
 } from './permit2.js'
 import { encodeUniversalRouterSwap, getQuote } from './sdk.js'
-import type {
-  UniswapMarketFilter,
-  UniswapSwapProviderConfig,
-} from './types.js'
+import type { UniswapMarketFilter, UniswapSwapProviderConfig } from './types.js'
 
 /**
  * Uniswap swap provider using Universal Router
@@ -155,18 +152,12 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     // Default to 1 unit if no amount specified
     const amountInWei =
       params.amountIn !== undefined
-        ? parseUnits(
-            params.amountIn.toString(),
-            assetIn.metadata.decimals,
-          )
+        ? parseUnits(params.amountIn.toString(), assetIn.metadata.decimals)
         : parseUnits('1', assetIn.metadata.decimals)
 
     const amountOutWei =
       params.amountOut !== undefined
-        ? parseUnits(
-            params.amountOut.toString(),
-            assetOut.metadata.decimals,
-          )
+        ? parseUnits(params.amountOut.toString(), assetOut.metadata.decimals)
         : undefined
 
     return getQuote({
@@ -190,11 +181,9 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     assetOut: Asset,
     chainId: SupportedChainId,
   ): UniswapMarketFilter & { fee: number; tickSpacing: number } {
-    const filter = this.resolveMarketFilter(
-      assetIn,
-      assetOut,
-      chainId,
-    ) as UniswapMarketFilter | undefined
+    const filter = this.resolveMarketFilter(assetIn, assetOut, chainId) as
+      | UniswapMarketFilter
+      | undefined
     if (!filter?.fee || !filter?.tickSpacing) {
       throw new Error(
         `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
