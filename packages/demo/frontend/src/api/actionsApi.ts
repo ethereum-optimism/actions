@@ -192,9 +192,7 @@ class ActionsApiClient {
     return result
   }
 
-  async getAssets(
-    headers: HeadersInit = {},
-  ): Promise<Asset[]> {
+  async getAssets(headers: HeadersInit = {}): Promise<Asset[]> {
     const { result } = await this.request<{
       result: Asset[]
     }>('/assets', {
@@ -280,7 +278,8 @@ class ActionsApiClient {
     priceImpact: number
     blockExplorerUrls?: string[]
   }> {
-    const { amountIn, tokenInAddress, tokenOutAddress, chainId, slippage } = params
+    const { amountIn, tokenInAddress, tokenOutAddress, chainId, slippage } =
+      params
     const { result } = await this.request<{
       result: {
         amountIn: string

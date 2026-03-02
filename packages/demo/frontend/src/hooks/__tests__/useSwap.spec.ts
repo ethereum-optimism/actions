@@ -1,5 +1,8 @@
 import { renderHook, act } from '@testing-library/react'
-import type { SupportedChainId, SwapPrice } from '@eth-optimism/actions-sdk/react'
+import type {
+  SupportedChainId,
+  SwapPrice,
+} from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -51,9 +54,7 @@ describe('useSwap', () => {
 
   it('handles price fetch error', async () => {
     const { actionsApi } = await import('@/api/actionsApi')
-    vi.mocked(actionsApi.getSwapPrice).mockRejectedValue(
-      new Error('RPC error'),
-    )
+    vi.mocked(actionsApi.getSwapPrice).mockRejectedValue(new Error('RPC error'))
 
     const { result } = renderHook(() => useSwap())
 

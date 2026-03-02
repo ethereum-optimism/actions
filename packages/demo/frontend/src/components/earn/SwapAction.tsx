@@ -308,7 +308,8 @@ export function SwapAction({
     parsedBuyAmt,
   )
   const sellUsd = assetIn ? formatUsd(parsedSellAmt, sellUsdRate) : null
-  const buyUsd = assetOut && amountOut ? formatUsd(parsedBuyAmt, buyUsdRate) : null
+  const buyUsd =
+    assetOut && amountOut ? formatUsd(parsedBuyAmt, buyUsdRate) : null
 
   if (assets.length < 2) {
     return (

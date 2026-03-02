@@ -46,9 +46,7 @@ export function ReviewSwapModal({
   const usdIn = formatUsd(parsedIn, usdPerIn)
 
   const formattedOut = formatSwapAmount(amountOut)
-  const formattedMinReceived = formatSwapAmount(
-    (parsedOut * 0.995).toFixed(6),
-  )
+  const formattedMinReceived = formatSwapAmount((parsedOut * 0.995).toFixed(6))
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="420px">
