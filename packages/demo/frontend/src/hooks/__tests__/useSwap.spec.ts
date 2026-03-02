@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react'
-import type { SupportedChainId } from '@eth-optimism/actions-sdk/react'
+import type { SupportedChainId, SwapPrice } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -20,13 +20,15 @@ const CHAIN_ID = 84532 as SupportedChainId
 describe('useSwap', () => {
   it('fetches price successfully', async () => {
     const { actionsApi } = await import('@/api/actionsApi')
-    const mockPrice: SwapPriceResult = {
+    const mockPrice: SwapPrice = {
       price: '0.005',
       priceInverse: '200',
       amountIn: 100000000n,
       amountOut: 500000000000000000n,
+      amountInFormatted: '100',
       amountOutFormatted: '0.5',
       priceImpact: 0.001,
+      route: { path: [], pools: [] },
     }
     vi.mocked(actionsApi.getSwapPrice).mockResolvedValue(mockPrice)
 
