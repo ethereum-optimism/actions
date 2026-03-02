@@ -2,6 +2,7 @@ import type { Asset } from '@/types/asset.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
+import type { UniswapSwapProviderConfig } from '@/swap/providers/uniswap/types.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
@@ -24,7 +25,7 @@ export interface LendConfig {
  */
 export interface SwapConfig {
   /** Uniswap swap provider configuration */
-  uniswap?: SwapProviderConfig
+  uniswap?: UniswapSwapProviderConfig
 }
 
 /**

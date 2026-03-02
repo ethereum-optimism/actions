@@ -15,7 +15,12 @@ export {
   getTokenBySymbol,
   SUPPORTED_TOKENS,
 } from '@/supported/tokens.js'
-export { SwapProvider, UniswapSwapProvider } from '@/swap/index.js'
+export {
+  SwapProvider,
+  UniswapSwapProvider,
+  type UniswapMarketFilter,
+  type UniswapSwapProviderConfig,
+} from '@/swap/index.js'
 export type {
   ActionsConfig,
   ApyBreakdown,

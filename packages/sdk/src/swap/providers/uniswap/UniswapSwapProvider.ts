@@ -11,7 +11,6 @@ import type {
   SwapMarket,
   SwapPrice,
   SwapPriceParams,
-  SwapProviderConfig,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -29,13 +28,17 @@ import {
   checkTokenAllowance,
 } from './permit2.js'
 import { encodeUniversalRouterSwap, getQuote } from './sdk.js'
+import type {
+  UniswapMarketFilter,
+  UniswapSwapProviderConfig,
+} from './types.js'
 
 /**
  * Uniswap swap provider using Universal Router
  * @description Routes swaps through V4 pools via the Uniswap Universal Router.
  * Uses Permit2 for token approvals.
  */
-export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
+export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig> {
   supportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
   }
@@ -47,12 +50,7 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
     const addresses = getUniswapAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
 
-    const filter = this.resolveMarketFilter(assetIn, assetOut, chainId)
-    if (!filter?.fee || !filter?.tickSpacing) {
-      throw new Error(
-        `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
-      )
-    }
+    const filter = this.resolveUniswapFilter(assetIn, assetOut, chainId)
 
     // Get quote first for price info
     const quote = await getQuote({
@@ -152,12 +150,7 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
       throw new Error('assetOut is required')
     }
 
-    const filter = this.resolveMarketFilter(assetIn, assetOut, chainId)
-    if (!filter?.fee || !filter?.tickSpacing) {
-      throw new Error(
-        `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
-      )
-    }
+    const filter = this.resolveUniswapFilter(assetIn, assetOut, chainId)
 
     // Default to 1 unit if no amount specified
     const amountInWei =
@@ -187,6 +180,27 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
       fee: filter.fee,
       tickSpacing: filter.tickSpacing,
     })
+  }
+
+  /**
+   * Resolve and validate Uniswap-specific market filter with required fee/tickSpacing
+   */
+  private resolveUniswapFilter(
+    assetIn: Asset,
+    assetOut: Asset,
+    chainId: SupportedChainId,
+  ): UniswapMarketFilter & { fee: number; tickSpacing: number } {
+    const filter = this.resolveMarketFilter(
+      assetIn,
+      assetOut,
+      chainId,
+    ) as UniswapMarketFilter | undefined
+    if (!filter?.fee || !filter?.tickSpacing) {
+      throw new Error(
+        `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
+      )
+    }
+    return filter as UniswapMarketFilter & { fee: number; tickSpacing: number }
   }
 
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
