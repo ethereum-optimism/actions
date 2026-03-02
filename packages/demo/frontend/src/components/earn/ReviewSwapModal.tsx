@@ -1,9 +1,9 @@
 import type { SwapAsset } from '@/hooks/useSwapAssets'
 import {
+  deriveUsdRates,
   displaySymbol,
   formatSwapAmount,
   formatUsd,
-  isStablecoin,
 } from '@/utils/tokenDisplay'
 
 import { Modal, ModalHeader } from '../Modal'
@@ -35,20 +35,14 @@ export function ReviewSwapModal({
   const symbolIn = displaySymbol(assetIn.asset.metadata.symbol)
   const symbolOut = displaySymbol(assetOut.asset.metadata.symbol)
 
-  const inIsStable = isStablecoin(assetIn.asset.metadata.symbol)
-  const outIsStable = isStablecoin(assetOut.asset.metadata.symbol)
   const parsedIn = parseFloat(amountIn) || 0
   const parsedOut = parseFloat(amountOut) || 0
-  const usdPerIn = inIsStable
-    ? 1
-    : outIsStable && parsedIn > 0
-      ? parsedOut / parsedIn
-      : 1
-  const usdPerOut = outIsStable
-    ? 1
-    : inIsStable && parsedOut > 0
-      ? parsedIn / parsedOut
-      : 1
+  const { usdPerIn, usdPerOut } = deriveUsdRates(
+    assetIn.asset.metadata.symbol,
+    assetOut.asset.metadata.symbol,
+    parsedIn,
+    parsedOut,
+  )
   const usdIn = formatUsd(parsedIn, usdPerIn)
 
   const formattedOut = formatSwapAmount(amountOut)

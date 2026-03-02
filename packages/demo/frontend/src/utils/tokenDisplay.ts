@@ -40,6 +40,34 @@ export function getTokenName(symbol: string): string {
 }
 
 /**
+ * Derive USD-per-token rate for a swap pair.
+ * Stablecoins are assumed 1:1 with USD. Non-stablecoins derive
+ * their rate from the other side if it's a stablecoin.
+ */
+export function deriveUsdRates(
+  symbolIn: string,
+  symbolOut: string,
+  amountIn: number,
+  amountOut: number,
+): { usdPerIn: number; usdPerOut: number } {
+  const inIsStable = isStablecoin(symbolIn)
+  const outIsStable = isStablecoin(symbolOut)
+
+  const usdPerIn = inIsStable
+    ? 1
+    : outIsStable && amountIn > 0
+      ? amountOut / amountIn
+      : 1
+  const usdPerOut = outIsStable
+    ? 1
+    : inIsStable && amountOut > 0
+      ? amountIn / amountOut
+      : 1
+
+  return { usdPerIn, usdPerOut }
+}
+
+/**
  * Split a numeric string into main and secondary parts for display.
  * Shows first 4 decimals as main, rest as secondary (smaller text).
  */

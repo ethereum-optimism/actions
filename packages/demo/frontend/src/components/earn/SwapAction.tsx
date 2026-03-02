@@ -13,10 +13,10 @@ import { TokenSelectModal } from './TokenSelectModal'
 import { ReviewSwapModal } from './ReviewSwapModal'
 import { trackEvent } from '@/utils/analytics'
 import {
+  deriveUsdRates,
   displaySymbol,
   formatSwapAmount,
   formatUsd,
-  isStablecoin,
 } from '@/utils/tokenDisplay'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
@@ -299,20 +299,14 @@ export function SwapAction({
     !priceQuote
 
   // Compute USD-per-token for each side
-  const sellIsStable = assetIn && isStablecoin(assetIn.asset.metadata.symbol)
-  const buyIsStable = assetOut && isStablecoin(assetOut.asset.metadata.symbol)
   const parsedSellAmt = parseFloat(amountIn) || 0
   const parsedBuyAmt = parseFloat(amountOut) || 0
-  const sellUsdRate = sellIsStable
-    ? 1
-    : buyIsStable && parsedSellAmt > 0
-      ? parsedBuyAmt / parsedSellAmt
-      : 1
-  const buyUsdRate = buyIsStable
-    ? 1
-    : sellIsStable && parsedBuyAmt > 0
-      ? parsedSellAmt / parsedBuyAmt
-      : 1
+  const { usdPerIn: sellUsdRate, usdPerOut: buyUsdRate } = deriveUsdRates(
+    assetIn?.asset.metadata.symbol ?? '',
+    assetOut?.asset.metadata.symbol ?? '',
+    parsedSellAmt,
+    parsedBuyAmt,
+  )
   const sellUsd = assetIn ? formatUsd(parsedSellAmt, sellUsdRate) : null
   const buyUsd = assetOut && amountOut ? formatUsd(parsedBuyAmt, buyUsdRate) : null
 
