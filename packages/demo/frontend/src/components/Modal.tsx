@@ -55,6 +55,47 @@ export function Modal({
   )
 }
 
+export interface ModalHeaderProps {
+  title: string
+  onClose: () => void
+}
+
+/**
+ * Standard modal header with title and close button.
+ * Used by ReviewSwapModal, TokenSelectModal, etc.
+ */
+export function ModalHeader({ title, onClose }: ModalHeaderProps) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '24px',
+      }}
+    >
+      <div style={{ width: '24px' }} />
+      <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1a1b1e' }}>
+        {title}
+      </h2>
+      <button
+        onClick={onClose}
+        style={{
+          border: 'none',
+          background: 'none',
+          cursor: 'pointer',
+          padding: '4px',
+          color: '#666666',
+          fontSize: '20px',
+          lineHeight: 1,
+        }}
+      >
+        &times;
+      </button>
+    </div>
+  )
+}
+
 export interface ModalContentProps {
   icon?: ReactNode
   title: string
