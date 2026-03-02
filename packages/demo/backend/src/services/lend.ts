@@ -4,10 +4,10 @@ import type {
   LendTransactionReceipt,
   SupportedChainId,
 } from '@eth-optimism/actions-sdk'
-import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '../config/actions.js'
 import type { PositionParams } from '../types/index.js'
+import { resolveAsset } from '../utils/assets.js'
 import { getBlockExplorerUrls } from '../utils/explorers.js'
 import { getWallet } from './wallet.js'
 
@@ -39,15 +39,10 @@ async function executePosition(
       throw new Error(error)
     }
 
-    const asset = SUPPORTED_TOKENS.find(
-      (token) =>
-        token.address[marketId.chainId as SupportedChainId] === tokenAddress,
+    const asset = resolveAsset(
+      tokenAddress,
+      marketId.chainId as SupportedChainId,
     )
-    if (!asset) {
-      const error = `Asset not found for token address: ${tokenAddress}`
-      console.error('[executePosition] ERROR:', error)
-      throw new Error(error)
-    }
 
     const positionParams = { amount, asset, marketId }
 

@@ -4,10 +4,10 @@ import type {
   SwapPrice,
   SwapReceipt,
 } from '@eth-optimism/actions-sdk'
-import { SUPPORTED_TOKENS } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 
 import { getActions } from '../config/actions.js'
+import { resolveAsset } from '../utils/assets.js'
 import { getBlockExplorerUrls } from '../utils/explorers.js'
 import { getWallet } from './wallet.js'
 
@@ -43,20 +43,8 @@ export async function getPrice(params: PriceParams): Promise<SwapPrice> {
   const { tokenInAddress, tokenOutAddress, chainId, amountIn, amountOut } =
     params
   const actions = getActions()
-
-  const assetIn = SUPPORTED_TOKENS.find(
-    (token) => token.address[chainId] === tokenInAddress,
-  )
-  const assetOut = SUPPORTED_TOKENS.find(
-    (token) => token.address[chainId] === tokenOutAddress,
-  )
-
-  if (!assetIn) {
-    throw new Error(`Asset not found for token address: ${tokenInAddress}`)
-  }
-  if (!assetOut) {
-    throw new Error(`Asset not found for token address: ${tokenOutAddress}`)
-  }
+  const assetIn = resolveAsset(tokenInAddress, chainId)
+  const assetOut = resolveAsset(tokenOutAddress, chainId)
 
   return await actions.swap.price({
     assetIn,
@@ -88,19 +76,8 @@ export async function executeSwap(
       throw new Error('Swap not configured for this wallet')
     }
 
-    const assetIn = SUPPORTED_TOKENS.find(
-      (token) => token.address[chainId] === tokenInAddress,
-    )
-    const assetOut = SUPPORTED_TOKENS.find(
-      (token) => token.address[chainId] === tokenOutAddress,
-    )
-
-    if (!assetIn) {
-      throw new Error(`Asset not found for token address: ${tokenInAddress}`)
-    }
-    if (!assetOut) {
-      throw new Error(`Asset not found for token address: ${tokenOutAddress}`)
-    }
+    const assetIn = resolveAsset(tokenInAddress, chainId)
+    const assetOut = resolveAsset(tokenOutAddress, chainId)
 
     const result = await wallet.swap.execute({
       amountIn,
