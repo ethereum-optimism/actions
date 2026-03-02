@@ -1,4 +1,5 @@
 import type { ActivityEntry } from '@/providers/ActivityLogProvider'
+import { displaySymbol } from '@/utils/tokenDisplay'
 
 export type SummarySegment =
   | { type: 'text'; value: string }
@@ -6,10 +7,6 @@ export type SummarySegment =
 
 export interface ActivitySummary {
   segments: SummarySegment[]
-}
-
-function displaySymbol(symbol: string): string {
-  return symbol.replace('_DEMO', '')
 }
 
 const SYMBOL_LOGO: Record<string, string> = {

@@ -2,6 +2,7 @@ import { useMemo, useEffect, useRef, useState, useCallback } from 'react'
 import type { Address } from 'viem'
 import type { SupportedChainId } from '@eth-optimism/actions-sdk/react'
 import type { SwapAsset } from '@/hooks/useSwapAssets'
+import { displaySymbol, isStablecoin } from '@/utils/tokenDisplay'
 
 export interface TokenBalanceRow {
   symbol: string
@@ -18,14 +19,6 @@ interface UseTotalBalanceParams {
     chainId: SupportedChainId
     amountIn?: number
   }) => Promise<{ price: string; amountOutFormatted: string } | null>
-}
-
-function displaySymbol(symbol: string): string {
-  return symbol.replace('_DEMO', '')
-}
-
-function isStablecoin(symbol: string): boolean {
-  return displaySymbol(symbol) === 'USDC'
 }
 
 export function useTotalBalance({ assets, getPrice }: UseTotalBalanceParams) {

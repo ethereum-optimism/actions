@@ -9,6 +9,13 @@ import Shimmer from './Shimmer'
 import { Toast } from './Toast'
 import { CtaButton } from './CtaButton'
 import { trackEvent } from '@/utils/analytics'
+import {
+  displaySymbol,
+  formatSwapAmount,
+  formatUsd,
+  getTokenName,
+  isStablecoin,
+} from '@/utils/tokenDisplay'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
 
@@ -53,45 +60,6 @@ interface SwapActionProps {
     }) => void
     error: () => void
   } | null
-}
-
-const TOKEN_NAMES: Record<string, string> = {
-  ETH: 'Ethereum',
-  WETH: 'Wrapped Ether',
-  USDC: 'USD Coin',
-  OP: 'Optimism',
-}
-
-function getTokenName(symbol: string): string {
-  const clean = symbol.replace('_DEMO', '')
-  return TOKEN_NAMES[clean] || clean
-}
-
-function displaySymbol(symbol: string): string {
-  return symbol.replace('_DEMO', '')
-}
-
-function formatUsd(amount: string, usdPerToken = 1): string | null {
-  const parsed = parseFloat(amount)
-  if (!parsed || parsed <= 0) return null
-  return `$${(parsed * usdPerToken).toFixed(2)}`
-}
-
-function isStablecoin(symbol: string): boolean {
-  return displaySymbol(symbol).toUpperCase() === 'USDC'
-}
-
-function formatSwapAmount(amount: string): { main: string; secondary: string } {
-  const num = parseFloat(amount)
-  if (isNaN(num) || num === 0) return { main: '0', secondary: '' }
-
-  const [whole, decimal = ''] = amount.split('.')
-  if (decimal.length <= 4) return { main: amount, secondary: '' }
-
-  return {
-    main: `${whole}.${decimal.substring(0, 4)}`,
-    secondary: decimal.substring(4),
-  }
 }
 
 // --- Token Select Modal ---
@@ -306,7 +274,7 @@ function ReviewSwapModal({
     : inIsStable && parsedOut > 0
       ? parsedIn / parsedOut
       : 1
-  const usdIn = formatUsd(amountIn, usdPerIn)
+  const usdIn = formatUsd(parseFloat(amountIn) || 0, usdPerIn)
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="420px">
@@ -400,9 +368,9 @@ function ReviewSwapModal({
             style={{ width: '32px', height: '32px', borderRadius: '50%' }}
           />
         </div>
-        {formatUsd(amountOut, usdPerOut) && (
+        {formatUsd(parseFloat(amountOut) || 0, usdPerOut) && (
           <span style={{ fontSize: '14px', color: '#9195A6' }}>
-            {formatUsd(amountOut, usdPerOut)}
+            {formatUsd(parseFloat(amountOut) || 0, usdPerOut)}
           </span>
         )}
       </div>
@@ -734,8 +702,8 @@ export function SwapAction({
     : sellIsStable && parsedBuyAmt > 0
       ? parsedSellAmt / parsedBuyAmt
       : 1
-  const sellUsd = assetIn ? formatUsd(amountIn, sellUsdRate) : null
-  const buyUsd = assetOut && amountOut ? formatUsd(amountOut, buyUsdRate) : null
+  const sellUsd = assetIn ? formatUsd(parsedSellAmt, sellUsdRate) : null
+  const buyUsd = assetOut && amountOut ? formatUsd(parsedBuyAmt, buyUsdRate) : null
 
   if (assets.length < 2) {
     return (

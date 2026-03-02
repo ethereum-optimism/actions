@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { TokenBalanceRow } from '@/hooks/useTotalBalance'
+import { formatUsd } from '@/utils/tokenDisplay'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
 
@@ -12,8 +13,8 @@ interface TotalBalanceDropdownProps {
   fullWidth?: boolean
 }
 
-function formatUsd(value: number): string {
-  return `$${value.toFixed(2)}`
+function safeFormatUsd(value: number): string {
+  return formatUsd(value) ?? '$0.00'
 }
 
 /**
@@ -124,7 +125,7 @@ export function TotalBalanceDropdown({
               lineHeight: '18px',
             }}
           >
-            {isLoading ? '...' : formatUsd(totalUsd)}
+            {isLoading ? '...' : safeFormatUsd(totalUsd)}
           </div>
         </div>
         <svg
@@ -205,7 +206,7 @@ export function TotalBalanceDropdown({
                   color: '#666666',
                 }}
               >
-                {formatUsd(token.usdValue)}
+                {safeFormatUsd(token.usdValue)}
               </span>
             </div>
           ))}
