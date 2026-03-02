@@ -17,8 +17,8 @@ export {
 } from '@/supported/tokens.js'
 export {
   SwapProvider,
-  UniswapSwapProvider,
   type UniswapMarketFilter,
+  UniswapSwapProvider,
   type UniswapSwapProviderConfig,
 } from '@/swap/index.js'
 export type {

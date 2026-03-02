@@ -166,7 +166,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     tickSpacing,
   } = params
 
-  const { tokenIn, tokenOut, zeroForOne, poolKey } = resolvePoolParams(
+  const { tokenIn, zeroForOne, poolKey } = resolvePoolParams(
     assetIn,
     assetOut,
     chainId,

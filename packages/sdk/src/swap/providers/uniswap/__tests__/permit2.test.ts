@@ -1,5 +1,4 @@
 import type { Address, PublicClient } from 'viem'
-import { maxUint160, maxUint256 } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import {

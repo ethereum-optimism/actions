@@ -1,5 +1,4 @@
 import type { Address, PublicClient } from 'viem'
-import { decodeFunctionData } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -17,12 +16,6 @@ const WETH: Asset = {
   type: 'erc20',
   address: { 84532: '0x2222222222222222222222222222222222222222' as Address },
   metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
-}
-
-const ETH: Asset = {
-  type: 'native',
-  address: { 84532: '0x0000000000000000000000000000000000000000' as Address },
-  metadata: { name: 'Ether', symbol: 'ETH', decimals: 18 },
 }
 
 const QUOTER = '0x4a6513c898fe1b2d0e78d3b0e0a4a151589b1cba' as Address

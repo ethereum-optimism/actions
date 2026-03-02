@@ -10,8 +10,8 @@ export {
 export { WalletSwapNamespace } from './namespaces/WalletSwapNamespace.js'
 
 // Providers
-export { UniswapSwapProvider } from './providers/uniswap/UniswapSwapProvider.js'
 export type {
   UniswapMarketFilter,
   UniswapSwapProviderConfig,
 } from './providers/uniswap/types.js'
+export { UniswapSwapProvider } from './providers/uniswap/UniswapSwapProvider.js'

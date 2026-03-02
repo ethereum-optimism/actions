@@ -6,8 +6,8 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 
-import { UniswapSwapProvider } from '../UniswapSwapProvider.js'
 import type { UniswapSwapProviderConfig } from '../types.js'
+import { UniswapSwapProvider } from '../UniswapSwapProvider.js'
 
 const CHAIN_ID = baseSepolia.id as SupportedChainId
 
