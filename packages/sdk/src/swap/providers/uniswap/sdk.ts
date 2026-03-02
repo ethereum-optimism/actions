@@ -220,7 +220,16 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
 
   const price = calculatePrice(amountIn, amountOut, assetIn, assetOut)
   const priceInverse = calculatePrice(amountOut, amountIn, assetOut, assetIn)
-  const priceImpact = calculatePriceImpact()
+  const priceImpact = await calculatePriceImpact({
+    amountIn,
+    amountOut,
+    assetIn,
+    assetOut,
+    poolKey,
+    zeroForOne,
+    quoterAddress,
+    publicClient,
+  })
 
   const route: SwapRoute = {
     path: [assetIn, assetOut],
@@ -419,7 +428,73 @@ function calculatePrice(
   return (normalizedOut / normalizedIn).toFixed(6)
 }
 
-function calculatePriceImpact(): number {
-  // Simplified - real implementation would compare against mid price
-  return 0.001
+/**
+ * Calculate price impact by comparing execution price to mid-price
+ * @description Quotes a 1-unit trade to approximate the mid-price,
+ * then compares against the actual execution price.
+ * Returns 0 for 1-unit trades (they are the reference).
+ */
+async function calculatePriceImpact(params: {
+  amountIn: bigint
+  amountOut: bigint
+  assetIn: Asset
+  assetOut: Asset
+  poolKey: ResolvedPoolParams['poolKey']
+  zeroForOne: boolean
+  quoterAddress: Address
+  publicClient: PublicClient
+}): Promise<number> {
+  const {
+    amountIn,
+    amountOut,
+    assetIn,
+    assetOut,
+    poolKey,
+    zeroForOne,
+    quoterAddress,
+    publicClient,
+  } = params
+
+  const oneUnit = BigInt(10 ** assetIn.metadata.decimals)
+
+  // If the trade is already 1 unit, there's no meaningful impact to measure
+  if (amountIn === oneUnit) return 0
+
+  try {
+    const refResult = await publicClient.simulateContract({
+      address: quoterAddress,
+      abi: QUOTER_ABI,
+      functionName: 'quoteExactInputSingle',
+      args: [
+        {
+          poolKey,
+          zeroForOne,
+          exactAmount: oneUnit,
+          hookData: '0x' as `0x${string}`,
+        },
+      ],
+    })
+
+    const refAmountOut = refResult.result[0]
+
+    // midPrice = refAmountOut / oneUnit (per-unit rate)
+    // executionPrice = amountOut / amountIn (actual rate)
+    // priceImpact = 1 - (executionPrice / midPrice)
+    const inDecimals = assetIn.metadata.decimals
+    const outDecimals = assetOut.metadata.decimals
+
+    const midPrice =
+      Number(refAmountOut) / 10 ** outDecimals / (Number(oneUnit) / 10 ** inDecimals)
+    const execPrice =
+      Number(amountOut) / 10 ** outDecimals / (Number(amountIn) / 10 ** inDecimals)
+
+    if (midPrice === 0) return 0
+
+    const impact = 1 - execPrice / midPrice
+    // Clamp to [0, 1] — negative impact means better-than-mid execution
+    return Math.max(0, impact)
+  } catch {
+    // If reference quote fails, return 0 rather than blocking the trade
+    return 0
+  }
 }
