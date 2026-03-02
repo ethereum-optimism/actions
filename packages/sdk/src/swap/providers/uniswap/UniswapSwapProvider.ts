@@ -1,4 +1,5 @@
 import type { Address } from 'viem'
+import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
@@ -161,13 +162,17 @@ export class UniswapSwapProvider extends SwapProvider<SwapProviderConfig> {
     // Default to 1 unit if no amount specified
     const amountInWei =
       params.amountIn !== undefined
-        ? BigInt(Math.floor(params.amountIn * 10 ** assetIn.metadata.decimals))
-        : BigInt(10 ** assetIn.metadata.decimals)
+        ? parseUnits(
+            params.amountIn.toString(),
+            assetIn.metadata.decimals,
+          )
+        : parseUnits('1', assetIn.metadata.decimals)
 
     const amountOutWei =
       params.amountOut !== undefined
-        ? BigInt(
-            Math.floor(params.amountOut * 10 ** assetOut.metadata.decimals),
+        ? parseUnits(
+            params.amountOut.toString(),
+            assetOut.metadata.decimals,
           )
         : undefined
 
