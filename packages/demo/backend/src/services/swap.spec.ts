@@ -46,13 +46,17 @@ describe('Swap Service', () => {
 
   describe('getMarkets', () => {
     it('returns markets from swap provider', async () => {
-      const mockMarkets = [{ marketId: { poolId: '0xpool', chainId: CHAIN_ID } }]
+      const mockMarkets = [
+        { marketId: { poolId: '0xpool', chainId: CHAIN_ID } },
+      ]
       mockSwapNamespace.getMarkets.mockResolvedValue(mockMarkets)
 
       const result = await swapService.getMarkets(CHAIN_ID)
 
       expect(result).toEqual(mockMarkets)
-      expect(mockSwapNamespace.getMarkets).toHaveBeenCalledWith({ chainId: CHAIN_ID })
+      expect(mockSwapNamespace.getMarkets).toHaveBeenCalledWith({
+        chainId: CHAIN_ID,
+      })
     })
 
     it('passes empty params when no chainId', async () => {
