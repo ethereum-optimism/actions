@@ -25,7 +25,6 @@
     "release:publish": "pnpm install --frozen-lockfile && pnpm nx run-many --target=build && changeset publish",
     "release:version": "changeset version && pnpm install --lockfile-only",
     "release:version:snapshot": "changeset version --snapshot ${SNAPSHOT_NAME:-snapshot} && pnpm install --lockfile-only",
-    "build": "pnpm nx run-many --target=build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
