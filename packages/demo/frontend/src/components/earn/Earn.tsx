@@ -1,7 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { Address } from 'viem'
-import type { SupportedChainId } from '@eth-optimism/actions-sdk/react'
 import { Action } from './Action'
 import LentBalance from './LentBalance'
 import ActivityLog from './ActivityLog'
@@ -17,14 +15,10 @@ import { MarketSelector } from './MarketSelector'
 import type { LendProviderOperations } from '@/hooks/useLendProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
-import { useSwap } from '@/hooks/useSwap'
-import { useSwapAssets } from '@/hooks/useSwapAssets'
-import { actionsApi } from '@/api/actionsApi'
-import { OP_DEMO, USDC_DEMO } from '@/constants/markets'
 import { useLendBalance } from '@/hooks/useLendBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
+import { useEarnSwap } from '@/hooks/useEarnSwap'
 import { TotalBalanceDropdown } from './TotalBalanceDropdown'
-import { useTotalBalance } from '@/hooks/useTotalBalance'
 
 export interface EarnProps {
   operations: LendProviderOperations
@@ -192,110 +186,21 @@ function EarnContent({
   const { logActivity } = useActivityLogger()
 
   // Swap functionality
-  const { isExecuting: isSwapping } = useSwap()
-
-  const handleGetPrice = useCallback(
-    async ({
-      tokenInAddress,
-      tokenOutAddress,
-      chainId,
-      amountIn,
-      amountOut,
-    }: {
-      tokenInAddress: Address
-      tokenOutAddress: Address
-      chainId: SupportedChainId
-      amountIn?: number
-      amountOut?: number
-    }) => {
-      try {
-        const headers = await getAuthHeaders()
-        const price = await actionsApi.getSwapPrice(
-          {
-            tokenInAddress,
-            tokenOutAddress,
-            chainId,
-            amountIn,
-            amountOut,
-          },
-          headers,
-        )
-        return {
-          price: price.price,
-          priceImpact: price.priceImpact,
-          amountInFormatted: price.amountInFormatted,
-          amountOutFormatted: price.amountOutFormatted,
-        }
-      } catch {
-        return null
-      }
-    },
-    [getAuthHeaders],
-  )
-
-  // Get token balances fetcher from operations
-  const getTokenBalances = useCallback(async () => {
-    return operations.getTokenBalances()
-  }, [operations])
-
-  // Fetch swap assets (always enabled for navbar balance)
   const {
-    assets: swapAssets,
-    isLoading: isLoadingSwapAssets,
-    refetch: refetchSwapAssets,
-  } = useSwapAssets({
-    actions,
-    getAuthHeaders,
-    getTokenBalances,
-    enabled: true,
-    marketAllowlist: [USDC_DEMO, OP_DEMO],
-  })
-
-  // Refetch swap assets when switching to swap tab or when balances change
-  useEffect(() => {
-    if (activeTab === 'swap') {
-      refetchSwapAssets()
-    }
-  }, [activeTab, refetchSwapAssets])
-
-  useEffect(() => {
-    refetchSwapAssets()
-  }, [assetBalance, refetchSwapAssets])
-
-  const handleSwap = useCallback(
-    async ({
-      amountIn,
-      assetIn,
-      assetOut,
-      chainId,
-    }: {
-      amountIn: number
-      assetIn: import('@eth-optimism/actions-sdk/react').Asset
-      assetOut: import('@eth-optimism/actions-sdk/react').Asset
-      chainId: SupportedChainId
-    }) => {
-      const result = await operations.executeSwap({
-        amountIn,
-        assetIn,
-        assetOut,
-        chainId,
-      })
-      // Refetch immediately, then again after a short delay for RPC propagation
-      refetchSwapAssets()
-      setTimeout(() => refetchSwapAssets(), 2000)
-      return result
-    },
-    [operations, refetchSwapAssets],
-  )
-
-  // Total balance for navbar dropdown
-  const {
+    swapAssets,
+    isLoadingSwapAssets,
+    isSwapping,
+    handleSwap,
+    handleGetPrice,
     tokenBalances,
     totalUsd,
-    isLoading: isLoadingTotalBalance,
-  } = useTotalBalance({
-    assets: swapAssets,
-    getPrice: handleGetPrice,
+    isLoadingTotalBalance,
+  } = useEarnSwap({
+    getAuthHeaders,
+    actions,
+    operations,
+    activeTab,
+    assetBalance,
   })
 
   return (
