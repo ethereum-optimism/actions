@@ -39,12 +39,6 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
-
-      // Delayed refetch in case chain indexing is slow
-      // Won't show loading because mutation state is reset after first refetch
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
-      }, 2000)
     },
     onError: (error) => {
       console.error('[useMintAsset] Mutation failed', { error })

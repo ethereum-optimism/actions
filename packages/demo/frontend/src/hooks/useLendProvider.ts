@@ -8,8 +8,10 @@ import type {
   SupportedChainId,
   Asset,
 } from '@eth-optimism/actions-sdk/react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useMarketData } from '@/hooks/useMarketData'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
+import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { convertLendMarketToMarketInfo } from '@/utils/marketConversion'
 import type { LendExecutePositionParams } from '@/types/api'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
@@ -53,6 +55,8 @@ export function useLendProvider({
   logPrefix = '[useLendProvider]',
 }: UseLendProviderParams) {
   const hasLoadedMarkets = useRef(false)
+  const queryClient = useQueryClient()
+  const { logActivity } = useActivityLogger()
 
   // Market selection state management
   const {
@@ -80,11 +84,20 @@ export function useLendProvider({
 
       try {
         setIsLoadingMarkets(true)
+
+        // Log and fetch markets
+        const marketActivity = logActivity('getMarket')
         const rawMarkets = await operations.getMarkets()
+        marketActivity?.confirm()
+
+        // Seed markets cache so useMarkets query doesn't re-fetch
+        queryClient.setQueryData(['markets'], rawMarkets)
+
         const marketInfoList = rawMarkets.map(convertLendMarketToMarketInfo)
         setMarkets(marketInfoList)
 
-        // Fetch positions for all markets in parallel
+        // Log and fetch positions for all markets in parallel
+        const positionActivity = logActivity('getPosition')
         const positionPromises = marketInfoList.map(async (market) => {
           try {
             const position = await operations.getPosition({
@@ -102,6 +115,17 @@ export function useLendProvider({
         })
 
         const positionResults = await Promise.all(positionPromises)
+        positionActivity?.confirm()
+
+        // Seed position cache for each market so useMarketPosition doesn't re-fetch
+        for (const result of positionResults) {
+          if (result) {
+            queryClient.setQueryData(
+              ['position', result.market.marketId.address, result.market.marketId.chainId],
+              result.position,
+            )
+          }
+        }
 
         // Build initial market positions array with all markets that have deposits
         const initialPositions = positionResults
@@ -170,6 +194,8 @@ export function useLendProvider({
     ready,
     operations,
     logPrefix,
+    logActivity,
+    queryClient,
     setMarkets,
     setMarketPositions,
     selectedMarket,

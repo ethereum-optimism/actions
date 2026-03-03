@@ -81,18 +81,6 @@ export function useOpenPosition({
           variables.marketId.chainId,
         ],
       })
-
-      // Delayed refetch in case chain indexing is slow
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
-        queryClient.invalidateQueries({
-          queryKey: [
-            'position',
-            variables.marketId.address,
-            variables.marketId.chainId,
-          ],
-        })
-      }, 2000)
     },
   })
 }
@@ -133,18 +121,6 @@ export function useClosePosition({
           variables.marketId.chainId,
         ],
       })
-
-      // Delayed refetch in case chain indexing is slow
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
-        queryClient.invalidateQueries({
-          queryKey: [
-            'position',
-            variables.marketId.address,
-            variables.marketId.chainId,
-          ],
-        })
-      }, 2000)
     },
   })
 }
