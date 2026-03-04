@@ -1,8 +1,22 @@
 [build]
-  command = "pnpm --filter @eth-optimism/actions-sdk build && pnpm --filter actions-ui build"
+  command = "pnpm --filter @eth-optimism/actions-sdk build && pnpm --filter @eth-optimism/actions-service build && pnpm --filter actions-ui build"
   publish = "packages/demo/frontend/dist"
 
 [build.environment]
   NODE_VERSION = "20"
   NODE_OPTIONS = "--max-old-space-size=8192"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Rewrite /api/* to the backend Netlify Function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+
+# Set VITE_ACTIONS_API_URL for deploy previews so frontend hits the co-deployed backend
+[context.deploy-preview.environment]
+  VITE_ACTIONS_API_URL = "/api"
 
