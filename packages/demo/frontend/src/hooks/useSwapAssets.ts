@@ -26,9 +26,9 @@ interface UseSwapAssetsParams {
    */
   getAuthHeaders?: () => Promise<{ Authorization: string } | undefined>
   /**
-   * Token balances fetcher
+   * User's current token balances (from wallet layer)
    */
-  getTokenBalances: () => Promise<TokenBalance[]>
+  tokenBalances?: TokenBalance[]
   /**
    * Whether the component is ready to fetch
    */
@@ -50,7 +50,7 @@ interface UseSwapAssetsParams {
 export function useSwapAssets({
   actions,
   getAuthHeaders,
-  getTokenBalances,
+  tokenBalances,
   enabled,
   marketAllowlist,
 }: UseSwapAssetsParams) {
@@ -93,8 +93,8 @@ export function useSwapAssets({
         )
       }
 
-      // Step 3: Get user balances
-      const balances = await getTokenBalances()
+      // Step 3: Use provided token balances
+      const balances = tokenBalances ?? []
 
       // Step 4: Build asset map for quick lookup
       const assetMap = new Map<string, Asset>()
@@ -130,7 +130,7 @@ export function useSwapAssets({
     } finally {
       setIsLoading(false)
     }
-  }, [actions, getAuthHeaders, getTokenBalances, enabled])
+  }, [actions, getAuthHeaders, tokenBalances, enabled])
 
   useEffect(() => {
     fetchAssets()

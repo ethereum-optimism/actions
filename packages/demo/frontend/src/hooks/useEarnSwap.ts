@@ -1,11 +1,17 @@
 import { useCallback, useEffect } from 'react'
-import type { Asset, SupportedChainId } from '@eth-optimism/actions-sdk/react'
+import { useQueryClient, useQuery, skipToken } from '@tanstack/react-query'
+import type {
+  Asset,
+  SupportedChainId,
+  TokenBalance,
+} from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 
 import { actionsApi } from '@/api/actionsApi'
 import { useSwap } from '@/hooks/useSwap'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { useTotalBalance } from '@/hooks/useTotalBalance'
+import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { OP_DEMO, USDC_DEMO } from '@/constants/markets'
 import type { LendProviderOperations } from '@/hooks/useLendProvider'
 
@@ -14,7 +20,6 @@ interface UseEarnSwapParams {
   actions?: { getSupportedAssets: () => Asset[] }
   operations: LendProviderOperations
   activeTab: string
-  assetBalance: string | undefined
 }
 
 export function useEarnSwap({
@@ -22,9 +27,16 @@ export function useEarnSwap({
   actions,
   operations,
   activeTab,
-  assetBalance,
 }: UseEarnSwapParams) {
   const { isExecuting: isSwapping } = useSwap()
+  const queryClient = useQueryClient()
+  const { logActivity } = useActivityLogger()
+
+  // Passive subscriber — reads balances from cache populated by the lend path
+  const { data: walletTokenBalances } = useQuery<TokenBalance[]>({
+    queryKey: ['tokenBalances'],
+    queryFn: skipToken,
+  })
 
   const handleGetPrice = useCallback(
     async ({
@@ -59,10 +71,6 @@ export function useEarnSwap({
     [getAuthHeaders],
   )
 
-  const getTokenBalances = useCallback(async () => {
-    return operations.getTokenBalances()
-  }, [operations])
-
   const {
     assets: swapAssets,
     isLoading: isLoadingSwapAssets,
@@ -70,7 +78,7 @@ export function useEarnSwap({
   } = useSwapAssets({
     actions,
     getAuthHeaders,
-    getTokenBalances,
+    tokenBalances: walletTokenBalances,
     enabled: true,
     marketAllowlist: [USDC_DEMO, OP_DEMO],
   })
@@ -81,10 +89,6 @@ export function useEarnSwap({
       refetchSwapAssets()
     }
   }, [activeTab, refetchSwapAssets])
-
-  useEffect(() => {
-    refetchSwapAssets()
-  }, [assetBalance, refetchSwapAssets])
 
   const handleSwap = useCallback(
     async ({
@@ -104,11 +108,13 @@ export function useEarnSwap({
         assetOut,
         chainId,
       })
+      const activity = logActivity('getBalance')
+      await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+      activity?.confirm()
       refetchSwapAssets()
-      setTimeout(() => refetchSwapAssets(), 2000)
       return result
     },
-    [operations, refetchSwapAssets],
+    [operations, logActivity, queryClient, refetchSwapAssets],
   )
 
   const {

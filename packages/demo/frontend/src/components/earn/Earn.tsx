@@ -200,7 +200,6 @@ function EarnContent({
     actions,
     operations,
     activeTab,
-    assetBalance,
   })
 
   return (

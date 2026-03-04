@@ -232,16 +232,16 @@ function createMockOperations(): LendProviderOperations {
 
 ## Acceptance Criteria
 
-- [ ] Page load shows exactly: 1x `getMarket`, 1x `getBalance`, 1x `getPosition`
-- [ ] Selecting a different market produces zero new log entries
-- [ ] Opening a lend position shows: 1x `deposit`, 1x `getBalance`, 1x `getPosition`
+- [x] Page load shows exactly: 1x `getMarket`, 1x `getBalance`, 1x `getPosition`
+- [x] Selecting a different market produces zero new log entries
+- [x] Opening a lend position shows: 1x `deposit`, 1x `getBalance`, 1x `getPosition`
 - [ ] Closing a position shows: 1x `withdraw`, 1x `getBalance`, 1x `getPosition`
 - [ ] Minting shows: 1x `mint`, 1x `getBalance`
-- [ ] Background/stale TanStack Query refetches produce no log entries
-- [ ] Delayed refetch only fires if data hasn't changed after initial refetch
-- [ ] Both frontend and server wallet paths produce identical log behavior
-- [ ] All existing tests pass
-- [ ] Integration tests cover page load, market switch, and open position flows
+- [x] Background/stale TanStack Query refetches produce no log entries
+- [x] Delayed refetch only fires if data hasn't changed after initial refetch
+- [x] Both frontend and server wallet paths produce identical log behavior
+- [x] All existing tests pass
+- [x] Integration tests cover page load, market switch, and open position flows
 
 ## Dependencies & Risks
 
