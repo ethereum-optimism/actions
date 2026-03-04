@@ -4,7 +4,10 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { createElement, type ReactNode } from 'react'
 import { ActivityLogProvider } from '@/providers/ActivityLogProvider'
 import { useActivityLog } from '@/hooks/useActivityLog'
-import { useLendProvider, type LendProviderOperations } from '../useLendProvider'
+import {
+  useLendProvider,
+  type LendProviderOperations,
+} from '../useLendProvider'
 import type {
   LendMarket,
   LendMarketPosition,
@@ -188,7 +191,9 @@ describe('Activity Logging', () => {
     // Switch to a different market
     act(() => {
       const otherMarket = result.current.markets.find(
-        (m) => m.marketId.address !== result.current.selectedMarket?.marketId.address,
+        (m) =>
+          m.marketId.address !==
+          result.current.selectedMarket?.marketId.address,
       )
       if (otherMarket) {
         result.current.handleMarketSelect(otherMarket)
@@ -240,7 +245,9 @@ describe('Activity Logging', () => {
       positionCallCount++
       // First N calls are for initial batch fetch (one per market)
       // After that, return updated position for post-mutation refetch
-      return positionCallCount <= mockMarkets.length ? mockPosition : updatedPosition
+      return positionCallCount <= mockMarkets.length
+        ? mockPosition
+        : updatedPosition
     })
 
     const { result } = renderHook(
@@ -281,8 +288,12 @@ describe('Activity Logging', () => {
     )
 
     const depositLogs = newActivities.filter((a) => a.action === 'deposit')
-    const getBalanceLogs = newActivities.filter((a) => a.action === 'getBalance')
-    const getPositionLogs = newActivities.filter((a) => a.action === 'getPosition')
+    const getBalanceLogs = newActivities.filter(
+      (a) => a.action === 'getBalance',
+    )
+    const getPositionLogs = newActivities.filter(
+      (a) => a.action === 'getPosition',
+    )
 
     expect(depositLogs).toHaveLength(1)
     expect(getBalanceLogs).toHaveLength(1)

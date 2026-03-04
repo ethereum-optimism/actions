@@ -73,7 +73,9 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
         initialBalanceFetchDone.current = true
         return true
       }
-      return balanceBeforeMint.current !== null || balanceBeforeLend.current !== null
+      return (
+        balanceBeforeMint.current !== null || balanceBeforeLend.current !== null
+      )
     },
   })
 

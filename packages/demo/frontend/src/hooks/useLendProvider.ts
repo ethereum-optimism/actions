@@ -121,7 +121,11 @@ export function useLendProvider({
         for (const result of positionResults) {
           if (result) {
             queryClient.setQueryData(
-              ['position', result.market.marketId.address, result.market.marketId.chainId],
+              [
+                'position',
+                result.market.marketId.address,
+                result.market.marketId.chainId,
+              ],
               result.position,
             )
           }

@@ -6,10 +6,7 @@ interface UseMarketsParams {
   isReady: () => boolean
 }
 
-export function useMarkets({
-  getMarkets,
-  isReady,
-}: UseMarketsParams) {
+export function useMarkets({ getMarkets, isReady }: UseMarketsParams) {
   return useQuery({
     queryKey: ['markets'],
     queryFn: () => getMarkets(),
