@@ -3,8 +3,8 @@ import { serve } from '@hono/node-server'
 import { Option } from 'commander'
 
 import { initializeActions } from '@/config/actions.js'
-import { createApp } from '@/createApp.js'
 import { env } from '@/config/env.js'
+import { createApp } from '@/createApp.js'
 
 class ActionsApp extends App {
   private server: ReturnType<typeof serve> | null = null
