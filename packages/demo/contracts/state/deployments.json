@@ -1,15 +1,15 @@
 {
   "84532": {
     "tokens": {
-      "USDC_DEMO": null,
-      "OP_DEMO": null
+      "USDC_DEMO": "0xb1b0FE886cE376F28987AD24b1759a8f0A7dd839",
+      "OP_DEMO": "0xD6169405013E92387b78457Fa77d377cE8cD3EE8"
     },
     "morpho": {
-      "vault": null,
+      "vault": "0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1",
       "oracle": null
     },
     "uniswap": {
-      "poolId": null
+      "poolId": "0xf55820a35859dec5c7cf136d711b0ec06e381edcd1f1a5343b2dac0af7ba3df3"
     }
   }
 }
