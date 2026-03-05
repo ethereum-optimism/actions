@@ -86,26 +86,26 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       const assetInAddress = getAssetAddress(assetIn, chainId)
       const requiredAmount = params.amountInWei ?? quote.amountIn
 
-      // Check if token is approved to Permit2
-      const tokenAllowance = await checkTokenAllowance({
-        publicClient,
-        token: assetInAddress,
-        owner: walletAddress,
-        spender: addresses.permit2,
-      })
+      // Check both allowances in parallel
+      const [tokenAllowance, permit2Allowance] = await Promise.all([
+        checkTokenAllowance({
+          publicClient,
+          token: assetInAddress,
+          owner: walletAddress,
+          spender: addresses.permit2,
+        }),
+        checkPermit2Allowance({
+          publicClient,
+          permit2Address: addresses.permit2,
+          owner: walletAddress,
+          token: assetInAddress,
+          spender: addresses.universalRouter,
+        }),
+      ])
 
       if (tokenAllowance < requiredAmount) {
         tokenApproval = buildTokenApprovalTx(assetInAddress, addresses.permit2)
       }
-
-      // Check Permit2 allowance to Universal Router
-      const permit2Allowance = await checkPermit2Allowance({
-        publicClient,
-        permit2Address: addresses.permit2,
-        owner: walletAddress,
-        token: assetInAddress,
-        spender: addresses.universalRouter,
-      })
 
       if (permit2Allowance.amount < requiredAmount) {
         permit2Approval = buildPermit2ApprovalTx({

@@ -355,7 +355,7 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
 
   if (isExactInput) {
     const minAmountOut =
-      (quote.amountOut * BigInt(Math.floor((1 - slippage) * 10000))) / 10000n
+      (quote.amountOut * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
 
     actions =
       `0x${[SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
@@ -376,7 +376,7 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
   } else {
     const maxAmountIn =
       quote.amountIn +
-      (quote.amountIn * BigInt(Math.floor(slippage * 10000))) / 10000n
+      (quote.amountIn * BigInt(Math.round(slippage * 10000))) / 10000n
 
     actions =
       `0x${[SWAP_EXACT_OUT_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
