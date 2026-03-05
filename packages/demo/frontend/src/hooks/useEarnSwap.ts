@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient, useQuery, skipToken } from '@tanstack/react-query'
 import type {
   Asset,
@@ -8,7 +8,6 @@ import type {
 import type { Address } from 'viem'
 
 import { actionsApi } from '@/api/actionsApi'
-import { useSwap } from '@/hooks/useSwap'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { useTotalBalance } from '@/hooks/useTotalBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
@@ -28,7 +27,7 @@ export function useEarnSwap({
   operations,
   activeTab,
 }: UseEarnSwapParams) {
-  const { isExecuting: isSwapping } = useSwap()
+  const [isSwapping, setIsSwapping] = useState(false)
   const queryClient = useQueryClient()
   const { logActivity } = useActivityLogger()
 
@@ -102,19 +101,25 @@ export function useEarnSwap({
       assetOut: Asset
       chainId: SupportedChainId
     }) => {
-      const result = await operations.executeSwap({
-        amountIn,
-        assetIn,
-        assetOut,
-        chainId,
-      })
-      const activity = logActivity('getBalance')
-      await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
-      activity?.confirm()
-      refetchSwapAssets()
-      return result
+      if (isSwapping) return
+      setIsSwapping(true)
+      try {
+        const result = await operations.executeSwap({
+          amountIn,
+          assetIn,
+          assetOut,
+          chainId,
+        })
+        const activity = logActivity('getBalance')
+        await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+        activity?.confirm()
+        refetchSwapAssets()
+        return result
+      } finally {
+        setIsSwapping(false)
+      }
     },
-    [operations, logActivity, queryClient, refetchSwapAssets],
+    [isSwapping, operations, logActivity, queryClient, refetchSwapAssets],
   )
 
   const {

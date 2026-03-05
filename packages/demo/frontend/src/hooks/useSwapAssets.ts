@@ -59,6 +59,8 @@ export function useSwapAssets({
   const [error, setError] = useState<Error | null>(null)
   const marketAllowlistRef = useRef(marketAllowlist)
   marketAllowlistRef.current = marketAllowlist
+  const tokenBalancesRef = useRef(tokenBalances)
+  tokenBalancesRef.current = tokenBalances
 
   const fetchAssets = useCallback(async () => {
     if (!enabled) return
@@ -93,8 +95,8 @@ export function useSwapAssets({
         )
       }
 
-      // Step 3: Use provided token balances
-      const balances = tokenBalances ?? []
+      // Step 3: Use provided token balances (via ref to avoid refetch cascade)
+      const balances = tokenBalancesRef.current ?? []
 
       // Step 4: Build asset map for quick lookup
       const assetMap = new Map<string, Asset>()
@@ -129,7 +131,7 @@ export function useSwapAssets({
     } finally {
       setIsLoading(false)
     }
-  }, [actions, getAuthHeaders, tokenBalances, enabled])
+  }, [actions, getAuthHeaders, enabled])
 
   useEffect(() => {
     fetchAssets()
