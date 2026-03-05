@@ -328,6 +328,10 @@ export function SwapAction({
     )
   }
 
+  const formattedPrice = priceQuote
+    ? formatSwapAmount(priceQuote.price)
+    : null
+
   return (
     <>
       <div
@@ -539,10 +543,10 @@ export function SwapAction({
               }}
             >
               1 {displaySymbol(assetIn.asset.metadata.symbol)} ={' '}
-              {formatSwapAmount(priceQuote.price).main}
-              {formatSwapAmount(priceQuote.price).secondary && (
+              {formattedPrice.main}
+              {formattedPrice.secondary && (
                 <span style={{ color: '#9195A6', fontSize: '12px' }}>
-                  {formatSwapAmount(priceQuote.price).secondary}
+                  {formattedPrice.secondary}
                 </span>
               )}{' '}
               {displaySymbol(assetOut.asset.metadata.symbol)}
