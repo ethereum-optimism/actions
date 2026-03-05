@@ -19,6 +19,7 @@ interface ReviewSwapModalProps {
   amountOut: string
   priceQuote: { price: string; priceImpact: number } | null
   isExecuting: boolean
+  slippage?: number
 }
 
 export function ReviewSwapModal({
@@ -31,6 +32,7 @@ export function ReviewSwapModal({
   amountOut,
   priceQuote,
   isExecuting,
+  slippage = 0.005,
 }: ReviewSwapModalProps) {
   const symbolIn = displaySymbol(assetIn.asset.metadata.symbol)
   const symbolOut = displaySymbol(assetOut.asset.metadata.symbol)
@@ -46,7 +48,9 @@ export function ReviewSwapModal({
   const usdIn = formatUsd(parsedIn, usdPerIn)
 
   const formattedOut = formatSwapAmount(amountOut)
-  const formattedMinReceived = formatSwapAmount((parsedOut * 0.995).toFixed(6))
+  const formattedMinReceived = formatSwapAmount(
+    (parsedOut * (1 - slippage)).toFixed(6),
+  )
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="420px">
@@ -171,7 +175,9 @@ export function ReviewSwapModal({
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#666666' }}>Max slippage</span>
-            <span style={{ color: '#1a1b1e' }}>0.5%</span>
+            <span style={{ color: '#1a1b1e' }}>
+              {(slippage * 100).toFixed(1)}%
+            </span>
           </div>
         </div>
       )}
