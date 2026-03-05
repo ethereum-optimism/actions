@@ -26,10 +26,6 @@ export interface EarnProps {
   logout: () => Promise<void>
   walletAddress: string | null
   providerConfig: WalletProviderConfig
-  getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
-  actions?: {
-    getSupportedAssets: () => import('@eth-optimism/actions-sdk/react').Asset[]
-  }
   logPrefix?: string
 }
 
@@ -42,8 +38,6 @@ function Earn({
   logout,
   walletAddress,
   providerConfig,
-  getAuthHeaders,
-  actions,
   logPrefix,
 }: EarnProps) {
   const queryClient = useQueryClient()
@@ -87,8 +81,6 @@ function Earn({
             logout={logout}
             walletAddress={walletAddress}
             providerConfig={providerConfig}
-            getAuthHeaders={getAuthHeaders}
-            actions={actions}
             operations={operations}
           />
         </ActivityHighlightProvider>
@@ -101,10 +93,6 @@ interface EarnContentProps {
   logout: () => Promise<void>
   walletAddress: string | null
   providerConfig: WalletProviderConfig
-  getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
-  actions?: {
-    getSupportedAssets: () => import('@eth-optimism/actions-sdk/react').Asset[]
-  }
   operations: LendProviderOperations
 }
 
@@ -115,8 +103,6 @@ function EarnContent({
   logout,
   walletAddress,
   providerConfig,
-  getAuthHeaders,
-  actions,
   operations,
 }: EarnContentProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -196,8 +182,6 @@ function EarnContent({
     totalUsd,
     isLoadingTotalBalance,
   } = useEarnSwap({
-    getAuthHeaders,
-    actions,
     operations,
     activeTab,
   })

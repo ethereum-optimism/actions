@@ -5,9 +5,7 @@ import type {
   SupportedChainId,
   TokenBalance,
 } from '@eth-optimism/actions-sdk/react'
-import type { Address } from 'viem'
 
-import { actionsApi } from '@/api/actionsApi'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { useTotalBalance } from '@/hooks/useTotalBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
@@ -15,18 +13,11 @@ import { OP_DEMO, USDC_DEMO } from '@/constants/markets'
 import type { LendProviderOperations } from '@/hooks/useLendProvider'
 
 interface UseEarnSwapParams {
-  getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
-  actions?: { getSupportedAssets: () => Asset[] }
   operations: LendProviderOperations
   activeTab: string
 }
 
-export function useEarnSwap({
-  getAuthHeaders,
-  actions,
-  operations,
-  activeTab,
-}: UseEarnSwapParams) {
+export function useEarnSwap({ operations, activeTab }: UseEarnSwapParams) {
   const [isSwapping, setIsSwapping] = useState(false)
   const queryClient = useQueryClient()
   const { logActivity } = useActivityLogger()
@@ -51,23 +42,15 @@ export function useEarnSwap({
       amountIn?: number
       amountOut?: number
     }) => {
-      try {
-        const headers = await getAuthHeaders()
-        const price = await actionsApi.getSwapPrice(
-          { tokenInAddress, tokenOutAddress, chainId, amountIn, amountOut },
-          headers,
-        )
-        return {
-          price: price.price,
-          priceImpact: price.priceImpact,
-          amountInFormatted: price.amountInFormatted,
-          amountOutFormatted: price.amountOutFormatted,
-        }
-      } catch {
-        return null
-      }
+      return operations.getSwapPrice({
+        tokenInAddress,
+        tokenOutAddress,
+        chainId,
+        amountIn,
+        amountOut,
+      })
     },
-    [getAuthHeaders],
+    [operations],
   )
 
   const {
@@ -75,8 +58,7 @@ export function useEarnSwap({
     isLoading: isLoadingSwapAssets,
     refetch: refetchSwapAssets,
   } = useSwapAssets({
-    actions,
-    getAuthHeaders,
+    getConfiguredAssets: operations.getConfiguredAssets,
     tokenBalances: walletTokenBalances,
     enabled: true,
     marketAllowlist: [USDC_DEMO, OP_DEMO],

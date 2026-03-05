@@ -74,6 +74,24 @@ export function EarnWithServerWallet({
         )
         return { blockExplorerUrl: result.blockExplorerUrls?.[0] }
       },
+      getConfiguredAssets: async () => {
+        const headers = await getAuthHeaders()
+        return actionsApi.getAssets(headers)
+      },
+      getSwapPrice: async (params) => {
+        try {
+          const headers = await getAuthHeaders()
+          const price = await actionsApi.getSwapPrice(params, headers)
+          return {
+            price: price.price,
+            priceImpact: price.priceImpact,
+            amountInFormatted: price.amountInFormatted,
+            amountOutFormatted: price.amountOutFormatted,
+          }
+        } catch {
+          return null
+        }
+      },
     }),
     [getAuthHeaders, walletAddress],
   )
@@ -95,7 +113,6 @@ export function EarnWithServerWallet({
       logout={logout}
       walletAddress={walletAddress}
       providerConfig={selectedProvider}
-      getAuthHeaders={getAuthHeaders}
       logPrefix="[EarnWithServerWallet]"
     />
   )

@@ -5,7 +5,6 @@ import type {
   TokenBalance,
 } from '@eth-optimism/actions-sdk/react'
 
-import { actionsApi } from '@/api/actionsApi'
 import { getAssetLogo } from '@/constants/logos'
 
 export interface SwapAsset {
@@ -16,41 +15,22 @@ export interface SwapAsset {
 }
 
 interface UseSwapAssetsParams {
-  /**
-   * Actions instance for frontend wallets (Dynamic, Turnkey)
-   * If provided, uses actions.getSupportedAssets()
-   */
-  actions?: { getSupportedAssets: () => Asset[] }
-  /**
-   * Auth headers provider for backend wallets (Privy)
-   * If provided, uses API to fetch assets
-   */
-  getAuthHeaders?: () => Promise<{ Authorization: string } | undefined>
-  /**
-   * User's current token balances (from wallet layer)
-   */
+  /** Callback to fetch configured assets — abstracts wallet type */
+  getConfiguredAssets: () => Promise<Asset[]>
+  /** User's current token balances (from wallet layer) */
   tokenBalances?: TokenBalance[]
-  /**
-   * Whether the component is ready to fetch
-   */
+  /** Whether the component is ready to fetch */
   enabled: boolean
-  /**
-   * Restrict to only these assets (from swap config marketAllowlist).
-   * If omitted, all configured assets are shown.
-   */
+  /** Restrict to only these assets (from swap config marketAllowlist) */
   marketAllowlist?: Asset[]
 }
 
 /**
- * Shared hook for fetching swap assets
- * @description Works with both frontend and backend wallet providers.
- * - Frontend wallets: uses actions.getSupportedAssets()
- * - Backend wallets: fetches from /assets API endpoint
- * Then matches assets with user balances.
+ * Shared hook for fetching swap assets.
+ * Uses getConfiguredAssets callback to abstract frontend vs backend wallet differences.
  */
 export function useSwapAssets({
-  actions,
-  getAuthHeaders,
+  getConfiguredAssets,
   tokenBalances,
   enabled,
   marketAllowlist,
@@ -70,23 +50,9 @@ export function useSwapAssets({
     setError(null)
 
     try {
-      // Step 1: Get configured assets
-      let configuredAssets: Asset[]
+      let configuredAssets = await getConfiguredAssets()
 
-      if (actions) {
-        // Frontend wallet path: use actions.getSupportedAssets()
-        configuredAssets = actions.getSupportedAssets()
-      } else if (getAuthHeaders) {
-        // Backend wallet path: fetch from API
-        const headers = await getAuthHeaders()
-        configuredAssets = await actionsApi.getAssets(headers)
-      } else {
-        throw new Error(
-          'Either actions instance or getAuthHeaders must be provided',
-        )
-      }
-
-      // Step 2: Filter to swap allowlist if provided
+      // Filter to swap allowlist if provided
       if (marketAllowlistRef.current?.length) {
         const allowed = new Set(
           marketAllowlistRef.current.map((a) => a.metadata.symbol),
@@ -132,7 +98,7 @@ export function useSwapAssets({
     } finally {
       setIsLoading(false)
     }
-  }, [actions, getAuthHeaders, enabled])
+  }, [getConfiguredAssets, enabled])
 
   useEffect(() => {
     fetchAssets()

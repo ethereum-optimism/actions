@@ -116,15 +116,22 @@ export function EarnWithFrontendWallet({
         )
         return { blockExplorerUrl }
       },
+      getConfiguredAssets: async () => actions.getSupportedAssets(),
+      getSwapPrice: async (params) => {
+        try {
+          const price = await actionsApi.getSwapPrice(params)
+          return {
+            price: price.price,
+            priceImpact: price.priceImpact,
+            amountInFormatted: price.amountInFormatted,
+            amountOutFormatted: price.amountOutFormatted,
+          }
+        } catch {
+          return null
+        }
+      },
     }),
     [wallet, actions],
-  )
-
-  const getAuthHeaders = useMemo(
-    () => async () => {
-      return undefined
-    },
-    [],
   )
 
   return (
@@ -134,8 +141,6 @@ export function EarnWithFrontendWallet({
       logout={logout}
       walletAddress={wallet?.address || null}
       providerConfig={WALLET_PROVIDER_CONFIGS[selectedProvider]}
-      getAuthHeaders={getAuthHeaders}
-      actions={actions}
       logPrefix="[EarnWithFrontendWallet]"
     />
   )

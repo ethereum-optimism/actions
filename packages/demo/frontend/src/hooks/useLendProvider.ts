@@ -37,6 +37,19 @@ export interface LendProviderOperations {
     assetOut: Asset
     chainId: SupportedChainId
   }) => Promise<{ blockExplorerUrl?: string }>
+  getConfiguredAssets: () => Promise<Asset[]>
+  getSwapPrice: (params: {
+    tokenInAddress: Address
+    tokenOutAddress: Address
+    chainId: SupportedChainId
+    amountIn?: number
+    amountOut?: number
+  }) => Promise<{
+    price: string
+    priceImpact: number
+    amountInFormatted: string
+    amountOutFormatted: string
+  } | null>
 }
 
 interface UseLendProviderParams {
