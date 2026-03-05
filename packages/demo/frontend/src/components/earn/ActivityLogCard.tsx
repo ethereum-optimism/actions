@@ -5,6 +5,42 @@ import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
 type CardTab = 'log' | 'activity'
 
+const TABS: { key: CardTab; label: string }[] = [
+  { key: 'log', label: 'Log' },
+  { key: 'activity', label: 'Activity' },
+]
+
+function TabButton({
+  label,
+  isActive,
+  onClick,
+}: {
+  label: string
+  isActive: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '14px 20px',
+        border: 'none',
+        backgroundColor: 'transparent',
+        fontSize: '15px',
+        fontWeight: isActive ? 600 : 400,
+        color: isActive ? '#1a1b1e' : '#9195A6',
+        cursor: 'pointer',
+        borderBottom: isActive
+          ? '3px solid #1a1b1e'
+          : '3px solid transparent',
+        fontFamily: 'Inter',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
 interface ActivityLogCardProps {
   activities: ActivityEntry[]
   formatTimestamp: (timestamp: string) => string
@@ -30,47 +66,16 @@ function ActivityLogCard({
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
-      {/* Tab Header */}
       <div style={{ padding: '0 24px' }}>
         <div className="flex" style={{ gap: 0 }}>
-          <button
-            onClick={() => setActiveTab('log')}
-            style={{
-              padding: '14px 20px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              fontSize: '15px',
-              fontWeight: activeTab === 'log' ? 600 : 400,
-              color: activeTab === 'log' ? '#1a1b1e' : '#9195A6',
-              cursor: 'pointer',
-              borderBottom:
-                activeTab === 'log'
-                  ? '3px solid #1a1b1e'
-                  : '3px solid transparent',
-              fontFamily: 'Inter',
-            }}
-          >
-            Log
-          </button>
-          <button
-            onClick={() => setActiveTab('activity')}
-            style={{
-              padding: '14px 20px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              fontSize: '15px',
-              fontWeight: activeTab === 'activity' ? 600 : 400,
-              color: activeTab === 'activity' ? '#1a1b1e' : '#9195A6',
-              cursor: 'pointer',
-              borderBottom:
-                activeTab === 'activity'
-                  ? '3px solid #1a1b1e'
-                  : '3px solid transparent',
-              fontFamily: 'Inter',
-            }}
-          >
-            Activity
-          </button>
+          {TABS.map((tab) => (
+            <TabButton
+              key={tab.key}
+              label={tab.label}
+              isActive={activeTab === tab.key}
+              onClick={() => setActiveTab(tab.key)}
+            />
+          ))}
         </div>
         <div style={{ borderBottom: '1px solid #E0E2EB' }} />
       </div>
