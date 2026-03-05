@@ -6,9 +6,9 @@ import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
 
-import type { AuthContext } from '@/middleware/auth.js'
 import { serializeBigInt } from '@/utils/serializers.js'
 
+import { errorResponse, requireAuth } from '../helpers/errors.js'
 import { validateRequest } from '../helpers/validation.js'
 import * as swapService from '../services/swap.js'
 
@@ -85,8 +85,8 @@ export async function getMarkets(c: Context) {
       chainId as SupportedChainId | undefined,
     )
     return c.json({ result: serializeBigInt(markets) })
-  } catch {
-    return c.json({ error: 'Failed to get swap markets' }, 500)
+  } catch (error) {
+    return errorResponse(c, 'Failed to get swap markets', 500, error)
   }
 }
 
@@ -111,8 +111,7 @@ export async function getPrice(c: Context) {
 
     return c.json({ result: serializeBigInt(price) })
   } catch (error) {
-    console.error('Failed to get swap price:', error)
-    return c.json({ error: 'Failed to get swap price' }, 500)
+    return errorResponse(c, 'Failed to get swap price', 500, error)
   }
 }
 
@@ -127,13 +126,11 @@ export async function executeSwap(c: Context) {
     const { amountIn, tokenInAddress, tokenOutAddress, chainId, slippage } =
       validation.data.body
 
-    const auth = c.get('auth') as AuthContext | undefined
-    if (!auth || !auth.idToken) {
-      return c.json({ error: 'Unauthorized' }, 401)
-    }
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
 
     const result = await swapService.executeSwap({
-      idToken: auth.idToken,
+      idToken: authResult.auth.idToken,
       amountIn,
       tokenInAddress: tokenInAddress as Address,
       tokenOutAddress: tokenOutAddress as Address,
@@ -143,7 +140,6 @@ export async function executeSwap(c: Context) {
 
     return c.json({ result: serializeBigInt(result) })
   } catch (error) {
-    console.error('Failed to execute swap:', error)
-    return c.json({ error: 'Failed to execute swap' }, 500)
+    return errorResponse(c, 'Failed to execute swap', 500, error)
   }
 }

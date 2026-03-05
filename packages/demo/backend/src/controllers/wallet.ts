@@ -3,9 +3,9 @@ import type { Context } from 'hono'
 import { type Address } from 'viem'
 import { z } from 'zod'
 
-import type { AuthContext } from '@/middleware/auth.js'
 import type { GetWalletResponse } from '@/types/service.js'
 
+import { errorResponse, requireAuth } from '../helpers/errors.js'
 import { validateRequest } from '../helpers/validation.js'
 import * as faucetService from '../services/faucet.js'
 import * as walletService from '../services/wallet.js'
@@ -33,36 +33,20 @@ export class WalletController {
    */
   async getWallet(c: Context) {
     try {
-      const auth = c.get('auth') as AuthContext | undefined
+      const authResult = requireAuth(c)
+      if ('error' in authResult) return authResult.error
 
-      if (!auth || !auth.idToken) {
-        return c.json({ error: 'Unauthorized' }, 401)
-      }
-
-      const wallet = await walletService.getWallet(auth.idToken)
+      const wallet = await walletService.getWallet(authResult.auth.idToken)
 
       if (!wallet) {
-        return c.json(
-          {
-            error: 'Wallet not found',
-            message: `No wallet found for user`,
-          },
-          404,
-        )
+        return errorResponse(c, 'Wallet not found', 404)
       }
 
       return c.json({
         address: wallet.address,
       } satisfies GetWalletResponse)
     } catch (error) {
-      console.error(error)
-      return c.json(
-        {
-          error: 'Failed to get wallet',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to get wallet', 500, error)
     }
   }
 
@@ -71,27 +55,17 @@ export class WalletController {
    */
   async getBalance(c: Context) {
     try {
-      const auth = c.get('auth') as AuthContext | undefined
+      const authResult = requireAuth(c)
+      if ('error' in authResult) return authResult.error
 
-      if (!auth || !auth.idToken) {
-        return c.json({ error: 'Unauthorized' }, 401)
-      }
-
-      const wallet = await walletService.getWallet(auth.idToken)
+      const wallet = await walletService.getWallet(authResult.auth.idToken)
       if (!wallet) {
         throw new Error('Wallet not found')
       }
       const balance = await walletService.getWalletBalance(wallet)
       return c.json({ result: balance })
     } catch (error) {
-      console.error(error)
-      return c.json(
-        {
-          error: 'Failed to get balance',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to get balance', 500, error)
     }
   }
 
@@ -109,13 +83,10 @@ export class WalletController {
       chainId: Number(chainId) as SupportedChainId,
     }
 
-    const auth = c.get('auth') as AuthContext | undefined
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
 
-    if (!auth || !auth.idToken) {
-      return c.json({ error: 'Unauthorized' }, 401)
-    }
-
-    const wallet = await walletService.getWallet(auth.idToken)
+    const wallet = await walletService.getWallet(authResult.auth.idToken)
     if (!wallet) {
       throw new Error('Wallet not found')
     }
@@ -128,12 +99,10 @@ export class WalletController {
    */
   async mintDemoUsdcToWallet(c: Context) {
     try {
-      const auth = c.get('auth') as AuthContext | undefined
-      if (!auth || !auth.idToken) {
-        return c.json({ error: 'Unauthorized' }, 401)
-      }
+      const authResult = requireAuth(c)
+      if ('error' in authResult) return authResult.error
 
-      const wallet = await walletService.getWallet(auth.idToken)
+      const wallet = await walletService.getWallet(authResult.auth.idToken)
       if (!wallet) {
         throw new Error('Wallet not found')
       }
@@ -141,14 +110,7 @@ export class WalletController {
       const result = await walletService.mintDemoUsdcToWallet(wallet)
       return c.json(result)
     } catch (error) {
-      console.error(error)
-      return c.json(
-        {
-          error: 'Failed to fund wallet',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to fund wallet', 500, error)
     }
   }
 
@@ -165,26 +127,19 @@ export class WalletController {
       const isWalletEligibleForFaucet =
         await faucetService.isWalletEligibleForFaucet(walletAddress as Address)
       if (!isWalletEligibleForFaucet) {
-        return c.json({ error: 'Wallet is not eligible for the faucet' }, 400)
+        return errorResponse(c, 'Wallet is not eligible for the faucet', 400)
       }
 
       const result = await faucetService.dripEthToWallet(
         walletAddress as Address,
       )
       if (!result.success) {
-        return c.json({ error: 'Failed to drip ETH to wallet' }, 500)
+        return errorResponse(c, 'Failed to drip ETH to wallet', 500)
       }
 
       return c.json({ result: { userOpHash: result.userOpHash } })
     } catch (error) {
-      console.error(error)
-      return c.json(
-        {
-          error: 'Failed to drip ETH to wallet',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      )
+      return errorResponse(c, 'Failed to drip ETH to wallet', 500, error)
     }
   }
 }
