@@ -329,9 +329,7 @@ export function SwapAction({
     )
   }
 
-  const formattedPrice = priceQuote
-    ? formatSwapAmount(priceQuote.price)
-    : null
+  const formattedPrice = priceQuote ? formatSwapAmount(priceQuote.price) : null
 
   return (
     <>

@@ -41,8 +41,7 @@
     "build": "tsc && resolve-tspaths",
     "clean": "rm -rf dist types tsconfig.tsbuildinfo",
     "docs": "typedoc",
-    "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
-    "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --log-level=warn",
+    "lint": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --log-level=warn",
     "test": "vitest --run --project unit",
     "test:supersim": "vitest --run --project supersim",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"

@@ -53,7 +53,9 @@ export function ActivityFeedItem({
   chainId,
 }: ActivityFeedItemProps) {
   const [expanded, setExpanded] = useState(false)
-  const chain = chainId ? CHAIN_DISPLAY[chainId] ?? DEFAULT_CHAIN : DEFAULT_CHAIN
+  const chain = chainId
+    ? (CHAIN_DISPLAY[chainId] ?? DEFAULT_CHAIN)
+    : DEFAULT_CHAIN
 
   return (
     <div style={{ borderBottom: '1px solid #E0E2EB' }}>

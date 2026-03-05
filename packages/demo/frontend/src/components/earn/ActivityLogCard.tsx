@@ -30,9 +30,7 @@ function TabButton({
         fontWeight: isActive ? 600 : 400,
         color: isActive ? '#1a1b1e' : '#9195A6',
         cursor: 'pointer',
-        borderBottom: isActive
-          ? '3px solid #1a1b1e'
-          : '3px solid transparent',
+        borderBottom: isActive ? '3px solid #1a1b1e' : '3px solid transparent',
         fontFamily: 'Inter',
       }}
     >

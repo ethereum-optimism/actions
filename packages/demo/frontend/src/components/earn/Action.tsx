@@ -60,9 +60,7 @@ function getCtaText(
   if (isLoading) return 'Processing...'
   if (isMintingAsset) return 'Minting...'
   if (needsMint) return `Get ${displaySymbol}`
-  return mode === 'lend'
-    ? `Lend ${displaySymbol}`
-    : `Withdraw ${displaySymbol}`
+  return mode === 'lend' ? `Lend ${displaySymbol}` : `Withdraw ${displaySymbol}`
 }
 
 function ModeToggle({
@@ -355,7 +353,12 @@ export function Action({
     }
     if (isActionDisabled) return
 
-    const eventData = { action: mode, asset: assetSymbol, amount: amountValue, provider }
+    const eventData = {
+      action: mode,
+      asset: assetSymbol,
+      amount: amountValue,
+      provider,
+    }
     trackEvent('transaction_initiated', eventData)
 
     setIsLoading(true)
@@ -380,7 +383,13 @@ export function Action({
     }
   }
 
-  const ctaText = getCtaText(isLoading, isMintingAsset, needsMint, mode, displaySymbol)
+  const ctaText = getCtaText(
+    isLoading,
+    isMintingAsset,
+    needsMint,
+    mode,
+    displaySymbol,
+  )
   const ctaDisabled = isMintingAsset || (needsMint ? false : isActionDisabled)
 
   return (
