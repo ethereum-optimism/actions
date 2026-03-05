@@ -1,6 +1,6 @@
 import {
-  type SupportedChainId,
   SUPPORTED_CHAIN_IDS,
+  type SupportedChainId,
 } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import type { Address } from 'viem'
