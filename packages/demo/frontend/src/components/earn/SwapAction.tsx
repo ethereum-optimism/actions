@@ -273,7 +273,6 @@ export function SwapAction({
         amount: parseFloat(amountIn),
       })
     } catch (err) {
-      console.error('[SwapAction] swap failed:', err)
       activity?.error()
       setTxModalStatus('error')
       trackEvent('swap_error', {

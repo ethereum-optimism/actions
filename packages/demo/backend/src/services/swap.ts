@@ -107,11 +107,6 @@ export async function executeSwap(
       blockExplorerUrls,
     }
   } catch (error) {
-    console.error('[executeSwap] ERROR:', {
-      error,
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
     throw error
   }
 }

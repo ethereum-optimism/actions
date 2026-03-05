@@ -39,7 +39,7 @@ const ExecuteSwapRequestSchema = z.object({
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
     chainId: z.number().positive('chainId must be positive'),
-    slippage: z.number().min(0).max(1).optional(),
+    slippage: z.number().min(0).max(0.5).optional(),
   }),
 })
 
@@ -96,18 +96,7 @@ export async function getPrice(c: Context) {
 
     return c.json({ result: serializeBigInt(price) })
   } catch (error) {
-    console.error('[getPrice] ERROR:', {
-      error,
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-    return c.json(
-      {
-        error: 'Failed to get swap price',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      500,
-    )
+    return c.json({ error: 'Failed to get swap price' }, 500)
   }
 }
 
@@ -138,16 +127,6 @@ export async function executeSwap(c: Context) {
 
     return c.json({ result: serializeBigInt(result) })
   } catch (error) {
-    console.error('[executeSwap] ERROR:', {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-    })
-    return c.json(
-      {
-        error: 'Failed to execute swap',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      500,
-    )
+    return c.json({ error: 'Failed to execute swap' }, 500)
   }
 }

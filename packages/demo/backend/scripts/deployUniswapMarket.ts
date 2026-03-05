@@ -10,7 +10,7 @@
 
 import 'dotenv/config'
 
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 
 import { createPublicClient, encodePacked, http, keccak256 } from 'viem'
 import { baseSepolia } from 'viem/chains'
@@ -120,24 +120,43 @@ async function main(): Promise<void> {
     )
   }
 
-  // Deploy
-  const forgeArgs = process.argv.slice(2).join(' ')
+  // Deploy using execFileSync to prevent command injection
   const contractsDir = new URL('../../contracts', import.meta.url).pathname
 
-  const cmd = [
-    `cd ${contractsDir} &&`,
-    `DEMO_USDC_ADDRESS=${usdcAddress}`,
-    `DEMO_OP_ADDRESS=${opAddress}`,
-    `forge script script/DeployUniswapMarket.s.sol`,
-    `--rpc-url ${rpcUrl}`,
-    `--broadcast`,
-    `--private-key ${privateKey}`,
-    forgeArgs,
-  ].join(' ')
+  const ALLOWED_FORGE_FLAGS = new Set([
+    '--verify',
+    '--slow',
+    '--gas-estimate-multiplier',
+    '--legacy',
+  ])
+  const extraArgs = process.argv.slice(2).filter((arg) => {
+    const flag = arg.split('=')[0]
+    return ALLOWED_FORGE_FLAGS.has(flag)
+  })
 
-  const safeCmd = cmd.replace(privateKey, '***').replace(rpcUrl, '***')
-  console.log(`\n> ${safeCmd}\n`)
-  execSync(cmd, { stdio: 'inherit' })
+  const forgeArgs = [
+    'script',
+    'script/DeployUniswapMarket.s.sol',
+    '--rpc-url',
+    rpcUrl,
+    '--broadcast',
+    '--private-key',
+    privateKey,
+    ...extraArgs,
+  ]
+
+  console.log(
+    `\n> forge ${forgeArgs.map((a) => (a === privateKey ? '***' : a === rpcUrl ? '***' : a)).join(' ')}\n`,
+  )
+  execFileSync('forge', forgeArgs, {
+    cwd: contractsDir,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      DEMO_USDC_ADDRESS: usdcAddress,
+      DEMO_OP_ADDRESS: opAddress,
+    },
+  })
 
   console.log('\nPool deployed successfully!')
   logPoolInfo()
