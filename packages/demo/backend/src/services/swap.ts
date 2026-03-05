@@ -66,47 +66,43 @@ export async function executeSwap(
     slippage,
   } = params
 
-  try {
-    const wallet = await getWallet(idToken)
-    if (!wallet) {
-      throw new Error('Wallet not found')
-    }
+  const wallet = await getWallet(idToken)
+  if (!wallet) {
+    throw new Error('Wallet not found')
+  }
 
-    if (!wallet.swap) {
-      throw new Error('Swap not configured for this wallet')
-    }
+  if (!wallet.swap) {
+    throw new Error('Swap not configured for this wallet')
+  }
 
-    const assetIn = resolveAsset(tokenInAddress, chainId)
-    const assetOut = resolveAsset(tokenOutAddress, chainId)
+  const assetIn = resolveAsset(tokenInAddress, chainId)
+  const assetOut = resolveAsset(tokenOutAddress, chainId)
 
-    const result = await wallet.swap.execute({
-      amountIn,
-      assetIn,
-      assetOut,
-      chainId,
-      slippage,
-    })
+  const result = await wallet.swap.execute({
+    amountIn,
+    assetIn,
+    assetOut,
+    chainId,
+    slippage,
+  })
 
-    // Extract transaction hash from nested receipt
-    const receipt = result.receipt
-    const transactionHash =
-      'transactionHash' in receipt
-        ? (receipt.transactionHash as string)
-        : undefined
-    const userOpHash =
-      'userOpHash' in receipt ? (receipt.userOpHash as string) : undefined
+  // Extract transaction hash from nested receipt
+  const receipt = result.receipt
+  const transactionHash =
+    'transactionHash' in receipt
+      ? (receipt.transactionHash as string)
+      : undefined
+  const userOpHash =
+    'userOpHash' in receipt ? (receipt.userOpHash as string) : undefined
 
-    const blockExplorerUrls = getBlockExplorerUrls({
-      chainId,
-      transactionHash,
-      userOpHash,
-    })
+  const blockExplorerUrls = getBlockExplorerUrls({
+    chainId,
+    transactionHash,
+    userOpHash,
+  })
 
-    return {
-      ...result,
-      blockExplorerUrls,
-    }
-  } catch (error) {
-    throw error
+  return {
+    ...result,
+    blockExplorerUrls,
   }
 }

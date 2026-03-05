@@ -1,4 +1,7 @@
-import type { SupportedChainId } from '@eth-optimism/actions-sdk'
+import {
+  type SupportedChainId,
+  SUPPORTED_CHAIN_IDS,
+} from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
@@ -9,6 +12,18 @@ import { serializeBigInt } from '@/utils/serializers.js'
 import { validateRequest } from '../helpers/validation.js'
 import * as swapService from '../services/swap.js'
 
+const supportedChainIds = SUPPORTED_CHAIN_IDS as readonly number[]
+
+const chainIdFromString = z
+  .string()
+  .transform((v) => Number(v))
+  .refine((v) => supportedChainIds.includes(v), 'Unsupported chain ID')
+
+const chainIdFromNumber = z
+  .number()
+  .positive('chainId must be positive')
+  .refine((v) => supportedChainIds.includes(v), 'Unsupported chain ID')
+
 const PriceRequestSchema = z.object({
   query: z.object({
     tokenInAddress: z
@@ -17,7 +32,7 @@ const PriceRequestSchema = z.object({
     tokenOutAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
-    chainId: z.string().transform((v) => Number(v)),
+    chainId: chainIdFromString,
     amountIn: z
       .string()
       .optional()
@@ -38,7 +53,7 @@ const ExecuteSwapRequestSchema = z.object({
     tokenOutAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
-    chainId: z.number().positive('chainId must be positive'),
+    chainId: chainIdFromNumber,
     slippage: z.number().min(0).max(0.5).optional(),
   }),
 })
@@ -48,7 +63,11 @@ const GetMarketsRequestSchema = z.object({
     chainId: z
       .string()
       .optional()
-      .transform((v) => (v ? Number(v) : undefined)),
+      .transform((v) => (v ? Number(v) : undefined))
+      .refine(
+        (v) => v === undefined || supportedChainIds.includes(v),
+        'Unsupported chain ID',
+      ),
   }),
 })
 
@@ -62,16 +81,12 @@ export async function getMarkets(c: Context) {
 
     const { chainId } = validation.data.query
 
-    const markets = await swapService.getMarkets(chainId as SupportedChainId)
-    return c.json({ result: serializeBigInt(markets) })
-  } catch (error) {
-    return c.json(
-      {
-        error: 'Failed to get swap markets',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      500,
+    const markets = await swapService.getMarkets(
+      chainId as SupportedChainId | undefined,
     )
+    return c.json({ result: serializeBigInt(markets) })
+  } catch {
+    return c.json({ error: 'Failed to get swap markets' }, 500)
   }
 }
 
@@ -95,7 +110,8 @@ export async function getPrice(c: Context) {
     })
 
     return c.json({ result: serializeBigInt(price) })
-  } catch {
+  } catch (error) {
+    console.error('Failed to get swap price:', error)
     return c.json({ error: 'Failed to get swap price' }, 500)
   }
 }
@@ -126,7 +142,8 @@ export async function executeSwap(c: Context) {
     })
 
     return c.json({ result: serializeBigInt(result) })
-  } catch {
+  } catch (error) {
+    console.error('Failed to execute swap:', error)
     return c.json({ error: 'Failed to execute swap' }, 500)
   }
 }
