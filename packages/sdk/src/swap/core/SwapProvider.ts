@@ -67,6 +67,14 @@ export abstract class SwapProvider<
       throw new Error('Either amountIn or amountOut must be provided')
     }
 
+    // Prevent same-asset swaps
+    if (
+      params.assetIn.metadata.symbol.toLowerCase() ===
+      params.assetOut.metadata.symbol.toLowerCase()
+    ) {
+      throw new Error('Cannot swap an asset for itself')
+    }
+
     // Validate chain support
     this.validateChainSupported(params.chainId)
 
