@@ -1,3 +1,4 @@
+import { MARKET_LOGO, SYMBOL_LOGO } from '@/constants/logos'
 import type { ActivityEntry } from '@/providers/ActivityLogProvider'
 import { displaySymbol } from '@/utils/tokenDisplay'
 
@@ -7,20 +8,6 @@ export type SummarySegment =
 
 export interface ActivitySummary {
   segments: SummarySegment[]
-}
-
-const SYMBOL_LOGO: Record<string, string> = {
-  USDC_DEMO: '/usd-coin-usdc-logo.svg',
-  USDC: '/usd-coin-usdc-logo.svg',
-  ETH: '/eth.svg',
-  OP_DEMO: '/OP.svg',
-  OP: '/OP.svg',
-}
-
-const MARKET_LOGO: Record<string, string> = {
-  Morpho: '/morpho-logo.svg',
-  Aave: '/aave-logo.svg',
-  Uniswap: '/uniswap-logo.svg',
 }
 
 function tokenSegment(symbol: string, logo?: string): SummarySegment {
