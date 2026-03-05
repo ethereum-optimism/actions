@@ -272,7 +272,7 @@ export function SwapAction({
         assetOut: assetOut.asset.metadata.symbol,
         amount: parseFloat(amountIn),
       })
-    } catch (err) {
+    } catch {
       activity?.error()
       setTxModalStatus('error')
       trackEvent('swap_error', {

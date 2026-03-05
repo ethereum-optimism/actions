@@ -95,7 +95,7 @@ export async function getPrice(c: Context) {
     })
 
     return c.json({ result: serializeBigInt(price) })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to get swap price' }, 500)
   }
 }
@@ -126,7 +126,7 @@ export async function executeSwap(c: Context) {
     })
 
     return c.json({ result: serializeBigInt(result) })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to execute swap' }, 500)
   }
 }
