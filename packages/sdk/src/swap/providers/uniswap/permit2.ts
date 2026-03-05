@@ -1,5 +1,5 @@
 import type { Address, PublicClient } from 'viem'
-import { encodeFunctionData, maxUint48, maxUint160, maxUint256 } from 'viem'
+import { encodeFunctionData, maxUint160, maxUint256 } from 'viem'
 
 import type { TransactionData } from '@/types/transaction.js'
 
@@ -97,6 +97,8 @@ export function buildTokenApprovalTx(
   const data = encodeFunctionData({
     abi: ERC20_APPROVE_ABI,
     functionName: 'approve',
+    // ERC20 -> Permit2: maxUint256 is the Uniswap-canonical pattern.
+    // Permit2 is immutable with no owner — spending is scoped by its own allowance system.
     args: [permit2Address, maxUint256],
   })
 
@@ -117,13 +119,13 @@ export function buildPermit2ApprovalTx(params: {
 }): TransactionData {
   const { permit2Address, token, spender } = params
 
-  // Max expiration timestamp (2^48 - 1)
-  const maxExpiration = Number(maxUint48)
+  // 30-day expiration — industry standard for server wallets
+  const thirtyDays = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
 
   const data = encodeFunctionData({
     abi: PERMIT2_ABI,
     functionName: 'approve',
-    args: [token, spender, maxUint160, maxExpiration],
+    args: [token, spender, maxUint160, thirtyDays],
   })
 
   return {
