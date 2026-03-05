@@ -7,7 +7,7 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
 import { isEthSymbol } from '@/utils/assetUtils'
-import { CtaButton } from './CtaButton'
+import { CtaButton, MaxButton } from './CtaButton'
 
 function floorToFixed(value: number, decimals: number): string {
   const factor = 10 ** decimals
@@ -169,20 +169,7 @@ function AmountLabel({
                   ? `${floorToFixed(parseFloat(assetBalance), displayPrecision)} ${displaySymbol}`
                   : `${floorToFixed(parseFloat(depositedAmount || '0'), displayPrecision)} ${displaySymbol}`}
               </span>
-              <button
-                onClick={onMaxClick}
-                style={{
-                  padding: '0 4px',
-                  border: 'none',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: '#3374DB',
-                  cursor: 'pointer',
-                  backgroundColor: 'transparent',
-                }}
-              >
-                Max
-              </button>
+              <MaxButton onClick={onMaxClick} />
             </>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { CloseButton } from './CtaButton'
 
 interface ToastProps {
   isVisible: boolean
@@ -78,21 +79,9 @@ export function Toast({
             {description}
           </div>
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            border: 'none',
-            background: 'none',
-            cursor: 'pointer',
-            padding: '0',
-            color: '#9195A6',
-            fontSize: '16px',
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-        >
-          &times;
-        </button>
+        <span style={{ flexShrink: 0 }}>
+          <CloseButton onClick={onClose} size={16} />
+        </span>
       </div>
       <style>{`
         @keyframes toast-in {

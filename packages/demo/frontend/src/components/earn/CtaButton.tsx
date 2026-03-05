@@ -25,3 +25,47 @@ export function CtaButton({ onClick, disabled, children }: CtaButtonProps) {
     </button>
   )
 }
+
+export function CloseButton({
+  onClick,
+  size = 20,
+}: {
+  onClick: () => void
+  size?: number
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        border: 'none',
+        background: 'none',
+        cursor: 'pointer',
+        padding: '4px',
+        color: '#666666',
+        fontSize: `${size}px`,
+        lineHeight: 1,
+      }}
+    >
+      &times;
+    </button>
+  )
+}
+
+export function MaxButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '0 4px',
+        border: 'none',
+        fontSize: '14px',
+        fontWeight: 600,
+        color: '#3374DB',
+        cursor: 'pointer',
+        backgroundColor: 'transparent',
+      }}
+    >
+      Max
+    </button>
+  )
+}

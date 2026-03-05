@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { CloseButton } from './earn/CtaButton'
 
 export interface ModalProps {
   isOpen: boolean
@@ -78,20 +79,7 @@ export function ModalHeader({ title, onClose }: ModalHeaderProps) {
       <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1a1b1e' }}>
         {title}
       </h2>
-      <button
-        onClick={onClose}
-        style={{
-          border: 'none',
-          background: 'none',
-          cursor: 'pointer',
-          padding: '4px',
-          color: '#666666',
-          fontSize: '20px',
-          lineHeight: 1,
-        }}
-      >
-        &times;
-      </button>
+      <CloseButton onClick={onClose} />
     </div>
   )
 }

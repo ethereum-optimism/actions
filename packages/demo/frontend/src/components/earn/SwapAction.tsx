@@ -7,7 +7,7 @@ import type { SwapAsset } from '@/hooks/useSwapAssets'
 import TransactionModal from './TransactionModal'
 import Shimmer from './Shimmer'
 import { Toast } from './Toast'
-import { CtaButton } from './CtaButton'
+import { CtaButton, MaxButton } from './CtaButton'
 import { TokenButton } from './TokenButton'
 import { TokenSelectModal } from './TokenSelectModal'
 import { ReviewSwapModal } from './ReviewSwapModal'
@@ -365,20 +365,7 @@ export function SwapAction({
                       {assetIn?.balance || '0'}{' '}
                       {displaySymbol(assetIn?.asset.metadata.symbol || 'USDC')}
                     </span>
-                    <button
-                      onClick={handleMaxClick}
-                      style={{
-                        padding: '0 4px',
-                        border: 'none',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        color: '#3374DB',
-                        cursor: 'pointer',
-                        backgroundColor: 'transparent',
-                      }}
-                    >
-                      Max
-                    </button>
+                    <MaxButton onClick={handleMaxClick} />
                   </>
                 )}
               </div>

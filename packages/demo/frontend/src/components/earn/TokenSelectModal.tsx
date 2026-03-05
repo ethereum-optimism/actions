@@ -2,6 +2,7 @@ import type { SwapAsset } from '@/hooks/useSwapAssets'
 import { displaySymbol, getTokenName, isStablecoin } from '@/utils/tokenDisplay'
 
 import { Modal } from '../Modal'
+import { CloseButton } from './CtaButton'
 
 export function TokenSelectModal({
   isOpen,
@@ -24,20 +25,7 @@ export function TokenSelectModal({
           <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1a1b1e' }}>
             Select a token
           </h2>
-          <button
-            onClick={onClose}
-            style={{
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              color: '#666666',
-              fontSize: '20px',
-              lineHeight: 1,
-            }}
-          >
-            &times;
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         <div style={{ padding: '0 8px 8px' }}>
