@@ -40,6 +40,7 @@ export function ActivityFeedList({
           timestamp={formatTimestamp(activity.timestamp)}
           blockExplorerUrl={activity.blockExplorerUrl}
           status={activity.status}
+          chainId={activity.metadata?.chainId}
         />
       ))}
     </div>

@@ -8,6 +8,7 @@ export interface ActivityMetadata {
   assetLogo?: string
   marketName?: string
   marketLogo?: string
+  chainId?: number
   // Swap-specific
   amountOut?: string
   assetOutSymbol?: string

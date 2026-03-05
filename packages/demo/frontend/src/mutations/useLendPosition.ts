@@ -51,6 +51,7 @@ export function useOpenPosition({
         amount: params.amount.toString(),
         assetSymbol: params.asset.metadata.symbol,
         marketName: params.marketName,
+        chainId: params.marketId.chainId,
       })
       try {
         const result = await openPosition(params)
@@ -97,6 +98,7 @@ export function useClosePosition({
         amount: params.amount.toString(),
         assetSymbol: params.asset.metadata.symbol,
         marketName: params.marketName,
+        chainId: params.marketId.chainId,
       })
       try {
         const result = await closePosition(params)

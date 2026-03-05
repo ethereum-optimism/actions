@@ -1,11 +1,20 @@
 import { useState } from 'react'
 import type { ActivitySummary, SummarySegment } from '@/utils/activitySummary'
 
+const CHAIN_DISPLAY: Record<number, { name: string; logo: string }> = {
+  84532: { name: 'Base Sepolia', logo: '/base-logo.svg' },
+  11155420: { name: 'OP Sepolia', logo: '/op-logo.svg' },
+  130: { name: 'Unichain', logo: '/unichain-logo.svg' },
+}
+
+const DEFAULT_CHAIN = { name: 'Base Sepolia', logo: '/base-logo.svg' }
+
 interface ActivityFeedItemProps {
   summary: ActivitySummary
   timestamp: string
   blockExplorerUrl?: string
   status: 'pending' | 'confirmed' | 'error'
+  chainId?: number
 }
 
 function SummaryRenderer({ segments }: { segments: SummarySegment[] }) {
@@ -41,8 +50,10 @@ export function ActivityFeedItem({
   timestamp,
   blockExplorerUrl,
   status,
+  chainId,
 }: ActivityFeedItemProps) {
   const [expanded, setExpanded] = useState(false)
+  const chain = chainId ? CHAIN_DISPLAY[chainId] ?? DEFAULT_CHAIN : DEFAULT_CHAIN
 
   return (
     <div style={{ borderBottom: '1px solid #E0E2EB' }}>
@@ -128,11 +139,11 @@ export function ActivityFeedItem({
               style={{ color: '#1a1b1e' }}
             >
               <img
-                src="/base-logo.svg"
-                alt="Base"
+                src={chain.logo}
+                alt={chain.name}
                 style={{ width: '14px', height: '14px' }}
               />
-              Base Sepolia
+              {chain.name}
             </span>
           </div>
           {blockExplorerUrl && (
