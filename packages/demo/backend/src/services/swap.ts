@@ -50,7 +50,8 @@ export async function getPrice(params: PriceParams): Promise<SwapPrice> {
     assetIn,
     assetOut,
     chainId,
-    ...(amountOut !== undefined ? { amountOut } : { amountIn: amountIn ?? 1 }),
+    amountIn,
+    amountOut,
   })
 }
 

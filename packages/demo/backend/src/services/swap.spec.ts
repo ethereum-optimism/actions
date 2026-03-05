@@ -105,7 +105,7 @@ describe('Swap Service', () => {
       )
     })
 
-    it('defaults amountIn to 1 when neither specified', async () => {
+    it('passes undefined amounts when neither specified (SDK defaults)', async () => {
       mockSwapNamespace.price.mockResolvedValue({ price: '200' })
 
       await swapService.getPrice({
@@ -115,7 +115,10 @@ describe('Swap Service', () => {
       })
 
       expect(mockSwapNamespace.price).toHaveBeenCalledWith(
-        expect.objectContaining({ amountIn: 1 }),
+        expect.objectContaining({
+          amountIn: undefined,
+          amountOut: undefined,
+        }),
       )
     })
   })
