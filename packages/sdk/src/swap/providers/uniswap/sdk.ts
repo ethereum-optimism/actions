@@ -422,8 +422,8 @@ function calculatePrice(
   const inDecimals = assetIn.metadata.decimals
   const outDecimals = assetOut.metadata.decimals
 
-  const normalizedIn = Number(amountIn) / 10 ** inDecimals
-  const normalizedOut = Number(amountOut) / 10 ** outDecimals
+  const normalizedIn = parseFloat(formatUnits(amountIn, inDecimals))
+  const normalizedOut = parseFloat(formatUnits(amountOut, outDecimals))
 
   return (normalizedOut / normalizedIn).toFixed(6)
 }
@@ -484,13 +484,11 @@ async function calculatePriceImpact(params: {
     const outDecimals = assetOut.metadata.decimals
 
     const midPrice =
-      Number(refAmountOut) /
-      10 ** outDecimals /
-      (Number(oneUnit) / 10 ** inDecimals)
+      parseFloat(formatUnits(refAmountOut, outDecimals)) /
+      parseFloat(formatUnits(oneUnit, inDecimals))
     const execPrice =
-      Number(amountOut) /
-      10 ** outDecimals /
-      (Number(amountIn) / 10 ** inDecimals)
+      parseFloat(formatUnits(amountOut, outDecimals)) /
+      parseFloat(formatUnits(amountIn, inDecimals))
 
     if (midPrice === 0) return 0
 

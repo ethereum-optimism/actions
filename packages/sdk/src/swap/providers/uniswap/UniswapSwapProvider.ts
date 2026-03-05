@@ -184,7 +184,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     const filter = this.resolveMarketFilter(assetIn, assetOut, chainId) as
       | UniswapMarketFilter
       | undefined
-    if (!filter?.fee || !filter?.tickSpacing) {
+    if (filter?.fee === undefined || filter?.tickSpacing === undefined) {
       throw new Error(
         `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
       )

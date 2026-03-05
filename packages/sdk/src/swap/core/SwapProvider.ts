@@ -117,6 +117,14 @@ export abstract class SwapProvider<
       chainId: params.chainId,
     }
 
+    // Validate slippage bounds
+    const MAX_SLIPPAGE = 0.5
+    if (internalParams.slippage < 0 || internalParams.slippage > MAX_SLIPPAGE) {
+      throw new Error(
+        `Slippage ${internalParams.slippage} exceeds allowed range [0, ${MAX_SLIPPAGE * 100}%]`,
+      )
+    }
+
     return this._execute(internalParams)
   }
 
