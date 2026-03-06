@@ -17,7 +17,7 @@ import { useMemo } from 'react'
 import { createActions } from '@eth-optimism/actions-sdk/react'
 import { createActionsConfig } from '@/config/actions'
 import { actionsApi } from '@/api/actionsApi'
-import type { LendProviderOperations } from '@/hooks/useLendProvider'
+import type { EarnOperations } from '@/hooks/useLendProvider'
 
 export interface EarnWithFrontendWalletProps {
   wallet: Wallet | null
@@ -46,7 +46,7 @@ export function EarnWithFrontendWallet({
     FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS[selectedProvider]
   const actions = useActions(hostedWalletProviderType)
 
-  const operations = useMemo<LendProviderOperations>(
+  const operations = useMemo<EarnOperations>(
     () => ({
       getTokenBalances: async () => wallet!.getBalance(),
       getMarkets: async () => actions.lend.getMarkets(),

@@ -20,7 +20,7 @@ import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
  * Operations interface for wallet interactions
  * This abstraction allows both frontend and server wallet implementations
  */
-export interface LendProviderOperations {
+export interface EarnOperations {
   getTokenBalances: () => Promise<TokenBalance[]>
   getMarkets: () => Promise<LendMarket[]>
   getPosition: (marketId: LendMarketId) => Promise<LendMarketPosition>
@@ -53,7 +53,7 @@ export interface LendProviderOperations {
 }
 
 interface UseLendProviderParams {
-  operations: LendProviderOperations
+  operations: EarnOperations
   ready: boolean
   logPrefix?: string
 }

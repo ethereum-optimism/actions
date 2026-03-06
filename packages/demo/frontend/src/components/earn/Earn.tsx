@@ -12,7 +12,7 @@ import {
   useLendProviderContext,
 } from '@/contexts/LendProviderContext'
 import { MarketSelector } from './MarketSelector'
-import type { LendProviderOperations } from '@/hooks/useLendProvider'
+import type { EarnOperations } from '@/hooks/useLendProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
 import { useLendBalance } from '@/hooks/useLendBalance'
@@ -362,7 +362,7 @@ function LendTab({
 // --- Main Earn ---
 
 export interface EarnProps {
-  operations: LendProviderOperations
+  operations: EarnOperations
   ready: boolean
   logout: () => Promise<void>
   walletAddress: string | null
@@ -428,7 +428,7 @@ interface EarnContentProps {
   logout: () => Promise<void>
   walletAddress: string | null
   providerConfig: WalletProviderConfig
-  operations: LendProviderOperations
+  operations: EarnOperations
 }
 
 function EarnContent({

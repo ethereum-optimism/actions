@@ -4,10 +4,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { createElement, type ReactNode } from 'react'
 import { ActivityLogProvider } from '@/providers/ActivityLogProvider'
 import { useActivityLog } from '@/hooks/useActivityLog'
-import {
-  useLendProvider,
-  type LendProviderOperations,
-} from '../useLendProvider'
+import { useLendProvider, type EarnOperations } from '../useLendProvider'
 import type {
   LendMarket,
   LendMarketPosition,
@@ -82,7 +79,7 @@ const mockTokenBalances: TokenBalance[] = [
   },
 ]
 
-function createMockOperations(): LendProviderOperations {
+function createMockOperations(): EarnOperations {
   return {
     getTokenBalances: vi.fn().mockResolvedValue(mockTokenBalances),
     getMarkets: vi.fn().mockResolvedValue(mockMarkets),
@@ -121,7 +118,7 @@ function createTestWrapper() {
 
 // Helper hook that returns both lend provider state and activity log
 function useLendProviderWithLog(params: {
-  operations: LendProviderOperations
+  operations: EarnOperations
   ready: boolean
 }) {
   const lendProvider = useLendProvider(params)
@@ -130,7 +127,7 @@ function useLendProviderWithLog(params: {
 }
 
 describe('Activity Logging', () => {
-  let operations: LendProviderOperations
+  let operations: EarnOperations
 
   beforeEach(() => {
     operations = createMockOperations()

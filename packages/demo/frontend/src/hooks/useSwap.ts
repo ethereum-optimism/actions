@@ -10,10 +10,10 @@ import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { useTotalBalance } from '@/hooks/useTotalBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { OP_DEMO, USDC_DEMO } from '@/constants/markets'
-import type { LendProviderOperations } from '@/hooks/useLendProvider'
+import type { EarnOperations } from '@/hooks/useLendProvider'
 
 interface UseSwapParams {
-  operations: LendProviderOperations
+  operations: EarnOperations
   activeTab: string
 }
 
