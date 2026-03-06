@@ -1,5 +1,5 @@
 import type { Address, PublicClient } from 'viem'
-import { encodeFunctionData, maxUint160, maxUint256 } from 'viem'
+import { encodeFunctionData, maxUint256 } from 'viem'
 
 import type { TransactionData } from '@/types/transaction.js'
 

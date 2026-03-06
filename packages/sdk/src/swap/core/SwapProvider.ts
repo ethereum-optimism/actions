@@ -218,7 +218,12 @@ export abstract class SwapProvider<
     return list.find((filter) => {
       if (filter.chainId !== undefined && filter.chainId !== chainId)
         return false
-      return this.filterContainsPair(addressIn, addressOut, chainId, filter.assets)
+      return this.filterContainsPair(
+        addressIn,
+        addressOut,
+        chainId,
+        filter.assets,
+      )
     })
   }
 

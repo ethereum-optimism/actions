@@ -203,7 +203,6 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       }),
     ]
   }
-
 }
 
 /**
