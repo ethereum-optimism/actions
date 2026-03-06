@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import LogItem from './LogItem'
-import { ActivityList } from './ActivityList'
+import { LogTabContent } from './LogTabContent'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
 type CardTab = 'log' | 'activity'
@@ -85,36 +84,12 @@ function ActivityLogCard({
           scrollbarColor: '#D1D5DB #F3F4F6',
         }}
       >
-        {activeTab === 'log' ? (
-          activities.length > 0 ? (
-            displayedActivities.map((activity) => (
-              <LogItem
-                key={activity.id}
-                type={activity.type}
-                action={activity.action}
-                timestamp={formatTimestamp(activity.timestamp)}
-                status={activity.status}
-                blockExplorerUrl={activity.blockExplorerUrl}
-                isFromPreviousSession={activity.isFromPreviousSession}
-              />
-            ))
-          ) : (
-            <div
-              style={{
-                color: '#9CA3AF',
-                textAlign: 'center',
-                padding: '2rem',
-              }}
-            >
-              No activity yet
-            </div>
-          )
-        ) : (
-          <ActivityList
-            activities={activities}
-            formatTimestamp={formatTimestamp}
-          />
-        )}
+        <LogTabContent
+          activeTab={activeTab}
+          activities={activities}
+          displayActivities={displayedActivities}
+          formatTimestamp={formatTimestamp}
+        />
       </div>
 
       {activeTab === 'log' && hasMoreActivities && (

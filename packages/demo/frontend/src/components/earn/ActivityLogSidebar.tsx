@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import LogItem from './LogItem'
+import { LogTabContent } from './LogTabContent'
 import ActivityLogIcon from '../icons/ActivityLogIcon'
 import ArrowLine from '../icons/ArrowLine'
-import { ActivityList } from './ActivityList'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
 type SidebarTab = 'log' | 'activity'
@@ -217,36 +216,12 @@ function ActivityLogSidebar({
             overflowX: 'visible',
           }}
         >
-          {activeTab === 'log' ? (
-            activities.length > 0 ? (
-              activities.map((activity) => (
-                <LogItem
-                  key={activity.id}
-                  type={activity.type}
-                  action={activity.action}
-                  timestamp={formatTimestamp(activity.timestamp)}
-                  status={activity.status}
-                  blockExplorerUrl={activity.blockExplorerUrl}
-                  isFromPreviousSession={activity.isFromPreviousSession}
-                />
-              ))
-            ) : (
-              <div
-                style={{
-                  color: '#9CA3AF',
-                  textAlign: 'center',
-                  padding: '2rem',
-                }}
-              >
-                No activity yet
-              </div>
-            )
-          ) : (
-            <ActivityList
-              activities={activities}
-              formatTimestamp={formatTimestamp}
-            />
-          )}
+          <LogTabContent
+            activeTab={activeTab}
+            activities={activities}
+            displayActivities={activities}
+            formatTimestamp={formatTimestamp}
+          />
         </div>
 
         {/* Minimal Footer */}
