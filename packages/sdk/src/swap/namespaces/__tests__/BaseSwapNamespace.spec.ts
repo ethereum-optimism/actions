@@ -35,11 +35,8 @@ describe('BaseSwapNamespace', () => {
       expect(result.price).toBe('1.5')
     })
 
-    it('throws if no provider for chain', async () => {
-      const provider = createMockSwapProvider(undefined, {
-        supportedChains: [1 as SupportedChainId],
-      })
-      const namespace = new ActionsSwapNamespace({ uniswap: provider })
+    it('throws if no provider configured', async () => {
+      const namespace = new ActionsSwapNamespace({})
 
       await expect(
         namespace.price({
@@ -48,7 +45,7 @@ describe('BaseSwapNamespace', () => {
           amountIn: 100,
           chainId: 84532 as SupportedChainId,
         }),
-      ).rejects.toThrow('No swap provider available for chain 84532')
+      ).rejects.toThrow('No swap provider configured')
     })
   })
 

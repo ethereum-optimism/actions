@@ -20,7 +20,7 @@ export abstract class BaseSwapNamespace {
    * Get price quote for a swap
    */
   async price(params: SwapPriceParams): Promise<SwapPrice> {
-    const provider = this.getProviderForChain(params.chainId)
+    const provider = this.getProvider()
     return provider.getPrice(params)
   }
 
@@ -30,7 +30,7 @@ export abstract class BaseSwapNamespace {
    * @returns Market information
    */
   async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
-    const provider = this.getProviderForChain(params.chainId)
+    const provider = this.getProvider()
     return provider.getMarket(params)
   }
 
@@ -65,14 +65,12 @@ export abstract class BaseSwapNamespace {
     )
   }
 
-  protected getProviderForChain(
-    chainId: SupportedChainId,
-  ): SwapProvider<SwapProviderConfig> {
-    for (const provider of this.getAllProviders()) {
-      if (provider.isChainSupported(chainId)) {
-        return provider
-      }
+  // Future: resolve the best provider for given params (e.g. best price across Uniswap, Aerodrome, etc.)
+  protected getProvider(): SwapProvider<SwapProviderConfig> {
+    const provider = this.providers.uniswap
+    if (!provider) {
+      throw new Error('No swap provider configured')
     }
-    throw new Error(`No swap provider available for chain ${chainId}`)
+    return provider
   }
 }

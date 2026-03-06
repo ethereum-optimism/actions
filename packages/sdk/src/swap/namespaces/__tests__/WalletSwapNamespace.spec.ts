@@ -116,12 +116,9 @@ describe('WalletSwapNamespace', () => {
       )
     })
 
-    it('throws when no provider for chain', async () => {
-      const provider = createMockSwapProvider(undefined, {
-        supportedChains: [1 as SupportedChainId],
-      })
+    it('throws when no provider configured', async () => {
       const wallet = createMockWallet()
-      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+      const namespace = new WalletSwapNamespace({}, wallet)
 
       await expect(
         namespace.execute({
@@ -130,7 +127,7 @@ describe('WalletSwapNamespace', () => {
           assetOut: ETH,
           chainId: 84532 as SupportedChainId,
         }),
-      ).rejects.toThrow('No swap provider available for chain 84532')
+      ).rejects.toThrow('No swap provider configured')
     })
   })
 
