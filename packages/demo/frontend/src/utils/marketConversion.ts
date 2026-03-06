@@ -1,51 +1,39 @@
-import type { LendMarket } from '@eth-optimism/actions-sdk'
-import { baseSepolia, optimismSepolia } from 'viem/chains'
+import type { LendMarket, LendMarketConfig } from '@eth-optimism/actions-sdk'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
-import { isEthSymbol } from './assetUtils'
+import { CHAIN_DISPLAY, getAssetLogo } from '@/constants/logos'
 
-export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
-  const chainId = market.marketId.chainId
+const PROVIDER_DISPLAY: Record<string, { name: string; logo: string }> = {
+  morpho: { name: 'Morpho', logo: '/morpho-logo.svg' },
+  aave: { name: 'Aave', logo: '/aave-logo-dark.svg' },
+}
 
-  // Determine network info
-  let networkName = 'Unknown'
-  let networkLogo = '/base-logo.svg'
-  if (chainId === baseSepolia.id) {
-    networkName = 'Base Sepolia'
-    networkLogo = '/base-logo.svg'
-  } else if (chainId === optimismSepolia.id) {
-    networkName = 'OP Sepolia'
-    networkLogo = '/OPMainnet_Circle.svg'
-  }
+const DEFAULT_PROVIDER = { name: 'Unknown', logo: '/morpho-logo.svg' }
 
-  // Determine provider logo
-  const providerLogo =
-    market.name.toLowerCase().includes('gauntlet') ||
-    market.name.toLowerCase().includes('morpho')
-      ? '/morpho-logo.svg'
-      : '/aave-logo-dark.svg'
+function getNetworkInfo(chainId: number) {
+  return (
+    CHAIN_DISPLAY[chainId] ?? { name: 'Unknown', logo: '/OPMainnet_Circle.svg' }
+  )
+}
 
-  // Determine asset logo
-  const assetSymbol = market.asset.metadata.symbol
-  const assetLogo = assetSymbol.includes('USDC')
-    ? '/usd-coin-usdc-logo.svg'
-    : isEthSymbol(assetSymbol)
-      ? '/eth.svg'
-      : '/usd-coin-usdc-logo.svg'
-
-  // Derive display name from provider
-  const isAave = market.name.toLowerCase().includes('aave')
-  const marketName = isAave ? 'Aave' : 'Morpho'
+export function convertLendMarketToMarketInfo(
+  market: LendMarket,
+  config?: LendMarketConfig,
+): MarketInfo {
+  const provider = config?.lendProvider ?? 'morpho'
+  const { name: providerName, logo: providerLogo } =
+    PROVIDER_DISPLAY[provider] ?? DEFAULT_PROVIDER
+  const network = getNetworkInfo(market.marketId.chainId)
 
   return {
-    name: marketName,
+    name: providerName,
     logo: providerLogo,
-    networkName,
-    networkLogo,
+    networkName: network.name,
+    networkLogo: network.logo,
     asset: market.asset,
-    assetLogo,
+    assetLogo: getAssetLogo(market.asset.metadata.symbol),
     apy: market.apy.total,
     isLoadingApy: false,
     marketId: market.marketId,
-    provider: isAave ? 'aave' : 'morpho',
+    provider,
   }
 }

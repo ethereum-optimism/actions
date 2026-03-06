@@ -1,13 +1,6 @@
 import { useState } from 'react'
 import type { ActivitySummary, SummarySegment } from '@/utils/activitySummary'
-
-const CHAIN_DISPLAY: Record<number, { name: string; logo: string }> = {
-  84532: { name: 'Base Sepolia', logo: '/base-logo.svg' },
-  11155420: { name: 'OP Sepolia', logo: '/op-logo.svg' },
-  130: { name: 'Unichain', logo: '/unichain-logo.svg' },
-}
-
-const DEFAULT_CHAIN = { name: 'Base Sepolia', logo: '/base-logo.svg' }
+import { CHAIN_DISPLAY, DEFAULT_CHAIN } from '@/constants/logos'
 
 interface ActivityItemProps {
   summary: ActivitySummary
