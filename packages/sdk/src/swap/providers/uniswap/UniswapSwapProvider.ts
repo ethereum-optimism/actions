@@ -110,6 +110,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         tokenApproval = buildTokenApprovalTx(assetInAddress, addresses.permit2)
       }
 
+      // Permit2 expiration is in Unix seconds (matching EVM block.timestamp)
       const permit2Expired =
         permit2Allowance.expiration < Math.floor(Date.now() / 1000)
       if (permit2Allowance.amount < requiredAmount || permit2Expired) {
