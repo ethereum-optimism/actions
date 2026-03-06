@@ -110,11 +110,15 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         tokenApproval = buildTokenApprovalTx(assetInAddress, addresses.permit2)
       }
 
-      if (permit2Allowance.amount < requiredAmount) {
+      const permit2Expired =
+        permit2Allowance.expiration < Math.floor(Date.now() / 1000)
+      if (permit2Allowance.amount < requiredAmount || permit2Expired) {
         permit2Approval = buildPermit2ApprovalTx({
           permit2Address: addresses.permit2,
           token: assetInAddress,
           spender: addresses.universalRouter,
+          amount: requiredAmount,
+          expirySeconds: this._config.permit2ExpirySeconds,
         })
       }
     }

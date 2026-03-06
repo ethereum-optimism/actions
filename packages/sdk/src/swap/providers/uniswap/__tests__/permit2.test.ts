@@ -1,12 +1,30 @@
 import type { Address, PublicClient } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
+import { decodeFunctionData } from 'viem'
+
 import {
+  DEFAULT_PERMIT2_EXPIRY_SECONDS,
   buildPermit2ApprovalTx,
   buildTokenApprovalTx,
   checkPermit2Allowance,
   checkTokenAllowance,
 } from '../permit2.js'
+
+const PERMIT2_ABI = [
+  {
+    name: 'approve',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'token', type: 'address' },
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint160' },
+      { name: 'expiration', type: 'uint48' },
+    ],
+    outputs: [],
+  },
+] as const
 
 const TOKEN = '0x1111111111111111111111111111111111111111' as Address
 const OWNER = '0x2222222222222222222222222222222222222222' as Address
@@ -81,16 +99,45 @@ describe('buildTokenApprovalTx', () => {
 })
 
 describe('buildPermit2ApprovalTx', () => {
-  it('builds Permit2 approval for spender', () => {
+  it('approves exact amount with default expiry', () => {
+    const before = Math.floor(Date.now() / 1000)
+    const amount = 100000000n
+
     const tx = buildPermit2ApprovalTx({
       permit2Address: PERMIT2,
       token: TOKEN,
       spender: SPENDER,
+      amount,
     })
 
     expect(tx.to).toBe(PERMIT2)
     expect(tx.value).toBe(0n)
-    expect(tx.data).toMatch(/^0x/)
-    expect(tx.data.length).toBeGreaterThan(10)
+
+    const decoded = decodeFunctionData({ abi: PERMIT2_ABI, data: tx.data })
+    const [, , decodedAmount, expiration] = decoded.args
+    expect(decodedAmount).toBe(amount)
+    expect(Number(expiration)).toBeGreaterThanOrEqual(
+      before + DEFAULT_PERMIT2_EXPIRY_SECONDS,
+    )
+  })
+
+  it('uses custom expiry when provided', () => {
+    const before = Math.floor(Date.now() / 1000)
+    const customExpiry = 7 * 24 * 60 * 60 // 7 days
+
+    const tx = buildPermit2ApprovalTx({
+      permit2Address: PERMIT2,
+      token: TOKEN,
+      spender: SPENDER,
+      amount: 100000000n,
+      expirySeconds: customExpiry,
+    })
+
+    const decoded = decodeFunctionData({ abi: PERMIT2_ABI, data: tx.data })
+    const [, , , expiration] = decoded.args
+    expect(Number(expiration)).toBeGreaterThanOrEqual(before + customExpiry)
+    expect(Number(expiration)).toBeLessThan(
+      before + DEFAULT_PERMIT2_EXPIRY_SECONDS,
+    )
   })
 })

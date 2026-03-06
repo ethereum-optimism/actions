@@ -19,4 +19,6 @@ export interface UniswapMarketFilter extends SwapMarketFilter {
 export interface UniswapSwapProviderConfig extends SwapProviderConfig {
   marketAllowlist?: UniswapMarketFilter[]
   marketBlocklist?: UniswapMarketFilter[]
+  /** Permit2 approval expiry in seconds from now. Defaults to 30 days. */
+  permit2ExpirySeconds?: number
 }

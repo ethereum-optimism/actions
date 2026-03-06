@@ -3,6 +3,9 @@ import { encodeFunctionData, maxUint160, maxUint256 } from 'viem'
 
 import type { TransactionData } from '@/types/transaction.js'
 
+/** Default Permit2 approval expiry: 30 days in seconds */
+export const DEFAULT_PERMIT2_EXPIRY_SECONDS = 30 * 24 * 60 * 60
+
 /**
  * Permit2 ABI (subset for approvals)
  */
@@ -116,16 +119,18 @@ export function buildPermit2ApprovalTx(params: {
   permit2Address: Address
   token: Address
   spender: Address
+  amount: bigint
+  expirySeconds?: number
 }): TransactionData {
-  const { permit2Address, token, spender } = params
-
-  // 30-day expiration — industry standard for server wallets
-  const thirtyDays = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
+  const { permit2Address, token, spender, amount } = params
+  const expiration =
+    Math.floor(Date.now() / 1000) +
+    (params.expirySeconds ?? DEFAULT_PERMIT2_EXPIRY_SECONDS)
 
   const data = encodeFunctionData({
     abi: PERMIT2_ABI,
     functionName: 'approve',
-    args: [token, spender, maxUint160, thirtyDays],
+    args: [token, spender, amount, expiration],
   })
 
   return {
