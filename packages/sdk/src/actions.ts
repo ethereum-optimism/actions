@@ -81,41 +81,28 @@ export class Actions<
     this.hostedWalletProviderRegistry = deps.hostedWalletProviderRegistry
     this._assetsConfig = config.assets
 
-    // Create lending providers if configured
-    if (config.lend) {
-      if (config.lend.morpho) {
-        this._lendProviders.morpho = new MorphoLendProvider(
-          config.lend.morpho,
-          this.chainManager,
-        )
-      }
-
-      if (config.lend.aave) {
-        this._lendProviders.aave = new AaveLendProvider(
-          config.lend.aave,
-          this.chainManager,
-        )
-      }
-
-      // Create lend namespace if any providers are configured
-      if (this._lendProviders.morpho || this._lendProviders.aave) {
-        this._lend = new ActionsLendNamespace(this._lendProviders)
-      }
+    if (config.lend?.morpho) {
+      this._lendProviders.morpho = new MorphoLendProvider(
+        config.lend.morpho,
+        this.chainManager,
+      )
+    }
+    if (config.lend?.aave) {
+      this._lendProviders.aave = new AaveLendProvider(
+        config.lend.aave,
+        this.chainManager,
+      )
+    }
+    if (this._lendProviders.morpho || this._lendProviders.aave) {
+      this._lend = new ActionsLendNamespace(this._lendProviders)
     }
 
-    // Create swap providers if configured
-    if (config.swap) {
-      if (config.swap.uniswap) {
-        this._swapProviders.uniswap = new UniswapSwapProvider(
-          config.swap.uniswap,
-          this.chainManager,
-        )
-      }
-
-      // Create swap namespace if any providers are configured
-      if (this._swapProviders.uniswap) {
-        this._swap = new ActionsSwapNamespace(this._swapProviders)
-      }
+    if (config.swap?.uniswap) {
+      this._swapProviders.uniswap = new UniswapSwapProvider(
+        config.swap.uniswap,
+        this.chainManager,
+      )
+      this._swap = new ActionsSwapNamespace(this._swapProviders)
     }
 
     this.wallet = this.createWalletNamespace(config.wallet)
