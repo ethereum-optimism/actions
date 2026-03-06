@@ -1,14 +1,13 @@
 import type { Address, PublicClient } from 'viem'
+import { decodeFunctionData } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
-import { decodeFunctionData } from 'viem'
-
 import {
-  DEFAULT_PERMIT2_EXPIRY_SECONDS,
   buildPermit2ApprovalTx,
   buildTokenApprovalTx,
   checkPermit2Allowance,
   checkTokenAllowance,
+  DEFAULT_PERMIT2_EXPIRY_SECONDS,
 } from '../permit2.js'
 
 const PERMIT2_ABI = [

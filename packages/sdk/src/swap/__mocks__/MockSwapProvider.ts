@@ -80,6 +80,19 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this._supportedChains
   }
 
+  reset(): void {
+    vi.clearAllMocks()
+  }
+
+  // Expose protected methods for testing
+  public testValidateMarketAllowed(
+    assetIn: any,
+    assetOut: any,
+    chainId: SupportedChainId,
+  ): void {
+    return this.validateMarketAllowed(assetIn, assetOut, chainId)
+  }
+
   protected async _execute(
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {
@@ -98,15 +111,6 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     params: GetSwapMarketsParams,
   ): Promise<SwapMarket[]> {
     return this.mockGetMarkets(params)
-  }
-
-  // Expose protected methods for testing
-  public testValidateMarketAllowed(
-    assetIn: any,
-    assetOut: any,
-    chainId: SupportedChainId,
-  ): void {
-    return this.validateMarketAllowed(assetIn, assetOut, chainId)
   }
 
   private createMockSwapTransaction(
@@ -200,9 +204,6 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     ]
   }
 
-  reset(): void {
-    vi.clearAllMocks()
-  }
 }
 
 /**

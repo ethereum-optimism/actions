@@ -3,12 +3,9 @@ import { formatUnits } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   SwapExecuteParams,
-  SwapReceipt,
-  SwapTransaction,
-} from '@/types/swap/index.js'
+ SwapProviders,  SwapReceipt,
+  SwapTransaction } from '@/types/swap/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-
-import type { SwapProviders } from '@/types/swap/index.js'
 
 import { BaseSwapNamespace } from './BaseSwapNamespace.js'
 

@@ -183,25 +183,6 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     })
   }
 
-  /**
-   * Resolve and validate Uniswap-specific market filter with required fee/tickSpacing
-   */
-  private resolveUniswapFilter(
-    assetIn: Asset,
-    assetOut: Asset,
-    chainId: SupportedChainId,
-  ): UniswapMarketFilter & { fee: number; tickSpacing: number } {
-    const filter = this.resolveMarketFilter(assetIn, assetOut, chainId) as
-      | UniswapMarketFilter
-      | undefined
-    if (filter?.fee === undefined || filter?.tickSpacing === undefined) {
-      throw new Error(
-        `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
-      )
-    }
-    return filter as UniswapMarketFilter & { fee: number; tickSpacing: number }
-  }
-
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     const { poolId, chainId } = params
     const subgraphUrl = getSubgraphUrl(chainId)
@@ -258,6 +239,25 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     )
 
     return results.flat()
+  }
+
+  /**
+   * Resolve and validate Uniswap-specific market filter with required fee/tickSpacing
+   */
+  private resolveUniswapFilter(
+    assetIn: Asset,
+    assetOut: Asset,
+    chainId: SupportedChainId,
+  ): UniswapMarketFilter & { fee: number; tickSpacing: number } {
+    const filter = this.resolveMarketFilter(assetIn, assetOut, chainId) as
+      | UniswapMarketFilter
+      | undefined
+    if (filter?.fee === undefined || filter?.tickSpacing === undefined) {
+      throw new Error(
+        `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
+      )
+    }
+    return filter as UniswapMarketFilter & { fee: number; tickSpacing: number }
   }
 
   private async fetchMarketsForChain(
