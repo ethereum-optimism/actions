@@ -9,7 +9,7 @@ const CHAIN_DISPLAY: Record<number, { name: string; logo: string }> = {
 
 const DEFAULT_CHAIN = { name: 'Base Sepolia', logo: '/base-logo.svg' }
 
-interface ActivityFeedItemProps {
+interface ActivityItemProps {
   summary: ActivitySummary
   timestamp: string
   blockExplorerUrl?: string
@@ -45,13 +45,13 @@ function SummaryRenderer({ segments }: { segments: SummarySegment[] }) {
   )
 }
 
-export function ActivityFeedItem({
+export function ActivityItem({
   summary,
   timestamp,
   blockExplorerUrl,
   status,
   chainId,
-}: ActivityFeedItemProps) {
+}: ActivityItemProps) {
   const [expanded, setExpanded] = useState(false)
   const chain = chainId
     ? (CHAIN_DISPLAY[chainId] ?? DEFAULT_CHAIN)

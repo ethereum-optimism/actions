@@ -1,19 +1,19 @@
 import type { ActivityEntry } from '@/providers/ActivityLogProvider'
-import { ActivityFeedItem } from './ActivityFeedItem'
+import { ActivityItem } from './ActivityItem'
 import {
   getActivitySummary,
   isSignedTransaction,
 } from '@/utils/activitySummary'
 
-interface ActivityFeedListProps {
+interface ActivityListProps {
   activities: ActivityEntry[]
   formatTimestamp: (timestamp: string) => string
 }
 
-export function ActivityFeedList({
+export function ActivityList({
   activities,
   formatTimestamp,
-}: ActivityFeedListProps) {
+}: ActivityListProps) {
   const signedTransactions = activities.filter(isSignedTransaction)
 
   if (signedTransactions.length === 0) {
@@ -34,7 +34,7 @@ export function ActivityFeedList({
   return (
     <div>
       {signedTransactions.map((activity) => (
-        <ActivityFeedItem
+        <ActivityItem
           key={activity.id}
           summary={getActivitySummary(activity)}
           timestamp={formatTimestamp(activity.timestamp)}

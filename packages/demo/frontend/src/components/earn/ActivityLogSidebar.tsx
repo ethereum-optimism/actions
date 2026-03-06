@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import ActivityLogItem from './ActivityLogItem'
+import LogItem from './LogItem'
 import ActivityLogIcon from '../icons/ActivityLogIcon'
 import ArrowLine from '../icons/ArrowLine'
-import { ActivityFeedList } from './ActivityFeedList'
+import { ActivityList } from './ActivityList'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
 type SidebarTab = 'log' | 'activity'
@@ -220,7 +220,7 @@ function ActivityLogSidebar({
           {activeTab === 'log' ? (
             activities.length > 0 ? (
               activities.map((activity) => (
-                <ActivityLogItem
+                <LogItem
                   key={activity.id}
                   type={activity.type}
                   action={activity.action}
@@ -242,7 +242,7 @@ function ActivityLogSidebar({
               </div>
             )
           ) : (
-            <ActivityFeedList
+            <ActivityList
               activities={activities}
               formatTimestamp={formatTimestamp}
             />

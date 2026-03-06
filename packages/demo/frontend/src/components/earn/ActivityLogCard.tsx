@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import ActivityLogItem from './ActivityLogItem'
-import { ActivityFeedList } from './ActivityFeedList'
+import LogItem from './LogItem'
+import { ActivityList } from './ActivityList'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
 
 type CardTab = 'log' | 'activity'
@@ -88,7 +88,7 @@ function ActivityLogCard({
         {activeTab === 'log' ? (
           activities.length > 0 ? (
             displayedActivities.map((activity) => (
-              <ActivityLogItem
+              <LogItem
                 key={activity.id}
                 type={activity.type}
                 action={activity.action}
@@ -110,7 +110,7 @@ function ActivityLogCard({
             </div>
           )
         ) : (
-          <ActivityFeedList
+          <ActivityList
             activities={activities}
             formatTimestamp={formatTimestamp}
           />

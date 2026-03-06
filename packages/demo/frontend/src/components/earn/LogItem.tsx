@@ -3,7 +3,7 @@ import { ACTIVITY_CONFIG } from '../../constants/activityLogConfigs'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 
-interface ActivityLogItemProps {
+interface LogItemProps {
   type: 'lend' | 'withdraw' | 'fund' | 'wallet' | 'swap'
   action: string
   timestamp: string
@@ -59,13 +59,13 @@ const STATUS_TOOLTIPS = {
   },
 } as const
 
-function ActivityLogItem({
+function LogItem({
   type,
   action,
   status,
   blockExplorerUrl,
   isFromPreviousSession,
-}: ActivityLogItemProps) {
+}: LogItemProps) {
   // TODO: Re-enable expand state in next PR when request/response data is improved
   // const [isExpanded, setIsExpanded] = useState(false)
   const isExpanded = false
@@ -367,4 +367,4 @@ function ActivityLogItem({
   )
 }
 
-export default ActivityLogItem
+export default LogItem
