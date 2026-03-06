@@ -30,7 +30,7 @@ import {
   getSupportedChainIds,
   getUniswapAddresses,
 } from './addresses.js'
-import { encodeUniversalRouterSwap, getQuote } from './sdk.js'
+import { encodeUniversalRouterSwap, getQuote } from './encoding.js'
 import type { UniswapMarketFilter, UniswapSwapProviderConfig } from './types.js'
 
 /**
@@ -61,6 +61,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       chainId,
       publicClient,
       quoterAddress: addresses.quoter,
+      poolManagerAddress: addresses.poolManager,
       fee: filter.fee,
       tickSpacing: filter.tickSpacing,
     })
@@ -178,6 +179,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       chainId,
       publicClient,
       quoterAddress: addresses.quoter,
+      poolManagerAddress: addresses.poolManager,
       fee: filter.fee,
       tickSpacing: filter.tickSpacing,
     })

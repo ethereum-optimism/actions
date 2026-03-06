@@ -167,7 +167,7 @@ export interface SwapPrice {
   amountInFormatted: string
   /** Human-readable output amount */
   amountOutFormatted: string
-  /** Price impact as decimal (0.01 = 1%) */
+  /** Price impact as decimal (0.03 = 3%). Derived from pool mid-price vs execution price. */
   priceImpact: number
   /** Route taken for the swap */
   route: SwapRoute
@@ -201,7 +201,7 @@ export interface SwapTransaction {
   assetOut: Asset
   /** Execution price */
   price: string
-  /** Price impact */
+  /** Price impact as decimal (0.03 = 3%) */
   priceImpact: number
   /** Transaction data for execution */
   transactionData: SwapTransactionData
@@ -227,7 +227,7 @@ export interface SwapReceipt {
   assetOut: Asset
   /** Execution price as human-readable string */
   price: string
-  /** Price impact as decimal */
+  /** Price impact as decimal (0.03 = 3%) */
   priceImpact: number
 }
 

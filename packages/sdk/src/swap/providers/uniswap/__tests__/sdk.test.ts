@@ -4,7 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 
-import { encodeUniversalRouterSwap, getQuote } from '../sdk.js'
+import {
+  calculatePriceImpact,
+  encodeUniversalRouterSwap,
+  getQuote,
+} from '../encoding.js'
 
 const USDC: Asset = {
   type: 'erc20',
@@ -19,9 +23,16 @@ const WETH: Asset = {
 }
 
 const QUOTER = '0x4a6513c898fe1b2d0e78d3b0e0a4a151589b1cba' as Address
+const POOL_MANAGER = '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address
 const CHAIN_ID = 84532 as SupportedChainId
 const FEE = 100
 const TICK_SPACING = 2
+
+// Mock sqrtPriceX96 for a ~2000 USDC/WETH pool
+// sqrtPriceX96 = sqrt(price) * 2^96, where price = WETH/USDC adjusted for decimals
+// For 1 WETH = 2000 USDC: price(token0→token1) depends on sort order
+const MOCK_SQRT_PRICE =
+  '0x0000000000000000000000000000000000000000000000010000000000000000' as `0x${string}`
 
 function createMockPublicClient(
   amountResult: bigint,
@@ -31,6 +42,7 @@ function createMockPublicClient(
     simulateContract: vi.fn().mockResolvedValue({
       result: [amountResult, gasEstimate],
     }),
+    readContract: vi.fn().mockResolvedValue(MOCK_SQRT_PRICE),
   } as unknown as PublicClient
 }
 
@@ -44,6 +56,7 @@ describe('getQuote', () => {
       chainId: CHAIN_ID,
       publicClient,
       quoterAddress: QUOTER,
+      poolManagerAddress: POOL_MANAGER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -54,6 +67,8 @@ describe('getQuote', () => {
     expect(quote.amountOutFormatted).toBe('0.5')
     expect(quote.price).toBeDefined()
     expect(quote.priceInverse).toBeDefined()
+    expect(typeof quote.priceImpact).toBe('number')
+    expect(quote.priceImpact).toBeGreaterThanOrEqual(0)
     expect(quote.route.path).toEqual([USDC, WETH])
     expect(quote.route.pools).toHaveLength(1)
     expect(quote.gasEstimate).toBe(150000n)
@@ -61,6 +76,13 @@ describe('getQuote', () => {
     expect(publicClient.simulateContract).toHaveBeenCalledWith(
       expect.objectContaining({
         functionName: 'quoteExactInputSingle',
+      }),
+    )
+    // Should also read sqrtPriceX96 via extsload
+    expect(publicClient.readContract).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: POOL_MANAGER,
+        functionName: 'extsload',
       }),
     )
   })
@@ -74,6 +96,7 @@ describe('getQuote', () => {
       chainId: CHAIN_ID,
       publicClient,
       quoterAddress: QUOTER,
+      poolManagerAddress: POOL_MANAGER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -97,6 +120,7 @@ describe('getQuote', () => {
       chainId: CHAIN_ID,
       publicClient,
       quoterAddress: QUOTER,
+      poolManagerAddress: POOL_MANAGER,
       fee: FEE,
       tickSpacing: TICK_SPACING,
     })
@@ -108,6 +132,77 @@ describe('getQuote', () => {
       args.poolKey.currency0.toLowerCase() <
         args.poolKey.currency1.toLowerCase(),
     ).toBe(true)
+  })
+})
+
+describe('calculatePriceImpact', () => {
+  // sqrtPriceX96 for a pool where 1 USDC-wei buys 5e9 WETH-wei
+  // (100 USDC → 0.5 WETH at mid-price)
+  // Computed as: sqrt(5e9) * 2^96 ≈ 70711 * 2^96
+  const MID_SQRT_PRICE = 5602302599546145575577086272208896n
+
+  it('returns 0 when sqrtPriceX96 is 0', () => {
+    const impact = calculatePriceImpact({
+      sqrtPriceX96: 0n,
+      amountIn: 100000000n,
+      amountOut: 500000000000000000n,
+      zeroForOne: true,
+    })
+    expect(impact).toBe(0)
+  })
+
+  it('returns ~0 for a trade at mid-price', () => {
+    // 100 USDC → ~0.5 WETH, which matches the mid-price
+    const impact = calculatePriceImpact({
+      sqrtPriceX96: MID_SQRT_PRICE,
+      amountIn: 100000000n,
+      amountOut: 500000000000000000n,
+      zeroForOne: true,
+    })
+
+    // Very small due to integer sqrt rounding, but near 0
+    expect(impact).toBeLessThan(0.001)
+  })
+
+  it('returns positive impact when execution is worse than mid-price', () => {
+    // Mid-price says we should get ~0.5 WETH, but we only get 0.4 WETH
+    const impact = calculatePriceImpact({
+      sqrtPriceX96: MID_SQRT_PRICE,
+      amountIn: 100000000n,
+      amountOut: 400000000000000000n, // 0.4 WETH instead of ~0.5
+      zeroForOne: true,
+    })
+
+    // ~20% price impact
+    expect(impact).toBeGreaterThan(0.15)
+    expect(impact).toBeLessThan(0.25)
+  })
+
+  it('clamps negative impact to 0', () => {
+    // Execution was better than mid-price (got more than expected)
+    const impact = calculatePriceImpact({
+      sqrtPriceX96: MID_SQRT_PRICE,
+      amountIn: 100000000n,
+      amountOut: 600000000000000000n, // 0.6 WETH — better than ~0.5 mid
+      zeroForOne: true,
+    })
+
+    expect(impact).toBe(0)
+  })
+
+  it('works for oneForZero direction', () => {
+    // Selling WETH for USDC (oneForZero)
+    // At mid-price: 0.5 WETH should get ~100 USDC-wei worth
+    // But we only get 90 USDC → some impact
+    const impact = calculatePriceImpact({
+      sqrtPriceX96: MID_SQRT_PRICE,
+      amountIn: 500000000000000000n, // 0.5 WETH
+      amountOut: 90000000n, // 90 USDC (less than ~100)
+      zeroForOne: false,
+    })
+
+    expect(impact).toBeGreaterThan(0.05)
+    expect(impact).toBeLessThan(0.15)
   })
 })
 

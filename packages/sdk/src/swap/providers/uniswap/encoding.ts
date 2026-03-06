@@ -1,5 +1,10 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { encodeAbiParameters, encodeFunctionData, formatUnits } from 'viem'
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+  formatUnits,
+  keccak256,
+} from 'viem'
 
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -11,6 +16,8 @@ import {
   CURRENCY_AMOUNT_PARAMS,
   EXACT_INPUT_SINGLE_PARAMS,
   EXACT_OUTPUT_SINGLE_PARAMS,
+  EXTSLOAD_ABI,
+  POOL_KEY_ABI_TYPE,
   QUOTER_ABI,
   UNIVERSAL_ROUTER_ABI,
 } from './abis.js'
@@ -75,6 +82,7 @@ export interface GetQuoteParams {
   chainId: SupportedChainId
   publicClient: PublicClient
   quoterAddress: Address
+  poolManagerAddress: Address
   /** Fee tier in pips (e.g. 100 = 0.01%) */
   fee: number
   /** Tick spacing for the pool */
@@ -93,6 +101,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     chainId,
     publicClient,
     quoterAddress,
+    poolManagerAddress,
     fee,
     tickSpacing,
   } = params
@@ -107,59 +116,49 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
 
   const isExactInput = amountInWei !== undefined
 
-  let amountIn: bigint
-  let amountOut: bigint
-  let gasEstimate: bigint
+  // Read pool mid-price and quote in parallel — no extra sequential RPC call
+  const [sqrtPriceX96, quoteResult] = await Promise.all([
+    getPoolSqrtPrice({ publicClient, poolManagerAddress, poolKey }),
+    isExactInput
+      ? publicClient.simulateContract({
+          address: quoterAddress,
+          abi: QUOTER_ABI,
+          functionName: 'quoteExactInputSingle',
+          args: [
+            {
+              poolKey,
+              zeroForOne,
+              exactAmount: amountInWei,
+              hookData: '0x' as `0x${string}`,
+            },
+          ],
+        })
+      : publicClient.simulateContract({
+          address: quoterAddress,
+          abi: QUOTER_ABI,
+          functionName: 'quoteExactOutputSingle',
+          args: [
+            {
+              poolKey,
+              zeroForOne,
+              exactAmount: amountOutWei!,
+              hookData: '0x' as `0x${string}`,
+            },
+          ],
+        }),
+  ])
 
-  if (isExactInput) {
-    const result = await publicClient.simulateContract({
-      address: quoterAddress,
-      abi: QUOTER_ABI,
-      functionName: 'quoteExactInputSingle',
-      args: [
-        {
-          poolKey,
-          zeroForOne,
-          exactAmount: amountInWei,
-          hookData: '0x' as `0x${string}`,
-        },
-      ],
-    })
-
-    amountIn = amountInWei
-    amountOut = result.result[0]
-    gasEstimate = result.result[1]
-  } else {
-    const result = await publicClient.simulateContract({
-      address: quoterAddress,
-      abi: QUOTER_ABI,
-      functionName: 'quoteExactOutputSingle',
-      args: [
-        {
-          poolKey,
-          zeroForOne,
-          exactAmount: amountOutWei!,
-          hookData: '0x' as `0x${string}`,
-        },
-      ],
-    })
-
-    amountIn = result.result[0]
-    amountOut = amountOutWei!
-    gasEstimate = result.result[1]
-  }
+  const amountIn = isExactInput ? amountInWei : quoteResult.result[0]
+  const amountOut = isExactInput ? quoteResult.result[0] : amountOutWei!
+  const gasEstimate = quoteResult.result[1]
 
   const price = calculatePrice(amountIn, amountOut, assetIn, assetOut)
   const priceInverse = calculatePrice(amountOut, amountIn, assetOut, assetIn)
-  const priceImpact = await calculatePriceImpact({
+  const priceImpact = calculatePriceImpact({
+    sqrtPriceX96,
     amountIn,
     amountOut,
-    assetIn,
-    assetOut,
-    poolKey,
     zeroForOne,
-    quoterAddress,
-    publicClient,
   })
 
   const route: SwapRoute = {
@@ -317,75 +316,82 @@ function calculatePrice(
   return (normalizedOut / normalizedIn).toFixed(6)
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Price impact via pool mid-price read from PoolManager storage (extsload)
+// Formula mirrors Uniswap SDK's computePriceImpact:
+//   (quotedOutput - actualOutput) / quotedOutput
+// @see https://github.com/Uniswap/sdks/blob/main/sdks/sdk-core/src/utils/computePriceImpact.ts
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** @see https://docs.uniswap.org/contracts/v4/reference/core/libraries/StateLibrary */
+const POOLS_SLOT = 6n
+
 /**
- * Calculate price impact by comparing execution price to mid-price
- * @description Quotes a 1-unit trade to approximate the mid-price,
- * then compares against the actual execution price.
- * Returns 0 for 1-unit trades (they are the reference).
+ * Read sqrtPriceX96 from a V4 pool via PoolManager.extsload (single SLOAD)
  */
-async function calculatePriceImpact(params: {
+export async function getPoolSqrtPrice(params: {
+  publicClient: PublicClient
+  poolManagerAddress: Address
+  poolKey: ResolvedPoolParams['poolKey']
+}): Promise<bigint> {
+  const { publicClient, poolManagerAddress, poolKey } = params
+
+  const poolId = keccak256(
+    encodeAbiParameters(POOL_KEY_ABI_TYPE, [
+      poolKey.currency0,
+      poolKey.currency1,
+      poolKey.fee,
+      poolKey.tickSpacing,
+      poolKey.hooks,
+    ]),
+  )
+
+  // pools[poolId].slot0 — slot0 is at offset 0 from the mapping base
+  const slot = keccak256(
+    encodeAbiParameters(
+      [{ type: 'bytes32' }, { type: 'uint256' }],
+      [poolId, POOLS_SLOT],
+    ),
+  )
+
+  const result = await publicClient.readContract({
+    address: poolManagerAddress,
+    abi: EXTSLOAD_ABI,
+    functionName: 'extsload',
+    args: [slot],
+  })
+
+  // sqrtPriceX96 is packed in the lower 160 bits of slot0
+  return BigInt(result) & ((1n << 160n) - 1n)
+}
+
+/**
+ * Price impact as a decimal (0.03 = 3%). Returns 0 if unavailable.
+ */
+export function calculatePriceImpact(params: {
+  sqrtPriceX96: bigint
   amountIn: bigint
   amountOut: bigint
-  assetIn: Asset
-  assetOut: Asset
-  poolKey: ResolvedPoolParams['poolKey']
   zeroForOne: boolean
-  quoterAddress: Address
-  publicClient: PublicClient
-}): Promise<number> {
-  const {
-    amountIn,
-    amountOut,
-    assetIn,
-    assetOut,
-    poolKey,
-    zeroForOne,
-    quoterAddress,
-    publicClient,
-  } = params
+}): number {
+  const { sqrtPriceX96, amountIn, amountOut, zeroForOne } = params
 
-  const oneUnit = BigInt(10 ** assetIn.metadata.decimals)
+  if (sqrtPriceX96 === 0n) return 0
 
-  // If the trade is already 1 unit, there's no meaningful impact to measure
-  if (amountIn === oneUnit) return 0
+  // price(currency0→currency1) = sqrtPriceX96² / 2¹⁹² (raw wei units)
+  const Q192 = 1n << 192n
+  const sqrtPriceSq = sqrtPriceX96 * sqrtPriceX96
 
-  try {
-    const refResult = await publicClient.simulateContract({
-      address: quoterAddress,
-      abi: QUOTER_ABI,
-      functionName: 'quoteExactInputSingle',
-      args: [
-        {
-          poolKey,
-          zeroForOne,
-          exactAmount: oneUnit,
-          hookData: '0x' as `0x${string}`,
-        },
-      ],
-    })
+  // What you'd receive at mid-price
+  const quotedOutput = zeroForOne
+    ? (amountIn * sqrtPriceSq) / Q192
+    : (amountIn * Q192) / sqrtPriceSq
 
-    const refAmountOut = refResult.result[0]
+  if (quotedOutput === 0n) return 0
 
-    // midPrice = refAmountOut / oneUnit (per-unit rate)
-    // executionPrice = amountOut / amountIn (actual rate)
-    // priceImpact = 1 - (executionPrice / midPrice)
-    const inDecimals = assetIn.metadata.decimals
-    const outDecimals = assetOut.metadata.decimals
+  const SCALE = 10n ** 18n
+  const impactScaled = ((quotedOutput - amountOut) * SCALE) / quotedOutput
+  const impact = Number(impactScaled) / Number(SCALE)
 
-    const midPrice =
-      parseFloat(formatUnits(refAmountOut, outDecimals)) /
-      parseFloat(formatUnits(oneUnit, inDecimals))
-    const execPrice =
-      parseFloat(formatUnits(amountOut, outDecimals)) /
-      parseFloat(formatUnits(amountIn, inDecimals))
-
-    if (midPrice === 0) return 0
-
-    const impact = 1 - execPrice / midPrice
-    // Clamp to [0, 1] — negative impact means better-than-mid execution
-    return Math.max(0, impact)
-  } catch {
-    // If reference quote fails, return 0 rather than blocking the trade
-    return 0
-  }
+  return Math.max(0, impact)
 }

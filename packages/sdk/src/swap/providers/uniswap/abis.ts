@@ -117,3 +117,28 @@ export const CURRENCY_AMOUNT_PARAMS = [
   { type: 'address' },
   { type: 'uint256' },
 ] as const
+
+/**
+ * PoolManager extsload ABI — reads arbitrary storage slots via SLOAD
+ * @see https://docs.uniswap.org/contracts/v4/guides/read-pool-state
+ */
+export const EXTSLOAD_ABI = [
+  {
+    name: 'extsload',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'slot', type: 'bytes32' }],
+    outputs: [{ type: 'bytes32' }],
+  },
+] as const
+
+/**
+ * PoolKey ABI encoding type for computing PoolId
+ */
+export const POOL_KEY_ABI_TYPE = [
+  { name: 'currency0', type: 'address' },
+  { name: 'currency1', type: 'address' },
+  { name: 'fee', type: 'uint24' },
+  { name: 'tickSpacing', type: 'int24' },
+  { name: 'hooks', type: 'address' },
+] as const
