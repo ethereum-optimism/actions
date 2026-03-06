@@ -90,20 +90,6 @@ const UNISWAP_ADDRESSES: Partial<Record<SupportedChainId, UniswapAddresses>> = {
 }
 
 /**
- * WETH addresses per chain (0x4200... is the standard OP Stack WETH)
- */
-const WETH_ADDRESSES: Partial<Record<SupportedChainId, Address>> = {
-  [mainnet.id]: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-  [optimism.id]: '0x4200000000000000000000000000000000000006',
-  [base.id]: '0x4200000000000000000000000000000000000006',
-  [unichain.id]: '0x4200000000000000000000000000000000000006',
-  [worldchain.id]: '0x4200000000000000000000000000000000000006',
-  [sepolia.id]: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
-  [baseSepolia.id]: '0x4200000000000000000000000000000000000006',
-  [unichainSepolia.id]: '0x4200000000000000000000000000000000000006',
-}
-
-/**
  * Uniswap V4 Subgraph URLs per chain
  * @see https://docs.uniswap.org/contracts/v4/deployments
  */
@@ -129,17 +115,6 @@ export function getUniswapAddresses(
  */
 export function getSupportedChainIds(): SupportedChainId[] {
   return Object.keys(UNISWAP_ADDRESSES).map(Number) as SupportedChainId[]
-}
-
-/**
- * Get WETH address for a chain
- */
-export function getWethAddress(chainId: SupportedChainId): Address {
-  const address = WETH_ADDRESSES[chainId]
-  if (!address) {
-    throw new Error(`No WETH address for chain ${chainId}`)
-  }
-  return address
 }
 
 /**

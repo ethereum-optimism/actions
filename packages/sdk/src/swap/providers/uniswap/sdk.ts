@@ -1,12 +1,11 @@
 import type { Address, Hex, PublicClient } from 'viem'
 import { encodeAbiParameters, encodeFunctionData, formatUnits } from 'viem'
 
+import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
-
-import { getWethAddress } from './addresses.js'
 
 /**
  * PoolKey tuple components (shared across V4 ABI definitions)
@@ -111,11 +110,11 @@ function resolvePoolParams(
   tickSpacing: number,
 ): ResolvedPoolParams {
   const tokenIn = isNativeAsset(assetIn)
-    ? getWethAddress(chainId)
+    ? getAssetAddress(WETH, chainId)
     : getAssetAddress(assetIn, chainId)
 
   const tokenOut = isNativeAsset(assetOut)
-    ? getWethAddress(chainId)
+    ? getAssetAddress(WETH, chainId)
     : getAssetAddress(assetOut, chainId)
 
   // V4 requires sorted tokens: currency0 < currency1
