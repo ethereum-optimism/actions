@@ -8,7 +8,9 @@ import type {
 } from '@/types/swap/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
-import { BaseSwapNamespace, type SwapProviders } from './BaseSwapNamespace.js'
+import type { SwapProviders } from '@/types/swap/index.js'
+
+import { BaseSwapNamespace } from './BaseSwapNamespace.js'
 
 /**
  * Wallet swap namespace (full operations with signing)

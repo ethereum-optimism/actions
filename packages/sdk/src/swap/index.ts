@@ -3,10 +3,7 @@ export { SwapProvider } from './core/SwapProvider.js'
 
 // Namespaces
 export { ActionsSwapNamespace } from './namespaces/ActionsSwapNamespace.js'
-export {
-  BaseSwapNamespace,
-  type SwapProviders,
-} from './namespaces/BaseSwapNamespace.js'
+export { BaseSwapNamespace } from './namespaces/BaseSwapNamespace.js'
 export { WalletSwapNamespace } from './namespaces/WalletSwapNamespace.js'
 
 // Providers

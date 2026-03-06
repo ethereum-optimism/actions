@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
 import type {
@@ -11,6 +12,13 @@ import type {
 export { SwapProvider } from '@/swap/core/SwapProvider.js'
 export { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
 export { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
+
+/**
+ * Map of available swap providers keyed by provider name
+ */
+export type SwapProviders = {
+  uniswap?: SwapProvider<SwapProviderConfig>
+}
 
 /**
  * Swap provider configuration

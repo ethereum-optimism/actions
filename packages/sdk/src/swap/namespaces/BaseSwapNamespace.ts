@@ -7,11 +7,8 @@ import type {
   SwapPrice,
   SwapPriceParams,
   SwapProviderConfig,
+  SwapProviders,
 } from '@/types/swap/index.js'
-
-export type SwapProviders = {
-  uniswap?: SwapProvider<SwapProviderConfig>
-}
 
 /**
  * Base swap namespace with shared read-only operations
