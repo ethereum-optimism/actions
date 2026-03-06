@@ -9,6 +9,157 @@ import {
 import { Modal, ModalHeader } from '../Modal'
 import { CtaButton } from './CtaButton'
 
+function AmountRow({
+  label,
+  amount,
+  logo,
+  symbol,
+  usd,
+}: {
+  label: string
+  amount: { main: string; secondary?: string }
+  logo: string
+  symbol: string
+  usd?: string | null
+}) {
+  return (
+    <div>
+      <span style={{ fontSize: '14px', color: '#9195A6' }}>{label}</span>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}>
+          {amount.main}
+          {amount.secondary && (
+            <span style={{ color: '#9195A6', fontSize: '20px' }}>
+              {amount.secondary}
+            </span>
+          )}
+        </span>
+        <img
+          src={logo}
+          alt={symbol}
+          style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+        />
+      </div>
+      {usd && <span style={{ fontSize: '14px', color: '#9195A6' }}>{usd}</span>}
+    </div>
+  )
+}
+
+function DownArrow() {
+  return (
+    <div style={{ padding: '8px 0' }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path
+          d="M8 3V13M8 13L4 9M8 13L12 9"
+          stroke="#9195A6"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  )
+}
+
+function DetailRow({
+  label,
+  value,
+  valueColor,
+}: {
+  label: string
+  value: React.ReactNode
+  valueColor?: string
+}) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span style={{ color: '#666666' }}>{label}</span>
+      <span style={{ color: valueColor || '#1a1b1e' }}>{value}</span>
+    </div>
+  )
+}
+
+function FormattedAmount({
+  amount,
+  suffix,
+}: {
+  amount: { main: string; secondary?: string }
+  suffix: string
+}) {
+  return (
+    <>
+      {amount.main}
+      {amount.secondary && (
+        <span style={{ color: '#9195A6', fontSize: '12px' }}>
+          {amount.secondary}
+        </span>
+      )}{' '}
+      {suffix}
+    </>
+  )
+}
+
+function SwapDetails({
+  priceQuote,
+  symbolIn,
+  symbolOut,
+  formattedMinReceived,
+  slippage,
+}: {
+  priceQuote: { price: string; priceImpact: number }
+  symbolIn: string
+  symbolOut: string
+  formattedMinReceived: { main: string; secondary?: string }
+  slippage: number
+}) {
+  const formattedRate = formatSwapAmount(priceQuote.price)
+  const impactPct = (priceQuote.priceImpact * 100).toFixed(3)
+
+  return (
+    <div
+      style={{
+        borderTop: '1px solid #E0E2EB',
+        paddingTop: '16px',
+        marginBottom: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        fontSize: '14px',
+      }}
+    >
+      <DetailRow
+        label="Exchange rate"
+        value={
+          <>
+            1 {symbolIn} ={' '}
+            <FormattedAmount amount={formattedRate} suffix={symbolOut} />
+          </>
+        }
+      />
+      <DetailRow
+        label="Price impact"
+        value={`${priceQuote.priceImpact > 0 ? '-' : ''}${impactPct}%`}
+        valueColor={priceQuote.priceImpact > 0.01 ? '#F59E0B' : undefined}
+      />
+      <DetailRow
+        label="Minimum received"
+        value={
+          <FormattedAmount amount={formattedMinReceived} suffix={symbolOut} />
+        }
+      />
+      <DetailRow
+        label="Max slippage"
+        value={`${(slippage * 100).toFixed(1)}%`}
+      />
+    </div>
+  )
+}
+
 interface ReviewSwapModalProps {
   isOpen: boolean
   onClose: () => void
@@ -45,9 +196,7 @@ export function ReviewSwapModal({
     parsedIn,
     parsedOut,
   )
-  const usdIn = formatUsd(parsedIn, usdPerIn)
 
-  const formattedOut = formatSwapAmount(amountOut)
   const formattedMinReceived = formatSwapAmount(
     (parsedOut * (1 - slippage)).toFixed(6),
   )
@@ -56,130 +205,34 @@ export function ReviewSwapModal({
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="420px">
       <ModalHeader title="Review swap" onClose={onClose} />
 
-      {/* You pay */}
-      <div style={{ marginBottom: '4px' }}>
-        <span style={{ fontSize: '14px', color: '#9195A6' }}>You pay</span>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <span style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}>
-            {amountIn}
-          </span>
-          <img
-            src={assetIn.logo}
-            alt={symbolIn}
-            style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-          />
-        </div>
-        {usdIn && (
-          <span style={{ fontSize: '14px', color: '#9195A6' }}>{usdIn}</span>
-        )}
-      </div>
+      <AmountRow
+        label="You pay"
+        amount={{ main: amountIn }}
+        logo={assetIn.logo}
+        symbol={symbolIn}
+        usd={formatUsd(parsedIn, usdPerIn)}
+      />
 
-      {/* Arrow */}
-      <div style={{ padding: '8px 0' }}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path
-            d="M8 3V13M8 13L4 9M8 13L12 9"
-            stroke="#9195A6"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
+      <DownArrow />
 
-      {/* You receive */}
       <div style={{ marginBottom: '24px' }}>
-        <span style={{ fontSize: '14px', color: '#9195A6' }}>You receive</span>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <span style={{ fontSize: '32px', fontWeight: 500, color: '#1a1b1e' }}>
-            {formattedOut.main}
-            {formattedOut.secondary && (
-              <span style={{ color: '#9195A6', fontSize: '20px' }}>
-                {formattedOut.secondary}
-              </span>
-            )}
-          </span>
-          <img
-            src={assetOut.logo}
-            alt={symbolOut}
-            style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-          />
-        </div>
-        {formatUsd(parsedOut, usdPerOut) && (
-          <span style={{ fontSize: '14px', color: '#9195A6' }}>
-            {formatUsd(parsedOut, usdPerOut)}
-          </span>
-        )}
+        <AmountRow
+          label="You receive"
+          amount={formatSwapAmount(amountOut)}
+          logo={assetOut.logo}
+          symbol={symbolOut}
+          usd={formatUsd(parsedOut, usdPerOut)}
+        />
       </div>
 
-      {/* Details */}
       {priceQuote && (
-        <div
-          style={{
-            borderTop: '1px solid #E0E2EB',
-            paddingTop: '16px',
-            marginBottom: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            fontSize: '14px',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#666666' }}>Exchange rate</span>
-            <span style={{ color: '#1a1b1e' }}>
-              1 {symbolIn} = {formatSwapAmount(priceQuote.price).main}
-              {formatSwapAmount(priceQuote.price).secondary && (
-                <span style={{ color: '#9195A6', fontSize: '12px' }}>
-                  {formatSwapAmount(priceQuote.price).secondary}
-                </span>
-              )}{' '}
-              {symbolOut}
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#666666' }}>Price impact</span>
-            <span
-              style={{
-                color: priceQuote.priceImpact > 0.01 ? '#F59E0B' : '#1a1b1e',
-              }}
-            >
-              {priceQuote.priceImpact > 0
-                ? `-${(priceQuote.priceImpact * 100).toFixed(3)}%`
-                : `${(priceQuote.priceImpact * 100).toFixed(3)}%`}
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#666666' }}>Minimum received</span>
-            <span style={{ color: '#1a1b1e' }}>
-              {formattedMinReceived.main}
-              {formattedMinReceived.secondary && (
-                <span style={{ color: '#9195A6', fontSize: '12px' }}>
-                  {formattedMinReceived.secondary}
-                </span>
-              )}{' '}
-              {symbolOut}
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#666666' }}>Max slippage</span>
-            <span style={{ color: '#1a1b1e' }}>
-              {(slippage * 100).toFixed(1)}%
-            </span>
-          </div>
-        </div>
+        <SwapDetails
+          priceQuote={priceQuote}
+          symbolIn={symbolIn}
+          symbolOut={symbolOut}
+          formattedMinReceived={formattedMinReceived}
+          slippage={slippage}
+        />
       )}
 
       <CtaButton onClick={onConfirm} disabled={isExecuting}>
