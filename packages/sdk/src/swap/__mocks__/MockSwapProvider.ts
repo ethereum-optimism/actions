@@ -8,7 +8,7 @@ import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
-  SwapExecuteInternalParams,
+  ResolvedSwapParams,
   SwapMarket,
   SwapPrice,
   SwapPriceParams,
@@ -27,7 +27,7 @@ export interface MockSwapProviderConfig {
  */
 export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   public mockExecute: MockedFunction<
-    (params: SwapExecuteInternalParams) => Promise<SwapTransaction>
+    (params: ResolvedSwapParams) => Promise<SwapTransaction>
   >
   public mockGetPrice: MockedFunction<
     (params: SwapPriceParams) => Promise<SwapPrice>
@@ -81,7 +81,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   }
 
   protected async _execute(
-    params: SwapExecuteInternalParams,
+    params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {
     return this.mockExecute(params)
   }
@@ -114,7 +114,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   }
 
   private createMockSwapTransaction(
-    params: SwapExecuteInternalParams,
+    params: ResolvedSwapParams,
   ): SwapTransaction {
     const amountIn = params.amountInWei ?? 1000000n
     const amountOut = 1500000000000000000n

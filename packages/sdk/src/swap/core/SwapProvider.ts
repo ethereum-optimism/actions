@@ -1,5 +1,4 @@
 import type { Address } from 'viem'
-import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -7,7 +6,7 @@ import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
-  SwapExecuteInternalParams,
+  ResolvedSwapParams,
   SwapExecuteParams,
   SwapMarket,
   SwapMarketFilter,
@@ -16,18 +15,15 @@ import type {
   SwapProviderConfig,
   SwapTransaction,
 } from '@/types/swap/index.js'
-import { isAssetSupportedOnChain } from '@/utils/assets.js'
+import { isAssetSupportedOnChain, parseAssetAmount } from '@/utils/assets.js'
 
-/** Default slippage tolerance (0.5%) */
 const DEFAULT_SLIPPAGE = 0.005
-
-/** Default deadline offset (1 minute) */
 const DEFAULT_DEADLINE_OFFSET = 60
+const MAX_SLIPPAGE = 0.5
 
 /**
- * Abstract base class for swap providers
- * @description Defines the interface for all swap provider implementations.
- * Uses template method pattern - public methods handle validation and conversion,
+ * Abstract base class for swap providers.
+ * Public methods handle validation and conversion,
  * protected abstract methods implement provider-specific logic.
  */
 export abstract class SwapProvider<
@@ -41,19 +37,17 @@ export abstract class SwapProvider<
     this.chainManager = chainManager
   }
 
-  /** Provider configuration */
   get config(): TConfig {
     return this._config
   }
 
-  /** Default slippage from config or provider default */
   get defaultSlippage(): number {
     return this._config.defaultSlippage ?? DEFAULT_SLIPPAGE
   }
 
   /**
    * Execute a token swap
-   * @param params - Swap parameters
+   * @param params - Swap parameters including assets, amounts, and chain
    * @returns Swap transaction data ready for execution
    */
   async execute(
@@ -62,105 +56,32 @@ export abstract class SwapProvider<
       chainId: SupportedChainId
     },
   ): Promise<SwapTransaction> {
-    // Validate at least one amount is provided
-    if (params.amountIn === undefined && params.amountOut === undefined) {
-      throw new Error('Either amountIn or amountOut must be provided')
-    }
-
-    // Prevent same-asset swaps
-    if (
-      params.assetIn.metadata.symbol.toLowerCase() ===
-      params.assetOut.metadata.symbol.toLowerCase()
-    ) {
-      throw new Error('Cannot swap an asset for itself')
-    }
-
-    // Validate chain support
+    this.validateAmountProvided(params.amountIn, params.amountOut)
+    this.validateNotSameAsset(params.assetIn, params.assetOut)
     this.validateChainSupported(params.chainId)
-
-    // Validate market is allowed
     this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
+    this.validateAssetOnChain(params.assetIn, params.chainId)
+    this.validateAssetOnChain(params.assetOut, params.chainId)
 
-    // Validate assets are supported on chain
-    if (!isAssetSupportedOnChain(params.assetIn, params.chainId)) {
-      throw new Error(
-        `Asset ${params.assetIn.metadata.symbol} not supported on chain ${params.chainId}`,
-      )
-    }
-    if (!isAssetSupportedOnChain(params.assetOut, params.chainId)) {
-      throw new Error(
-        `Asset ${params.assetOut.metadata.symbol} not supported on chain ${params.chainId}`,
-      )
-    }
-
-    // Convert amounts to wei
-    const amountInWei =
-      params.amountIn !== undefined
-        ? parseUnits(
-            params.amountIn.toString(),
-            params.assetIn.metadata.decimals,
-          )
-        : undefined
-
-    const amountOutWei =
-      params.amountOut !== undefined
-        ? parseUnits(
-            params.amountOut.toString(),
-            params.assetOut.metadata.decimals,
-          )
-        : undefined
-
-    // Build internal params with defaults
-    const internalParams: SwapExecuteInternalParams = {
-      amountInWei,
-      amountOutWei,
-      assetIn: params.assetIn,
-      assetOut: params.assetOut,
-      slippage: params.slippage ?? this.defaultSlippage,
-      deadline:
-        params.deadline ??
-        Math.floor(Date.now() / 1000) + DEFAULT_DEADLINE_OFFSET,
-      recipient: params.recipient ?? params.walletAddress,
-      walletAddress: params.walletAddress,
-      chainId: params.chainId,
-    }
-
-    // Validate slippage bounds
-    const MAX_SLIPPAGE = 0.5
-    if (internalParams.slippage < 0 || internalParams.slippage > MAX_SLIPPAGE) {
-      throw new Error(
-        `Slippage ${internalParams.slippage} exceeds allowed range [0, ${MAX_SLIPPAGE * 100}%]`,
-      )
-    }
+    const internalParams = this.resolveParams(params)
+    this.validateSlippage(internalParams.slippage)
 
     return this._execute(internalParams)
   }
 
-  /**
-   * Get price quote for a swap
-   * @param params - Price query parameters
-   * @returns Price quote with route information
-   */
+  /** Get price quote for a swap */
   async getPrice(params: SwapPriceParams): Promise<SwapPrice> {
     this.validateChainSupported(params.chainId)
     return this._getPrice(params)
   }
 
-  /**
-   * Get a specific swap market by ID
-   * @param params - Market identifier and chain
-   * @returns Market information
-   */
+  /** Get a specific swap market by ID */
   async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     this.validateChainSupported(params.chainId)
     return this._getMarket(params)
   }
 
-  /**
-   * Get available swap markets
-   * @param params - Optional filtering by chainId or asset
-   * @returns Array of swap markets
-   */
+  /** Get available swap markets, optionally filtered by chainId or asset */
   async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
     if (params.chainId) {
       this.validateChainSupported(params.chainId)
@@ -168,9 +89,6 @@ export abstract class SwapProvider<
     return this._getMarkets(params)
   }
 
-  /**
-   * Check if a chain is supported
-   */
   isChainSupported(chainId: SupportedChainId): boolean {
     return this.supportedChainIds().includes(chainId)
   }
@@ -195,7 +113,6 @@ export abstract class SwapProvider<
   ): void {
     const { marketBlocklist, marketAllowlist } = this._config
 
-    // Check blocklist first
     if (marketBlocklist?.length) {
       const isBlocked = this.findMatchingFilter(
         assetIn,
@@ -210,7 +127,6 @@ export abstract class SwapProvider<
       }
     }
 
-    // Check allowlist if configured
     if (marketAllowlist?.length) {
       const isAllowed = this.findMatchingFilter(
         assetIn,
@@ -226,9 +142,6 @@ export abstract class SwapProvider<
     }
   }
 
-  /**
-   * Resolve the first matching market filter for a pair
-   */
   protected resolveMarketFilter(
     assetIn: Asset,
     assetOut: Asset,
@@ -243,6 +156,71 @@ export abstract class SwapProvider<
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
+  private validateAmountProvided(amountIn?: number, amountOut?: number): void {
+    if (amountIn === undefined && amountOut === undefined) {
+      throw new Error('Either amountIn or amountOut must be provided')
+    }
+  }
+
+  private validateNotSameAsset(assetIn: Asset, assetOut: Asset): void {
+    if (
+      assetIn.metadata.symbol.toLowerCase() ===
+      assetOut.metadata.symbol.toLowerCase()
+    ) {
+      throw new Error('Cannot swap an asset for itself')
+    }
+  }
+
+  private validateSlippage(slippage: number): void {
+    if (slippage < 0 || slippage > MAX_SLIPPAGE) {
+      throw new Error(
+        `Slippage ${slippage} exceeds allowed range [0, ${MAX_SLIPPAGE * 100}%]`,
+      )
+    }
+  }
+
+  private resolveParams(
+    params: SwapExecuteParams & {
+      walletAddress: Address
+      chainId: SupportedChainId
+    },
+  ): ResolvedSwapParams {
+    return {
+      amountInWei:
+        params.amountIn !== undefined
+          ? parseAssetAmount({
+              amount: params.amountIn,
+              decimals: params.assetIn.metadata.decimals,
+            })
+          : undefined,
+      amountOutWei:
+        params.amountOut !== undefined
+          ? parseAssetAmount({
+              amount: params.amountOut,
+              decimals: params.assetOut.metadata.decimals,
+            })
+          : undefined,
+      assetIn: params.assetIn,
+      assetOut: params.assetOut,
+      slippage: params.slippage ?? this.defaultSlippage,
+      deadline:
+        params.deadline ??
+        Math.floor(Date.now() / 1000) + DEFAULT_DEADLINE_OFFSET,
+      // Send output tokens to specified recipient, or back to the initiating wallet
+      recipient: params.recipient ?? params.walletAddress,
+      walletAddress: params.walletAddress,
+      chainId: params.chainId,
+    }
+  }
+
+  private validateAssetOnChain(asset: Asset, chainId: SupportedChainId): void {
+    if (!isAssetSupportedOnChain(asset, chainId)) {
+      throw new Error(
+        `Asset ${asset.metadata.symbol} not supported on chain ${chainId}`,
+      )
+    }
+  }
+
   private findMatchingFilter(
     assetIn: Asset,
     assetOut: Asset,
@@ -255,7 +233,6 @@ export abstract class SwapProvider<
     return list.find((filter) => {
       if (filter.chainId !== undefined && filter.chainId !== chainId)
         return false
-
       return this.filterContainsPair(symbolIn, symbolOut, filter.assets)
     })
   }
@@ -273,13 +250,10 @@ export abstract class SwapProvider<
   // Abstract methods (implement in provider)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Get supported chain IDs for this provider
-   */
   abstract supportedChainIds(): SupportedChainId[]
 
   protected abstract _execute(
-    params: SwapExecuteInternalParams,
+    params: ResolvedSwapParams,
   ): Promise<SwapTransaction>
 
   protected abstract _getPrice(params: SwapPriceParams): Promise<SwapPrice>

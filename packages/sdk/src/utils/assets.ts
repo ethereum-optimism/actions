@@ -6,16 +6,16 @@ import type { Asset } from '@/types/asset.js'
 
 /**
  * Parse human-readable amount to wei/smallest unit
- * @param amount - Human-readable amount (e.g. 1.5)
- * @param decimals - Token decimals
  * @returns Amount in smallest unit (wei equivalent)
  */
-export function parseAssetAmount(amount: number, decimals: number): bigint {
-  // Convert number to string with proper precision
-  const amountStr = amount.toString()
-
-  // Use viem's parseUnits for proper decimal handling
-  return parseUnits(amountStr, decimals)
+export function parseAssetAmount({
+  amount,
+  decimals,
+}: {
+  amount: number
+  decimals: number
+}): bigint {
+  return parseUnits(amount.toString(), decimals)
 }
 
 /**

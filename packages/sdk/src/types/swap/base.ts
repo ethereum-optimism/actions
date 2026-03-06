@@ -88,9 +88,10 @@ export interface SwapExecuteParams {
 }
 
 /**
- * Internal parameters after validation and conversion
+ * Fully resolved swap parameters with defaults applied and amounts in wei.
+ * Passed to provider _execute() implementations.
  */
-export interface SwapExecuteInternalParams {
+export interface ResolvedSwapParams {
   amountInWei?: bigint
   amountOutWei?: bigint
   assetIn: Asset

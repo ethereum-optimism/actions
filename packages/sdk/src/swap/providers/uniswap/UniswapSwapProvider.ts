@@ -1,5 +1,4 @@
 import type { Address } from 'viem'
-import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
@@ -7,14 +6,18 @@ import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
-  SwapExecuteInternalParams,
+  ResolvedSwapParams,
   SwapMarket,
   SwapPrice,
   SwapPriceParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
-import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
+import {
+  getAssetAddress,
+  isNativeAsset,
+  parseAssetAmount,
+} from '@/utils/assets.js'
 
 import {
   getSubgraphUrl,
@@ -41,7 +44,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
   }
 
   protected async _execute(
-    params: SwapExecuteInternalParams,
+    params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {
     const { chainId, assetIn, assetOut, walletAddress } = params
     const addresses = getUniswapAddresses(chainId)
@@ -149,15 +152,17 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
 
     const filter = this.resolveUniswapFilter(assetIn, assetOut, chainId)
 
-    // Default to 1 unit if no amount specified
-    const amountInWei =
-      params.amountIn !== undefined
-        ? parseUnits(params.amountIn.toString(), assetIn.metadata.decimals)
-        : parseUnits('1', assetIn.metadata.decimals)
+    const amountInWei = parseAssetAmount({
+      amount: params.amountIn ?? 1,
+      decimals: assetIn.metadata.decimals,
+    })
 
     const amountOutWei =
       params.amountOut !== undefined
-        ? parseUnits(params.amountOut.toString(), assetOut.metadata.decimals)
+        ? parseAssetAmount({
+            amount: params.amountOut,
+            decimals: assetOut.metadata.decimals,
+          })
         : undefined
 
     return getQuote({
