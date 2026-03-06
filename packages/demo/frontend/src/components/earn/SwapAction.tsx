@@ -41,8 +41,8 @@ interface SwapActionProps {
   }) => Promise<{
     price: string
     priceImpact: number
-    amountInFormatted: string
-    amountOutFormatted: string
+    amountIn: number
+    amountOut: number
   } | null>
   isExecuting: boolean
   onLogActivity?: (
@@ -240,8 +240,8 @@ export function SwapAction({
   const [priceQuote, setPriceQuote] = useState<{
     price: string
     priceImpact: number
-    amountInFormatted: string
-    amountOutFormatted: string
+    amountIn: number
+    amountOut: number
   } | null>(null)
   const [isLoadingPrice, setIsLoadingPrice] = useState(false)
 
@@ -294,9 +294,9 @@ export function SwapAction({
         setPriceQuote(quote)
         if (quote) {
           if (editDirection === 'in') {
-            setAmountOut(quote.amountOutFormatted)
+            setAmountOut(quote.amountOut.toString())
           } else {
-            setAmountIn(quote.amountInFormatted)
+            setAmountIn(quote.amountIn.toString())
           }
         }
       } catch {

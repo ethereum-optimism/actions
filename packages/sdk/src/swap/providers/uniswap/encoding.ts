@@ -175,10 +175,10 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
   return {
     price,
     priceInverse,
-    amountIn,
-    amountOut,
-    amountInFormatted: formatUnits(amountIn, assetIn.metadata.decimals),
-    amountOutFormatted: formatUnits(amountOut, assetOut.metadata.decimals),
+    amountIn: parseFloat(formatUnits(amountIn, assetIn.metadata.decimals)),
+    amountOut: parseFloat(formatUnits(amountOut, assetOut.metadata.decimals)),
+    amountInWei: amountIn,
+    amountOutWei: amountOut,
     priceImpact,
     route,
     gasEstimate,
@@ -243,7 +243,7 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
 
   if (isExactInput) {
     const minAmountOut =
-      (quote.amountOut * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
+      (quote.amountOutWei * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
 
     actions =
       `0x${[SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
@@ -263,8 +263,8 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
     ]
   } else {
     const maxAmountIn =
-      quote.amountIn +
-      (quote.amountIn * BigInt(Math.round(slippage * 10000))) / 10000n
+      quote.amountInWei +
+      (quote.amountInWei * BigInt(Math.round(slippage * 10000))) / 10000n
 
     actions =
       `0x${[SWAP_EXACT_OUT_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
@@ -274,13 +274,16 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
         {
           poolKey,
           zeroForOne,
-          amountOut: quote.amountOut,
+          amountOut: quote.amountOutWei,
           amountInMaximum: maxAmountIn,
           hookData: '0x',
         },
       ]),
       encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, maxAmountIn]),
-      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenOut, quote.amountOut]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [
+        tokenOut,
+        quote.amountOutWei,
+      ]),
     ]
   }
 

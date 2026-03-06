@@ -66,8 +66,8 @@ function buildSwapOperations(
         return {
           price: price.price,
           priceImpact: price.priceImpact,
-          amountInFormatted: price.amountInFormatted,
-          amountOutFormatted: price.amountOutFormatted,
+          amountIn: price.amountIn,
+          amountOut: price.amountOut,
         }
       } catch {
         return null

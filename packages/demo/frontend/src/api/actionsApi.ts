@@ -256,8 +256,10 @@ class ActionsApiClient {
     })
     return {
       ...result,
-      amountIn: BigInt(result.amountIn),
-      amountOut: BigInt(result.amountOut),
+      amountIn: Number(result.amountIn),
+      amountOut: Number(result.amountOut),
+      amountInWei: BigInt(result.amountInWei),
+      amountOutWei: BigInt(result.amountOutWei),
       gasEstimate: result.gasEstimate ? BigInt(result.gasEstimate) : undefined,
     } as SwapPrice
   }
@@ -272,8 +274,8 @@ class ActionsApiClient {
     },
     headers: HeadersInit = {},
   ): Promise<{
-    amountIn: bigint
-    amountOut: bigint
+    amountIn: number
+    amountOut: number
     price: string
     priceImpact: number
     blockExplorerUrls?: string[]
@@ -300,8 +302,8 @@ class ActionsApiClient {
       headers,
     })
     return {
-      amountIn: BigInt(result.amountIn),
-      amountOut: BigInt(result.amountOut),
+      amountIn: Number(result.amountIn),
+      amountOut: Number(result.amountOut),
       price: result.price,
       priceImpact: result.priceImpact,
       blockExplorerUrls: result.blockExplorerUrls,

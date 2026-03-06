@@ -57,8 +57,10 @@ describe('WalletSwapNamespace', () => {
 
       // Override mock to return transaction with approvals
       provider.mockExecute.mockResolvedValueOnce({
-        amountIn: 100000000n,
-        amountOut: 1500000000000000000n,
+        amountIn: 100,
+        amountOut: 1.5,
+        amountInWei: 100000000n,
+        amountOutWei: 1500000000000000000n,
         assetIn: USDC,
         assetOut: ETH,
         price: '1.5',

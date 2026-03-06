@@ -47,8 +47,8 @@ export interface EarnOperations {
   }) => Promise<{
     price: string
     priceImpact: number
-    amountInFormatted: string
-    amountOutFormatted: string
+    amountIn: number
+    amountOut: number
   } | null>
 }
 

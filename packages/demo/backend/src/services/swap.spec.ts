@@ -157,14 +157,14 @@ describe('Swap Service', () => {
     it('executes swap and returns receipt with explorer urls', async () => {
       const mockReceipt = {
         receipt: { transactionHash: '0xtxhash' },
-        amountIn: 100000000n,
-        amountOut: 500000000000000000n,
+        amountIn: 100,
+        amountOut: 0.5,
+        amountInWei: 100000000n,
+        amountOutWei: 500000000000000000n,
         price: '0.005',
         priceImpact: 0.001,
         assetIn: {},
         assetOut: {},
-        amountInFormatted: '100',
-        amountOutFormatted: '0.5',
       }
 
       const { getWallet } = await import('./wallet.js')
@@ -180,7 +180,7 @@ describe('Swap Service', () => {
         chainId: CHAIN_ID,
       })
 
-      expect(result.amountIn).toBe(100000000n)
+      expect(result.amountIn).toBe(100)
       expect(result.blockExplorerUrls).toBeDefined()
     })
   })

@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import { type Address, formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
@@ -88,7 +88,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
 
     if (!isNativeAsset(assetIn)) {
       const assetInAddress = getAssetAddress(assetIn, chainId)
-      const requiredAmount = params.amountInWei ?? quote.amountIn
+      const requiredAmount = params.amountInWei ?? quote.amountInWei
 
       // Check both allowances in parallel
       const [tokenAllowance, permit2Allowance] = await Promise.all([
@@ -132,9 +132,16 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       value: isNativeAsset(assetIn) ? (params.amountInWei ?? 0n) : 0n,
     }
 
+    const amountInWei = params.amountInWei ?? quote.amountInWei
+    const amountOutWei = quote.amountOutWei
+
     return {
-      amountIn: params.amountInWei ?? quote.amountIn,
-      amountOut: quote.amountOut,
+      amountIn: parseFloat(formatUnits(amountInWei, assetIn.metadata.decimals)),
+      amountOut: parseFloat(
+        formatUnits(amountOutWei, assetOut.metadata.decimals),
+      ),
+      amountInWei,
+      amountOutWei,
       assetIn,
       assetOut,
       price: quote.price,

@@ -61,10 +61,10 @@ describe('getQuote', () => {
       tickSpacing: TICK_SPACING,
     })
 
-    expect(quote.amountIn).toBe(100000000n)
-    expect(quote.amountOut).toBe(500000000000000000n)
-    expect(quote.amountInFormatted).toBe('100')
-    expect(quote.amountOutFormatted).toBe('0.5')
+    expect(quote.amountIn).toBe(100)
+    expect(quote.amountOut).toBe(0.5)
+    expect(quote.amountInWei).toBe(100000000n)
+    expect(quote.amountOutWei).toBe(500000000000000000n)
     expect(quote.price).toBeDefined()
     expect(quote.priceInverse).toBeDefined()
     expect(typeof quote.priceImpact).toBe('number')
@@ -101,8 +101,8 @@ describe('getQuote', () => {
       tickSpacing: TICK_SPACING,
     })
 
-    expect(quote.amountIn).toBe(100000000n)
-    expect(quote.amountOut).toBe(500000000000000000n)
+    expect(quote.amountInWei).toBe(100000000n)
+    expect(quote.amountOutWei).toBe(500000000000000000n)
 
     expect(publicClient.simulateContract).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -210,10 +210,10 @@ describe('encodeUniversalRouterSwap', () => {
   const baseQuote = {
     price: '0.005',
     priceInverse: '200',
-    amountIn: 100000000n,
-    amountOut: 500000000000000000n,
-    amountInFormatted: '100',
-    amountOutFormatted: '0.5',
+    amountIn: 100,
+    amountOut: 0.5,
+    amountInWei: 100000000n,
+    amountOutWei: 500000000000000000n,
     priceImpact: 0.001,
     route: { path: [USDC, WETH], pools: [] },
     gasEstimate: 150000n,

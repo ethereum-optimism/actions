@@ -159,14 +159,14 @@ export interface SwapPrice {
   price: string
   /** Inverse exchange rate */
   priceInverse: string
-  /** Input amount in wei */
-  amountIn: bigint
-  /** Expected output amount in wei */
-  amountOut: bigint
   /** Human-readable input amount */
-  amountInFormatted: string
+  amountIn: number
   /** Human-readable output amount */
-  amountOutFormatted: string
+  amountOut: number
+  /** Input amount in wei */
+  amountInWei: bigint
+  /** Expected output amount in wei */
+  amountOutWei: bigint
   /** Price impact as decimal (0.03 = 3%). Derived from pool mid-price vs execution price. */
   priceImpact: number
   /** Route taken for the swap */
@@ -191,10 +191,14 @@ export interface SwapTransactionData {
  * Swap transaction result
  */
 export interface SwapTransaction {
+  /** Human-readable input amount */
+  amountIn: number
+  /** Human-readable output amount */
+  amountOut: number
   /** Input amount in wei */
-  amountIn: bigint
+  amountInWei: bigint
   /** Output amount in wei (expected) */
-  amountOut: bigint
+  amountOutWei: bigint
   /** Input asset */
   assetIn: Asset
   /** Output asset */
@@ -213,14 +217,14 @@ export interface SwapTransaction {
 export interface SwapReceipt {
   /** Transaction receipt(s) */
   receipt: TransactionReturnType | BatchTransactionReturnType
-  /** Actual input amount in wei */
-  amountIn: bigint
-  /** Actual output amount in wei */
-  amountOut: bigint
   /** Human-readable input amount */
-  amountInFormatted: string
+  amountIn: number
   /** Human-readable output amount */
-  amountOutFormatted: string
+  amountOut: number
+  /** Actual input amount in wei */
+  amountInWei: bigint
+  /** Actual output amount in wei */
+  amountOutWei: bigint
   /** Input asset */
   assetIn: Asset
   /** Output asset */
