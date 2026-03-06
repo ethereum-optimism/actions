@@ -15,7 +15,16 @@ import type {
   SwapProviderConfig,
   SwapTransaction,
 } from '@/types/swap/index.js'
-import { isAssetSupportedOnChain, parseAssetAmount } from '@/utils/assets.js'
+import { parseAssetAmount } from '@/utils/assets.js'
+import {
+  validateAmountPositiveIfExists,
+  validateAmountProvided,
+  validateAssetOnChain,
+  validateNotBothAmounts,
+  validateNotSameAsset,
+  validateNotZeroAddress,
+  validateSlippage,
+} from '@/utils/validation.js'
 
 const DEFAULT_SLIPPAGE = 0.005
 const DEFAULT_DEADLINE_OFFSET = 60
@@ -56,17 +65,24 @@ export abstract class SwapProvider<
       chainId: SupportedChainId
     },
   ): Promise<SwapTransaction> {
-    this.validateAmountProvided(params.amountIn, params.amountOut)
-    this.validateNotSameAsset(params.assetIn, params.assetOut)
+    validateAmountProvided(params.amountIn, params.amountOut)
+    validateAmountPositiveIfExists(params.amountIn)
+    validateAmountPositiveIfExists(params.amountOut)
+    validateNotBothAmounts(params.amountIn, params.amountOut)
+    validateNotSameAsset(params.assetIn, params.assetOut)
+    validateNotZeroAddress(params.walletAddress, 'walletAddress')
+    if (params.recipient) {
+      validateNotZeroAddress(params.recipient, 'recipient')
+    }
     this.validateChainSupported(params.chainId)
     this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
-    this.validateAssetOnChain(params.assetIn, params.chainId)
-    this.validateAssetOnChain(params.assetOut, params.chainId)
+    validateAssetOnChain(params.assetIn, params.chainId)
+    validateAssetOnChain(params.assetOut, params.chainId)
 
-    const internalParams = this.resolveParams(params)
-    this.validateSlippage(internalParams.slippage)
+    const resolvedParams = this.resolveParams(params)
+    validateSlippage(resolvedParams.slippage, MAX_SLIPPAGE)
 
-    return this._execute(internalParams)
+    return this._execute(resolvedParams)
   }
 
   /** Get price quote for a swap */
@@ -156,29 +172,6 @@ export abstract class SwapProvider<
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
-  private validateAmountProvided(amountIn?: number, amountOut?: number): void {
-    if (amountIn === undefined && amountOut === undefined) {
-      throw new Error('Either amountIn or amountOut must be provided')
-    }
-  }
-
-  private validateNotSameAsset(assetIn: Asset, assetOut: Asset): void {
-    if (
-      assetIn.metadata.symbol.toLowerCase() ===
-      assetOut.metadata.symbol.toLowerCase()
-    ) {
-      throw new Error('Cannot swap an asset for itself')
-    }
-  }
-
-  private validateSlippage(slippage: number): void {
-    if (slippage < 0 || slippage > MAX_SLIPPAGE) {
-      throw new Error(
-        `Slippage ${slippage} exceeds allowed range [0, ${MAX_SLIPPAGE * 100}%]`,
-      )
-    }
-  }
-
   private resolveParams(
     params: SwapExecuteParams & {
       walletAddress: Address
@@ -210,14 +203,6 @@ export abstract class SwapProvider<
       recipient: params.recipient ?? params.walletAddress,
       walletAddress: params.walletAddress,
       chainId: params.chainId,
-    }
-  }
-
-  private validateAssetOnChain(asset: Asset, chainId: SupportedChainId): void {
-    if (!isAssetSupportedOnChain(asset, chainId)) {
-      throw new Error(
-        `Asset ${asset.metadata.symbol} not supported on chain ${chainId}`,
-      )
     }
   }
 
