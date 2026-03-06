@@ -17,7 +17,7 @@ import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
 import { useLendBalance } from '@/hooks/useLendBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
-import { useEarnSwap } from '@/hooks/useEarnSwap'
+import { useSwap } from '@/hooks/useSwap'
 import { TotalBalanceDropdown } from './TotalBalanceDropdown'
 
 export interface EarnProps {
@@ -181,7 +181,7 @@ function EarnContent({
     tokenBalances,
     totalUsd,
     isLoadingTotalBalance,
-  } = useEarnSwap({
+  } = useSwap({
     operations,
     activeTab,
   })

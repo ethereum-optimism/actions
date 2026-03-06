@@ -12,12 +12,12 @@ import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { OP_DEMO, USDC_DEMO } from '@/constants/markets'
 import type { LendProviderOperations } from '@/hooks/useLendProvider'
 
-interface UseEarnSwapParams {
+interface UseSwapParams {
   operations: LendProviderOperations
   activeTab: string
 }
 
-export function useEarnSwap({ operations, activeTab }: UseEarnSwapParams) {
+export function useSwap({ operations, activeTab }: UseSwapParams) {
   const [isSwapping, setIsSwapping] = useState(false)
   const queryClient = useQueryClient()
   const { logActivity } = useActivityLogger()
