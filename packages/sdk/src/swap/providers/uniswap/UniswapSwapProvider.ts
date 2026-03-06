@@ -18,18 +18,18 @@ import {
   isNativeAsset,
   parseAssetAmount,
 } from '@/utils/assets.js'
+import {
+  buildPermit2ApprovalTx,
+  buildTokenApprovalTx,
+  checkPermit2Allowance,
+  checkTokenAllowance,
+} from '@/utils/permit2.js'
 
 import {
   getSubgraphUrl,
   getSupportedChainIds,
   getUniswapAddresses,
 } from './addresses.js'
-import {
-  buildPermit2ApprovalTx,
-  buildTokenApprovalTx,
-  checkPermit2Allowance,
-  checkTokenAllowance,
-} from './permit2.js'
 import { encodeUniversalRouterSwap, getQuote } from './sdk.js'
 import type { UniswapMarketFilter, UniswapSwapProviderConfig } from './types.js'
 

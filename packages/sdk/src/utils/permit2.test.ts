@@ -8,7 +8,7 @@ import {
   checkPermit2Allowance,
   checkTokenAllowance,
   DEFAULT_PERMIT2_EXPIRY_SECONDS,
-} from '../permit2.js'
+} from '@/utils/permit2.js'
 
 const PERMIT2_ABI = [
   {

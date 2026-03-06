@@ -1,5 +1,5 @@
 import type { Address, PublicClient } from 'viem'
-import { encodeFunctionData, maxUint256 } from 'viem'
+import { encodeFunctionData, erc20Abi, maxUint256 } from 'viem'
 
 import type { TransactionData } from '@/types/transaction.js'
 
@@ -40,22 +40,6 @@ const PERMIT2_ABI = [
 ] as const
 
 /**
- * ERC20 approve ABI
- */
-const ERC20_APPROVE_ABI = [
-  {
-    name: 'approve',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ type: 'bool' }],
-  },
-] as const
-
-/**
  * Permit2 allowance info
  */
 export interface Permit2Allowance {
@@ -91,14 +75,14 @@ export async function checkPermit2Allowance(params: {
 }
 
 /**
- * Build token approval transaction to Permit2
+ * Build ERC20 token approval transaction to Permit2
  */
 export function buildTokenApprovalTx(
   token: Address,
   permit2Address: Address,
 ): TransactionData {
   const data = encodeFunctionData({
-    abi: ERC20_APPROVE_ABI,
+    abi: erc20Abi,
     functionName: 'approve',
     // ERC20 -> Permit2: maxUint256 is the Uniswap-canonical pattern.
     // Permit2 is immutable with no owner — spending is scoped by its own allowance system.
@@ -113,7 +97,7 @@ export function buildTokenApprovalTx(
 }
 
 /**
- * Build Permit2 approval transaction for Universal Router
+ * Build Permit2 approval transaction for a spender
  */
 export function buildPermit2ApprovalTx(params: {
   permit2Address: Address
@@ -151,22 +135,10 @@ export async function checkTokenAllowance(params: {
 }): Promise<bigint> {
   const { publicClient, token, owner, spender } = params
 
-  const allowance = await publicClient.readContract({
+  return publicClient.readContract({
     address: token,
-    abi: [
-      {
-        name: 'allowance',
-        type: 'function',
-        stateMutability: 'view',
-        inputs: [
-          { name: 'owner', type: 'address' },
-          { name: 'spender', type: 'address' },
-        ],
-        outputs: [{ type: 'uint256' }],
-      },
-    ],
+    abi: erc20Abi,
     functionName: 'allowance',
     args: [owner, spender],
   })
-  return allowance
 }
