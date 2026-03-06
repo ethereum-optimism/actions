@@ -388,8 +388,23 @@ describe('SwapProvider', () => {
     })
 
     it('should match any chain when filter has no chainId', () => {
+      // Assets with addresses on both chains
+      const multiChainUSDC: Asset = {
+        ...MockUSDC,
+        address: {
+          84532: '0x1111111111111111111111111111111111111111' as Address,
+          10: '0x1111111111111111111111111111111111111112' as Address,
+        },
+      }
+      const multiChainWETH: Asset = {
+        ...MockWETH,
+        address: {
+          84532: '0x2222222222222222222222222222222222222222' as Address,
+          10: '0x2222222222222222222222222222222222222223' as Address,
+        },
+      }
       const filter: SwapMarketFilter = {
-        assets: [MockUSDC, MockWETH],
+        assets: [multiChainUSDC, multiChainWETH],
       }
       const provider = new MockSwapProvider(
         { marketAllowlist: [filter] },
@@ -401,23 +416,37 @@ describe('SwapProvider', () => {
       // Should match on any supported chain
       expect(() =>
         provider.testValidateMarketAllowed(
-          MockUSDC,
-          MockWETH,
+          multiChainUSDC,
+          multiChainWETH,
           84532 as SupportedChainId,
         ),
       ).not.toThrow()
       expect(() =>
         provider.testValidateMarketAllowed(
-          MockUSDC,
-          MockWETH,
+          multiChainUSDC,
+          multiChainWETH,
           10 as SupportedChainId,
         ),
       ).not.toThrow()
     })
 
     it('should scope filter to specific chainId when provided', () => {
+      const multiChainUSDC: Asset = {
+        ...MockUSDC,
+        address: {
+          84532: '0x1111111111111111111111111111111111111111' as Address,
+          10: '0x1111111111111111111111111111111111111112' as Address,
+        },
+      }
+      const multiChainWETH: Asset = {
+        ...MockWETH,
+        address: {
+          84532: '0x2222222222222222222222222222222222222222' as Address,
+          10: '0x2222222222222222222222222222222222222223' as Address,
+        },
+      }
       const filter: SwapMarketFilter = {
-        assets: [MockUSDC, MockWETH],
+        assets: [multiChainUSDC, multiChainWETH],
         chainId: 84532 as SupportedChainId,
       }
       const provider = new MockSwapProvider(
@@ -430,8 +459,8 @@ describe('SwapProvider', () => {
       // Should match on 84532
       expect(() =>
         provider.testValidateMarketAllowed(
-          MockUSDC,
-          MockWETH,
+          multiChainUSDC,
+          multiChainWETH,
           84532 as SupportedChainId,
         ),
       ).not.toThrow()
@@ -439,8 +468,8 @@ describe('SwapProvider', () => {
       // Should NOT match on chain 10
       expect(() =>
         provider.testValidateMarketAllowed(
-          MockUSDC,
-          MockWETH,
+          multiChainUSDC,
+          multiChainWETH,
           10 as SupportedChainId,
         ),
       ).toThrow('not in the allowlist')

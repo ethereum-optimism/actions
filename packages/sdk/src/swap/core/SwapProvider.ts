@@ -211,23 +211,30 @@ export abstract class SwapProvider<
     chainId: SupportedChainId,
     list: SwapMarketFilter[],
   ): SwapMarketFilter | undefined {
-    const symbolIn = assetIn.metadata.symbol.toLowerCase()
-    const symbolOut = assetOut.metadata.symbol.toLowerCase()
+    const addressIn = assetIn.address[chainId]
+    const addressOut = assetOut.address[chainId]
+    if (!addressIn || !addressOut) return undefined
 
     return list.find((filter) => {
       if (filter.chainId !== undefined && filter.chainId !== chainId)
         return false
-      return this.filterContainsPair(symbolIn, symbolOut, filter.assets)
+      return this.filterContainsPair(addressIn, addressOut, chainId, filter.assets)
     })
   }
 
   private filterContainsPair(
-    symbolIn: string,
-    symbolOut: string,
+    addressIn: string,
+    addressOut: string,
+    chainId: SupportedChainId,
     assets: Asset[],
   ): boolean {
-    const symbols = assets.map((a) => a.metadata.symbol.toLowerCase())
-    return symbols.includes(symbolIn) && symbols.includes(symbolOut)
+    const addresses = assets
+      .map((a) => a.address[chainId]?.toLowerCase())
+      .filter(Boolean)
+    return (
+      addresses.includes(addressIn.toLowerCase()) &&
+      addresses.includes(addressOut.toLowerCase())
+    )
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
