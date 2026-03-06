@@ -20,6 +20,7 @@ import {
   validateAmountPositiveIfExists,
   validateAmountProvided,
   validateAssetOnChain,
+  validateChainSupported,
   validateNotBothAmounts,
   validateNotSameAsset,
   validateNotZeroAddress,
@@ -65,42 +66,28 @@ export abstract class SwapProvider<
       chainId: SupportedChainId
     },
   ): Promise<SwapTransaction> {
-    validateAmountProvided(params.amountIn, params.amountOut)
-    validateAmountPositiveIfExists(params.amountIn)
-    validateAmountPositiveIfExists(params.amountOut)
-    validateNotBothAmounts(params.amountIn, params.amountOut)
-    validateNotSameAsset(params.assetIn, params.assetOut)
-    validateNotZeroAddress(params.walletAddress, 'walletAddress')
-    if (params.recipient) {
-      validateNotZeroAddress(params.recipient, 'recipient')
-    }
-    this.validateChainSupported(params.chainId)
-    this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
-    validateAssetOnChain(params.assetIn, params.chainId)
-    validateAssetOnChain(params.assetOut, params.chainId)
-
+    this.executeValidations(params)
     const resolvedParams = this.resolveParams(params)
     validateSlippage(resolvedParams.slippage, MAX_SLIPPAGE)
-
     return this._execute(resolvedParams)
   }
 
   /** Get price quote for a swap */
   async getPrice(params: SwapPriceParams): Promise<SwapPrice> {
-    this.validateChainSupported(params.chainId)
+    validateChainSupported(params.chainId, this.supportedChainIds())
     return this._getPrice(params)
   }
 
   /** Get a specific swap market by ID */
   async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
-    this.validateChainSupported(params.chainId)
+    validateChainSupported(params.chainId, this.supportedChainIds())
     return this._getMarket(params)
   }
 
   /** Get available swap markets, optionally filtered by chainId or asset */
   async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
     if (params.chainId) {
-      this.validateChainSupported(params.chainId)
+      validateChainSupported(params.chainId, this.supportedChainIds())
     }
     return this._getMarkets(params)
   }
@@ -112,15 +99,6 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Protected helpers
   // ─────────────────────────────────────────────────────────────────────────────
-
-  protected validateChainSupported(chainId: SupportedChainId): void {
-    if (!this.isChainSupported(chainId)) {
-      throw new Error(
-        `Chain ${chainId} is not supported by this swap provider. ` +
-          `Supported chains: ${this.supportedChainIds().join(', ')}`,
-      )
-    }
-  }
 
   protected validateMarketAllowed(
     assetIn: Asset,
@@ -171,6 +149,27 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
+
+  private executeValidations(
+    params: SwapExecuteParams & {
+      walletAddress: Address
+      chainId: SupportedChainId
+    },
+  ): void {
+    validateAmountProvided(params.amountIn, params.amountOut)
+    validateAmountPositiveIfExists(params.amountIn)
+    validateAmountPositiveIfExists(params.amountOut)
+    validateNotBothAmounts(params.amountIn, params.amountOut)
+    validateNotSameAsset(params.assetIn, params.assetOut)
+    validateNotZeroAddress(params.walletAddress, 'walletAddress')
+    if (params.recipient) {
+      validateNotZeroAddress(params.recipient, 'recipient')
+    }
+    validateChainSupported(params.chainId, this.supportedChainIds())
+    this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
+    validateAssetOnChain(params.assetIn, params.chainId)
+    validateAssetOnChain(params.assetOut, params.chainId)
+  }
 
   private resolveParams(
     params: SwapExecuteParams & {

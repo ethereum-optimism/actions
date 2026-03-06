@@ -53,6 +53,17 @@ export function validateSlippage(slippage: number, maxSlippage: number): void {
   }
 }
 
+export function validateChainSupported(
+  chainId: number,
+  supportedChainIds: readonly number[],
+): void {
+  if (!supportedChainIds.includes(chainId)) {
+    throw new Error(
+      `Chain ${chainId} is not supported. Supported chains: ${supportedChainIds.join(', ')}`,
+    )
+  }
+}
+
 export function validateAssetOnChain(
   asset: Asset,
   chainId: SupportedChainId,

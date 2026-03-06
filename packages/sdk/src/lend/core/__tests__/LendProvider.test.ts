@@ -4,13 +4,10 @@ import { describe, expect, it } from 'vitest'
 import { MockUSDCAsset } from '@/__mocks__/MockAssets.js'
 import { MockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
 import type { LendMarketConfig, LendMarketId } from '@/types/lend/index.js'
+import { validateChainSupported } from '@/utils/validation.js'
 
 // Test helper class that exposes protected validation methods as public
 class TestLendProvider extends MockLendProvider {
-  public validateProviderSupported(chainId: number): void {
-    return super.validateProviderSupported(chainId)
-  }
-
   public validateConfigSupported(marketId: LendMarketId): void {
     return super.validateConfigSupported(marketId)
   }
@@ -186,7 +183,7 @@ describe('LendProvider', () => {
       const provider = new TestLendProvider()
 
       expect(() => {
-        provider.validateProviderSupported(999)
+        validateChainSupported(999, provider.supportedChainIds())
       }).toThrow('Chain 999 is not supported')
     })
 

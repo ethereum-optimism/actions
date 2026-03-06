@@ -101,10 +101,6 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   }
 
   // Expose protected methods for testing
-  public testValidateChainSupported(chainId: SupportedChainId): void {
-    return this.validateChainSupported(chainId)
-  }
-
   public testValidateMarketAllowed(
     assetIn: any,
     assetOut: any,

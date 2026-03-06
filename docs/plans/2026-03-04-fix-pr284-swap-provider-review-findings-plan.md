@@ -540,6 +540,12 @@ Second review with 6 parallel agents (TypeScript, Security+ethskills, Architectu
 - [ ] Consider: export a utility type from SDK for "address-based" swap params, or just keep the current pattern with a comment noting the intentional divergence
 - **Status:** Current pattern is reasonable — backend types bridge Address→Asset
 
+### Nit 6: `getActions()` function call pattern in services
+**File:** `packages/demo/backend/src/services/swap.ts`, `lend.ts`
+- **Question:** Can `actions` be imported directly instead of calling `getActions()` each time?
+- **Answer:** No — the Actions SDK instance is created lazily at app startup via `initializeActions()` (depends on env vars validated at runtime). The `getActions()` singleton accessor pattern is the correct approach because module-level `export const actions = ...` would fail before env validation. The one-line cost ensures runtime safety.
+- **Status:** Current pattern is correct, no change needed.
+
 _(More nits to be added as user provides them)_
 
 ---
