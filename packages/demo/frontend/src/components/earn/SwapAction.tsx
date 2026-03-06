@@ -57,7 +57,154 @@ interface SwapActionProps {
   } | null
 }
 
-// --- Main SwapAction ---
+const amountInputStyle = {
+  width: '100%',
+  border: 'none',
+  outline: 'none',
+  fontSize: '32px',
+  fontWeight: 500,
+  color: '#000',
+  backgroundColor: 'transparent',
+  fontFamily: 'Inter',
+} as const
+
+function SwapInputPanel({
+  label,
+  asset,
+  amount,
+  usd,
+  isLoading,
+  isLoadingBalances,
+  onChange,
+  onTokenClick,
+  onMaxClick,
+  dashed,
+}: {
+  label: string
+  asset: SwapAsset | undefined
+  amount: string
+  usd: string | null
+  isLoading: boolean
+  isLoadingBalances: boolean
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onTokenClick: () => void
+  onMaxClick?: () => void
+  dashed?: boolean
+}) {
+  return (
+    <div
+      style={{
+        backgroundColor: '#F9FAFB',
+        borderRadius: '16px',
+        padding: '20px',
+        ...(dashed && { border: '1px dashed #E0E2EB' }),
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <span style={{ color: '#9195A6', fontSize: '14px' }}>{label}</span>
+        <div className="flex items-center gap-1">
+          {isLoadingBalances ? (
+            <Shimmer width="80px" height="16px" variant="rectangle" />
+          ) : (
+            <>
+              <span style={{ color: '#9195A6', fontSize: '14px' }}>
+                {asset?.balance || '0'}{' '}
+                {displaySymbol(asset?.asset.metadata.symbol || '')}
+              </span>
+              {onMaxClick && <MaxButton onClick={onMaxClick} />}
+            </>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <div style={{ flex: 1 }}>
+          <input
+            type="text"
+            placeholder="0"
+            value={isLoading ? '...' : amount}
+            onChange={onChange}
+            disabled={isLoading}
+            style={amountInputStyle}
+          />
+          {usd && (
+            <span
+              style={{
+                color: '#9195A6',
+                fontSize: '14px',
+                marginTop: '2px',
+                display: 'block',
+              }}
+            >
+              {usd}
+            </span>
+          )}
+        </div>
+        {asset && <TokenButton asset={asset} onClick={onTokenClick} />}
+      </div>
+    </div>
+  )
+}
+
+function FlipButton({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="flex justify-center -my-3 relative z-10">
+      <button
+        onClick={onClick}
+        style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '10px',
+          border: '1px solid #E0E2EB',
+          backgroundColor: '#FFFFFF',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M8 3V13M8 13L4 9M8 13L12 9"
+            stroke="#666666"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+function ExchangeRate({
+  assetIn,
+  assetOut,
+  formattedPrice,
+}: {
+  assetIn: SwapAsset
+  assetOut: SwapAsset
+  formattedPrice: { main: string; secondary?: string }
+}) {
+  return (
+    <div
+      style={{
+        marginTop: '12px',
+        fontSize: '14px',
+        color: '#666666',
+        fontFamily: 'Inter',
+        textAlign: 'left',
+      }}
+    >
+      1 {displaySymbol(assetIn.asset.metadata.symbol)} = {formattedPrice.main}
+      {formattedPrice.secondary && (
+        <span style={{ color: '#9195A6', fontSize: '12px' }}>
+          {formattedPrice.secondary}
+        </span>
+      )}{' '}
+      {displaySymbol(assetOut.asset.metadata.symbol)}
+    </div>
+  )
+}
 
 export function SwapAction({
   assets,
@@ -345,170 +492,36 @@ export function SwapAction({
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
         }}
       >
-        {/* Sell Section */}
         <div className="p-6">
-          <div
-            style={{
-              backgroundColor: '#F9FAFB',
-              borderRadius: '16px',
-              padding: '20px',
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span style={{ color: '#9195A6', fontSize: '14px' }}>Sell</span>
-              <div className="flex items-center gap-1">
-                {isLoadingBalances ? (
-                  <Shimmer width="80px" height="16px" variant="rectangle" />
-                ) : (
-                  <>
-                    <span style={{ color: '#9195A6', fontSize: '14px' }}>
-                      {assetIn?.balance || '0'}{' '}
-                      {displaySymbol(assetIn?.asset.metadata.symbol || 'USDC')}
-                    </span>
-                    <MaxButton onClick={handleMaxClick} />
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div style={{ flex: 1 }}>
-                <input
-                  type="text"
-                  placeholder="0"
-                  value={
-                    isLoadingPrice && editDirection === 'out' ? '...' : amountIn
-                  }
-                  onChange={handleAmountInChange}
-                  disabled={isLoadingPrice && editDirection === 'out'}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '32px',
-                    fontWeight: 500,
-                    color: '#000',
-                    backgroundColor: 'transparent',
-                    fontFamily: 'Inter',
-                  }}
-                />
-                {sellUsd && (
-                  <span
-                    style={{
-                      color: '#9195A6',
-                      fontSize: '14px',
-                      marginTop: '2px',
-                      display: 'block',
-                    }}
-                  >
-                    {sellUsd}
-                  </span>
-                )}
-              </div>
-              {assetIn && (
-                <TokenButton
-                  asset={assetIn}
-                  onClick={() => setTokenSelectTarget('in')}
-                />
-              )}
-            </div>
-          </div>
+          <SwapInputPanel
+            label="Sell"
+            asset={assetIn}
+            amount={amountIn}
+            usd={sellUsd}
+            isLoading={isLoadingPrice && editDirection === 'out'}
+            isLoadingBalances={isLoadingBalances}
+            onChange={handleAmountInChange}
+            onTokenClick={() => setTokenSelectTarget('in')}
+            onMaxClick={handleMaxClick}
+          />
         </div>
 
-        {/* Down Arrow Divider */}
-        <div className="flex justify-center -my-3 relative z-10">
-          <button
-            onClick={handleFlipAssets}
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              border: '1px solid #E0E2EB',
-              backgroundColor: '#FFFFFF',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M8 3V13M8 13L4 9M8 13L12 9"
-                stroke="#666666"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </div>
+        <FlipButton onClick={handleFlipAssets} />
 
-        {/* Buy Section */}
         <div className="p-6" style={{ borderTop: '1px solid #E0E2EB' }}>
-          <div
-            style={{
-              backgroundColor: '#F9FAFB',
-              borderRadius: '16px',
-              padding: '20px',
-              border: '1px dashed #E0E2EB',
-            }}
-          >
-            <div
-              className="flex items-center justify-between"
-              style={{ marginBottom: '12px' }}
-            >
-              <span style={{ color: '#9195A6', fontSize: '14px' }}>Buy</span>
-              {assetOut && (
-                <span style={{ color: '#9195A6', fontSize: '14px' }}>
-                  {assetOut.balance || '0'}{' '}
-                  {displaySymbol(assetOut.asset.metadata.symbol)}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <div style={{ flex: 1 }}>
-                <input
-                  type="text"
-                  placeholder="0"
-                  value={
-                    isLoadingPrice && editDirection === 'in' ? '...' : amountOut
-                  }
-                  onChange={handleAmountOutChange}
-                  disabled={isLoadingPrice && editDirection === 'in'}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '32px',
-                    fontWeight: 500,
-                    color: '#000',
-                    backgroundColor: 'transparent',
-                    fontFamily: 'Inter',
-                  }}
-                />
-                {buyUsd && (
-                  <span
-                    style={{
-                      color: '#9195A6',
-                      fontSize: '14px',
-                      marginTop: '2px',
-                      display: 'block',
-                    }}
-                  >
-                    {buyUsd}
-                  </span>
-                )}
-              </div>
-              {assetOut && (
-                <TokenButton
-                  asset={assetOut}
-                  onClick={() => setTokenSelectTarget('out')}
-                />
-              )}
-            </div>
-          </div>
+          <SwapInputPanel
+            label="Buy"
+            asset={assetOut}
+            amount={amountOut}
+            usd={buyUsd}
+            isLoading={isLoadingPrice && editDirection === 'in'}
+            isLoadingBalances={isLoadingBalances}
+            onChange={handleAmountOutChange}
+            onTokenClick={() => setTokenSelectTarget('out')}
+            dashed
+          />
         </div>
 
-        {/* Review Button */}
         <div className="px-6 pb-6">
           <CtaButton onClick={handleReview} disabled={isReviewDisabled}>
             {isExecuting
@@ -517,26 +530,12 @@ export function SwapAction({
                 ? 'Getting Quote...'
                 : 'Review'}
           </CtaButton>
-          {/* Exchange Rate */}
-          {priceQuote && assetIn && assetOut && (
-            <div
-              style={{
-                marginTop: '12px',
-                fontSize: '14px',
-                color: '#666666',
-                fontFamily: 'Inter',
-                textAlign: 'left',
-              }}
-            >
-              1 {displaySymbol(assetIn.asset.metadata.symbol)} ={' '}
-              {formattedPrice.main}
-              {formattedPrice.secondary && (
-                <span style={{ color: '#9195A6', fontSize: '12px' }}>
-                  {formattedPrice.secondary}
-                </span>
-              )}{' '}
-              {displaySymbol(assetOut.asset.metadata.symbol)}
-            </div>
+          {priceQuote && assetIn && assetOut && formattedPrice && (
+            <ExchangeRate
+              assetIn={assetIn}
+              assetOut={assetOut}
+              formattedPrice={formattedPrice}
+            />
           )}
         </div>
       </div>
