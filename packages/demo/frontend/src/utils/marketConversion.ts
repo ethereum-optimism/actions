@@ -1,4 +1,4 @@
-import type { LendMarket, LendMarketConfig } from '@eth-optimism/actions-sdk'
+import type { LendMarket } from '@eth-optimism/actions-sdk'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import { CHAIN_DISPLAY, getAssetLogo } from '@/constants/logos'
 
@@ -7,7 +7,7 @@ const PROVIDER_DISPLAY: Record<string, { name: string; logo: string }> = {
   aave: { name: 'Aave', logo: '/aave-logo-dark.svg' },
 }
 
-const DEFAULT_PROVIDER = { name: 'Unknown', logo: '/morpho-logo.svg' }
+const DEFAULT_PROVIDER = { name: 'Morpho', logo: '/morpho-logo.svg' }
 
 function getNetworkInfo(chainId: number) {
   return (
@@ -15,11 +15,10 @@ function getNetworkInfo(chainId: number) {
   )
 }
 
-export function convertLendMarketToMarketInfo(
-  market: LendMarket,
-  config?: LendMarketConfig,
-): MarketInfo {
-  const provider = config?.lendProvider ?? 'morpho'
+export function convertLendMarketToMarketInfo(market: LendMarket): MarketInfo {
+  const provider = market.name.toLowerCase().includes('aave')
+    ? 'aave'
+    : 'morpho'
   const { name: providerName, logo: providerLogo } =
     PROVIDER_DISPLAY[provider] ?? DEFAULT_PROVIDER
   const network = getNetworkInfo(market.marketId.chainId)
