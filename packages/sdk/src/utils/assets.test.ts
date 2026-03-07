@@ -28,16 +28,16 @@ describe('Asset Utilities', () => {
 
   describe('parseAssetAmount', () => {
     it('converts human-readable amount to wei using asset decimals', () => {
-      expect(parseAssetAmount(100, MockUSDCAsset)).toBe(100000000n)
-      expect(parseAssetAmount(1, MockWETHAsset)).toBe(1000000000000000000n)
+      expect(parseAssetAmount(MockUSDCAsset, 100)).toBe(100000000n)
+      expect(parseAssetAmount(MockWETHAsset, 1)).toBe(1000000000000000000n)
     })
 
     it('returns undefined when amount is undefined', () => {
-      expect(parseAssetAmount(undefined, MockUSDCAsset)).toBeUndefined()
+      expect(parseAssetAmount(MockUSDCAsset, undefined)).toBeUndefined()
     })
 
     it('handles fractional amounts', () => {
-      expect(parseAssetAmount(0.5, MockUSDCAsset)).toBe(500000n)
+      expect(parseAssetAmount(MockUSDCAsset, 0.5)).toBe(500000n)
     })
   })
 })

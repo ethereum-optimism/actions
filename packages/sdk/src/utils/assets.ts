@@ -8,14 +8,14 @@ import type { Asset } from '@/types/asset.js'
  * Parse human-readable amount to wei using an asset's decimals.
  * Returns undefined when amount is undefined.
  */
-export function parseAssetAmount(amount: number, asset: Asset): bigint
+export function parseAssetAmount(asset: Asset, amount: number): bigint
 export function parseAssetAmount(
-  amount: number | undefined,
   asset: Asset,
+  amount: number | undefined,
 ): bigint | undefined
 export function parseAssetAmount(
-  amount: number | undefined,
   asset: Asset,
+  amount: number | undefined,
 ): bigint | undefined {
   if (amount === undefined) return undefined
   return parseUnits(amount.toString(), asset.metadata.decimals)

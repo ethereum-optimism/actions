@@ -178,8 +178,8 @@ export abstract class SwapProvider<
     },
   ): ResolvedSwapParams {
     return {
-      amountInWei: parseAssetAmount(params.amountIn, params.assetIn),
-      amountOutWei: parseAssetAmount(params.amountOut, params.assetOut),
+      amountInWei: parseAssetAmount(params.assetIn, params.amountIn),
+      amountOutWei: parseAssetAmount(params.assetOut, params.amountOut),
       assetIn: params.assetIn,
       assetOut: params.assetOut,
       slippage: params.slippage ?? this.defaultSlippage,

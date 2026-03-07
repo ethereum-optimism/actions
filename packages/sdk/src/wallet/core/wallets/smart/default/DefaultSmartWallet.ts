@@ -549,7 +549,7 @@ export class DefaultSmartWallet extends SmartWallet {
 
     // Handle ETH transfers
     if (asset.type === 'native') {
-      const parsedAmount = parseAssetAmount(amount, asset)
+      const parsedAmount = parseAssetAmount(asset, amount)
 
       return {
         to: recipientAddress,
@@ -559,7 +559,7 @@ export class DefaultSmartWallet extends SmartWallet {
     }
 
     // Handle ERC20 token transfers
-    const parsedAmount = parseAssetAmount(amount, asset)
+    const parsedAmount = parseAssetAmount(asset, amount)
 
     // Encode ERC20 transfer function call
     const transferData = encodeFunctionData({
