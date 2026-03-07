@@ -162,18 +162,9 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
 
     const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
 
-    const amountInWei = parseAssetAmount({
-      amount: params.amountIn ?? 1,
-      decimals: assetIn.metadata.decimals,
-    })
-
-    const amountOutWei =
-      params.amountOut !== undefined
-        ? parseAssetAmount({
-            amount: params.amountOut,
-            decimals: assetOut.metadata.decimals,
-          })
-        : undefined
+    // Default to 1 unit for price quotes when no amount specified
+    const amountInWei = parseAssetAmount(params.amountIn ?? 1, assetIn)
+    const amountOutWei = parseAssetAmount(params.amountOut, assetOut)
 
     return getQuote({
       assetIn,

@@ -5,17 +5,20 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 
 /**
- * Parse human-readable amount to wei/smallest unit
- * @returns Amount in smallest unit (wei equivalent)
+ * Parse human-readable amount to wei using an asset's decimals.
+ * Returns undefined when amount is undefined.
  */
-export function parseAssetAmount({
-  amount,
-  decimals,
-}: {
-  amount: number
-  decimals: number
-}): bigint {
-  return parseUnits(amount.toString(), decimals)
+export function parseAssetAmount(amount: number, asset: Asset): bigint
+export function parseAssetAmount(
+  amount: number | undefined,
+  asset: Asset,
+): bigint | undefined
+export function parseAssetAmount(
+  amount: number | undefined,
+  asset: Asset,
+): bigint | undefined {
+  if (amount === undefined) return undefined
+  return parseUnits(amount.toString(), asset.metadata.decimals)
 }
 
 /**

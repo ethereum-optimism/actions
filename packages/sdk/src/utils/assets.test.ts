@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset, MockWETHAsset } from '@/__mocks__/MockAssets.js'
-import { isAssetSupportedOnChain } from '@/utils/assets.js'
+import { isAssetSupportedOnChain, parseAssetAmount } from '@/utils/assets.js'
 
 describe('Asset Utilities', () => {
   describe('isAssetSupportedOnChain', () => {
@@ -23,6 +23,21 @@ describe('Asset Utilities', () => {
       expect(MockWETHAsset.metadata.symbol).toBe('WETH')
       expect(MockWETHAsset.metadata.decimals).toBe(18)
       expect(MockWETHAsset.type).toBe('erc20')
+    })
+  })
+
+  describe('parseAssetAmount', () => {
+    it('converts human-readable amount to wei using asset decimals', () => {
+      expect(parseAssetAmount(100, MockUSDCAsset)).toBe(100000000n)
+      expect(parseAssetAmount(1, MockWETHAsset)).toBe(1000000000000000000n)
+    })
+
+    it('returns undefined when amount is undefined', () => {
+      expect(parseAssetAmount(undefined, MockUSDCAsset)).toBeUndefined()
+    })
+
+    it('handles fractional amounts', () => {
+      expect(parseAssetAmount(0.5, MockUSDCAsset)).toBe(500000n)
     })
   })
 })

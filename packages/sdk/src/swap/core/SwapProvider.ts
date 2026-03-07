@@ -178,20 +178,8 @@ export abstract class SwapProvider<
     },
   ): ResolvedSwapParams {
     return {
-      amountInWei:
-        params.amountIn !== undefined
-          ? parseAssetAmount({
-              amount: params.amountIn,
-              decimals: params.assetIn.metadata.decimals,
-            })
-          : undefined,
-      amountOutWei:
-        params.amountOut !== undefined
-          ? parseAssetAmount({
-              amount: params.amountOut,
-              decimals: params.assetOut.metadata.decimals,
-            })
-          : undefined,
+      amountInWei: parseAssetAmount(params.amountIn, params.assetIn),
+      amountOutWei: parseAssetAmount(params.amountOut, params.assetOut),
       assetIn: params.assetIn,
       assetOut: params.assetOut,
       slippage: params.slippage ?? this.defaultSlippage,
