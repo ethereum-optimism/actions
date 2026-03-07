@@ -402,10 +402,7 @@ function Earn({
   }
 
   return (
-    <ActivityLogProvider
-      walletProvider={providerConfig.queryParam}
-      walletAddress={walletAddress}
-    >
+    <ActivityLogProvider walletProvider={providerConfig.queryParam}>
       <LendProviderContextProvider
         operations={operations}
         ready={ready}

@@ -89,9 +89,10 @@ function buildWithdrawSummary(entry: ActivityEntry): SummarySegment[] {
 
 function buildMintSummary(entry: ActivityEntry): SummarySegment[] {
   const m = entry.metadata
+  const amount = m?.amount ? `${m.amount} ` : ''
   if (m?.assetSymbol) {
     return [
-      { type: 'text', value: 'Minted ' },
+      { type: 'text', value: `Minted ${amount}` },
       tokenSegment(m.assetSymbol, m.assetLogo),
     ]
   }

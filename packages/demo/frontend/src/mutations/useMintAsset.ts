@@ -20,7 +20,11 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
 
   return useMutation({
     mutationFn: async ({ asset }: { asset: Asset }) => {
-      const activity = logActivity?.('mint')
+      const isNative = asset.type === 'native'
+      const activity = logActivity?.('mint', {
+        amount: isNative ? undefined : '100',
+        assetSymbol: asset.metadata.symbol,
+      })
       try {
         const result = await mintAsset(asset)
 

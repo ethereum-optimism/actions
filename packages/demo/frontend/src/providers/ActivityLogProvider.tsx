@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
 
 import { ActivityLogContext } from '../contexts/ActivityLogContext'
+import { ACTIVITY_CONFIG } from '../constants/activityLogConfigs'
 
 export interface ActivityMetadata {
   amount?: string
@@ -26,19 +27,25 @@ export type ActivityEntry = {
   metadata?: ActivityMetadata
 }
 
+/** Returns true if the action represents an on-chain transaction (not a read-only query) */
+function isTransactionAction(action: string): boolean {
+  const config = ACTIVITY_CONFIG[action]
+  return !!config && !config.isReadOnly
+}
+
 export function ActivityLogProvider({
   children,
   walletProvider,
-  walletAddress,
 }: {
   children: ReactNode
   walletProvider?: string
-  walletAddress?: string | null
 }) {
-  const suffix = [walletProvider, walletAddress].filter(Boolean).join('-')
-  const STORAGE_KEY = suffix ? `activity-log-${suffix}` : 'activity-log'
-  const NEXT_ID_KEY = suffix
-    ? `activity-log-next-id-${suffix}`
+  // Key by provider only — walletAddress is unstable (null on first render)
+  const STORAGE_KEY = walletProvider
+    ? `activity-log-${walletProvider}`
+    : 'activity-log'
+  const NEXT_ID_KEY = walletProvider
+    ? `activity-log-next-id-${walletProvider}`
     : 'activity-log-next-id'
 
   const [activities, setActivities] = useState<ActivityEntry[]>(() => {
@@ -72,8 +79,11 @@ export function ActivityLogProvider({
   // Sync transaction activities to localStorage whenever they change
   useEffect(() => {
     try {
+      // Persist confirmed transactions, not read-only queries
       const transactionActivities = activities.filter(
-        (activity) => !!activity.blockExplorerUrl,
+        (activity) =>
+          activity.status === 'confirmed' &&
+          isTransactionAction(activity.action),
       )
       localStorage.setItem(STORAGE_KEY, JSON.stringify(transactionActivities))
       localStorage.setItem(NEXT_ID_KEY, nextIdRef.current.toString())
