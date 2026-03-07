@@ -83,6 +83,6 @@ export function formatSwapAmount(amount: string): {
 
   return {
     main: `${whole}.${decimal.substring(0, 4)}`,
-    secondary: decimal.substring(4),
+    secondary: decimal.substring(4, 8),
   }
 }

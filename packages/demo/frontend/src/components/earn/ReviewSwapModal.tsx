@@ -207,7 +207,7 @@ export function ReviewSwapModal({
 
       <AmountRow
         label="You pay"
-        amount={{ main: amountIn }}
+        amount={formatSwapAmount(amountIn)}
         logo={assetIn.logo}
         symbol={symbolIn}
         usd={formatUsd(parsedIn, usdPerIn)}
