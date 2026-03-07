@@ -28,7 +28,7 @@ import {
 import { POOL_KEY_ABI_TYPE } from './abis.js'
 import { getSupportedChainIds, getUniswapAddresses } from './addresses.js'
 import { encodeUniversalRouterSwap, getQuote } from './encoding.js'
-import type { UniswapMarketFilter, UniswapSwapProviderConfig } from './types.js'
+import type { UniswapMarketConfig, UniswapSwapProviderConfig } from './types.js'
 
 /**
  * Uniswap swap provider using Universal Router
@@ -47,7 +47,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     const addresses = getUniswapAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
 
-    const filter = this.resolveUniswapFilter(assetIn, assetOut, chainId)
+    const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
 
     // Get quote first for price info
     const quote = await getQuote({
@@ -59,8 +59,8 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       publicClient,
       quoterAddress: addresses.quoter,
       poolManagerAddress: addresses.poolManager,
-      fee: filter.fee,
-      tickSpacing: filter.tickSpacing,
+      fee: marketConfig.fee,
+      tickSpacing: marketConfig.tickSpacing,
     })
 
     // Build the swap calldata
@@ -75,8 +75,8 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       chainId,
       quote,
       universalRouterAddress: addresses.universalRouter,
-      fee: filter.fee,
-      tickSpacing: filter.tickSpacing,
+      fee: marketConfig.fee,
+      tickSpacing: marketConfig.tickSpacing,
     })
 
     // Determine if approvals are needed (not for native ETH input)
@@ -160,7 +160,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       throw new Error('assetOut is required')
     }
 
-    const filter = this.resolveUniswapFilter(assetIn, assetOut, chainId)
+    const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
 
     const amountInWei = parseAssetAmount({
       amount: params.amountIn ?? 1,
@@ -184,17 +184,17 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       publicClient,
       quoterAddress: addresses.quoter,
       poolManagerAddress: addresses.poolManager,
-      fee: filter.fee,
-      tickSpacing: filter.tickSpacing,
+      fee: marketConfig.fee,
+      tickSpacing: marketConfig.tickSpacing,
     })
   }
 
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     const { poolId, chainId } = params
 
-    for (const filter of this.validFilters()) {
-      if (filter.chainId !== undefined && filter.chainId !== chainId) continue
-      const match = this.marketsFromFilter(filter, chainId).find(
+    for (const config of this.validConfigs()) {
+      if (config.chainId !== undefined && config.chainId !== chainId) continue
+      const match = this.marketsFromConfig(config, chainId).find(
         (m) => m.marketId.poolId === poolId,
       )
       if (match) return match
@@ -212,78 +212,79 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
   protected async _getMarkets(
     params: GetSwapMarketsParams,
   ): Promise<SwapMarket[]> {
-    return this.validFilters().flatMap((filter) => {
+    return this.validConfigs().flatMap((config) => {
       const chainIds = params.chainId
         ? [params.chainId]
-        : filter.chainId
-          ? [filter.chainId]
+        : config.chainId
+          ? [config.chainId]
           : this.supportedChainIds()
 
       return chainIds.flatMap((chainId) =>
-        this.marketsFromFilter(filter, chainId, params.asset),
+        this.marketsFromConfig(config, chainId, params.asset),
       )
     })
   }
 
   /**
-   * Resolve and validate Uniswap-specific market filter with required fee/tickSpacing
+   * Resolve and validate Uniswap-specific market config with required fee/tickSpacing
    */
-  private resolveUniswapFilter(
+  private resolveUniswapConfig(
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
-  ): UniswapMarketFilter & { fee: number; tickSpacing: number } {
-    const filter = this.resolveMarketFilter(assetIn, assetOut, chainId) as
-      | UniswapMarketFilter
+  ): UniswapMarketConfig & { fee: number; tickSpacing: number } {
+    const config = this.resolveMarketConfig(assetIn, assetOut, chainId) as
+      | UniswapMarketConfig
       | undefined
-    if (filter?.fee === undefined || filter?.tickSpacing === undefined) {
+    if (config?.fee === undefined || config?.tickSpacing === undefined) {
       throw new Error(
         `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
       )
     }
-    return filter as UniswapMarketFilter & { fee: number; tickSpacing: number }
+    return config as UniswapMarketConfig & { fee: number; tickSpacing: number }
   }
 
-  /** Filters from allowlist that have required fee/tickSpacing */
-  private validFilters(): Array<
-    UniswapMarketFilter & {
+  /** Configs from allowlist that have required fee/tickSpacing */
+  private validConfigs(): Array<
+    UniswapMarketConfig & {
       fee: number
       tickSpacing: number
     }
   > {
     return (this._config.marketAllowlist ?? []).filter(
-      (f): f is UniswapMarketFilter & { fee: number; tickSpacing: number } =>
+      (f): f is UniswapMarketConfig & { fee: number; tickSpacing: number } =>
         f.fee !== undefined && f.tickSpacing !== undefined,
     )
   }
 
-  /** Generate all pair-based markets from a filter on a given chain */
-  private marketsFromFilter(
-    filter: UniswapMarketFilter & { fee: number; tickSpacing: number },
+  /** Generate all pair-based markets from a config on a given chain */
+  private marketsFromConfig(
+    config: UniswapMarketConfig & { fee: number; tickSpacing: number },
     chainId: SupportedChainId,
     asset?: Asset,
   ): SwapMarket[] {
-    return this.assetPairs(filter.assets, asset)
+    return this.assetPairs(config.assets, asset)
       .map(([a, b]) =>
-        this.filterToMarket(a, b, chainId, filter.fee, filter.tickSpacing),
+        this.configToMarket(a, b, chainId, config.fee, config.tickSpacing),
       )
       .filter((m): m is SwapMarket => m !== null)
   }
 
-  /** Unique pairs from an asset list, optionally filtered to pairs containing a specific asset */
+  /** Unique pairs from an asset list, optionally scoped to pairs containing a specific asset */
   private assetPairs(
     assets: Asset[],
-    filterAsset?: Asset,
+    requiredAsset?: Asset,
   ): Array<[Asset, Asset]> {
     return assets
       .flatMap((a, i) => assets.slice(i + 1).map((b): [Asset, Asset] => [a, b]))
       .filter(
-        ([a, b]) => !filterAsset || a === filterAsset || b === filterAsset,
+        ([a, b]) =>
+          !requiredAsset || a === requiredAsset || b === requiredAsset,
       )
   }
 
   /** Build a SwapMarket from two assets + pool params. Returns null if assets lack addresses on this chain. */
-  private filterToMarket(
+  private configToMarket(
     assetA: Asset,
     assetB: Asset,
     chainId: SupportedChainId,

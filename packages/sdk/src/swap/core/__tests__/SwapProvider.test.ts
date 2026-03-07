@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MockSwapProvider } from '@/swap/__mocks__/MockSwapProvider.js'
 import type { Asset } from '@/types/asset.js'
-import type { SwapMarketFilter } from '@/types/swap/index.js'
+import type { SwapMarketConfig } from '@/types/swap/index.js'
 
 // Test assets
 const MockUSDC: Asset = {
@@ -44,12 +44,12 @@ describe('SwapProvider', () => {
     })
 
     it('should store market allowlist when provided', () => {
-      const filter: SwapMarketFilter = {
+      const config: SwapMarketConfig = {
         assets: [MockUSDC, MockWETH],
         chainId: 84532 as SupportedChainId,
       }
-      const provider = new MockSwapProvider({ marketAllowlist: [filter] })
-      expect(provider.config.marketAllowlist).toEqual([filter])
+      const provider = new MockSwapProvider({ marketAllowlist: [config] })
+      expect(provider.config.marketAllowlist).toEqual([config])
     })
   })
 
@@ -273,11 +273,11 @@ describe('SwapProvider', () => {
     })
 
     it('should allow pairs in allowlist', () => {
-      const filter: SwapMarketFilter = {
+      const config: SwapMarketConfig = {
         assets: [MockUSDC, MockWETH],
         chainId: 84532 as SupportedChainId,
       }
-      const provider = new MockSwapProvider({ marketAllowlist: [filter] })
+      const provider = new MockSwapProvider({ marketAllowlist: [config] })
       expect(() =>
         provider.testValidateMarketAllowed(
           MockUSDC,
@@ -288,11 +288,11 @@ describe('SwapProvider', () => {
     })
 
     it('should reject pairs not in allowlist', () => {
-      const filter: SwapMarketFilter = {
+      const config: SwapMarketConfig = {
         assets: [MockUSDC, MockWETH],
         chainId: 84532 as SupportedChainId,
       }
-      const provider = new MockSwapProvider({ marketAllowlist: [filter] })
+      const provider = new MockSwapProvider({ marketAllowlist: [config] })
       expect(() =>
         provider.testValidateMarketAllowed(
           MockUSDC,
@@ -303,11 +303,11 @@ describe('SwapProvider', () => {
     })
 
     it('should match pairs regardless of order', () => {
-      const filter: SwapMarketFilter = {
+      const config: SwapMarketConfig = {
         assets: [MockUSDC, MockWETH],
         chainId: 84532 as SupportedChainId,
       }
-      const provider = new MockSwapProvider({ marketAllowlist: [filter] })
+      const provider = new MockSwapProvider({ marketAllowlist: [config] })
       // Reversed order should still match
       expect(() =>
         provider.testValidateMarketAllowed(
@@ -319,11 +319,11 @@ describe('SwapProvider', () => {
     })
 
     it('should reject blocklisted pairs', () => {
-      const filter: SwapMarketFilter = {
+      const config: SwapMarketConfig = {
         assets: [MockUSDC, MockOP],
         chainId: 84532 as SupportedChainId,
       }
-      const provider = new MockSwapProvider({ marketBlocklist: [filter] })
+      const provider = new MockSwapProvider({ marketBlocklist: [config] })
       expect(() =>
         provider.testValidateMarketAllowed(
           MockUSDC,
@@ -334,17 +334,17 @@ describe('SwapProvider', () => {
     })
 
     it('should check blocklist before allowlist', () => {
-      const allowFilter: SwapMarketFilter = {
+      const allowConfig: SwapMarketConfig = {
         assets: [MockUSDC, MockWETH],
         chainId: 84532 as SupportedChainId,
       }
-      const blockFilter: SwapMarketFilter = {
+      const blockConfig: SwapMarketConfig = {
         assets: [MockUSDC, MockWETH],
         chainId: 84532 as SupportedChainId,
       }
       const provider = new MockSwapProvider({
-        marketAllowlist: [allowFilter],
-        marketBlocklist: [blockFilter],
+        marketAllowlist: [allowConfig],
+        marketBlocklist: [blockConfig],
       })
       // Blocklist takes precedence
       expect(() =>
@@ -357,11 +357,11 @@ describe('SwapProvider', () => {
     })
 
     it('should expand multi-asset filter to all pairs', () => {
-      const filter: SwapMarketFilter = {
+      const config: SwapMarketConfig = {
         assets: [MockUSDC, MockWETH, MockOP],
         chainId: 84532 as SupportedChainId,
       }
-      const provider = new MockSwapProvider({ marketAllowlist: [filter] })
+      const provider = new MockSwapProvider({ marketAllowlist: [config] })
 
       // All 3 pairs should be allowed: USDC/WETH, USDC/OP, WETH/OP
       expect(() =>
@@ -403,11 +403,11 @@ describe('SwapProvider', () => {
           10: '0x2222222222222222222222222222222222222223' as Address,
         },
       }
-      const filter: SwapMarketFilter = {
+      const config: SwapMarketConfig = {
         assets: [multiChainUSDC, multiChainWETH],
       }
       const provider = new MockSwapProvider(
-        { marketAllowlist: [filter] },
+        { marketAllowlist: [config] },
         {
           supportedChains: [84532 as SupportedChainId, 10 as SupportedChainId],
         },
@@ -445,12 +445,12 @@ describe('SwapProvider', () => {
           10: '0x2222222222222222222222222222222222222223' as Address,
         },
       }
-      const filter: SwapMarketFilter = {
+      const config: SwapMarketConfig = {
         assets: [multiChainUSDC, multiChainWETH],
         chainId: 84532 as SupportedChainId,
       }
       const provider = new MockSwapProvider(
-        { marketAllowlist: [filter] },
+        { marketAllowlist: [config] },
         {
           supportedChains: [84532 as SupportedChainId, 10 as SupportedChainId],
         },

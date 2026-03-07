@@ -9,7 +9,7 @@ import type {
   ResolvedSwapParams,
   SwapExecuteParams,
   SwapMarket,
-  SwapMarketFilter,
+  SwapMarketConfig,
   SwapPrice,
   SwapPriceParams,
   SwapProviderConfig,
@@ -108,7 +108,7 @@ export abstract class SwapProvider<
     const { marketBlocklist, marketAllowlist } = this._config
 
     if (marketBlocklist?.length) {
-      const isBlocked = this.findMatchingFilter(
+      const isBlocked = this.findMatchingConfig(
         assetIn,
         assetOut,
         chainId,
@@ -122,7 +122,7 @@ export abstract class SwapProvider<
     }
 
     if (marketAllowlist?.length) {
-      const isAllowed = this.findMatchingFilter(
+      const isAllowed = this.findMatchingConfig(
         assetIn,
         assetOut,
         chainId,
@@ -136,14 +136,14 @@ export abstract class SwapProvider<
     }
   }
 
-  protected resolveMarketFilter(
+  protected resolveMarketConfig(
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
-  ): SwapMarketFilter | undefined {
+  ): SwapMarketConfig | undefined {
     const { marketAllowlist } = this._config
     if (!marketAllowlist?.length) return undefined
-    return this.findMatchingFilter(assetIn, assetOut, chainId, marketAllowlist)
+    return this.findMatchingConfig(assetIn, assetOut, chainId, marketAllowlist)
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -205,29 +205,29 @@ export abstract class SwapProvider<
     }
   }
 
-  private findMatchingFilter(
+  private findMatchingConfig(
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
-    list: SwapMarketFilter[],
-  ): SwapMarketFilter | undefined {
+    list: SwapMarketConfig[],
+  ): SwapMarketConfig | undefined {
     const addressIn = assetIn.address[chainId]
     const addressOut = assetOut.address[chainId]
     if (!addressIn || !addressOut) return undefined
 
-    return list.find((filter) => {
-      if (filter.chainId !== undefined && filter.chainId !== chainId)
+    return list.find((config) => {
+      if (config.chainId !== undefined && config.chainId !== chainId)
         return false
-      return this.filterContainsPair(
+      return this.configContainsPair(
         addressIn,
         addressOut,
         chainId,
-        filter.assets,
+        config.assets,
       )
     })
   }
 
-  private filterContainsPair(
+  private configContainsPair(
     addressIn: string,
     addressOut: string,
     chainId: SupportedChainId,

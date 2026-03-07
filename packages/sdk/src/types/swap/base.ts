@@ -28,9 +28,9 @@ export interface SwapProviderConfig {
   /** Default slippage tolerance (e.g., 0.005 for 0.5%) */
   defaultSlippage?: number
   /** Allowlist of swap markets (optional - defaults to all supported assets) */
-  marketAllowlist?: SwapMarketFilter[]
+  marketAllowlist?: SwapMarketConfig[]
   /** Blocklist of swap markets to exclude */
-  marketBlocklist?: SwapMarketFilter[]
+  marketBlocklist?: SwapMarketConfig[]
 }
 
 /**
@@ -38,7 +38,7 @@ export interface SwapProviderConfig {
  * @description Define allowed/blocked trading markets by assets.
  * 2 assets = one explicit pair. 3+ = all pairs between them.
  */
-export interface SwapMarketFilter {
+export interface SwapMarketConfig {
   /** 2 assets = one explicit pair. 3+ = all pairs between them. */
   assets: [Asset, Asset, ...Asset[]]
   /** Restrict to a specific chain. Omit = all configured chains. */

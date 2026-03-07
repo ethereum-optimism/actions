@@ -8,7 +8,7 @@ export { WalletSwapNamespace } from './namespaces/WalletSwapNamespace.js'
 
 // Providers
 export type {
-  UniswapMarketFilter,
+  UniswapMarketConfig,
   UniswapSwapProviderConfig,
 } from './providers/uniswap/types.js'
 export { UniswapSwapProvider } from './providers/uniswap/UniswapSwapProvider.js'

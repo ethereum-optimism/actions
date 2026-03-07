@@ -20,7 +20,7 @@ export {
 } from '@/supported/tokens.js'
 export {
   SwapProvider,
-  type UniswapMarketFilter,
+  type UniswapMarketConfig,
   UniswapSwapProvider,
   type UniswapSwapProviderConfig,
 } from '@/swap/index.js'
@@ -43,7 +43,7 @@ export type {
   SwapConfig,
   SwapExecuteParams,
   SwapMarket,
-  SwapMarketFilter,
+  SwapMarketConfig,
   SwapMarketId,
   SwapPrice,
   SwapPriceParams,
