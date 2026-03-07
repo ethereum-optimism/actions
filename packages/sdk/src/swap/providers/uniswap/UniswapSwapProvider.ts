@@ -31,25 +31,27 @@ import { encodeUniversalRouterSwap, getQuote } from './encoding.js'
 import type { UniswapMarketConfig, UniswapSwapProviderConfig } from './types.js'
 
 /**
- * Uniswap swap provider using Universal Router
- * @description Routes swaps through V4 pools via the Uniswap Universal Router.
- * Uses Permit2 for token approvals.
+ * Uniswap V4 swap provider using Universal Router and Permit2 approvals.
  */
 export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig> {
+  /** @returns Chain IDs where Uniswap V4 contracts are deployed */
   supportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
   }
 
+  /**
+   * Build a swap transaction with quote, calldata, and any required approvals.
+   * @param params - Resolved swap parameters (amounts in wei, defaults applied)
+   * @returns Transaction data ready for wallet execution
+   */
   protected async _execute(
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {
-    const { chainId, assetIn, assetOut, walletAddress } = params
+    const { chainId, assetIn, assetOut } = params
     const addresses = getUniswapAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
-
     const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
 
-    // Get quote first for price info
     const quote = await getQuote({
       assetIn,
       assetOut,
@@ -63,7 +65,6 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       tickSpacing: marketConfig.tickSpacing,
     })
 
-    // Build the swap calldata
     const swapCalldata = encodeUniversalRouterSwap({
       amountInWei: params.amountInWei,
       amountOutWei: params.amountOutWei,
@@ -79,78 +80,38 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       tickSpacing: marketConfig.tickSpacing,
     })
 
-    // Determine if approvals are needed (not for native ETH input)
-    let tokenApproval: TransactionData | undefined
-    let permit2Approval: TransactionData | undefined
+    const amountInWei = params.amountInWei ?? quote.amountInWei
+    const { tokenApproval, permit2Approval } = await this.buildApprovals(
+      params,
+      amountInWei,
+    )
 
-    if (!isNativeAsset(assetIn)) {
-      const assetInAddress = getAssetAddress(assetIn, chainId)
-      const requiredAmount = params.amountInWei ?? quote.amountInWei
-
-      // Check both allowances in parallel
-      const [tokenAllowance, permit2Allowance] = await Promise.all([
-        checkTokenAllowance({
-          publicClient,
-          token: assetInAddress,
-          owner: walletAddress,
-          spender: addresses.permit2,
-        }),
-        checkPermit2Allowance({
-          publicClient,
-          permit2Address: addresses.permit2,
-          owner: walletAddress,
-          token: assetInAddress,
-          spender: addresses.universalRouter,
-        }),
-      ])
-
-      if (tokenAllowance < requiredAmount) {
-        tokenApproval = buildTokenApprovalTx(assetInAddress, addresses.permit2)
-      }
-
-      // Permit2 expiration is in Unix seconds (matching EVM block.timestamp)
-      const permit2Expired =
-        permit2Allowance.expiration < Math.floor(Date.now() / 1000)
-      if (permit2Allowance.amount < requiredAmount || permit2Expired) {
-        permit2Approval = buildPermit2ApprovalTx({
-          permit2Address: addresses.permit2,
-          token: assetInAddress,
-          spender: addresses.universalRouter,
-          amount: requiredAmount,
-          expirySeconds: this._config.permit2ExpirySeconds,
-        })
-      }
-    }
-
-    // Build swap transaction
     const swapTx: TransactionData = {
       to: addresses.universalRouter,
       data: swapCalldata,
       value: isNativeAsset(assetIn) ? (params.amountInWei ?? 0n) : 0n,
     }
 
-    const amountInWei = params.amountInWei ?? quote.amountInWei
-    const amountOutWei = quote.amountOutWei
-
     return {
       amountIn: parseFloat(formatUnits(amountInWei, assetIn.metadata.decimals)),
       amountOut: parseFloat(
-        formatUnits(amountOutWei, assetOut.metadata.decimals),
+        formatUnits(quote.amountOutWei, assetOut.metadata.decimals),
       ),
       amountInWei,
-      amountOutWei,
+      amountOutWei: quote.amountOutWei,
       assetIn,
       assetOut,
       price: quote.price,
       priceImpact: quote.priceImpact,
-      transactionData: {
-        tokenApproval,
-        permit2Approval,
-        swap: swapTx,
-      },
+      transactionData: { tokenApproval, permit2Approval, swap: swapTx },
     }
   }
 
+  /**
+   * Get a price quote for a swap pair.
+   * @param params - Price query with assets, optional amounts, and chain
+   * @returns Quote with price, amounts, price impact, and route
+   */
   protected async _getPrice(params: SwapPriceParams): Promise<SwapPrice> {
     const { chainId, assetIn, assetOut } = params
     const addresses = getUniswapAddresses(chainId)
@@ -180,6 +141,12 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     })
   }
 
+  /**
+   * Find a specific market by poolId from the allowlist.
+   * @param params - Pool ID and chain to look up
+   * @returns Matching market
+   * @throws If no matching market found in config
+   */
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     const { poolId, chainId } = params
 
@@ -197,8 +164,10 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
   }
 
   /**
-   * Expands the market allowlist into concrete SwapMarket objects.
+   * Expand the market allowlist into concrete SwapMarket objects.
    * Derives poolId from each asset pair's pool key — no RPC calls needed.
+   * @param params - Optional chain and asset filters
+   * @returns All configured markets matching the filters
    */
   protected async _getMarkets(
     params: GetSwapMarketsParams,
@@ -216,8 +185,78 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     })
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Private helpers
+  // ─────────────────────────────────────────────────────────────────────────────
+
   /**
-   * Resolve and validate Uniswap-specific market config with required fee/tickSpacing
+   * Check ERC20 and Permit2 allowances, returning approval txs if needed.
+   * Skipped entirely for native ETH swaps.
+   * @param params - Resolved swap params (wallet address, asset info)
+   * @param requiredAmount - Amount in wei that must be approved
+   * @returns Token and Permit2 approval transactions (undefined if not needed)
+   */
+  private async buildApprovals(
+    params: ResolvedSwapParams,
+    requiredAmount: bigint,
+  ): Promise<{
+    tokenApproval: TransactionData | undefined
+    permit2Approval: TransactionData | undefined
+  }> {
+    if (isNativeAsset(params.assetIn)) {
+      return { tokenApproval: undefined, permit2Approval: undefined }
+    }
+
+    const { chainId, walletAddress } = params
+    const addresses = getUniswapAddresses(chainId)
+    const publicClient = this.chainManager.getPublicClient(chainId)
+    const token = getAssetAddress(params.assetIn, chainId)
+
+    const [tokenAllowance, permit2Allowance] = await Promise.all([
+      checkTokenAllowance({
+        publicClient,
+        token,
+        owner: walletAddress,
+        spender: addresses.permit2,
+      }),
+      checkPermit2Allowance({
+        publicClient,
+        permit2Address: addresses.permit2,
+        owner: walletAddress,
+        token,
+        spender: addresses.universalRouter,
+      }),
+    ])
+
+    const tokenApproval =
+      tokenAllowance < requiredAmount
+        ? buildTokenApprovalTx(token, addresses.permit2)
+        : undefined
+
+    // Permit2 expiration is in Unix seconds (matching EVM block.timestamp)
+    const permit2Expired =
+      permit2Allowance.expiration < Math.floor(Date.now() / 1000)
+    const permit2Approval =
+      permit2Allowance.amount < requiredAmount || permit2Expired
+        ? buildPermit2ApprovalTx({
+            permit2Address: addresses.permit2,
+            token,
+            spender: addresses.universalRouter,
+            amount: requiredAmount,
+            expirySeconds: this._config.permit2ExpirySeconds,
+          })
+        : undefined
+
+    return { tokenApproval, permit2Approval }
+  }
+
+  /**
+   * Look up the Uniswap-specific market config for a pair, validating fee/tickSpacing.
+   * @param assetIn - Input asset
+   * @param assetOut - Output asset
+   * @param chainId - Target chain
+   * @returns Market config with guaranteed fee and tickSpacing
+   * @throws If pair not in allowlist or missing fee/tickSpacing
    */
   private resolveUniswapConfig(
     assetIn: Asset,
@@ -235,12 +274,9 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     return config as UniswapMarketConfig & { fee: number; tickSpacing: number }
   }
 
-  /** Configs from allowlist that have required fee/tickSpacing */
+  /** @returns Allowlist entries that have the required fee and tickSpacing set */
   private validConfigs(): Array<
-    UniswapMarketConfig & {
-      fee: number
-      tickSpacing: number
-    }
+    UniswapMarketConfig & { fee: number; tickSpacing: number }
   > {
     return (this._config.marketAllowlist ?? []).filter(
       (f): f is UniswapMarketConfig & { fee: number; tickSpacing: number } =>
@@ -248,7 +284,12 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     )
   }
 
-  /** Generate all pair-based markets from a config on a given chain */
+  /**
+   * Generate all SwapMarket objects from a single config entry on a given chain.
+   * @param config - Market config with fee/tickSpacing
+   * @param chainId - Target chain
+   * @param asset - If provided, only return markets containing this asset
+   */
   private marketsFromConfig(
     config: UniswapMarketConfig & { fee: number; tickSpacing: number },
     chainId: SupportedChainId,
@@ -261,7 +302,11 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       .filter((m): m is SwapMarket => m !== null)
   }
 
-  /** Unique pairs from an asset list, optionally scoped to pairs containing a specific asset */
+  /**
+   * Generate unique asset pairs, optionally scoped to pairs containing a required asset.
+   * @param assets - Full list of assets from a market config
+   * @param requiredAsset - If set, only pairs including this asset are returned
+   */
   private assetPairs(
     assets: Asset[],
     requiredAsset?: Asset,
@@ -274,7 +319,11 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       )
   }
 
-  /** Build a SwapMarket from two assets + pool params. Returns null if assets lack addresses on this chain. */
+  /**
+   * Build a SwapMarket from two assets and V4 pool parameters.
+   * Computes a deterministic poolId from the sorted pool key.
+   * @returns SwapMarket, or null if either asset lacks an address on this chain
+   */
   private configToMarket(
     assetA: Asset,
     assetB: Asset,
@@ -287,12 +336,14 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     if (!addrA || addrA === 'native' || !addrB || addrB === 'native')
       return null
 
-    // Sort tokens for deterministic poolId (V4 requires currency0 < currency1)
+    // V4 requires currency0 < currency1 for deterministic pool keys
     const [currency0, currency1] =
       addrA.toLowerCase() < addrB.toLowerCase()
         ? [addrA, addrB]
         : [addrB, addrA]
 
+    // PoolId = keccak256(abi.encode(PoolKey)) per V4's PoolIdLibrary
+    // @see https://github.com/Uniswap/v4-core/blob/main/src/types/PoolId.sol
     const poolId = keccak256(
       encodeAbiParameters(POOL_KEY_ABI_TYPE, [
         currency0 as Address,
