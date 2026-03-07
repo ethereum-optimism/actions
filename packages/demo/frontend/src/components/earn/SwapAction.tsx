@@ -282,6 +282,7 @@ export function SwapAction({
 
     setIsLoadingPrice(true)
     const fetchPrice = async () => {
+      const activity = onLogActivity?.('getPrice')
       try {
         const quote = await onGetPrice({
           tokenInAddress: assetIn.asset.address[assetIn.chainId] as Address,
@@ -291,6 +292,7 @@ export function SwapAction({
             ? { amountIn: parseFloat(activeAmount) }
             : { amountOut: parseFloat(activeAmount) }),
         })
+        activity?.confirm()
         setPriceQuote(quote)
         if (quote) {
           if (editDirection === 'in') {
@@ -300,6 +302,7 @@ export function SwapAction({
           }
         }
       } catch {
+        activity?.confirm({ error: 'Failed to fetch price' })
         setPriceQuote(null)
       } finally {
         setIsLoadingPrice(false)

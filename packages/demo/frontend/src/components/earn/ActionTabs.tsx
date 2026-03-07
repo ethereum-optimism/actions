@@ -19,7 +19,7 @@ const LEND_ACTIONS = new Set([
   'getMarket',
   'getPosition',
 ])
-const SWAP_ACTIONS = new Set(['swap'])
+const SWAP_ACTIONS = new Set(['swap', 'getPrice'])
 
 function isTabHighlighted(
   tabId: ActionType,

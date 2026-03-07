@@ -61,6 +61,13 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
     apiMethod: 'actions.wallet.createSmartWallet()',
     tooltip: 'Creates a new smart wallet',
   },
+  getPrice: {
+    type: 'swap',
+    description: 'Get swap price',
+    apiMethod: 'actions.swap.price()',
+    tooltip: 'Fetches a swap price quote',
+    isReadOnly: true,
+  },
   swap: {
     type: 'swap',
     description: 'Swap tokens',

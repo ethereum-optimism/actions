@@ -35,13 +35,12 @@ export interface ActivityLogHandle {
  * ```
  */
 export function useActivityLogger() {
-  const { addActivity, updateActivity } = useActivityLog()
+  const { addActivity, updateActivity, addOrUpdateActivity } = useActivityLog()
 
   /**
-   * Logs an activity by its action key
-   *
-   * @param action - The action key from ACTIVITY_CONFIG (e.g., 'mint', 'getBalance')
-   * @returns An activity handle with confirm() and error() methods, or null if config not found
+   * Logs an activity by its action key.
+   * Read-only actions (e.g. getPrice, getMarket) reuse the same log entry
+   * on consecutive calls instead of creating duplicates.
    */
   const logActivity = useCallback(
     (action: string, metadata?: ActivityMetadata): ActivityLogHandle | null => {
@@ -51,12 +50,17 @@ export function useActivityLogger() {
         return null
       }
 
-      const id = addActivity({
+      const entry = {
         type: config.type,
-        action: action,
-        status: 'pending',
+        action,
+        status: 'pending' as const,
         metadata,
-      })
+      }
+
+      // Read-only actions reuse the same log row; mutations always get a new row
+      const id = config.isReadOnly
+        ? addOrUpdateActivity(action, entry)
+        : addActivity(entry)
 
       return {
         id,
@@ -72,7 +76,7 @@ export function useActivityLogger() {
         },
       }
     },
-    [addActivity, updateActivity],
+    [addActivity, updateActivity, addOrUpdateActivity],
   )
 
   return { logActivity }
