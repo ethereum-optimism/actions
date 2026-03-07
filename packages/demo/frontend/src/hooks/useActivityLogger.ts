@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { useActivityLog } from './useActivityLog'
 import { ACTIVITY_CONFIG } from '../constants/activityLogConfigs'
 import type { ActivityMetadata } from '@/providers/ActivityLogProvider'
@@ -35,12 +35,13 @@ export interface ActivityLogHandle {
  * ```
  */
 export function useActivityLogger() {
-  const { addActivity, updateActivity, addOrUpdateActivity } = useActivityLog()
+  const { addActivity, updateActivity } = useActivityLog()
+  const lastActionRef = useRef<{ action: string; id: number } | null>(null)
 
   /**
    * Logs an activity by its action key.
-   * Read-only actions (e.g. getPrice, getMarket) reuse the same log entry
-   * on consecutive calls instead of creating duplicates.
+   * Consecutive read-only actions of the same type reuse the existing log entry.
+   * A different action in between resets the dedup, creating a new entry.
    */
   const logActivity = useCallback(
     (action: string, metadata?: ActivityMetadata): ActivityLogHandle | null => {
@@ -57,10 +58,18 @@ export function useActivityLogger() {
         metadata,
       }
 
-      // Read-only actions reuse the same log row; mutations always get a new row
-      const id = config.isReadOnly
-        ? addOrUpdateActivity(action, entry)
-        : addActivity(entry)
+      // Reuse the existing row only if it's the same read-only action consecutively
+      const canReuse =
+        config.isReadOnly && lastActionRef.current?.action === action
+
+      let id: number
+      if (canReuse) {
+        id = lastActionRef.current!.id
+        updateActivity(id, { ...entry, timestamp: new Date().toISOString() })
+      } else {
+        id = addActivity(entry)
+      }
+      lastActionRef.current = { action, id }
 
       return {
         id,
@@ -76,7 +85,7 @@ export function useActivityLogger() {
         },
       }
     },
-    [addActivity, updateActivity, addOrUpdateActivity],
+    [addActivity, updateActivity],
   )
 
   return { logActivity }

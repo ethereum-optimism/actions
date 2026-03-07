@@ -319,7 +319,7 @@ export function useLendProvider({
     isLoadingApy,
     depositedAmount,
     isLoadingPosition,
-    isInitialLoad,
+    isInitialLoad: isInitialLoad || isLoadingMarkets,
     // Actions
     handleMintAsset,
     handleTransaction,
