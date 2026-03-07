@@ -191,8 +191,6 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
         },
       ],
       fee: 500,
-      tvl: 1000000n,
-      volume24h: 500000n,
       provider: 'uniswap',
     }
   }

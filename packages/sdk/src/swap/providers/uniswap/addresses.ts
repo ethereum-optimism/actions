@@ -88,14 +88,6 @@ const UNISWAP_ADDRESSES: Partial<Record<SupportedChainId, UniswapAddresses>> = {
 }
 
 /**
- * Uniswap V4 Subgraph URLs per chain
- * @see https://docs.uniswap.org/contracts/v4/deployments
- */
-const SUBGRAPH_URLS: Partial<Record<SupportedChainId, string>> = {
-  // Testnets typically don't have official subgraphs
-}
-
-/**
  * Get Uniswap contract addresses for a chain
  */
 export function getUniswapAddresses(
@@ -113,11 +105,4 @@ export function getUniswapAddresses(
  */
 export function getSupportedChainIds(): SupportedChainId[] {
   return Object.keys(UNISWAP_ADDRESSES).map(Number) as SupportedChainId[]
-}
-
-/**
- * Get Uniswap V4 Subgraph URL for a chain
- */
-export function getSubgraphUrl(chainId: SupportedChainId): string | undefined {
-  return SUBGRAPH_URLS[chainId]
 }

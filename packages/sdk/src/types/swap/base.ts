@@ -245,10 +245,6 @@ export interface SwapMarket {
   assets: [Asset, Asset]
   /** Fee tier in pips (500 = 0.05%) */
   fee: number
-  /** Total value locked in USD */
-  tvl?: bigint
-  /** 24-hour trading volume in USD */
-  volume24h?: bigint
   /** Provider name */
   provider: 'uniswap'
 }

@@ -2,6 +2,7 @@ import type { Address, PublicClient } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
+import { MockWETHAsset } from '@/__mocks__/MockAssets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
@@ -34,14 +35,18 @@ function createMockChainManager(): ChainManager {
     }),
     readContract: vi
       .fn()
-      .mockImplementation(({ args }: { args: unknown[] }) => {
-        // Permit2 allowance has 3 args: (owner, token, spender)
-        // ERC20 allowance has 2 args: (owner, spender)
-        if (args?.length === 3) {
-          return Promise.resolve([0n, 0, 0])
-        }
-        return Promise.resolve(0n)
-      }),
+      .mockImplementation(
+        ({ functionName, args }: { functionName: string; args: unknown[] }) => {
+          if (functionName === 'extsload')
+            return Promise.resolve(
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            )
+          // Permit2 allowance: 3 args (owner, token, spender)
+          if (args?.length === 3) return Promise.resolve([0n, 0, 0])
+          // ERC20 allowance: 2 args (owner, spender)
+          return Promise.resolve(0n)
+        },
+      ),
   } as unknown as PublicClient
 
   return {
@@ -152,20 +157,143 @@ describe('UniswapSwapProvider', () => {
   })
 
   describe('getMarkets', () => {
-    it('returns empty array when no subgraph available', async () => {
+    it('returns markets from allowlist config', async () => {
       const provider = createProvider()
       const markets = await provider.getMarkets({})
-      // Base Sepolia has no subgraph configured, so returns empty
+      expect(markets).toHaveLength(1)
+      expect(markets[0].assets).toEqual([USDC, OP])
+      expect(markets[0].fee).toBe(100)
+      expect(markets[0].provider).toBe('uniswap')
+      expect(markets[0].marketId.poolId).toMatch(/^0x/)
+      expect(markets[0].marketId.chainId).toBe(CHAIN_ID)
+    })
+
+    it('returns empty when no allowlist configured', async () => {
+      const provider = createProvider({ marketAllowlist: [] })
+      const markets = await provider.getMarkets({})
       expect(markets).toEqual([])
+    })
+
+    it('expands multi-asset filter into all pairs', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          {
+            assets: [USDC, OP, MockWETHAsset],
+            fee: 100,
+            tickSpacing: 2,
+            chainId: CHAIN_ID,
+          },
+        ],
+      })
+      const markets = await provider.getMarkets({})
+      // 3 assets → 3 pairs: USDC/OP, USDC/WETH, OP/WETH
+      expect(markets).toHaveLength(3)
+    })
+
+    it('filters by asset', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          {
+            assets: [USDC, OP, MockWETHAsset],
+            fee: 100,
+            tickSpacing: 2,
+            chainId: CHAIN_ID,
+          },
+        ],
+      })
+      const markets = await provider.getMarkets({ asset: USDC })
+      // Only pairs containing USDC: USDC/OP, USDC/WETH
+      expect(markets).toHaveLength(2)
+      for (const market of markets) {
+        expect(market.assets).toContain(USDC)
+      }
+    })
+
+    it('skips filters without fee/tickSpacing', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          { assets: [USDC, OP], chainId: CHAIN_ID },
+          {
+            assets: [USDC, MockWETHAsset],
+            fee: 500,
+            tickSpacing: 10,
+            chainId: CHAIN_ID,
+          },
+        ],
+      })
+      const markets = await provider.getMarkets({})
+      // Only the second filter has fee+tickSpacing
+      expect(markets).toHaveLength(1)
+      expect(markets[0].assets).toEqual([USDC, MockWETHAsset])
+    })
+
+    it('skips assets without address on target chain', async () => {
+      const noChainAsset: Asset = {
+        type: 'erc20',
+        address: { 1: '0x5555555555555555555555555555555555555555' as Address },
+        metadata: { name: 'No Chain', symbol: 'NC', decimals: 18 },
+      }
+      const provider = createProvider({
+        marketAllowlist: [
+          {
+            assets: [USDC, noChainAsset],
+            fee: 100,
+            tickSpacing: 2,
+            chainId: CHAIN_ID,
+          },
+        ],
+      })
+      const markets = await provider.getMarkets({})
+      expect(markets).toEqual([])
+    })
+
+    it('produces deterministic poolIds', async () => {
+      const provider = createProvider()
+      const first = await provider.getMarkets({})
+      const second = await provider.getMarkets({})
+      expect(first[0].marketId.poolId).toBe(second[0].marketId.poolId)
     })
   })
 
   describe('getMarket', () => {
-    it('throws when subgraph not available', async () => {
+    it('finds market by poolId', async () => {
+      const provider = createProvider()
+      const markets = await provider.getMarkets({})
+      const market = await provider.getMarket({
+        poolId: markets[0].marketId.poolId,
+        chainId: CHAIN_ID,
+      })
+      expect(market.fee).toBe(100)
+      expect(market.assets).toEqual([USDC, OP])
+    })
+
+    it('throws for unknown poolId', async () => {
       const provider = createProvider()
       await expect(
-        provider.getMarket({ poolId: '0xpool', chainId: CHAIN_ID }),
-      ).rejects.toThrow('Subgraph not available')
+        provider.getMarket({ poolId: '0xunknown', chainId: CHAIN_ID }),
+      ).rejects.toThrow('not found')
+    })
+
+    it('finds correct market in multi-asset filter', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          {
+            assets: [USDC, OP, MockWETHAsset],
+            fee: 100,
+            tickSpacing: 2,
+            chainId: CHAIN_ID,
+          },
+        ],
+      })
+      const markets = await provider.getMarkets({})
+      // Look up each market by its poolId
+      for (const expected of markets) {
+        const found = await provider.getMarket({
+          poolId: expected.marketId.poolId,
+          chainId: CHAIN_ID,
+        })
+        expect(found.marketId.poolId).toBe(expected.marketId.poolId)
+      }
     })
   })
 })

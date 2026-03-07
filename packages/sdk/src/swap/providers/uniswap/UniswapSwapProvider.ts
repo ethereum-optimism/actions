@@ -1,4 +1,4 @@
-import { type Address, formatUnits } from 'viem'
+import { type Address, encodeAbiParameters, formatUnits, keccak256 } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
@@ -25,11 +25,8 @@ import {
   checkTokenAllowance,
 } from '@/utils/permit2.js'
 
-import {
-  getSubgraphUrl,
-  getSupportedChainIds,
-  getUniswapAddresses,
-} from './addresses.js'
+import { POOL_KEY_ABI_TYPE } from './abis.js'
+import { getSupportedChainIds, getUniswapAddresses } from './addresses.js'
 import { encodeUniversalRouterSwap, getQuote } from './encoding.js'
 import type { UniswapMarketFilter, UniswapSwapProviderConfig } from './types.js'
 
@@ -194,60 +191,38 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
 
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     const { poolId, chainId } = params
-    const subgraphUrl = getSubgraphUrl(chainId)
 
-    if (!subgraphUrl) {
-      throw new Error(`Subgraph not available for chain ${chainId}`)
-    }
-
-    const query = `
-      query GetPool($id: ID!) {
-        pool(id: $id) {
-          id
-          token0 { id, symbol, decimals }
-          token1 { id, symbol, decimals }
-          feeTier
-          totalValueLockedUSD
-          volumeUSD
-        }
-      }
-    `
-
-    const response = await fetch(subgraphUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query,
-        variables: { id: poolId },
-      }),
-    })
-
-    const data = (await response.json()) as {
-      data: { pool: SubgraphPool | null }
-    }
-    if (!data.data.pool) {
-      throw new Error(
-        `Market with poolId ${poolId} not found on chain ${chainId}`,
+    for (const filter of this.validFilters()) {
+      if (filter.chainId !== undefined && filter.chainId !== chainId) continue
+      const match = this.marketsFromFilter(filter, chainId).find(
+        (m) => m.marketId.poolId === poolId,
       )
+      if (match) return match
     }
 
-    return this.transformSubgraphMarket(data.data.pool, chainId)
+    throw new Error(
+      `Market with poolId ${poolId} not found on chain ${chainId}`,
+    )
   }
 
+  /**
+   * Expands the market allowlist into concrete SwapMarket objects.
+   * Derives poolId from each asset pair's pool key — no RPC calls needed.
+   */
   protected async _getMarkets(
     params: GetSwapMarketsParams,
   ): Promise<SwapMarket[]> {
-    const chainIds = params.chainId
-      ? [params.chainId]
-      : this.supportedChainIds()
+    return this.validFilters().flatMap((filter) => {
+      const chainIds = params.chainId
+        ? [params.chainId]
+        : filter.chainId
+          ? [filter.chainId]
+          : this.supportedChainIds()
 
-    const results = await Promise.all(
-      chainIds.map((chainId) =>
-        this.fetchMarketsForChain(chainId, params.asset),
-      ),
-    )
-
-    return results.flat()
+      return chainIds.flatMap((chainId) =>
+        this.marketsFromFilter(filter, chainId, params.asset),
+      )
+    })
   }
 
   /**
@@ -269,91 +244,78 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     return filter as UniswapMarketFilter & { fee: number; tickSpacing: number }
   }
 
-  private async fetchMarketsForChain(
-    chainId: SupportedChainId,
-    asset?: Asset,
-  ): Promise<SwapMarket[]> {
-    const subgraphUrl = getSubgraphUrl(chainId)
-    if (!subgraphUrl) return []
-
-    const query = `
-      query GetPools($first: Int!, $skip: Int!, $where: Pool_filter) {
-        pools(first: $first, skip: $skip, where: $where, orderBy: totalValueLockedUSD, orderDirection: desc) {
-          id
-          token0 { id, symbol, decimals }
-          token1 { id, symbol, decimals }
-          feeTier
-          totalValueLockedUSD
-          volumeUSD
-        }
-      }
-    `
-
-    const where = asset
-      ? {
-          or: [
-            { token0_: { symbol: asset.metadata.symbol } },
-            { token1_: { symbol: asset.metadata.symbol } },
-          ],
-        }
-      : undefined
-
-    const response = await fetch(subgraphUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query,
-        variables: { first: 100, skip: 0, where },
-      }),
-    })
-
-    const data = (await response.json()) as { data: { pools: SubgraphPool[] } }
-    return data.data.pools.map((pool) =>
-      this.transformSubgraphMarket(pool, chainId),
+  /** Filters from allowlist that have required fee/tickSpacing */
+  private validFilters(): Array<
+    UniswapMarketFilter & {
+      fee: number
+      tickSpacing: number
+    }
+  > {
+    return (this._config.marketAllowlist ?? []).filter(
+      (f): f is UniswapMarketFilter & { fee: number; tickSpacing: number } =>
+        f.fee !== undefined && f.tickSpacing !== undefined,
     )
   }
 
-  private transformSubgraphMarket(
-    pool: SubgraphPool,
+  /** Generate all pair-based markets from a filter on a given chain */
+  private marketsFromFilter(
+    filter: UniswapMarketFilter & { fee: number; tickSpacing: number },
     chainId: SupportedChainId,
-  ): SwapMarket {
+    asset?: Asset,
+  ): SwapMarket[] {
+    return this.assetPairs(filter.assets, asset)
+      .map(([a, b]) =>
+        this.filterToMarket(a, b, chainId, filter.fee, filter.tickSpacing),
+      )
+      .filter((m): m is SwapMarket => m !== null)
+  }
+
+  /** Unique pairs from an asset list, optionally filtered to pairs containing a specific asset */
+  private assetPairs(
+    assets: Asset[],
+    filterAsset?: Asset,
+  ): Array<[Asset, Asset]> {
+    return assets
+      .flatMap((a, i) => assets.slice(i + 1).map((b): [Asset, Asset] => [a, b]))
+      .filter(
+        ([a, b]) => !filterAsset || a === filterAsset || b === filterAsset,
+      )
+  }
+
+  /** Build a SwapMarket from two assets + pool params. Returns null if assets lack addresses on this chain. */
+  private filterToMarket(
+    assetA: Asset,
+    assetB: Asset,
+    chainId: SupportedChainId,
+    fee: number,
+    tickSpacing: number,
+  ): SwapMarket | null {
+    const addrA = assetA.address[chainId]
+    const addrB = assetB.address[chainId]
+    if (!addrA || addrA === 'native' || !addrB || addrB === 'native')
+      return null
+
+    // Sort tokens for deterministic poolId (V4 requires currency0 < currency1)
+    const [currency0, currency1] =
+      addrA.toLowerCase() < addrB.toLowerCase()
+        ? [addrA, addrB]
+        : [addrB, addrA]
+
+    const poolId = keccak256(
+      encodeAbiParameters(POOL_KEY_ABI_TYPE, [
+        currency0 as Address,
+        currency1 as Address,
+        fee,
+        tickSpacing,
+        '0x0000000000000000000000000000000000000000' as Address,
+      ]),
+    )
+
     return {
-      marketId: {
-        poolId: pool.id,
-        chainId,
-      },
-      assets: [
-        this.tokenToAsset(pool.token0, chainId),
-        this.tokenToAsset(pool.token1, chainId),
-      ],
-      fee: Number(pool.feeTier),
-      tvl: BigInt(Math.floor(parseFloat(pool.totalValueLockedUSD) * 1e6)),
-      volume24h: BigInt(Math.floor(parseFloat(pool.volumeUSD) * 1e6)),
+      marketId: { poolId, chainId },
+      assets: [assetA, assetB],
+      fee,
       provider: 'uniswap',
     }
   }
-
-  private tokenToAsset(
-    token: { id: string; symbol: string; decimals: string },
-    chainId: SupportedChainId,
-  ): Asset {
-    return {
-      type: 'erc20',
-      address: { [chainId]: token.id as Address },
-      metadata: {
-        name: token.symbol,
-        symbol: token.symbol,
-        decimals: Number(token.decimals),
-      },
-    }
-  }
-}
-
-interface SubgraphPool {
-  id: string
-  token0: { id: string; symbol: string; decimals: string }
-  token1: { id: string; symbol: string; decimals: string }
-  feeTier: string
-  totalValueLockedUSD: string
-  volumeUSD: string
 }
