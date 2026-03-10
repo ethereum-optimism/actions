@@ -29,7 +29,7 @@ import {
 
 const DEFAULT_SLIPPAGE = 0.005
 const DEFAULT_DEADLINE_OFFSET = 60
-const MAX_SLIPPAGE = 0.5
+const DEFAULT_MAX_SLIPPAGE = 0.5
 
 /**
  * Abstract base class for swap providers.
@@ -68,7 +68,10 @@ export abstract class SwapProvider<
   ): Promise<SwapTransaction> {
     this.executeValidations(params)
     const resolvedParams = this.resolveParams(params)
-    validateSlippage(resolvedParams.slippage, MAX_SLIPPAGE)
+    validateSlippage(
+      resolvedParams.slippage,
+      this._config.maxSlippage ?? DEFAULT_MAX_SLIPPAGE,
+    )
     return this._execute(resolvedParams)
   }
 

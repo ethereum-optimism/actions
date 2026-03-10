@@ -27,6 +27,8 @@ export type SwapProviders = {
 export interface SwapProviderConfig {
   /** Default slippage tolerance (e.g., 0.005 for 0.5%) */
   defaultSlippage?: number
+  /** Maximum allowed slippage (e.g., 0.5 for 50%). Defaults to 0.5. */
+  maxSlippage?: number
   /** Allowlist of swap markets (optional - defaults to all supported assets) */
   marketAllowlist?: SwapMarketConfig[]
   /** Blocklist of swap markets to exclude */
