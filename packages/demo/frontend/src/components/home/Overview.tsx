@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { ScrollyProvider } from 'react-scrolly-telling'
 import { colors } from '@/constants/colors'
 import ScrollingStack from '@/components/home/ScrollingStack'
@@ -71,7 +72,7 @@ const receipt = wallet.borrow.openPosition({
     title: 'Swap',
     description:
       'Enable onchain trading between configurable protocols and assets.',
-    images: [{ src: '/uniswap-logo.svg', link: 'https://uniswap.org/' }],
+    images: [{ src: '/uniswap-logo-white.svg', link: 'https://uniswap.org/' }],
     imageLabel: 'Supports swap providers:',
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
@@ -147,6 +148,17 @@ interface OverviewProps {
 }
 
 function Overview({ onProgressUpdate }: OverviewProps) {
+  // Preload public-path images so they're cached before sections scroll into view
+  useEffect(() => {
+    content
+      .flatMap((item) => item.images?.map((img) => img.src) ?? [])
+      .filter((src) => src.startsWith('/'))
+      .forEach((src) => {
+        const img = new Image()
+        img.src = src
+      })
+  }, [])
+
   return (
     <ScrollyProvider>
       <div className="py-16">

@@ -726,8 +726,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         rel="noopener noreferrer"
                                         style={{
                                           flex:
-                                            imageCount === 2
-                                              ? '0 0 30%'
+                                            imageCount <= 2
+                                              ? '0 0 45%'
                                               : '1 1 0',
                                           minWidth: 0,
                                         }}
@@ -749,8 +749,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         key={index}
                                         style={{
                                           flex:
-                                            imageCount === 2
-                                              ? '0 0 30%'
+                                            imageCount <= 2
+                                              ? '0 0 45%'
                                               : '1 1 0',
                                           minWidth: 0,
                                         }}
@@ -970,8 +970,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         rel="noopener noreferrer"
                                         style={{
                                           flex:
-                                            imageCount === 2
-                                              ? '0 0 30%'
+                                            imageCount <= 2
+                                              ? '0 0 45%'
                                               : '1 1 0',
                                           minWidth: 0,
                                         }}
@@ -993,8 +993,8 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         key={index}
                                         style={{
                                           flex:
-                                            imageCount === 2
-                                              ? '0 0 30%'
+                                            imageCount <= 2
+                                              ? '0 0 45%'
                                               : '1 1 0',
                                           minWidth: 0,
                                         }}
