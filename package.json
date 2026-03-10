@@ -20,6 +20,7 @@
     "clean": "pnpm -r clean",
     "dev": "mprocs --config mprocs.yml",
     "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
     "release:publish": "pnpm install --frozen-lockfile && pnpm nx run-many --target=build && changeset publish",
     "release:version": "changeset version && pnpm install --lockfile-only",
     "release:version:snapshot": "changeset version --snapshot ${SNAPSHOT_NAME:-snapshot} && pnpm install --lockfile-only",
