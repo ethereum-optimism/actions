@@ -206,7 +206,7 @@ export abstract class SwapProvider<
     return list.find((config) => {
       if (config.chainId !== undefined && config.chainId !== chainId)
         return false
-      return this.configContainsPair(
+      return this.containsPairByAddress(
         addressIn,
         addressOut,
         chainId,
@@ -215,7 +215,7 @@ export abstract class SwapProvider<
     })
   }
 
-  private configContainsPair(
+  private containsPairByAddress(
     addressIn: string,
     addressOut: string,
     chainId: SupportedChainId,
