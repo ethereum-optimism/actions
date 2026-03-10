@@ -36,28 +36,27 @@ function isTransactionAction(action: string): boolean {
 export function ActivityLogProvider({
   children,
   walletProvider,
+  walletAddress,
 }: {
   children: ReactNode
   walletProvider?: string
+  walletAddress?: string | null
 }) {
-  // Key by provider only — walletAddress is unstable (null on first render)
-  const STORAGE_KEY = walletProvider
-    ? `activity-log-${walletProvider}`
-    : 'activity-log'
-  const NEXT_ID_KEY = walletProvider
-    ? `activity-log-next-id-${walletProvider}`
-    : 'activity-log-next-id'
+  // Stable key using wallet address when available, provider as fallback
+  const keyBase = walletAddress
+    ? `activity-log-${walletAddress}`
+    : walletProvider
+      ? `activity-log-${walletProvider}`
+      : 'activity-log'
+  const STORAGE_KEY = keyBase
+  const NEXT_ID_KEY = `${keyBase}-next-id`
 
   const [activities, setActivities] = useState<ActivityEntry[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored) as ActivityEntry[]
-        // Mark all loaded activities as from previous session
-        return parsed.map((activity) => ({
-          ...activity,
-          isFromPreviousSession: true,
-        }))
+        return parsed.map((a) => ({ ...a, isFromPreviousSession: true }))
       }
       return []
     } catch {
@@ -75,11 +74,33 @@ export function ActivityLogProvider({
     })(),
   )
   const activityKeysRef = useRef<Map<string, number>>(new Map())
+  const prevKeyRef = useRef(STORAGE_KEY)
 
-  // Sync transaction activities to localStorage whenever they change
+  // When wallet address changes (login/logout), reload from the new key
+  useEffect(() => {
+    if (STORAGE_KEY === prevKeyRef.current) return
+    prevKeyRef.current = STORAGE_KEY
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored) as ActivityEntry[]
+        setActivities(
+          parsed.map((a) => ({ ...a, isFromPreviousSession: true })),
+        )
+      } else {
+        setActivities([])
+      }
+      const storedId = localStorage.getItem(NEXT_ID_KEY)
+      nextIdRef.current = storedId ? parseInt(storedId, 10) : 1
+      activityKeysRef.current = new Map()
+    } catch {
+      setActivities([])
+    }
+  }, [STORAGE_KEY, NEXT_ID_KEY])
+
+  // Sync to localStorage on every change
   useEffect(() => {
     try {
-      // Persist confirmed transactions, not read-only queries
       const transactionActivities = activities.filter(
         (activity) =>
           activity.status === 'confirmed' &&

@@ -195,13 +195,29 @@ function LentBalance({
                       >
                         {(() => {
                           const { loading, amount } = getDisplayState(market)
-                          if (loading) return <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Shimmer width="60px" height="16px" variant="rectangle" /></div>
+                          if (loading)
+                            return (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'flex-end',
+                                }}
+                              >
+                                <Shimmer
+                                  width="60px"
+                                  height="16px"
+                                  variant="rectangle"
+                                />
+                              </div>
+                            )
                           const fmt = formatDepositedAmount(amount)
                           return (
                             <>
                               {market.asset.metadata.symbol !== 'ETH' && '$'}
                               {fmt.main}
-                              <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                              <span
+                                style={{ color: '#9195A6', fontSize: '12px' }}
+                              >
                                 {fmt.secondary}
                               </span>
                             </>
@@ -525,14 +541,35 @@ function LentBalance({
                             }}
                           >
                             {(() => {
-                              const { loading, amount } = getDisplayState(market)
-                              if (loading) return <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Shimmer width="60px" height="16px" variant="rectangle" /></div>
+                              const { loading, amount } =
+                                getDisplayState(market)
+                              if (loading)
+                                return (
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'flex-end',
+                                    }}
+                                  >
+                                    <Shimmer
+                                      width="60px"
+                                      height="16px"
+                                      variant="rectangle"
+                                    />
+                                  </div>
+                                )
                               const fmt = formatDepositedAmount(amount)
                               return (
                                 <>
-                                  {market.asset.metadata.symbol !== 'ETH' && '$'}
+                                  {market.asset.metadata.symbol !== 'ETH' &&
+                                    '$'}
                                   {fmt.main}
-                                  <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                                  <span
+                                    style={{
+                                      color: '#9195A6',
+                                      fontSize: '12px',
+                                    }}
+                                  >
                                     {fmt.secondary}
                                   </span>
                                 </>
