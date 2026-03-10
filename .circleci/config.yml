@@ -144,6 +144,9 @@ jobs:
       - run:
           name: Run Backend Tests
           command: cd packages/demo/backend && pnpm test
+      - run:
+          name: Run Contracts Build and Tests
+          command: cd packages/demo/contracts && pnpm build && pnpm test
 
   docker-build:
     environment:
