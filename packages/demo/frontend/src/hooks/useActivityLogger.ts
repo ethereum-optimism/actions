@@ -1,10 +1,14 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { useActivityLog } from './useActivityLog'
 import { ACTIVITY_CONFIG } from '../constants/activityLogConfigs'
+import type { ActivityMetadata } from '@/providers/ActivityLogProvider'
 
 export interface ActivityLogHandle {
   id: number
-  confirm: (data?: { blockExplorerUrl?: string }) => void
+  confirm: (data?: {
+    blockExplorerUrl?: string
+    metadata?: ActivityMetadata
+  }) => void
   error: () => void
 }
 
@@ -32,26 +36,40 @@ export interface ActivityLogHandle {
  */
 export function useActivityLogger() {
   const { addActivity, updateActivity } = useActivityLog()
+  const lastActionRef = useRef<{ action: string; id: number } | null>(null)
 
   /**
-   * Logs an activity by its action key
-   *
-   * @param action - The action key from ACTIVITY_CONFIG (e.g., 'mint', 'getBalance')
-   * @returns An activity handle with confirm() and error() methods, or null if config not found
+   * Logs an activity by its action key.
+   * Consecutive read-only actions of the same type reuse the existing log entry.
+   * A different action in between resets the dedup, creating a new entry.
    */
   const logActivity = useCallback(
-    (action: string): ActivityLogHandle | null => {
+    (action: string, metadata?: ActivityMetadata): ActivityLogHandle | null => {
       const config = ACTIVITY_CONFIG[action]
       if (!config) {
         console.warn(`No activity config found for action: ${action}`)
         return null
       }
 
-      const id = addActivity({
+      const entry = {
         type: config.type,
-        action: action,
-        status: 'pending',
-      })
+        action,
+        status: 'pending' as const,
+        metadata,
+      }
+
+      // Reuse the existing row only if it's the same read-only action consecutively
+      const canReuse =
+        config.isReadOnly && lastActionRef.current?.action === action
+
+      let id: number
+      if (canReuse) {
+        id = lastActionRef.current!.id
+        updateActivity(id, { ...entry, timestamp: new Date().toISOString() })
+      } else {
+        id = addActivity(entry)
+      }
+      lastActionRef.current = { action, id }
 
       return {
         id,
@@ -59,6 +77,7 @@ export function useActivityLogger() {
           updateActivity(id, {
             status: 'confirmed',
             blockExplorerUrl: data?.blockExplorerUrl,
+            ...(data?.metadata && { metadata: data.metadata }),
           })
         },
         error: () => {

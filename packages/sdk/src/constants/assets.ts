@@ -45,6 +45,7 @@ export const WETH: Asset = {
     [baseSepolia.id]: '0x4200000000000000000000000000000000000006',
     [unichain.id]: '0x4200000000000000000000000000000000000006',
     [unichainSepolia.id]: '0x4200000000000000000000000000000000000006',
+    [worldchain.id]: '0x4200000000000000000000000000000000000006',
   },
   metadata: {
     symbol: 'WETH',
@@ -90,6 +91,21 @@ export const USDC_DEMO: Asset = {
     symbol: 'USDC_DEMO',
     name: 'USDC',
     decimals: 6,
+  },
+  type: 'erc20',
+}
+
+/**
+ * Demo OP token for testing
+ */
+export const OP_DEMO: Asset = {
+  address: {
+    [baseSepolia.id]: '0xD6169405013E92387b78457Fa77d377cE8cD3EE8',
+  },
+  metadata: {
+    symbol: 'OP_DEMO',
+    name: 'OP',
+    decimals: 18,
   },
   type: 'erc20',
 }

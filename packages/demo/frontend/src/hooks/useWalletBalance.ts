@@ -17,6 +17,7 @@ import { useMintAsset } from '@/mutations/useMintAsset'
 import { useOpenPosition, useClosePosition } from '@/mutations/useLendPosition'
 import { matchAssetBalance } from '@/utils/balanceMatching'
 import { getBlockExplorerUrl, extractHashes } from '@/utils/blockExplorer'
+import { useQueryClient } from '@tanstack/react-query'
 
 export interface UseWalletBalanceConfig {
   getTokenBalances: () => Promise<TokenBalance[]>
@@ -49,11 +50,14 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     selectedMarketApy,
   } = params
 
+  const queryClient = useQueryClient()
   const { logActivity } = useActivityLogger()
 
-  // Track balance before operations to ensure we don't show stale data
+  // Track balance/position before operations to detect when data changes
   const balanceBeforeLend = useRef<string | null>(null)
   const balanceBeforeMint = useRef<string | null>(null)
+  const positionBeforeLend = useRef<string | null>(null)
+  const initialBalanceFetchDone = useRef(false)
 
   // Queries
   const {
@@ -64,9 +68,15 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     getTokenBalances: getTokenBalancesRaw,
     isReady,
     logActivity,
-    // Log balance fetch after mutations (when we're waiting for balance to change)
-    shouldLogFetch: () =>
-      balanceBeforeMint.current !== null || balanceBeforeLend.current !== null,
+    shouldLogFetch: () => {
+      if (!initialBalanceFetchDone.current) {
+        initialBalanceFetchDone.current = true
+        return true
+      }
+      return (
+        balanceBeforeMint.current !== null || balanceBeforeLend.current !== null
+      )
+    },
   })
 
   const {
@@ -76,7 +86,6 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
   } = useMarkets({
     getMarkets: getMarketsRaw,
     isReady,
-    logActivity,
   })
 
   const {
@@ -88,6 +97,7 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     getPosition: getPositionRaw,
     isReady,
     logActivity,
+    shouldLogFetch: () => positionBeforeLend.current !== null,
   })
 
   // Mutations
@@ -127,6 +137,7 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       assetAddress,
       asset: market.asset,
       apy: selectedMarketApy ?? market.apy.total,
+      name: market.name.toLowerCase().includes('aave') ? 'Aave' : 'Morpho',
     }
   }, [markets, selectedMarketId, selectedMarketApy])
 
@@ -141,7 +152,9 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     })
   }, [tokenBalances, marketData, selectedAsset])
 
-  // Reset mutation states and clear balance tracking when balance actually changes
+  const depositedAmount = position?.balanceFormatted ?? null
+
+  // Reset mutation states and clear tracking refs when data actually changes
   useEffect(() => {
     const lendBalanceChanged =
       balanceBeforeLend.current !== null &&
@@ -161,12 +174,20 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       }
     }
 
-    // Reset mint mutation only when balance has changed from pre-mint value
     if (!isFetchingBalances && mintBalanceChanged) {
       balanceBeforeMint.current = null
       if (mintAssetMutation.isSuccess) {
         mintAssetMutation.reset()
       }
+    }
+
+    // Clear tracking refs on mutation error so shimmer doesn't persist
+    if (openPositionMutation.isError || closePositionMutation.isError) {
+      balanceBeforeLend.current = null
+      positionBeforeLend.current = null
+    }
+    if (mintAssetMutation.isError) {
+      balanceBeforeMint.current = null
     }
   }, [
     isFetchingBalances,
@@ -176,10 +197,61 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     closePositionMutation,
   ])
 
+  // Clear position tracking ref when position data changes
+  useEffect(() => {
+    if (
+      positionBeforeLend.current !== null &&
+      !isFetchingPosition &&
+      depositedAmount !== positionBeforeLend.current
+    ) {
+      positionBeforeLend.current = null
+    }
+  }, [isFetchingPosition, depositedAmount])
+
+  // Conditional delayed refetch: only re-invalidate if data hasn't changed yet
+  useEffect(() => {
+    const needsBalanceRetry =
+      !isFetchingBalances &&
+      ((balanceBeforeLend.current !== null &&
+        assetBalance === balanceBeforeLend.current) ||
+        (balanceBeforeMint.current !== null &&
+          assetBalance === balanceBeforeMint.current))
+
+    const needsPositionRetry =
+      !isFetchingPosition &&
+      positionBeforeLend.current !== null &&
+      depositedAmount === positionBeforeLend.current
+
+    if (!needsBalanceRetry && !needsPositionRetry) return
+
+    const timer = setTimeout(() => {
+      if (needsBalanceRetry) {
+        queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+      }
+      if (needsPositionRetry && selectedMarketId) {
+        queryClient.invalidateQueries({
+          queryKey: [
+            'position',
+            selectedMarketId.address,
+            selectedMarketId.chainId,
+          ],
+        })
+      }
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [
+    isFetchingBalances,
+    isFetchingPosition,
+    assetBalance,
+    depositedAmount,
+    queryClient,
+    selectedMarketId,
+  ])
+
   // Handler functions
   const handleMintAsset = async () => {
     if (!selectedAsset) return
-    // Track balance before mint to ensure we show minting state until balance changes
     balanceBeforeMint.current = assetBalance
     await mintAssetMutation.mutateAsync({
       asset: selectedAsset,
@@ -194,13 +266,14 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
       throw new Error('Market data not available')
     }
 
-    // Track balance before transaction to ensure we show loading until it changes
     balanceBeforeLend.current = assetBalance
+    positionBeforeLend.current = depositedAmount
 
-    const params: LendExecutePositionParams = {
+    const params = {
       marketId: marketData.marketId,
       amount,
       asset: marketData.asset,
+      marketName: marketData.name,
     }
 
     const result =
@@ -248,11 +321,15 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     isWaitingForMintBalanceChange
 
   const isLoadingApy = isLoadingMarkets || isFetchingMarkets
+  const isWaitingForPositionChange =
+    positionBeforeLend.current !== null &&
+    depositedAmount === positionBeforeLend.current
+
   const isLoadingPositionState =
     isLoadingPosition ||
-    isFetchingPosition ||
     openPositionMutation.isPending ||
-    closePositionMutation.isPending
+    closePositionMutation.isPending ||
+    isWaitingForPositionChange
 
   // Track minting state: true while mint is in progress OR until balance changes
   const isMintingAsset =
@@ -267,7 +344,7 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     apy: marketData?.apy ?? null,
     isInitialLoad: isLoadingMarkets,
     isLoadingPosition: isLoadingPositionState,
-    depositedAmount: position?.balanceFormatted ?? null,
+    depositedAmount,
     handleTransaction,
   }
 }

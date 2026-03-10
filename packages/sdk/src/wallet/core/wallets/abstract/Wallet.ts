@@ -6,9 +6,11 @@ import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
+import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
-import type { TransactionData } from '@/types/lend/index.js'
+import type { TransactionData } from '@/types/transaction.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
@@ -26,6 +28,12 @@ export abstract class Wallet {
   protected lendProviders: {
     morpho?: LendProvider<LendProviderConfig>
     aave?: LendProvider<LendProviderConfig>
+  }
+  /** Swap namespace with all swap operations */
+  swap?: WalletSwapNamespace
+  /** Providers for swap operations */
+  protected swapProviders: {
+    uniswap?: SwapProvider<SwapProviderConfig>
   }
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
@@ -53,6 +61,7 @@ export abstract class Wallet {
    * Create a new wallet
    * @param chainManager - Chain manager for the wallet
    * @param lendProviders - Lend providers for the wallet
+   * @param swapProviders - Swap providers for the wallet
    * @param supportedAssets - List of supported assets (defaults to all SUPPORTED_TOKENS)
    */
   protected constructor(
@@ -61,13 +70,20 @@ export abstract class Wallet {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     },
+    swapProviders?: {
+      uniswap?: SwapProvider<SwapProviderConfig>
+    },
     supportedAssets?: Asset[],
   ) {
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
+    this.swapProviders = swapProviders || {}
     this.supportedAssets = supportedAssets || SUPPORTED_TOKENS
     if (this.lendProviders.morpho || this.lendProviders.aave) {
       this.lend = new WalletLendNamespace(this.lendProviders, this)
+    }
+    if (this.swapProviders.uniswap) {
+      this.swap = new WalletSwapNamespace(this.swapProviders, this)
     }
   }
 

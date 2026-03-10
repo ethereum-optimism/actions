@@ -2,7 +2,8 @@ import type { LocalAccount } from 'viem'
 
 import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
@@ -19,6 +20,9 @@ export class DynamicHostedWalletProvider extends HostedWalletProvider<
 > {
   /**
    * Create a new Dynamic wallet provider
+   * @param chainManager Chain manager for RPC, chain info, and transports
+   * @param lendProviders Optional lend providers for DeFi operations
+   * @param swapProviders Optional swap providers for trading operations
    */
   constructor(
     chainManager: ChainManager,
@@ -26,8 +30,11 @@ export class DynamicHostedWalletProvider extends HostedWalletProvider<
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     },
+    swapProviders?: {
+      uniswap?: SwapProvider<SwapProviderConfig>
+    },
   ) {
-    super(chainManager, lendProviders)
+    super(chainManager, lendProviders, swapProviders)
   }
 
   async toActionsWallet(
@@ -37,6 +44,7 @@ export class DynamicHostedWalletProvider extends HostedWalletProvider<
       dynamicWallet: params.wallet,
       chainManager: this.chainManager,
       lendProviders: this.lendProviders,
+      swapProviders: this.swapProviders,
     })
   }
 

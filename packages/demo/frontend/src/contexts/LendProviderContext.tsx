@@ -1,10 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import type { MarketPosition } from '@/types/market'
-import {
-  useLendProvider,
-  type LendProviderOperations,
-} from '@/hooks/useLendProvider'
+import { useLendProvider, type EarnOperations } from '@/hooks/useLendProvider'
 
 interface LendProviderContextValue {
   // Market data
@@ -33,7 +30,7 @@ const LendProviderContext = createContext<LendProviderContextValue | null>(null)
 
 interface LendProviderContextProviderProps {
   children: ReactNode
-  operations: LendProviderOperations
+  operations: EarnOperations
   ready: boolean
   logPrefix?: string
 }

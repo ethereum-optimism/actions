@@ -499,7 +499,6 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -551,7 +550,6 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -636,7 +634,6 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -696,7 +693,6 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
               wallet: {
                 hostedWalletConfig: {
                   provider: {

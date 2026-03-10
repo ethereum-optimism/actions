@@ -80,6 +80,12 @@ module.exports = {
     'jsdoc/check-indentation': 'error',
     'jsdoc/tag-lines': 'error',
 
+    // Enforce @/ path aliases over relative imports
+    'no-restricted-imports': [
+      'warn',
+      { patterns: [{ group: ['../*'], message: 'Use @/ path alias instead of relative imports.' }] },
+    ],
+
     // General rules
     'no-console': 'warn',
     'prefer-const': 'error',

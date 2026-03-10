@@ -7,16 +7,52 @@ import Shimmer from './Shimmer'
 interface LentBalanceProps {
   marketPositions: MarketPosition[]
   isInitialLoad?: boolean
+  isLoadingPosition?: boolean
+  currentDepositedAmount?: string | null
+  selectedMarketId?: { address: string; chainId: number }
+  getInterest?: (
+    marketId: { address: string; chainId: number },
+    currentOnChainBalance: string,
+  ) => number
 }
 
 function LentBalance({
   marketPositions,
   isInitialLoad = false,
+  isLoadingPosition = false,
+  currentDepositedAmount,
+  selectedMarketId,
+  getInterest,
 }: LentBalanceProps) {
   const { hoveredAction } = useActivityHighlight()
   const [showApyTooltip, setShowApyTooltip] = useState(false)
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
   const apyRef = useRef<HTMLDivElement>(null)
+
+  const isSelectedMarket = (market: MarketPosition): boolean =>
+    !!selectedMarketId &&
+    market.marketId.address.toLowerCase() ===
+      selectedMarketId.address.toLowerCase() &&
+    market.marketId.chainId === selectedMarketId.chainId
+
+  // For the selected market, always use the authoritative value from the position query.
+  // Show shimmer only while isLoadingPosition is true.
+  // This avoids stale flashes because both values come from the same source (useWalletBalance).
+  const getDisplayState = (
+    market: MarketPosition,
+  ): { loading: boolean; amount: string } => {
+    if (!isSelectedMarket(market)) {
+      return { loading: false, amount: market.depositedAmount || '0' }
+    }
+    if (isLoadingPosition) {
+      return { loading: true, amount: '0' }
+    }
+    // Always prefer the position query value over the potentially stale marketPositions value
+    return {
+      loading: false,
+      amount: currentDepositedAmount ?? market.depositedAmount ?? '0',
+    }
+  }
 
   // Filter to only show markets with deposits > 0 and sort alphabetically by asset symbol
   const marketsWithDeposits = marketPositions
@@ -60,14 +96,20 @@ function LentBalance({
     }
   }
 
+  const isCardHighlighted =
+    hoveredAction === 'getMarket' || hoveredAction === 'getPosition'
+
   return (
     <>
       <div
-        className="w-full"
+        className="w-full transition-all"
         style={{
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E0E2EB',
+          backgroundColor: isCardHighlighted
+            ? colors.highlight.background
+            : '#FFFFFF',
+          border: `1px solid ${isCardHighlighted ? colors.highlight.border : '#E0E2EB'}`,
           borderRadius: '24px',
+          boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
         }}
       >
@@ -151,17 +193,36 @@ function LentBalance({
                               : 'transparent',
                         }}
                       >
-                        {market.asset.metadata.symbol !== 'ETH' && '$'}
-                        {
-                          formatDepositedAmount(market.depositedAmount || '0')
-                            .main
-                        }
-                        <span style={{ color: '#9195A6', fontSize: '12px' }}>
-                          {
-                            formatDepositedAmount(market.depositedAmount || '0')
-                              .secondary
-                          }
-                        </span>
+                        {(() => {
+                          const { loading, amount } = getDisplayState(market)
+                          if (loading)
+                            return (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'flex-end',
+                                }}
+                              >
+                                <Shimmer
+                                  width="60px"
+                                  height="16px"
+                                  variant="rectangle"
+                                />
+                              </div>
+                            )
+                          const fmt = formatDepositedAmount(amount)
+                          return (
+                            <>
+                              {market.asset.metadata.symbol !== 'ETH' && '$'}
+                              {fmt.main}
+                              <span
+                                style={{ color: '#9195A6', fontSize: '12px' }}
+                              >
+                                {fmt.secondary}
+                              </span>
+                            </>
+                          )
+                        })()}
                       </span>
                     </div>
                     {/* Row 2: Market · Network */}
@@ -290,10 +351,23 @@ function LentBalance({
                           fontSize: '12px',
                           fontWeight: 500,
                           fontFamily: 'Inter',
+                          minWidth: '80px',
+                        }}
+                      >
+                        Interest
+                      </th>
+                      <th
+                        style={{
+                          textAlign: 'right',
+                          padding: '12px 8px',
+                          color: '#9195A6',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          fontFamily: 'Inter',
                           minWidth: '100px',
                         }}
                       >
-                        Amount
+                        Value
                       </th>
                     </tr>
                   </thead>
@@ -426,6 +500,38 @@ function LentBalance({
                                 : 'transparent',
                           }}
                         >
+                          {(() => {
+                            const interest = getInterest
+                              ? getInterest(
+                                  market.marketId,
+                                  market.depositedAmount || '0',
+                                )
+                              : 0
+                            return (
+                              <span
+                                style={{
+                                  color: '#22C55E',
+                                  fontSize: '14px',
+                                  fontWeight: 500,
+                                  fontFamily: 'Inter',
+                                }}
+                              >
+                                +{interest.toFixed(3)}
+                              </span>
+                            )
+                          })()}
+                        </td>
+                        <td
+                          className="transition-all"
+                          style={{
+                            padding: '16px 8px',
+                            textAlign: 'right',
+                            backgroundColor:
+                              hoveredAction === 'getPosition'
+                                ? colors.highlight.background
+                                : 'transparent',
+                          }}
+                        >
                           <span
                             style={{
                               color: '#1a1b1e',
@@ -434,24 +540,41 @@ function LentBalance({
                               fontFamily: 'Inter',
                             }}
                           >
-                            {market.asset.metadata.symbol !== 'ETH' && '$'}
-                            {
-                              formatDepositedAmount(
-                                market.depositedAmount || '0',
-                              ).main
-                            }
-                            <span
-                              style={{
-                                color: '#9195A6',
-                                fontSize: '12px',
-                              }}
-                            >
-                              {
-                                formatDepositedAmount(
-                                  market.depositedAmount || '0',
-                                ).secondary
-                              }
-                            </span>
+                            {(() => {
+                              const { loading, amount } =
+                                getDisplayState(market)
+                              if (loading)
+                                return (
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'flex-end',
+                                    }}
+                                  >
+                                    <Shimmer
+                                      width="60px"
+                                      height="16px"
+                                      variant="rectangle"
+                                    />
+                                  </div>
+                                )
+                              const fmt = formatDepositedAmount(amount)
+                              return (
+                                <>
+                                  {market.asset.metadata.symbol !== 'ETH' &&
+                                    '$'}
+                                  {fmt.main}
+                                  <span
+                                    style={{
+                                      color: '#9195A6',
+                                      fontSize: '12px',
+                                    }}
+                                  >
+                                    {fmt.secondary}
+                                  </span>
+                                </>
+                              )
+                            })()}
                           </span>
                         </td>
                       </tr>

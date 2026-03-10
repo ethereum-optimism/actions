@@ -3,12 +3,22 @@ import type { LendTransactionReceipt } from '@eth-optimism/actions-sdk'
 import type { LendExecutePositionParams } from '@/types/api'
 import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 
+interface LendMutationParams extends LendExecutePositionParams {
+  marketName?: string
+}
+
 interface UseOpenPositionParams {
   openPosition: (
     params: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
-  logActivity?: (action: string) => {
-    confirm: (data?: { blockExplorerUrl?: string }) => void
+  logActivity?: (
+    action: string,
+    metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
+  ) => {
+    confirm: (data?: {
+      blockExplorerUrl?: string
+      metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata
+    }) => void
     error: () => void
   } | null
 }
@@ -17,8 +27,14 @@ interface UseClosePositionParams {
   closePosition: (
     params: LendExecutePositionParams,
   ) => Promise<LendTransactionReceipt>
-  logActivity?: (action: string) => {
-    confirm: (data?: { blockExplorerUrl?: string }) => void
+  logActivity?: (
+    action: string,
+    metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
+  ) => {
+    confirm: (data?: {
+      blockExplorerUrl?: string
+      metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata
+    }) => void
     error: () => void
   } | null
 }
@@ -30,8 +46,13 @@ export function useOpenPosition({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (params: LendExecutePositionParams) => {
-      const activity = logActivity?.('deposit')
+    mutationFn: async (params: LendMutationParams) => {
+      const activity = logActivity?.('deposit', {
+        amount: params.amount.toString(),
+        assetSymbol: params.asset.metadata.symbol,
+        marketName: params.marketName,
+        chainId: params.marketId.chainId,
+      })
       try {
         const result = await openPosition(params)
 
@@ -62,7 +83,7 @@ export function useOpenPosition({
         ],
       })
 
-      // Delayed refetch in case chain indexing is slow
+      // Retry in case RPC returns stale state right after the transaction
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
         queryClient.invalidateQueries({
@@ -84,8 +105,13 @@ export function useClosePosition({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (params: LendExecutePositionParams) => {
-      const activity = logActivity?.('withdraw')
+    mutationFn: async (params: LendMutationParams) => {
+      const activity = logActivity?.('withdraw', {
+        amount: params.amount.toString(),
+        assetSymbol: params.asset.metadata.symbol,
+        marketName: params.marketName,
+        chainId: params.marketId.chainId,
+      })
       try {
         const result = await closePosition(params)
 
@@ -110,7 +136,7 @@ export function useClosePosition({
         ],
       })
 
-      // Delayed refetch in case chain indexing is slow
+      // Retry in case RPC returns stale state right after the transaction
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
         queryClient.invalidateQueries({

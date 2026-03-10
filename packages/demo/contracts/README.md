@@ -75,23 +75,44 @@ forge script script/ImpersonateFund.s.sol \
   --sender 0x5752e57DcfA070e3822d69498185B706c293C792
 ```
 
+### DeployDemoTokens.s.sol
+
+Standalone token deployment script. Deploys `DemoUSDC` and `DemoOP` tokens independently. Used by the orchestrator or for manual token-only deploys.
+
+```bash
+forge script script/DeployDemoTokens.s.sol:DeployDemoTokens \
+  --rpc-url https://sepolia.base.org \
+  --broadcast \
+  --private-key <your_private_key>
+```
+
 ### DeployMorphoMarket.s.sol
 
 Forge deployment script that creates a complete Morpho lending market for demo purposes. Uses MetaMorpho V1.1 factory for instant single-transaction deployment.
 
 **What it creates:**
 
-- `DemoUSDC` - Mintable ERC20 loan token (6 decimals)
-- `DemoOP` - Mintable ERC20 collateral token (18 decimals)
+- `DemoUSDC` - Mintable ERC20 loan token (6 decimals) _(or reuses existing via env var)_
+- `DemoOP` - Mintable ERC20 collateral token (18 decimals) _(or reuses existing via env var)_
 - `FixedPriceOracle` - Returns 1:1 price (1 USDC per 1 OP)
 - Morpho Blue market with 94.5% LLTV
 - MetaMorpho V1.1 vault ("Actions Demo USDC Vault" / "dUSDC")
 - Yield-generating borrow position (99.9% utilization)
 
-**Deploy to Base Sepolia:**
+**Deploy to Base Sepolia (standalone):**
 
 ```bash
 forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
+  --rpc-url https://sepolia.base.org \
+  --broadcast \
+  --private-key <your_private_key>
+```
+
+**Deploy with existing tokens:**
+
+```bash
+DEMO_USDC_ADDRESS=0x... DEMO_OP_ADDRESS=0x... \
+  forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
   --rpc-url https://sepolia.base.org \
   --broadcast \
   --private-key <your_private_key>
@@ -111,11 +132,53 @@ Update these config files with the new addresses:
 **How Yield Works:**
 The script creates a borrow position at 99.9% utilization. Interest accrues to vault depositors in real-time. The APY adapts over time based on sustained utilization.
 
+### DeployUniswapMarket.s.sol
+
+Deploys a Uniswap V4 pool for DemoUSDC/DemoOP with full-range liquidity. Requires token addresses via environment variables.
+
+**What it creates:**
+
+- Uniswap V4 pool (0.05% fee, tick spacing 10)
+- Full-range liquidity position (100k USDC + 100k OP)
+- 1:1 initial price (1 OP = 1 USDC, adjusted for decimal difference)
+
+**Deploy to Base Sepolia:**
+
+```bash
+DEMO_USDC_ADDRESS=0x... DEMO_OP_ADDRESS=0x... \
+  forge script script/DeployUniswapMarket.s.sol:DeployUniswapMarket \
+  --rpc-url https://sepolia.base.org \
+  --broadcast \
+  --private-key <your_private_key>
+```
+
+### deploy-demo.sh (Orchestrator)
+
+Shell script that runs all deployments in order, tracking state in `state/deployments.json`. Idempotent — skips steps that are already complete.
+
+**Flow:** Deploy tokens → Deploy Morpho market → Deploy Uniswap pool
+
+```bash
+pnpm deploy:demo -- --rpc-url https://sepolia.base.org --private-key <your_private_key>
+```
+
+**State tracking:** Deployment addresses are stored in `state/deployments.json` keyed by chain ID. The file is committed to the repo so the team shares one set of demo contracts.
+
+**Multi-network:** The state file supports multiple chain IDs. Pass a different `--rpc-url` to target other networks.
+
 ---
 
 ## Quick Start Scripts
 
 For convenience, the following npm scripts are available:
+
+### `pnpm deploy:demo`
+
+Deploys the full demo infrastructure (tokens, Morpho market, Uniswap pool) to Base Sepolia. Idempotent — skips steps already recorded in `state/deployments.json`.
+
+```bash
+pnpm deploy:demo -- --rpc-url https://sepolia.base.org --private-key <your_private_key>
+```
 
 ### `pnpm deploy:faucet:supersim`
 
