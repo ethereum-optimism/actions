@@ -8,7 +8,7 @@ export const SYMBOL_LOGO: Record<string, string> = {
 
 export const MARKET_LOGO: Record<string, string> = {
   Morpho: '/morpho-logo.svg',
-  Aave: '/aave-logo.svg',
+  Aave: '/aave-logo-dark.svg',
   Uniswap: '/uniswap-logo.svg',
 }
 

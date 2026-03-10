@@ -303,6 +303,7 @@ function LendTab({
     isMintingAsset,
     depositedAmount,
     isInitialLoad,
+    isLoadingPosition,
     handleMintAsset,
   } = useLendProviderContext()
 
@@ -353,6 +354,9 @@ function LendTab({
       <LentBalance
         marketPositions={marketPositions}
         isInitialLoad={isInitialLoad}
+        isLoadingPosition={isLoadingPosition}
+        currentDepositedAmount={depositedAmount}
+        selectedMarketId={selectedMarket?.marketId}
         getInterest={getInterest}
       />
     </>

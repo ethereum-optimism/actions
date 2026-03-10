@@ -180,6 +180,15 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
         mintAssetMutation.reset()
       }
     }
+
+    // Clear tracking refs on mutation error so shimmer doesn't persist
+    if (openPositionMutation.isError || closePositionMutation.isError) {
+      balanceBeforeLend.current = null
+      positionBeforeLend.current = null
+    }
+    if (mintAssetMutation.isError) {
+      balanceBeforeMint.current = null
+    }
   }, [
     isFetchingBalances,
     assetBalance,
@@ -312,11 +321,15 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     isWaitingForMintBalanceChange
 
   const isLoadingApy = isLoadingMarkets || isFetchingMarkets
+  const isWaitingForPositionChange =
+    positionBeforeLend.current !== null &&
+    depositedAmount === positionBeforeLend.current
+
   const isLoadingPositionState =
     isLoadingPosition ||
-    isFetchingPosition ||
     openPositionMutation.isPending ||
-    closePositionMutation.isPending
+    closePositionMutation.isPending ||
+    isWaitingForPositionChange
 
   // Track minting state: true while mint is in progress OR until balance changes
   const isMintingAsset =
