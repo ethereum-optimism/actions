@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useQueryClient, useQuery, skipToken } from '@tanstack/react-query'
-import type {
-  Asset,
-  SupportedChainId,
-  TokenBalance,
-} from '@eth-optimism/actions-sdk/react'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
+import type { Asset, SupportedChainId } from '@eth-optimism/actions-sdk/react'
 
+import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { useTotalBalance } from '@/hooks/useTotalBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
@@ -22,11 +19,13 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
   const queryClient = useQueryClient()
   const { logActivity } = useActivityLogger()
 
-  // Passive subscriber — reads balances from cache populated by the lend path
+  // Read-only subscriber to tokenBalances cache (managed by lend path's useTokenBalances).
+  // enabled:false means this never triggers fetches — it only receives cache updates.
   const { data: walletTokenBalances } = useQuery<TokenBalance[]>({
     queryKey: ['tokenBalances'],
-    queryFn: skipToken,
+    enabled: false,
   })
+  const isLoadingBalances = !walletTokenBalances
 
   const handleGetPrice = useCallback(
     async ({
@@ -64,7 +63,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
     marketAllowlist: [USDC_DEMO, OP_DEMO],
   })
 
-  // Refetch swap assets when switching to swap tab or when balances change
+  // Fetch configured assets when switching to swap tab
   useEffect(() => {
     if (activeTab === 'swap') {
       refetchSwapAssets()
@@ -95,13 +94,16 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
         const activity = logActivity('getBalance')
         await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
         activity?.confirm()
-        refetchSwapAssets()
+        // Retry shortly after in case RPC returned stale balance
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+        }, 1000)
         return result
       } finally {
         setIsSwapping(false)
       }
     },
-    [isSwapping, operations, logActivity, queryClient, refetchSwapAssets],
+    [isSwapping, operations, logActivity, queryClient],
   )
 
   const {
@@ -121,6 +123,6 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
     handleGetPrice,
     tokenBalances,
     totalUsd,
-    isLoadingTotalBalance,
+    isLoadingTotalBalance: isLoadingTotalBalance || isLoadingBalances,
   }
 }

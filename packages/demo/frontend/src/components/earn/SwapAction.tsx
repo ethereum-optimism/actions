@@ -268,13 +268,23 @@ export function SwapAction({
   // Only depend on the amount the user is actively editing to avoid re-fetch loops
   const activeAmount = editDirection === 'in' ? amountIn : amountOut
 
-  // Fetch price when amount changes (bidirectional)
+  // Stable identity for price fetch dependencies — avoid re-fetching when balance changes
+  const tokenInAddress = assetIn?.asset.address[assetIn?.chainId] as
+    | Address
+    | undefined
+  const tokenOutAddress = assetOut?.asset.address[assetOut?.chainId] as
+    | Address
+    | undefined
+  const chainId = assetIn?.chainId
+
+  // Fetch price when amount or asset selection changes (not on balance updates)
   useEffect(() => {
     if (
       !activeAmount ||
       parseFloat(activeAmount) <= 0 ||
-      !assetIn ||
-      !assetOut
+      !tokenInAddress ||
+      !tokenOutAddress ||
+      !chainId
     ) {
       setPriceQuote(null)
       return
@@ -285,9 +295,9 @@ export function SwapAction({
       const activity = onLogActivity?.('getPrice')
       try {
         const quote = await onGetPrice({
-          tokenInAddress: assetIn.asset.address[assetIn.chainId] as Address,
-          tokenOutAddress: assetOut.asset.address[assetOut.chainId] as Address,
-          chainId: assetIn.chainId,
+          tokenInAddress,
+          tokenOutAddress,
+          chainId,
           ...(editDirection === 'in'
             ? { amountIn: parseFloat(activeAmount) }
             : { amountOut: parseFloat(activeAmount) }),
@@ -311,7 +321,15 @@ export function SwapAction({
 
     const debounce = setTimeout(fetchPrice, 500)
     return () => clearTimeout(debounce)
-  }, [activeAmount, editDirection, assetIn, assetOut, onGetPrice])
+  }, [
+    activeAmount,
+    editDirection,
+    tokenInAddress,
+    tokenOutAddress,
+    chainId,
+    onGetPrice,
+    onLogActivity,
+  ])
 
   const handleFlipAssets = () => {
     setAssetInIndex(assetOutIndex)

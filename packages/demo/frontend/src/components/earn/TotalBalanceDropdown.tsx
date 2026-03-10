@@ -3,6 +3,7 @@ import type { TokenBalanceRow } from '@/hooks/useTotalBalance'
 import { formatUsd } from '@/utils/tokenDisplay'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
+import Shimmer from './Shimmer'
 
 const WALLET_ACTIONS = new Set(['getBalance', 'create', 'createHosted', 'send'])
 
@@ -113,20 +114,30 @@ export function TotalBalanceDropdown({
         }}
       >
         <div style={{ textAlign: 'left', flex: 1 }}>
-          <div
-            style={{ fontSize: '11px', color: '#9195A6', lineHeight: '14px' }}
-          >
-            Total Balance
-          </div>
-          <div
-            style={{
-              fontSize: '14px',
-              color: '#1a1b1e',
-              lineHeight: '18px',
-            }}
-          >
-            {isLoading ? '...' : safeFormatUsd(totalUsd)}
-          </div>
+          {isLoading ? (
+            <Shimmer width="90px" height="32px" variant="rectangle" />
+          ) : (
+            <>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: '#9195A6',
+                  lineHeight: '14px',
+                }}
+              >
+                Total Balance
+              </div>
+              <div
+                style={{
+                  fontSize: '14px',
+                  color: '#1a1b1e',
+                  lineHeight: '18px',
+                }}
+              >
+                {safeFormatUsd(totalUsd)}
+              </div>
+            </>
+          )}
         </div>
         <svg
           width="16"

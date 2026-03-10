@@ -82,6 +82,18 @@ export function useOpenPosition({
           variables.marketId.chainId,
         ],
       })
+
+      // Retry in case RPC returns stale state right after the transaction
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+        queryClient.invalidateQueries({
+          queryKey: [
+            'position',
+            variables.marketId.address,
+            variables.marketId.chainId,
+          ],
+        })
+      }, 2000)
     },
   })
 }
@@ -123,6 +135,18 @@ export function useClosePosition({
           variables.marketId.chainId,
         ],
       })
+
+      // Retry in case RPC returns stale state right after the transaction
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+        queryClient.invalidateQueries({
+          queryKey: [
+            'position',
+            variables.marketId.address,
+            variables.marketId.chainId,
+          ],
+        })
+      }, 2000)
     },
   })
 }
