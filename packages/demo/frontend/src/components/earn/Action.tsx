@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import TransactionModal from './TransactionModal'
 import { Toast } from './Toast'
-import Shimmer from './Shimmer'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
 import { isEthSymbol } from '@/utils/assetUtils'
-import { CtaButton, MaxButton } from './CtaButton'
+import { CtaButton } from './CtaButton'
+import { ModeToggle } from './ModeToggle'
+import { AmountLabel } from './AmountLabel'
+import { AmountInput } from './AmountInput'
+import { IlliquidMarketNotice } from './IlliquidMarketNotice'
 
 function floorToFixed(value: number, decimals: number): string {
   const factor = 10 ** decimals
@@ -61,210 +64,6 @@ function getCtaText(
   if (isMintingAsset) return 'Minting...'
   if (needsMint) return `Get ${displaySymbol}`
   return mode === 'lend' ? `Lend ${displaySymbol}` : `Withdraw ${displaySymbol}`
-}
-
-function ModeToggle({
-  mode,
-  onModeChange,
-}: {
-  mode: 'lend' | 'withdraw'
-  onModeChange: (mode: 'lend' | 'withdraw') => void
-}) {
-  return (
-    <div
-      style={{
-        position: 'relative',
-        display: 'flex',
-        width: '100%',
-        backgroundColor: '#F5F5F7',
-        borderRadius: '10px',
-        padding: '3px',
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          top: '3px',
-          bottom: '3px',
-          left: mode === 'lend' ? '3px' : '50%',
-          width: 'calc(50% - 3px)',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-          transition: 'left 200ms ease-in-out',
-        }}
-      />
-      {(['lend', 'withdraw'] as const).map((m) => (
-        <button
-          key={m}
-          onClick={() => onModeChange(m)}
-          style={{
-            flex: 1,
-            position: 'relative',
-            padding: '10px 32px',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '15px',
-            fontWeight: 500,
-            fontFamily: 'Inter',
-            cursor: 'pointer',
-            backgroundColor: 'transparent',
-            color: mode === m ? '#000' : '#666',
-            transition: 'color 200ms ease-in-out',
-          }}
-        >
-          {m === 'lend' ? 'Lend' : 'Withdraw'}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function AmountLabel({
-  mode,
-  isLoadingBalance,
-  isLockedWithdrawAmount,
-  assetBalance,
-  depositedAmount,
-  displaySymbol,
-  displayPrecision,
-  onMaxClick,
-}: {
-  mode: 'lend' | 'withdraw'
-  isLoadingBalance: boolean
-  isLockedWithdrawAmount: boolean
-  assetBalance: string
-  depositedAmount: string | null
-  displaySymbol: string
-  displayPrecision: number
-  onMaxClick: () => void
-}) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '8px',
-      }}
-    >
-      <label
-        style={{
-          color: '#0F111A',
-          fontSize: '16px',
-          fontWeight: 600,
-          display: 'block',
-        }}
-      >
-        {mode === 'lend' ? 'Amount to lend' : 'Amount to withdraw'}
-      </label>
-      {!isLockedWithdrawAmount && (
-        <div className="flex items-center gap-1">
-          {isLoadingBalance ? (
-            <Shimmer width="80px" height="16px" variant="rectangle" />
-          ) : (
-            <>
-              <span style={{ color: '#9195A6', fontSize: '14px' }}>
-                {mode === 'lend'
-                  ? `${floorToFixed(parseFloat(assetBalance), displayPrecision)} ${displaySymbol}`
-                  : `${floorToFixed(parseFloat(depositedAmount || '0'), displayPrecision)} ${displaySymbol}`}
-              </span>
-              <MaxButton onClick={onMaxClick} />
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function AmountInput({
-  value,
-  onChange,
-  disabled,
-  displaySymbol,
-}: {
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  disabled: boolean
-  displaySymbol: string
-}) {
-  return (
-    <div
-      style={{
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        border: '1px solid #E0E2EB',
-        borderRadius: '12px',
-        padding: '12px 16px',
-        backgroundColor: '#FFFFFF',
-      }}
-    >
-      <input
-        type="text"
-        placeholder="0"
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        style={{
-          flex: 1,
-          border: 'none',
-          outline: 'none',
-          fontSize: '16px',
-          color: disabled ? '#9195A6' : '#000',
-          backgroundColor: 'transparent',
-          fontFamily: 'Inter',
-          cursor: disabled ? 'not-allowed' : 'text',
-        }}
-      />
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          paddingLeft: '12px',
-          borderLeft: '1px solid #E0E2EB',
-        }}
-      >
-        <span
-          style={{
-            color: '#9195A6',
-            fontSize: '14px',
-            fontWeight: 600,
-            fontFamily: 'Inter',
-          }}
-        >
-          {displaySymbol}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function IlliquidMarketNotice({ maxWithdraw }: { maxWithdraw: number }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '12px 16px',
-        backgroundColor: '#EFF6FF',
-        border: '1px solid #BFDBFE',
-        borderRadius: '8px',
-        fontSize: '14px',
-        color: '#1E40AF',
-        fontWeight: 500,
-      }}
-    >
-      <span style={{ fontSize: '16px' }}>ℹ️</span>
-      <span>
-        For the purposes of this demo, this testnet market only allows{' '}
-        {maxWithdraw} withdrawals.
-      </span>
-    </div>
-  )
 }
 
 export function Action({
