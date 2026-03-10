@@ -1,5 +1,11 @@
 # @eth-optimism/actions-sdk
 
+## 0.3.0
+
+### Minor Changes
+
+- [#284](https://github.com/ethereum-optimism/actions/pull/284) [`93a0250`](https://github.com/ethereum-optimism/actions/commit/93a02502e2c5bfc905eaafdf5fbf5ecfe11ee923) Thanks [@its-everdred](https://github.com/its-everdred)! - Adds support for swapping with Uniswap
+
 ## 0.2.0
 
 ### Minor Changes
