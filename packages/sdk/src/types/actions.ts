@@ -8,25 +8,28 @@ import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js
 // Re-export provider configs for convenience
 export type { LendProviderConfig, SwapProviderConfig }
 
+/** Require at least one property to be defined */
+type RequireAtLeastOne<T> = {
+  [K in keyof T]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<keyof T, K>>>
+}[keyof T]
+
 /**
- * Lending configuration
- * @description Configuration for all lending providers
+ * Lending configuration — at least one provider must be configured
  */
-export interface LendConfig {
+export type LendConfig = RequireAtLeastOne<{
   /** Morpho lending provider configuration */
   morpho?: LendProviderConfig
   /** Aave lending provider configuration */
   aave?: LendProviderConfig
-}
+}>
 
 /**
- * Swap configuration
- * @description Configuration for all swap providers
+ * Swap configuration — at least one provider must be configured
  */
-export interface SwapConfig {
+export type SwapConfig = RequireAtLeastOne<{
   /** Uniswap swap provider configuration */
   uniswap?: UniswapSwapProviderConfig
-}
+}>
 
 /**
  * Network configuration for lending providers
