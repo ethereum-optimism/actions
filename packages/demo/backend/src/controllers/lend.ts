@@ -8,12 +8,17 @@ import { validateRequest } from '@/helpers/validation.js'
 import * as lendService from '@/services/lend.js'
 import { serializeBigInt } from '@/utils/serializers.js'
 
+const tokenAddressSchema = z
+  .string()
+  .refine(
+    (val) => val === 'native' || /^0x[a-fA-F0-9]{40}$/.test(val),
+    'Must be a hex address or "native"',
+  )
+
 const OpenPositionRequestSchema = z.object({
   body: z.object({
     amount: z.number().positive('amount must be positive'),
-    tokenAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
+    tokenAddress: tokenAddressSchema,
     marketId: z.object({
       address: z
         .string()
@@ -26,9 +31,7 @@ const OpenPositionRequestSchema = z.object({
 const ClosePositionRequestSchema = z.object({
   body: z.object({
     amount: z.number().positive('amount must be positive'),
-    tokenAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
+    tokenAddress: tokenAddressSchema,
     marketId: z.object({
       address: z
         .string()

@@ -7,7 +7,7 @@ import type { Address } from 'viem'
  * @throws if the token address is not found for the given chain
  */
 export function resolveAsset(
-  tokenAddress: Address,
+  tokenAddress: Address | 'native',
   chainId: SupportedChainId,
 ): Asset {
   const asset = SUPPORTED_TOKENS.find(
