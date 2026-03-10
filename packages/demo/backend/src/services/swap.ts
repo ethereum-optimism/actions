@@ -6,10 +6,10 @@ import type {
 } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 
-import { getActions } from '../config/actions.js'
-import { resolveAsset } from '../utils/assets.js'
-import { getBlockExplorerUrls } from '../utils/explorers.js'
-import { getWallet } from './wallet.js'
+import { getActions } from '@/config/actions.js'
+import { resolveAsset } from '@/utils/assets.js'
+import { getBlockExplorerUrls } from '@/utils/explorers.js'
+import { getWallet } from '@/services/wallet.js'
 
 export interface SwapParams {
   idToken: string

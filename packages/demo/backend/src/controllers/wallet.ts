@@ -5,10 +5,10 @@ import { z } from 'zod'
 
 import type { GetWalletResponse } from '@/types/service.js'
 
-import { errorResponse, requireAuth } from '../helpers/errors.js'
-import { validateRequest } from '../helpers/validation.js'
-import * as faucetService from '../services/faucet.js'
-import * as walletService from '../services/wallet.js'
+import { errorResponse, requireAuth } from '@/helpers/errors.js'
+import { validateRequest } from '@/helpers/validation.js'
+import * as faucetService from '@/services/faucet.js'
+import * as walletService from '@/services/wallet.js'
 
 const LendPositionRequestSchema = z.object({
   params: z.object({
