@@ -7,9 +7,9 @@ import type {
 import type { Address } from 'viem'
 
 import { getActions } from '@/config/actions.js'
+import { getWallet } from '@/services/wallet.js'
 import { resolveAsset } from '@/utils/assets.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
-import { getWallet } from '@/services/wallet.js'
 
 export interface SwapParams {
   idToken: string

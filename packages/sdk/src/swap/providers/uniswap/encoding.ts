@@ -8,10 +8,6 @@ import {
 } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { Asset } from '@/types/asset.js'
-import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
-import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
-
 import {
   CURRENCY_AMOUNT_PARAMS,
   EXACT_INPUT_SINGLE_PARAMS,
@@ -20,7 +16,10 @@ import {
   POOL_KEY_ABI_TYPE,
   QUOTER_ABI,
   UNIVERSAL_ROUTER_ABI,
-} from './abis.js'
+} from '@/swap/providers/uniswap/abis.js'
+import type { Asset } from '@/types/asset.js'
+import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
+import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 /**
  * V4 represents native ETH as address(0) in pool keys and settle/take params,

@@ -146,7 +146,9 @@ export abstract class SwapProvider<
   ): SwapMarketConfig | undefined {
     const { marketAllowlist } = this._config
     if (!marketAllowlist?.length) {
-      throw new Error('No markets configured. Provide a marketAllowlist in swap provider config.')
+      throw new Error(
+        'No markets configured. Provide a marketAllowlist in swap provider config.',
+      )
     }
     return this.findMatchingConfig(assetIn, assetOut, chainId, marketAllowlist)
   }

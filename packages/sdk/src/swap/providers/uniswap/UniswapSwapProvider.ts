@@ -2,6 +2,19 @@ import { type Address, encodeAbiParameters, formatUnits, keccak256 } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
+import { POOL_KEY_ABI_TYPE } from '@/swap/providers/uniswap/abis.js'
+import {
+  getSupportedChainIds,
+  getUniswapAddresses,
+} from '@/swap/providers/uniswap/addresses.js'
+import {
+  encodeUniversalRouterSwap,
+  getQuote,
+} from '@/swap/providers/uniswap/encoding.js'
+import type {
+  UniswapMarketConfig,
+  UniswapSwapProviderConfig,
+} from '@/swap/providers/uniswap/types.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
@@ -24,11 +37,6 @@ import {
   checkPermit2Allowance,
   checkTokenAllowance,
 } from '@/utils/permit2.js'
-
-import { POOL_KEY_ABI_TYPE } from './abis.js'
-import { getSupportedChainIds, getUniswapAddresses } from './addresses.js'
-import { encodeUniversalRouterSwap, getQuote } from './encoding.js'
-import type { UniswapMarketConfig, UniswapSwapProviderConfig } from './types.js'
 
 /**
  * Uniswap V4 swap provider using Universal Router and Permit2 approvals.

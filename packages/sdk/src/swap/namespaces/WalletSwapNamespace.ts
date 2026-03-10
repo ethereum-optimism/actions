@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
 import type {
   SwapExecuteParams,
   SwapProviders,
@@ -6,8 +7,6 @@ import type {
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-
-import { BaseSwapNamespace } from './BaseSwapNamespace.js'
 
 /**
  * Wallet swap namespace (full operations with signing)

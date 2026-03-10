@@ -1,4 +1,4 @@
-import { BaseSwapNamespace } from './BaseSwapNamespace.js'
+import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
 
 /**
  * Actions swap namespace (read-only, no wallet required)

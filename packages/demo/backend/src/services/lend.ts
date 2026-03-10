@@ -6,10 +6,10 @@ import type {
 } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
+import { getWallet } from '@/services/wallet.js'
 import type { PositionParams } from '@/types/index.js'
 import { resolveAsset } from '@/utils/assets.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
-import { getWallet } from '@/services/wallet.js'
 
 type LendTransactionReceiptWithUrls = LendTransactionReceipt & {
   blockExplorerUrls: string[]

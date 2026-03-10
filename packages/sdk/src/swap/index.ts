@@ -1,14 +1,14 @@
 // Core
-export { SwapProvider } from './core/SwapProvider.js'
+export { SwapProvider } from '@/swap/core/SwapProvider.js'
 
 // Namespaces
-export { ActionsSwapNamespace } from './namespaces/ActionsSwapNamespace.js'
-export { BaseSwapNamespace } from './namespaces/BaseSwapNamespace.js'
-export { WalletSwapNamespace } from './namespaces/WalletSwapNamespace.js'
+export { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
+export { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
+export { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
 
 // Providers
 export type {
   UniswapMarketConfig,
   UniswapSwapProviderConfig,
-} from './providers/uniswap/types.js'
-export { UniswapSwapProvider } from './providers/uniswap/UniswapSwapProvider.js'
+} from '@/swap/providers/uniswap/types.js'
+export { UniswapSwapProvider } from '@/swap/providers/uniswap/UniswapSwapProvider.js'

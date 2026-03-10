@@ -3,11 +3,10 @@ import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
 
-import { serializeBigInt } from '@/utils/serializers.js'
-
 import { errorResponse, requireAuth } from '@/helpers/errors.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as lendService from '@/services/lend.js'
+import { serializeBigInt } from '@/utils/serializers.js'
 
 const OpenPositionRequestSchema = z.object({
   body: z.object({
