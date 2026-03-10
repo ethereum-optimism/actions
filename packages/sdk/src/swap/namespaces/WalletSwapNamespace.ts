@@ -1,10 +1,10 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
 import type {
-  SwapExecuteParams,
   SwapProviders,
   SwapReceipt,
   SwapTransaction,
+  WalletSwapParams,
 } from '@/types/swap/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
@@ -25,7 +25,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * @param params - Swap parameters including chainId
    * @returns Swap receipt with transaction details
    */
-  async execute(params: SwapExecuteParams): Promise<SwapReceipt> {
+  async execute(params: WalletSwapParams): Promise<SwapReceipt> {
     const provider = this.getProvider()
 
     // Build swap transaction

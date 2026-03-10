@@ -55,6 +55,7 @@ export type {
   TransactionData,
   UserOperationTransactionReceipt,
   WalletConfig,
+  WalletSwapParams,
 } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'

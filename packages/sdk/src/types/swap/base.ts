@@ -74,11 +74,10 @@ export interface GetSwapMarketsParams {
 }
 
 /**
- * Parameters for executing a swap
- * @description Exactly one of amountIn or amountOut must be provided.
- * Both values should be human-readable numbers (e.g., 100 for 100 USDC).
+ * Parameters for a wallet swap — what the developer passes.
+ * Exactly one of amountIn or amountOut must be provided.
  */
-export interface SwapExecuteParams {
+export interface WalletSwapParams {
   /** Amount of input token (human-readable). For exact-in swaps. Mutually exclusive with amountOut. */
   amountIn?: number
   /** Amount of output token (human-readable). For exact-out swaps. Mutually exclusive with amountIn. */
@@ -95,6 +94,14 @@ export interface SwapExecuteParams {
   deadline?: number
   /** Recipient address. Defaults to wallet address. */
   recipient?: Address
+}
+
+/**
+ * Full swap execute parameters including wallet address.
+ * walletAddress is auto-injected by the wallet namespace.
+ */
+export interface SwapExecuteParams extends WalletSwapParams {
+  walletAddress: Address
 }
 
 /**

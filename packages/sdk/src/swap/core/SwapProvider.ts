@@ -71,12 +71,7 @@ export abstract class SwapProvider<
    * @param params - Swap parameters including assets, amounts, and chain
    * @returns Swap transaction data ready for execution
    */
-  async execute(
-    params: SwapExecuteParams & {
-      walletAddress: Address
-      chainId: SupportedChainId
-    },
-  ): Promise<SwapTransaction> {
+  async execute(params: SwapExecuteParams): Promise<SwapTransaction> {
     this.executeValidations(params)
     const resolvedParams = this.resolveParams(params)
     validateSlippage(
@@ -232,12 +227,7 @@ export abstract class SwapProvider<
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
-  private executeValidations(
-    params: SwapExecuteParams & {
-      walletAddress: Address
-      chainId: SupportedChainId
-    },
-  ): void {
+  private executeValidations(params: SwapExecuteParams): void {
     validateAmountProvided(params.amountIn, params.amountOut)
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
@@ -253,12 +243,7 @@ export abstract class SwapProvider<
     validateAssetOnChain(params.assetOut, params.chainId)
   }
 
-  private resolveParams(
-    params: SwapExecuteParams & {
-      walletAddress: Address
-      chainId: SupportedChainId
-    },
-  ): ResolvedSwapParams {
+  private resolveParams(params: SwapExecuteParams): ResolvedSwapParams {
     return {
       amountInWei: parseAssetAmount(params.assetIn, params.amountIn),
       amountOutWei: parseAssetAmount(params.assetOut, params.amountOut),
