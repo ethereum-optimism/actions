@@ -1,4 +1,4 @@
-import type { Address, PublicClient } from 'viem'
+import { type Address, type PublicClient, zeroAddress } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -20,6 +20,12 @@ const WETH: Asset = {
   type: 'erc20',
   address: { 84532: '0x2222222222222222222222222222222222222222' as Address },
   metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
+}
+
+const ETH: Asset = {
+  type: 'native',
+  address: { 84532: 'native' },
+  metadata: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
 }
 
 const QUOTER = '0x4a6513c898fe1b2d0e78d3b0e0a4a151589b1cba' as Address
@@ -132,6 +138,46 @@ describe('getQuote', () => {
       args.poolKey.currency0.toLowerCase() <
         args.poolKey.currency1.toLowerCase(),
     ).toBe(true)
+  })
+
+  it('uses address(0) for native ETH in pool key', async () => {
+    const publicClient = createMockPublicClient(100000000n)
+    await getQuote({
+      assetIn: ETH,
+      assetOut: USDC,
+      amountInWei: 1000000000000000000n,
+      chainId: CHAIN_ID,
+      publicClient,
+      quoterAddress: QUOTER,
+      poolManagerAddress: POOL_MANAGER,
+      fee: FEE,
+      tickSpacing: TICK_SPACING,
+    })
+
+    const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
+    const args = (call as any).args[0]
+    // Native ETH should be address(0), sorted as currency0 (lowest possible address)
+    expect(args.poolKey.currency0).toBe(zeroAddress)
+  })
+
+  it('uses address(0) for native ETH as output', async () => {
+    const publicClient = createMockPublicClient(1000000000000000000n)
+    await getQuote({
+      assetIn: USDC,
+      assetOut: ETH,
+      amountInWei: 100000000n,
+      chainId: CHAIN_ID,
+      publicClient,
+      quoterAddress: QUOTER,
+      poolManagerAddress: POOL_MANAGER,
+      fee: FEE,
+      tickSpacing: TICK_SPACING,
+    })
+
+    const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
+    const args = (call as any).args[0]
+    // Native ETH should be address(0) regardless of swap direction
+    expect(args.poolKey.currency0).toBe(zeroAddress)
   })
 })
 

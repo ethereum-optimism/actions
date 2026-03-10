@@ -4,9 +4,9 @@ import {
   encodeFunctionData,
   formatUnits,
   keccak256,
+  zeroAddress,
 } from 'viem'
 
-import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
@@ -21,6 +21,13 @@ import {
   QUOTER_ABI,
   UNIVERSAL_ROUTER_ABI,
 } from './abis.js'
+
+/**
+ * V4 represents native ETH as address(0) in pool keys and settle/take params,
+ * unlike V3 which required WETH. Named for clarity at call sites.
+ * @see https://github.com/Uniswap/v4-core/blob/main/src/types/Currency.sol
+ */
+const NATIVE_CURRENCY = zeroAddress
 
 /**
  * Resolved V4 pool parameters
@@ -49,11 +56,11 @@ function resolvePoolParams(
   tickSpacing: number,
 ): ResolvedPoolParams {
   const tokenIn = isNativeAsset(assetIn)
-    ? getAssetAddress(WETH, chainId)
+    ? NATIVE_CURRENCY
     : getAssetAddress(assetIn, chainId)
 
   const tokenOut = isNativeAsset(assetOut)
-    ? getAssetAddress(WETH, chainId)
+    ? NATIVE_CURRENCY
     : getAssetAddress(assetOut, chainId)
 
   // V4 requires sorted tokens: currency0 < currency1
