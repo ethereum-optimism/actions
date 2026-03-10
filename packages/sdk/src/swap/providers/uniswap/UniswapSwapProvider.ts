@@ -26,17 +26,7 @@ import type {
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
-import {
-  getAssetAddress,
-  isNativeAsset,
-  parseAssetAmount,
-} from '@/utils/assets.js'
-import {
-  buildPermit2ApprovalTx,
-  buildTokenApprovalTx,
-  checkPermit2Allowance,
-  checkTokenAllowance,
-} from '@/utils/permit2.js'
+import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
 
 /**
  * Uniswap V4 swap provider using Universal Router and Permit2 approvals.
@@ -89,9 +79,12 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     })
 
     const amountInWei = params.amountInWei ?? quote.amountInWei
-    const { tokenApproval, permit2Approval } = await this.buildApprovals(
+    const { tokenApproval, permit2Approval } = await this.buildPermit2Approvals(
       params,
       amountInWei,
+      addresses.permit2,
+      addresses.universalRouter,
+      this._config.permit2ExpirySeconds,
     )
 
     const swapTx: TransactionData = {
@@ -196,67 +189,6 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
   // ─────────────────────────────────────────────────────────────────────────────
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Check ERC20 and Permit2 allowances, returning approval txs if needed.
-   * Skipped entirely for native ETH swaps.
-   * @param params - Resolved swap params (wallet address, asset info)
-   * @param requiredAmount - Amount in wei that must be approved
-   * @returns Token and Permit2 approval transactions (undefined if not needed)
-   */
-  private async buildApprovals(
-    params: ResolvedSwapParams,
-    requiredAmount: bigint,
-  ): Promise<{
-    tokenApproval: TransactionData | undefined
-    permit2Approval: TransactionData | undefined
-  }> {
-    if (isNativeAsset(params.assetIn)) {
-      return { tokenApproval: undefined, permit2Approval: undefined }
-    }
-
-    const { chainId, walletAddress } = params
-    const addresses = getUniswapAddresses(chainId)
-    const publicClient = this.chainManager.getPublicClient(chainId)
-    const token = getAssetAddress(params.assetIn, chainId)
-
-    const [tokenAllowance, permit2Allowance] = await Promise.all([
-      checkTokenAllowance({
-        publicClient,
-        token,
-        owner: walletAddress,
-        spender: addresses.permit2,
-      }),
-      checkPermit2Allowance({
-        publicClient,
-        permit2Address: addresses.permit2,
-        owner: walletAddress,
-        token,
-        spender: addresses.universalRouter,
-      }),
-    ])
-
-    const tokenApproval =
-      tokenAllowance < requiredAmount
-        ? buildTokenApprovalTx(token, addresses.permit2)
-        : undefined
-
-    // Permit2 expiration is in Unix seconds (matching EVM block.timestamp)
-    const permit2Expired =
-      permit2Allowance.expiration < Math.floor(Date.now() / 1000)
-    const permit2Approval =
-      permit2Allowance.amount < requiredAmount || permit2Expired
-        ? buildPermit2ApprovalTx({
-            permit2Address: addresses.permit2,
-            token,
-            spender: addresses.universalRouter,
-            amount: requiredAmount,
-            expirySeconds: this._config.permit2ExpirySeconds,
-          })
-        : undefined
-
-    return { tokenApproval, permit2Approval }
-  }
 
   /**
    * Look up the Uniswap-specific market config for a pair, validating fee/tickSpacing.

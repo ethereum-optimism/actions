@@ -15,7 +15,18 @@ import type {
   SwapProviderConfig,
   SwapTransaction,
 } from '@/types/swap/index.js'
-import { parseAssetAmount } from '@/utils/assets.js'
+import type { TransactionData } from '@/types/transaction.js'
+import {
+  getAssetAddress,
+  isNativeAsset,
+  parseAssetAmount,
+} from '@/utils/assets.js'
+import {
+  buildPermit2ApprovalTx,
+  buildTokenApprovalTx,
+  checkPermit2Allowance,
+  checkTokenAllowance,
+} from '@/utils/permit2.js'
 import {
   validateAmountPositiveIfExists,
   validateAmountProvided,
@@ -151,6 +162,70 @@ export abstract class SwapProvider<
       )
     }
     return this.findMatchingConfig(assetIn, assetOut, chainId, marketAllowlist)
+  }
+
+  /**
+   * Build Permit2 approval transactions for an ERC20 swap input.
+   * Skipped for native assets. Checks both ERC20→Permit2 and Permit2→spender allowances in parallel.
+   * @param params - Resolved swap params (wallet address, asset info, chain)
+   * @param requiredAmount - Amount in wei that must be approved
+   * @param permit2Address - Permit2 contract address
+   * @param permit2Spender - The router/contract that Permit2 should approve (e.g. Universal Router)
+   * @param permit2ExpirySeconds - Optional custom expiry for the Permit2 approval
+   */
+  protected async buildPermit2Approvals(
+    params: ResolvedSwapParams,
+    requiredAmount: bigint,
+    permit2Address: Address,
+    permit2Spender: Address,
+    permit2ExpirySeconds?: number,
+  ): Promise<{
+    tokenApproval: TransactionData | undefined
+    permit2Approval: TransactionData | undefined
+  }> {
+    if (isNativeAsset(params.assetIn)) {
+      return { tokenApproval: undefined, permit2Approval: undefined }
+    }
+
+    const publicClient = this.chainManager.getPublicClient(params.chainId)
+    const token = getAssetAddress(params.assetIn, params.chainId)
+
+    const [tokenAllowance, permit2Allowance] = await Promise.all([
+      checkTokenAllowance({
+        publicClient,
+        token,
+        owner: params.walletAddress,
+        spender: permit2Address,
+      }),
+      checkPermit2Allowance({
+        publicClient,
+        permit2Address,
+        owner: params.walletAddress,
+        token,
+        spender: permit2Spender,
+      }),
+    ])
+
+    const tokenApproval =
+      tokenAllowance < requiredAmount
+        ? buildTokenApprovalTx(token, permit2Address)
+        : undefined
+
+    // Permit2 expiration is in Unix seconds (matching EVM block.timestamp)
+    const permit2Expired =
+      permit2Allowance.expiration < Math.floor(Date.now() / 1000)
+    const permit2Approval =
+      permit2Allowance.amount < requiredAmount || permit2Expired
+        ? buildPermit2ApprovalTx({
+            permit2Address,
+            token,
+            spender: permit2Spender,
+            amount: requiredAmount,
+            expirySeconds: permit2ExpirySeconds,
+          })
+        : undefined
+
+    return { tokenApproval, permit2Approval }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
