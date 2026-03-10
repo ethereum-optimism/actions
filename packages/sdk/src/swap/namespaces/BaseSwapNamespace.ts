@@ -59,6 +59,7 @@ export abstract class BaseSwapNamespace {
     return Array.from(chainIds)
   }
 
+  // SwapProviders keys are optional (uniswap?, aerodrome?, etc.) so filter out unconfigured ones
   protected getAllProviders(): Array<SwapProvider<SwapProviderConfig>> {
     return Object.values(this.providers).filter(
       (p): p is SwapProvider<SwapProviderConfig> => p !== undefined,
