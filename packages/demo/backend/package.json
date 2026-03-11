@@ -41,7 +41,7 @@
     "@eth-optimism/actions-sdk": "workspace:*",
     "@eth-optimism/utils-app": "^0.0.6",
     "@eth-optimism/viem": "^0.4.13",
-    "@hono/node-server": "^1.14.0",
+    "@hono/node-server": "^1.19.10",
     "@privy-io/node": "^0.3.0",
     "commander": "^13.1.0",
     "dotenv": "^16.4.5",
