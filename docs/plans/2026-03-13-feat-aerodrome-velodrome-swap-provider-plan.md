@@ -424,35 +424,161 @@ Mock setup: `createMockChainManager()` with mock `readContract` for:
 - Test `encodeSwap()` encodes correct function for token→token, ETH→token, token→ETH
 - Test Route struct encoding: v2 has 4 fields, leaf has 3 fields
 
-### Phase 11: Demo Deployment Scripts
+### Phase 11: Demo Deployment — Aerodrome on Base Sepolia
 
-**DEPENDENCY: Testnet protocol instance.** No official Aerodrome/Velodrome deployment exists on Base Sepolia. Unlike Uniswap (where V4 PoolManager, PositionManager, and Permit2 are already deployed on Base Sepolia and `DeployUniswapMarket.s.sol` only creates a pool on the existing infra), Velodrome would require deploying the core protocol contracts (Router, PoolFactory, FactoryRegistry, stubs for Voter/WETH) — a significantly larger task.
+#### 11a: Licensing
 
-**Resolution options (check with team first):**
+Aerodrome uses a **mixed-license model**:
 
-1. **Team already has a testnet deployment** — use their addresses. Simplest path.
-2. **Deploy Aerodrome ourselves using their existing scripts** — the `aerodrome-finance/contracts` repo has a JSON config system (`script/constants/`) that supports custom deployments without code changes. Steps:
-  - Clone `aerodrome-finance/contracts`
-  - Create `script/constants/BaseSepolia.json` from `TEMPLATE.json` (set WETH to `0x4200000000000000000000000000000000000006`, team/feeManager/emergencyCouncil/allowedManager to deployer address, minimal minter amounts, empty pools)
-  - Run: `forge script script/DeployCore.s.sol:DeployCore --broadcast --slow --rpc-url <base-sepolia-rpc>`
-  - Collect Router + PoolFactory addresses from output
-  - This is a ~30 min one-time task, not an ongoing maintenance burden
-3. **Use supersim fork mode** — fork Base mainnet locally for Aerodrome. Works for local dev only.
+| License | Contracts | Testnet OK? |
+|---------|-----------|-------------|
+| **GPL-3.0** | Router, Pool, PoolFactory, core AMM | Yes — permissive copyleft, deploy anywhere |
+| **BUSL-1.1** | Voter, VotingEscrow, Minter, governance | Yes for non-production use (testnet demo qualifies) |
+| **MIT** | Utilities, interfaces | Yes — no restrictions |
 
-Note: The Velodrome repo (`velodrome-finance/contracts`) hardcodes addresses in Solidity and requires code changes to deploy to a new chain. **Use the Aerodrome repo** for testnet deployment — it's better structured for this.
+The BUSL-1.1 (licensor: Perpetual Cyclist Services LLC) explicitly permits non-production use. A testnet demo is non-production. The BUSL converts to GPL-2.0+ at a date stored at `v2-license-date.velodrome.eth` (~2027). For our demo we need the full stack (Router needs Voter address in constructor), so we deploy everything under the non-production allowance.
 
-**Assuming option 1 or 2 provides addresses:**
+#### 11b: External Dependencies on Base Sepolia
+
+Only **one**: WETH at `0x4200000000000000000000000000000000000006` — standard OP Stack L2 predeploy, already exists on Base Sepolia. Everything else is deployed by the script.
+
+#### 11c: Deployment Steps
+
+**Prerequisites:**
+- Foundry installed
+- Deployer address funded with ~0.1 ETH on Base Sepolia
+- Base Sepolia RPC URL
+
+**Step 1: Clone and install**
+```bash
+git clone https://github.com/aerodrome-finance/contracts.git aerodrome-contracts
+cd aerodrome-contracts
+npm install
+forge install
+```
+
+**Step 2: Create config JSON**
+
+Create `script/constants/base-sepolia.json`:
+```json
+{
+    "allowedManager": "<DEPLOYER_ADDRESS>",
+    "feeManager": "<DEPLOYER_ADDRESS>",
+    "emergencyCouncil": "<DEPLOYER_ADDRESS>",
+    "team": "<DEPLOYER_ADDRESS>",
+    "WETH": "0x4200000000000000000000000000000000000006",
+    "whitelistTokens": [
+        "0x4200000000000000000000000000000000000006"
+    ],
+    "minter": {
+        "liquid": [
+            {
+                "amount": 1000000000000000000000000,
+                "wallet": "<DEPLOYER_ADDRESS>"
+            }
+        ],
+        "locked": [
+            {
+                "amount": 1000000000000000000000,
+                "wallet": "<DEPLOYER_ADDRESS>"
+            }
+        ]
+    }
+}
+```
+
+Notes:
+- `allowedManager` **must not** be `address(0)` — `VotingEscrow.setAllowedManager()` reverts on zero
+- `minter.liquid` amount is in wei (18 decimals). AirdropDistributor auto-gets 200M AERO on top of this
+- `minter.locked` creates permanently-locked veNFTs — use small amounts for testnet
+- `pools`/`poolsAero` arrays are not used by DeployCore — omit them
+
+**Step 3: Add Base Sepolia RPC to `foundry.toml`**
+```toml
+[rpc_endpoints]
+base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+```
+
+**Step 4: Set env vars**
+```bash
+export PRIVATE_KEY_DEPLOY=<hex_private_key_no_0x>
+export CONSTANTS_FILENAME=base-sepolia.json
+export OUTPUT_FILENAME=base-sepolia.json
+export BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+```
+
+**Step 5: Dry run**
+```bash
+forge script script/DeployCore.s.sol:DeployCore \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
+  -vvvv
+```
+
+**Step 6: Deploy**
+```bash
+forge script script/DeployCore.s.sol:DeployCore \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
+  --broadcast \
+  --slow \
+  -vvvv
+```
+
+**Step 7: Collect addresses**
+
+Output written to `script/constants/output/DeployCore-base-sepolia.json`. Key addresses needed:
+- `Router` — for swap encoding and approvals
+- `PoolFactory` — for creating pools
+
+#### 11d: What the Script Deploys (in order)
+
+1. AERO token
+2. Pool implementation → PoolFactory → VotingRewardsFactory → GaugeFactory → ManagedRewardsFactory → FactoryRegistry
+3. Forwarder (OpenGSN ERC-2771)
+4. VotingEscrow → VeArtProxy → RewardsDistributor
+5. Voter
+6. Router (constructor args: forwarder, factoryRegistry, factory, voter, WETH)
+7. Minter → AirdropDistributor
+8. Wiring: voter.initialize(), minter.initialize(), role transfers to team address
+
+~15 contracts total, all in one broadcast. No external dependencies beyond WETH.
+
+#### 11e: Create Demo Pool
+
+**After** the protocol is deployed, create the USDC/OP pool. This is the part that mirrors `DeployUniswapMarket.s.sol`.
 
 **New file: `packages/demo/contracts/script/DeployVelodromeMarket.s.sol`**
 
-Parallel to `DeployUniswapMarket.s.sol`. Creates a Velodrome-style pool on Base Sepolia with initial liquidity for DemoUSDC/DemoOP on an existing protocol deployment:
-
-1. Read DemoUSDC and DemoOP addresses from env
+1. Read DemoUSDC, DemoOP, Router, and PoolFactory addresses from env
 2. Call `PoolFactory.createPool(tokenA, tokenB, stable=false)` to create a volatile pool
 3. Mint demo tokens
 4. Approve tokens to Router
 5. Call `Router.addLiquidity(tokenA, tokenB, stable=false, amountADesired, amountBDesired, amountAMin, amountBMin, to, deadline)` to seed liquidity
 6. Output pool address
+
+**Update `deploy-demo.sh`** — add Step 4:
+```bash
+# --- Step 4: Deploy Velodrome Pool ---
+VELO_POOL=$(read_state "velodrome.pool")
+if [[ -z "$VELO_POOL" ]]; then
+    echo ">>> Deploying Velodrome pool..."
+    OUTPUT=$(DEMO_USDC_ADDRESS="$USDC_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
+        VELO_ROUTER="$VELO_ROUTER_ADDR" VELO_FACTORY="$VELO_FACTORY_ADDR" \
+        forge script script/DeployVelodromeMarket.s.sol:DeployVelodromeMarket \
+        "${FORGE_ARGS[@]}" --broadcast 2>&1)
+    VELO_POOL=$(parse_address "Pool:" "$OUTPUT")
+    write_state "velodrome.pool" "$VELO_POOL"
+fi
+```
+
+Add the deployed addresses to the SDK's Velodrome addresses module:
+```typescript
+// Base Sepolia — testnet deployment
+[baseSepolia.id]: {
+  router: '<deployed Router address>',
+  poolFactory: '<deployed PoolFactory address>',
+  routerType: 'v2',
+},
+```
 
 **Update: `packages/demo/contracts/script/deploy-demo.sh`**
 Add Step 4 after Uniswap pool deployment:
