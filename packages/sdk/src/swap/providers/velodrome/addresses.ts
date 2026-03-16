@@ -19,7 +19,6 @@ export interface VelodromeAddresses {
  *
  * Hub chains (Optimism, Base) use v2 routers with factory-aware Route structs.
  * Leaf chains use the Relay leaf router with simplified Route structs.
- *
  * @see https://velodrome.finance/docs
  * @see https://aerodrome.finance/docs
  */

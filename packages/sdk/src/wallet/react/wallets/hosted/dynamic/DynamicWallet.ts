@@ -33,7 +33,7 @@ export class DynamicWallet extends EOAWallet {
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
+      velodrome?: SwapProvider<SwapProviderConfig>
     },
   ) {
     super(chainManager, lendProviders, swapProviders)
@@ -49,7 +49,7 @@ export class DynamicWallet extends EOAWallet {
     }
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
+      velodrome?: SwapProvider<SwapProviderConfig>
     }
   }): Promise<DynamicWallet> {
     const wallet = new DynamicWallet(
