@@ -72,8 +72,9 @@ const receipt = wallet.borrow.openPosition({
     title: 'Swap',
     description:
       'Enable onchain trading between configurable protocols and assets.',
-    images: [{ src: '/uniswap-logo-white.svg', link: 'https://uniswap.org/' }],
-    imageLabel: 'Supports swap providers:',
+    soonBadge: true,
+    // images: [{ src: '/uniswap-logo-white.svg', link: 'https://uniswap.org/' }],
+    imageLabel: 'Supported swap providers: Coming soon™',
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,
