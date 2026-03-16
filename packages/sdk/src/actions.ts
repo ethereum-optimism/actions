@@ -4,7 +4,7 @@ import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { SwapProvider } from '@/swap/index.js'
-import { UniswapSwapProvider } from '@/swap/index.js'
+import { UniswapSwapProvider, VelodromeSwapProvider } from '@/swap/index.js'
 import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
 import type {
   ActionsConfig,
@@ -55,6 +55,7 @@ export class Actions<
   private _swap?: ActionsSwapNamespace
   private _swapProviders: {
     uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
   } = {}
   private _assetsConfig?: AssetsConfig
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]

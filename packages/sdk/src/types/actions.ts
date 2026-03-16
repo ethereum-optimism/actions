@@ -1,4 +1,5 @@
 import type { UniswapSwapProviderConfig } from '@/swap/providers/uniswap/types.js'
+import type { VelodromeSwapProviderConfig } from '@/swap/providers/velodrome/types.js'
 import type { Asset } from '@/types/asset.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
@@ -29,6 +30,8 @@ export type LendConfig = RequireAtLeastOne<{
 export type SwapConfig = RequireAtLeastOne<{
   /** Uniswap swap provider configuration */
   uniswap?: UniswapSwapProviderConfig
+  /** Velodrome/Aerodrome swap provider configuration */
+  velodrome?: VelodromeSwapProviderConfig
 }>
 
 /**

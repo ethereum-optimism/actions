@@ -18,6 +18,7 @@ export { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
  */
 export type SwapProviders = {
   uniswap?: SwapProvider<SwapProviderConfig>
+  velodrome?: SwapProvider<SwapProviderConfig>
 }
 
 /**
@@ -255,5 +256,5 @@ export interface SwapMarket {
   /** Fee tier in pips (500 = 0.05%) */
   fee: number
   /** Provider name */
-  provider: 'uniswap'
+  provider: 'uniswap' | 'velodrome'
 }
