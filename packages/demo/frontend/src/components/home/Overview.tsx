@@ -76,7 +76,7 @@ const receipt = wallet.borrow.openPosition({
       { src: '/uniswap-logo-white.svg', link: 'https://uniswap.org/' },
       { src: '/velodrome-logo-white.svg', link: 'https://velodrome.finance/' },
     ],
-    imageLabel: 'Supported swap providers: Coming soon™',
+    imageLabel: 'Supported swap providers:',
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,
