@@ -20,6 +20,7 @@ export interface MockSwapProviderConfig {
   supportedChains: SupportedChainId[]
   defaultPrice: string
   defaultPriceImpact: number
+  provider: 'uniswap' | 'velodrome'
 }
 
 /**
@@ -59,6 +60,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       supportedChains: this._supportedChains,
       defaultPrice: mockConfig?.defaultPrice ?? '1.5',
       defaultPriceImpact: mockConfig?.defaultPriceImpact ?? 0.001,
+      provider: mockConfig?.provider ?? 'uniswap',
     }
 
     // Create mocked functions
@@ -191,7 +193,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
         },
       ],
       fee: 500,
-      provider: 'uniswap',
+      provider: this.mockProviderConfig.provider,
     }
   }
 

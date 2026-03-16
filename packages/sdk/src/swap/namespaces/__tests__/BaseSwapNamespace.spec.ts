@@ -73,10 +73,8 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace({
         uniswap: provider1,
+        velodrome: provider2,
       })
-
-      // Add second provider manually for testing aggregation
-      ;(namespace as any).providers.oneInch = provider2
 
       const result = await namespace.getMarkets({})
 
@@ -105,8 +103,8 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace({
         uniswap: provider1,
+        velodrome: provider2,
       })
-      ;(namespace as any).providers.oneInch = provider2
 
       const result = namespace.supportedChainIds()
 
@@ -126,8 +124,8 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace({
         uniswap: provider1,
+        velodrome: provider2,
       })
-      ;(namespace as any).providers.oneInch = provider2
 
       const result = namespace.supportedChainIds()
 
