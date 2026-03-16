@@ -72,13 +72,11 @@ const receipt = wallet.borrow.openPosition({
     title: 'Swap',
     description:
       'Enable onchain trading between configurable protocols and assets.',
-    // TODO: Restore provider logos once Velodrome integration lands
-    // images: [
-    //   { src: '/uniswap-logo-white.svg', link: 'https://uniswap.org/' },
-    //   { src: '/velodrome-logo-white.svg', link: 'https://velodrome.finance/' },
-    // ],
-    soonBadge: true,
-    imageLabel: 'Supported swap providers: Coming soon™',
+    images: [
+      { src: '/uniswap-logo-white.svg', link: 'https://uniswap.org/' },
+      { src: '/velodrome-logo-white.svg', link: 'https://velodrome.finance/' },
+    ],
+    imageLabel: 'Supports swap providers:',
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,
