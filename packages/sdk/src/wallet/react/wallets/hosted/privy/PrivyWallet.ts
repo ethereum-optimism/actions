@@ -27,6 +27,7 @@ export class PrivyWallet extends EOAWallet {
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
     },
   ) {
     super(chainManager, lendProviders, swapProviders)
@@ -42,6 +43,7 @@ export class PrivyWallet extends EOAWallet {
     }
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
     }
   }): Promise<PrivyWallet> {
     const wallet = new PrivyWallet(

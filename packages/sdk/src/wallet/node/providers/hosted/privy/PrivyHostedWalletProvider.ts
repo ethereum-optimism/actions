@@ -49,6 +49,7 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
     }
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
     }
     supportedAssets?: Asset[]
     authorizationContext?: AuthorizationContext

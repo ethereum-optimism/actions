@@ -75,6 +75,7 @@ export class DefaultSmartWallet extends SmartWallet {
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
     },
     supportedAssets?: Asset[],
     deploymentAddress?: Address,
@@ -128,6 +129,7 @@ export class DefaultSmartWallet extends SmartWallet {
     }
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
     }
     supportedAssets?: Asset[]
     deploymentAddress?: Address

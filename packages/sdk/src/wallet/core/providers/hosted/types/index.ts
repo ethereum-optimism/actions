@@ -19,6 +19,7 @@ export interface HostedProviderDeps {
   }
   swapProviders?: {
     uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
   }
   supportedAssets?: Asset[]
 }
