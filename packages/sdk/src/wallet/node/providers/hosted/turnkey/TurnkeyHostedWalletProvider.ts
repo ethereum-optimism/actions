@@ -45,7 +45,7 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
+      velodrome?: SwapProvider<SwapProviderConfig>
     },
     supportedAssets?: Asset[],
   ) {

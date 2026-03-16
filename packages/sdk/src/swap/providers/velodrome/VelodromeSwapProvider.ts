@@ -11,10 +11,7 @@ import {
   getSupportedChainIds,
   getVelodromeAddresses,
 } from '@/swap/providers/velodrome/addresses.js'
-import {
-  encodeSwap,
-  getQuote,
-} from '@/swap/providers/velodrome/encoding.js'
+import { encodeSwap, getQuote } from '@/swap/providers/velodrome/encoding.js'
 import type {
   VelodromeMarketConfig,
   VelodromeSwapProviderConfig,
@@ -257,9 +254,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   }
 
   /** @returns Allowlist entries that have the required stable flag set */
-  private validConfigs(): Array<
-    VelodromeMarketConfig & { stable: boolean }
-  > {
+  private validConfigs(): Array<VelodromeMarketConfig & { stable: boolean }> {
     return (this._config.marketAllowlist ?? []).filter(
       (f): f is VelodromeMarketConfig & { stable: boolean } =>
         f.stable !== undefined,

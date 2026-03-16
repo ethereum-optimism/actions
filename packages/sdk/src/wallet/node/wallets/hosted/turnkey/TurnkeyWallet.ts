@@ -53,7 +53,7 @@ export class TurnkeyWallet extends EOAWallet {
     }
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
+      velodrome?: SwapProvider<SwapProviderConfig>
     }
     supportedAssets?: Asset[]
   }) {
@@ -86,7 +86,7 @@ export class TurnkeyWallet extends EOAWallet {
     }
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
+      velodrome?: SwapProvider<SwapProviderConfig>
     }
     supportedAssets?: Asset[]
   }): Promise<TurnkeyWallet> {

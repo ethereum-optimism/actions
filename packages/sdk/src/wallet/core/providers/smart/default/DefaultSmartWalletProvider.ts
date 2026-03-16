@@ -58,7 +58,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
+      velodrome?: SwapProvider<SwapProviderConfig>
     },
     supportedAssets?: Asset[],
     attributionSuffix?: string,

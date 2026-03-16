@@ -36,7 +36,7 @@ export abstract class HostedWalletProvider<
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
+      velodrome?: SwapProvider<SwapProviderConfig>
     },
     supportedAssets?: Asset[],
   ) {

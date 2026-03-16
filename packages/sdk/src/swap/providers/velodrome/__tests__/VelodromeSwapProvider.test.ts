@@ -39,16 +39,14 @@ function createMockChainManager(): ChainManager {
   const mockPublicClient = {
     readContract: vi
       .fn()
-      .mockImplementation(
-        ({ functionName }: { functionName: string }) => {
-          // getAmountsOut returns [amountIn, amountOut]
-          if (functionName === 'getAmountsOut')
-            return Promise.resolve([100000000n, 500000000000000000n])
-          // ERC20 allowance
-          if (functionName === 'allowance') return Promise.resolve(0n)
-          return Promise.resolve(0n)
-        },
-      ),
+      .mockImplementation(({ functionName }: { functionName: string }) => {
+        // getAmountsOut returns [amountIn, amountOut]
+        if (functionName === 'getAmountsOut')
+          return Promise.resolve([100000000n, 500000000000000000n])
+        // ERC20 allowance
+        if (functionName === 'allowance') return Promise.resolve(0n)
+        return Promise.resolve(0n)
+      }),
   } as unknown as PublicClient
 
   return {
@@ -62,9 +60,7 @@ function createProvider(
 ): VelodromeSwapProvider {
   const config: VelodromeSwapProviderConfig = {
     defaultSlippage: 0.005,
-    marketAllowlist: [
-      { assets: [USDC, OP], stable: false, chainId: CHAIN_ID },
-    ],
+    marketAllowlist: [{ assets: [USDC, OP], stable: false, chainId: CHAIN_ID }],
     ...configOverrides,
   }
   return new VelodromeSwapProvider(config, createMockChainManager())
@@ -124,7 +120,8 @@ describe('VelodromeSwapProvider', () => {
           assetIn: USDC,
           assetOut: OP,
           chainId: CHAIN_ID,
-          walletAddress: '0x000000000000000000000000000000000000dEaD' as Address,
+          walletAddress:
+            '0x000000000000000000000000000000000000dEaD' as Address,
         }),
       ).rejects.toThrow('does not support exact-output swaps')
     })
@@ -140,7 +137,8 @@ describe('VelodromeSwapProvider', () => {
           assetIn: USDC,
           assetOut: OP,
           chainId: CHAIN_ID,
-          walletAddress: '0x000000000000000000000000000000000000dEaD' as Address,
+          walletAddress:
+            '0x000000000000000000000000000000000000dEaD' as Address,
         }),
       ).rejects.toThrow('stable flag must be configured')
     })
