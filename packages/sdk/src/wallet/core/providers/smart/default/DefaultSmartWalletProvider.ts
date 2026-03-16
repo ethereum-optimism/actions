@@ -35,6 +35,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
   /** Providers for swap operations */
   private swapProviders: {
     uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
   }
   /** Supported assets for this wallet provider */
   private supportedAssets?: Asset[]
@@ -57,6 +58,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
     },
     supportedAssets?: Asset[],
     attributionSuffix?: string,

@@ -24,6 +24,7 @@ export abstract class HostedWalletProvider<
   }
   protected swapProviders: {
     uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
   }
   protected supportedAssets?: Asset[]
 
@@ -35,6 +36,7 @@ export abstract class HostedWalletProvider<
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
     },
     supportedAssets?: Asset[],
   ) {

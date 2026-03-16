@@ -34,6 +34,7 @@ export abstract class Wallet {
   /** Providers for swap operations */
   protected swapProviders: {
     uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
   }
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
@@ -72,6 +73,7 @@ export abstract class Wallet {
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+      velodrome?: SwapProvider<SwapProviderConfig>
     },
     supportedAssets?: Asset[],
   ) {
@@ -82,7 +84,7 @@ export abstract class Wallet {
     if (this.lendProviders.morpho || this.lendProviders.aave) {
       this.lend = new WalletLendNamespace(this.lendProviders, this)
     }
-    if (this.swapProviders.uniswap) {
+    if (Object.values(this.swapProviders).some(Boolean)) {
       this.swap = new WalletSwapNamespace(this.swapProviders, this)
     }
   }

@@ -41,6 +41,7 @@ export class PrivyWallet extends EOAWallet {
     },
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
     },
     supportedAssets?: Asset[],
     authorizationContext?: AuthorizationContext,
@@ -64,6 +65,7 @@ export class PrivyWallet extends EOAWallet {
     }
     swapProviders?: {
       uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
     }
     supportedAssets?: Asset[]
   }): Promise<PrivyWallet> {
