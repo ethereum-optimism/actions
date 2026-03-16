@@ -438,9 +438,15 @@ Aerodrome uses a **mixed-license model**:
 
 The BUSL-1.1 (licensor: Perpetual Cyclist Services LLC) explicitly permits non-production use. A testnet demo is non-production. The BUSL converts to GPL-2.0+ at a date stored at `v2-license-date.velodrome.eth` (~2027). For our demo we need the full stack (Router needs Voter address in constructor), so we deploy everything under the non-production allowance.
 
-#### 11b: External Dependencies on Base Sepolia
+#### 11b: Base Sepolia Protocol Addresses — Pending from Velodrome Team
 
-Only **one**: WETH at `0x4200000000000000000000000000000000000006` — standard OP Stack L2 predeploy, already exists on Base Sepolia. Everything else is deployed by the script.
+The Velodrome team confirmed they have a Base Sepolia deployment but the addresses are not in their public repos. We need **Router** and **PoolFactory** addresses from them. The `.env.base-sepolia` in `velodrome-finance/automations` only has Chainlink automation config (Voter and GaugeUpkeepManager are `address(0)`).
+
+**Blocked until we receive:** Router address, PoolFactory address. Once available, add to the SDK addresses module and proceed with demo pool creation.
+
+#### 11c: External Dependencies on Base Sepolia
+
+Only **one**: WETH at `0x4200000000000000000000000000000000000006` — standard OP Stack L2 predeploy, already exists on Base Sepolia. Everything else is deployed by the Velodrome team.
 
 #### 11c: Deployment Steps
 
