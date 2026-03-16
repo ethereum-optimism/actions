@@ -2,7 +2,6 @@ import type { LendProvider } from '@/lend/index.js'
 import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { SwapProvider } from '@/swap/index.js'
 import { UniswapSwapProvider, VelodromeSwapProvider } from '@/swap/index.js'
 import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
@@ -174,39 +173,31 @@ export class Actions<
   /**
    * Get the list of supported assets based on configuration
    * @description Returns filtered assets based on allow/block lists in assets config.
-   * If no config provided, returns all SUPPORTED_TOKENS.
+   * If no allow list provided, returns empty array.
    * @returns Array of supported assets
    */
   public getSupportedAssets(): Asset[] {
-    // If no assets config, return all supported tokens
-    if (!this._assetsConfig) {
-      return SUPPORTED_TOKENS
+    const allow = this._assetsConfig?.allow ?? []
+    const block = this._assetsConfig?.block
+
+    if (!block?.length) {
+      return allow
     }
 
-    // If allow list provided, return only those
-    if (this._assetsConfig.allow && this._assetsConfig.allow.length > 0) {
-      return this._assetsConfig.allow
-    }
+    const resolveAddresses = (asset: Asset): string[] =>
+      Object.values(asset.address)
+        .filter(
+          (addr): addr is Exclude<typeof addr, undefined | 'native'> =>
+            addr !== undefined && addr !== 'native',
+        )
+        .map((addr) => addr.toLowerCase())
 
-    // If block list provided, filter out blocked assets
-    if (this._assetsConfig.block && this._assetsConfig.block.length > 0) {
-      const blockedAddresses = new Set(
-        this._assetsConfig.block.flatMap((asset) =>
-          Object.values(asset.address)
-            .filter((addr): addr is string => addr !== undefined)
-            .map((addr) => addr.toLowerCase()),
-        ),
-      )
-      return SUPPORTED_TOKENS.filter((token) => {
-        const tokenAddresses = Object.values(token.address)
-          .filter((addr): addr is string => addr !== undefined)
-          .map((addr) => addr.toLowerCase())
-        return !tokenAddresses.some((addr) => blockedAddresses.has(addr))
-      })
-    }
+    const blockedAddresses = new Set(block.flatMap(resolveAddresses))
 
-    // Default to all supported tokens
-    return SUPPORTED_TOKENS
+    return allow.filter((asset) => {
+      const addresses = resolveAddresses(asset)
+      return !addresses.some((addr) => blockedAddresses.has(addr))
+    })
   }
 
   /**
