@@ -7,14 +7,13 @@ import {
   ink,
   lisk,
   mainnet,
-  metal,
+  metalL2,
   mode,
   optimism,
   optimismSepolia,
   sepolia,
   soneium,
   superseed,
-  swell,
   unichain,
   unichainSepolia,
   worldchain,
@@ -35,11 +34,12 @@ export const ACTIONS_SUPPORTED_CHAIN_IDS = [
   fraxtal.id,
   ink.id,
   lisk.id,
-  metal.id,
+  metalL2.id,
   mode.id,
   soneium.id,
   superseed.id,
-  swell.id,
+  // Swell — not available in viem/chains
+  1923 as const,
 ] as const
 
 export type SupportedChainId = (typeof ACTIONS_SUPPORTED_CHAIN_IDS)[number]
