@@ -23,6 +23,9 @@ export {
   type UniswapMarketConfig,
   UniswapSwapProvider,
   type UniswapSwapProviderConfig,
+  type VelodromeMarketConfig,
+  VelodromeSwapProvider,
+  type VelodromeSwapProviderConfig,
 } from '@/swap/index.js'
 export type {
   ActionsConfig,

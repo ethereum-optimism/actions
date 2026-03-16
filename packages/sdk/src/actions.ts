@@ -105,6 +105,14 @@ export class Actions<
         config.swap.uniswap,
         this.chainManager,
       )
+    }
+    if (config.swap?.velodrome) {
+      this._swapProviders.velodrome = new VelodromeSwapProvider(
+        config.swap.velodrome,
+        this.chainManager,
+      )
+    }
+    if (Object.values(this._swapProviders).some(Boolean)) {
       this._swap = new ActionsSwapNamespace(this._swapProviders)
     }
 
@@ -160,6 +168,7 @@ export class Actions<
    */
   get swapProviders(): {
     uniswap?: SwapProvider<SwapProviderConfig>
+    velodrome?: SwapProvider<SwapProviderConfig>
   } {
     return this._swapProviders
   }
@@ -185,13 +194,15 @@ export class Actions<
     if (this._assetsConfig.block && this._assetsConfig.block.length > 0) {
       const blockedAddresses = new Set(
         this._assetsConfig.block.flatMap((asset) =>
-          Object.values(asset.address).map((addr) => addr.toLowerCase()),
+          Object.values(asset.address)
+            .filter((addr): addr is string => addr !== undefined)
+            .map((addr) => addr.toLowerCase()),
         ),
       )
       return SUPPORTED_TOKENS.filter((token) => {
-        const tokenAddresses = Object.values(token.address).map((addr) =>
-          addr.toLowerCase(),
-        )
+        const tokenAddresses = Object.values(token.address)
+          .filter((addr): addr is string => addr !== undefined)
+          .map((addr) => addr.toLowerCase())
         return !tokenAddresses.some((addr) => blockedAddresses.has(addr))
       })
     }

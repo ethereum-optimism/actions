@@ -127,6 +127,24 @@ export abstract class SwapProvider<
     return this.supportedChainIds().includes(chainId)
   }
 
+  /**
+   * Check if this provider supports a given market (asset pair on chain).
+   * Returns true if the pair passes allowlist/blocklist checks.
+   */
+  isMarketSupported(
+    assetIn: Asset,
+    assetOut: Asset,
+    chainId: SupportedChainId,
+  ): boolean {
+    if (!this.isChainSupported(chainId)) return false
+    try {
+      this.validateMarketAllowed(assetIn, assetOut, chainId)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Protected helpers
   // ─────────────────────────────────────────────────────────────────────────────

@@ -26,7 +26,11 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * @returns Swap receipt with transaction details
    */
   async execute(params: WalletSwapParams): Promise<SwapReceipt> {
-    const provider = this.getProvider()
+    const provider = this.getProviderForParams(
+      params.assetIn,
+      params.assetOut,
+      params.chainId,
+    )
 
     // Build swap transaction
     const swapTx = await provider.execute({
