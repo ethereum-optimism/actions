@@ -1,95 +1,94 @@
 import type { Address } from 'viem'
-import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
+import {
+  base,
+  baseSepolia,
+  ink,
+  optimism,
+  optimismSepolia,
+  soneium,
+} from 'viem/chains'
+
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 /**
- * Aave V3 Pool addresses for Optimism Superchain networks
- * @description Hardcoded Pool contract addresses for each supported chain
+ * Aave V3 contract addresses per chain
  */
-
-/**
- * Mainnet Pool addresses
- */
-export const POOL_ADDRESSES_MAINNET: Record<number, Address> = {
-  [optimism.id]: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-  [base.id]: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
-} as const
-
-/**
- * Testnet Pool addresses
- */
-export const POOL_ADDRESSES_TESTNET: Record<number, Address> = {
-  [optimismSepolia.id]: '0xb50201558b00496a145fe76f7424749556e326d8',
-  [baseSepolia.id]: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27',
-} as const
-
-/**
- * All Pool addresses (mainnet + testnet)
- */
-export const POOL_ADDRESSES: Record<number, Address> = {
-  ...POOL_ADDRESSES_MAINNET,
-  ...POOL_ADDRESSES_TESTNET,
-} as const
-
-/**
- * Get Pool address for a given chain ID
- * @param chainId - Chain ID
- * @returns Pool address if supported, undefined otherwise
- */
-export function getPoolAddress(chainId: number): Address | undefined {
-  return POOL_ADDRESSES[chainId]
+export interface AaveAddresses {
+  pool: Address
+  wethGateway: Address
+  uiPoolDataProvider: Address
+  poolAddressesProvider: Address
 }
 
 /**
- * Check if a chain ID has Aave V3 deployed
- * @param chainId - Chain ID to check
- * @returns true if Aave V3 is deployed on this chain
+ * Aave V3 contract addresses for OP Stack chains
+ * @see https://github.com/bgd-labs/aave-address-book
  */
-export function isAaveChainSupported(chainId: number): boolean {
-  return chainId in POOL_ADDRESSES
+const AAVE_ADDRESSES: Partial<Record<SupportedChainId, AaveAddresses>> = {
+  [optimism.id]: {
+    pool: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+    wethGateway: '0x5f2508cAE9923b02316254026CD43d7902866725',
+    uiPoolDataProvider: '0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654',
+    poolAddressesProvider: '0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb',
+  },
+  [base.id]: {
+    pool: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
+    wethGateway: '0xa0d9C1E9E48Ca30c8d8C3B5D69FF5dc1f6DFfC24',
+    uiPoolDataProvider: '0xd82a47fdebB5bf5329b09441C3DaB4b5df2153Ad',
+    poolAddressesProvider: '0xe20fCBdBfFC4Dd138cE8b2E6FBb6CB49777ad64D',
+  },
+  [soneium.id]: {
+    pool: '0xDd3d7A7d03D9fD9ef45f3E587287922eF65CA38B',
+    wethGateway: '0x6376D4df995f32f308f2d5049a7a320943023232',
+    uiPoolDataProvider: '0xc69299Ddd3a704F6954c8Ae1AD00e0892d77Aee4',
+    poolAddressesProvider: '0x82405D1a189bd6cE4667809C35B37fBE136A4c5B',
+  },
+  [ink.id]: {
+    pool: '0x2816cf15F6d2220E789aA011D5EE4eB6c47FEbA',
+    wethGateway: '0xDe090EfCD6ef4b86792e2D84E55a5fa8d49D25D2',
+    uiPoolDataProvider: '0xF1485fb7DBFa5db0B368FeA808FD6ff945c36064',
+    poolAddressesProvider: '0x4172E6aAEC070ACB31aaCE343A58c93E4C70f44D',
+  },
+  [optimismSepolia.id]: {
+    pool: '0xb50201558b00496a145fe76f7424749556e326d8',
+    wethGateway: '0x589750BA8aF186cE5B55391B0b7148cAD43a1619',
+    uiPoolDataProvider: '0x86E2938daE289763D4e09a7e42c5cCcA62Cf9809',
+    poolAddressesProvider: '0x36616cf17557639614c1cdDb356b1B83fc0B2132',
+  },
+  [baseSepolia.id]: {
+    pool: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27',
+    wethGateway: '0x0568130e794429D2eEBC4dafE18f25Ff1a1ed8b6',
+    uiPoolDataProvider: '0xBc9f5b7E248451CdD7cA54e717a2BFe1F32b566b',
+    poolAddressesProvider: '0xE4C23309117Aa30342BFaae6c95c6478e0A4Ad00',
+  },
+}
+
+/**
+ * Get all Aave addresses for a chain
+ */
+export function getAaveAddresses(
+  chainId: number,
+): AaveAddresses | undefined {
+  return AAVE_ADDRESSES[chainId as SupportedChainId]
+}
+
+/**
+ * Get Pool address for a given chain ID
+ */
+export function getPoolAddress(chainId: number): Address | undefined {
+  return getAaveAddresses(chainId)?.pool
+}
+
+/**
+ * Get WETHGateway address for a given chain ID
+ */
+export function getWETHGatewayAddress(chainId: number): Address | undefined {
+  return getAaveAddresses(chainId)?.wethGateway
 }
 
 /**
  * Get all supported chain IDs
- * @returns Array of chain IDs with Aave V3 deployed
  */
 export function getSupportedChainIds(): number[] {
-  return Object.keys(POOL_ADDRESSES).map(Number)
-}
-
-/**
- * Aave V3 WETHGateway addresses for Optimism Superchain networks
- * @description Gateway contracts that handle native ETH wrapping and depositing
- */
-
-/**
- * Mainnet WETHGateway addresses
- */
-export const WETH_GATEWAY_ADDRESSES_MAINNET: Record<number, Address> = {
-  [optimism.id]: '0x5f2508cAE9923b02316254026CD43d7902866725',
-  [base.id]: '0xa0d9C1E9E48Ca30c8d8C3B5D69FF5dc1f6DFfC24',
-} as const
-
-/**
- * Testnet WETHGateway addresses
- */
-export const WETH_GATEWAY_ADDRESSES_TESTNET: Record<number, Address> = {
-  [optimismSepolia.id]: '0x589750BA8aF186cE5B55391B0b7148cAD43a1619',
-  [baseSepolia.id]: '0x0568130e794429D2eEBC4dafE18f25Ff1a1ed8b6',
-} as const
-
-/**
- * All WETHGateway addresses (mainnet + testnet)
- */
-export const WETH_GATEWAY_ADDRESSES: Record<number, Address> = {
-  ...WETH_GATEWAY_ADDRESSES_MAINNET,
-  ...WETH_GATEWAY_ADDRESSES_TESTNET,
-} as const
-
-/**
- * Get WETHGateway address for a given chain ID
- * @param chainId - Chain ID
- * @returns WETHGateway address if supported, undefined otherwise
- */
-export function getWETHGatewayAddress(chainId: number): Address | undefined {
-  return WETH_GATEWAY_ADDRESSES[chainId]
+  return Object.keys(AAVE_ADDRESSES).map(Number)
 }
