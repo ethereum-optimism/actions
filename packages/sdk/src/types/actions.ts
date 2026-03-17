@@ -24,6 +24,20 @@ export type LendConfig = RequireAtLeastOne<{
   aave?: LendProviderConfig
 }>
 
+/** Names of available swap providers */
+export type SwapProviderName = 'uniswap' | 'velodrome'
+
+/**
+ * Swap provider routing configuration.
+ * Controls how the SDK selects a provider when the caller doesn't specify one.
+ */
+export interface SwapRoutingConfig {
+  /** Comparison strategy for selecting across providers. Currently only 'price'. */
+  strategy?: 'price'
+  /** Provider to prefer when strategy produces a tie, or to always use when no strategy is set. */
+  defaultProvider?: SwapProviderName
+}
+
 /**
  * Swap configuration — at least one provider must be configured
  */
@@ -32,7 +46,10 @@ export type SwapConfig = RequireAtLeastOne<{
   uniswap?: UniswapSwapProviderConfig
   /** Velodrome/Aerodrome swap provider configuration */
   velodrome?: VelodromeSwapProviderConfig
-}>
+}> & {
+  /** Routing configuration for multi-provider selection */
+  routing?: SwapRoutingConfig
+}
 
 /**
  * Network configuration for lending providers

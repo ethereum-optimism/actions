@@ -8,7 +8,7 @@ import type {
  */
 export interface VelodromeMarketConfig extends SwapMarketConfig {
   /** true = stable pool (correlated assets), false = volatile pool */
-  stable: boolean
+  stable?: boolean
 }
 
 /**

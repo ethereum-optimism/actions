@@ -11,6 +11,8 @@ import { getWallet } from '@/services/wallet.js'
 import { resolveAsset } from '@/utils/assets.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
+export type SwapProviderName = 'uniswap' | 'velodrome'
+
 export interface SwapParams {
   idToken: string
   amountIn: number
@@ -18,6 +20,7 @@ export interface SwapParams {
   tokenOutAddress: Address
   chainId: SupportedChainId
   slippage?: number
+  provider?: SwapProviderName
 }
 
 export interface PriceParams {
@@ -26,6 +29,7 @@ export interface PriceParams {
   chainId: SupportedChainId
   amountIn?: number
   amountOut?: number
+  provider?: SwapProviderName
 }
 
 type SwapReceiptWithUrls = SwapReceipt & {
@@ -40,11 +44,32 @@ export async function getMarkets(
 }
 
 export async function getPrice(params: PriceParams): Promise<SwapPrice> {
-  const { tokenInAddress, tokenOutAddress, chainId, amountIn, amountOut } =
-    params
+  const {
+    tokenInAddress,
+    tokenOutAddress,
+    chainId,
+    amountIn,
+    amountOut,
+    provider,
+  } = params
   const actions = getActions()
   const assetIn = resolveAsset(tokenInAddress, chainId)
   const assetOut = resolveAsset(tokenOutAddress, chainId)
+
+  // Route to specific provider when requested
+  if (provider) {
+    const swapProvider = actions.swapProviders[provider]
+    if (!swapProvider) {
+      throw new Error(`Swap provider "${provider}" not configured`)
+    }
+    return await swapProvider.getPrice({
+      assetIn,
+      assetOut,
+      chainId,
+      amountIn,
+      amountOut,
+    })
+  }
 
   return await actions.swap.price({
     assetIn,
