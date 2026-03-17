@@ -10,6 +10,7 @@ import type {
   AssetsConfig,
   LendProviderConfig,
   SwapProviderConfig,
+  SwapRoutingConfig,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
@@ -56,6 +57,7 @@ export class Actions<
     uniswap?: SwapProvider<SwapProviderConfig>
     velodrome?: SwapProvider<SwapProviderConfig>
   } = {}
+  private _swapRouting?: SwapRoutingConfig
   private _assetsConfig?: AssetsConfig
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
@@ -109,8 +111,12 @@ export class Actions<
         this.chainManager,
       )
     }
+    this._swapRouting = config.swap?.routing
     if (Object.values(this._swapProviders).some(Boolean)) {
-      this._swap = new ActionsSwapNamespace(this._swapProviders)
+      this._swap = new ActionsSwapNamespace(
+        this._swapProviders,
+        this._swapRouting,
+      )
     }
 
     this.wallet = this.createWalletNamespace(config.wallet)
@@ -236,6 +242,7 @@ export class Actions<
         lendProviders: this._lendProviders,
         swapProviders: this._swapProviders,
         supportedAssets: this.getSupportedAssets(),
+        swapRouting: this._swapRouting,
       },
       options,
     )

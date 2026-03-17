@@ -46,9 +46,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
       },
       velodrome: {
         defaultSlippage: 0.005, // 0.5%
-        marketAllowlist: [
-          { assets: [USDC_DEMO, OP_DEMO], stable: false },
-        ],
+        marketAllowlist: [{ assets: [USDC_DEMO, OP_DEMO], stable: false }],
       },
     },
     assets: {

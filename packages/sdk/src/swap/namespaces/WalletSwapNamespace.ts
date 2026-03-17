@@ -1,5 +1,6 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
+import type { SwapRoutingConfig } from '@/types/actions.js'
 import type {
   SwapProviders,
   SwapReceipt,
@@ -16,8 +17,9 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   constructor(
     providers: SwapProviders,
     private readonly wallet: Wallet,
+    routing?: SwapRoutingConfig,
   ) {
-    super(providers)
+    super(providers, routing)
   }
 
   /**
@@ -26,7 +28,8 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * @returns Swap receipt with transaction details
    */
   async execute(params: WalletSwapParams): Promise<SwapReceipt> {
-    const provider = this.getProviderForParams(
+    const provider = this.resolveProvider(
+      params.provider,
       params.assetIn,
       params.assetOut,
       params.chainId,

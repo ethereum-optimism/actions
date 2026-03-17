@@ -2,6 +2,7 @@ import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
 import type {
@@ -95,6 +96,8 @@ export interface WalletSwapParams {
   deadline?: number
   /** Recipient address. Defaults to wallet address. */
   recipient?: Address
+  /** Explicitly select a swap provider. Overrides routing config. */
+  provider?: SwapProviderName
 }
 
 /**
@@ -137,6 +140,8 @@ export interface SwapPriceParams {
   amountOut?: number
   /** Chain to get price on */
   chainId: SupportedChainId
+  /** Explicitly select a swap provider. Overrides routing config. */
+  provider?: SwapProviderName
 }
 
 /**

@@ -128,6 +128,7 @@ describe('VelodromeSwapProvider', () => {
 
     it('throws without stable flag in market config', async () => {
       const provider = createProvider({
+        // Intentionally omit stable to test runtime validation
         marketAllowlist: [{ assets: [USDC, OP], chainId: CHAIN_ID }],
       })
 
@@ -239,6 +240,7 @@ describe('VelodromeSwapProvider', () => {
     it('skips configs without stable defined', async () => {
       const provider = createProvider({
         marketAllowlist: [
+          // Intentionally omit stable to test filtering
           { assets: [USDC, OP], chainId: CHAIN_ID },
           {
             assets: [USDC, WETH],
