@@ -227,12 +227,14 @@ class ActionsApiClient {
       chainId,
       amountIn,
       amountOut,
+      provider,
     }: {
       tokenInAddress: Address
       tokenOutAddress: Address
       chainId: SupportedChainId
       amountIn?: number
       amountOut?: number
+      provider?: string
     },
     headers: HeadersInit = {},
   ): Promise<SwapPrice> {
@@ -246,6 +248,9 @@ class ActionsApiClient {
     }
     if (amountOut !== undefined) {
       params.set('amountOut', amountOut.toString())
+    }
+    if (provider) {
+      params.set('provider', provider)
     }
 
     const { result } = await this.request<{
@@ -271,6 +276,7 @@ class ActionsApiClient {
       tokenOutAddress: Address
       chainId: SupportedChainId
       slippage?: number
+      provider?: string
     },
     headers: HeadersInit = {},
   ): Promise<{
@@ -280,7 +286,7 @@ class ActionsApiClient {
     priceImpact: number
     blockExplorerUrls?: string[]
   }> {
-    const { amountIn, tokenInAddress, tokenOutAddress, chainId, slippage } =
+    const { amountIn, tokenInAddress, tokenOutAddress, chainId, slippage, provider } =
       params
     const { result } = await this.request<{
       result: {
@@ -298,6 +304,7 @@ class ActionsApiClient {
         tokenOutAddress,
         chainId,
         slippage,
+        provider,
       }),
       headers,
     })
