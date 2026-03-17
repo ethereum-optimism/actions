@@ -18,7 +18,10 @@ export interface RewardsBreakdown {
  * @param vaultAddress - Vault address
  * @returns Promise resolving to raw vault data or null if not found
  */
-export async function fetchRewards(vaultAddress: Address): Promise<any | null> {
+export async function fetchRewards(
+  vaultAddress: Address,
+  chainId: number,
+): Promise<any | null> {
   const vaultQuery = {
     query: `
       query VaultByAddress($address: String!, $chainId: Int) {
@@ -67,7 +70,7 @@ export async function fetchRewards(vaultAddress: Address): Promise<any | null> {
     `,
     variables: {
       address: vaultAddress.toLowerCase(),
-      chainId: 130,
+      chainId,
     },
   }
 

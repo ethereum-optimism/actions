@@ -107,7 +107,7 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, 130)
 
       expect(vaultData).toBeDefined()
       expect(vaultData).not.toBeNull()
@@ -129,7 +129,7 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, 130)
       expect(vaultData).toBeNull()
     })
 
@@ -139,7 +139,7 @@ describe('Morpho API Integration', () => {
         vi.fn().mockRejectedValue(new Error('Network error')),
       )
 
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, 130)
       expect(vaultData).toBeNull()
     })
 
@@ -153,7 +153,7 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, 130)
       expect(vaultData).toBeNull()
     })
   })
@@ -244,7 +244,7 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT)
+      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT, 130)
 
       expect(rewards).toBeDefined()
       expect(typeof rewards.usdc).toBe('number')
@@ -267,7 +267,7 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT)
+      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT, 130)
 
       expect(rewards.usdc).toBe(0)
       expect(rewards.morpho).toBe(0)
@@ -279,7 +279,7 @@ describe('Morpho API Integration', () => {
   // External tests that make real network requests (only run with EXTERNAL_TEST=true)
   describe.runIf(externalTest())('External API Tests', () => {
     it('should fetch raw vault data from Morpho GraphQL API', async () => {
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, 130)
 
       expect(vaultData).toBeDefined()
       expect(vaultData).not.toBeNull()
@@ -290,7 +290,7 @@ describe('Morpho API Integration', () => {
     }, 30000)
 
     it('should fetch and calculate rewards breakdown', async () => {
-      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT)
+      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT, 130)
 
       expect(rewards).toBeDefined()
       expect(typeof rewards.usdc).toBe('number')
@@ -311,12 +311,12 @@ describe('Morpho API Integration', () => {
       const nonExistentVault =
         '0x0000000000000000000000000000000000000000' as Address
 
-      const vaultData = await fetchRewards(nonExistentVault)
+      const vaultData = await fetchRewards(nonExistentVault, 130)
       expect(vaultData).toBeNull()
     }, 30000)
 
     it('should validate GraphQL response structure', async () => {
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, 130)
 
       expect(vaultData).toMatchObject({
         address: expect.any(String),
