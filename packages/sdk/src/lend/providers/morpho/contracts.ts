@@ -10,8 +10,8 @@ import {
   worldchain,
 } from 'viem/chains'
 
-import { SUPPORTED_CHAIN_IDS as ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { SUPPORTED_CHAIN_IDS as ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type {
   MorphoContracts,
   MorphoContractsRegistry,

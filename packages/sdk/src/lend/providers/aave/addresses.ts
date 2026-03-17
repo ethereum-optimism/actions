@@ -66,9 +66,7 @@ const AAVE_ADDRESSES: Partial<Record<SupportedChainId, AaveAddresses>> = {
 /**
  * Get all Aave addresses for a chain
  */
-export function getAaveAddresses(
-  chainId: number,
-): AaveAddresses | undefined {
+export function getAaveAddresses(chainId: number): AaveAddresses | undefined {
   return AAVE_ADDRESSES[chainId as SupportedChainId]
 }
 
