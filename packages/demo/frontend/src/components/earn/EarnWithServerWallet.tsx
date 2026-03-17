@@ -35,10 +35,10 @@ function buildSwapOperations(
   getAuthHeaders: () => Promise<AuthHeaders>,
 ): Pick<
   EarnOperations,
-  'executeSwap' | 'getConfiguredAssets' | 'getSwapPrice'
+  'executeSwap' | 'getConfiguredAssets' | 'getSwapMarkets' | 'getSwapPrice'
 > {
   return {
-    executeSwap: async ({ amountIn, assetIn, assetOut, chainId }) => {
+    executeSwap: async ({ amountIn, assetIn, assetOut, chainId, provider }) => {
       const tokenInAddress = assetIn.address[chainId]
       const tokenOutAddress = assetOut.address[chainId]
       if (!tokenInAddress || !tokenOutAddress) {
@@ -50,6 +50,7 @@ function buildSwapOperations(
           tokenInAddress: tokenInAddress as Address,
           tokenOutAddress: tokenOutAddress as Address,
           chainId,
+          provider,
         },
         await getAuthHeaders(),
       )
@@ -57,6 +58,8 @@ function buildSwapOperations(
     },
     getConfiguredAssets: async () =>
       actionsApi.getAssets(await getAuthHeaders()),
+    getSwapMarkets: async () =>
+      actionsApi.getSwapMarkets(undefined, await getAuthHeaders()),
     getSwapPrice: async (params) => {
       try {
         const price = await actionsApi.getSwapPrice(

@@ -15,6 +15,7 @@ import { MarketSelector } from './MarketSelector'
 import type { EarnOperations } from '@/hooks/useLendProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
+import { SwapMarketSelector } from './SwapMarketSelector'
 import { useLendBalance } from '@/hooks/useLendBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { useSwap } from '@/hooks/useSwap'
@@ -499,6 +500,10 @@ function EarnContent({
     tokenBalances,
     totalUsd,
     isLoadingTotalBalance,
+    swapMarkets,
+    isLoadingMarkets,
+    selectedProvider,
+    setSelectedProvider,
   } = useSwap({ operations, activeTab })
 
   return (
@@ -534,14 +539,22 @@ function EarnContent({
               )}
 
               {activeTab === 'swap' && (
-                <SwapAction
-                  assets={swapAssets}
-                  isLoadingBalances={isLoadingSwapAssets}
-                  onSwap={handleSwap}
-                  onGetPrice={handleGetPrice}
-                  isExecuting={isSwapping}
-                  onLogActivity={logActivity}
-                />
+                <>
+                  <SwapMarketSelector
+                    markets={swapMarkets}
+                    selectedProvider={selectedProvider}
+                    onSelect={setSelectedProvider}
+                    isLoading={isLoadingMarkets}
+                  />
+                  <SwapAction
+                    assets={swapAssets}
+                    isLoadingBalances={isLoadingSwapAssets}
+                    onSwap={handleSwap}
+                    onGetPrice={handleGetPrice}
+                    isExecuting={isSwapping}
+                    onLogActivity={logActivity}
+                  />
+                </>
               )}
 
               <div className="lg:hidden">

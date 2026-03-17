@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useQueryClient, useQuery } from '@tanstack/react-query'
-import type { Asset, SupportedChainId } from '@eth-optimism/actions-sdk/react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { Asset, SupportedChainId, SwapMarket } from '@eth-optimism/actions-sdk/react'
 
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
@@ -16,6 +16,7 @@ interface UseSwapParams {
 
 export function useSwap({ operations, activeTab }: UseSwapParams) {
   const [isSwapping, setIsSwapping] = useState(false)
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
   const queryClient = useQueryClient()
   const { logActivity } = useActivityLogger()
 
@@ -26,6 +27,22 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
     enabled: false,
   })
   const isLoadingBalances = !walletTokenBalances
+
+  // Fetch swap markets to populate the provider selector
+  const { data: swapMarkets = [], isLoading: isLoadingMarkets } = useQuery<
+    SwapMarket[]
+  >({
+    queryKey: ['swapMarkets'],
+    queryFn: () => operations.getSwapMarkets(),
+    enabled: activeTab === 'swap',
+  })
+
+  // Auto-select first provider when markets load
+  useEffect(() => {
+    if (swapMarkets.length > 0 && !selectedProvider) {
+      setSelectedProvider(swapMarkets[0].provider)
+    }
+  }, [swapMarkets, selectedProvider])
 
   const handleGetPrice = useCallback(
     async ({
@@ -47,9 +64,10 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
         chainId,
         amountIn,
         amountOut,
+        provider: selectedProvider ?? undefined,
       })
     },
-    [operations],
+    [operations, selectedProvider],
   )
 
   const {
@@ -90,6 +108,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
           assetIn,
           assetOut,
           chainId,
+          provider: selectedProvider ?? undefined,
         })
         const activity = logActivity('getBalance')
         await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
@@ -103,7 +122,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
         setIsSwapping(false)
       }
     },
-    [isSwapping, operations, logActivity, queryClient],
+    [isSwapping, operations, selectedProvider, logActivity, queryClient],
   )
 
   const {
@@ -124,5 +143,9 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
     tokenBalances,
     totalUsd,
     isLoadingTotalBalance: isLoadingTotalBalance || isLoadingBalances,
+    swapMarkets,
+    isLoadingMarkets,
+    selectedProvider,
+    setSelectedProvider,
   }
 }
