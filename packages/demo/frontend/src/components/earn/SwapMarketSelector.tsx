@@ -63,11 +63,7 @@ export function SwapMarketSelector({
     const name = displayName(option.provider)
     return (
       <div className="flex items-center gap-2 flex-1">
-        <img
-          src={MARKET_LOGO[name] ?? ''}
-          alt={name}
-          className="h-6 w-6"
-        />
+        <img src={MARKET_LOGO[name] ?? ''} alt={name} className="h-6 w-6" />
         <span className="text-sm font-medium" style={{ color: '#1a1b1e' }}>
           {name}
         </span>

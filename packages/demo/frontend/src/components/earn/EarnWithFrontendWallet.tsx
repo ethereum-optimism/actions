@@ -102,7 +102,13 @@ export function EarnWithFrontendWallet({
       },
       openPosition: async (params) => wallet!.lend!.openPosition(params),
       closePosition: async (params) => wallet!.lend!.closePosition(params),
-      executeSwap: async ({ amountIn, assetIn, assetOut, chainId, provider }) => {
+      executeSwap: async ({
+        amountIn,
+        assetIn,
+        assetOut,
+        chainId,
+        provider,
+      }) => {
         const receipt = await wallet!.swap!.execute({
           amountIn,
           assetIn,

@@ -50,9 +50,7 @@ export function createActionsConfig<T extends ReactProviderTypes>(
       },
       velodrome: {
         defaultSlippage: 0.005,
-        marketAllowlist: [
-          { assets: [USDC_DEMO, OP_DEMO], stable: false },
-        ],
+        marketAllowlist: [{ assets: [USDC_DEMO, OP_DEMO], stable: false }],
       },
     },
     chains: [
