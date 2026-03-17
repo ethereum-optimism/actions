@@ -25,10 +25,10 @@ export interface VelodromeAddresses {
 const VELODROME_ADDRESSES: Partial<
   Record<SupportedChainId, VelodromeAddresses>
 > = {
-  // Base Sepolia — testnet deployment (addresses TBD from Velodrome team)
+  // Base Sepolia — testnet deployment from Velodrome team
   84532: {
-    router: '0x0000000000000000000000000000000000000000',
-    poolFactory: '0x0000000000000000000000000000000000000000',
+    router: '0x6Df1c91424F79E40E33B1A48F0687B666bE71075',
+    poolFactory: '0x7b9644D43900da734f5a83DD0489Af1197DF2CF0',
     routerType: 'v2',
   },
   // Optimism — Velodrome v2
