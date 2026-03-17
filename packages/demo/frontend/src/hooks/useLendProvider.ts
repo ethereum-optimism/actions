@@ -6,6 +6,7 @@ import type {
   LendMarketPosition,
   LendTransactionReceipt,
   SupportedChainId,
+  SwapMarket,
   Asset,
 } from '@eth-optimism/actions-sdk/react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -36,14 +37,17 @@ export interface EarnOperations {
     assetIn: Asset
     assetOut: Asset
     chainId: SupportedChainId
+    provider?: string
   }) => Promise<{ blockExplorerUrl?: string }>
   getConfiguredAssets: () => Promise<Asset[]>
+  getSwapMarkets: () => Promise<SwapMarket[]>
   getSwapPrice: (params: {
     tokenInAddress: Address
     tokenOutAddress: Address
     chainId: SupportedChainId
     amountIn?: number
     amountOut?: number
+    provider?: string
   }) => Promise<{
     price: string
     priceImpact: number
