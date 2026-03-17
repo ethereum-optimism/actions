@@ -10,7 +10,7 @@ import {IPoolFactory, IRouter} from "../src/interfaces/IVelodrome.sol";
 ///         Requires an existing Velodrome protocol deployment on the target chain.
 ///         Reads token and protocol addresses from environment variables.
 contract DeployVelodromeMarket is Script {
-    // TODO: Replace with actual Base Sepolia deployment addresses from the Velodrome team
+    // TODO: Replace with actual Base Sepolia deployment addresses
     address constant ROUTER = address(0);
     address constant POOL_FACTORY = address(0);
 
@@ -19,8 +19,8 @@ contract DeployVelodromeMarket is Script {
     uint256 constant OP_AMOUNT = 1_000_000e18; // 1M OP
 
     function run() public {
-        require(ROUTER != address(0), "ROUTER address not set — waiting for Velodrome Base Sepolia deployment");
-        require(POOL_FACTORY != address(0), "POOL_FACTORY address not set — waiting for Velodrome Base Sepolia deployment");
+        require(ROUTER != address(0), "ROUTER address not set - waiting for Velodrome Base Sepolia deployment");
+        require(POOL_FACTORY != address(0), "POOL_FACTORY address not set - waiting for Velodrome Base Sepolia deployment");
 
         address usdcAddr = vm.envAddress("DEMO_USDC_ADDRESS");
         address opAddr = vm.envAddress("DEMO_OP_ADDRESS");
