@@ -12,6 +12,7 @@ import * as swapService from '@/services/swap.js'
 import { serializeBigInt } from '@/utils/serializers.js'
 
 const supportedChainIds = ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]
+const providerEnum = z.enum(['uniswap', 'velodrome']).optional()
 
 const chainIdFromString = z
   .string()
@@ -40,6 +41,7 @@ const PriceRequestSchema = z.object({
       .string()
       .optional()
       .transform((v) => (v ? Number(v) : undefined)),
+    provider: z.string().optional().pipe(providerEnum),
   }),
 })
 
@@ -54,6 +56,7 @@ const ExecuteSwapRequestSchema = z.object({
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
     chainId: chainIdFromNumber,
     slippage: z.number().min(0).max(0.5).optional(),
+    provider: providerEnum,
   }),
 })
 
@@ -97,8 +100,14 @@ export async function getPrice(c: Context) {
     const validation = await validateRequest(c, PriceRequestSchema)
     if (!validation.success) return validation.response
 
-    const { tokenInAddress, tokenOutAddress, chainId, amountIn, amountOut } =
-      validation.data.query
+    const {
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      amountIn,
+      amountOut,
+      provider,
+    } = validation.data.query
 
     const price = await swapService.getPrice({
       tokenInAddress: tokenInAddress as Address,
@@ -106,6 +115,7 @@ export async function getPrice(c: Context) {
       chainId: chainId as SupportedChainId,
       amountIn,
       amountOut,
+      provider,
     })
 
     return c.json({ result: serializeBigInt(price) })
@@ -122,8 +132,14 @@ export async function executeSwap(c: Context) {
     const validation = await validateRequest(c, ExecuteSwapRequestSchema)
     if (!validation.success) return validation.response
 
-    const { amountIn, tokenInAddress, tokenOutAddress, chainId, slippage } =
-      validation.data.body
+    const {
+      amountIn,
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      slippage,
+      provider,
+    } = validation.data.body
 
     const authResult = requireAuth(c)
     if ('error' in authResult) return authResult.error
@@ -135,6 +151,7 @@ export async function executeSwap(c: Context) {
       tokenOutAddress: tokenOutAddress as Address,
       chainId: chainId as SupportedChainId,
       slippage,
+      provider,
     })
 
     return c.json({ result: serializeBigInt(result) })
