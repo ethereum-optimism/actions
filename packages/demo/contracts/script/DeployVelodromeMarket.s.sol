@@ -20,7 +20,9 @@ contract DeployVelodromeMarket is Script {
 
     function run() public {
         require(ROUTER != address(0), "ROUTER address not set - waiting for Velodrome Base Sepolia deployment");
-        require(POOL_FACTORY != address(0), "POOL_FACTORY address not set - waiting for Velodrome Base Sepolia deployment");
+        require(
+            POOL_FACTORY != address(0), "POOL_FACTORY address not set - waiting for Velodrome Base Sepolia deployment"
+        );
 
         address usdcAddr = vm.envAddress("DEMO_USDC_ADDRESS");
         address opAddr = vm.envAddress("DEMO_OP_ADDRESS");

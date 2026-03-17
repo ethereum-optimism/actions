@@ -16,6 +16,7 @@ import type { EarnOperations } from '@/hooks/useLendProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
 import { SwapMarketSelector } from './SwapMarketSelector'
+import { BestPriceIndicator } from './BestPriceIndicator'
 import { useLendBalance } from '@/hooks/useLendBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { useSwap } from '@/hooks/useSwap'
@@ -540,12 +541,24 @@ function EarnContent({
 
               {activeTab === 'swap' && (
                 <>
-                  <SwapMarketSelector
-                    markets={swapMarkets}
-                    selectedProvider={selectedProvider}
-                    onSelect={setSelectedProvider}
-                    isLoading={isLoadingMarkets}
-                  />
+                  <div>
+                    <h3
+                      className="mb-3"
+                      style={{
+                        color: '#1a1b1e',
+                        fontSize: '16px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Select Market
+                    </h3>
+                    <SwapMarketSelector
+                      markets={swapMarkets}
+                      selectedProvider={selectedProvider}
+                      onSelect={setSelectedProvider}
+                      isLoading={isLoadingMarkets}
+                    />
+                  </div>
                   <SwapAction
                     assets={swapAssets}
                     isLoadingBalances={isLoadingSwapAssets}
@@ -554,6 +567,7 @@ function EarnContent({
                     isExecuting={isSwapping}
                     onLogActivity={logActivity}
                   />
+                  <BestPriceIndicator />
                 </>
               )}
 
