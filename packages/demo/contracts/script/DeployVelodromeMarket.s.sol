@@ -3,15 +3,14 @@ pragma solidity ^0.8.26;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
-import {IPoolFactory, IRouter} from "../src/interfaces/IVelodrome.sol";
+import {IPoolFactory, IPool} from "../src/interfaces/IVelodrome.sol";
 
 /// @title DeployVelodromeMarket
 /// @notice Creates a Velodrome/Aerodrome volatile pool for DemoUSDC/DemoOP with initial liquidity.
-///         Requires an existing Velodrome protocol deployment on the target chain.
-///         Reads token and protocol addresses from environment variables.
+///         Adds liquidity directly via the pool (transfer + mint), bypassing the Router.
+///         Reads token addresses from environment variables.
 contract DeployVelodromeMarket is Script {
     // Base Sepolia — Velodrome testnet deployment
-    address constant ROUTER = 0x6Df1c91424F79E40E33B1A48F0687B666bE71075;
     address constant POOL_FACTORY = 0x7b9644D43900da734f5a83DD0489Af1197DF2CF0;
 
     // Liquidity amounts
@@ -24,9 +23,14 @@ contract DeployVelodromeMarket is Script {
 
         vm.startBroadcast();
 
-        // Create volatile pool
-        address pool = IPoolFactory(POOL_FACTORY).createPool(usdcAddr, opAddr, false);
-        console.log("Pool:", pool);
+        // Create volatile pool (or reuse existing)
+        address pool = IPoolFactory(POOL_FACTORY).getPool(usdcAddr, opAddr, false);
+        if (pool == address(0)) {
+            pool = IPoolFactory(POOL_FACTORY).createPool(usdcAddr, opAddr, false);
+            console.log("Pool created:", pool);
+        } else {
+            console.log("Pool exists:", pool);
+        }
 
         // Mint demo tokens for liquidity
         (bool s1,) = usdcAddr.call(abi.encodeWithSignature("mint(address,uint256)", msg.sender, USDC_AMOUNT));
@@ -34,26 +38,14 @@ contract DeployVelodromeMarket is Script {
         (bool s2,) = opAddr.call(abi.encodeWithSignature("mint(address,uint256)", msg.sender, OP_AMOUNT));
         require(s2, "OP mint failed");
 
-        // Approve tokens to Router
-        IERC20(usdcAddr).approve(ROUTER, type(uint256).max);
-        IERC20(opAddr).approve(ROUTER, type(uint256).max);
-
-        // Add liquidity
-        (uint256 amountA, uint256 amountB, uint256 liquidity) = IRouter(ROUTER).addLiquidity(
-            usdcAddr,
-            opAddr,
-            false, // volatile pool
-            USDC_AMOUNT,
-            OP_AMOUNT,
-            0, // no minimum (testnet)
-            0, // no minimum (testnet)
-            msg.sender,
-            block.timestamp + 60
-        );
+        // Add liquidity directly to the pool (transfer + mint pattern)
+        // This bypasses the Router, which on Base Sepolia is a Universal Router
+        // with a different interface than the legacy v2 Router.
+        IERC20(usdcAddr).transfer(pool, USDC_AMOUNT);
+        IERC20(opAddr).transfer(pool, OP_AMOUNT);
+        uint256 liquidity = IPool(pool).mint(msg.sender);
 
         console.log("Liquidity added:", liquidity);
-        console.log("Amount USDC:", amountA);
-        console.log("Amount OP:", amountB);
 
         vm.stopBroadcast();
     }
