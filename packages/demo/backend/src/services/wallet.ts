@@ -6,7 +6,7 @@ import type {
   UserOperationTransactionReceipt,
   Wallet,
 } from '@eth-optimism/actions-sdk'
-import { getAssetAddress, getTokenBySymbol } from '@eth-optimism/actions-sdk'
+import { getAssetAddress, USDC_DEMO } from '@eth-optimism/actions-sdk'
 import type { User } from '@privy-io/node'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
@@ -105,14 +105,9 @@ export async function mintDemoUsdcToWallet(wallet: SmartWallet): Promise<{
 
   const amountInDecimals = BigInt(Math.floor(parseFloat('100') * 1000000))
 
-  const usdcDemoToken = getTokenBySymbol('USDC_DEMO')
-  if (!usdcDemoToken) {
-    throw new Error('USDC_DEMO token not found in supported tokens')
-  }
-
   const calls = [
     {
-      to: getAssetAddress(usdcDemoToken, baseSepolia.id),
+      to: getAssetAddress(USDC_DEMO, baseSepolia.id),
       data: encodeFunctionData({
         abi: mintableErc20Abi,
         functionName: 'mint',

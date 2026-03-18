@@ -1,11 +1,50 @@
 export type { Actions } from '@/actions.js'
 export {
+  AAVE,
+  ARB,
+  BAL,
+  CBBTC,
+  CBETH,
+  COMP,
+  CRV,
+  DAI,
+  EETH,
+  ENA,
+  ENS,
   ETH,
+  ETHFI,
+  FRAX,
+  GRT,
+  LDO,
+  LINK,
+  MKR,
   MORPHO,
+  ONDO,
+  ONEINCH,
+  OP,
   OP_DEMO,
+  PENDLE,
+  PEPE,
+  POL,
+  PYUSD,
+  RENDER,
+  RETH,
+  RPL,
+  SHIB,
+  SKY,
+  SNX,
+  STETH,
+  SUSHI,
+  UNI,
   USDC,
   USDC_DEMO,
+  USDE,
+  USDT,
+  WBTC,
+  WEETH,
   WETH,
+  WLD,
+  WSTETH,
 } from '@/constants/assets.js'
 export {
   SUPPORTED_CHAIN_IDS,
@@ -13,11 +52,6 @@ export {
 } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'
 export { LendProvider, MorphoLendProvider } from '@/lend/index.js'
-export {
-  getTokenAddress,
-  getTokenBySymbol,
-  SUPPORTED_TOKENS,
-} from '@/supported/tokens.js'
 export {
   SwapProvider,
   type UniswapMarketConfig,

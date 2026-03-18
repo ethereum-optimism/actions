@@ -42,12 +42,13 @@ export interface LendNetworkConfig {
 
 /**
  * Assets configuration
- * @description Configuration for supported assets
+ * @description Configuration for supported assets. Import token constants from the SDK
+ * or define your own Asset objects.
  */
 export interface AssetsConfig {
-  /** Allowlist of assets to support (optional - defaults to all SUPPORTED_TOKENS) */
+  /** Allowlist of assets to support. No default — developers must explicitly configure. */
   allow?: Asset[]
-  /** Blocklist of assets to exclude (optional) */
+  /** Blocklist of assets to exclude from the allow list. Only effective when allow is also set. For future use with runtime asset fetching. */
   block?: Asset[]
 }
 

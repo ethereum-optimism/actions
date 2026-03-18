@@ -12,7 +12,6 @@ import { getRandomAddress } from '@/__mocks__/utils.js'
 import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { LendProvider, TransactionData } from '@/types/lend/index.js'
 import {

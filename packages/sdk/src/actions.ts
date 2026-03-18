@@ -2,7 +2,6 @@ import type { LendProvider } from '@/lend/index.js'
 import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { SwapProvider } from '@/swap/index.js'
 import { UniswapSwapProvider } from '@/swap/index.js'
 import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
@@ -85,6 +84,7 @@ export class Actions<
       this._lendProviders.morpho = new MorphoLendProvider(
         config.lend.morpho,
         this.chainManager,
+        this.getSupportedAssets(),
       )
     }
     if (config.lend?.aave) {
@@ -164,28 +164,24 @@ export class Actions<
   /**
    * Get the list of supported assets based on configuration
    * @description Returns filtered assets based on allow/block lists in assets config.
-   * If no config provided, returns all SUPPORTED_TOKENS.
+   * If no config provided, returns empty array. Developers must explicitly configure
+   * their supported assets via ActionsConfig.assets.allow.
    * @returns Array of supported assets
    */
   public getSupportedAssets(): Asset[] {
-    // If no assets config, return all supported tokens
     if (!this._assetsConfig) {
-      return SUPPORTED_TOKENS
+      return []
     }
 
-    // If allow list provided, return only those
-    if (this._assetsConfig.allow && this._assetsConfig.allow.length > 0) {
-      return this._assetsConfig.allow
-    }
+    const allowList = this._assetsConfig.allow ?? []
 
-    // If block list provided, filter out blocked assets
     if (this._assetsConfig.block && this._assetsConfig.block.length > 0) {
       const blockedAddresses = new Set(
         this._assetsConfig.block.flatMap((asset) =>
           Object.values(asset.address).map((addr) => addr.toLowerCase()),
         ),
       )
-      return SUPPORTED_TOKENS.filter((token) => {
+      return allowList.filter((token) => {
         const tokenAddresses = Object.values(token.address).map((addr) =>
           addr.toLowerCase(),
         )
@@ -193,8 +189,7 @@ export class Actions<
       })
     }
 
-    // Default to all supported tokens
-    return SUPPORTED_TOKENS
+    return allowList
   }
 
   /**

@@ -4,6 +4,24 @@ import {
   calculateBaseApy,
   calculateRewardsBreakdown,
 } from '@/lend/providers/morpho/sdk.js'
+import type { Asset } from '@/types/asset.js'
+
+const USDC_ADDRESS = '0x078d782b760474a361dda0af3839290b0ef57ad6'
+const MORPHO_ADDRESS = '0x9994e35db50125e0df82e4c2dde62496ce330999'
+const CHAIN_ID = 130
+
+const testSupportedAssets: Asset[] = [
+  {
+    address: { [CHAIN_ID]: USDC_ADDRESS as `0x${string}` },
+    metadata: { decimals: 6, name: 'USD Coin', symbol: 'USDC' },
+    type: 'erc20',
+  },
+  {
+    address: { [CHAIN_ID]: MORPHO_ADDRESS as `0x${string}` },
+    metadata: { decimals: 18, name: 'Morpho Token', symbol: 'MORPHO' },
+    type: 'erc20',
+  },
+]
 
 describe('Vault Utilities', () => {
   describe('calculateBaseApy', () => {
@@ -157,40 +175,34 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault)
+      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
 
-      expect(result).toEqual({
-        eth: 0,
-        weth: 0,
-        usdc: 0,
-        usdc_demo: 0,
-        op_demo: 0,
-        morpho: 0,
-        other: 0,
-        totalRewards: 0,
-      })
+      expect(result[USDC_ADDRESS]).toBe(0)
+      expect(result[MORPHO_ADDRESS]).toBe(0)
+      expect(result.other).toBe(0)
+      expect(result.totalRewards).toBe(0)
     })
 
-    it('should categorize vault-level rewards by chain ID', () => {
+    it('should categorize vault-level rewards by address', () => {
       const apiVault = {
         state: {
           rewards: [
             {
               supplyApr: 0.03, // 3% USDC rewards
               asset: {
-                address: '0x078d782b760474a361dda0af3839290b0ef57ad6',
+                address: USDC_ADDRESS,
                 name: 'USDC',
                 symbol: 'USDC',
-                chain: { id: 130 }, // Unichain = USDC rewards
+                chain: { id: CHAIN_ID },
               },
             },
             {
               supplyApr: 0.015, // 1.5% MORPHO rewards
               asset: {
-                address: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
+                address: MORPHO_ADDRESS,
                 name: 'MORPHO',
                 symbol: 'MORPHO',
-                chain: { id: 1 }, // Ethereum = MORPHO rewards
+                chain: { id: CHAIN_ID },
               },
             },
           ],
@@ -198,10 +210,10 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault)
+      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
 
-      expect(result.usdc).toBeCloseTo(0.03, 4)
-      expect(result.morpho).toBeCloseTo(0.015, 4)
+      expect(result[USDC_ADDRESS]).toBeCloseTo(0.03, 4)
+      expect(result[MORPHO_ADDRESS]).toBeCloseTo(0.015, 4)
       expect(result.other).toBe(0)
       expect(result.totalRewards).toBeCloseTo(0.045, 4)
     })
@@ -220,9 +232,9 @@ describe('Vault Utilities', () => {
                     {
                       supplyApr: 0.02, // 2% reward
                       asset: {
-                        address: '0x078d782b760474a361dda0af3839290b0ef57ad6',
+                        address: USDC_ADDRESS,
                         symbol: 'USDC',
-                        chain: { id: 130 }, // USDC reward
+                        chain: { id: CHAIN_ID },
                       },
                     },
                   ],
@@ -238,9 +250,9 @@ describe('Vault Utilities', () => {
                     {
                       supplyApr: 0.05, // 5% reward
                       asset: {
-                        address: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
+                        address: MORPHO_ADDRESS,
                         symbol: 'MORPHO',
-                        chain: { id: 1 }, // MORPHO reward
+                        chain: { id: CHAIN_ID },
                       },
                     },
                   ],
@@ -251,13 +263,13 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault)
+      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
 
       // Expected calculation:
       // USDC: 2% * (600k / 1M) = 1.2%
       // MORPHO: 5% * (400k / 1M) = 2%
-      expect(result.usdc).toBeCloseTo(0.012, 4)
-      expect(result.morpho).toBeCloseTo(0.02, 4)
+      expect(result[USDC_ADDRESS]).toBeCloseTo(0.012, 4)
+      expect(result[MORPHO_ADDRESS]).toBeCloseTo(0.02, 4)
       expect(result.other).toBe(0)
       expect(result.totalRewards).toBeCloseTo(0.032, 4)
     })
@@ -269,9 +281,9 @@ describe('Vault Utilities', () => {
             {
               supplyApr: 0.01, // 1% vault-level USDC reward
               asset: {
-                address: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
+                address: USDC_ADDRESS,
                 symbol: 'USDC',
-                chain: { id: 130 },
+                chain: { id: CHAIN_ID },
               },
             },
           ],
@@ -285,9 +297,9 @@ describe('Vault Utilities', () => {
                     {
                       supplyApr: 0.015, // 1.5% market-level MORPHO reward
                       asset: {
-                        address: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
+                        address: MORPHO_ADDRESS,
                         symbol: 'MORPHO',
-                        chain: { id: 1 },
+                        chain: { id: CHAIN_ID },
                       },
                     },
                   ],
@@ -298,14 +310,14 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault)
+      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
 
-      expect(result.usdc).toBeCloseTo(0.01, 4) // Vault-level
-      expect(result.morpho).toBeCloseTo(0.015, 4) // Market-level (100% weight)
+      expect(result[USDC_ADDRESS]).toBeCloseTo(0.01, 4) // Vault-level
+      expect(result[MORPHO_ADDRESS]).toBeCloseTo(0.015, 4) // Market-level (100% weight)
       expect(result.totalRewards).toBeCloseTo(0.025, 4)
     })
 
-    it('should categorize unknown tokens as other rewards', () => {
+    it('should categorize unknown token addresses as other', () => {
       const apiVault = {
         state: {
           rewards: [
@@ -315,7 +327,7 @@ describe('Vault Utilities', () => {
                 address: '0x1234567890123456789012345678901234567890',
                 name: 'UNKNOWN',
                 symbol: 'UNKNOWN',
-                chain: { id: 42 }, // Unknown chain
+                chain: { id: CHAIN_ID },
               },
             },
           ],
@@ -323,10 +335,10 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault)
+      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
 
-      expect(result.usdc).toBe(0)
-      expect(result.morpho).toBe(0)
+      expect(result[USDC_ADDRESS]).toBe(0)
+      expect(result[MORPHO_ADDRESS]).toBe(0)
       expect(result.other).toBeCloseTo(0.005, 4)
       expect(result.totalRewards).toBeCloseTo(0.005, 4)
     })
@@ -345,9 +357,9 @@ describe('Vault Utilities', () => {
                     {
                       supplyApr: 0.1, // High reward but no weight
                       asset: {
-                        address: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
+                        address: USDC_ADDRESS,
                         symbol: 'USDC',
-                        chain: { id: 130 },
+                        chain: { id: CHAIN_ID },
                       },
                     },
                   ],
@@ -358,10 +370,10 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault)
+      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
 
       // Should be zero because total supply is zero (weight = 0)
-      expect(result.usdc).toBe(0)
+      expect(result[USDC_ADDRESS]).toBe(0)
       expect(result.totalRewards).toBe(0)
     })
   })

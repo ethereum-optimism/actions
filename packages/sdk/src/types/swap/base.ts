@@ -105,12 +105,12 @@ export interface SwapExecuteParams extends WalletSwapParams {
 }
 
 /**
- * Fully resolved swap parameters with defaults applied and amounts in wei.
+ * Fully resolved swap parameters with defaults applied and amounts as raw bigint.
  * Passed to provider _execute() implementations.
  */
 export interface ResolvedSwapParams {
-  amountInWei?: bigint
-  amountOutWei?: bigint
+  amountInRaw?: bigint
+  amountOutRaw?: bigint
   assetIn: Asset
   assetOut: Asset
   slippage: number
@@ -172,15 +172,15 @@ export interface SwapPrice {
   amountIn: number
   /** Human-readable output amount */
   amountOut: number
-  /** Input amount in wei */
-  amountInWei: bigint
-  /** Expected output amount in wei */
-  amountOutWei: bigint
+  /** Input amount as raw bigint */
+  amountInRaw: bigint
+  /** Expected output amount as raw bigint */
+  amountOutRaw: bigint
   /** Price impact as decimal (0.03 = 3%). Derived from pool mid-price vs execution price. */
   priceImpact: number
   /** Route taken for the swap */
   route: SwapRoute
-  /** Estimated gas cost in wei */
+  /** Estimated gas cost as raw bigint */
   gasEstimate?: bigint
 }
 
@@ -204,10 +204,10 @@ export interface SwapTransaction {
   amountIn: number
   /** Human-readable output amount */
   amountOut: number
-  /** Input amount in wei */
-  amountInWei: bigint
-  /** Output amount in wei (expected) */
-  amountOutWei: bigint
+  /** Input amount as raw bigint */
+  amountInRaw: bigint
+  /** Output amount as raw bigint (expected) */
+  amountOutRaw: bigint
   /** Input asset */
   assetIn: Asset
   /** Output asset */
@@ -230,10 +230,10 @@ export interface SwapReceipt {
   amountIn: number
   /** Human-readable output amount */
   amountOut: number
-  /** Actual input amount in wei */
-  amountInWei: bigint
-  /** Actual output amount in wei */
-  amountOutWei: bigint
+  /** Actual input amount as raw bigint */
+  amountInRaw: bigint
+  /** Actual output amount as raw bigint */
+  amountOutRaw: bigint
   /** Input asset */
   assetIn: Asset
   /** Output asset */

@@ -152,7 +152,7 @@ describe('UniswapSwapProvider', () => {
       })
 
       // 1 USDC = 1000000 (6 decimals)
-      expect(price.amountInWei).toBe(1000000n)
+      expect(price.amountInRaw).toBe(1000000n)
     })
   })
 
