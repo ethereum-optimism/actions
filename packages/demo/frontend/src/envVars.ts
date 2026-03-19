@@ -3,7 +3,6 @@ import { z } from 'zod'
 const envVarSchema = z.object({
   VITE_ACTIONS_API_URL: z
     .string()
-    .url()
     .default(
       import.meta.env.MODE === 'production'
         ? 'https://dev-verbs-service.optimism.io'
