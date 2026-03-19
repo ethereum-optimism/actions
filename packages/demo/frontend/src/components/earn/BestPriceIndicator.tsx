@@ -85,7 +85,12 @@ export function BestPriceIndicator() {
         <span className="text-xs tabular-nums" style={{ color: '#999999' }}>
           {isFetching ? '...' : `${secondsLeft}s`}
         </span>
-        <div className="relative" ref={tooltipRef}>
+        <div
+          className="relative"
+          ref={tooltipRef}
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
           <button
             onClick={() => setShowTooltip((prev) => !prev)}
             className="flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
