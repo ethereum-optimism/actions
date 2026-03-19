@@ -1,9 +1,18 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { encodeFunctionData, formatUnits } from 'viem'
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+  encodePacked,
+  formatUnits,
+} from 'viem'
 
+import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   LEAF_ROUTER_ABI,
+  POOL_ABI,
+  POOL_FACTORY_ABI,
+  UNIVERSAL_ROUTER_ABI,
   V2_ROUTER_ABI,
 } from '@/swap/providers/velodrome/abis.js'
 import type { VelodromeRouterType } from '@/swap/providers/velodrome/addresses.js'
@@ -24,9 +33,9 @@ export interface GetQuoteParams {
 }
 
 /**
- * Get a swap quote from the Velodrome/Aerodrome Router via getAmountsOut.
- * @param params - Quote parameters including assets, amount, and router details
- * @returns Price quote with amounts and route information
+ * Get a swap quote. Routes to the correct quoting mechanism based on router type:
+ * - v2/leaf: Router.getAmountsOut()
+ * - universal: Pool.getAmountOut() directly (no legacy router available)
  */
 export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
   const {
@@ -49,21 +58,48 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     ? getWrappedNativeAddress(chainId)
     : getAssetAddress(assetOut, chainId)
 
-  const abi = routerType === 'v2' ? V2_ROUTER_ABI : LEAF_ROUTER_ABI
+  let amountOutWei: bigint
 
-  const route =
-    routerType === 'v2'
-      ? { from: tokenIn, to: tokenOut, stable, factory: factoryAddress }
-      : { from: tokenIn, to: tokenOut, stable }
+  if (routerType === 'universal') {
+    // Look up the pool and quote directly
+    const poolAddress = await publicClient.readContract({
+      address: factoryAddress,
+      abi: POOL_FACTORY_ABI,
+      functionName: 'getPool',
+      args: [tokenIn, tokenOut, stable],
+    })
 
-  const amounts = await publicClient.readContract({
-    address: routerAddress,
-    abi,
-    functionName: 'getAmountsOut',
-    args: [amountInWei, [route]],
-  })
+    if (
+      !poolAddress ||
+      poolAddress === '0x0000000000000000000000000000000000000000'
+    ) {
+      throw new Error(
+        `No Velodrome pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (stable=${stable})`,
+      )
+    }
 
-  const amountOutWei = (amounts as bigint[])[1]
+    amountOutWei = (await publicClient.readContract({
+      address: poolAddress as Address,
+      abi: POOL_ABI,
+      functionName: 'getAmountOut',
+      args: [amountInWei, tokenIn],
+    })) as bigint
+  } else {
+    // Legacy router quoting
+    const abi = routerType === 'v2' ? V2_ROUTER_ABI : LEAF_ROUTER_ABI
+    const route =
+      routerType === 'v2'
+        ? { from: tokenIn, to: tokenOut, stable, factory: factoryAddress }
+        : { from: tokenIn, to: tokenOut, stable }
+
+    const amounts = await publicClient.readContract({
+      address: routerAddress,
+      abi,
+      functionName: 'getAmountsOut',
+      args: [amountInWei, [route]],
+    })
+    amountOutWei = (amounts as bigint[])[1]
+  }
 
   const normalizedIn = parseFloat(
     formatUnits(amountInWei, assetIn.metadata.decimals),
@@ -77,13 +113,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
 
   const swapRoute: SwapRoute = {
     path: [assetIn, assetOut],
-    pools: [
-      {
-        address: tokenIn,
-        fee: 0,
-        version: 'v2',
-      },
-    ],
+    pools: [{ address: tokenIn, fee: 0, version: 'v2' }],
   }
 
   return {
@@ -111,11 +141,15 @@ export interface EncodeSwapParams {
   chainId: SupportedChainId
 }
 
+/** Universal Router V2_SWAP_EXACT_IN command */
+const V2_SWAP_EXACT_IN = 0x08
+/** Sentinel: route output to msg.sender */
+const MSG_SENDER = '0x0000000000000000000000000000000000000001' as Address
+
 /**
- * Encode Velodrome/Aerodrome Router swap calldata.
- * Selects the correct swap function based on whether ETH is involved.
- * @param params - Swap encoding parameters
- * @returns Encoded calldata as hex string
+ * Encode swap calldata. Routes to the correct encoding based on router type:
+ * - v2/leaf: Legacy Router swapExactTokensForTokens/ETH variants
+ * - universal: Universal Router execute() with V2_SWAP_EXACT_IN command
  */
 export function encodeSwap(params: EncodeSwapParams): Hex {
   const {
@@ -139,8 +173,94 @@ export function encodeSwap(params: EncodeSwapParams): Hex {
     ? getWrappedNativeAddress(chainId)
     : getAssetAddress(assetOut, chainId)
 
-  const abi = routerType === 'v2' ? V2_ROUTER_ABI : LEAF_ROUTER_ABI
+  if (routerType === 'universal') {
+    return encodeUniversalRouterSwap(
+      tokenIn,
+      tokenOut,
+      amountInWei,
+      amountOutMin,
+      stable,
+      deadline,
+    )
+  }
 
+  return encodeLegacyRouterSwap(
+    assetIn,
+    assetOut,
+    tokenIn,
+    tokenOut,
+    amountInWei,
+    amountOutMin,
+    routerType,
+    stable,
+    factoryAddress,
+    recipient,
+    deadline,
+  )
+}
+
+/**
+ * Encode a V2_SWAP_EXACT_IN command for the Universal Router.
+ * Route format: abi.encodePacked(tokenIn, stable, tokenOut) — 41 bytes per hop.
+ * The 6th param `isUni` is false for Velodrome/Aerodrome pools.
+ */
+function encodeUniversalRouterSwap(
+  tokenIn: Address,
+  tokenOut: Address,
+  amountInWei: bigint,
+  amountOutMin: bigint,
+  stable: boolean,
+  deadline: number,
+): Hex {
+  const commands = `0x${V2_SWAP_EXACT_IN.toString(16).padStart(2, '0')}` as Hex
+
+  // Velodrome V2 route: [tokenIn (20)] [stable (1)] [tokenOut (20)]
+  const routes = encodePacked(
+    ['address', 'bool', 'address'],
+    [tokenIn, stable, tokenOut],
+  )
+
+  const input = encodeAbiParameters(
+    [
+      { type: 'address' },
+      { type: 'uint256' },
+      { type: 'uint256' },
+      { type: 'bytes' },
+      { type: 'bool' },
+      { type: 'bool' },
+    ],
+    [
+      MSG_SENDER, // recipient
+      amountInWei,
+      amountOutMin,
+      routes,
+      true, // payerIsUser — pull tokens from caller via Permit2
+      false, // isUni — false for Velodrome/Aerodrome
+    ],
+  )
+
+  return encodeFunctionData({
+    abi: UNIVERSAL_ROUTER_ABI,
+    functionName: 'execute',
+    args: [commands, [input], BigInt(deadline)],
+  })
+}
+
+/** Encode swap calldata for legacy v2 or leaf routers */
+function encodeLegacyRouterSwap(
+  assetIn: Asset,
+  assetOut: Asset,
+  tokenIn: Address,
+  tokenOut: Address,
+  amountInWei: bigint,
+  amountOutMin: bigint,
+  routerType: 'v2' | 'leaf',
+  stable: boolean,
+  factoryAddress: Address,
+  recipient: Address,
+  deadline: number,
+): Hex {
+  const abi = routerType === 'v2' ? V2_ROUTER_ABI : LEAF_ROUTER_ABI
   const route =
     routerType === 'v2'
       ? { from: tokenIn, to: tokenOut, stable, factory: factoryAddress }
@@ -174,38 +294,13 @@ export function encodeSwap(params: EncodeSwapParams): Hex {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * WETH addresses per chain for Velodrome/Aerodrome route construction.
- * Router getAmountsOut requires the wrapped native token address, not address(0).
- */
-const WRAPPED_NATIVE: Partial<Record<SupportedChainId, Address>> = {
-  // Optimism — WETH
-  10: '0x4200000000000000000000000000000000000006',
-  // Base — WETH
-  8453: '0x4200000000000000000000000000000000000006',
-  // Leaf chains share the standard OP Stack WETH at the predeploy address
-  60808: '0x4200000000000000000000000000000000000006',
-  42220: '0x4200000000000000000000000000000000000006',
-  252: '0x4200000000000000000000000000000000000006',
-  57073: '0x4200000000000000000000000000000000000006',
-  1135: '0x4200000000000000000000000000000000000006',
-  1750: '0x4200000000000000000000000000000000000006',
-  34443: '0x4200000000000000000000000000000000000006',
-  1868: '0x4200000000000000000000000000000000000006',
-  5330: '0x4200000000000000000000000000000000000006',
-  1923: '0x4200000000000000000000000000000000000006',
-  130: '0x4200000000000000000000000000000000000006',
-}
-
-/**
  * Get the wrapped native token address for a chain.
  * Velodrome routers require WETH address in Route structs, not address(0).
  */
 function getWrappedNativeAddress(chainId: SupportedChainId): Address {
-  const addr = WRAPPED_NATIVE[chainId]
-  if (!addr) {
-    throw new Error(
-      `No wrapped native token address configured for chain ${chainId}`,
-    )
+  const addr = WETH.address[chainId]
+  if (!addr || addr === 'native') {
+    throw new Error(`No WETH address configured for chain ${chainId}`)
   }
   return addr
 }

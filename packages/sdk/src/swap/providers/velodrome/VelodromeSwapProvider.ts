@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { concat, encodeFunctionData, formatUnits, keccak256 } from 'viem'
 
+import { PERMIT2_ADDRESS } from '@/constants/contracts.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
@@ -94,26 +95,39 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       chainId,
     })
 
-    // Build token approval directly to the router (no Permit2)
+    // Universal Router uses Permit2 for approvals; legacy routers use direct approval
     let tokenApproval: TransactionData | undefined
-    if (!isNativeAsset(assetIn)) {
-      const token = getAssetAddress(assetIn, chainId)
-      const currentAllowance = await publicClient.readContract({
-        address: token,
-        abi: ERC20_ALLOWANCE_ABI,
-        functionName: 'allowance',
-        args: [params.walletAddress, addresses.router],
-      })
+    let permit2Approval: TransactionData | undefined
 
-      if ((currentAllowance as bigint) < amountInWei) {
-        tokenApproval = {
-          to: token,
-          data: encodeFunctionData({
-            abi: ERC20_APPROVE_ABI,
-            functionName: 'approve',
-            args: [addresses.router, amountInWei],
-          }),
-          value: 0n,
+    if (!isNativeAsset(assetIn)) {
+      if (addresses.routerType === 'universal') {
+        const approvals = await this.buildPermit2Approvals(
+          params,
+          amountInWei,
+          PERMIT2_ADDRESS,
+          addresses.router,
+        )
+        tokenApproval = approvals.tokenApproval
+        permit2Approval = approvals.permit2Approval
+      } else {
+        const token = getAssetAddress(assetIn, chainId)
+        const currentAllowance = await publicClient.readContract({
+          address: token,
+          abi: ERC20_ALLOWANCE_ABI,
+          functionName: 'allowance',
+          args: [params.walletAddress, addresses.router],
+        })
+
+        if ((currentAllowance as bigint) < amountInWei) {
+          tokenApproval = {
+            to: token,
+            data: encodeFunctionData({
+              abi: ERC20_APPROVE_ABI,
+              functionName: 'approve',
+              args: [addresses.router, amountInWei],
+            }),
+            value: 0n,
+          }
         }
       }
     }
@@ -137,7 +151,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       priceImpact: quote.priceImpact,
       transactionData: {
         tokenApproval,
-        permit2Approval: undefined,
+        permit2Approval,
         swap: swapTx,
       },
     }

@@ -161,6 +161,58 @@ export const LEAF_ROUTER_ABI = [
   },
 ] as const
 
+/**
+ * Velodrome/Aerodrome Universal Router ABI
+ * Uses a command-based execute() pattern for all swap operations.
+ */
+export const UNIVERSAL_ROUTER_ABI = [
+  {
+    name: 'execute',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'commands', type: 'bytes' },
+      { name: 'inputs', type: 'bytes[]' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+] as const
+
+/**
+ * Velodrome/Aerodrome Pool ABI for direct quoting.
+ * Used when the Universal Router is the only router available (no legacy getAmountsOut).
+ */
+export const POOL_ABI = [
+  {
+    name: 'getAmountOut',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'tokenIn', type: 'address' },
+    ],
+    outputs: [{ type: 'uint256' }],
+  },
+] as const
+
+/**
+ * Velodrome/Aerodrome PoolFactory ABI for looking up pools.
+ */
+export const POOL_FACTORY_ABI = [
+  {
+    name: 'getPool',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'tokenA', type: 'address' },
+      { name: 'tokenB', type: 'address' },
+      { name: 'stable', type: 'bool' },
+    ],
+    outputs: [{ type: 'address' }],
+  },
+] as const
+
 /** ERC20 allowance ABI for checking current approval */
 export const ERC20_ALLOWANCE_ABI = [
   {
