@@ -441,7 +441,8 @@ export function SwapAction({
         assetOut: assetOut.asset.metadata.symbol,
         amount: parseFloat(amountIn),
       })
-    } catch {
+    } catch (err) {
+      console.error('[swap] execution failed:', err)
       activity?.error()
       setTxModalStatus('error')
       trackEvent('swap_error', {

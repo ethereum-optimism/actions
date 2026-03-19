@@ -13,9 +13,10 @@ contract DeployVelodromeMarket is Script {
     // Base Sepolia — Velodrome testnet deployment
     address constant POOL_FACTORY = 0x7b9644D43900da734f5a83DD0489Af1197DF2CF0;
 
-    // Liquidity amounts
+    // Liquidity amounts — ratio targets 1 OP = 0.18 USDC (~5.5 OP per USDC)
+    // to match the Uniswap V4 pool pricing
     uint256 constant USDC_AMOUNT = 1_000_000e6; // 1M USDC
-    uint256 constant OP_AMOUNT = 1_000_000e18; // 1M OP
+    uint256 constant OP_AMOUNT = 5_555_556e18; // ~5.5M OP
 
     function run() public {
         address usdcAddr = vm.envAddress("DEMO_USDC_ADDRESS");

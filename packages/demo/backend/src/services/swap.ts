@@ -90,14 +90,27 @@ export async function executeSwap(
   const assetIn = resolveAsset(tokenInAddress, chainId)
   const assetOut = resolveAsset(tokenOutAddress, chainId)
 
-  const result = await wallet.swap.execute({
-    amountIn,
-    assetIn,
-    assetOut,
-    chainId,
-    slippage,
-    provider,
-  })
+  let result
+  try {
+    result = await wallet.swap.execute({
+      amountIn,
+      assetIn,
+      assetOut,
+      chainId,
+      slippage,
+      provider,
+    })
+  } catch (err) {
+    console.error('[swap] execute failed:', {
+      provider,
+      assetIn: assetIn.metadata.symbol,
+      assetOut: assetOut.metadata.symbol,
+      amountIn,
+      chainId,
+      error: err instanceof Error ? err.message : err,
+    })
+    throw err
+  }
 
   const receipt = result.receipt
   const blockExplorerUrls = getBlockExplorerUrls({
