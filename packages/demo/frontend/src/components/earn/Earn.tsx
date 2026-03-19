@@ -16,7 +16,6 @@ import type { EarnOperations } from '@/hooks/useLendProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
 import { SwapMarketSelector } from './SwapMarketSelector'
-import { BestPriceIndicator } from './BestPriceIndicator'
 import { useLendBalance } from '@/hooks/useLendBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { useSwap } from '@/hooks/useSwap'
@@ -567,7 +566,6 @@ function EarnContent({
                     isExecuting={isSwapping}
                     onLogActivity={logActivity}
                   />
-                  <BestPriceIndicator />
                 </>
               )}
 
