@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { SwapMarket } from '@eth-optimism/actions-sdk/react'
 
-import { CHAIN_DISPLAY, DEFAULT_CHAIN, MARKET_LOGO } from '@/constants/logos'
-
-/** Capitalize first letter */
-const displayName = (provider: string) =>
-  provider.charAt(0).toUpperCase() + provider.slice(1)
+import {
+  CHAIN_DISPLAY,
+  DEFAULT_CHAIN,
+  getProviderDisplayName,
+  MARKET_LOGO,
+} from '@/constants/logos'
 
 interface SwapMarketSelectorProps {
   markets: SwapMarket[]
@@ -60,7 +61,7 @@ export function SwapMarketSelector({
 
   const renderOption = (option: { provider: string; chainId: number }) => {
     const chain = chainDisplay(option.chainId)
-    const name = displayName(option.provider)
+    const name = getProviderDisplayName(option.provider, option.chainId)
     return (
       <div className="flex items-center gap-2 flex-1">
         <img src={MARKET_LOGO[name] ?? ''} alt={name} className="h-6 w-6" />

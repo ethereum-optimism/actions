@@ -1,5 +1,5 @@
 import type { SwapAsset } from '@/hooks/useSwapAssets'
-import { MARKET_LOGO } from '@/constants/logos'
+import { getProviderDisplayName, MARKET_LOGO } from '@/constants/logos'
 import {
   deriveUsdRates,
   displaySymbol,
@@ -119,11 +119,12 @@ function SwapDetails({
   formattedMinReceived: { main: string; secondary?: string }
   slippage: number
   selectedProvider?: string | null
+  chainId?: number
 }) {
   const formattedRate = formatSwapAmount(priceQuote.price)
   const impactPct = (priceQuote.priceImpact * 100).toFixed(3)
   const providerDisplayName = selectedProvider
-    ? selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)
+    ? getProviderDisplayName(selectedProvider, chainId)
     : ''
 
   return (
@@ -258,6 +259,7 @@ export function ReviewSwapModal({
           formattedMinReceived={formattedMinReceived}
           slippage={slippage}
           selectedProvider={selectedProvider}
+          chainId={assetIn.chainId}
         />
       )}
 
