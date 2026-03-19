@@ -1,12 +1,12 @@
 import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
 import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
-import type { LendProviders } from '@/types/providers.js'
 import type {
   GetLendMarketParams,
   GetLendMarketsParams,
   LendMarket,
   LendMarketId,
 } from '@/types/lend/index.js'
+import type { LendProviders } from '@/types/providers.js'
 
 export type { LendProviders } from '@/types/providers.js'
 
