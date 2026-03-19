@@ -2,8 +2,8 @@ import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 
-/** Router contract variant */
-export type VelodromeRouterType = 'v2' | 'leaf'
+/** Router contract variant: v2 (legacy), leaf (relay chains), universal (new) */
+export type VelodromeRouterType = 'v2' | 'leaf' | 'universal'
 
 /**
  * Velodrome/Aerodrome contract addresses for a chain
@@ -25,11 +25,11 @@ export interface VelodromeAddresses {
 const VELODROME_ADDRESSES: Partial<
   Record<SupportedChainId, VelodromeAddresses>
 > = {
-  // Base Sepolia — testnet deployment from Velodrome team
+  // Base Sepolia — testnet deployment from Velodrome team (Universal Router)
   84532: {
     router: '0x6Df1c91424F79E40E33B1A48F0687B666bE71075',
     poolFactory: '0x7b9644D43900da734f5a83DD0489Af1197DF2CF0',
-    routerType: 'v2',
+    routerType: 'universal',
   },
   // Optimism — Velodrome v2
   10: {
