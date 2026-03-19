@@ -2,11 +2,9 @@ import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import type { LocalAccount } from 'viem'
 import { getAddress } from 'viem'
 
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
-import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
@@ -43,14 +41,8 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
   constructor(params: {
     privyClient: PrivyClient
     chainManager: ChainManager
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    }
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-      velodrome?: SwapProvider<SwapProviderConfig>
-    }
+    lendProviders?: LendProviders
+    swapProviders?: SwapProviders
     supportedAssets?: Asset[]
     authorizationContext?: AuthorizationContext
   }) {

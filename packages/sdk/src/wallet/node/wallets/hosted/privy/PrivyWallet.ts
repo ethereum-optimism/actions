@@ -1,11 +1,9 @@
 import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import { type Address, type LocalAccount } from 'viem'
 
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
-import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
 
@@ -35,14 +33,8 @@ export class PrivyWallet extends EOAWallet {
     walletId: string,
     address: Address,
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-      velodrome?: SwapProvider<SwapProviderConfig>
-    },
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
     authorizationContext?: AuthorizationContext,
   ) {
@@ -59,14 +51,8 @@ export class PrivyWallet extends EOAWallet {
     walletId: string
     address: Address
     chainManager: ChainManager
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    }
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-      velodrome?: SwapProvider<SwapProviderConfig>
-    }
+    lendProviders?: LendProviders
+    swapProviders?: SwapProviders
     supportedAssets?: Asset[]
   }): Promise<PrivyWallet> {
     const wallet = new PrivyWallet(
