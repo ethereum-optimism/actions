@@ -220,6 +220,9 @@ function encodeUniversalRouterSwap(
     [tokenIn, stable, tokenOut],
   )
 
+  // payerIsUser = false: tokens are pre-transferred to the Router by the smart wallet.
+  // The Router transfers amountIn from its own balance to the first pair.
+  // This avoids Permit2 pull complexity with 4337 batched transactions.
   const input = encodeAbiParameters(
     [
       { type: 'address' },
@@ -230,11 +233,11 @@ function encodeUniversalRouterSwap(
       { type: 'bool' },
     ],
     [
-      MSG_SENDER, // recipient
-      amountInWei,
+      MSG_SENDER, // recipient — output goes back to the smart wallet
+      amountInWei, // actual amount (router holds these tokens)
       amountOutMin,
       routes,
-      true, // payerIsUser — pull tokens from caller via Permit2
+      false, // payerIsUser — tokens already in the router
       false, // isUni — false for Velodrome/Aerodrome
     ],
   )

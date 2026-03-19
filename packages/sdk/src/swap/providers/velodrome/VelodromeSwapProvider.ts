@@ -1,7 +1,6 @@
 import type { Address } from 'viem'
 import { concat, encodeFunctionData, formatUnits, keccak256 } from 'viem'
 
-import { PERMIT2_ADDRESS } from '@/constants/contracts.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
@@ -95,22 +94,38 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       chainId,
     })
 
-    // Universal Router uses Permit2 for approvals; legacy routers use direct approval
+    // For the Universal Router: transfer tokens directly to the router before the swap.
+    // The swap uses payerIsUser=false (router's own balance), avoiding Permit2 pull
+    // complexity with 4337 batched transactions.
+    // For legacy routers: approve tokens directly to the router.
     let tokenApproval: TransactionData | undefined
-    let permit2Approval: TransactionData | undefined
 
     if (!isNativeAsset(assetIn)) {
+      const token = getAssetAddress(assetIn, chainId)
+
       if (addresses.routerType === 'universal') {
-        const approvals = await this.buildPermit2Approvals(
-          params,
-          amountInWei,
-          PERMIT2_ADDRESS,
-          addresses.router,
-        )
-        tokenApproval = approvals.tokenApproval
-        permit2Approval = approvals.permit2Approval
+        // Transfer tokens to the Universal Router — it will use its own balance
+        tokenApproval = {
+          to: token,
+          data: encodeFunctionData({
+            abi: [
+              {
+                name: 'transfer',
+                type: 'function',
+                stateMutability: 'nonpayable',
+                inputs: [
+                  { name: 'to', type: 'address' },
+                  { name: 'amount', type: 'uint256' },
+                ],
+                outputs: [{ type: 'bool' }],
+              },
+            ] as const,
+            functionName: 'transfer',
+            args: [addresses.router, amountInWei],
+          }),
+          value: 0n,
+        }
       } else {
-        const token = getAssetAddress(assetIn, chainId)
         const currentAllowance = await publicClient.readContract({
           address: token,
           abi: ERC20_ALLOWANCE_ABI,
@@ -151,7 +166,6 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       priceImpact: quote.priceImpact,
       transactionData: {
         tokenApproval,
-        permit2Approval,
         swap: swapTx,
       },
     }
