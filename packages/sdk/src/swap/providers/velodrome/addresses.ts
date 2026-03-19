@@ -25,9 +25,9 @@ export interface VelodromeAddresses {
 const VELODROME_ADDRESSES: Partial<
   Record<SupportedChainId, VelodromeAddresses>
 > = {
-  // Base Sepolia — testnet deployment from Velodrome team (Universal Router)
+  // Base Sepolia — Universal Router deployed with correct init code hash
   84532: {
-    router: '0x6Df1c91424F79E40E33B1A48F0687B666bE71075',
+    router: '0x4b94B729d6183c9efD0071f0790e984bAF46E093',
     poolFactory: '0x7b9644D43900da734f5a83DD0489Af1197DF2CF0',
     routerType: 'universal',
   },
