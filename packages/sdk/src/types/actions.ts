@@ -3,11 +3,14 @@ import type { VelodromeSwapProviderConfig } from '@/swap/providers/velodrome/typ
 import type { Asset } from '@/types/asset.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
 export type { LendProviderConfig, SwapProviderConfig }
+// Re-export centralized provider maps
+export type { LendProviders, SwapProviders } from '@/types/providers.js'
 
 /** Require at least one property to be defined */
 type RequireAtLeastOne<T> = {
@@ -18,14 +21,11 @@ type RequireAtLeastOne<T> = {
  * Lending configuration — at least one provider must be configured
  */
 export type LendConfig = RequireAtLeastOne<{
-  /** Morpho lending provider configuration */
-  morpho?: LendProviderConfig
-  /** Aave lending provider configuration */
-  aave?: LendProviderConfig
+  [K in keyof LendProviders]: LendProviderConfig
 }>
 
-/** Names of available swap providers */
-export type SwapProviderName = 'uniswap' | 'velodrome'
+/** Names of available swap providers — derived from SwapProviders registry */
+export type SwapProviderName = keyof SwapProviders
 
 /**
  * Swap provider routing configuration.
