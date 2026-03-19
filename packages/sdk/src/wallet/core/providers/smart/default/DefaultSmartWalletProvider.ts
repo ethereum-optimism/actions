@@ -2,11 +2,9 @@ import type { Address, Hex, LocalAccount } from 'viem'
 import { keccak256, slice, toHex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
-import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
@@ -28,15 +26,9 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
   /** Manages supported blockchain networks */
   private chainManager: ChainManager
   /** Providers for lending market operations */
-  private lendProviders: {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  }
+  private lendProviders: LendProviders
   /** Providers for swap operations */
-  private swapProviders: {
-    uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
-  }
+  private swapProviders: SwapProviders
   /** Supported assets for this wallet provider */
   private supportedAssets?: Asset[]
   /** Optional 16-byte attribution suffix appended to callData */
@@ -52,14 +44,8 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    */
   constructor(
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-      velodrome?: SwapProvider<SwapProviderConfig>
-    },
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
     attributionSuffix?: string,
   ) {
