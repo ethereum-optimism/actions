@@ -564,6 +564,7 @@ function EarnContent({
                     onSwap={handleSwap}
                     onGetPrice={handleGetPrice}
                     isExecuting={isSwapping}
+                    selectedProvider={selectedProvider}
                     onLogActivity={logActivity}
                   />
                 </>

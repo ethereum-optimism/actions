@@ -45,6 +45,7 @@ interface SwapActionProps {
     amountOut: number
   } | null>
   isExecuting: boolean
+  selectedProvider?: string | null
   onLogActivity?: (
     action: string,
     metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
@@ -212,6 +213,7 @@ export function SwapAction({
   onSwap,
   onGetPrice,
   isExecuting,
+  selectedProvider,
   onLogActivity,
 }: SwapActionProps) {
   const { hoveredAction } = useActivityHighlight()
@@ -580,6 +582,7 @@ export function SwapAction({
           amountOut={amountOut}
           priceQuote={priceQuote}
           isExecuting={isExecuting}
+          selectedProvider={selectedProvider}
         />
       )}
 
