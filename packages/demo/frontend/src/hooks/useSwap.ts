@@ -22,8 +22,10 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
 
   // Read-only subscriber to tokenBalances cache (managed by lend path's useTokenBalances).
   // enabled:false means this never triggers fetches — it only receives cache updates.
+  // queryFn provided to suppress React Query warning (never called when disabled).
   const { data: walletTokenBalances } = useQuery<TokenBalance[]>({
     queryKey: ['tokenBalances'],
+    queryFn: () => Promise.resolve([]),
     enabled: false,
   })
   const isLoadingBalances = !walletTokenBalances
