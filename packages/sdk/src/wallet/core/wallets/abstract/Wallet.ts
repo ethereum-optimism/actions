@@ -1,19 +1,14 @@
 import type { Address, LocalAccount } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
-import type {
-  LendProviderConfig,
-  SwapProviderConfig,
-  SwapRoutingConfig,
-} from '@/types/actions.js'
+import type { SwapRoutingConfig } from '@/types/actions.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import type {
   BatchTransactionReturnType,
@@ -29,17 +24,11 @@ export abstract class Wallet {
   /** Lend namespace with all lending operations */
   lend?: WalletLendNamespace
   /** Providers for lending market operations */
-  protected lendProviders: {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  }
+  protected lendProviders: LendProviders
   /** Swap namespace with all swap operations */
   swap?: WalletSwapNamespace
   /** Providers for swap operations */
-  protected swapProviders: {
-    uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
-  }
+  protected swapProviders: SwapProviders
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
   /** List of supported assets for this wallet */
@@ -71,14 +60,8 @@ export abstract class Wallet {
    */
   protected constructor(
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-      velodrome?: SwapProvider<SwapProviderConfig>
-    },
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
     swapRouting?: SwapRoutingConfig,
   ) {
