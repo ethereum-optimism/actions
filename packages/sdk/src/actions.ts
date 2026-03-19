@@ -1,15 +1,13 @@
-import type { LendProvider } from '@/lend/index.js'
 import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/index.js'
 import { UniswapSwapProvider, VelodromeSwapProvider } from '@/swap/index.js'
 import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
 import type {
   ActionsConfig,
   AssetsConfig,
-  LendProviderConfig,
-  SwapProviderConfig,
+  LendProviders,
+  SwapProviders,
   SwapRoutingConfig,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
@@ -48,15 +46,9 @@ export class Actions<
   >
   private chainManager: ChainManager
   private _lend?: ActionsLendNamespace
-  private _lendProviders: {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  } = {}
+  private _lendProviders: LendProviders = {}
   private _swap?: ActionsSwapNamespace
-  private _swapProviders: {
-    uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
-  } = {}
+  private _swapProviders: SwapProviders = {}
   private _swapRouting?: SwapRoutingConfig
   private _assetsConfig?: AssetsConfig
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
@@ -142,10 +134,7 @@ export class Actions<
    * Get the lend provider instances
    * @returns Object containing configured lend providers
    */
-  get lendProviders(): {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  } {
+  get lendProviders(): LendProviders {
     return this._lendProviders
   }
 
@@ -169,10 +158,7 @@ export class Actions<
    * Get the swap provider instances
    * @returns Object containing configured swap providers
    */
-  get swapProviders(): {
-    uniswap?: SwapProvider<SwapProviderConfig>
-    velodrome?: SwapProvider<SwapProviderConfig>
-  } {
+  get swapProviders(): SwapProviders {
     return this._swapProviders
   }
 
