@@ -82,7 +82,7 @@ const receipt = wallet.swap.execute({
   amountIn: 1,
   assetIn: USDC,
   assetOut: ETH,
-  chainId: 8453, // Base
+  chainId: 10, // OP Mainnet
 });`,
   },
   {
