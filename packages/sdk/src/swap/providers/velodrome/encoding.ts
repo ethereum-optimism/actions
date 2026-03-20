@@ -9,6 +9,7 @@ import {
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
+  CL_POOL_FACTORY_ABI,
   LEAF_ROUTER_ABI,
   POOL_ABI,
   POOL_FACTORY_ABI,
@@ -289,6 +290,195 @@ function encodeLegacyRouterSwap(
     abi,
     functionName: 'swapExactTokensForTokens',
     args: [amountInWei, amountOutMin, [route], recipient, BigInt(deadline)],
+  })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CL / Slipstream pool functions
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface GetCLQuoteParams {
+  assetIn: Asset
+  assetOut: Asset
+  amountInWei: bigint
+  chainId: SupportedChainId
+  publicClient: PublicClient
+  clFactoryAddress: Address
+  tickSpacing: number
+}
+
+/**
+ * Get a swap quote from a CL/Slipstream pool.
+ * Looks up the pool via the CL factory, then calls pool.quote().
+ */
+export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
+  const {
+    assetIn,
+    assetOut,
+    amountInWei,
+    publicClient,
+    clFactoryAddress,
+    tickSpacing,
+    chainId,
+  } = params
+
+  const tokenIn = isNativeAsset(assetIn)
+    ? getWrappedNativeAddress(chainId)
+    : getAssetAddress(assetIn, chainId)
+
+  const tokenOut = isNativeAsset(assetOut)
+    ? getWrappedNativeAddress(chainId)
+    : getAssetAddress(assetOut, chainId)
+
+  // Look up the CL pool
+  const poolAddress = await publicClient.readContract({
+    address: clFactoryAddress,
+    abi: CL_POOL_FACTORY_ABI,
+    functionName: 'getPool',
+    args: [tokenIn, tokenOut, tickSpacing],
+  })
+
+  if (
+    !poolAddress ||
+    poolAddress === '0x0000000000000000000000000000000000000000'
+  ) {
+    throw new Error(
+      `No CL pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (tickSpacing=${tickSpacing})`,
+    )
+  }
+
+  // Determine swap direction: zeroForOne = tokenIn < tokenOut
+  const zeroForOne = tokenIn.toLowerCase() < tokenOut.toLowerCase()
+
+  // sqrtPriceLimitX96: 0 = no limit (use MIN/MAX depending on direction)
+  // For zeroForOne: use MIN_SQRT_RATIO + 1, for oneForZero: use MAX_SQRT_RATIO - 1
+  const sqrtPriceLimitX96 = zeroForOne
+    ? 4295128740n // MIN_SQRT_RATIO + 1
+    : 1461446703485210103287273052203988822378723970341n // MAX_SQRT_RATIO - 1
+
+  // Call pool.quote() — uses staticcall, reverts with the quoted amount
+  // The pool.quote() function simulates the swap and returns the output amount
+  const amountOutWei = (await publicClient.readContract({
+    address: poolAddress as Address,
+    abi: [
+      {
+        name: 'quote',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+          { name: 'amountIn', type: 'uint256' },
+          { name: 'zeroForOne', type: 'bool' },
+          { name: 'sqrtPriceLimitX96', type: 'uint160' },
+        ],
+        outputs: [
+          { name: 'amountOut', type: 'uint256' },
+          { name: 'sqrtPriceX96After', type: 'uint160' },
+          { name: 'initializedTicksCrossed', type: 'uint32' },
+          { name: 'gasEstimate', type: 'uint256' },
+        ],
+      },
+    ] as const,
+    functionName: 'quote',
+    args: [amountInWei, zeroForOne, sqrtPriceLimitX96],
+  })) as readonly [bigint, bigint, number, bigint]
+
+  const outputAmount = amountOutWei[0]
+
+  const normalizedIn = parseFloat(
+    formatUnits(amountInWei, assetIn.metadata.decimals),
+  )
+  const normalizedOut = parseFloat(
+    formatUnits(outputAmount, assetOut.metadata.decimals),
+  )
+
+  const price = (normalizedOut / normalizedIn).toFixed(6)
+  const priceInverse = (normalizedIn / normalizedOut).toFixed(6)
+
+  const swapRoute: SwapRoute = {
+    path: [assetIn, assetOut],
+    pools: [{ address: poolAddress as Address, fee: 0, version: 'v3' }],
+  }
+
+  return {
+    price,
+    priceInverse,
+    amountIn: normalizedIn,
+    amountOut: normalizedOut,
+    amountInWei,
+    amountOutWei: outputAmount,
+    priceImpact: 0,
+    route: swapRoute,
+  }
+}
+
+export interface EncodeCLSwapParams {
+  assetIn: Asset
+  assetOut: Asset
+  amountInWei: bigint
+  amountOutMin: bigint
+  tickSpacing: number
+  recipient: Address
+  deadline: number
+  chainId: SupportedChainId
+}
+
+/** Universal Router V3_SWAP_EXACT_IN command */
+const V3_SWAP_EXACT_IN = 0x00
+
+/**
+ * Encode a V3_SWAP_EXACT_IN command for a CL/Slipstream pool on the Universal Router.
+ * Path: encodePacked([tokenIn (20), tickSpacing as int24 (3), tokenOut (20)]) — 43 bytes.
+ */
+export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
+  const {
+    assetIn,
+    assetOut,
+    amountInWei,
+    amountOutMin,
+    tickSpacing,
+    deadline,
+    chainId,
+  } = params
+
+  const tokenIn = isNativeAsset(assetIn)
+    ? getWrappedNativeAddress(chainId)
+    : getAssetAddress(assetIn, chainId)
+
+  const tokenOut = isNativeAsset(assetOut)
+    ? getWrappedNativeAddress(chainId)
+    : getAssetAddress(assetOut, chainId)
+
+  const commands = `0x${V3_SWAP_EXACT_IN.toString(16).padStart(2, '0')}` as Hex
+
+  // CL path: [tokenIn (20)] [tickSpacing as int24 (3)] [tokenOut (20)] — 43 bytes
+  const path = encodePacked(
+    ['address', 'int24', 'address'],
+    [tokenIn, tickSpacing, tokenOut],
+  )
+
+  // V3_SWAP_EXACT_IN params:
+  // (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
+  const input = encodeAbiParameters(
+    [
+      { type: 'address' },
+      { type: 'uint256' },
+      { type: 'uint256' },
+      { type: 'bytes' },
+      { type: 'bool' },
+    ],
+    [
+      MSG_SENDER, // recipient — output goes back to caller
+      amountInWei,
+      amountOutMin,
+      path,
+      false, // payerIsUser — tokens pre-transferred to router
+    ],
+  )
+
+  return encodeFunctionData({
+    abi: UNIVERSAL_ROUTER_ABI,
+    functionName: 'execute',
+    args: [commands, [input], BigInt(deadline)],
   })
 }
 
