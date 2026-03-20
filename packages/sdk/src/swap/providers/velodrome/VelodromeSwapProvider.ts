@@ -13,6 +13,7 @@ import {
 } from '@/swap/providers/velodrome/addresses.js'
 import { encodeSwap, getQuote } from '@/swap/providers/velodrome/encoding.js'
 import type {
+  ResolvedPoolConfig,
   VelodromeMarketConfig,
   VelodromeSwapProviderConfig,
 } from '@/swap/providers/velodrome/types.js'
@@ -63,7 +64,13 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const { chainId, assetIn, assetOut } = params
     const addresses = getVelodromeAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
-    const marketConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
+    const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
+
+    if (poolConfig.type === 'cl') {
+      throw new Error(
+        'CL pool execution not yet supported via _execute. Use getQuote() + execute(quote) instead.',
+      )
+    }
 
     const amountInWei = params.amountInWei!
 
@@ -75,7 +82,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       publicClient,
       routerAddress: addresses.router,
       routerType: addresses.routerType,
-      stable: marketConfig.stable,
+      stable: poolConfig.stable,
       factoryAddress: addresses.poolFactory,
     })
 
@@ -89,7 +96,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       amountInWei,
       amountOutMin,
       routerType: addresses.routerType,
-      stable: marketConfig.stable,
+      stable: poolConfig.stable,
       factoryAddress: addresses.poolFactory,
       recipient: params.recipient,
       deadline: params.deadline,
@@ -193,7 +200,13 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
     const addresses = getVelodromeAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
-    const marketConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
+    const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
+
+    if (poolConfig.type === 'cl') {
+      throw new Error(
+        'CL pool pricing not yet supported via _getPrice. Use getQuote() instead.',
+      )
+    }
 
     // Default to 1 unit for price quotes when no amount specified
     const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
@@ -206,7 +219,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       publicClient,
       routerAddress: addresses.router,
       routerType: addresses.routerType,
-      stable: marketConfig.stable,
+      stable: poolConfig.stable,
       factoryAddress: addresses.poolFactory,
     })
   }
@@ -270,7 +283,13 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
     const addresses = getVelodromeAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
-    const marketConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
+    const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
+
+    if (poolConfig.type === 'cl') {
+      throw new Error(
+        'CL pool quoting not yet supported. CL encoding coming in a future commit.',
+      )
+    }
 
     const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
     const slippage = params.slippage ?? this.defaultSlippage
@@ -285,7 +304,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       publicClient,
       routerAddress: addresses.router,
       routerType: addresses.routerType,
-      stable: marketConfig.stable,
+      stable: poolConfig.stable,
       factoryAddress: addresses.poolFactory,
     })
 
@@ -298,7 +317,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       amountInWei,
       amountOutMin: amountOutMinWei,
       routerType: addresses.routerType,
-      stable: marketConfig.stable,
+      stable: poolConfig.stable,
       factoryAddress: addresses.poolFactory,
       recipient:
         params.recipient ?? '0x0000000000000000000000000000000000000001',
@@ -325,7 +344,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         chainId,
         deadline,
         providerContext: {
-          stable: marketConfig.stable,
+          stable: poolConfig.stable,
           factoryAddress: addresses.poolFactory,
           routerType: addresses.routerType,
         },
@@ -424,50 +443,68 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Look up the Velodrome-specific market config for a pair, validating the stable flag.
-   * @param assetIn - Input asset
-   * @param assetOut - Output asset
-   * @param chainId - Target chain
-   * @returns Market config with guaranteed stable flag
-   * @throws If pair not in allowlist or missing stable flag
+   * Resolve market config to a discriminated pool config.
+   * @throws If pair not in allowlist, or has both/neither stable and tickSpacing
    */
   private resolveVelodromeConfig(
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
-  ): VelodromeMarketConfig & { stable: boolean } {
+  ): ResolvedPoolConfig {
     const config = this.resolveMarketConfig(assetIn, assetOut, chainId) as
       | VelodromeMarketConfig
       | undefined
-    if (config?.stable === undefined) {
+    if (!config) {
       throw new Error(
-        `stable flag must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
+        `No market config for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
       )
     }
-    return config as VelodromeMarketConfig & { stable: boolean }
+    return VelodromeSwapProvider.resolvePoolConfig(config)
   }
 
-  /** @returns Allowlist entries that have the required stable flag set */
-  private validConfigs(): Array<VelodromeMarketConfig & { stable: boolean }> {
+  /**
+   * Resolve a VelodromeMarketConfig to a discriminated ResolvedPoolConfig.
+   * Exactly one of stable or tickSpacing must be set.
+   */
+  private static resolvePoolConfig(
+    config: VelodromeMarketConfig,
+  ): ResolvedPoolConfig {
+    const hasStable = config.stable !== undefined
+    const hasTick = config.tickSpacing !== undefined
+    if (hasStable && hasTick) {
+      throw new Error(
+        'stable and tickSpacing are mutually exclusive — set one, not both',
+      )
+    }
+    if (!hasStable && !hasTick) {
+      throw new Error(
+        'Either stable (v2 AMM) or tickSpacing (CL) must be configured',
+      )
+    }
+    if (hasTick) {
+      return { type: 'cl', tickSpacing: config.tickSpacing! }
+    }
+    return { type: 'v2', stable: config.stable! }
+  }
+
+  /** @returns Allowlist entries that have either stable or tickSpacing set */
+  private validConfigs(): VelodromeMarketConfig[] {
     return (this._config.marketAllowlist ?? []).filter(
-      (f): f is VelodromeMarketConfig & { stable: boolean } =>
-        f.stable !== undefined,
+      (f) => f.stable !== undefined || f.tickSpacing !== undefined,
     )
   }
 
   /**
    * Generate all SwapMarket objects from a single config entry on a given chain.
-   * @param config - Market config with stable flag
-   * @param chainId - Target chain
-   * @param asset - If provided, only return markets containing this asset
    */
   private marketsFromConfig(
-    config: VelodromeMarketConfig & { stable: boolean },
+    config: VelodromeMarketConfig,
     chainId: SupportedChainId,
     asset?: Asset,
   ): SwapMarket[] {
+    const poolConfig = VelodromeSwapProvider.resolvePoolConfig(config)
     return this.assetPairs(config.assets, asset)
-      .map(([a, b]) => this.configToMarket(a, b, chainId, config.stable))
+      .map(([a, b]) => this.configToMarket(a, b, chainId, poolConfig))
       .filter((m): m is SwapMarket => m !== null)
   }
 
@@ -490,33 +527,43 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
   /**
    * Build a SwapMarket from two assets and Velodrome pool parameters.
-   * Computes a deterministic poolId: keccak256(abi.encodePacked(sortedTokenA, sortedTokenB, stable)).
+   * For v2: poolId = keccak256(sortedA, sortedB, stable)
+   * For CL: poolId = keccak256(sortedA, sortedB, tickSpacing as int24)
    * @returns SwapMarket, or null if either asset lacks an address on this chain
    */
   private configToMarket(
     assetA: Asset,
     assetB: Asset,
     chainId: SupportedChainId,
-    stable: boolean,
+    poolConfig: ResolvedPoolConfig,
   ): SwapMarket | null {
     const addrA = assetA.address[chainId]
     const addrB = assetB.address[chainId]
     if (!addrA || addrA === 'native' || !addrB || addrB === 'native')
       return null
 
-    // Sort addresses alphabetically for deterministic pool ID
     const [sortedA, sortedB] =
       addrA.toLowerCase() < addrB.toLowerCase()
         ? [addrA, addrB]
         : [addrB, addrA]
 
-    const poolId = keccak256(
-      concat([
-        sortedA as Address,
-        sortedB as Address,
-        stable ? '0x01' : '0x00',
-      ]),
-    )
+    let poolId: string
+    if (poolConfig.type === 'cl') {
+      // CL pool: encode tickSpacing as int24 (3 bytes)
+      const tickBytes =
+        `0x${(poolConfig.tickSpacing & 0xffffff).toString(16).padStart(6, '0')}` as `0x${string}`
+      poolId = keccak256(
+        concat([sortedA as Address, sortedB as Address, tickBytes]),
+      )
+    } else {
+      poolId = keccak256(
+        concat([
+          sortedA as Address,
+          sortedB as Address,
+          poolConfig.stable ? '0x01' : '0x00',
+        ]),
+      )
+    }
 
     return {
       marketId: { poolId, chainId },

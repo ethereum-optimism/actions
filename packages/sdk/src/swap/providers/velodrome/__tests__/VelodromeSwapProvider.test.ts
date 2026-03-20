@@ -141,7 +141,9 @@ describe('VelodromeSwapProvider', () => {
           walletAddress:
             '0x000000000000000000000000000000000000dEaD' as Address,
         }),
-      ).rejects.toThrow('stable flag must be configured')
+      ).rejects.toThrow(
+        'Either stable (v2 AMM) or tickSpacing (CL) must be configured',
+      )
     })
   })
 
@@ -291,10 +293,10 @@ describe('VelodromeSwapProvider', () => {
       }
     })
 
-    it('skips configs without stable defined', async () => {
+    it('skips configs without stable or tickSpacing defined', async () => {
       const provider = createProvider({
         marketAllowlist: [
-          // Intentionally omit stable to test filtering
+          // Intentionally omit both to test filtering
           { assets: [USDC, OP], chainId: CHAIN_ID },
           {
             assets: [USDC, WETH],
@@ -306,6 +308,55 @@ describe('VelodromeSwapProvider', () => {
       const markets = await provider.getMarkets({})
       expect(markets).toHaveLength(1)
       expect(markets[0].assets).toEqual([USDC, WETH])
+    })
+
+    it('includes CL configs with tickSpacing', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          {
+            assets: [USDC, WETH],
+            tickSpacing: 100,
+            chainId: CHAIN_ID,
+          },
+        ],
+      })
+      const markets = await provider.getMarkets({})
+      expect(markets).toHaveLength(1)
+      expect(markets[0].marketId.poolId).toMatch(/^0x/)
+    })
+
+    it('CL pool has different poolId than v2 pool for same pair', async () => {
+      const v2Provider = createProvider({
+        marketAllowlist: [
+          { assets: [USDC, WETH], stable: false, chainId: CHAIN_ID },
+        ],
+      })
+      const clProvider = createProvider({
+        marketAllowlist: [
+          { assets: [USDC, WETH], tickSpacing: 100, chainId: CHAIN_ID },
+        ],
+      })
+      const v2Markets = await v2Provider.getMarkets({})
+      const clMarkets = await clProvider.getMarkets({})
+      expect(v2Markets[0].marketId.poolId).not.toBe(
+        clMarkets[0].marketId.poolId,
+      )
+    })
+
+    it('throws when both stable and tickSpacing are set', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          {
+            assets: [USDC, OP],
+            stable: false,
+            tickSpacing: 100,
+            chainId: CHAIN_ID,
+          },
+        ],
+      })
+      await expect(provider.getMarkets({})).rejects.toThrow(
+        'mutually exclusive',
+      )
     })
 
     it('skips assets without address on target chain', async () => {
