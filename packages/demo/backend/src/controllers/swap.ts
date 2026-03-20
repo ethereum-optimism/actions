@@ -125,6 +125,38 @@ export async function getPrice(c: Context) {
 }
 
 /**
+ * GET - Get a full swap quote with pre-built execution data
+ */
+export async function getQuote(c: Context) {
+  try {
+    const validation = await validateRequest(c, PriceRequestSchema)
+    if (!validation.success) return validation.response
+
+    const {
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      amountIn,
+      amountOut,
+      provider,
+    } = validation.data.query
+
+    const quote = await swapService.getQuote({
+      tokenInAddress: tokenInAddress as Address,
+      tokenOutAddress: tokenOutAddress as Address,
+      chainId: chainId as SupportedChainId,
+      amountIn,
+      amountOut,
+      provider,
+    })
+
+    return c.json({ result: serializeBigInt(quote) })
+  } catch (error) {
+    return errorResponse(c, 'Failed to get swap quote', 500, error)
+  }
+}
+
+/**
  * POST - Execute a token swap
  */
 export async function executeSwap(c: Context) {

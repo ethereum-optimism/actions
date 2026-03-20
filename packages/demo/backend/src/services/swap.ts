@@ -3,6 +3,7 @@ import type {
   SwapMarket,
   SwapPrice,
   SwapProviderName,
+  SwapQuote,
   SwapReceipt,
 } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
@@ -56,6 +57,29 @@ export async function getPrice(params: PriceParams): Promise<SwapPrice> {
   const assetOut = resolveAsset(tokenOutAddress, chainId)
 
   return await actions.swap.price({
+    assetIn,
+    assetOut,
+    chainId,
+    amountIn,
+    amountOut,
+    provider,
+  })
+}
+
+export async function getQuote(params: PriceParams): Promise<SwapQuote> {
+  const {
+    tokenInAddress,
+    tokenOutAddress,
+    chainId,
+    amountIn,
+    amountOut,
+    provider,
+  } = params
+  const actions = getActions()
+  const assetIn = resolveAsset(tokenInAddress, chainId)
+  const assetOut = resolveAsset(tokenOutAddress, chainId)
+
+  return await actions.swap.getQuote({
     assetIn,
     assetOut,
     chainId,
