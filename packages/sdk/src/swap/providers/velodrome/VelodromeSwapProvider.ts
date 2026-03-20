@@ -11,7 +11,12 @@ import {
   getSupportedChainIds,
   getVelodromeAddresses,
 } from '@/swap/providers/velodrome/addresses.js'
-import { encodeSwap, getQuote } from '@/swap/providers/velodrome/encoding.js'
+import {
+  encodeCLSwap,
+  encodeSwap,
+  getCLQuote,
+  getQuote,
+} from '@/swap/providers/velodrome/encoding.js'
 import type {
   ResolvedPoolConfig,
   VelodromeMarketConfig,
@@ -285,17 +290,73 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
-    if (poolConfig.type === 'cl') {
-      throw new Error(
-        'CL pool quoting not yet supported. CL encoding coming in a future commit.',
-      )
-    }
-
     const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + 60
+    const recipient =
+      params.recipient ?? '0x0000000000000000000000000000000000000001'
 
+    if (poolConfig.type === 'cl') {
+      if (!addresses.clFactory) {
+        throw new Error(`CL pools not supported on chain ${chainId}`)
+      }
+
+      const quote = await getCLQuote({
+        assetIn,
+        assetOut,
+        amountInWei,
+        chainId,
+        publicClient,
+        clFactoryAddress: addresses.clFactory,
+        tickSpacing: poolConfig.tickSpacing,
+      })
+
+      const amountOutMinWei =
+        (quote.amountOutWei * BigInt(Math.round((1 - slippage) * 10000))) /
+        10000n
+
+      const swapCalldata = encodeCLSwap({
+        assetIn,
+        assetOut,
+        amountInWei,
+        amountOutMin: amountOutMinWei,
+        tickSpacing: poolConfig.tickSpacing,
+        recipient,
+        deadline,
+        chainId,
+      })
+
+      return {
+        assetIn,
+        assetOut,
+        amountIn: params.amountIn,
+        chainId,
+        slippage,
+        deadline,
+        recipient: params.recipient,
+        provider: 'velodrome',
+        price: quote,
+        execution: {
+          swapCalldata,
+          routerAddress: addresses.router,
+          amountInWei,
+          amountOutMinWei,
+          value: isNativeAsset(assetIn) ? amountInWei : 0n,
+          chainId,
+          deadline,
+          providerContext: {
+            tickSpacing: poolConfig.tickSpacing,
+            clFactoryAddress: addresses.clFactory,
+            poolAddress: quote.route.pools[0]?.address,
+          },
+        },
+        quotedAt: now,
+        expiresAt: deadline,
+      }
+    }
+
+    // v2 AMM path
     const quote = await getQuote({
       assetIn,
       assetOut,
@@ -319,8 +380,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       routerType: addresses.routerType,
       stable: poolConfig.stable,
       factoryAddress: addresses.poolFactory,
-      recipient:
-        params.recipient ?? '0x0000000000000000000000000000000000000001',
+      recipient,
       deadline,
       chainId,
     })
