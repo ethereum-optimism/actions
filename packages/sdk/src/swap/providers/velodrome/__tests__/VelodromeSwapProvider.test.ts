@@ -187,6 +187,60 @@ describe('VelodromeSwapProvider', () => {
     })
   })
 
+  describe('getQuote', () => {
+    it('returns SwapQuote with execution data', async () => {
+      const provider = createProvider()
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: OP,
+        amountIn: 100,
+        chainId: CHAIN_ID,
+      })
+
+      expect(quote.price).toBeDefined()
+      expect(quote.price.price).toBeDefined()
+      expect(quote.execution).toBeDefined()
+      expect(quote.execution.swapCalldata).toMatch(/^0x/)
+      expect(quote.execution.routerAddress).toBeDefined()
+      expect(quote.execution.amountInWei).toBeGreaterThan(0n)
+      expect(quote.provider).toBe('velodrome')
+      expect(quote.quotedAt).toBeGreaterThan(0)
+      expect(quote.expiresAt).toBeGreaterThan(quote.quotedAt)
+    })
+
+    it('throws for exact-output quotes', async () => {
+      const provider = createProvider()
+
+      await expect(
+        provider.getQuote({
+          assetIn: USDC,
+          assetOut: OP,
+          amountOut: 1,
+          chainId: CHAIN_ID,
+        }),
+      ).rejects.toThrow('does not support exact-output swaps')
+    })
+
+    it('execute with quote skips re-quoting', async () => {
+      const provider = createProvider()
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: OP,
+        amountIn: 100,
+        chainId: CHAIN_ID,
+        recipient: '0x000000000000000000000000000000000000dEaD' as Address,
+      })
+
+      const result = await provider.execute(quote)
+
+      expect(result.transactionData.swap).toBeDefined()
+      expect(result.transactionData.swap.data).toBe(
+        quote.execution.swapCalldata,
+      )
+      expect(result.price).toBe(quote.price.price)
+    })
+  })
+
   describe('getMarkets', () => {
     it('returns markets from allowlist config', async () => {
       const provider = createProvider()
