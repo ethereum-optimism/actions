@@ -24,6 +24,8 @@ import type {
   SwapMarket,
   SwapPrice,
   SwapPriceParams,
+  SwapQuote,
+  SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -251,6 +253,170 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         this.marketsFromConfig(config, chainId, params.asset),
       )
     })
+  }
+
+  /**
+   * Get a full swap quote with pre-built execution data.
+   * Combines quoting + encoding into a single call.
+   */
+  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    const { chainId, assetIn, assetOut } = params
+
+    if (params.amountOut !== undefined) {
+      throw new Error(
+        'Velodrome/Aerodrome does not support exact-output swaps. Provide amountIn instead of amountOut.',
+      )
+    }
+
+    const addresses = getVelodromeAddresses(chainId)
+    const publicClient = this.chainManager.getPublicClient(chainId)
+    const marketConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
+
+    const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
+    const slippage = params.slippage ?? this.defaultSlippage
+    const now = Math.floor(Date.now() / 1000)
+    const deadline = params.deadline ?? now + 60
+
+    const quote = await getQuote({
+      assetIn,
+      assetOut,
+      amountInWei,
+      chainId,
+      publicClient,
+      routerAddress: addresses.router,
+      routerType: addresses.routerType,
+      stable: marketConfig.stable,
+      factoryAddress: addresses.poolFactory,
+    })
+
+    const amountOutMinWei =
+      (quote.amountOutWei * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
+
+    const swapCalldata = encodeSwap({
+      assetIn,
+      assetOut,
+      amountInWei,
+      amountOutMin: amountOutMinWei,
+      routerType: addresses.routerType,
+      stable: marketConfig.stable,
+      factoryAddress: addresses.poolFactory,
+      recipient:
+        params.recipient ?? '0x0000000000000000000000000000000000000001',
+      deadline,
+      chainId,
+    })
+
+    return {
+      assetIn,
+      assetOut,
+      amountIn: params.amountIn,
+      chainId,
+      slippage,
+      deadline,
+      recipient: params.recipient,
+      provider: 'velodrome',
+      price: quote,
+      execution: {
+        swapCalldata,
+        routerAddress: addresses.router,
+        amountInWei,
+        amountOutMinWei,
+        value: isNativeAsset(assetIn) ? amountInWei : 0n,
+        chainId,
+        deadline,
+        providerContext: {
+          stable: marketConfig.stable,
+          factoryAddress: addresses.poolFactory,
+          routerType: addresses.routerType,
+        },
+      },
+      quotedAt: now,
+      expiresAt: deadline,
+    }
+  }
+
+  /**
+   * Execute a swap from a pre-built quote.
+   * Uses the pre-encoded calldata but builds fresh approval transactions.
+   */
+  protected async _executeFromQuote(
+    quote: SwapQuote,
+  ): Promise<SwapTransaction> {
+    const { chainId, assetIn, assetOut } = quote
+    const { execution } = quote
+    const addresses = getVelodromeAddresses(chainId)
+    const publicClient = this.chainManager.getPublicClient(chainId)
+
+    let tokenApproval: TransactionData | undefined
+
+    if (!isNativeAsset(assetIn)) {
+      const token = getAssetAddress(assetIn, chainId)
+
+      if (addresses.routerType === 'universal') {
+        tokenApproval = {
+          to: token,
+          data: encodeFunctionData({
+            abi: [
+              {
+                name: 'transfer',
+                type: 'function',
+                stateMutability: 'nonpayable',
+                inputs: [
+                  { name: 'to', type: 'address' },
+                  { name: 'amount', type: 'uint256' },
+                ],
+                outputs: [{ type: 'bool' }],
+              },
+            ] as const,
+            functionName: 'transfer',
+            args: [addresses.router, execution.amountInWei],
+          }),
+          value: 0n,
+        }
+      } else {
+        const recipient =
+          quote.recipient ?? '0x0000000000000000000000000000000000000001'
+        const currentAllowance = await publicClient.readContract({
+          address: token,
+          abi: ERC20_ALLOWANCE_ABI,
+          functionName: 'allowance',
+          args: [recipient, addresses.router],
+        })
+
+        if ((currentAllowance as bigint) < execution.amountInWei) {
+          tokenApproval = {
+            to: token,
+            data: encodeFunctionData({
+              abi: ERC20_APPROVE_ABI,
+              functionName: 'approve',
+              args: [addresses.router, execution.amountInWei],
+            }),
+            value: 0n,
+          }
+        }
+      }
+    }
+
+    const swapTx: TransactionData = {
+      to: execution.routerAddress,
+      data: execution.swapCalldata,
+      value: execution.value,
+    }
+
+    return {
+      amountIn: quote.price.amountIn,
+      amountOut: quote.price.amountOut,
+      amountInWei: execution.amountInWei,
+      amountOutWei: quote.price.amountOutWei,
+      assetIn,
+      assetOut,
+      price: quote.price.price,
+      priceImpact: quote.price.priceImpact,
+      transactionData: {
+        tokenApproval,
+        swap: swapTx,
+      },
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
