@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { SwapProviderName } from '@/types/actions.js'
@@ -134,6 +134,70 @@ export interface SwapPriceParams {
   chainId: SupportedChainId
   /** Explicitly select a swap provider. Overrides routing config. */
   provider?: SwapProviderName
+}
+
+/**
+ * Parameters for getting a swap quote (pre-built for execution).
+ * Unlike SwapPriceParams, assetOut is required.
+ */
+export interface SwapQuoteParams {
+  /** Token to sell */
+  assetIn: Asset
+  /** Token to buy (required) */
+  assetOut: Asset
+  /** Amount of input token (human-readable). Mutually exclusive with amountOut. */
+  amountIn?: number
+  /** Amount of output token (human-readable). Mutually exclusive with amountIn. */
+  amountOut?: number
+  /** Chain to execute swap on */
+  chainId: SupportedChainId
+  /** Slippage tolerance baked into the quote */
+  slippage?: number
+  /** Transaction deadline as Unix timestamp */
+  deadline?: number
+  /** Recipient address */
+  recipient?: Address
+  /** Explicitly select a swap provider */
+  provider?: SwapProviderName
+}
+
+/**
+ * Pre-built execution data from a quote, ready to submit on-chain.
+ */
+export interface SwapQuoteExecution {
+  /** Encoded swap calldata */
+  swapCalldata: Hex
+  /** Router/contract to send the swap transaction to */
+  routerAddress: Address
+  /** Input amount in wei */
+  amountInWei: bigint
+  /** Minimum output amount in wei (after slippage) */
+  amountOutMinWei: bigint
+  /** Native ETH value for ETH-in swaps, else 0n */
+  value: bigint
+  /** Chain ID for execution */
+  chainId: SupportedChainId
+  /** Transaction deadline as Unix timestamp */
+  deadline: number
+  /** Opaque provider-specific context (e.g. stable flag, factory address) */
+  providerContext?: Record<string, unknown>
+}
+
+/**
+ * A complete swap quote: display data (SwapPrice) + pre-built execution data.
+ * Pass to execute() to skip re-quoting.
+ */
+export interface SwapQuote extends SwapQuoteParams {
+  /** Display data (price, amounts, route) */
+  price: SwapPrice
+  /** Pre-built execution data */
+  execution: SwapQuoteExecution
+  /** Provider that generated this quote */
+  provider: SwapProviderName
+  /** When the quote was generated (Unix seconds) */
+  quotedAt: number
+  /** When the quote expires (Unix seconds, equals deadline) */
+  expiresAt: number
 }
 
 /**
