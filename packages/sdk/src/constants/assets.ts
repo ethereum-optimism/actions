@@ -34,6 +34,7 @@ export const ETH: Asset = {
 /**
  * Wrapped ETH token definition
  * @description WETH is the ERC-20 wrapped version of native ETH
+ * @see https://www.coingecko.com/en/coins/weth
  */
 export const WETH: Asset = {
   address: {
@@ -83,6 +84,7 @@ export const USDC: Asset = {
 /**
  * Tether USD stablecoin
  * @description USDT is currently only deployed on Ethereum mainnet for supported chains
+ * @see https://www.coingecko.com/en/coins/tether
  */
 export const USDT: Asset = {
   address: {
@@ -99,6 +101,7 @@ export const USDT: Asset = {
 /**
  * Dai stablecoin
  * @description DAI is currently only deployed on Ethereum mainnet for supported chains
+ * @see https://www.coingecko.com/en/coins/dai
  */
 export const DAI: Asset = {
   address: {
@@ -114,6 +117,7 @@ export const DAI: Asset = {
 
 /**
  * Frax stablecoin
+ * @see https://www.coingecko.com/en/coins/frax
  */
 export const FRAX: Asset = {
   address: {
@@ -130,6 +134,7 @@ export const FRAX: Asset = {
 
 /**
  * Ethena USDe stablecoin
+ * @see https://www.coingecko.com/en/coins/ethena-usde
  */
 export const USDE: Asset = {
   address: {
@@ -147,6 +152,7 @@ export const USDE: Asset = {
 
 /**
  * PayPal USD stablecoin
+ * @see https://www.coingecko.com/en/coins/paypal-usd
  */
 export const PYUSD: Asset = {
   address: {
@@ -162,6 +168,7 @@ export const PYUSD: Asset = {
 
 /**
  * Sky (rebranded MakerDAO governance token)
+ * @see https://www.coingecko.com/en/coins/sky
  */
 export const SKY: Asset = {
   address: {
@@ -178,6 +185,7 @@ export const SKY: Asset = {
 /**
  * Wrapped Bitcoin
  * @description Canonical bridge deployments; third-party bridged versions exist but are not listed here
+ * @see https://www.coingecko.com/en/coins/wrapped-bitcoin
  */
 export const WBTC: Asset = {
   address: {
@@ -197,6 +205,7 @@ export const WBTC: Asset = {
 /**
  * Coinbase Wrapped Bitcoin
  * @description cbBTC uses the same address on mainnet and Base
+ * @see https://www.coingecko.com/en/coins/coinbase-wrapped-btc
  */
 export const CBBTC: Asset = {
   address: {
@@ -214,6 +223,7 @@ export const CBBTC: Asset = {
 /**
  * Lido Staked Ether
  * @description stETH is a rebasing token available only on Ethereum mainnet
+ * @see https://www.coingecko.com/en/coins/staked-ether
  */
 export const STETH: Asset = {
   address: {
@@ -230,6 +240,7 @@ export const STETH: Asset = {
 /**
  * Wrapped Lido Staked Ether
  * @description Non-rebasing wrapper around stETH
+ * @see https://www.coingecko.com/en/coins/wrapped-steth
  */
 export const WSTETH: Asset = {
   address: {
@@ -246,6 +257,7 @@ export const WSTETH: Asset = {
 
 /**
  * Rocket Pool ETH
+ * @see https://www.coingecko.com/en/coins/rocket-pool-eth
  */
 export const RETH: Asset = {
   address: {
@@ -264,6 +276,7 @@ export const RETH: Asset = {
 
 /**
  * Coinbase Wrapped Staked ETH
+ * @see https://www.coingecko.com/en/coins/coinbase-wrapped-staked-eth
  */
 export const CBETH: Asset = {
   address: {
@@ -282,6 +295,7 @@ export const CBETH: Asset = {
 /**
  * ether.fi Staked ETH (eETH)
  * @description Restaked ETH liquid staking token from ether.fi
+ * @see https://www.coingecko.com/en/coins/ether-fi-staked-eth
  */
 export const EETH: Asset = {
   address: {
@@ -298,6 +312,7 @@ export const EETH: Asset = {
 /**
  * ether.fi Wrapped eETH
  * @description Non-rebasing wrapper around eETH; canonical bridge deployments
+ * @see https://www.coingecko.com/en/coins/wrapped-eeth
  */
 export const WEETH: Asset = {
   address: {
@@ -316,6 +331,7 @@ export const WEETH: Asset = {
 
 /**
  * ether.fi Governance Token
+ * @see https://www.coingecko.com/en/coins/ether-fi
  */
 export const ETHFI: Asset = {
   address: {
@@ -332,6 +348,7 @@ export const ETHFI: Asset = {
 
 /**
  * Aave governance token
+ * @see https://www.coingecko.com/en/coins/aave
  */
 export const AAVE: Asset = {
   address: {
@@ -349,6 +366,7 @@ export const AAVE: Asset = {
 
 /**
  * Uniswap governance token
+ * @see https://www.coingecko.com/en/coins/uniswap
  */
 export const UNI: Asset = {
   address: {
@@ -366,6 +384,7 @@ export const UNI: Asset = {
 
 /**
  * Chainlink token
+ * @see https://www.coingecko.com/en/coins/chainlink
  */
 export const LINK: Asset = {
   address: {
@@ -385,6 +404,7 @@ export const LINK: Asset = {
 
 /**
  * Curve DAO token
+ * @see https://www.coingecko.com/en/coins/curve-dao-token
  */
 export const CRV: Asset = {
   address: {
@@ -402,6 +422,7 @@ export const CRV: Asset = {
 
 /**
  * Synthetix network token
+ * @see https://www.coingecko.com/en/coins/havven
  */
 export const SNX: Asset = {
   address: {
@@ -419,6 +440,7 @@ export const SNX: Asset = {
 
 /**
  * Compound governance token
+ * @see https://www.coingecko.com/en/coins/compound-governance-token
  */
 export const COMP: Asset = {
   address: {
@@ -435,6 +457,7 @@ export const COMP: Asset = {
 
 /**
  * Balancer governance token
+ * @see https://www.coingecko.com/en/coins/balancer
  */
 export const BAL: Asset = {
   address: {
@@ -452,6 +475,7 @@ export const BAL: Asset = {
 
 /**
  * SushiSwap token
+ * @see https://www.coingecko.com/en/coins/sushi
  */
 export const SUSHI: Asset = {
   address: {
@@ -469,6 +493,7 @@ export const SUSHI: Asset = {
 /**
  * 1inch network token
  * @description Named ONEINCH because JavaScript identifiers cannot start with a digit
+ * @see https://www.coingecko.com/en/coins/1inch
  */
 export const ONEINCH: Asset = {
   address: {
@@ -485,6 +510,7 @@ export const ONEINCH: Asset = {
 
 /**
  * Pendle governance token
+ * @see https://www.coingecko.com/en/coins/pendle
  */
 export const PENDLE: Asset = {
   address: {
@@ -502,6 +528,7 @@ export const PENDLE: Asset = {
 
 /**
  * Maker governance token
+ * @see https://www.coingecko.com/en/coins/maker
  */
 export const MKR: Asset = {
   address: {
@@ -517,6 +544,7 @@ export const MKR: Asset = {
 
 /**
  * Lido DAO token
+ * @see https://www.coingecko.com/en/coins/lido-dao
  */
 export const LDO: Asset = {
   address: {
@@ -533,6 +561,7 @@ export const LDO: Asset = {
 
 /**
  * Rocket Pool governance token
+ * @see https://www.coingecko.com/en/coins/rocket-pool
  */
 export const RPL: Asset = {
   address: {
@@ -548,6 +577,7 @@ export const RPL: Asset = {
 
 /**
  * The Graph protocol token
+ * @see https://www.coingecko.com/en/coins/the-graph
  */
 export const GRT: Asset = {
   address: {
@@ -563,6 +593,7 @@ export const GRT: Asset = {
 
 /**
  * Ethereum Name Service token
+ * @see https://www.coingecko.com/en/coins/ethereum-name-service
  */
 export const ENS: Asset = {
   address: {
@@ -579,6 +610,7 @@ export const ENS: Asset = {
 /**
  * Optimism governance token
  * @description OP is native to Optimism; not deployed on mainnet
+ * @see https://www.coingecko.com/en/coins/optimism
  */
 export const OP: Asset = {
   address: {
@@ -594,6 +626,7 @@ export const OP: Asset = {
 
 /**
  * Arbitrum governance token
+ * @see https://www.coingecko.com/en/coins/arbitrum
  */
 export const ARB: Asset = {
   address: {
@@ -609,6 +642,7 @@ export const ARB: Asset = {
 
 /**
  * Polygon (POL) token
+ * @see https://www.coingecko.com/en/coins/matic-network
  */
 export const POL: Asset = {
   address: {
@@ -624,6 +658,7 @@ export const POL: Asset = {
 
 /**
  * Render token
+ * @see https://www.coingecko.com/en/coins/render-token
  */
 export const RENDER: Asset = {
   address: {
@@ -639,6 +674,7 @@ export const RENDER: Asset = {
 
 /**
  * Worldcoin token
+ * @see https://www.coingecko.com/en/coins/worldcoin-wld
  */
 export const WLD: Asset = {
   address: {
@@ -656,6 +692,7 @@ export const WLD: Asset = {
 
 /**
  * Ondo Finance token
+ * @see https://www.coingecko.com/en/coins/ondo-finance
  */
 export const ONDO: Asset = {
   address: {
@@ -671,6 +708,7 @@ export const ONDO: Asset = {
 
 /**
  * Ethena governance token
+ * @see https://www.coingecko.com/en/coins/ethena
  */
 export const ENA: Asset = {
   address: {
@@ -688,6 +726,7 @@ export const ENA: Asset = {
 
 /**
  * Shiba Inu meme token
+ * @see https://www.coingecko.com/en/coins/shiba-inu
  */
 export const SHIB: Asset = {
   address: {
@@ -703,6 +742,7 @@ export const SHIB: Asset = {
 
 /**
  * Pepe meme token
+ * @see https://www.coingecko.com/en/coins/pepe
  */
 export const PEPE: Asset = {
   address: {
@@ -718,6 +758,7 @@ export const PEPE: Asset = {
 
 /**
  * Morpho Token
+ * @see https://www.coingecko.com/en/coins/morpho
  */
 export const MORPHO: Asset = {
   address: {
