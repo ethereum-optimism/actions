@@ -12,6 +12,8 @@ export interface VelodromeAddresses {
   router: Address
   poolFactory: Address
   routerType: VelodromeRouterType
+  /** CL/Slipstream pool factory address (only on chains where CL is deployed) */
+  clFactory?: Address
 }
 
 /**
@@ -36,12 +38,14 @@ const VELODROME_ADDRESSES: Partial<
     router: '0xa062aE8A9c5e11aaA026fc2670B0D65cCc8B2858',
     poolFactory: '0xF1046053aa5682b4F9a81b5481394DA16BE5FF5a',
     routerType: 'v2',
+    clFactory: '0xCc0bDDB707055e04e497aB22a59c2aF4391cd12F',
   },
   // Base — Aerodrome v2
   8453: {
     router: '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43',
     poolFactory: '0x420DD381b31aEf6683db6B902084cB0FFECe40Da',
     routerType: 'v2',
+    clFactory: '0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A',
   },
   // Bob
   60808: {
