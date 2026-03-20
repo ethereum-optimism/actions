@@ -44,7 +44,7 @@ const AAVE_ADDRESSES: Partial<Record<SupportedChainId, AaveAddresses>> = {
     poolAddressesProvider: '0x82405D1a189bd6cE4667809C35B37fBE136A4c5B',
   },
   [ink.id]: {
-    pool: '0x2816cf15F6d2220E789aA011D5EE4eB6c47FEbA',
+    pool: '0x2816cf15F6d2A220E789aA011D5EE4eB6c47FEbA',
     wethGateway: '0xDe090EfCD6ef4b86792e2D84E55a5fa8d49D25D2',
     uiPoolDataProvider: '0xF1485fb7DBFa5db0B368FeA808FD6ff945c36064',
     poolAddressesProvider: '0x4172E6aAEC070ACB31aaCE343A58c93E4C70f44D',
