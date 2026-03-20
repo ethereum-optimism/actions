@@ -9,7 +9,10 @@ import {
   UNIVERSAL_ROUTER_ABI,
   V2_ROUTER_ABI,
 } from '@/swap/providers/velodrome/abis.js'
-import { encodeSwap } from '@/swap/providers/velodrome/encoding.js'
+import {
+  encodeCLSwap,
+  encodeSwap,
+} from '@/swap/providers/velodrome/encoding.js'
 import type { Asset } from '@/types/asset.js'
 
 const OP_CHAIN_ID = optimism.id as SupportedChainId
@@ -255,6 +258,60 @@ describe('encodeSwap', () => {
       expect(universalData).not.toBe(v2Data)
       expect(v2Data).not.toBe(leafData)
       expect(universalData).not.toBe(leafData)
+    })
+  })
+
+  describe('CL/Slipstream encoding', () => {
+    it('encodes V3_SWAP_EXACT_IN command (0x00)', () => {
+      const data = encodeCLSwap({
+        assetIn: USDC,
+        assetOut: WETH_TOKEN,
+        amountInWei: 1000000n,
+        amountOutMin: 400000000000000000n,
+        tickSpacing: 100,
+        recipient: RECIPIENT,
+        deadline: DEADLINE,
+        chainId: BASE_CHAIN_ID,
+      })
+
+      const { functionName, args } = decode<[string, string[], bigint]>(
+        UNIVERSAL_ROUTER_ABI,
+        data,
+      )
+      expect(functionName).toBe('execute')
+      const [commands, inputs, deadline] = args
+      // Command 0x00 = V3_SWAP_EXACT_IN
+      expect(commands).toBe('0x00')
+      expect(inputs).toHaveLength(1)
+      expect(deadline).toBe(BigInt(DEADLINE))
+    })
+
+    it('produces different calldata than V2 universal router swap', () => {
+      const clData = encodeCLSwap({
+        assetIn: USDC,
+        assetOut: WETH_TOKEN,
+        amountInWei: 1000000n,
+        amountOutMin: 400000000000000000n,
+        tickSpacing: 100,
+        recipient: RECIPIENT,
+        deadline: DEADLINE,
+        chainId: BASE_CHAIN_ID,
+      })
+
+      const v2Data = encodeSwap({
+        assetIn: USDC,
+        assetOut: WETH_TOKEN,
+        amountInWei: 1000000n,
+        amountOutMin: 400000000000000000n,
+        routerType: 'universal',
+        stable: false,
+        factoryAddress: FACTORY,
+        recipient: RECIPIENT,
+        deadline: DEADLINE,
+        chainId: BASE_CHAIN_ID,
+      })
+
+      expect(clData).not.toBe(v2Data)
     })
   })
 
