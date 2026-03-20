@@ -61,6 +61,9 @@ function createMockChainManager(chainId: SupportedChainId): ChainManager {
         // Universal Router: pool.getAmountOut returns output amount
         if (functionName === 'getAmountOut')
           return Promise.resolve(500000000000000000n)
+        // CL pool.quote returns [amountOut, sqrtPriceAfter, ticksCrossed, gasEstimate]
+        if (functionName === 'quote')
+          return Promise.resolve([500000000000000000n, 0n, 0, 0n])
         return Promise.resolve(0n)
       }),
   } as unknown as PublicClient
@@ -240,6 +243,113 @@ describe('VelodromeSwapProvider router type routing', () => {
       expect(result.transactionData.tokenApproval).toBeDefined()
       // Swap tx should have zero value (not sending ETH)
       expect(result.transactionData.swap.value).toBe(0n)
+    })
+  })
+
+  describe('CL/Slipstream pools', () => {
+    it('getQuote works for CL pool on Optimism', async () => {
+      const provider = createProvider(OP_CHAIN_ID, {
+        marketAllowlist: [
+          { assets: [USDC, WETH], tickSpacing: 100, chainId: OP_CHAIN_ID },
+        ],
+      })
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: WETH,
+        amountIn: 100,
+        chainId: OP_CHAIN_ID,
+      })
+
+      expect(quote.provider).toBe('velodrome')
+      expect(quote.price.amountOut).toBeGreaterThan(0)
+      expect(quote.execution.swapCalldata).toMatch(/^0x/)
+      expect(
+        (quote.execution.providerContext as Record<string, unknown>)
+          .tickSpacing,
+      ).toBe(100)
+    })
+
+    it('getQuote works for CL pool on Base', async () => {
+      const provider = createProvider(BASE_CHAIN_ID, {
+        marketAllowlist: [
+          { assets: [USDC, WETH], tickSpacing: 100, chainId: BASE_CHAIN_ID },
+        ],
+      })
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: WETH,
+        amountIn: 100,
+        chainId: BASE_CHAIN_ID,
+      })
+
+      expect(quote.provider).toBe('velodrome')
+      expect(quote.execution).toBeDefined()
+    })
+
+    it('execute with CL quote uses pre-built calldata', async () => {
+      const provider = createProvider(OP_CHAIN_ID, {
+        marketAllowlist: [
+          { assets: [USDC, WETH], tickSpacing: 100, chainId: OP_CHAIN_ID },
+        ],
+      })
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: WETH,
+        amountIn: 100,
+        chainId: OP_CHAIN_ID,
+        recipient: WALLET,
+      })
+
+      const result = await provider.execute(quote)
+      expect(result.transactionData.swap.data).toBe(
+        quote.execution.swapCalldata,
+      )
+    })
+
+    it('throws for CL on unsupported chain', async () => {
+      const MODE_CHAIN_ID = 34443 as SupportedChainId
+      const modeUsdc: Asset = {
+        type: 'erc20',
+        address: {
+          [MODE_CHAIN_ID]:
+            '0x5555555555555555555555555555555555555555' as Address,
+        },
+        metadata: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
+      }
+      const modeWeth: Asset = {
+        type: 'erc20',
+        address: {
+          [MODE_CHAIN_ID]:
+            '0x4200000000000000000000000000000000000006' as Address,
+        },
+        metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
+      }
+
+      const provider = new VelodromeSwapProvider(
+        {
+          defaultSlippage: 0.005,
+          marketAllowlist: [
+            {
+              assets: [modeUsdc, modeWeth],
+              tickSpacing: 100,
+              chainId: MODE_CHAIN_ID,
+            },
+          ],
+        },
+        createMockChainManager(MODE_CHAIN_ID),
+      )
+
+      await expect(
+        provider.getQuote({
+          assetIn: modeUsdc,
+          assetOut: modeWeth,
+          amountIn: 100,
+          chainId: MODE_CHAIN_ID,
+        }),
+      ).rejects.toThrow('CL pools not supported on chain')
     })
   })
 
