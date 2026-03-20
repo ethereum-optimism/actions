@@ -245,7 +245,10 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT, unichain.id)
+      const rewards = await fetchAndCalculateRewards(
+        GAUNTLET_USDC_VAULT,
+        unichain.id,
+      )
 
       expect(rewards).toBeDefined()
       expect(typeof rewards.usdc).toBe('number')
@@ -268,7 +271,10 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT, unichain.id)
+      const rewards = await fetchAndCalculateRewards(
+        GAUNTLET_USDC_VAULT,
+        unichain.id,
+      )
 
       expect(rewards.usdc).toBe(0)
       expect(rewards.morpho).toBe(0)
@@ -291,7 +297,10 @@ describe('Morpho API Integration', () => {
     }, 30000)
 
     it('should fetch and calculate rewards breakdown', async () => {
-      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT, unichain.id)
+      const rewards = await fetchAndCalculateRewards(
+        GAUNTLET_USDC_VAULT,
+        unichain.id,
+      )
 
       expect(rewards).toBeDefined()
       expect(typeof rewards.usdc).toBe('number')
