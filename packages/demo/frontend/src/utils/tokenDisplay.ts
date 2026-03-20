@@ -71,15 +71,16 @@ export function deriveUsdRates(
  * Split a numeric string into main and secondary parts for display.
  * Shows first 4 decimals as main, rest as secondary (smaller text).
  */
-export function formatSwapAmount(amount: string): {
+export function formatSwapAmount(amount: string | number): {
   main: string
   secondary: string
 } {
-  const num = parseFloat(amount)
+  const str = String(amount)
+  const num = parseFloat(str)
   if (isNaN(num) || num === 0) return { main: '0', secondary: '' }
 
-  const [whole, decimal = ''] = amount.split('.')
-  if (decimal.length <= 4) return { main: amount, secondary: '' }
+  const [whole, decimal = ''] = str.split('.')
+  if (decimal.length <= 4) return { main: str, secondary: '' }
 
   return {
     main: `${whole}.${decimal.substring(0, 4)}`,

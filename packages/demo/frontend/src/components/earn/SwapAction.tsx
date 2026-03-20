@@ -39,7 +39,7 @@ interface SwapActionProps {
     amountIn?: number
     amountOut?: number
   }) => Promise<{
-    price: string
+    price: number
     priceImpact: number
     amountIn: number
     amountOut: number
@@ -240,7 +240,7 @@ export function SwapAction({
   const [amountOut, setAmountOut] = useState('')
   const [editDirection, setEditDirection] = useState<'in' | 'out'>('in')
   const [priceQuote, setPriceQuote] = useState<{
-    price: string
+    price: number
     priceImpact: number
     amountIn: number
     amountOut: number
@@ -371,6 +371,10 @@ export function SwapAction({
 
   const handleTokenSelect = useCallback(
     (index: number) => {
+      // No-op if selecting the token already in this slot
+      if (tokenSelectTarget === 'in' && index === assetInIndex) return
+      if (tokenSelectTarget === 'out' && index === assetOutIndex) return
+
       if (tokenSelectTarget === 'in') {
         if (index === assetOutIndex) setAssetOutIndex(assetInIndex)
         setAssetInIndex(index)
