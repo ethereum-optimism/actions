@@ -97,12 +97,6 @@ export abstract class SwapProvider<
     return this._getQuote(params)
   }
 
-  /** Get price quote for a swap (display data only) */
-  async getPrice(params: SwapPriceParams): Promise<SwapPrice> {
-    validateChainSupported(params.chainId, this.supportedChainIds())
-    return this._getPrice(params)
-  }
-
   /** Get a specific swap market by ID */
   async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     validateChainSupported(params.chainId, this.supportedChainIds())
@@ -310,8 +304,8 @@ export abstract class SwapProvider<
 
   private resolveParams(params: SwapExecuteParams): ResolvedSwapParams {
     return {
-      amountInWei: parseAssetAmount(params.assetIn, params.amountIn),
-      amountOutWei: parseAssetAmount(params.assetOut, params.amountOut),
+      amountInRaw: parseAssetAmount(params.assetIn, params.amountIn),
+      amountOutRaw: parseAssetAmount(params.assetOut, params.amountOut),
       assetIn: params.assetIn,
       assetOut: params.assetOut,
       slippage: params.slippage ?? this.defaultSlippage,

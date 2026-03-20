@@ -83,8 +83,8 @@ function resolvePoolParams(
 export interface GetQuoteParams {
   assetIn: Asset
   assetOut: Asset
-  amountInWei?: bigint
-  amountOutWei?: bigint
+  amountInRaw?: bigint
+  amountOutRaw?: bigint
   chainId: SupportedChainId
   publicClient: PublicClient
   quoterAddress: Address
@@ -102,8 +102,8 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
   const {
     assetIn,
     assetOut,
-    amountInWei,
-    amountOutWei,
+    amountInRaw,
+    amountOutRaw,
     chainId,
     publicClient,
     quoterAddress,
@@ -120,7 +120,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     tickSpacing,
   )
 
-  const isExactInput = amountInWei !== undefined
+  const isExactInput = amountInRaw !== undefined
 
   // Read pool mid-price and quote in parallel — no extra sequential RPC call
   const [sqrtPriceX96, quoteResult] = await Promise.all([
@@ -134,7 +134,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
             {
               poolKey,
               zeroForOne,
-              exactAmount: amountInWei,
+              exactAmount: amountInRaw,
               hookData: '0x' as `0x${string}`,
             },
           ],
@@ -147,15 +147,15 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
             {
               poolKey,
               zeroForOne,
-              exactAmount: amountOutWei!,
+              exactAmount: amountOutRaw!,
               hookData: '0x' as `0x${string}`,
             },
           ],
         }),
   ])
 
-  const amountIn = isExactInput ? amountInWei : quoteResult.result[0]
-  const amountOut = isExactInput ? quoteResult.result[0] : amountOutWei!
+  const amountIn = isExactInput ? amountInRaw : quoteResult.result[0]
+  const amountOut = isExactInput ? quoteResult.result[0] : amountOutRaw!
   const gasEstimate = quoteResult.result[1]
 
   const price = calculatePrice(amountIn, amountOut, assetIn, assetOut)
@@ -183,8 +183,8 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     priceInverse,
     amountIn: parseFloat(formatUnits(amountIn, assetIn.metadata.decimals)),
     amountOut: parseFloat(formatUnits(amountOut, assetOut.metadata.decimals)),
-    amountInWei: amountIn,
-    amountOutWei: amountOut,
+    amountInRaw: amountIn,
+    amountOutRaw: amountOut,
     priceImpact,
     route,
     gasEstimate,
@@ -192,8 +192,8 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
 }
 
 export interface EncodeSwapParams {
-  amountInWei?: bigint
-  amountOutWei?: bigint
+  amountInRaw?: bigint
+  amountOutRaw?: bigint
   assetIn: Asset
   assetOut: Asset
   slippage: number
@@ -223,7 +223,7 @@ const TAKE_ALL = 0x0f
  */
 export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
   const {
-    amountInWei,
+    amountInRaw,
     assetIn,
     assetOut,
     slippage,
@@ -242,14 +242,14 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
     tickSpacing,
   )
 
-  const isExactInput = amountInWei !== undefined
+  const isExactInput = amountInRaw !== undefined
 
   let actions: Hex
   let actionParams: Hex[]
 
   if (isExactInput) {
     const minAmountOut =
-      (quote.amountOutWei * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
+      (quote.amountOutRaw * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
 
     actions =
       `0x${[SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
@@ -259,18 +259,18 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
         {
           poolKey,
           zeroForOne,
-          amountIn: amountInWei,
+          amountIn: amountInRaw,
           amountOutMinimum: minAmountOut,
           hookData: '0x',
         },
       ]),
-      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, amountInWei]),
+      encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, amountInRaw]),
       encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenOut, minAmountOut]),
     ]
   } else {
     const maxAmountIn =
-      quote.amountInWei +
-      (quote.amountInWei * BigInt(Math.round(slippage * 10000))) / 10000n
+      quote.amountInRaw +
+      (quote.amountInRaw * BigInt(Math.round(slippage * 10000))) / 10000n
 
     actions =
       `0x${[SWAP_EXACT_OUT_SINGLE, SETTLE_ALL, TAKE_ALL].map((a) => a.toString(16).padStart(2, '0')).join('')}` as Hex
@@ -280,7 +280,7 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
         {
           poolKey,
           zeroForOne,
-          amountOut: quote.amountOutWei,
+          amountOut: quote.amountOutRaw,
           amountInMaximum: maxAmountIn,
           hookData: '0x',
         },
@@ -288,7 +288,7 @@ export function encodeUniversalRouterSwap(params: EncodeSwapParams): Hex {
       encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [tokenIn, maxAmountIn]),
       encodeAbiParameters(CURRENCY_AMOUNT_PARAMS, [
         tokenOut,
-        quote.amountOutWei,
+        quote.amountOutRaw,
       ]),
     ]
   }

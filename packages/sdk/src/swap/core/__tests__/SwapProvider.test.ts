@@ -148,7 +148,7 @@ describe('SwapProvider', () => {
 
       expect(provider.mockExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          amountInWei: 100000000n, // 100 * 10^6
+          amountInRaw: 100000000n, // 100 * 10^6
         }),
       )
     })
@@ -169,11 +169,11 @@ describe('SwapProvider', () => {
     })
   })
 
-  describe('getPrice()', () => {
+  describe('getQuote()', () => {
     it('should throw if chain not supported', async () => {
       const provider = new MockSwapProvider()
       await expect(
-        provider.getPrice({
+        provider.getQuote({
           assetIn: MockUSDC,
           assetOut: MockWETH,
           chainId: 999 as SupportedChainId,
@@ -181,19 +181,19 @@ describe('SwapProvider', () => {
       ).rejects.toThrow('Chain 999 is not supported')
     })
 
-    it('should return price quote', async () => {
+    it('should return quote', async () => {
       const provider = new MockSwapProvider()
-      const price = await provider.getPrice({
+      const quote = await provider.getQuote({
         assetIn: MockUSDC,
         assetOut: MockWETH,
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
       })
 
-      expect(price.price).toBeDefined()
-      expect(price.amountIn).toBeDefined()
-      expect(price.amountOut).toBeDefined()
-      expect(price.route).toBeDefined()
+      expect(quote.price).toBeDefined()
+      expect(quote.amountIn).toBeDefined()
+      expect(quote.amountOut).toBeDefined()
+      expect(quote.route).toBeDefined()
     })
   })
 

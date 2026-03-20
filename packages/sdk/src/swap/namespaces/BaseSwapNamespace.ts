@@ -6,8 +6,6 @@ import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
   SwapMarket,
-  SwapPrice,
-  SwapPriceParams,
   SwapProviderConfig,
   SwapProviders,
   SwapQuote,
@@ -34,19 +32,6 @@ export abstract class BaseSwapNamespace {
       params.chainId,
     )
     return provider.getQuote(params)
-  }
-
-  /**
-   * Get price quote for a swap (display data only)
-   */
-  async price(params: SwapPriceParams): Promise<SwapPrice> {
-    const provider = this.resolveProvider(
-      params.provider,
-      params.assetIn,
-      params.assetOut!,
-      params.chainId,
-    )
-    return provider.getPrice(params)
   }
 
   /**

@@ -48,8 +48,6 @@ export type {
   SwapMarket,
   SwapMarketConfig,
   SwapMarketId,
-  SwapPrice,
-  SwapPriceParams,
   SwapProviderConfig,
   SwapProviderName,
   SwapQuote,

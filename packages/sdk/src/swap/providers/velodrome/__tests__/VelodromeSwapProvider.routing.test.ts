@@ -142,15 +142,15 @@ describe('VelodromeSwapProvider router type routing', () => {
 
     it('quotes via pool.getAmountOut for Universal Router', async () => {
       const provider = createProvider(BASE_SEPOLIA_CHAIN_ID)
-      const price = await provider.getPrice({
+      const quote = await provider.getQuote({
         assetIn: USDC,
         assetOut: WETH,
         amountIn: 100,
         chainId: BASE_SEPOLIA_CHAIN_ID,
       })
 
-      expect(price.price).toBeDefined()
-      expect(price.amountOut).toBeGreaterThan(0)
+      expect(quote.price).toBeTypeOf('number')
+      expect(quote.amountOut).toBeGreaterThan(0)
     })
   })
 
@@ -262,7 +262,7 @@ describe('VelodromeSwapProvider router type routing', () => {
       })
 
       expect(quote.provider).toBe('velodrome')
-      expect(quote.price.amountOut).toBeGreaterThan(0)
+      expect(quote.amountOut).toBeGreaterThan(0)
       expect(quote.execution.swapCalldata).toMatch(/^0x/)
       expect(
         (quote.execution.providerContext as Record<string, unknown>)
@@ -328,22 +328,22 @@ describe('VelodromeSwapProvider router type routing', () => {
       expect(result.amountOut).toBeGreaterThan(0)
     })
 
-    it('getPrice works for CL pool', async () => {
+    it('getQuote works for CL pool via getQuote', async () => {
       const provider = createProvider(OP_CHAIN_ID, {
         marketAllowlist: [
           { assets: [USDC, WETH], tickSpacing: 100, chainId: OP_CHAIN_ID },
         ],
       })
 
-      const price = await provider.getPrice({
+      const quote = await provider.getQuote({
         assetIn: USDC,
         assetOut: WETH,
         amountIn: 100,
         chainId: OP_CHAIN_ID,
       })
 
-      expect(price.price).toBeDefined()
-      expect(price.amountOut).toBeGreaterThan(0)
+      expect(quote.price).toBeTypeOf('number')
+      expect(quote.amountOut).toBeGreaterThan(0)
     })
 
     it('throws for CL on unsupported chain', async () => {

@@ -64,7 +64,7 @@ describe('encodeSwap', () => {
       const data = encodeSwap({
         assetIn: USDC,
         assetOut: WETH_TOKEN,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         routerType: 'v2',
         stable: false,
@@ -96,7 +96,7 @@ describe('encodeSwap', () => {
       const data = encodeSwap({
         assetIn: ETH,
         assetOut: USDC,
-        amountInWei: 1000000000000000000n,
+        amountInRaw: 1000000000000000000n,
         amountOutMin: 900000n,
         routerType: 'v2',
         stable: false,
@@ -126,7 +126,7 @@ describe('encodeSwap', () => {
       const data = encodeSwap({
         assetIn: USDC,
         assetOut: ETH,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         routerType: 'v2',
         stable: false,
@@ -146,7 +146,7 @@ describe('encodeSwap', () => {
       const data = encodeSwap({
         assetIn: USDC,
         assetOut: WETH_TOKEN,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         routerType: 'leaf',
         stable: false,
@@ -173,7 +173,7 @@ describe('encodeSwap', () => {
       const data = encodeSwap({
         assetIn: ETH,
         assetOut: USDC,
-        amountInWei: 1000000000000000000n,
+        amountInRaw: 1000000000000000000n,
         amountOutMin: 900000n,
         routerType: 'leaf',
         stable: false,
@@ -191,7 +191,7 @@ describe('encodeSwap', () => {
       const data = encodeSwap({
         assetIn: USDC,
         assetOut: WETH_TOKEN,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         routerType: 'leaf',
         stable: true,
@@ -215,7 +215,7 @@ describe('encodeSwap', () => {
       const data = encodeSwap({
         assetIn: USDC,
         assetOut: WETH_TOKEN,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         routerType: 'universal',
         stable: false,
@@ -241,7 +241,7 @@ describe('encodeSwap', () => {
       const params = {
         assetIn: USDC,
         assetOut: WETH_TOKEN,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         stable: false,
         factoryAddress: FACTORY,
@@ -266,7 +266,7 @@ describe('encodeSwap', () => {
       const data = encodeCLSwap({
         assetIn: USDC,
         assetOut: WETH_TOKEN,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         tickSpacing: 100,
         recipient: RECIPIENT,
@@ -290,7 +290,7 @@ describe('encodeSwap', () => {
       const clData = encodeCLSwap({
         assetIn: USDC,
         assetOut: WETH_TOKEN,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         tickSpacing: 100,
         recipient: RECIPIENT,
@@ -301,7 +301,7 @@ describe('encodeSwap', () => {
       const v2Data = encodeSwap({
         assetIn: USDC,
         assetOut: WETH_TOKEN,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         routerType: 'universal',
         stable: false,
@@ -320,7 +320,7 @@ describe('encodeSwap', () => {
       const baseParams = {
         assetIn: USDC,
         assetOut: WETH_TOKEN,
-        amountInWei: 1000000n,
+        amountInRaw: 1000000n,
         amountOutMin: 400000000000000000n,
         stable: false,
         factoryAddress: FACTORY,

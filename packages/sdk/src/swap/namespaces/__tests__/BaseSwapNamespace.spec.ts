@@ -34,7 +34,7 @@ describe('BaseSwapNamespace', () => {
       })
 
       expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
-      expect(result.price.price).toBe('1.5')
+      expect(result.price).toBe(1.5)
       expect(result.execution).toBeDefined()
       expect(result.execution.swapCalldata).toMatch(/^0x/)
       expect(result.provider).toBe('uniswap')
@@ -45,36 +45,6 @@ describe('BaseSwapNamespace', () => {
 
       await expect(
         namespace.getQuote({
-          assetIn: USDC,
-          assetOut: ETH,
-          amountIn: 100,
-          chainId: 84532 as SupportedChainId,
-        }),
-      ).rejects.toThrow('No swap provider configured')
-    })
-  })
-
-  describe('price', () => {
-    it('delegates to provider getPrice', async () => {
-      const provider = createMockSwapProvider()
-      const namespace = new ActionsSwapNamespace({ uniswap: provider })
-
-      const result = await namespace.price({
-        assetIn: USDC,
-        assetOut: ETH,
-        amountIn: 100,
-        chainId: 84532 as SupportedChainId,
-      })
-
-      expect(provider.mockGetPrice).toHaveBeenCalledTimes(1)
-      expect(result.price).toBe('1.5')
-    })
-
-    it('throws if no provider configured', async () => {
-      const namespace = new ActionsSwapNamespace({})
-
-      await expect(
-        namespace.price({
           assetIn: USDC,
           assetOut: ETH,
           amountIn: 100,

@@ -45,7 +45,7 @@ describe('WalletSwapNamespace', () => {
       expect(provider.mockExecute).toHaveBeenCalledTimes(1)
       expect(wallet.send).toHaveBeenCalledTimes(1)
       expect(wallet.sendBatch).not.toHaveBeenCalled()
-      expect(result.price).toBe('1.5')
+      expect(result.price).toBe(1.5)
       expect(result.assetIn).toBe(USDC)
       expect(result.assetOut).toBe(ETH)
     })
@@ -59,11 +59,11 @@ describe('WalletSwapNamespace', () => {
       provider.mockExecute.mockResolvedValueOnce({
         amountIn: 100,
         amountOut: 1.5,
-        amountInWei: 100000000n,
-        amountOutWei: 1500000000000000000n,
+        amountInRaw: 100000000n,
+        amountOutRaw: 1500000000000000000n,
         assetIn: USDC,
         assetOut: ETH,
-        price: '1.5',
+        price: 1.5,
         priceImpact: 0.001,
         transactionData: {
           tokenApproval: {
@@ -151,25 +151,25 @@ describe('WalletSwapNamespace', () => {
       // Should use executeFromQuote path (not the normal mockExecute)
       expect(provider.mockExecuteFromQuote).toHaveBeenCalledTimes(1)
       expect(provider.mockExecute).not.toHaveBeenCalled()
-      expect(result.price).toBe('1.5')
+      expect(result.price).toBe(1.5)
       expect(wallet.send).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('inherits read-only methods', () => {
-    it('has price method from BaseSwapNamespace', async () => {
+    it('has getQuote method from BaseSwapNamespace', async () => {
       const provider = createMockSwapProvider()
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
 
-      const result = await namespace.price({
+      const result = await namespace.getQuote({
         assetIn: USDC,
         assetOut: ETH,
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
       })
 
-      expect(result.price).toBe('1.5')
+      expect(result.price).toBe(1.5)
     })
 
     it('has getMarkets method from BaseSwapNamespace', async () => {

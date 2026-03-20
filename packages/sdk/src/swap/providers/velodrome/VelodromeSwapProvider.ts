@@ -60,7 +60,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   protected async _execute(
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {
-    if (params.amountOutWei !== undefined) {
+    if (params.amountOutRaw !== undefined) {
       throw new Error(
         'Velodrome/Aerodrome does not support exact-output swaps. Provide amountIn instead of amountOut.',
       )
@@ -71,7 +71,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
-    const amountInWei = params.amountInWei!
+    const amountInRaw = params.amountInRaw!
     let quote: SwapPrice
     let swapCalldata: Hex
 
@@ -83,7 +83,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       quote = await getCLQuote({
         assetIn,
         assetOut,
-        amountInWei,
+        amountInRaw,
         chainId,
         publicClient,
         clFactoryAddress: addresses.clFactory,
@@ -91,14 +91,14 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       })
 
       const amountOutMin =
-        (quote.amountOutWei *
+        (quote.amountOutRaw *
           BigInt(Math.round((1 - params.slippage) * 10000))) /
         10000n
 
       swapCalldata = encodeCLSwap({
         assetIn,
         assetOut,
-        amountInWei,
+        amountInRaw,
         amountOutMin,
         tickSpacing: poolConfig.tickSpacing,
         recipient: params.recipient,
@@ -109,7 +109,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       quote = await getQuote({
         assetIn,
         assetOut,
-        amountInWei,
+        amountInRaw,
         chainId,
         publicClient,
         routerAddress: addresses.router,
@@ -119,14 +119,14 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       })
 
       const amountOutMin =
-        (quote.amountOutWei *
+        (quote.amountOutRaw *
           BigInt(Math.round((1 - params.slippage) * 10000))) /
         10000n
 
       swapCalldata = encodeSwap({
         assetIn,
         assetOut,
-        amountInWei,
+        amountInRaw,
         amountOutMin,
         routerType: addresses.routerType,
         stable: poolConfig.stable,
@@ -164,7 +164,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
               },
             ] as const,
             functionName: 'transfer',
-            args: [addresses.router, amountInWei],
+            args: [addresses.router, amountInRaw],
           }),
           value: 0n,
         }
@@ -176,13 +176,13 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
           args: [params.walletAddress, addresses.router],
         })
 
-        if ((currentAllowance as bigint) < amountInWei) {
+        if ((currentAllowance as bigint) < amountInRaw) {
           tokenApproval = {
             to: token,
             data: encodeFunctionData({
               abi: ERC20_APPROVE_ABI,
               functionName: 'approve',
-              args: [addresses.router, amountInWei],
+              args: [addresses.router, amountInRaw],
             }),
             value: 0n,
           }
@@ -193,19 +193,24 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const swapTx: TransactionData = {
       to: addresses.router,
       data: swapCalldata,
-      value: isNativeAsset(assetIn) ? amountInWei : 0n,
+      value: isNativeAsset(assetIn) ? amountInRaw : 0n,
     }
 
+    const amountIn = parseFloat(
+      formatUnits(amountInRaw, assetIn.metadata.decimals),
+    )
+    const amountOut = parseFloat(
+      formatUnits(quote.amountOutRaw, assetOut.metadata.decimals),
+    )
+
     return {
-      amountIn: parseFloat(formatUnits(amountInWei, assetIn.metadata.decimals)),
-      amountOut: parseFloat(
-        formatUnits(quote.amountOutWei, assetOut.metadata.decimals),
-      ),
-      amountInWei,
-      amountOutWei: quote.amountOutWei,
+      amountIn,
+      amountOut,
+      amountInRaw,
+      amountOutRaw: quote.amountOutRaw,
       assetIn,
       assetOut,
-      price: quote.price,
+      price: amountOut / amountIn,
       priceImpact: quote.priceImpact,
       transactionData: {
         tokenApproval,
@@ -237,7 +242,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
     // Default to 1 unit for price quotes when no amount specified
-    const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
+    const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
 
     if (poolConfig.type === 'cl') {
       if (!addresses.clFactory) {
@@ -246,7 +251,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       return getCLQuote({
         assetIn,
         assetOut,
-        amountInWei,
+        amountInRaw,
         chainId,
         publicClient,
         clFactoryAddress: addresses.clFactory,
@@ -257,7 +262,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     return getQuote({
       assetIn,
       assetOut,
-      amountInWei,
+      amountInRaw,
       chainId,
       publicClient,
       routerAddress: addresses.router,
@@ -328,127 +333,126 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
-    const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
+    const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + 60
     const recipient =
       params.recipient ?? '0x0000000000000000000000000000000000000001'
 
+    // Get internal price quote and encode swap calldata
+    let internalQuote: SwapPrice
+    let swapCalldata: Hex
+    let providerContext: Record<string, unknown>
+
     if (poolConfig.type === 'cl') {
       if (!addresses.clFactory) {
         throw new Error(`CL pools not supported on chain ${chainId}`)
       }
 
-      const quote = await getCLQuote({
+      internalQuote = await getCLQuote({
         assetIn,
         assetOut,
-        amountInWei,
+        amountInRaw,
         chainId,
         publicClient,
         clFactoryAddress: addresses.clFactory,
         tickSpacing: poolConfig.tickSpacing,
       })
 
-      const amountOutMinWei =
-        (quote.amountOutWei * BigInt(Math.round((1 - slippage) * 10000))) /
+      const amountOutMinRaw =
+        (internalQuote.amountOutRaw *
+          BigInt(Math.round((1 - slippage) * 10000))) /
         10000n
 
-      const swapCalldata = encodeCLSwap({
+      swapCalldata = encodeCLSwap({
         assetIn,
         assetOut,
-        amountInWei,
-        amountOutMin: amountOutMinWei,
+        amountInRaw,
+        amountOutMin: amountOutMinRaw,
         tickSpacing: poolConfig.tickSpacing,
         recipient,
         deadline,
         chainId,
       })
 
-      return {
+      providerContext = {
+        tickSpacing: poolConfig.tickSpacing,
+        clFactoryAddress: addresses.clFactory,
+        poolAddress: internalQuote.route.pools[0]?.address,
+      }
+    } else {
+      internalQuote = await getQuote({
         assetIn,
         assetOut,
-        amountIn: params.amountIn,
+        amountInRaw,
         chainId,
-        slippage,
+        publicClient,
+        routerAddress: addresses.router,
+        routerType: addresses.routerType,
+        stable: poolConfig.stable,
+        factoryAddress: addresses.poolFactory,
+      })
+
+      const amountOutMinRaw =
+        (internalQuote.amountOutRaw *
+          BigInt(Math.round((1 - slippage) * 10000))) /
+        10000n
+
+      swapCalldata = encodeSwap({
+        assetIn,
+        assetOut,
+        amountInRaw,
+        amountOutMin: amountOutMinRaw,
+        routerType: addresses.routerType,
+        stable: poolConfig.stable,
+        factoryAddress: addresses.poolFactory,
+        recipient,
         deadline,
-        recipient: params.recipient,
-        provider: 'velodrome',
-        price: quote,
-        execution: {
-          swapCalldata,
-          routerAddress: addresses.router,
-          amountInWei,
-          amountOutMinWei,
-          value: isNativeAsset(assetIn) ? amountInWei : 0n,
-          chainId,
-          deadline,
-          providerContext: {
-            tickSpacing: poolConfig.tickSpacing,
-            clFactoryAddress: addresses.clFactory,
-            poolAddress: quote.route.pools[0]?.address,
-          },
-        },
-        quotedAt: now,
-        expiresAt: deadline,
+        chainId,
+      })
+
+      providerContext = {
+        stable: poolConfig.stable,
+        factoryAddress: addresses.poolFactory,
+        routerType: addresses.routerType,
       }
     }
 
-    // v2 AMM path
-    const quote = await getQuote({
-      assetIn,
-      assetOut,
-      amountInWei,
-      chainId,
-      publicClient,
-      routerAddress: addresses.router,
-      routerType: addresses.routerType,
-      stable: poolConfig.stable,
-      factoryAddress: addresses.poolFactory,
-    })
-
-    const amountOutMinWei =
-      (quote.amountOutWei * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
-
-    const swapCalldata = encodeSwap({
-      assetIn,
-      assetOut,
-      amountInWei,
-      amountOutMin: amountOutMinWei,
-      routerType: addresses.routerType,
-      stable: poolConfig.stable,
-      factoryAddress: addresses.poolFactory,
-      recipient,
-      deadline,
-      chainId,
-    })
+    const amountOutMinRaw =
+      (internalQuote.amountOutRaw *
+        BigInt(Math.round((1 - slippage) * 10000))) /
+      10000n
+    const amountOutMin = parseFloat(
+      formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
+    )
 
     return {
       assetIn,
       assetOut,
-      amountIn: params.amountIn,
       chainId,
-      slippage,
-      deadline,
-      recipient: params.recipient,
-      provider: 'velodrome',
-      price: quote,
+      amountIn: internalQuote.amountIn,
+      amountInRaw: amountInRaw,
+      amountOut: internalQuote.amountOut,
+      amountOutRaw: internalQuote.amountOutRaw,
+      amountOutMin,
+      amountOutMinRaw,
+      price: internalQuote.amountOut / internalQuote.amountIn,
+      priceInverse: internalQuote.amountIn / internalQuote.amountOut,
+      priceImpact: internalQuote.priceImpact,
+      route: internalQuote.route,
       execution: {
         swapCalldata,
         routerAddress: addresses.router,
-        amountInWei,
-        amountOutMinWei,
-        value: isNativeAsset(assetIn) ? amountInWei : 0n,
-        chainId,
-        deadline,
-        providerContext: {
-          stable: poolConfig.stable,
-          factoryAddress: addresses.poolFactory,
-          routerType: addresses.routerType,
-        },
+        value: isNativeAsset(assetIn) ? amountInRaw : 0n,
+        providerContext,
       },
+      provider: 'velodrome',
+      slippage,
+      deadline,
       quotedAt: now,
       expiresAt: deadline,
+      gasEstimate: internalQuote.gasEstimate,
     }
   }
 
@@ -459,8 +463,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   protected async _executeFromQuote(
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
-    const { chainId, assetIn, assetOut } = quote
-    const { execution } = quote
+    const { chainId, assetIn, assetOut, execution } = quote
     const addresses = getVelodromeAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
 
@@ -486,27 +489,29 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
               },
             ] as const,
             functionName: 'transfer',
-            args: [addresses.router, execution.amountInWei],
+            args: [addresses.router, quote.amountInRaw],
           }),
           value: 0n,
         }
       } else {
-        const recipient =
-          quote.recipient ?? '0x0000000000000000000000000000000000000001'
         const currentAllowance = await publicClient.readContract({
           address: token,
           abi: ERC20_ALLOWANCE_ABI,
           functionName: 'allowance',
-          args: [recipient, addresses.router],
+          // Use providerContext or a reasonable default for the owner address
+          args: [
+            '0x0000000000000000000000000000000000000001' as Address,
+            addresses.router,
+          ],
         })
 
-        if ((currentAllowance as bigint) < execution.amountInWei) {
+        if ((currentAllowance as bigint) < quote.amountInRaw) {
           tokenApproval = {
             to: token,
             data: encodeFunctionData({
               abi: ERC20_APPROVE_ABI,
               functionName: 'approve',
-              args: [addresses.router, execution.amountInWei],
+              args: [addresses.router, quote.amountInRaw],
             }),
             value: 0n,
           }
@@ -521,14 +526,14 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     }
 
     return {
-      amountIn: quote.price.amountIn,
-      amountOut: quote.price.amountOut,
-      amountInWei: execution.amountInWei,
-      amountOutWei: quote.price.amountOutWei,
+      amountIn: quote.amountIn,
+      amountOut: quote.amountOut,
+      amountInRaw: quote.amountInRaw,
+      amountOutRaw: quote.amountOutRaw,
       assetIn,
       assetOut,
-      price: quote.price.price,
-      priceImpact: quote.price.priceImpact,
+      price: quote.price,
+      priceImpact: quote.priceImpact,
       transactionData: {
         tokenApproval,
         swap: swapTx,

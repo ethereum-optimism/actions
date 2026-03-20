@@ -127,32 +127,33 @@ describe('UniswapSwapProvider', () => {
     })
   })
 
-  describe('getPrice', () => {
-    it('returns price quote', async () => {
+  describe('getQuote', () => {
+    it('returns swap quote', async () => {
       const provider = createProvider()
-      const price = await provider.getPrice({
+      const quote = await provider.getQuote({
         assetIn: USDC,
         assetOut: OP,
         amountIn: 100,
         chainId: CHAIN_ID,
       })
 
-      expect(price.price).toBeDefined()
-      expect(price.amountIn).toBeDefined()
-      expect(price.amountOut).toBeDefined()
-      expect(price.route.path).toEqual([USDC, OP])
+      expect(quote.price).toBeTypeOf('number')
+      expect(quote.amountIn).toBeDefined()
+      expect(quote.amountOut).toBeDefined()
+      expect(quote.route.path).toEqual([USDC, OP])
+      expect(quote.execution).toBeDefined()
     })
 
     it('defaults to 1 unit when no amount specified', async () => {
       const provider = createProvider()
-      const price = await provider.getPrice({
+      const quote = await provider.getQuote({
         assetIn: USDC,
         assetOut: OP,
         chainId: CHAIN_ID,
       })
 
       // 1 USDC = 1000000 (6 decimals)
-      expect(price.amountInWei).toBe(1000000n)
+      expect(quote.amountInRaw).toBe(1000000n)
     })
   })
 

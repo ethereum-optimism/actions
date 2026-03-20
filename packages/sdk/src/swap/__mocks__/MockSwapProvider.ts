@@ -20,7 +20,7 @@ import type {
 
 export interface MockSwapProviderConfig {
   supportedChains: SupportedChainId[]
-  defaultPrice: string
+  defaultPrice: number
   defaultPriceImpact: number
   provider: 'uniswap' | 'velodrome'
 }
@@ -69,7 +69,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     ]
     this.mockProviderConfig = {
       supportedChains: this._supportedChains,
-      defaultPrice: mockConfig?.defaultPrice ?? '1.5',
+      defaultPrice: mockConfig?.defaultPrice ?? 1.5,
       defaultPriceImpact: mockConfig?.defaultPriceImpact ?? 0.001,
       provider: mockConfig?.provider ?? 'uniswap',
     }
@@ -147,14 +147,14 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   private createMockSwapTransaction(
     params: ResolvedSwapParams,
   ): SwapTransaction {
-    const amountIn = params.amountInWei ?? 1000000n
+    const amountIn = params.amountInRaw ?? 1000000n
     const amountOut = 1500000000000000000n
 
     return {
       amountIn: 1.0,
       amountOut: 1.5,
-      amountInWei: amountIn,
-      amountOutWei: amountOut,
+      amountInRaw: amountIn,
+      amountOutRaw: amountOut,
       assetIn: params.assetIn,
       assetOut: params.assetOut,
       price: this.mockProviderConfig.defaultPrice,
@@ -182,12 +182,12 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     const amountOut = (amountIn * 15n) / 10n
 
     return {
-      price: this.mockProviderConfig.defaultPrice,
-      priceInverse: '0.666666',
+      price: String(this.mockProviderConfig.defaultPrice),
+      priceInverse: String(1 / this.mockProviderConfig.defaultPrice),
       amountIn: 1.0,
       amountOut: 1.5,
-      amountInWei: amountIn,
-      amountOutWei: amountOut,
+      amountInRaw: amountIn,
+      amountOutRaw: amountOut,
       priceImpact: this.mockProviderConfig.defaultPriceImpact,
       route: {
         path: [params.assetIn, params.assetOut!],
@@ -204,30 +204,48 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   }
 
   private createMockQuote(params: SwapQuoteParams): SwapQuote {
-    const price = this.createMockPrice({
-      assetIn: params.assetIn,
-      assetOut: params.assetOut,
-      amountIn: params.amountIn,
-      amountOut: params.amountOut,
-      chainId: params.chainId,
-    })
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + 60
+    const slippage = params.slippage ?? 0.005
+    const amountIn = params.amountIn ?? 1.0
+    const amountOut = amountIn * this.mockProviderConfig.defaultPrice
+    const amountInRaw = BigInt(
+      Math.floor(amountIn * 10 ** params.assetIn.metadata.decimals),
+    )
+    const amountOutRaw = BigInt(
+      Math.floor(amountOut * 10 ** params.assetOut.metadata.decimals),
+    )
+    const amountOutMinRaw =
+      (amountOutRaw * BigInt(Math.round((1 - slippage) * 10000))) / 10000n
+
     return {
-      ...params,
-      provider: this.mockProviderConfig.provider,
-      price,
+      assetIn: params.assetIn,
+      assetOut: params.assetOut,
+      chainId: params.chainId,
+      amountIn,
+      amountInRaw,
+      amountOut,
+      amountOutRaw,
+      amountOutMin: amountOut * (1 - slippage),
+      amountOutMinRaw,
+      price: this.mockProviderConfig.defaultPrice,
+      priceInverse: 1 / this.mockProviderConfig.defaultPrice,
+      priceImpact: this.mockProviderConfig.defaultPriceImpact,
+      route: {
+        path: [params.assetIn, params.assetOut],
+        pools: [{ address: '0x1234' as Address, fee: 500, version: 'v4' }],
+      },
       execution: {
         swapCalldata: '0x1234' as `0x${string}`,
         routerAddress: '0x492e6456d9528771018deb9e87ef7750ef184104' as Address,
-        amountInWei: price.amountInWei,
-        amountOutMinWei: price.amountOutWei,
         value: 0n,
-        chainId: params.chainId,
-        deadline,
       },
+      provider: this.mockProviderConfig.provider,
+      slippage,
+      deadline,
       quotedAt: now,
       expiresAt: deadline,
+      gasEstimate: 150000n,
     }
   }
 
@@ -235,14 +253,14 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     quote: SwapQuote,
   ): SwapTransaction {
     return {
-      amountIn: quote.price.amountIn,
-      amountOut: quote.price.amountOut,
-      amountInWei: quote.execution.amountInWei,
-      amountOutWei: quote.price.amountOutWei,
+      amountIn: quote.amountIn,
+      amountOut: quote.amountOut,
+      amountInRaw: quote.amountInRaw,
+      amountOutRaw: quote.amountOutRaw,
       assetIn: quote.assetIn,
       assetOut: quote.assetOut,
-      price: quote.price.price,
-      priceImpact: quote.price.priceImpact,
+      price: quote.price,
+      priceImpact: quote.priceImpact,
       transactionData: {
         swap: {
           to: quote.execution.routerAddress,

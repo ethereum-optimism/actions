@@ -24,7 +24,7 @@ import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 export interface GetQuoteParams {
   assetIn: Asset
   assetOut: Asset
-  amountInWei: bigint
+  amountInRaw: bigint
   chainId: SupportedChainId
   publicClient: PublicClient
   routerAddress: Address
@@ -42,7 +42,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
   const {
     assetIn,
     assetOut,
-    amountInWei,
+    amountInRaw,
     publicClient,
     routerAddress,
     routerType,
@@ -59,7 +59,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     ? getWrappedNativeAddress(chainId)
     : getAssetAddress(assetOut, chainId)
 
-  let amountOutWei: bigint
+  let amountOutRaw: bigint
 
   if (routerType === 'universal') {
     // Look up the pool and quote directly
@@ -79,11 +79,11 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
       )
     }
 
-    amountOutWei = (await publicClient.readContract({
+    amountOutRaw = (await publicClient.readContract({
       address: poolAddress as Address,
       abi: POOL_ABI,
       functionName: 'getAmountOut',
-      args: [amountInWei, tokenIn],
+      args: [amountInRaw, tokenIn],
     })) as bigint
   } else {
     // Legacy router quoting
@@ -97,16 +97,16 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
       address: routerAddress,
       abi,
       functionName: 'getAmountsOut',
-      args: [amountInWei, [route]],
+      args: [amountInRaw, [route]],
     })
-    amountOutWei = (amounts as bigint[])[1]
+    amountOutRaw = (amounts as bigint[])[1]
   }
 
   const normalizedIn = parseFloat(
-    formatUnits(amountInWei, assetIn.metadata.decimals),
+    formatUnits(amountInRaw, assetIn.metadata.decimals),
   )
   const normalizedOut = parseFloat(
-    formatUnits(amountOutWei, assetOut.metadata.decimals),
+    formatUnits(amountOutRaw, assetOut.metadata.decimals),
   )
 
   const price = (normalizedOut / normalizedIn).toFixed(6)
@@ -122,8 +122,8 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
     priceInverse,
     amountIn: normalizedIn,
     amountOut: normalizedOut,
-    amountInWei,
-    amountOutWei,
+    amountInRaw,
+    amountOutRaw,
     priceImpact: 0,
     route: swapRoute,
   }
@@ -132,7 +132,7 @@ export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
 export interface EncodeSwapParams {
   assetIn: Asset
   assetOut: Asset
-  amountInWei: bigint
+  amountInRaw: bigint
   amountOutMin: bigint
   routerType: VelodromeRouterType
   stable: boolean
@@ -156,7 +156,7 @@ export function encodeSwap(params: EncodeSwapParams): Hex {
   const {
     assetIn,
     assetOut,
-    amountInWei,
+    amountInRaw,
     amountOutMin,
     routerType,
     stable,
@@ -178,7 +178,7 @@ export function encodeSwap(params: EncodeSwapParams): Hex {
     return encodeUniversalRouterSwap(
       tokenIn,
       tokenOut,
-      amountInWei,
+      amountInRaw,
       amountOutMin,
       stable,
       deadline,
@@ -190,7 +190,7 @@ export function encodeSwap(params: EncodeSwapParams): Hex {
     assetOut,
     tokenIn,
     tokenOut,
-    amountInWei,
+    amountInRaw,
     amountOutMin,
     routerType,
     stable,
@@ -208,7 +208,7 @@ export function encodeSwap(params: EncodeSwapParams): Hex {
 function encodeUniversalRouterSwap(
   tokenIn: Address,
   tokenOut: Address,
-  amountInWei: bigint,
+  amountInRaw: bigint,
   amountOutMin: bigint,
   stable: boolean,
   deadline: number,
@@ -235,7 +235,7 @@ function encodeUniversalRouterSwap(
     ],
     [
       MSG_SENDER, // recipient — output goes back to the smart wallet
-      amountInWei, // actual amount (router holds these tokens)
+      amountInRaw, // actual amount (router holds these tokens)
       amountOutMin,
       routes,
       false, // payerIsUser — tokens already in the router
@@ -256,7 +256,7 @@ function encodeLegacyRouterSwap(
   assetOut: Asset,
   tokenIn: Address,
   tokenOut: Address,
-  amountInWei: bigint,
+  amountInRaw: bigint,
   amountOutMin: bigint,
   routerType: 'v2' | 'leaf',
   stable: boolean,
@@ -282,14 +282,14 @@ function encodeLegacyRouterSwap(
     return encodeFunctionData({
       abi,
       functionName: 'swapExactTokensForETH',
-      args: [amountInWei, amountOutMin, [route], recipient, BigInt(deadline)],
+      args: [amountInRaw, amountOutMin, [route], recipient, BigInt(deadline)],
     })
   }
 
   return encodeFunctionData({
     abi,
     functionName: 'swapExactTokensForTokens',
-    args: [amountInWei, amountOutMin, [route], recipient, BigInt(deadline)],
+    args: [amountInRaw, amountOutMin, [route], recipient, BigInt(deadline)],
   })
 }
 
@@ -300,7 +300,7 @@ function encodeLegacyRouterSwap(
 export interface GetCLQuoteParams {
   assetIn: Asset
   assetOut: Asset
-  amountInWei: bigint
+  amountInRaw: bigint
   chainId: SupportedChainId
   publicClient: PublicClient
   clFactoryAddress: Address
@@ -315,7 +315,7 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
   const {
     assetIn,
     assetOut,
-    amountInWei,
+    amountInRaw,
     publicClient,
     clFactoryAddress,
     tickSpacing,
@@ -358,7 +358,7 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
 
   // Call pool.quote() — uses staticcall, reverts with the quoted amount
   // The pool.quote() function simulates the swap and returns the output amount
-  const amountOutWei = (await publicClient.readContract({
+  const amountOutRaw = (await publicClient.readContract({
     address: poolAddress as Address,
     abi: [
       {
@@ -379,13 +379,13 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
       },
     ] as const,
     functionName: 'quote',
-    args: [amountInWei, zeroForOne, sqrtPriceLimitX96],
+    args: [amountInRaw, zeroForOne, sqrtPriceLimitX96],
   })) as readonly [bigint, bigint, number, bigint]
 
-  const outputAmount = amountOutWei[0]
+  const outputAmount = amountOutRaw[0]
 
   const normalizedIn = parseFloat(
-    formatUnits(amountInWei, assetIn.metadata.decimals),
+    formatUnits(amountInRaw, assetIn.metadata.decimals),
   )
   const normalizedOut = parseFloat(
     formatUnits(outputAmount, assetOut.metadata.decimals),
@@ -404,8 +404,8 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
     priceInverse,
     amountIn: normalizedIn,
     amountOut: normalizedOut,
-    amountInWei,
-    amountOutWei: outputAmount,
+    amountInRaw,
+    amountOutRaw: outputAmount,
     priceImpact: 0,
     route: swapRoute,
   }
@@ -414,7 +414,7 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
 export interface EncodeCLSwapParams {
   assetIn: Asset
   assetOut: Asset
-  amountInWei: bigint
+  amountInRaw: bigint
   amountOutMin: bigint
   tickSpacing: number
   recipient: Address
@@ -433,7 +433,7 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
   const {
     assetIn,
     assetOut,
-    amountInWei,
+    amountInRaw,
     amountOutMin,
     tickSpacing,
     deadline,
@@ -468,7 +468,7 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
     ],
     [
       MSG_SENDER, // recipient — output goes back to caller
-      amountInWei,
+      amountInRaw,
       amountOutMin,
       path,
       false, // payerIsUser — tokens pre-transferred to router

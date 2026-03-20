@@ -105,8 +105,8 @@ export interface SwapExecuteParams extends WalletSwapParams {
  * Passed to provider _execute() implementations.
  */
 export interface ResolvedSwapParams {
-  amountInWei?: bigint
-  amountOutWei?: bigint
+  amountInRaw?: bigint
+  amountOutRaw?: bigint
   assetIn: Asset
   assetOut: Asset
   slippage: number
@@ -169,35 +169,68 @@ export interface SwapQuoteExecution {
   swapCalldata: Hex
   /** Router/contract to send the swap transaction to */
   routerAddress: Address
-  /** Input amount in wei */
-  amountInWei: bigint
-  /** Minimum output amount in wei (after slippage) */
-  amountOutMinWei: bigint
   /** Native ETH value for ETH-in swaps, else 0n */
   value: bigint
-  /** Chain ID for execution */
-  chainId: SupportedChainId
-  /** Transaction deadline as Unix timestamp */
-  deadline: number
   /** Opaque provider-specific context (e.g. stable flag, factory address) */
   providerContext?: Record<string, unknown>
 }
 
 /**
- * A complete swap quote: display data (SwapPrice) + pre-built execution data.
+ * A complete swap quote: pricing, amounts, and pre-built execution data.
  * Pass to execute() to skip re-quoting.
  */
-export interface SwapQuote extends SwapQuoteParams {
-  /** Display data (price, amounts, route) */
-  price: SwapPrice
-  /** Pre-built execution data */
+export interface SwapQuote {
+  // ── What you're swapping ──
+  /** Token being sold */
+  assetIn: Asset
+  /** Token being bought */
+  assetOut: Asset
+  /** Chain to execute on */
+  chainId: SupportedChainId
+
+  // ── Amounts ──
+  /** Human-readable input amount */
+  amountIn: number
+  /** Input amount as raw bigint (native decimals) */
+  amountInRaw: bigint
+  /** Human-readable expected output amount (before slippage) */
+  amountOut: number
+  /** Expected output amount as raw bigint */
+  amountOutRaw: bigint
+  /** Human-readable minimum output (after slippage) */
+  amountOutMin: number
+  /** Minimum output as raw bigint */
+  amountOutMinRaw: bigint
+
+  // ── Price ──
+  /** Exchange rate: amountOut / amountIn */
+  price: number
+  /** Inverse exchange rate: amountIn / amountOut */
+  priceInverse: number
+  /** Price impact as decimal (0.03 = 3%) */
+  priceImpact: number
+
+  // ── Route ──
+  /** Route taken for the swap */
+  route: SwapRoute
+
+  // ── Execution ──
+  /** Pre-built transaction data. Pass quote to execute() to use. */
   execution: SwapQuoteExecution
+
+  // ── Metadata ──
   /** Provider that generated this quote */
   provider: SwapProviderName
+  /** Slippage tolerance applied to this quote */
+  slippage: number
+  /** Transaction deadline (Unix seconds) */
+  deadline: number
   /** When the quote was generated (Unix seconds) */
   quotedAt: number
-  /** When the quote expires (Unix seconds, equals deadline) */
+  /** When the quote expires (Unix seconds) */
   expiresAt: number
+  /** Estimated gas cost in wei */
+  gasEstimate?: bigint
 }
 
 /**
@@ -235,9 +268,9 @@ export interface SwapPrice {
   /** Human-readable output amount */
   amountOut: number
   /** Input amount in wei */
-  amountInWei: bigint
+  amountInRaw: bigint
   /** Expected output amount in wei */
-  amountOutWei: bigint
+  amountOutRaw: bigint
   /** Price impact as decimal (0.03 = 3%). Derived from pool mid-price vs execution price. */
   priceImpact: number
   /** Route taken for the swap */
@@ -267,15 +300,15 @@ export interface SwapTransaction {
   /** Human-readable output amount */
   amountOut: number
   /** Input amount in wei */
-  amountInWei: bigint
+  amountInRaw: bigint
   /** Output amount in wei (expected) */
-  amountOutWei: bigint
+  amountOutRaw: bigint
   /** Input asset */
   assetIn: Asset
   /** Output asset */
   assetOut: Asset
-  /** Execution price */
-  price: string
+  /** Exchange rate: amountOut / amountIn */
+  price: number
   /** Price impact as decimal (0.03 = 3%) */
   priceImpact: number
   /** Transaction data for execution */
@@ -293,15 +326,15 @@ export interface SwapReceipt {
   /** Human-readable output amount */
   amountOut: number
   /** Actual input amount in wei */
-  amountInWei: bigint
+  amountInRaw: bigint
   /** Actual output amount in wei */
-  amountOutWei: bigint
+  amountOutRaw: bigint
   /** Input asset */
   assetIn: Asset
   /** Output asset */
   assetOut: Asset
-  /** Execution price as human-readable string */
-  price: string
+  /** Exchange rate: amountOut / amountIn */
+  price: number
   /** Price impact as decimal (0.03 = 3%) */
   priceImpact: number
 }

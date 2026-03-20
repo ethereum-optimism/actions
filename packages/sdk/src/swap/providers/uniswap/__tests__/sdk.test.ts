@@ -58,7 +58,7 @@ describe('getQuote', () => {
     const quote = await getQuote({
       assetIn: USDC,
       assetOut: WETH,
-      amountInWei: 100000000n, // 100 USDC
+      amountInRaw: 100000000n, // 100 USDC
       chainId: CHAIN_ID,
       publicClient,
       quoterAddress: QUOTER,
@@ -69,8 +69,8 @@ describe('getQuote', () => {
 
     expect(quote.amountIn).toBe(100)
     expect(quote.amountOut).toBe(0.5)
-    expect(quote.amountInWei).toBe(100000000n)
-    expect(quote.amountOutWei).toBe(500000000000000000n)
+    expect(quote.amountInRaw).toBe(100000000n)
+    expect(quote.amountOutRaw).toBe(500000000000000000n)
     expect(quote.price).toBeDefined()
     expect(quote.priceInverse).toBeDefined()
     expect(typeof quote.priceImpact).toBe('number')
@@ -98,7 +98,7 @@ describe('getQuote', () => {
     const quote = await getQuote({
       assetIn: USDC,
       assetOut: WETH,
-      amountOutWei: 500000000000000000n, // 0.5 WETH
+      amountOutRaw: 500000000000000000n, // 0.5 WETH
       chainId: CHAIN_ID,
       publicClient,
       quoterAddress: QUOTER,
@@ -107,8 +107,8 @@ describe('getQuote', () => {
       tickSpacing: TICK_SPACING,
     })
 
-    expect(quote.amountInWei).toBe(100000000n)
-    expect(quote.amountOutWei).toBe(500000000000000000n)
+    expect(quote.amountInRaw).toBe(100000000n)
+    expect(quote.amountOutRaw).toBe(500000000000000000n)
 
     expect(publicClient.simulateContract).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -122,7 +122,7 @@ describe('getQuote', () => {
     await getQuote({
       assetIn: WETH, // higher address
       assetOut: USDC, // lower address
-      amountInWei: 1000000000000000000n,
+      amountInRaw: 1000000000000000000n,
       chainId: CHAIN_ID,
       publicClient,
       quoterAddress: QUOTER,
@@ -145,7 +145,7 @@ describe('getQuote', () => {
     await getQuote({
       assetIn: ETH,
       assetOut: USDC,
-      amountInWei: 1000000000000000000n,
+      amountInRaw: 1000000000000000000n,
       chainId: CHAIN_ID,
       publicClient,
       quoterAddress: QUOTER,
@@ -165,7 +165,7 @@ describe('getQuote', () => {
     await getQuote({
       assetIn: USDC,
       assetOut: ETH,
-      amountInWei: 100000000n,
+      amountInRaw: 100000000n,
       chainId: CHAIN_ID,
       publicClient,
       quoterAddress: QUOTER,
@@ -258,8 +258,8 @@ describe('encodeUniversalRouterSwap', () => {
     priceInverse: '200',
     amountIn: 100,
     amountOut: 0.5,
-    amountInWei: 100000000n,
-    amountOutWei: 500000000000000000n,
+    amountInRaw: 100000000n,
+    amountOutRaw: 500000000000000000n,
     priceImpact: 0.001,
     route: { path: [USDC, WETH], pools: [] },
     gasEstimate: 150000n,
@@ -267,7 +267,7 @@ describe('encodeUniversalRouterSwap', () => {
 
   it('encodes exact-in swap calldata', () => {
     const calldata = encodeUniversalRouterSwap({
-      amountInWei: 100000000n,
+      amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
       slippage: 0.005,
@@ -286,7 +286,7 @@ describe('encodeUniversalRouterSwap', () => {
 
   it('encodes exact-out swap calldata', () => {
     const calldata = encodeUniversalRouterSwap({
-      amountOutWei: 500000000000000000n,
+      amountOutRaw: 500000000000000000n,
       assetIn: USDC,
       assetOut: WETH,
       slippage: 0.005,
@@ -305,7 +305,7 @@ describe('encodeUniversalRouterSwap', () => {
 
   it('produces different calldata for exact-in vs exact-out', () => {
     const exactIn = encodeUniversalRouterSwap({
-      amountInWei: 100000000n,
+      amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
       slippage: 0.005,
@@ -319,7 +319,7 @@ describe('encodeUniversalRouterSwap', () => {
     })
 
     const exactOut = encodeUniversalRouterSwap({
-      amountOutWei: 500000000000000000n,
+      amountOutRaw: 500000000000000000n,
       assetIn: USDC,
       assetOut: WETH,
       slippage: 0.005,
@@ -337,7 +337,7 @@ describe('encodeUniversalRouterSwap', () => {
 
   it('applies slippage to minimum output for exact-in', () => {
     const noSlippage = encodeUniversalRouterSwap({
-      amountInWei: 100000000n,
+      amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
       slippage: 0,
@@ -351,7 +351,7 @@ describe('encodeUniversalRouterSwap', () => {
     })
 
     const withSlippage = encodeUniversalRouterSwap({
-      amountInWei: 100000000n,
+      amountInRaw: 100000000n,
       assetIn: USDC,
       assetOut: WETH,
       slippage: 0.05, // 5%
