@@ -87,7 +87,9 @@ export async function fetchERC20Balance(
 
   return {
     asset,
-    totalBalance: parseFloat(formatUnits(totalBalanceRaw, asset.metadata.decimals)),
+    totalBalance: parseFloat(
+      formatUnits(totalBalanceRaw, asset.metadata.decimals),
+    ),
     totalBalanceRaw,
     chains,
   }

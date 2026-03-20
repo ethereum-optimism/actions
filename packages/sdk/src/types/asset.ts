@@ -25,8 +25,13 @@ export interface TokenBalance {
   asset: Asset
   totalBalance: number
   totalBalanceRaw: bigint
-  chains: Partial<Record<SupportedChainId, {
-    balance: number
-    balanceRaw: bigint
-  }>>
+  chains: Partial<
+    Record<
+      SupportedChainId,
+      {
+        balance: number
+        balanceRaw: bigint
+      }
+    >
+  >
 }

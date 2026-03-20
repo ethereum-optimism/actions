@@ -175,7 +175,11 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(result[USDC_ADDRESS]).toBe(0)
       expect(result[MORPHO_ADDRESS]).toBe(0)
@@ -210,7 +214,11 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(result[USDC_ADDRESS]).toBeCloseTo(0.03, 4)
       expect(result[MORPHO_ADDRESS]).toBeCloseTo(0.015, 4)
@@ -263,7 +271,11 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       // Expected calculation:
       // USDC: 2% * (600k / 1M) = 1.2%
@@ -310,7 +322,11 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(result[USDC_ADDRESS]).toBeCloseTo(0.01, 4) // Vault-level
       expect(result[MORPHO_ADDRESS]).toBeCloseTo(0.015, 4) // Market-level (100% weight)
@@ -335,7 +351,11 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(result[USDC_ADDRESS]).toBe(0)
       expect(result[MORPHO_ADDRESS]).toBe(0)
@@ -370,7 +390,11 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, testSupportedAssets, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       // Should be zero because total supply is zero (weight = 0)
       expect(result[USDC_ADDRESS]).toBe(0)

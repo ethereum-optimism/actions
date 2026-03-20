@@ -86,7 +86,7 @@ export const USDC: Asset = {
  */
 export const USDT: Asset = {
   address: {
-    [mainnet.id]: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+    [mainnet.id]: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
   },
   metadata: {
     symbol: 'USDT',
@@ -102,7 +102,7 @@ export const USDT: Asset = {
  */
 export const DAI: Asset = {
   address: {
-    [mainnet.id]: '0x6b175474e89094c44da98b954eedeac495271d0f',
+    [mainnet.id]: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
   },
   metadata: {
     symbol: 'DAI',
@@ -117,8 +117,8 @@ export const DAI: Asset = {
  */
 export const FRAX: Asset = {
   address: {
-    [mainnet.id]: '0x853d955acef822db058eb8505911ed77f175b99e',
-    [optimism.id]: '0x2e3d870790dc77a83dd1d18184acc7439a53f475',
+    [mainnet.id]: '0x853d955aCEf822Db058eb8505911ED77F175b99e',
+    [optimism.id]: '0x2E3D870790dC77A83DD1d18184Acc7439A53f475',
   },
   metadata: {
     symbol: 'FRAX',
@@ -133,9 +133,9 @@ export const FRAX: Asset = {
  */
 export const USDE: Asset = {
   address: {
-    [mainnet.id]: '0x4c9edd5852cd905f086c759e8383e09bff1e68b3',
-    [optimism.id]: '0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34',
-    [base.id]: '0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34',
+    [mainnet.id]: '0x4c9EDD5852cd905f086C759E8383e09bff1E68B3',
+    [optimism.id]: '0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34',
+    [base.id]: '0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34',
   },
   metadata: {
     symbol: 'USDe',
@@ -150,7 +150,7 @@ export const USDE: Asset = {
  */
 export const PYUSD: Asset = {
   address: {
-    [mainnet.id]: '0x6c3ea9036406852006290770bedfcaba0e23a0e8',
+    [mainnet.id]: '0x6c3ea9036406852006290770BEdFcAbA0e23A0e8',
   },
   metadata: {
     symbol: 'PYUSD',
@@ -161,11 +161,11 @@ export const PYUSD: Asset = {
 }
 
 /**
- * Sky (formerly MakerDAO governance token rebranded)
+ * Sky (rebranded MakerDAO governance token)
  */
 export const SKY: Asset = {
   address: {
-    [mainnet.id]: '0x56072c95faa701256059aa122697b133aded9279',
+    [mainnet.id]: '0x56072C95FAA701256059aa122697B133aDEd9279',
   },
   metadata: {
     symbol: 'SKY',
@@ -181,10 +181,10 @@ export const SKY: Asset = {
  */
 export const WBTC: Asset = {
   address: {
-    [mainnet.id]: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-    [optimism.id]: '0x68f180fcce6836688e9084f035309e29bf0a2095',
-    [base.id]: '0x1cea84203673764244e05693e42e6ace62be9ba5',
-    [unichain.id]: '0x0555e30da8f98308edb960aa94c0db47230d2b9c',
+    [mainnet.id]: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
+    [optimism.id]: '0x68f180fcCe6836688e9084f035309E29Bf0A2095',
+    [base.id]: '0x1ceA84203673764244E05693e42E6Ace62bE9BA5',
+    [unichain.id]: '0x0555E30da8f98308EdB960aa94C0Db47230d2B9c',
   },
   metadata: {
     symbol: 'WBTC',
@@ -200,8 +200,8 @@ export const WBTC: Asset = {
  */
 export const CBBTC: Asset = {
   address: {
-    [mainnet.id]: '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf',
-    [base.id]: '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf',
+    [mainnet.id]: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
+    [base.id]: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
   },
   metadata: {
     symbol: 'cbBTC',
@@ -217,7 +217,7 @@ export const CBBTC: Asset = {
  */
 export const STETH: Asset = {
   address: {
-    [mainnet.id]: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84',
+    [mainnet.id]: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
   },
   metadata: {
     symbol: 'stETH',
@@ -233,8 +233,8 @@ export const STETH: Asset = {
  */
 export const WSTETH: Asset = {
   address: {
-    [mainnet.id]: '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0',
-    [unichain.id]: '0xc02fe7317d4eb8753a02c35fe019786854a92001',
+    [mainnet.id]: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+    [unichain.id]: '0xc02fE7317D4eb8753a02c35fe019786854A92001',
   },
   metadata: {
     symbol: 'wstETH',
@@ -249,10 +249,10 @@ export const WSTETH: Asset = {
  */
 export const RETH: Asset = {
   address: {
-    [mainnet.id]: '0xae78736cd615f374d3085123a210448e74fc6393',
-    [optimism.id]: '0x9bcef72be871e61ed4fbbc7630889bee758eb81d',
-    [base.id]: '0xb6fe221fe9eef5aba221c348ba20a1bf5e73624c',
-    [unichain.id]: '0x94cac393f3444cef63a651ffc18497e7e8bd036a',
+    [mainnet.id]: '0xae78736Cd615f374D3085123A210448E74Fc6393',
+    [optimism.id]: '0x9Bcef72be871e61ED4fBbc7630889beE758eb81D',
+    [base.id]: '0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c',
+    [unichain.id]: '0x94Cac393f3444cEf63a651FfC18497E7e8bd036a',
   },
   metadata: {
     symbol: 'rETH',
@@ -267,9 +267,9 @@ export const RETH: Asset = {
  */
 export const CBETH: Asset = {
   address: {
-    [mainnet.id]: '0xbe9895146f7af43049ca1c1ae358b0541ea49704',
-    [optimism.id]: '0xaddb6a0412de1ba0f936dcaeb8aaa24578dcf3b2',
-    [base.id]: '0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22',
+    [mainnet.id]: '0xBe9895146f7AF43049ca1c1AE358B0541Ea49704',
+    [optimism.id]: '0xadDb6A0412DE1BA0F936DCaeb8Aaa24578dcF3B2',
+    [base.id]: '0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22',
   },
   metadata: {
     symbol: 'cbETH',
@@ -285,7 +285,7 @@ export const CBETH: Asset = {
  */
 export const EETH: Asset = {
   address: {
-    [mainnet.id]: '0x35fa164735182de50811e8e2e824cfb9b6118ac2',
+    [mainnet.id]: '0x35fA164735182de50811E8e2E824cFb9B6118ac2',
   },
   metadata: {
     symbol: 'eETH',
@@ -301,10 +301,10 @@ export const EETH: Asset = {
  */
 export const WEETH: Asset = {
   address: {
-    [mainnet.id]: '0xcd5fe23c85820f7b72d0926fc9b05b43e359b7ee',
-    [optimism.id]: '0x5a7facb970d094b6c7ff1df0ea68d99e6e73cbff',
-    [base.id]: '0x04c0599ae5a44757c0af6f9ec3b93da8976c150a',
-    [unichain.id]: '0x7dcc39b4d1c53cb31e1abc0e358b43987fef80f7',
+    [mainnet.id]: '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee',
+    [optimism.id]: '0x5A7fACB970D094B6C7FF1df0eA68D99E6e73CBFF',
+    [base.id]: '0x04C0599Ae5A44757c0af6F9eC3b93da8976c150A',
+    [unichain.id]: '0x7DCC39B4d1C53CB31e1aBc0e358b43987FEF80f7',
   },
   metadata: {
     symbol: 'weETH',
@@ -319,8 +319,8 @@ export const WEETH: Asset = {
  */
 export const ETHFI: Asset = {
   address: {
-    [mainnet.id]: '0xfe0c30065b384f05761f15d0cc899d4f9f9cc0eb',
-    [base.id]: '0x6c240dda6b5c336df09a4d011139beaaa1ea2aa2',
+    [mainnet.id]: '0xFe0c30065B384F05761f15d0CC899D4F9F9Cc0eB',
+    [base.id]: '0x6C240DDA6b5c336DF09A4D011139beAAa1eA2Aa2',
   },
   metadata: {
     symbol: 'ETHFI',
@@ -335,9 +335,9 @@ export const ETHFI: Asset = {
  */
 export const AAVE: Asset = {
   address: {
-    [mainnet.id]: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
-    [optimism.id]: '0x76fb31fb4af56892a25e32cfc43de717950c9278',
-    [base.id]: '0x63706e401c06ac8513145b7687a14804d17f814b',
+    [mainnet.id]: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9',
+    [optimism.id]: '0x76FB31fb4af56892A25e32cFC43De717950c9278',
+    [base.id]: '0x63706e401c06ac8513145b7687A14804d17f814b',
   },
   metadata: {
     symbol: 'AAVE',
@@ -352,9 +352,9 @@ export const AAVE: Asset = {
  */
 export const UNI: Asset = {
   address: {
-    [mainnet.id]: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
-    [optimism.id]: '0x6fd9d7ad17242c41f7131d257212c54a0e816691',
-    [unichain.id]: '0x8f187aa05619a017077f5308904739877ce9ea21',
+    [mainnet.id]: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
+    [optimism.id]: '0x6fd9d7AD17242c41f7131d257212c54A0e816691',
+    [unichain.id]: '0x8f187aA05619a017077f5308904739877ce9eA21',
   },
   metadata: {
     symbol: 'UNI',
@@ -369,11 +369,11 @@ export const UNI: Asset = {
  */
 export const LINK: Asset = {
   address: {
-    [mainnet.id]: '0x514910771af9ca656af840dff83e8264ecf986ca',
-    [optimism.id]: '0x350a791bfc2c21f9ed5d10980dad2e2638ffa7f6',
-    [base.id]: '0x88fb150bdc53a65fe94dea0c9ba0a6daf8c6e196',
-    [unichain.id]: '0xef66491eab4bbb582c57b14778afd8dfb70d8a1a',
-    [worldchain.id]: '0x915b648e994d5f31059b38223b9fbe98ae185473',
+    [mainnet.id]: '0x514910771AF9Ca656af840dff83E8264EcF986CA',
+    [optimism.id]: '0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6',
+    [base.id]: '0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196',
+    [unichain.id]: '0xEF66491eab4bbB582c57b14778afd8dFb70D8A1A',
+    [worldchain.id]: '0x915b648e994d5f31059B38223b9fbe98ae185473',
   },
   metadata: {
     symbol: 'LINK',
@@ -388,9 +388,9 @@ export const LINK: Asset = {
  */
 export const CRV: Asset = {
   address: {
-    [mainnet.id]: '0xd533a949740bb3306d119cc777fa900ba034cd52',
-    [optimism.id]: '0x0994206dfe8de6ec6920ff4d779b0d950605fb53',
-    [base.id]: '0x8ee73c484a26e0a5df2ee2a4960b789967dd0415',
+    [mainnet.id]: '0xD533a949740bb3306d119CC777fa900bA034cd52',
+    [optimism.id]: '0x0994206dfE8De6Ec6920FF4D779B0d950605Fb53',
+    [base.id]: '0x8Ee73c484A26e0A5df2Ee2a4960B789967dd0415',
   },
   metadata: {
     symbol: 'CRV',
@@ -405,9 +405,9 @@ export const CRV: Asset = {
  */
 export const SNX: Asset = {
   address: {
-    [mainnet.id]: '0xc011a73ee8576fb46f5e1c5751ca3b9fe0af2a6f',
-    [optimism.id]: '0x8700daec35af8ff88c16bdf0418774cb3d7599b4',
-    [base.id]: '0x22e6966b799c4d5b13be962e1d117b56327fda66',
+    [mainnet.id]: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
+    [optimism.id]: '0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4',
+    [base.id]: '0x22e6966B799c4D5B13BE962E1D117b56327FDa66',
   },
   metadata: {
     symbol: 'SNX',
@@ -422,8 +422,8 @@ export const SNX: Asset = {
  */
 export const COMP: Asset = {
   address: {
-    [mainnet.id]: '0xc00e94cb662c3520282e6f5717214004a7f26888',
-    [base.id]: '0x9e1028f5f1d5ede59748ffcee5532509976840e0',
+    [mainnet.id]: '0xc00e94Cb662C3520282E6f5717214004A7f26888',
+    [base.id]: '0x9e1028F5F1D5eDE59748FFceE5532509976840E0',
   },
   metadata: {
     symbol: 'COMP',
@@ -438,9 +438,9 @@ export const COMP: Asset = {
  */
 export const BAL: Asset = {
   address: {
-    [mainnet.id]: '0xba100000625a3754423978a60c9317c58a424e3d',
-    [optimism.id]: '0xfe8b128ba8c78aabc59d4c64cee7ff28e9379921',
-    [base.id]: '0x4158734d47fc9692176b5085e0f52ee0da5d47f1',
+    [mainnet.id]: '0xba100000625a3754423978a60c9317c58a424e3D',
+    [optimism.id]: '0xFE8B128bA8C78aabC59d4c64cEE7fF28e9379921',
+    [base.id]: '0x4158734D47Fc9692176B5085E0F52ee0Da5d47F1',
   },
   metadata: {
     symbol: 'BAL',
@@ -455,8 +455,8 @@ export const BAL: Asset = {
  */
 export const SUSHI: Asset = {
   address: {
-    [mainnet.id]: '0x6b3595068778dd592e39a122f4f5a5cf09c90fe2',
-    [base.id]: '0x7d49a065d17d6d4a55dc13649901fdbb98b2afba',
+    [mainnet.id]: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2',
+    [base.id]: '0x7D49a065D17d6d4a55dc13649901fdBB98B2AFBA',
   },
   metadata: {
     symbol: 'SUSHI',
@@ -468,12 +468,12 @@ export const SUSHI: Asset = {
 
 /**
  * 1inch network token
- * @description Named ONEINCH because identifiers cannot start with a digit
+ * @description Named ONEINCH because JavaScript identifiers cannot start with a digit
  */
 export const ONEINCH: Asset = {
   address: {
-    [mainnet.id]: '0x111111111117dc0aa78b770fa6a738034120c302',
-    [base.id]: '0xc5fecc3a29fb57b5024eec8a2239d4621e111cbe',
+    [mainnet.id]: '0x111111111117dC0aa78b770fA6A738034120C302',
+    [base.id]: '0xc5fecC3a29Fb57B5024eEc8a2239d4621e111CBE',
   },
   metadata: {
     symbol: '1INCH',
@@ -488,9 +488,9 @@ export const ONEINCH: Asset = {
  */
 export const PENDLE: Asset = {
   address: {
-    [mainnet.id]: '0x808507121b80c02388fad14726482e061b8da827',
-    [optimism.id]: '0xbc7b1ff1c6989f006a1185318ed4e7b5796e66e1',
-    [base.id]: '0xa99f6e6785da0f5d6fb42495fe424bce029eeb3e',
+    [mainnet.id]: '0x808507121B80c02388fAd14726482e061B8da827',
+    [optimism.id]: '0xBC7B1Ff1c6989f006a1185318eD4E7b5796e66E1',
+    [base.id]: '0xA99F6e6785Da0F5d6fB42495Fe424BCE029Eeb3E',
   },
   metadata: {
     symbol: 'PENDLE',
@@ -505,7 +505,7 @@ export const PENDLE: Asset = {
  */
 export const MKR: Asset = {
   address: {
-    [mainnet.id]: '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2',
+    [mainnet.id]: '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2',
   },
   metadata: {
     symbol: 'MKR',
@@ -520,8 +520,8 @@ export const MKR: Asset = {
  */
 export const LDO: Asset = {
   address: {
-    [mainnet.id]: '0x5a98fcbea516cf06857215779fd812ca3bef1b32',
-    [optimism.id]: '0xfdb794692724153d1488ccdbe0c56c252596735f',
+    [mainnet.id]: '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32',
+    [optimism.id]: '0xFdb794692724153d1488CcdBE0C56c252596735F',
   },
   metadata: {
     symbol: 'LDO',
@@ -536,7 +536,7 @@ export const LDO: Asset = {
  */
 export const RPL: Asset = {
   address: {
-    [mainnet.id]: '0xd33526068d116ce69f19a9ee46f0bd304f21a51f',
+    [mainnet.id]: '0xD33526068D116cE69F19A9ee46F0bd304F21A51f',
   },
   metadata: {
     symbol: 'RPL',
@@ -551,7 +551,7 @@ export const RPL: Asset = {
  */
 export const GRT: Asset = {
   address: {
-    [mainnet.id]: '0xc944e90c64b2c07662a292be6244bdf05cda44a7',
+    [mainnet.id]: '0xc944E90C64B2c07662A292be6244BDf05Cda44a7',
   },
   metadata: {
     symbol: 'GRT',
@@ -566,7 +566,7 @@ export const GRT: Asset = {
  */
 export const ENS: Asset = {
   address: {
-    [mainnet.id]: '0xc18360217d8f7ab5e7c516566761ea12ce7f9d72',
+    [mainnet.id]: '0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72',
   },
   metadata: {
     symbol: 'ENS',
@@ -597,7 +597,7 @@ export const OP: Asset = {
  */
 export const ARB: Asset = {
   address: {
-    [mainnet.id]: '0xb50721bcf8d664c30412cfbc6cf7a15145234ad1',
+    [mainnet.id]: '0xB50721BCf8d664c30412Cfbc6cf7a15145234ad1',
   },
   metadata: {
     symbol: 'ARB',
@@ -612,7 +612,7 @@ export const ARB: Asset = {
  */
 export const POL: Asset = {
   address: {
-    [mainnet.id]: '0x455e53cbb86018ac2b8092fdcd39d8444affc3f6',
+    [mainnet.id]: '0x455e53CBB86018Ac2B8092FdCd39d8444aFFC3F6',
   },
   metadata: {
     symbol: 'POL',
@@ -627,7 +627,7 @@ export const POL: Asset = {
  */
 export const RENDER: Asset = {
   address: {
-    [mainnet.id]: '0x6de037ef9ad2725eb40118bb1702ebb27e4aeb24',
+    [mainnet.id]: '0x6De037ef9aD2725EB40118Bb1702EBb27e4Aeb24',
   },
   metadata: {
     symbol: 'RENDER',
@@ -642,9 +642,9 @@ export const RENDER: Asset = {
  */
 export const WLD: Asset = {
   address: {
-    [mainnet.id]: '0x163f8c2467924be0ae7b5347228cabf260318753',
-    [optimism.id]: '0xdc6ff44d5d932cbd77b52e5612ba0529dc6226f1',
-    [worldchain.id]: '0x2cfc85d8e48f8eab294be644d9e25c3030863003',
+    [mainnet.id]: '0x163f8C2467924be0ae7B5347228CABF260318753',
+    [optimism.id]: '0xdC6fF44d5d932Cbd77B52E5612Ba0529DC6226F1',
+    [worldchain.id]: '0x2cFc85d8E48F8EAB294be644d9E25C3030863003',
   },
   metadata: {
     symbol: 'WLD',
@@ -659,7 +659,7 @@ export const WLD: Asset = {
  */
 export const ONDO: Asset = {
   address: {
-    [mainnet.id]: '0xfaba6f8e4a5e8ab82f62fe7c39859fa577269be3',
+    [mainnet.id]: '0xfAbA6f8e4a5E8Ab82F62fe7C39859FA577269BE3',
   },
   metadata: {
     symbol: 'ONDO',
@@ -674,9 +674,9 @@ export const ONDO: Asset = {
  */
 export const ENA: Asset = {
   address: {
-    [mainnet.id]: '0x57e114b691db790c35207b2e685d4a43181e6061',
-    [optimism.id]: '0x58538e6a46e07434d7e7375bc268d3cb839c0133',
-    [base.id]: '0x58538e6a46e07434d7e7375bc268d3cb839c0133',
+    [mainnet.id]: '0x57e114B691Db790C35207b2e685D4A43181e6061',
+    [optimism.id]: '0x58538e6A46E07434d7E7375Bc268D3cb839C0133',
+    [base.id]: '0x58538e6A46E07434d7E7375Bc268D3cb839C0133',
   },
   metadata: {
     symbol: 'ENA',
@@ -691,7 +691,7 @@ export const ENA: Asset = {
  */
 export const SHIB: Asset = {
   address: {
-    [mainnet.id]: '0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce',
+    [mainnet.id]: '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE',
   },
   metadata: {
     symbol: 'SHIB',
@@ -706,7 +706,7 @@ export const SHIB: Asset = {
  */
 export const PEPE: Asset = {
   address: {
-    [mainnet.id]: '0x6982508145454ce325ddbe47a25d4ec3d2311933',
+    [mainnet.id]: '0x6982508145454Ce325dDbE47a25d4ec3d2311933',
   },
   metadata: {
     symbol: 'PEPE',

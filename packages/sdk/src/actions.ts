@@ -84,7 +84,7 @@ export class Actions<
       this._lendProviders.morpho = new MorphoLendProvider(
         config.lend.morpho,
         this.chainManager,
-        this.getSupportedAssets(),
+        () => this.getSupportedAssets(),
       )
     }
     if (config.lend?.aave) {

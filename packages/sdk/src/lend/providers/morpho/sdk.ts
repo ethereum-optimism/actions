@@ -48,7 +48,10 @@ export async function fetchAndCalculateRewards(
 /**
  * Build an empty rewards object with all supported asset addresses initialized to 0
  */
-function buildEmptyRewards(supportedAssets: Asset[], chainId: number): RewardsBreakdown {
+function buildEmptyRewards(
+  supportedAssets: Asset[],
+  chainId: number,
+): RewardsBreakdown {
   const emptyRewards: Record<string, number> = {
     other: 0,
     totalRewards: 0,
@@ -359,7 +362,10 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
         params.marketId.chainId,
       ).catch((error) => {
         console.error('Failed to fetch rewards data:', error)
-        return buildEmptyRewards(params.supportedAssets || [], params.marketId.chainId)
+        return buildEmptyRewards(
+          params.supportedAssets || [],
+          params.marketId.chainId,
+        )
       })
 
       const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
@@ -538,7 +544,10 @@ export function calculateRewardsBreakdown(
   if (apiVault.state?.rewards && apiVault.state.rewards.length > 0) {
     for (const reward of apiVault.state.rewards) {
       const rewardApr = reward.supplyApr || 0
-      const category = categorizeRewardAsset(reward.asset?.address, knownAddresses)
+      const category = categorizeRewardAsset(
+        reward.asset?.address,
+        knownAddresses,
+      )
       rewardsByCategory[category] += rewardApr
     }
   }
@@ -565,7 +574,10 @@ export function calculateRewardsBreakdown(
         for (const reward of allocation.market.state.rewards) {
           const rewardApr = reward.supplyApr || 0
           const weightedRewardApr = rewardApr * weight
-          const category = categorizeRewardAsset(reward.asset?.address, knownAddresses)
+          const category = categorizeRewardAsset(
+            reward.asset?.address,
+            knownAddresses,
+          )
           rewardsByCategory[category] += weightedRewardApr
         }
       }

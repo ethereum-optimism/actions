@@ -181,7 +181,11 @@ describe('Morpho API Integration', () => {
 
   describe('calculateRewardsBreakdown', () => {
     it('should calculate rewards from vault-level rewards keyed by address', () => {
-      const rewards = calculateRewardsBreakdown(mockVaultWithRewards, testSupportedAssets, CHAIN_ID)
+      const rewards = calculateRewardsBreakdown(
+        mockVaultWithRewards,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(rewards[USDC_ADDRESS]).toBe(0.025)
       expect(rewards[MORPHO_ADDRESS]).toBe(0.01)
@@ -192,7 +196,11 @@ describe('Morpho API Integration', () => {
     })
 
     it('should return zeros for vault with no rewards', () => {
-      const rewards = calculateRewardsBreakdown(mockVaultNoRewards, testSupportedAssets, CHAIN_ID)
+      const rewards = calculateRewardsBreakdown(
+        mockVaultNoRewards,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(rewards[USDC_ADDRESS]).toBe(0)
       expect(rewards[MORPHO_ADDRESS]).toBe(0)
@@ -214,7 +222,11 @@ describe('Morpho API Integration', () => {
         },
       }
 
-      const rewards = calculateRewardsBreakdown(vaultWithUnknown, testSupportedAssets, CHAIN_ID)
+      const rewards = calculateRewardsBreakdown(
+        vaultWithUnknown,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(rewards.other).toBe(0.05)
     })
@@ -228,7 +240,12 @@ describe('Morpho API Integration', () => {
             {
               market: {
                 state: {
-                  rewards: [{ asset: { address: USDC_ADDRESS, symbol: 'USDC' }, supplyApr: 0.1 }],
+                  rewards: [
+                    {
+                      asset: { address: USDC_ADDRESS, symbol: 'USDC' },
+                      supplyApr: 0.1,
+                    },
+                  ],
                 },
               },
               supplyAssetsUsd: 750000, // 75% of total
@@ -236,7 +253,12 @@ describe('Morpho API Integration', () => {
             {
               market: {
                 state: {
-                  rewards: [{ asset: { address: USDC_ADDRESS, symbol: 'USDC' }, supplyApr: 0.02 }],
+                  rewards: [
+                    {
+                      asset: { address: USDC_ADDRESS, symbol: 'USDC' },
+                      supplyApr: 0.02,
+                    },
+                  ],
                 },
               },
               supplyAssetsUsd: 250000, // 25% of total
@@ -245,7 +267,11 @@ describe('Morpho API Integration', () => {
         },
       }
 
-      const rewards = calculateRewardsBreakdown(vaultWithMarketRewards, testSupportedAssets, CHAIN_ID)
+      const rewards = calculateRewardsBreakdown(
+        vaultWithMarketRewards,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       // Expected: 0.1 * 0.75 + 0.02 * 0.25 = 0.075 + 0.005 = 0.08
       expect(rewards[USDC_ADDRESS]).toBeCloseTo(0.08, 6)
@@ -265,7 +291,11 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT, testSupportedAssets, CHAIN_ID)
+      const rewards = await fetchAndCalculateRewards(
+        GAUNTLET_USDC_VAULT,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(rewards).toBeDefined()
       expect(typeof rewards[USDC_ADDRESS]).toBe('number')
@@ -288,7 +318,11 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT, testSupportedAssets, CHAIN_ID)
+      const rewards = await fetchAndCalculateRewards(
+        GAUNTLET_USDC_VAULT,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(rewards[USDC_ADDRESS]).toBe(0)
       expect(rewards[MORPHO_ADDRESS]).toBe(0)
@@ -311,7 +345,11 @@ describe('Morpho API Integration', () => {
     }, 30000)
 
     it('should fetch and calculate rewards breakdown', async () => {
-      const rewards = await fetchAndCalculateRewards(GAUNTLET_USDC_VAULT, testSupportedAssets, CHAIN_ID)
+      const rewards = await fetchAndCalculateRewards(
+        GAUNTLET_USDC_VAULT,
+        testSupportedAssets,
+        CHAIN_ID,
+      )
 
       expect(rewards).toBeDefined()
       expect(typeof rewards.other).toBe('number')

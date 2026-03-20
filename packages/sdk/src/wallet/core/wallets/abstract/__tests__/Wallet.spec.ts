@@ -42,7 +42,14 @@ describe('Wallet (base)', () => {
   })
 
   it('getBalance fetches ERC20 balances for explicitly configured assets', async () => {
-    const wallet = new TestWallet(chainManager, address, signer, undefined, undefined, [ETH, USDC])
+    const wallet = new TestWallet(
+      chainManager,
+      address,
+      signer,
+      undefined,
+      undefined,
+      [ETH, USDC],
+    )
 
     const result = await wallet.getBalance()
 
