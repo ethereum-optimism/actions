@@ -135,7 +135,8 @@ export interface LendMarketInfo extends LendMarketBase {
 
 /**
  * APY breakdown for detailed display
- * @description Breakdown of APY components following Morpho's official methodology
+ * @description Breakdown of APY components following Morpho's official methodology.
+ * Individual token reward APRs are keyed by lowercase token address.
  */
 export interface ApyBreakdown {
   /** Total net APY after all components and fees */
@@ -144,12 +145,10 @@ export interface ApyBreakdown {
   native: number
   /** Total rewards APR from all sources */
   totalRewards: number
-  /** Individual token rewards APRs (dynamically populated) */
-  usdc?: number
-  morpho?: number
-  other?: number
   /** Performance/management fee rate */
   performanceFee: number
+  /** Individual token reward APRs keyed by address, plus 'other' for unrecognized */
+  [key: string]: number | undefined
 }
 
 /**

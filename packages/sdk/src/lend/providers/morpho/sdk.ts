@@ -13,8 +13,8 @@ import {
 } from '@/lend/providers/morpho/api.js'
 import { getMorphoContracts } from '@/lend/providers/morpho/contracts.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import type { LendProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   ApyBreakdown,
   LendMarket,
@@ -27,29 +27,42 @@ import { SECONDS_PER_YEAR } from '@/utils/constants.js'
 /**
  * Fetch and calculate rewards breakdown from Morpho GraphQL API
  * @param vaultAddress - Vault address
+ * @param supportedAssets - Configured assets for reward categorization
+ * @param chainId - Chain ID for address lookup
  * @returns Promise resolving to rewards breakdown
  */
 export async function fetchAndCalculateRewards(
   vaultAddress: Address,
+  supportedAssets: Asset[],
+  chainId: number,
 ): Promise<RewardsBreakdown> {
   const vaultData = await fetchRewards(vaultAddress)
 
   if (!vaultData) {
-    // Initialize empty rewards object with all supported tokens + other
-    const emptyRewards: Record<string, number> = {
-      other: 0,
-      totalRewards: 0,
-    }
-
-    // Add all supported tokens (lowercase) to the rewards object
-    SUPPORTED_TOKENS.forEach((token) => {
-      emptyRewards[token.metadata.symbol.toLowerCase()] = 0
-    })
-
-    return emptyRewards as unknown as RewardsBreakdown
+    return buildEmptyRewards(supportedAssets, chainId)
   }
 
-  return calculateRewardsBreakdown(vaultData)
+  return calculateRewardsBreakdown(vaultData, supportedAssets, chainId)
+}
+
+/**
+ * Build an empty rewards object with all supported asset addresses initialized to 0
+ */
+function buildEmptyRewards(
+  supportedAssets: Asset[],
+  chainId: number,
+): RewardsBreakdown {
+  const emptyRewards: Record<string, number> = {
+    other: 0,
+    totalRewards: 0,
+  }
+  for (const token of supportedAssets) {
+    const addr = token.address[chainId as keyof typeof token.address]
+    if (addr && addr !== 'native') {
+      emptyRewards[addr.toLowerCase()] = 0
+    }
+  }
+  return emptyRewards as RewardsBreakdown
 }
 
 /**
@@ -285,6 +298,8 @@ interface GetVaultParams {
   chainManager: ChainManager
   /** Lend configuration containing market allowlist */
   lendConfig?: LendProviderConfig
+  /** Configured supported assets for reward categorization */
+  supportedAssets?: Asset[]
 }
 
 /**
@@ -343,18 +358,14 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
       // Fetch rewards data from API
       const rewardsBreakdown = await fetchAndCalculateRewards(
         params.marketId.address,
+        params.supportedAssets || [],
+        params.marketId.chainId,
       ).catch((error) => {
         console.error('Failed to fetch rewards data:', error)
-        return {
-          eth: 0,
-          weth: 0,
-          usdc: 0,
-          usdc_demo: 0,
-          op_demo: 0,
-          morpho: 0,
-          other: 0,
-          totalRewards: 0,
-        }
+        return buildEmptyRewards(
+          params.supportedAssets || [],
+          params.marketId.chainId,
+        )
       })
 
       const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
@@ -490,37 +501,55 @@ export function calculateApyBreakdown(
 }
 
 /**
+ * Categorize a reward asset by its address. If the address matches a supported asset, use that.
+ * Otherwise, fall back to 'other'.
+ */
+function categorizeRewardAsset(
+  rewardAssetAddress: string | undefined,
+  knownAddresses: Set<string>,
+): string {
+  if (!rewardAssetAddress) return 'other'
+  const normalized = rewardAssetAddress.toLowerCase()
+  return knownAddresses.has(normalized) ? normalized : 'other'
+}
+
+/**
  * Calculate detailed rewards breakdown from vault and market allocations
  * @param apiVault - Vault data from GraphQL API
+ * @param supportedAssets - Configured assets for reward categorization
+ * @param chainId - Chain ID for address lookup
  * @returns Detailed rewards breakdown
  */
-export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
-  // Initialize rewards object with all supported tokens + other
-  const rewardsByCategory: Record<string, number> = {
-    other: 0,
+export function calculateRewardsBreakdown(
+  apiVault: any,
+  supportedAssets: Asset[],
+  chainId: number,
+): RewardsBreakdown {
+  // Build set of known asset addresses on this chain
+  const knownAddresses = new Set<string>()
+  for (const token of supportedAssets) {
+    const addr = token.address[chainId as keyof typeof token.address]
+    if (addr && addr !== 'native') {
+      knownAddresses.add(addr.toLowerCase())
+    }
   }
 
-  // Add all supported tokens (lowercase) to the rewards object
-  SUPPORTED_TOKENS.forEach((token) => {
-    rewardsByCategory[token.metadata.symbol.toLowerCase()] = 0
-  })
+  // Initialize rewards object with all known addresses + other
+  const rewardsByCategory: Record<string, number> = { other: 0 }
+  for (const addr of knownAddresses) {
+    rewardsByCategory[addr] = 0
+  }
 
   // Calculate vault-level rewards
   if (apiVault.state?.rewards && apiVault.state.rewards.length > 0) {
-    apiVault.state.rewards.forEach((reward: any) => {
+    for (const reward of apiVault.state.rewards) {
       const rewardApr = reward.supplyApr || 0
-      const assetSymbol = reward.asset.symbol
-
-      // Use the symbol from API response for categorization
-      const category = assetSymbol ? assetSymbol.toLowerCase() : 'other'
-
-      // Add to appropriate category if supported, otherwise to 'other'
-      if (category in rewardsByCategory) {
-        rewardsByCategory[category] += rewardApr
-      } else {
-        rewardsByCategory.other += rewardApr
-      }
-    })
+      const category = categorizeRewardAsset(
+        reward.asset?.address,
+        knownAddresses,
+      )
+      rewardsByCategory[category] += rewardApr
+    }
   }
 
   // Calculate market-level rewards (weighted by allocation)
@@ -532,7 +561,7 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
       0,
     )
 
-    apiVault.state.allocation.forEach((allocation: any) => {
+    for (const allocation of apiVault.state.allocation) {
       if (
         allocation.market?.state?.rewards &&
         allocation.market.state.rewards.length > 0
@@ -542,23 +571,17 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
             ? (allocation.supplyAssetsUsd || 0) / totalSupplyUsd
             : 0
 
-        allocation.market.state.rewards.forEach((reward: any) => {
+        for (const reward of allocation.market.state.rewards) {
           const rewardApr = reward.supplyApr || 0
           const weightedRewardApr = rewardApr * weight
-          const assetSymbol = reward.asset.symbol
-
-          // Use the symbol from API response for categorization
-          const category = assetSymbol ? assetSymbol.toLowerCase() : 'other'
-
-          // Add to appropriate category if supported, otherwise to 'other'
-          if (category in rewardsByCategory) {
-            rewardsByCategory[category] += weightedRewardApr
-          } else {
-            rewardsByCategory.other += weightedRewardApr
-          }
-        })
+          const category = categorizeRewardAsset(
+            reward.asset?.address,
+            knownAddresses,
+          )
+          rewardsByCategory[category] += weightedRewardApr
+        }
       }
-    })
+    }
   }
 
   // Calculate total rewards APR
