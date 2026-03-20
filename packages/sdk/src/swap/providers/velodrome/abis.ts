@@ -213,6 +213,47 @@ export const POOL_FACTORY_ABI = [
   },
 ] as const
 
+/**
+ * CL/Slipstream PoolFactory ABI for looking up CL pools.
+ * Uses int24 tickSpacing instead of bool stable.
+ */
+export const CL_POOL_FACTORY_ABI = [
+  {
+    name: 'getPool',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'tokenA', type: 'address' },
+      { name: 'tokenB', type: 'address' },
+      { name: 'tickSpacing', type: 'int24' },
+    ],
+    outputs: [{ type: 'address' }],
+  },
+] as const
+
+/**
+ * CL/Slipstream Pool ABI for quoting.
+ * Uses quote() which returns (amountOut, sqrtPriceX96After, initializedTicksCrossed, gasEstimate).
+ */
+export const CL_POOL_ABI = [
+  {
+    name: 'quote',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'amountIn', type: 'uint256' },
+      { name: 'zeroForOne', type: 'bool' },
+      { name: 'sqrtPriceLimitX96', type: 'uint160' },
+    ],
+    outputs: [
+      { name: 'amountOut', type: 'uint256' },
+      { name: 'sqrtPriceX96After', type: 'uint160' },
+      { name: 'initializedTicksCrossed', type: 'uint32' },
+      { name: 'gasEstimate', type: 'uint256' },
+    ],
+  },
+] as const
+
 /** ERC20 allowance ABI for checking current approval */
 export const ERC20_ALLOWANCE_ABI = [
   {
