@@ -220,6 +220,55 @@ class ActionsApiClient {
     }))
   }
 
+  async getSwapQuote(
+    {
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      amountIn,
+      amountOut,
+      provider,
+    }: {
+      tokenInAddress: Address
+      tokenOutAddress: Address
+      chainId: SupportedChainId
+      amountIn?: number
+      amountOut?: number
+      provider?: string
+    },
+    headers: HeadersInit = {},
+  ): Promise<SwapPrice & { execution?: unknown }> {
+    const params = new URLSearchParams({
+      tokenInAddress,
+      tokenOutAddress,
+      chainId: chainId.toString(),
+    })
+    if (amountIn !== undefined) {
+      params.set('amountIn', amountIn.toString())
+    }
+    if (amountOut !== undefined) {
+      params.set('amountOut', amountOut.toString())
+    }
+    if (provider) {
+      params.set('provider', provider)
+    }
+
+    const { result } = await this.request<{
+      result: Serialized<SwapPrice> & { execution?: unknown }
+    }>(`/swap/quote?${params}`, {
+      method: 'GET',
+      headers,
+    })
+    return {
+      ...result,
+      amountIn: Number(result.amountIn),
+      amountOut: Number(result.amountOut),
+      amountInWei: BigInt(result.amountInWei),
+      amountOutWei: BigInt(result.amountOutWei),
+      gasEstimate: result.gasEstimate ? BigInt(result.gasEstimate) : undefined,
+    } as SwapPrice & { execution?: unknown }
+  }
+
   async getSwapPrice(
     {
       tokenInAddress,
