@@ -1,5 +1,7 @@
 import type { Address } from 'viem'
 
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+
 /**
  * Morpho contract addresses needed per chain
  */
@@ -15,4 +17,6 @@ export interface MorphoContracts {
 /**
  * Registry mapping chainId to Morpho contracts
  */
-export type MorphoContractsRegistry = Record<number, MorphoContracts>
+export type MorphoContractsRegistry = Partial<
+  Record<SupportedChainId, MorphoContracts>
+>

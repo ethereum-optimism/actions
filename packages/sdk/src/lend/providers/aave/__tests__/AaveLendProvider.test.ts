@@ -92,9 +92,11 @@ describe('AaveLendProvider', () => {
     it('should return array of supported chain IDs', () => {
       const chainIds = provider.supportedChainIds()
 
-      expect(chainIds).toHaveLength(4)
+      expect(chainIds).toHaveLength(6)
       expect(chainIds).toContain(10) // Optimism
       expect(chainIds).toContain(8453) // Base
+      expect(chainIds).toContain(1868) // Soneium
+      expect(chainIds).toContain(57073) // Ink
       expect(chainIds).toContain(11155420) // Optimism Sepolia
       expect(chainIds).toContain(84532) // Base Sepolia
     })
