@@ -101,7 +101,7 @@ export interface SwapExecuteParams extends WalletSwapParams {
 }
 
 /**
- * Fully resolved swap parameters with defaults applied and amounts in wei.
+ * Fully resolved swap parameters with defaults applied and amounts as raw bigint.
  * Passed to provider _execute() implementations.
  */
 export interface ResolvedSwapParams {
@@ -229,7 +229,7 @@ export interface SwapQuote {
   quotedAt: number
   /** When the quote expires (Unix seconds) */
   expiresAt: number
-  /** Estimated gas cost in wei */
+  /** Estimated gas cost as raw bigint (native decimals) */
   gasEstimate?: bigint
 }
 
@@ -267,15 +267,15 @@ export interface SwapPrice {
   amountIn: number
   /** Human-readable output amount */
   amountOut: number
-  /** Input amount in wei */
+  /** Input amount as raw bigint (native decimals) */
   amountInRaw: bigint
-  /** Expected output amount in wei */
+  /** Expected output amount as raw bigint (native decimals) */
   amountOutRaw: bigint
   /** Price impact as decimal (0.03 = 3%). Derived from pool mid-price vs execution price. */
   priceImpact: number
   /** Route taken for the swap */
   route: SwapRoute
-  /** Estimated gas cost in wei */
+  /** Estimated gas cost as raw bigint (native decimals) */
   gasEstimate?: bigint
 }
 
@@ -299,9 +299,9 @@ export interface SwapTransaction {
   amountIn: number
   /** Human-readable output amount */
   amountOut: number
-  /** Input amount in wei */
+  /** Input amount as raw bigint (native decimals) */
   amountInRaw: bigint
-  /** Output amount in wei (expected) */
+  /** Output amount as raw bigint (native decimals) (expected) */
   amountOutRaw: bigint
   /** Input asset */
   assetIn: Asset
@@ -325,9 +325,9 @@ export interface SwapReceipt {
   amountIn: number
   /** Human-readable output amount */
   amountOut: number
-  /** Actual input amount in wei */
+  /** Actual input amount as raw bigint (native decimals) */
   amountInRaw: bigint
-  /** Actual output amount in wei */
+  /** Actual output amount as raw bigint (native decimals) */
   amountOutRaw: bigint
   /** Input asset */
   assetIn: Asset

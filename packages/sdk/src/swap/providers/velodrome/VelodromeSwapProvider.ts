@@ -360,22 +360,6 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         tickSpacing: poolConfig.tickSpacing,
       })
 
-      const amountOutMinRaw =
-        (internalQuote.amountOutRaw *
-          BigInt(Math.round((1 - slippage) * 10000))) /
-        10000n
-
-      swapCalldata = encodeCLSwap({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        amountOutMin: amountOutMinRaw,
-        tickSpacing: poolConfig.tickSpacing,
-        recipient,
-        deadline,
-        chainId,
-      })
-
       providerContext = {
         tickSpacing: poolConfig.tickSpacing,
         clFactoryAddress: addresses.clFactory,
@@ -394,24 +378,6 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         factoryAddress: addresses.poolFactory,
       })
 
-      const amountOutMinRaw =
-        (internalQuote.amountOutRaw *
-          BigInt(Math.round((1 - slippage) * 10000))) /
-        10000n
-
-      swapCalldata = encodeSwap({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        amountOutMin: amountOutMinRaw,
-        routerType: addresses.routerType,
-        stable: poolConfig.stable,
-        factoryAddress: addresses.poolFactory,
-        recipient,
-        deadline,
-        chainId,
-      })
-
       providerContext = {
         stable: poolConfig.stable,
         factoryAddress: addresses.poolFactory,
@@ -419,6 +385,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       }
     }
 
+    // Slippage: computed once in bigint, used for both encoding and the SwapQuote return
     const amountOutMinRaw =
       (internalQuote.amountOutRaw *
         BigInt(Math.round((1 - slippage) * 10000))) /
@@ -426,6 +393,33 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const amountOutMin = parseFloat(
       formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
     )
+
+    if (poolConfig.type === 'cl') {
+      swapCalldata = encodeCLSwap({
+        assetIn,
+        assetOut,
+        amountInRaw,
+        amountOutMin: amountOutMinRaw,
+        tickSpacing: (poolConfig as { type: 'cl'; tickSpacing: number })
+          .tickSpacing,
+        recipient,
+        deadline,
+        chainId,
+      })
+    } else {
+      swapCalldata = encodeSwap({
+        assetIn,
+        assetOut,
+        amountInRaw,
+        amountOutMin: amountOutMinRaw,
+        routerType: addresses.routerType,
+        stable: (poolConfig as { type: 'v2'; stable: boolean }).stable,
+        factoryAddress: addresses.poolFactory,
+        recipient,
+        deadline,
+        chainId,
+      })
+    }
 
     return {
       assetIn,

@@ -212,7 +212,7 @@ export abstract class SwapProvider<
    * Build Permit2 approval transactions for an ERC20 swap input.
    * Skipped for native assets. Checks both ERC20→Permit2 and Permit2→spender allowances in parallel.
    * @param params - Resolved swap params (wallet address, asset info, chain)
-   * @param requiredAmount - Amount in wei that must be approved
+   * @param requiredAmount - Amount as raw bigint that must be approved
    * @param permit2Address - Permit2 contract address
    * @param permit2Spender - The router/contract that Permit2 should approve (e.g. Universal Router)
    * @param permit2ExpirySeconds - Optional custom expiry for the Permit2 approval
