@@ -10,6 +10,8 @@ import type {
   SwapPriceParams,
   SwapProviderConfig,
   SwapProviders,
+  SwapQuote,
+  SwapQuoteParams,
 } from '@/types/swap/index.js'
 
 /**
@@ -22,7 +24,20 @@ export abstract class BaseSwapNamespace {
   ) {}
 
   /**
-   * Get price quote for a swap
+   * Get a full swap quote with pre-built execution data.
+   */
+  async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    const provider = this.resolveProvider(
+      params.provider,
+      params.assetIn,
+      params.assetOut,
+      params.chainId,
+    )
+    return provider.getQuote(params)
+  }
+
+  /**
+   * Get price quote for a swap (display data only)
    */
   async price(params: SwapPriceParams): Promise<SwapPrice> {
     const provider = this.resolveProvider(
