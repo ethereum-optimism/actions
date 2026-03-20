@@ -13,6 +13,8 @@ import type {
   SwapPrice,
   SwapPriceParams,
   SwapProviderConfig,
+  SwapQuote,
+  SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
 
@@ -20,6 +22,7 @@ export interface MockSwapProviderConfig {
   supportedChains: SupportedChainId[]
   defaultPrice: string
   defaultPriceImpact: number
+  provider: 'uniswap' | 'velodrome'
 }
 
 /**
@@ -31,6 +34,12 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   >
   public mockGetPrice: MockedFunction<
     (params: SwapPriceParams) => Promise<SwapPrice>
+  >
+  public mockGetQuote: MockedFunction<
+    (params: SwapQuoteParams) => Promise<SwapQuote>
+  >
+  public mockExecuteFromQuote: MockedFunction<
+    (quote: SwapQuote) => Promise<SwapTransaction>
   >
   public mockGetMarket: MockedFunction<
     (params: GetSwapMarketParams) => Promise<SwapMarket>
@@ -59,6 +68,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       supportedChains: this._supportedChains,
       defaultPrice: mockConfig?.defaultPrice ?? '1.5',
       defaultPriceImpact: mockConfig?.defaultPriceImpact ?? 0.001,
+      provider: mockConfig?.provider ?? 'uniswap',
     }
 
     // Create mocked functions
@@ -68,6 +78,14 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     this.mockGetPrice = vi
       .fn()
       .mockImplementation(this.createMockPrice.bind(this))
+    this.mockGetQuote = vi
+      .fn()
+      .mockImplementation(this.createMockQuote.bind(this))
+    this.mockExecuteFromQuote = vi
+      .fn()
+      .mockImplementation((quote: SwapQuote) =>
+        this.createMockSwapTransactionFromQuote(quote),
+      )
     this.mockGetMarket = vi
       .fn()
       .mockImplementation(this.createMockMarket.bind(this))
@@ -101,6 +119,16 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
 
   protected async _getPrice(params: SwapPriceParams): Promise<SwapPrice> {
     return this.mockGetPrice(params)
+  }
+
+  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    return this.mockGetQuote(params)
+  }
+
+  protected async _executeFromQuote(
+    quote: SwapQuote,
+  ): Promise<SwapTransaction> {
+    return this.mockExecuteFromQuote(quote)
   }
 
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
@@ -172,6 +200,56 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     }
   }
 
+  private createMockQuote(params: SwapQuoteParams): SwapQuote {
+    const price = this.createMockPrice({
+      assetIn: params.assetIn,
+      assetOut: params.assetOut,
+      amountIn: params.amountIn,
+      amountOut: params.amountOut,
+      chainId: params.chainId,
+    })
+    const now = Math.floor(Date.now() / 1000)
+    const deadline = params.deadline ?? now + 60
+    return {
+      ...params,
+      provider: this.mockProviderConfig.provider,
+      price,
+      execution: {
+        swapCalldata: '0x1234' as `0x${string}`,
+        routerAddress: '0x492e6456d9528771018deb9e87ef7750ef184104' as Address,
+        amountInWei: price.amountInWei,
+        amountOutMinWei: price.amountOutWei,
+        value: 0n,
+        chainId: params.chainId,
+        deadline,
+      },
+      quotedAt: now,
+      expiresAt: deadline,
+    }
+  }
+
+  private createMockSwapTransactionFromQuote(
+    quote: SwapQuote,
+  ): SwapTransaction {
+    return {
+      amountIn: quote.price.amountIn,
+      amountOut: quote.price.amountOut,
+      amountInWei: quote.execution.amountInWei,
+      amountOutWei: quote.price.amountOutWei,
+      assetIn: quote.assetIn,
+      assetOut: quote.assetOut,
+      price: quote.price.price,
+      priceImpact: quote.price.priceImpact,
+      transactionData: {
+        swap: {
+          to: quote.execution.routerAddress,
+          data: quote.execution.swapCalldata,
+          value: quote.execution.value,
+        },
+      },
+    }
+  }
+
   private createMockMarket(params: GetSwapMarketParams): SwapMarket {
     return {
       marketId: {
@@ -191,7 +269,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
         },
       ],
       fee: 500,
-      provider: 'uniswap',
+      provider: this.mockProviderConfig.provider,
     }
   }
 

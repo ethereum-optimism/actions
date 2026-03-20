@@ -1,5 +1,7 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { SwapProviderName, SwapRoutingConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
@@ -8,30 +10,61 @@ import type {
   SwapPriceParams,
   SwapProviderConfig,
   SwapProviders,
+  SwapQuote,
+  SwapQuoteParams,
 } from '@/types/swap/index.js'
 
 /**
  * Base swap namespace with shared read-only operations
  */
 export abstract class BaseSwapNamespace {
-  constructor(protected readonly providers: SwapProviders) {}
+  constructor(
+    protected readonly providers: SwapProviders,
+    protected readonly routing?: SwapRoutingConfig,
+  ) {}
 
   /**
-   * Get price quote for a swap
+   * Get a full swap quote with pre-built execution data.
+   */
+  async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    const provider = this.resolveProvider(
+      params.provider,
+      params.assetIn,
+      params.assetOut,
+      params.chainId,
+    )
+    return provider.getQuote(params)
+  }
+
+  /**
+   * Get price quote for a swap (display data only)
    */
   async price(params: SwapPriceParams): Promise<SwapPrice> {
-    const provider = this.getProvider()
+    const provider = this.resolveProvider(
+      params.provider,
+      params.assetIn,
+      params.assetOut!,
+      params.chainId,
+    )
     return provider.getPrice(params)
   }
 
   /**
-   * Get a specific swap market
+   * Get a specific swap market by iterating all providers
    * @param params - Market identifier
    * @returns Market information
    */
   async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
-    const provider = this.getProvider()
-    return provider.getMarket(params)
+    for (const provider of this.getAllProviders()) {
+      try {
+        return await provider.getMarket(params)
+      } catch {
+        continue
+      }
+    }
+    throw new Error(
+      `Market with poolId ${params.poolId} not found on chain ${params.chainId}`,
+    )
   }
 
   /**
@@ -59,19 +92,71 @@ export abstract class BaseSwapNamespace {
     return Array.from(chainIds)
   }
 
-  // SwapProviders keys are optional (uniswap?, aerodrome?, etc.) so filter out unconfigured ones
+  // SwapProviders keys are optional (uniswap?, velodrome?, etc.) so filter out unconfigured ones
   protected getAllProviders(): Array<SwapProvider<SwapProviderConfig>> {
     return Object.values(this.providers).filter(
       (p): p is SwapProvider<SwapProviderConfig> => p !== undefined,
     )
   }
 
-  // Future: resolve the best provider for given params (e.g. best price across Uniswap, Aerodrome, etc.)
-  protected getProvider(): SwapProvider<SwapProviderConfig> {
-    const provider = this.providers.uniswap
-    if (!provider) {
+  /**
+   * Resolve which provider handles a request.
+   *
+   * Precedence:
+   * 1. Explicit `provider` param on the call
+   * 2. routing.defaultProvider (when no strategy set)
+   * 3. routing.strategy match (market-aware, defaultProvider as tiebreaker)
+   * 4. First provider whose allowlist matches
+   * 5. First configured provider
+   */
+  protected resolveProvider(
+    provider: SwapProviderName | undefined,
+    assetIn: Asset,
+    assetOut: Asset,
+    chainId: SupportedChainId,
+  ): SwapProvider<SwapProviderConfig> {
+    const allProviders = this.getAllProviders()
+    if (allProviders.length === 0) {
       throw new Error('No swap provider configured')
     }
-    return provider
+
+    // 1. Explicit provider param
+    if (provider) {
+      const named = this.providers[provider]
+      if (!named) {
+        throw new Error(`Swap provider "${provider}" not configured`)
+      }
+      return named
+    }
+
+    // Single provider — no routing needed
+    if (allProviders.length === 1) {
+      return allProviders[0]
+    }
+
+    // 2. defaultProvider with no strategy — always use it
+    if (this.routing?.defaultProvider && !this.routing.strategy) {
+      const defaultP = this.providers[this.routing.defaultProvider]
+      if (defaultP) return defaultP
+    }
+
+    // 3. Strategy-based routing (currently only 'price' — falls through to
+    //    market-based matching for now; best-price comparison is a future enhancement)
+
+    // 4. Match by market allowlist
+    for (const p of allProviders) {
+      if (p.isMarketSupported(assetIn, assetOut, chainId)) {
+        return p
+      }
+    }
+
+    // 5. Match by chain support
+    for (const p of allProviders) {
+      if (p.isChainSupported(chainId)) {
+        return p
+      }
+    }
+
+    return allProviders[0]
   }
 }

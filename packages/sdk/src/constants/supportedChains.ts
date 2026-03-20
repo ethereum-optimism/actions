@@ -1,10 +1,19 @@
 import {
   base,
   baseSepolia,
+  bob,
+  celo,
+  fraxtal,
+  ink,
+  lisk,
   mainnet,
+  metalL2,
+  mode,
   optimism,
   optimismSepolia,
   sepolia,
+  soneium,
+  superseed,
   unichain,
   unichainSepolia,
   worldchain,
@@ -20,6 +29,17 @@ export const SUPPORTED_CHAIN_IDS = [
   unichain.id,
   unichainSepolia.id,
   worldchain.id,
+  bob.id,
+  celo.id,
+  fraxtal.id,
+  ink.id,
+  lisk.id,
+  metalL2.id,
+  mode.id,
+  soneium.id,
+  superseed.id,
+  // Swell — not available in viem/chains
+  1923 as const,
 ] as const
 
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number]

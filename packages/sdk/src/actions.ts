@@ -1,16 +1,14 @@
-import type { LendProvider } from '@/lend/index.js'
 import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { SwapProvider } from '@/swap/index.js'
-import { UniswapSwapProvider } from '@/swap/index.js'
+import { UniswapSwapProvider, VelodromeSwapProvider } from '@/swap/index.js'
 import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
 import type {
   ActionsConfig,
   AssetsConfig,
-  LendProviderConfig,
-  SwapProviderConfig,
+  LendProviders,
+  SwapProviders,
+  SwapRoutingConfig,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
@@ -48,14 +46,10 @@ export class Actions<
   >
   private chainManager: ChainManager
   private _lend?: ActionsLendNamespace
-  private _lendProviders: {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  } = {}
+  private _lendProviders: LendProviders = {}
   private _swap?: ActionsSwapNamespace
-  private _swapProviders: {
-    uniswap?: SwapProvider<SwapProviderConfig>
-  } = {}
+  private _swapProviders: SwapProviders = {}
+  private _swapRouting?: SwapRoutingConfig
   private _assetsConfig?: AssetsConfig
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
@@ -102,7 +96,19 @@ export class Actions<
         config.swap.uniswap,
         this.chainManager,
       )
-      this._swap = new ActionsSwapNamespace(this._swapProviders)
+    }
+    if (config.swap?.velodrome) {
+      this._swapProviders.velodrome = new VelodromeSwapProvider(
+        config.swap.velodrome,
+        this.chainManager,
+      )
+    }
+    this._swapRouting = config.swap?.routing
+    if (Object.values(this._swapProviders).some(Boolean)) {
+      this._swap = new ActionsSwapNamespace(
+        this._swapProviders,
+        this._swapRouting,
+      )
     }
 
     this.wallet = this.createWalletNamespace(config.wallet)
@@ -128,10 +134,7 @@ export class Actions<
    * Get the lend provider instances
    * @returns Object containing configured lend providers
    */
-  get lendProviders(): {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  } {
+  get lendProviders(): LendProviders {
     return this._lendProviders
   }
 
@@ -155,46 +158,38 @@ export class Actions<
    * Get the swap provider instances
    * @returns Object containing configured swap providers
    */
-  get swapProviders(): {
-    uniswap?: SwapProvider<SwapProviderConfig>
-  } {
+  get swapProviders(): SwapProviders {
     return this._swapProviders
   }
 
   /**
    * Get the list of supported assets based on configuration
    * @description Returns filtered assets based on allow/block lists in assets config.
-   * If no config provided, returns all SUPPORTED_TOKENS.
+   * If no allow list provided, returns empty array.
    * @returns Array of supported assets
    */
   public getSupportedAssets(): Asset[] {
-    // If no assets config, return all supported tokens
-    if (!this._assetsConfig) {
-      return SUPPORTED_TOKENS
+    const allow = this._assetsConfig?.allow ?? []
+    const block = this._assetsConfig?.block
+
+    if (!block?.length) {
+      return allow
     }
 
-    // If allow list provided, return only those
-    if (this._assetsConfig.allow && this._assetsConfig.allow.length > 0) {
-      return this._assetsConfig.allow
-    }
-
-    // If block list provided, filter out blocked assets
-    if (this._assetsConfig.block && this._assetsConfig.block.length > 0) {
-      const blockedAddresses = new Set(
-        this._assetsConfig.block.flatMap((asset) =>
-          Object.values(asset.address).map((addr) => addr.toLowerCase()),
-        ),
-      )
-      return SUPPORTED_TOKENS.filter((token) => {
-        const tokenAddresses = Object.values(token.address).map((addr) =>
-          addr.toLowerCase(),
+    const resolveAddresses = (asset: Asset): string[] =>
+      Object.values(asset.address)
+        .filter(
+          (addr): addr is Exclude<typeof addr, undefined | 'native'> =>
+            addr !== undefined && addr !== 'native',
         )
-        return !tokenAddresses.some((addr) => blockedAddresses.has(addr))
-      })
-    }
+        .map((addr) => addr.toLowerCase())
 
-    // Default to all supported tokens
-    return SUPPORTED_TOKENS
+    const blockedAddresses = new Set(block.flatMap(resolveAddresses))
+
+    return allow.filter((asset) => {
+      const addresses = resolveAddresses(asset)
+      return !addresses.some((addr) => blockedAddresses.has(addr))
+    })
   }
 
   /**
@@ -233,6 +228,7 @@ export class Actions<
         lendProviders: this._lendProviders,
         swapProviders: this._swapProviders,
         supportedAssets: this.getSupportedAssets(),
+        swapRouting: this._swapRouting,
       },
       options,
     )

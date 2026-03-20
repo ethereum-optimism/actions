@@ -23,6 +23,8 @@ import type {
   SwapMarket,
   SwapPrice,
   SwapPriceParams,
+  SwapQuote,
+  SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -184,6 +186,135 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         this.marketsFromConfig(config, chainId, params.asset),
       )
     })
+  }
+
+  /**
+   * Get a full swap quote with pre-built execution data.
+   */
+  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    const { chainId, assetIn, assetOut } = params
+    const addresses = getUniswapAddresses(chainId)
+    const publicClient = this.chainManager.getPublicClient(chainId)
+    const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
+
+    const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
+    const amountOutWei = parseAssetAmount(assetOut, params.amountOut)
+    const slippage = params.slippage ?? this.defaultSlippage
+    const now = Math.floor(Date.now() / 1000)
+    const deadline = params.deadline ?? now + 60
+
+    const quote = await getQuote({
+      assetIn,
+      assetOut,
+      amountInWei: amountOutWei ? undefined : amountInWei,
+      amountOutWei,
+      chainId,
+      publicClient,
+      quoterAddress: addresses.quoter,
+      poolManagerAddress: addresses.poolManager,
+      fee: marketConfig.fee,
+      tickSpacing: marketConfig.tickSpacing,
+    })
+
+    const swapCalldata = encodeUniversalRouterSwap({
+      amountInWei: amountOutWei ? undefined : amountInWei,
+      amountOutWei,
+      assetIn,
+      assetOut,
+      slippage,
+      deadline,
+      recipient:
+        params.recipient ?? '0x0000000000000000000000000000000000000001',
+      chainId,
+      quote,
+      universalRouterAddress: addresses.universalRouter,
+      fee: marketConfig.fee,
+      tickSpacing: marketConfig.tickSpacing,
+    })
+
+    const finalAmountInWei = amountOutWei ? quote.amountInWei : amountInWei
+
+    return {
+      assetIn,
+      assetOut,
+      amountIn: params.amountIn,
+      amountOut: params.amountOut,
+      chainId,
+      slippage,
+      deadline,
+      recipient: params.recipient,
+      provider: 'uniswap',
+      price: quote,
+      execution: {
+        swapCalldata,
+        routerAddress: addresses.universalRouter,
+        amountInWei: finalAmountInWei,
+        amountOutMinWei: quote.amountOutWei,
+        value: isNativeAsset(assetIn) ? (amountInWei ?? 0n) : 0n,
+        chainId,
+        deadline,
+        providerContext: {
+          fee: marketConfig.fee,
+          tickSpacing: marketConfig.tickSpacing,
+          permit2Address: addresses.permit2,
+        },
+      },
+      quotedAt: now,
+      expiresAt: deadline,
+    }
+  }
+
+  /**
+   * Execute a swap from a pre-built quote.
+   * Uses pre-encoded calldata but builds fresh approval transactions.
+   */
+  protected async _executeFromQuote(
+    quote: SwapQuote,
+  ): Promise<SwapTransaction> {
+    const { chainId, assetIn, assetOut } = quote
+    const { execution } = quote
+    const addresses = getUniswapAddresses(chainId)
+
+    // Build fresh approvals using the walletAddress from recipient
+    // For quote-based execution, we need a walletAddress for permit2 checks.
+    // The recipient in the quote is used as the wallet address for approval checks.
+    const walletAddress =
+      quote.recipient ?? '0x0000000000000000000000000000000000000001'
+
+    const { tokenApproval, permit2Approval } = await this.buildPermit2Approvals(
+      {
+        assetIn,
+        assetOut,
+        slippage: quote.slippage ?? this.defaultSlippage,
+        deadline: execution.deadline,
+        recipient: walletAddress,
+        walletAddress,
+        chainId,
+        amountInWei: execution.amountInWei,
+      },
+      execution.amountInWei,
+      addresses.permit2,
+      addresses.universalRouter,
+      this._config.permit2ExpirySeconds,
+    )
+
+    const swapTx: TransactionData = {
+      to: execution.routerAddress,
+      data: execution.swapCalldata,
+      value: execution.value,
+    }
+
+    return {
+      amountIn: quote.price.amountIn,
+      amountOut: quote.price.amountOut,
+      amountInWei: execution.amountInWei,
+      amountOutWei: quote.price.amountOutWei,
+      assetIn,
+      assetOut,
+      price: quote.price.price,
+      priceImpact: quote.price.priceImpact,
+      transactionData: { tokenApproval, permit2Approval, swap: swapTx },
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

@@ -131,6 +131,29 @@ describe('WalletSwapNamespace', () => {
         }),
       ).rejects.toThrow('No swap provider configured')
     })
+
+    it('executes swap from a SwapQuote (skips re-quoting)', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      // Get a quote first
+      const quote = await namespace.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      // Execute with the quote
+      const result = await namespace.execute(quote)
+
+      // Should use executeFromQuote path (not the normal mockExecute)
+      expect(provider.mockExecuteFromQuote).toHaveBeenCalledTimes(1)
+      expect(provider.mockExecute).not.toHaveBeenCalled()
+      expect(result.price).toBe('1.5')
+      expect(wallet.send).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('inherits read-only methods', () => {

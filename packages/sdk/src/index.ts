@@ -23,6 +23,9 @@ export {
   type UniswapMarketConfig,
   UniswapSwapProvider,
   type UniswapSwapProviderConfig,
+  type VelodromeMarketConfig,
+  VelodromeSwapProvider,
+  type VelodromeSwapProviderConfig,
 } from '@/swap/index.js'
 export type {
   ActionsConfig,
@@ -48,8 +51,13 @@ export type {
   SwapPrice,
   SwapPriceParams,
   SwapProviderConfig,
+  SwapProviderName,
+  SwapQuote,
+  SwapQuoteExecution,
+  SwapQuoteParams,
   SwapReceipt,
   SwapRoute,
+  SwapRoutingConfig,
   SwapTransaction,
   TokenBalance,
   TransactionData,

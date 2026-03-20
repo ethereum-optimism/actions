@@ -13,6 +13,8 @@ import type {
   SwapPrice,
   SwapPriceParams,
   SwapProviderConfig,
+  SwapQuote,
+  SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -67,11 +69,15 @@ export abstract class SwapProvider<
   }
 
   /**
-   * Execute a token swap
-   * @param params - Swap parameters including assets, amounts, and chain
-   * @returns Swap transaction data ready for execution
+   * Execute a token swap.
+   * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote (skips re-quoting).
    */
-  async execute(params: SwapExecuteParams): Promise<SwapTransaction> {
+  async execute(
+    params: SwapExecuteParams | SwapQuote,
+  ): Promise<SwapTransaction> {
+    if ('execution' in params) {
+      return this.executeFromQuote(params)
+    }
     this.executeValidations(params)
     const resolvedParams = this.resolveParams(params)
     validateSlippage(
@@ -81,7 +87,16 @@ export abstract class SwapProvider<
     return this._execute(resolvedParams)
   }
 
-  /** Get price quote for a swap */
+  /**
+   * Get a full swap quote with pre-built execution data.
+   * The returned SwapQuote can be passed directly to execute() to skip re-quoting.
+   */
+  async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    validateChainSupported(params.chainId, this.supportedChainIds())
+    return this._getQuote(params)
+  }
+
+  /** Get price quote for a swap (display data only) */
   async getPrice(params: SwapPriceParams): Promise<SwapPrice> {
     validateChainSupported(params.chainId, this.supportedChainIds())
     return this._getPrice(params)
@@ -103,6 +118,24 @@ export abstract class SwapProvider<
 
   isChainSupported(chainId: SupportedChainId): boolean {
     return this.supportedChainIds().includes(chainId)
+  }
+
+  /**
+   * Check if this provider supports a given market (asset pair on chain).
+   * Returns true if the pair passes allowlist/blocklist checks.
+   */
+  isMarketSupported(
+    assetIn: Asset,
+    assetOut: Asset,
+    chainId: SupportedChainId,
+  ): boolean {
+    if (!this.isChainSupported(chainId)) return false
+    try {
+      this.validateMarketAllowed(assetIn, assetOut, chainId)
+      return true
+    } catch {
+      return false
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -227,6 +260,16 @@ export abstract class SwapProvider<
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
+  private executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
+    const now = Math.floor(Date.now() / 1000)
+    if (now >= quote.expiresAt) {
+      throw new Error(
+        `Quote expired at ${quote.expiresAt}, current time is ${now}`,
+      )
+    }
+    return this._executeFromQuote(quote)
+  }
+
   private executeValidations(params: SwapExecuteParams): void {
     validateAmountProvided(params.amountIn, params.amountOut)
     validateAmountPositiveIfExists(params.amountIn)
@@ -308,6 +351,12 @@ export abstract class SwapProvider<
   ): Promise<SwapTransaction>
 
   protected abstract _getPrice(params: SwapPriceParams): Promise<SwapPrice>
+
+  protected abstract _getQuote(params: SwapQuoteParams): Promise<SwapQuote>
+
+  protected abstract _executeFromQuote(
+    quote: SwapQuote,
+  ): Promise<SwapTransaction>
 
   protected abstract _getMarket(
     params: GetSwapMarketParams,

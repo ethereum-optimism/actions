@@ -1,7 +1,9 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
+import type { SwapRoutingConfig } from '@/types/actions.js'
 import type {
   SwapProviders,
+  SwapQuote,
   SwapReceipt,
   SwapTransaction,
   WalletSwapParams,
@@ -16,17 +18,35 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   constructor(
     providers: SwapProviders,
     private readonly wallet: Wallet,
+    routing?: SwapRoutingConfig,
   ) {
-    super(providers)
+    super(providers, routing)
   }
 
   /**
-   * Execute a token swap
-   * @param params - Swap parameters including chainId
-   * @returns Swap receipt with transaction details
+   * Execute a token swap.
+   * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote (skips re-quoting).
    */
-  async execute(params: WalletSwapParams): Promise<SwapReceipt> {
-    const provider = this.getProvider()
+  async execute(params: WalletSwapParams | SwapQuote): Promise<SwapReceipt> {
+    // SwapQuote path: pass through to provider, no need to inject walletAddress
+    if ('execution' in params) {
+      const provider = this.resolveProvider(
+        params.provider,
+        params.assetIn,
+        params.assetOut,
+        params.chainId,
+      )
+      const swapTx = await provider.execute(params)
+      const receipt = await this.executeTransaction(swapTx, params.chainId)
+      return this.buildReceipt(swapTx, receipt)
+    }
+
+    const provider = this.resolveProvider(
+      params.provider,
+      params.assetIn,
+      params.assetOut,
+      params.chainId,
+    )
 
     // Build swap transaction
     const swapTx = await provider.execute({
@@ -36,7 +56,13 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
 
     // Execute transaction(s)
     const receipt = await this.executeTransaction(swapTx, params.chainId)
+    return this.buildReceipt(swapTx, receipt)
+  }
 
+  private buildReceipt(
+    swapTx: SwapTransaction,
+    receipt: SwapReceipt['receipt'],
+  ): SwapReceipt {
     return {
       receipt,
       amountIn: swapTx.amountIn,

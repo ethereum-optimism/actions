@@ -2,6 +2,8 @@ import type {
   SupportedChainId,
   SwapMarket,
   SwapPrice,
+  SwapProviderName,
+  SwapQuote,
   SwapReceipt,
 } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
@@ -18,6 +20,7 @@ export interface SwapParams {
   tokenOutAddress: Address
   chainId: SupportedChainId
   slippage?: number
+  provider?: SwapProviderName
 }
 
 export interface PriceParams {
@@ -26,6 +29,7 @@ export interface PriceParams {
   chainId: SupportedChainId
   amountIn?: number
   amountOut?: number
+  provider?: SwapProviderName
 }
 
 type SwapReceiptWithUrls = SwapReceipt & {
@@ -40,8 +44,14 @@ export async function getMarkets(
 }
 
 export async function getPrice(params: PriceParams): Promise<SwapPrice> {
-  const { tokenInAddress, tokenOutAddress, chainId, amountIn, amountOut } =
-    params
+  const {
+    tokenInAddress,
+    tokenOutAddress,
+    chainId,
+    amountIn,
+    amountOut,
+    provider,
+  } = params
   const actions = getActions()
   const assetIn = resolveAsset(tokenInAddress, chainId)
   const assetOut = resolveAsset(tokenOutAddress, chainId)
@@ -52,6 +62,30 @@ export async function getPrice(params: PriceParams): Promise<SwapPrice> {
     chainId,
     amountIn,
     amountOut,
+    provider,
+  })
+}
+
+export async function getQuote(params: PriceParams): Promise<SwapQuote> {
+  const {
+    tokenInAddress,
+    tokenOutAddress,
+    chainId,
+    amountIn,
+    amountOut,
+    provider,
+  } = params
+  const actions = getActions()
+  const assetIn = resolveAsset(tokenInAddress, chainId)
+  const assetOut = resolveAsset(tokenOutAddress, chainId)
+
+  return await actions.swap.getQuote({
+    assetIn,
+    assetOut,
+    chainId,
+    amountIn,
+    amountOut,
+    provider,
   })
 }
 
@@ -65,6 +99,7 @@ export async function executeSwap(
     tokenOutAddress,
     chainId,
     slippage,
+    provider,
   } = params
 
   const wallet = await getWallet(idToken)
@@ -79,13 +114,27 @@ export async function executeSwap(
   const assetIn = resolveAsset(tokenInAddress, chainId)
   const assetOut = resolveAsset(tokenOutAddress, chainId)
 
-  const result = await wallet.swap.execute({
-    amountIn,
-    assetIn,
-    assetOut,
-    chainId,
-    slippage,
-  })
+  let result
+  try {
+    result = await wallet.swap.execute({
+      amountIn,
+      assetIn,
+      assetOut,
+      chainId,
+      slippage,
+      provider,
+    })
+  } catch (err) {
+    console.error('[swap] execute failed:', {
+      provider,
+      assetIn: assetIn.metadata.symbol,
+      assetOut: assetOut.metadata.symbol,
+      amountIn,
+      chainId,
+      error: err instanceof Error ? err.message : err,
+    })
+    throw err
+  }
 
   const receipt = result.receipt
   const blockExplorerUrls = getBlockExplorerUrls({

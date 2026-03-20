@@ -1,7 +1,7 @@
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
 import type {
@@ -12,13 +12,7 @@ import type {
 export { SwapProvider } from '@/swap/core/SwapProvider.js'
 export { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
 export { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
-
-/**
- * Map of available swap providers keyed by provider name
- */
-export type SwapProviders = {
-  uniswap?: SwapProvider<SwapProviderConfig>
-}
+export type { SwapProviders } from '@/types/providers.js'
 
 /**
  * Swap provider configuration
@@ -94,6 +88,8 @@ export interface WalletSwapParams {
   deadline?: number
   /** Recipient address. Defaults to wallet address. */
   recipient?: Address
+  /** Explicitly select a swap provider. Overrides routing config. */
+  provider?: SwapProviderName
 }
 
 /**
@@ -136,6 +132,72 @@ export interface SwapPriceParams {
   amountOut?: number
   /** Chain to get price on */
   chainId: SupportedChainId
+  /** Explicitly select a swap provider. Overrides routing config. */
+  provider?: SwapProviderName
+}
+
+/**
+ * Parameters for getting a swap quote (pre-built for execution).
+ * Unlike SwapPriceParams, assetOut is required.
+ */
+export interface SwapQuoteParams {
+  /** Token to sell */
+  assetIn: Asset
+  /** Token to buy (required) */
+  assetOut: Asset
+  /** Amount of input token (human-readable). Mutually exclusive with amountOut. */
+  amountIn?: number
+  /** Amount of output token (human-readable). Mutually exclusive with amountIn. */
+  amountOut?: number
+  /** Chain to execute swap on */
+  chainId: SupportedChainId
+  /** Slippage tolerance baked into the quote */
+  slippage?: number
+  /** Transaction deadline as Unix timestamp */
+  deadline?: number
+  /** Recipient address */
+  recipient?: Address
+  /** Explicitly select a swap provider */
+  provider?: SwapProviderName
+}
+
+/**
+ * Pre-built execution data from a quote, ready to submit on-chain.
+ */
+export interface SwapQuoteExecution {
+  /** Encoded swap calldata */
+  swapCalldata: Hex
+  /** Router/contract to send the swap transaction to */
+  routerAddress: Address
+  /** Input amount in wei */
+  amountInWei: bigint
+  /** Minimum output amount in wei (after slippage) */
+  amountOutMinWei: bigint
+  /** Native ETH value for ETH-in swaps, else 0n */
+  value: bigint
+  /** Chain ID for execution */
+  chainId: SupportedChainId
+  /** Transaction deadline as Unix timestamp */
+  deadline: number
+  /** Opaque provider-specific context (e.g. stable flag, factory address) */
+  providerContext?: Record<string, unknown>
+}
+
+/**
+ * A complete swap quote: display data (SwapPrice) + pre-built execution data.
+ * Pass to execute() to skip re-quoting.
+ */
+export interface SwapQuote extends SwapQuoteParams {
+  /** Display data (price, amounts, route) */
+  price: SwapPrice
+  /** Pre-built execution data */
+  execution: SwapQuoteExecution
+  /** Provider that generated this quote */
+  provider: SwapProviderName
+  /** When the quote was generated (Unix seconds) */
+  quotedAt: number
+  /** When the quote expires (Unix seconds, equals deadline) */
+  expiresAt: number
 }
 
 /**
@@ -255,5 +317,5 @@ export interface SwapMarket {
   /** Fee tier in pips (500 = 0.05%) */
   fee: number
   /** Provider name */
-  provider: 'uniswap'
+  provider: 'uniswap' | 'velodrome'
 }

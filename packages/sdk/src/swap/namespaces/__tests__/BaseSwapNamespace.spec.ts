@@ -19,6 +19,39 @@ describe('BaseSwapNamespace', () => {
     metadata: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   }
 
+  describe('getQuote', () => {
+    it('delegates to provider getQuote', async () => {
+      const provider = createMockSwapProvider()
+      const namespace = new ActionsSwapNamespace({ uniswap: provider })
+
+      const result = await namespace.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
+      expect(result.price.price).toBe('1.5')
+      expect(result.execution).toBeDefined()
+      expect(result.execution.swapCalldata).toMatch(/^0x/)
+      expect(result.provider).toBe('uniswap')
+    })
+
+    it('throws if no provider configured', async () => {
+      const namespace = new ActionsSwapNamespace({})
+
+      await expect(
+        namespace.getQuote({
+          assetIn: USDC,
+          assetOut: ETH,
+          amountIn: 100,
+          chainId: 84532 as SupportedChainId,
+        }),
+      ).rejects.toThrow('No swap provider configured')
+    })
+  })
+
   describe('price', () => {
     it('delegates to provider getPrice', async () => {
       const provider = createMockSwapProvider()
@@ -73,10 +106,8 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace({
         uniswap: provider1,
+        velodrome: provider2,
       })
-
-      // Add second provider manually for testing aggregation
-      ;(namespace as any).providers.oneInch = provider2
 
       const result = await namespace.getMarkets({})
 
@@ -105,8 +136,8 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace({
         uniswap: provider1,
+        velodrome: provider2,
       })
-      ;(namespace as any).providers.oneInch = provider2
 
       const result = namespace.supportedChainIds()
 
@@ -126,8 +157,8 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace({
         uniswap: provider1,
+        velodrome: provider2,
       })
-      ;(namespace as any).providers.oneInch = provider2
 
       const result = namespace.supportedChainIds()
 

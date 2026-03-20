@@ -1,12 +1,16 @@
 import type { UniswapSwapProviderConfig } from '@/swap/providers/uniswap/types.js'
+import type { VelodromeSwapProviderConfig } from '@/swap/providers/velodrome/types.js'
 import type { Asset } from '@/types/asset.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
 export type { LendProviderConfig, SwapProviderConfig }
+// Re-export centralized provider maps
+export type { LendProviders, SwapProviders } from '@/types/providers.js'
 
 /** Require at least one property to be defined */
 type RequireAtLeastOne<T> = {
@@ -17,11 +21,22 @@ type RequireAtLeastOne<T> = {
  * Lending configuration — at least one provider must be configured
  */
 export type LendConfig = RequireAtLeastOne<{
-  /** Morpho lending provider configuration */
-  morpho?: LendProviderConfig
-  /** Aave lending provider configuration */
-  aave?: LendProviderConfig
+  [K in keyof LendProviders]: LendProviderConfig
 }>
+
+/** Names of available swap providers — derived from SwapProviders registry */
+export type SwapProviderName = keyof SwapProviders
+
+/**
+ * Swap provider routing configuration.
+ * Controls how the SDK selects a provider when the caller doesn't specify one.
+ */
+export interface SwapRoutingConfig {
+  /** Comparison strategy for selecting across providers. Currently only 'price'. */
+  strategy?: 'price'
+  /** Provider to prefer when strategy produces a tie, or to always use when no strategy is set. */
+  defaultProvider?: SwapProviderName
+}
 
 /**
  * Swap configuration — at least one provider must be configured
@@ -29,7 +44,12 @@ export type LendConfig = RequireAtLeastOne<{
 export type SwapConfig = RequireAtLeastOne<{
   /** Uniswap swap provider configuration */
   uniswap?: UniswapSwapProviderConfig
-}>
+  /** Velodrome/Aerodrome swap provider configuration */
+  velodrome?: VelodromeSwapProviderConfig
+}> & {
+  /** Routing configuration for multi-provider selection */
+  routing?: SwapRoutingConfig
+}
 
 /**
  * Network configuration for lending providers

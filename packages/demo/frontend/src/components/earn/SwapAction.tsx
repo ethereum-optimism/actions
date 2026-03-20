@@ -45,6 +45,7 @@ interface SwapActionProps {
     amountOut: number
   } | null>
   isExecuting: boolean
+  selectedProvider?: string | null
   onLogActivity?: (
     action: string,
     metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
@@ -212,6 +213,7 @@ export function SwapAction({
   onSwap,
   onGetPrice,
   isExecuting,
+  selectedProvider,
   onLogActivity,
 }: SwapActionProps) {
   const { hoveredAction } = useActivityHighlight()
@@ -441,7 +443,8 @@ export function SwapAction({
         assetOut: assetOut.asset.metadata.symbol,
         amount: parseFloat(amountIn),
       })
-    } catch {
+    } catch (err) {
+      console.error('[swap] execution failed:', err)
       activity?.error()
       setTxModalStatus('error')
       trackEvent('swap_error', {
@@ -579,6 +582,7 @@ export function SwapAction({
           amountOut={amountOut}
           priceQuote={priceQuote}
           isExecuting={isExecuting}
+          selectedProvider={selectedProvider}
         />
       )}
 
