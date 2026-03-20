@@ -309,6 +309,43 @@ describe('VelodromeSwapProvider router type routing', () => {
       )
     })
 
+    it('execute works for CL pool via raw params', async () => {
+      const provider = createProvider(OP_CHAIN_ID, {
+        marketAllowlist: [
+          { assets: [USDC, WETH], tickSpacing: 100, chainId: OP_CHAIN_ID },
+        ],
+      })
+
+      const result = await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: WETH,
+        chainId: OP_CHAIN_ID,
+        walletAddress: WALLET,
+      })
+
+      expect(result.transactionData.swap).toBeDefined()
+      expect(result.amountOut).toBeGreaterThan(0)
+    })
+
+    it('getPrice works for CL pool', async () => {
+      const provider = createProvider(OP_CHAIN_ID, {
+        marketAllowlist: [
+          { assets: [USDC, WETH], tickSpacing: 100, chainId: OP_CHAIN_ID },
+        ],
+      })
+
+      const price = await provider.getPrice({
+        assetIn: USDC,
+        assetOut: WETH,
+        amountIn: 100,
+        chainId: OP_CHAIN_ID,
+      })
+
+      expect(price.price).toBeDefined()
+      expect(price.amountOut).toBeGreaterThan(0)
+    })
+
     it('throws for CL on unsupported chain', async () => {
       const MODE_CHAIN_ID = 34443 as SupportedChainId
       const modeUsdc: Asset = {

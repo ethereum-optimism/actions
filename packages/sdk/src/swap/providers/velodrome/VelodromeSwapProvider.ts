@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
 import { concat, encodeFunctionData, formatUnits, keccak256 } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -71,42 +71,71 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
-    if (poolConfig.type === 'cl') {
-      throw new Error(
-        'CL pool execution not yet supported via _execute. Use getQuote() + execute(quote) instead.',
-      )
-    }
-
     const amountInWei = params.amountInWei!
+    let quote: SwapPrice
+    let swapCalldata: Hex
 
-    const quote = await getQuote({
-      assetIn,
-      assetOut,
-      amountInWei,
-      chainId,
-      publicClient,
-      routerAddress: addresses.router,
-      routerType: addresses.routerType,
-      stable: poolConfig.stable,
-      factoryAddress: addresses.poolFactory,
-    })
+    if (poolConfig.type === 'cl') {
+      if (!addresses.clFactory) {
+        throw new Error(`CL pools not supported on chain ${chainId}`)
+      }
 
-    const amountOutMin =
-      (quote.amountOutWei * BigInt(Math.round((1 - params.slippage) * 10000))) /
-      10000n
+      quote = await getCLQuote({
+        assetIn,
+        assetOut,
+        amountInWei,
+        chainId,
+        publicClient,
+        clFactoryAddress: addresses.clFactory,
+        tickSpacing: poolConfig.tickSpacing,
+      })
 
-    const swapCalldata = encodeSwap({
-      assetIn,
-      assetOut,
-      amountInWei,
-      amountOutMin,
-      routerType: addresses.routerType,
-      stable: poolConfig.stable,
-      factoryAddress: addresses.poolFactory,
-      recipient: params.recipient,
-      deadline: params.deadline,
-      chainId,
-    })
+      const amountOutMin =
+        (quote.amountOutWei *
+          BigInt(Math.round((1 - params.slippage) * 10000))) /
+        10000n
+
+      swapCalldata = encodeCLSwap({
+        assetIn,
+        assetOut,
+        amountInWei,
+        amountOutMin,
+        tickSpacing: poolConfig.tickSpacing,
+        recipient: params.recipient,
+        deadline: params.deadline,
+        chainId,
+      })
+    } else {
+      quote = await getQuote({
+        assetIn,
+        assetOut,
+        amountInWei,
+        chainId,
+        publicClient,
+        routerAddress: addresses.router,
+        routerType: addresses.routerType,
+        stable: poolConfig.stable,
+        factoryAddress: addresses.poolFactory,
+      })
+
+      const amountOutMin =
+        (quote.amountOutWei *
+          BigInt(Math.round((1 - params.slippage) * 10000))) /
+        10000n
+
+      swapCalldata = encodeSwap({
+        assetIn,
+        assetOut,
+        amountInWei,
+        amountOutMin,
+        routerType: addresses.routerType,
+        stable: poolConfig.stable,
+        factoryAddress: addresses.poolFactory,
+        recipient: params.recipient,
+        deadline: params.deadline,
+        chainId,
+      })
+    }
 
     // For the Universal Router: transfer tokens directly to the router before the swap.
     // The swap uses payerIsUser=false (router's own balance), avoiding Permit2 pull
@@ -207,14 +236,23 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
-    if (poolConfig.type === 'cl') {
-      throw new Error(
-        'CL pool pricing not yet supported via _getPrice. Use getQuote() instead.',
-      )
-    }
-
     // Default to 1 unit for price quotes when no amount specified
     const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
+
+    if (poolConfig.type === 'cl') {
+      if (!addresses.clFactory) {
+        throw new Error(`CL pools not supported on chain ${chainId}`)
+      }
+      return getCLQuote({
+        assetIn,
+        assetOut,
+        amountInWei,
+        chainId,
+        publicClient,
+        clFactoryAddress: addresses.clFactory,
+        tickSpacing: poolConfig.tickSpacing,
+      })
+    }
 
     return getQuote({
       assetIn,
