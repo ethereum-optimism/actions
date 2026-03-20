@@ -10,9 +10,7 @@ export function resolveAsset(
   chainId: SupportedChainId,
   assets: Asset[],
 ): Asset {
-  const asset = assets.find(
-    (token) => token.address[chainId] === tokenAddress,
-  )
+  const asset = assets.find((token) => token.address[chainId] === tokenAddress)
   if (!asset) {
     throw new Error(`Asset not found for token address: ${tokenAddress}`)
   }
