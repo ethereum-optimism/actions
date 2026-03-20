@@ -60,7 +60,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
       amountIn?: number
       amountOut?: number
     }) => {
-      return operations.getSwapPrice({
+      return operations.getSwapQuote({
         tokenInAddress,
         tokenOutAddress,
         chainId,

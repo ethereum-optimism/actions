@@ -1,7 +1,6 @@
 import type {
   SupportedChainId,
   SwapMarket,
-  SwapPrice,
   SwapProviderName,
   SwapQuote,
   SwapReceipt,
@@ -41,29 +40,6 @@ export async function getMarkets(
 ): Promise<SwapMarket[]> {
   const actions = getActions()
   return await actions.swap.getMarkets(chainId ? { chainId } : {})
-}
-
-export async function getPrice(params: PriceParams): Promise<SwapPrice> {
-  const {
-    tokenInAddress,
-    tokenOutAddress,
-    chainId,
-    amountIn,
-    amountOut,
-    provider,
-  } = params
-  const actions = getActions()
-  const assetIn = resolveAsset(tokenInAddress, chainId)
-  const assetOut = resolveAsset(tokenOutAddress, chainId)
-
-  return await actions.swap.price({
-    assetIn,
-    assetOut,
-    chainId,
-    amountIn,
-    amountOut,
-    provider,
-  })
 }
 
 export async function getQuote(params: PriceParams): Promise<SwapQuote> {

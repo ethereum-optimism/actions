@@ -64,7 +64,7 @@ export const ACTIVITY_CONFIG: Record<string, ActivityConfigEntry> = {
   getPrice: {
     type: 'swap',
     description: 'Get price',
-    apiMethod: 'actions.swap.price()',
+    apiMethod: 'actions.swap.getQuote()',
     tooltip: 'Fetches a swap price quote',
     isReadOnly: true,
   },

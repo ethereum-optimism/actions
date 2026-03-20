@@ -119,7 +119,7 @@ export function EarnWithFrontendWallet({
       },
       getConfiguredAssets: async () => actions.getSupportedAssets(),
       getSwapMarkets: async () => actions.swap.getMarkets(),
-      getSwapPrice: async (params) => {
+      getSwapQuote: async (params) => {
         try {
           const assets = actions.getSupportedAssets()
           const assetIn = assets.find(
@@ -130,7 +130,7 @@ export function EarnWithFrontendWallet({
           )
           if (!assetIn || !assetOut) return null
 
-          const price = await actions.swap.price({
+          const quote = await actions.swap.getQuote({
             assetIn,
             assetOut,
             chainId: params.chainId,
@@ -139,10 +139,10 @@ export function EarnWithFrontendWallet({
             provider: params.provider,
           })
           return {
-            price: price.price,
-            priceImpact: price.priceImpact,
-            amountIn: price.amountIn,
-            amountOut: price.amountOut,
+            price: quote.price,
+            priceImpact: quote.priceImpact,
+            amountIn: quote.amountIn,
+            amountOut: quote.amountOut,
           }
         } catch {
           return null

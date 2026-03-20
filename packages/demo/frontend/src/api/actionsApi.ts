@@ -3,7 +3,7 @@ import type {
   LendMarketPosition,
   SupportedChainId,
   SwapMarket,
-  SwapPrice,
+  SwapQuote,
   TokenBalance,
   LendMarket,
   LendTransactionReceipt,
@@ -237,7 +237,7 @@ class ActionsApiClient {
       provider?: string
     },
     headers: HeadersInit = {},
-  ): Promise<SwapPrice & { execution?: unknown }> {
+  ) {
     const params = new URLSearchParams({
       tokenInAddress,
       tokenOutAddress,
@@ -254,7 +254,7 @@ class ActionsApiClient {
     }
 
     const { result } = await this.request<{
-      result: Serialized<SwapPrice> & { execution?: unknown }
+      result: Serialized<SwapQuote>
     }>(`/swap/quote?${params}`, {
       method: 'GET',
       headers,
@@ -263,59 +263,11 @@ class ActionsApiClient {
       ...result,
       amountIn: Number(result.amountIn),
       amountOut: Number(result.amountOut),
-      amountInWei: BigInt(result.amountInWei),
-      amountOutWei: BigInt(result.amountOutWei),
+      amountInRaw: BigInt(result.amountInRaw),
+      amountOutRaw: BigInt(result.amountOutRaw),
+      amountOutMinRaw: BigInt(result.amountOutMinRaw),
       gasEstimate: result.gasEstimate ? BigInt(result.gasEstimate) : undefined,
-    } as SwapPrice & { execution?: unknown }
-  }
-
-  async getSwapPrice(
-    {
-      tokenInAddress,
-      tokenOutAddress,
-      chainId,
-      amountIn,
-      amountOut,
-      provider,
-    }: {
-      tokenInAddress: Address
-      tokenOutAddress: Address
-      chainId: SupportedChainId
-      amountIn?: number
-      amountOut?: number
-      provider?: string
-    },
-    headers: HeadersInit = {},
-  ): Promise<SwapPrice> {
-    const params = new URLSearchParams({
-      tokenInAddress,
-      tokenOutAddress,
-      chainId: chainId.toString(),
-    })
-    if (amountIn !== undefined) {
-      params.set('amountIn', amountIn.toString())
     }
-    if (amountOut !== undefined) {
-      params.set('amountOut', amountOut.toString())
-    }
-    if (provider) {
-      params.set('provider', provider)
-    }
-
-    const { result } = await this.request<{
-      result: Serialized<SwapPrice>
-    }>(`/swap/price?${params}`, {
-      method: 'GET',
-      headers,
-    })
-    return {
-      ...result,
-      amountIn: Number(result.amountIn),
-      amountOut: Number(result.amountOut),
-      amountInWei: BigInt(result.amountInWei),
-      amountOutWei: BigInt(result.amountOutWei),
-      gasEstimate: result.gasEstimate ? BigInt(result.gasEstimate) : undefined,
-    } as SwapPrice
   }
 
   async executeSwap(

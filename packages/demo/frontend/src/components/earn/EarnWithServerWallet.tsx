@@ -35,7 +35,7 @@ function buildSwapOperations(
   getAuthHeaders: () => Promise<AuthHeaders>,
 ): Pick<
   EarnOperations,
-  'executeSwap' | 'getConfiguredAssets' | 'getSwapMarkets' | 'getSwapPrice'
+  'executeSwap' | 'getConfiguredAssets' | 'getSwapMarkets' | 'getSwapQuote'
 > {
   return {
     executeSwap: async ({ amountIn, assetIn, assetOut, chainId, provider }) => {
@@ -60,17 +60,17 @@ function buildSwapOperations(
       actionsApi.getAssets(await getAuthHeaders()),
     getSwapMarkets: async () =>
       actionsApi.getSwapMarkets(undefined, await getAuthHeaders()),
-    getSwapPrice: async (params) => {
+    getSwapQuote: async (params) => {
       try {
-        const price = await actionsApi.getSwapPrice(
+        const quote = await actionsApi.getSwapQuote(
           params,
           await getAuthHeaders(),
         )
         return {
-          price: price.price,
-          priceImpact: price.priceImpact,
-          amountIn: price.amountIn,
-          amountOut: price.amountOut,
+          price: quote.price,
+          priceImpact: quote.priceImpact,
+          amountIn: quote.amountIn,
+          amountOut: quote.amountOut,
         }
       } catch {
         return null

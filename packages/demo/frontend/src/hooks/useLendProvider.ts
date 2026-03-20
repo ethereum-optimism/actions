@@ -41,7 +41,7 @@ export interface EarnOperations {
   }) => Promise<{ blockExplorerUrl?: string }>
   getConfiguredAssets: () => Promise<Asset[]>
   getSwapMarkets: () => Promise<SwapMarket[]>
-  getSwapPrice: (params: {
+  getSwapQuote: (params: {
     tokenInAddress: Address
     tokenOutAddress: Address
     chainId: SupportedChainId
@@ -49,7 +49,7 @@ export interface EarnOperations {
     amountOut?: number
     provider?: string
   }) => Promise<{
-    price: string
+    price: number
     priceImpact: number
     amountIn: number
     amountOut: number

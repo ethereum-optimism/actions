@@ -69,6 +69,5 @@ router.get('/assets', assetsController.getAssets)
 
 // Swap endpoints
 router.get('/swap/markets', swapController.getMarkets)
-router.get('/swap/price', swapController.getPrice)
 router.get('/swap/quote', swapController.getQuote)
 router.post('/swap/execute', authMiddleware, swapController.executeSwap)

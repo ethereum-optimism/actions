@@ -93,39 +93,7 @@ export async function getMarkets(c: Context) {
 }
 
 /**
- * GET - Get price quote for a swap
- */
-export async function getPrice(c: Context) {
-  try {
-    const validation = await validateRequest(c, PriceRequestSchema)
-    if (!validation.success) return validation.response
-
-    const {
-      tokenInAddress,
-      tokenOutAddress,
-      chainId,
-      amountIn,
-      amountOut,
-      provider,
-    } = validation.data.query
-
-    const price = await swapService.getPrice({
-      tokenInAddress: tokenInAddress as Address,
-      tokenOutAddress: tokenOutAddress as Address,
-      chainId: chainId as SupportedChainId,
-      amountIn,
-      amountOut,
-      provider,
-    })
-
-    return c.json({ result: serializeBigInt(price) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to get swap price', 500, error)
-  }
-}
-
-/**
- * GET - Get a full swap quote with pre-built execution data
+ * GET - Get a swap quote with pricing and pre-built execution data
  */
 export async function getQuote(c: Context) {
   try {
