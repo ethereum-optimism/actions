@@ -10,10 +10,10 @@ import type { SwapMarketConfig } from '@/types/swap/index.js'
 type NamedAddresses = Record<string, Address>
 
 /**
- * Validates all values in a Partial<Record<number, T>> address map.
- * T may be a single Address or a record of named addresses.
+ * Validates all values in an address map.
+ * Values may be a single Address or a record of named addresses.
  * Collects all failures before throwing a single Error listing every invalid entry.
- * @returns The original map if all addresses are valid.
+ * @returns The original map reference if all addresses are valid.
  * @throws Error listing all invalid addresses with their chain IDs and key names.
  */
 export function validateAddressMap<

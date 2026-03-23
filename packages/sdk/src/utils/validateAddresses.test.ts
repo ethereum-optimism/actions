@@ -106,6 +106,11 @@ describe('validateAssetAddresses', () => {
     const map = { 1: 'native' as const, 10: VALID_ADDRESS }
     expect(() => validateAssetAddresses(map)).not.toThrow()
   })
+
+  it('returns the original map reference on success', () => {
+    const map = { 10: VALID_ADDRESS }
+    expect(validateAssetAddresses(map)).toBe(map)
+  })
 })
 
 describe('validateConfigAddresses', () => {
