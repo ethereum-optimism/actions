@@ -185,7 +185,9 @@ describe('validateConfigAddresses', () => {
       validateConfigAddresses({
         lend: {
           aave: {
-            marketAllowlist: [{ ...invalidMarketAddress, lendProvider: 'aave' }],
+            marketAllowlist: [
+              { ...invalidMarketAddress, lendProvider: 'aave' },
+            ],
           },
         },
       }),
@@ -197,7 +199,9 @@ describe('validateConfigAddresses', () => {
       validateConfigAddresses({
         lend: {
           aave: {
-            marketBlocklist: [{ ...invalidMarketAddress, lendProvider: 'aave' }],
+            marketBlocklist: [
+              { ...invalidMarketAddress, lendProvider: 'aave' },
+            ],
           },
         },
       }),
