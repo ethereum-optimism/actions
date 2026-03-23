@@ -99,7 +99,7 @@ function collectMarketErrors(
   section: string,
   errors: string[],
 ): void {
-  if (!markets) return
+  if (markets === undefined) return
   for (const market of markets) {
     try {
       getAddress(market.address)
@@ -117,7 +117,7 @@ function collectSwapMarketErrors(
   section: string,
   errors: string[],
 ): void {
-  if (!markets) return
+  if (markets === undefined) return
   for (const market of markets) {
     for (const asset of market.assets) {
       collectAssetAddressErrors(asset, `${section}.assets[].address`, errors)
