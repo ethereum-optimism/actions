@@ -43,9 +43,8 @@ export async function getPrice(params: PriceParams): Promise<SwapPrice> {
   const { tokenInAddress, tokenOutAddress, chainId, amountIn, amountOut } =
     params
   const actions = getActions()
-  const assets = actions.getSupportedAssets()
-  const assetIn = resolveAsset(tokenInAddress, chainId, assets)
-  const assetOut = resolveAsset(tokenOutAddress, chainId, assets)
+  const assetIn = resolveAsset(tokenInAddress, chainId)
+  const assetOut = resolveAsset(tokenOutAddress, chainId)
 
   return await actions.swap.price({
     assetIn,
@@ -77,10 +76,8 @@ export async function executeSwap(
     throw new Error('Swap not configured for this wallet')
   }
 
-  const actions = getActions()
-  const assets = actions.getSupportedAssets()
-  const assetIn = resolveAsset(tokenInAddress, chainId, assets)
-  const assetOut = resolveAsset(tokenOutAddress, chainId, assets)
+  const assetIn = resolveAsset(tokenInAddress, chainId)
+  const assetOut = resolveAsset(tokenOutAddress, chainId)
 
   const result = await wallet.swap.execute({
     amountIn,
