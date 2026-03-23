@@ -35,6 +35,7 @@ const mockSwapNamespace = {
 
 const mockActions = {
   swap: mockSwapNamespace,
+  getSupportedAssets: vi.fn().mockReturnValue([]),
 }
 
 describe('Swap Service', () => {
