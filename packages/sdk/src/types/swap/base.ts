@@ -137,8 +137,7 @@ export interface SwapPriceParams {
 }
 
 /**
- * Parameters for getting a swap quote (pre-built for execution).
- * Unlike SwapPriceParams, assetOut is required.
+ * Parameters for getting a swap quote with pre-built execution data.
  */
 export interface SwapQuoteParams {
   /** Token to sell */

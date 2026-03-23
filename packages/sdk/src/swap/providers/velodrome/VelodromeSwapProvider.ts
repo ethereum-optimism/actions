@@ -43,7 +43,8 @@ import {
 
 /**
  * Velodrome/Aerodrome swap provider for OP Stack chains.
- * Supports v2 routers (Optimism, Base) and leaf routers (Relay chains).
+ * Supports v2 AMM pools, CL/Slipstream concentrated liquidity pools,
+ * v2 routers (Optimism, Base), leaf routers (Relay chains), and Universal Router (Base Sepolia).
  */
 export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderConfig> {
   /** @returns Chain IDs where Velodrome/Aerodrome contracts are deployed */

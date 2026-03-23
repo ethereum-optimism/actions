@@ -11,8 +11,8 @@ import type {
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
- * Wallet swap namespace (full operations with signing)
- * @description Provides execute() for swapping tokens
+ * Wallet swap namespace with full operations including signing.
+ * Provides getQuote() for pricing and execute() for swapping tokens.
  */
 export class WalletSwapNamespace extends BaseSwapNamespace {
   constructor(
