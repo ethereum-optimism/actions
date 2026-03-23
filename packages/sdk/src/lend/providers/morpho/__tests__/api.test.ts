@@ -321,7 +321,7 @@ describe('Morpho API Integration', () => {
       const nonExistentVault =
         '0x0000000000000000000000000000000000000000' as Address
 
-      const vaultData = await fetchRewards(nonExistentVault, 130)
+      const vaultData = await fetchRewards(nonExistentVault, unichain.id)
       expect(vaultData).toBeNull()
     }, 30000)
 
