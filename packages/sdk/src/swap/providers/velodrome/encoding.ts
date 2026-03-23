@@ -10,6 +10,7 @@ import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   CL_POOL_FACTORY_ABI,
+  CL_QUOTER_ABI,
   LEAF_ROUTER_ABI,
   POOL_ABI,
   POOL_FACTORY_ABI,
@@ -304,12 +305,13 @@ export interface GetCLQuoteParams {
   chainId: SupportedChainId
   publicClient: PublicClient
   clFactoryAddress: Address
+  clQuoterAddress: Address
   tickSpacing: number
 }
 
 /**
- * Get a swap quote from a CL/Slipstream pool.
- * Looks up the pool via the CL factory, then calls pool.quote().
+ * Get a swap quote from a CL/Slipstream pool via QuoterV2.
+ * Looks up the pool via the CL factory for validation, then quotes via QuoterV2.
  */
 export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
   const {
@@ -318,6 +320,7 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
     amountInRaw,
     publicClient,
     clFactoryAddress,
+    clQuoterAddress,
     tickSpacing,
     chainId,
   } = params
@@ -330,7 +333,7 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
     ? getWrappedNativeAddress(chainId)
     : getAssetAddress(assetOut, chainId)
 
-  // Look up the CL pool
+  // Verify the CL pool exists
   const poolAddress = await publicClient.readContract({
     address: clFactoryAddress,
     abi: CL_POOL_FACTORY_ABI,
@@ -347,42 +350,24 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
     )
   }
 
-  // Determine swap direction: zeroForOne = tokenIn < tokenOut
-  const zeroForOne = tokenIn.toLowerCase() < tokenOut.toLowerCase()
-
-  // sqrtPriceLimitX96: 0 = no limit (use MIN/MAX depending on direction)
-  // For zeroForOne: use MIN_SQRT_RATIO + 1, for oneForZero: use MAX_SQRT_RATIO - 1
-  const sqrtPriceLimitX96 = zeroForOne
-    ? 4295128740n // MIN_SQRT_RATIO + 1
-    : 1461446703485210103287273052203988822378723970341n // MAX_SQRT_RATIO - 1
-
-  // Call pool.quote() — uses staticcall, reverts with the quoted amount
-  // The pool.quote() function simulates the swap and returns the output amount
-  const amountOutRaw = (await publicClient.readContract({
-    address: poolAddress as Address,
-    abi: [
+  // Quote via QuoterV2.quoteExactInputSingle — simulates the swap off-chain
+  // sqrtPriceLimitX96 = 0 means no price limit (quote the full amount)
+  const quoteResult = (await publicClient.simulateContract({
+    address: clQuoterAddress,
+    abi: CL_QUOTER_ABI,
+    functionName: 'quoteExactInputSingle',
+    args: [
       {
-        name: 'quote',
-        type: 'function',
-        stateMutability: 'nonpayable',
-        inputs: [
-          { name: 'amountIn', type: 'uint256' },
-          { name: 'zeroForOne', type: 'bool' },
-          { name: 'sqrtPriceLimitX96', type: 'uint160' },
-        ],
-        outputs: [
-          { name: 'amountOut', type: 'uint256' },
-          { name: 'sqrtPriceX96After', type: 'uint160' },
-          { name: 'initializedTicksCrossed', type: 'uint32' },
-          { name: 'gasEstimate', type: 'uint256' },
-        ],
+        tokenIn,
+        tokenOut,
+        tickSpacing,
+        amountIn: amountInRaw,
+        sqrtPriceLimitX96: 0n,
       },
-    ] as const,
-    functionName: 'quote',
-    args: [amountInRaw, zeroForOne, sqrtPriceLimitX96],
-  })) as readonly [bigint, bigint, number, bigint]
+    ],
+  })) as { result: readonly [bigint, bigint, number, bigint] }
 
-  const outputAmount = amountOutRaw[0]
+  const outputAmount = quoteResult.result[0]
 
   const normalizedIn = parseFloat(
     formatUnits(amountInRaw, assetIn.metadata.decimals),

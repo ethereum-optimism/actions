@@ -178,6 +178,11 @@ export interface SwapQuoteExecution {
 /**
  * A complete swap quote: pricing, amounts, and pre-built execution data.
  * Pass to execute() to skip re-quoting.
+ *
+ * **Precision note:** `Raw` fields (bigint) are the on-chain source of truth.
+ * Number fields (`amountIn`, `amountOut`, `price`, etc.) are display approximations
+ * derived via `formatUnits` → `parseFloat`. For tokens with many significant digits,
+ * numbers may lose precision. Use `Raw` fields for any math that matters.
  */
 export interface SwapQuote {
   // ── What you're swapping ──
@@ -188,24 +193,24 @@ export interface SwapQuote {
   /** Chain to execute on */
   chainId: SupportedChainId
 
-  // ── Amounts ──
-  /** Human-readable input amount */
+  // ── Amounts (Raw = on-chain precision, number = display approximation) ──
+  /** Human-readable input amount (display only — use amountInRaw for precision) */
   amountIn: number
-  /** Input amount as raw bigint (native decimals) */
+  /** Input amount as raw bigint (native decimals). Source of truth. */
   amountInRaw: bigint
-  /** Human-readable expected output amount (before slippage) */
+  /** Human-readable expected output (display only — use amountOutRaw for precision) */
   amountOut: number
-  /** Expected output amount as raw bigint */
+  /** Expected output as raw bigint. Source of truth. */
   amountOutRaw: bigint
-  /** Human-readable minimum output (after slippage) */
+  /** Human-readable minimum output after slippage (display only) */
   amountOutMin: number
-  /** Minimum output as raw bigint */
+  /** Minimum output as raw bigint after slippage. Source of truth for on-chain execution. */
   amountOutMinRaw: bigint
 
-  // ── Price ──
-  /** Exchange rate: amountOut / amountIn */
+  // ── Price (display approximations derived from number amounts) ──
+  /** Exchange rate: amountOut / amountIn. Display approximation. */
   price: number
-  /** Inverse exchange rate: amountIn / amountOut */
+  /** Inverse exchange rate: amountIn / amountOut. Display approximation. */
   priceInverse: number
   /** Price impact as decimal (0.03 = 3%) */
   priceImpact: number

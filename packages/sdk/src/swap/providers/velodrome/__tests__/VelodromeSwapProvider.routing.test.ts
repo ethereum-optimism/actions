@@ -56,16 +56,17 @@ function createMockChainManager(chainId: SupportedChainId): ChainManager {
         if (functionName === 'getAmountsOut')
           return Promise.resolve([1000000n, 500000000000000000n])
         if (functionName === 'allowance') return Promise.resolve(0n)
-        // Universal Router: factory.getPool returns a pool address
+        // Factory.getPool returns a pool address
         if (functionName === 'getPool') return Promise.resolve(MOCK_POOL)
-        // Universal Router: pool.getAmountOut returns output amount
+        // Pool.getAmountOut for v2/universal quoting
         if (functionName === 'getAmountOut')
           return Promise.resolve(500000000000000000n)
-        // CL pool.quote returns [amountOut, sqrtPriceAfter, ticksCrossed, gasEstimate]
-        if (functionName === 'quote')
-          return Promise.resolve([500000000000000000n, 0n, 0, 0n])
         return Promise.resolve(0n)
       }),
+    // QuoterV2.quoteExactInputSingle for CL pools
+    simulateContract: vi.fn().mockResolvedValue({
+      result: [500000000000000000n, 0n, 0, 0n],
+    }),
   } as unknown as PublicClient
 
   return {

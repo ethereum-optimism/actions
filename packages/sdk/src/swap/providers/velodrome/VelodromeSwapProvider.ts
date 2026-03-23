@@ -76,7 +76,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     let swapCalldata: Hex
 
     if (poolConfig.type === 'cl') {
-      if (!addresses.clFactory) {
+      if (!addresses.clFactory || !addresses.clQuoter) {
         throw new Error(`CL pools not supported on chain ${chainId}`)
       }
 
@@ -87,6 +87,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         chainId,
         publicClient,
         clFactoryAddress: addresses.clFactory,
+        clQuoterAddress: addresses.clQuoter,
         tickSpacing: poolConfig.tickSpacing,
       })
 
@@ -245,7 +246,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
 
     if (poolConfig.type === 'cl') {
-      if (!addresses.clFactory) {
+      if (!addresses.clFactory || !addresses.clQuoter) {
         throw new Error(`CL pools not supported on chain ${chainId}`)
       }
       return getCLQuote({
@@ -255,6 +256,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         chainId,
         publicClient,
         clFactoryAddress: addresses.clFactory,
+        clQuoterAddress: addresses.clQuoter,
         tickSpacing: poolConfig.tickSpacing,
       })
     }
@@ -346,7 +348,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     let providerContext: Record<string, unknown>
 
     if (poolConfig.type === 'cl') {
-      if (!addresses.clFactory) {
+      if (!addresses.clFactory || !addresses.clQuoter) {
         throw new Error(`CL pools not supported on chain ${chainId}`)
       }
 
@@ -357,6 +359,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         chainId,
         publicClient,
         clFactoryAddress: addresses.clFactory,
+        clQuoterAddress: addresses.clQuoter,
         tickSpacing: poolConfig.tickSpacing,
       })
 

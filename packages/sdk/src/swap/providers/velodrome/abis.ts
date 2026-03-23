@@ -232,18 +232,27 @@ export const CL_POOL_FACTORY_ABI = [
 ] as const
 
 /**
- * CL/Slipstream Pool ABI for quoting.
- * Uses quote() which returns (amountOut, sqrtPriceX96After, initializedTicksCrossed, gasEstimate).
+ * CL/Slipstream QuoterV2 ABI for simulating swaps off-chain.
+ * quoteExactInputSingle returns the expected output for a given exact input.
+ * @see https://github.com/velodrome-finance/slipstream
  */
-export const CL_POOL_ABI = [
+export const CL_QUOTER_ABI = [
   {
-    name: 'quote',
+    name: 'quoteExactInputSingle',
     type: 'function',
     stateMutability: 'nonpayable',
     inputs: [
-      { name: 'amountIn', type: 'uint256' },
-      { name: 'zeroForOne', type: 'bool' },
-      { name: 'sqrtPriceLimitX96', type: 'uint160' },
+      {
+        name: 'params',
+        type: 'tuple',
+        components: [
+          { name: 'tokenIn', type: 'address' },
+          { name: 'tokenOut', type: 'address' },
+          { name: 'tickSpacing', type: 'int24' },
+          { name: 'amountIn', type: 'uint256' },
+          { name: 'sqrtPriceLimitX96', type: 'uint160' },
+        ],
+      },
     ],
     outputs: [
       { name: 'amountOut', type: 'uint256' },
