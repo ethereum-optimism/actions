@@ -1,4 +1,5 @@
 import type { Address } from 'viem'
+import { mainnet } from 'viem/chains'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { fetchRewards } from '@/lend/providers/morpho/api.js'
@@ -6,28 +7,13 @@ import {
   calculateRewardsBreakdown,
   fetchAndCalculateRewards,
 } from '@/lend/providers/morpho/sdk.js'
-import type { Asset } from '@/types/asset.js'
+import { MORPHO, USDC } from '@/constants/assets.js'
 import { externalTest } from '@/utils/test.js'
 
-const USDC_ADDRESS = '0x078d782b760474a361dda0af3839290b0ef57ad6'
-const MORPHO_ADDRESS = '0x9994e35db50125e0df82e4c2dde62496ce330999'
-const CHAIN_ID = 130
-
-/**
- * Test supported assets for reward categorization
- */
-const testSupportedAssets: Asset[] = [
-  {
-    address: { [CHAIN_ID]: USDC_ADDRESS as Address },
-    metadata: { decimals: 6, name: 'USD Coin', symbol: 'USDC' },
-    type: 'erc20',
-  },
-  {
-    address: { [CHAIN_ID]: MORPHO_ADDRESS as Address },
-    metadata: { decimals: 18, name: 'Morpho Token', symbol: 'MORPHO' },
-    type: 'erc20',
-  },
-]
+const CHAIN_ID = mainnet.id
+const USDC_ADDRESS = USDC.address[CHAIN_ID]!.toLowerCase()
+const MORPHO_ADDRESS = MORPHO.address[CHAIN_ID]!.toLowerCase()
+const testSupportedAssets = [USDC, MORPHO]
 
 /**
  * Mock API response for a vault with rewards

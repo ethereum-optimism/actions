@@ -1,27 +1,16 @@
+import { mainnet } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
 import {
   calculateBaseApy,
   calculateRewardsBreakdown,
 } from '@/lend/providers/morpho/sdk.js'
-import type { Asset } from '@/types/asset.js'
+import { MORPHO, USDC } from '@/constants/assets.js'
 
-const USDC_ADDRESS = '0x078d782b760474a361dda0af3839290b0ef57ad6'
-const MORPHO_ADDRESS = '0x9994e35db50125e0df82e4c2dde62496ce330999'
-const CHAIN_ID = 130
-
-const testSupportedAssets: Asset[] = [
-  {
-    address: { [CHAIN_ID]: USDC_ADDRESS as `0x${string}` },
-    metadata: { decimals: 6, name: 'USD Coin', symbol: 'USDC' },
-    type: 'erc20',
-  },
-  {
-    address: { [CHAIN_ID]: MORPHO_ADDRESS as `0x${string}` },
-    metadata: { decimals: 18, name: 'Morpho Token', symbol: 'MORPHO' },
-    type: 'erc20',
-  },
-]
+const CHAIN_ID = mainnet.id
+const USDC_ADDRESS = USDC.address[CHAIN_ID]!.toLowerCase()
+const MORPHO_ADDRESS = MORPHO.address[CHAIN_ID]!.toLowerCase()
+const testSupportedAssets = [USDC, MORPHO]
 
 describe('Vault Utilities', () => {
   describe('calculateBaseApy', () => {
