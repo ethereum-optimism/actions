@@ -98,6 +98,7 @@ describe('validateAssetAddresses', () => {
     } catch (e) {
       err = e as Error
     }
+    expect(err).toBeDefined()
     expect(err!.message).toMatch(/chain 10/)
     expect(err!.message).toMatch(/chain 8453/)
   })
@@ -182,7 +183,11 @@ describe('validateConfigAddresses', () => {
   it('throws with a descriptive message when a bad address appears in lend.aave.marketAllowlist', () => {
     expect(() =>
       validateConfigAddresses({
-        lend: { aave: { marketAllowlist: [invalidMarketAddress] } },
+        lend: {
+          aave: {
+            marketAllowlist: [{ ...invalidMarketAddress, lendProvider: 'aave' }],
+          },
+        },
       }),
     ).toThrow(/lend\.aave\.marketAllowlist/)
   })
