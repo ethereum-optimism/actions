@@ -174,6 +174,26 @@ describe('validateConfigAddresses', () => {
     ).toThrow(/assets\.block/)
   })
 
+  it('throws with a descriptive message when a bad address appears in lend.aave.marketAllowlist', () => {
+    expect(() =>
+      validateConfigAddresses({
+        lend: { aave: { marketAllowlist: [invalidMarketAddress] } },
+      }),
+    ).toThrow(/lend\.aave\.marketAllowlist/)
+  })
+
+  it('throws with a descriptive message when a bad address appears in swap.uniswap.marketAllowlist', () => {
+    expect(() =>
+      validateConfigAddresses({
+        swap: {
+          uniswap: {
+            marketAllowlist: [{ assets: [invalidAsset, validAsset] }],
+          },
+        },
+      }),
+    ).toThrow(/swap\.uniswap\.marketAllowlist/)
+  })
+
   it('collects failures across multiple config sections and throws once with all of them', () => {
     let err: Error | undefined
     try {

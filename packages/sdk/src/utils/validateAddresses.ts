@@ -22,7 +22,7 @@ export function validateAddressMap<
   const errors: string[] = []
 
   for (const [chainId, value] of Object.entries(map)) {
-    if (!value) continue
+    if (value === undefined) continue
     if (typeof value === 'string') {
       try {
         getAddress(value)
@@ -63,7 +63,7 @@ export function validateAssetAddresses(
   const errors: string[] = []
 
   for (const [chainId, value] of Object.entries(map)) {
-    if (!value || value === 'native') continue
+    if (value === undefined || value === 'native') continue
     try {
       getAddress(value)
     } catch {
@@ -83,7 +83,7 @@ function collectAssetAddressErrors(
   errors: string[],
 ): void {
   for (const [chainId, addr] of Object.entries(asset.address)) {
-    if (!addr || addr === 'native') continue
+    if (addr === undefined || addr === 'native') continue
     try {
       getAddress(addr)
     } catch {
