@@ -16,9 +16,9 @@ type NamedAddresses = Record<string, Address>
  * @returns The original map if all addresses are valid.
  * @throws Error listing all invalid addresses with their chain IDs and key names.
  */
-export function validateAddressMap<M extends Partial<Record<number, Address | NamedAddresses>>>(
-  map: M,
-): M {
+export function validateAddressMap<
+  M extends Partial<Record<number, Address | NamedAddresses>>,
+>(map: M): M {
   const errors: string[] = []
 
   for (const [chainId, value] of Object.entries(map)) {
