@@ -39,21 +39,21 @@ export const SUPPORTED_CHAIN_IDS = [
  */
 export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
-  private readonly getAssets: () => Asset[]
+  private readonly assets: Asset[]
 
   /**
    * Create a new Morpho lending provider
    * @param config - Morpho lending configuration
    * @param chainManager - Chain manager for blockchain interactions
-   * @param getAssets - Getter called at use-time to read the current supported assets
+   * @param assets - Supported assets for reward categorization
    */
   constructor(
     config: LendProviderConfig,
     chainManager: ChainManager,
-    getAssets: () => Asset[] = () => [],
+    assets: Asset[] = [],
   ) {
     super(config, chainManager)
-    this.getAssets = getAssets
+    this.assets = assets
   }
 
   /**
@@ -165,7 +165,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       marketId,
       chainManager: this.chainManager,
       lendConfig: this._config,
-      supportedAssets: this.getAssets(),
+      supportedAssets: this.assets,
     })
   }
 

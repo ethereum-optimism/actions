@@ -84,14 +84,13 @@ export function useSwapAssets({
         if (!asset || seen.has(symbol)) return null
         seen.add(symbol)
 
-        // Find first chain with a balance
-        const firstChainId = Object.keys(balance.chains)[0]
+        const chainId = Number(Object.keys(balance.chains)[0] ?? 84532) as SupportedChainId
 
         return {
           asset,
           logo: getAssetLogo(symbol),
           balance: balance.totalBalance.toString(),
-          chainId: firstChainId ? (Number(firstChainId) as SupportedChainId) : (84532 as SupportedChainId),
+          chainId,
         }
       })
       .filter((item): item is SwapAsset => item !== null)
