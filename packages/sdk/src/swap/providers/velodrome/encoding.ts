@@ -350,9 +350,10 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
     )
   }
 
-  // Quote via QuoterV2.quoteExactInputSingle — simulates the swap off-chain
-  // sqrtPriceLimitX96 = 0 means no price limit (quote the full amount)
-  const quoteResult = (await publicClient.simulateContract({
+  // Quote via QuoterV2.quoteExactInputSingle
+  // QuoterV2 functions use eth_call (readContract) — they simulate internally
+  // and return the result. sqrtPriceLimitX96 = 0 means no price limit.
+  const quoteResult = (await publicClient.readContract({
     address: clQuoterAddress,
     abi: CL_QUOTER_ABI,
     functionName: 'quoteExactInputSingle',
@@ -360,14 +361,14 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
       {
         tokenIn,
         tokenOut,
-        tickSpacing,
         amountIn: amountInRaw,
+        tickSpacing,
         sqrtPriceLimitX96: 0n,
       },
     ],
-  })) as { result: readonly [bigint, bigint, number, bigint] }
+  })) as readonly [bigint, bigint, number, bigint]
 
-  const outputAmount = quoteResult.result[0]
+  const outputAmount = quoteResult[0]
 
   const normalizedIn = parseFloat(
     formatUnits(amountInRaw, assetIn.metadata.decimals),

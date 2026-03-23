@@ -61,12 +61,11 @@ function createMockChainManager(chainId: SupportedChainId): ChainManager {
         // Pool.getAmountOut for v2/universal quoting
         if (functionName === 'getAmountOut')
           return Promise.resolve(500000000000000000n)
+        // QuoterV2.quoteExactInputSingle for CL pools
+        if (functionName === 'quoteExactInputSingle')
+          return Promise.resolve([500000000000000000n, 0n, 0, 0n])
         return Promise.resolve(0n)
       }),
-    // QuoterV2.quoteExactInputSingle for CL pools
-    simulateContract: vi.fn().mockResolvedValue({
-      result: [500000000000000000n, 0n, 0, 0n],
-    }),
   } as unknown as PublicClient
 
   return {

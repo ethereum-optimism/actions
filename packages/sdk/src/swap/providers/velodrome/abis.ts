@@ -248,8 +248,8 @@ export const CL_QUOTER_ABI = [
         components: [
           { name: 'tokenIn', type: 'address' },
           { name: 'tokenOut', type: 'address' },
-          { name: 'tickSpacing', type: 'int24' },
           { name: 'amountIn', type: 'uint256' },
+          { name: 'tickSpacing', type: 'int24' },
           { name: 'sqrtPriceLimitX96', type: 'uint160' },
         ],
       },

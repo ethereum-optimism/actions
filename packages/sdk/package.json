@@ -44,7 +44,7 @@
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --log-level=warn",
     "test": "vitest --run --project unit",
-    "test:supersim": "vitest --run --project supersim",
+    "test:network": "vitest --run --project network",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "keywords": [
