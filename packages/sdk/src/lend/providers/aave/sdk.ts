@@ -4,7 +4,7 @@ import { providers } from 'ethers'
 import type { Address } from 'viem'
 
 import { WETH } from '@/constants/assets.js'
-import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { POOL_GET_RESERVE_DATA_ABI } from '@/lend/providers/aave/abis/pool.js'
 import {
   getAaveAddresses,
@@ -239,7 +239,7 @@ export async function getReserves(
  */
 export async function getATokenAddress(params: {
   underlyingAsset: Address
-  chainId: (typeof SUPPORTED_CHAIN_IDS)[number]
+  chainId: SupportedChainId
   chainManager: ChainManager
 }): Promise<Address> {
   const poolAddress = getPoolAddress(params.chainId)

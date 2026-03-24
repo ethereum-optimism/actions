@@ -19,18 +19,13 @@ import type {
 import { getAssetAddress } from '@/utils/assets.js'
 
 /**
- * Supported chain IDs for Morpho lending
- * @description Chain IDs where Morpho is deployed and supported by the Actions SDK
- */
-export const SUPPORTED_CHAIN_IDS =
-  getMorphoSupportedChainIds() as readonly number[]
-
-/**
  * Morpho lending provider implementation
  * @description Lending provider implementation using Morpho protocol
  */
 export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
-  protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
+  protocolSupportedChainIds(): number[] {
+    return getMorphoSupportedChainIds()
+  }
 
   /**
    * Create a new Morpho lending provider

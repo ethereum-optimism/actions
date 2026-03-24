@@ -3,8 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getRandomAddress } from '@/__mocks__/utils.js'
 import type { MockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
-import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import {
+  createMockLendProvider,
+  MockLendProvider as MockLendProviderClass,
+} from '@/lend/__mocks__/MockLendProvider.js'
 import { BaseLendNamespace } from '@/lend/namespaces/BaseLendNamespace.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 
 // Concrete implementation for testing
 class TestLendNamespace extends BaseLendNamespace {}
@@ -109,10 +114,12 @@ describe('BaseLendNamespace', () => {
 
   describe('supportedChainIds', () => {
     it('should return unique chain IDs from all providers', () => {
-      const namespace = new TestLendNamespace({
-        morpho: mockMorphoProvider,
-        aave: mockAaveProvider,
-      })
+      const chainManager = new MockChainManager({
+        supportedChains: [1, 130, 8453, 84532],
+      }) as unknown as ChainManager
+      const morpho = new MockLendProviderClass({}, undefined, chainManager)
+      const aave = new MockLendProviderClass({}, undefined, chainManager)
+      const namespace = new TestLendNamespace({ morpho, aave })
 
       const chainIds = namespace.supportedChainIds()
 

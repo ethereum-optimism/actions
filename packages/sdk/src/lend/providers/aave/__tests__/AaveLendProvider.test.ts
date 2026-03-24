@@ -88,9 +88,9 @@ describe('AaveLendProvider', () => {
     })
   })
 
-  describe('supportedChainIds', () => {
-    it('should return array of supported chain IDs', () => {
-      const chainIds = provider.supportedChainIds()
+  describe('protocolSupportedChainIds', () => {
+    it('should return all Aave V3 deployment chains', () => {
+      const chainIds = provider.protocolSupportedChainIds()
 
       expect(chainIds).toHaveLength(6)
       expect(chainIds).toContain(10) // Optimism
@@ -100,12 +100,19 @@ describe('AaveLendProvider', () => {
       expect(chainIds).toContain(11155420) // Optimism Sepolia
       expect(chainIds).toContain(84532) // Base Sepolia
     })
+  })
+
+  describe('supportedChainIds', () => {
+    it('should return only chains present in ActionsConfig', () => {
+      // mockChainManager is configured with supportedChains: [8453]
+      const chainIds = provider.supportedChainIds()
+
+      expect(chainIds).toEqual([8453])
+    })
 
     it('should return unique chain IDs', () => {
       const chainIds = provider.supportedChainIds()
-      const uniqueIds = [...new Set(chainIds)]
-
-      expect(chainIds.length).toBe(uniqueIds.length)
+      expect(chainIds.length).toBe(new Set(chainIds).size)
     })
   })
 

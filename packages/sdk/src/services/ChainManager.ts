@@ -12,7 +12,7 @@ import {
 import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { createBundlerClient } from 'viem/account-abstraction'
 
-import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainConfig } from '@/types/chain.js'
 
 /**
@@ -22,7 +22,7 @@ import type { ChainConfig } from '@/types/chain.js'
  */
 export class ChainManager {
   /** Map of chain IDs to their corresponding public clients */
-  private publicClients: Map<(typeof SUPPORTED_CHAIN_IDS)[number], PublicClient>
+  private publicClients: Map<SupportedChainId, PublicClient>
   /** Configuration for each supported chain */
   private chainConfigs: ChainConfig[]
 
@@ -41,7 +41,7 @@ export class ChainManager {
    * @returns PublicClient instance for the specified chain
    * @throws Error if no client is configured for the chain ID
    */
-  getPublicClient(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): PublicClient {
+  getPublicClient(chainId: SupportedChainId): PublicClient {
     const client = this.publicClients.get(chainId)
     if (!client) {
       throw new Error(`No public client configured for chain ID: ${chainId}`)
@@ -57,7 +57,7 @@ export class ChainManager {
    * @throws Error if no bundler URL is configured for the chain ID
    */
   getBundlerClient(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
+    chainId: SupportedChainId,
     account: SmartAccount,
   ): BundlerClient | SmartAccountClient {
     const chainConfig = this.getChainConfig(chainId)
@@ -94,9 +94,7 @@ export class ChainManager {
    * @returns RPC URL as a string
    * @throws Error if no chain config is found for the chain ID
    */
-  getRpcUrls(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
-  ): string[] | undefined {
+  getRpcUrls(chainId: SupportedChainId): string[] | undefined {
     const chainConfig = this.getChainConfig(chainId)
     return chainConfig.rpcUrls
   }
@@ -107,9 +105,7 @@ export class ChainManager {
    * @returns Bundler URL as a string or undefined if not configured
    * @throws Error if no chain config is found for the chain ID
    */
-  getBundlerUrl(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
-  ): string | undefined {
+  getBundlerUrl(chainId: SupportedChainId): string | undefined {
     const chainConfig = this.getChainConfig(chainId)
     if (!chainConfig.bundler) {
       throw new Error(`No bundler configured for chain ID: ${chainId}`)
@@ -122,7 +118,7 @@ export class ChainManager {
    * @param chainId - The chain ID to retrieve information for
    * @returns Chain object containing chain details
    */
-  getChain(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): Chain {
+  getChain(chainId: SupportedChainId): Chain {
     return chainById[chainId]
   }
 
@@ -140,7 +136,7 @@ export class ChainManager {
    * @returns Transport configured with fallback RPC URLs or default http transport
    * @throws Error if no chain config is found for the chain ID
    */
-  getTransportForChain(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]) {
+  getTransportForChain(chainId: SupportedChainId) {
     const rpcUrls = this.getRpcUrls(chainId)
     return rpcUrls?.length
       ? fallback(rpcUrls.map((rpcUrl) => http(rpcUrl)))
@@ -155,11 +151,8 @@ export class ChainManager {
    */
   private createPublicClients(
     chains: ChainConfig[],
-  ): Map<(typeof SUPPORTED_CHAIN_IDS)[number], PublicClient> {
-    const clients = new Map<
-      (typeof SUPPORTED_CHAIN_IDS)[number],
-      PublicClient
-    >()
+  ): Map<SupportedChainId, PublicClient> {
+    const clients = new Map<SupportedChainId, PublicClient>()
 
     for (const chainConfig of chains) {
       const chain = chainById[chainConfig.chainId]
@@ -187,9 +180,7 @@ export class ChainManager {
    * @param chainId The chain ID to retrieve the chain config for
    * @returns ChainConfig object containing chain details
    */
-  private getChainConfig(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
-  ): ChainConfig {
+  private getChainConfig(chainId: SupportedChainId): ChainConfig {
     const chainConfig = this.chainConfigs.find((c) => c.chainId === chainId)
     if (!chainConfig) {
       throw new Error(`No chain config found for chain ID: ${chainId}`)
@@ -205,7 +196,7 @@ export class ChainManager {
    * @returns Pimlico bundler client for the specified chain
    */
   private getPimlicoBundlerClient(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
+    chainId: SupportedChainId,
     account: SmartAccount,
     sponsorshipPolicyId?: string,
   ) {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import {
   createMockSwapProvider,
   MockSwapProvider,
@@ -99,9 +101,13 @@ describe('BaseSwapNamespace', () => {
       const provider1 = createMockSwapProvider(undefined, {
         supportedChains: [84532 as SupportedChainId],
       })
-      const provider2 = new MockSwapProvider(undefined, {
-        supportedChains: [1 as SupportedChainId, 10 as SupportedChainId],
-      })
+      const provider2 = new MockSwapProvider(
+        undefined,
+        { supportedChains: [1 as SupportedChainId, 10 as SupportedChainId] },
+        new MockChainManager({
+          supportedChains: [1 as SupportedChainId, 10 as SupportedChainId],
+        }) as unknown as ChainManager,
+      )
 
       const namespace = new ActionsSwapNamespace({
         uniswap: provider1,

@@ -13,7 +13,7 @@ import {
   worldchain,
 } from 'viem/chains'
 
-export const SUPPORTED_CHAIN_IDS = [
+export const ACTIONS_SUPPORTED_CHAIN_IDS = [
   mainnet.id,
   sepolia.id,
   optimism.id,
@@ -28,4 +28,4 @@ export const SUPPORTED_CHAIN_IDS = [
   mode.id,
 ] as const
 
-export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number]
+export type SupportedChainId = (typeof ACTIONS_SUPPORTED_CHAIN_IDS)[number]

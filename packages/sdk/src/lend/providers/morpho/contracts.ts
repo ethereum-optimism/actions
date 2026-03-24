@@ -1,8 +1,8 @@
-import { ChainId } from '@morpho-org/blue-sdk'
 import {
   base,
   baseSepolia,
   ink,
+  mainnet,
   mode,
   optimism,
   soneium,
@@ -11,7 +11,6 @@ import {
 } from 'viem/chains'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { SUPPORTED_CHAIN_IDS as ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type {
   MorphoContracts,
   MorphoContractsRegistry,
@@ -29,6 +28,10 @@ const MORPHO_BLUE = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as const
  * @see https://github.com/morpho-org/sdks
  */
 export const MORPHO_CONTRACTS: MorphoContractsRegistry = {
+  [mainnet.id]: {
+    morphoBlue: MORPHO_BLUE,
+    irm: '0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC',
+  },
   [optimism.id]: {
     morphoBlue: MORPHO_BLUE,
     irm: '0x8cD70A8F399428456b29546BC5dBe10ab6a06ef6',
@@ -73,17 +76,11 @@ export function getMorphoContracts(
 }
 
 /**
- * Get all chain IDs where Morpho is deployed AND supported by the Actions SDK.
- * Combines local contracts registry with Morpho SDK's ChainId enum,
- * filtered to the Actions SDK's supported chains.
+ * Get all chain IDs where Morpho contracts are deployed.
+ * Returns chains present in the local contracts registry.
+ * Filtering against ACTIONS_SUPPORTED_CHAIN_IDS and developer-configured chains
+ * is handled by the LendProvider base class.
  */
 export function getSupportedChainIds(): number[] {
-  const localChains = Object.keys(MORPHO_CONTRACTS).map(Number)
-  const sdkChains = Object.values(ChainId).filter(
-    (value): value is number => typeof value === 'number',
-  )
-  const allMorphoChains = [...new Set([...localChains, ...sdkChains])]
-  return allMorphoChains.filter((chainId) =>
-    (ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]).includes(chainId),
-  )
+  return Object.keys(MORPHO_CONTRACTS).map(Number)
 }
