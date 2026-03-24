@@ -1,7 +1,6 @@
 import { baseSepolia } from 'viem/chains'
 
 import type { MorphoContractsRegistry } from '@/types/lend/contracts.js'
-import { validateAddressMap } from '@/utils/validateAddresses.js'
 
 /**
  * Morpho Blue core contract - same address on all chains via CREATE2
@@ -12,12 +11,12 @@ const MORPHO_BLUE = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb' as const
  * Contract addresses for chains NOT supported by Morpho SDK (testnets).
  * Mainnet/Base use the SDK which provides richer data including rewards.
  */
-export const MORPHO_CONTRACTS: MorphoContractsRegistry = validateAddressMap({
+export const MORPHO_CONTRACTS: MorphoContractsRegistry = {
   [baseSepolia.id]: {
     morphoBlue: MORPHO_BLUE,
     irm: '0x46415998764C29aB2a25CbeA6254146D50D22687',
   },
-})
+}
 
 /**
  * Get Morpho contracts for a chain

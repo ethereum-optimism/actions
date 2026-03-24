@@ -12,7 +12,6 @@ import {
 
 import { PERMIT2_ADDRESS } from '@/constants/contracts.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { validateAddressMap } from '@/utils/validateAddresses.js'
 
 /**
  * Uniswap contract addresses
@@ -29,8 +28,9 @@ export interface UniswapAddresses {
  * Uniswap V4 contract addresses per chain
  * @see https://docs.uniswap.org/contracts/v4/deployments
  */
-const UNISWAP_ADDRESSES: Partial<Record<SupportedChainId, UniswapAddresses>> =
-  validateAddressMap({
+export const UNISWAP_ADDRESSES: Partial<
+  Record<SupportedChainId, UniswapAddresses>
+> = {
     [mainnet.id]: {
       poolManager: '0x000000000004444c5dc75cB358380D2e3dE08A90',
       positionManager: '0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e',
@@ -87,7 +87,7 @@ const UNISWAP_ADDRESSES: Partial<Record<SupportedChainId, UniswapAddresses>> =
       quoter: '0x56dcd40a3f2d466f48e7f48bdbe5cc9b92ae4472',
       permit2: PERMIT2_ADDRESS,
     },
-  })
+  }
 
 /**
  * Get Uniswap contract addresses for a chain

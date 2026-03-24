@@ -4,8 +4,8 @@ import { getAddress } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { AssetsConfig, LendConfig, SwapConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendMarketConfig } from '@/types/lend/index.js'
-import type { SwapMarketConfig } from '@/types/swap/index.js'
+import type { LendProviderConfig } from '@/types/lend/index.js'
+import type { SwapProviderConfig } from '@/types/swap/index.js'
 
 type NamedAddresses = Record<string, Address>
 
@@ -77,57 +77,48 @@ export function validateAssetAddresses(
   return map
 }
 
-function collectAssetAddressErrors(
-  asset: Asset,
-  location: string,
-  errors: string[],
-): void {
-  for (const [chainId, addr] of Object.entries(asset.address)) {
-    if (addr === undefined || addr === 'native') continue
-    try {
-      getAddress(addr)
-    } catch {
-      errors.push(
-        `  - ${location} on chain ${chainId}: ${addr} (not a valid EVM address)`,
-      )
-    }
-  }
+interface AddressEntry {
+  path: string
+  value: string
 }
 
-function collectMarketErrors(
-  markets: LendMarketConfig[] | undefined,
-  section: string,
-  errors: string[],
-): void {
-  if (markets === undefined) return
-  for (const market of markets) {
-    try {
-      getAddress(market.address)
-    } catch {
-      errors.push(
-        `  - ${section}.address: ${market.address} (not a valid EVM address)`,
-      )
-    }
-    collectAssetAddressErrors(market.asset, `${section}.asset.address`, errors)
-  }
+function assetAddresses(asset: Asset, path: string): AddressEntry[] {
+  return Object.entries(asset.address)
+    .filter(([, addr]) => addr !== 'native')
+    .map(([chainId, addr]) => ({
+      path: `${path}.address[${chainId}]`,
+      value: addr as string,
+    }))
 }
 
-function collectSwapMarketErrors(
-  markets: SwapMarketConfig[] | undefined,
-  section: string,
-  errors: string[],
-): void {
-  if (markets === undefined) return
-  for (const market of markets) {
-    for (const asset of market.assets) {
-      collectAssetAddressErrors(asset, `${section}.assets[].address`, errors)
-    }
-  }
+function lendProviderAddresses(
+  config: LendProviderConfig,
+  providerPath: string,
+): AddressEntry[] {
+  return (['marketAllowlist', 'marketBlocklist'] as const).flatMap((key) =>
+    (config[key] ?? []).flatMap((m, i) => [
+      { path: `${providerPath}.${key}[${i}].address`, value: m.address },
+      ...assetAddresses(m.asset, `${providerPath}.${key}[${i}].asset`),
+    ]),
+  )
+}
+
+function swapProviderAddresses(
+  config: SwapProviderConfig,
+  providerPath: string,
+): AddressEntry[] {
+  return (['marketAllowlist', 'marketBlocklist'] as const).flatMap((key) =>
+    (config[key] ?? []).flatMap((m, i) =>
+      m.assets.flatMap((asset, j) =>
+        assetAddresses(asset, `${providerPath}.${key}[${i}].assets[${j}]`),
+      ),
+    ),
+  )
 }
 
 /**
  * Validates all developer-supplied addresses in an ActionsConfig.
- * Validates lend market addresses, swap asset addresses, and asset allow/block list addresses.
+ * Iterates all lend and swap providers generically, so new providers are covered automatically.
  * Collects all failures before throwing a single Error.
  * @throws Error listing all invalid addresses with their locations and chain IDs.
  */
@@ -136,58 +127,29 @@ export function validateConfigAddresses(config: {
   swap?: SwapConfig
   assets?: AssetsConfig
 }): void {
-  const errors: string[] = []
+  const addresses: AddressEntry[] = [
+    ...Object.entries(config.lend ?? {}).flatMap(([name, cfg]) =>
+      lendProviderAddresses(cfg as LendProviderConfig, `lend.${name}`),
+    ),
+    ...Object.entries(config.swap ?? {}).flatMap(([name, cfg]) =>
+      swapProviderAddresses(cfg as SwapProviderConfig, `swap.${name}`),
+    ),
+    ...(config.assets?.allow ?? []).flatMap((a, i) =>
+      assetAddresses(a, `assets.allow[${i}]`),
+    ),
+    ...(config.assets?.block ?? []).flatMap((a, i) =>
+      assetAddresses(a, `assets.block[${i}]`),
+    ),
+  ]
 
-  if (config.lend?.morpho) {
-    collectMarketErrors(
-      config.lend.morpho.marketAllowlist,
-      'lend.morpho.marketAllowlist[]',
-      errors,
-    )
-    collectMarketErrors(
-      config.lend.morpho.marketBlocklist,
-      'lend.morpho.marketBlocklist[]',
-      errors,
-    )
-  }
-
-  if (config.lend?.aave) {
-    collectMarketErrors(
-      config.lend.aave.marketAllowlist,
-      'lend.aave.marketAllowlist[]',
-      errors,
-    )
-    collectMarketErrors(
-      config.lend.aave.marketBlocklist,
-      'lend.aave.marketBlocklist[]',
-      errors,
-    )
-  }
-
-  if (config.swap?.uniswap) {
-    collectSwapMarketErrors(
-      config.swap.uniswap.marketAllowlist,
-      'swap.uniswap.marketAllowlist[]',
-      errors,
-    )
-    collectSwapMarketErrors(
-      config.swap.uniswap.marketBlocklist,
-      'swap.uniswap.marketBlocklist[]',
-      errors,
-    )
-  }
-
-  if (config.assets?.allow) {
-    for (const asset of config.assets.allow) {
-      collectAssetAddressErrors(asset, 'assets.allow[].address', errors)
+  const errors = addresses.flatMap(({ path, value }) => {
+    try {
+      getAddress(value)
+      return []
+    } catch {
+      return [`  - ${path}: ${value} (not a valid EVM address)`]
     }
-  }
-
-  if (config.assets?.block) {
-    for (const asset of config.assets.block) {
-      collectAssetAddressErrors(asset, 'assets.block[].address', errors)
-    }
-  }
+  })
 
   if (errors.length > 0) {
     throw new Error(`Invalid addresses found:\n${errors.join('\n')}`)

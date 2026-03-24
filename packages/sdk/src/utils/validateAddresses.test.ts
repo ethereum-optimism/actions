@@ -7,6 +7,22 @@ import {
   getMockAuthorizationContext,
 } from '@/__mocks__/MockPrivyClient.js'
 import { Actions } from '@/actions.js'
+import {
+  ETH,
+  MORPHO,
+  OP_DEMO,
+  USDC,
+  USDC_DEMO,
+  WETH,
+} from '@/constants/assets.js'
+import {
+  POOL_ADDRESSES_MAINNET,
+  POOL_ADDRESSES_TESTNET,
+  WETH_GATEWAY_ADDRESSES_MAINNET,
+  WETH_GATEWAY_ADDRESSES_TESTNET,
+} from '@/lend/providers/aave/addresses.js'
+import { MORPHO_CONTRACTS } from '@/lend/providers/morpho/contracts.js'
+import { UNISWAP_ADDRESSES } from '@/swap/providers/uniswap/addresses.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendMarketConfig } from '@/types/lend/index.js'
 import {
@@ -260,6 +276,30 @@ describe('validateConfigAddresses', () => {
         assets: { allow: [validAsset] },
       }),
     ).not.toThrow()
+  })
+})
+
+describe('hardcoded address maps contain valid EVM addresses', () => {
+  it('all hardcoded address maps contain valid EVM addresses', () => {
+    expect(() => validateAddressMap(POOL_ADDRESSES_MAINNET)).not.toThrow()
+    expect(() => validateAddressMap(POOL_ADDRESSES_TESTNET)).not.toThrow()
+    expect(() => validateAddressMap(WETH_GATEWAY_ADDRESSES_MAINNET)).not.toThrow()
+    expect(() => validateAddressMap(WETH_GATEWAY_ADDRESSES_TESTNET)).not.toThrow()
+    expect(() =>
+      validateAddressMap(MORPHO_CONTRACTS as unknown as Record<number, Record<string, Address>>),
+    ).not.toThrow()
+    expect(() =>
+      validateAddressMap(UNISWAP_ADDRESSES as Record<number, Record<string, Address>>),
+    ).not.toThrow()
+  })
+
+  it('all hardcoded asset address maps contain valid EVM addresses', () => {
+    expect(() => validateAssetAddresses(ETH.address)).not.toThrow()
+    expect(() => validateAssetAddresses(WETH.address)).not.toThrow()
+    expect(() => validateAssetAddresses(USDC.address)).not.toThrow()
+    expect(() => validateAssetAddresses(USDC_DEMO.address)).not.toThrow()
+    expect(() => validateAssetAddresses(OP_DEMO.address)).not.toThrow()
+    expect(() => validateAssetAddresses(MORPHO.address)).not.toThrow()
   })
 })
 

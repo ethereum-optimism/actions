@@ -1,8 +1,6 @@
 import type { Address } from 'viem'
 import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 
-import { validateAddressMap } from '@/utils/validateAddresses.js'
-
 /**
  * Aave V3 Pool addresses for Optimism Superchain networks
  * @description Hardcoded Pool contract addresses for each supported chain
@@ -11,20 +9,18 @@ import { validateAddressMap } from '@/utils/validateAddresses.js'
 /**
  * Mainnet Pool addresses
  */
-export const POOL_ADDRESSES_MAINNET: Record<number, Address> =
-  validateAddressMap({
-    [optimism.id]: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-    [base.id]: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
-  })
+export const POOL_ADDRESSES_MAINNET: Record<number, Address> = {
+  [optimism.id]: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+  [base.id]: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
+}
 
 /**
  * Testnet Pool addresses
  */
-export const POOL_ADDRESSES_TESTNET: Record<number, Address> =
-  validateAddressMap({
-    [optimismSepolia.id]: '0xb50201558b00496a145fe76f7424749556e326d8',
-    [baseSepolia.id]: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27',
-  })
+export const POOL_ADDRESSES_TESTNET: Record<number, Address> = {
+  [optimismSepolia.id]: '0xb50201558b00496a145fe76f7424749556e326d8',
+  [baseSepolia.id]: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27',
+}
 
 /**
  * All Pool addresses (mainnet + testnet)
@@ -68,20 +64,18 @@ export function getSupportedChainIds(): number[] {
 /**
  * Mainnet WETHGateway addresses
  */
-export const WETH_GATEWAY_ADDRESSES_MAINNET: Record<number, Address> =
-  validateAddressMap({
-    [optimism.id]: '0x5f2508cAE9923b02316254026CD43d7902866725',
-    [base.id]: '0xa0d9C1E9E48Ca30c8d8C3B5D69FF5dc1f6DFfC24',
-  })
+export const WETH_GATEWAY_ADDRESSES_MAINNET: Record<number, Address> = {
+  [optimism.id]: '0x5f2508cAE9923b02316254026CD43d7902866725',
+  [base.id]: '0xa0d9C1E9E48Ca30c8d8C3B5D69FF5dc1f6DFfC24',
+}
 
 /**
  * Testnet WETHGateway addresses
  */
-export const WETH_GATEWAY_ADDRESSES_TESTNET: Record<number, Address> =
-  validateAddressMap({
-    [optimismSepolia.id]: '0x589750BA8aF186cE5B55391B0b7148cAD43a1619',
-    [baseSepolia.id]: '0x0568130e794429D2eEBC4dafE18f25Ff1a1ed8b6',
-  })
+export const WETH_GATEWAY_ADDRESSES_TESTNET: Record<number, Address> = {
+  [optimismSepolia.id]: '0x589750BA8aF186cE5B55391B0b7148cAD43a1619',
+  [baseSepolia.id]: '0x0568130e794429D2eEBC4dafE18f25Ff1a1ed8b6',
+}
 
 /**
  * All WETHGateway addresses (mainnet + testnet)

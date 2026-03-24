@@ -11,10 +11,9 @@ import {
 } from 'viem/chains'
 
 import type { Asset } from '@/types/asset.js'
-import { validateAssetAddresses } from '@/utils/validateAddresses.js'
 
 export const ETH: Asset = {
-  address: validateAssetAddresses({
+  address: {
     [mainnet.id]: 'native',
     [sepolia.id]: 'native',
     [optimism.id]: 'native',
@@ -23,7 +22,7 @@ export const ETH: Asset = {
     [baseSepolia.id]: 'native',
     [unichain.id]: 'native',
     [unichainSepolia.id]: 'native',
-  }),
+  },
   metadata: {
     decimals: 18,
     name: 'Ethereum',
@@ -37,7 +36,7 @@ export const ETH: Asset = {
  * @description WETH is the ERC-20 wrapped version of native ETH
  */
 export const WETH: Asset = {
-  address: validateAssetAddresses({
+  address: {
     [mainnet.id]: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     [sepolia.id]: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
     [optimism.id]: '0x4200000000000000000000000000000000000006',
@@ -47,7 +46,7 @@ export const WETH: Asset = {
     [unichain.id]: '0x4200000000000000000000000000000000000006',
     [unichainSepolia.id]: '0x4200000000000000000000000000000000000006',
     [worldchain.id]: '0x4200000000000000000000000000000000000006',
-  }),
+  },
   metadata: {
     symbol: 'WETH',
     name: 'Wrapped Ether',
@@ -62,7 +61,7 @@ export const WETH: Asset = {
  * @see https://developers.circle.com/stablecoins/usdc-contract-addresses
  */
 export const USDC: Asset = {
-  address: validateAssetAddresses({
+  address: {
     [mainnet.id]: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     [sepolia.id]: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
     [optimism.id]: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
@@ -72,7 +71,7 @@ export const USDC: Asset = {
     [unichain.id]: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
     [unichainSepolia.id]: '0x31d0220469e10c4E71834a79b1f276d740d3768F',
     [worldchain.id]: '0x79A02482A880bCe3F13E09da970dC34dB4cD24D1',
-  }),
+  },
   metadata: {
     symbol: 'USDC',
     name: 'USD Coin',
@@ -85,9 +84,9 @@ export const USDC: Asset = {
  * Demo USDC token for testing
  */
 export const USDC_DEMO: Asset = {
-  address: validateAssetAddresses({
+  address: {
     [baseSepolia.id]: '0xb1b0FE886cE376F28987Ad24b1759a8f0A7dd839',
-  }),
+  },
   metadata: {
     symbol: 'USDC_DEMO',
     name: 'USDC',
@@ -100,9 +99,9 @@ export const USDC_DEMO: Asset = {
  * Demo OP token for testing
  */
 export const OP_DEMO: Asset = {
-  address: validateAssetAddresses({
+  address: {
     [baseSepolia.id]: '0xD6169405013E92387b78457Fa77d377cE8cD3EE8',
-  }),
+  },
   metadata: {
     symbol: 'OP_DEMO',
     name: 'OP',
@@ -115,10 +114,10 @@ export const OP_DEMO: Asset = {
  * Morpho Token
  */
 export const MORPHO: Asset = {
-  address: validateAssetAddresses({
+  address: {
     [mainnet.id]: '0x58D97B57BB95320F9a05dC918Aef65434969c2B2',
     [base.id]: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
-  }),
+  },
   metadata: {
     symbol: 'MORPHO',
     name: 'Morpho Token',
