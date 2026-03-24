@@ -283,13 +283,21 @@ describe('hardcoded address maps contain valid EVM addresses', () => {
   it('all hardcoded address maps contain valid EVM addresses', () => {
     expect(() => validateAddressMap(POOL_ADDRESSES_MAINNET)).not.toThrow()
     expect(() => validateAddressMap(POOL_ADDRESSES_TESTNET)).not.toThrow()
-    expect(() => validateAddressMap(WETH_GATEWAY_ADDRESSES_MAINNET)).not.toThrow()
-    expect(() => validateAddressMap(WETH_GATEWAY_ADDRESSES_TESTNET)).not.toThrow()
     expect(() =>
-      validateAddressMap(MORPHO_CONTRACTS as unknown as Record<number, Record<string, Address>>),
+      validateAddressMap(WETH_GATEWAY_ADDRESSES_MAINNET),
     ).not.toThrow()
     expect(() =>
-      validateAddressMap(UNISWAP_ADDRESSES as Record<number, Record<string, Address>>),
+      validateAddressMap(WETH_GATEWAY_ADDRESSES_TESTNET),
+    ).not.toThrow()
+    expect(() =>
+      validateAddressMap(
+        MORPHO_CONTRACTS as unknown as Record<number, Record<string, Address>>,
+      ),
+    ).not.toThrow()
+    expect(() =>
+      validateAddressMap(
+        UNISWAP_ADDRESSES as Record<number, Record<string, Address>>,
+      ),
     ).not.toThrow()
   })
 
