@@ -7,7 +7,6 @@ import { LendProvider } from '@/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/lend/providers/morpho/sdk.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
-import type { Asset } from '@/types/asset.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -39,21 +38,13 @@ export const SUPPORTED_CHAIN_IDS = [
  */
 export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
   protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
-  private readonly assets: Asset[]
-
   /**
    * Create a new Morpho lending provider
    * @param config - Morpho lending configuration
    * @param chainManager - Chain manager for blockchain interactions
-   * @param assets - Supported assets for reward categorization
    */
-  constructor(
-    config: LendProviderConfig,
-    chainManager: ChainManager,
-    assets: Asset[] = [],
-  ) {
+  constructor(config: LendProviderConfig, chainManager: ChainManager) {
     super(config, chainManager)
-    this.assets = assets
   }
 
   /**
@@ -165,7 +156,6 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       marketId,
       chainManager: this.chainManager,
       lendConfig: this._config,
-      supportedAssets: this.assets,
     })
   }
 

@@ -19,6 +19,7 @@ export {
   LINK,
   MKR,
   MORPHO,
+  NATIVELY_SUPPORTED_ASSETS,
   ONDO,
   ONEINCH,
   OP,

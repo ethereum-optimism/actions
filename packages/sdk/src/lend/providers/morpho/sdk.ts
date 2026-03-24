@@ -7,6 +7,7 @@ import {
 } from '@morpho-org/blue-sdk-viem'
 import type { Address, PublicClient } from 'viem'
 
+import { NATIVELY_SUPPORTED_ASSETS } from '@/constants/assets.js'
 import {
   fetchRewards,
   type RewardsBreakdown,
@@ -33,30 +34,27 @@ import { SECONDS_PER_YEAR } from '@/utils/constants.js'
  */
 export async function fetchAndCalculateRewards(
   vaultAddress: Address,
-  supportedAssets: Asset[],
   chainId: number,
+  marketAsset?: Asset,
 ): Promise<RewardsBreakdown> {
   const vaultData = await fetchRewards(vaultAddress)
 
   if (!vaultData) {
-    return buildEmptyRewards(supportedAssets, chainId)
+    return buildEmptyRewards(chainId, marketAsset)
   }
 
-  return calculateRewardsBreakdown(vaultData, supportedAssets, chainId)
+  return calculateRewardsBreakdown(vaultData, chainId, marketAsset)
 }
 
 /**
  * Build an empty rewards object with all supported asset addresses initialized to 0
  */
-function buildEmptyRewards(
-  supportedAssets: Asset[],
-  chainId: number,
-): RewardsBreakdown {
-  const emptyRewards: Record<string, number> = {
-    other: 0,
-    totalRewards: 0,
-  }
-  for (const token of supportedAssets) {
+function buildEmptyRewards(chainId: number, marketAsset?: Asset): RewardsBreakdown {
+  const assets = marketAsset
+    ? [...NATIVELY_SUPPORTED_ASSETS, marketAsset]
+    : NATIVELY_SUPPORTED_ASSETS
+  const emptyRewards: Record<string, number> = { other: 0, totalRewards: 0 }
+  for (const token of assets) {
     const addr = token.address[chainId as keyof typeof token.address]
     if (addr && addr !== 'native') {
       emptyRewards[addr.toLowerCase()] = 0
@@ -298,8 +296,6 @@ interface GetVaultParams {
   chainManager: ChainManager
   /** Lend configuration containing market allowlist */
   lendConfig?: LendProviderConfig
-  /** Configured supported assets for reward categorization */
-  supportedAssets?: Asset[]
 }
 
 /**
@@ -358,14 +354,11 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
       // Fetch rewards data from API
       const rewardsBreakdown = await fetchAndCalculateRewards(
         params.marketId.address,
-        params.supportedAssets || [],
         params.marketId.chainId,
+        marketConfig.asset,
       ).catch((error) => {
         console.error('Failed to fetch rewards data:', error)
-        return buildEmptyRewards(
-          params.supportedAssets || [],
-          params.marketId.chainId,
-        )
+        return buildEmptyRewards(params.marketId.chainId, marketConfig.asset)
       })
 
       const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
@@ -522,12 +515,15 @@ function categorizeRewardAsset(
  */
 export function calculateRewardsBreakdown(
   apiVault: any,
-  supportedAssets: Asset[],
   chainId: number,
+  marketAsset?: Asset,
 ): RewardsBreakdown {
+  const assets = marketAsset
+    ? [...NATIVELY_SUPPORTED_ASSETS, marketAsset]
+    : NATIVELY_SUPPORTED_ASSETS
   // Build set of known asset addresses on this chain
   const knownAddresses = new Set<string>()
-  for (const token of supportedAssets) {
+  for (const token of assets) {
     const addr = token.address[chainId as keyof typeof token.address]
     if (addr && addr !== 'native') {
       knownAddresses.add(addr.toLowerCase())

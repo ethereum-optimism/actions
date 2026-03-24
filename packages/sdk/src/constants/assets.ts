@@ -774,6 +774,18 @@ export const MORPHO: Asset = {
 }
 
 /**
+ * All natively supported assets
+ */
+export const NATIVELY_SUPPORTED_ASSETS: Asset[] = [
+  ETH, WETH, USDC, USDT, DAI, FRAX, USDE, PYUSD, SKY,
+  WBTC, CBBTC, STETH, WSTETH, RETH, CBETH, EETH, WEETH, ETHFI,
+  AAVE, UNI, LINK, CRV, SNX, COMP, BAL, SUSHI, ONEINCH, PENDLE,
+  MKR, LDO, RPL, GRT, ENS,
+  OP, ARB, POL, RENDER, WLD, ONDO, ENA,
+  SHIB, PEPE, MORPHO,
+]
+
+/**
  * Demo USDC token for testing
  */
 export const USDC_DEMO: Asset = {

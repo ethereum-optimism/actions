@@ -10,7 +10,6 @@ import { MORPHO, USDC } from '@/constants/assets.js'
 const CHAIN_ID = mainnet.id
 const USDC_ADDRESS = USDC.address[CHAIN_ID]!.toLowerCase()
 const MORPHO_ADDRESS = MORPHO.address[CHAIN_ID]!.toLowerCase()
-const testSupportedAssets = [USDC, MORPHO]
 
 describe('Vault Utilities', () => {
   describe('calculateBaseApy', () => {
@@ -166,7 +165,6 @@ describe('Vault Utilities', () => {
 
       const result = calculateRewardsBreakdown(
         apiVault,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -205,7 +203,6 @@ describe('Vault Utilities', () => {
 
       const result = calculateRewardsBreakdown(
         apiVault,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -262,7 +259,6 @@ describe('Vault Utilities', () => {
 
       const result = calculateRewardsBreakdown(
         apiVault,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -313,7 +309,6 @@ describe('Vault Utilities', () => {
 
       const result = calculateRewardsBreakdown(
         apiVault,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -342,7 +337,6 @@ describe('Vault Utilities', () => {
 
       const result = calculateRewardsBreakdown(
         apiVault,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -381,7 +375,6 @@ describe('Vault Utilities', () => {
 
       const result = calculateRewardsBreakdown(
         apiVault,
-        testSupportedAssets,
         CHAIN_ID,
       )
 

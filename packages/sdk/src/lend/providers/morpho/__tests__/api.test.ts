@@ -13,7 +13,6 @@ import { externalTest } from '@/utils/test.js'
 const CHAIN_ID = mainnet.id
 const USDC_ADDRESS = USDC.address[CHAIN_ID]!.toLowerCase()
 const MORPHO_ADDRESS = MORPHO.address[CHAIN_ID]!.toLowerCase()
-const testSupportedAssets = [USDC, MORPHO]
 
 /**
  * Mock API response for a vault with rewards
@@ -169,7 +168,6 @@ describe('Morpho API Integration', () => {
     it('should calculate rewards from vault-level rewards keyed by address', () => {
       const rewards = calculateRewardsBreakdown(
         mockVaultWithRewards,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -184,7 +182,6 @@ describe('Morpho API Integration', () => {
     it('should return zeros for vault with no rewards', () => {
       const rewards = calculateRewardsBreakdown(
         mockVaultNoRewards,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -210,7 +207,6 @@ describe('Morpho API Integration', () => {
 
       const rewards = calculateRewardsBreakdown(
         vaultWithUnknown,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -255,7 +251,6 @@ describe('Morpho API Integration', () => {
 
       const rewards = calculateRewardsBreakdown(
         vaultWithMarketRewards,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -279,7 +274,6 @@ describe('Morpho API Integration', () => {
 
       const rewards = await fetchAndCalculateRewards(
         GAUNTLET_USDC_VAULT,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -306,7 +300,6 @@ describe('Morpho API Integration', () => {
 
       const rewards = await fetchAndCalculateRewards(
         GAUNTLET_USDC_VAULT,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
@@ -333,7 +326,6 @@ describe('Morpho API Integration', () => {
     it('should fetch and calculate rewards breakdown', async () => {
       const rewards = await fetchAndCalculateRewards(
         GAUNTLET_USDC_VAULT,
-        testSupportedAssets,
         CHAIN_ID,
       )
 
