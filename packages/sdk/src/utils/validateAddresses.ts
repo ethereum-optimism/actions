@@ -27,9 +27,7 @@ export function validateAddressMap<
       try {
         getAddress(value)
       } catch {
-        errors.push(
-          `  - address on chain ${chainId}: ${value} (not a valid EVM address)`,
-        )
+        errors.push(`  - [${chainId}]: ${value} (not a valid EVM address)`)
       }
     } else {
       for (const [key, addr] of Object.entries(value as NamedAddresses)) {
@@ -37,7 +35,7 @@ export function validateAddressMap<
           getAddress(addr)
         } catch {
           errors.push(
-            `  - ${key} on chain ${chainId}: ${addr} (not a valid EVM address)`,
+            `  - ${key}[${chainId}]: ${addr} (not a valid EVM address)`,
           )
         }
       }
@@ -54,12 +52,11 @@ export function validateAddressMap<
  * Validates a Partial<Record<SupportedChainId, Address | 'native'>> asset address map.
  * Skips entries where the value is 'native'.
  * Collects all failures before throwing a single Error.
- * @returns The original map if all non-native addresses are valid.
  * @throws Error listing all invalid addresses with their chain IDs.
  */
 export function validateAssetAddresses(
   map: Partial<Record<SupportedChainId, Address | 'native'>>,
-): Partial<Record<SupportedChainId, Address | 'native'>> {
+): void {
   const errors: string[] = []
 
   for (const [chainId, value] of Object.entries(map)) {
@@ -67,14 +64,13 @@ export function validateAssetAddresses(
     try {
       getAddress(value)
     } catch {
-      errors.push(`  - chain ${chainId}: ${value} (not a valid EVM address)`)
+      errors.push(`  - [${chainId}]: ${value} (not a valid EVM address)`)
     }
   }
 
   if (errors.length > 0) {
     throw new Error(`Invalid addresses found:\n${errors.join('\n')}`)
   }
-  return map
 }
 
 interface AddressEntry {

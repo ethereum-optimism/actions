@@ -48,7 +48,7 @@ describe('validateAddressMap', () => {
     const map = {
       10: { poolAddress: INVALID_ADDRESS },
     }
-    expect(() => validateAddressMap(map)).toThrow(/poolAddress on chain 10/)
+    expect(() => validateAddressMap(map)).toThrow(/poolAddress\[10\]/)
     expect(() => validateAddressMap(map)).toThrow(INVALID_ADDRESS)
   })
 
@@ -64,8 +64,8 @@ describe('validateAddressMap', () => {
       err = e as Error
     }
     expect(err).toBeDefined()
-    expect(err!.message).toMatch(/poolAddress on chain 10/)
-    expect(err!.message).toMatch(/rewardAddress on chain 8453/)
+    expect(err!.message).toMatch(/poolAddress\[10\]/)
+    expect(err!.message).toMatch(/rewardAddress\[8453\]/)
   })
 
   it('passes for valid checksummed addresses', () => {
@@ -90,7 +90,7 @@ describe('validateAddressMap', () => {
 
   it('handles simple Record<number, Address> values', () => {
     const map: Record<number, Address> = { 10: INVALID_ADDRESS }
-    expect(() => validateAddressMap(map)).toThrow(/address on chain 10/)
+    expect(() => validateAddressMap(map)).toThrow(/\[10\]/)
   })
 })
 
@@ -102,7 +102,7 @@ describe('validateAssetAddresses', () => {
 
   it('throws with location info for invalid non-native addresses', () => {
     const map = { 10: INVALID_ADDRESS }
-    expect(() => validateAssetAddresses(map)).toThrow(/chain 10/)
+    expect(() => validateAssetAddresses(map)).toThrow(/\[10\]/)
     expect(() => validateAssetAddresses(map)).toThrow(INVALID_ADDRESS)
   })
 
@@ -115,8 +115,8 @@ describe('validateAssetAddresses', () => {
       err = e as Error
     }
     expect(err).toBeDefined()
-    expect(err!.message).toMatch(/chain 10/)
-    expect(err!.message).toMatch(/chain 8453/)
+    expect(err!.message).toMatch(/\[10\]/)
+    expect(err!.message).toMatch(/\[8453\]/)
   })
 
   it('passes for valid addresses and skips native', () => {
@@ -124,9 +124,9 @@ describe('validateAssetAddresses', () => {
     expect(() => validateAssetAddresses(map)).not.toThrow()
   })
 
-  it('returns the original map reference on success', () => {
+  it('passes for valid addresses', () => {
     const map = { 10: VALID_ADDRESS }
-    expect(validateAssetAddresses(map)).toBe(map)
+    expect(() => validateAssetAddresses(map)).not.toThrow()
   })
 })
 
