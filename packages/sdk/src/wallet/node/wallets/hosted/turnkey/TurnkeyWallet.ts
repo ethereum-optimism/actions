@@ -5,7 +5,8 @@ import type { Address, LocalAccount } from 'viem'
 
 import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
@@ -50,6 +51,9 @@ export class TurnkeyWallet extends EOAWallet {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     }
+    swapProviders?: {
+      uniswap?: SwapProvider<SwapProviderConfig>
+    }
     supportedAssets?: Asset[]
   }) {
     const {
@@ -59,9 +63,10 @@ export class TurnkeyWallet extends EOAWallet {
       signWith,
       ethereumAddress,
       lendProviders,
+      swapProviders,
       supportedAssets,
     } = params
-    super(chainManager, lendProviders, supportedAssets)
+    super(chainManager, lendProviders, swapProviders, supportedAssets)
     this.client = client
     this.organizationId = organizationId
     this.signWith = signWith
@@ -77,6 +82,9 @@ export class TurnkeyWallet extends EOAWallet {
     lendProviders?: {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
+    }
+    swapProviders?: {
+      uniswap?: SwapProvider<SwapProviderConfig>
     }
     supportedAssets?: Asset[]
   }): Promise<TurnkeyWallet> {

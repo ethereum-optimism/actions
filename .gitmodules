@@ -4,3 +4,6 @@
 [submodule "packages/demo/contracts/lib/solady"]
 	path = packages/demo/contracts/lib/solady
 	url = https://github.com/Vectorized/solady
+[submodule "packages/demo/contracts/lib/v4-periphery"]
+	path = packages/demo/contracts/lib/v4-periphery
+	url = https://github.com/uniswap/v4-periphery

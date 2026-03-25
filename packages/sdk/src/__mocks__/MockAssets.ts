@@ -8,6 +8,7 @@ import type { Asset } from '@/types/asset.js'
 export const MockUSDCAsset: Asset = {
   address: {
     130: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address,
+    84532: '0xA0b86991c431c924C2407E4C573C686cc8C6c5b7' as Address,
   },
   metadata: {
     decimals: 6,
@@ -23,6 +24,7 @@ export const MockUSDCAsset: Asset = {
 export const MockWETHAsset: Asset = {
   address: {
     130: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
+    84532: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
   },
   metadata: {
     decimals: 18,

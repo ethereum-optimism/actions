@@ -56,6 +56,7 @@ describe('DynamicHostedWalletProvider', () => {
         dynamicWallet: mockDynamicWallet,
         chainManager: mockChainManager,
         lendProviders: {},
+        swapProviders: {},
       })
       expect(result).toBe(mockResult)
     })

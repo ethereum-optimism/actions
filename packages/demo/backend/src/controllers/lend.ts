@@ -3,18 +3,22 @@ import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
 
-import type { AuthContext } from '@/middleware/auth.js'
+import { errorResponse, requireAuth } from '@/helpers/errors.js'
+import { validateRequest } from '@/helpers/validation.js'
+import * as lendService from '@/services/lend.js'
 import { serializeBigInt } from '@/utils/serializers.js'
 
-import { validateRequest } from '../helpers/validation.js'
-import * as lendService from '../services/lend.js'
+const tokenAddressSchema = z
+  .string()
+  .refine(
+    (val) => val === 'native' || /^0x[a-fA-F0-9]{40}$/.test(val),
+    'Must be a hex address or "native"',
+  )
 
 const OpenPositionRequestSchema = z.object({
   body: z.object({
     amount: z.number().positive('amount must be positive'),
-    tokenAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
+    tokenAddress: tokenAddressSchema,
     marketId: z.object({
       address: z
         .string()
@@ -27,9 +31,7 @@ const OpenPositionRequestSchema = z.object({
 const ClosePositionRequestSchema = z.object({
   body: z.object({
     amount: z.number().positive('amount must be positive'),
-    tokenAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address format'),
+    tokenAddress: tokenAddressSchema,
     marketId: z.object({
       address: z
         .string()
@@ -47,13 +49,7 @@ export async function getMarkets(c: Context) {
     const markets = await lendService.getMarkets()
     return c.json({ result: serializeBigInt(markets) })
   } catch (error) {
-    return c.json(
-      {
-        error: 'Failed to get markets',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      500,
-    )
+    return errorResponse(c, 'Failed to get markets', 500, error)
   }
 }
 
@@ -69,13 +65,11 @@ export async function openPosition(c: Context) {
       body: { amount, tokenAddress, marketId },
     } = validation.data
 
-    const auth = c.get('auth') as AuthContext | undefined
-    if (!auth || !auth.idToken) {
-      return c.json({ error: 'Unauthorized' }, 401)
-    }
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
 
     const result = await lendService.openPosition({
-      idToken: auth.idToken,
+      idToken: authResult.auth.idToken,
       amount,
       tokenAddress: tokenAddress as Address,
       marketId: {
@@ -86,17 +80,7 @@ export async function openPosition(c: Context) {
 
     return c.json({ result: serializeBigInt(result) })
   } catch (error) {
-    console.error('[openPositionV1] ERROR:', {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-    })
-    return c.json(
-      {
-        error: 'Failed to open position',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      500,
-    )
+    return errorResponse(c, 'Failed to open position', 500, error)
   }
 }
 
@@ -112,13 +96,11 @@ export async function closePosition(c: Context) {
       body: { amount, tokenAddress, marketId },
     } = validation.data
 
-    const auth = c.get('auth') as AuthContext | undefined
-    if (!auth || !auth.idToken) {
-      return c.json({ error: 'Unauthorized' }, 401)
-    }
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
 
     const result = await lendService.closePosition({
-      idToken: auth.idToken,
+      idToken: authResult.auth.idToken,
       amount,
       tokenAddress: tokenAddress as Address,
       marketId: {
@@ -129,16 +111,6 @@ export async function closePosition(c: Context) {
 
     return c.json({ result: serializeBigInt(result) })
   } catch (error) {
-    console.error('[closePosition] ERROR:', {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-    })
-    return c.json(
-      {
-        error: 'Failed to close position',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      500,
-    )
+    return errorResponse(c, 'Failed to close position', 500, error)
   }
 }

@@ -413,6 +413,7 @@ describe('DefaultSmartWalletProvider', () => {
     const provider = new DefaultSmartWalletProvider(
       mockChainManager,
       { morpho: mockLendProvider },
+      undefined,
       supportedAssets,
       attributionSeed,
     )
@@ -440,6 +441,7 @@ describe('DefaultSmartWalletProvider', () => {
     const provider = new DefaultSmartWalletProvider(
       mockChainManager,
       { morpho: mockLendProvider },
+      undefined,
       supportedAssets,
       attributionSeed,
     )

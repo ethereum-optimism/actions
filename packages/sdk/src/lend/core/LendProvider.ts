@@ -21,6 +21,7 @@ import type {
   TransactionData,
 } from '@/types/lend/index.js'
 import { validateMarketAsset } from '@/utils/markets.js'
+import { validateChainSupported } from '@/utils/validation.js'
 
 /**
  * Lending provider abstract class
@@ -77,7 +78,7 @@ export abstract class LendProvider<
       throw new Error('walletAddress is required')
     }
 
-    this.validateProviderSupported(params.marketId.chainId)
+    validateChainSupported(params.marketId.chainId, this.SUPPORTED_CHAIN_IDS)
     this.validateConfigSupported(params.marketId)
 
     // Convert human-readable amount to wei using the asset's decimals
@@ -105,7 +106,7 @@ export abstract class LendProvider<
       chainId: params.chainId,
     }
 
-    this.validateProviderSupported(params.chainId)
+    validateChainSupported(params.chainId, this.SUPPORTED_CHAIN_IDS)
     this.validateConfigSupported(marketId)
     return this._getMarket(marketId)
   }
@@ -117,7 +118,7 @@ export abstract class LendProvider<
    */
   async getMarkets(params: GetLendMarketsParams = {}): Promise<LendMarket[]> {
     if (params.chainId !== undefined)
-      this.validateProviderSupported(params.chainId)
+      validateChainSupported(params.chainId, this.SUPPORTED_CHAIN_IDS)
 
     const filteredMarkets = this.filterMarketConfigs(
       params.chainId,
@@ -156,7 +157,7 @@ export abstract class LendProvider<
       )
     }
 
-    this.validateProviderSupported(marketId.chainId)
+    validateChainSupported(marketId.chainId, this.SUPPORTED_CHAIN_IDS)
     this.validateConfigSupported(marketId)
 
     return this._getPosition({ marketId, walletAddress })
@@ -176,7 +177,7 @@ export abstract class LendProvider<
       throw new Error('walletAddress is required')
     }
 
-    this.validateProviderSupported(params.marketId.chainId)
+    validateChainSupported(params.marketId.chainId, this.SUPPORTED_CHAIN_IDS)
     this.validateConfigSupported(params.marketId)
 
     const market = await this.getMarket({
@@ -215,19 +216,6 @@ export abstract class LendProvider<
    */
   protected isChainSupported(chainId: number): boolean {
     return this.SUPPORTED_CHAIN_IDS.includes(chainId)
-  }
-
-  /**
-   * Validate that a chainId is supported for lending operations
-   * @param chainId - Chain ID to validate
-   * @throws Error if chain is not supported
-   */
-  protected validateProviderSupported(chainId: number): void {
-    if (!this.isChainSupported(chainId)) {
-      throw new Error(
-        `Chain ${chainId} is not supported. Supported chains: ${this.SUPPORTED_CHAIN_IDS.join(', ')}`,
-      )
-    }
   }
 
   /**

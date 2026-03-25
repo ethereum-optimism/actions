@@ -6,6 +6,7 @@ import type {
   ReactProviderTypes,
 } from '@eth-optimism/actions-sdk/react'
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi'
+import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 import Earn from './Earn'
 import {
   FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS,
@@ -16,7 +17,7 @@ import { useMemo } from 'react'
 import { createActions } from '@eth-optimism/actions-sdk/react'
 import { createActionsConfig } from '@/config/actions'
 import { actionsApi } from '@/api/actionsApi'
-import type { LendProviderOperations } from '@/hooks/useLendProvider'
+import type { EarnOperations } from '@/hooks/useLendProvider'
 
 export interface EarnWithFrontendWalletProps {
   wallet: Wallet | null
@@ -45,7 +46,7 @@ export function EarnWithFrontendWallet({
     FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS[selectedProvider]
   const actions = useActions(hostedWalletProviderType)
 
-  const operations = useMemo<LendProviderOperations>(
+  const operations = useMemo<EarnOperations>(
     () => ({
       getTokenBalances: async () => wallet!.getBalance(),
       getMarkets: async () => actions.lend.getMarkets(),
@@ -101,6 +102,49 @@ export function EarnWithFrontendWallet({
       },
       openPosition: async (params) => wallet!.lend!.openPosition(params),
       closePosition: async (params) => wallet!.lend!.closePosition(params),
+      executeSwap: async ({ amountIn, assetIn, assetOut, chainId }) => {
+        const receipt = await wallet!.swap!.execute({
+          amountIn,
+          assetIn,
+          assetOut,
+          chainId,
+        })
+        const txReceipt = receipt.receipt
+        const blockExplorerUrl = getBlockExplorerUrl(
+          chainId,
+          txReceipt as Parameters<typeof getBlockExplorerUrl>[1],
+        )
+        return { blockExplorerUrl }
+      },
+      getConfiguredAssets: async () => actions.getSupportedAssets(),
+      getSwapPrice: async (params) => {
+        try {
+          const assets = actions.getSupportedAssets()
+          const assetIn = assets.find(
+            (a) => a.address[params.chainId] === params.tokenInAddress,
+          )
+          const assetOut = assets.find(
+            (a) => a.address[params.chainId] === params.tokenOutAddress,
+          )
+          if (!assetIn || !assetOut) return null
+
+          const price = await actions.swap.price({
+            assetIn,
+            assetOut,
+            chainId: params.chainId,
+            amountIn: params.amountIn,
+            amountOut: params.amountOut,
+          })
+          return {
+            price: price.price,
+            priceImpact: price.priceImpact,
+            amountIn: price.amountIn,
+            amountOut: price.amountOut,
+          }
+        } catch {
+          return null
+        }
+      },
     }),
     [wallet, actions],
   )

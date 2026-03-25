@@ -11,6 +11,7 @@ interface UseMarketPositionParams {
   logActivity?: (
     action: string,
   ) => { confirm: () => void; error: () => void } | null
+  shouldLogFetch?: () => boolean
 }
 
 export function useMarketPosition({
@@ -18,13 +19,14 @@ export function useMarketPosition({
   getPosition,
   isReady,
   logActivity,
+  shouldLogFetch,
 }: UseMarketPositionParams) {
   return useQuery({
     queryKey: ['position', marketId?.address, marketId?.chainId],
     queryFn: async () => {
       if (!marketId) return null
 
-      const activity = logActivity?.('getPosition')
+      const activity = shouldLogFetch?.() ? logActivity?.('getPosition') : null
       try {
         const result = await getPosition(marketId)
         activity?.confirm()

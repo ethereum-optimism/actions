@@ -3,7 +3,8 @@ import { type Address, type LocalAccount } from 'viem'
 
 import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
@@ -26,6 +27,7 @@ export class PrivyWallet extends EOAWallet {
    * @param address - Ethereum address of the wallet
    * @param chainManager - Chain manager for multi-chain operations
    * @param lendProviders - Optional lend providers for DeFi operations
+   * @param swapProviders - Optional swap providers for trading operations
    * @param supportedAssets - Optional list of supported assets
    */
   private constructor(
@@ -37,10 +39,13 @@ export class PrivyWallet extends EOAWallet {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     },
+    swapProviders?: {
+      uniswap?: SwapProvider<SwapProviderConfig>
+    },
     supportedAssets?: Asset[],
     authorizationContext?: AuthorizationContext,
   ) {
-    super(chainManager, lendProviders, supportedAssets)
+    super(chainManager, lendProviders, swapProviders, supportedAssets)
     this.privyClient = privyClient
     this.authorizationContext = authorizationContext
     this.walletId = walletId
@@ -57,6 +62,9 @@ export class PrivyWallet extends EOAWallet {
       morpho?: LendProvider<LendProviderConfig>
       aave?: LendProvider<LendProviderConfig>
     }
+    swapProviders?: {
+      uniswap?: SwapProvider<SwapProviderConfig>
+    }
     supportedAssets?: Asset[]
   }): Promise<PrivyWallet> {
     const wallet = new PrivyWallet(
@@ -65,6 +73,7 @@ export class PrivyWallet extends EOAWallet {
       params.address,
       params.chainManager,
       params.lendProviders,
+      params.swapProviders,
       params.supportedAssets,
       params.authorizationContext,
     )

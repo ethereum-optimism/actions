@@ -40,6 +40,7 @@ describe('PrivyHostedWalletProvider (React)', () => {
         chainManager: mockChainManager,
         connectedWallet: mockConnectedWallet,
         lendProviders: {},
+        swapProviders: {},
       })
       expect(result).toBe(mockActionsWallet)
     })

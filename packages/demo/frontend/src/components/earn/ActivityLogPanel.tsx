@@ -1,4 +1,4 @@
-import ActivityLogItem from './ActivityLogItem'
+import LogItem from './LogItem'
 import ActivityLogIcon from '../icons/ActivityLogIcon'
 import CloseIcon from '../icons/CloseIcon'
 import type { ActivityEntry } from '../../providers/ActivityLogProvider'
@@ -73,7 +73,7 @@ function ActivityLogPanel({
         }}
       >
         {activities.map((activity) => (
-          <ActivityLogItem
+          <LogItem
             key={activity.id}
             type={activity.type}
             action={activity.action}
