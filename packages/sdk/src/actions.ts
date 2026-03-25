@@ -58,8 +58,6 @@ export class Actions<
     uniswap?: SwapProvider<SwapProviderConfig>
   } = {}
   private _assetsConfig?: AssetsConfig
-  private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
-  private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
     THostedWalletProvidersSchema['providerInstances'],
     THostedWalletProvidersSchema['providerConfigs'],
@@ -204,17 +202,17 @@ export class Actions<
    * @param config - Wallet configuration
    * @returns WalletProvider instance
    */
-  private createWalletProvider(
+  private async createWalletProvider(
     config: ActionsConfig<
       THostedWalletProviderType,
       THostedWalletProvidersSchema['providerConfigs']
     >['wallet'],
-  ): WalletProvider<
+  ): Promise<WalletProvider<
     THostedWalletProviderType,
     THostedWalletProvidersSchema['providerToActionsOptions'],
     THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
     SmartWalletProvider
-  > {
+  >> {
     const hostedWalletProviderConfig = config.hostedWalletConfig.provider
     const factory = this.hostedWalletProviderRegistry.getFactory(
       hostedWalletProviderConfig.type,
@@ -229,7 +227,7 @@ export class Actions<
         `Invalid options for hosted wallet provider: ${hostedWalletProviderConfig.type}`,
       )
     }
-    this.hostedWalletProvider = factory.create(
+    const hostedWalletProvider = await factory.create(
       {
         chainManager: this.chainManager,
         lendProviders: this._lendProviders,
@@ -239,11 +237,12 @@ export class Actions<
       options,
     )
 
+    let smartWalletProvider: SmartWalletProvider
     if (
       !config.smartWalletConfig ||
       config.smartWalletConfig.provider.type === 'default'
     ) {
-      this.smartWalletProvider = new DefaultSmartWalletProvider(
+      smartWalletProvider = new DefaultSmartWalletProvider(
         this.chainManager,
         this._lendProviders,
         this._swapProviders,
@@ -256,16 +255,13 @@ export class Actions<
       )
     }
 
-    const walletProvider = new WalletProvider(
-      this.hostedWalletProvider,
-      this.smartWalletProvider,
-    )
-
-    return walletProvider
+    return new WalletProvider(hostedWalletProvider, smartWalletProvider)
   }
 
   /**
    * Create the wallet namespace instance
+   * @description Creates a WalletNamespace with lazy provider initialization.
+   * The wallet provider is not created until the first wallet method is called.
    * @param config - Wallet configuration
    * @returns WalletNamespace instance
    */
@@ -275,12 +271,12 @@ export class Actions<
       THostedWalletProvidersSchema['providerConfigs']
     >['wallet'],
   ) {
-    const walletProvider = this.createWalletProvider(config)
+    const providerFactory = () => this.createWalletProvider(config)
     return new WalletNamespace<
       THostedWalletProviderType,
       THostedWalletProvidersSchema['providerToActionsOptions'],
       THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
       SmartWalletProvider
-    >(walletProvider)
+    >(providerFactory)
   }
 }
