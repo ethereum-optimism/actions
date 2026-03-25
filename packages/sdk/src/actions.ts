@@ -12,6 +12,7 @@ import type {
   SwapProviderConfig,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import { validateConfigAddresses } from '@/utils/validateAddresses.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
@@ -79,6 +80,7 @@ export class Actions<
     this.chainManager = new ChainManager(config.chains)
     this.hostedWalletProviderRegistry = deps.hostedWalletProviderRegistry
     this._assetsConfig = config.assets
+    validateConfigAddresses(config)
 
     if (config.lend?.morpho) {
       this._lendProviders.morpho = new MorphoLendProvider(
