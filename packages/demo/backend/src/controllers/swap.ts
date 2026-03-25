@@ -1,5 +1,5 @@
 import {
-  SUPPORTED_CHAIN_IDS,
+  ACTIONS_SUPPORTED_CHAIN_IDS,
   type SupportedChainId,
 } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
@@ -11,7 +11,7 @@ import { validateRequest } from '@/helpers/validation.js'
 import * as swapService from '@/services/swap.js'
 import { serializeBigInt } from '@/utils/serializers.js'
 
-const supportedChainIds = SUPPORTED_CHAIN_IDS as readonly number[]
+const supportedChainIds = ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]
 
 const chainIdFromString = z
   .string()
