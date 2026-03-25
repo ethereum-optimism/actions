@@ -9,7 +9,7 @@ import {
 } from '@/swap/providers/velodrome/abis.js'
 import {
   getSupportedChainIds,
-  getVelodromeAddresses,
+  getVelodromeConfig,
 } from '@/swap/providers/velodrome/addresses.js'
 import {
   encodeCLSwap,
@@ -68,7 +68,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     }
 
     const { chainId, assetIn, assetOut } = params
-    const addresses = getVelodromeAddresses(chainId)
+    const chain = getVelodromeConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
@@ -77,7 +77,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     let swapCalldata: Hex
 
     if (poolConfig.type === 'cl') {
-      if (!addresses.clFactory || !addresses.clQuoter) {
+      if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
         throw new Error(`CL pools not supported on chain ${chainId}`)
       }
 
@@ -87,8 +87,8 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         amountInRaw,
         chainId,
         publicClient,
-        clFactoryAddress: addresses.clFactory,
-        clQuoterAddress: addresses.clQuoter,
+        clFactoryAddress: chain.contracts.clPoolFactory,
+        clQuoterAddress: chain.contracts.clQuoterV2,
         tickSpacing: poolConfig.tickSpacing,
       })
 
@@ -114,10 +114,10 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         amountInRaw,
         chainId,
         publicClient,
-        routerAddress: addresses.router,
-        routerType: addresses.routerType,
+        routerAddress: chain.contracts.router,
+        routerType: chain.routerType,
         stable: poolConfig.stable,
-        factoryAddress: addresses.poolFactory,
+        factoryAddress: chain.contracts.poolFactory,
       })
 
       const amountOutMin =
@@ -130,9 +130,9 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         assetOut,
         amountInRaw,
         amountOutMin,
-        routerType: addresses.routerType,
+        routerType: chain.routerType,
         stable: poolConfig.stable,
-        factoryAddress: addresses.poolFactory,
+        factoryAddress: chain.contracts.poolFactory,
         recipient: params.recipient,
         deadline: params.deadline,
         chainId,
@@ -148,7 +148,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     if (!isNativeAsset(assetIn)) {
       const token = getAssetAddress(assetIn, chainId)
 
-      if (addresses.routerType === 'universal') {
+      if (chain.routerType === 'universal') {
         // Transfer tokens to the Universal Router — it will use its own balance
         tokenApproval = {
           to: token,
@@ -166,7 +166,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
               },
             ] as const,
             functionName: 'transfer',
-            args: [addresses.router, amountInRaw],
+            args: [chain.contracts.router, amountInRaw],
           }),
           value: 0n,
         }
@@ -175,7 +175,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
           address: token,
           abi: ERC20_ALLOWANCE_ABI,
           functionName: 'allowance',
-          args: [params.walletAddress, addresses.router],
+          args: [params.walletAddress, chain.contracts.router],
         })
 
         if ((currentAllowance as bigint) < amountInRaw) {
@@ -184,7 +184,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
             data: encodeFunctionData({
               abi: ERC20_APPROVE_ABI,
               functionName: 'approve',
-              args: [addresses.router, amountInRaw],
+              args: [chain.contracts.router, amountInRaw],
             }),
             value: 0n,
           }
@@ -193,7 +193,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     }
 
     const swapTx: TransactionData = {
-      to: addresses.router,
+      to: chain.contracts.router,
       data: swapCalldata,
       value: isNativeAsset(assetIn) ? amountInRaw : 0n,
     }
@@ -239,7 +239,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       )
     }
 
-    const addresses = getVelodromeAddresses(chainId)
+    const chain = getVelodromeConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
@@ -247,7 +247,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
 
     if (poolConfig.type === 'cl') {
-      if (!addresses.clFactory || !addresses.clQuoter) {
+      if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
         throw new Error(`CL pools not supported on chain ${chainId}`)
       }
       return getCLQuote({
@@ -256,8 +256,8 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         amountInRaw,
         chainId,
         publicClient,
-        clFactoryAddress: addresses.clFactory,
-        clQuoterAddress: addresses.clQuoter,
+        clFactoryAddress: chain.contracts.clPoolFactory,
+        clQuoterAddress: chain.contracts.clQuoterV2,
         tickSpacing: poolConfig.tickSpacing,
       })
     }
@@ -268,10 +268,10 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       amountInRaw,
       chainId,
       publicClient,
-      routerAddress: addresses.router,
-      routerType: addresses.routerType,
+      routerAddress: chain.contracts.router,
+      routerType: chain.routerType,
       stable: poolConfig.stable,
-      factoryAddress: addresses.poolFactory,
+      factoryAddress: chain.contracts.poolFactory,
     })
   }
 
@@ -332,7 +332,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       )
     }
 
-    const addresses = getVelodromeAddresses(chainId)
+    const chain = getVelodromeConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
@@ -349,7 +349,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     let providerContext: Record<string, unknown>
 
     if (poolConfig.type === 'cl') {
-      if (!addresses.clFactory || !addresses.clQuoter) {
+      if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
         throw new Error(`CL pools not supported on chain ${chainId}`)
       }
 
@@ -359,14 +359,14 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         amountInRaw,
         chainId,
         publicClient,
-        clFactoryAddress: addresses.clFactory,
-        clQuoterAddress: addresses.clQuoter,
+        clFactoryAddress: chain.contracts.clPoolFactory,
+        clQuoterAddress: chain.contracts.clQuoterV2,
         tickSpacing: poolConfig.tickSpacing,
       })
 
       providerContext = {
         tickSpacing: poolConfig.tickSpacing,
-        clFactoryAddress: addresses.clFactory,
+        clFactoryAddress: chain.contracts.clPoolFactory,
         poolAddress: internalQuote.route.pools[0]?.address,
       }
     } else {
@@ -376,16 +376,16 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         amountInRaw,
         chainId,
         publicClient,
-        routerAddress: addresses.router,
-        routerType: addresses.routerType,
+        routerAddress: chain.contracts.router,
+        routerType: chain.routerType,
         stable: poolConfig.stable,
-        factoryAddress: addresses.poolFactory,
+        factoryAddress: chain.contracts.poolFactory,
       })
 
       providerContext = {
         stable: poolConfig.stable,
-        factoryAddress: addresses.poolFactory,
-        routerType: addresses.routerType,
+        factoryAddress: chain.contracts.poolFactory,
+        routerType: chain.routerType,
       }
     }
 
@@ -416,9 +416,9 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         assetOut,
         amountInRaw,
         amountOutMin: amountOutMinRaw,
-        routerType: addresses.routerType,
+        routerType: chain.routerType,
         stable: (poolConfig as { type: 'v2'; stable: boolean }).stable,
-        factoryAddress: addresses.poolFactory,
+        factoryAddress: chain.contracts.poolFactory,
         recipient,
         deadline,
         chainId,
@@ -441,7 +441,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       route: internalQuote.route,
       execution: {
         swapCalldata,
-        routerAddress: addresses.router,
+        routerAddress: chain.contracts.router,
         value: isNativeAsset(assetIn) ? amountInRaw : 0n,
         providerContext,
       },
@@ -462,7 +462,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
     const { chainId, assetIn, assetOut, execution } = quote
-    const addresses = getVelodromeAddresses(chainId)
+    const chain = getVelodromeConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
 
     let tokenApproval: TransactionData | undefined
@@ -470,7 +470,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     if (!isNativeAsset(assetIn)) {
       const token = getAssetAddress(assetIn, chainId)
 
-      if (addresses.routerType === 'universal') {
+      if (chain.routerType === 'universal') {
         tokenApproval = {
           to: token,
           data: encodeFunctionData({
@@ -487,7 +487,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
               },
             ] as const,
             functionName: 'transfer',
-            args: [addresses.router, quote.amountInRaw],
+            args: [chain.contracts.router, quote.amountInRaw],
           }),
           value: 0n,
         }
@@ -499,7 +499,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
           // Use providerContext or a reasonable default for the owner address
           args: [
             '0x0000000000000000000000000000000000000001' as Address,
-            addresses.router,
+            chain.contracts.router,
           ],
         })
 
@@ -509,7 +509,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
             data: encodeFunctionData({
               abi: ERC20_APPROVE_ABI,
               functionName: 'approve',
-              args: [addresses.router, quote.amountInRaw],
+              args: [chain.contracts.router, quote.amountInRaw],
             }),
             value: 0n,
           }
