@@ -72,6 +72,8 @@ export abstract class SwapProvider<
   /**
    * Execute a token swap.
    * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote (skips re-quoting).
+   * @param params - Swap parameters or a pre-built SwapQuote from getQuote()
+   * @returns Transaction data ready for wallet execution
    */
   async execute(
     params: SwapExecuteParams | SwapQuote,
@@ -91,19 +93,29 @@ export abstract class SwapProvider<
   /**
    * Get a full swap quote with pre-built execution data.
    * The returned SwapQuote can be passed directly to execute() to skip re-quoting.
+   * @param params - Quote parameters (assets, amounts, chain, slippage)
+   * @returns SwapQuote with pricing, amounts, and pre-encoded calldata
    */
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     validateChainSupported(params.chainId, this.supportedChainIds())
     return this._getQuote(params)
   }
 
-  /** Get a specific swap market by ID */
+  /**
+   * Get a specific swap market by ID.
+   * @param params - Market identifier (poolId + chainId)
+   * @returns Market information including assets and fee tier
+   */
   async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     validateChainSupported(params.chainId, this.supportedChainIds())
     return this._getMarket(params)
   }
 
-  /** Get available swap markets, optionally filtered by chainId or asset */
+  /**
+   * Get available swap markets, optionally filtered.
+   * @param params - Optional filters (chainId, asset)
+   * @returns Array of markets from this provider
+   */
   async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
     if (params.chainId) {
       validateChainSupported(params.chainId, this.supportedChainIds())

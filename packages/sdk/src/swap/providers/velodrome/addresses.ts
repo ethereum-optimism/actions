@@ -58,7 +58,6 @@ export interface VelodromeChainConfig {
 export const VELODROME_CHAINS: Partial<
   Record<SupportedChainId, VelodromeChainConfig>
 > = {
-  // Base Sepolia — Universal Router deployed with correct init code hash
   [baseSepolia.id]: {
     contracts: {
       router: '0x4b94B729d6183c9efD0071f0790e984bAF46E093',
@@ -66,7 +65,6 @@ export const VELODROME_CHAINS: Partial<
     },
     metadata: { routerType: 'universal' },
   },
-  // Optimism — Velodrome v2
   [optimism.id]: {
     contracts: {
       router: '0xa062aE8A9c5e11aaA026fc2670B0D65cCc8B2858',
@@ -76,7 +74,6 @@ export const VELODROME_CHAINS: Partial<
     },
     metadata: { routerType: 'v2' },
   },
-  // Base — Aerodrome v2
   [base.id]: {
     contracts: {
       router: '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43',
@@ -86,7 +83,6 @@ export const VELODROME_CHAINS: Partial<
     },
     metadata: { routerType: 'v2' },
   },
-  // Bob
   [bob.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
@@ -94,7 +90,6 @@ export const VELODROME_CHAINS: Partial<
     },
     metadata: { routerType: 'leaf' },
   },
-  // Celo
   [celo.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
