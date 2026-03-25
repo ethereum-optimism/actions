@@ -125,7 +125,7 @@ const usdcBalance = await wallet.getBalance(CustomToken);`,
     description:
       'Configure which chains you want to support. Abstract them away from your users.',
     images: [
-      { src: '/eth-white.svg', link: 'https://ethereum.org/' },
+      { src: '/eth-glyph-colored.svg', link: 'https://ethereum.org/' },
       { src: '/OPMainnet_Circle.svg', link: 'https://optimism.io/' },
       { src: '/base-logo.svg', link: 'https://base.org/' },
       { src: '/unichain-logo.svg', link: 'https://unichain.org/' },
@@ -145,12 +145,13 @@ const OPTIMISM = {
     url: env.OPTIMISM_BUNDLER_URL,
   },
 }
-const chains = [OPTIMISM, BASE, UNICHAIN, WORLD, INK, SONEIUM, ZORA];
+const chains = [OPTIMISM, BASE, UNICHAIN, WORLD, INK...];
 
 // Bring it all together
 export const actions = createActions({
   wallet,
   lend,
+  borrow,
   swap,
   chains,
   assets,
