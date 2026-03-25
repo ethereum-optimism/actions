@@ -1,5 +1,6 @@
 import type { SwapAsset } from '@/hooks/useSwapAssets'
-import { getProviderDisplayName, MARKET_LOGO } from '@/constants/logos'
+import { MARKET_LOGO } from '@/constants/logos'
+import { getProviderDisplayName } from '@/constants/providers'
 import {
   deriveUsdRates,
   displaySymbol,

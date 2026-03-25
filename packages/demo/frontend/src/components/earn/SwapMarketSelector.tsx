@@ -4,9 +4,9 @@ import type { SwapMarket } from '@eth-optimism/actions-sdk/react'
 import {
   CHAIN_DISPLAY,
   DEFAULT_CHAIN,
-  getProviderDisplayName,
   MARKET_LOGO,
 } from '@/constants/logos'
+import { getProviderDisplayName } from '@/constants/providers'
 
 import { Dropdown } from './Dropdown'
 
