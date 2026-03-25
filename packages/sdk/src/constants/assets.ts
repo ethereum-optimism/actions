@@ -31,7 +31,6 @@ export const ETH: Asset = {
     [unichain.id]: 'native',
     [unichainSepolia.id]: 'native',
     [worldchain.id]: 'native',
-    // Standard OP Stack native asset — not separately listed on CoinGecko per chain
     [soneium.id]: 'native',
     [ink.id]: 'native',
     [mode.id]: 'native',
@@ -65,7 +64,6 @@ export const WETH: Asset = {
     [unichain.id]: '0x4200000000000000000000000000000000000006',
     [unichainSepolia.id]: '0x4200000000000000000000000000000000000006',
     [worldchain.id]: '0x4200000000000000000000000000000000000006',
-    // Standard OP Stack WETH deployment — not separately listed on CoinGecko per chain
     [soneium.id]: '0x4200000000000000000000000000000000000006',
     [ink.id]: '0x4200000000000000000000000000000000000006',
     [mode.id]: '0x4200000000000000000000000000000000000006',
