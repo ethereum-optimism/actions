@@ -2,12 +2,12 @@ import type { Address } from 'viem'
 import { mainnet } from 'viem/chains'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { MORPHO, USDC } from '@/constants/assets.js'
 import { fetchRewards } from '@/lend/providers/morpho/api.js'
 import {
   calculateRewardsBreakdown,
   fetchAndCalculateRewards,
 } from '@/lend/providers/morpho/sdk.js'
-import { MORPHO, USDC } from '@/constants/assets.js'
 import { externalTest } from '@/utils/test.js'
 
 const CHAIN_ID = mainnet.id
@@ -166,10 +166,7 @@ describe('Morpho API Integration', () => {
 
   describe('calculateRewardsBreakdown', () => {
     it('should calculate rewards from vault-level rewards keyed by address', () => {
-      const rewards = calculateRewardsBreakdown(
-        mockVaultWithRewards,
-        CHAIN_ID,
-      )
+      const rewards = calculateRewardsBreakdown(mockVaultWithRewards, CHAIN_ID)
 
       expect(rewards[USDC_ADDRESS]).toBe(0.025)
       expect(rewards[MORPHO_ADDRESS]).toBe(0.01)
@@ -180,10 +177,7 @@ describe('Morpho API Integration', () => {
     })
 
     it('should return zeros for vault with no rewards', () => {
-      const rewards = calculateRewardsBreakdown(
-        mockVaultNoRewards,
-        CHAIN_ID,
-      )
+      const rewards = calculateRewardsBreakdown(mockVaultNoRewards, CHAIN_ID)
 
       expect(rewards[USDC_ADDRESS]).toBe(0)
       expect(rewards[MORPHO_ADDRESS]).toBe(0)
@@ -205,10 +199,7 @@ describe('Morpho API Integration', () => {
         },
       }
 
-      const rewards = calculateRewardsBreakdown(
-        vaultWithUnknown,
-        CHAIN_ID,
-      )
+      const rewards = calculateRewardsBreakdown(vaultWithUnknown, CHAIN_ID)
 
       expect(rewards.other).toBe(0.05)
     })

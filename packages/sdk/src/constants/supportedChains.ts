@@ -1,10 +1,18 @@
 import {
   base,
   baseSepolia,
+  bob,
+  fraxtal,
+  ink,
+  lisk,
   mainnet,
+  metalL2,
+  mode,
   optimism,
   optimismSepolia,
   sepolia,
+  soneium,
+  swellchain,
   unichain,
   unichainSepolia,
   worldchain,
@@ -20,6 +28,14 @@ export const SUPPORTED_CHAIN_IDS = [
   unichain.id,
   unichainSepolia.id,
   worldchain.id,
+  soneium.id,
+  ink.id,
+  mode.id,
+  fraxtal.id,
+  lisk.id,
+  bob.id,
+  swellchain.id,
+  metalL2.id,
 ] as const
 
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number]

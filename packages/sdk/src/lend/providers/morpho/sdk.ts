@@ -49,7 +49,10 @@ export async function fetchAndCalculateRewards(
 /**
  * Build an empty rewards object with all supported asset addresses initialized to 0
  */
-function buildEmptyRewards(chainId: number, marketAsset?: Asset): RewardsBreakdown {
+function buildEmptyRewards(
+  chainId: number,
+  marketAsset?: Asset,
+): RewardsBreakdown {
   const assets = marketAsset
     ? [...NATIVELY_SUPPORTED_ASSETS, marketAsset]
     : NATIVELY_SUPPORTED_ASSETS
