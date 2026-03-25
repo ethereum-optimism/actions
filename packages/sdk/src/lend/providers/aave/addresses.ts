@@ -8,6 +8,7 @@ import {
   soneium,
 } from 'viem/chains'
 
+
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 /**
@@ -89,4 +90,25 @@ export function getWETHGatewayAddress(chainId: number): Address | undefined {
  */
 export function getSupportedChainIds(): number[] {
   return Object.keys(AAVE_ADDRESSES).map(Number)
+}
+
+export const POOL_ADDRESSES_MAINNET: Record<number, Address> = {
+  [optimism.id]: AAVE_ADDRESSES[optimism.id]!.pool,
+  [base.id]: AAVE_ADDRESSES[base.id]!.pool,
+  [soneium.id]: AAVE_ADDRESSES[soneium.id]!.pool,
+  [ink.id]: AAVE_ADDRESSES[ink.id]!.pool,
+}
+export const POOL_ADDRESSES_TESTNET: Record<number, Address> = {
+  [optimismSepolia.id]: AAVE_ADDRESSES[optimismSepolia.id]!.pool,
+  [baseSepolia.id]: AAVE_ADDRESSES[baseSepolia.id]!.pool,
+}
+export const WETH_GATEWAY_ADDRESSES_MAINNET: Record<number, Address> = {
+  [optimism.id]: AAVE_ADDRESSES[optimism.id]!.wethGateway,
+  [base.id]: AAVE_ADDRESSES[base.id]!.wethGateway,
+  [soneium.id]: AAVE_ADDRESSES[soneium.id]!.wethGateway,
+  [ink.id]: AAVE_ADDRESSES[ink.id]!.wethGateway,
+}
+export const WETH_GATEWAY_ADDRESSES_TESTNET: Record<number, Address> = {
+  [optimismSepolia.id]: AAVE_ADDRESSES[optimismSepolia.id]!.wethGateway,
+  [baseSepolia.id]: AAVE_ADDRESSES[baseSepolia.id]!.wethGateway,
 }
