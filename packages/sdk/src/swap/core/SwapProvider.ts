@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -99,6 +100,27 @@ export abstract class SwapProvider<
       validateChainSupported(params.chainId, this.supportedChainIds())
     }
     return this._getMarkets(params)
+  }
+
+  /**
+   * Chain IDs supported by the underlying protocol.
+   * @description Each provider implements this to declare the chains its protocol
+   * is deployed on, without any SDK-level or developer-config filtering.
+   */
+  abstract protocolSupportedChainIds(): SupportedChainId[]
+
+  /**
+   * Effective supported chain IDs.
+   * @description Intersection of the protocol's supported chains,
+   * the Actions SDK's known chains, and the developer's ActionsConfig.chains.
+   */
+  supportedChainIds(): SupportedChainId[] {
+    const configuredChains = this.chainManager.getSupportedChains()
+    return this.protocolSupportedChainIds().filter(
+      (id) =>
+        (ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
+        configuredChains.includes(id),
+    )
   }
 
   isChainSupported(chainId: SupportedChainId): boolean {
@@ -300,8 +322,6 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Abstract methods (implement in provider)
   // ─────────────────────────────────────────────────────────────────────────────
-
-  abstract supportedChainIds(): SupportedChainId[]
 
   protected abstract _execute(
     params: ResolvedSwapParams,

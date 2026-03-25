@@ -1,10 +1,13 @@
 import {
   base,
   baseSepolia,
+  ink,
   mainnet,
+  mode,
   optimism,
   optimismSepolia,
   sepolia,
+  soneium,
   unichain,
   unichainSepolia,
   worldchain,
@@ -22,6 +25,10 @@ export const ETH: Asset = {
     [baseSepolia.id]: 'native',
     [unichain.id]: 'native',
     [unichainSepolia.id]: 'native',
+    [worldchain.id]: 'native',
+    [ink.id]: 'native',
+    [soneium.id]: 'native',
+    [mode.id]: 'native',
   },
   metadata: {
     decimals: 18,
@@ -46,6 +53,9 @@ export const WETH: Asset = {
     [unichain.id]: '0x4200000000000000000000000000000000000006',
     [unichainSepolia.id]: '0x4200000000000000000000000000000000000006',
     [worldchain.id]: '0x4200000000000000000000000000000000000006',
+    [ink.id]: '0x4200000000000000000000000000000000000006',
+    [soneium.id]: '0x4200000000000000000000000000000000000006',
+    [mode.id]: '0x4200000000000000000000000000000000000006',
   },
   metadata: {
     symbol: 'WETH',
@@ -71,6 +81,7 @@ export const USDC: Asset = {
     [unichain.id]: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
     [unichainSepolia.id]: '0x31d0220469e10c4E71834a79b1f276d740d3768F',
     [worldchain.id]: '0x79A02482A880bCe3F13E09da970dC34dB4cD24D1',
+    [ink.id]: '0x2D270e6886d130D724215A266106e6832161EAEd',
   },
   metadata: {
     symbol: 'USDC',
