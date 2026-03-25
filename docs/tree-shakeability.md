@@ -556,3 +556,40 @@ Search the test suite for all `createActions` and `new Actions` call sites and a
 - Any test file importing from `nodeActionsFactory` or `reactActionsFactory`
 - Any test file directly instantiating `Actions`
 - Registry tests that call `factory.create()` (now returns `Promise`)
+
+---
+
+## 6. Additional Findings (2026-03-24)
+
+### `sideEffects: false` — quick win, partial fix
+
+Adding `"sideEffects": false` to `packages/sdk/package.json` helps bundlers tree-shake unused barrel re-exports. In the demo frontend build, this reduced the `actionsApi` chunk from **2,022 kB → 110 kB** — the bundler can now drop re-exports from `src/index.ts` that aren't actually used by the consumer.
+
+However, `sideEffects: false` alone does **not** solve the overall memory pressure. The code that was in the `actionsApi` chunk shifted to `EarnWithFrontendWallet` (which directly calls `createActions` and thus pulls in all providers). The largest chunk went from 2,022 kB to 2,188 kB — a slight increase in peak. CI builds still require `NODE_OPTIONS='--max-old-space-size=4096'` and `--parallel=1` to avoid OOM.
+
+### Vite `manualChunks` — tested, not viable as-is
+
+Two `manualChunks` strategies were tested:
+
+**Function-based chunking** (splitting by `node_modules` path pattern): This made things worse. Forcing all `@dynamic-labs` modules into one chunk pulled their transitive deps along, inflating the Dynamic chunk from 1,290 kB to 3,196 kB. Same issue with WalletConnect (1,901 → 2,863 kB). The problem is that these SDKs share transitive dependencies that Rollup normally deduplicates across chunks — forcing them together defeats that optimization.
+
+**Object-based chunking** (listing package names): Failed because protocol deps (`@aave/contract-helpers`, `@morpho-org/*`) are transitive deps of the SDK, not direct deps of the frontend. In pnpm strict mode, Rollup can't resolve them as entry modules from the frontend package.
+
+### Stale dist as a contributing factor
+
+The backend typecheck errors (15 errors referencing missing `swap` config, `Promise<Actions>` types, etc.) were caused by a stale `packages/sdk/dist/` that predated the swap provider addition. Rebuilding the SDK (`pnpm build` in `packages/sdk/`) resolved all errors. CI should always build the SDK before typechecking dependents — the NX dependency graph handles this, but local development can hit stale dist if the SDK isn't rebuilt after pulling changes.
+
+### Constraint: `createActions` must stay synchronous
+
+During brainstorming, keeping `createActions` synchronous was identified as a hard requirement. The current React integration uses `useMemo(() => createActions(config))` which cannot await. This rules out **Approach B** (dynamic imports inside `createActions`) as a standalone solution without a wrapper pattern.
+
+### Viable next step: per-wallet subpath exports (Approach C variant)
+
+The most promising direction that preserves the synchronous API:
+
+- Create `@eth-optimism/actions-sdk/react/privy`, `/react/dynamic`, `/react/turnkey` entry points
+- Each entry point exports the same `createActions` with the same config-driven API
+- Each only imports that wallet provider's registry, avoiding the static import of all 3
+- The demo's existing `React.lazy` pattern in `EarnPage.tsx` would naturally separate wallet chunks
+- Action providers (Lend, Swap) stay as hard deps — no developer workflow change
+- The existing `@eth-optimism/actions-sdk/react` entry point would continue to work (imports all 3) for backwards compatibility
