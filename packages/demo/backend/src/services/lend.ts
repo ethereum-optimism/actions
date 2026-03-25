@@ -39,7 +39,10 @@ async function executePosition(
       throw new Error(error)
     }
 
-    const asset = resolveAsset(tokenAddress, marketId.chainId as SupportedChainId)
+    const asset = resolveAsset(
+      tokenAddress,
+      marketId.chainId as SupportedChainId,
+    )
 
     const positionParams = { amount, asset, marketId }
 
