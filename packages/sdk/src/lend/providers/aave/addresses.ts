@@ -8,7 +8,6 @@ import {
   soneium,
 } from 'viem/chains'
 
-
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 /**
