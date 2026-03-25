@@ -1,4 +1,19 @@
 import type { Address } from 'viem'
+import {
+  base,
+  baseSepolia,
+  bob,
+  celo,
+  fraxtal,
+  ink,
+  lisk,
+  metalL2,
+  mode,
+  optimism,
+  soneium,
+  superseed,
+  unichain,
+} from 'viem/chains'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 
@@ -44,7 +59,7 @@ export const VELODROME_CHAINS: Partial<
   Record<SupportedChainId, VelodromeChainConfig>
 > = {
   // Base Sepolia — Universal Router deployed with correct init code hash
-  84532: {
+  [baseSepolia.id]: {
     contracts: {
       router: '0x4b94B729d6183c9efD0071f0790e984bAF46E093',
       poolFactory: '0x7b9644D43900da734f5a83DD0489Af1197DF2CF0',
@@ -52,7 +67,7 @@ export const VELODROME_CHAINS: Partial<
     metadata: { routerType: 'universal' },
   },
   // Optimism — Velodrome v2
-  10: {
+  [optimism.id]: {
     contracts: {
       router: '0xa062aE8A9c5e11aaA026fc2670B0D65cCc8B2858',
       poolFactory: '0xF1046053aa5682b4F9a81b5481394DA16BE5FF5a',
@@ -62,7 +77,7 @@ export const VELODROME_CHAINS: Partial<
     metadata: { routerType: 'v2' },
   },
   // Base — Aerodrome v2
-  8453: {
+  [base.id]: {
     contracts: {
       router: '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43',
       poolFactory: '0x420DD381b31aEf6683db6B902084cB0FFECe40Da',
@@ -72,7 +87,7 @@ export const VELODROME_CHAINS: Partial<
     metadata: { routerType: 'v2' },
   },
   // Bob
-  60808: {
+  [bob.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
@@ -80,70 +95,63 @@ export const VELODROME_CHAINS: Partial<
     metadata: { routerType: 'leaf' },
   },
   // Celo
-  42220: {
+  [celo.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
     metadata: { routerType: 'leaf' },
   },
-  // Fraxtal
-  252: {
+  [fraxtal.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
     metadata: { routerType: 'leaf' },
   },
-  // Ink
-  57073: {
+  [ink.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
     metadata: { routerType: 'leaf' },
   },
-  // Lisk
-  1135: {
+  [lisk.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
     metadata: { routerType: 'leaf' },
   },
-  // Metal
-  1750: {
+  [metalL2.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
     metadata: { routerType: 'leaf' },
   },
-  // Mode
-  34443: {
+  [mode.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
     metadata: { routerType: 'leaf' },
   },
-  // Soneium
-  1868: {
+  [soneium.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
     metadata: { routerType: 'leaf' },
   },
-  // Superseed
-  5330: {
+  [superseed.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
     metadata: { routerType: 'leaf' },
   },
-  // Swell
+  // Swell — not available in viem/chains
   1923: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
@@ -151,8 +159,7 @@ export const VELODROME_CHAINS: Partial<
     },
     metadata: { routerType: 'leaf' },
   },
-  // Unichain
-  130: {
+  [unichain.id]: {
     contracts: {
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
