@@ -124,13 +124,6 @@ export abstract class SwapProvider<
   }
 
   /**
-   * Chain IDs supported by the underlying protocol.
-   * @description Each provider implements this to declare the chains its protocol
-   * is deployed on, without any SDK-level or developer-config filtering.
-   */
-  abstract protocolSupportedChainIds(): SupportedChainId[]
-
-  /**
    * Effective supported chain IDs.
    * @description Intersection of the protocol's supported chains,
    * the Actions SDK's known chains, and the developer's ActionsConfig.chains.
@@ -371,6 +364,13 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Abstract methods (implement in provider)
   // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Chain IDs supported by the underlying protocol.
+   * Each provider declares the chains its protocol is deployed on,
+   * without any SDK-level or developer-config filtering.
+   */
+  abstract protocolSupportedChainIds(): SupportedChainId[]
 
   protected abstract _execute(
     params: ResolvedSwapParams,

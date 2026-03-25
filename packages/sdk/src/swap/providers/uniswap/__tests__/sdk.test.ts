@@ -8,7 +8,7 @@ import {
   calculatePriceImpact,
   encodeUniversalRouterSwap,
   getQuote,
-} from '../encoding.js'
+} from '@/swap/providers/uniswap/encoding.js'
 
 const USDC: Asset = {
   type: 'erc20',

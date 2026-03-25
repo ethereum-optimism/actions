@@ -18,8 +18,8 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 
-import type { VelodromeSwapProviderConfig } from '../types.js'
-import { VelodromeSwapProvider } from '../VelodromeSwapProvider.js'
+import type { VelodromeSwapProviderConfig } from '@/swap/providers/velodrome/types.js'
+import { VelodromeSwapProvider } from '@/swap/providers/velodrome/VelodromeSwapProvider.js'
 
 // ── Real mainnet assets ──
 
