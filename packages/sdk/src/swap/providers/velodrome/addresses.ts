@@ -22,11 +22,14 @@ export interface VelodromeContracts {
 
 /**
  * Per-chain Velodrome/Aerodrome configuration.
- * Contracts are separated from metadata for clean validation and access.
+ * Structured as { contracts, metadata } for clean separation of
+ * validated addresses from provider-specific configuration.
  */
 export interface VelodromeChainConfig {
   contracts: VelodromeContracts
-  routerType: VelodromeRouterType
+  metadata: {
+    routerType: VelodromeRouterType
+  }
 }
 
 /**
@@ -46,7 +49,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x4b94B729d6183c9efD0071f0790e984bAF46E093',
       poolFactory: '0x7b9644D43900da734f5a83DD0489Af1197DF2CF0',
     },
-    routerType: 'universal',
+    metadata: { routerType: 'universal' },
   },
   // Optimism — Velodrome v2
   10: {
@@ -56,7 +59,7 @@ export const VELODROME_CHAINS: Partial<
       clPoolFactory: '0xCc0bDDB707055e04e497aB22a59c2aF4391cd12F',
       clQuoterV2: '0x89D8218ed5fF1e46d8dcd33fb0bbeE3be1621466',
     },
-    routerType: 'v2',
+    metadata: { routerType: 'v2' },
   },
   // Base — Aerodrome v2
   8453: {
@@ -66,7 +69,7 @@ export const VELODROME_CHAINS: Partial<
       clPoolFactory: '0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A',
       clQuoterV2: '0x254cF9E1E6e233aa1AC962CB9B05b2cfeAaE15b0',
     },
-    routerType: 'v2',
+    metadata: { routerType: 'v2' },
   },
   // Bob
   60808: {
@@ -74,7 +77,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Celo
   42220: {
@@ -82,7 +85,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Fraxtal
   252: {
@@ -90,7 +93,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Ink
   57073: {
@@ -98,7 +101,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Lisk
   1135: {
@@ -106,7 +109,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Metal
   1750: {
@@ -114,7 +117,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Mode
   34443: {
@@ -122,7 +125,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Soneium
   1868: {
@@ -130,7 +133,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Superseed
   5330: {
@@ -138,7 +141,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Swell
   1923: {
@@ -146,7 +149,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
   // Unichain
   130: {
@@ -154,7 +157,7 @@ export const VELODROME_CHAINS: Partial<
       router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
       poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
     },
-    routerType: 'leaf',
+    metadata: { routerType: 'leaf' },
   },
 }
 

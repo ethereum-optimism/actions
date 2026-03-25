@@ -115,7 +115,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         chainId,
         publicClient,
         routerAddress: chain.contracts.router,
-        routerType: chain.routerType,
+        routerType: chain.metadata.routerType,
         stable: poolConfig.stable,
         factoryAddress: chain.contracts.poolFactory,
       })
@@ -130,7 +130,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         assetOut,
         amountInRaw,
         amountOutMin,
-        routerType: chain.routerType,
+        routerType: chain.metadata.routerType,
         stable: poolConfig.stable,
         factoryAddress: chain.contracts.poolFactory,
         recipient: params.recipient,
@@ -148,7 +148,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     if (!isNativeAsset(assetIn)) {
       const token = getAssetAddress(assetIn, chainId)
 
-      if (chain.routerType === 'universal') {
+      if (chain.metadata.routerType === 'universal') {
         // Transfer tokens to the Universal Router — it will use its own balance
         tokenApproval = {
           to: token,
@@ -269,7 +269,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       chainId,
       publicClient,
       routerAddress: chain.contracts.router,
-      routerType: chain.routerType,
+      routerType: chain.metadata.routerType,
       stable: poolConfig.stable,
       factoryAddress: chain.contracts.poolFactory,
     })
@@ -377,7 +377,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         chainId,
         publicClient,
         routerAddress: chain.contracts.router,
-        routerType: chain.routerType,
+        routerType: chain.metadata.routerType,
         stable: poolConfig.stable,
         factoryAddress: chain.contracts.poolFactory,
       })
@@ -385,7 +385,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       providerContext = {
         stable: poolConfig.stable,
         factoryAddress: chain.contracts.poolFactory,
-        routerType: chain.routerType,
+        routerType: chain.metadata.routerType,
       }
     }
 
@@ -416,7 +416,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         assetOut,
         amountInRaw,
         amountOutMin: amountOutMinRaw,
-        routerType: chain.routerType,
+        routerType: chain.metadata.routerType,
         stable: (poolConfig as { type: 'v2'; stable: boolean }).stable,
         factoryAddress: chain.contracts.poolFactory,
         recipient,
@@ -470,7 +470,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     if (!isNativeAsset(assetIn)) {
       const token = getAssetAddress(assetIn, chainId)
 
-      if (chain.routerType === 'universal') {
+      if (chain.metadata.routerType === 'universal') {
         tokenApproval = {
           to: token,
           data: encodeFunctionData({
