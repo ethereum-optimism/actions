@@ -81,12 +81,8 @@ export abstract class SwapProvider<
     if ('execution' in params) {
       return this.executeFromQuote(params)
     }
-    this.executeValidations(params)
+    this.validateExecuteParams(params)
     const resolvedParams = this.resolveParams(params)
-    validateSlippage(
-      resolvedParams.slippage,
-      this._config.maxSlippage ?? DEFAULT_MAX_SLIPPAGE,
-    )
     return this._execute(resolvedParams)
   }
 
@@ -282,6 +278,7 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
 
   private executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
+    this.validateSwap(quote)
     const now = Math.floor(Date.now() / 1000)
     if (now >= quote.expiresAt) {
       throw new Error(
@@ -291,20 +288,33 @@ export abstract class SwapProvider<
     return this._executeFromQuote(quote)
   }
 
-  private executeValidations(params: SwapExecuteParams): void {
+  private validateExecuteParams(params: SwapExecuteParams): void {
     validateAmountProvided(params.amountIn, params.amountOut)
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
     validateNotBothAmounts(params.amountIn, params.amountOut)
-    validateNotSameAsset(params.assetIn, params.assetOut)
     validateNotZeroAddress(params.walletAddress, 'walletAddress')
     if (params.recipient) {
       validateNotZeroAddress(params.recipient, 'recipient')
     }
+    this.validateSwap(params)
+  }
+
+  private validateSwap(params: {
+    assetIn: Asset
+    assetOut: Asset
+    chainId: SupportedChainId
+    slippage?: number
+  }): void {
+    validateNotSameAsset(params.assetIn, params.assetOut)
     validateChainSupported(params.chainId, this.supportedChainIds())
     this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
     validateAssetOnChain(params.assetIn, params.chainId)
     validateAssetOnChain(params.assetOut, params.chainId)
+    validateSlippage(
+      params.slippage ?? this.defaultSlippage,
+      this._config.maxSlippage ?? DEFAULT_MAX_SLIPPAGE,
+    )
   }
 
   private resolveParams(params: SwapExecuteParams): ResolvedSwapParams {
