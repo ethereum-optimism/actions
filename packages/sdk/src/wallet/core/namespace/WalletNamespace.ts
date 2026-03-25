@@ -36,9 +36,21 @@ export class WalletNamespace<
     HostedWalletProvider<THostedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
-  private _provider: WalletProvider<THostedProviderType, TToActionsMap, H, S> | null = null
-  private _providerFactory: WalletProviderFactory<THostedProviderType, TToActionsMap, H, S>
-  private _initPromise: Promise<WalletProvider<THostedProviderType, TToActionsMap, H, S>> | null = null
+  private _provider: WalletProvider<
+    THostedProviderType,
+    TToActionsMap,
+    H,
+    S
+  > | null = null
+  private _providerFactory: WalletProviderFactory<
+    THostedProviderType,
+    TToActionsMap,
+    H,
+    S
+  >
+  private _initPromise: Promise<
+    WalletProvider<THostedProviderType, TToActionsMap, H, S>
+  > | null = null
 
   constructor(
     providerOrFactory:
@@ -53,7 +65,9 @@ export class WalletNamespace<
     }
   }
 
-  private resolveProvider(): Promise<WalletProvider<THostedProviderType, TToActionsMap, H, S>> {
+  private resolveProvider(): Promise<
+    WalletProvider<THostedProviderType, TToActionsMap, H, S>
+  > {
     if (this._provider) return Promise.resolve(this._provider)
     if (!this._initPromise) {
       this._initPromise = this._providerFactory().then((provider) => {

@@ -25,9 +25,8 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
         return true
       },
       async create({ chainManager, lendProviders, swapProviders }, _options) {
-        const { DynamicHostedWalletProvider } = await import(
-          '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
-        )
+        const { DynamicHostedWalletProvider } =
+          await import('@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js')
         return new DynamicHostedWalletProvider(
           chainManager,
           lendProviders,
@@ -42,9 +41,8 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
         return true
       },
       async create({ chainManager, lendProviders, swapProviders }, _options) {
-        const { PrivyHostedWalletProvider } = await import(
-          '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
-        )
+        const { PrivyHostedWalletProvider } =
+          await import('@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js')
         return new PrivyHostedWalletProvider(
           chainManager,
           lendProviders,
@@ -59,9 +57,8 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
         return true
       },
       async create({ chainManager, lendProviders, swapProviders }, _options) {
-        const { TurnkeyHostedWalletProvider } = await import(
-          '@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
-        )
+        const { TurnkeyHostedWalletProvider } =
+          await import('@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js')
         return new TurnkeyHostedWalletProvider(
           chainManager,
           lendProviders,

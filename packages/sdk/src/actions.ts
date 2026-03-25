@@ -207,12 +207,14 @@ export class Actions<
       THostedWalletProviderType,
       THostedWalletProvidersSchema['providerConfigs']
     >['wallet'],
-  ): Promise<WalletProvider<
-    THostedWalletProviderType,
-    THostedWalletProvidersSchema['providerToActionsOptions'],
-    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
-    SmartWalletProvider
-  >> {
+  ): Promise<
+    WalletProvider<
+      THostedWalletProviderType,
+      THostedWalletProvidersSchema['providerToActionsOptions'],
+      THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
+      SmartWalletProvider
+    >
+  > {
     const hostedWalletProviderConfig = config.hostedWalletConfig.provider
     const factory = this.hostedWalletProviderRegistry.getFactory(
       hostedWalletProviderConfig.type,

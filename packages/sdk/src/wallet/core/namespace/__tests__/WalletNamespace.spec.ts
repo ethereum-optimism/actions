@@ -54,7 +54,9 @@ describe('WalletNamespace', () => {
       )
       const walletNamespace = new WalletNamespace(walletProvider)
 
-      expect(await walletNamespace.hostedWalletProvider()).toBe(hostedWalletProvider)
+      expect(await walletNamespace.hostedWalletProvider()).toBe(
+        hostedWalletProvider,
+      )
     })
   })
 
@@ -79,7 +81,9 @@ describe('WalletNamespace', () => {
       )
       const walletNamespace = new WalletNamespace(walletProvider)
 
-      expect(await walletNamespace.smartWalletProvider()).toBe(smartWalletProvider)
+      expect(await walletNamespace.smartWalletProvider()).toBe(
+        smartWalletProvider,
+      )
     })
   })
 

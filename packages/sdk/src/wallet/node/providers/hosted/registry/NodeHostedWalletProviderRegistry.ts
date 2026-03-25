@@ -28,9 +28,8 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
         { chainManager, lendProviders, swapProviders, supportedAssets },
         options,
       ) {
-        const { PrivyHostedWalletProvider } = await import(
-          '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
-        )
+        const { PrivyHostedWalletProvider } =
+          await import('@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js')
         return new PrivyHostedWalletProvider({
           privyClient: options.privyClient,
           chainManager,
@@ -52,9 +51,8 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
         { chainManager, lendProviders, swapProviders, supportedAssets },
         options,
       ) {
-        const { TurnkeyHostedWalletProvider } = await import(
-          '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
-        )
+        const { TurnkeyHostedWalletProvider } =
+          await import('@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js')
         return new TurnkeyHostedWalletProvider(
           options.client,
           chainManager,
