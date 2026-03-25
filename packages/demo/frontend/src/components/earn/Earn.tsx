@@ -15,7 +15,10 @@ import { MarketSelector } from './MarketSelector'
 import type { EarnOperations } from '@/hooks/useLendProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
-import { SwapMarketSelector } from './SwapMarketSelector'
+import {
+  DemoProviderTooltip,
+  SwapMarketSelector,
+} from './SwapMarketSelector'
 import { useLendBalance } from '@/hooks/useLendBalance'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { useSwap } from '@/hooks/useSwap'
@@ -541,16 +544,18 @@ function EarnContent({
               {activeTab === 'swap' && (
                 <>
                   <div>
-                    <h3
-                      className="mb-3"
-                      style={{
-                        color: '#1a1b1e',
-                        fontSize: '16px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Select Market
-                    </h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3
+                        style={{
+                          color: '#1a1b1e',
+                          fontSize: '16px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Select Market
+                      </h3>
+                      <DemoProviderTooltip />
+                    </div>
                     <SwapMarketSelector
                       markets={swapMarkets}
                       selectedProvider={selectedProvider}

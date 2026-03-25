@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Asset, SupportedChainId, SwapMarket } from '@eth-optimism/actions-sdk/react'
+import type {
+  Asset,
+  SupportedChainId,
+  SwapMarket,
+} from '@eth-optimism/actions-sdk/react'
 
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import { useSwapAssets } from '@/hooks/useSwapAssets'

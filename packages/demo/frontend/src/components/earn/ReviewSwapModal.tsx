@@ -112,8 +112,9 @@ function SwapDetails({
   formattedMinReceived,
   slippage,
   selectedProvider,
+  chainId,
 }: {
-  priceQuote: { price: string; priceImpact: number }
+  priceQuote: { price: number; priceImpact: number }
   symbolIn: string
   symbolOut: string
   formattedMinReceived: { main: string; secondary?: string }
@@ -192,7 +193,7 @@ interface ReviewSwapModalProps {
   assetOut: SwapAsset
   amountIn: string
   amountOut: string
-  priceQuote: { price: string; priceImpact: number } | null
+  priceQuote: { price: number; priceImpact: number } | null
   isExecuting: boolean
   selectedProvider?: string | null
   slippage?: number

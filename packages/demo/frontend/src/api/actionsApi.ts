@@ -287,8 +287,14 @@ class ActionsApiClient {
     priceImpact: number
     blockExplorerUrls?: string[]
   }> {
-    const { amountIn, tokenInAddress, tokenOutAddress, chainId, slippage, provider } =
-      params
+    const {
+      amountIn,
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      slippage,
+      provider,
+    } = params
     const { result } = await this.request<{
       result: {
         amountIn: string
