@@ -28,7 +28,9 @@ export interface UniswapAddresses {
  * Uniswap V4 contract addresses per chain
  * @see https://docs.uniswap.org/contracts/v4/deployments
  */
-const UNISWAP_ADDRESSES: Partial<Record<SupportedChainId, UniswapAddresses>> = {
+export const UNISWAP_ADDRESSES: Partial<
+  Record<SupportedChainId, UniswapAddresses>
+> = {
   [mainnet.id]: {
     poolManager: '0x000000000004444c5dc75cB358380D2e3dE08A90',
     positionManager: '0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e',
