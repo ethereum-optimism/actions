@@ -56,10 +56,7 @@ export interface HostedProviderFactory<
 > {
   type: TType
   validateOptions(options: unknown): options is TOptions
-  create(
-    deps: HostedProviderDeps,
-    options: TOptions,
-  ): TInstance | Promise<TInstance>
+  create(deps: HostedProviderDeps, options: TOptions): TInstance
 }
 
 /**

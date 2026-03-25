@@ -1,4 +1,7 @@
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
+import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
+import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
+import { TurnkeyHostedWalletProvider } from '@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
 import type {
   ReactHostedProviderInstanceMap,
   ReactOptionsMap,
@@ -9,8 +12,10 @@ import type {
  * React hosted wallet provider registry
  * @description
  * Environment-scoped registry that binds React/browser provider keys to their
- * factory implementations. Provider code is loaded lazily via dynamic import()
- * so that unused wallet SDKs are not included in the bundle.
+ * factory implementations. This ensures browser-only hosted providers are
+ * discoverable at runtime without importing Node-only code. The registry
+ * pre-registers 'dynamic' and 'privy' providers and can be extended with
+ * additional providers via `register`.
  */
 export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
   ReactHostedProviderInstanceMap,
@@ -24,9 +29,7 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       validateOptions(_options): _options is ReactOptionsMap['dynamic'] {
         return true
       },
-      async create({ chainManager, lendProviders, swapProviders }, _options) {
-        const { DynamicHostedWalletProvider } =
-          await import('@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js')
+      create({ chainManager, lendProviders, swapProviders }, _options) {
         return new DynamicHostedWalletProvider(
           chainManager,
           lendProviders,
@@ -40,9 +43,7 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       validateOptions(_options): _options is ReactOptionsMap['privy'] {
         return true
       },
-      async create({ chainManager, lendProviders, swapProviders }, _options) {
-        const { PrivyHostedWalletProvider } =
-          await import('@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js')
+      create({ chainManager, lendProviders, swapProviders }, _options) {
         return new PrivyHostedWalletProvider(
           chainManager,
           lendProviders,
@@ -56,9 +57,7 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       validateOptions(_options): _options is ReactOptionsMap['turnkey'] {
         return true
       },
-      async create({ chainManager, lendProviders, swapProviders }, _options) {
-        const { TurnkeyHostedWalletProvider } =
-          await import('@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js')
+      create({ chainManager, lendProviders, swapProviders }, _options) {
         return new TurnkeyHostedWalletProvider(
           chainManager,
           lendProviders,

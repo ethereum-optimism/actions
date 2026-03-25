@@ -49,11 +49,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
     ).toBe(true)
   })
 
-  it('creates a DynamicHostedWalletProvider instance', async () => {
+  it('creates a DynamicHostedWalletProvider instance', () => {
     const registry = new ReactHostedWalletProviderRegistry()
     const factory = registry.getFactory('dynamic')
 
-    const provider = await factory.create(
+    const provider = factory.create(
       { chainManager: mockChainManager },
       undefined as ReactOptionsMap['dynamic'],
     )
@@ -71,11 +71,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
     ).toBe(true)
   })
 
-  it('creates a PrivyHostedWalletProvider instance', async () => {
+  it('creates a PrivyHostedWalletProvider instance', () => {
     const registry = new ReactHostedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
-    const provider = await factory.create(
+    const provider = factory.create(
       { chainManager: mockChainManager },
       undefined as ReactOptionsMap['privy'],
     )
@@ -93,11 +93,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
     ).toBe(true)
   })
 
-  it('creates a TurnkeyHostedWalletProvider instance', async () => {
+  it('creates a TurnkeyHostedWalletProvider instance', () => {
     const registry = new ReactHostedWalletProviderRegistry()
     const factory = registry.getFactory('turnkey')
 
-    const provider = await factory.create(
+    const provider = factory.create(
       { chainManager: mockChainManager },
       undefined as ReactOptionsMap['turnkey'],
     )

@@ -54,11 +54,11 @@ describe('NodeHostedWalletProviderRegistry', () => {
     ).toBe(false)
   })
 
-  it('creates a PrivyHostedWalletProvider instance', async () => {
+  it('creates a PrivyHostedWalletProvider instance', () => {
     const registry = new NodeHostedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
-    const provider = await factory.create({ chainManager: mockChainManager }, {
+    const provider = factory.create({ chainManager: mockChainManager }, {
       privyClient: mockPrivyClient,
       authorizationContext: getMockAuthorizationContext(),
     } as NodeOptionsMap['privy'])
@@ -80,11 +80,11 @@ describe('NodeHostedWalletProviderRegistry', () => {
     expect(factory.validateOptions?.({})).toBe(false)
   })
 
-  it('creates a TurnkeyHostedWalletProvider instance', async () => {
+  it('creates a TurnkeyHostedWalletProvider instance', () => {
     const registry = new NodeHostedWalletProviderRegistry()
     const factory = registry.getFactory('turnkey')
 
-    const provider = await factory.create(
+    const provider = factory.create(
       { chainManager: mockChainManager },
       {
         client: mockTurnkeyClient,

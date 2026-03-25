@@ -10,7 +10,6 @@
     "url": "https://github.com/ethereum-optimism/actions/issues"
   },
   "type": "module",
-  "sideEffects": false,
   "version": "0.3.0",
   "description": "TypeScript SDK for Actions",
   "main": "dist/index.js",
