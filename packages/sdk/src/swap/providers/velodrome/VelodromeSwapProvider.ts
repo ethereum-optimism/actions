@@ -48,7 +48,7 @@ import {
  */
 export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderConfig> {
   /** @returns Chain IDs where Velodrome/Aerodrome contracts are deployed */
-  supportedChainIds(): SupportedChainId[] {
+  protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
   }
 

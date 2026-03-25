@@ -393,7 +393,7 @@ describe('VelodromeSwapProvider router type routing', () => {
   describe('supported chains', () => {
     it('includes all 14 configured chains', () => {
       const provider = createProvider(OP_CHAIN_ID)
-      const chainIds = provider.supportedChainIds()
+      const chainIds = provider.protocolSupportedChainIds()
 
       // Hub chains
       expect(chainIds).toContain(10) // Optimism

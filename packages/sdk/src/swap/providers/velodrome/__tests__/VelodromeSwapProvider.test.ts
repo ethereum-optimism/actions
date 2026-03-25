@@ -70,7 +70,7 @@ describe('VelodromeSwapProvider', () => {
   describe('supportedChainIds', () => {
     it('returns Optimism and Base', () => {
       const provider = createProvider()
-      const chainIds = provider.supportedChainIds()
+      const chainIds = provider.protocolSupportedChainIds()
       expect(chainIds).toContain(10) // Optimism
       expect(chainIds).toContain(8453) // Base
     })
