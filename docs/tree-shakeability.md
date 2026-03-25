@@ -583,13 +583,57 @@ The backend typecheck errors (15 errors referencing missing `swap` config, `Prom
 
 During brainstorming, keeping `createActions` synchronous was identified as a hard requirement. The current React integration uses `useMemo(() => createActions(config))` which cannot await. This rules out **Approach B** (dynamic imports inside `createActions`) as a standalone solution without a wrapper pattern.
 
-### Viable next step: per-wallet subpath exports (Approach C variant)
+### Per-wallet subpath exports — explored, not ideal
 
-The most promising direction that preserves the synchronous API:
+One approach considered: create `@eth-optimism/actions-sdk/react/privy`, `/react/dynamic`, `/react/turnkey` entry points, each with its own single-provider registry and `createActions`.
 
-- Create `@eth-optimism/actions-sdk/react/privy`, `/react/dynamic`, `/react/turnkey` entry points
-- Each entry point exports the same `createActions` with the same config-driven API
-- Each only imports that wallet provider's registry, avoiding the static import of all 3
-- The demo's existing `React.lazy` pattern in `EarnPage.tsx` would naturally separate wallet chunks
-- Action providers (Lend, Swap) stay as hard deps — no developer workflow change
-- The existing `@eth-optimism/actions-sdk/react` entry point would continue to work (imports all 3) for backwards compatibility
+**Why it was rejected:** It ties the import path to a specific wallet provider, which creates awkward coupling as the SDK evolves. Future features like EOA support or multi-provider configs (embedded wallet + EOA) don't fit this model. It's also a bundling workaround rather than an architectural improvement — each entry point would duplicate the factory boilerplate.
+
+### Recommended approach: lazy wallet provider initialization (Approach E)
+
+The strongest direction preserves the synchronous `createActions` API while enabling dynamic imports internally.
+
+#### Root cause
+
+`ReactHostedWalletProviderRegistry` statically imports all 3 wallet providers at the top of the file. The `Actions` constructor eagerly calls `createWalletNamespace` → `createWalletProvider` → `factory.create()`, which forces all provider code into the bundle regardless of which one the developer configured.
+
+#### Key insight: all wallet methods are already async
+
+Every method on `WalletNamespace` (`createSmartWallet`, `createSigner`, `toActionsWallet`, `getSmartWallet`) returns a `Promise`. Every consumer call site already uses `await`. The wallet provider doesn't need to exist at `createActions` time — it only needs to exist by the time a wallet method is called.
+
+#### How it works
+
+1. **`HostedProviderFactory.create()` becomes async** — return type changes from `TInstance` to `TInstance | Promise<TInstance>`. Existing sync factories still satisfy this type.
+
+2. **Registry factories use `await import()` instead of static imports:**
+   ```ts
+   // Before (top of file)
+   import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/...'
+
+   // After (inside create method)
+   async create({ chainManager, lendProviders, swapProviders }, _options) {
+     const { PrivyHostedWalletProvider } = await import(
+       '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
+     )
+     return new PrivyHostedWalletProvider(chainManager, lendProviders, swapProviders)
+   }
+   ```
+
+3. **`WalletNamespace` accepts a factory function** — instead of a resolved `WalletProvider`, it takes `() => Promise<WalletProvider>`. Each async method calls `resolveProvider()` which creates and caches the provider on first call.
+
+4. **`Actions` constructor passes a factory closure** — `createWalletNamespace` wraps `createWalletProvider` in an async closure instead of calling it eagerly.
+
+5. **`createActions` stays synchronous** — it returns `Actions` immediately. The async work happens on first wallet method call, which is already async.
+
+#### What doesn't change
+
+- `createActions` signature and return type
+- `ActionsConfig` shape
+- All consumer code (`await actions.wallet.createSmartWallet(...)` etc.)
+- Lend and swap provider initialization (stays eager/static)
+
+#### Open questions
+
+- **Sync getters:** `WalletNamespace` has sync getters for `hostedWalletProvider` and `smartWalletProvider`. These would throw if accessed before any async wallet method is called. Need to verify no code paths depend on these being available immediately after `createActions`.
+- **`resolve-tspaths` and dynamic imports:** The SDK build uses `tsc && resolve-tspaths` to rewrite `@/` path aliases. Need to verify it handles dynamic `import('@/...')` expressions.
+- **Bundler behavior:** Vite/Rollup will see the dynamic import string literals and may still follow them at build time, creating separate chunks. The tree-shaking win depends on the bundler code-splitting these into chunks that are only loaded for the configured provider. Needs build verification.
