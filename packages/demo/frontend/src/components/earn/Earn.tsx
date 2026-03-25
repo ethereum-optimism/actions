@@ -226,7 +226,9 @@ function EarnHeader({
           style={{ height: '56px' }}
         >
           <div className="flex items-center gap-8" style={{ height: '100%' }}>
-            <img src="/Optimism.svg" alt="Optimism" className="h-4" />
+            <a href="/">
+              <img src="/Optimism.svg" alt="Optimism" className="h-4" />
+            </a>
             <div className="hidden md:flex" style={{ height: '100%' }}>
               <ActionTabs activeTab={activeTab} onTabChange={onTabChange} />
             </div>
