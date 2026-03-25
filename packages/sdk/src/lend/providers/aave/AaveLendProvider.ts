@@ -26,17 +26,13 @@ import {
 import { getATokenAddress, getReserve, getReserves } from './sdk.js'
 
 /**
- * Supported chain IDs for Aave lending
- * @description Array of chain IDs where Aave V3 is available on Optimism Superchain
- */
-export const SUPPORTED_CHAIN_IDS = getSupportedChainIds() as readonly number[]
-
-/**
  * Aave lending provider implementation
  * @description Lending provider implementation using Aave V3 protocol
  */
 export class AaveLendProvider extends LendProvider<LendProviderConfig> {
-  protected readonly SUPPORTED_CHAIN_IDS = SUPPORTED_CHAIN_IDS
+  protocolSupportedChainIds(): number[] {
+    return getSupportedChainIds()
+  }
 
   /**
    * Create a new Aave lending provider

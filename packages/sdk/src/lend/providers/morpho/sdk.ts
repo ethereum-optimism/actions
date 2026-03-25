@@ -37,7 +37,7 @@ export async function fetchAndCalculateRewards(
   chainId: number,
   marketAsset?: Asset,
 ): Promise<RewardsBreakdown> {
-  const vaultData = await fetchRewards(vaultAddress)
+  const vaultData = await fetchRewards(vaultAddress, chainId)
 
   if (!vaultData) {
     return buildEmptyRewards(chainId, marketAsset)
@@ -252,7 +252,7 @@ async function calculateVaultApy(
 }
 
 /**
- * Fetch vault data via direct on-chain queries (for testnets)
+ * Fetch vault data via direct on-chain queries (fallback when SDK unavailable)
  */
 async function fetchVaultDataOnChain(
   marketId: LendMarketId,
@@ -346,7 +346,7 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     params.marketId.chainId,
   )
 
-  // Try SDK first for supported chains (mainnets)
+  // Try SDK first for SDK-supported chains
   if (isSdkSupportedChain(params.marketId.chainId)) {
     try {
       const vault = await fetchAccrualVault(
@@ -388,7 +388,7 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     }
   }
 
-  // Fallback to direct on-chain queries for testnets or if SDK fails
+  // Fallback to direct on-chain queries if SDK unavailable or fails
   const contracts = getMorphoContracts(params.marketId.chainId)
   if (contracts) {
     return fetchVaultDataOnChain(

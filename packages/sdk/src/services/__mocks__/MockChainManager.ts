@@ -4,10 +4,7 @@ import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { unichain } from 'viem/chains'
 import { type MockedFunction, vi } from 'vitest'
 
-import type {
-  SUPPORTED_CHAIN_IDS,
-  SupportedChainId,
-} from '@/constants/supportedChains.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 export interface MockChainManagerConfig {
   supportedChains: SupportedChainId[]
@@ -79,15 +76,15 @@ export class MockChainManager {
     })
   }
 
-  getChain(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): Chain {
+  getChain(chainId: SupportedChainId): Chain {
     return chainById[chainId]
   }
 
-  getRpcUrls(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): string[] {
+  getRpcUrls(chainId: SupportedChainId): string[] {
     return this.getChain(chainId).rpcUrls.default.http as string[]
   }
 
-  getTransportForChain(_chainId: (typeof SUPPORTED_CHAIN_IDS)[number]) {
+  getTransportForChain(_chainId: SupportedChainId) {
     // Mock implementation returns a simple http transport
     // In tests, the actual transport behavior is typically mocked at a higher level
     return {} as unknown

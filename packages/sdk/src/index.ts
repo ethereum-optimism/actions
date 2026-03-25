@@ -48,7 +48,7 @@ export {
   WSTETH,
 } from '@/constants/assets.js'
 export {
-  SUPPORTED_CHAIN_IDS,
+  ACTIONS_SUPPORTED_CHAIN_IDS,
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'

@@ -33,7 +33,7 @@ import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
  */
 export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig> {
   /** @returns Chain IDs where Uniswap V4 contracts are deployed */
-  supportedChainIds(): SupportedChainId[] {
+  protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
   }
 

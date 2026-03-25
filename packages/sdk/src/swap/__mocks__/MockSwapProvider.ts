@@ -49,7 +49,10 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   ) {
     super(
       config || {},
-      chainManager || (new MockChainManager() as unknown as ChainManager),
+      chainManager ||
+        (new MockChainManager({
+          supportedChains: [84532 as SupportedChainId],
+        }) as unknown as ChainManager),
     )
 
     this._supportedChains = mockConfig?.supportedChains ?? [
@@ -76,7 +79,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       .mockImplementation(this.createMockMarkets.bind(this))
   }
 
-  supportedChainIds(): SupportedChainId[] {
+  protocolSupportedChainIds(): SupportedChainId[] {
     return this._supportedChains
   }
 
