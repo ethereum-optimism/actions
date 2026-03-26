@@ -1,4 +1,5 @@
 import { MARKET_LOGO, SYMBOL_LOGO } from '@/constants/logos'
+import { getProviderDisplayName } from '@/constants/providers'
 import type { ActivityEntry } from '@/providers/ActivityLogProvider'
 import { displaySymbol } from '@/utils/tokenDisplay'
 
@@ -49,7 +50,9 @@ function buildSwapSummary(entry: ActivityEntry): SummarySegment[] {
       { type: 'text', value: ` for ${truncateAmount(m.amountOut)} ` },
       tokenSegment(m.assetOutSymbol, m.assetOutLogo),
       { type: 'text', value: ' on ' },
-      marketSegment(m.provider === 'velodrome' ? 'Aerodrome' : 'Uniswap'),
+      marketSegment(
+        getProviderDisplayName(m.provider ?? 'uniswap', m.chainId),
+      ),
     ]
   }
   return [{ type: 'text', value: 'Swapped tokens' }]

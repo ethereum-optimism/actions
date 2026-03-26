@@ -419,6 +419,7 @@ export function SwapAction({
       assetOutSymbol: assetOut.asset.metadata.symbol,
       assetOutLogo: assetOut.logo,
       chainId: assetIn.chainId,
+      provider: selectedProvider ?? undefined,
     })
 
     setReviewOpen(false)
