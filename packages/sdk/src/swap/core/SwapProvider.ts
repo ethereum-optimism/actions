@@ -335,7 +335,7 @@ export abstract class SwapProvider<
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
 
-  private executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
+  private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     this.validateQuoteExpiration(quote)
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
 
@@ -343,6 +343,25 @@ export abstract class SwapProvider<
       throw new Error(
         'SwapQuote.recipient is required for execution. Pass the quote through WalletSwapNamespace.execute() which injects the wallet address.',
       )
+    }
+
+    // If the recipient changed since the quote was built (e.g. quote from
+    // ActionsSwapNamespace executed through WalletSwapNamespace), re-encode
+    // calldata with the correct recipient to prevent tokens going to the wrong address.
+    if (quote.recipient !== quote.quotedRecipient) {
+      const freshQuote = await this._getQuote({
+        assetIn: quote.assetIn,
+        assetOut: quote.assetOut,
+        amountIn: quote.amountIn,
+        chainId: quote.chainId,
+        slippage: quote.slippage,
+        deadline: quote.deadline,
+        recipient: quote.recipient,
+      })
+      return this.buildSwapTransactions({
+        ...freshQuote,
+        recipient: quote.recipient,
+      })
     }
 
     return this.buildSwapTransactions(quote)
