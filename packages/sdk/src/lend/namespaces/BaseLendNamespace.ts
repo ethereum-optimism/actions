@@ -1,18 +1,14 @@
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
 import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
-import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   GetLendMarketParams,
   GetLendMarketsParams,
   LendMarket,
   LendMarketId,
 } from '@/types/lend/index.js'
+import type { LendProviders } from '@/types/providers.js'
 
-export type LendProviders = {
-  morpho?: LendProvider<LendProviderConfig>
-  aave?: LendProvider<LendProviderConfig>
-}
+export type { LendProviders } from '@/types/providers.js'
 
 /**
  * Base Lend Namespace

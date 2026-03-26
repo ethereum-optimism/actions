@@ -3,7 +3,7 @@ import type {
   LendMarketPosition,
   SupportedChainId,
   SwapMarket,
-  SwapPrice,
+  SwapQuote,
   TokenBalance,
   LendMarket,
   LendTransactionReceipt,
@@ -222,22 +222,24 @@ class ActionsApiClient {
     }))
   }
 
-  async getSwapPrice(
+  async getSwapQuote(
     {
       tokenInAddress,
       tokenOutAddress,
       chainId,
       amountIn,
       amountOut,
+      provider,
     }: {
       tokenInAddress: Address
       tokenOutAddress: Address
       chainId: SupportedChainId
       amountIn?: number
       amountOut?: number
+      provider?: string
     },
     headers: HeadersInit = {},
-  ): Promise<SwapPrice> {
+  ) {
     const params = new URLSearchParams({
       tokenInAddress,
       tokenOutAddress,
@@ -249,10 +251,13 @@ class ActionsApiClient {
     if (amountOut !== undefined) {
       params.set('amountOut', amountOut.toString())
     }
+    if (provider) {
+      params.set('provider', provider)
+    }
 
     const { result } = await this.request<{
-      result: Serialized<SwapPrice>
-    }>(`/swap/price?${params}`, {
+      result: Serialized<SwapQuote>
+    }>(`/swap/quote?${params}`, {
       method: 'GET',
       headers,
     })
@@ -262,8 +267,9 @@ class ActionsApiClient {
       amountOut: Number(result.amountOut),
       amountInRaw: BigInt(result.amountInRaw),
       amountOutRaw: BigInt(result.amountOutRaw),
+      amountOutMinRaw: BigInt(result.amountOutMinRaw),
       gasEstimate: result.gasEstimate ? BigInt(result.gasEstimate) : undefined,
-    } as SwapPrice
+    }
   }
 
   async executeSwap(
@@ -273,6 +279,7 @@ class ActionsApiClient {
       tokenOutAddress: Address
       chainId: SupportedChainId
       slippage?: number
+      provider?: string
     },
     headers: HeadersInit = {},
   ): Promise<{
@@ -282,8 +289,14 @@ class ActionsApiClient {
     priceImpact: number
     blockExplorerUrls?: string[]
   }> {
-    const { amountIn, tokenInAddress, tokenOutAddress, chainId, slippage } =
-      params
+    const {
+      amountIn,
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      slippage,
+      provider,
+    } = params
     const { result } = await this.request<{
       result: {
         amountIn: string
@@ -300,6 +313,7 @@ class ActionsApiClient {
         tokenOutAddress,
         chainId,
         slippage,
+        provider,
       }),
       headers,
     })

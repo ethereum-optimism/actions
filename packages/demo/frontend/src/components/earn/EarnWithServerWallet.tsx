@@ -35,21 +35,22 @@ function buildSwapOperations(
   getAuthHeaders: () => Promise<AuthHeaders>,
 ): Pick<
   EarnOperations,
-  'executeSwap' | 'getConfiguredAssets' | 'getSwapPrice'
+  'executeSwap' | 'getConfiguredAssets' | 'getSwapMarkets' | 'getSwapQuote'
 > {
   return {
-    executeSwap: async ({ amountIn, assetIn, assetOut, chainId }) => {
-      const tokenInAddress = assetIn.address[chainId]
-      const tokenOutAddress = assetOut.address[chainId]
+    executeSwap: async (quote) => {
+      const tokenInAddress = quote.assetIn.address[quote.chainId]
+      const tokenOutAddress = quote.assetOut.address[quote.chainId]
       if (!tokenInAddress || !tokenOutAddress) {
         throw new Error('Token address not found for chain')
       }
+      // Server wallet re-quotes server-side; pass the quote params for execution
       const result = await actionsApi.executeSwap(
         {
-          amountIn,
+          amountIn: quote.amountIn,
           tokenInAddress: tokenInAddress as Address,
           tokenOutAddress: tokenOutAddress as Address,
-          chainId,
+          chainId: quote.chainId,
         },
         await getAuthHeaders(),
       )
@@ -57,18 +58,11 @@ function buildSwapOperations(
     },
     getConfiguredAssets: async () =>
       actionsApi.getAssets(await getAuthHeaders()),
-    getSwapPrice: async (params) => {
+    getSwapMarkets: async () =>
+      actionsApi.getSwapMarkets(undefined, await getAuthHeaders()),
+    getSwapQuote: async (params) => {
       try {
-        const price = await actionsApi.getSwapPrice(
-          params,
-          await getAuthHeaders(),
-        )
-        return {
-          price: price.price,
-          priceImpact: price.priceImpact,
-          amountIn: price.amountIn,
-          amountOut: price.amountOut,
-        }
+        return await actionsApi.getSwapQuote(params, await getAuthHeaders())
       } catch {
         return null
       }

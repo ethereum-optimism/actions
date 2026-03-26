@@ -20,6 +20,7 @@ import {
 } from '@/lend/providers/aave/addresses.js'
 import { MORPHO_CONTRACTS } from '@/lend/providers/morpho/contracts.js'
 import { UNISWAP_ADDRESSES } from '@/swap/providers/uniswap/addresses.js'
+import { VELODROME_CHAINS } from '@/swap/providers/velodrome/addresses.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendMarketConfig } from '@/types/lend/index.js'
 import {
@@ -294,6 +295,15 @@ describe('hardcoded address maps contain valid EVM addresses', () => {
     expect(() =>
       validateAddressMap(
         UNISWAP_ADDRESSES as Record<number, Record<string, Address>>,
+      ),
+    ).not.toThrow()
+    // Velodrome: contracts are cleanly separated from metadata
+    const veloContracts = Object.fromEntries(
+      Object.entries(VELODROME_CHAINS).map(([id, cfg]) => [id, cfg!.contracts]),
+    )
+    expect(() =>
+      validateAddressMap(
+        veloContracts as unknown as Record<number, Record<string, Address>>,
       ),
     ).not.toThrow()
   })

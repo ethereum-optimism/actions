@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { encodeFunctionData, erc20Abi, parseUnits } from 'viem'
+import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
@@ -21,6 +21,7 @@ import type {
   LendTransaction,
   TransactionData,
 } from '@/types/lend/index.js'
+import { buildErc20ApprovalTx } from '@/utils/approve.js'
 import { validateMarketAsset } from '@/utils/markets.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
@@ -283,17 +284,7 @@ export abstract class LendProvider<
     spender: Address,
     amount: bigint,
   ): TransactionData {
-    const approvalCallData = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [spender, amount],
-    })
-
-    return {
-      to: tokenAddress,
-      data: approvalCallData,
-      value: 0n,
-    }
+    return buildErc20ApprovalTx(tokenAddress, spender, amount)
   }
 
   /**

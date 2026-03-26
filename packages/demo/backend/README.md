@@ -36,6 +36,15 @@ A backend service for interacting with the Actions SDK.
    pnpm dev
    ```
 
+## Deploy Scripts
+
+| Command | Description |
+| ------- | ----------- |
+| `pnpm deploy:uniswap` | Deploy Uniswap V4 pool for demo tokens on Base Sepolia |
+| `pnpm deploy:velodrome` | Deploy Velodrome volatile pool for demo tokens on Base Sepolia |
+
+Both require `BASE_SEPOLIA_RPC_URL` and `DEMO_MARKET_SETUP_PRIVATE_KEY` in `.env`.
+
 ## API Endpoints
 
 | Method | Endpoint            | Description         |

@@ -1,8 +1,7 @@
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
-import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 
 /**
@@ -13,14 +12,10 @@ import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstra
  */
 export interface HostedProviderDeps {
   chainManager: ChainManager
-  lendProviders?: {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  }
-  swapProviders?: {
-    uniswap?: SwapProvider<SwapProviderConfig>
-  }
+  lendProviders?: LendProviders
+  swapProviders?: SwapProviders
   supportedAssets?: Asset[]
+  swapSettings?: SwapSettings
 }
 
 /**

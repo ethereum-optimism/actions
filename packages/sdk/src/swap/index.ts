@@ -12,3 +12,8 @@ export type {
   UniswapSwapProviderConfig,
 } from '@/swap/providers/uniswap/types.js'
 export { UniswapSwapProvider } from '@/swap/providers/uniswap/UniswapSwapProvider.js'
+export type {
+  VelodromeMarketConfig,
+  VelodromeSwapProviderConfig,
+} from '@/swap/providers/velodrome/types.js'
+export { VelodromeSwapProvider } from '@/swap/providers/velodrome/VelodromeSwapProvider.js'

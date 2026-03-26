@@ -1,12 +1,16 @@
 import type { UniswapSwapProviderConfig } from '@/swap/providers/uniswap/types.js'
+import type { VelodromeSwapProviderConfig } from '@/swap/providers/velodrome/types.js'
 import type { Asset } from '@/types/asset.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
 export type { LendProviderConfig, SwapProviderConfig }
+// Re-export centralized provider maps
+export type { LendProviders, SwapProviders } from '@/types/providers.js'
 
 /** Require at least one property to be defined */
 type RequireAtLeastOne<T> = {
@@ -17,19 +21,54 @@ type RequireAtLeastOne<T> = {
  * Lending configuration — at least one provider must be configured
  */
 export type LendConfig = RequireAtLeastOne<{
-  /** Morpho lending provider configuration */
-  morpho?: LendProviderConfig
-  /** Aave lending provider configuration */
-  aave?: LendProviderConfig
+  [K in keyof LendProviders]: LendProviderConfig
 }>
 
+/** Names of available swap providers — derived from SwapProviders registry */
+export type SwapProviderName = keyof SwapProviders
+
+/** Names of available lend providers — derived from LendProviders registry */
+export type LendProviderName = keyof LendProviders
+
+/** Routing strategy for selecting a provider when multiple are configured. */
+export type SwapRoutingStrategy = 'price'
+
 /**
- * Swap configuration — at least one provider must be configured
+ * Shared swap settings applied across all providers.
+ * Provider-level values override these when set.
+ */
+export interface SwapSettings {
+  /** Default slippage tolerance (e.g., 0.005 for 0.5%). Defaults to 0.005. */
+  defaultSlippage?: number
+  /** Maximum allowed slippage (e.g., 0.5 for 50%). Defaults to 0.5. */
+  maxSlippage?: number
+  /** Quote expiration in seconds from now. Defaults to 60. */
+  quoteExpirationSeconds?: number
+  /** Permit2 sub-approval expiration in seconds from now. Defaults to 2592000 (30 days). */
+  permit2ExpirationSeconds?: number
+  /**
+   * Routing strategy for multi-provider selection.
+   * 'price' fetches quotes from all eligible providers and returns the best price.
+   * Omit to fall back to market-matching heuristics.
+   */
+  routing?: SwapRoutingStrategy
+  /** Provider to prefer when routing produces a tie, or to always use when no routing strategy is set. */
+  defaultProvider?: SwapProviderName
+}
+
+/**
+ * Swap configuration — at least one provider must be configured.
+ * Shared settings go in `config`; per-provider settings go under the provider key.
  */
 export type SwapConfig = RequireAtLeastOne<{
   /** Uniswap swap provider configuration */
   uniswap?: UniswapSwapProviderConfig
-}>
+  /** Velodrome/Aerodrome swap provider configuration */
+  velodrome?: VelodromeSwapProviderConfig
+}> & {
+  /** Shared settings applied across all providers */
+  settings?: SwapSettings
+}
 
 /**
  * Network configuration for lending providers

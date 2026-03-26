@@ -2,13 +2,12 @@ import { type Address, type PublicClient, zeroAddress } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { Asset } from '@/types/asset.js'
-
 import {
   calculatePriceImpact,
   encodeUniversalRouterSwap,
   getQuote,
-} from '../encoding.js'
+} from '@/swap/providers/uniswap/encoding.js'
+import type { Asset } from '@/types/asset.js'
 
 const USDC: Asset = {
   type: 'erc20',

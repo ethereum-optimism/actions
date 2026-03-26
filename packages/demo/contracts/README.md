@@ -152,11 +152,37 @@ DEMO_USDC_ADDRESS=0x... DEMO_OP_ADDRESS=0x... \
   --private-key <your_private_key>
 ```
 
+### DeployVelodromeMarket.s.sol
+
+Creates a Velodrome volatile pool for DemoUSDC/DemoOP with initial liquidity on Base Sepolia. Uses the Velodrome testnet deployment (Router + PoolFactory).
+
+**What it creates:**
+
+- Velodrome volatile pool (USDC_DEMO/OP_DEMO)
+- Initial liquidity (1M USDC + 1M OP)
+
+**Deploy to Base Sepolia:**
+
+```bash
+DEMO_USDC_ADDRESS=0x... DEMO_OP_ADDRESS=0x... \
+  forge script script/DeployVelodromeMarket.s.sol:DeployVelodromeMarket \
+  --rpc-url https://sepolia.base.org \
+  --broadcast \
+  --private-key <your_private_key>
+```
+
+**Or use the TypeScript wrapper:**
+
+```bash
+cd packages/demo/backend
+pnpm deploy:velodrome
+```
+
 ### deploy-demo.sh (Orchestrator)
 
 Shell script that runs all deployments in order, tracking state in `state/deployments.json`. Idempotent — skips steps that are already complete.
 
-**Flow:** Deploy tokens → Deploy Morpho market → Deploy Uniswap pool
+**Flow:** Deploy tokens → Deploy Morpho market → Deploy Uniswap pool → Deploy Velodrome pool
 
 ```bash
 pnpm deploy:demo -- --rpc-url https://sepolia.base.org --private-key <your_private_key>
@@ -179,6 +205,17 @@ Deploys the full demo infrastructure (tokens, Morpho market, Uniswap pool) to Ba
 ```bash
 pnpm deploy:demo -- --rpc-url https://sepolia.base.org --private-key <your_private_key>
 ```
+
+### `pnpm deploy:velodrome`
+
+Deploys a Velodrome volatile pool for DemoUSDC/DemoOP on Base Sepolia. Reads token addresses from backend config and credentials from `.env`.
+
+```bash
+cd packages/demo/backend
+pnpm deploy:velodrome
+```
+
+Requires `BASE_SEPOLIA_RPC_URL` and `DEMO_MARKET_SETUP_PRIVATE_KEY` in `.env`.
 
 ### `pnpm deploy:faucet:supersim`
 

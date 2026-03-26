@@ -22,8 +22,14 @@ export function Modal({
     <div
       style={{
         position: 'fixed',
-        inset: 0,
-        zIndex: 50,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        minHeight: '100dvh',
+        zIndex: 100,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

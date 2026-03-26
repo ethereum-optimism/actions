@@ -1,4 +1,6 @@
 import type { SwapAsset } from '@/hooks/useSwapAssets'
+import { MARKET_LOGO } from '@/constants/logos'
+import { getProviderDisplayName } from '@/constants/providers'
 import {
   deriveUsdRates,
   displaySymbol,
@@ -110,15 +112,22 @@ function SwapDetails({
   symbolOut,
   formattedMinReceived,
   slippage,
+  selectedProvider,
+  chainId,
 }: {
-  priceQuote: { price: string; priceImpact: number }
+  priceQuote: { price: number; priceImpact: number }
   symbolIn: string
   symbolOut: string
   formattedMinReceived: { main: string; secondary?: string }
   slippage: number
+  selectedProvider?: string | null
+  chainId?: number
 }) {
   const formattedRate = formatSwapAmount(priceQuote.price)
   const impactPct = (priceQuote.priceImpact * 100).toFixed(3)
+  const providerDisplayName = selectedProvider
+    ? getProviderDisplayName(selectedProvider, chainId)
+    : ''
 
   return (
     <div
@@ -132,6 +141,23 @@ function SwapDetails({
         fontSize: '14px',
       }}
     >
+      {selectedProvider && (
+        <DetailRow
+          label="Swap provider"
+          value={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {MARKET_LOGO[providerDisplayName] && (
+                <img
+                  src={MARKET_LOGO[providerDisplayName]}
+                  alt={providerDisplayName}
+                  style={{ width: '16px', height: '16px' }}
+                />
+              )}
+              {providerDisplayName}
+            </span>
+          }
+        />
+      )}
       <DetailRow
         label="Exchange rate"
         value={
@@ -168,8 +194,9 @@ interface ReviewSwapModalProps {
   assetOut: SwapAsset
   amountIn: string
   amountOut: string
-  priceQuote: { price: string; priceImpact: number } | null
+  priceQuote: { price: number; priceImpact: number } | null
   isExecuting: boolean
+  selectedProvider?: string | null
   slippage?: number
 }
 
@@ -183,6 +210,7 @@ export function ReviewSwapModal({
   amountOut,
   priceQuote,
   isExecuting,
+  selectedProvider,
   slippage = 0.005,
 }: ReviewSwapModalProps) {
   const symbolIn = displaySymbol(assetIn.asset.metadata.symbol)
@@ -232,6 +260,8 @@ export function ReviewSwapModal({
           symbolOut={symbolOut}
           formattedMinReceived={formattedMinReceived}
           slippage={slippage}
+          selectedProvider={selectedProvider}
+          chainId={assetIn.chainId}
         />
       )}
 

@@ -1,17 +1,17 @@
-import type { LendProvider } from '@/lend/index.js'
 import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/index.js'
-import { UniswapSwapProvider } from '@/swap/index.js'
+import { UniswapSwapProvider, VelodromeSwapProvider } from '@/swap/index.js'
 import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
 import type {
   ActionsConfig,
   AssetsConfig,
-  LendProviderConfig,
-  SwapProviderConfig,
+  LendProviders,
+  SwapProviders,
+  SwapSettings,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import { getAllAssetAddresses } from '@/utils/assets.js'
 import { validateConfigAddresses } from '@/utils/validateAddresses.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
@@ -48,14 +48,10 @@ export class Actions<
   >
   private chainManager: ChainManager
   private _lend?: ActionsLendNamespace
-  private _lendProviders: {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  } = {}
+  private _lendProviders: LendProviders = {}
   private _swap?: ActionsSwapNamespace
-  private _swapProviders: {
-    uniswap?: SwapProvider<SwapProviderConfig>
-  } = {}
+  private _swapProviders: SwapProviders = {}
+  private _swapSettings?: SwapSettings
   private _assetsConfig?: AssetsConfig
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
     THostedWalletProvidersSchema['providerInstances'],
@@ -96,12 +92,27 @@ export class Actions<
       this._lend = new ActionsLendNamespace(this._lendProviders)
     }
 
+    const swapSettings = config.swap?.settings
     if (config.swap?.uniswap) {
       this._swapProviders.uniswap = new UniswapSwapProvider(
         config.swap.uniswap,
         this.chainManager,
+        swapSettings,
       )
-      this._swap = new ActionsSwapNamespace(this._swapProviders)
+    }
+    if (config.swap?.velodrome) {
+      this._swapProviders.velodrome = new VelodromeSwapProvider(
+        config.swap.velodrome,
+        this.chainManager,
+        swapSettings,
+      )
+    }
+    this._swapSettings = swapSettings
+    if (Object.values(this._swapProviders).some(Boolean)) {
+      this._swap = new ActionsSwapNamespace(
+        this._swapProviders,
+        this._swapSettings,
+      )
     }
 
     this.wallet = this.createWalletNamespace(config.wallet)
@@ -127,10 +138,7 @@ export class Actions<
    * Get the lend provider instances
    * @returns Object containing configured lend providers
    */
-  get lendProviders(): {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  } {
+  get lendProviders(): LendProviders {
     return this._lendProviders
   }
 
@@ -154,9 +162,7 @@ export class Actions<
    * Get the swap provider instances
    * @returns Object containing configured swap providers
    */
-  get swapProviders(): {
-    uniswap?: SwapProvider<SwapProviderConfig>
-  } {
+  get swapProviders(): SwapProviders {
     return this._swapProviders
   }
 
@@ -172,23 +178,19 @@ export class Actions<
       return []
     }
 
-    const allowList = this._assetsConfig.allow ?? []
+    const allow = this._assetsConfig.allow ?? []
+    const block = this._assetsConfig.block
 
-    if (this._assetsConfig.block && this._assetsConfig.block.length > 0) {
-      const blockedAddresses = new Set(
-        this._assetsConfig.block.flatMap((asset) =>
-          Object.values(asset.address).map((addr) => addr.toLowerCase()),
-        ),
-      )
-      return allowList.filter((token) => {
-        const tokenAddresses = Object.values(token.address).map((addr) =>
-          addr.toLowerCase(),
-        )
-        return !tokenAddresses.some((addr) => blockedAddresses.has(addr))
-      })
+    if (!block?.length) {
+      return allow
     }
 
-    return allowList
+    const blockedAddresses = new Set(block.flatMap(getAllAssetAddresses))
+
+    return allow.filter((asset) => {
+      const addresses = getAllAssetAddresses(asset)
+      return !addresses.some((addr) => blockedAddresses.has(addr))
+    })
   }
 
   /**
@@ -229,6 +231,7 @@ export class Actions<
         lendProviders: this._lendProviders,
         swapProviders: this._swapProviders,
         supportedAssets: this.getSupportedAssets(),
+        swapSettings: this._swapSettings,
       },
       options,
     )

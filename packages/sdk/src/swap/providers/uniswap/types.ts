@@ -14,11 +14,12 @@ export interface UniswapMarketConfig extends SwapMarketConfig {
 }
 
 /**
- * Uniswap swap provider configuration
+ * Uniswap swap provider configuration.
+ * Provider-level values override the shared SwapGlobalConfig.
  */
 export interface UniswapSwapProviderConfig extends SwapProviderConfig {
   marketAllowlist?: UniswapMarketConfig[]
   marketBlocklist?: UniswapMarketConfig[]
-  /** Permit2 approval expiry in seconds from now. Defaults to 30 days. */
-  permit2ExpirySeconds?: number
+  /** Permit2 sub-approval expiration override in seconds from now. */
+  permit2ExpirationSeconds?: number
 }

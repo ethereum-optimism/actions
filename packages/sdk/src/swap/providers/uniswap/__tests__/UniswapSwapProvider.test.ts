@@ -5,10 +5,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { MockWETHAsset } from '@/__mocks__/MockAssets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { UniswapSwapProviderConfig } from '@/swap/providers/uniswap/types.js'
+import { UniswapSwapProvider } from '@/swap/providers/uniswap/UniswapSwapProvider.js'
 import type { Asset } from '@/types/asset.js'
-
-import type { UniswapSwapProviderConfig } from '../types.js'
-import { UniswapSwapProvider } from '../UniswapSwapProvider.js'
 
 const CHAIN_ID = baseSepolia.id as SupportedChainId
 
@@ -127,32 +126,33 @@ describe('UniswapSwapProvider', () => {
     })
   })
 
-  describe('getPrice', () => {
-    it('returns price quote', async () => {
+  describe('getQuote', () => {
+    it('returns swap quote', async () => {
       const provider = createProvider()
-      const price = await provider.getPrice({
+      const quote = await provider.getQuote({
         assetIn: USDC,
         assetOut: OP,
         amountIn: 100,
         chainId: CHAIN_ID,
       })
 
-      expect(price.price).toBeDefined()
-      expect(price.amountIn).toBeDefined()
-      expect(price.amountOut).toBeDefined()
-      expect(price.route.path).toEqual([USDC, OP])
+      expect(quote.price).toBeTypeOf('number')
+      expect(quote.amountIn).toBeDefined()
+      expect(quote.amountOut).toBeDefined()
+      expect(quote.route.path).toEqual([USDC, OP])
+      expect(quote.execution).toBeDefined()
     })
 
     it('defaults to 1 unit when no amount specified', async () => {
       const provider = createProvider()
-      const price = await provider.getPrice({
+      const quote = await provider.getQuote({
         assetIn: USDC,
         assetOut: OP,
         chainId: CHAIN_ID,
       })
 
       // 1 USDC = 1000000 (6 decimals)
-      expect(price.amountInRaw).toBe(1000000n)
+      expect(quote.amountInRaw).toBe(1000000n)
     })
   })
 

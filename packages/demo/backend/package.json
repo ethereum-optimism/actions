@@ -35,7 +35,8 @@
     "test": "vitest --run",
     "typecheck": "tsc --noEmit",
     "attribution": "tsx scripts/attribution.ts",
-    "deploy:uniswap": "tsx scripts/deployUniswapMarket.ts"
+    "deploy:uniswap": "tsx scripts/deployUniswapMarket.ts",
+    "deploy:velodrome": "tsx scripts/deployVelodromeMarket.ts"
   },
   "dependencies": {
     "@eth-optimism/actions-sdk": "workspace:*",

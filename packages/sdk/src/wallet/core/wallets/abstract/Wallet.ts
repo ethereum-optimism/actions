@@ -1,14 +1,13 @@
 import type { Address, LocalAccount } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
-import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import type {
   BatchTransactionReturnType,
@@ -24,16 +23,11 @@ export abstract class Wallet {
   /** Lend namespace with all lending operations */
   lend?: WalletLendNamespace
   /** Providers for lending market operations */
-  protected lendProviders: {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  }
+  protected lendProviders: LendProviders
   /** Swap namespace with all swap operations */
   swap?: WalletSwapNamespace
   /** Providers for swap operations */
-  protected swapProviders: {
-    uniswap?: SwapProvider<SwapProviderConfig>
-  }
+  protected swapProviders: SwapProviders
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
   /** List of supported assets for this wallet */
@@ -65,14 +59,10 @@ export abstract class Wallet {
    */
   protected constructor(
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-    },
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
+    swapSettings?: SwapSettings,
   ) {
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
@@ -81,8 +71,12 @@ export abstract class Wallet {
     if (this.lendProviders.morpho || this.lendProviders.aave) {
       this.lend = new WalletLendNamespace(this.lendProviders, this)
     }
-    if (this.swapProviders.uniswap) {
-      this.swap = new WalletSwapNamespace(this.swapProviders, this)
+    if (Object.values(this.swapProviders).some(Boolean)) {
+      this.swap = new WalletSwapNamespace(
+        this.swapProviders,
+        this,
+        swapSettings,
+      )
     }
   }
 

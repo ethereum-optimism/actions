@@ -1,37 +1,169 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { SwapProviderName, SwapSettings } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
   SwapMarket,
-  SwapPrice,
-  SwapPriceParams,
   SwapProviderConfig,
   SwapProviders,
+  SwapQuote,
+  SwapQuoteParams,
 } from '@/types/swap/index.js'
 
 /**
  * Base swap namespace with shared read-only operations
  */
 export abstract class BaseSwapNamespace {
-  constructor(protected readonly providers: SwapProviders) {}
+  constructor(
+    protected readonly providers: SwapProviders,
+    protected readonly settings?: SwapSettings,
+  ) {}
 
   /**
-   * Get price quote for a swap
+   * Get a swap quote with pre-built execution data.
+   * When `routing: 'price'` is set in settings and no explicit provider is requested,
+   * fetches quotes from all eligible providers in parallel and returns the best price.
+   * @param params - Quote parameters (assets, amounts, chain, optional provider)
+   * @returns The best available SwapQuote
    */
-  async price(params: SwapPriceParams): Promise<SwapPrice> {
-    const provider = this.getProvider()
-    return provider.getPrice(params)
+  async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    // Explicit provider — skip routing
+    if (params.provider) {
+      const provider = this.resolveProvider(
+        params.provider,
+        params.assetIn,
+        params.assetOut,
+        params.chainId,
+      )
+      return provider.getQuote(params)
+    }
+
+    // Price routing — quote all eligible providers, return best
+    if (this.settings?.routing === 'price') {
+      return this.getBestQuote(params)
+    }
+
+    // No routing — resolve single provider via fallback logic
+    const provider = this.resolveProvider(
+      undefined,
+      params.assetIn,
+      params.assetOut,
+      params.chainId,
+    )
+    return provider.getQuote(params)
   }
 
   /**
-   * Get a specific swap market
-   * @param params - Market identifier
+   * Fetch quotes from all eligible providers in parallel and return the best.
+   * @param params - Quote parameters
+   * @returns The quote with the highest amountOut
+   * @throws If no provider returns a valid quote
+   */
+  private async getBestQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    const quotes = await this.fetchAllQuotes(params)
+
+    let best: SwapQuote | null = null
+    for (const quote of quotes) {
+      if (!best || quote.amountOutRaw > best.amountOutRaw) {
+        best = quote
+      }
+    }
+
+    if (!best) {
+      throw new Error(
+        `All providers failed to quote ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol}`,
+      )
+    }
+
+    return best
+  }
+
+  /**
+   * Fetch quotes from all eligible providers in parallel.
+   * Providers that don't support the pair or fail to quote are silently skipped.
+   * @param params - Quote parameters
+   * @returns Array of successful quotes (may be empty if all providers fail)
+   */
+  private async fetchAllQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
+    const eligible = this.getAllProviders().filter((p) =>
+      p.isMarketSupported(params.assetIn, params.assetOut, params.chainId),
+    )
+
+    if (eligible.length === 0) {
+      throw new Error(
+        `No provider supports ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol} on chain ${params.chainId}`,
+      )
+    }
+
+    const results = await Promise.allSettled(
+      eligible.map((p) => p.getQuote(params)),
+    )
+
+    return results
+      .filter(
+        (r): r is PromiseFulfilledResult<SwapQuote> => r.status === 'fulfilled',
+      )
+      .map((r) => r.value)
+  }
+
+  /**
+   * Fetch quotes from all eligible providers in parallel.
+   * Unlike getQuote(), returns all successful quotes instead of just the best.
+   * If an explicit provider is specified, returns a single-element array from that provider.
+   * @param params - Quote parameters (assets, amounts, chain, optional provider)
+   * @returns Array of SwapQuotes sorted by amountOut descending (best first)
+   */
+  async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
+    if (params.provider) {
+      const provider = this.resolveProvider(
+        params.provider,
+        params.assetIn,
+        params.assetOut,
+        params.chainId,
+      )
+      return [await provider.getQuote(params)]
+    }
+
+    const quotes = await this.fetchAllQuotes(params)
+    return quotes.sort((a, b) =>
+      a.amountOutRaw > b.amountOutRaw
+        ? -1
+        : a.amountOutRaw < b.amountOutRaw
+          ? 1
+          : 0,
+    )
+  }
+
+  /**
+   * Get a specific swap market by ID.
+   * @param params - Market identifier (poolId + chainId)
+   * @param provider - Optional provider name to query directly instead of searching all
    * @returns Market information
    */
-  async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
-    const provider = this.getProvider()
-    return provider.getMarket(params)
+  async getMarket(
+    params: GetSwapMarketParams,
+    provider?: SwapProviderName,
+  ): Promise<SwapMarket> {
+    if (provider) {
+      const named = this.providers[provider]
+      if (!named) {
+        throw new Error(`Swap provider "${provider}" not configured`)
+      }
+      return named.getMarket(params)
+    }
+
+    for (const p of this.getAllProviders()) {
+      try {
+        return await p.getMarket(params)
+      } catch {
+        continue
+      }
+    }
+    throw new Error(
+      `Market with poolId ${params.poolId} not found on chain ${params.chainId}`,
+    )
   }
 
   /**
@@ -59,19 +191,68 @@ export abstract class BaseSwapNamespace {
     return Array.from(chainIds)
   }
 
-  // SwapProviders keys are optional (uniswap?, aerodrome?, etc.) so filter out unconfigured ones
+  // SwapProviders keys are optional (uniswap?, velodrome?, etc.) so filter out unconfigured ones
   protected getAllProviders(): Array<SwapProvider<SwapProviderConfig>> {
     return Object.values(this.providers).filter(
       (p): p is SwapProvider<SwapProviderConfig> => p !== undefined,
     )
   }
 
-  // Future: resolve the best provider for given params (e.g. best price across Uniswap, Aerodrome, etc.)
-  protected getProvider(): SwapProvider<SwapProviderConfig> {
-    const provider = this.providers.uniswap
-    if (!provider) {
+  /**
+   * Resolve which provider handles a request.
+   *
+   * Precedence:
+   * 1. Explicit `provider` param on the call
+   * 2. routing.defaultProvider (when no strategy set)
+   * 3. routing.strategy match (market-aware, defaultProvider as tiebreaker)
+   * 4. First provider whose allowlist matches
+   * 5. First configured provider
+   */
+  protected resolveProvider(
+    provider: SwapProviderName | undefined,
+    assetIn: Asset,
+    assetOut: Asset,
+    chainId: SupportedChainId,
+  ): SwapProvider<SwapProviderConfig> {
+    const allProviders = this.getAllProviders()
+    if (allProviders.length === 0) {
       throw new Error('No swap provider configured')
     }
-    return provider
+
+    // 1. Explicit provider param
+    if (provider) {
+      const named = this.providers[provider]
+      if (!named) {
+        throw new Error(`Swap provider "${provider}" not configured`)
+      }
+      return named
+    }
+
+    // Single provider — no routing needed
+    if (allProviders.length === 1) {
+      return allProviders[0]
+    }
+
+    // 2. defaultProvider with no routing strategy — always use it
+    if (this.settings?.defaultProvider && !this.settings.routing) {
+      const provider = this.providers[this.settings.defaultProvider]
+      if (provider) return provider
+    }
+
+    // 3. Match by market allowlist
+    for (const p of allProviders) {
+      if (p.isMarketSupported(assetIn, assetOut, chainId)) {
+        return p
+      }
+    }
+
+    // 4. Match by chain support
+    for (const p of allProviders) {
+      if (p.isChainSupported(chainId)) {
+        return p
+      }
+    }
+
+    return allProviders[0]
   }
 }

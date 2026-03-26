@@ -43,6 +43,62 @@ describe('SwapProvider', () => {
       expect(provider.defaultSlippage).toBe(0.01)
     })
 
+    it('should use settings slippage when provider does not set one', () => {
+      const provider = new MockSwapProvider({}, undefined, undefined, {
+        defaultSlippage: 0.02,
+      })
+      expect(provider.defaultSlippage).toBe(0.02)
+    })
+
+    it('should prefer provider slippage over settings', () => {
+      const provider = new MockSwapProvider(
+        { defaultSlippage: 0.03 },
+        undefined,
+        undefined,
+        { defaultSlippage: 0.02 },
+      )
+      expect(provider.defaultSlippage).toBe(0.03)
+    })
+
+    it('should resolve maxSlippage: provider → settings → default', () => {
+      expect(new MockSwapProvider().maxSlippage).toBe(0.5)
+      expect(
+        new MockSwapProvider({}, undefined, undefined, { maxSlippage: 0.3 })
+          .maxSlippage,
+      ).toBe(0.3)
+      expect(
+        new MockSwapProvider({ maxSlippage: 0.1 }, undefined, undefined, {
+          maxSlippage: 0.3,
+        }).maxSlippage,
+      ).toBe(0.1)
+    })
+
+    it('should resolve quoteExpirationSeconds: provider → settings → default', () => {
+      expect(new MockSwapProvider().quoteExpirationSeconds).toBe(60)
+      expect(
+        new MockSwapProvider({}, undefined, undefined, {
+          quoteExpirationSeconds: 120,
+        }).quoteExpirationSeconds,
+      ).toBe(120)
+      expect(
+        new MockSwapProvider(
+          { quoteExpirationSeconds: 30 },
+          undefined,
+          undefined,
+          { quoteExpirationSeconds: 120 },
+        ).quoteExpirationSeconds,
+      ).toBe(30)
+    })
+
+    it('should resolve permit2ExpirationSeconds: provider → settings → default', () => {
+      expect(new MockSwapProvider().permit2ExpirationSeconds).toBe(2_592_000)
+      expect(
+        new MockSwapProvider({}, undefined, undefined, {
+          permit2ExpirationSeconds: 86400,
+        }).permit2ExpirationSeconds,
+      ).toBe(86400)
+    })
+
     it('should store market allowlist when provided', () => {
       const config: SwapMarketConfig = {
         assets: [MockUSDC, MockWETH],
@@ -169,11 +225,11 @@ describe('SwapProvider', () => {
     })
   })
 
-  describe('getPrice()', () => {
+  describe('getQuote()', () => {
     it('should throw if chain not supported', async () => {
       const provider = new MockSwapProvider()
       await expect(
-        provider.getPrice({
+        provider.getQuote({
           assetIn: MockUSDC,
           assetOut: MockWETH,
           chainId: 999 as SupportedChainId,
@@ -181,19 +237,19 @@ describe('SwapProvider', () => {
       ).rejects.toThrow('Chain 999 is not supported')
     })
 
-    it('should return price quote', async () => {
+    it('should return quote', async () => {
       const provider = new MockSwapProvider()
-      const price = await provider.getPrice({
+      const quote = await provider.getQuote({
         assetIn: MockUSDC,
         assetOut: MockWETH,
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
       })
 
-      expect(price.price).toBeDefined()
-      expect(price.amountIn).toBeDefined()
-      expect(price.amountOut).toBeDefined()
-      expect(price.route).toBeDefined()
+      expect(quote.price).toBeDefined()
+      expect(quote.amountIn).toBeDefined()
+      expect(quote.amountOut).toBeDefined()
+      expect(quote.route).toBeDefined()
     })
   })
 
@@ -428,6 +484,92 @@ describe('SwapProvider', () => {
           10 as SupportedChainId,
         ),
       ).not.toThrow()
+    })
+
+    it('should filter blocked markets from getMarkets()', async () => {
+      const allowConfig: SwapMarketConfig = {
+        assets: [MockUSDC, MockWETH, MockOP],
+        chainId: 84532 as SupportedChainId,
+      }
+      const blockConfig: SwapMarketConfig = {
+        assets: [MockUSDC, MockOP],
+        chainId: 84532 as SupportedChainId,
+      }
+      const provider = new MockSwapProvider({
+        marketAllowlist: [allowConfig],
+        marketBlocklist: [blockConfig],
+      })
+
+      // Mock _getMarkets to return markets with real assets
+      provider.mockGetMarkets.mockResolvedValue([
+        {
+          marketId: { poolId: '0xpool1', chainId: 84532 as SupportedChainId },
+          assets: [MockUSDC, MockWETH],
+          fee: 0,
+          provider: 'uniswap',
+        },
+        {
+          marketId: { poolId: '0xpool2', chainId: 84532 as SupportedChainId },
+          assets: [MockUSDC, MockOP],
+          fee: 0,
+          provider: 'uniswap',
+        },
+      ])
+
+      const markets = await provider.getMarkets()
+      // USDC/OP is blocklisted, only USDC/WETH should remain
+      expect(markets).toHaveLength(1)
+      expect(markets[0].assets[0]).toBe(MockUSDC)
+      expect(markets[0].assets[1]).toBe(MockWETH)
+    })
+
+    it('should reject blocked market from getMarket()', async () => {
+      const blockConfig: SwapMarketConfig = {
+        assets: [MockUSDC, MockOP],
+        chainId: 84532 as SupportedChainId,
+      }
+      const provider = new MockSwapProvider({
+        marketBlocklist: [blockConfig],
+      })
+
+      // Mock _getMarket to return a blocked market
+      provider.mockGetMarket.mockResolvedValue({
+        marketId: { poolId: '0xpool1', chainId: 84532 as SupportedChainId },
+        assets: [MockUSDC, MockOP],
+        fee: 0,
+        provider: 'uniswap',
+      })
+
+      await expect(
+        provider.getMarket({
+          poolId: '0xpool1',
+          chainId: 84532 as SupportedChainId,
+        }),
+      ).rejects.toThrow('is blocked')
+    })
+
+    it('should allow non-blocked market from getMarket()', async () => {
+      const blockConfig: SwapMarketConfig = {
+        assets: [MockUSDC, MockOP],
+        chainId: 84532 as SupportedChainId,
+      }
+      const provider = new MockSwapProvider({
+        marketBlocklist: [blockConfig],
+      })
+
+      provider.mockGetMarket.mockResolvedValue({
+        marketId: { poolId: '0xpool1', chainId: 84532 as SupportedChainId },
+        assets: [MockUSDC, MockWETH],
+        fee: 0,
+        provider: 'uniswap',
+      })
+
+      const market = await provider.getMarket({
+        poolId: '0xpool1',
+        chainId: 84532 as SupportedChainId,
+      })
+      expect(market.assets[0]).toBe(MockUSDC)
+      expect(market.assets[1]).toBe(MockWETH)
     })
 
     it('should scope filter to specific chainId when provided', () => {
