@@ -110,6 +110,14 @@ export abstract class SwapProvider<
   abstract protocolSupportedChainIds(): SupportedChainId[]
 
   /**
+   * Contract addresses for all supported chains.
+   * @description Used for automated address validation in tests.
+   * Each provider extracts addresses from its chain configuration.
+   * @returns Map of chain ID to array of contract addresses
+   */
+  abstract contractAddresses(): Record<number, Address[]>
+
+  /**
    * Effective supported chain IDs.
    * @description Intersection of the protocol's supported chains,
    * the Actions SDK's known chains, and the developer's ActionsConfig.chains.

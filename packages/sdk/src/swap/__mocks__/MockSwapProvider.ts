@@ -83,6 +83,13 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this._supportedChains
   }
 
+  contractAddresses(): Record<number, Address[]> {
+    // Mock implementation returns empty addresses for supported chains
+    return Object.fromEntries(
+      this._supportedChains.map((chainId) => [chainId, []]),
+    )
+  }
+
   reset(): void {
     vi.clearAllMocks()
   }

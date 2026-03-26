@@ -72,6 +72,13 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     return [1, 130, 8453, 84532]
   }
 
+  contractAddresses(): Record<number, Address[]> {
+    // Mock implementation returns empty addresses for supported chains
+    return Object.fromEntries(
+      this.protocolSupportedChainIds().map((chainId) => [chainId, []]),
+    )
+  }
+
   constructor(
     config?: LendProviderConfig,
     mockConfig?: Partial<MockLendProviderConfig>,

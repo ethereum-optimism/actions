@@ -19,6 +19,7 @@ import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 import { POOL_ABI, WETH_GATEWAY_ABI } from './abis/pool.js'
 import {
+  AAVE_CHAINS,
   getPoolAddress,
   getSupportedChainIds,
   getWETHGatewayAddress,
@@ -32,6 +33,19 @@ import { getATokenAddress, getReserve, getReserves } from './sdk.js'
 export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   protocolSupportedChainIds(): number[] {
     return getSupportedChainIds()
+  }
+
+  /**
+   * Contract addresses for automated validation.
+   * @returns Map of chain ID to array of Aave contract addresses
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return Object.fromEntries(
+      Object.entries(AAVE_CHAINS).map(([chainId, config]) => [
+        Number(chainId),
+        Object.values(config!.contracts),
+      ]),
+    )
   }
 
   /**
