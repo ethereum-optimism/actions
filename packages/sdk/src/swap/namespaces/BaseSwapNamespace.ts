@@ -22,11 +22,32 @@ export abstract class BaseSwapNamespace {
   ) {}
 
   /**
-   * Get a full swap quote with pre-built execution data.
+   * Get a swap quote with pre-built execution data.
+   * When `routing: 'price'` is set in settings and no explicit provider is requested,
+   * fetches quotes from all eligible providers in parallel and returns the best price.
+   * @param params - Quote parameters (assets, amounts, chain, optional provider)
+   * @returns The best available SwapQuote
    */
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    // Explicit provider — skip routing
+    if (params.provider) {
+      const provider = this.resolveProvider(
+        params.provider,
+        params.assetIn,
+        params.assetOut,
+        params.chainId,
+      )
+      return provider.getQuote(params)
+    }
+
+    // Price routing — quote all eligible providers, return best
+    if (this.settings?.routing === 'price') {
+      return this.getBestQuote(params)
+    }
+
+    // No routing — resolve single provider via fallback logic
     const provider = this.resolveProvider(
-      params.provider,
+      undefined,
       params.assetIn,
       params.assetOut,
       params.chainId,
@@ -35,14 +56,67 @@ export abstract class BaseSwapNamespace {
   }
 
   /**
-   * Get a specific swap market by iterating all providers
-   * @param params - Market identifier
+   * Fetch quotes from all eligible providers in parallel and return the one
+   * with the highest output amount (best price for the caller).
+   * Providers that don't support the pair or fail to quote are silently skipped.
+   * @param params - Quote parameters
+   * @returns The quote with the highest amountOut
+   * @throws If no provider returns a valid quote
+   */
+  private async getBestQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    const eligible = this.getAllProviders().filter((p) =>
+      p.isMarketSupported(params.assetIn, params.assetOut, params.chainId),
+    )
+
+    if (eligible.length === 0) {
+      throw new Error(
+        `No provider supports ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol} on chain ${params.chainId}`,
+      )
+    }
+
+    const results = await Promise.allSettled(
+      eligible.map((p) => p.getQuote(params)),
+    )
+
+    let best: SwapQuote | null = null
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        if (!best || result.value.amountOutRaw > best.amountOutRaw) {
+          best = result.value
+        }
+      }
+    }
+
+    if (!best) {
+      throw new Error(
+        `All providers failed to quote ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol}`,
+      )
+    }
+
+    return best
+  }
+
+  /**
+   * Get a specific swap market by ID.
+   * @param params - Market identifier (poolId + chainId)
+   * @param provider - Optional provider name to query directly instead of searching all
    * @returns Market information
    */
-  async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
-    for (const provider of this.getAllProviders()) {
+  async getMarket(
+    params: GetSwapMarketParams,
+    provider?: SwapProviderName,
+  ): Promise<SwapMarket> {
+    if (provider) {
+      const named = this.providers[provider]
+      if (!named) {
+        throw new Error(`Swap provider "${provider}" not configured`)
+      }
+      return named.getMarket(params)
+    }
+
+    for (const p of this.getAllProviders()) {
       try {
-        return await provider.getMarket(params)
+        return await p.getMarket(params)
       } catch {
         continue
       }
@@ -125,16 +199,14 @@ export abstract class BaseSwapNamespace {
       if (provider) return provider
     }
 
-    // 3. Routing strategy (e.g. 'price') — TODO: implement multi-provider quoting
-
-    // 4. Match by market allowlist
+    // 3. Match by market allowlist
     for (const p of allProviders) {
       if (p.isMarketSupported(assetIn, assetOut, chainId)) {
         return p
       }
     }
 
-    // 5. Match by chain support
+    // 4. Match by chain support
     for (const p of allProviders) {
       if (p.isChainSupported(chainId)) {
         return p
