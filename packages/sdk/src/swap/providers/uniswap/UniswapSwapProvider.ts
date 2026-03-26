@@ -192,6 +192,12 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     }
   }
 
+  /**
+   * Find a specific market by poolId from the allowlist.
+   * @param params - Pool ID and chain to look up
+   * @returns Matching market
+   * @throws If no matching market found in config
+   */
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     return findMarket(
       getValidMarketConfigs(this._config.marketAllowlist),
@@ -201,6 +207,11 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     )
   }
 
+  /**
+   * Expand the market allowlist into concrete SwapMarket objects.
+   * @param params - Optional filters (chainId, asset)
+   * @returns All configured markets matching the filters
+   */
   protected async _getMarkets(
     params: GetSwapMarketsParams,
   ): Promise<SwapMarket[]> {

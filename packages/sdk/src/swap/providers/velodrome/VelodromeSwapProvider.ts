@@ -51,7 +51,6 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
   /**
    * Build a swap transaction from raw parameters.
-   * Delegates to _getQuote then _executeFromQuote to avoid duplicating logic.
    * @param params - Resolved swap parameters (amounts as raw bigint, defaults applied)
    * @returns Transaction data ready for wallet execution
    * @throws If amountOut is provided (Velodrome only supports exact-input swaps)
@@ -81,6 +80,12 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     return this._executeFromQuote(swapQuote)
   }
 
+  /**
+   * Find a specific market by poolId from the allowlist.
+   * @param params - Pool ID and chain to look up
+   * @returns Matching market
+   * @throws If no matching market found in config
+   */
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     return findMarket(
       getValidMarketConfigs(this._config.marketAllowlist),
@@ -90,6 +95,11 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     )
   }
 
+  /**
+   * Expand the market allowlist into concrete SwapMarket objects.
+   * @param params - Optional filters (chainId, asset)
+   * @returns All configured markets matching the filters
+   */
   protected async _getMarkets(
     params: GetSwapMarketsParams,
   ): Promise<SwapMarket[]> {
