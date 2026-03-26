@@ -2,9 +2,9 @@ import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
-  UNIVERSAL_ROUTER_MSG_SENDER,
   expandMarkets,
   findMarket,
+  UNIVERSAL_ROUTER_MSG_SENDER,
 } from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {

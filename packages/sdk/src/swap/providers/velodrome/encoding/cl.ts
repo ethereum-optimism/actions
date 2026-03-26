@@ -10,7 +10,11 @@ import {
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 
-import { buildSwapPrice, UNIVERSAL_ROUTER_MSG_SENDER, resolveTokens } from './helpers.js'
+import {
+  buildSwapPrice,
+  resolveTokens,
+  UNIVERSAL_ROUTER_MSG_SENDER,
+} from './helpers.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Quoting

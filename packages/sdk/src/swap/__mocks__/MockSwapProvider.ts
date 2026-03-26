@@ -37,9 +37,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     (params: SwapQuoteParams) => Promise<SwapQuote>
   >
   public mockBuildApprovals: MockedFunction<
-    (
-      quote: SwapQuote,
-    ) => Promise<{
+    (quote: SwapQuote) => Promise<{
       tokenApproval?: TransactionData
       permit2Approval?: TransactionData
     }>
