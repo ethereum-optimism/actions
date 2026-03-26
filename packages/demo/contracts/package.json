@@ -1,6 +1,6 @@
 {
   "name": "@eth-optimism/actions-demo-contracts",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "license": "MIT",
   "scripts": {
