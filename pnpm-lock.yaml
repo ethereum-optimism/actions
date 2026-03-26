@@ -83,13 +83,13 @@ importers:
         version: link:../../sdk
       '@eth-optimism/utils-app':
         specifier: ^0.0.6
-        version: 0.0.6(@hono/node-server@1.19.7(hono@4.12.7))(commander@13.1.0)(hono@4.12.7)(pino-pretty@13.1.3)(pino@9.14.0)(prom-client@15.1.3)
+        version: 0.0.6(@hono/node-server@1.19.10(hono@4.12.7))(commander@13.1.0)(hono@4.12.7)(pino-pretty@13.1.3)(pino@9.14.0)(prom-client@15.1.3)
       '@eth-optimism/viem':
         specifier: ^0.4.13
         version: 0.4.14(viem@2.33.0(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.1.13))
       '@hono/node-server':
-        specifier: ^1.14.0
-        version: 1.19.7(hono@4.12.7)
+        specifier: ^1.19.10
+        version: 1.19.10(hono@4.12.7)
       '@privy-io/node':
         specifier: ^0.3.0
         version: 0.3.0(viem@2.33.0(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.1.13))
@@ -175,7 +175,7 @@ importers:
         version: 11.11.1
       mixpanel-browser:
         specifier: ^2.72.0
-        version: 2.72.0(@mixpanel/rrweb-utils@2.0.0-alpha.18.3)
+        version: 2.72.0(@mixpanel/rrweb-utils@2.0.0-alpha.18.4)
       react:
         specifier: ^18
         version: 18.3.1
@@ -1765,8 +1765,8 @@ packages:
     peerDependencies:
       react: '>= 16 || ^19.0.0-rc'
 
-  '@hono/node-server@1.19.7':
-    resolution: {integrity: sha512-vUcD0uauS7EU2caukW8z5lJKtoGMokxNbJtBiwHgpqxEXokaHCBkQUmCHhjFB1VUTWdqj25QoMkMKzgjq+uhrw==}
+  '@hono/node-server@1.19.10':
+    resolution: {integrity: sha512-hZ7nOssGqRgyV3FVVQdfi+U4q02uB23bpnYpdvNXkYTRRyWx84b7yf1ans+dnJ/7h41sGL3CeQTfO+ZGxuO+Iw==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
@@ -2018,9 +2018,11 @@ packages:
 
   '@metamask/sdk-analytics@0.0.5':
     resolution: {integrity: sha512-fDah+keS1RjSUlC8GmYXvx6Y26s3Ax1U9hGpWb6GSY5SAdmTSIqp2CvYy6yW0WgLhnYhW+6xERuD0eVqV63QIQ==}
+    deprecated: No longer maintained, superseded by @metamask/connect-analytics
 
   '@metamask/sdk-communication-layer@0.33.0':
     resolution: {integrity: sha512-d0Jvk6V+plhF/3cy+5apJG16z6rmcJOy5B86PTUgghuzkBzrN7+7Ovzpp0JBr0EUuuoFXjEqc7Y6KakQ5WXv1Q==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
     peerDependencies:
       cross-fetch: ^4.0.0
       eciesjs: '*'
@@ -2030,9 +2032,11 @@ packages:
 
   '@metamask/sdk-install-modal-web@0.32.1':
     resolution: {integrity: sha512-MGmAo6qSjf1tuYXhCu2EZLftq+DSt5Z7fsIKr2P+lDgdTPWgLfZB1tJKzNcwKKOdf6q9Qmmxn7lJuI/gq5LrKw==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
 
   '@metamask/sdk@0.33.0':
     resolution: {integrity: sha512-Msfv21NKU4iAMBMupxlIb0hFsqzErVLg+yaW3NStQGEGA9Z37gXfouKO21lEDb4FcMLbrqV76pgrnDLm9gy3Wg==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
 
   '@metamask/superstruct@3.2.1':
     resolution: {integrity: sha512-fLgJnDOXFmuVlB38rUN5SmU7hAFQcCjrg3Vrxz67KTY7YHFnSNEKvX4avmEBdOI0yTCxZjwMCFEqsC8k2+Wd3g==}
@@ -2072,8 +2076,8 @@ packages:
   '@mixpanel/rrweb-utils@2.0.0-alpha.18.2':
     resolution: {integrity: sha512-OomKIB6GTx5xvCLJ7iic2khT/t/tnCJUex13aEqsbSqIT/UzUUsqf+LTrgUK5ex+f6odmkCNjre2y5jvpNqn+g==}
 
-  '@mixpanel/rrweb-utils@2.0.0-alpha.18.3':
-    resolution: {integrity: sha512-5hvfIhYaSlpJYKQn4nK1s3Rv63UExMq5l1FtAKFXznCqsnVIEb+yICKOiESSzIRwrCxInnUvFOGCfNWBXy9QLw==}
+  '@mixpanel/rrweb-utils@2.0.0-alpha.18.4':
+    resolution: {integrity: sha512-c3nUbQl19kxHjf8nowFMeXlJw0ZqLesIVBb9t4g1nC4WtaNEPkFotWRdGt5V2cJNQ+aY38/v2uYb8Ren4IcdSQ==}
 
   '@mixpanel/rrweb@2.0.0-alpha.18.2':
     resolution: {integrity: sha512-J3dVTEu6Z4p8di7y9KKvUooNuBjX97DdG6XGWoPEPi07A9512h9M8MEtvlY3mK0PGfuC0Mz5Pv/Ws6gjGYfKQg==}
@@ -2261,8 +2265,8 @@ packages:
   '@nx/workspace@21.6.10':
     resolution: {integrity: sha512-6OkXs4gAVjDtrfqhJf7lHZX/VlCFLRZpywfgvmije40wrExkJDNEHx3Gf6dvSVwl0vE6Gz8D2t6luO02hGGz4w==}
 
-  '@opentelemetry/api@1.9.0':
-    resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
+  '@opentelemetry/api@1.9.1':
+    resolution: {integrity: sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q==}
     engines: {node: '>=8.0.0'}
 
   '@openzeppelin/contracts@4.9.6':
@@ -9567,9 +9571,9 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@eth-optimism/utils-app@0.0.6(@hono/node-server@1.19.7(hono@4.12.7))(commander@13.1.0)(hono@4.12.7)(pino-pretty@13.1.3)(pino@9.14.0)(prom-client@15.1.3)':
+  '@eth-optimism/utils-app@0.0.6(@hono/node-server@1.19.10(hono@4.12.7))(commander@13.1.0)(hono@4.12.7)(pino-pretty@13.1.3)(pino@9.14.0)(prom-client@15.1.3)':
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.12.7)
+      '@hono/node-server': 1.19.10(hono@4.12.7)
       commander: 13.1.0
       hono: 4.12.7
       pino: 9.14.0
@@ -9943,7 +9947,7 @@ snapshots:
     dependencies:
       react: 18.3.1
 
-  '@hono/node-server@1.19.7(hono@4.12.7)':
+  '@hono/node-server@1.19.10(hono@4.12.7)':
     dependencies:
       hono: 4.12.7
 
@@ -10302,10 +10306,10 @@ snapshots:
     dependencies:
       '@mixpanel/rrweb-snapshot': 2.0.0-alpha.18.2
 
-  '@mixpanel/rrweb-plugin-console-record@2.0.0-alpha.18.2(@mixpanel/rrweb-utils@2.0.0-alpha.18.3)(@mixpanel/rrweb@2.0.0-alpha.18.2)':
+  '@mixpanel/rrweb-plugin-console-record@2.0.0-alpha.18.2(@mixpanel/rrweb-utils@2.0.0-alpha.18.4)(@mixpanel/rrweb@2.0.0-alpha.18.2)':
     dependencies:
       '@mixpanel/rrweb': 2.0.0-alpha.18.2
-      '@mixpanel/rrweb-utils': 2.0.0-alpha.18.3
+      '@mixpanel/rrweb-utils': 2.0.0-alpha.18.4
 
   '@mixpanel/rrweb-snapshot@2.0.0-alpha.18.2':
     dependencies:
@@ -10315,7 +10319,7 @@ snapshots:
 
   '@mixpanel/rrweb-utils@2.0.0-alpha.18.2': {}
 
-  '@mixpanel/rrweb-utils@2.0.0-alpha.18.3': {}
+  '@mixpanel/rrweb-utils@2.0.0-alpha.18.4': {}
 
   '@mixpanel/rrweb@2.0.0-alpha.18.2':
     dependencies:
@@ -10551,7 +10555,7 @@ snapshots:
       - '@swc/core'
       - debug
 
-  '@opentelemetry/api@1.9.0': {}
+  '@opentelemetry/api@1.9.1': {}
 
   '@openzeppelin/contracts@4.9.6': {}
 
@@ -17973,10 +17977,10 @@ snapshots:
 
   mitt@3.0.1: {}
 
-  mixpanel-browser@2.72.0(@mixpanel/rrweb-utils@2.0.0-alpha.18.3):
+  mixpanel-browser@2.72.0(@mixpanel/rrweb-utils@2.0.0-alpha.18.4):
     dependencies:
       '@mixpanel/rrweb': 2.0.0-alpha.18.2
-      '@mixpanel/rrweb-plugin-console-record': 2.0.0-alpha.18.2(@mixpanel/rrweb-utils@2.0.0-alpha.18.3)(@mixpanel/rrweb@2.0.0-alpha.18.2)
+      '@mixpanel/rrweb-plugin-console-record': 2.0.0-alpha.18.2(@mixpanel/rrweb-utils@2.0.0-alpha.18.4)(@mixpanel/rrweb@2.0.0-alpha.18.2)
     transitivePeerDependencies:
       - '@mixpanel/rrweb-utils'
 
@@ -18560,7 +18564,7 @@ snapshots:
 
   prom-client@15.1.3:
     dependencies:
-      '@opentelemetry/api': 1.9.0
+      '@opentelemetry/api': 1.9.1
       tdigest: 0.1.2
 
   prop-types@15.8.1:
