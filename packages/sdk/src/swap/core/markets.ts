@@ -62,30 +62,31 @@ export function findMarket<T extends SwapMarketConfig>(
 
 /**
  * Expand market configs into concrete SwapMarket objects with optional filters.
- * @param configs - Valid market configs
- * @param params - Optional chainId and asset filters
- * @param supportedChainIds - All chain IDs this provider supports
- * @param toMarkets - Provider-specific function that expands a config into SwapMarket[]
+ * @param options.configs - Valid market configs
+ * @param options.filters - Optional chainId and asset filters
+ * @param options.supportedChainIds - All chain IDs this provider supports
+ * @param options.toMarkets - Provider-specific function that expands a config into SwapMarket[]
  */
-export function expandMarkets<T extends SwapMarketConfig>(
-  configs: T[],
-  params: GetSwapMarketsParams,
-  supportedChainIds: SupportedChainId[],
+export function expandMarkets<T extends SwapMarketConfig>(options: {
+  configs: T[]
+  filters: GetSwapMarketsParams
+  supportedChainIds: SupportedChainId[]
   toMarkets: (
     config: T,
     chainId: SupportedChainId,
     asset?: Asset,
-  ) => SwapMarket[],
-): SwapMarket[] {
+  ) => SwapMarket[]
+}): SwapMarket[] {
+  const { configs, filters, supportedChainIds, toMarkets } = options
   return configs.flatMap((config) => {
-    const chainIds = params.chainId
-      ? [params.chainId]
+    const chainIds = filters.chainId
+      ? [filters.chainId]
       : config.chainId
         ? [config.chainId]
         : supportedChainIds
 
     return chainIds.flatMap((chainId) =>
-      toMarkets(config, chainId, params.asset),
+      toMarkets(config, chainId, filters.asset),
     )
   })
 }

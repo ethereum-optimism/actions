@@ -204,12 +204,12 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
   protected async _getMarkets(
     params: GetSwapMarketsParams,
   ): Promise<SwapMarket[]> {
-    return expandMarkets(
-      getValidMarketConfigs(this._config.marketAllowlist),
-      params,
-      this.supportedChainIds(),
-      configToMarkets,
-    )
+    return expandMarkets({
+      configs: getValidMarketConfigs(this._config.marketAllowlist),
+      filters: params,
+      supportedChainIds: this.supportedChainIds(),
+      toMarkets: configToMarkets,
+    })
   }
 
   /**
