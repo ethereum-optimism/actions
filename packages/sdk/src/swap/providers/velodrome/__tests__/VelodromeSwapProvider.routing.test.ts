@@ -1,51 +1,22 @@
-import type { Address, PublicClient } from 'viem'
-import { base, baseSepolia, optimism } from 'viem/chains'
+import type { PublicClient } from 'viem'
+import { base, baseSepolia, mode, optimism } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
+import {
+  MOCK_POOL,
+  MOCK_WALLET,
+  MockETHAsset as ETH,
+  MockUSDCAsset as USDC,
+  MockWETHAsset as WETH,
+} from '@/__mocks__/MockAssets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { VelodromeSwapProviderConfig } from '@/swap/providers/velodrome/types.js'
 import { VelodromeSwapProvider } from '@/swap/providers/velodrome/VelodromeSwapProvider.js'
-import type { Asset } from '@/types/asset.js'
 
 const OP_CHAIN_ID = optimism.id as SupportedChainId
 const BASE_CHAIN_ID = base.id as SupportedChainId
 const BASE_SEPOLIA_CHAIN_ID = baseSepolia.id as SupportedChainId
-
-const WALLET = '0x000000000000000000000000000000000000dEaD' as Address
-const MOCK_POOL = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address
-
-const USDC: Asset = {
-  type: 'erc20',
-  address: {
-    [OP_CHAIN_ID]: '0x1111111111111111111111111111111111111111' as Address,
-    [BASE_CHAIN_ID]: '0x2222222222222222222222222222222222222222' as Address,
-    [BASE_SEPOLIA_CHAIN_ID]:
-      '0x3333333333333333333333333333333333333333' as Address,
-  },
-  metadata: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
-}
-
-const WETH: Asset = {
-  type: 'erc20',
-  address: {
-    [OP_CHAIN_ID]: '0x4200000000000000000000000000000000000006' as Address,
-    [BASE_CHAIN_ID]: '0x4200000000000000000000000000000000000006' as Address,
-    [BASE_SEPOLIA_CHAIN_ID]:
-      '0x4200000000000000000000000000000000000006' as Address,
-  },
-  metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
-}
-
-const ETH: Asset = {
-  type: 'native',
-  address: {
-    [OP_CHAIN_ID]: 'native',
-    [BASE_CHAIN_ID]: 'native',
-    [BASE_SEPOLIA_CHAIN_ID]: 'native',
-  },
-  metadata: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-}
 
 function createMockChainManager(chainId: SupportedChainId): ChainManager {
   const mockPublicClient = {
@@ -94,7 +65,7 @@ describe('VelodromeSwapProvider router type routing', () => {
         assetIn: USDC,
         assetOut: WETH,
         chainId: OP_CHAIN_ID,
-        walletAddress: WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       expect(result.transactionData.swap).toBeDefined()
@@ -111,7 +82,7 @@ describe('VelodromeSwapProvider router type routing', () => {
         assetIn: USDC,
         assetOut: WETH,
         chainId: BASE_CHAIN_ID,
-        walletAddress: WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       expect(result.transactionData.swap).toBeDefined()
@@ -127,7 +98,7 @@ describe('VelodromeSwapProvider router type routing', () => {
         assetIn: USDC,
         assetOut: WETH,
         chainId: BASE_SEPOLIA_CHAIN_ID,
-        walletAddress: WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       expect(result.transactionData.swap).toBeDefined()
@@ -155,30 +126,14 @@ describe('VelodromeSwapProvider router type routing', () => {
 
   describe('leaf router (relay chains)', () => {
     it('executes swap on Mode (leaf chain)', async () => {
-      const MODE_CHAIN_ID = 34443 as SupportedChainId
-      const modeUsdc: Asset = {
-        type: 'erc20',
-        address: {
-          [MODE_CHAIN_ID]:
-            '0x5555555555555555555555555555555555555555' as Address,
-        },
-        metadata: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
-      }
-      const modeWeth: Asset = {
-        type: 'erc20',
-        address: {
-          [MODE_CHAIN_ID]:
-            '0x4200000000000000000000000000000000000006' as Address,
-        },
-        metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
-      }
+      const MODE_CHAIN_ID = mode.id as SupportedChainId
 
       const provider = new VelodromeSwapProvider(
         {
           defaultSlippage: 0.005,
           marketAllowlist: [
             {
-              assets: [modeUsdc, modeWeth],
+              assets: [USDC, WETH],
               stable: false,
               chainId: MODE_CHAIN_ID,
             },
@@ -189,10 +144,10 @@ describe('VelodromeSwapProvider router type routing', () => {
 
       const result = await provider.execute({
         amountIn: 100,
-        assetIn: modeUsdc,
-        assetOut: modeWeth,
+        assetIn: USDC,
+        assetOut: WETH,
         chainId: MODE_CHAIN_ID,
-        walletAddress: WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       expect(result.transactionData.swap).toBeDefined()
@@ -214,7 +169,7 @@ describe('VelodromeSwapProvider router type routing', () => {
         assetIn: ETH,
         assetOut: USDC,
         chainId: OP_CHAIN_ID,
-        walletAddress: WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       // No approval needed for native ETH
@@ -235,184 +190,13 @@ describe('VelodromeSwapProvider router type routing', () => {
         assetIn: USDC,
         assetOut: ETH,
         chainId: OP_CHAIN_ID,
-        walletAddress: WALLET,
+        walletAddress: MOCK_WALLET,
       })
 
       // Approval needed for USDC
       expect(result.transactionData.tokenApproval).toBeDefined()
       // Swap tx should have zero value (not sending ETH)
       expect(result.transactionData.swap.value).toBe(0n)
-    })
-  })
-
-  describe('CL/Slipstream pools', () => {
-    it('getQuote works for CL pool on Optimism', async () => {
-      const provider = createProvider(OP_CHAIN_ID, {
-        marketAllowlist: [
-          { assets: [USDC, WETH], tickSpacing: 100, chainId: OP_CHAIN_ID },
-        ],
-      })
-
-      const quote = await provider.getQuote({
-        assetIn: USDC,
-        assetOut: WETH,
-        amountIn: 100,
-        chainId: OP_CHAIN_ID,
-      })
-
-      expect(quote.provider).toBe('velodrome')
-      expect(quote.amountOut).toBeGreaterThan(0)
-      expect(quote.execution.swapCalldata).toMatch(/^0x/)
-      expect(
-        (quote.execution.providerContext as Record<string, unknown>)
-          .tickSpacing,
-      ).toBe(100)
-    })
-
-    it('getQuote works for CL pool on Base', async () => {
-      const provider = createProvider(BASE_CHAIN_ID, {
-        marketAllowlist: [
-          { assets: [USDC, WETH], tickSpacing: 100, chainId: BASE_CHAIN_ID },
-        ],
-      })
-
-      const quote = await provider.getQuote({
-        assetIn: USDC,
-        assetOut: WETH,
-        amountIn: 100,
-        chainId: BASE_CHAIN_ID,
-      })
-
-      expect(quote.provider).toBe('velodrome')
-      expect(quote.execution).toBeDefined()
-    })
-
-    it('execute with CL quote uses pre-built calldata', async () => {
-      const provider = createProvider(OP_CHAIN_ID, {
-        marketAllowlist: [
-          { assets: [USDC, WETH], tickSpacing: 100, chainId: OP_CHAIN_ID },
-        ],
-      })
-
-      const quote = await provider.getQuote({
-        assetIn: USDC,
-        assetOut: WETH,
-        amountIn: 100,
-        chainId: OP_CHAIN_ID,
-        recipient: WALLET,
-      })
-
-      const result = await provider.execute(quote)
-      expect(result.transactionData.swap.data).toBe(
-        quote.execution.swapCalldata,
-      )
-    })
-
-    it('execute works for CL pool via raw params', async () => {
-      const provider = createProvider(OP_CHAIN_ID, {
-        marketAllowlist: [
-          { assets: [USDC, WETH], tickSpacing: 100, chainId: OP_CHAIN_ID },
-        ],
-      })
-
-      const result = await provider.execute({
-        amountIn: 100,
-        assetIn: USDC,
-        assetOut: WETH,
-        chainId: OP_CHAIN_ID,
-        walletAddress: WALLET,
-      })
-
-      expect(result.transactionData.swap).toBeDefined()
-      expect(result.amountOut).toBeGreaterThan(0)
-    })
-
-    it('getQuote works for CL pool via getQuote', async () => {
-      const provider = createProvider(OP_CHAIN_ID, {
-        marketAllowlist: [
-          { assets: [USDC, WETH], tickSpacing: 100, chainId: OP_CHAIN_ID },
-        ],
-      })
-
-      const quote = await provider.getQuote({
-        assetIn: USDC,
-        assetOut: WETH,
-        amountIn: 100,
-        chainId: OP_CHAIN_ID,
-      })
-
-      expect(quote.price).toBeTypeOf('number')
-      expect(quote.amountOut).toBeGreaterThan(0)
-    })
-
-    it('throws for CL on unsupported chain', async () => {
-      const MODE_CHAIN_ID = 34443 as SupportedChainId
-      const modeUsdc: Asset = {
-        type: 'erc20',
-        address: {
-          [MODE_CHAIN_ID]:
-            '0x5555555555555555555555555555555555555555' as Address,
-        },
-        metadata: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
-      }
-      const modeWeth: Asset = {
-        type: 'erc20',
-        address: {
-          [MODE_CHAIN_ID]:
-            '0x4200000000000000000000000000000000000006' as Address,
-        },
-        metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
-      }
-
-      const provider = new VelodromeSwapProvider(
-        {
-          defaultSlippage: 0.005,
-          marketAllowlist: [
-            {
-              assets: [modeUsdc, modeWeth],
-              tickSpacing: 100,
-              chainId: MODE_CHAIN_ID,
-            },
-          ],
-        },
-        createMockChainManager(MODE_CHAIN_ID),
-      )
-
-      await expect(
-        provider.getQuote({
-          assetIn: modeUsdc,
-          assetOut: modeWeth,
-          amountIn: 100,
-          chainId: MODE_CHAIN_ID,
-        }),
-      ).rejects.toThrow('CL pools not supported on chain')
-    })
-  })
-
-  describe('supported chains', () => {
-    it('includes all 14 configured chains', () => {
-      const provider = createProvider(OP_CHAIN_ID)
-      const chainIds = provider.protocolSupportedChainIds()
-
-      // Hub chains
-      expect(chainIds).toContain(10) // Optimism
-      expect(chainIds).toContain(8453) // Base
-      expect(chainIds).toContain(84532) // Base Sepolia
-
-      // Leaf chains
-      expect(chainIds).toContain(60808) // Bob
-      expect(chainIds).toContain(42220) // Celo
-      expect(chainIds).toContain(252) // Fraxtal
-      expect(chainIds).toContain(57073) // Ink
-      expect(chainIds).toContain(1135) // Lisk
-      expect(chainIds).toContain(1750) // Metal
-      expect(chainIds).toContain(34443) // Mode
-      expect(chainIds).toContain(1868) // Soneium
-      expect(chainIds).toContain(5330) // Superseed
-      expect(chainIds).toContain(1923) // Swell
-      expect(chainIds).toContain(130) // Unichain
-
-      expect(chainIds).toHaveLength(14)
     })
   })
 })

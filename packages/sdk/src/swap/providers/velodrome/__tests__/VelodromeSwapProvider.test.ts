@@ -1,7 +1,13 @@
 import type { Address, PublicClient } from 'viem'
-import { optimism } from 'viem/chains'
+import { mode, optimism } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
+import {
+  MOCK_WALLET,
+  MockOPAsset as OP,
+  MockUSDCAsset as USDC,
+  MockWETHAsset as WETH,
+} from '@/__mocks__/MockAssets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { VelodromeSwapProviderConfig } from '@/swap/providers/velodrome/types.js'
@@ -10,40 +16,18 @@ import type { Asset } from '@/types/asset.js'
 
 const CHAIN_ID = optimism.id as SupportedChainId
 
-const USDC: Asset = {
-  type: 'erc20',
-  address: {
-    [CHAIN_ID]: '0x1111111111111111111111111111111111111111' as Address,
-  },
-  metadata: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
-}
-
-const OP: Asset = {
-  type: 'erc20',
-  address: {
-    [CHAIN_ID]: '0x3333333333333333333333333333333333333333' as Address,
-  },
-  metadata: { name: 'Optimism', symbol: 'OP', decimals: 18 },
-}
-
-const WETH: Asset = {
-  type: 'erc20',
-  address: {
-    [CHAIN_ID]: '0x4200000000000000000000000000000000000006' as Address,
-  },
-  metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
-}
-
 function createMockChainManager(): ChainManager {
   const mockPublicClient = {
     readContract: vi
       .fn()
       .mockImplementation(({ functionName }: { functionName: string }) => {
-        // getAmountsOut returns [amountIn, amountOut]
         if (functionName === 'getAmountsOut')
           return Promise.resolve([100000000n, 500000000000000000n])
-        // ERC20 allowance
         if (functionName === 'allowance') return Promise.resolve(0n)
+        if (functionName === 'getPool')
+          return Promise.resolve('0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        if (functionName === 'quoteExactInputSingle')
+          return Promise.resolve([500000000000000000n, 0n, 0, 0n])
         return Promise.resolve(0n)
       }),
   } as unknown as PublicClient
@@ -83,7 +67,7 @@ describe('VelodromeSwapProvider', () => {
         assetIn: USDC,
         assetOut: OP,
         chainId: CHAIN_ID,
-        walletAddress: '0x000000000000000000000000000000000000dEaD' as Address,
+        walletAddress: MOCK_WALLET,
       })
 
       expect(result.transactionData.swap).toBeDefined()
@@ -101,7 +85,7 @@ describe('VelodromeSwapProvider', () => {
         assetIn: USDC,
         assetOut: OP,
         chainId: CHAIN_ID,
-        walletAddress: '0x000000000000000000000000000000000000dEaD' as Address,
+        walletAddress: MOCK_WALLET,
       })
 
       // Mock returns 0n allowance, so approval to Router should be needed
@@ -119,8 +103,7 @@ describe('VelodromeSwapProvider', () => {
           assetIn: USDC,
           assetOut: OP,
           chainId: CHAIN_ID,
-          walletAddress:
-            '0x000000000000000000000000000000000000dEaD' as Address,
+          walletAddress: MOCK_WALLET,
         }),
       ).rejects.toThrow('does not support exact-output swaps')
     })
@@ -137,8 +120,7 @@ describe('VelodromeSwapProvider', () => {
           assetIn: USDC,
           assetOut: OP,
           chainId: CHAIN_ID,
-          walletAddress:
-            '0x000000000000000000000000000000000000dEaD' as Address,
+          walletAddress: MOCK_WALLET,
         }),
       ).rejects.toThrow(
         'Either stable (v2 AMM) or tickSpacing (CL) must be configured',
@@ -201,7 +183,7 @@ describe('VelodromeSwapProvider', () => {
         assetOut: OP,
         amountIn: 100,
         chainId: CHAIN_ID,
-        recipient: '0x000000000000000000000000000000000000dEaD' as Address,
+        recipient: MOCK_WALLET,
       })
 
       const result = await provider.execute(quote)
@@ -390,6 +372,129 @@ describe('VelodromeSwapProvider', () => {
         })
         expect(found.marketId.poolId).toBe(expected.marketId.poolId)
       }
+    })
+  })
+
+  describe('CL/Slipstream pools', () => {
+    it('getQuote returns quote with CL-specific providerContext', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          { assets: [USDC, WETH], tickSpacing: 100, chainId: CHAIN_ID },
+        ],
+      })
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: WETH,
+        amountIn: 100,
+        chainId: CHAIN_ID,
+      })
+
+      expect(quote.provider).toBe('velodrome')
+      expect(quote.amountOut).toBeGreaterThan(0)
+      expect(quote.execution.swapCalldata).toMatch(/^0x/)
+      expect(
+        (quote.execution.providerContext as Record<string, unknown>)
+          .tickSpacing,
+      ).toBe(100)
+    })
+
+    it('execute with CL quote uses pre-built calldata', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          { assets: [USDC, WETH], tickSpacing: 100, chainId: CHAIN_ID },
+        ],
+      })
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: WETH,
+        amountIn: 100,
+        chainId: CHAIN_ID,
+        recipient: MOCK_WALLET,
+      })
+
+      const result = await provider.execute(quote)
+      expect(result.transactionData.swap.data).toBe(
+        quote.execution.swapCalldata,
+      )
+    })
+
+    it('execute works for CL pool via raw params', async () => {
+      const provider = createProvider({
+        marketAllowlist: [
+          { assets: [USDC, WETH], tickSpacing: 100, chainId: CHAIN_ID },
+        ],
+      })
+
+      const result = await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: WETH,
+        chainId: CHAIN_ID,
+        walletAddress: MOCK_WALLET,
+      })
+
+      expect(result.transactionData.swap).toBeDefined()
+      expect(result.amountOut).toBeGreaterThan(0)
+    })
+
+    it('throws for CL on unsupported chain (no clPoolFactory)', async () => {
+      const MODE_CHAIN_ID = mode.id as SupportedChainId
+
+      const mockChainManager = {
+        getPublicClient: vi.fn().mockReturnValue({
+          readContract: vi.fn(),
+        }),
+        getSupportedChains: vi.fn().mockReturnValue([MODE_CHAIN_ID]),
+      } as unknown as ChainManager
+
+      const provider = new VelodromeSwapProvider(
+        {
+          defaultSlippage: 0.005,
+          marketAllowlist: [
+            {
+              assets: [USDC, WETH],
+              tickSpacing: 100,
+              chainId: MODE_CHAIN_ID,
+            },
+          ],
+        },
+        mockChainManager,
+      )
+
+      await expect(
+        provider.getQuote({
+          assetIn: USDC,
+          assetOut: WETH,
+          amountIn: 100,
+          chainId: MODE_CHAIN_ID,
+        }),
+      ).rejects.toThrow('CL pools not supported on chain')
+    })
+  })
+
+  describe('protocolSupportedChainIds', () => {
+    it('includes all configured chains', () => {
+      const provider = createProvider()
+      const chainIds = provider.protocolSupportedChainIds()
+
+      expect(chainIds).toContain(10) // Optimism
+      expect(chainIds).toContain(8453) // Base
+      expect(chainIds).toContain(84532) // Base Sepolia
+      expect(chainIds).toContain(60808) // Bob
+      expect(chainIds).toContain(42220) // Celo
+      expect(chainIds).toContain(252) // Fraxtal
+      expect(chainIds).toContain(57073) // Ink
+      expect(chainIds).toContain(1135) // Lisk
+      expect(chainIds).toContain(1750) // Metal
+      expect(chainIds).toContain(34443) // Mode
+      expect(chainIds).toContain(1868) // Soneium
+      expect(chainIds).toContain(5330) // Superseed
+      expect(chainIds).toContain(1923) // Swell
+      expect(chainIds).toContain(130) // Unichain
+
+      expect(chainIds).toHaveLength(14)
     })
   })
 })
