@@ -4,6 +4,7 @@ import type { SwapSettings } from '@/types/actions.js'
 import type {
   SwapProviders,
   SwapQuote,
+  SwapQuoteParams,
   SwapReceipt,
   SwapTransaction,
   WalletSwapParams,
@@ -21,6 +22,27 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
     settings?: SwapSettings,
   ) {
     super(providers, settings)
+  }
+
+  /**
+   * Get a swap quote with the wallet address as recipient.
+   * Ensures calldata is encoded for the real wallet, not a placeholder.
+   */
+  override async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    return super.getQuote({
+      ...params,
+      recipient: params.recipient ?? this.wallet.address,
+    })
+  }
+
+  /**
+   * Get quotes from all providers with the wallet address as recipient.
+   */
+  override async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
+    return super.getQuotes({
+      ...params,
+      recipient: params.recipient ?? this.wallet.address,
+    })
   }
 
   /**
