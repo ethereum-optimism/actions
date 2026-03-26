@@ -147,24 +147,34 @@ export abstract class SwapProvider<
 
   /**
    * Get a specific swap market by ID.
+   * Validates the market is not blocklisted before returning.
    * @param params - Market identifier (poolId + chainId)
    * @returns Market information including assets and fee tier
+   * @throws If market is blocklisted
    */
   async getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
     validateChainSupported(params.chainId, this.supportedChainIds())
-    return this._getMarket(params)
+    const market = await this._getMarket(params)
+    this.validateMarketAllowed(
+      market.assets[0],
+      market.assets[1],
+      params.chainId,
+    )
+    return market
   }
 
   /**
    * Get available swap markets, optionally filtered.
+   * Excludes blocklisted markets from results.
    * @param params - Optional filters (chainId, asset)
-   * @returns Array of markets from this provider
+   * @returns Array of non-blocked markets from this provider
    */
   async getMarkets(params: GetSwapMarketsParams = {}): Promise<SwapMarket[]> {
     if (params.chainId) {
       validateChainSupported(params.chainId, this.supportedChainIds())
     }
-    return this._getMarkets(params)
+    const markets = await this._getMarkets(params)
+    return this.filterBlockedMarkets(markets)
   }
 
   /**
@@ -373,6 +383,25 @@ export abstract class SwapProvider<
       walletAddress: params.walletAddress,
       chainId: params.chainId,
     }
+  }
+
+  /**
+   * Filter out markets whose asset pairs appear in the blocklist.
+   */
+  private filterBlockedMarkets(markets: SwapMarket[]): SwapMarket[] {
+    const { marketBlocklist } = this._config
+    if (!marketBlocklist?.length) return markets
+
+    return markets.filter((market) => {
+      const [assetA, assetB] = market.assets
+      const blocked = this.findMatchingConfig(
+        assetA,
+        assetB,
+        market.marketId.chainId,
+        marketBlocklist,
+      )
+      return !blocked
+    })
   }
 
   private findMatchingConfig(
