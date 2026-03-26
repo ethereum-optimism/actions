@@ -204,6 +204,8 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: 150000n,
+      quotedRecipient: (params.recipient ??
+        '0x0000000000000000000000000000000000000001') as Address,
     }
   }
 

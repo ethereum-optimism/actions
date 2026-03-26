@@ -243,6 +243,12 @@ export interface SwapQuote {
    * Used to check existing on-chain allowances and skip redundant approvals.
    */
   recipient?: Address
+  /**
+   * The recipient address baked into execution.swapCalldata at quote time.
+   * If recipient differs from quotedRecipient at execute time, calldata is re-encoded
+   * with the correct recipient to prevent tokens from being sent to the wrong address.
+   */
+  quotedRecipient: Address
 }
 
 /**

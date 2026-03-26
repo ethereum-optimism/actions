@@ -189,6 +189,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: internalQuote.gasEstimate,
+      quotedRecipient: recipient,
     }
   }
 

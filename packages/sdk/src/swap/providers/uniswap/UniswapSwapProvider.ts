@@ -113,6 +113,8 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       tickSpacing: marketConfig.tickSpacing,
     })
 
+    const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
+
     const swapCalldata = encodeUniversalRouterSwap({
       amountInRaw: amountOutRaw ? undefined : amountInRaw,
       amountOutRaw,
@@ -120,7 +122,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       assetOut,
       slippage,
       deadline,
-      recipient: params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER,
+      recipient,
       chainId,
       quote,
       universalRouterAddress: addresses.universalRouter,
@@ -167,6 +169,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: quote.gasEstimate,
+      quotedRecipient: recipient,
     }
   }
 
