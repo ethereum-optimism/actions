@@ -156,22 +156,94 @@ describe('WalletSwapNamespace', () => {
     })
   })
 
-  describe('inherits read-only methods', () => {
-    it('has getQuote method from BaseSwapNamespace', async () => {
+  describe('getQuote recipient injection', () => {
+    it('injects wallet address as recipient', async () => {
       const provider = createMockSwapProvider()
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
 
-      const result = await namespace.getQuote({
+      const quote = await namespace.getQuote({
         assetIn: USDC,
         assetOut: ETH,
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
       })
 
-      expect(result.price).toBe(1.5)
+      // Quote should have wallet address as the encoded recipient
+      expect(quote.quotedRecipient).toBe(mockWalletAddress)
     })
 
+    it('preserves explicit recipient over wallet address', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+      const customRecipient =
+        '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address
+
+      const quote = await namespace.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        recipient: customRecipient,
+      })
+
+      expect(quote.quotedRecipient).toBe(customRecipient)
+    })
+  })
+
+  describe('execute with recipient mismatch', () => {
+    it('re-encodes when quote recipient differs from wallet', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      // Get quote without wallet (simulates ActionsSwapNamespace quote)
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        // No recipient — uses placeholder
+      })
+
+      // quotedRecipient should be the placeholder, not the wallet
+      expect(quote.quotedRecipient).not.toBe(mockWalletAddress)
+
+      // Execute through wallet namespace — should re-quote with correct recipient
+      const result = await namespace.execute(quote)
+      expect(result.price).toBeDefined()
+
+      // Provider's getQuote should have been called twice:
+      // 1) original quote, 2) re-quote with wallet address
+      expect(provider.mockGetQuote).toHaveBeenCalledTimes(2)
+    })
+
+    it('skips re-encode when quote already has correct recipient', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      // Get quote through wallet namespace (has correct recipient)
+      const quote = await namespace.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      expect(quote.quotedRecipient).toBe(mockWalletAddress)
+
+      // Execute — should NOT re-quote
+      const result = await namespace.execute(quote)
+      expect(result.price).toBeDefined()
+
+      // getQuote called only once (the original)
+      expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('inherits read-only methods', () => {
     it('has getMarkets method from BaseSwapNamespace', async () => {
       const provider = createMockSwapProvider()
       const wallet = createMockWallet()
