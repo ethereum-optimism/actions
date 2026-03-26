@@ -238,36 +238,24 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         tokenApproval = {
           to: token,
           data: encodeFunctionData({
-            abi: [
-              {
-                name: 'transfer',
-                type: 'function',
-                stateMutability: 'nonpayable',
-                inputs: [
-                  { name: 'to', type: 'address' },
-                  { name: 'amount', type: 'uint256' },
-                ],
-                outputs: [{ type: 'bool' }],
-              },
-            ] as const,
+            abi: erc20Abi,
             functionName: 'transfer',
             args: [chain.contracts.router, quote.amountInRaw],
           }),
           value: 0n,
         }
       } else {
-        const currentAllowance = await publicClient.readContract({
+        const currentAllowance = (await publicClient.readContract({
           address: token,
           abi: erc20Abi,
           functionName: 'allowance',
-          // Use providerContext or a reasonable default for the owner address
           args: [
             '0x0000000000000000000000000000000000000001' as Address,
             chain.contracts.router,
           ],
-        })
+        })) as bigint
 
-        if ((currentAllowance as bigint) < quote.amountInRaw) {
+        if (currentAllowance < quote.amountInRaw) {
           tokenApproval = {
             to: token,
             data: encodeFunctionData({
