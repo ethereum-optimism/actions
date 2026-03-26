@@ -13,10 +13,8 @@ import { CtaButton, MaxButton } from './CtaButton'
 import { TokenButton } from './TokenButton'
 import { TokenSelectModal } from './TokenSelectModal'
 import { ReviewSwapModal } from './ReviewSwapModal'
-import {
-  DemoProviderTooltip,
-  SwapMarketSelector,
-} from './SwapMarketSelector'
+import { DemoProviderTooltip } from './DemoProviderTooltip'
+import { SwapMarketSelector } from './SwapMarketSelector'
 import { trackEvent } from '@/utils/analytics'
 import {
   deriveUsdRates,
