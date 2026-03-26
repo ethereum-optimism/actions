@@ -64,7 +64,7 @@ function findMarketInAllowlist(
  * @returns APY breakdown with native APY and rewards
  */
 export function calculateApyBreakdown(reserve: {
-  formattedReserve?: any
+  formattedReserve?: { supplyAPY?: string }
 }): ApyBreakdown {
   // Get supply APY from formatted reserve data
   const supplyApy = reserve.formattedReserve?.supplyAPY
