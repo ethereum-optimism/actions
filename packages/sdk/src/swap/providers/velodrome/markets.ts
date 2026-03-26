@@ -2,6 +2,7 @@ import type { Address } from 'viem'
 import { concat, keccak256 } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { assetPairs } from '@/swap/core/markets.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapMarket } from '@/types/swap/index.js'
 
@@ -36,19 +37,21 @@ export function resolvePoolConfig(
 }
 
 /**
- * Generate unique asset pairs, optionally scoped to pairs containing a required asset.
- * @param assets - Full list of assets from a market config
- * @param requiredAsset - If set, only pairs including this asset are returned
+ * Expand a single VelodromeMarketConfig into SwapMarket objects for a given chain.
+ * Used as the `toMarkets` callback for shared findMarket/expandMarkets.
+ * @param config - Market config with pool parameters
+ * @param chainId - Target chain
+ * @param asset - If provided, only return markets containing this asset
  */
-export function assetPairs(
-  assets: Asset[],
-  requiredAsset?: Asset,
-): Array<[Asset, Asset]> {
-  return assets
-    .flatMap((a, i) => assets.slice(i + 1).map((b): [Asset, Asset] => [a, b]))
-    .filter(
-      ([a, b]) => !requiredAsset || a === requiredAsset || b === requiredAsset,
-    )
+export function configToMarkets(
+  config: VelodromeMarketConfig,
+  chainId: SupportedChainId,
+  asset?: Asset,
+): SwapMarket[] {
+  const poolConfig = resolvePoolConfig(config)
+  return assetPairs(config.assets, asset)
+    .map(([a, b]) => pairToMarket(a, b, chainId, poolConfig))
+    .filter((m): m is SwapMarket => m !== null)
 }
 
 /**
@@ -57,7 +60,7 @@ export function assetPairs(
  * For CL: poolId = keccak256(sortedA, sortedB, tickSpacing as int24)
  * @returns SwapMarket, or null if either asset lacks an address on this chain
  */
-export function configToMarket(
+function pairToMarket(
   assetA: Asset,
   assetB: Asset,
   chainId: SupportedChainId,

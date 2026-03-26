@@ -3,6 +3,10 @@ import { formatUnits } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
+  expandMarkets,
+  findMarket,
+} from '@/swap/core/markets.js'
+import {
   getChainConfig,
   getSupportedChainIds,
   getValidMarketConfigs,
@@ -13,8 +17,7 @@ import {
   fetchPoolQuote,
 } from '@/swap/providers/velodrome/encoding/index.js'
 import {
-  assetPairs,
-  configToMarket,
+  configToMarkets,
   resolvePoolConfig,
 } from '@/swap/providers/velodrome/markets.js'
 import type {
@@ -81,47 +84,24 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     return this._executeFromQuote(swapQuote)
   }
 
-  /**
-   * Find a specific market by poolId from the allowlist.
-   * @param params - Pool ID and chain to look up
-   * @returns Matching market
-   * @throws If no matching market found in config
-   */
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
-    const { poolId, chainId } = params
-
-    for (const config of this.validConfigs()) {
-      if (config.chainId !== undefined && config.chainId !== chainId) continue
-      const match = this.marketsFromConfig(config, chainId).find(
-        (m) => m.marketId.poolId === poolId,
-      )
-      if (match) return match
-    }
-
-    throw new Error(
-      `Market with poolId ${poolId} not found on chain ${chainId}`,
+    return findMarket(
+      getValidMarketConfigs(this._config.marketAllowlist),
+      params.chainId,
+      params.poolId,
+      configToMarkets,
     )
   }
 
-  /**
-   * Expand the market allowlist into concrete SwapMarket objects.
-   * @param params - Optional filters (chainId, asset)
-   * @returns All configured markets matching the filters
-   */
   protected async _getMarkets(
     params: GetSwapMarketsParams,
   ): Promise<SwapMarket[]> {
-    return this.validConfigs().flatMap((config) => {
-      const chainIds = params.chainId
-        ? [params.chainId]
-        : config.chainId
-          ? [config.chainId]
-          : this.supportedChainIds()
-
-      return chainIds.flatMap((chainId) =>
-        this.marketsFromConfig(config, chainId, params.asset),
-      )
-    })
+    return expandMarkets(
+      getValidMarketConfigs(this._config.marketAllowlist),
+      params,
+      this.supportedChainIds(),
+      configToMarkets,
+    )
   }
 
   /**
@@ -247,10 +227,6 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Private helpers (require `this` access)
-  // ─────────────────────────────────────────────────────────────────────────────
-
   /**
    * Resolve market config to a discriminated pool config.
    * @throws If pair not in allowlist, or has both/neither stable and tickSpacing
@@ -269,24 +245,5 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       )
     }
     return resolvePoolConfig(config)
-  }
-
-  /** @returns Allowlist entries that have either stable or tickSpacing set */
-  private validConfigs(): VelodromeMarketConfig[] {
-    return (this._config.marketAllowlist ?? []).filter(
-      (f) => f.stable !== undefined || f.tickSpacing !== undefined,
-    )
-  }
-
-  /** Generate all SwapMarket objects from a single config entry on a given chain. */
-  private marketsFromConfig(
-    config: VelodromeMarketConfig,
-    chainId: SupportedChainId,
-    asset?: Asset,
-  ): SwapMarket[] {
-    const poolCfg = resolvePoolConfig(config)
-    return assetPairs(config.assets, asset)
-      .map(([a, b]) => configToMarket(a, b, chainId, poolCfg))
-      .filter((m): m is SwapMarket => m !== null)
   }
 }
