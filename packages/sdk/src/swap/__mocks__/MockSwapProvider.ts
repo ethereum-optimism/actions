@@ -17,6 +17,7 @@ import type {
   SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
+import type { TransactionData } from '@/types/transaction.js'
 
 export interface MockSwapProviderConfig {
   supportedChains: SupportedChainId[]
@@ -35,8 +36,13 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   public mockGetQuote: MockedFunction<
     (params: SwapQuoteParams) => Promise<SwapQuote>
   >
-  public mockExecuteFromQuote: MockedFunction<
-    (quote: SwapQuote) => Promise<SwapTransaction>
+  public mockBuildApprovals: MockedFunction<
+    (
+      quote: SwapQuote,
+    ) => Promise<{
+      tokenApproval?: TransactionData
+      permit2Approval?: TransactionData
+    }>
   >
   public mockGetMarket: MockedFunction<
     (params: GetSwapMarketParams) => Promise<SwapMarket>
@@ -80,11 +86,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     this.mockGetQuote = vi
       .fn()
       .mockImplementation(this.createMockQuote.bind(this))
-    this.mockExecuteFromQuote = vi
-      .fn()
-      .mockImplementation((quote: SwapQuote) =>
-        this.createMockSwapTransactionFromQuote(quote),
-      )
+    this.mockBuildApprovals = vi.fn().mockResolvedValue({})
     this.mockGetMarket = vi
       .fn()
       .mockImplementation(this.createMockMarket.bind(this))
@@ -120,10 +122,8 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this.mockGetQuote(params)
   }
 
-  protected async _executeFromQuote(
-    quote: SwapQuote,
-  ): Promise<SwapTransaction> {
-    return this.mockExecuteFromQuote(quote)
+  protected async _buildApprovals(quote: SwapQuote) {
+    return this.mockBuildApprovals(quote)
   }
 
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
@@ -204,28 +204,6 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: 150000n,
-    }
-  }
-
-  private createMockSwapTransactionFromQuote(
-    quote: SwapQuote,
-  ): SwapTransaction {
-    return {
-      amountIn: quote.amountIn,
-      amountOut: quote.amountOut,
-      amountInRaw: quote.amountInRaw,
-      amountOutRaw: quote.amountOutRaw,
-      assetIn: quote.assetIn,
-      assetOut: quote.assetOut,
-      price: quote.price,
-      priceImpact: quote.priceImpact,
-      transactionData: {
-        swap: {
-          to: quote.execution.routerAddress,
-          data: quote.execution.swapCalldata,
-          value: quote.execution.value,
-        },
-      },
     }
   }
 

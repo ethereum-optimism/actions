@@ -186,7 +186,10 @@ describe('VelodromeSwapProvider', () => {
         recipient: MOCK_WALLET,
       })
 
-      const result = await provider.execute(quote)
+      const result = await provider.execute({
+        ...quote,
+        recipient: MOCK_WALLET,
+      })
 
       expect(result.transactionData.swap).toBeDefined()
       expect(result.transactionData.swap.data).toBe(
@@ -414,7 +417,10 @@ describe('VelodromeSwapProvider', () => {
         recipient: MOCK_WALLET,
       })
 
-      const result = await provider.execute(quote)
+      const result = await provider.execute({
+        ...quote,
+        recipient: MOCK_WALLET,
+      })
       expect(result.transactionData.swap.data).toBe(
         quote.execution.swapCalldata,
       )

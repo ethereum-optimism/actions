@@ -14,7 +14,7 @@ import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { isNativeAsset } from '@/utils/assets.js'
 
-import { buildSwapPrice, MSG_SENDER, resolveTokens } from './helpers.js'
+import { buildSwapPrice, UNIVERSAL_ROUTER_MSG_SENDER, resolveTokens } from './helpers.js'
 
 /** Universal Router V2_SWAP_EXACT_IN command byte */
 const V2_SWAP_EXACT_IN = 0x08
@@ -211,7 +211,7 @@ function encodeUniversalV2Swap(
       { type: 'bool' },
     ],
     [
-      MSG_SENDER,
+      UNIVERSAL_ROUTER_MSG_SENDER, // recipient = msg.sender (Universal Router sentinel)
       params.amountInRaw,
       params.amountOutMin,
       routes,

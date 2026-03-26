@@ -1,7 +1,11 @@
-import { type Address, formatUnits } from 'viem'
+import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { expandMarkets, findMarket } from '@/swap/core/markets.js'
+import {
+  UNIVERSAL_ROUTER_MSG_SENDER,
+  expandMarkets,
+  findMarket,
+} from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
   getSupportedChainIds,
@@ -29,7 +33,6 @@ import type {
   SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
-import type { TransactionData } from '@/types/transaction.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
 
 /**
@@ -61,51 +64,27 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       deadline: params.deadline,
       recipient: params.recipient,
     })
-    return this._executeFromQuote(swapQuote)
+    return this.buildSwapTransactions(swapQuote)
   }
 
-  protected async _executeFromQuote(
-    quote: SwapQuote,
-  ): Promise<SwapTransaction> {
-    const { chainId, assetIn, assetOut, execution } = quote
-    const addresses = getUniswapAddresses(chainId)
+  protected async _buildApprovals(quote: SwapQuote) {
+    const addresses = getUniswapAddresses(quote.chainId)
 
-    const walletAddress =
-      '0x0000000000000000000000000000000000000001' as Address
-
-    const { tokenApproval, permit2Approval } = await this.buildPermit2Approvals(
+    return this.buildPermit2Approvals(
       {
-        assetIn,
-        assetOut,
+        assetIn: quote.assetIn,
+        assetOut: quote.assetOut,
         slippage: quote.slippage,
         deadline: quote.deadline,
-        recipient: walletAddress,
-        walletAddress,
-        chainId,
+        recipient: quote.recipient!,
+        walletAddress: quote.recipient!,
+        chainId: quote.chainId,
         amountInRaw: quote.amountInRaw,
       },
       quote.amountInRaw,
       addresses.permit2,
       addresses.universalRouter,
     )
-
-    const swapTx: TransactionData = {
-      to: execution.routerAddress,
-      data: execution.swapCalldata,
-      value: execution.value,
-    }
-
-    return {
-      amountIn: quote.amountIn,
-      amountOut: quote.amountOut,
-      amountInRaw: quote.amountInRaw,
-      amountOutRaw: quote.amountOutRaw,
-      assetIn,
-      assetOut,
-      price: quote.price,
-      priceImpact: quote.priceImpact,
-      transactionData: { tokenApproval, permit2Approval, swap: swapTx },
-    }
   }
 
   protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
@@ -141,8 +120,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       assetOut,
       slippage,
       deadline,
-      recipient:
-        params.recipient ?? '0x0000000000000000000000000000000000000001',
+      recipient: params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER,
       chainId,
       quote,
       universalRouterAddress: addresses.universalRouter,

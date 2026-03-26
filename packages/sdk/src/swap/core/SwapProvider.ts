@@ -16,6 +16,7 @@ import type {
   SwapQuote,
   SwapQuoteParams,
   SwapTransaction,
+  SwapTransactionData,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 import {
@@ -337,7 +338,43 @@ export abstract class SwapProvider<
   private executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     this.validateQuoteExpiration(quote)
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
-    return this._executeFromQuote(quote)
+
+    if (!quote.recipient) {
+      throw new Error(
+        'SwapQuote.recipient is required for execution. Pass the quote through WalletSwapNamespace.execute() which injects the wallet address.',
+      )
+    }
+
+    return this.buildSwapTransactions(quote)
+  }
+
+  /**
+   * Build a SwapTransaction from a quote by fetching approvals and wrapping the swap calldata.
+   * Used by both the quote-execute path and provider _execute implementations.
+   * @param quote - SwapQuote with recipient set for allowance checks
+   */
+  protected async buildSwapTransactions(
+    quote: SwapQuote,
+  ): Promise<SwapTransaction> {
+    const approvals = await this._buildApprovals(quote)
+
+    const swapTx: TransactionData = {
+      to: quote.execution.routerAddress,
+      data: quote.execution.swapCalldata,
+      value: quote.execution.value,
+    }
+
+    return {
+      amountIn: quote.amountIn,
+      amountOut: quote.amountOut,
+      amountInRaw: quote.amountInRaw,
+      amountOutRaw: quote.amountOutRaw,
+      assetIn: quote.assetIn,
+      assetOut: quote.assetOut,
+      price: quote.price,
+      priceImpact: quote.priceImpact,
+      transactionData: { ...approvals, swap: swapTx },
+    }
   }
 
   private validateSwapExecute(params: SwapExecuteParams | SwapQuote): void {
@@ -458,9 +495,15 @@ export abstract class SwapProvider<
 
   protected abstract _getQuote(params: SwapQuoteParams): Promise<SwapQuote>
 
-  protected abstract _executeFromQuote(
+  /**
+   * Build provider-specific approval transactions for a swap.
+   * Called by the base class during executeFromQuote with a validated recipient.
+   * @param quote - SwapQuote with recipient set to the real wallet address
+   * @returns Approval transactions needed before the swap (tokenApproval, permit2Approval)
+   */
+  protected abstract _buildApprovals(
     quote: SwapQuote,
-  ): Promise<SwapTransaction>
+  ): Promise<Omit<SwapTransactionData, 'swap'>>
 
   protected abstract _getMarket(
     params: GetSwapMarketParams,

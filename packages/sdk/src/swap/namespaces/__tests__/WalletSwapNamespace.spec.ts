@@ -148,8 +148,8 @@ describe('WalletSwapNamespace', () => {
       // Execute with the quote
       const result = await namespace.execute(quote)
 
-      // Should use executeFromQuote path (not the normal mockExecute)
-      expect(provider.mockExecuteFromQuote).toHaveBeenCalledTimes(1)
+      // Should use quote path: _buildApprovals called, not _execute
+      expect(provider.mockBuildApprovals).toHaveBeenCalledTimes(1)
       expect(provider.mockExecute).not.toHaveBeenCalled()
       expect(result.price).toBe(1.5)
       expect(wallet.send).toHaveBeenCalledTimes(1)

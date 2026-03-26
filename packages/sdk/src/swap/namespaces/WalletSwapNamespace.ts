@@ -30,10 +30,11 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * @returns Swap receipt with transaction details
    */
   async execute(params: WalletSwapParams | SwapQuote): Promise<SwapReceipt> {
-    // Inject walletAddress for raw params; quotes already have everything needed
+    // Inject walletAddress — raw params need it for validation,
+    // quotes need it for on-chain allowance checks during approval building
     const executeParams =
       'execution' in params
-        ? params
+        ? { ...params, recipient: this.wallet.address }
         : { ...params, walletAddress: this.wallet.address }
 
     const provider = this.resolveProvider(

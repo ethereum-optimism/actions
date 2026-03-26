@@ -3,13 +3,12 @@ import { formatUnits } from 'viem'
 
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/swap/core/markets.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
-/** Sentinel: route output to msg.sender */
-export const MSG_SENDER =
-  '0x0000000000000000000000000000000000000001' as Address
+export { UNIVERSAL_ROUTER_MSG_SENDER }
 
 /**
  * Resolve an asset pair to on-chain token addresses for a given chain.

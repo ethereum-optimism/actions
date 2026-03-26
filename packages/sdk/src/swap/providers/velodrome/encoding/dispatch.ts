@@ -13,7 +13,6 @@ import type { TransactionData } from '@/types/transaction.js'
 import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
 
 import { encodeCLSwap, getCLQuote } from './cl.js'
-import { MSG_SENDER } from './helpers.js'
 import { encodeSwap, getQuote } from './v2.js'
 
 /** Internal result from pool-type-specific quoting */
@@ -145,6 +144,7 @@ export async function buildTokenApproval(
   router: Address,
   routerType: VelodromeRouterType,
   amount: bigint,
+  owner: Address,
   publicClient: PublicClient,
 ): Promise<TransactionData | undefined> {
   if (routerType === 'universal') {
@@ -162,7 +162,7 @@ export async function buildTokenApproval(
   return buildApprovalTxIfNeeded({
     publicClient,
     token,
-    owner: MSG_SENDER,
+    owner,
     spender: router,
     amount,
   })

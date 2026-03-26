@@ -237,6 +237,12 @@ export interface SwapQuote {
   expiresAt: number
   /** Estimated gas cost as raw bigint (native decimals) */
   gasEstimate?: bigint
+  /**
+   * Wallet address that will execute this quote.
+   * Set by WalletSwapNamespace before execution — not available on price-only quotes.
+   * Used to check existing on-chain allowances and skip redundant approvals.
+   */
+  recipient?: Address
 }
 
 /**

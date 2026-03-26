@@ -1,3 +1,5 @@
+import type { Address } from 'viem'
+
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -5,6 +7,16 @@ import type {
   SwapMarket,
   SwapMarketConfig,
 } from '@/types/swap/index.js'
+
+/**
+ * Sentinel address meaning "send output to msg.sender" in Universal Router commands.
+ * The Universal Router maps address(1) to msg.sender and address(2) to the router itself.
+ * Only valid in Universal Router calldata encoding — do not use as a general-purpose address.
+ * Both Uniswap and Velodrome/Aerodrome Universal Router forks use this convention.
+ * @see https://github.com/Uniswap/universal-router/blob/main/contracts/libraries/Constants.sol
+ */
+export const UNIVERSAL_ROUTER_MSG_SENDER =
+  '0x0000000000000000000000000000000000000001' as Address
 
 /**
  * Generate unique asset pairs, optionally filtered to pairs containing a required asset.

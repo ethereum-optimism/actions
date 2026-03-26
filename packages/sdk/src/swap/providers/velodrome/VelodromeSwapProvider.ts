@@ -1,7 +1,11 @@
 import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { expandMarkets, findMarket } from '@/swap/core/markets.js'
+import {
+  UNIVERSAL_ROUTER_MSG_SENDER,
+  expandMarkets,
+  findMarket,
+} from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
   getChainConfig,
@@ -31,7 +35,6 @@ import type {
   SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
-import type { TransactionData } from '@/types/transaction.js'
 import {
   getAssetAddress,
   isNativeAsset,
@@ -77,7 +80,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       deadline: params.deadline,
       recipient: params.recipient,
     })
-    return this._executeFromQuote(swapQuote)
+    return this.buildSwapTransactions(swapQuote)
   }
 
   /**
@@ -134,8 +137,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
-    const recipient =
-      params.recipient ?? '0x0000000000000000000000000000000000000001'
+    const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
 
     const { internalQuote, providerContext } = await fetchPoolQuote(
       poolConfig,
@@ -190,48 +192,22 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     }
   }
 
-  /**
-   * Execute a swap from a pre-built quote.
-   * @param quote - A SwapQuote previously returned by _getQuote
-   * @returns Transaction data with approvals and swap calldata
-   */
-  protected async _executeFromQuote(
-    quote: SwapQuote,
-  ): Promise<SwapTransaction> {
-    const { chainId, assetIn, assetOut, execution } = quote
-    const chain = getChainConfig(chainId)
-    const publicClient = this.chainManager.getPublicClient(chainId)
+  protected async _buildApprovals(quote: SwapQuote) {
+    const chain = getChainConfig(quote.chainId)
+    const publicClient = this.chainManager.getPublicClient(quote.chainId)
 
-    const tokenApproval = isNativeAsset(assetIn)
+    const tokenApproval = isNativeAsset(quote.assetIn)
       ? undefined
       : await buildTokenApproval(
-          getAssetAddress(assetIn, chainId),
+          getAssetAddress(quote.assetIn, quote.chainId),
           chain.contracts.router,
           chain.metadata.routerType,
           quote.amountInRaw,
+          quote.recipient!,
           publicClient,
         )
 
-    const swapTx: TransactionData = {
-      to: execution.routerAddress,
-      data: execution.swapCalldata,
-      value: execution.value,
-    }
-
-    return {
-      amountIn: quote.amountIn,
-      amountOut: quote.amountOut,
-      amountInRaw: quote.amountInRaw,
-      amountOutRaw: quote.amountOutRaw,
-      assetIn,
-      assetOut,
-      price: quote.price,
-      priceImpact: quote.priceImpact,
-      transactionData: {
-        tokenApproval,
-        swap: swapTx,
-      },
-    }
+    return { tokenApproval }
   }
 
   /**

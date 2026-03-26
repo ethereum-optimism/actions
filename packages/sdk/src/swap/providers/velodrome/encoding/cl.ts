@@ -10,7 +10,7 @@ import {
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 
-import { buildSwapPrice, MSG_SENDER, resolveTokens } from './helpers.js'
+import { buildSwapPrice, UNIVERSAL_ROUTER_MSG_SENDER, resolveTokens } from './helpers.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Quoting
@@ -137,7 +137,7 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
       { type: 'bool' },
     ],
     [
-      MSG_SENDER,
+      UNIVERSAL_ROUTER_MSG_SENDER, // recipient = msg.sender (Universal Router sentinel)
       amountInRaw,
       amountOutMin,
       path,
