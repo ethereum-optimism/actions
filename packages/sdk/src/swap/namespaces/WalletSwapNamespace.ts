@@ -26,20 +26,15 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   /**
    * Execute a token swap.
    * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote (skips re-quoting).
+   * @param params - Swap parameters or a pre-built SwapQuote from getQuote()
+   * @returns Swap receipt with transaction details
    */
   async execute(params: WalletSwapParams | SwapQuote): Promise<SwapReceipt> {
-    // SwapQuote path: pass through to provider, no need to inject walletAddress
-    if ('execution' in params) {
-      const provider = this.resolveProvider(
-        params.provider,
-        params.assetIn,
-        params.assetOut,
-        params.chainId,
-      )
-      const swapTx = await provider.execute(params)
-      const receipt = await this.executeTransaction(swapTx, params.chainId)
-      return this.buildReceipt(swapTx, receipt)
-    }
+    // Inject walletAddress for raw params; quotes already have everything needed
+    const executeParams =
+      'execution' in params
+        ? params
+        : { ...params, walletAddress: this.wallet.address }
 
     const provider = this.resolveProvider(
       params.provider,
@@ -48,13 +43,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
       params.chainId,
     )
 
-    // Build swap transaction
-    const swapTx = await provider.execute({
-      ...params,
-      walletAddress: this.wallet.address,
-    })
-
-    // Execute transaction(s)
+    const swapTx = await provider.execute(executeParams)
     const receipt = await this.executeTransaction(swapTx, params.chainId)
     return this.buildReceipt(swapTx, receipt)
   }
