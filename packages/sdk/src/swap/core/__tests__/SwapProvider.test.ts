@@ -43,6 +43,62 @@ describe('SwapProvider', () => {
       expect(provider.defaultSlippage).toBe(0.01)
     })
 
+    it('should use settings slippage when provider does not set one', () => {
+      const provider = new MockSwapProvider({}, undefined, undefined, {
+        defaultSlippage: 0.02,
+      })
+      expect(provider.defaultSlippage).toBe(0.02)
+    })
+
+    it('should prefer provider slippage over settings', () => {
+      const provider = new MockSwapProvider(
+        { defaultSlippage: 0.03 },
+        undefined,
+        undefined,
+        { defaultSlippage: 0.02 },
+      )
+      expect(provider.defaultSlippage).toBe(0.03)
+    })
+
+    it('should resolve maxSlippage: provider → settings → default', () => {
+      expect(new MockSwapProvider().maxSlippage).toBe(0.5)
+      expect(
+        new MockSwapProvider({}, undefined, undefined, { maxSlippage: 0.3 })
+          .maxSlippage,
+      ).toBe(0.3)
+      expect(
+        new MockSwapProvider({ maxSlippage: 0.1 }, undefined, undefined, {
+          maxSlippage: 0.3,
+        }).maxSlippage,
+      ).toBe(0.1)
+    })
+
+    it('should resolve quoteExpirationSeconds: provider → settings → default', () => {
+      expect(new MockSwapProvider().quoteExpirationSeconds).toBe(60)
+      expect(
+        new MockSwapProvider({}, undefined, undefined, {
+          quoteExpirationSeconds: 120,
+        }).quoteExpirationSeconds,
+      ).toBe(120)
+      expect(
+        new MockSwapProvider(
+          { quoteExpirationSeconds: 30 },
+          undefined,
+          undefined,
+          { quoteExpirationSeconds: 120 },
+        ).quoteExpirationSeconds,
+      ).toBe(30)
+    })
+
+    it('should resolve permit2ExpirationSeconds: provider → settings → default', () => {
+      expect(new MockSwapProvider().permit2ExpirationSeconds).toBe(2_592_000)
+      expect(
+        new MockSwapProvider({}, undefined, undefined, {
+          permit2ExpirationSeconds: 86400,
+        }).permit2ExpirationSeconds,
+      ).toBe(86400)
+    })
+
     it('should store market allowlist when provided', () => {
       const config: SwapMarketConfig = {
         assets: [MockUSDC, MockWETH],

@@ -5,6 +5,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
@@ -56,6 +57,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     config?: SwapProviderConfig,
     mockConfig?: Partial<MockSwapProviderConfig>,
     chainManager?: ChainManager,
+    settings?: SwapSettings,
   ) {
     super(
       config || {},
@@ -63,6 +65,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
         (new MockChainManager({
           supportedChains: [84532 as SupportedChainId],
         }) as unknown as ChainManager),
+      settings,
     )
 
     this._supportedChains = mockConfig?.supportedChains ?? [

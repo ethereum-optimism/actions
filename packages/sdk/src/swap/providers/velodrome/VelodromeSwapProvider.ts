@@ -339,7 +339,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
-    const deadline = params.deadline ?? now + 60
+    const deadline = params.deadline ?? now + this.quoteExpirationSeconds
     const recipient =
       params.recipient ?? '0x0000000000000000000000000000000000000001'
 

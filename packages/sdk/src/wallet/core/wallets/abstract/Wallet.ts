@@ -6,7 +6,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
-import type { SwapRoutingConfig } from '@/types/actions.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -63,7 +63,7 @@ export abstract class Wallet {
     lendProviders?: LendProviders,
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
-    swapRouting?: SwapRoutingConfig,
+    swapSettings?: SwapSettings,
   ) {
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
@@ -73,7 +73,11 @@ export abstract class Wallet {
       this.lend = new WalletLendNamespace(this.lendProviders, this)
     }
     if (Object.values(this.swapProviders).some(Boolean)) {
-      this.swap = new WalletSwapNamespace(this.swapProviders, this, swapRouting)
+      this.swap = new WalletSwapNamespace(
+        this.swapProviders,
+        this,
+        swapSettings,
+      )
     }
   }
 

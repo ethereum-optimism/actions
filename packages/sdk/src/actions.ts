@@ -8,7 +8,7 @@ import type {
   AssetsConfig,
   LendProviders,
   SwapProviders,
-  SwapRoutingConfig,
+  SwapSettings,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import { validateConfigAddresses } from '@/utils/validateAddresses.js'
@@ -50,7 +50,7 @@ export class Actions<
   private _lendProviders: LendProviders = {}
   private _swap?: ActionsSwapNamespace
   private _swapProviders: SwapProviders = {}
-  private _swapRouting?: SwapRoutingConfig
+  private _swapSettings?: SwapSettings
   private _assetsConfig?: AssetsConfig
   private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
   private smartWalletProvider!: SmartWalletProvider
@@ -93,23 +93,26 @@ export class Actions<
       this._lend = new ActionsLendNamespace(this._lendProviders)
     }
 
+    const swapSettings = config.swap?.settings
     if (config.swap?.uniswap) {
       this._swapProviders.uniswap = new UniswapSwapProvider(
         config.swap.uniswap,
         this.chainManager,
+        swapSettings,
       )
     }
     if (config.swap?.velodrome) {
       this._swapProviders.velodrome = new VelodromeSwapProvider(
         config.swap.velodrome,
         this.chainManager,
+        swapSettings,
       )
     }
-    this._swapRouting = config.swap?.routing
+    this._swapSettings = swapSettings
     if (Object.values(this._swapProviders).some(Boolean)) {
       this._swap = new ActionsSwapNamespace(
         this._swapProviders,
-        this._swapRouting,
+        this._swapSettings,
       )
     }
 
@@ -230,7 +233,7 @@ export class Actions<
         lendProviders: this._lendProviders,
         swapProviders: this._swapProviders,
         supportedAssets: this.getSupportedAssets(),
-        swapRouting: this._swapRouting,
+        swapSettings: this._swapSettings,
       },
       options,
     )

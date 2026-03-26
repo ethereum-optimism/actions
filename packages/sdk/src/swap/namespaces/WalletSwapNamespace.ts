@@ -1,6 +1,6 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
-import type { SwapRoutingConfig } from '@/types/actions.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type {
   SwapProviders,
   SwapQuote,
@@ -18,9 +18,9 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   constructor(
     providers: SwapProviders,
     private readonly wallet: Wallet,
-    routing?: SwapRoutingConfig,
+    settings?: SwapSettings,
   ) {
-    super(providers, routing)
+    super(providers, settings)
   }
 
   /**

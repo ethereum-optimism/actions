@@ -86,7 +86,6 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       amountInRaw,
       addresses.permit2,
       addresses.universalRouter,
-      this._config.permit2ExpirySeconds,
     )
 
     const swapTx: TransactionData = {
@@ -206,7 +205,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     const amountOutRaw = parseAssetAmount(assetOut, params.amountOut)
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
-    const deadline = params.deadline ?? now + 60
+    const deadline = params.deadline ?? now + this.quoteExpirationSeconds
 
     const quote = await getQuote({
       assetIn,
@@ -308,7 +307,6 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       quote.amountInRaw,
       addresses.permit2,
       addresses.universalRouter,
-      this._config.permit2ExpirySeconds,
     )
 
     const swapTx: TransactionData = {

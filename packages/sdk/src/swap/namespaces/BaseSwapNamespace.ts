@@ -1,6 +1,6 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { SwapProvider } from '@/swap/core/SwapProvider.js'
-import type { SwapProviderName, SwapRoutingConfig } from '@/types/actions.js'
+import type { SwapProviderName, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
@@ -18,7 +18,7 @@ import type {
 export abstract class BaseSwapNamespace {
   constructor(
     protected readonly providers: SwapProviders,
-    protected readonly routing?: SwapRoutingConfig,
+    protected readonly settings?: SwapSettings,
   ) {}
 
   /**
@@ -119,14 +119,13 @@ export abstract class BaseSwapNamespace {
       return allProviders[0]
     }
 
-    // 2. defaultProvider with no strategy — always use it
-    if (this.routing?.defaultProvider && !this.routing.strategy) {
-      const defaultP = this.providers[this.routing.defaultProvider]
-      if (defaultP) return defaultP
+    // 2. defaultProvider with no routing strategy — always use it
+    if (this.settings?.defaultProvider && !this.settings.routing) {
+      const provider = this.providers[this.settings.defaultProvider]
+      if (provider) return provider
     }
 
-    // 3. Strategy-based routing (currently only 'price' — falls through to
-    //    market-based matching for now; best-price comparison is a future enhancement)
+    // 3. Routing strategy (e.g. 'price') — TODO: implement multi-provider quoting
 
     // 4. Match by market allowlist
     for (const p of allProviders) {

@@ -27,19 +27,35 @@ export type LendConfig = RequireAtLeastOne<{
 /** Names of available swap providers — derived from SwapProviders registry */
 export type SwapProviderName = keyof SwapProviders
 
+/** Routing strategy for selecting a provider when multiple are configured. */
+export type SwapRoutingStrategy = 'price'
+
 /**
- * Swap provider routing configuration.
- * Controls how the SDK selects a provider when the caller doesn't specify one.
+ * Shared swap settings applied across all providers.
+ * Provider-level values override these when set.
  */
-export interface SwapRoutingConfig {
-  /** Comparison strategy for selecting across providers. Currently only 'price'. */
-  strategy?: 'price'
-  /** Provider to prefer when strategy produces a tie, or to always use when no strategy is set. */
+export interface SwapSettings {
+  /** Default slippage tolerance (e.g., 0.005 for 0.5%). Defaults to 0.005. */
+  defaultSlippage?: number
+  /** Maximum allowed slippage (e.g., 0.5 for 50%). Defaults to 0.5. */
+  maxSlippage?: number
+  /** Quote expiration in seconds from now. Defaults to 60. */
+  quoteExpirationSeconds?: number
+  /** Permit2 sub-approval expiration in seconds from now. Defaults to 2592000 (30 days). */
+  permit2ExpirationSeconds?: number
+  /**
+   * Routing strategy for multi-provider selection.
+   * 'price' fetches quotes from all eligible providers and returns the best price.
+   * Omit to fall back to market-matching heuristics.
+   */
+  routing?: SwapRoutingStrategy
+  /** Provider to prefer when routing produces a tie, or to always use when no routing strategy is set. */
   defaultProvider?: SwapProviderName
 }
 
 /**
- * Swap configuration — at least one provider must be configured
+ * Swap configuration — at least one provider must be configured.
+ * Shared settings go in `config`; per-provider settings go under the provider key.
  */
 export type SwapConfig = RequireAtLeastOne<{
   /** Uniswap swap provider configuration */
@@ -47,8 +63,8 @@ export type SwapConfig = RequireAtLeastOne<{
   /** Velodrome/Aerodrome swap provider configuration */
   velodrome?: VelodromeSwapProviderConfig
 }> & {
-  /** Routing configuration for multi-provider selection */
-  routing?: SwapRoutingConfig
+  /** Shared settings applied across all providers */
+  settings?: SwapSettings
 }
 
 /**

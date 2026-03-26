@@ -3,6 +3,7 @@ import type { Address } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
@@ -41,23 +42,35 @@ import {
   validateSlippage,
 } from '@/utils/validation.js'
 
-const DEFAULT_SLIPPAGE = 0.005
-const DEFAULT_DEADLINE_OFFSET = 60
-const DEFAULT_MAX_SLIPPAGE = 0.5
+/** Hardcoded fallbacks when neither provider nor global config sets a value */
+const DEFAULTS = {
+  slippage: 0.005,
+  maxSlippage: 0.5,
+  quoteExpirationSeconds: 60,
+  permit2ExpirationSeconds: 2_592_000, // 30 days
+} as const
 
 /**
  * Abstract base class for swap providers.
  * Public methods handle validation and conversion,
  * protected abstract methods implement provider-specific logic.
+ *
+ * Settings are resolved with provider → global → hardcoded default precedence.
  */
 export abstract class SwapProvider<
   TConfig extends SwapProviderConfig = SwapProviderConfig,
 > {
   protected readonly _config: TConfig
+  protected readonly _settings: SwapSettings
   protected readonly chainManager: ChainManager
 
-  constructor(config: TConfig, chainManager: ChainManager) {
+  constructor(
+    config: TConfig,
+    chainManager: ChainManager,
+    settings?: SwapSettings,
+  ) {
     this._config = config
+    this._settings = settings ?? {}
     this.chainManager = chainManager
   }
 
@@ -65,8 +78,41 @@ export abstract class SwapProvider<
     return this._config
   }
 
+  /** Resolved default slippage: provider → global → 0.005 */
   get defaultSlippage(): number {
-    return this._config.defaultSlippage ?? DEFAULT_SLIPPAGE
+    return (
+      this._config.defaultSlippage ??
+      this._settings.defaultSlippage ??
+      DEFAULTS.slippage
+    )
+  }
+
+  /** Resolved max slippage: provider → global → 0.5 */
+  get maxSlippage(): number {
+    return (
+      this._config.maxSlippage ??
+      this._settings.maxSlippage ??
+      DEFAULTS.maxSlippage
+    )
+  }
+
+  /** Resolved quote expiration in seconds: provider → global → 60 */
+  get quoteExpirationSeconds(): number {
+    return (
+      this._config.quoteExpirationSeconds ??
+      this._settings.quoteExpirationSeconds ??
+      DEFAULTS.quoteExpirationSeconds
+    )
+  }
+
+  /** Resolved Permit2 sub-approval expiration in seconds: provider → global → 30 days */
+  get permit2ExpirationSeconds(): number {
+    return (
+      (this._config as { permit2ExpirationSeconds?: number })
+        .permit2ExpirationSeconds ??
+      this._settings.permit2ExpirationSeconds ??
+      DEFAULTS.permit2ExpirationSeconds
+    )
   }
 
   /**
@@ -216,18 +262,17 @@ export abstract class SwapProvider<
   /**
    * Build Permit2 approval transactions for an ERC20 swap input.
    * Skipped for native assets. Checks both ERC20→Permit2 and Permit2→spender allowances in parallel.
+   * Uses the resolved `permit2ExpirationSeconds` from provider → global → default.
    * @param params - Resolved swap params (wallet address, asset info, chain)
    * @param requiredAmount - Amount as raw bigint that must be approved
    * @param permit2Address - Permit2 contract address
    * @param permit2Spender - The router/contract that Permit2 should approve (e.g. Universal Router)
-   * @param permit2ExpirySeconds - Optional custom expiry for the Permit2 approval
    */
   protected async buildPermit2Approvals(
     params: ResolvedSwapParams,
     requiredAmount: bigint,
     permit2Address: Address,
     permit2Spender: Address,
-    permit2ExpirySeconds?: number,
   ): Promise<{
     tokenApproval: TransactionData | undefined
     permit2Approval: TransactionData | undefined
@@ -270,7 +315,7 @@ export abstract class SwapProvider<
             token,
             spender: permit2Spender,
             amount: requiredAmount,
-            expirySeconds: permit2ExpirySeconds,
+            expirySeconds: this.permit2ExpirationSeconds,
           })
         : undefined
 
@@ -296,10 +341,7 @@ export abstract class SwapProvider<
     validateAmountProvided(params.amountIn, params.amountOut)
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
-    validateSlippage(
-      params.slippage ?? this.defaultSlippage,
-      this._config.maxSlippage ?? DEFAULT_MAX_SLIPPAGE,
-    )
+    validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
     this.validateRecipient(params)
   }
 
@@ -327,7 +369,7 @@ export abstract class SwapProvider<
       slippage: params.slippage ?? this.defaultSlippage,
       deadline:
         params.deadline ??
-        Math.floor(Date.now() / 1000) + DEFAULT_DEADLINE_OFFSET,
+        Math.floor(Date.now() / 1000) + this.quoteExpirationSeconds,
       // Send output tokens to specified recipient, or back to the initiating wallet
       recipient: params.recipient ?? params.walletAddress,
       walletAddress: params.walletAddress,

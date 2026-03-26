@@ -15,14 +15,16 @@ export { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
 export type { SwapProviders } from '@/types/providers.js'
 
 /**
- * Swap provider configuration
- * @description Configuration for a single swap provider (mirrors LendProviderConfig pattern)
+ * Per-provider swap configuration.
+ * Provider-level values override the shared SwapGlobalConfig defaults.
  */
 export interface SwapProviderConfig {
-  /** Default slippage tolerance (e.g., 0.005 for 0.5%) */
+  /** Slippage tolerance override for this provider (e.g., 0.005 for 0.5%) */
   defaultSlippage?: number
-  /** Maximum allowed slippage (e.g., 0.5 for 50%). Defaults to 0.5. */
+  /** Maximum allowed slippage override for this provider (e.g., 0.5 for 50%) */
   maxSlippage?: number
+  /** Quote expiration override for this provider, in seconds from now */
+  quoteExpirationSeconds?: number
   /** Allowlist of swap markets (optional - defaults to all supported assets) */
   marketAllowlist?: SwapMarketConfig[]
   /** Blocklist of swap markets to exclude */

@@ -1,5 +1,5 @@
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapRoutingConfig } from '@/types/actions.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
@@ -15,7 +15,7 @@ export interface HostedProviderDeps {
   lendProviders?: LendProviders
   swapProviders?: SwapProviders
   supportedAssets?: Asset[]
-  swapRouting?: SwapRoutingConfig
+  swapSettings?: SwapSettings
 }
 
 /**
