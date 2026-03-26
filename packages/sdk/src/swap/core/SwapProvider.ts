@@ -19,16 +19,16 @@ import type {
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 import {
-  getAssetAddress,
-  isNativeAsset,
-  parseAssetAmount,
-} from '@/utils/assets.js'
-import {
   buildPermit2ApprovalTx,
   buildTokenApprovalTx,
   checkPermit2Allowance,
   checkTokenAllowance,
-} from '@/utils/permit2.js'
+} from '@/utils/approve.js'
+import {
+  getAssetAddress,
+  isNativeAsset,
+  parseAssetAmount,
+} from '@/utils/assets.js'
 import {
   validateAmountPositiveIfExists,
   validateAmountProvided,

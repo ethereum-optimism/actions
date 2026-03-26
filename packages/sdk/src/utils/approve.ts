@@ -75,25 +75,15 @@ export async function checkPermit2Allowance(params: {
 }
 
 /**
- * Build ERC20 token approval transaction to Permit2
+ * Build ERC20 token approval transaction to Permit2.
+ * Uses maxUint256 — the Uniswap-canonical pattern.
+ * Permit2 is immutable with no owner; spending is scoped by its own allowance system.
  */
 export function buildTokenApprovalTx(
   token: Address,
   permit2Address: Address,
 ): TransactionData {
-  const data = encodeFunctionData({
-    abi: erc20Abi,
-    functionName: 'approve',
-    // ERC20 -> Permit2: maxUint256 is the Uniswap-canonical pattern.
-    // Permit2 is immutable with no owner — spending is scoped by its own allowance system.
-    args: [permit2Address, maxUint256],
-  })
-
-  return {
-    to: token,
-    data,
-    value: 0n,
-  }
+  return buildErc20ApprovalTx(token, permit2Address, maxUint256)
 }
 
 /**
@@ -141,4 +131,67 @@ export async function checkTokenAllowance(params: {
     functionName: 'allowance',
     args: [owner, spender],
   })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Generic ERC20 approval utilities
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Build an ERC20 approve transaction.
+ * @param token - ERC20 token address
+ * @param spender - Address to approve
+ * @param amount - Amount to approve
+ * @returns Transaction data for the approval
+ */
+export function buildErc20ApprovalTx(
+  token: Address,
+  spender: Address,
+  amount: bigint,
+): TransactionData {
+  return {
+    to: token,
+    data: encodeFunctionData({
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [spender, amount],
+    }),
+    value: 0n,
+  }
+}
+
+/**
+ * Compute how much additional ERC20 approval is needed.
+ * Returns 0n if current allowance is sufficient.
+ * @param params - Token, owner, spender, required amount, and public client
+ * @returns The deficit (required - current), or 0n if already sufficient
+ */
+export async function getApprovalDeficit(params: {
+  publicClient: PublicClient
+  token: Address
+  owner: Address
+  spender: Address
+  amount: bigint
+}): Promise<bigint> {
+  const current = await checkTokenAllowance(params)
+  return current >= params.amount ? 0n : params.amount - current
+}
+
+/**
+ * Build an ERC20 approval transaction only if needed, approving only the deficit.
+ * Checks the current on-chain allowance, returns undefined if already sufficient.
+ * @param params - Token, owner, spender, required amount, and public client
+ * @returns Approval transaction for the deficit amount, or undefined if allowance is sufficient
+ */
+export async function buildApprovalTxIfNeeded(params: {
+  publicClient: PublicClient
+  token: Address
+  owner: Address
+  spender: Address
+  amount: bigint
+}): Promise<TransactionData | undefined> {
+  const deficit = await getApprovalDeficit(params)
+  return deficit > 0n
+    ? buildErc20ApprovalTx(params.token, params.spender, deficit)
+    : undefined
 }
