@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { QUOTE_DISCRIMINATOR } from '@/swap/core/SwapProvider.js'
 import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type {
@@ -55,7 +56,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
     // Inject walletAddress — raw params need it for validation,
     // quotes need it for on-chain allowance checks during approval building
     const executeParams =
-      'execution' in params
+      QUOTE_DISCRIMINATOR in params
         ? { ...params, recipient: this.wallet.address }
         : { ...params, walletAddress: this.wallet.address }
 

@@ -54,6 +54,9 @@ const DEFAULTS = {
 /** Basis points denominator for slippage calculations (1 bp = 0.01%) */
 const BPS_DENOMINATOR = 10000n
 
+/** Field used to distinguish a SwapQuote from raw SwapExecuteParams */
+export const QUOTE_DISCRIMINATOR = 'quotedAt' as const
+
 /**
  * Abstract base class for swap providers.
  * Public methods handle validation and conversion,
@@ -130,7 +133,7 @@ export abstract class SwapProvider<
   ): Promise<SwapTransaction> {
     this.validateSwapExecute(params)
 
-    if ('execution' in params) {
+    if (QUOTE_DISCRIMINATOR in params) {
       return this.executeFromQuote(params)
     }
 
