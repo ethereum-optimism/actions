@@ -62,10 +62,7 @@ function buildSwapOperations(
       actionsApi.getSwapMarkets(undefined, await getAuthHeaders()),
     getSwapQuote: async (params) => {
       try {
-        return await actionsApi.getSwapQuote(
-          params,
-          await getAuthHeaders(),
-        )
+        return await actionsApi.getSwapQuote(params, await getAuthHeaders())
       } catch {
         return null
       }

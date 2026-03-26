@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type {
-  Asset,
   SupportedChainId,
   SwapMarket,
   SwapQuote,
@@ -393,7 +392,14 @@ export function SwapAction({
   }
 
   const handleConfirmSwap = async () => {
-    if (!amountIn || parseFloat(amountIn) <= 0 || !assetIn || !assetOut || !quote) return
+    if (
+      !amountIn ||
+      parseFloat(amountIn) <= 0 ||
+      !assetIn ||
+      !assetOut ||
+      !quote
+    )
+      return
 
     const inSymbol = displaySymbol(assetIn.asset.metadata.symbol)
     const outSymbol = displaySymbol(assetOut.asset.metadata.symbol)
@@ -599,7 +605,7 @@ export function SwapAction({
           assetOut={assetOut}
           amountIn={amountIn}
           amountOut={amountOut}
-          quote={quote}
+          priceQuote={quote}
           isExecuting={isExecuting}
           selectedProvider={selectedProvider}
         />

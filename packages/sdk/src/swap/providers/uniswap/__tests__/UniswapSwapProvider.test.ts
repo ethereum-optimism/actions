@@ -5,10 +5,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { MockWETHAsset } from '@/__mocks__/MockAssets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { Asset } from '@/types/asset.js'
-
 import type { UniswapSwapProviderConfig } from '@/swap/providers/uniswap/types.js'
 import { UniswapSwapProvider } from '@/swap/providers/uniswap/UniswapSwapProvider.js'
+import type { Asset } from '@/types/asset.js'
 
 const CHAIN_ID = baseSepolia.id as SupportedChainId
 

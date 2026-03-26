@@ -1,11 +1,7 @@
 import { useMemo } from 'react'
 import type { SwapMarket } from '@eth-optimism/actions-sdk/react'
 
-import {
-  CHAIN_DISPLAY,
-  DEFAULT_CHAIN,
-  MARKET_LOGO,
-} from '@/constants/logos'
+import { CHAIN_DISPLAY, DEFAULT_CHAIN, MARKET_LOGO } from '@/constants/logos'
 import { getProviderDisplayName } from '@/constants/providers'
 
 import { Dropdown } from './Dropdown'
@@ -61,15 +57,8 @@ export function SwapMarketSelector({
         const name = getProviderDisplayName(option.provider, option.chainId)
         return (
           <div className="flex items-center gap-2 flex-1">
-            <img
-              src={MARKET_LOGO[name] ?? ''}
-              alt={name}
-              className="h-6 w-6"
-            />
-            <span
-              className="text-sm font-medium"
-              style={{ color: '#1a1b1e' }}
-            >
+            <img src={MARKET_LOGO[name] ?? ''} alt={name} className="h-6 w-6" />
+            <span className="text-sm font-medium" style={{ color: '#1a1b1e' }}>
               {name}
             </span>
             <span className="text-sm" style={{ color: '#666666' }}>

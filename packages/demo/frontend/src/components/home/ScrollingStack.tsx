@@ -700,9 +700,6 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               >
                                 {content[prevLayerRef.current - 1].images?.map(
                                   (image, index) => {
-                                    const imageCount =
-                                      content[prevLayerRef.current - 1].images
-                                        ?.length || 3
                                     const img = (
                                       <img
                                         key={index}
@@ -935,9 +932,6 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               >
                                 {content[prevLayerRef.current - 1].images?.map(
                                   (image, index) => {
-                                    const imageCount =
-                                      content[prevLayerRef.current - 1].images
-                                        ?.length || 3
                                     const img = (
                                       <img
                                         key={index}

@@ -51,9 +51,7 @@ export function DemoProviderTooltip() {
             Provider selection for demo purposes only.
           </div>
           <div style={{ color: '#b0b3be' }}>
-            <code style={{ color: '#fff', fontSize: '11px' }}>
-              wallet.swap
-            </code>{' '}
+            <code style={{ color: '#fff', fontSize: '11px' }}>wallet.swap</code>{' '}
             will default to the best price across all providers unless otherwise
             specified.
           </div>

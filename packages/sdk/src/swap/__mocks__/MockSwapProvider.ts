@@ -2,10 +2,10 @@ import type { Address } from 'viem'
 import { type MockedFunction, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { Asset } from '@/types/asset.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
