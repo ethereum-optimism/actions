@@ -12,7 +12,7 @@ import {
 import {
   encodeCLSwap,
   encodeSwap,
-} from '@/swap/providers/velodrome/encoding.js'
+} from '@/swap/providers/velodrome/encoding/index.js'
 import type { Asset } from '@/types/asset.js'
 
 const OP_CHAIN_ID = optimism.id as SupportedChainId

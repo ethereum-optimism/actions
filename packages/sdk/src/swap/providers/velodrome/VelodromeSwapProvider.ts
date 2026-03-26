@@ -18,7 +18,7 @@ import {
   encodeSwap,
   getCLQuote,
   getQuote,
-} from '@/swap/providers/velodrome/encoding.js'
+} from '@/swap/providers/velodrome/encoding/index.js'
 import type {
   ResolvedPoolConfig,
   VelodromeMarketConfig,
