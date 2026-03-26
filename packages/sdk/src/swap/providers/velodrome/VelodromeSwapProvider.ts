@@ -31,11 +31,7 @@ import type {
   SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
-import {
-  getAssetAddress,
-  isNativeAsset,
-  parseAssetAmount,
-} from '@/utils/assets.js'
+import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 /**
  * Velodrome/Aerodrome swap provider for OP Stack chains.

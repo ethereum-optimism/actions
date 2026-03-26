@@ -4,6 +4,7 @@ import { formatUnits } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/swap/core/markets.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -26,7 +27,6 @@ import {
   checkPermit2Allowance,
   checkTokenAllowance,
 } from '@/utils/approve.js'
-import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/swap/core/markets.js'
 import {
   getAssetAddress,
   isNativeAsset,

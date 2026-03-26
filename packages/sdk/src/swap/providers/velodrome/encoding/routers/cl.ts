@@ -7,14 +7,13 @@ import {
   CL_QUOTER_ABI,
   UNIVERSAL_ROUTER_ABI,
 } from '@/swap/providers/velodrome/abis.js'
-import type { Asset } from '@/types/asset.js'
-import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
-
 import {
   buildSwapPrice,
   resolveTokens,
   UNIVERSAL_ROUTER_MSG_SENDER,
 } from '@/swap/providers/velodrome/encoding/helpers.js'
+import type { Asset } from '@/types/asset.js'
+import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Quoting

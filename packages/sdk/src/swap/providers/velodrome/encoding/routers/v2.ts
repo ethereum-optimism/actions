@@ -10,15 +10,14 @@ import {
   V2_ROUTER_ABI,
 } from '@/swap/providers/velodrome/abis.js'
 import type { VelodromeRouterType } from '@/swap/providers/velodrome/config.js'
-import type { Asset } from '@/types/asset.js'
-import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
-import { isNativeAsset } from '@/utils/assets.js'
-
 import {
   buildSwapPrice,
   resolveTokens,
   UNIVERSAL_ROUTER_MSG_SENDER,
 } from '@/swap/providers/velodrome/encoding/helpers.js'
+import type { Asset } from '@/types/asset.js'
+import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
+import { isNativeAsset } from '@/utils/assets.js'
 
 /** Universal Router V2_SWAP_EXACT_IN command byte */
 const V2_SWAP_EXACT_IN = 0x08
