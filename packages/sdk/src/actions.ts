@@ -11,6 +11,7 @@ import type {
   SwapSettings,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import { getAllAssetAddresses } from '@/utils/assets.js'
 import { validateConfigAddresses } from '@/utils/validateAddresses.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
@@ -181,18 +182,10 @@ export class Actions<
       return allow
     }
 
-    const resolveAddresses = (asset: Asset): string[] =>
-      Object.values(asset.address)
-        .filter(
-          (addr): addr is Exclude<typeof addr, undefined | 'native'> =>
-            addr !== undefined && addr !== 'native',
-        )
-        .map((addr) => addr.toLowerCase())
-
-    const blockedAddresses = new Set(block.flatMap(resolveAddresses))
+    const blockedAddresses = new Set(block.flatMap(getAllAssetAddresses))
 
     return allow.filter((asset) => {
-      const addresses = resolveAddresses(asset)
+      const addresses = getAllAssetAddresses(asset)
       return !addresses.some((addr) => blockedAddresses.has(addr))
     })
   }
