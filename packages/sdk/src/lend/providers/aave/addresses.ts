@@ -32,7 +32,7 @@ export interface AaveChainConfig {
  * Aave V3 contract addresses for OP Stack chains
  * @see https://github.com/bgd-labs/aave-address-book
  */
-const AAVE_CHAINS: Partial<Record<SupportedChainId, AaveChainConfig>> = {
+export const AAVE_CHAINS: Partial<Record<SupportedChainId, AaveChainConfig>> = {
   [optimism.id]: {
     contracts: {
       pool: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
