@@ -368,5 +368,5 @@ export interface SwapMarket {
   /** Fee tier in pips (500 = 0.05%) */
   fee: number
   /** Provider name */
-  provider: 'uniswap' | 'velodrome'
+  provider: SwapProviderName
 }

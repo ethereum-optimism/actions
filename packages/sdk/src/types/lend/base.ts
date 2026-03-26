@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { LendProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 // Import and re-export shared transaction type for backwards compatibility
 import type { TransactionData } from '@/types/transaction.js'
@@ -33,7 +34,7 @@ export type LendMarketConfigMetadata = {
   /** Asset information for this market */
   asset: Asset
   /** Lending provider type */
-  lendProvider: 'morpho' | 'aave'
+  lendProvider: LendProviderName
 }
 
 /**

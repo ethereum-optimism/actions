@@ -1,5 +1,6 @@
 import { formatUnits } from 'viem'
 
+import { VELODROME } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { expandMarkets, findMarket } from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
@@ -123,7 +124,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
     const chain = getChainConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
-    const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
+    const poolConfig = this.resolveVelodromeMarketConfig(assetIn, assetOut, chainId)
     const { slippage, now, deadline, recipient, amountInRaw } =
       this.resolveQuoteDefaults(params)
 
@@ -169,7 +170,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         value: isNativeAsset(assetIn) ? amountInRaw : 0n,
         providerContext,
       },
-      provider: 'velodrome',
+      provider: VELODROME,
       slippage,
       deadline,
       quotedAt: now,
@@ -201,7 +202,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
    * Resolve market config to a discriminated pool config.
    * @throws If pair not in allowlist, or has both/neither stable and tickSpacing
    */
-  private resolveVelodromeConfig(
+  private resolveVelodromeMarketConfig(
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,

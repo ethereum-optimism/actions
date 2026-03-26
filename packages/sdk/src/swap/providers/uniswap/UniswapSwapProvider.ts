@@ -1,5 +1,6 @@
 import { formatUnits } from 'viem'
 
+import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { expandMarkets, findMarket } from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
@@ -153,7 +154,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
           permit2Address: addresses.permit2,
         },
       },
-      provider: 'uniswap',
+      provider: UNISWAP,
       slippage,
       deadline,
       quotedAt: now,

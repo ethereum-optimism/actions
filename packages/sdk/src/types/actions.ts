@@ -27,6 +27,9 @@ export type LendConfig = RequireAtLeastOne<{
 /** Names of available swap providers — derived from SwapProviders registry */
 export type SwapProviderName = keyof SwapProviders
 
+/** Names of available lend providers — derived from LendProviders registry */
+export type LendProviderName = keyof LendProviders
+
 /** Routing strategy for selecting a provider when multiple are configured. */
 export type SwapRoutingStrategy = 'price'
 

@@ -371,6 +371,35 @@ export abstract class SwapProvider<
     return { tokenApproval, permit2Approval }
   }
 
+  /**
+   * Build a SwapTransaction from a quote by fetching approvals and wrapping the swap calldata.
+   * Used by both the quote-execute path and provider _execute implementations.
+   * @param quote - SwapQuote with recipient set for allowance checks
+   */
+  protected async buildSwapTransactions(
+    quote: SwapQuote,
+  ): Promise<SwapTransaction> {
+    const approvals = await this._buildApprovals(quote)
+
+    const swapTx: TransactionData = {
+      to: quote.execution.routerAddress,
+      data: quote.execution.swapCalldata,
+      value: quote.execution.value,
+    }
+
+    return {
+      amountIn: quote.amountIn,
+      amountOut: quote.amountOut,
+      amountInRaw: quote.amountInRaw,
+      amountOutRaw: quote.amountOutRaw,
+      assetIn: quote.assetIn,
+      assetOut: quote.assetOut,
+      price: quote.price,
+      priceImpact: quote.priceImpact,
+      transactionData: { ...approvals, swap: swapTx },
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
@@ -405,35 +434,6 @@ export abstract class SwapProvider<
     }
 
     return this.buildSwapTransactions(quote)
-  }
-
-  /**
-   * Build a SwapTransaction from a quote by fetching approvals and wrapping the swap calldata.
-   * Used by both the quote-execute path and provider _execute implementations.
-   * @param quote - SwapQuote with recipient set for allowance checks
-   */
-  protected async buildSwapTransactions(
-    quote: SwapQuote,
-  ): Promise<SwapTransaction> {
-    const approvals = await this._buildApprovals(quote)
-
-    const swapTx: TransactionData = {
-      to: quote.execution.routerAddress,
-      data: quote.execution.swapCalldata,
-      value: quote.execution.value,
-    }
-
-    return {
-      amountIn: quote.amountIn,
-      amountOut: quote.amountOut,
-      amountInRaw: quote.amountInRaw,
-      amountOutRaw: quote.amountOutRaw,
-      assetIn: quote.assetIn,
-      assetOut: quote.assetOut,
-      price: quote.price,
-      priceImpact: quote.priceImpact,
-      transactionData: { ...approvals, swap: swapTx },
-    }
   }
 
   private validateSwapExecute(params: SwapExecuteParams | SwapQuote): void {

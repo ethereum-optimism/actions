@@ -1,5 +1,6 @@
 import { type Address, encodeAbiParameters, keccak256 } from 'viem'
 
+import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { assetPairs } from '@/swap/core/markets.js'
 import { POOL_KEY_ABI_TYPE } from '@/swap/providers/uniswap/abis.js'
@@ -78,6 +79,6 @@ function pairToMarket(
     marketId: { poolId, chainId },
     assets: [assetA, assetB],
     fee,
-    provider: 'uniswap',
+    provider: UNISWAP,
   }
 }

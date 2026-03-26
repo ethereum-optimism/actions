@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { concat, keccak256 } from 'viem'
 
+import { VELODROME } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { assetPairs } from '@/swap/core/markets.js'
 import type { Asset } from '@/types/asset.js'
@@ -94,6 +95,6 @@ function pairToMarket(
     marketId: { poolId, chainId },
     assets: [assetA, assetB],
     fee: 0,
-    provider: 'velodrome' as SwapMarket['provider'],
+    provider: VELODROME,
   }
 }
