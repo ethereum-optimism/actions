@@ -1,28 +1,22 @@
-import type { Address, Hex, PublicClient } from 'viem'
-import {
-  concat,
-  encodeFunctionData,
-  erc20Abi,
-  formatUnits,
-  keccak256,
-} from 'viem'
+import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
   getSupportedChainIds,
   getVelodromeConfig,
-  type VelodromeChainConfig,
-  type VelodromeRouterType,
 } from '@/swap/providers/velodrome/addresses.js'
 import {
-  encodeCLSwap,
-  encodeSwap,
-  getCLQuote,
-  getQuote,
+  buildTokenApproval,
+  encodePoolSwap,
+  fetchPoolQuote,
 } from '@/swap/providers/velodrome/encoding/index.js'
+import {
+  assetPairs,
+  configToMarket,
+  resolvePoolConfig,
+} from '@/swap/providers/velodrome/markets.js'
 import type {
-  ResolvedPoolConfig,
   VelodromeMarketConfig,
   VelodromeSwapProviderConfig,
 } from '@/swap/providers/velodrome/types.js'
@@ -32,24 +26,16 @@ import type {
   GetSwapMarketsParams,
   ResolvedSwapParams,
   SwapMarket,
-  SwapPrice,
   SwapQuote,
   SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
-import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
 import {
   getAssetAddress,
   isNativeAsset,
   parseAssetAmount,
 } from '@/utils/assets.js'
-
-/** Internal result from pool-type-specific quoting */
-interface PoolQuoteResult {
-  internalQuote: SwapPrice
-  providerContext: Record<string, unknown>
-}
 
 /**
  * Velodrome/Aerodrome swap provider for OP Stack chains.
@@ -163,7 +149,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const recipient =
       params.recipient ?? '0x0000000000000000000000000000000000000001'
 
-    const { internalQuote, providerContext } = await this.fetchPoolQuote(
+    const { internalQuote, providerContext } = await fetchPoolQuote(
       poolConfig,
       { assetIn, assetOut, amountInRaw, chainId, publicClient, chain },
     )
@@ -176,7 +162,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
     )
 
-    const swapCalldata = this.encodePoolSwap(poolConfig, {
+    const swapCalldata = encodePoolSwap(poolConfig, {
       assetIn,
       assetOut,
       amountInRaw,
@@ -218,9 +204,6 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
   /**
    * Execute a swap from a pre-built quote.
-   * Uses the pre-encoded calldata from the quote but builds fresh token approval transactions.
-   * For Universal Router: transfers tokens directly to the router (avoids Permit2 with 4337 batching).
-   * For legacy routers: approves tokens directly to the router.
    * @param quote - A SwapQuote previously returned by _getQuote
    * @returns Transaction data with approvals and swap calldata
    */
@@ -233,7 +216,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
     const tokenApproval = isNativeAsset(assetIn)
       ? undefined
-      : await this.buildTokenApproval(
+      : await buildTokenApproval(
           getAssetAddress(assetIn, chainId),
           chain.contracts.router,
           chain.metadata.routerType,
@@ -263,158 +246,8 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     }
   }
 
-  /**
-   * Build a token approval or transfer transaction for swap input.
-   *
-   * Universal Router uses a direct ERC20 transfer instead of approve+transferFrom.
-   * This works because smart wallet batching (4337) bundles the transfer and swap
-   * into a single atomic UserOperation — the router receives tokens before executing
-   * the swap in the same transaction. The caller must already hold the tokens.
-   *
-   * Legacy routers (v2, leaf) use standard approve, approving only the deficit.
-   */
-  private async buildTokenApproval(
-    token: Address,
-    router: Address,
-    routerType: VelodromeRouterType,
-    amount: bigint,
-    publicClient: PublicClient,
-  ): Promise<TransactionData | undefined> {
-    if (routerType === 'universal') {
-      return {
-        to: token,
-        data: encodeFunctionData({
-          abi: erc20Abi,
-          functionName: 'transfer',
-          args: [router, amount],
-        }),
-        value: 0n,
-      }
-    }
-
-    return buildApprovalTxIfNeeded({
-      publicClient,
-      token,
-      owner: '0x0000000000000000000000000000000000000001' as Address,
-      spender: router,
-      amount,
-    })
-  }
-
   // ─────────────────────────────────────────────────────────────────────────────
-  // Pool-type dispatch helpers
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Fetch a price quote for the given pool type.
-   * @returns Internal quote and provider context for the SwapQuote
-   * @throws If CL pool requested on a chain without CL factory/quoter
-   */
-  private async fetchPoolQuote(
-    poolConfig: ResolvedPoolConfig,
-    params: {
-      assetIn: Asset
-      assetOut: Asset
-      amountInRaw: bigint
-      chainId: SupportedChainId
-      publicClient: PublicClient
-      chain: VelodromeChainConfig
-    },
-  ): Promise<PoolQuoteResult> {
-    const { assetIn, assetOut, amountInRaw, chainId, publicClient, chain } =
-      params
-
-    if (poolConfig.type === 'cl') {
-      if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
-        throw new Error(`CL pools not supported on chain ${chainId}`)
-      }
-      const internalQuote = await getCLQuote({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        chainId,
-        publicClient,
-        clFactoryAddress: chain.contracts.clPoolFactory,
-        clQuoterAddress: chain.contracts.clQuoterV2,
-        tickSpacing: poolConfig.tickSpacing,
-      })
-      return {
-        internalQuote,
-        providerContext: {
-          tickSpacing: poolConfig.tickSpacing,
-          clFactoryAddress: chain.contracts.clPoolFactory,
-          poolAddress: internalQuote.route.pools[0]?.address,
-        },
-      }
-    }
-
-    const internalQuote = await getQuote({
-      assetIn,
-      assetOut,
-      amountInRaw,
-      chainId,
-      publicClient,
-      routerAddress: chain.contracts.router,
-      routerType: chain.metadata.routerType,
-      stable: poolConfig.stable,
-      factoryAddress: chain.contracts.poolFactory,
-    })
-    return {
-      internalQuote,
-      providerContext: {
-        stable: poolConfig.stable,
-        factoryAddress: chain.contracts.poolFactory,
-        routerType: chain.metadata.routerType,
-      },
-    }
-  }
-
-  /**
-   * Encode swap calldata for the given pool type.
-   * @returns Encoded calldata as hex string
-   */
-  private encodePoolSwap(
-    poolConfig: ResolvedPoolConfig,
-    params: {
-      assetIn: Asset
-      assetOut: Asset
-      amountInRaw: bigint
-      amountOutMinRaw: bigint
-      recipient: Address
-      deadline: number
-      chainId: SupportedChainId
-      chain: VelodromeChainConfig
-    },
-  ): Hex {
-    if (poolConfig.type === 'cl') {
-      return encodeCLSwap({
-        assetIn: params.assetIn,
-        assetOut: params.assetOut,
-        amountInRaw: params.amountInRaw,
-        amountOutMin: params.amountOutMinRaw,
-        tickSpacing: poolConfig.tickSpacing,
-        recipient: params.recipient,
-        deadline: params.deadline,
-        chainId: params.chainId,
-      })
-    }
-
-    return encodeSwap({
-      assetIn: params.assetIn,
-      assetOut: params.assetOut,
-      amountInRaw: params.amountInRaw,
-      amountOutMin: params.amountOutMinRaw,
-      routerType: params.chain.metadata.routerType,
-      stable: poolConfig.stable,
-      factoryAddress: params.chain.contracts.poolFactory,
-      recipient: params.recipient,
-      deadline: params.deadline,
-      chainId: params.chainId,
-    })
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Private helpers
+  // Private helpers (require `this` access)
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
@@ -425,7 +258,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
-  ): ResolvedPoolConfig {
+  ) {
     const config = this.resolveMarketConfig(assetIn, assetOut, chainId) as
       | VelodromeMarketConfig
       | undefined
@@ -434,32 +267,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         `No market config for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
       )
     }
-    return VelodromeSwapProvider.resolvePoolConfig(config)
-  }
-
-  /**
-   * Resolve a VelodromeMarketConfig to a discriminated ResolvedPoolConfig.
-   * Exactly one of stable or tickSpacing must be set.
-   */
-  private static resolvePoolConfig(
-    config: VelodromeMarketConfig,
-  ): ResolvedPoolConfig {
-    const hasStable = config.stable !== undefined
-    const hasTick = config.tickSpacing !== undefined
-    if (hasStable && hasTick) {
-      throw new Error(
-        'stable and tickSpacing are mutually exclusive — set one, not both',
-      )
-    }
-    if (!hasStable && !hasTick) {
-      throw new Error(
-        'Either stable (v2 AMM) or tickSpacing (CL) must be configured',
-      )
-    }
-    if (hasTick) {
-      return { type: 'cl', tickSpacing: config.tickSpacing! }
-    }
-    return { type: 'v2', stable: config.stable! }
+    return resolvePoolConfig(config)
   }
 
   /** @returns Allowlist entries that have either stable or tickSpacing set */
@@ -469,82 +277,15 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     )
   }
 
-  /**
-   * Generate all SwapMarket objects from a single config entry on a given chain.
-   */
+  /** Generate all SwapMarket objects from a single config entry on a given chain. */
   private marketsFromConfig(
     config: VelodromeMarketConfig,
     chainId: SupportedChainId,
     asset?: Asset,
   ): SwapMarket[] {
-    const poolConfig = VelodromeSwapProvider.resolvePoolConfig(config)
-    return this.assetPairs(config.assets, asset)
-      .map(([a, b]) => this.configToMarket(a, b, chainId, poolConfig))
+    const poolCfg = resolvePoolConfig(config)
+    return assetPairs(config.assets, asset)
+      .map(([a, b]) => configToMarket(a, b, chainId, poolCfg))
       .filter((m): m is SwapMarket => m !== null)
-  }
-
-  /**
-   * Generate unique asset pairs, optionally scoped to pairs containing a required asset.
-   * @param assets - Full list of assets from a market config
-   * @param requiredAsset - If set, only pairs including this asset are returned
-   */
-  private assetPairs(
-    assets: Asset[],
-    requiredAsset?: Asset,
-  ): Array<[Asset, Asset]> {
-    return assets
-      .flatMap((a, i) => assets.slice(i + 1).map((b): [Asset, Asset] => [a, b]))
-      .filter(
-        ([a, b]) =>
-          !requiredAsset || a === requiredAsset || b === requiredAsset,
-      )
-  }
-
-  /**
-   * Build a SwapMarket from two assets and Velodrome pool parameters.
-   * For v2: poolId = keccak256(sortedA, sortedB, stable)
-   * For CL: poolId = keccak256(sortedA, sortedB, tickSpacing as int24)
-   * @returns SwapMarket, or null if either asset lacks an address on this chain
-   */
-  private configToMarket(
-    assetA: Asset,
-    assetB: Asset,
-    chainId: SupportedChainId,
-    poolConfig: ResolvedPoolConfig,
-  ): SwapMarket | null {
-    const addrA = assetA.address[chainId]
-    const addrB = assetB.address[chainId]
-    if (!addrA || addrA === 'native' || !addrB || addrB === 'native')
-      return null
-
-    const [sortedA, sortedB] =
-      addrA.toLowerCase() < addrB.toLowerCase()
-        ? [addrA, addrB]
-        : [addrB, addrA]
-
-    let poolId: string
-    if (poolConfig.type === 'cl') {
-      // CL pool: encode tickSpacing as int24 (3 bytes)
-      const tickBytes =
-        `0x${(poolConfig.tickSpacing & 0xffffff).toString(16).padStart(6, '0')}` as `0x${string}`
-      poolId = keccak256(
-        concat([sortedA as Address, sortedB as Address, tickBytes]),
-      )
-    } else {
-      poolId = keccak256(
-        concat([
-          sortedA as Address,
-          sortedB as Address,
-          poolConfig.stable ? '0x01' : '0x00',
-        ]),
-      )
-    }
-
-    return {
-      marketId: { poolId, chainId },
-      assets: [assetA, assetB],
-      fee: 0,
-      provider: 'velodrome' as SwapMarket['provider'],
-    }
   }
 }
