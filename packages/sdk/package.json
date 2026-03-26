@@ -11,6 +11,7 @@
   },
   "type": "module",
   "sideEffects": false,
+  "sideEffects": false,
   "version": "0.3.0",
   "description": "TypeScript SDK for Actions",
   "main": "dist/index.js",
