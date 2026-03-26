@@ -16,6 +16,9 @@ import { isNativeAsset } from '@/utils/assets.js'
 
 import { buildSwapPrice, MSG_SENDER, resolveTokens } from './helpers.js'
 
+/** Universal Router V2_SWAP_EXACT_IN command byte */
+const V2_SWAP_EXACT_IN = 0x08
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Quoting
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,7 +70,7 @@ async function fetchAmountOut(
     return fetchAmountOutViaPool(params, tokenIn, tokenOut)
   }
   if (routerType === 'v2') {
-    return fetchAmountOutViaRouter(params, tokenIn, tokenOut, V2_ROUTER_ABI, {
+    return fetchAmountOutViaRouter(params, V2_ROUTER_ABI, {
       from: tokenIn,
       to: tokenOut,
       stable: params.stable,
@@ -75,7 +78,7 @@ async function fetchAmountOut(
     })
   }
   if (routerType === 'leaf') {
-    return fetchAmountOutViaRouter(params, tokenIn, tokenOut, LEAF_ROUTER_ABI, {
+    return fetchAmountOutViaRouter(params, LEAF_ROUTER_ABI, {
       from: tokenIn,
       to: tokenOut,
       stable: params.stable,
@@ -119,8 +122,6 @@ async function fetchAmountOutViaPool(
 /** Quote via Router.getAmountsOut (v2 and leaf router path). */
 async function fetchAmountOutViaRouter(
   params: GetQuoteParams,
-  _tokenIn: Address,
-  _tokenOut: Address,
   abi: typeof V2_ROUTER_ABI | typeof LEAF_ROUTER_ABI,
   route: { from: Address; to: Address; stable: boolean; factory?: Address },
 ): Promise<bigint> {
@@ -184,9 +185,6 @@ export function encodeSwap(params: EncodeSwapParams): Hex {
   }
   throw new Error(`Unknown router type: ${routerType as string}`)
 }
-
-/** Universal Router V2_SWAP_EXACT_IN command byte */
-const V2_SWAP_EXACT_IN = 0x08
 
 /**
  * Encode a V2_SWAP_EXACT_IN command for the Universal Router.
