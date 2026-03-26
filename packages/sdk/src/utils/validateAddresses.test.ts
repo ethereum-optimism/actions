@@ -278,7 +278,7 @@ describe('provider contract addresses contain valid EVM addresses', () => {
     const swapProviders = [UNISWAP_CHAINS]
     for (const providerChains of swapProviders) {
       for (const [chainId, config] of Object.entries(providerChains)) {
-        const addresses = Object.values(config!.contracts)
+        const addresses = Object.values(config!.contracts) as Address[]
         for (const addr of addresses) {
           expect(
             () => getAddress(addr),
@@ -292,7 +292,7 @@ describe('provider contract addresses contain valid EVM addresses', () => {
     const lendProviders = [AAVE_CHAINS, MORPHO_CHAINS]
     for (const providerChains of lendProviders) {
       for (const [chainId, config] of Object.entries(providerChains)) {
-        const addresses = Object.values(config!.contracts)
+        const addresses = Object.values(config!.contracts) as Address[]
         for (const addr of addresses) {
           expect(
             () => getAddress(addr),
