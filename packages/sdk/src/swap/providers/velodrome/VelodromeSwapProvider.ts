@@ -29,7 +29,6 @@ import type {
   ResolvedSwapParams,
   SwapMarket,
   SwapPrice,
-  SwapPriceParams,
   SwapQuote,
   SwapQuoteParams,
   SwapTransaction,
@@ -222,59 +221,6 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   }
 
   /**
-   * Get a price quote for a swap pair.
-   * @param params - Price query with assets, optional amounts, and chain
-   * @returns Quote with price, amounts, and route
-   */
-  protected async _getPrice(params: SwapPriceParams): Promise<SwapPrice> {
-    const { chainId, assetIn, assetOut } = params
-
-    if (!assetOut) {
-      throw new Error('assetOut is required')
-    }
-
-    if (params.amountOut !== undefined) {
-      throw new Error(
-        'Velodrome/Aerodrome does not support exact-output swaps. Provide amountIn instead of amountOut.',
-      )
-    }
-
-    const chain = getVelodromeConfig(chainId)
-    const publicClient = this.chainManager.getPublicClient(chainId)
-    const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
-
-    // Default to 1 unit for price quotes when no amount specified
-    const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
-
-    if (poolConfig.type === 'cl') {
-      if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
-        throw new Error(`CL pools not supported on chain ${chainId}`)
-      }
-      return getCLQuote({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        chainId,
-        publicClient,
-        clFactoryAddress: chain.contracts.clPoolFactory,
-        clQuoterAddress: chain.contracts.clQuoterV2,
-        tickSpacing: poolConfig.tickSpacing,
-      })
-    }
-
-    return getQuote({
-      assetIn,
-      assetOut,
-      amountInRaw,
-      chainId,
-      publicClient,
-      routerAddress: chain.contracts.router,
-      routerType: chain.metadata.routerType,
-      stable: poolConfig.stable,
-      factoryAddress: chain.contracts.poolFactory,
-    })
-  }
-
   /**
    * Find a specific market by poolId from the allowlist.
    * @param params - Pool ID and chain to look up

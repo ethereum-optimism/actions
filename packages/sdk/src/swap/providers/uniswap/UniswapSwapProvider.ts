@@ -21,8 +21,6 @@ import type {
   GetSwapMarketsParams,
   ResolvedSwapParams,
   SwapMarket,
-  SwapPrice,
-  SwapPriceParams,
   SwapQuote,
   SwapQuoteParams,
   SwapTransaction,
@@ -115,39 +113,6 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
   }
 
   /**
-   * Get a price quote for a swap pair.
-   * @param params - Price query with assets, optional amounts, and chain
-   * @returns Quote with price, amounts, price impact, and route
-   */
-  protected async _getPrice(params: SwapPriceParams): Promise<SwapPrice> {
-    const { chainId, assetIn, assetOut } = params
-    const addresses = getUniswapAddresses(chainId)
-    const publicClient = this.chainManager.getPublicClient(chainId)
-
-    if (!assetOut) {
-      throw new Error('assetOut is required')
-    }
-
-    const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
-
-    // Default to 1 unit for price quotes when no amount specified
-    const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
-    const amountOutRaw = parseAssetAmount(assetOut, params.amountOut)
-
-    return getQuote({
-      assetIn,
-      assetOut,
-      amountInRaw: amountOutRaw ? undefined : amountInRaw,
-      amountOutRaw,
-      chainId,
-      publicClient,
-      quoterAddress: addresses.quoter,
-      poolManagerAddress: addresses.poolManager,
-      fee: marketConfig.fee,
-      tickSpacing: marketConfig.tickSpacing,
-    })
-  }
-
   /**
    * Find a specific market by poolId from the allowlist.
    * @param params - Pool ID and chain to look up

@@ -12,8 +12,6 @@ import type {
   SwapExecuteParams,
   SwapMarket,
   SwapMarketConfig,
-  SwapPrice,
-  SwapPriceParams,
   SwapProviderConfig,
   SwapQuote,
   SwapQuoteParams,
@@ -428,8 +426,6 @@ export abstract class SwapProvider<
   protected abstract _execute(
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction>
-
-  protected abstract _getPrice(params: SwapPriceParams): Promise<SwapPrice>
 
   protected abstract _getQuote(params: SwapQuoteParams): Promise<SwapQuote>
 

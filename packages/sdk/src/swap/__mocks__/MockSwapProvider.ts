@@ -12,8 +12,6 @@ import type {
   GetSwapMarketsParams,
   ResolvedSwapParams,
   SwapMarket,
-  SwapPrice,
-  SwapPriceParams,
   SwapProviderConfig,
   SwapQuote,
   SwapQuoteParams,
@@ -33,9 +31,6 @@ export interface MockSwapProviderConfig {
 export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   public mockExecute: MockedFunction<
     (params: ResolvedSwapParams) => Promise<SwapTransaction>
-  >
-  public mockGetPrice: MockedFunction<
-    (params: SwapPriceParams) => Promise<SwapPrice>
   >
   public mockGetQuote: MockedFunction<
     (params: SwapQuoteParams) => Promise<SwapQuote>
@@ -82,9 +77,6 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     this.mockExecute = vi
       .fn()
       .mockImplementation(this.createMockSwapTransaction.bind(this))
-    this.mockGetPrice = vi
-      .fn()
-      .mockImplementation(this.createMockPrice.bind(this))
     this.mockGetQuote = vi
       .fn()
       .mockImplementation(this.createMockQuote.bind(this))
@@ -122,10 +114,6 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {
     return this.mockExecute(params)
-  }
-
-  protected async _getPrice(params: SwapPriceParams): Promise<SwapPrice> {
-    return this.mockGetPrice(params)
   }
 
   protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
@@ -170,40 +158,6 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
           value: 0n,
         },
       },
-    }
-  }
-
-  private createMockPrice(params: SwapPriceParams): SwapPrice {
-    const amountIn =
-      params.amountIn !== undefined
-        ? BigInt(
-            Math.floor(
-              params.amountIn * 10 ** params.assetIn.metadata.decimals,
-            ),
-          )
-        : BigInt(10 ** params.assetIn.metadata.decimals)
-
-    const amountOut = (amountIn * 15n) / 10n
-
-    return {
-      price: String(this.mockProviderConfig.defaultPrice),
-      priceInverse: String(1 / this.mockProviderConfig.defaultPrice),
-      amountIn: 1.0,
-      amountOut: 1.5,
-      amountInRaw: amountIn,
-      amountOutRaw: amountOut,
-      priceImpact: this.mockProviderConfig.defaultPriceImpact,
-      route: {
-        path: [params.assetIn, params.assetOut!],
-        pools: [
-          {
-            address: '0x1234' as Address,
-            fee: 500,
-            version: 'v4',
-          },
-        ],
-      },
-      gasEstimate: 150000n,
     }
   }
 
