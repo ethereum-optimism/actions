@@ -1,4 +1,4 @@
-import type { Address, Hex } from 'viem'
+import type { Address, Hex, PublicClient } from 'viem'
 import {
   concat,
   encodeFunctionData,
@@ -10,6 +10,7 @@ import {
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
+  type VelodromeChainConfig,
   getSupportedChainIds,
   getVelodromeConfig,
 } from '@/swap/providers/velodrome/addresses.js'
@@ -41,6 +42,12 @@ import {
   isNativeAsset,
   parseAssetAmount,
 } from '@/utils/assets.js'
+
+/** Internal result from pool-type-specific quoting */
+interface PoolQuoteResult {
+  internalQuote: SwapPrice
+  providerContext: Record<string, unknown>
+}
 
 /**
  * Velodrome/Aerodrome swap provider for OP Stack chains.
@@ -130,11 +137,9 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
   /**
    * Get a full swap quote with pricing, slippage bounds, and pre-built execution data.
-   * Routes to v2 AMM or CL/Slipstream quoting based on the market config.
    * @param params - Quote parameters (assets, amounts, chain, slippage, deadline)
    * @returns SwapQuote with amounts, price, route, and encoded calldata
    * @throws If amountOut is provided (Velodrome only supports exact-input)
-   * @throws If CL pool requested on a chain without CL factory/quoter
    */
   protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     const { chainId, assetIn, assetOut } = params
@@ -156,53 +161,11 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const recipient =
       params.recipient ?? '0x0000000000000000000000000000000000000001'
 
-    // Get internal price quote and encode swap calldata
-    let internalQuote: SwapPrice
-    let swapCalldata: Hex
-    let providerContext: Record<string, unknown>
+    const { internalQuote, providerContext } = await this.fetchPoolQuote(
+      poolConfig,
+      { assetIn, assetOut, amountInRaw, chainId, publicClient, chain },
+    )
 
-    if (poolConfig.type === 'cl') {
-      if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
-        throw new Error(`CL pools not supported on chain ${chainId}`)
-      }
-
-      internalQuote = await getCLQuote({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        chainId,
-        publicClient,
-        clFactoryAddress: chain.contracts.clPoolFactory,
-        clQuoterAddress: chain.contracts.clQuoterV2,
-        tickSpacing: poolConfig.tickSpacing,
-      })
-
-      providerContext = {
-        tickSpacing: poolConfig.tickSpacing,
-        clFactoryAddress: chain.contracts.clPoolFactory,
-        poolAddress: internalQuote.route.pools[0]?.address,
-      }
-    } else {
-      internalQuote = await getQuote({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        chainId,
-        publicClient,
-        routerAddress: chain.contracts.router,
-        routerType: chain.metadata.routerType,
-        stable: poolConfig.stable,
-        factoryAddress: chain.contracts.poolFactory,
-      })
-
-      providerContext = {
-        stable: poolConfig.stable,
-        factoryAddress: chain.contracts.poolFactory,
-        routerType: chain.metadata.routerType,
-      }
-    }
-
-    // Slippage: computed once in bigint, used for both encoding and the SwapQuote return
     const amountOutMinRaw =
       (internalQuote.amountOutRaw *
         BigInt(Math.round((1 - slippage) * 10000))) /
@@ -211,39 +174,23 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
     )
 
-    if (poolConfig.type === 'cl') {
-      swapCalldata = encodeCLSwap({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        amountOutMin: amountOutMinRaw,
-        tickSpacing: (poolConfig as { type: 'cl'; tickSpacing: number })
-          .tickSpacing,
-        recipient,
-        deadline,
-        chainId,
-      })
-    } else {
-      swapCalldata = encodeSwap({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        amountOutMin: amountOutMinRaw,
-        routerType: chain.metadata.routerType,
-        stable: (poolConfig as { type: 'v2'; stable: boolean }).stable,
-        factoryAddress: chain.contracts.poolFactory,
-        recipient,
-        deadline,
-        chainId,
-      })
-    }
+    const swapCalldata = this.encodePoolSwap(poolConfig, {
+      assetIn,
+      assetOut,
+      amountInRaw,
+      amountOutMinRaw,
+      recipient,
+      deadline,
+      chainId,
+      chain,
+    })
 
     return {
       assetIn,
       assetOut,
       chainId,
       amountIn: internalQuote.amountIn,
-      amountInRaw: amountInRaw,
+      amountInRaw,
       amountOut: internalQuote.amountOut,
       amountOutRaw: internalQuote.amountOutRaw,
       amountOutMin,
@@ -354,6 +301,118 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         swap: swapTx,
       },
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Pool-type dispatch helpers
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Fetch a price quote for the given pool type.
+   * @returns Internal quote and provider context for the SwapQuote
+   * @throws If CL pool requested on a chain without CL factory/quoter
+   */
+  private async fetchPoolQuote(
+    poolConfig: ResolvedPoolConfig,
+    params: {
+      assetIn: Asset
+      assetOut: Asset
+      amountInRaw: bigint
+      chainId: SupportedChainId
+      publicClient: PublicClient
+      chain: VelodromeChainConfig
+    },
+  ): Promise<PoolQuoteResult> {
+    const { assetIn, assetOut, amountInRaw, chainId, publicClient, chain } =
+      params
+
+    if (poolConfig.type === 'cl') {
+      if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
+        throw new Error(`CL pools not supported on chain ${chainId}`)
+      }
+      const internalQuote = await getCLQuote({
+        assetIn,
+        assetOut,
+        amountInRaw,
+        chainId,
+        publicClient,
+        clFactoryAddress: chain.contracts.clPoolFactory,
+        clQuoterAddress: chain.contracts.clQuoterV2,
+        tickSpacing: poolConfig.tickSpacing,
+      })
+      return {
+        internalQuote,
+        providerContext: {
+          tickSpacing: poolConfig.tickSpacing,
+          clFactoryAddress: chain.contracts.clPoolFactory,
+          poolAddress: internalQuote.route.pools[0]?.address,
+        },
+      }
+    }
+
+    const internalQuote = await getQuote({
+      assetIn,
+      assetOut,
+      amountInRaw,
+      chainId,
+      publicClient,
+      routerAddress: chain.contracts.router,
+      routerType: chain.metadata.routerType,
+      stable: poolConfig.stable,
+      factoryAddress: chain.contracts.poolFactory,
+    })
+    return {
+      internalQuote,
+      providerContext: {
+        stable: poolConfig.stable,
+        factoryAddress: chain.contracts.poolFactory,
+        routerType: chain.metadata.routerType,
+      },
+    }
+  }
+
+  /**
+   * Encode swap calldata for the given pool type.
+   * @returns Encoded calldata as hex string
+   */
+  private encodePoolSwap(
+    poolConfig: ResolvedPoolConfig,
+    params: {
+      assetIn: Asset
+      assetOut: Asset
+      amountInRaw: bigint
+      amountOutMinRaw: bigint
+      recipient: Address
+      deadline: number
+      chainId: SupportedChainId
+      chain: VelodromeChainConfig
+    },
+  ): Hex {
+    if (poolConfig.type === 'cl') {
+      return encodeCLSwap({
+        assetIn: params.assetIn,
+        assetOut: params.assetOut,
+        amountInRaw: params.amountInRaw,
+        amountOutMin: params.amountOutMinRaw,
+        tickSpacing: poolConfig.tickSpacing,
+        recipient: params.recipient,
+        deadline: params.deadline,
+        chainId: params.chainId,
+      })
+    }
+
+    return encodeSwap({
+      assetIn: params.assetIn,
+      assetOut: params.assetOut,
+      amountInRaw: params.amountInRaw,
+      amountOutMin: params.amountOutMinRaw,
+      routerType: params.chain.metadata.routerType,
+      stable: poolConfig.stable,
+      factoryAddress: params.chain.contracts.poolFactory,
+      recipient: params.recipient,
+      deadline: params.deadline,
+      chainId: params.chainId,
+    })
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
