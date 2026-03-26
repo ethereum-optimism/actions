@@ -132,6 +132,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     const publicClient = this.chainManager.getPublicClient(chainId)
     const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
 
+    // Default to 1 unit for price quotes when no amount specified
     const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
     const amountOutRaw = parseAssetAmount(assetOut, params.amountOut)
     const slippage = params.slippage ?? this.defaultSlippage

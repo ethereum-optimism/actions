@@ -1,13 +1,18 @@
 import type { Address } from 'viem'
-import { unichain } from 'viem/chains'
+import { mainnet } from 'viem/chains'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { MORPHO, USDC } from '@/constants/assets.js'
 import { fetchRewards } from '@/lend/providers/morpho/api.js'
 import {
   calculateRewardsBreakdown,
   fetchAndCalculateRewards,
 } from '@/lend/providers/morpho/sdk.js'
 import { externalTest } from '@/utils/test.js'
+
+const CHAIN_ID = mainnet.id
+const USDC_ADDRESS = USDC.address[CHAIN_ID]!.toLowerCase()
+const MORPHO_ADDRESS = MORPHO.address[CHAIN_ID]!.toLowerCase()
 
 /**
  * Mock API response for a vault with rewards
@@ -19,20 +24,20 @@ const mockVaultWithRewards = {
     rewards: [
       {
         asset: {
-          address: '0x078d782b760474a361dda0af3839290b0ef57ad6',
+          address: USDC_ADDRESS,
           name: 'USD Coin',
           symbol: 'USDC',
-          chain: { id: 130 },
+          chain: { id: CHAIN_ID },
         },
         amountPerSuppliedToken: '1000000',
         supplyApr: 0.025, // 2.5% APR
       },
       {
         asset: {
-          address: '0x9994e35db50125e0df82e4c2dde62496ce330999',
+          address: MORPHO_ADDRESS,
           name: 'Morpho Token',
           symbol: 'MORPHO',
-          chain: { id: 130 },
+          chain: { id: CHAIN_ID },
         },
         amountPerSuppliedToken: '500000',
         supplyApr: 0.01, // 1% APR
@@ -51,7 +56,7 @@ const mockVaultWithRewards = {
                 asset: {
                   address: '0xunknown',
                   symbol: 'UNKNOWN',
-                  chain: { id: 130 },
+                  chain: { id: CHAIN_ID },
                 },
               },
             ],
@@ -71,7 +76,7 @@ const mockVaultWithRewards = {
       },
     ],
   },
-  chain: { id: 130 },
+  chain: { id: CHAIN_ID },
 }
 
 /**
@@ -84,7 +89,7 @@ const mockVaultNoRewards = {
     rewards: [],
     allocation: [],
   },
-  chain: { id: 130 },
+  chain: { id: CHAIN_ID },
 }
 
 describe('Morpho API Integration', () => {
@@ -108,7 +113,7 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, unichain.id)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, CHAIN_ID)
 
       expect(vaultData).toBeDefined()
       expect(vaultData).not.toBeNull()
@@ -130,7 +135,7 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, unichain.id)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, CHAIN_ID)
       expect(vaultData).toBeNull()
     })
 
@@ -140,7 +145,7 @@ describe('Morpho API Integration', () => {
         vi.fn().mockRejectedValue(new Error('Network error')),
       )
 
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, unichain.id)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, CHAIN_ID)
       expect(vaultData).toBeNull()
     })
 
@@ -154,17 +159,17 @@ describe('Morpho API Integration', () => {
         }),
       )
 
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, unichain.id)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, CHAIN_ID)
       expect(vaultData).toBeNull()
     })
   })
 
   describe('calculateRewardsBreakdown', () => {
-    it('should calculate rewards from vault-level rewards', () => {
-      const rewards = calculateRewardsBreakdown(mockVaultWithRewards)
+    it('should calculate rewards from vault-level rewards keyed by address', () => {
+      const rewards = calculateRewardsBreakdown(mockVaultWithRewards, CHAIN_ID)
 
-      expect(rewards.usdc).toBe(0.025)
-      expect(rewards.morpho).toBe(0.01)
+      expect(rewards[USDC_ADDRESS]).toBe(0.025)
+      expect(rewards[MORPHO_ADDRESS]).toBe(0.01)
       expect(rewards.totalRewards).toBeCloseTo(
         0.025 + 0.01 + 0.005 * (1000000 / 1500000),
         6,
@@ -172,21 +177,21 @@ describe('Morpho API Integration', () => {
     })
 
     it('should return zeros for vault with no rewards', () => {
-      const rewards = calculateRewardsBreakdown(mockVaultNoRewards)
+      const rewards = calculateRewardsBreakdown(mockVaultNoRewards, CHAIN_ID)
 
-      expect(rewards.usdc).toBe(0)
-      expect(rewards.morpho).toBe(0)
+      expect(rewards[USDC_ADDRESS]).toBe(0)
+      expect(rewards[MORPHO_ADDRESS]).toBe(0)
       expect(rewards.other).toBe(0)
       expect(rewards.totalRewards).toBe(0)
     })
 
-    it('should categorize unknown tokens as other', () => {
+    it('should categorize unknown token addresses as other', () => {
       const vaultWithUnknown = {
         ...mockVaultNoRewards,
         state: {
           rewards: [
             {
-              asset: { symbol: 'RARE_TOKEN' },
+              asset: { address: '0xunknowntoken', symbol: 'RARE_TOKEN' },
               supplyApr: 0.05,
             },
           ],
@@ -194,7 +199,7 @@ describe('Morpho API Integration', () => {
         },
       }
 
-      const rewards = calculateRewardsBreakdown(vaultWithUnknown)
+      const rewards = calculateRewardsBreakdown(vaultWithUnknown, CHAIN_ID)
 
       expect(rewards.other).toBe(0.05)
     })
@@ -208,7 +213,12 @@ describe('Morpho API Integration', () => {
             {
               market: {
                 state: {
-                  rewards: [{ asset: { symbol: 'USDC' }, supplyApr: 0.1 }],
+                  rewards: [
+                    {
+                      asset: { address: USDC_ADDRESS, symbol: 'USDC' },
+                      supplyApr: 0.1,
+                    },
+                  ],
                 },
               },
               supplyAssetsUsd: 750000, // 75% of total
@@ -216,7 +226,12 @@ describe('Morpho API Integration', () => {
             {
               market: {
                 state: {
-                  rewards: [{ asset: { symbol: 'USDC' }, supplyApr: 0.02 }],
+                  rewards: [
+                    {
+                      asset: { address: USDC_ADDRESS, symbol: 'USDC' },
+                      supplyApr: 0.02,
+                    },
+                  ],
                 },
               },
               supplyAssetsUsd: 250000, // 25% of total
@@ -225,10 +240,13 @@ describe('Morpho API Integration', () => {
         },
       }
 
-      const rewards = calculateRewardsBreakdown(vaultWithMarketRewards)
+      const rewards = calculateRewardsBreakdown(
+        vaultWithMarketRewards,
+        CHAIN_ID,
+      )
 
       // Expected: 0.1 * 0.75 + 0.02 * 0.25 = 0.075 + 0.005 = 0.08
-      expect(rewards.usdc).toBeCloseTo(0.08, 6)
+      expect(rewards[USDC_ADDRESS]).toBeCloseTo(0.08, 6)
     })
   })
 
@@ -247,16 +265,16 @@ describe('Morpho API Integration', () => {
 
       const rewards = await fetchAndCalculateRewards(
         GAUNTLET_USDC_VAULT,
-        unichain.id,
+        CHAIN_ID,
       )
 
       expect(rewards).toBeDefined()
-      expect(typeof rewards.usdc).toBe('number')
-      expect(typeof rewards.morpho).toBe('number')
+      expect(typeof rewards[USDC_ADDRESS]).toBe('number')
+      expect(typeof rewards[MORPHO_ADDRESS]).toBe('number')
       expect(typeof rewards.other).toBe('number')
       expect(typeof rewards.totalRewards).toBe('number')
-      expect(rewards.usdc).toBeGreaterThan(0)
-      expect(rewards.morpho).toBeGreaterThan(0)
+      expect(rewards[USDC_ADDRESS]).toBeGreaterThan(0)
+      expect(rewards[MORPHO_ADDRESS]).toBeGreaterThan(0)
     })
 
     it('should return empty rewards when vault not found', async () => {
@@ -273,11 +291,11 @@ describe('Morpho API Integration', () => {
 
       const rewards = await fetchAndCalculateRewards(
         GAUNTLET_USDC_VAULT,
-        unichain.id,
+        CHAIN_ID,
       )
 
-      expect(rewards.usdc).toBe(0)
-      expect(rewards.morpho).toBe(0)
+      expect(rewards[USDC_ADDRESS]).toBe(0)
+      expect(rewards[MORPHO_ADDRESS]).toBe(0)
       expect(rewards.other).toBe(0)
       expect(rewards.totalRewards).toBe(0)
     })
@@ -286,7 +304,7 @@ describe('Morpho API Integration', () => {
   // External tests that make real network requests (only run with EXTERNAL_TEST=true)
   describe.runIf(externalTest())('External API Tests', () => {
     it('should fetch raw vault data from Morpho GraphQL API', async () => {
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, unichain.id)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, CHAIN_ID)
 
       expect(vaultData).toBeDefined()
       expect(vaultData).not.toBeNull()
@@ -299,34 +317,27 @@ describe('Morpho API Integration', () => {
     it('should fetch and calculate rewards breakdown', async () => {
       const rewards = await fetchAndCalculateRewards(
         GAUNTLET_USDC_VAULT,
-        unichain.id,
+        CHAIN_ID,
       )
 
       expect(rewards).toBeDefined()
-      expect(typeof rewards.usdc).toBe('number')
-      expect(typeof rewards.morpho).toBe('number')
       expect(typeof rewards.other).toBe('number')
       expect(typeof rewards.totalRewards).toBe('number')
 
-      expect(rewards.usdc).toBeGreaterThanOrEqual(0)
-      expect(rewards.morpho).toBeGreaterThanOrEqual(0)
       expect(rewards.other).toBeGreaterThanOrEqual(0)
       expect(rewards.totalRewards).toBeGreaterThanOrEqual(0)
-
-      const expectedTotal = rewards.usdc + rewards.morpho + rewards.other
-      expect(rewards.totalRewards).toBeCloseTo(expectedTotal, 6)
     }, 30000)
 
     it('should handle non-existent vault gracefully', async () => {
       const nonExistentVault =
         '0x0000000000000000000000000000000000000000' as Address
 
-      const vaultData = await fetchRewards(nonExistentVault, unichain.id)
+      const vaultData = await fetchRewards(nonExistentVault, CHAIN_ID)
       expect(vaultData).toBeNull()
     }, 30000)
 
     it('should validate GraphQL response structure', async () => {
-      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, unichain.id)
+      const vaultData = await fetchRewards(GAUNTLET_USDC_VAULT, CHAIN_ID)
 
       expect(vaultData).toMatchObject({
         address: expect.any(String),

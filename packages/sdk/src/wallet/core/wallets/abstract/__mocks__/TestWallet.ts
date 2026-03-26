@@ -1,7 +1,11 @@
 import type { Address, LocalAccount, WalletClient } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/lend/index.js'
 import type { EOATransactionReceipt } from '@/wallet/core/wallets/abstract/types/index.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
@@ -14,8 +18,16 @@ export class TestWallet extends Wallet {
     chainManager: ChainManager,
     address: Address,
     signer: LocalAccount,
+    lendProviders?: {
+      morpho?: LendProvider<LendProviderConfig>
+      aave?: LendProvider<LendProviderConfig>
+    },
+    swapProviders?: {
+      uniswap?: SwapProvider<SwapProviderConfig>
+    },
+    supportedAssets?: Asset[],
   ) {
-    super(chainManager)
+    super(chainManager, lendProviders, swapProviders, supportedAssets)
     this.address = address
     this.signer = signer
   }

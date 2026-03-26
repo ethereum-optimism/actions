@@ -171,12 +171,17 @@ export class Actions<
   /**
    * Get the list of supported assets based on configuration
    * @description Returns filtered assets based on allow/block lists in assets config.
-   * If no allow list provided, returns empty array.
+   * If no config provided, returns empty array. Developers must explicitly configure
+   * their supported assets via ActionsConfig.assets.allow.
    * @returns Array of supported assets
    */
   public getSupportedAssets(): Asset[] {
-    const allow = this._assetsConfig?.allow ?? []
-    const block = this._assetsConfig?.block
+    if (!this._assetsConfig) {
+      return []
+    }
+
+    const allow = this._assetsConfig.allow ?? []
+    const block = this._assetsConfig.block
 
     if (!block?.length) {
       return allow

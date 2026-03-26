@@ -29,17 +29,15 @@ describe('TokenBalance', () => {
       )
 
       expect(balance).toEqual({
-        symbol: 'USDC',
-        totalBalance: 1000000n,
-        totalFormattedBalance: '1',
-        chainBalances: [
-          {
-            chainId: unichain.id,
-            balance: 1000000n,
-            formattedBalance: '1',
-            tokenAddress: MockUSDCAsset.address[unichain.id]!,
+        asset: MockUSDCAsset,
+        totalBalance: 1,
+        totalBalanceRaw: 1000000n,
+        chains: {
+          [unichain.id]: {
+            balance: 1,
+            balanceRaw: 1000000n,
           },
-        ],
+        },
       })
     })
 
@@ -63,10 +61,10 @@ describe('TokenBalance', () => {
       )
 
       expect(balance).toEqual({
-        symbol: 'UNSUPPORTED',
-        totalBalance: 0n,
-        totalFormattedBalance: '0',
-        chainBalances: [],
+        asset: unsupportedAsset,
+        totalBalance: 0,
+        totalBalanceRaw: 0n,
+        chains: {},
       })
     })
   })
@@ -76,17 +74,15 @@ describe('TokenBalance', () => {
       const balance = await fetchETHBalance(chainManager, walletAddress)
 
       expect(balance).toEqual({
-        symbol: 'ETH',
-        totalBalance: 1000000n,
-        totalFormattedBalance: '0.000000000001',
-        chainBalances: [
-          {
-            chainId: unichain.id,
-            balance: 1000000n,
-            formattedBalance: '0.000000000001',
-            tokenAddress: ETH.address[unichain.id]!,
+        asset: ETH,
+        totalBalance: 0.000000000001,
+        totalBalanceRaw: 1000000n,
+        chains: {
+          [unichain.id]: {
+            balance: 0.000000000001,
+            balanceRaw: 1000000n,
           },
-        ],
+        },
       })
     })
   })

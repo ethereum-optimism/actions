@@ -22,13 +22,16 @@ export interface Asset {
  * Detailed token balance information
  */
 export interface TokenBalance {
-  symbol: string
-  totalBalance: bigint
-  totalFormattedBalance: string
-  chainBalances: Array<{
-    chainId: SupportedChainId
-    balance: bigint
-    tokenAddress: Address | 'native'
-    formattedBalance: string
-  }>
+  asset: Asset
+  totalBalance: number
+  totalBalanceRaw: bigint
+  chains: Partial<
+    Record<
+      SupportedChainId,
+      {
+        balance: number
+        balanceRaw: bigint
+      }
+    >
+  >
 }

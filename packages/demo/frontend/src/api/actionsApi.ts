@@ -97,12 +97,14 @@ class ActionsApiClient {
     })
     return result.map((balance) => ({
       ...balance,
-      totalBalance: BigInt(balance.totalBalance),
-      chainBalances: balance.chainBalances.map((chainBalance) => ({
-        ...chainBalance,
-        balance: BigInt(chainBalance.balance),
-      })),
-    }))
+      totalBalanceRaw: BigInt(balance.totalBalanceRaw),
+      chains: Object.fromEntries(
+        Object.entries(balance.chains).map(([chainId, chainBalance]) => [
+          chainId,
+          chainBalance ? { ...chainBalance, balanceRaw: BigInt(chainBalance.balanceRaw) } : chainBalance,
+        ]),
+      ),
+    })) as TokenBalance[]
   }
 
   async mintDemoUsdcToWallet(headers: HeadersInit = {}): Promise<{

@@ -1,6 +1,7 @@
 import { type Address, type LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
@@ -27,8 +28,9 @@ export class DynamicWallet extends EOAWallet {
     dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet'],
     lendProviders?: LendProviders,
     swapProviders?: SwapProviders,
+    supportedAssets?: Asset[],
   ) {
-    super(chainManager, lendProviders, swapProviders)
+    super(chainManager, lendProviders, swapProviders, supportedAssets)
     this.dynamicWallet = dynamicWallet
   }
 
@@ -37,12 +39,14 @@ export class DynamicWallet extends EOAWallet {
     chainManager: ChainManager
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
+    supportedAssets?: Asset[]
   }): Promise<DynamicWallet> {
     const wallet = new DynamicWallet(
       params.chainManager,
       params.dynamicWallet,
       params.lendProviders,
       params.swapProviders,
+      params.supportedAssets,
     )
     await wallet.initialize()
     return wallet

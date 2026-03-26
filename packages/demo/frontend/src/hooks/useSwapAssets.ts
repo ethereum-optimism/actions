@@ -79,15 +79,18 @@ export function useSwapAssets({
     const seen = new Set<string>()
     return tokenBalances
       .map((balance): SwapAsset | null => {
-        const asset = assetMap.get(balance.symbol)
-        if (!asset || seen.has(balance.symbol)) return null
-        seen.add(balance.symbol)
+        const symbol = balance.asset.metadata.symbol
+        const asset = assetMap.get(symbol)
+        if (!asset || seen.has(symbol)) return null
+        seen.add(symbol)
+
+        const chainId = Number(Object.keys(balance.chains)[0] ?? 84532) as SupportedChainId
 
         return {
           asset,
-          logo: getAssetLogo(balance.symbol),
-          balance: balance.totalFormattedBalance,
-          chainId: balance.chainBalances[0]?.chainId || 84532,
+          logo: getAssetLogo(symbol),
+          balance: balance.totalBalance.toString(),
+          chainId,
         }
       })
       .filter((item): item is SwapAsset => item !== null)

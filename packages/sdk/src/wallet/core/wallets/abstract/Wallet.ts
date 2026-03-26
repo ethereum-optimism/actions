@@ -4,7 +4,6 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
@@ -56,7 +55,7 @@ export abstract class Wallet {
    * @param chainManager - Chain manager for the wallet
    * @param lendProviders - Lend providers for the wallet
    * @param swapProviders - Swap providers for the wallet
-   * @param supportedAssets - List of supported assets (defaults to all SUPPORTED_TOKENS)
+   * @param supportedAssets - List of supported assets (defaults to empty)
    */
   protected constructor(
     chainManager: ChainManager,
@@ -68,7 +67,7 @@ export abstract class Wallet {
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
     this.swapProviders = swapProviders || {}
-    this.supportedAssets = supportedAssets || SUPPORTED_TOKENS
+    this.supportedAssets = supportedAssets || []
     if (this.lendProviders.morpho || this.lendProviders.aave) {
       this.lend = new WalletLendNamespace(this.lendProviders, this)
     }

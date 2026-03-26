@@ -8,12 +8,9 @@ import {
 } from '@/__mocks__/MockPrivyClient.js'
 import { Actions } from '@/actions.js'
 import {
-  ETH,
-  MORPHO,
+  NATIVELY_SUPPORTED_ASSETS,
   OP_DEMO,
-  USDC,
   USDC_DEMO,
-  WETH,
 } from '@/constants/assets.js'
 import {
   POOL_ADDRESSES_MAINNET,
@@ -312,12 +309,11 @@ describe('hardcoded address maps contain valid EVM addresses', () => {
   })
 
   it('all hardcoded asset address maps contain valid EVM addresses', () => {
-    expect(() => validateAssetAddresses(ETH.address)).not.toThrow()
-    expect(() => validateAssetAddresses(WETH.address)).not.toThrow()
-    expect(() => validateAssetAddresses(USDC.address)).not.toThrow()
+    for (const asset of NATIVELY_SUPPORTED_ASSETS) {
+      expect(() => validateAssetAddresses(asset.address)).not.toThrow()
+    }
     expect(() => validateAssetAddresses(USDC_DEMO.address)).not.toThrow()
     expect(() => validateAssetAddresses(OP_DEMO.address)).not.toThrow()
-    expect(() => validateAssetAddresses(MORPHO.address)).not.toThrow()
   })
 })
 

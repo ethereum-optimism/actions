@@ -14,6 +14,7 @@ import {
   sepolia,
   soneium,
   superseed,
+  swellchain,
   unichain,
   unichainSepolia,
   worldchain,
@@ -38,8 +39,7 @@ export const ACTIONS_SUPPORTED_CHAIN_IDS = [
   mode.id,
   soneium.id,
   superseed.id,
-  // Swell — not available in viem/chains
-  1923 as const,
+  swellchain.id,
 ] as const
 
 export type SupportedChainId = (typeof ACTIONS_SUPPORTED_CHAIN_IDS)[number]
