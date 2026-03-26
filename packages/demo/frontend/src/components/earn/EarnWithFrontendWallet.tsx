@@ -102,23 +102,11 @@ export function EarnWithFrontendWallet({
       },
       openPosition: async (params) => wallet!.lend!.openPosition(params),
       closePosition: async (params) => wallet!.lend!.closePosition(params),
-      executeSwap: async ({
-        amountIn,
-        assetIn,
-        assetOut,
-        chainId,
-        provider,
-      }) => {
-        const receipt = await wallet!.swap!.execute({
-          amountIn,
-          assetIn,
-          assetOut,
-          chainId,
-          provider,
-        })
+      executeSwap: async (quote) => {
+        const receipt = await wallet!.swap!.execute(quote)
         const txReceipt = receipt.receipt
         const blockExplorerUrl = getBlockExplorerUrl(
-          chainId,
+          quote.chainId,
           txReceipt as Parameters<typeof getBlockExplorerUrl>[1],
         )
         return { blockExplorerUrl }
@@ -136,7 +124,7 @@ export function EarnWithFrontendWallet({
           )
           if (!assetIn || !assetOut) return null
 
-          const quote = await actions.swap.getQuote({
+          return await actions.swap.getQuote({
             assetIn,
             assetOut,
             chainId: params.chainId,
@@ -144,12 +132,6 @@ export function EarnWithFrontendWallet({
             amountOut: params.amountOut,
             provider: params.provider,
           })
-          return {
-            price: quote.price,
-            priceImpact: quote.priceImpact,
-            amountIn: quote.amountIn,
-            amountOut: quote.amountOut,
-          }
         } catch {
           return null
         }

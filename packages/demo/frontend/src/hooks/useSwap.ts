@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
-  Asset,
   SupportedChainId,
   SwapMarket,
+  SwapQuote,
 } from '@eth-optimism/actions-sdk/react'
 
+import type { Address } from 'viem'
 import type { TokenBalance } from '@eth-optimism/actions-sdk/react'
 import { useSwapAssets } from '@/hooks/useSwapAssets'
 import { useTotalBalance } from '@/hooks/useTotalBalance'
@@ -50,7 +51,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
     }
   }, [swapMarkets, selectedProvider])
 
-  const handleGetPrice = useCallback(
+  const handleGetQuote = useCallback(
     async ({
       tokenInAddress,
       tokenOutAddress,
@@ -95,27 +96,11 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
   }, [activeTab, refetchSwapAssets])
 
   const handleSwap = useCallback(
-    async ({
-      amountIn,
-      assetIn,
-      assetOut,
-      chainId,
-    }: {
-      amountIn: number
-      assetIn: Asset
-      assetOut: Asset
-      chainId: SupportedChainId
-    }) => {
+    async (quote: SwapQuote) => {
       if (isSwapping) return
       setIsSwapping(true)
       try {
-        const result = await operations.executeSwap({
-          amountIn,
-          assetIn,
-          assetOut,
-          chainId,
-          provider: selectedProvider ?? undefined,
-        })
+        const result = await operations.executeSwap(quote)
         const activity = logActivity('getBalance')
         await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
         activity?.confirm()
@@ -128,7 +113,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
         setIsSwapping(false)
       }
     },
-    [isSwapping, operations, selectedProvider, logActivity, queryClient],
+    [isSwapping, operations, logActivity, queryClient],
   )
 
   const {
@@ -137,7 +122,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
     isLoading: isLoadingTotalBalance,
   } = useTotalBalance({
     assets: swapAssets,
-    getPrice: handleGetPrice,
+    getPrice: handleGetQuote,
   })
 
   return {
@@ -145,7 +130,7 @@ export function useSwap({ operations, activeTab }: UseSwapParams) {
     isLoadingSwapAssets,
     isSwapping,
     handleSwap,
-    handleGetPrice,
+    handleGetQuote,
     tokenBalances,
     totalUsd,
     isLoadingTotalBalance: isLoadingTotalBalance || isLoadingBalances,

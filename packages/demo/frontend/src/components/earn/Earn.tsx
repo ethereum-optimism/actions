@@ -497,7 +497,7 @@ function EarnContent({
     isLoadingSwapAssets,
     isSwapping,
     handleSwap,
-    handleGetPrice,
+    handleGetQuote,
     tokenBalances,
     totalUsd,
     isLoadingTotalBalance,
@@ -544,7 +544,7 @@ function EarnContent({
                   assets={swapAssets}
                   isLoadingBalances={isLoadingSwapAssets}
                   onSwap={handleSwap}
-                  onGetPrice={handleGetPrice}
+                  onGetQuote={handleGetQuote}
                   isExecuting={isSwapping}
                   selectedProvider={selectedProvider}
                   swapMarkets={swapMarkets}

@@ -38,19 +38,19 @@ function buildSwapOperations(
   'executeSwap' | 'getConfiguredAssets' | 'getSwapMarkets' | 'getSwapQuote'
 > {
   return {
-    executeSwap: async ({ amountIn, assetIn, assetOut, chainId, provider }) => {
-      const tokenInAddress = assetIn.address[chainId]
-      const tokenOutAddress = assetOut.address[chainId]
+    executeSwap: async (quote) => {
+      const tokenInAddress = quote.assetIn.address[quote.chainId]
+      const tokenOutAddress = quote.assetOut.address[quote.chainId]
       if (!tokenInAddress || !tokenOutAddress) {
         throw new Error('Token address not found for chain')
       }
+      // Server wallet re-quotes server-side; pass the quote params for execution
       const result = await actionsApi.executeSwap(
         {
-          amountIn,
+          amountIn: quote.amountIn,
           tokenInAddress: tokenInAddress as Address,
           tokenOutAddress: tokenOutAddress as Address,
-          chainId,
-          provider,
+          chainId: quote.chainId,
         },
         await getAuthHeaders(),
       )
@@ -62,16 +62,10 @@ function buildSwapOperations(
       actionsApi.getSwapMarkets(undefined, await getAuthHeaders()),
     getSwapQuote: async (params) => {
       try {
-        const quote = await actionsApi.getSwapQuote(
+        return await actionsApi.getSwapQuote(
           params,
           await getAuthHeaders(),
         )
-        return {
-          price: quote.price,
-          priceImpact: quote.priceImpact,
-          amountIn: quote.amountIn,
-          amountOut: quote.amountOut,
-        }
       } catch {
         return null
       }
