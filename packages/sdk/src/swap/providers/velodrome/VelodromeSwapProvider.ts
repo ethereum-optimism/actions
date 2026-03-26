@@ -13,6 +13,7 @@ import {
   getSupportedChainIds,
   getVelodromeConfig,
   type VelodromeChainConfig,
+  type VelodromeRouterType,
 } from '@/swap/providers/velodrome/addresses.js'
 import {
   encodeCLSwap,
@@ -37,6 +38,7 @@ import type {
   SwapTransaction,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
+import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
 import {
   getAssetAddress,
   isNativeAsset,
@@ -229,45 +231,15 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const chain = getVelodromeConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
 
-    let tokenApproval: TransactionData | undefined
-
-    if (!isNativeAsset(assetIn)) {
-      const token = getAssetAddress(assetIn, chainId)
-
-      if (chain.metadata.routerType === 'universal') {
-        tokenApproval = {
-          to: token,
-          data: encodeFunctionData({
-            abi: erc20Abi,
-            functionName: 'transfer',
-            args: [chain.contracts.router, quote.amountInRaw],
-          }),
-          value: 0n,
-        }
-      } else {
-        const currentAllowance = (await publicClient.readContract({
-          address: token,
-          abi: erc20Abi,
-          functionName: 'allowance',
-          args: [
-            '0x0000000000000000000000000000000000000001' as Address,
-            chain.contracts.router,
-          ],
-        })) as bigint
-
-        if (currentAllowance < quote.amountInRaw) {
-          tokenApproval = {
-            to: token,
-            data: encodeFunctionData({
-              abi: erc20Abi,
-              functionName: 'approve',
-              args: [chain.contracts.router, quote.amountInRaw],
-            }),
-            value: 0n,
-          }
-        }
-      }
-    }
+    const tokenApproval = isNativeAsset(assetIn)
+      ? undefined
+      : await this.buildTokenApproval(
+          getAssetAddress(assetIn, chainId),
+          chain.contracts.router,
+          chain.metadata.routerType,
+          quote.amountInRaw,
+          publicClient,
+        )
 
     const swapTx: TransactionData = {
       to: execution.routerAddress,
@@ -289,6 +261,44 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         swap: swapTx,
       },
     }
+  }
+
+  /**
+   * Build a token approval or transfer transaction for swap input.
+   *
+   * Universal Router uses a direct ERC20 transfer instead of approve+transferFrom.
+   * This works because smart wallet batching (4337) bundles the transfer and swap
+   * into a single atomic UserOperation — the router receives tokens before executing
+   * the swap in the same transaction. The caller must already hold the tokens.
+   *
+   * Legacy routers (v2, leaf) use standard approve, approving only the deficit.
+   */
+  private async buildTokenApproval(
+    token: Address,
+    router: Address,
+    routerType: VelodromeRouterType,
+    amount: bigint,
+    publicClient: PublicClient,
+  ): Promise<TransactionData | undefined> {
+    if (routerType === 'universal') {
+      return {
+        to: token,
+        data: encodeFunctionData({
+          abi: erc20Abi,
+          functionName: 'transfer',
+          args: [router, amount],
+        }),
+        value: 0n,
+      }
+    }
+
+    return buildApprovalTxIfNeeded({
+      publicClient,
+      token,
+      owner: '0x0000000000000000000000000000000000000001' as Address,
+      spender: router,
+      amount,
+    })
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
