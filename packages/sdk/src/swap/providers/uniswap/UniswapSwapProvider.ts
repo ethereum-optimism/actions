@@ -1,11 +1,7 @@
 import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import {
-  expandMarkets,
-  findMarket,
-  UNIVERSAL_ROUTER_MSG_SENDER,
-} from '@/swap/core/markets.js'
+import { expandMarkets, findMarket } from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
   getSupportedChainIds,
@@ -93,12 +89,9 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     const publicClient = this.chainManager.getPublicClient(chainId)
     const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
 
-    // Default to 1 unit for price quotes when no amount specified
-    const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
+    const { slippage, now, deadline, recipient, amountInRaw } =
+      this.resolveQuoteDefaults(params)
     const amountOutRaw = parseAssetAmount(assetOut, params.amountOut)
-    const slippage = params.slippage ?? this.defaultSlippage
-    const now = Math.floor(Date.now() / 1000)
-    const deadline = params.deadline ?? now + this.quoteExpirationSeconds
 
     const quote = await getQuote({
       assetIn,
@@ -112,8 +105,6 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       fee: marketConfig.fee,
       tickSpacing: marketConfig.tickSpacing,
     })
-
-    const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
 
     const swapCalldata = encodeUniversalRouterSwap({
       amountInRaw: amountOutRaw ? undefined : amountInRaw,
@@ -132,11 +123,10 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
 
     const finalAmountInRaw = amountOutRaw ? quote.amountInRaw : amountInRaw
 
-    const slippageBps = BigInt(Math.round(slippage * 10000))
-    const amountOutMinRaw =
-      (quote.amountOutRaw * (10000n - slippageBps)) / 10000n
-    const amountOutMin = parseFloat(
-      formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
+    const { amountOutMinRaw, amountOutMin } = this.computeSlippageBounds(
+      quote.amountOutRaw,
+      slippage,
+      assetOut,
     )
 
     return {

@@ -1,11 +1,7 @@
 import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import {
-  expandMarkets,
-  findMarket,
-  UNIVERSAL_ROUTER_MSG_SENDER,
-} from '@/swap/core/markets.js'
+import { expandMarkets, findMarket } from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
   getChainConfig,
@@ -132,24 +128,18 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const chain = getChainConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
-
-    const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
-    const slippage = params.slippage ?? this.defaultSlippage
-    const now = Math.floor(Date.now() / 1000)
-    const deadline = params.deadline ?? now + this.quoteExpirationSeconds
-    const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
+    const { slippage, now, deadline, recipient, amountInRaw } =
+      this.resolveQuoteDefaults(params)
 
     const { internalQuote, providerContext } = await fetchPoolQuote(
       poolConfig,
       { assetIn, assetOut, amountInRaw, chainId, publicClient, chain },
     )
 
-    const amountOutMinRaw =
-      (internalQuote.amountOutRaw *
-        BigInt(Math.round((1 - slippage) * 10000))) /
-      10000n
-    const amountOutMin = parseFloat(
-      formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
+    const { amountOutMinRaw, amountOutMin } = this.computeSlippageBounds(
+      internalQuote.amountOutRaw,
+      slippage,
+      assetOut,
     )
 
     const swapCalldata = encodePoolSwap(poolConfig, {

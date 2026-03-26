@@ -1,4 +1,5 @@
 import type { Address } from 'viem'
+import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
@@ -25,6 +26,7 @@ import {
   checkPermit2Allowance,
   checkTokenAllowance,
 } from '@/utils/approve.js'
+import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/swap/core/markets.js'
 import {
   getAssetAddress,
   isNativeAsset,
@@ -48,6 +50,9 @@ const DEFAULTS = {
   quoteExpirationSeconds: 60,
   permit2ExpirationSeconds: 2_592_000, // 30 days
 } as const
+
+/** Basis points denominator for slippage calculations (1 bp = 0.01%) */
+const BPS_DENOMINATOR = 10000n
 
 /**
  * Abstract base class for swap providers.
@@ -252,6 +257,41 @@ export abstract class SwapProvider<
         )
       }
     }
+  }
+
+  /**
+   * Resolve common quote parameters with provider defaults.
+   * @param params - Raw quote params from the user
+   * @returns Resolved slippage, deadline, recipient, amountInRaw, and current timestamp
+   */
+  protected resolveQuoteDefaults(params: SwapQuoteParams) {
+    const slippage = params.slippage ?? this.defaultSlippage
+    const now = Math.floor(Date.now() / 1000)
+    const deadline = params.deadline ?? now + this.quoteExpirationSeconds
+    const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
+    const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
+    return { slippage, now, deadline, recipient, amountInRaw }
+  }
+
+  /**
+   * Compute minimum output amount after slippage.
+   * @param amountOutRaw - Expected output as raw bigint
+   * @param slippage - Slippage tolerance as decimal (0.005 = 0.5%)
+   * @param assetOut - Output asset (for decimal conversion)
+   * @returns Raw and human-readable minimum output amounts
+   */
+  protected computeSlippageBounds(
+    amountOutRaw: bigint,
+    slippage: number,
+    assetOut: Asset,
+  ): { amountOutMinRaw: bigint; amountOutMin: number } {
+    const slippageBps = BigInt(Math.round(slippage * Number(BPS_DENOMINATOR)))
+    const amountOutMinRaw =
+      (amountOutRaw * (BPS_DENOMINATOR - slippageBps)) / BPS_DENOMINATOR
+    const amountOutMin = parseFloat(
+      formatUnits(amountOutMinRaw, assetOut.metadata.decimals),
+    )
+    return { amountOutMinRaw, amountOutMin }
   }
 
   protected resolveMarketConfig(
