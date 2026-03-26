@@ -55,6 +55,15 @@ export interface VelodromeChainConfig {
  * @see https://velodrome.finance/docs
  * @see https://aerodrome.finance/docs
  */
+/** Shared config for all Velodrome Relay leaf chains (identical contracts). */
+const LEAF_CHAIN_CONFIG: VelodromeChainConfig = {
+  contracts: {
+    router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
+    poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
+  },
+  metadata: { routerType: 'leaf' },
+}
+
 export const VELODROME_CHAINS: Partial<
   Record<SupportedChainId, VelodromeChainConfig>
 > = {
@@ -83,84 +92,18 @@ export const VELODROME_CHAINS: Partial<
     },
     metadata: { routerType: 'v2' },
   },
-  [bob.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
-  [celo.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
-  [fraxtal.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
-  [ink.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
-  [lisk.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
-  [metalL2.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
-  [mode.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
-  [soneium.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
-  [superseed.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
+  [bob.id]: LEAF_CHAIN_CONFIG,
+  [celo.id]: LEAF_CHAIN_CONFIG,
+  [fraxtal.id]: LEAF_CHAIN_CONFIG,
+  [ink.id]: LEAF_CHAIN_CONFIG,
+  [lisk.id]: LEAF_CHAIN_CONFIG,
+  [metalL2.id]: LEAF_CHAIN_CONFIG,
+  [mode.id]: LEAF_CHAIN_CONFIG,
+  [soneium.id]: LEAF_CHAIN_CONFIG,
+  [superseed.id]: LEAF_CHAIN_CONFIG,
   // Swell — not available in viem/chains
-  1923: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
-  [unichain.id]: {
-    contracts: {
-      router: '0x3a63171DD9BebF4D07BC782FECC7eb0b890C2A45',
-      poolFactory: '0x31832f2a97Fd20664D76Cc421207669b55CE4BC0',
-    },
-    metadata: { routerType: 'leaf' },
-  },
+  1923: LEAF_CHAIN_CONFIG,
+  [unichain.id]: LEAF_CHAIN_CONFIG,
 }
 
 /**
