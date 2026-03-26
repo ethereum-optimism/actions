@@ -78,12 +78,16 @@ export abstract class SwapProvider<
   async execute(
     params: SwapExecuteParams | SwapQuote,
   ): Promise<SwapTransaction> {
+    this.validateSwapExecute(params)
+
     if ('execution' in params) {
       return this.executeFromQuote(params)
     }
-    this.validateExecuteParams(params)
-    const resolvedParams = this.resolveParams(params)
-    return this._execute(resolvedParams)
+
+    // Raw params only
+    validateNotBothAmounts(params.amountIn, params.amountOut)
+    validateNotZeroAddress(params.walletAddress, 'walletAddress')
+    return this._execute(this.resolveParams(params))
   }
 
   /**
@@ -278,43 +282,40 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
 
   private executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
-    this.validateSwap(quote)
+    this.validateQuoteExpiration(quote)
+    validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
+    return this._executeFromQuote(quote)
+  }
+
+  private validateSwapExecute(params: SwapExecuteParams | SwapQuote): void {
+    validateNotSameAsset(params.assetIn, params.assetOut)
+    validateChainSupported(params.chainId, this.supportedChainIds())
+    this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
+    validateAssetOnChain(params.assetIn, params.chainId)
+    validateAssetOnChain(params.assetOut, params.chainId)
+    validateAmountProvided(params.amountIn, params.amountOut)
+    validateAmountPositiveIfExists(params.amountIn)
+    validateAmountPositiveIfExists(params.amountOut)
+    validateSlippage(
+      params.slippage ?? this.defaultSlippage,
+      this._config.maxSlippage ?? DEFAULT_MAX_SLIPPAGE,
+    )
+    this.validateRecipient(params)
+  }
+
+  private validateRecipient(params: SwapExecuteParams | SwapQuote): void {
+    if ('recipient' in params && params.recipient) {
+      validateNotZeroAddress(params.recipient, 'recipient')
+    }
+  }
+
+  private validateQuoteExpiration(quote: SwapQuote): void {
     const now = Math.floor(Date.now() / 1000)
     if (now >= quote.expiresAt) {
       throw new Error(
         `Quote expired at ${quote.expiresAt}, current time is ${now}`,
       )
     }
-    return this._executeFromQuote(quote)
-  }
-
-  private validateExecuteParams(params: SwapExecuteParams): void {
-    validateAmountProvided(params.amountIn, params.amountOut)
-    validateAmountPositiveIfExists(params.amountIn)
-    validateAmountPositiveIfExists(params.amountOut)
-    validateNotBothAmounts(params.amountIn, params.amountOut)
-    validateNotZeroAddress(params.walletAddress, 'walletAddress')
-    if (params.recipient) {
-      validateNotZeroAddress(params.recipient, 'recipient')
-    }
-    this.validateSwap(params)
-  }
-
-  private validateSwap(params: {
-    assetIn: Asset
-    assetOut: Asset
-    chainId: SupportedChainId
-    slippage?: number
-  }): void {
-    validateNotSameAsset(params.assetIn, params.assetOut)
-    validateChainSupported(params.chainId, this.supportedChainIds())
-    this.validateMarketAllowed(params.assetIn, params.assetOut, params.chainId)
-    validateAssetOnChain(params.assetIn, params.chainId)
-    validateAssetOnChain(params.assetOut, params.chainId)
-    validateSlippage(
-      params.slippage ?? this.defaultSlippage,
-      this._config.maxSlippage ?? DEFAULT_MAX_SLIPPAGE,
-    )
   }
 
   private resolveParams(params: SwapExecuteParams): ResolvedSwapParams {
