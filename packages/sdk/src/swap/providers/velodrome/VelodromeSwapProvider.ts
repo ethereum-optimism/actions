@@ -1,11 +1,8 @@
 import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { expandMarkets, findMarket } from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
-import {
-  expandMarkets,
-  findMarket,
-} from '@/swap/core/markets.js'
 import {
   getChainConfig,
   getSupportedChainIds,

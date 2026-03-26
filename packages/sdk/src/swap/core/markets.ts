@@ -57,9 +57,7 @@ export function findMarket<T extends SwapMarketConfig>(
     )
     if (match) return match
   }
-  throw new Error(
-    `Market with poolId ${poolId} not found on chain ${chainId}`,
-  )
+  throw new Error(`Market with poolId ${poolId} not found on chain ${chainId}`)
 }
 
 /**

@@ -1,8 +1,8 @@
 import { type Address, formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import { expandMarkets, findMarket } from '@/swap/core/markets.js'
+import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
   getSupportedChainIds,
   getUniswapAddresses,

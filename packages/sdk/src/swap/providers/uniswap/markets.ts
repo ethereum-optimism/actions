@@ -36,7 +36,9 @@ export function configToMarkets(
   asset?: Asset,
 ): SwapMarket[] {
   return assetPairs(config.assets, asset)
-    .map(([a, b]) => pairToMarket(a, b, chainId, config.fee, config.tickSpacing))
+    .map(([a, b]) =>
+      pairToMarket(a, b, chainId, config.fee, config.tickSpacing),
+    )
     .filter((m): m is SwapMarket => m !== null)
 }
 
@@ -54,13 +56,10 @@ function pairToMarket(
 ): SwapMarket | null {
   const addrA = assetA.address[chainId]
   const addrB = assetB.address[chainId]
-  if (!addrA || addrA === 'native' || !addrB || addrB === 'native')
-    return null
+  if (!addrA || addrA === 'native' || !addrB || addrB === 'native') return null
 
   const [currency0, currency1] =
-    addrA.toLowerCase() < addrB.toLowerCase()
-      ? [addrA, addrB]
-      : [addrB, addrA]
+    addrA.toLowerCase() < addrB.toLowerCase() ? [addrA, addrB] : [addrB, addrA]
 
   // V4 requires currency0 < currency1 for deterministic pool keys
   // PoolId = keccak256(abi.encode(PoolKey)) per V4's PoolIdLibrary

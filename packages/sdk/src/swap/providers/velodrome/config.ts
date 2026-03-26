@@ -1,12 +1,13 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 
-import {
-  VELODROME_CHAINS,
-  type VelodromeChainConfig,
-} from './addresses.js'
+import { VELODROME_CHAINS, type VelodromeChainConfig } from './addresses.js'
 import type { VelodromeMarketConfig } from './types.js'
 
-export type { VelodromeChainConfig, VelodromeContracts, VelodromeRouterType } from './addresses.js'
+export type {
+  VelodromeChainConfig,
+  VelodromeContracts,
+  VelodromeRouterType,
+} from './addresses.js'
 
 /**
  * Get Velodrome/Aerodrome chain config including contracts and metadata.
