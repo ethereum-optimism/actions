@@ -14,7 +14,7 @@ import {
   buildSwapPrice,
   resolveTokens,
   UNIVERSAL_ROUTER_MSG_SENDER,
-} from '../helpers.js'
+} from '@/swap/providers/velodrome/encoding/helpers.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Quoting

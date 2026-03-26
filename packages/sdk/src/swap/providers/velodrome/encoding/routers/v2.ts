@@ -18,7 +18,7 @@ import {
   buildSwapPrice,
   resolveTokens,
   UNIVERSAL_ROUTER_MSG_SENDER,
-} from '../helpers.js'
+} from '@/swap/providers/velodrome/encoding/helpers.js'
 
 /** Universal Router V2_SWAP_EXACT_IN command byte */
 const V2_SWAP_EXACT_IN = 0x08
