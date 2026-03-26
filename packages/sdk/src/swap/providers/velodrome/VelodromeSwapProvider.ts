@@ -124,7 +124,11 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
     const chain = getChainConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
-    const poolConfig = this.resolveVelodromeMarketConfig(assetIn, assetOut, chainId)
+    const poolConfig = this.resolveVelodromeMarketConfig(
+      assetIn,
+      assetOut,
+      chainId,
+    )
     const { slippage, now, deadline, recipient, amountInRaw } =
       this.resolveQuoteDefaults(params)
 
