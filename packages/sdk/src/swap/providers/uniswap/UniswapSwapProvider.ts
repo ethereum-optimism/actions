@@ -6,6 +6,7 @@ import { POOL_KEY_ABI_TYPE } from '@/swap/providers/uniswap/abis.js'
 import {
   getSupportedChainIds,
   getUniswapAddresses,
+  UNISWAP_CHAINS,
 } from '@/swap/providers/uniswap/addresses.js'
 import {
   encodeUniversalRouterSwap,
@@ -35,6 +36,19 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
   /** @returns Chain IDs where Uniswap V4 contracts are deployed */
   protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
+  }
+
+  /**
+   * Contract addresses for automated validation.
+   * @returns Map of chain ID to array of Uniswap contract addresses
+   */
+  contractAddresses(): Record<number, Address[]> {
+    return Object.fromEntries(
+      Object.entries(UNISWAP_CHAINS).map(([chainId, config]) => [
+        Number(chainId),
+        Object.values(config!.contracts),
+      ]),
+    )
   }
 
   /**
