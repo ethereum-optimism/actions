@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Bridge ETH from Sepolia L1 to OP Sepolia, sending directly to the faucet contract.
-# Uses the official OP L1StandardBridge.depositETHTo() to bridge and deliver in one tx.
+# Uses the OP Sepolia OptimismPortal.depositTransaction() to bridge and deliver in one tx.
 #
 # Usage:
 #   pnpm bridge:faucet                          # bridge 0.1 ETH (default)
@@ -11,13 +11,13 @@ set -euo pipefail
 #
 # Required env vars (loaded from packages/demo/backend/.env):
 #   FAUCET_FUNDER_PRIVATE_KEY  - private key of the sender on Sepolia L1
-#   OP_SEPOLIA_FAUCET_ADDRESS - faucet contract address on OP Sepolia
+#   OP_SEPOLIA_FAUCET_ADDRESS  - faucet contract address on OP Sepolia
 
-# OP Sepolia L1StandardBridge on Sepolia L1
+# OP Sepolia OptimismPortal on Sepolia L1
 # @see https://docs.optimism.io/chain/addresses
-L1_STANDARD_BRIDGE="0xFBb0621E0B23b5A62104c2202E4522AF10Db1d20"
+OPTIMISM_PORTAL="0x16Fc5058F25648194471939df75CF27A2fdC48BC"
 SEPOLIA_RPC="https://ethereum-sepolia-rpc.publicnode.com"
-MIN_GAS_LIMIT=200000
+GAS_LIMIT=100000
 
 # Defaults
 AMOUNT="0.1"
@@ -60,23 +60,25 @@ echo "  From:      Sepolia L1"
 echo "  To:        OP Sepolia"
 echo "  Recipient: $OP_SEPOLIA_FAUCET_ADDRESS (faucet)"
 echo "  Amount:    $AMOUNT ETH ($AMOUNT_WEI wei)"
-echo "  Bridge:    $L1_STANDARD_BRIDGE"
+echo "  Portal:    $OPTIMISM_PORTAL"
 echo ""
 
+# depositTransaction(address _to, uint256 _value, uint64 _gasLimit, bool _isCreation, bytes _data)
+# _to: recipient on L2, _value: ETH to send on L2, _gasLimit: L2 gas, _isCreation: false, _data: empty
 if $DRY_RUN; then
     echo "[DRY RUN] Would call:"
-    echo "  cast send $L1_STANDARD_BRIDGE \\"
-    echo "    'depositETHTo(address,uint32,bytes)' \\"
-    echo "    $OP_SEPOLIA_FAUCET_ADDRESS $MIN_GAS_LIMIT 0x \\"
+    echo "  cast send $OPTIMISM_PORTAL \\"
+    echo "    'depositTransaction(address,uint256,uint64,bool,bytes)' \\"
+    echo "    $OP_SEPOLIA_FAUCET_ADDRESS $AMOUNT_WEI $GAS_LIMIT false 0x \\"
     echo "    --value ${AMOUNT}ether \\"
     echo "    --rpc-url $SEPOLIA_RPC"
     exit 0
 fi
 
 echo "Sending bridge transaction..."
-cast send "$L1_STANDARD_BRIDGE" \
-    "depositETHTo(address,uint32,bytes)" \
-    "$OP_SEPOLIA_FAUCET_ADDRESS" "$MIN_GAS_LIMIT" "0x" \
+cast send "$OPTIMISM_PORTAL" \
+    "depositTransaction(address,uint256,uint64,bool,bytes)" \
+    "$OP_SEPOLIA_FAUCET_ADDRESS" "$AMOUNT_WEI" "$GAS_LIMIT" false "0x" \
     --value "${AMOUNT}ether" \
     --private-key "$FAUCET_FUNDER_PRIVATE_KEY" \
     --rpc-url "$SEPOLIA_RPC"
