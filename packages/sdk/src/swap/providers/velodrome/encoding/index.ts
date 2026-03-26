@@ -1,10 +1,7 @@
-export type { EncodeCLSwapParams, GetCLQuoteParams } from './cl.js'
-export { encodeCLSwap, getCLQuote } from './cl.js'
-export type { PoolQuoteResult } from './dispatch.js'
-export {
-  buildTokenApproval,
-  encodePoolSwap,
-  fetchPoolQuote,
-} from './dispatch.js'
-export type { EncodeSwapParams, GetQuoteParams } from './v2.js'
-export { encodeSwap, getQuote } from './v2.js'
+export type { PoolQuoteResult } from './poolRouter.js'
+export { encodePoolSwap, fetchPoolQuote } from './poolRouter.js'
+export { buildTokenApproval } from './routers/approval.js'
+export type { EncodeCLSwapParams, GetCLQuoteParams } from './routers/cl.js'
+export { encodeCLSwap, getCLQuote } from './routers/cl.js'
+export type { EncodeSwapParams, GetQuoteParams } from './routers/v2.js'
+export { encodeSwap, getQuote } from './routers/v2.js'
