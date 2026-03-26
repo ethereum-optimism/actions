@@ -12,8 +12,20 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 /**
+ * Provider factory function for lazy initialization
+ */
+type WalletProviderFactory<
+  THostedProviderType extends string,
+  TToActionsMap extends Record<THostedProviderType, unknown>,
+  H extends HostedWalletProvider<THostedProviderType, TToActionsMap>,
+  S extends SmartWalletProvider,
+> = () => Promise<WalletProvider<THostedProviderType, TToActionsMap, H, S>>
+
+/**
  * Wallet namespace that provides unified wallet operations
- * @description Provides access to wallet functionality through a single provider interface
+ * @description Provides access to wallet functionality through a single provider interface.
+ * Supports lazy initialization — the wallet provider is created on first method call,
+ * enabling tree-shaking of unused wallet provider dependencies.
  */
 export class WalletNamespace<
   THostedProviderType extends string,
@@ -22,32 +34,70 @@ export class WalletNamespace<
     HostedWalletProvider<THostedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
-  private provider: WalletProvider<THostedProviderType, TToActionsMap, H, S>
+  private _provider: WalletProvider<
+    THostedProviderType,
+    TToActionsMap,
+    H,
+    S
+  > | null = null
+  private _providerFactory: WalletProviderFactory<
+    THostedProviderType,
+    TToActionsMap,
+    H,
+    S
+  >
+  private _initPromise: Promise<
+    WalletProvider<THostedProviderType, TToActionsMap, H, S>
+  > | null = null
 
   constructor(
-    provider: WalletProvider<THostedProviderType, TToActionsMap, H, S>,
+    providerOrFactory:
+      | WalletProvider<THostedProviderType, TToActionsMap, H, S>
+      | WalletProviderFactory<THostedProviderType, TToActionsMap, H, S>,
   ) {
-    this.provider = provider
+    if (typeof providerOrFactory === 'function') {
+      this._providerFactory = providerOrFactory
+    } else {
+      this._provider = providerOrFactory
+      this._providerFactory = () => Promise.resolve(providerOrFactory)
+    }
+  }
+
+  private resolveProvider(): Promise<
+    WalletProvider<THostedProviderType, TToActionsMap, H, S>
+  > {
+    if (this._provider) return Promise.resolve(this._provider)
+    if (!this._initPromise) {
+      this._initPromise = this._providerFactory().then((provider) => {
+        this._provider = provider
+        return provider
+      })
+    }
+    return this._initPromise
   }
 
   /**
    * Get direct access to the hosted wallet provider
    * @description Provides direct access to the underlying hosted wallet provider when
-   * advanced functionality beyond the unified interface is needed
-   * @returns The configured hosted wallet provider instance
+   * advanced functionality beyond the unified interface is needed.
+   * Lazily initializes the provider if not yet created.
+   * @returns Promise resolving to the configured hosted wallet provider instance
    */
-  get hostedWalletProvider(): H {
-    return this.provider.hostedWalletProvider
+  async hostedWalletProvider(): Promise<H> {
+    const provider = await this.resolveProvider()
+    return provider.hostedWalletProvider
   }
 
   /**
    * Get direct access to the smart wallet provider
    * @description Provides direct access to the underlying smart wallet provider when
-   * advanced functionality beyond the unified interface is needed
-   * @returns The configured smart wallet provider instance
+   * advanced functionality beyond the unified interface is needed.
+   * Lazily initializes the provider if not yet created.
+   * @returns Promise resolving to the configured smart wallet provider instance
    */
-  get smartWalletProvider(): S {
-    return this.provider.smartWalletProvider
+  async smartWalletProvider(): Promise<S> {
+    const provider = await this.resolveProvider()
+    return provider.smartWalletProvider
   }
 
   /**
@@ -70,7 +120,8 @@ export class WalletNamespace<
   async createSmartWallet(
     params: CreateSmartWalletOptions,
   ): Promise<SmartWalletCreationResult<SmartWallet>> {
-    return this.provider.createSmartWallet(params)
+    const provider = await this.resolveProvider()
+    return provider.createSmartWallet(params)
   }
 
   /**
@@ -85,7 +136,8 @@ export class WalletNamespace<
   async createSigner(
     params: TToActionsMap[THostedProviderType],
   ): Promise<LocalAccount> {
-    return this.provider.createSigner(params)
+    const provider = await this.resolveProvider()
+    return provider.createSigner(params)
   }
 
   /**
@@ -99,7 +151,8 @@ export class WalletNamespace<
   async toActionsWallet(
     params: TToActionsMap[THostedProviderType],
   ): Promise<Wallet> {
-    return this.provider.hostedWalletToActionsWallet(params)
+    const provider = await this.resolveProvider()
+    return provider.hostedWalletToActionsWallet(params)
   }
 
   /**
@@ -118,6 +171,7 @@ export class WalletNamespace<
    * @throws Error if neither walletAddress nor deploymentSigners provided
    */
   async getSmartWallet(params: GetSmartWalletOptions) {
-    return this.provider.getSmartWallet(params)
+    const provider = await this.resolveProvider()
+    return provider.getSmartWallet(params)
   }
 }

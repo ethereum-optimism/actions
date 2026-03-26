@@ -38,7 +38,7 @@ describe('WalletNamespace', () => {
   })
 
   describe('hostedWalletProvider', () => {
-    it('should provide access to hosted wallet provider', () => {
+    it('should provide access to hosted wallet provider', async () => {
       const hostedWalletProvider = new PrivyHostedWalletProvider({
         privyClient: mockPrivyClient,
         chainManager: mockChainManager,
@@ -54,12 +54,14 @@ describe('WalletNamespace', () => {
       )
       const walletNamespace = new WalletNamespace(walletProvider)
 
-      expect(walletNamespace.hostedWalletProvider).toBe(hostedWalletProvider)
+      expect(await walletNamespace.hostedWalletProvider()).toBe(
+        hostedWalletProvider,
+      )
     })
   })
 
   describe('smartWalletProvider', () => {
-    it('should provide access to smart wallet provider', () => {
+    it('should provide access to smart wallet provider', async () => {
       const mockPrivyClient = createMockPrivyClient(
         'test-app-id',
         'test-app-secret',
@@ -79,7 +81,9 @@ describe('WalletNamespace', () => {
       )
       const walletNamespace = new WalletNamespace(walletProvider)
 
-      expect(walletNamespace.smartWalletProvider).toBe(smartWalletProvider)
+      expect(await walletNamespace.smartWalletProvider()).toBe(
+        smartWalletProvider,
+      )
     })
   })
 
