@@ -22,6 +22,70 @@ import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Sentinel: route output to msg.sender */
+const MSG_SENDER = '0x0000000000000000000000000000000000000001' as Address
+
+/** Resolve asset pair to on-chain token addresses for a given chain. */
+function resolveTokens(
+  assetIn: Asset,
+  assetOut: Asset,
+  chainId: SupportedChainId,
+): { tokenIn: Address; tokenOut: Address } {
+  const tokenIn = isNativeAsset(assetIn)
+    ? getWrappedNativeAddress(chainId)
+    : getAssetAddress(assetIn, chainId)
+  const tokenOut = isNativeAsset(assetOut)
+    ? getWrappedNativeAddress(chainId)
+    : getAssetAddress(assetOut, chainId)
+  return { tokenIn, tokenOut }
+}
+
+/**
+ * Get the wrapped native token address for a chain.
+ * Velodrome routers require WETH address in Route structs, not address(0).
+ */
+function getWrappedNativeAddress(chainId: SupportedChainId): Address {
+  const addr = WETH.address[chainId]
+  if (!addr || addr === 'native') {
+    throw new Error(`No WETH address configured for chain ${chainId}`)
+  }
+  return addr
+}
+
+/** Build a SwapPrice from raw quote data. */
+function buildSwapPrice(
+  assetIn: Asset,
+  assetOut: Asset,
+  amountInRaw: bigint,
+  amountOutRaw: bigint,
+  route: SwapRoute,
+): SwapPrice {
+  const amountIn = parseFloat(
+    formatUnits(amountInRaw, assetIn.metadata.decimals),
+  )
+  const amountOut = parseFloat(
+    formatUnits(amountOutRaw, assetOut.metadata.decimals),
+  )
+  return {
+    price: (amountOut / amountIn).toFixed(6),
+    priceInverse: (amountIn / amountOut).toFixed(6),
+    amountIn,
+    amountOut,
+    amountInRaw,
+    amountOutRaw,
+    priceImpact: 0,
+    route,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V2 AMM quoting
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface GetQuoteParams {
   assetIn: Asset
   assetOut: Asset
@@ -35,100 +99,102 @@ export interface GetQuoteParams {
 }
 
 /**
- * Get a swap quote. Routes to the correct quoting mechanism based on router type:
- * - v2/leaf: Router.getAmountsOut()
- * - universal: Pool.getAmountOut() directly (no legacy router available)
+ * Get a v2 AMM swap quote.
+ * @param params - Quote parameters including router type
+ * @returns Price quote with amounts and route
  */
 export async function getQuote(params: GetQuoteParams): Promise<SwapPrice> {
-  const {
-    assetIn,
-    assetOut,
-    amountInRaw,
-    publicClient,
-    routerAddress,
-    routerType,
-    stable,
-    factoryAddress,
-    chainId,
-  } = params
-
-  const tokenIn = isNativeAsset(assetIn)
-    ? getWrappedNativeAddress(chainId)
-    : getAssetAddress(assetIn, chainId)
-
-  const tokenOut = isNativeAsset(assetOut)
-    ? getWrappedNativeAddress(chainId)
-    : getAssetAddress(assetOut, chainId)
-
-  let amountOutRaw: bigint
-
-  if (routerType === 'universal') {
-    // Look up the pool and quote directly
-    const poolAddress = await publicClient.readContract({
-      address: factoryAddress,
-      abi: POOL_FACTORY_ABI,
-      functionName: 'getPool',
-      args: [tokenIn, tokenOut, stable],
-    })
-
-    if (
-      !poolAddress ||
-      poolAddress === '0x0000000000000000000000000000000000000000'
-    ) {
-      throw new Error(
-        `No Velodrome pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (stable=${stable})`,
-      )
-    }
-
-    amountOutRaw = (await publicClient.readContract({
-      address: poolAddress as Address,
-      abi: POOL_ABI,
-      functionName: 'getAmountOut',
-      args: [amountInRaw, tokenIn],
-    })) as bigint
-  } else {
-    // Legacy router quoting
-    const abi = routerType === 'v2' ? V2_ROUTER_ABI : LEAF_ROUTER_ABI
-    const route =
-      routerType === 'v2'
-        ? { from: tokenIn, to: tokenOut, stable, factory: factoryAddress }
-        : { from: tokenIn, to: tokenOut, stable }
-
-    const amounts = await publicClient.readContract({
-      address: routerAddress,
-      abi,
-      functionName: 'getAmountsOut',
-      args: [amountInRaw, [route]],
-    })
-    amountOutRaw = (amounts as bigint[])[1]
-  }
-
-  const normalizedIn = parseFloat(
-    formatUnits(amountInRaw, assetIn.metadata.decimals),
-  )
-  const normalizedOut = parseFloat(
-    formatUnits(amountOutRaw, assetOut.metadata.decimals),
-  )
-
-  const price = (normalizedOut / normalizedIn).toFixed(6)
-  const priceInverse = (normalizedIn / normalizedOut).toFixed(6)
-
-  const swapRoute: SwapRoute = {
+  const { assetIn, assetOut, amountInRaw, chainId } = params
+  const { tokenIn, tokenOut } = resolveTokens(assetIn, assetOut, chainId)
+  const amountOutRaw = await fetchAmountOut(params, tokenIn, tokenOut)
+  const route: SwapRoute = {
     path: [assetIn, assetOut],
     pools: [{ address: tokenIn, fee: 0, version: 'v2' }],
   }
-
-  return {
-    price,
-    priceInverse,
-    amountIn: normalizedIn,
-    amountOut: normalizedOut,
-    amountInRaw,
-    amountOutRaw,
-    priceImpact: 0,
-    route: swapRoute,
-  }
+  return buildSwapPrice(assetIn, assetOut, amountInRaw, amountOutRaw, route)
 }
+
+/** Fetch the output amount using the appropriate quoting mechanism for the router type. */
+async function fetchAmountOut(
+  params: GetQuoteParams,
+  tokenIn: Address,
+  tokenOut: Address,
+): Promise<bigint> {
+  const { routerType } = params
+
+  if (routerType === 'universal') {
+    return fetchAmountOutViaPool(params, tokenIn, tokenOut)
+  }
+  if (routerType === 'v2') {
+    return fetchAmountOutViaRouter(params, tokenIn, tokenOut, V2_ROUTER_ABI, {
+      from: tokenIn,
+      to: tokenOut,
+      stable: params.stable,
+      factory: params.factoryAddress,
+    })
+  }
+  if (routerType === 'leaf') {
+    return fetchAmountOutViaRouter(params, tokenIn, tokenOut, LEAF_ROUTER_ABI, {
+      from: tokenIn,
+      to: tokenOut,
+      stable: params.stable,
+    })
+  }
+  throw new Error(`Unknown router type: ${routerType as string}`)
+}
+
+/** Quote via Pool.getAmountOut (Universal Router path — no legacy router available). */
+async function fetchAmountOutViaPool(
+  params: GetQuoteParams,
+  tokenIn: Address,
+  tokenOut: Address,
+): Promise<bigint> {
+  const { publicClient, factoryAddress, stable, assetIn, assetOut } = params
+
+  const poolAddress = await publicClient.readContract({
+    address: factoryAddress,
+    abi: POOL_FACTORY_ABI,
+    functionName: 'getPool',
+    args: [tokenIn, tokenOut, stable],
+  })
+
+  if (
+    !poolAddress ||
+    poolAddress === '0x0000000000000000000000000000000000000000'
+  ) {
+    throw new Error(
+      `No Velodrome pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (stable=${stable})`,
+    )
+  }
+
+  return (await publicClient.readContract({
+    address: poolAddress as Address,
+    abi: POOL_ABI,
+    functionName: 'getAmountOut',
+    args: [params.amountInRaw, tokenIn],
+  })) as bigint
+}
+
+/** Quote via Router.getAmountsOut (v2 and leaf router path). */
+async function fetchAmountOutViaRouter(
+  params: GetQuoteParams,
+  tokenIn: Address,
+  tokenOut: Address,
+  abi: typeof V2_ROUTER_ABI | typeof LEAF_ROUTER_ABI,
+  route: { from: Address; to: Address; stable: boolean; factory?: Address },
+): Promise<bigint> {
+  const amounts = await params.publicClient.readContract({
+    address: params.routerAddress,
+    abi,
+    functionName: 'getAmountsOut',
+    args: [params.amountInRaw, [route]],
+  })
+  return (amounts as bigint[])[1]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V2 AMM encoding
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface EncodeSwapParams {
   assetIn: Asset
@@ -143,88 +209,58 @@ export interface EncodeSwapParams {
   chainId: SupportedChainId
 }
 
-/** Universal Router V2_SWAP_EXACT_IN command */
-const V2_SWAP_EXACT_IN = 0x08
-/** Sentinel: route output to msg.sender */
-const MSG_SENDER = '0x0000000000000000000000000000000000000001' as Address
-
 /**
- * Encode swap calldata. Routes to the correct encoding based on router type:
- * - v2/leaf: Legacy Router swapExactTokensForTokens/ETH variants
- * - universal: Universal Router execute() with V2_SWAP_EXACT_IN command
+ * Encode swap calldata for the appropriate router type.
+ * @param params - Swap encoding parameters
+ * @returns Encoded calldata as hex string
  */
 export function encodeSwap(params: EncodeSwapParams): Hex {
-  const {
-    assetIn,
-    assetOut,
-    amountInRaw,
-    amountOutMin,
-    routerType,
-    stable,
-    factoryAddress,
-    recipient,
-    deadline,
-    chainId,
-  } = params
-
-  const tokenIn = isNativeAsset(assetIn)
-    ? getWrappedNativeAddress(chainId)
-    : getAssetAddress(assetIn, chainId)
-
-  const tokenOut = isNativeAsset(assetOut)
-    ? getWrappedNativeAddress(chainId)
-    : getAssetAddress(assetOut, chainId)
+  const { routerType } = params
+  const { tokenIn, tokenOut } = resolveTokens(
+    params.assetIn,
+    params.assetOut,
+    params.chainId,
+  )
 
   if (routerType === 'universal') {
-    return encodeUniversalRouterSwap(
-      tokenIn,
-      tokenOut,
-      amountInRaw,
-      amountOutMin,
-      stable,
-      deadline,
-    )
+    return encodeUniversalV2Swap(tokenIn, tokenOut, params)
   }
-
-  return encodeLegacyRouterSwap(
-    assetIn,
-    assetOut,
-    tokenIn,
-    tokenOut,
-    amountInRaw,
-    amountOutMin,
-    routerType,
-    stable,
-    factoryAddress,
-    recipient,
-    deadline,
-  )
+  if (routerType === 'v2') {
+    return encodeLegacySwap(tokenIn, tokenOut, params, V2_ROUTER_ABI, {
+      from: tokenIn,
+      to: tokenOut,
+      stable: params.stable,
+      factory: params.factoryAddress,
+    })
+  }
+  if (routerType === 'leaf') {
+    return encodeLegacySwap(tokenIn, tokenOut, params, LEAF_ROUTER_ABI, {
+      from: tokenIn,
+      to: tokenOut,
+      stable: params.stable,
+    })
+  }
+  throw new Error(`Unknown router type: ${routerType as string}`)
 }
+
+/** Universal Router V2_SWAP_EXACT_IN command byte */
+const V2_SWAP_EXACT_IN = 0x08
 
 /**
  * Encode a V2_SWAP_EXACT_IN command for the Universal Router.
- * Route format: abi.encodePacked(tokenIn, stable, tokenOut) — 41 bytes per hop.
- * The 6th param `isUni` is false for Velodrome/Aerodrome pools.
+ * Route: encodePacked(tokenIn, stable, tokenOut) — 41 bytes per hop.
+ * payerIsUser = false: tokens are pre-transferred to the Router by the smart wallet.
  */
-function encodeUniversalRouterSwap(
+function encodeUniversalV2Swap(
   tokenIn: Address,
   tokenOut: Address,
-  amountInRaw: bigint,
-  amountOutMin: bigint,
-  stable: boolean,
-  deadline: number,
+  params: EncodeSwapParams,
 ): Hex {
   const commands = `0x${V2_SWAP_EXACT_IN.toString(16).padStart(2, '0')}` as Hex
-
-  // Velodrome V2 route: [tokenIn (20)] [stable (1)] [tokenOut (20)]
   const routes = encodePacked(
     ['address', 'bool', 'address'],
-    [tokenIn, stable, tokenOut],
+    [tokenIn, params.stable, tokenOut],
   )
-
-  // payerIsUser = false: tokens are pre-transferred to the Router by the smart wallet.
-  // The Router transfers amountIn from its own balance to the first pair.
-  // This avoids Permit2 pull complexity with 4337 batched transactions.
   const input = encodeAbiParameters(
     [
       { type: 'address' },
@@ -235,41 +271,34 @@ function encodeUniversalRouterSwap(
       { type: 'bool' },
     ],
     [
-      MSG_SENDER, // recipient — output goes back to the smart wallet
-      amountInRaw, // actual amount (router holds these tokens)
-      amountOutMin,
+      MSG_SENDER,
+      params.amountInRaw,
+      params.amountOutMin,
       routes,
-      false, // payerIsUser — tokens already in the router
+      false, // payerIsUser
       false, // isUni — false for Velodrome/Aerodrome
     ],
   )
-
   return encodeFunctionData({
     abi: UNIVERSAL_ROUTER_ABI,
     functionName: 'execute',
-    args: [commands, [input], BigInt(deadline)],
+    args: [commands, [input], BigInt(params.deadline)],
   })
 }
 
-/** Encode swap calldata for legacy v2 or leaf routers */
-function encodeLegacyRouterSwap(
-  assetIn: Asset,
-  assetOut: Asset,
+/**
+ * Encode swap calldata for legacy v2 or leaf routers.
+ * Selects the correct swap function based on whether native ETH is involved.
+ */
+function encodeLegacySwap(
   tokenIn: Address,
   tokenOut: Address,
-  amountInRaw: bigint,
-  amountOutMin: bigint,
-  routerType: 'v2' | 'leaf',
-  stable: boolean,
-  factoryAddress: Address,
-  recipient: Address,
-  deadline: number,
+  params: EncodeSwapParams,
+  abi: typeof V2_ROUTER_ABI | typeof LEAF_ROUTER_ABI,
+  route: { from: Address; to: Address; stable: boolean; factory?: Address },
 ): Hex {
-  const abi = routerType === 'v2' ? V2_ROUTER_ABI : LEAF_ROUTER_ABI
-  const route =
-    routerType === 'v2'
-      ? { from: tokenIn, to: tokenOut, stable, factory: factoryAddress }
-      : { from: tokenIn, to: tokenOut, stable }
+  const { assetIn, assetOut, amountInRaw, amountOutMin, recipient, deadline } =
+    params
 
   if (isNativeAsset(assetIn)) {
     return encodeFunctionData({
@@ -295,7 +324,7 @@ function encodeLegacyRouterSwap(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CL / Slipstream pool functions
+// CL / Slipstream quoting
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface GetCLQuoteParams {
@@ -311,7 +340,10 @@ export interface GetCLQuoteParams {
 
 /**
  * Get a swap quote from a CL/Slipstream pool via QuoterV2.
- * Looks up the pool via the CL factory for validation, then quotes via QuoterV2.
+ * Verifies the pool exists via the CL factory, then quotes via QuoterV2.
+ * @param params - CL quote parameters
+ * @returns Price quote with amounts and route
+ * @throws If no CL pool exists for the given pair and tickSpacing
  */
 export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
   const {
@@ -324,14 +356,7 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
     tickSpacing,
     chainId,
   } = params
-
-  const tokenIn = isNativeAsset(assetIn)
-    ? getWrappedNativeAddress(chainId)
-    : getAssetAddress(assetIn, chainId)
-
-  const tokenOut = isNativeAsset(assetOut)
-    ? getWrappedNativeAddress(chainId)
-    : getAssetAddress(assetOut, chainId)
+  const { tokenIn, tokenOut } = resolveTokens(assetIn, assetOut, chainId)
 
   // Verify the CL pool exists
   const poolAddress = await publicClient.readContract({
@@ -351,8 +376,7 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
   }
 
   // Quote via QuoterV2.quoteExactInputSingle
-  // QuoterV2 functions use eth_call (readContract) — they simulate internally
-  // and return the result. sqrtPriceLimitX96 = 0 means no price limit.
+  // sqrtPriceLimitX96 = 0 means no price limit
   const quoteResult = (await publicClient.readContract({
     address: clQuoterAddress,
     abi: CL_QUOTER_ABI,
@@ -368,34 +392,16 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
     ],
   })) as readonly [bigint, bigint, number, bigint]
 
-  const outputAmount = quoteResult[0]
-
-  const normalizedIn = parseFloat(
-    formatUnits(amountInRaw, assetIn.metadata.decimals),
-  )
-  const normalizedOut = parseFloat(
-    formatUnits(outputAmount, assetOut.metadata.decimals),
-  )
-
-  const price = (normalizedOut / normalizedIn).toFixed(6)
-  const priceInverse = (normalizedIn / normalizedOut).toFixed(6)
-
-  const swapRoute: SwapRoute = {
+  const route: SwapRoute = {
     path: [assetIn, assetOut],
     pools: [{ address: poolAddress as Address, fee: 0, version: 'v3' }],
   }
-
-  return {
-    price,
-    priceInverse,
-    amountIn: normalizedIn,
-    amountOut: normalizedOut,
-    amountInRaw,
-    amountOutRaw: outputAmount,
-    priceImpact: 0,
-    route: swapRoute,
-  }
+  return buildSwapPrice(assetIn, assetOut, amountInRaw, quoteResult[0], route)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CL / Slipstream encoding
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface EncodeCLSwapParams {
   assetIn: Asset
@@ -408,31 +414,22 @@ export interface EncodeCLSwapParams {
   chainId: SupportedChainId
 }
 
-/** Universal Router V3_SWAP_EXACT_IN command */
+/** Universal Router V3_SWAP_EXACT_IN command byte */
 const V3_SWAP_EXACT_IN = 0x00
 
 /**
  * Encode a V3_SWAP_EXACT_IN command for a CL/Slipstream pool on the Universal Router.
  * Path: encodePacked([tokenIn (20), tickSpacing as int24 (3), tokenOut (20)]) — 43 bytes.
+ * @param params - CL swap encoding parameters
+ * @returns Encoded calldata as hex string
  */
 export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
-  const {
-    assetIn,
-    assetOut,
-    amountInRaw,
-    amountOutMin,
-    tickSpacing,
-    deadline,
+  const { amountInRaw, amountOutMin, tickSpacing, deadline, chainId } = params
+  const { tokenIn, tokenOut } = resolveTokens(
+    params.assetIn,
+    params.assetOut,
     chainId,
-  } = params
-
-  const tokenIn = isNativeAsset(assetIn)
-    ? getWrappedNativeAddress(chainId)
-    : getAssetAddress(assetIn, chainId)
-
-  const tokenOut = isNativeAsset(assetOut)
-    ? getWrappedNativeAddress(chainId)
-    : getAssetAddress(assetOut, chainId)
+  )
 
   const commands = `0x${V3_SWAP_EXACT_IN.toString(16).padStart(2, '0')}` as Hex
 
@@ -442,8 +439,6 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
     [tokenIn, tickSpacing, tokenOut],
   )
 
-  // V3_SWAP_EXACT_IN params:
-  // (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
   const input = encodeAbiParameters(
     [
       { type: 'address' },
@@ -453,7 +448,7 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
       { type: 'bool' },
     ],
     [
-      MSG_SENDER, // recipient — output goes back to caller
+      MSG_SENDER,
       amountInRaw,
       amountOutMin,
       path,
@@ -466,20 +461,4 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
     functionName: 'execute',
     args: [commands, [input], BigInt(deadline)],
   })
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Get the wrapped native token address for a chain.
- * Velodrome routers require WETH address in Route structs, not address(0).
- */
-function getWrappedNativeAddress(chainId: SupportedChainId): Address {
-  const addr = WETH.address[chainId]
-  if (!addr || addr === 'native') {
-    throw new Error(`No WETH address configured for chain ${chainId}`)
-  }
-  return addr
 }
