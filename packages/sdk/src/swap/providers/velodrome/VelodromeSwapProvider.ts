@@ -10,9 +10,9 @@ import {
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
-  type VelodromeChainConfig,
   getSupportedChainIds,
   getVelodromeConfig,
+  type VelodromeChainConfig,
 } from '@/swap/providers/velodrome/addresses.js'
 import {
   encodeCLSwap,
