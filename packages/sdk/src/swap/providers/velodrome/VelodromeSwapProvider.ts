@@ -1,12 +1,14 @@
 import type { Address, Hex } from 'viem'
-import { concat, encodeFunctionData, formatUnits, keccak256 } from 'viem'
+import {
+  concat,
+  encodeFunctionData,
+  erc20Abi,
+  formatUnits,
+  keccak256,
+} from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
-import {
-  ERC20_ALLOWANCE_ABI,
-  ERC20_APPROVE_ABI,
-} from '@/swap/providers/velodrome/abis.js'
 import {
   getSupportedChainIds,
   getVelodromeConfig,
@@ -309,7 +311,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       } else {
         const currentAllowance = await publicClient.readContract({
           address: token,
-          abi: ERC20_ALLOWANCE_ABI,
+          abi: erc20Abi,
           functionName: 'allowance',
           // Use providerContext or a reasonable default for the owner address
           args: [
@@ -322,7 +324,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
           tokenApproval = {
             to: token,
             data: encodeFunctionData({
-              abi: ERC20_APPROVE_ABI,
+              abi: erc20Abi,
               functionName: 'approve',
               args: [chain.contracts.router, quote.amountInRaw],
             }),

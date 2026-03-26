@@ -262,31 +262,3 @@ export const CL_QUOTER_ABI = [
     ],
   },
 ] as const
-
-/** ERC20 allowance ABI for checking current approval */
-export const ERC20_ALLOWANCE_ABI = [
-  {
-    name: 'allowance',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    outputs: [{ type: 'uint256' }],
-  },
-] as const
-
-/** ERC20 approve ABI for granting token approval */
-export const ERC20_APPROVE_ABI = [
-  {
-    name: 'approve',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ type: 'bool' }],
-  },
-] as const
