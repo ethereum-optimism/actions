@@ -9,7 +9,7 @@ import {
   UNIVERSAL_ROUTER_ABI,
   V2_ROUTER_ABI,
 } from '@/swap/providers/velodrome/abis.js'
-import type { VelodromeRouterType } from '@/swap/providers/velodrome/addresses.js'
+import type { VelodromeRouterType } from '@/swap/providers/velodrome/config.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { isNativeAsset } from '@/utils/assets.js'

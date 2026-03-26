@@ -47,14 +47,6 @@ export interface VelodromeChainConfig {
   }
 }
 
-/**
- * Velodrome/Aerodrome chain configurations.
- *
- * Hub chains (Optimism, Base) use v2 routers with factory-aware Route structs.
- * Leaf chains use the Relay router with simplified Route structs.
- * @see https://velodrome.finance/docs
- * @see https://aerodrome.finance/docs
- */
 /** Shared config for all Velodrome Relay leaf chains (identical contracts). */
 const LEAF_CHAIN_CONFIG: VelodromeChainConfig = {
   contracts: {
@@ -64,6 +56,14 @@ const LEAF_CHAIN_CONFIG: VelodromeChainConfig = {
   metadata: { routerType: 'leaf' },
 }
 
+/**
+ * Velodrome/Aerodrome chain configurations.
+ *
+ * Hub chains (Optimism, Base) use v2 routers with factory-aware Route structs.
+ * Leaf chains use the Relay router with simplified Route structs.
+ * @see https://velodrome.finance/docs
+ * @see https://aerodrome.finance/docs
+ */
 export const VELODROME_CHAINS: Partial<
   Record<SupportedChainId, VelodromeChainConfig>
 > = {
@@ -104,25 +104,4 @@ export const VELODROME_CHAINS: Partial<
   // Swell — not available in viem/chains
   1923: LEAF_CHAIN_CONFIG,
   [unichain.id]: LEAF_CHAIN_CONFIG,
-}
-
-/**
- * Get Velodrome/Aerodrome chain config including contracts and metadata.
- * @throws If chain is not supported
- */
-export function getVelodromeConfig(
-  chainId: SupportedChainId,
-): VelodromeChainConfig {
-  const config = VELODROME_CHAINS[chainId]
-  if (!config) {
-    throw new Error(`Velodrome/Aerodrome not supported on chain ${chainId}`)
-  }
-  return config
-}
-
-/**
- * Get all chain IDs where Velodrome/Aerodrome is deployed
- */
-export function getSupportedChainIds(): SupportedChainId[] {
-  return Object.keys(VELODROME_CHAINS).map(Number) as SupportedChainId[]
 }

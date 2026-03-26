@@ -3,9 +3,10 @@ import { formatUnits } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
+  getChainConfig,
   getSupportedChainIds,
-  getVelodromeConfig,
-} from '@/swap/providers/velodrome/addresses.js'
+  getValidMarketConfigs,
+} from '@/swap/providers/velodrome/config.js'
 import {
   buildTokenApproval,
   encodePoolSwap,
@@ -138,7 +139,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       )
     }
 
-    const chain = getVelodromeConfig(chainId)
+    const chain = getChainConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
     const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
 
@@ -211,7 +212,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
     const { chainId, assetIn, assetOut, execution } = quote
-    const chain = getVelodromeConfig(chainId)
+    const chain = getChainConfig(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
 
     const tokenApproval = isNativeAsset(assetIn)

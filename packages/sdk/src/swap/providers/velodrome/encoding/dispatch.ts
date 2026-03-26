@@ -5,7 +5,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   VelodromeChainConfig,
   VelodromeRouterType,
-} from '@/swap/providers/velodrome/addresses.js'
+} from '@/swap/providers/velodrome/config.js'
 import type { ResolvedPoolConfig } from '@/swap/providers/velodrome/types.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice } from '@/types/swap/index.js'
