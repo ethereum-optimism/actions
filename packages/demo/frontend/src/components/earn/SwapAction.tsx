@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import type { Asset, SupportedChainId } from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 
+import type { SwapMarket } from '@eth-optimism/actions-sdk/react'
+
 import type { SwapAsset } from '@/hooks/useSwapAssets'
 import TransactionModal from './TransactionModal'
 import Shimmer from './Shimmer'
@@ -11,6 +13,10 @@ import { CtaButton, MaxButton } from './CtaButton'
 import { TokenButton } from './TokenButton'
 import { TokenSelectModal } from './TokenSelectModal'
 import { ReviewSwapModal } from './ReviewSwapModal'
+import {
+  DemoProviderTooltip,
+  SwapMarketSelector,
+} from './SwapMarketSelector'
 import { trackEvent } from '@/utils/analytics'
 import {
   deriveUsdRates,
@@ -46,6 +52,9 @@ interface SwapActionProps {
   } | null>
   isExecuting: boolean
   selectedProvider?: string | null
+  swapMarkets?: SwapMarket[]
+  isLoadingMarkets?: boolean
+  onSelectProvider?: (provider: string) => void
   onLogActivity?: (
     action: string,
     metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
@@ -214,6 +223,9 @@ export function SwapAction({
   onGetPrice,
   isExecuting,
   selectedProvider,
+  swapMarkets = [],
+  isLoadingMarkets = false,
+  onSelectProvider,
   onLogActivity,
 }: SwapActionProps) {
   const { hoveredAction } = useActivityHighlight()
@@ -508,6 +520,28 @@ export function SwapAction({
 
   return (
     <>
+      {onSelectProvider && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <h3
+              style={{
+                color: '#1a1b1e',
+                fontSize: '16px',
+                fontWeight: 600,
+              }}
+            >
+              Select Market
+            </h3>
+            <DemoProviderTooltip />
+          </div>
+          <SwapMarketSelector
+            markets={swapMarkets}
+            selectedProvider={selectedProvider ?? null}
+            onSelect={onSelectProvider}
+            isLoading={isLoadingMarkets}
+          />
+        </div>
+      )}
       <div
         className="w-full transition-all"
         style={{
