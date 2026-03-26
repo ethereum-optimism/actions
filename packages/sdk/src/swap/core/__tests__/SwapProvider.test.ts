@@ -148,7 +148,7 @@ describe('SwapProvider', () => {
 
       expect(provider.mockExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          amountInWei: 100000000n, // 100 * 10^6
+          amountInRaw: 100000000n, // 100 * 10^6
         }),
       )
     })

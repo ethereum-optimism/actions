@@ -53,8 +53,8 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     const quote = await getQuote({
       assetIn,
       assetOut,
-      amountInWei: params.amountInWei,
-      amountOutWei: params.amountOutWei,
+      amountInRaw: params.amountInRaw,
+      amountOutRaw: params.amountOutRaw,
       chainId,
       publicClient,
       quoterAddress: addresses.quoter,
@@ -64,8 +64,8 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     })
 
     const swapCalldata = encodeUniversalRouterSwap({
-      amountInWei: params.amountInWei,
-      amountOutWei: params.amountOutWei,
+      amountInRaw: params.amountInRaw,
+      amountOutRaw: params.amountOutRaw,
       assetIn,
       assetOut,
       slippage: params.slippage,
@@ -78,10 +78,10 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       tickSpacing: marketConfig.tickSpacing,
     })
 
-    const amountInWei = params.amountInWei ?? quote.amountInWei
+    const amountInRaw = params.amountInRaw ?? quote.amountInRaw
     const { tokenApproval, permit2Approval } = await this.buildPermit2Approvals(
       params,
-      amountInWei,
+      amountInRaw,
       addresses.permit2,
       addresses.universalRouter,
       this._config.permit2ExpirySeconds,
@@ -90,16 +90,16 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     const swapTx: TransactionData = {
       to: addresses.universalRouter,
       data: swapCalldata,
-      value: isNativeAsset(assetIn) ? (params.amountInWei ?? 0n) : 0n,
+      value: isNativeAsset(assetIn) ? (params.amountInRaw ?? 0n) : 0n,
     }
 
     return {
-      amountIn: parseFloat(formatUnits(amountInWei, assetIn.metadata.decimals)),
+      amountIn: parseFloat(formatUnits(amountInRaw, assetIn.metadata.decimals)),
       amountOut: parseFloat(
-        formatUnits(quote.amountOutWei, assetOut.metadata.decimals),
+        formatUnits(quote.amountOutRaw, assetOut.metadata.decimals),
       ),
-      amountInWei,
-      amountOutWei: quote.amountOutWei,
+      amountInRaw,
+      amountOutRaw: quote.amountOutRaw,
       assetIn,
       assetOut,
       price: quote.price,
@@ -125,14 +125,14 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
 
     // Default to 1 unit for price quotes when no amount specified
-    const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
-    const amountOutWei = parseAssetAmount(assetOut, params.amountOut)
+    const amountInRaw = parseAssetAmount(assetIn, params.amountIn ?? 1)
+    const amountOutRaw = parseAssetAmount(assetOut, params.amountOut)
 
     return getQuote({
       assetIn,
       assetOut,
-      amountInWei: amountOutWei ? undefined : amountInWei,
-      amountOutWei,
+      amountInRaw: amountOutRaw ? undefined : amountInRaw,
+      amountOutRaw,
       chainId,
       publicClient,
       quoterAddress: addresses.quoter,

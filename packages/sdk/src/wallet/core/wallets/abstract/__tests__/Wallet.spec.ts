@@ -3,11 +3,11 @@ import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getRandomAddress } from '@/__mocks__/utils.js'
+import { ETH, USDC } from '@/constants/assets.js'
 import type { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
 import { TestWallet } from '@/wallet/core/wallets/abstract/__mocks__/TestWallet.js'
 
 vi.mock('@/services/tokenBalance.js', async () => {
@@ -29,7 +29,7 @@ describe('Wallet (base)', () => {
     vi.clearAllMocks()
   })
 
-  it('getBalance fetches ETH and ERC20 balances for all supported tokens', async () => {
+  it('getBalance returns only ETH when no supportedAssets configured', async () => {
     const wallet = new TestWallet(chainManager, address, signer)
 
     const result = await wallet.getBalance()
@@ -37,10 +37,26 @@ describe('Wallet (base)', () => {
     expect(result).toBeTruthy()
     expect(fetchETHBalance).toHaveBeenCalledTimes(1)
     expect(fetchETHBalance).toHaveBeenCalledWith(chainManager, address)
-    // Should call fetchERC20Balance for each token in SUPPORTED_TOKENS
-    expect(fetchERC20Balance).toHaveBeenCalledTimes(
-      Object.keys(SUPPORTED_TOKENS).length,
+    // No supportedAssets configured, so no ERC20 balance fetches
+    expect(fetchERC20Balance).toHaveBeenCalledTimes(0)
+  })
+
+  it('getBalance fetches ERC20 balances for explicitly configured assets', async () => {
+    const wallet = new TestWallet(
+      chainManager,
+      address,
+      signer,
+      undefined,
+      undefined,
+      [ETH, USDC],
     )
+
+    const result = await wallet.getBalance()
+
+    expect(result).toBeTruthy()
+    expect(fetchETHBalance).toHaveBeenCalledTimes(1)
+    // Should call fetchERC20Balance for each configured asset
+    expect(fetchERC20Balance).toHaveBeenCalledTimes(2)
   })
 
   it('getBalance propagates errors from underlying fetchers', async () => {

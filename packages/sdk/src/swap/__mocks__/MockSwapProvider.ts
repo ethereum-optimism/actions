@@ -119,14 +119,14 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
   private createMockSwapTransaction(
     params: ResolvedSwapParams,
   ): SwapTransaction {
-    const amountIn = params.amountInWei ?? 1000000n
+    const amountIn = params.amountInRaw ?? 1000000n
     const amountOut = 1500000000000000000n
 
     return {
       amountIn: 1.0,
       amountOut: 1.5,
-      amountInWei: amountIn,
-      amountOutWei: amountOut,
+      amountInRaw: amountIn,
+      amountOutRaw: amountOut,
       assetIn: params.assetIn,
       assetOut: params.assetOut,
       price: this.mockProviderConfig.defaultPrice,
@@ -158,8 +158,8 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       priceInverse: '0.666666',
       amountIn: 1.0,
       amountOut: 1.5,
-      amountInWei: amountIn,
-      amountOutWei: amountOut,
+      amountInRaw: amountIn,
+      amountOutRaw: amountOut,
       priceImpact: this.mockProviderConfig.defaultPriceImpact,
       route: {
         path: [params.assetIn, params.assetOut!],
