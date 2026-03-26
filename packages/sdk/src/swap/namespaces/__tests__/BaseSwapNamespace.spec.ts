@@ -156,6 +156,88 @@ describe('BaseSwapNamespace', () => {
     })
   })
 
+  describe('getQuotes', () => {
+    it('returns quotes from all eligible providers sorted by best price', async () => {
+      const cheapProvider = new MockSwapProvider(
+        { marketAllowlist: [{ assets: [USDC, ETH] }] },
+        { defaultPrice: 1.2, provider: 'uniswap' },
+      )
+      const expensiveProvider = new MockSwapProvider(
+        { marketAllowlist: [{ assets: [USDC, ETH] }] },
+        { defaultPrice: 1.8, provider: 'velodrome' },
+      )
+
+      const namespace = new ActionsSwapNamespace({
+        uniswap: cheapProvider,
+        velodrome: expensiveProvider,
+      })
+
+      const quotes = await namespace.getQuotes({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      expect(quotes).toHaveLength(2)
+      expect(quotes[0].provider).toBe('velodrome')
+      expect(quotes[1].provider).toBe('uniswap')
+    })
+
+    it('skips failed providers and returns successful ones', async () => {
+      const workingProvider = createMockSwapProvider(
+        { marketAllowlist: [{ assets: [USDC, ETH] }] },
+        { provider: 'velodrome' },
+      )
+      const failingProvider = createMockSwapProvider(
+        { marketAllowlist: [{ assets: [USDC, ETH] }] },
+        { provider: 'uniswap' },
+      )
+      failingProvider.mockGetQuote.mockRejectedValue(new Error('fail'))
+
+      const namespace = new ActionsSwapNamespace({
+        uniswap: failingProvider,
+        velodrome: workingProvider,
+      })
+
+      const quotes = await namespace.getQuotes({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      expect(quotes).toHaveLength(1)
+      expect(quotes[0].provider).toBe('velodrome')
+    })
+
+    it('returns single-element array when explicit provider specified', async () => {
+      const provider1 = createMockSwapProvider(undefined, {
+        provider: 'uniswap',
+      })
+      const provider2 = new MockSwapProvider(undefined, {
+        supportedChains: [84532 as SupportedChainId],
+        provider: 'velodrome',
+      })
+
+      const namespace = new ActionsSwapNamespace({
+        uniswap: provider1,
+        velodrome: provider2,
+      })
+
+      const quotes = await namespace.getQuotes({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        provider: 'uniswap',
+      })
+
+      expect(quotes).toHaveLength(1)
+      expect(quotes[0].provider).toBe('uniswap')
+    })
+  })
+
   describe('getMarket', () => {
     it('delegates to provider getMarket', async () => {
       const provider = createMockSwapProvider()

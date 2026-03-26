@@ -56,14 +56,37 @@ export abstract class BaseSwapNamespace {
   }
 
   /**
-   * Fetch quotes from all eligible providers in parallel and return the one
-   * with the highest output amount (best price for the caller).
-   * Providers that don't support the pair or fail to quote are silently skipped.
+   * Fetch quotes from all eligible providers in parallel and return the best.
    * @param params - Quote parameters
    * @returns The quote with the highest amountOut
    * @throws If no provider returns a valid quote
    */
   private async getBestQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    const quotes = await this.fetchAllQuotes(params)
+
+    let best: SwapQuote | null = null
+    for (const quote of quotes) {
+      if (!best || quote.amountOutRaw > best.amountOutRaw) {
+        best = quote
+      }
+    }
+
+    if (!best) {
+      throw new Error(
+        `All providers failed to quote ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol}`,
+      )
+    }
+
+    return best
+  }
+
+  /**
+   * Fetch quotes from all eligible providers in parallel.
+   * Providers that don't support the pair or fail to quote are silently skipped.
+   * @param params - Quote parameters
+   * @returns Array of successful quotes (may be empty if all providers fail)
+   */
+  private async fetchAllQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
     const eligible = this.getAllProviders().filter((p) =>
       p.isMarketSupported(params.assetIn, params.assetOut, params.chainId),
     )
@@ -78,22 +101,39 @@ export abstract class BaseSwapNamespace {
       eligible.map((p) => p.getQuote(params)),
     )
 
-    let best: SwapQuote | null = null
-    for (const result of results) {
-      if (result.status === 'fulfilled') {
-        if (!best || result.value.amountOutRaw > best.amountOutRaw) {
-          best = result.value
-        }
-      }
-    }
-
-    if (!best) {
-      throw new Error(
-        `All providers failed to quote ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol}`,
+    return results
+      .filter(
+        (r): r is PromiseFulfilledResult<SwapQuote> => r.status === 'fulfilled',
       )
+      .map((r) => r.value)
+  }
+
+  /**
+   * Fetch quotes from all eligible providers in parallel.
+   * Unlike getQuote(), returns all successful quotes instead of just the best.
+   * If an explicit provider is specified, returns a single-element array from that provider.
+   * @param params - Quote parameters (assets, amounts, chain, optional provider)
+   * @returns Array of SwapQuotes sorted by amountOut descending (best first)
+   */
+  async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
+    if (params.provider) {
+      const provider = this.resolveProvider(
+        params.provider,
+        params.assetIn,
+        params.assetOut,
+        params.chainId,
+      )
+      return [await provider.getQuote(params)]
     }
 
-    return best
+    const quotes = await this.fetchAllQuotes(params)
+    return quotes.sort((a, b) =>
+      a.amountOutRaw > b.amountOutRaw
+        ? -1
+        : a.amountOutRaw < b.amountOutRaw
+          ? 1
+          : 0,
+    )
   }
 
   /**
