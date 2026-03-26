@@ -52,10 +52,11 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   }
 
   /**
-   * Build a swap transaction with quote, calldata, and any required approvals.
-   * Velodrome/Aerodrome only supports exact-input swaps.
-   * @param params - Resolved swap parameters (amounts in wei, defaults applied)
+   * Build a swap transaction from raw parameters.
+   * Delegates to _getQuote then _executeFromQuote to avoid duplicating logic.
+   * @param params - Resolved swap parameters (amounts as raw bigint, defaults applied)
    * @returns Transaction data ready for wallet execution
+   * @throws If amountOut is provided (Velodrome only supports exact-input swaps)
    */
   protected async _execute(
     params: ResolvedSwapParams,
@@ -66,161 +67,22 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       )
     }
 
-    const { chainId, assetIn, assetOut } = params
-    const chain = getVelodromeConfig(chainId)
-    const publicClient = this.chainManager.getPublicClient(chainId)
-    const poolConfig = this.resolveVelodromeConfig(assetIn, assetOut, chainId)
-
-    const amountInRaw = params.amountInRaw!
-    let quote: SwapPrice
-    let swapCalldata: Hex
-
-    if (poolConfig.type === 'cl') {
-      if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
-        throw new Error(`CL pools not supported on chain ${chainId}`)
-      }
-
-      quote = await getCLQuote({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        chainId,
-        publicClient,
-        clFactoryAddress: chain.contracts.clPoolFactory,
-        clQuoterAddress: chain.contracts.clQuoterV2,
-        tickSpacing: poolConfig.tickSpacing,
-      })
-
-      const amountOutMin =
-        (quote.amountOutRaw *
-          BigInt(Math.round((1 - params.slippage) * 10000))) /
-        10000n
-
-      swapCalldata = encodeCLSwap({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        amountOutMin,
-        tickSpacing: poolConfig.tickSpacing,
-        recipient: params.recipient,
-        deadline: params.deadline,
-        chainId,
-      })
-    } else {
-      quote = await getQuote({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        chainId,
-        publicClient,
-        routerAddress: chain.contracts.router,
-        routerType: chain.metadata.routerType,
-        stable: poolConfig.stable,
-        factoryAddress: chain.contracts.poolFactory,
-      })
-
-      const amountOutMin =
-        (quote.amountOutRaw *
-          BigInt(Math.round((1 - params.slippage) * 10000))) /
-        10000n
-
-      swapCalldata = encodeSwap({
-        assetIn,
-        assetOut,
-        amountInRaw,
-        amountOutMin,
-        routerType: chain.metadata.routerType,
-        stable: poolConfig.stable,
-        factoryAddress: chain.contracts.poolFactory,
-        recipient: params.recipient,
-        deadline: params.deadline,
-        chainId,
-      })
-    }
-
-    // For the Universal Router: transfer tokens directly to the router before the swap.
-    // The swap uses payerIsUser=false (router's own balance), avoiding Permit2 pull
-    // complexity with 4337 batched transactions.
-    // For legacy routers: approve tokens directly to the router.
-    let tokenApproval: TransactionData | undefined
-
-    if (!isNativeAsset(assetIn)) {
-      const token = getAssetAddress(assetIn, chainId)
-
-      if (chain.metadata.routerType === 'universal') {
-        // Transfer tokens to the Universal Router — it will use its own balance
-        tokenApproval = {
-          to: token,
-          data: encodeFunctionData({
-            abi: [
-              {
-                name: 'transfer',
-                type: 'function',
-                stateMutability: 'nonpayable',
-                inputs: [
-                  { name: 'to', type: 'address' },
-                  { name: 'amount', type: 'uint256' },
-                ],
-                outputs: [{ type: 'bool' }],
-              },
-            ] as const,
-            functionName: 'transfer',
-            args: [chain.contracts.router, amountInRaw],
-          }),
-          value: 0n,
-        }
-      } else {
-        const currentAllowance = await publicClient.readContract({
-          address: token,
-          abi: ERC20_ALLOWANCE_ABI,
-          functionName: 'allowance',
-          args: [params.walletAddress, chain.contracts.router],
-        })
-
-        if ((currentAllowance as bigint) < amountInRaw) {
-          tokenApproval = {
-            to: token,
-            data: encodeFunctionData({
-              abi: ERC20_APPROVE_ABI,
-              functionName: 'approve',
-              args: [chain.contracts.router, amountInRaw],
-            }),
-            value: 0n,
-          }
-        }
-      }
-    }
-
-    const swapTx: TransactionData = {
-      to: chain.contracts.router,
-      data: swapCalldata,
-      value: isNativeAsset(assetIn) ? amountInRaw : 0n,
-    }
-
-    const amountIn = parseFloat(
-      formatUnits(amountInRaw, assetIn.metadata.decimals),
-    )
-    const amountOut = parseFloat(
-      formatUnits(quote.amountOutRaw, assetOut.metadata.decimals),
-    )
-
-    return {
-      amountIn,
-      amountOut,
-      amountInRaw,
-      amountOutRaw: quote.amountOutRaw,
-      assetIn,
-      assetOut,
-      price: amountOut / amountIn,
-      priceImpact: quote.priceImpact,
-      transactionData: {
-        tokenApproval,
-        swap: swapTx,
-      },
-    }
+    const swapQuote = await this._getQuote({
+      assetIn: params.assetIn,
+      assetOut: params.assetOut,
+      amountIn: params.amountInRaw
+        ? parseFloat(
+            formatUnits(params.amountInRaw, params.assetIn.metadata.decimals),
+          )
+        : undefined,
+      chainId: params.chainId,
+      slippage: params.slippage,
+      deadline: params.deadline,
+      recipient: params.recipient,
+    })
+    return this._executeFromQuote(swapQuote)
   }
 
-  /**
   /**
    * Find a specific market by poolId from the allowlist.
    * @param params - Pool ID and chain to look up
@@ -245,8 +107,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
   /**
    * Expand the market allowlist into concrete SwapMarket objects.
-   * Derives poolId from each asset pair's sorted addresses and stable flag.
-   * @param params - Optional chain and asset filters
+   * @param params - Optional filters (chainId, asset)
    * @returns All configured markets matching the filters
    */
   protected async _getMarkets(
@@ -266,8 +127,12 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   }
 
   /**
-   * Get a full swap quote with pre-built execution data.
-   * Combines quoting + encoding into a single call.
+   * Get a full swap quote with pricing, slippage bounds, and pre-built execution data.
+   * Routes to v2 AMM or CL/Slipstream quoting based on the market config.
+   * @param params - Quote parameters (assets, amounts, chain, slippage, deadline)
+   * @returns SwapQuote with amounts, price, route, and encoded calldata
+   * @throws If amountOut is provided (Velodrome only supports exact-input)
+   * @throws If CL pool requested on a chain without CL factory/quoter
    */
   protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     const { chainId, assetIn, assetOut } = params
@@ -402,7 +267,11 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
   /**
    * Execute a swap from a pre-built quote.
-   * Uses the pre-encoded calldata but builds fresh approval transactions.
+   * Uses the pre-encoded calldata from the quote but builds fresh token approval transactions.
+   * For Universal Router: transfers tokens directly to the router (avoids Permit2 with 4337 batching).
+   * For legacy routers: approves tokens directly to the router.
+   * @param quote - A SwapQuote previously returned by _getQuote
+   * @returns Transaction data with approvals and swap calldata
    */
   protected async _executeFromQuote(
     quote: SwapQuote,
