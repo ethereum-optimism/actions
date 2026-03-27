@@ -4,7 +4,7 @@ import type {
   CreateSmartWalletOptions,
   GetSmartWalletOptions,
 } from '@/types/wallet.js'
-import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import type { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
@@ -18,11 +18,11 @@ import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWall
 export class WalletProvider<
   THostedProviderType extends string,
   TToActionsMap extends Record<THostedProviderType, unknown>,
-  H extends HostedWalletProvider<THostedProviderType, TToActionsMap>,
+  H extends EmbeddedWalletProvider<THostedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   constructor(
-    public readonly hostedWalletProvider: H,
+    public readonly embeddedWalletProvider: H,
     public readonly smartWalletProvider: S,
   ) {}
 
@@ -52,7 +52,7 @@ export class WalletProvider<
   async hostedWalletToActionsWallet(
     params: TToActionsMap[THostedProviderType],
   ): Promise<Wallet> {
-    return this.hostedWalletProvider.toActionsWallet(params)
+    return this.embeddedWalletProvider.toActionsWallet(params)
   }
 
   /**
@@ -67,7 +67,7 @@ export class WalletProvider<
   async createSigner(
     params: TToActionsMap[THostedProviderType],
   ): Promise<LocalAccount> {
-    return this.hostedWalletProvider.createSigner(params)
+    return this.embeddedWalletProvider.createSigner(params)
   }
 
   /**

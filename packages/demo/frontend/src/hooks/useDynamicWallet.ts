@@ -9,7 +9,7 @@ import { useActions } from './useActions'
  */
 export function useDynamicWallet() {
   const { primaryWallet } = useDynamicContext()
-  const { actions } = useActions({ hostedWalletProviderType: 'dynamic' })
+  const { actions } = useActions({ embeddedWalletProviderType: 'dynamic' })
   const [smartWallet, setSmartWallet] = useState<SmartWallet | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<Error | null>(null)

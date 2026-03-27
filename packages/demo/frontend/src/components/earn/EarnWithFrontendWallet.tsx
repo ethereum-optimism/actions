@@ -25,10 +25,10 @@ export interface EarnWithFrontendWalletProps {
   selectedProvider: FrontendWalletProviderType
 }
 
-function useActions<T extends ReactProviderTypes>(hostedWalletProviderType: T) {
+function useActions<T extends ReactProviderTypes>(embeddedWalletProviderType: T) {
   const config = useMemo(
-    () => createActionsConfig(hostedWalletProviderType),
-    [hostedWalletProviderType],
+    () => createActionsConfig(embeddedWalletProviderType),
+    [embeddedWalletProviderType],
   )
   return useMemo(() => createActions(config), [config])
 }
@@ -42,9 +42,9 @@ export function EarnWithFrontendWallet({
   selectedProvider,
   logout,
 }: EarnWithFrontendWalletProps) {
-  const hostedWalletProviderType =
+  const embeddedWalletProviderType =
     FRONTEND_HOSTED_WALLET_PROVIDER_CONFIGS[selectedProvider]
-  const actions = useActions(hostedWalletProviderType)
+  const actions = useActions(embeddedWalletProviderType)
 
   const operations = useMemo<EarnOperations>(
     () => ({

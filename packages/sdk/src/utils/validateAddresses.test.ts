@@ -30,13 +30,13 @@ import {
   validateAssetAddresses,
   validateConfigAddresses,
 } from '@/utils/validateAddresses.js'
-import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
-import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
-import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
+import { EmbeddedWalletProviderRegistry } from '@/wallet/core/providers/embedded/registry/EmbeddedWalletProviderRegistry.js'
+import type { EmbeddedWalletProvidersSchema } from '@/wallet/core/providers/embedded/types/index.js'
+import { PrivyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
 import type {
   NodeOptionsMap,
   NodeToActionsOptionsMap,
-} from '@/wallet/node/providers/hosted/types/index.js'
+} from '@/wallet/node/providers/embedded/types/index.js'
 
 const VALID_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as Address
 const VALID_ADDRESS_2 = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address
@@ -312,16 +312,16 @@ describe('hardcoded address maps contain valid EVM addresses', () => {
 })
 
 describe('Actions constructor address validation', () => {
-  type TestInstanceMap = { privy: PrivyHostedWalletProvider }
+  type TestInstanceMap = { privy: PrivyEmbeddedWalletProvider }
   type TestConfigMap = { privy: NodeOptionsMap['privy'] }
-  type TestWalletProvider = HostedWalletProvidersSchema<
+  type TestWalletProvider = EmbeddedWalletProvidersSchema<
     'privy',
     TestInstanceMap,
     TestConfigMap,
     NodeToActionsOptionsMap
   >
 
-  class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
+  class TestEmbeddedWalletProviderRegistry extends EmbeddedWalletProviderRegistry<
     TestInstanceMap,
     TestConfigMap,
     'privy'
@@ -334,7 +334,7 @@ describe('Actions constructor address validation', () => {
           return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
         },
         create({ chainManager }, options) {
-          return new PrivyHostedWalletProvider({
+          return new PrivyEmbeddedWalletProvider({
             privyClient: options.privyClient,
             chainManager,
             authorizationContext: options.authorizationContext,
@@ -345,7 +345,7 @@ describe('Actions constructor address validation', () => {
   }
 
   const baseWalletConfig = {
-    hostedWalletConfig: {
+    embeddedWalletConfig: {
       provider: {
         type: 'privy' as const,
         config: {
@@ -387,8 +387,8 @@ describe('Actions constructor address validation', () => {
             wallet: baseWalletConfig,
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         ),
     ).toThrow(/Invalid addresses found/)
@@ -424,8 +424,8 @@ describe('Actions constructor address validation', () => {
             wallet: baseWalletConfig,
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         ),
     ).not.toThrow()
