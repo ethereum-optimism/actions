@@ -59,7 +59,9 @@ describe('MorphoLendProvider', () => {
     beforeEach(() => {
       const mockVault = createMockMorphoVault()
 
-      vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as any)
+      vi.mocked(fetchAccrualVault).mockResolvedValue(
+        mockVault as unknown as Awaited<ReturnType<typeof fetchAccrualVault>>,
+      )
 
       vi.stubGlobal(
         'fetch',
@@ -75,7 +77,7 @@ describe('MorphoLendProvider', () => {
               },
             },
           }),
-        } as any),
+        } as unknown as Response),
       )
     })
 
@@ -114,9 +116,10 @@ describe('MorphoLendProvider', () => {
     })
 
     it('should handle withdrawal errors', async () => {
-      vi.spyOn(provider as any, '_getMarket').mockRejectedValueOnce(
-        new Error('Market fetch failed'),
-      )
+      vi.spyOn(
+        provider as unknown as { _getMarket: () => unknown },
+        '_getMarket',
+      ).mockRejectedValueOnce(new Error('Market fetch failed'))
 
       const amount = 500
       const asset = MockGauntletUSDCMarket.asset
@@ -158,7 +161,9 @@ describe('MorphoLendProvider', () => {
     beforeEach(() => {
       const mockVault = createMockMorphoVault()
 
-      vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as any)
+      vi.mocked(fetchAccrualVault).mockResolvedValue(
+        mockVault as unknown as Awaited<ReturnType<typeof fetchAccrualVault>>,
+      )
 
       // Mock the fetch API for rewards
       vi.stubGlobal(
@@ -175,7 +180,7 @@ describe('MorphoLendProvider', () => {
               },
             },
           }),
-        } as any),
+        } as unknown as Response),
       )
     })
 
@@ -213,9 +218,10 @@ describe('MorphoLendProvider', () => {
     })
 
     it('should handle lending errors', async () => {
-      vi.spyOn(provider as any, '_getMarket').mockRejectedValueOnce(
-        new Error('Market fetch failed'),
-      )
+      vi.spyOn(
+        provider as unknown as { _getMarket: () => unknown },
+        '_getMarket',
+      ).mockRejectedValueOnce(new Error('Market fetch failed'))
 
       const asset = MockGauntletUSDCMarket.asset
       const amount = 1000

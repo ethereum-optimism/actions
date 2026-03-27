@@ -50,7 +50,7 @@ describe('PrivyWallet (React)', () => {
       signMessage: vi.fn(),
       signTransaction: vi.fn(),
       signTypedData: vi.fn(),
-    } as any
+    } as unknown as Awaited<ReturnType<typeof toViemAccount>>
     vi.mocked(toViemAccount).mockResolvedValue(mockViemAccount)
     const connectedWallet = {
       __brand: 'privy-connected-wallet',
@@ -82,7 +82,7 @@ describe('PrivyWallet (React)', () => {
       signMessage: vi.fn(),
       signTransaction: vi.fn(),
       signTypedData: vi.fn(),
-    } as any)
+    } as unknown as Awaited<ReturnType<typeof toViemAccount>>)
     const connectedWallet = {
       __brand: 'privy-connected-wallet',
     } as unknown as ConnectedWallet
