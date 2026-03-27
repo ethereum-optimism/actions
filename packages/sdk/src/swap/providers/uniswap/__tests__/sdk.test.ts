@@ -131,7 +131,11 @@ describe('getQuote', () => {
     })
 
     const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
-    const args = (call as any).args[0]
+    const args = (
+      call as unknown as {
+        args: [{ poolKey: { currency0: string; currency1: string } }]
+      }
+    ).args[0]
     // currency0 should be the lower address
     expect(
       args.poolKey.currency0.toLowerCase() <
@@ -154,7 +158,11 @@ describe('getQuote', () => {
     })
 
     const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
-    const args = (call as any).args[0]
+    const args = (
+      call as unknown as {
+        args: [{ poolKey: { currency0: string; currency1: string } }]
+      }
+    ).args[0]
     // Native ETH should be address(0), sorted as currency0 (lowest possible address)
     expect(args.poolKey.currency0).toBe(zeroAddress)
   })
@@ -174,7 +182,11 @@ describe('getQuote', () => {
     })
 
     const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
-    const args = (call as any).args[0]
+    const args = (
+      call as unknown as {
+        args: [{ poolKey: { currency0: string; currency1: string } }]
+      }
+    ).args[0]
     // Native ETH should be address(0) regardless of swap direction
     expect(args.poolKey.currency0).toBe(zeroAddress)
   })

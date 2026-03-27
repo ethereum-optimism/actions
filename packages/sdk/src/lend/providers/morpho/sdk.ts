@@ -1,4 +1,4 @@
-import { type AccrualPosition, ChainId } from '@morpho-org/blue-sdk'
+import { ChainId } from '@morpho-org/blue-sdk'
 import {
   adaptiveCurveIrmAbi,
   blueAbi,
@@ -10,6 +10,7 @@ import type { Address, PublicClient } from 'viem'
 import { NATIVELY_SUPPORTED_ASSETS } from '@/constants/assets.js'
 import {
   fetchRewards,
+  type MorphoVaultApiResponse,
   type RewardsBreakdown,
 } from '@/lend/providers/morpho/api.js'
 import { getMorphoContracts } from '@/lend/providers/morpho/contracts.js'
@@ -24,6 +25,25 @@ import type {
   MorphoContracts,
 } from '@/types/lend/index.js'
 import { SECONDS_PER_YEAR } from '@/utils/constants.js'
+
+/** Position data accessed by APY calculations — structural subset of AccrualPosition */
+interface MorphoSdkPosition {
+  supplyShares: bigint
+  supplyAssets: bigint
+  market: { supplyApy?: bigint } | null
+}
+
+/** Single allocation entry from the Morpho SDK vault's allocations Map */
+interface MorphoSdkAllocation {
+  position: MorphoSdkPosition
+}
+
+/** Minimal shape of a Morpho SDK vault used by APY calculation functions */
+interface MorphoSdkVault {
+  totalAssets: bigint
+  fee: bigint
+  allocations: { values(): Iterable<MorphoSdkAllocation> }
+}
 
 /**
  * Fetch and calculate rewards breakdown from Morpho GraphQL API
@@ -71,7 +91,7 @@ function buildEmptyRewards(
  * @param vault - Vault data from Morpho SDK
  * @returns Base APY (before rewards, after fees)
  */
-export function calculateBaseApy(vault: any): number {
+export function calculateBaseApy(vault: MorphoSdkVault): number {
   try {
     if (vault.totalAssets === 0n) {
       return 0
@@ -81,8 +101,8 @@ export function calculateBaseApy(vault: any): number {
     const allocationsArray = Array.from(vault.allocations.values())
 
     const totalWeightedApy = allocationsArray.reduce(
-      (total: bigint, allocation: any) => {
-        const position: AccrualPosition = allocation.position
+      (total: bigint, allocation: MorphoSdkAllocation) => {
+        const position = allocation.position
         const market = position.market
 
         if (market && position.supplyShares > 0n) {
@@ -470,7 +490,7 @@ export async function findBestVaultForAsset(
  * @returns Complete APY breakdown
  */
 export function calculateApyBreakdown(
-  vault: any,
+  vault: MorphoSdkVault,
   rewardsBreakdown: RewardsBreakdown,
 ): ApyBreakdown {
   // 1. Calculate base APY from SDK data (before fees)
@@ -517,7 +537,7 @@ function categorizeRewardAsset(
  * @returns Detailed rewards breakdown
  */
 export function calculateRewardsBreakdown(
-  apiVault: any,
+  apiVault: MorphoVaultApiResponse,
   chainId: number,
   marketAsset?: Asset,
 ): RewardsBreakdown {
@@ -554,7 +574,7 @@ export function calculateRewardsBreakdown(
   // Calculate market-level rewards (weighted by allocation)
   if (apiVault.state?.allocation && apiVault.state.allocation.length > 0) {
     const totalSupplyUsd = apiVault.state.allocation.reduce(
-      (total: number, alloc: any) => {
+      (total: number, alloc: { supplyAssetsUsd?: number }) => {
         return total + (alloc.supplyAssetsUsd || 0)
       },
       0,

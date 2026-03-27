@@ -111,7 +111,7 @@ export async function startSupersim(
 
   // Handle case where supersim command is not found
   supersimProcess.on('error', (error) => {
-    if ((error as any).code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       throw new Error(
         'supersim command not found. Please install supersim:\n' +
           '  macOS/Linux: brew install ethereum-optimism/tap/supersim\n' +
@@ -249,7 +249,7 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
     account: funderAccount,
     chain,
     transport: http(rpcUrl),
-  }) as any // Type assertion to avoid viem version compatibility issue
+  })
 
   // Send ETH funding transaction
   const fundingTx = await funderClient.sendTransaction({
@@ -273,8 +273,12 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
 
       // Impersonate the whale account
       console.log(`Impersonating whale account: ${usdcWhale}`)
-      await publicClient.request({
-        method: 'anvil_impersonateAccount' as any,
+      await (
+        publicClient as unknown as {
+          request: (args: { method: string; params: string[] }) => Promise<void>
+        }
+      ).request({
+        method: 'anvil_impersonateAccount',
         params: [usdcWhale],
       })
 
@@ -320,8 +324,12 @@ export async function fundWallet(config: FundWalletConfig): Promise<void> {
       )
 
       // Stop impersonating the account
-      await publicClient.request({
-        method: 'anvil_stopImpersonatingAccount' as any,
+      await (
+        publicClient as unknown as {
+          request: (args: { method: string; params: string[] }) => Promise<void>
+        }
+      ).request({
+        method: 'anvil_stopImpersonatingAccount',
         params: [usdcWhale],
       })
     } catch (error) {

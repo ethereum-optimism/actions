@@ -41,7 +41,9 @@ describe('Swap Service', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     const { getActions } = await import('../config/actions.js')
-    vi.mocked(getActions).mockReturnValue(mockActions as any)
+    vi.mocked(getActions).mockReturnValue(
+      mockActions as unknown as ReturnType<typeof getActions>,
+    )
   })
 
   describe('getMarkets', () => {
@@ -128,7 +130,9 @@ describe('Swap Service', () => {
   describe('executeSwap', () => {
     it('throws when wallet not found', async () => {
       const { getWallet } = await import('./wallet.js')
-      vi.mocked(getWallet).mockResolvedValue(null as any)
+      vi.mocked(getWallet).mockResolvedValue(
+        null as unknown as Awaited<ReturnType<typeof getWallet>>,
+      )
 
       await expect(
         swapService.executeSwap({
@@ -143,7 +147,9 @@ describe('Swap Service', () => {
 
     it('throws when swap not configured', async () => {
       const { getWallet } = await import('./wallet.js')
-      vi.mocked(getWallet).mockResolvedValue({ swap: undefined } as any)
+      vi.mocked(getWallet).mockResolvedValue({
+        swap: undefined,
+      } as unknown as Awaited<ReturnType<typeof getWallet>>)
 
       await expect(
         swapService.executeSwap({
@@ -172,7 +178,7 @@ describe('Swap Service', () => {
       const { getWallet } = await import('./wallet.js')
       vi.mocked(getWallet).mockResolvedValue({
         swap: { execute: vi.fn().mockResolvedValue(mockReceipt) },
-      } as any)
+      } as unknown as Awaited<ReturnType<typeof getWallet>>)
 
       const result = await swapService.executeSwap({
         idToken: 'valid',

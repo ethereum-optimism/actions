@@ -50,9 +50,7 @@ function buildSwapSummary(entry: ActivityEntry): SummarySegment[] {
       { type: 'text', value: ` for ${truncateAmount(m.amountOut)} ` },
       tokenSegment(m.assetOutSymbol, m.assetOutLogo),
       { type: 'text', value: ' on ' },
-      marketSegment(
-        getProviderDisplayName(m.provider ?? 'uniswap', m.chainId),
-      ),
+      marketSegment(getProviderDisplayName(m.provider ?? 'uniswap', m.chainId)),
     ]
   }
   return [{ type: 'text', value: 'Swapped tokens' }]
