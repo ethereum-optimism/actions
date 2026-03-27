@@ -6,14 +6,14 @@ import {
 import { createActionsConfig } from '@/config/actions'
 
 export function useActions<T extends ReactProviderTypes>({
-  hostedWalletProviderType,
+  embeddedWalletProviderType,
 }: {
-  hostedWalletProviderType: T
+  embeddedWalletProviderType: T
 }) {
   // Memoize the config to prevent recreating it on every render
   const config = useMemo(
-    () => createActionsConfig(hostedWalletProviderType),
-    [hostedWalletProviderType],
+    () => createActionsConfig(embeddedWalletProviderType),
+    [embeddedWalletProviderType],
   )
 
   // Memoize the actions instance to prevent recreating on every render

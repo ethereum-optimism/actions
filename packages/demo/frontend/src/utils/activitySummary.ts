@@ -108,7 +108,7 @@ const SUMMARY_BUILDERS: Record<
   withdraw: buildWithdrawSummary,
   mint: buildMintSummary,
   create: () => [{ type: 'text', value: 'Created wallet' }],
-  createHosted: () => [{ type: 'text', value: 'Created hosted wallet' }],
+  createHosted: () => [{ type: 'text', value: 'Created embedded wallet' }],
 }
 
 export function getActivitySummary(entry: ActivityEntry): ActivitySummary {

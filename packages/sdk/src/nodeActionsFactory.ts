@@ -1,37 +1,37 @@
 import { Actions } from '@/actions.js'
 import type { ActionsConfig } from '@/types/actions.js'
-import { NodeHostedWalletProviderRegistry } from '@/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.js'
+import { NodeEmbeddedWalletProviderRegistry } from '@/wallet/node/providers/embedded/registry/NodeEmbeddedWalletProviderRegistry.js'
 import type {
-  NodeHostedWalletProvidersSchema,
+  NodeEmbeddedWalletProvidersSchema,
   NodeOptionsMap,
   NodeProviderTypes,
-} from '@/wallet/node/providers/hosted/types/index.js'
+} from '@/wallet/node/providers/embedded/types/index.js'
 
 /**
  * Node Actions configuration
  * @description Configuration object for initializing the Actions SDK in Node
  */
 export type NodeActionsConfig<
-  HostedWalletProviderType extends NodeProviderTypes,
-> = ActionsConfig<HostedWalletProviderType, NodeOptionsMap>
+  EmbeddedWalletProviderType extends NodeProviderTypes,
+> = ActionsConfig<EmbeddedWalletProviderType, NodeOptionsMap>
 
 /**
  * Creates a Node environment Actions factory
  *
- * Creates an Actions instance wired with the Node-specific HostedWalletProviderRegistry.
+ * Creates an Actions instance wired with the Node-specific EmbeddedWalletProviderRegistry.
  * This ensures browser-only providers  are never imported in Node,
  * avoiding runtime/module-resolution issues on the backend.
  * @param config Actions configuration
- * @returns Actions instance using the NodeHostedWalletProviderRegistry
+ * @returns Actions instance using the NodeEmbeddedWalletProviderRegistry
  */
 export function createActions<
-  HostedWalletProviderType extends NodeProviderTypes,
->(config: NodeActionsConfig<HostedWalletProviderType>) {
+  EmbeddedWalletProviderType extends NodeProviderTypes,
+>(config: NodeActionsConfig<EmbeddedWalletProviderType>) {
   return new Actions<
-    NodeHostedWalletProvidersSchema['providerTypes'],
-    NodeHostedWalletProvidersSchema,
-    HostedWalletProviderType
+    NodeEmbeddedWalletProvidersSchema['providerTypes'],
+    NodeEmbeddedWalletProvidersSchema,
+    EmbeddedWalletProviderType
   >(config, {
-    hostedWalletProviderRegistry: new NodeHostedWalletProviderRegistry(),
+    embeddedWalletProviderRegistry: new NodeEmbeddedWalletProviderRegistry(),
   })
 }

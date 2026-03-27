@@ -32,7 +32,7 @@ const embeddedWallet = wallets.find(
   (wallet) => wallet.walletClientType === 'privy',
 )
 
-// ACTIONS: Create signer from hosted wallet
+// ACTIONS: Create signer from embedded wallet
 const signer = await actions.wallet.createSigner({
   connectedWallet: embeddedWallet,
 })
@@ -52,7 +52,7 @@ const privyWallet = await privyClient.wallets().create({
   owner: { user_id: 'privy:did:xxxxx' },
 });
 
-// ACTIONS: Create signer from hosted wallet
+// ACTIONS: Create signer from embedded wallet
 const privySigner = await actions.wallet.createSigner({
   walletId: privyWallet.id,
   address: getAddress(privyWallet.address),
@@ -69,7 +69,7 @@ import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 // DYNAMIC: Fetch wallet
 const { primaryWallet } = useDynamicContext()
 
-// ACTIONS: Create signer from hosted wallet
+// ACTIONS: Create signer from embedded wallet
 const signer = await actions.wallet.createSigner({wallet: primaryWallet})
 
 // ACTIONS: Create smart wallet capable of Actions
@@ -99,7 +99,7 @@ const embeddedWallet = wallets.find(
 
 const walletAddress = embeddedWallet.accounts[0].address
 
-// ACTIONS: Create signer from hosted wallet
+// ACTIONS: Create signer from embedded wallet
 const signer = await actions.wallet.createSigner({
   client: httpClient,
   organizationId: session.organizationId,
@@ -133,7 +133,7 @@ const turnkeyWallet = await turnkeyClient.apiClient().createWallet({
   }],
 })
 
-// ACTIONS: Create signer from hosted wallet
+// ACTIONS: Create signer from embedded wallet
 const turnkeySigner = await actions.wallet.createSigner({
   organizationId: turnkeyWallet.activity.organizationId,
   signWith: turnkeyWallet.addresses[0],
@@ -207,7 +207,7 @@ const { wallet } = await actions.wallet.createSmartWallet({
         >
           <div className="pt-6 pb-4">
             <p className="text-base mb-4" style={{ color: colors.text.cream }}>
-              Use hosted wallets as signers of smart wallets you control.
+              Use embedded wallets as signers of smart wallets you control.
             </p>
             <div
               className="rounded-lg overflow-hidden mb-8 shadow-2xl"

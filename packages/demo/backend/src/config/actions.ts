@@ -12,7 +12,7 @@ let actionsInstance: ReturnType<typeof createActions<'privy'>>
 export function createActionsConfig(): NodeActionsConfig<'privy'> {
   return {
     wallet: {
-      hostedWalletConfig: {
+      embeddedWalletConfig: {
         provider: {
           type: 'privy' as const,
           config: {

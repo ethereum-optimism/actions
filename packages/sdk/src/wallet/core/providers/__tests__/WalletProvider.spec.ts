@@ -17,8 +17,8 @@ import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { DefaultSmartWallet } from '@/wallet/core/wallets/smart/default/DefaultSmartWallet.js'
 import { SmartWalletDeploymentError } from '@/wallet/core/wallets/smart/error/errors.js'
-import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import type { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
+import { PrivyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
+import type { PrivyWallet } from '@/wallet/node/wallets/embedded/privy/PrivyWallet.js'
 
 const mockChainManager = new MockChainManager({
   supportedChains: [unichain.id],
@@ -35,7 +35,7 @@ describe('WalletProvider', () => {
 
   describe('createSmartWallet', () => {
     it('should create a smart wallet and return deployment result', async () => {
-      const hostedWalletProvider = new PrivyHostedWalletProvider({
+      const embeddedWalletProvider = new PrivyEmbeddedWalletProvider({
         privyClient: mockPrivyClient,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -45,17 +45,17 @@ describe('WalletProvider', () => {
         { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
-        hostedWalletProvider,
+        embeddedWalletProvider,
         smartWalletProvider,
       )
 
-      // Create a hosted wallet to use as signer
-      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
+      // Create a embedded wallet to use as signer
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
-      const signers = [getRandomAddress(), hostedWallet.address]
+      const signer = embeddedWallet.signer
+      const signers = [getRandomAddress(), embeddedWallet.address]
       const nonce = BigInt(123)
 
       const mockWallet = {} as DefaultSmartWallet
@@ -89,7 +89,7 @@ describe('WalletProvider', () => {
     })
 
     it('should pass through deployment successes and failures', async () => {
-      const hostedWalletProvider = new PrivyHostedWalletProvider({
+      const embeddedWalletProvider = new PrivyEmbeddedWalletProvider({
         privyClient: mockPrivyClient,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -99,16 +99,16 @@ describe('WalletProvider', () => {
         { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
-        hostedWalletProvider,
+        embeddedWalletProvider,
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
-      const signers = [getRandomAddress(), hostedWallet.address]
+      const signer = embeddedWallet.signer
+      const signers = [getRandomAddress(), embeddedWallet.address]
 
       const mockWallet = {} as DefaultSmartWallet
       const mockReceipt = {
@@ -144,7 +144,7 @@ describe('WalletProvider', () => {
     })
 
     it('should forward deploymentChainIds parameter', async () => {
-      const hostedWalletProvider = new PrivyHostedWalletProvider({
+      const embeddedWalletProvider = new PrivyEmbeddedWalletProvider({
         privyClient: mockPrivyClient,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -154,16 +154,16 @@ describe('WalletProvider', () => {
         { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
-        hostedWalletProvider,
+        embeddedWalletProvider,
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
-      const signers = [getRandomAddress(), hostedWallet.address]
+      const signer = embeddedWallet.signer
+      const signers = [getRandomAddress(), embeddedWallet.address]
       const deploymentChainIds: SupportedChainId[] = [8453]
 
       const mockWallet = {} as DefaultSmartWallet
@@ -197,7 +197,7 @@ describe('WalletProvider', () => {
     })
 
     it('should throw error if signer is not in signers array', async () => {
-      const hostedWalletProvider = new PrivyHostedWalletProvider({
+      const embeddedWalletProvider = new PrivyEmbeddedWalletProvider({
         privyClient: mockPrivyClient,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -207,15 +207,15 @@ describe('WalletProvider', () => {
         { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
-        hostedWalletProvider,
+        embeddedWalletProvider,
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
+      const signer = embeddedWallet.signer
       // Signer is NOT in the signers array
       const signers = [getRandomAddress(), getRandomAddress()]
 
@@ -230,7 +230,7 @@ describe('WalletProvider', () => {
 
   describe('getSmartWallet', () => {
     it('should get a smart wallet with provided signer', async () => {
-      const hostedWalletProvider = new PrivyHostedWalletProvider({
+      const embeddedWalletProvider = new PrivyEmbeddedWalletProvider({
         privyClient: mockPrivyClient,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -245,16 +245,16 @@ describe('WalletProvider', () => {
         .mockResolvedValue(mockWalletAddress)
       const getWalletSpy = vi.spyOn(smartWalletProvider, 'getWallet')
       const walletProvider = new WalletProvider(
-        hostedWalletProvider,
+        embeddedWalletProvider,
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
-      const deploymentSigners = [hostedWallet.address, getRandomAddress()]
+      const signer = embeddedWallet.signer
+      const deploymentSigners = [embeddedWallet.address, getRandomAddress()]
       const nonce = BigInt(789)
 
       const smartWallet = await walletProvider.getSmartWallet({
@@ -277,7 +277,7 @@ describe('WalletProvider', () => {
     })
 
     it('should throw error when getting smart wallet without required parameters', async () => {
-      const hostedWalletProvider = new PrivyHostedWalletProvider({
+      const embeddedWalletProvider = new PrivyEmbeddedWalletProvider({
         privyClient: mockPrivyClient,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -287,15 +287,15 @@ describe('WalletProvider', () => {
         { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
-        hostedWalletProvider,
+        embeddedWalletProvider,
         smartWalletProvider,
       )
 
-      const hostedWallet = (await hostedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
+      const signer = embeddedWallet.signer
 
       await expect(
         walletProvider.getSmartWallet({
@@ -309,9 +309,9 @@ describe('WalletProvider', () => {
     })
   })
 
-  describe('hostedWalletToActionsWallet', () => {
-    it('should convert a hosted wallet to an Actions wallet', async () => {
-      const hostedWalletProvider = new PrivyHostedWalletProvider({
+  describe('embeddedWalletToActionsWallet', () => {
+    it('should convert a embedded wallet to an Actions wallet', async () => {
+      const embeddedWalletProvider = new PrivyEmbeddedWalletProvider({
         privyClient: mockPrivyClient,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -321,16 +321,16 @@ describe('WalletProvider', () => {
         { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
-        hostedWalletProvider,
+        embeddedWalletProvider,
         smartWalletProvider,
       )
       const toActionsWalletSpy = vi.spyOn(
-        hostedWalletProvider,
+        embeddedWalletProvider,
         'toActionsWallet',
       )
 
       const privyWallet = createMockPrivyWallet()
-      const hostedWallet = await walletProvider.hostedWalletToActionsWallet({
+      const embeddedWallet = await walletProvider.embeddedWalletToActionsWallet({
         walletId: privyWallet.id,
         address: privyWallet.address,
       })
@@ -339,19 +339,19 @@ describe('WalletProvider', () => {
         walletId: privyWallet.id,
         address: privyWallet.address,
       })
-      expect(hostedWallet).toBeInstanceOf(Wallet)
-      expect(hostedWallet.signer.address).toBe(privyWallet.address)
-      expect(hostedWallet.address).toBe(privyWallet.address)
+      expect(embeddedWallet).toBeInstanceOf(Wallet)
+      expect(embeddedWallet.signer.address).toBe(privyWallet.address)
+      expect(embeddedWallet.address).toBe(privyWallet.address)
     })
   })
 
   describe('createSigner', () => {
-    it('should delegate to hosted wallet provider createSigner', async () => {
+    it('should delegate to embedded wallet provider createSigner', async () => {
       const mockPrivyClient = createMockPrivyClient(
         'test-app-id',
         'test-app-secret',
       )
-      const hostedWalletProvider = new PrivyHostedWalletProvider({
+      const embeddedWalletProvider = new PrivyEmbeddedWalletProvider({
         privyClient: mockPrivyClient,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -361,10 +361,10 @@ describe('WalletProvider', () => {
         { morpho: mockLendProvider },
       )
       const walletProvider = new WalletProvider(
-        hostedWalletProvider,
+        embeddedWalletProvider,
         smartWalletProvider,
       )
-      const createSignerSpy = vi.spyOn(hostedWalletProvider, 'createSigner')
+      const createSignerSpy = vi.spyOn(embeddedWalletProvider, 'createSigner')
 
       const privyWallet = createMockPrivyWallet()
       const params = {
