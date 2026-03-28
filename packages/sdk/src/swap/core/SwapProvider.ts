@@ -151,7 +151,19 @@ export abstract class SwapProvider<
    */
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     validateChainSupported(params.chainId, this.supportedChainIds())
-    return this._getQuote(params)
+    return this._getQuote(params, true)
+  }
+
+  /**
+   * Get a read-only swap quote without execution calldata.
+   * Faster than getQuote() for price display — skips expensive encoding.
+   * Used internally by ActionsSwapNamespace (read-only, no wallet).
+   * @param params - Quote parameters (assets, amounts, chain, slippage)
+   * @returns SwapQuote with pricing and amounts, but no execution field
+   */
+  async getQuoteReadOnly(params: SwapQuoteParams): Promise<SwapQuote> {
+    validateChainSupported(params.chainId, this.supportedChainIds())
+    return this._getQuote(params, false)
   }
 
   /**
@@ -382,6 +394,12 @@ export abstract class SwapProvider<
   protected async buildSwapTransactions(
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
+    if (!quote.execution) {
+      throw new Error(
+        'Cannot build swap transactions without execution data. Use WalletSwapNamespace to get executable quotes.',
+      )
+    }
+
     const approvals = await this._buildApprovals(quote)
 
     const swapTx: TransactionData = {
@@ -409,6 +427,13 @@ export abstract class SwapProvider<
 
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     this.validateQuoteExpiration(quote)
+
+    if (!quote.execution) {
+      throw new Error(
+        'SwapQuote.execution is missing. Read-only quotes cannot be executed. Use WalletSwapNamespace.getQuote() to get an executable quote.',
+      )
+    }
+
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
 
     if (!quote.recipient) {
@@ -421,15 +446,18 @@ export abstract class SwapProvider<
     // ActionsSwapNamespace executed through WalletSwapNamespace), re-encode
     // calldata with the correct recipient to prevent tokens going to the wrong address.
     if (quote.recipient !== quote.quotedRecipient) {
-      const freshQuote = await this._getQuote({
-        assetIn: quote.assetIn,
-        assetOut: quote.assetOut,
-        amountIn: quote.amountIn,
-        chainId: quote.chainId,
-        slippage: quote.slippage,
-        deadline: quote.deadline,
-        recipient: quote.recipient,
-      })
+      const freshQuote = await this._getQuote(
+        {
+          assetIn: quote.assetIn,
+          assetOut: quote.assetOut,
+          amountIn: quote.amountIn,
+          chainId: quote.chainId,
+          slippage: quote.slippage,
+          deadline: quote.deadline,
+          recipient: quote.recipient,
+        },
+        true, // Always include calldata when re-quoting for execution
+      )
       return this.buildSwapTransactions({
         ...freshQuote,
         recipient: quote.recipient,
@@ -555,7 +583,10 @@ export abstract class SwapProvider<
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction>
 
-  protected abstract _getQuote(params: SwapQuoteParams): Promise<SwapQuote>
+  protected abstract _getQuote(
+    params: SwapQuoteParams,
+    includeCalldata?: boolean,
+  ): Promise<SwapQuote>
 
   /**
    * Build provider-specific approval transactions for a swap.

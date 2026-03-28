@@ -144,8 +144,8 @@ describe('VelodromeSwapProvider', () => {
       expect(quote.amountInRaw).toBeGreaterThan(0n)
       expect(quote.route.path).toEqual([USDC, OP])
       expect(quote.execution).toBeDefined()
-      expect(quote.execution.swapCalldata).toMatch(/^0x/)
-      expect(quote.execution.routerAddress).toBeDefined()
+      expect(quote.execution!.swapCalldata).toMatch(/^0x/)
+      expect(quote.execution!.routerAddress).toBeDefined()
       expect(quote.provider).toBe('velodrome')
       expect(quote.quotedAt).toBeGreaterThan(0)
       expect(quote.expiresAt).toBeGreaterThan(quote.quotedAt)
@@ -193,7 +193,7 @@ describe('VelodromeSwapProvider', () => {
 
       expect(result.transactionData.swap).toBeDefined()
       expect(result.transactionData.swap.data).toBe(
-        quote.execution.swapCalldata,
+        quote.execution!.swapCalldata,
       )
       expect(result.price).toBe(quote.price)
     })
@@ -395,9 +395,9 @@ describe('VelodromeSwapProvider', () => {
 
       expect(quote.provider).toBe('velodrome')
       expect(quote.amountOut).toBeGreaterThan(0)
-      expect(quote.execution.swapCalldata).toMatch(/^0x/)
+      expect(quote.execution!.swapCalldata).toMatch(/^0x/)
       expect(
-        (quote.execution.providerContext as Record<string, unknown>)
+        (quote.execution!.providerContext as Record<string, unknown>)
           .tickSpacing,
       ).toBe(100)
     })
@@ -422,7 +422,7 @@ describe('VelodromeSwapProvider', () => {
         recipient: MOCK_WALLET,
       })
       expect(result.transactionData.swap.data).toBe(
-        quote.execution.swapCalldata,
+        quote.execution!.swapCalldata,
       )
     })
 

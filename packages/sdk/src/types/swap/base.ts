@@ -221,8 +221,11 @@ export interface SwapQuote {
   route: SwapRoute
 
   // ── Execution ──
-  /** Pre-built transaction data. Pass quote to execute() to use. */
-  execution: SwapQuoteExecution
+  /**
+   * Pre-built transaction data. Pass quote to execute() to use.
+   * Omitted when quote is requested via ActionsSwapNamespace (read-only, no wallet).
+   */
+  execution?: SwapQuoteExecution
 
   // ── Metadata ──
   /** Provider that generated this quote */

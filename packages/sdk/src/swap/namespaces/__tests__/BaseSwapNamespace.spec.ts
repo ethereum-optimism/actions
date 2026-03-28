@@ -35,8 +35,8 @@ describe('BaseSwapNamespace', () => {
 
       expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
       expect(result.price).toBe(1.5)
-      expect(result.execution).toBeDefined()
-      expect(result.execution.swapCalldata).toMatch(/^0x/)
+      // ActionsSwapNamespace returns read-only quotes without execution data
+      expect(result.execution).toBeUndefined()
       expect(result.provider).toBe('uniswap')
     })
 
