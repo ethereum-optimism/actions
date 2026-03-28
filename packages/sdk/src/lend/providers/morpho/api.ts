@@ -13,12 +13,52 @@ export interface RewardsBreakdown {
   totalRewards: number
 }
 
+export interface MorphoVaultReward {
+  asset: {
+    address: string
+    name: string
+    symbol: string
+    chain: { id: number }
+  }
+  amountPerSuppliedToken: string
+  supplyApr: number
+}
+
+export interface MorphoMarketReward {
+  supplyApr: number
+  amountPerSuppliedToken: string
+  asset: {
+    address: string
+    symbol: string
+    chain: { id: number }
+  }
+}
+
+export interface MorphoVaultData {
+  address: string
+  id: string
+  state: {
+    rewards: MorphoVaultReward[]
+    allocation: Array<{
+      market: {
+        id: string
+        uniqueKey: string
+        state: {
+          rewards: MorphoMarketReward[]
+        }
+      }
+      supplyAssetsUsd: number
+    }>
+  }
+  chain: { id: number }
+}
+
 /**
  * Fetch raw vault rewards data from Morpho GraphQL API
  * @param vaultAddress - Vault address
  * @returns Promise resolving to raw vault data or null if not found
  */
-export async function fetchRewards(vaultAddress: Address): Promise<any | null> {
+export async function fetchRewards(vaultAddress: Address): Promise<MorphoVaultData | null> {
   const vaultQuery = {
     query: `
       query VaultByAddress($address: String!, $chainId: Int) {
@@ -80,7 +120,7 @@ export async function fetchRewards(vaultAddress: Address): Promise<any | null> {
       body: JSON.stringify(vaultQuery),
     })
 
-    const vaultData = (await response.json()) as any
+    const vaultData = (await response.json()) as { data?: { vaultByAddress?: MorphoVaultData } }
     return vaultData.data?.vaultByAddress || null
   } catch (apiError) {
     // eslint-disable-next-line no-console

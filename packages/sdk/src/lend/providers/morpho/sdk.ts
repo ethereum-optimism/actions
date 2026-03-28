@@ -9,6 +9,7 @@ import type { Address, PublicClient } from 'viem'
 
 import {
   fetchRewards,
+  type MorphoVaultData,
   type RewardsBreakdown,
 } from '@/lend/providers/morpho/api.js'
 import { getMorphoContracts } from '@/lend/providers/morpho/contracts.js'
@@ -52,12 +53,25 @@ export async function fetchAndCalculateRewards(
   return calculateRewardsBreakdown(vaultData)
 }
 
+interface MorphoVaultAllocation {
+  position: AccrualPosition
+}
+
+interface MorphoVault {
+  totalAssets: bigint
+  totalSupply: bigint
+  fee: bigint
+  owner: Address
+  curator: Address
+  allocations: Map<string, MorphoVaultAllocation>
+}
+
 /**
  * Calculate base vault APY from SDK data
  * @param vault - Vault data from Morpho SDK
  * @returns Base APY (before rewards, after fees)
  */
-export function calculateBaseApy(vault: any): number {
+export function calculateBaseApy(vault: MorphoVault): number {
   try {
     if (vault.totalAssets === 0n) {
       return 0
@@ -67,7 +81,7 @@ export function calculateBaseApy(vault: any): number {
     const allocationsArray = Array.from(vault.allocations.values())
 
     const totalWeightedApy = allocationsArray.reduce(
-      (total: bigint, allocation: any) => {
+      (total: bigint, allocation: MorphoVaultAllocation) => {
         const position: AccrualPosition = allocation.position
         const market = position.market
 
@@ -463,7 +477,7 @@ export async function findBestVaultForAsset(
  * @returns Complete APY breakdown
  */
 export function calculateApyBreakdown(
-  vault: any,
+  vault: MorphoVault,
   rewardsBreakdown: RewardsBreakdown,
 ): ApyBreakdown {
   // 1. Calculate base APY from SDK data (before fees)
@@ -494,7 +508,7 @@ export function calculateApyBreakdown(
  * @param apiVault - Vault data from GraphQL API
  * @returns Detailed rewards breakdown
  */
-export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
+export function calculateRewardsBreakdown(apiVault: MorphoVaultData): RewardsBreakdown {
   // Initialize rewards object with all supported tokens + other
   const rewardsByCategory: Record<string, number> = {
     other: 0,
@@ -507,7 +521,7 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
 
   // Calculate vault-level rewards
   if (apiVault.state?.rewards && apiVault.state.rewards.length > 0) {
-    apiVault.state.rewards.forEach((reward: any) => {
+    apiVault.state.rewards.forEach((reward) => {
       const rewardApr = reward.supplyApr || 0
       const assetSymbol = reward.asset.symbol
 
@@ -526,13 +540,13 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
   // Calculate market-level rewards (weighted by allocation)
   if (apiVault.state?.allocation && apiVault.state.allocation.length > 0) {
     const totalSupplyUsd = apiVault.state.allocation.reduce(
-      (total: number, alloc: any) => {
+      (total: number, alloc) => {
         return total + (alloc.supplyAssetsUsd || 0)
       },
       0,
     )
 
-    apiVault.state.allocation.forEach((allocation: any) => {
+    apiVault.state.allocation.forEach((allocation) => {
       if (
         allocation.market?.state?.rewards &&
         allocation.market.state.rewards.length > 0
@@ -542,7 +556,7 @@ export function calculateRewardsBreakdown(apiVault: any): RewardsBreakdown {
             ? (allocation.supplyAssetsUsd || 0) / totalSupplyUsd
             : 0
 
-        allocation.market.state.rewards.forEach((reward: any) => {
+        allocation.market.state.rewards.forEach((reward) => {
           const rewardApr = reward.supplyApr || 0
           const weightedRewardApr = rewardApr * weight
           const assetSymbol = reward.asset.symbol
