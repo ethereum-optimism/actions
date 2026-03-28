@@ -181,7 +181,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
       expect(quote.amountOut).toBeGreaterThan(0)
       expect(quote.amountOutRaw).toBeGreaterThan(0n)
       expect(quote.price).toBeGreaterThan(0)
-      expect(quote.execution.swapCalldata).toMatch(/^0x/)
+      expect(quote.execution!.swapCalldata).toMatch(/^0x/)
       expect(quote.provider).toBe('velodrome')
       expect(quote.route.pools).toHaveLength(1)
     })
@@ -241,7 +241,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
 
       expect(quote.amountOut).toBeGreaterThan(0)
       expect(quote.price).toBeGreaterThan(0)
-      expect(quote.execution.swapCalldata).toMatch(/^0x/)
+      expect(quote.execution!.swapCalldata).toMatch(/^0x/)
     })
   })
 
@@ -272,7 +272,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
       expect(quote.amountOut).toBeGreaterThan(0)
       expect(quote.amountOutRaw).toBeGreaterThan(0n)
       expect(quote.price).toBeGreaterThan(0)
-      expect(quote.execution.swapCalldata).toMatch(/^0x/)
+      expect(quote.execution!.swapCalldata).toMatch(/^0x/)
       expect(quote.provider).toBe('velodrome')
     })
   })
@@ -304,7 +304,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
       expect(quote.amountOut).toBeGreaterThan(0)
       expect(quote.amountOutRaw).toBeGreaterThan(0n)
       expect(quote.price).toBeGreaterThan(0)
-      expect(quote.execution.swapCalldata).toMatch(/^0x/)
+      expect(quote.execution!.swapCalldata).toMatch(/^0x/)
     })
 
     it('execute(quote) produces valid transaction data', async () => {
@@ -333,7 +333,7 @@ describe('VelodromeSwapProvider network fork tests', () => {
 
       const tx = await provider.execute(quote)
 
-      expect(tx.transactionData.swap.data).toBe(quote.execution.swapCalldata)
+      expect(tx.transactionData.swap.data).toBe(quote.execution!.swapCalldata)
       expect(tx.amountIn).toBe(quote.amountIn)
       expect(tx.price).toBe(quote.price)
     })

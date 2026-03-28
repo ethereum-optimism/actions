@@ -84,7 +84,10 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     )
   }
 
-  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+  protected async _getQuote(
+    params: SwapQuoteParams,
+    includeCalldata: boolean = true,
+  ): Promise<SwapQuote> {
     const { chainId, assetIn, assetOut } = params
     const addresses = getUniswapAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
@@ -107,20 +110,22 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       tickSpacing: marketConfig.tickSpacing,
     })
 
-    const swapCalldata = encodeUniversalRouterSwap({
-      amountInRaw: amountOutRaw ? undefined : amountInRaw,
-      amountOutRaw,
-      assetIn,
-      assetOut,
-      slippage,
-      deadline,
-      recipient,
-      chainId,
-      quote,
-      universalRouterAddress: addresses.universalRouter,
-      fee: marketConfig.fee,
-      tickSpacing: marketConfig.tickSpacing,
-    })
+    const swapCalldata = includeCalldata
+      ? encodeUniversalRouterSwap({
+          amountInRaw: amountOutRaw ? undefined : amountInRaw,
+          amountOutRaw,
+          assetIn,
+          assetOut,
+          slippage,
+          deadline,
+          recipient,
+          chainId,
+          quote,
+          universalRouterAddress: addresses.universalRouter,
+          fee: marketConfig.fee,
+          tickSpacing: marketConfig.tickSpacing,
+        })
+      : undefined
 
     const finalAmountInRaw = amountOutRaw ? quote.amountInRaw : amountInRaw
 
@@ -144,16 +149,18 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       priceInverse: quote.amountIn / quote.amountOut,
       priceImpact: quote.priceImpact,
       route: quote.route,
-      execution: {
-        swapCalldata,
-        routerAddress: addresses.universalRouter,
-        value: isNativeAsset(assetIn) ? (amountInRaw ?? 0n) : 0n,
-        providerContext: {
-          fee: marketConfig.fee,
-          tickSpacing: marketConfig.tickSpacing,
-          permit2Address: addresses.permit2,
-        },
-      },
+      execution: swapCalldata
+        ? {
+            swapCalldata,
+            routerAddress: addresses.universalRouter,
+            value: isNativeAsset(assetIn) ? (amountInRaw ?? 0n) : 0n,
+            providerContext: {
+              fee: marketConfig.fee,
+              tickSpacing: marketConfig.tickSpacing,
+              permit2Address: addresses.permit2,
+            },
+          }
+        : undefined,
       provider: UNISWAP,
       slippage,
       deadline,

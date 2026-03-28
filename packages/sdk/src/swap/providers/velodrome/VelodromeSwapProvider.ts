@@ -113,7 +113,10 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
    * @returns SwapQuote with amounts, price, route, and encoded calldata
    * @throws If amountOut is provided (Velodrome only supports exact-input)
    */
-  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+  protected async _getQuote(
+    params: SwapQuoteParams,
+    includeCalldata: boolean = true,
+  ): Promise<SwapQuote> {
     const { chainId, assetIn, assetOut } = params
 
     if (params.amountOut !== undefined) {
@@ -143,16 +146,18 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       assetOut,
     )
 
-    const swapCalldata = encodePoolSwap(poolConfig, {
-      assetIn,
-      assetOut,
-      amountInRaw,
-      amountOutMinRaw,
-      recipient,
-      deadline,
-      chainId,
-      chain,
-    })
+    const swapCalldata = includeCalldata
+      ? encodePoolSwap(poolConfig, {
+          assetIn,
+          assetOut,
+          amountInRaw,
+          amountOutMinRaw,
+          recipient,
+          deadline,
+          chainId,
+          chain,
+        })
+      : undefined
 
     return {
       assetIn,
@@ -168,12 +173,14 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       priceInverse: internalQuote.amountIn / internalQuote.amountOut,
       priceImpact: internalQuote.priceImpact,
       route: internalQuote.route,
-      execution: {
-        swapCalldata,
-        routerAddress: chain.contracts.router,
-        value: isNativeAsset(assetIn) ? amountInRaw : 0n,
-        providerContext,
-      },
+      execution: swapCalldata
+        ? {
+            swapCalldata,
+            routerAddress: chain.contracts.router,
+            value: isNativeAsset(assetIn) ? amountInRaw : 0n,
+            providerContext,
+          }
+        : undefined,
       provider: VELODROME,
       slippage,
       deadline,

@@ -116,8 +116,16 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this.mockExecute(params)
   }
 
-  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
-    return this.mockGetQuote(params)
+  protected async _getQuote(
+    params: SwapQuoteParams,
+    includeCalldata?: boolean,
+  ): Promise<SwapQuote> {
+    const quote = await this.mockGetQuote(params)
+    // For mock, honor includeCalldata flag (remove execution if false)
+    if (includeCalldata === false) {
+      return { ...quote, execution: undefined }
+    }
+    return quote
   }
 
   protected async _buildApprovals(quote: SwapQuote) {
