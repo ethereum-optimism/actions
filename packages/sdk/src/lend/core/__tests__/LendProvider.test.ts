@@ -101,7 +101,7 @@ describe('LendProvider', () => {
       const mockAsset = {
         metadata: { symbol: 'USDC', name: 'USD Coin' },
         address: { 84532: '0x123' as Address },
-      } as any
+      } as unknown as Asset
 
       const markets = await provider.getMarkets({ asset: mockAsset })
       expect(Array.isArray(markets)).toBe(true)

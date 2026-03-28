@@ -10,6 +10,7 @@ describe('Asset Utilities', () => {
     })
 
     it('should return false for asset on unsupported chain', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(isAssetSupportedOnChain(MockUSDCAsset, 999 as any)).toBe(false)
     })
 

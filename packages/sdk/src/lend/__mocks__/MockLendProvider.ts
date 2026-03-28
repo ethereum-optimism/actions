@@ -136,7 +136,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
    * Helper method to simulate errors
    */
   simulateError(method: keyof MockLendProvider, error: Error) {
-    const mockMethod = this[method] as MockedFunction<any>
+    const mockMethod = this[method] as MockedFunction<(...args: unknown[]) => Promise<unknown>>
     if (mockMethod && typeof mockMethod.mockRejectedValue === 'function') {
       mockMethod.mockRejectedValue(error)
     }

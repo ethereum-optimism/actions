@@ -86,8 +86,8 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
 
   // Expose protected methods for testing
   public testValidateMarketAllowed(
-    assetIn: any,
-    assetOut: any,
+    assetIn: { address: Record<number, Address>; metadata: { symbol: string; name: string } },
+    assetOut: { address: Record<number, Address>; metadata: { symbol: string; name: string } },
     chainId: SupportedChainId,
   ): void {
     return this.validateMarketAllowed(assetIn, assetOut, chainId)

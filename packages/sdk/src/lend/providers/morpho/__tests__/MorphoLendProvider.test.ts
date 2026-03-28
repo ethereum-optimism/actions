@@ -59,7 +59,7 @@ describe('MorphoLendProvider', () => {
     beforeEach(() => {
       const mockVault = createMockMorphoVault()
 
-      vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as any)
+      vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as unknown as Awaited<ReturnType<typeof fetchAccrualVault>>)
 
       vi.stubGlobal(
         'fetch',
@@ -75,7 +75,7 @@ describe('MorphoLendProvider', () => {
               },
             },
           }),
-        } as any),
+        } as unknown as RewardsBreakdown),
       )
     })
 
@@ -114,6 +114,7 @@ describe('MorphoLendProvider', () => {
     })
 
     it('should handle withdrawal errors', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.spyOn(provider as any, '_getMarket').mockRejectedValueOnce(
         new Error('Market fetch failed'),
       )
@@ -158,7 +159,7 @@ describe('MorphoLendProvider', () => {
     beforeEach(() => {
       const mockVault = createMockMorphoVault()
 
-      vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as any)
+      vi.mocked(fetchAccrualVault).mockResolvedValue(mockVault as unknown as Awaited<ReturnType<typeof fetchAccrualVault>>)
 
       // Mock the fetch API for rewards
       vi.stubGlobal(
@@ -175,7 +176,7 @@ describe('MorphoLendProvider', () => {
               },
             },
           }),
-        } as any),
+        } as unknown as RewardsBreakdown),
       )
     })
 
@@ -213,6 +214,7 @@ describe('MorphoLendProvider', () => {
     })
 
     it('should handle lending errors', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.spyOn(provider as any, '_getMarket').mockRejectedValueOnce(
         new Error('Market fetch failed'),
       )

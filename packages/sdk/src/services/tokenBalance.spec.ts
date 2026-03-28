@@ -17,7 +17,7 @@ describe('TokenBalance', () => {
     chainManager = new MockChainManager({
       supportedChains: [unichain.id],
       defaultBalance: 1000000n,
-    }) as any
+    }) as unknown as PublicClient
   })
 
   describe('fetchBalance', () => {
@@ -52,7 +52,7 @@ describe('TokenBalance', () => {
         },
         address: {
           27637: '0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842',
-        } as any,
+        } as unknown as PublicClient,
         type: 'erc20',
       }
 
