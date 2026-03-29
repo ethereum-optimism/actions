@@ -30,16 +30,16 @@ describe('PrivyEmbeddedWalletProvider', () => {
         chainManager: mockChainManager,
       })
 
-      const hostedWallet = createMockPrivyWallet()
+      const embeddedWallet = createMockPrivyWallet()
 
       const actionsWallet = await provider.toActionsWallet({
-        walletId: hostedWallet.id,
-        address: hostedWallet.address as Address,
+        walletId: embeddedWallet.id,
+        address: embeddedWallet.address as Address,
       })
 
       expect(actionsWallet).toBeInstanceOf(Wallet)
-      expect(actionsWallet.address).toBe(hostedWallet.address)
-      expect(actionsWallet.signer.address).toBe(hostedWallet.address)
+      expect(actionsWallet.address).toBe(embeddedWallet.address)
+      expect(actionsWallet.signer.address).toBe(embeddedWallet.address)
     })
 
     it('forwards params to PrivyWallet.create', async () => {
@@ -117,14 +117,14 @@ describe('PrivyEmbeddedWalletProvider', () => {
         chainManager: mockChainManager,
       })
 
-      const hostedWallet = createMockPrivyWallet()
+      const embeddedWallet = createMockPrivyWallet()
 
       const signer = await provider.createSigner({
-        walletId: hostedWallet.id,
-        address: hostedWallet.address,
+        walletId: embeddedWallet.id,
+        address: embeddedWallet.address,
       })
 
-      expect(signer.address).toBe(hostedWallet.address)
+      expect(signer.address).toBe(embeddedWallet.address)
       expect(signer.type).toBe('local')
     })
   })

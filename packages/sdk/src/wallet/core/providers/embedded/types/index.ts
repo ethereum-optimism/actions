@@ -5,7 +5,7 @@ import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 
 /**
- * Common dependencies provided to hosted provider factories
+ * Common dependencies provided to embedded provider factories
  * @description
  * Environment-agnostic services that providers require at creation time.
  * Currently limited to `ChainManager`, but can be extended as needed.

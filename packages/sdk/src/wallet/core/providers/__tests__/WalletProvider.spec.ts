@@ -50,12 +50,12 @@ describe('WalletProvider', () => {
       )
 
       // Create a embedded wallet to use as signer
-      const hostedWallet = (await embeddedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
-      const signers = [getRandomAddress(), hostedWallet.address]
+      const signer = embeddedWallet.signer
+      const signers = [getRandomAddress(), embeddedWallet.address]
       const nonce = BigInt(123)
 
       const mockWallet = {} as DefaultSmartWallet
@@ -103,12 +103,12 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await embeddedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
-      const signers = [getRandomAddress(), hostedWallet.address]
+      const signer = embeddedWallet.signer
+      const signers = [getRandomAddress(), embeddedWallet.address]
 
       const mockWallet = {} as DefaultSmartWallet
       const mockReceipt = {
@@ -158,12 +158,12 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await embeddedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
-      const signers = [getRandomAddress(), hostedWallet.address]
+      const signer = embeddedWallet.signer
+      const signers = [getRandomAddress(), embeddedWallet.address]
       const deploymentChainIds: SupportedChainId[] = [8453]
 
       const mockWallet = {} as DefaultSmartWallet
@@ -211,11 +211,11 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await embeddedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
+      const signer = embeddedWallet.signer
       // Signer is NOT in the signers array
       const signers = [getRandomAddress(), getRandomAddress()]
 
@@ -249,12 +249,12 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await embeddedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
-      const deploymentSigners = [hostedWallet.address, getRandomAddress()]
+      const signer = embeddedWallet.signer
+      const deploymentSigners = [embeddedWallet.address, getRandomAddress()]
       const nonce = BigInt(789)
 
       const smartWallet = await walletProvider.getSmartWallet({
@@ -291,11 +291,11 @@ describe('WalletProvider', () => {
         smartWalletProvider,
       )
 
-      const hostedWallet = (await embeddedWalletProvider.toActionsWallet({
+      const embeddedWallet = (await embeddedWalletProvider.toActionsWallet({
         walletId: 'mock-wallet-1',
         address: getRandomAddress(),
       })) as PrivyWallet
-      const signer = hostedWallet.signer
+      const signer = embeddedWallet.signer
 
       await expect(
         walletProvider.getSmartWallet({
@@ -309,7 +309,7 @@ describe('WalletProvider', () => {
     })
   })
 
-  describe('hostedWalletToActionsWallet', () => {
+  describe('embeddedWalletToActionsWallet', () => {
     it('should convert a embedded wallet to an Actions wallet', async () => {
       const embeddedWalletProvider = new PrivyEmbeddedWalletProvider({
         privyClient: mockPrivyClient,
@@ -330,7 +330,7 @@ describe('WalletProvider', () => {
       )
 
       const privyWallet = createMockPrivyWallet()
-      const hostedWallet = await walletProvider.hostedWalletToActionsWallet({
+      const embeddedWallet = await walletProvider.embeddedWalletToActionsWallet({
         walletId: privyWallet.id,
         address: privyWallet.address,
       })
@@ -339,9 +339,9 @@ describe('WalletProvider', () => {
         walletId: privyWallet.id,
         address: privyWallet.address,
       })
-      expect(hostedWallet).toBeInstanceOf(Wallet)
-      expect(hostedWallet.signer.address).toBe(privyWallet.address)
-      expect(hostedWallet.address).toBe(privyWallet.address)
+      expect(embeddedWallet).toBeInstanceOf(Wallet)
+      expect(embeddedWallet.signer.address).toBe(privyWallet.address)
+      expect(embeddedWallet.address).toBe(privyWallet.address)
     })
   })
 

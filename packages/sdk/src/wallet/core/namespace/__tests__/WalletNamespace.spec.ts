@@ -107,24 +107,24 @@ describe('WalletNamespace', () => {
 
       // Create a embedded wallet to use as signer
       const privyWallet = createMockPrivyWallet()
-      const hostedWallet =
+      const embeddedWallet =
         await walletProvider.embeddedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
-      const signers = [getRandomAddress(), hostedWallet.address]
+      const signers = [getRandomAddress(), embeddedWallet.address]
       const nonce = BigInt(123)
 
       const result = await walletNamespace.createSmartWallet({
         signers,
-        signer: hostedWallet.signer,
+        signer: embeddedWallet.signer,
         nonce,
       })
 
       expect(result.wallet).toBeInstanceOf(DefaultSmartWallet)
       expect(createSmartWalletSpy).toHaveBeenCalledWith({
         signers,
-        signer: hostedWallet.signer,
+        signer: embeddedWallet.signer,
         nonce,
       })
     })
@@ -147,12 +147,12 @@ describe('WalletNamespace', () => {
 
       // Create a embedded wallet to use as signer
       const privyWallet = createMockPrivyWallet()
-      const hostedWallet =
+      const embeddedWallet =
         await walletProvider.embeddedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
-      const signers = [getRandomAddress(), hostedWallet.address]
+      const signers = [getRandomAddress(), embeddedWallet.address]
       const nonce = BigInt(456)
       const deploymentChainIds = [130] as SupportedChainId[]
 
@@ -177,7 +177,7 @@ describe('WalletNamespace', () => {
 
       const result = await walletNamespace.createSmartWallet({
         signers,
-        signer: hostedWallet.signer,
+        signer: embeddedWallet.signer,
         nonce,
         deploymentChainIds,
       })
@@ -185,7 +185,7 @@ describe('WalletNamespace', () => {
       // Verify it was called with correct params
       expect(createSmartWalletSpy).toHaveBeenCalledWith({
         signers,
-        signer: hostedWallet.signer,
+        signer: embeddedWallet.signer,
         nonce,
         deploymentChainIds,
       })
@@ -231,17 +231,17 @@ describe('WalletNamespace', () => {
       const walletNamespace = new WalletNamespace(walletProvider)
 
       const privyWallet = createMockPrivyWallet()
-      const hostedWallet =
+      const embeddedWallet =
         await walletProvider.embeddedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
-      const deploymentSigners = [hostedWallet.address, getRandomAddress()]
+      const deploymentSigners = [embeddedWallet.address, getRandomAddress()]
       const nonce = BigInt(789)
       const params = {
-        signer: hostedWallet.signer,
+        signer: embeddedWallet.signer,
         deploymentSigners,
-        signers: [hostedWallet.signer.address],
+        signers: [embeddedWallet.signer.address],
         nonce,
       }
 
@@ -272,7 +272,7 @@ describe('WalletNamespace', () => {
       const walletNamespace = new WalletNamespace(walletProvider)
 
       const privyWallet = createMockPrivyWallet()
-      const hostedWallet =
+      const embeddedWallet =
         await walletProvider.embeddedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
@@ -280,8 +280,8 @@ describe('WalletNamespace', () => {
 
       await expect(
         walletNamespace.getSmartWallet({
-          signer: hostedWallet.signer,
-          signers: [hostedWallet.signer.address],
+          signer: embeddedWallet.signer,
+          signers: [embeddedWallet.signer.address],
           // Missing both walletAddress and deploymentSigners
         }),
       ).rejects.toThrow(
@@ -308,7 +308,7 @@ describe('WalletNamespace', () => {
       const walletNamespace = new WalletNamespace(walletProvider)
 
       const privyWallet = createMockPrivyWallet()
-      const hostedWallet =
+      const embeddedWallet =
         await walletProvider.embeddedWalletProvider.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
@@ -328,8 +328,8 @@ describe('WalletNamespace', () => {
         address: privyWallet.address,
       })
       expect(actionsWallet).toBeInstanceOf(Wallet)
-      expect(actionsWallet.signer.address).toBe(hostedWallet.signer.address)
-      expect(actionsWallet.address).toBe(hostedWallet.address)
+      expect(actionsWallet.signer.address).toBe(embeddedWallet.signer.address)
+      expect(actionsWallet.address).toBe(embeddedWallet.address)
     })
   })
 

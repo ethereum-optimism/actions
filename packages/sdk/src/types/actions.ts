@@ -116,11 +116,11 @@ export interface ActionsConfig<
  * @description Configuration for wallet providers
  */
 export type WalletConfig<
-  THostedProviderType extends string,
-  TConfigMap extends { [K in THostedProviderType]: unknown },
+  TEmbeddedProviderType extends string,
+  TConfigMap extends { [K in TEmbeddedProviderType]: unknown },
 > = {
   /** Embedded wallet configuration */
-  embeddedWalletConfig: HostedWalletConfig<THostedProviderType, TConfigMap>
+  embeddedWalletConfig: HostedWalletConfig<TEmbeddedProviderType, TConfigMap>
   /** Smart wallet configuration for ERC-4337 infrastructure */
   smartWalletConfig: SmartWalletConfig
 }
@@ -130,11 +130,11 @@ export type WalletConfig<
  * @description Configuration for embedded wallets / signers
  */
 export interface HostedWalletConfig<
-  THostedProviderType extends string,
-  TConfigMap extends { [K in THostedProviderType]: unknown },
+  TEmbeddedProviderType extends string,
+  TConfigMap extends { [K in TEmbeddedProviderType]: unknown },
 > {
   /** Wallet provider for account creation, management, and signing */
-  provider: ProviderSpec<THostedProviderType, TConfigMap>
+  provider: ProviderSpec<TEmbeddedProviderType, TConfigMap>
 }
 
 /**

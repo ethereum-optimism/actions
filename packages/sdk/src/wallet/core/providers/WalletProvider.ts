@@ -16,9 +16,9 @@ import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWall
  * Provides a unified interface for all wallet operations while supporting pluggable providers.
  */
 export class WalletProvider<
-  THostedProviderType extends string,
-  TToActionsMap extends Record<THostedProviderType, unknown>,
-  H extends EmbeddedWalletProvider<THostedProviderType, TToActionsMap>,
+  TEmbeddedProviderType extends string,
+  TToActionsMap extends Record<TEmbeddedProviderType, unknown>,
+  H extends EmbeddedWalletProvider<TEmbeddedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   constructor(
@@ -49,8 +49,8 @@ export class WalletProvider<
     return this.smartWalletProvider.createWallet({ ...params })
   }
 
-  async hostedWalletToActionsWallet(
-    params: TToActionsMap[THostedProviderType],
+  async embeddedWalletToActionsWallet(
+    params: TToActionsMap[TEmbeddedProviderType],
   ): Promise<Wallet> {
     return this.embeddedWalletProvider.toActionsWallet(params)
   }
@@ -65,7 +65,7 @@ export class WalletProvider<
    * @returns Promise resolving to a viem `LocalAccount` with the embedded wallet as the signer backend
    */
   async createSigner(
-    params: TToActionsMap[THostedProviderType],
+    params: TToActionsMap[TEmbeddedProviderType],
   ): Promise<LocalAccount> {
     return this.embeddedWalletProvider.createSigner(params)
   }
@@ -74,7 +74,7 @@ export class WalletProvider<
    * Get an existing smart wallet with a provided signer
    * @description Retrieves a smart wallet using a directly provided signer. This is useful when
    * you already have a LocalAccount signer and want to access an existing smart wallet without
-   * going through the embedded wallet provider. Use this instead of getSmartWalletWithHostedSigner
+   * going through the embedded wallet provider. Use this instead of getSmartWalletWithEmbeddedSigner
    * when you have direct control over the signer.
    * @param signer - Local account to use for signing transactions on the smart wallet
    * @param getWalletParams - Wallet retrieval parameters
