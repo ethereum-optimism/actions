@@ -10,11 +10,14 @@ vi.mock('@dynamic-labs/ethereum', () => ({
 }))
 
 // Mock DynamicWallet to avoid importing browser-related deps
-vi.mock('@/wallet/react/wallets/embedded/dynamic/DynamicWallet.js', async () => {
-  const { DynamicWalletMock } =
-    await import('@/wallet/react/wallets/embedded/dynamic/__mocks__/DynamicWalletMock.js')
-  return { DynamicWallet: DynamicWalletMock }
-})
+vi.mock(
+  '@/wallet/react/wallets/embedded/dynamic/DynamicWallet.js',
+  async () => {
+    const { DynamicWalletMock } =
+      await import('@/wallet/react/wallets/embedded/dynamic/__mocks__/DynamicWalletMock.js')
+    return { DynamicWallet: DynamicWalletMock }
+  },
+)
 
 // Mock createSigner to avoid importing @dynamic-labs
 vi.mock('@/wallet/react/wallets/embedded/dynamic/utils/createSigner.js')

@@ -20,7 +20,8 @@ import type {
  * @returns Promise resolving to a viem `LocalAccount` with Turnkey as the signer backend
  */
 export async function createSigner(
-  params: TurnkeyEmbeddedWalletToActionsWalletOptions & NodeOptionsMap['turnkey'],
+  params: TurnkeyEmbeddedWalletToActionsWalletOptions &
+    NodeOptionsMap['turnkey'],
 ): Promise<LocalAccount> {
   const { client, organizationId, signWith, ethereumAddress } = params
   return createAccount({

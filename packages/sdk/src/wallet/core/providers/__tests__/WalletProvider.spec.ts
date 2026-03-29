@@ -330,10 +330,12 @@ describe('WalletProvider', () => {
       )
 
       const privyWallet = createMockPrivyWallet()
-      const embeddedWallet = await walletProvider.embeddedWalletToActionsWallet({
-        walletId: privyWallet.id,
-        address: privyWallet.address,
-      })
+      const embeddedWallet = await walletProvider.embeddedWalletToActionsWallet(
+        {
+          walletId: privyWallet.id,
+          address: privyWallet.address,
+        },
+      )
 
       expect(toActionsWalletSpy).toHaveBeenCalledWith({
         walletId: privyWallet.id,
