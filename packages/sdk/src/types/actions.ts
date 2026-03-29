@@ -120,7 +120,7 @@ export type WalletConfig<
   TConfigMap extends { [K in TEmbeddedProviderType]: unknown },
 > = {
   /** Embedded wallet configuration */
-  embeddedWalletConfig: HostedWalletConfig<TEmbeddedProviderType, TConfigMap>
+  embeddedWalletConfig: EmbeddedWalletConfig<TEmbeddedProviderType, TConfigMap>
   /** Smart wallet configuration for ERC-4337 infrastructure */
   smartWalletConfig: SmartWalletConfig
 }
@@ -129,7 +129,7 @@ export type WalletConfig<
  * Embedded wallet configuration
  * @description Configuration for embedded wallets / signers
  */
-export interface HostedWalletConfig<
+export interface EmbeddedWalletConfig<
   TEmbeddedProviderType extends string,
   TConfigMap extends { [K in TEmbeddedProviderType]: unknown },
 > {
