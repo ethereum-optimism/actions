@@ -5,20 +5,20 @@ import { getAddress } from 'viem'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
-import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
   NodeToActionsOptionsMap,
   PrivyHostedWalletToActionsWalletOptions,
-} from '@/wallet/node/providers/hosted/types/index.js'
-import { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
-import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
+} from '@/wallet/node/providers/embedded/types/index.js'
+import { PrivyWallet } from '@/wallet/node/wallets/embedded/privy/PrivyWallet.js'
+import { createSigner } from '@/wallet/node/wallets/embedded/privy/utils/createSigner.js'
 
 /**
  * Privy wallet provider implementation
  * @description Wallet provider implementation using Privy service
  */
-export class PrivyHostedWalletProvider extends HostedWalletProvider<
+export class PrivyEmbeddedWalletProvider extends EmbeddedWalletProvider<
   'privy',
   NodeToActionsOptionsMap
 > {

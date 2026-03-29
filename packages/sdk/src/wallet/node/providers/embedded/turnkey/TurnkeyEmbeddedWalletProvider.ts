@@ -6,20 +6,20 @@ import type { LocalAccount } from 'viem'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
-import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import type { NodeToActionsOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
-import { TurnkeyWallet } from '@/wallet/node/wallets/hosted/turnkey/TurnkeyWallet.js'
-import { createSigner } from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
+import type { NodeToActionsOptionsMap } from '@/wallet/node/providers/embedded/types/index.js'
+import { TurnkeyWallet } from '@/wallet/node/wallets/embedded/turnkey/TurnkeyWallet.js'
+import { createSigner } from '@/wallet/node/wallets/embedded/turnkey/utils/createSigner.js'
 
 /**
  * Turnkey wallet provider implementation
- * @description Hosted wallet provider that wraps Turnkey's signing infrastructure
+ * @description Embedded wallet provider that wraps Turnkey's signing infrastructure
  * and exposes an Actions-compatible wallet. This provider is intended for Node
  * environments where the Turnkey client (HTTP, server, or core SDK) and
  * organization context are provided at construction time.
  */
-export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
+export class TurnkeyEmbeddedWalletProvider extends EmbeddedWalletProvider<
   'turnkey',
   NodeToActionsOptionsMap
 > {
@@ -45,7 +45,7 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
   }
 
   /**
-   * Convert a Turnkey hosted wallet context into an Actions wallet
+   * Convert a Turnkey embedded wallet context into an Actions wallet
    * @description Creates a `TurnkeyWallet` configured with the provider's Turnkey
    * client and organization.
    * @param params - Options for creating the Actions wallet from Turnkey context

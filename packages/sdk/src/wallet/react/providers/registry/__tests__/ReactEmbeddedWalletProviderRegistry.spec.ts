@@ -3,33 +3,33 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
-import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import { TurnkeyHostedWalletProvider } from '@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
-import type { ReactOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
-import { ReactHostedWalletProviderRegistry } from '@/wallet/react/providers/registry/ReactHostedWalletProviderRegistry.js'
+import { DynamicEmbeddedWalletProvider } from '@/wallet/react/providers/embedded/dynamic/DynamicEmbeddedWalletProvider.js'
+import { PrivyEmbeddedWalletProvider } from '@/wallet/react/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
+import { TurnkeyEmbeddedWalletProvider } from '@/wallet/react/providers/embedded/turnkey/TurnkeyEmbeddedWalletProvider.js'
+import type { ReactOptionsMap } from '@/wallet/react/providers/embedded/types/index.js'
+import { ReactEmbeddedWalletProviderRegistry } from '@/wallet/react/providers/registry/ReactEmbeddedWalletProviderRegistry.js'
 
 // Mock the dynamic provider to avoid importing any browser-only dependencies
 vi.mock(
-  '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js',
+  '@/wallet/react/providers/embedded/dynamic/DynamicEmbeddedWalletProvider.js',
   async () => {
-    const { DynamicHostedWalletProviderMock } =
-      await import('@/wallet/react/providers/hosted/dynamic/__mocks__/DynamicHostedWalletProviderMock.js')
-    return { DynamicHostedWalletProvider: DynamicHostedWalletProviderMock }
+    const { DynamicEmbeddedWalletProviderMock } =
+      await import('@/wallet/react/providers/embedded/dynamic/__mocks__/DynamicEmbeddedWalletProviderMock.js')
+    return { DynamicEmbeddedWalletProvider: DynamicEmbeddedWalletProviderMock }
   },
 )
 
 // Mock the privy provider to avoid importing any browser-only dependencies
 vi.mock(
-  '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js',
+  '@/wallet/react/providers/embedded/privy/PrivyEmbeddedWalletProvider.js',
   async () => {
-    const { PrivyHostedWalletProviderMock } =
-      await import('@/wallet/react/providers/hosted/privy/__mocks__/PrivyHostedWalletProviderMock.js')
-    return { PrivyHostedWalletProvider: PrivyHostedWalletProviderMock }
+    const { PrivyEmbeddedWalletProviderMock } =
+      await import('@/wallet/react/providers/embedded/privy/__mocks__/PrivyEmbeddedWalletProviderMock.js')
+    return { PrivyEmbeddedWalletProvider: PrivyEmbeddedWalletProviderMock }
   },
 )
 
-describe('ReactHostedWalletProviderRegistry', () => {
+describe('ReactEmbeddedWalletProviderRegistry', () => {
   const mockChainManager = new MockChainManager({
     supportedChains: [unichain.id],
   }) as unknown as ChainManager
@@ -39,7 +39,7 @@ describe('ReactHostedWalletProviderRegistry', () => {
   })
 
   it('returns dynamic factory and validates options', () => {
-    const registry = new ReactHostedWalletProviderRegistry()
+    const registry = new ReactEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('dynamic')
 
     expect(factory.type).toBe('dynamic')
@@ -49,8 +49,8 @@ describe('ReactHostedWalletProviderRegistry', () => {
     ).toBe(true)
   })
 
-  it('creates a DynamicHostedWalletProvider instance', async () => {
-    const registry = new ReactHostedWalletProviderRegistry()
+  it('creates a DynamicEmbeddedWalletProvider instance', async () => {
+    const registry = new ReactEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('dynamic')
 
     const provider = await factory.create(
@@ -58,11 +58,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
       undefined as ReactOptionsMap['dynamic'],
     )
 
-    expect(provider).toBeInstanceOf(DynamicHostedWalletProvider)
+    expect(provider).toBeInstanceOf(DynamicEmbeddedWalletProvider)
   })
 
   it('returns privy factory and validates options', () => {
-    const registry = new ReactHostedWalletProviderRegistry()
+    const registry = new ReactEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
     expect(factory.type).toBe('privy')
@@ -71,8 +71,8 @@ describe('ReactHostedWalletProviderRegistry', () => {
     ).toBe(true)
   })
 
-  it('creates a PrivyHostedWalletProvider instance', async () => {
-    const registry = new ReactHostedWalletProviderRegistry()
+  it('creates a PrivyEmbeddedWalletProvider instance', async () => {
+    const registry = new ReactEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
     const provider = await factory.create(
@@ -80,11 +80,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
       undefined as ReactOptionsMap['privy'],
     )
 
-    expect(provider).toBeInstanceOf(PrivyHostedWalletProvider)
+    expect(provider).toBeInstanceOf(PrivyEmbeddedWalletProvider)
   })
 
   it('returns turnkey factory and validates options', () => {
-    const registry = new ReactHostedWalletProviderRegistry()
+    const registry = new ReactEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('turnkey')
 
     expect(factory.type).toBe('turnkey')
@@ -93,8 +93,8 @@ describe('ReactHostedWalletProviderRegistry', () => {
     ).toBe(true)
   })
 
-  it('creates a TurnkeyHostedWalletProvider instance', async () => {
-    const registry = new ReactHostedWalletProviderRegistry()
+  it('creates a TurnkeyEmbeddedWalletProvider instance', async () => {
+    const registry = new ReactEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('turnkey')
 
     const provider = await factory.create(
@@ -102,14 +102,14 @@ describe('ReactHostedWalletProviderRegistry', () => {
       undefined as ReactOptionsMap['turnkey'],
     )
 
-    expect(provider).toBeInstanceOf(TurnkeyHostedWalletProvider)
+    expect(provider).toBeInstanceOf(TurnkeyEmbeddedWalletProvider)
   })
 
   it('throws for unknown provider type', () => {
-    const registry = new ReactHostedWalletProviderRegistry()
+    const registry = new ReactEmbeddedWalletProviderRegistry()
     // @ts-expect-error: testing runtime error for unknown type
     expect(() => registry.getFactory('unknown')).toThrow(
-      'Unknown hosted wallet provider: unknown',
+      'Unknown embedded wallet provider: unknown',
     )
   })
 })

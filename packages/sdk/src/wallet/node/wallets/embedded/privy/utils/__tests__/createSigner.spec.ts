@@ -8,7 +8,7 @@ import {
   getMockAuthorizationContext,
 } from '@/__mocks__/MockPrivyClient.js'
 import { getRandomAddress } from '@/__mocks__/utils.js'
-import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
+import { createSigner } from '@/wallet/node/wallets/embedded/privy/utils/createSigner.js'
 
 vi.mock('@privy-io/node/viem', async () => ({
   // @ts-ignore - importActual returns unknown

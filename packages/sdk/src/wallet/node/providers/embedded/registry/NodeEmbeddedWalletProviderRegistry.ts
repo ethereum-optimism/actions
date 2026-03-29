@@ -1,18 +1,18 @@
-import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
+import { EmbeddedWalletProviderRegistry } from '@/wallet/core/providers/embedded/registry/EmbeddedWalletProviderRegistry.js'
 import type {
   NodeHostedProviderInstanceMap,
   NodeOptionsMap,
   NodeProviderTypes,
-} from '@/wallet/node/providers/hosted/types/index.js'
+} from '@/wallet/node/providers/embedded/types/index.js'
 
 /**
- * Node hosted wallet provider registry
+ * Node embedded wallet provider registry
  * @description
  * Environment-scoped registry that binds Node/server provider keys to their
  * factory implementations. Provider code is loaded lazily via dynamic import()
  * so that unused wallet SDKs are not included in the bundle.
  */
-export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
+export class NodeEmbeddedWalletProviderRegistry extends EmbeddedWalletProviderRegistry<
   NodeHostedProviderInstanceMap,
   NodeOptionsMap,
   NodeProviderTypes
@@ -28,9 +28,9 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
         { chainManager, lendProviders, swapProviders, supportedAssets },
         options,
       ) {
-        const { PrivyHostedWalletProvider } =
-          await import('@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js')
-        return new PrivyHostedWalletProvider({
+        const { PrivyEmbeddedWalletProvider } =
+          await import('@/wallet/node/providers/embedded/privy/PrivyEmbeddedWalletProvider.js')
+        return new PrivyEmbeddedWalletProvider({
           privyClient: options.privyClient,
           chainManager,
           lendProviders,
@@ -51,9 +51,9 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
         { chainManager, lendProviders, swapProviders, supportedAssets },
         options,
       ) {
-        const { TurnkeyHostedWalletProvider } =
-          await import('@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js')
-        return new TurnkeyHostedWalletProvider(
+        const { TurnkeyEmbeddedWalletProvider } =
+          await import('@/wallet/node/providers/embedded/turnkey/TurnkeyEmbeddedWalletProvider.js')
+        return new TurnkeyEmbeddedWalletProvider(
           options.client,
           chainManager,
           lendProviders,

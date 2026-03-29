@@ -4,18 +4,18 @@ import { vi } from 'vitest'
 
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
   DynamicHostedWalletToActionsWalletOptions,
   ReactToActionsOptionsMap,
-} from '@/wallet/react/providers/hosted/types/index.js'
+} from '@/wallet/react/providers/embedded/types/index.js'
 
 /**
- * Minimal mock implementation matching the shape of HostedWalletProvider<'dynamic'>
+ * Minimal mock implementation matching the shape of EmbeddedWalletProvider<'dynamic'>
  * for use in unit tests without importing browser-only dependencies.
  */
-export class DynamicHostedWalletProviderMock extends HostedWalletProvider<
+export class DynamicEmbeddedWalletProviderMock extends EmbeddedWalletProvider<
   'dynamic',
   ReactToActionsOptionsMap
 > {

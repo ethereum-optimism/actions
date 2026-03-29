@@ -8,12 +8,12 @@ import {
 } from '@/__mocks__/MockPrivyClient.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
-import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import type { NodeOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
+import { EmbeddedWalletProviderRegistry } from '@/wallet/core/providers/embedded/registry/EmbeddedWalletProviderRegistry.js'
+import { PrivyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
+import type { NodeOptionsMap } from '@/wallet/node/providers/embedded/types/index.js'
 
-type TestInstanceMap = { privy: PrivyHostedWalletProvider }
-class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
+type TestInstanceMap = { privy: PrivyEmbeddedWalletProvider }
+class TestEmbeddedWalletProviderRegistry extends EmbeddedWalletProviderRegistry<
   TestInstanceMap,
   Pick<NodeOptionsMap, 'privy'>,
   'privy'
@@ -26,7 +26,7 @@ class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
         return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
       },
       create({ chainManager }, options) {
-        return new PrivyHostedWalletProvider({
+        return new PrivyEmbeddedWalletProvider({
           privyClient: options.privyClient,
           chainManager,
           authorizationContext: options.authorizationContext,
@@ -36,7 +36,7 @@ class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
   }
 }
 
-describe('HostedWalletProviderRegistry', () => {
+describe('EmbeddedWalletProviderRegistry', () => {
   const mockChainManager = new MockChainManager({
     supportedChains: [unichain.id],
   }) as unknown as ChainManager
@@ -51,7 +51,7 @@ describe('HostedWalletProviderRegistry', () => {
   })
 
   it('returns privy factory and validates options', () => {
-    const registry = new TestHostedWalletProviderRegistry()
+    const registry = new TestEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
     expect(factory.type).toBe('privy')
@@ -65,8 +65,8 @@ describe('HostedWalletProviderRegistry', () => {
     expect(factory.validateOptions?.({})).toBe(false)
   })
 
-  it('creates a PrivyHostedWalletProvider instance', () => {
-    const registry = new TestHostedWalletProviderRegistry()
+  it('creates a PrivyEmbeddedWalletProvider instance', () => {
+    const registry = new TestEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
     const provider = factory.create(
@@ -77,14 +77,14 @@ describe('HostedWalletProviderRegistry', () => {
       },
     )
 
-    expect(provider).toBeInstanceOf(PrivyHostedWalletProvider)
+    expect(provider).toBeInstanceOf(PrivyEmbeddedWalletProvider)
   })
 
   it('throws for unknown provider type', () => {
-    const registry = new TestHostedWalletProviderRegistry()
+    const registry = new TestEmbeddedWalletProviderRegistry()
     // @ts-expect-error: testing runtime error for unknown type
     expect(() => registry.getFactory('unknown')).toThrow(
-      'Unknown hosted wallet provider: unknown',
+      'Unknown embedded wallet provider: unknown',
     )
   })
 })

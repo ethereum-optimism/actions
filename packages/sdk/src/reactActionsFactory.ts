@@ -1,37 +1,37 @@
 import { Actions } from '@/actions.js'
 import type { ActionsConfig } from '@/types/actions.js'
 import type {
-  ReactHostedWalletProvidersSchema,
+  ReactEmbeddedWalletProvidersSchema,
   ReactOptionsMap,
   ReactProviderTypes,
-} from '@/wallet/react/providers/hosted/types/index.js'
-import { ReactHostedWalletProviderRegistry } from '@/wallet/react/providers/registry/ReactHostedWalletProviderRegistry.js'
+} from '@/wallet/react/providers/embedded/types/index.js'
+import { ReactEmbeddedWalletProviderRegistry } from '@/wallet/react/providers/registry/ReactEmbeddedWalletProviderRegistry.js'
 
 /**
  * React Actions configuration
  * @description Configuration object for initializing the Actions SDK in React
  */
 export type ReactActionsConfig<
-  HostedWalletProviderType extends ReactProviderTypes,
-> = ActionsConfig<HostedWalletProviderType, ReactOptionsMap>
+  EmbeddedWalletProviderType extends ReactProviderTypes,
+> = ActionsConfig<EmbeddedWalletProviderType, ReactOptionsMap>
 
 /**
  * Creates a React/browser environment Actions factory
  *
- * Creates an Actions instance wired with the React-specific HostedWalletProviderRegistry.
+ * Creates an Actions instance wired with the React-specific EmbeddedWalletProviderRegistry.
  * This registry enables browser-only hosted providers and defers
  * their imports to the client environment to keep server builds clean.
  * @param config Actions configuration
- * @returns Actions instance using the ReactHostedWalletProviderRegistry
+ * @returns Actions instance using the ReactEmbeddedWalletProviderRegistry
  */
 export function createActions<
-  HostedWalletProviderType extends ReactProviderTypes,
->(config: ReactActionsConfig<HostedWalletProviderType>) {
+  EmbeddedWalletProviderType extends ReactProviderTypes,
+>(config: ReactActionsConfig<EmbeddedWalletProviderType>) {
   return new Actions<
-    ReactHostedWalletProvidersSchema['providerTypes'],
-    ReactHostedWalletProvidersSchema,
-    HostedWalletProviderType
+    ReactEmbeddedWalletProvidersSchema['providerTypes'],
+    ReactEmbeddedWalletProvidersSchema,
+    EmbeddedWalletProviderType
   >(config, {
-    hostedWalletProviderRegistry: new ReactHostedWalletProviderRegistry(),
+    embeddedWalletProviderRegistry: new ReactEmbeddedWalletProviderRegistry(),
   })
 }

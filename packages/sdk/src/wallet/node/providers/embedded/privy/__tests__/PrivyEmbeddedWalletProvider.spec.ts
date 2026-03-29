@@ -13,10 +13,10 @@ import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
+import { PrivyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
+import { PrivyWallet } from '@/wallet/node/wallets/embedded/privy/PrivyWallet.js'
 
-describe('PrivyHostedWalletProvider', () => {
+describe('PrivyEmbeddedWalletProvider', () => {
   const mockChainManager = new MockChainManager({
     supportedChains: [unichain.id],
   }) as unknown as ChainManager
@@ -24,7 +24,7 @@ describe('PrivyHostedWalletProvider', () => {
   describe('toActionsWallet', () => {
     it('toActionsWallet creates an ActionsWallet with correct address and signer', async () => {
       const privy = createMockPrivyClient('app', 'secret')
-      const provider = new PrivyHostedWalletProvider({
+      const provider = new PrivyEmbeddedWalletProvider({
         privyClient: privy,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -45,7 +45,7 @@ describe('PrivyHostedWalletProvider', () => {
     it('forwards params to PrivyWallet.create', async () => {
       const privy = createMockPrivyClient('app', 'secret')
       const authorizationContext = getMockAuthorizationContext()
-      const provider = new PrivyHostedWalletProvider({
+      const provider = new PrivyEmbeddedWalletProvider({
         privyClient: privy,
         authorizationContext,
         chainManager: mockChainManager,
@@ -70,7 +70,7 @@ describe('PrivyHostedWalletProvider', () => {
 
     it('throws on invalid address', async () => {
       const privy = createMockPrivyClient('app', 'secret')
-      const provider = new PrivyHostedWalletProvider({
+      const provider = new PrivyEmbeddedWalletProvider({
         privyClient: privy,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -84,7 +84,7 @@ describe('PrivyHostedWalletProvider', () => {
     it('forwards lendProvider when provided to constructor', async () => {
       const privy = createMockPrivyClient('app', 'secret')
       const mockLendProvider = createMockLendProvider()
-      const provider = new PrivyHostedWalletProvider({
+      const provider = new PrivyEmbeddedWalletProvider({
         privyClient: privy,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
@@ -111,7 +111,7 @@ describe('PrivyHostedWalletProvider', () => {
   describe('createSigner', () => {
     it('should create a LocalAccount with correct address', async () => {
       const privy = createMockPrivyClient('app', 'secret')
-      const provider = new PrivyHostedWalletProvider({
+      const provider = new PrivyEmbeddedWalletProvider({
         privyClient: privy,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,

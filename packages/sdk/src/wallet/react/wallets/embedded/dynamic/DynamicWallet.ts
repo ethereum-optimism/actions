@@ -4,8 +4,8 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
-import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
-import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
+import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
+import { createSigner } from '@/wallet/react/wallets/embedded/dynamic/utils/createSigner.js'
 
 /**
  * Dynamic wallet implementation

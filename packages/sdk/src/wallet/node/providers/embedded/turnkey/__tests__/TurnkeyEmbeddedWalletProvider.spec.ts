@@ -6,11 +6,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
-import { TurnkeyWallet } from '@/wallet/node/wallets/hosted/turnkey/TurnkeyWallet.js'
-import * as createSignerUtil from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
+import { TurnkeyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/turnkey/TurnkeyEmbeddedWalletProvider.js'
+import { TurnkeyWallet } from '@/wallet/node/wallets/embedded/turnkey/TurnkeyWallet.js'
+import * as createSignerUtil from '@/wallet/node/wallets/embedded/turnkey/utils/createSigner.js'
 
-describe('TurnkeyHostedWalletProvider', () => {
+describe('TurnkeyEmbeddedWalletProvider', () => {
   const mockChainManager = new MockChainManager({
     supportedChains: [unichain.id],
   }) as unknown as ChainManager
@@ -18,7 +18,7 @@ describe('TurnkeyHostedWalletProvider', () => {
   describe('toActionsWallet', () => {
     it('forwards params to TurnkeyWallet.create', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
+      const provider = new TurnkeyEmbeddedWalletProvider(
         turnkeyClient,
         mockChainManager,
       )
@@ -46,7 +46,7 @@ describe('TurnkeyHostedWalletProvider', () => {
 
     it('forwards ethereumAddress when provided', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
+      const provider = new TurnkeyEmbeddedWalletProvider(
         turnkeyClient,
         mockChainManager,
       )
@@ -75,7 +75,7 @@ describe('TurnkeyHostedWalletProvider', () => {
 
     it('returns the created TurnkeyWallet instance', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
+      const provider = new TurnkeyEmbeddedWalletProvider(
         turnkeyClient,
         mockChainManager,
       )
@@ -95,7 +95,7 @@ describe('TurnkeyHostedWalletProvider', () => {
     it('forwards lendProvider when provided to constructor', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
       const mockLendProvider = createMockLendProvider()
-      const provider = new TurnkeyHostedWalletProvider(
+      const provider = new TurnkeyEmbeddedWalletProvider(
         turnkeyClient,
         mockChainManager,
         { morpho: mockLendProvider },
@@ -122,7 +122,7 @@ describe('TurnkeyHostedWalletProvider', () => {
   describe('createSigner', () => {
     it('should delegate to createSigner utility with correct params', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
+      const provider = new TurnkeyEmbeddedWalletProvider(
         turnkeyClient,
         mockChainManager,
       )
@@ -151,7 +151,7 @@ describe('TurnkeyHostedWalletProvider', () => {
 
     it('should forward ethereumAddress when provided', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
+      const provider = new TurnkeyEmbeddedWalletProvider(
         turnkeyClient,
         mockChainManager,
       )

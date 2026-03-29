@@ -10,14 +10,14 @@ vi.mock('@dynamic-labs/ethereum', () => ({
 }))
 
 // Mock DynamicWallet to avoid importing browser-related deps
-vi.mock('@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js', async () => {
+vi.mock('@/wallet/react/wallets/embedded/dynamic/DynamicWallet.js', async () => {
   const { DynamicWalletMock } =
-    await import('@/wallet/react/wallets/hosted/dynamic/__mocks__/DynamicWalletMock.js')
+    await import('@/wallet/react/wallets/embedded/dynamic/__mocks__/DynamicWalletMock.js')
   return { DynamicWallet: DynamicWalletMock }
 })
 
 // Mock createSigner to avoid importing @dynamic-labs
-vi.mock('@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js')
+vi.mock('@/wallet/react/wallets/embedded/dynamic/utils/createSigner.js')
 
 /* eslint-disable import/first */
 import type { LocalAccount } from 'viem'
@@ -25,19 +25,19 @@ import type { LocalAccount } from 'viem'
 import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
-import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
-import { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
-import * as createSignerUtil from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
+import { DynamicEmbeddedWalletProvider } from '@/wallet/react/providers/embedded/dynamic/DynamicEmbeddedWalletProvider.js'
+import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
+import { DynamicWallet } from '@/wallet/react/wallets/embedded/dynamic/DynamicWallet.js'
+import * as createSignerUtil from '@/wallet/react/wallets/embedded/dynamic/utils/createSigner.js'
 /* eslint-enable import/first */
 
-describe('DynamicHostedWalletProvider', () => {
+describe('DynamicEmbeddedWalletProvider', () => {
   describe('toActionsWallet', () => {
     it('toActionsWallet delegates to DynamicWallet.create with correct args', async () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const provider = new DynamicHostedWalletProvider(mockChainManager)
+      const provider = new DynamicEmbeddedWalletProvider(mockChainManager)
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',
@@ -66,7 +66,7 @@ describe('DynamicHostedWalletProvider', () => {
         supportedChains: [1],
       }) as unknown as ChainManager
       const mockLendProvider = createMockLendProvider()
-      const provider = new DynamicHostedWalletProvider(mockChainManager, {
+      const provider = new DynamicEmbeddedWalletProvider(mockChainManager, {
         morpho: mockLendProvider,
       })
 
@@ -95,7 +95,7 @@ describe('DynamicHostedWalletProvider', () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const provider = new DynamicHostedWalletProvider(mockChainManager)
+      const provider = new DynamicEmbeddedWalletProvider(mockChainManager)
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',

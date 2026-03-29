@@ -1,7 +1,7 @@
 import { createAccount } from '@turnkey/viem'
 import type { LocalAccount } from 'viem'
 
-import type { TurnkeyHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import type { TurnkeyHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
 
 /**
  * Create a viem LocalAccount instance backed by Turnkey

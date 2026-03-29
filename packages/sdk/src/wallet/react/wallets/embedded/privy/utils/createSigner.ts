@@ -2,7 +2,7 @@ import { toViemAccount } from '@privy-io/react-auth'
 import type { CustomSource, LocalAccount } from 'viem'
 import { toAccount } from 'viem/accounts'
 
-import type { PrivyHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import type { PrivyHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
 
 /**
  * Create a LocalAccount from a Privy wallet

@@ -5,24 +5,24 @@ import { describe, expect, it, vi } from 'vitest'
 import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import { PrivyWallet } from '@/wallet/react/wallets/hosted/privy/PrivyWallet.js'
-import * as createSignerUtil from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
+import { PrivyEmbeddedWalletProvider } from '@/wallet/react/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
+import { PrivyWallet } from '@/wallet/react/wallets/embedded/privy/PrivyWallet.js'
+import * as createSignerUtil from '@/wallet/react/wallets/embedded/privy/utils/createSigner.js'
 
 // Mock PrivyWallet to avoid importing browser-related deps
-vi.mock('@/wallet/react/wallets/hosted/privy/PrivyWallet.js', async () => {
+vi.mock('@/wallet/react/wallets/embedded/privy/PrivyWallet.js', async () => {
   const { PrivyWalletMock } =
-    await import('@/wallet/react/wallets/hosted/privy/__mocks__/PrivyWalletMock.js')
+    await import('@/wallet/react/wallets/embedded/privy/__mocks__/PrivyWalletMock.js')
   return { PrivyWallet: PrivyWalletMock }
 })
 
-describe('PrivyHostedWalletProvider (React)', () => {
+describe('PrivyEmbeddedWalletProvider (React)', () => {
   describe('toActionsWallet', () => {
     it('toActionsWallet delegates to PrivyWallet.create with correct args', async () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const provider = new PrivyHostedWalletProvider(mockChainManager)
+      const provider = new PrivyEmbeddedWalletProvider(mockChainManager)
       const mockActionsWallet = {
         __brand: 'actions-wallet',
       } as unknown as PrivyWallet
@@ -50,7 +50,7 @@ describe('PrivyHostedWalletProvider (React)', () => {
         supportedChains: [1],
       }) as unknown as ChainManager
       const mockLendProvider = createMockLendProvider()
-      const provider = new PrivyHostedWalletProvider(mockChainManager, {
+      const provider = new PrivyEmbeddedWalletProvider(mockChainManager, {
         morpho: mockLendProvider,
       })
       const mockActionsWallet = {
@@ -78,7 +78,7 @@ describe('PrivyHostedWalletProvider (React)', () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const provider = new PrivyHostedWalletProvider(mockChainManager)
+      const provider = new PrivyEmbeddedWalletProvider(mockChainManager)
 
       const mockConnectedWallet = {
         __brand: 'privy-connected-wallet',

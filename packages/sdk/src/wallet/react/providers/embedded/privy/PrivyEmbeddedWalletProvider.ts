@@ -3,16 +3,16 @@ import type { LocalAccount } from 'viem'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
-import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
-import { PrivyWallet } from '@/wallet/react/wallets/hosted/privy/PrivyWallet.js'
-import { createSigner } from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
+import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/embedded/types/index.js'
+import { PrivyWallet } from '@/wallet/react/wallets/embedded/privy/PrivyWallet.js'
+import { createSigner } from '@/wallet/react/wallets/embedded/privy/utils/createSigner.js'
 
 /**
- * Privy hosted wallet provider (React)
+ * Privy embedded wallet provider (React)
  */
-export class PrivyHostedWalletProvider extends HostedWalletProvider<
+export class PrivyEmbeddedWalletProvider extends EmbeddedWalletProvider<
   'privy',
   ReactToActionsOptionsMap
 > {

@@ -10,24 +10,24 @@ import { Actions } from '@/actions.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { LendMarketConfig } from '@/types/lend/index.js'
 import { externalTest } from '@/utils/test.js'
-import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
-import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
-import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
+import { EmbeddedWalletProviderRegistry } from '@/wallet/core/providers/embedded/registry/EmbeddedWalletProviderRegistry.js'
+import type { EmbeddedWalletProvidersSchema } from '@/wallet/core/providers/embedded/types/index.js'
+import { PrivyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
 import type {
   NodeOptionsMap,
   NodeToActionsOptionsMap,
-} from '@/wallet/node/providers/hosted/types/index.js'
+} from '@/wallet/node/providers/embedded/types/index.js'
 
 describe('Actions SDK', () => {
-  type TestInstanceMap = { privy: PrivyHostedWalletProvider }
+  type TestInstanceMap = { privy: PrivyEmbeddedWalletProvider }
   type TestConfigMap = { privy: NodeOptionsMap['privy'] }
-  type TestWalletProvider = HostedWalletProvidersSchema<
+  type TestWalletProvider = EmbeddedWalletProvidersSchema<
     'privy',
     TestInstanceMap,
     TestConfigMap,
     NodeToActionsOptionsMap
   >
-  class TestHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
+  class TestEmbeddedWalletProviderRegistry extends EmbeddedWalletProviderRegistry<
     TestInstanceMap,
     TestConfigMap,
     'privy'
@@ -40,7 +40,7 @@ describe('Actions SDK', () => {
           return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
         },
         create({ chainManager }, options) {
-          return new PrivyHostedWalletProvider({
+          return new PrivyEmbeddedWalletProvider({
             privyClient: options.privyClient,
             chainManager,
             authorizationContext: options.authorizationContext,
@@ -64,7 +64,7 @@ describe('Actions SDK', () => {
               morpho: {},
             },
             wallet: {
-              hostedWalletConfig: {
+              embeddedWalletConfig: {
                 provider: {
                   type: 'privy',
                   config: {
@@ -82,8 +82,8 @@ describe('Actions SDK', () => {
             },
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         )
 
@@ -103,7 +103,7 @@ describe('Actions SDK', () => {
               morpho: {},
             },
             wallet: {
-              hostedWalletConfig: {
+              embeddedWalletConfig: {
                 provider: {
                   type: 'privy',
                   config: {
@@ -121,8 +121,8 @@ describe('Actions SDK', () => {
             },
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         )
 
@@ -163,7 +163,7 @@ describe('Actions SDK', () => {
               },
             },
             wallet: {
-              hostedWalletConfig: {
+              embeddedWalletConfig: {
                 provider: {
                   type: 'privy',
                   config: {
@@ -181,8 +181,8 @@ describe('Actions SDK', () => {
             },
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         )
 
@@ -245,7 +245,7 @@ describe('Actions SDK', () => {
               },
             },
             wallet: {
-              hostedWalletConfig: {
+              embeddedWalletConfig: {
                 provider: {
                   type: 'privy',
                   config: {
@@ -263,8 +263,8 @@ describe('Actions SDK', () => {
             },
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         )
 
@@ -283,7 +283,7 @@ describe('Actions SDK', () => {
           {
             chains: [{ chainId: unichain.id }],
             wallet: {
-              hostedWalletConfig: {
+              embeddedWalletConfig: {
                 provider: {
                   type: 'privy',
                   config: {
@@ -301,8 +301,8 @@ describe('Actions SDK', () => {
             },
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         )
 
@@ -327,7 +327,7 @@ describe('Actions SDK', () => {
               chains: [{ chainId: unichain.id }],
               lend: { morpho: morphoConfig },
               wallet: {
-                hostedWalletConfig: {
+                embeddedWalletConfig: {
                   provider: {
                     type: 'privy',
                     config: {
@@ -345,8 +345,8 @@ describe('Actions SDK', () => {
               },
             },
             {
-              hostedWalletProviderRegistry:
-                new TestHostedWalletProviderRegistry(),
+              embeddedWalletProviderRegistry:
+                new TestEmbeddedWalletProviderRegistry(),
             },
           )
         }).not.toThrow()
@@ -365,7 +365,7 @@ describe('Actions SDK', () => {
               chains: [{ chainId: unichain.id }],
               lend: { morpho: morphoConfig },
               wallet: {
-                hostedWalletConfig: {
+                embeddedWalletConfig: {
                   provider: {
                     type: 'privy',
                     config: {
@@ -383,8 +383,8 @@ describe('Actions SDK', () => {
               },
             },
             {
-              hostedWalletProviderRegistry:
-                new TestHostedWalletProviderRegistry(),
+              embeddedWalletProviderRegistry:
+                new TestEmbeddedWalletProviderRegistry(),
             },
           )
         }).not.toThrow()
@@ -407,7 +407,7 @@ describe('Actions SDK', () => {
               morpho: {},
             },
             wallet: {
-              hostedWalletConfig: {
+              embeddedWalletConfig: {
                 provider: {
                   type: 'privy',
                   config: {
@@ -425,8 +425,8 @@ describe('Actions SDK', () => {
             },
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         )
 
@@ -450,7 +450,7 @@ describe('Actions SDK', () => {
               morpho: {},
             },
             wallet: {
-              hostedWalletConfig: {
+              embeddedWalletConfig: {
                 provider: {
                   type: 'privy',
                   config: {
@@ -468,8 +468,8 @@ describe('Actions SDK', () => {
             },
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         )
 
@@ -500,7 +500,7 @@ describe('Actions SDK', () => {
                 },
               ],
               wallet: {
-                hostedWalletConfig: {
+                embeddedWalletConfig: {
                   provider: {
                     type: 'privy',
                     config: {
@@ -518,8 +518,8 @@ describe('Actions SDK', () => {
               },
             },
             {
-              hostedWalletProviderRegistry:
-                new TestHostedWalletProviderRegistry(),
+              embeddedWalletProviderRegistry:
+                new TestEmbeddedWalletProviderRegistry(),
             },
           )
 
@@ -551,7 +551,7 @@ describe('Actions SDK', () => {
                 },
               ],
               wallet: {
-                hostedWalletConfig: {
+                embeddedWalletConfig: {
                   provider: {
                     type: 'privy',
                     config: {
@@ -571,8 +571,8 @@ describe('Actions SDK', () => {
               },
             },
             {
-              hostedWalletProviderRegistry:
-                new TestHostedWalletProviderRegistry(),
+              embeddedWalletProviderRegistry:
+                new TestEmbeddedWalletProviderRegistry(),
             },
           )
 
@@ -635,7 +635,7 @@ describe('Actions SDK', () => {
                 },
               ],
               wallet: {
-                hostedWalletConfig: {
+                embeddedWalletConfig: {
                   provider: {
                     type: 'privy',
                     config: {
@@ -655,8 +655,8 @@ describe('Actions SDK', () => {
               },
             },
             {
-              hostedWalletProviderRegistry:
-                new TestHostedWalletProviderRegistry(),
+              embeddedWalletProviderRegistry:
+                new TestEmbeddedWalletProviderRegistry(),
             },
           )
 
@@ -694,7 +694,7 @@ describe('Actions SDK', () => {
                 },
               ],
               wallet: {
-                hostedWalletConfig: {
+                embeddedWalletConfig: {
                   provider: {
                     type: 'privy',
                     config: {
@@ -714,8 +714,8 @@ describe('Actions SDK', () => {
               },
             },
             {
-              hostedWalletProviderRegistry:
-                new TestHostedWalletProviderRegistry(),
+              embeddedWalletProviderRegistry:
+                new TestEmbeddedWalletProviderRegistry(),
             },
           )
 
@@ -747,7 +747,7 @@ describe('Actions SDK', () => {
               morpho: {},
             },
             wallet: {
-              hostedWalletConfig: {
+              embeddedWalletConfig: {
                 provider: {
                   type: 'privy',
                   config: {
@@ -767,8 +767,8 @@ describe('Actions SDK', () => {
             },
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         )
 
@@ -798,7 +798,7 @@ describe('Actions SDK', () => {
               morpho: {},
             },
             wallet: {
-              hostedWalletConfig: {
+              embeddedWalletConfig: {
                 provider: {
                   type: 'privy',
                   config: {
@@ -818,8 +818,8 @@ describe('Actions SDK', () => {
             },
           },
           {
-            hostedWalletProviderRegistry:
-              new TestHostedWalletProviderRegistry(),
+            embeddedWalletProviderRegistry:
+              new TestEmbeddedWalletProviderRegistry(),
           },
         )
 

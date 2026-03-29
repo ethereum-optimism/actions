@@ -2,10 +2,10 @@ import type { Wallet as DynamicWallet } from '@dynamic-labs/wallet-connector-cor
 import type { ConnectedWallet } from '@privy-io/react-auth'
 import type { TurnkeySDKClientBase } from '@turnkey/react-wallet-kit'
 
-import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
-import type { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'
-import type { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import type { TurnkeyHostedWalletProvider } from '@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
+import type { EmbeddedWalletProvidersSchema } from '@/wallet/core/providers/embedded/types/index.js'
+import type { DynamicEmbeddedWalletProvider } from '@/wallet/react/providers/embedded/dynamic/DynamicEmbeddedWalletProvider.js'
+import type { PrivyEmbeddedWalletProvider } from '@/wallet/react/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
+import type { TurnkeyEmbeddedWalletProvider } from '@/wallet/react/providers/embedded/turnkey/TurnkeyEmbeddedWalletProvider.js'
 
 /**
  * React provider type keys
@@ -18,10 +18,10 @@ export type ReactProviderTypes = keyof ReactOptionsMap &
   keyof ReactHostedProviderInstanceMap
 
 /**
- * Configuration options per React hosted wallet provider
+ * Configuration options per React embedded wallet provider
  * @description
  * Strongly-typed configuration inputs passed to each provider factory when
- * creating a hosted wallet provider for React. The Dynamic provider has no
+ * creating a embedded wallet provider for React. The Dynamic provider has no
  * build-time options.
  */
 export interface ReactOptionsMap {
@@ -31,8 +31,8 @@ export interface ReactOptionsMap {
 }
 
 /**
- * Options for converting a Dynamic hosted wallet to an Actions wallet
- * @description Parameters for converting a hosted wallet to an Actions wallet
+ * Options for converting a Dynamic embedded wallet to an Actions wallet
+ * @description Parameters for converting a embedded wallet to an Actions wallet
  * @property wallet Dynamic wallet instance obtained from the Dynamic connector
  */
 export type DynamicHostedWalletToActionsWalletOptions = {
@@ -40,8 +40,8 @@ export type DynamicHostedWalletToActionsWalletOptions = {
 }
 
 /**
- * Options for converting a Privy hosted wallet to an Actions wallet
- * @description Parameters for converting a Privy hosted wallet to an Actions wallet
+ * Options for converting a Privy embedded wallet to an Actions wallet
+ * @description Parameters for converting a Privy embedded wallet to an Actions wallet
  * @property connectedWallet Privy ConnectedWallet instance from @privy-io/react-auth
  */
 export type PrivyHostedWalletToActionsWalletOptions = {
@@ -49,8 +49,8 @@ export type PrivyHostedWalletToActionsWalletOptions = {
 }
 
 /**
- * Options for converting a Turnkey hosted wallet to an Actions wallet
- * @description Parameters for converting a hosted wallet to an Actions wallet
+ * Options for converting a Turnkey embedded wallet to an Actions wallet
+ * @description Parameters for converting a embedded wallet to an Actions wallet
  * @property signWith This can be a wallet account address, private key address, or private key ID.
  * @property ethereumAddress Ethereum address to use for this account, in the case that a private key ID is used to sign.
  * If left undefined, `createSigner` will fetch it from the Turnkey API. We recommend setting this if you're using a passkey
@@ -65,17 +65,17 @@ export type TurnkeyHostedWalletToActionsWalletOptions = {
 }
 
 /**
- * React/browser hosted wallet registry
+ * React/browser embedded wallet registry
  * @description Registers browser-only providers for client apps.
  */
 export type ReactHostedProviderInstanceMap = {
-  dynamic: DynamicHostedWalletProvider
-  privy: PrivyHostedWalletProvider
-  turnkey: TurnkeyHostedWalletProvider
+  dynamic: DynamicEmbeddedWalletProvider
+  privy: PrivyEmbeddedWalletProvider
+  turnkey: TurnkeyEmbeddedWalletProvider
 }
 
 /**
- * Parameters required to convert each hosted wallet to an Actions wallet (React)
+ * Parameters required to convert each embedded wallet to an Actions wallet (React)
  * @description Provider-specific, caller-supplied data needed by `toActionsWallet`.
  */
 export type ReactToActionsOptionsMap = {
@@ -85,14 +85,14 @@ export type ReactToActionsOptionsMap = {
 }
 
 /**
- * Complete React hosted wallet providers schema
+ * Complete React embedded wallet providers schema
  * @description
  * Bundles provider type keys, concrete provider instances, creation configs,
  * and `toActionsWallet` parameter types for the React environment.
  * This schema is used to type `Actions` and its registries without widening
  * to generic `string` keys.
  */
-export type ReactHostedWalletProvidersSchema = HostedWalletProvidersSchema<
+export type ReactEmbeddedWalletProvidersSchema = EmbeddedWalletProvidersSchema<
   ReactProviderTypes,
   ReactHostedProviderInstanceMap,
   ReactOptionsMap,

@@ -7,7 +7,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
-import { createSigner } from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
+import { createSigner } from '@/wallet/node/wallets/embedded/turnkey/utils/createSigner.js'
 
 /**
  * Turnkey wallet implementation

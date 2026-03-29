@@ -4,7 +4,7 @@ import type { LocalAccount } from 'viem'
 import type {
   NodeOptionsMap,
   TurnkeyHostedWalletToActionsWalletOptions,
-} from '@/wallet/node/providers/hosted/types/index.js'
+} from '@/wallet/node/providers/embedded/types/index.js'
 
 /**
  * Create a viem LocalAccount instance backed by Turnkey

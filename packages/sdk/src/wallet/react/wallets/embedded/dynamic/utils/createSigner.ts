@@ -3,7 +3,7 @@ import type { DynamicWaasEVMConnector } from '@dynamic-labs/waas-evm'
 import type { LocalAccount } from 'viem'
 import { toAccount } from 'viem/accounts'
 
-import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
 
 /**
  * Create a LocalAccount from a Dynamic wallet

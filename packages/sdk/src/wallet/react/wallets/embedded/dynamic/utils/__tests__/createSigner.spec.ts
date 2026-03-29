@@ -6,7 +6,7 @@ import { toAccount } from 'viem/accounts'
 import { describe, expect, it, vi } from 'vitest'
 
 import { getRandomAddress } from '@/__mocks__/utils.js'
-import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
+import { createSigner } from '@/wallet/react/wallets/embedded/dynamic/utils/createSigner.js'
 
 vi.mock('@dynamic-labs/ethereum', async () => ({
   isEthereumWallet: vi.fn(),

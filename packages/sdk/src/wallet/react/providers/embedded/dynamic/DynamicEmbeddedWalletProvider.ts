@@ -3,17 +3,17 @@ import type { LocalAccount } from 'viem'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
-import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
-import { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
-import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
+import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/embedded/types/index.js'
+import { DynamicWallet } from '@/wallet/react/wallets/embedded/dynamic/DynamicWallet.js'
+import { createSigner } from '@/wallet/react/wallets/embedded/dynamic/utils/createSigner.js'
 
 /**
  * Dynamic wallet provider implementation
  * @description Wallet provider implementation using Dynamic service
  */
-export class DynamicHostedWalletProvider extends HostedWalletProvider<
+export class DynamicEmbeddedWalletProvider extends EmbeddedWalletProvider<
   'dynamic',
   ReactToActionsOptionsMap
 > {

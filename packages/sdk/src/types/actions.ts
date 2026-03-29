@@ -5,7 +5,7 @@ import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
-import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
+import type { ProviderSpec } from '@/wallet/core/providers/embedded/types/index.js'
 
 // Re-export provider configs for convenience
 export type { LendProviderConfig, SwapProviderConfig }
@@ -96,11 +96,11 @@ export interface AssetsConfig {
  * @description Configuration object for initializing the Actions SDK
  */
 export interface ActionsConfig<
-  THostedWalletProviderType extends string,
-  TConfigMap extends { [K in THostedWalletProviderType]: unknown },
+  TEmbeddedWalletProviderType extends string,
+  TConfigMap extends { [K in TEmbeddedWalletProviderType]: unknown },
 > {
   /** Wallet configuration */
-  wallet: WalletConfig<THostedWalletProviderType, TConfigMap>
+  wallet: WalletConfig<TEmbeddedWalletProviderType, TConfigMap>
   /** Lending providers configuration (optional) */
   lend?: LendConfig
   /** Swap providers configuration (optional) */
@@ -119,15 +119,15 @@ export type WalletConfig<
   THostedProviderType extends string,
   TConfigMap extends { [K in THostedProviderType]: unknown },
 > = {
-  /** Hosted wallet configuration */
-  hostedWalletConfig: HostedWalletConfig<THostedProviderType, TConfigMap>
+  /** Embedded wallet configuration */
+  embeddedWalletConfig: HostedWalletConfig<THostedProviderType, TConfigMap>
   /** Smart wallet configuration for ERC-4337 infrastructure */
   smartWalletConfig: SmartWalletConfig
 }
 
 /**
- * Hosted wallet configuration
- * @description Configuration for hosted wallets / signers
+ * Embedded wallet configuration
+ * @description Configuration for embedded wallets / signers
  */
 export interface HostedWalletConfig<
   THostedProviderType extends string,

@@ -4,7 +4,7 @@ import type {
   CreateSmartWalletOptions,
   GetSmartWalletOptions,
 } from '@/types/wallet.js'
-import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import type { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
@@ -17,7 +17,7 @@ import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWall
 type WalletProviderFactory<
   THostedProviderType extends string,
   TToActionsMap extends Record<THostedProviderType, unknown>,
-  H extends HostedWalletProvider<THostedProviderType, TToActionsMap>,
+  H extends EmbeddedWalletProvider<THostedProviderType, TToActionsMap>,
   S extends SmartWalletProvider,
 > = () => Promise<WalletProvider<THostedProviderType, TToActionsMap, H, S>>
 
@@ -30,8 +30,8 @@ type WalletProviderFactory<
 export class WalletNamespace<
   THostedProviderType extends string,
   TToActionsMap extends Record<THostedProviderType, unknown>,
-  H extends HostedWalletProvider<THostedProviderType, TToActionsMap> =
-    HostedWalletProvider<THostedProviderType, TToActionsMap>,
+  H extends EmbeddedWalletProvider<THostedProviderType, TToActionsMap> =
+    EmbeddedWalletProvider<THostedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   private _provider: WalletProvider<
@@ -77,15 +77,15 @@ export class WalletNamespace<
   }
 
   /**
-   * Get direct access to the hosted wallet provider
-   * @description Provides direct access to the underlying hosted wallet provider when
+   * Get direct access to the embedded wallet provider
+   * @description Provides direct access to the underlying embedded wallet provider when
    * advanced functionality beyond the unified interface is needed.
    * Lazily initializes the provider if not yet created.
-   * @returns Promise resolving to the configured hosted wallet provider instance
+   * @returns Promise resolving to the configured embedded wallet provider instance
    */
-  async hostedWalletProvider(): Promise<H> {
+  async embeddedWalletProvider(): Promise<H> {
     const provider = await this.resolveProvider()
-    return provider.hostedWalletProvider
+    return provider.embeddedWalletProvider
   }
 
   /**
@@ -125,13 +125,13 @@ export class WalletNamespace<
   }
 
   /**
-   * Create a viem LocalAccount signer from the hosted wallet
-   * @description Produces a signing account backed by the hosted wallet without wrapping
+   * Create a viem LocalAccount signer from the embedded wallet
+   * @description Produces a signing account backed by the embedded wallet without wrapping
    * it in a full Actions wallet. This is useful when you need to pass the signer
    * into an Actions smart wallet as a signer, for lower-level viem operations, or
    * for passing to other libraries that accept a viem `LocalAccount`.
    * @param params - Configuration for the signer
-   * @returns Promise resolving to a viem `LocalAccount` with the hosted wallet as the signer backend
+   * @returns Promise resolving to a viem `LocalAccount` with the embedded wallet as the signer backend
    */
   async createSigner(
     params: TToActionsMap[THostedProviderType],
@@ -141,11 +141,11 @@ export class WalletNamespace<
   }
 
   /**
-   * Convert a hosted wallet to an Actions wallet
-   * @description Converts a hosted wallet to an Actions wallet instance.
-   * @param params - Parameters for converting a hosted wallet to an Actions wallet
-   * @param params.walletId - Unique identifier for the hosted wallet
-   * @param params.address - Ethereum address of the hosted wallet
+   * Convert a embedded wallet to an Actions wallet
+   * @description Converts a embedded wallet to an Actions wallet instance.
+   * @param params - Parameters for converting a embedded wallet to an Actions wallet
+   * @param params.walletId - Unique identifier for the embedded wallet
+   * @param params.address - Ethereum address of the embedded wallet
    * @returns Promise resolving to the Actions wallet instance
    */
   async toActionsWallet(
@@ -159,7 +159,7 @@ export class WalletNamespace<
    * Get an existing smart wallet with a provided signer
    * @description Retrieves a smart wallet using a directly provided signer. This is useful when
    * you already have a LocalAccount signer and want to access an existing smart wallet without
-   * going through the hosted wallet provider. Use this instead of getSmartWalletWithHostedSigner
+   * going through the embedded wallet provider. Use this instead of getSmartWalletWithHostedSigner
    * when you have direct control over the signer.
    * @param params - Wallet retrieval parameters
    * @param params.signer - Local account to use for signing transactions on the smart wallet

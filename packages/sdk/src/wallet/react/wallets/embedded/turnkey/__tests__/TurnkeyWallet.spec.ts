@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getRandomAddress } from '@/__mocks__/utils.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { TurnkeyWallet } from '@/wallet/react/wallets/hosted/turnkey/TurnkeyWallet.js'
+import { TurnkeyWallet } from '@/wallet/react/wallets/embedded/turnkey/TurnkeyWallet.js'
 
 vi.mock('viem', async () => ({
   // @ts-ignore - importActual returns unknown

@@ -9,12 +9,12 @@ import {
 } from '@/__mocks__/MockPrivyClient.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import { NodeHostedWalletProviderRegistry } from '@/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.js'
-import { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
-import type { NodeOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
+import { PrivyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
+import { NodeEmbeddedWalletProviderRegistry } from '@/wallet/node/providers/embedded/registry/NodeEmbeddedWalletProviderRegistry.js'
+import { TurnkeyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/turnkey/TurnkeyEmbeddedWalletProvider.js'
+import type { NodeOptionsMap } from '@/wallet/node/providers/embedded/types/index.js'
 
-describe('NodeHostedWalletProviderRegistry', () => {
+describe('NodeEmbeddedWalletProviderRegistry', () => {
   const mockChainManager = new MockChainManager({
     supportedChains: [unichain.id],
   }) as unknown as ChainManager
@@ -30,7 +30,7 @@ describe('NodeHostedWalletProviderRegistry', () => {
   })
 
   it('returns privy factory and validates options', () => {
-    const registry = new NodeHostedWalletProviderRegistry()
+    const registry = new NodeEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
     expect(factory.type).toBe('privy')
@@ -54,8 +54,8 @@ describe('NodeHostedWalletProviderRegistry', () => {
     ).toBe(false)
   })
 
-  it('creates a PrivyHostedWalletProvider instance', async () => {
-    const registry = new NodeHostedWalletProviderRegistry()
+  it('creates a PrivyEmbeddedWalletProvider instance', async () => {
+    const registry = new NodeEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
     const provider = await factory.create({ chainManager: mockChainManager }, {
@@ -63,11 +63,11 @@ describe('NodeHostedWalletProviderRegistry', () => {
       authorizationContext: getMockAuthorizationContext(),
     } as NodeOptionsMap['privy'])
 
-    expect(provider).toBeInstanceOf(PrivyHostedWalletProvider)
+    expect(provider).toBeInstanceOf(PrivyEmbeddedWalletProvider)
   })
 
   it('returns turnkey factory and validates options', () => {
-    const registry = new NodeHostedWalletProviderRegistry()
+    const registry = new NodeEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('turnkey')
 
     expect(factory.type).toBe('turnkey')
@@ -80,8 +80,8 @@ describe('NodeHostedWalletProviderRegistry', () => {
     expect(factory.validateOptions?.({})).toBe(false)
   })
 
-  it('creates a TurnkeyHostedWalletProvider instance', async () => {
-    const registry = new NodeHostedWalletProviderRegistry()
+  it('creates a TurnkeyEmbeddedWalletProvider instance', async () => {
+    const registry = new NodeEmbeddedWalletProviderRegistry()
     const factory = registry.getFactory('turnkey')
 
     const provider = await factory.create(
@@ -91,14 +91,14 @@ describe('NodeHostedWalletProviderRegistry', () => {
       },
     )
 
-    expect(provider).toBeInstanceOf(TurnkeyHostedWalletProvider)
+    expect(provider).toBeInstanceOf(TurnkeyEmbeddedWalletProvider)
   })
 
   it('throws for unknown provider type', () => {
-    const registry = new NodeHostedWalletProviderRegistry()
+    const registry = new NodeEmbeddedWalletProviderRegistry()
     // @ts-expect-error: testing runtime error for unknown type
     expect(() => registry.getFactory('unknown')).toThrow(
-      'Unknown hosted wallet provider: unknown',
+      'Unknown embedded wallet provider: unknown',
     )
   })
 })

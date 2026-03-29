@@ -18,7 +18,7 @@ import {
 import { getRandomAddress } from '@/__mocks__/utils.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
+import { PrivyWallet } from '@/wallet/node/wallets/embedded/privy/PrivyWallet.js'
 
 vi.mock('viem', async () => ({
   // @ts-ignore - importActual returns unknown

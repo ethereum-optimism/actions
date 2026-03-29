@@ -4,9 +4,9 @@ import type { TurnkeyClient as TurnkeyHttpClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
 import type { Address } from 'viem'
 
-import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
-import type { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import type { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
+import type { EmbeddedWalletProvidersSchema } from '@/wallet/core/providers/embedded/types/index.js'
+import type { PrivyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
+import type { TurnkeyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/turnkey/TurnkeyEmbeddedWalletProvider.js'
 
 /**
  * Node provider type keys
@@ -20,10 +20,10 @@ export type NodeProviderTypes = keyof NodeOptionsMap &
   keyof NodeToActionsOptionsMap
 
 /**
- * Configuration options per Node hosted wallet provider
+ * Configuration options per Node embedded wallet provider
  * @description
  * Strongly-typed configuration inputs passed to each provider factory when
- * creating a hosted wallet provider for Node.
+ * creating a embedded wallet provider for Node.
  */
 export interface NodeOptionsMap {
   /**
@@ -49,8 +49,8 @@ export interface NodeOptionsMap {
 }
 
 /**
- * Options for converting a Turnkey hosted wallet to an Actions wallet
- * @description Parameters for converting a hosted wallet to an Actions wallet
+ * Options for converting a Turnkey embedded wallet to an Actions wallet
+ * @description Parameters for converting a embedded wallet to an Actions wallet
  * @property signWith This can be a wallet account address, private key address, or private key ID.
  * @property ethereumAddress Ethereum address to use for this account, in the case that a private key ID is used to sign.
  * If left undefined, `createAccount` will fetch it from the Turnkey API. We recommend setting this if you're using a passkey
@@ -64,8 +64,8 @@ export type TurnkeyHostedWalletToActionsWalletOptions = {
 }
 
 /**
- * Options for converting a Privy hosted wallet to an Actions wallet
- * @description Parameters for converting a hosted wallet to an Actions wallet
+ * Options for converting a Privy embedded wallet to an Actions wallet
+ * @description Parameters for converting a embedded wallet to an Actions wallet
  * @property walletId Privy wallet identifier
  * @property address Ethereum address of the wallet
  */
@@ -75,16 +75,16 @@ export type PrivyHostedWalletToActionsWalletOptions = {
 }
 
 /**
- * Node environment hosted wallet registry.
+ * Node environment embedded wallet registry.
  * Registers server-safe providers for use in Node.
  */
 export type NodeHostedProviderInstanceMap = {
-  privy: PrivyHostedWalletProvider
-  turnkey: TurnkeyHostedWalletProvider
+  privy: PrivyEmbeddedWalletProvider
+  turnkey: TurnkeyEmbeddedWalletProvider
 }
 
 /**
- * Parameters required to convert each hosted wallet to an Actions wallet (Node)
+ * Parameters required to convert each embedded wallet to an Actions wallet (Node)
  * @description
  * Provider-specific, caller-supplied data needed by `toActionsWallet`.
  */
@@ -94,14 +94,14 @@ export type NodeToActionsOptionsMap = {
 }
 
 /**
- * Complete Node hosted wallet providers schema
+ * Complete Node embedded wallet providers schema
  * @description
  * Bundles provider type keys, concrete provider instances, creation configs,
  * and `toActionsWallet` parameter types for the Node environment.
  * This schema is used to type `Actions` and its registries without widening
  * to generic `string` keys.
  */
-export type NodeHostedWalletProvidersSchema = HostedWalletProvidersSchema<
+export type NodeEmbeddedWalletProvidersSchema = EmbeddedWalletProvidersSchema<
   NodeProviderTypes,
   NodeHostedProviderInstanceMap,
   NodeOptionsMap,

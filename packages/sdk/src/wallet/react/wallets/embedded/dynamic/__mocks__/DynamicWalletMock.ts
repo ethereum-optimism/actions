@@ -3,7 +3,7 @@ import { vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviders } from '@/types/providers.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
+import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
 
 /**
  * Minimal mock for DynamicWallet used in React tests

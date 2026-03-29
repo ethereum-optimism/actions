@@ -1,18 +1,18 @@
-import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
+import { EmbeddedWalletProviderRegistry } from '@/wallet/core/providers/embedded/registry/EmbeddedWalletProviderRegistry.js'
 import type {
   ReactHostedProviderInstanceMap,
   ReactOptionsMap,
   ReactProviderTypes,
-} from '@/wallet/react/providers/hosted/types/index.js'
+} from '@/wallet/react/providers/embedded/types/index.js'
 
 /**
- * React hosted wallet provider registry
+ * React embedded wallet provider registry
  * @description
  * Environment-scoped registry that binds React/browser provider keys to their
  * factory implementations. Provider code is loaded lazily via dynamic import()
  * so that unused wallet SDKs are not included in the bundle.
  */
-export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
+export class ReactEmbeddedWalletProviderRegistry extends EmbeddedWalletProviderRegistry<
   ReactHostedProviderInstanceMap,
   ReactOptionsMap,
   ReactProviderTypes
@@ -28,9 +28,9 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
         { chainManager, lendProviders, swapProviders, supportedAssets },
         _options,
       ) {
-        const { DynamicHostedWalletProvider } =
-          await import('@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js')
-        return new DynamicHostedWalletProvider(
+        const { DynamicEmbeddedWalletProvider } =
+          await import('@/wallet/react/providers/embedded/dynamic/DynamicEmbeddedWalletProvider.js')
+        return new DynamicEmbeddedWalletProvider(
           chainManager,
           lendProviders,
           swapProviders,
@@ -48,9 +48,9 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
         { chainManager, lendProviders, swapProviders, supportedAssets },
         _options,
       ) {
-        const { PrivyHostedWalletProvider } =
-          await import('@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js')
-        return new PrivyHostedWalletProvider(
+        const { PrivyEmbeddedWalletProvider } =
+          await import('@/wallet/react/providers/embedded/privy/PrivyEmbeddedWalletProvider.js')
+        return new PrivyEmbeddedWalletProvider(
           chainManager,
           lendProviders,
           swapProviders,
@@ -68,9 +68,9 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
         { chainManager, lendProviders, swapProviders, supportedAssets },
         _options,
       ) {
-        const { TurnkeyHostedWalletProvider } =
-          await import('@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js')
-        return new TurnkeyHostedWalletProvider(
+        const { TurnkeyEmbeddedWalletProvider } =
+          await import('@/wallet/react/providers/embedded/turnkey/TurnkeyEmbeddedWalletProvider.js')
+        return new TurnkeyEmbeddedWalletProvider(
           chainManager,
           lendProviders,
           swapProviders,

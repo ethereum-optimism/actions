@@ -5,7 +5,7 @@ import { toAccount } from 'viem/accounts'
 import { describe, expect, it, vi } from 'vitest'
 
 import { getRandomAddress } from '@/__mocks__/utils.js'
-import { createSigner } from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
+import { createSigner } from '@/wallet/react/wallets/embedded/privy/utils/createSigner.js'
 
 vi.mock('@privy-io/react-auth', async () => ({
   // @ts-ignore - importActual returns unknown

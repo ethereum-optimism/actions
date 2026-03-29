@@ -4,7 +4,7 @@ import type { LocalAccount } from 'viem'
 import type {
   NodeOptionsMap,
   PrivyHostedWalletToActionsWalletOptions,
-} from '@/wallet/node/providers/hosted/types/index.js'
+} from '@/wallet/node/providers/embedded/types/index.js'
 
 /**
  * Create a LocalAccount from a Privy wallet
