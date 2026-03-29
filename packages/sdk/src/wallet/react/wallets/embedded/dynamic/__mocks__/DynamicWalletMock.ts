@@ -3,7 +3,7 @@ import { vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviders } from '@/types/providers.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
+import type { DynamicEmbeddedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
 
 /**
  * Minimal mock for DynamicWallet used in React tests
@@ -15,7 +15,7 @@ export class DynamicWalletMock {
   static readonly create = vi.fn(
     async (_params: {
       chainManager: ChainManager
-      dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
+      dynamicWallet: DynamicEmbeddedWalletToActionsWalletOptions['wallet']
       lendProviders?: LendProviders
     }): Promise<Wallet> => {
       return {} as unknown as Wallet

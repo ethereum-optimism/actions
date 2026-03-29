@@ -9,7 +9,7 @@ import { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstrac
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
   NodeToActionsOptionsMap,
-  PrivyHostedWalletToActionsWalletOptions,
+  PrivyEmbeddedWalletToActionsWalletOptions,
 } from '@/wallet/node/providers/embedded/types/index.js'
 import { PrivyWallet } from '@/wallet/node/wallets/embedded/privy/PrivyWallet.js'
 import { createSigner } from '@/wallet/node/wallets/embedded/privy/utils/createSigner.js'
@@ -57,7 +57,7 @@ export class PrivyEmbeddedWalletProvider extends EmbeddedWalletProvider<
   }
 
   async toActionsWallet(
-    params: PrivyHostedWalletToActionsWalletOptions,
+    params: PrivyEmbeddedWalletToActionsWalletOptions,
   ): Promise<Wallet> {
     return PrivyWallet.create({
       privyClient: this.privyClient,

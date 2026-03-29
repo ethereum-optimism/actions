@@ -15,7 +15,7 @@ import type { TurnkeyEmbeddedWalletProvider } from '@/wallet/react/providers/emb
  * at compile time.
  */
 export type ReactProviderTypes = keyof ReactOptionsMap &
-  keyof ReactHostedProviderInstanceMap
+  keyof ReactEmbeddedProviderInstanceMap
 
 /**
  * Configuration options per React embedded wallet provider
@@ -35,7 +35,7 @@ export interface ReactOptionsMap {
  * @description Parameters for converting a embedded wallet to an Actions wallet
  * @property wallet Dynamic wallet instance obtained from the Dynamic connector
  */
-export type DynamicHostedWalletToActionsWalletOptions = {
+export type DynamicEmbeddedWalletToActionsWalletOptions = {
   wallet: DynamicWallet
 }
 
@@ -44,7 +44,7 @@ export type DynamicHostedWalletToActionsWalletOptions = {
  * @description Parameters for converting a Privy embedded wallet to an Actions wallet
  * @property connectedWallet Privy ConnectedWallet instance from @privy-io/react-auth
  */
-export type PrivyHostedWalletToActionsWalletOptions = {
+export type PrivyEmbeddedWalletToActionsWalletOptions = {
   connectedWallet: ConnectedWallet
 }
 
@@ -57,7 +57,7 @@ export type PrivyHostedWalletToActionsWalletOptions = {
  * client, so that your users are not prompted for a passkey signature just to fetch their address. You may leave this
  * undefined if using an API key client.
  */
-export type TurnkeyHostedWalletToActionsWalletOptions = {
+export type TurnkeyEmbeddedWalletToActionsWalletOptions = {
   client: TurnkeySDKClientBase
   organizationId: string
   signWith: string
@@ -68,7 +68,7 @@ export type TurnkeyHostedWalletToActionsWalletOptions = {
  * React/browser embedded wallet registry
  * @description Registers browser-only providers for client apps.
  */
-export type ReactHostedProviderInstanceMap = {
+export type ReactEmbeddedProviderInstanceMap = {
   dynamic: DynamicEmbeddedWalletProvider
   privy: PrivyEmbeddedWalletProvider
   turnkey: TurnkeyEmbeddedWalletProvider
@@ -79,9 +79,9 @@ export type ReactHostedProviderInstanceMap = {
  * @description Provider-specific, caller-supplied data needed by `toActionsWallet`.
  */
 export type ReactToActionsOptionsMap = {
-  dynamic: DynamicHostedWalletToActionsWalletOptions
-  privy: PrivyHostedWalletToActionsWalletOptions
-  turnkey: TurnkeyHostedWalletToActionsWalletOptions
+  dynamic: DynamicEmbeddedWalletToActionsWalletOptions
+  privy: PrivyEmbeddedWalletToActionsWalletOptions
+  turnkey: TurnkeyEmbeddedWalletToActionsWalletOptions
 }
 
 /**
@@ -94,7 +94,7 @@ export type ReactToActionsOptionsMap = {
  */
 export type ReactEmbeddedWalletProvidersSchema = EmbeddedWalletProvidersSchema<
   ReactProviderTypes,
-  ReactHostedProviderInstanceMap,
+  ReactEmbeddedProviderInstanceMap,
   ReactOptionsMap,
   ReactToActionsOptionsMap
 >

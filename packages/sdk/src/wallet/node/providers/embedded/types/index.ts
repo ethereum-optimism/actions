@@ -16,7 +16,7 @@ import type { TurnkeyEmbeddedWalletProvider } from '@/wallet/node/providers/embe
  * stay in sync (options, instances, and toActions options) at compile time.
  */
 export type NodeProviderTypes = keyof NodeOptionsMap &
-  keyof NodeHostedProviderInstanceMap &
+  keyof NodeEmbeddedProviderInstanceMap &
   keyof NodeToActionsOptionsMap
 
 /**
@@ -57,7 +57,7 @@ export interface NodeOptionsMap {
  * client, so that your users are not prompted for a passkey signature just to fetch their address. You may leave this
  * undefined if using an API key client.
  */
-export type TurnkeyHostedWalletToActionsWalletOptions = {
+export type TurnkeyEmbeddedWalletToActionsWalletOptions = {
   organizationId: string
   signWith: string
   ethereumAddress?: string
@@ -69,7 +69,7 @@ export type TurnkeyHostedWalletToActionsWalletOptions = {
  * @property walletId Privy wallet identifier
  * @property address Ethereum address of the wallet
  */
-export type PrivyHostedWalletToActionsWalletOptions = {
+export type PrivyEmbeddedWalletToActionsWalletOptions = {
   walletId: string
   address: Address
 }
@@ -78,7 +78,7 @@ export type PrivyHostedWalletToActionsWalletOptions = {
  * Node environment embedded wallet registry.
  * Registers server-safe providers for use in Node.
  */
-export type NodeHostedProviderInstanceMap = {
+export type NodeEmbeddedProviderInstanceMap = {
   privy: PrivyEmbeddedWalletProvider
   turnkey: TurnkeyEmbeddedWalletProvider
 }
@@ -89,8 +89,8 @@ export type NodeHostedProviderInstanceMap = {
  * Provider-specific, caller-supplied data needed by `toActionsWallet`.
  */
 export type NodeToActionsOptionsMap = {
-  privy: PrivyHostedWalletToActionsWalletOptions
-  turnkey: TurnkeyHostedWalletToActionsWalletOptions
+  privy: PrivyEmbeddedWalletToActionsWalletOptions
+  turnkey: TurnkeyEmbeddedWalletToActionsWalletOptions
 }
 
 /**
@@ -103,7 +103,7 @@ export type NodeToActionsOptionsMap = {
  */
 export type NodeEmbeddedWalletProvidersSchema = EmbeddedWalletProvidersSchema<
   NodeProviderTypes,
-  NodeHostedProviderInstanceMap,
+  NodeEmbeddedProviderInstanceMap,
   NodeOptionsMap,
   NodeToActionsOptionsMap
 >

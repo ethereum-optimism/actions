@@ -7,7 +7,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
-  DynamicHostedWalletToActionsWalletOptions,
+  DynamicEmbeddedWalletToActionsWalletOptions,
   ReactToActionsOptionsMap,
 } from '@/wallet/react/providers/embedded/types/index.js'
 
@@ -22,7 +22,7 @@ export class DynamicEmbeddedWalletProviderMock extends EmbeddedWalletProvider<
   // Exposed mock for assertions if needed
   public readonly toActionsWalletMock = vi.fn(
     async (
-      _params: DynamicHostedWalletToActionsWalletOptions,
+      _params: DynamicEmbeddedWalletToActionsWalletOptions,
     ): Promise<Wallet> => {
       return {} as unknown as Wallet
     },
@@ -30,7 +30,7 @@ export class DynamicEmbeddedWalletProviderMock extends EmbeddedWalletProvider<
 
   public readonly createSignerMock = vi.fn(
     async (
-      _params: DynamicHostedWalletToActionsWalletOptions,
+      _params: DynamicEmbeddedWalletToActionsWalletOptions,
     ): Promise<LocalAccount> => {
       return {} as unknown as LocalAccount
     },
@@ -44,13 +44,13 @@ export class DynamicEmbeddedWalletProviderMock extends EmbeddedWalletProvider<
   }
 
   async toActionsWallet(
-    params: DynamicHostedWalletToActionsWalletOptions,
+    params: DynamicEmbeddedWalletToActionsWalletOptions,
   ): Promise<Wallet> {
     return this.toActionsWalletMock(params)
   }
 
   async createSigner(
-    params: DynamicHostedWalletToActionsWalletOptions,
+    params: DynamicEmbeddedWalletToActionsWalletOptions,
   ): Promise<LocalAccount> {
     return this.createSignerMock(params)
   }

@@ -3,7 +3,7 @@ import type { LocalAccount } from 'viem'
 
 import type {
   NodeOptionsMap,
-  PrivyHostedWalletToActionsWalletOptions,
+  PrivyEmbeddedWalletToActionsWalletOptions,
 } from '@/wallet/node/providers/embedded/types/index.js'
 
 /**
@@ -22,7 +22,7 @@ import type {
  * @throws Error if wallet retrieval fails or signing operations are not supported
  */
 export function createSigner(
-  params: PrivyHostedWalletToActionsWalletOptions & NodeOptionsMap['privy'],
+  params: PrivyEmbeddedWalletToActionsWalletOptions & NodeOptionsMap['privy'],
 ): LocalAccount {
   const { walletId, address, privyClient, authorizationContext } = params
   const account = createViemAccount(privyClient, {

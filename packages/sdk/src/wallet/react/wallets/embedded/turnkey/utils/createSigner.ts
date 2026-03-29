@@ -1,7 +1,7 @@
 import { createAccount } from '@turnkey/viem'
 import type { LocalAccount } from 'viem'
 
-import type { TurnkeyHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
+import type { TurnkeyEmbeddedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
 
 /**
  * Create a viem LocalAccount instance backed by Turnkey
@@ -17,7 +17,7 @@ import type { TurnkeyHostedWalletToActionsWalletOptions } from '@/wallet/react/p
  * @returns Promise resolving to a viem `LocalAccount` with Turnkey as the signer backend
  */
 export async function createSigner(
-  params: TurnkeyHostedWalletToActionsWalletOptions,
+  params: TurnkeyEmbeddedWalletToActionsWalletOptions,
 ): Promise<LocalAccount> {
   const { client, organizationId, signWith, ethereumAddress } = params
   return createAccount({

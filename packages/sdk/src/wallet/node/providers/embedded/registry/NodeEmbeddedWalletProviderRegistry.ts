@@ -1,6 +1,6 @@
 import { EmbeddedWalletProviderRegistry } from '@/wallet/core/providers/embedded/registry/EmbeddedWalletProviderRegistry.js'
 import type {
-  NodeHostedProviderInstanceMap,
+  NodeEmbeddedProviderInstanceMap,
   NodeOptionsMap,
   NodeProviderTypes,
 } from '@/wallet/node/providers/embedded/types/index.js'
@@ -13,7 +13,7 @@ import type {
  * so that unused wallet SDKs are not included in the bundle.
  */
 export class NodeEmbeddedWalletProviderRegistry extends EmbeddedWalletProviderRegistry<
-  NodeHostedProviderInstanceMap,
+  NodeEmbeddedProviderInstanceMap,
   NodeOptionsMap,
   NodeProviderTypes
 > {

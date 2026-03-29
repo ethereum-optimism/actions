@@ -26,7 +26,7 @@ import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { DynamicEmbeddedWalletProvider } from '@/wallet/react/providers/embedded/dynamic/DynamicEmbeddedWalletProvider.js'
-import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
+import type { DynamicEmbeddedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
 import { DynamicWallet } from '@/wallet/react/wallets/embedded/dynamic/DynamicWallet.js'
 import * as createSignerUtil from '@/wallet/react/wallets/embedded/dynamic/utils/createSigner.js'
 /* eslint-enable import/first */
@@ -41,7 +41,7 @@ describe('DynamicEmbeddedWalletProvider', () => {
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',
-      } as unknown as DynamicHostedWalletToActionsWalletOptions['wallet']
+      } as unknown as DynamicEmbeddedWalletToActionsWalletOptions['wallet']
       const mockResult = {
         __brand: 'actions-wallet',
       } as unknown as DynamicWallet
@@ -72,7 +72,7 @@ describe('DynamicEmbeddedWalletProvider', () => {
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',
-      } as unknown as DynamicHostedWalletToActionsWalletOptions['wallet']
+      } as unknown as DynamicEmbeddedWalletToActionsWalletOptions['wallet']
       const mockResult = {
         __brand: 'actions-wallet',
       } as unknown as DynamicWallet
@@ -99,7 +99,7 @@ describe('DynamicEmbeddedWalletProvider', () => {
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',
-      } as unknown as DynamicHostedWalletToActionsWalletOptions['wallet']
+      } as unknown as DynamicEmbeddedWalletToActionsWalletOptions['wallet']
 
       const mockSigner = {
         address: '0xabc',

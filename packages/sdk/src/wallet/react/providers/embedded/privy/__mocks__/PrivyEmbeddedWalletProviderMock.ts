@@ -7,7 +7,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
-  PrivyHostedWalletToActionsWalletOptions,
+  PrivyEmbeddedWalletToActionsWalletOptions,
   ReactToActionsOptionsMap,
 } from '@/wallet/react/providers/embedded/types/index.js'
 
@@ -21,7 +21,7 @@ export class PrivyEmbeddedWalletProviderMock extends EmbeddedWalletProvider<
 > {
   public readonly toActionsWalletMock = vi.fn(
     async (
-      _params: PrivyHostedWalletToActionsWalletOptions,
+      _params: PrivyEmbeddedWalletToActionsWalletOptions,
     ): Promise<Wallet> => {
       return {} as unknown as Wallet
     },
@@ -29,7 +29,7 @@ export class PrivyEmbeddedWalletProviderMock extends EmbeddedWalletProvider<
 
   public readonly createSignerMock = vi.fn(
     async (
-      _params: PrivyHostedWalletToActionsWalletOptions,
+      _params: PrivyEmbeddedWalletToActionsWalletOptions,
     ): Promise<LocalAccount> => {
       return {} as unknown as LocalAccount
     },
@@ -43,13 +43,13 @@ export class PrivyEmbeddedWalletProviderMock extends EmbeddedWalletProvider<
   }
 
   async toActionsWallet(
-    params: PrivyHostedWalletToActionsWalletOptions,
+    params: PrivyEmbeddedWalletToActionsWalletOptions,
   ): Promise<Wallet> {
     return this.toActionsWalletMock(params)
   }
 
   async createSigner(
-    params: PrivyHostedWalletToActionsWalletOptions,
+    params: PrivyEmbeddedWalletToActionsWalletOptions,
   ): Promise<LocalAccount> {
     return this.createSignerMock(params)
   }

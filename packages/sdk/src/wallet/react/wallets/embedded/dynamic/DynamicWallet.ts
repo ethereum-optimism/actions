@@ -4,7 +4,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
-import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
+import type { DynamicEmbeddedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
 import { createSigner } from '@/wallet/react/wallets/embedded/dynamic/utils/createSigner.js'
 
 /**
@@ -14,7 +14,7 @@ import { createSigner } from '@/wallet/react/wallets/embedded/dynamic/utils/crea
 export class DynamicWallet extends EOAWallet {
   public signer!: LocalAccount
   public address!: Address
-  private readonly dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
+  private readonly dynamicWallet: DynamicEmbeddedWalletToActionsWalletOptions['wallet']
 
   /**
    * Create a new Dynamic wallet
@@ -25,7 +25,7 @@ export class DynamicWallet extends EOAWallet {
    */
   private constructor(
     chainManager: ChainManager,
-    dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet'],
+    dynamicWallet: DynamicEmbeddedWalletToActionsWalletOptions['wallet'],
     lendProviders?: LendProviders,
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
@@ -35,7 +35,7 @@ export class DynamicWallet extends EOAWallet {
   }
 
   static async create(params: {
-    dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
+    dynamicWallet: DynamicEmbeddedWalletToActionsWalletOptions['wallet']
     chainManager: ChainManager
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
