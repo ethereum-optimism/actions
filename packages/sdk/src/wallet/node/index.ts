@@ -1,7 +1,7 @@
-export { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
+export { PrivyEmbeddedWalletProvider } from '@/wallet/node/providers/embedded/privy/PrivyEmbeddedWalletProvider.js'
 export type {
-  NodeHostedWalletProvidersSchema,
+  NodeEmbeddedWalletProvidersSchema,
   NodeOptionsMap,
   NodeProviderTypes,
-} from '@/wallet/node/providers/hosted/types/index.js'
-export { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
+} from '@/wallet/node/providers/embedded/types/index.js'
+export { PrivyWallet } from '@/wallet/node/wallets/embedded/privy/PrivyWallet.js'

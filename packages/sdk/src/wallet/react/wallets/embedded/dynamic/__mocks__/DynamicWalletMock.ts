@@ -1,0 +1,24 @@
+import { vi } from 'vitest'
+
+import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendProviders } from '@/types/providers.js'
+import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import type { DynamicEmbeddedWalletToActionsWalletOptions } from '@/wallet/react/providers/embedded/types/index.js'
+
+/**
+ * Minimal mock for DynamicWallet used in React tests
+ * @description
+ * Provides a static `create` spy that returns a stubbed `Wallet`, avoiding
+ * browser-only dependencies. Use with `vi.mock` to replace the real module.
+ */
+export class DynamicWalletMock {
+  static readonly create = vi.fn(
+    async (_params: {
+      chainManager: ChainManager
+      dynamicWallet: DynamicEmbeddedWalletToActionsWalletOptions['wallet']
+      lendProviders?: LendProviders
+    }): Promise<Wallet> => {
+      return {} as unknown as Wallet
+    },
+  )
+}

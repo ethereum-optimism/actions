@@ -69,11 +69,11 @@ Create a config file (e.g. `actions.ts`) that centralizes the Actions SDK config
 
 ### 4a: Wallet Config
 
-The wallet config declares which hosted wallet provider to use and enables smart wallets. Here's an example using Privy on a React frontend:
+The wallet config declares which embedded wallet provider to use and enables smart wallets. Here's an example using Privy on a React frontend:
 
 ```typescript
 const walletConfig = {
-  hostedWalletConfig: {
+  embeddedWalletConfig: {
     provider: {
       type: 'privy' as const,
     },
@@ -88,7 +88,7 @@ const walletConfig = {
 
 Each provider has different config requirements depending on the environment (React vs Node). For the full setup code for each provider, see the [Integrating Wallets](https://docs.optimism.io/app-developers/reference/actions/integrating-wallets) guide.
 
-> **Source of truth for provider config shapes**: Check the SDK source at `src/wallet/node/providers/hosted/types/` (Node) or `src/wallet/react/providers/hosted/types/` (React) for the exact config each provider expects.
+> **Source of truth for provider config shapes**: Check the SDK source at `src/wallet/node/providers/embedded/types/` (Node) or `src/wallet/react/providers/embedded/types/` (React) for the exact config each provider expects.
 
 ### 4b: DeFi Provider Config (Lend, Borrow, Swap, etc.)
 
