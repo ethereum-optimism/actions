@@ -63,7 +63,8 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       const depositCallData = MetaMorphoAction.deposit(assets, receiver)
 
       return {
-        amount: params.amountWei,
+        amount: parseFloat(formatUnits(params.amountWei, params.asset.metadata.decimals)),
+        amountRaw: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
@@ -108,7 +109,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         params.marketId.chainId,
       )
 
-      const assets = params.amount
+      const assets = params.amountRaw
       const receiver = params.walletAddress
       const owner = params.walletAddress
       const withdrawCallData = MetaMorphoAction.withdraw(
@@ -118,7 +119,8 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       )
 
       return {
-        amount: params.amount,
+        amount: parseFloat(formatUnits(params.amountRaw, vaultInfo.asset.metadata.decimals)),
+        amountRaw: params.amountRaw,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
@@ -181,8 +183,14 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         params.marketId.chainId,
       )
 
+      // Get vault info for asset decimals
+      const vaultInfo = await this.getMarket({
+        address: params.marketId.address,
+        chainId: params.marketId.chainId,
+      })
+
       // Get user's market token balance (shares in the vault)
-      const shares = await publicClient.readContract({
+      const sharesRaw = await publicClient.readContract({
         address: params.marketId.address,
         abi: erc20Abi,
         functionName: 'balanceOf',
@@ -190,7 +198,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       })
 
       // Convert shares to underlying asset balance using convertToAssets
-      const balance = await publicClient.readContract({
+      const balanceRaw = await publicClient.readContract({
         address: params.marketId.address,
         abi: [
           {
@@ -202,18 +210,18 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
           },
         ],
         functionName: 'convertToAssets',
-        args: [shares],
+        args: [sharesRaw],
       })
 
-      // Format the balances (USDC has 6 decimals)
-      const balanceFormatted = formatUnits(balance, 6)
-      const sharesFormatted = formatUnits(shares, 18) // Vault shares typically have 18 decimals
+      // Convert to human-readable numbers
+      const balance = parseFloat(formatUnits(balanceRaw, vaultInfo.asset.metadata.decimals))
+      const shares = parseFloat(formatUnits(sharesRaw, 18)) // Vault shares typically have 18 decimals
 
       return {
         balance,
-        balanceFormatted,
+        balanceRaw,
         shares,
-        sharesFormatted,
+        sharesRaw,
         marketId: params.marketId,
       }
     } catch {
