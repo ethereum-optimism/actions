@@ -127,7 +127,7 @@ describe('LendProvider', () => {
         walletAddress: '0x5678' as Address,
       })
 
-      expect(result.amount).toBe(100n)
+      expect(result.amountRaw).toBe(100n)
       expect(result.marketId).toBe('0x1234')
       expect(typeof result.transactionData).toBe('object')
     })
@@ -141,7 +141,7 @@ describe('LendProvider', () => {
         'market-2',
       )
 
-      expect(result.amount).toBe(500n)
+      expect(result.amountRaw).toBe(500n)
       expect(result.marketId).toBe('market-2')
     })
 
@@ -160,7 +160,7 @@ describe('LendProvider', () => {
         walletAddress: '0x5678' as Address,
       })
 
-      expect(result.amount).toBe(1000000000n)
+      expect(result.amountRaw).toBe(1000000000n)
       expect(result.asset).toBe('0x123')
       expect(result.marketId).toBe('0x1234')
       expect(result.apy).toBe(0.05)
