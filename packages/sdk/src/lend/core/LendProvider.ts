@@ -209,7 +209,7 @@ export abstract class LendProvider<
 
     return this._closePosition({
       asset: params.asset,
-      amount: amountWei,
+      amountRaw: amountWei,
       marketId: params.marketId,
       walletAddress: params.walletAddress,
       options: params.options,
