@@ -137,7 +137,7 @@ describe('AaveLendProvider', () => {
         walletAddress: MockReceiverAddress,
       })
 
-      expect(lendTransaction).toHaveProperty('amountRaw', BigInt('1000000000')))
+      expect(lendTransaction).toHaveProperty('amountRaw', BigInt('1000000000'))
       expect(lendTransaction).toHaveProperty(
         'asset',
         asset.address[marketId.chainId],
@@ -226,7 +226,7 @@ describe('AaveLendProvider', () => {
         walletAddress,
       })
 
-      expect(withdrawTransaction).toHaveProperty('amountRaw', BigInt('500000000')))
+      expect(withdrawTransaction).toHaveProperty('amountRaw', BigInt('500000000'))
       expect(withdrawTransaction).toHaveProperty(
         'asset',
         asset.address[marketId.chainId],
