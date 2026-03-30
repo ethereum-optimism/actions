@@ -114,8 +114,8 @@ describe('LendProvider', () => {
         chainId: 84532 as const,
       })
 
-      expect(position.balance).toBe(500000n)
-      expect(position.shares).toBe(500000n)
+      expect(position.balanceRaw).toBe(500000n)
+      expect(position.sharesRaw).toBe(500000n)
       expect(position.marketId.chainId).toBe(84532)
     })
 
@@ -127,7 +127,8 @@ describe('LendProvider', () => {
         walletAddress: '0x5678' as Address,
       })
 
-      expect(result.amountRaw).toBe(100n)
+      expect(result.amountRaw).toBe(BigInt(100 * 10 ** 6))
+      expect(result.amount).toBe(100)
       expect(result.marketId).toBe('0x1234')
       expect(typeof result.transactionData).toBe('object')
     })
