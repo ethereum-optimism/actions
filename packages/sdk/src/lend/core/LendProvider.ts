@@ -125,10 +125,24 @@ export abstract class LendProvider<
       params.asset,
     )
 
+    // Apply allowlist/blocklist filtering to provided or filtered markets
+    const marketsToFetch = params.markets || filteredMarkets
+    const allowedMarkets = marketsToFetch.filter((market) => {
+      try {
+        this.validateMarketAllowed({
+          address: market.address,
+          chainId: market.chainId,
+        })
+        return true
+      } catch {
+        return false
+      }
+    })
+
     return this._getMarkets({
       asset: params.asset,
       chainId: params.chainId,
-      markets: params.markets || filteredMarkets,
+      markets: allowedMarkets,
     })
   }
 
@@ -224,29 +238,59 @@ export abstract class LendProvider<
    * @throws Error if market allowlist is configured but market is not in it
    */
   protected validateConfigSupported(marketId: LendMarketId): void {
-    if (
-      !this._config.marketAllowlist ||
-      this._config.marketAllowlist.length === 0
-    ) {
-      return
+    validateChainSupported(marketId.chainId, this.SUPPORTED_CHAIN_IDS)
+    this.validateMarketAllowed(marketId)
+  }
+
+  /**
+   * Validate that a market passes allowlist/blocklist checks.
+   * @param marketId - Market identifier containing address and chainId
+   * @throws Error if market is blocked or not in allowlist
+   */
+  protected validateMarketAllowed(marketId: LendMarketId): void {
+    const { marketBlocklist, marketAllowlist } = this._config
+
+    // Check blocklist first
+    if (marketBlocklist?.length) {
+      const isBlocked = this.findMatchingMarket(marketId, marketBlocklist)
+      if (isBlocked) {
+        throw new Error(
+          `Market ${marketId.address} on chain ${marketId.chainId} is blocked`,
+        )
+      }
     }
 
-    const foundMarket = this._config.marketAllowlist.find(
-      (allowedMarket: LendMarketConfig) =>
-        allowedMarket.address.toLowerCase() ===
-          marketId.address.toLowerCase() &&
-        allowedMarket.chainId === marketId.chainId,
-    )
-
-    if (!foundMarket) {
-      throw new Error(
-        `Market ${marketId.address} on chain ${marketId.chainId} is not in the market allowlist`,
-      )
+    // Check allowlist
+    if (marketAllowlist?.length) {
+      const isAllowed = this.findMatchingMarket(marketId, marketAllowlist)
+      if (!isAllowed) {
+        throw new Error(
+          `Market ${marketId.address} on chain ${marketId.chainId} is not in the market allowlist`,
+        )
+      }
     }
   }
 
   /**
-   * Helper method to filter market configurations
+   * Find a matching market configuration in a list.
+   * @param marketId - Market to find
+   * @param list - List of market configs to search
+   * @returns Matching market config or undefined
+   */
+  private findMatchingMarket(
+    marketId: LendMarketId,
+    list: LendMarketConfig[],
+  ): LendMarketConfig | undefined {
+    return list.find(
+      (config) =>
+        config.address.toLowerCase() === marketId.address.toLowerCase() &&
+        config.chainId === marketId.chainId,
+    )
+  }
+
+  /**
+   * Helper method to filter market configurations.
+   * Filters by chainId and asset, and respects allowlist/blocklist.
    * @param chainId - Chain ID to filter by
    * @param asset - Asset to filter by
    * @returns Filtered market configurations
@@ -256,10 +300,24 @@ export abstract class LendProvider<
     asset?: Asset,
   ): LendMarketConfig[] {
     let configs = this._config.marketAllowlist || []
+
+    // Apply chainId and asset filters
     if (chainId !== undefined)
       configs = configs.filter((m: LendMarketConfig) => m.chainId === chainId)
     if (asset !== undefined)
       configs = configs.filter((m: LendMarketConfig) => m.asset === asset)
+
+    // Apply blocklist filter
+    if (this._config.marketBlocklist?.length) {
+      configs = configs.filter((market) => {
+        const isBlocked = this.findMatchingMarket(
+          { address: market.address, chainId: market.chainId },
+          this._config.marketBlocklist!,
+        )
+        return !isBlocked
+      })
+    }
+
     return configs
   }
 
