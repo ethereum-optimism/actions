@@ -202,7 +202,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
 
     return this.createMockWithdraw(
       assetAddress,
-      params.amount,
+      params.amountRaw,
       params.marketId.chainId,
       params.marketId.address,
     )
@@ -223,7 +223,8 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     const amountWei = BigInt(Math.floor(amount * 10 ** asset.metadata.decimals))
 
     return {
-      amount: amountWei,
+      amount,
+      amountRaw: amountWei,
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
@@ -326,11 +327,14 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
       throw new Error('marketId is required for mock position')
     }
 
+    const balanceRaw = this.mockConfig.mockBalance / 2n
+    const sharesRaw = this.mockConfig.mockBalance / 2n
+    
     return {
-      balance: this.mockConfig.mockBalance / 2n,
-      balanceFormatted: (this.mockConfig.mockBalance / 2n).toString(),
-      shares: this.mockConfig.mockBalance / 2n,
-      sharesFormatted: (this.mockConfig.mockBalance / 2n).toString(),
+      balance: Number(balanceRaw) / (10 ** 6), // Assume 6 decimals
+      balanceRaw,
+      shares: Number(sharesRaw) / (10 ** 18), // Shares typically 18 decimals
+      sharesRaw,
       marketId,
     }
   }
@@ -364,12 +368,16 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
 
   private async createMockWithdraw(
     asset: Address,
-    amount: bigint,
+    amountRaw: bigint,
     _chainId: number,
     marketId?: string,
   ): Promise<LendTransaction> {
+    // Assume 6 decimals for mock (USDC-like)
+    const amount = Number(amountRaw) / (10 ** 6)
+    
     return {
       amount,
+      amountRaw,
       asset,
       marketId: marketId || 'mock-market',
       apy: 0,
