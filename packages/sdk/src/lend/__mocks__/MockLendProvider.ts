@@ -254,8 +254,12 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
       throw new Error(`Asset not supported on chain ${marketId.chainId}`)
     }
 
+    // Convert amountWei back to human-readable number
+    const amount = Number(amountWei) / (10 ** asset.metadata.decimals)
+    
     return {
-      amount: amountWei,
+      amount,
+      amountRaw: amountWei,
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
@@ -351,8 +355,13 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
         ? rawAddress
         : ('0x1234567890123456789012345678901234567890' as Address)
 
+    // Convert human-readable amount to wei (assume 6 decimals if no asset provided)
+    const decimals = asset?.metadata?.decimals || 6
+    const amountRaw = BigInt(Math.floor(amount * (10 ** decimals)))
+    
     return {
-      amount: BigInt(amount),
+      amount,
+      amountRaw,
       asset: assetAddress,
       marketId: marketId.address,
       apy: 0,
