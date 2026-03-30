@@ -56,10 +56,10 @@ const mockMarkets: LendMarket[] = [
 ]
 
 const mockPosition: LendMarketPosition = {
-  balance: 0n,
-  balanceFormatted: '0',
-  shares: 0n,
-  sharesFormatted: '0',
+  balance: 0,        // human-readable number
+  balanceRaw: 0n,    // raw bigint
+  shares: 0,         // human-readable number
+  sharesRaw: 0n,     // raw bigint
   marketId: { address: MARKET_ADDRESS_1, chainId: CHAIN_ID },
 }
 
@@ -227,8 +227,8 @@ describe('Activity Logging', () => {
     ]
     const updatedPosition: LendMarketPosition = {
       ...mockPosition,
-      balance: 10000000n,
-      balanceFormatted: '10',
+      balance: 10,        // human-readable number (10 USDC)
+      balanceRaw: 10000000n, // 10 * 10^6
     }
 
     let callCount = 0

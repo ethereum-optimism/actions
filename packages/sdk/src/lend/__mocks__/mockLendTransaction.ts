@@ -6,7 +6,8 @@ import type { LendTransaction, TransactionData } from '@/types/lend/index.js'
  * Creates a mock lend transaction for testing
  */
 export function createMockLendTransaction(params: {
-  amount: bigint
+  amount: number
+  amountRaw: bigint
   asset: Address
   marketId: Address
   approval?: TransactionData
@@ -14,6 +15,7 @@ export function createMockLendTransaction(params: {
 }): LendTransaction {
   return {
     amount: params.amount,
+    amountRaw: params.amountRaw,
     asset: params.asset,
     marketId: params.marketId,
     apy: 0.05,

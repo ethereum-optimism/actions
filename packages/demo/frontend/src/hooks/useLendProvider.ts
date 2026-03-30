@@ -148,7 +148,7 @@ export function useLendProvider({
         const initialPositions = positionResults
           .filter((result) => {
             if (!result) return false
-            return result.position.balance > 0n
+            return result.position.balance > 0
           })
           .map((result) => {
             const { market, position } = result!

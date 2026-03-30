@@ -120,7 +120,8 @@ describe('WalletLendNamespace', () => {
       const amount = 1000
       const marketId = mockMarketId
       const mockTransaction = {
-        amount: 1000000000n,
+        amount: 1000,          // human-readable (was 1000 USDC = 1000000000 raw)
+        amountRaw: 1000000000n,
         asset: mockAsset.address[130],
         marketId: marketId.address,
         apy: 0.05,
@@ -168,7 +169,8 @@ describe('WalletLendNamespace', () => {
       }
 
       const mockTransaction = {
-        amount: 100n,
+        amount: 100,
+        amountRaw: 100n,
         asset: getRandomAddress(),
         marketId: closeParams.marketId.address,
         apy: 0.05,
@@ -233,7 +235,8 @@ describe('WalletLendNamespace', () => {
       data: '0xdeposit' as const,
     }
     const mockTransaction = {
-      amount: 1000000000n,
+      amount: 1000,          // ← human-readable number (matches the openPosition call below)
+      amountRaw: 1000000000n, // ← 1000 USDC * 10^6
       asset: mockAsset.address[130],
       marketId: marketId.address,
       apy: 0.05,

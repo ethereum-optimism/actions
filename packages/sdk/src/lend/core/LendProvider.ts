@@ -172,7 +172,7 @@ export abstract class LendProvider<
 
   /**
    * Close a lending position (withdraw assets from a market)
-   * @param amount - Amount to withdraw (human-readable number)
+   * @param amountRaw - Amount to withdraw (human-readable number)
    * @param asset - Asset to withdraw (optional, validated against marketId)
    * @param marketId - Market identifier containing address and chainId
    * @param walletAddress - Wallet address for receiving assets and as owner
@@ -208,7 +208,7 @@ export abstract class LendProvider<
 
     return this._closePosition({
       asset: params.asset,
-      amount: amountWei,
+      amountRaw: amountWei,
       marketId: params.marketId,
       walletAddress: params.walletAddress,
       options: params.options,

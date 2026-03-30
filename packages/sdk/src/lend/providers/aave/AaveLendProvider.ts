@@ -15,7 +15,7 @@ import type {
   LendOpenPositionInternalParams,
   LendTransaction,
 } from '@/types/lend/index.js'
-import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
+import { formatAssetAmount, getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 import { POOL_ABI, WETH_GATEWAY_ABI } from './abis/pool.js'
 import {
@@ -186,16 +186,11 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         args: [params.walletAddress],
       })
 
-      const balanceFormatted = formatUnits(
-        balance,
-        market.asset.metadata.decimals,
-      )
-
       return {
-        balance,
-        balanceFormatted,
-        shares: balance, // In Aave, aTokens are 1:1 with underlying
-        sharesFormatted: balanceFormatted,
+        balance: formatAssetAmount(balance, market.asset.metadata.decimals),
+        balanceRaw: balance,
+        shares: formatAssetAmount(balance, market.asset.metadata.decimals), // Aave is 1:1
+        sharesRaw: balance,
         marketId: params.marketId,
       }
     } catch {
@@ -235,7 +230,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
 
     return {
-      amount: params.amountWei,
+      amount: formatAssetAmount(params.amountWei, params.asset.metadata.decimals),
+      amountRaw: params.amountWei,
       asset: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
@@ -274,7 +270,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     })
 
     return {
-      amount: params.amountWei,
+      amount: formatAssetAmount(params.amountWei, params.asset.metadata.decimals),
+      amountRaw: params.amountWei,
       asset: assetAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
@@ -324,13 +321,14 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       functionName: 'withdrawETH',
       args: [
         poolAddress, // pool
-        params.amount, // amount
+        params.amountRaw, // amount
         params.walletAddress, // to (receives native ETH)
       ],
     })
 
     return {
-      amount: params.amount,
+      amount: formatAssetAmount(params.amountRaw, marketInfo.asset.metadata.decimals), // ← human-readable number
+      amountRaw: params.amountRaw, 
       asset: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
@@ -338,7 +336,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         approval: this.buildApprovalTx(
           aWETHAddress,
           gatewayAddress,
-          params.amount,
+          params.amountRaw,
         ),
         position: {
           to: gatewayAddress,
@@ -369,13 +367,14 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       functionName: 'withdraw',
       args: [
         assetAddress, // asset
-        params.amount, // amount
+        params.amountRaw, // amount
         params.walletAddress, // to
       ],
     })
 
     return {
-      amount: params.amount,
+      amount: formatAssetAmount(params.amountRaw, marketInfo.asset.metadata.decimals), // ← human-readable number
+      amountRaw: params.amountRaw, 
       asset: assetAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,

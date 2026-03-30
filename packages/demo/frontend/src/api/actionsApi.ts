@@ -135,8 +135,10 @@ class ActionsApiClient {
     })
     return {
       ...result,
-      balance: BigInt(result.balance),
-      shares: BigInt(result.shares),
+      balance: result.balance,             // number — no conversion needed
+      balanceRaw: BigInt(result.balanceRaw), // string → bigint
+      shares: result.shares,               // number — no conversion needed
+      sharesRaw: BigInt(result.sharesRaw),   // string → bigint
     }
   }
 

@@ -43,10 +43,10 @@ export interface MarketResponse {
 }
 
 export interface PositionResponse {
-  balance: string
-  balanceFormatted: string
-  shares: string
-  sharesFormatted: string
+  balance: number
+  balanceRaw: string   // bigint serialized as string over the wire
+  shares: number
+  sharesRaw: string
 }
 
 export interface TransactionResponse {

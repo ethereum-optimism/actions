@@ -114,20 +114,28 @@ describe('LendProvider', () => {
         chainId: 84532 as const,
       })
 
-      expect(position.balance).toBe(500000n)
-      expect(position.shares).toBe(500000n)
+      expect(position.balance).toBe(500000)    // number
+      expect(position.balanceRaw).toBe(500000n) // bigint
+      expect(position.shares).toBe(500000)
+      expect(position.sharesRaw).toBe(500000n)
       expect(position.marketId.chainId).toBe(84532)
     })
 
     it('should implement closePosition method', async () => {
       const provider = new MockLendProvider()
+      const mockAsset = {
+        address: { 84532: '0x123' as Address },
+        metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+        type: 'erc20' as const,
+      }
       const result = await provider.closePosition({
         amount: 100,
+        asset: mockAsset,
         marketId: { address: '0x1234' as Address, chainId: 84532 as const },
         walletAddress: '0x5678' as Address,
       })
-
-      expect(result.amount).toBe(100n)
+      expect(result.amount).toBe(100)
+      expect(result.amountRaw).toBe(100000000n) // 100 * 10^6 ✓
       expect(result.marketId).toBe('0x1234')
       expect(typeof result.transactionData).toBe('object')
     })
@@ -141,7 +149,8 @@ describe('LendProvider', () => {
         'market-2',
       )
 
-      expect(result.amount).toBe(500n)
+      expect(result.amount).toBe(500)
+      expect(result.amountRaw).toBe(500n)
       expect(result.marketId).toBe('market-2')
     })
 
@@ -160,7 +169,8 @@ describe('LendProvider', () => {
         walletAddress: '0x5678' as Address,
       })
 
-      expect(result.amount).toBe(1000000000n)
+      expect(result.amount).toBe(1000)
+      expect(result.amountRaw).toBe(1000000000n)
       expect(result.asset).toBe('0x123')
       expect(result.marketId).toBe('0x1234')
       expect(result.apy).toBe(0.05)

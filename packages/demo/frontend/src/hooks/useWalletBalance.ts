@@ -152,7 +152,7 @@ export function useWalletBalance(params: UseWalletBalanceConfig) {
     })
   }, [tokenBalances, marketData, selectedAsset])
 
-  const depositedAmount = position?.balanceFormatted ?? null
+  const depositedAmount = position != null ? position.balance.toString() : null
 
   // Reset mutation states and clear tracking refs when data actually changes
   useEffect(() => {

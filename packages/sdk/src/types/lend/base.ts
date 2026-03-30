@@ -66,7 +66,9 @@ export interface LendTransaction {
   /** Transaction hash (set after execution) */
   hash?: string
   /** Amount lent */
-  amount: bigint
+  amount: number
+  /** raw on-chain value */
+  amountRaw: bigint
   /** Asset address */
   asset: Address
   /** Market ID */
@@ -216,13 +218,13 @@ export interface LendProviderConfig {
  */
 export interface LendMarketPosition {
   /** Asset balance in wei */
-  balance: bigint
-  /** Formatted asset balance */
-  balanceFormatted: string
+  balance: number
+  /** raw on-chain value */
+  balanceRaw: bigint
   /** Market shares owned */
-  shares: bigint
-  /** Formatted market shares */
-  sharesFormatted: string
+  shares: number
+  /** raw on-chain value */
+  sharesRaw: bigint
   /** Market identifier */
   marketId: LendMarketId
 }
@@ -271,7 +273,7 @@ export interface LendClosePositionParams {
   /** Asset to withdraw (optional - will be validated against marketId) */
   asset?: Asset
   /** Amount to withdraw (in wei) */
-  amount: bigint
+  amountRaw: bigint
   /** Market identifier containing address and chainId */
   marketId: LendMarketId
   /** Wallet address for receiving assets and as owner */

@@ -202,7 +202,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
 
     return this.createMockWithdraw(
       assetAddress,
-      params.amount,
+      params.amountRaw,
       params.marketId.chainId,
       params.marketId.address,
     )
@@ -223,7 +223,8 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     const amountWei = BigInt(Math.floor(amount * 10 ** asset.metadata.decimals))
 
     return {
-      amount: amountWei,
+      amount: parseFloat(amountWei.toString()) / (10 ** asset.metadata.decimals),
+      amountRaw: amountWei,
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
@@ -254,7 +255,8 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     }
 
     return {
-      amount: amountWei,
+      amount: parseFloat(amountWei.toString()) / (10 ** asset.metadata.decimals),
+      amountRaw: amountWei,
       asset: assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
@@ -327,49 +329,53 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     }
 
     return {
-      balance: this.mockConfig.mockBalance / 2n,
-      balanceFormatted: (this.mockConfig.mockBalance / 2n).toString(),
-      shares: this.mockConfig.mockBalance / 2n,
-      sharesFormatted: (this.mockConfig.mockBalance / 2n).toString(),
+      balance: Number(this.mockConfig.mockBalance / 2n),
+      balanceRaw: this.mockConfig.mockBalance / 2n,
+      shares: Number(this.mockConfig.mockBalance / 2n),
+      sharesRaw: this.mockConfig.mockBalance / 2n,
       marketId,
     }
   }
 
-  private async createMockClosePosition({
-    amount,
-    asset,
-    marketId,
-  }: ClosePositionParams): Promise<LendTransaction> {
-    // If asset provided, use its address for the chain; otherwise use a mock asset
-    const rawAddress = asset?.address[marketId.chainId]
-    const assetAddress: Address =
-      rawAddress && rawAddress !== 'native'
-        ? rawAddress
-        : ('0x1234567890123456789012345678901234567890' as Address)
+private async createMockClosePosition({
+  amount,
+  asset,
+  marketId,
+}: ClosePositionParams): Promise<LendTransaction> {
+  const rawAddress = asset?.address[marketId.chainId]
+  const assetAddress: Address =
+    rawAddress && rawAddress !== 'native'
+      ? rawAddress
+      : ('0x1234567890123456789012345678901234567890' as Address)
 
-    return {
-      amount: BigInt(amount),
-      asset: assetAddress,
-      marketId: marketId.address,
-      apy: 0,
-      transactionData: {
-        position: {
-          to: marketId.address,
-          data: '0xb460af94' as Address,
-          value: 0n,
-        },
+  const decimals = asset?.metadata.decimals ?? 18
+  const amountRaw = BigInt(Math.floor(amount * 10 ** decimals))
+
+  return {
+    amount,        // ← already human-readable, pass through directly
+    amountRaw,     // ← computed raw bigint
+    asset: assetAddress,
+    marketId: marketId.address,
+    apy: 0,
+    transactionData: {
+      position: {
+        to: marketId.address,
+        data: '0xb460af94' as Address,
+        value: 0n,
       },
-    }
+    },
   }
+}
 
   private async createMockWithdraw(
     asset: Address,
-    amount: bigint,
+    amountRaw: bigint,
     _chainId: number,
     marketId?: string,
   ): Promise<LendTransaction> {
     return {
-      amount,
+      amount: Number(amountRaw),
+      amountRaw,
       asset,
       marketId: marketId || 'mock-market',
       apy: 0,

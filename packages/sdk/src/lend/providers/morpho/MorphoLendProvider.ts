@@ -16,7 +16,7 @@ import type {
   LendOpenPositionInternalParams,
   LendTransaction,
 } from '@/types/lend/index.js'
-import { getAssetAddress } from '@/utils/assets.js'
+import { formatAssetAmount, getAssetAddress } from '@/utils/assets.js'
 
 /**
  * Morpho lending provider implementation
@@ -63,7 +63,8 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       const depositCallData = MetaMorphoAction.deposit(assets, receiver)
 
       return {
-        amount: params.amountWei,
+        amount: formatAssetAmount(params.amountWei, params.asset.metadata.decimals),
+        amountRaw: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
@@ -108,7 +109,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         params.marketId.chainId,
       )
 
-      const assets = params.amount
+      const assets = params.amountRaw
       const receiver = params.walletAddress
       const owner = params.walletAddress
       const withdrawCallData = MetaMorphoAction.withdraw(
@@ -118,7 +119,8 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       )
 
       return {
-        amount: params.amount,
+        amount: formatAssetAmount(params.amountRaw, vaultInfo.asset.metadata.decimals),
+        amountRaw: params.amountRaw,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
@@ -205,15 +207,11 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         args: [shares],
       })
 
-      // Format the balances (USDC has 6 decimals)
-      const balanceFormatted = formatUnits(balance, 6)
-      const sharesFormatted = formatUnits(shares, 18) // Vault shares typically have 18 decimals
-
       return {
-        balance,
-        balanceFormatted,
-        shares,
-        sharesFormatted,
+        balance: formatAssetAmount(balance, 6),
+        balanceRaw: balance,
+        shares: formatAssetAmount(shares, 18),
+        sharesRaw: shares,
         marketId: params.marketId,
       }
     } catch {
