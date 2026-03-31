@@ -1,10 +1,9 @@
 import type { ConnectedWallet } from '@privy-io/react-auth'
 import type { Address, LocalAccount } from 'viem'
 
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
-import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
 
@@ -21,34 +20,27 @@ export class PrivyWallet extends EOAWallet {
   private constructor(
     chainManager: ChainManager,
     connectedWallet: ConnectedWallet,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-    },
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
+    supportedAssets?: Asset[],
   ) {
-    super(chainManager, lendProviders, swapProviders)
+    super(chainManager, lendProviders, swapProviders, supportedAssets)
     this.connectedWallet = connectedWallet
   }
 
   static async create(params: {
     chainManager: ChainManager
     connectedWallet: ConnectedWallet
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    }
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-    }
+    lendProviders?: LendProviders
+    swapProviders?: SwapProviders
+    supportedAssets?: Asset[]
   }): Promise<PrivyWallet> {
     const wallet = new PrivyWallet(
       params.chainManager,
       params.connectedWallet,
       params.lendProviders,
       params.swapProviders,
+      params.supportedAssets,
     )
     await wallet.initialize()
     return wallet

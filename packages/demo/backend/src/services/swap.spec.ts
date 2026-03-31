@@ -30,7 +30,7 @@ const CHAIN_ID = 84532 as SupportedChainId
 
 const mockSwapNamespace = {
   getMarkets: vi.fn(),
-  price: vi.fn(),
+  getQuote: vi.fn(),
 }
 
 const mockActions = {
@@ -68,53 +68,55 @@ describe('Swap Service', () => {
     })
   })
 
-  describe('getPrice', () => {
-    it('returns price quote for exact-in', async () => {
-      const mockPrice = {
-        price: '0.005',
-        amountIn: 100000000n,
-        amountOut: 500000000000000000n,
+  describe('getQuote', () => {
+    it('returns quote for exact-in', async () => {
+      const mockQuote = {
+        price: 0.005,
+        amountIn: 100,
+        amountOut: 0.5,
+        amountInRaw: 100000000n,
+        amountOutRaw: 500000000000000000n,
       }
-      mockSwapNamespace.price.mockResolvedValue(mockPrice)
+      mockSwapNamespace.getQuote.mockResolvedValue(mockQuote)
 
-      const result = await swapService.getPrice({
+      const result = await swapService.getQuote({
         tokenInAddress: TOKEN_IN,
         tokenOutAddress: TOKEN_OUT,
         chainId: CHAIN_ID,
         amountIn: 100,
       })
 
-      expect(result).toEqual(mockPrice)
-      expect(mockSwapNamespace.price).toHaveBeenCalledWith(
+      expect(result).toEqual(mockQuote)
+      expect(mockSwapNamespace.getQuote).toHaveBeenCalledWith(
         expect.objectContaining({ amountIn: 100 }),
       )
     })
 
     it('passes amountOut for exact-out quotes', async () => {
-      mockSwapNamespace.price.mockResolvedValue({ price: '200' })
+      mockSwapNamespace.getQuote.mockResolvedValue({ price: 200 })
 
-      await swapService.getPrice({
+      await swapService.getQuote({
         tokenInAddress: TOKEN_IN,
         tokenOutAddress: TOKEN_OUT,
         chainId: CHAIN_ID,
         amountOut: 0.5,
       })
 
-      expect(mockSwapNamespace.price).toHaveBeenCalledWith(
+      expect(mockSwapNamespace.getQuote).toHaveBeenCalledWith(
         expect.objectContaining({ amountOut: 0.5 }),
       )
     })
 
     it('passes undefined amounts when neither specified (SDK defaults)', async () => {
-      mockSwapNamespace.price.mockResolvedValue({ price: '200' })
+      mockSwapNamespace.getQuote.mockResolvedValue({ price: 200 })
 
-      await swapService.getPrice({
+      await swapService.getQuote({
         tokenInAddress: TOKEN_IN,
         tokenOutAddress: TOKEN_OUT,
         chainId: CHAIN_ID,
       })
 
-      expect(mockSwapNamespace.price).toHaveBeenCalledWith(
+      expect(mockSwapNamespace.getQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           amountIn: undefined,
           amountOut: undefined,
@@ -159,8 +161,8 @@ describe('Swap Service', () => {
         receipt: { transactionHash: '0xtxhash' },
         amountIn: 100,
         amountOut: 0.5,
-        amountInWei: 100000000n,
-        amountOutWei: 500000000000000000n,
+        amountInRaw: 100000000n,
+        amountOutRaw: 500000000000000000n,
         price: '0.005',
         priceImpact: 0.001,
         assetIn: {},

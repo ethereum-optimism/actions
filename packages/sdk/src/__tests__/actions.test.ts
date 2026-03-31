@@ -433,7 +433,7 @@ describe('Actions SDK', () => {
         expect(actions.lend).toBeDefined()
         const supportedIds = actions.lend.supportedChainIds()
         expect(supportedIds).toContain(130) // Unichain
-        expect(supportedIds).toContain(8453) // Base
+        expect(supportedIds).toContain(84532) // Base Sepolia
       })
     })
 

@@ -18,7 +18,7 @@ interface UseTotalBalanceParams {
     tokenOutAddress: Address
     chainId: SupportedChainId
     amountIn?: number
-  }) => Promise<{ price: string; amountOut: number } | null>
+  }) => Promise<{ amountOut: number } | null>
 }
 
 export function useTotalBalance({ assets, getPrice }: UseTotalBalanceParams) {

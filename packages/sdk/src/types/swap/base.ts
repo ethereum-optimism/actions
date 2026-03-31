@@ -1,7 +1,7 @@
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
 import type {
@@ -12,23 +12,19 @@ import type {
 export { SwapProvider } from '@/swap/core/SwapProvider.js'
 export { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
 export { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
+export type { SwapProviders } from '@/types/providers.js'
 
 /**
- * Map of available swap providers keyed by provider name
- */
-export type SwapProviders = {
-  uniswap?: SwapProvider<SwapProviderConfig>
-}
-
-/**
- * Swap provider configuration
- * @description Configuration for a single swap provider (mirrors LendProviderConfig pattern)
+ * Per-provider swap configuration.
+ * Provider-level values override the shared SwapGlobalConfig defaults.
  */
 export interface SwapProviderConfig {
-  /** Default slippage tolerance (e.g., 0.005 for 0.5%) */
+  /** Slippage tolerance override for this provider (e.g., 0.005 for 0.5%) */
   defaultSlippage?: number
-  /** Maximum allowed slippage (e.g., 0.5 for 50%). Defaults to 0.5. */
+  /** Maximum allowed slippage override for this provider (e.g., 0.5 for 50%) */
   maxSlippage?: number
+  /** Quote expiration override for this provider, in seconds from now */
+  quoteExpirationSeconds?: number
   /** Allowlist of swap markets (optional - defaults to all supported assets) */
   marketAllowlist?: SwapMarketConfig[]
   /** Blocklist of swap markets to exclude */
@@ -94,6 +90,8 @@ export interface WalletSwapParams {
   deadline?: number
   /** Recipient address. Defaults to wallet address. */
   recipient?: Address
+  /** Explicitly select a swap provider. Overrides routing config. */
+  provider?: SwapProviderName
 }
 
 /**
@@ -105,12 +103,12 @@ export interface SwapExecuteParams extends WalletSwapParams {
 }
 
 /**
- * Fully resolved swap parameters with defaults applied and amounts in wei.
+ * Fully resolved swap parameters with defaults applied and amounts as raw bigint.
  * Passed to provider _execute() implementations.
  */
 export interface ResolvedSwapParams {
-  amountInWei?: bigint
-  amountOutWei?: bigint
+  amountInRaw?: bigint
+  amountOutRaw?: bigint
   assetIn: Asset
   assetOut: Asset
   slippage: number
@@ -136,6 +134,121 @@ export interface SwapPriceParams {
   amountOut?: number
   /** Chain to get price on */
   chainId: SupportedChainId
+  /** Explicitly select a swap provider. Overrides routing config. */
+  provider?: SwapProviderName
+}
+
+/**
+ * Parameters for getting a swap quote with pre-built execution data.
+ */
+export interface SwapQuoteParams {
+  /** Token to sell */
+  assetIn: Asset
+  /** Token to buy (required) */
+  assetOut: Asset
+  /** Amount of input token (human-readable). Mutually exclusive with amountOut. */
+  amountIn?: number
+  /** Amount of output token (human-readable). Mutually exclusive with amountIn. */
+  amountOut?: number
+  /** Chain to execute swap on */
+  chainId: SupportedChainId
+  /** Slippage tolerance baked into the quote */
+  slippage?: number
+  /** Transaction deadline as Unix timestamp */
+  deadline?: number
+  /** Recipient address */
+  recipient?: Address
+  /** Explicitly select a swap provider */
+  provider?: SwapProviderName
+}
+
+/**
+ * Pre-built execution data from a quote, ready to submit on-chain.
+ */
+export interface SwapQuoteExecution {
+  /** Encoded swap calldata */
+  swapCalldata: Hex
+  /** Router/contract to send the swap transaction to */
+  routerAddress: Address
+  /** Native ETH value for ETH-in swaps, else 0n */
+  value: bigint
+  /** Opaque provider-specific context (e.g. stable flag, factory address) */
+  providerContext?: Record<string, unknown>
+}
+
+/**
+ * A complete swap quote: pricing, amounts, and pre-built execution data.
+ * Pass to execute() to skip re-quoting.
+ *
+ * **Precision note:** `Raw` fields (bigint) are the on-chain source of truth.
+ * Number fields (`amountIn`, `amountOut`, `price`, etc.) are display approximations
+ * derived via `formatUnits` → `parseFloat`. For tokens with many significant digits,
+ * numbers may lose precision. Use `Raw` fields for any math that matters.
+ */
+export interface SwapQuote {
+  // ── What you're swapping ──
+  /** Token being sold */
+  assetIn: Asset
+  /** Token being bought */
+  assetOut: Asset
+  /** Chain to execute on */
+  chainId: SupportedChainId
+
+  // ── Amounts (Raw = on-chain precision, number = display approximation) ──
+  /** Human-readable input amount (display only — use amountInRaw for precision) */
+  amountIn: number
+  /** Input amount as raw bigint (native decimals). Source of truth. */
+  amountInRaw: bigint
+  /** Human-readable expected output (display only — use amountOutRaw for precision) */
+  amountOut: number
+  /** Expected output as raw bigint. Source of truth. */
+  amountOutRaw: bigint
+  /** Human-readable minimum output after slippage (display only) */
+  amountOutMin: number
+  /** Minimum output as raw bigint after slippage. Source of truth for on-chain execution. */
+  amountOutMinRaw: bigint
+
+  // ── Price (display approximations derived from number amounts) ──
+  /** Exchange rate: amountOut / amountIn. Display approximation. */
+  price: number
+  /** Inverse exchange rate: amountIn / amountOut. Display approximation. */
+  priceInverse: number
+  /** Price impact as decimal (0.03 = 3%) */
+  priceImpact: number
+
+  // ── Route ──
+  /** Route taken for the swap */
+  route: SwapRoute
+
+  // ── Execution ──
+  /** Pre-built transaction data. Pass quote to execute() to use. */
+  execution: SwapQuoteExecution
+
+  // ── Metadata ──
+  /** Provider that generated this quote */
+  provider: SwapProviderName
+  /** Slippage tolerance applied to this quote */
+  slippage: number
+  /** Transaction deadline (Unix seconds) */
+  deadline: number
+  /** When the quote was generated (Unix seconds) */
+  quotedAt: number
+  /** When the quote expires (Unix seconds) */
+  expiresAt: number
+  /** Estimated gas cost as raw bigint (native decimals) */
+  gasEstimate?: bigint
+  /**
+   * Wallet address that will execute this quote.
+   * Set by WalletSwapNamespace before execution — not available on price-only quotes.
+   * Used to check existing on-chain allowances and skip redundant approvals.
+   */
+  recipient?: Address
+  /**
+   * The recipient address baked into execution.swapCalldata at quote time.
+   * If recipient differs from quotedRecipient at execute time, calldata is re-encoded
+   * with the correct recipient to prevent tokens from being sent to the wrong address.
+   */
+  quotedRecipient: Address
 }
 
 /**
@@ -172,15 +285,15 @@ export interface SwapPrice {
   amountIn: number
   /** Human-readable output amount */
   amountOut: number
-  /** Input amount in wei */
-  amountInWei: bigint
-  /** Expected output amount in wei */
-  amountOutWei: bigint
+  /** Input amount as raw bigint (native decimals) */
+  amountInRaw: bigint
+  /** Expected output amount as raw bigint (native decimals) */
+  amountOutRaw: bigint
   /** Price impact as decimal (0.03 = 3%). Derived from pool mid-price vs execution price. */
   priceImpact: number
   /** Route taken for the swap */
   route: SwapRoute
-  /** Estimated gas cost in wei */
+  /** Estimated gas cost as raw bigint (native decimals) */
   gasEstimate?: bigint
 }
 
@@ -204,16 +317,16 @@ export interface SwapTransaction {
   amountIn: number
   /** Human-readable output amount */
   amountOut: number
-  /** Input amount in wei */
-  amountInWei: bigint
-  /** Output amount in wei (expected) */
-  amountOutWei: bigint
+  /** Input amount as raw bigint (native decimals) */
+  amountInRaw: bigint
+  /** Output amount as raw bigint (native decimals) (expected) */
+  amountOutRaw: bigint
   /** Input asset */
   assetIn: Asset
   /** Output asset */
   assetOut: Asset
-  /** Execution price */
-  price: string
+  /** Exchange rate: amountOut / amountIn */
+  price: number
   /** Price impact as decimal (0.03 = 3%) */
   priceImpact: number
   /** Transaction data for execution */
@@ -230,16 +343,16 @@ export interface SwapReceipt {
   amountIn: number
   /** Human-readable output amount */
   amountOut: number
-  /** Actual input amount in wei */
-  amountInWei: bigint
-  /** Actual output amount in wei */
-  amountOutWei: bigint
+  /** Actual input amount as raw bigint (native decimals) */
+  amountInRaw: bigint
+  /** Actual output amount as raw bigint (native decimals) */
+  amountOutRaw: bigint
   /** Input asset */
   assetIn: Asset
   /** Output asset */
   assetOut: Asset
-  /** Execution price as human-readable string */
-  price: string
+  /** Exchange rate: amountOut / amountIn */
+  price: number
   /** Price impact as decimal (0.03 = 3%) */
   priceImpact: number
 }
@@ -255,5 +368,5 @@ export interface SwapMarket {
   /** Fee tier in pips (500 = 0.05%) */
   fee: number
   /** Provider name */
-  provider: 'uniswap'
+  provider: SwapProviderName
 }

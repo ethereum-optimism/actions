@@ -86,3 +86,17 @@ export function getAssetAddress(
   }
   return address
 }
+
+/**
+ * Get all non-native contract addresses for an asset across all chains, lowercased.
+ * @param asset - Asset to extract addresses from
+ * @returns Array of lowercased contract addresses
+ */
+export function getAllAssetAddresses(asset: Asset): string[] {
+  return Object.values(asset.address)
+    .filter(
+      (addr): addr is Exclude<typeof addr, undefined | 'native'> =>
+        addr !== undefined && addr !== 'native',
+    )
+    .map((addr) => addr.toLowerCase())
+}

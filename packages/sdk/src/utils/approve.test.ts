@@ -3,12 +3,15 @@ import { decodeFunctionData } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  buildApprovalTxIfNeeded,
+  buildErc20ApprovalTx,
   buildPermit2ApprovalTx,
   buildTokenApprovalTx,
   checkPermit2Allowance,
   checkTokenAllowance,
   DEFAULT_PERMIT2_EXPIRY_SECONDS,
-} from '@/utils/permit2.js'
+  getApprovalDeficit,
+} from '@/utils/approve.js'
 
 const PERMIT2_ABI = [
   {
@@ -138,5 +141,118 @@ describe('buildPermit2ApprovalTx', () => {
     expect(Number(expiration)).toBeLessThan(
       before + DEFAULT_PERMIT2_EXPIRY_SECONDS,
     )
+  })
+})
+
+describe('buildErc20ApprovalTx', () => {
+  it('builds approval for exact amount', () => {
+    const tx = buildErc20ApprovalTx(TOKEN, SPENDER, 500000n)
+
+    expect(tx.to).toBe(TOKEN)
+    expect(tx.value).toBe(0n)
+    expect(tx.data).toMatch(/^0x/)
+  })
+})
+
+describe('getApprovalDeficit', () => {
+  it('returns 0n when allowance is sufficient', async () => {
+    const publicClient = {
+      readContract: vi.fn().mockResolvedValue(1000000n),
+    } as unknown as PublicClient
+
+    const deficit = await getApprovalDeficit({
+      publicClient,
+      token: TOKEN,
+      owner: OWNER,
+      spender: SPENDER,
+      amount: 500000n,
+    })
+
+    expect(deficit).toBe(0n)
+  })
+
+  it('returns deficit when allowance is insufficient', async () => {
+    const publicClient = {
+      readContract: vi.fn().mockResolvedValue(300000n),
+    } as unknown as PublicClient
+
+    const deficit = await getApprovalDeficit({
+      publicClient,
+      token: TOKEN,
+      owner: OWNER,
+      spender: SPENDER,
+      amount: 500000n,
+    })
+
+    expect(deficit).toBe(200000n)
+  })
+
+  it('returns full amount when allowance is zero', async () => {
+    const publicClient = {
+      readContract: vi.fn().mockResolvedValue(0n),
+    } as unknown as PublicClient
+
+    const deficit = await getApprovalDeficit({
+      publicClient,
+      token: TOKEN,
+      owner: OWNER,
+      spender: SPENDER,
+      amount: 500000n,
+    })
+
+    expect(deficit).toBe(500000n)
+  })
+})
+
+describe('buildApprovalTxIfNeeded', () => {
+  it('returns undefined when allowance is sufficient', async () => {
+    const publicClient = {
+      readContract: vi.fn().mockResolvedValue(1000000n),
+    } as unknown as PublicClient
+
+    const tx = await buildApprovalTxIfNeeded({
+      publicClient,
+      token: TOKEN,
+      owner: OWNER,
+      spender: SPENDER,
+      amount: 500000n,
+    })
+
+    expect(tx).toBeUndefined()
+  })
+
+  it('returns approval tx for the deficit only', async () => {
+    const publicClient = {
+      readContract: vi.fn().mockResolvedValue(300000n),
+    } as unknown as PublicClient
+
+    const tx = await buildApprovalTxIfNeeded({
+      publicClient,
+      token: TOKEN,
+      owner: OWNER,
+      spender: SPENDER,
+      amount: 500000n,
+    })
+
+    expect(tx).toBeDefined()
+    expect(tx!.to).toBe(TOKEN)
+    expect(tx!.value).toBe(0n)
+  })
+
+  it('returns approval for full amount when allowance is zero', async () => {
+    const publicClient = {
+      readContract: vi.fn().mockResolvedValue(0n),
+    } as unknown as PublicClient
+
+    const tx = await buildApprovalTxIfNeeded({
+      publicClient,
+      token: TOKEN,
+      owner: OWNER,
+      spender: SPENDER,
+      amount: 500000n,
+    })
+
+    expect(tx).toBeDefined()
+    expect(tx!.to).toBe(TOKEN)
   })
 })

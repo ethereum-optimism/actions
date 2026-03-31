@@ -1,8 +1,9 @@
-import { type Address, encodeAbiParameters, formatUnits, keccak256 } from 'viem'
+import { formatUnits } from 'viem'
 
+import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { expandMarkets, findMarket } from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
-import { POOL_KEY_ABI_TYPE } from '@/swap/providers/uniswap/abis.js'
 import {
   getSupportedChainIds,
   getUniswapAddresses,
@@ -11,6 +12,10 @@ import {
   encodeUniversalRouterSwap,
   getQuote,
 } from '@/swap/providers/uniswap/encoding.js'
+import {
+  configToMarkets,
+  getValidMarketConfigs,
+} from '@/swap/providers/uniswap/markets.js'
 import type {
   UniswapMarketConfig,
   UniswapSwapProviderConfig,
@@ -21,40 +26,79 @@ import type {
   GetSwapMarketsParams,
   ResolvedSwapParams,
   SwapMarket,
-  SwapPrice,
-  SwapPriceParams,
+  SwapQuote,
+  SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
-import type { TransactionData } from '@/types/transaction.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
 
 /**
  * Uniswap V4 swap provider using Universal Router and Permit2 approvals.
  */
 export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig> {
-  /** @returns Chain IDs where Uniswap V4 contracts are deployed */
-  supportedChainIds(): SupportedChainId[] {
+  protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
   }
 
-  /**
-   * Build a swap transaction with quote, calldata, and any required approvals.
-   * @param params - Resolved swap parameters (amounts in wei, defaults applied)
-   * @returns Transaction data ready for wallet execution
-   */
   protected async _execute(
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {
+    const swapQuote = await this._getQuote({
+      assetIn: params.assetIn,
+      assetOut: params.assetOut,
+      amountIn: params.amountInRaw
+        ? parseFloat(
+            formatUnits(params.amountInRaw, params.assetIn.metadata.decimals),
+          )
+        : undefined,
+      amountOut: params.amountOutRaw
+        ? parseFloat(
+            formatUnits(params.amountOutRaw, params.assetOut.metadata.decimals),
+          )
+        : undefined,
+      chainId: params.chainId,
+      slippage: params.slippage,
+      deadline: params.deadline,
+      recipient: params.recipient,
+    })
+    return this.buildSwapTransactions(swapQuote)
+  }
+
+  protected async _buildApprovals(quote: SwapQuote) {
+    const addresses = getUniswapAddresses(quote.chainId)
+
+    return this.buildPermit2Approvals(
+      {
+        assetIn: quote.assetIn,
+        assetOut: quote.assetOut,
+        slippage: quote.slippage,
+        deadline: quote.deadline,
+        recipient: quote.recipient!,
+        walletAddress: quote.recipient!,
+        chainId: quote.chainId,
+        amountInRaw: quote.amountInRaw,
+      },
+      quote.amountInRaw,
+      addresses.permit2,
+      addresses.universalRouter,
+    )
+  }
+
+  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     const { chainId, assetIn, assetOut } = params
     const addresses = getUniswapAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)
     const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
 
+    const { slippage, now, deadline, recipient, amountInRaw } =
+      this.resolveQuoteDefaults(params)
+    const amountOutRaw = parseAssetAmount(assetOut, params.amountOut)
+
     const quote = await getQuote({
       assetIn,
       assetOut,
-      amountInWei: params.amountInWei,
-      amountOutWei: params.amountOutWei,
+      amountInRaw: amountOutRaw ? undefined : amountInRaw,
+      amountOutRaw,
       chainId,
       publicClient,
       quoterAddress: addresses.quoter,
@@ -64,13 +108,13 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     })
 
     const swapCalldata = encodeUniversalRouterSwap({
-      amountInWei: params.amountInWei,
-      amountOutWei: params.amountOutWei,
+      amountInRaw: amountOutRaw ? undefined : amountInRaw,
+      amountOutRaw,
       assetIn,
       assetOut,
-      slippage: params.slippage,
-      deadline: params.deadline,
-      recipient: params.recipient,
+      slippage,
+      deadline,
+      recipient,
       chainId,
       quote,
       universalRouterAddress: addresses.universalRouter,
@@ -78,68 +122,46 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       tickSpacing: marketConfig.tickSpacing,
     })
 
-    const amountInWei = params.amountInWei ?? quote.amountInWei
-    const { tokenApproval, permit2Approval } = await this.buildPermit2Approvals(
-      params,
-      amountInWei,
-      addresses.permit2,
-      addresses.universalRouter,
-      this._config.permit2ExpirySeconds,
+    const finalAmountInRaw = amountOutRaw ? quote.amountInRaw : amountInRaw
+
+    const { amountOutMinRaw, amountOutMin } = this.computeSlippageBounds(
+      quote.amountOutRaw,
+      slippage,
+      assetOut,
     )
 
-    const swapTx: TransactionData = {
-      to: addresses.universalRouter,
-      data: swapCalldata,
-      value: isNativeAsset(assetIn) ? (params.amountInWei ?? 0n) : 0n,
-    }
-
     return {
-      amountIn: parseFloat(formatUnits(amountInWei, assetIn.metadata.decimals)),
-      amountOut: parseFloat(
-        formatUnits(quote.amountOutWei, assetOut.metadata.decimals),
-      ),
-      amountInWei,
-      amountOutWei: quote.amountOutWei,
       assetIn,
       assetOut,
-      price: quote.price,
-      priceImpact: quote.priceImpact,
-      transactionData: { tokenApproval, permit2Approval, swap: swapTx },
-    }
-  }
-
-  /**
-   * Get a price quote for a swap pair.
-   * @param params - Price query with assets, optional amounts, and chain
-   * @returns Quote with price, amounts, price impact, and route
-   */
-  protected async _getPrice(params: SwapPriceParams): Promise<SwapPrice> {
-    const { chainId, assetIn, assetOut } = params
-    const addresses = getUniswapAddresses(chainId)
-    const publicClient = this.chainManager.getPublicClient(chainId)
-
-    if (!assetOut) {
-      throw new Error('assetOut is required')
-    }
-
-    const marketConfig = this.resolveUniswapConfig(assetIn, assetOut, chainId)
-
-    // Default to 1 unit for price quotes when no amount specified
-    const amountInWei = parseAssetAmount(assetIn, params.amountIn ?? 1)
-    const amountOutWei = parseAssetAmount(assetOut, params.amountOut)
-
-    return getQuote({
-      assetIn,
-      assetOut,
-      amountInWei: amountOutWei ? undefined : amountInWei,
-      amountOutWei,
       chainId,
-      publicClient,
-      quoterAddress: addresses.quoter,
-      poolManagerAddress: addresses.poolManager,
-      fee: marketConfig.fee,
-      tickSpacing: marketConfig.tickSpacing,
-    })
+      amountIn: quote.amountIn,
+      amountInRaw: finalAmountInRaw,
+      amountOut: quote.amountOut,
+      amountOutRaw: quote.amountOutRaw,
+      amountOutMin,
+      amountOutMinRaw,
+      price: quote.amountOut / quote.amountIn,
+      priceInverse: quote.amountIn / quote.amountOut,
+      priceImpact: quote.priceImpact,
+      route: quote.route,
+      execution: {
+        swapCalldata,
+        routerAddress: addresses.universalRouter,
+        value: isNativeAsset(assetIn) ? (amountInRaw ?? 0n) : 0n,
+        providerContext: {
+          fee: marketConfig.fee,
+          tickSpacing: marketConfig.tickSpacing,
+          permit2Address: addresses.permit2,
+        },
+      },
+      provider: UNISWAP,
+      slippage,
+      deadline,
+      quotedAt: now,
+      expiresAt: deadline,
+      gasEstimate: quote.gasEstimate,
+      quotedRecipient: recipient,
+    }
   }
 
   /**
@@ -149,53 +171,32 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
    * @throws If no matching market found in config
    */
   protected async _getMarket(params: GetSwapMarketParams): Promise<SwapMarket> {
-    const { poolId, chainId } = params
-
-    for (const config of this.validConfigs()) {
-      if (config.chainId !== undefined && config.chainId !== chainId) continue
-      const match = this.marketsFromConfig(config, chainId).find(
-        (m) => m.marketId.poolId === poolId,
-      )
-      if (match) return match
-    }
-
-    throw new Error(
-      `Market with poolId ${poolId} not found on chain ${chainId}`,
+    return findMarket(
+      getValidMarketConfigs(this._config.marketAllowlist),
+      params.chainId,
+      params.poolId,
+      configToMarkets,
     )
   }
 
   /**
    * Expand the market allowlist into concrete SwapMarket objects.
-   * Derives poolId from each asset pair's pool key — no RPC calls needed.
-   * @param params - Optional chain and asset filters
+   * @param params - Optional filters (chainId, asset)
    * @returns All configured markets matching the filters
    */
   protected async _getMarkets(
     params: GetSwapMarketsParams,
   ): Promise<SwapMarket[]> {
-    return this.validConfigs().flatMap((config) => {
-      const chainIds = params.chainId
-        ? [params.chainId]
-        : config.chainId
-          ? [config.chainId]
-          : this.supportedChainIds()
-
-      return chainIds.flatMap((chainId) =>
-        this.marketsFromConfig(config, chainId, params.asset),
-      )
+    return expandMarkets({
+      configs: getValidMarketConfigs(this._config.marketAllowlist),
+      filters: params,
+      supportedChainIds: this.supportedChainIds(),
+      toMarkets: configToMarkets,
     })
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Private helpers
-  // ─────────────────────────────────────────────────────────────────────────────
-
   /**
-   * Look up the Uniswap-specific market config for a pair, validating fee/tickSpacing.
-   * @param assetIn - Input asset
-   * @param assetOut - Output asset
-   * @param chainId - Target chain
-   * @returns Market config with guaranteed fee and tickSpacing
+   * Resolve and validate Uniswap market config for a pair.
    * @throws If pair not in allowlist or missing fee/tickSpacing
    */
   private resolveUniswapConfig(
@@ -212,93 +213,5 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       )
     }
     return config as UniswapMarketConfig & { fee: number; tickSpacing: number }
-  }
-
-  /** @returns Allowlist entries that have the required fee and tickSpacing set */
-  private validConfigs(): Array<
-    UniswapMarketConfig & { fee: number; tickSpacing: number }
-  > {
-    return (this._config.marketAllowlist ?? []).filter(
-      (f): f is UniswapMarketConfig & { fee: number; tickSpacing: number } =>
-        f.fee !== undefined && f.tickSpacing !== undefined,
-    )
-  }
-
-  /**
-   * Generate all SwapMarket objects from a single config entry on a given chain.
-   * @param config - Market config with fee/tickSpacing
-   * @param chainId - Target chain
-   * @param asset - If provided, only return markets containing this asset
-   */
-  private marketsFromConfig(
-    config: UniswapMarketConfig & { fee: number; tickSpacing: number },
-    chainId: SupportedChainId,
-    asset?: Asset,
-  ): SwapMarket[] {
-    return this.assetPairs(config.assets, asset)
-      .map(([a, b]) =>
-        this.configToMarket(a, b, chainId, config.fee, config.tickSpacing),
-      )
-      .filter((m): m is SwapMarket => m !== null)
-  }
-
-  /**
-   * Generate unique asset pairs, optionally scoped to pairs containing a required asset.
-   * @param assets - Full list of assets from a market config
-   * @param requiredAsset - If set, only pairs including this asset are returned
-   */
-  private assetPairs(
-    assets: Asset[],
-    requiredAsset?: Asset,
-  ): Array<[Asset, Asset]> {
-    return assets
-      .flatMap((a, i) => assets.slice(i + 1).map((b): [Asset, Asset] => [a, b]))
-      .filter(
-        ([a, b]) =>
-          !requiredAsset || a === requiredAsset || b === requiredAsset,
-      )
-  }
-
-  /**
-   * Build a SwapMarket from two assets and V4 pool parameters.
-   * Computes a deterministic poolId from the sorted pool key.
-   * @returns SwapMarket, or null if either asset lacks an address on this chain
-   */
-  private configToMarket(
-    assetA: Asset,
-    assetB: Asset,
-    chainId: SupportedChainId,
-    fee: number,
-    tickSpacing: number,
-  ): SwapMarket | null {
-    const addrA = assetA.address[chainId]
-    const addrB = assetB.address[chainId]
-    if (!addrA || addrA === 'native' || !addrB || addrB === 'native')
-      return null
-
-    // V4 requires currency0 < currency1 for deterministic pool keys
-    const [currency0, currency1] =
-      addrA.toLowerCase() < addrB.toLowerCase()
-        ? [addrA, addrB]
-        : [addrB, addrA]
-
-    // PoolId = keccak256(abi.encode(PoolKey)) per V4's PoolIdLibrary
-    // @see https://github.com/Uniswap/v4-core/blob/main/src/types/PoolId.sol
-    const poolId = keccak256(
-      encodeAbiParameters(POOL_KEY_ABI_TYPE, [
-        currency0 as Address,
-        currency1 as Address,
-        fee,
-        tickSpacing,
-        '0x0000000000000000000000000000000000000000' as Address,
-      ]),
-    )
-
-    return {
-      marketId: { poolId, chainId },
-      assets: [assetA, assetB],
-      fee,
-      provider: 'uniswap',
-    }
   }
 }

@@ -1,7 +1,8 @@
 import type { Address } from 'viem'
-import { encodeFunctionData, erc20Abi, parseUnits } from 'viem'
+import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
@@ -20,6 +21,7 @@ import type {
   LendTransaction,
   TransactionData,
 } from '@/types/lend/index.js'
+import { buildErc20ApprovalTx } from '@/utils/approve.js'
 import { validateMarketAsset } from '@/utils/markets.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
@@ -37,12 +39,6 @@ export abstract class LendProvider<
   protected readonly chainManager: ChainManager
 
   /**
-   * Supported chain IDs
-   * @description Array of chain IDs that this provider supports
-   */
-  protected abstract readonly SUPPORTED_CHAIN_IDS: readonly number[]
-
-  /**
    * Create a new lending provider
    * @param config - Provider-specific lending configuration
    * @param chainManager - Chain manager for blockchain interactions
@@ -57,12 +53,27 @@ export abstract class LendProvider<
   }
 
   /**
-   * Get supported chain IDs
-   * @description Returns an array of chain IDs that this provider supports
-   * @returns Array of supported chain IDs
+   * Chain IDs supported by the underlying protocol.
+   * @description Each provider implements this to declare the chains its protocol
+   * is deployed on, without any SDK-level or developer-config filtering.
+   * @returns Array of chain IDs the protocol natively supports
+   */
+  abstract protocolSupportedChainIds(): number[]
+
+  /**
+   * Effective supported chain IDs.
+   * @description Intersection of the protocol's supported chains,
+   * the Actions SDK's known chains, and the developer's ActionsConfig.chains.
+   * All validation in public methods uses this set.
+   * @returns Array of chain IDs usable through this provider instance
    */
   supportedChainIds(): number[] {
-    return [...this.SUPPORTED_CHAIN_IDS]
+    const configuredChains = this.chainManager.getSupportedChains()
+    return this.protocolSupportedChainIds().filter(
+      (id) =>
+        (ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
+        (configuredChains as number[]).includes(id),
+    )
   }
 
   /**
@@ -78,7 +89,6 @@ export abstract class LendProvider<
       throw new Error('walletAddress is required')
     }
 
-    validateChainSupported(params.marketId.chainId, this.SUPPORTED_CHAIN_IDS)
     this.validateConfigSupported(params.marketId)
 
     // Convert human-readable amount to wei using the asset's decimals
@@ -106,7 +116,6 @@ export abstract class LendProvider<
       chainId: params.chainId,
     }
 
-    validateChainSupported(params.chainId, this.SUPPORTED_CHAIN_IDS)
     this.validateConfigSupported(marketId)
     return this._getMarket(marketId)
   }
@@ -118,7 +127,7 @@ export abstract class LendProvider<
    */
   async getMarkets(params: GetLendMarketsParams = {}): Promise<LendMarket[]> {
     if (params.chainId !== undefined)
-      validateChainSupported(params.chainId, this.SUPPORTED_CHAIN_IDS)
+      validateChainSupported(params.chainId, this.supportedChainIds())
 
     const filteredMarkets = this.filterMarketConfigs(
       params.chainId,
@@ -157,7 +166,6 @@ export abstract class LendProvider<
       )
     }
 
-    validateChainSupported(marketId.chainId, this.SUPPORTED_CHAIN_IDS)
     this.validateConfigSupported(marketId)
 
     return this._getPosition({ marketId, walletAddress })
@@ -177,7 +185,6 @@ export abstract class LendProvider<
       throw new Error('walletAddress is required')
     }
 
-    validateChainSupported(params.marketId.chainId, this.SUPPORTED_CHAIN_IDS)
     this.validateConfigSupported(params.marketId)
 
     const market = await this.getMarket({
@@ -215,7 +222,7 @@ export abstract class LendProvider<
    * @returns true if chain is supported, false otherwise
    */
   protected isChainSupported(chainId: number): boolean {
-    return this.SUPPORTED_CHAIN_IDS.includes(chainId)
+    return this.supportedChainIds().includes(chainId)
   }
 
   /**
@@ -224,6 +231,8 @@ export abstract class LendProvider<
    * @throws Error if market allowlist is configured but market is not in it
    */
   protected validateConfigSupported(marketId: LendMarketId): void {
+    validateChainSupported(marketId.chainId, this.supportedChainIds())
+
     if (
       !this._config.marketAllowlist ||
       this._config.marketAllowlist.length === 0
@@ -275,17 +284,7 @@ export abstract class LendProvider<
     spender: Address,
     amount: bigint,
   ): TransactionData {
-    const approvalCallData = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [spender, amount],
-    })
-
-    return {
-      to: tokenAddress,
-      data: approvalCallData,
-      value: 0n,
-    }
+    return buildErc20ApprovalTx(tokenAddress, spender, amount)
   }
 
   /**

@@ -3,12 +3,8 @@ import type { Address } from 'viem'
 const MORPHO_API_ENDPOINT = 'https://api.morpho.org/graphql'
 
 export interface RewardsBreakdown {
-  eth: number
-  weth: number
-  usdc: number
-  usdc_demo: number
-  op_demo: number
-  morpho: number
+  /** Reward APR per token, keyed by lowercase token address. 'other' for unrecognized tokens. */
+  [tokenAddress: string]: number
   other: number
   totalRewards: number
 }
@@ -18,7 +14,10 @@ export interface RewardsBreakdown {
  * @param vaultAddress - Vault address
  * @returns Promise resolving to raw vault data or null if not found
  */
-export async function fetchRewards(vaultAddress: Address): Promise<any | null> {
+export async function fetchRewards(
+  vaultAddress: Address,
+  chainId: number,
+): Promise<any | null> {
   const vaultQuery = {
     query: `
       query VaultByAddress($address: String!, $chainId: Int) {
@@ -67,7 +66,7 @@ export async function fetchRewards(vaultAddress: Address): Promise<any | null> {
     `,
     variables: {
       address: vaultAddress.toLowerCase(),
-      chainId: 130,
+      chainId,
     },
   }
 

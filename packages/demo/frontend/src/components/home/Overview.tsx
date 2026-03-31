@@ -72,14 +72,17 @@ const receipt = wallet.borrow.openPosition({
     title: 'Swap',
     description:
       'Enable onchain trading between configurable protocols and assets.',
-    images: [{ src: '/uniswap-logo-white.svg', link: 'https://uniswap.org/' }],
-    imageLabel: 'Supports swap providers:',
+    images: [
+      { src: '/uniswap-logo-white.svg', link: 'https://uniswap.org/' },
+      { src: '/velodrome-logo-white.svg', link: 'https://velodrome.finance/' },
+    ],
+    imageLabel: 'Supported swap providers:',
     code: `// Swap between tokens
 const receipt = wallet.swap.execute({
   amountIn: 1,
   assetIn: USDC,
   assetOut: ETH,
-  chainId: 8453, // Base
+  chainId: 10, // OP Mainnet
 });`,
   },
   {
@@ -121,6 +124,17 @@ const usdcBalance = await wallet.getBalance(CustomToken);`,
     title: 'Chains',
     description:
       'Configure which chains you want to support. Abstract them away from your users.',
+    images: [
+      { src: '/eth-glyph-colored.svg', link: 'https://ethereum.org/' },
+      { src: '/OPMainnet_Circle.svg', link: 'https://optimism.io/' },
+      { src: '/base-logo.svg', link: 'https://base.org/' },
+      { src: '/unichain-logo.svg', link: 'https://unichain.org/' },
+      { src: '/world-logo.svg', link: 'https://world.org/' },
+      { src: '/ink-logo-purple-icon.svg', link: 'https://inkonchain.com/' },
+      { src: '/soneium-logo.webp', link: 'https://soneium.org/' },
+      { src: '/zora-logo.svg', link: 'https://zora.co/' },
+    ],
+    imageLabel: 'Supports EVM chains like:',
     mobileHeightBuffer: 0,
     code: `// Define chains once in a global config
 const OPTIMISM = {
@@ -131,15 +145,17 @@ const OPTIMISM = {
     url: env.OPTIMISM_BUNDLER_URL,
   },
 }
+const chains = [OPTIMISM, BASE, UNICHAIN, WORLD, INK...];
 
-const BASE = {
-  chainId: base.id,
-  rpcUrls: env.BASE_RPC_URL
-  bundler: { // Bundle and sponsor txs with a gas paymaster
-    type: 'simple' as const,
-    url: env.BASE_BUNDLER_URL,
-  },
-}`,
+// Bring it all together
+export const actions = createActions({
+  wallet,
+  lend,
+  borrow,
+  swap,
+  chains,
+  assets,
+});`,
   },
 ]
 
