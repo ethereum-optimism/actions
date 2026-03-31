@@ -1,4 +1,4 @@
-import { type ChildProcess, spawn } from 'node:child_process'
+import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
 
 import { createPublicClient, http } from 'viem'
 
@@ -26,12 +26,31 @@ export interface AnvilFork {
   config: ForkChainConfig
 }
 
+// Reuses an existing fork if one is already running on the requested port,
+// so concurrent test suites that share a chain config don't spawn duplicate
+// anvil processes.
 const activeForks = new Map<number, AnvilFork>()
+
+const RETRY_COUNT = 30
+const RETRY_INTERVAL_MS = 500
+const RETRY_WARN_THRESHOLD = 10
+
+function assertAnvilInstalled(): void {
+  try {
+    execFileSync('anvil', ['--version'], { stdio: 'ignore' })
+  } catch {
+    throw new Error(
+      'anvil binary not found. Install Foundry first: https://getfoundry.sh',
+    )
+  }
+}
 
 export async function startFork(config: ForkChainConfig): Promise<AnvilFork> {
   if (activeForks.has(config.port)) {
     return activeForks.get(config.port)!
   }
+
+  assertAnvilInstalled()
 
   const forkUrl = getRpcUrl(config)
   const proc = spawn(
@@ -42,7 +61,7 @@ export async function startFork(config: ForkChainConfig): Promise<AnvilFork> {
 
   const rpcUrl = `http://127.0.0.1:${config.port}`
 
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < RETRY_COUNT; i++) {
     try {
       const res = await fetch(rpcUrl, {
         method: 'POST',
@@ -67,13 +86,20 @@ export async function startFork(config: ForkChainConfig): Promise<AnvilFork> {
         return fork
       }
     } catch {
-      // not ready yet
+      if (i === RETRY_WARN_THRESHOLD) {
+        console.warn(
+          `[forks] anvil on port ${config.port} not ready after ${i} retries, still waiting…`,
+        )
+      }
     }
-    await new Promise((r) => setTimeout(r, 500))
+    await new Promise((r) => setTimeout(r, RETRY_INTERVAL_MS))
   }
 
   proc.kill()
-  throw new Error(`Anvil fork on port ${config.port} did not start in time`)
+  throw new Error(
+    `Anvil fork on port ${config.port} did not start within ${(RETRY_COUNT * RETRY_INTERVAL_MS) / 1000}s. ` +
+      'Check that the upstream RPC is reachable and not rate-limited.',
+  )
 }
 
 export function stopFork(fork: AnvilFork): void {
