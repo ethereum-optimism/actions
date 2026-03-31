@@ -15,6 +15,7 @@ import type {
   LendOpenPositionInternalParams,
   LendTransaction,
 } from '@/types/lend/index.js'
+import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 import { POOL_ABI, WETH_GATEWAY_ABI } from './abis/pool.js'
@@ -261,6 +262,16 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     // Get asset address for the chain (throws for native assets)
     const assetAddress = getAssetAddress(params.asset, params.marketId.chainId)
 
+    // Check if approval is needed
+    const publicClient = this.chainManager.getPublicClient(params.marketId.chainId)
+    const approval = await buildApprovalTxIfNeeded({
+      publicClient,
+      token: assetAddress,
+      owner: params.walletAddress,
+      spender: poolAddress,
+      amount: params.amountWei,
+    })
+
     // Generate supply transaction
     const supplyCallData = encodeFunctionData({
       abi: POOL_ABI,
@@ -279,11 +290,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
-        approval: this.buildApprovalTx(
-          assetAddress,
-          poolAddress,
-          params.amountWei,
-        ),
+        approval,
         position: {
           to: poolAddress,
           data: supplyCallData,
