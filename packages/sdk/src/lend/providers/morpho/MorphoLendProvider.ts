@@ -16,6 +16,7 @@ import type {
   LendOpenPositionInternalParams,
   LendTransaction,
 } from '@/types/lend/index.js'
+import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
 import { getAssetAddress } from '@/utils/assets.js'
 
 /**
@@ -62,17 +63,23 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       const receiver = params.walletAddress
       const depositCallData = MetaMorphoAction.deposit(assets, receiver)
 
+      // Check if approval is needed
+      const publicClient = this.chainManager.getPublicClient(params.marketId.chainId)
+      const approval = await buildApprovalTxIfNeeded({
+        publicClient,
+        token: assetAddress,
+        owner: params.walletAddress,
+        spender: params.marketId.address,
+        amount: params.amountWei,
+      })
+
       return {
         amount: params.amountWei,
         asset: assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
         transactionData: {
-          approval: this.buildApprovalTx(
-            assetAddress,
-            params.marketId.address,
-            params.amountWei,
-          ),
+          approval,
           position: {
             to: params.marketId.address,
             data: depositCallData,
