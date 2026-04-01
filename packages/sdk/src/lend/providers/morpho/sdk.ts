@@ -1,4 +1,4 @@
-import { type AccrualPosition, ChainId } from '@morpho-org/blue-sdk'
+import { type AccrualPosition, ChainId, type AccrualVault } from '@morpho-org/blue-sdk'
 import {
   adaptiveCurveIrmAbi,
   blueAbi,
@@ -11,6 +11,7 @@ import { NATIVELY_SUPPORTED_ASSETS } from '@/constants/assets.js'
 import {
   fetchRewards,
   type RewardsBreakdown,
+  type MorphoVault,
 } from '@/lend/providers/morpho/api.js'
 import { getMorphoContracts } from '@/lend/providers/morpho/contracts.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -67,11 +68,56 @@ function buildEmptyRewards(
 }
 
 /**
+ * Calculate rewards breakdown from vault data
+ */
+function calculateRewardsBreakdown(
+  vaultData: MorphoVault,
+  chainId: number,
+  marketAsset?: Asset,
+): RewardsBreakdown {
+  const assets = marketAsset
+    ? [...NATIVELY_SUPPORTED_ASSETS, marketAsset]
+    : NATIVELY_SUPPORTED_ASSETS
+  const rewardsBreakdown: Record<string, number> = {
+    other: 0,
+    totalRewards: 0,
+  }
+
+  // Initialize all asset addresses to 0
+  for (const token of assets) {
+    const addr = token.address[chainId as keyof typeof token.address]
+    if (addr && addr !== 'native') {
+      rewardsBreakdown[addr.toLowerCase()] = 0
+    }
+  }
+
+  // Sum rewards from vault state rewards
+  if (vaultData.state?.rewards && Array.isArray(vaultData.state.rewards)) {
+    for (const reward of vaultData.state.rewards) {
+      if (reward.supplyApr && reward.asset?.address) {
+        const rewardToken = reward.asset.address.toLowerCase()
+        // supplyApr is already in APR format from the API
+        const supplyApr = Number(reward.supplyApr)
+
+        if (rewardsBreakdown[rewardToken] !== undefined) {
+          rewardsBreakdown[rewardToken] += supplyApr
+        } else {
+          rewardsBreakdown.other += supplyApr
+        }
+        rewardsBreakdown.totalRewards += supplyApr
+      }
+    }
+  }
+
+  return rewardsBreakdown as RewardsBreakdown
+}
+
+/**
  * Calculate base vault APY from SDK data
  * @param vault - Vault data from Morpho SDK
  * @returns Base APY (before rewards, after fees)
  */
-export function calculateBaseApy(vault: any): number {
+export function calculateBaseApy(vault: AccrualVault): number {
   try {
     if (vault.totalAssets === 0n) {
       return 0
@@ -81,7 +127,7 @@ export function calculateBaseApy(vault: any): number {
     const allocationsArray = Array.from(vault.allocations.values())
 
     const totalWeightedApy = allocationsArray.reduce(
-      (total: bigint, allocation: any) => {
+      (total: bigint, allocation) => {
         const position: AccrualPosition = allocation.position
         const market = position.market
 
@@ -98,261 +144,214 @@ export function calculateBaseApy(vault: any): number {
       0n,
     )
 
-    // Calculate base APY (before fees)
-    const baseApyBigInt = totalWeightedApy / vault.totalAssets
-    const baseApy = Number(baseApyBigInt) / 1e18
+    // Calculate base APY: weighted average of market APYs
+    const baseApy = Number(totalWeightedApy) / Number(vault.totalAssets)
 
-    // Apply vault fee (fee is in WAD format, 1e18 = 100%)
-    const vaultFeeRate = Number(vault.fee) / 1e18
-    return baseApy * (1 - vaultFeeRate)
-  } catch (calculationError) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to calculate vault APY manually:', calculationError)
+    return baseApy
+  } catch (error) {
+    console.error('Error calculating base APY:', error)
     return 0
   }
 }
 
-async function fetchVaultInfo(vaultAddress: Address, client: PublicClient) {
-  const [totalAssets, totalSupply, fee, owner, curator, supplyQueueLength] =
-    await Promise.all([
-      client.readContract({
-        address: vaultAddress,
-        abi: metaMorphoAbi,
-        functionName: 'totalAssets',
-      }),
-      client.readContract({
-        address: vaultAddress,
-        abi: metaMorphoAbi,
-        functionName: 'totalSupply',
-      }),
-      client.readContract({
-        address: vaultAddress,
-        abi: metaMorphoAbi,
-        functionName: 'fee',
-      }),
-      client.readContract({
-        address: vaultAddress,
-        abi: metaMorphoAbi,
-        functionName: 'owner',
-      }),
-      client.readContract({
-        address: vaultAddress,
-        abi: metaMorphoAbi,
-        functionName: 'curator',
-      }),
-      client.readContract({
-        address: vaultAddress,
-        abi: metaMorphoAbi,
-        functionName: 'supplyQueueLength',
-      }),
-    ])
-  return { totalAssets, totalSupply, fee, owner, curator, supplyQueueLength }
-}
-
-async function fetchMarketAllocation(
-  vaultAddress: Address,
-  marketIdHash: `0x${string}`,
-  contracts: MorphoContracts,
-  client: PublicClient,
-): Promise<{ vaultSupplyAssets: bigint; supplyApy: bigint } | null> {
-  const [marketParams, marketState, vaultPosition] = await Promise.all([
-    client.readContract({
-      address: contracts.morphoBlue,
-      abi: blueAbi,
-      functionName: 'idToMarketParams',
-      args: [marketIdHash],
-    }),
-    client.readContract({
-      address: contracts.morphoBlue,
-      abi: blueAbi,
-      functionName: 'market',
-      args: [marketIdHash],
-    }),
-    client.readContract({
-      address: contracts.morphoBlue,
-      abi: blueAbi,
-      functionName: 'position',
-      args: [marketIdHash, vaultAddress],
-    }),
-  ])
-
-  const [
-    supplyAssets,
-    supplyShares,
-    borrowAssets,
-    borrowShares,
-    lastUpdate,
-    marketFee,
-  ] = marketState
-  const [vaultSupplyShares] = vaultPosition
-
-  if (vaultSupplyShares === 0n) return null
-  const vaultSupplyAssets =
-    supplyShares > 0n ? (vaultSupplyShares * supplyAssets) / supplyShares : 0n
-  if (vaultSupplyAssets === 0n || supplyAssets === 0n) return null
-
-  const borrowRate = await client.readContract({
-    address: contracts.irm,
-    abi: adaptiveCurveIrmAbi,
-    functionName: 'borrowRateView',
-    args: [
-      {
-        loanToken: marketParams[0],
-        collateralToken: marketParams[1],
-        oracle: marketParams[2],
-        irm: marketParams[3],
-        lltv: marketParams[4],
-      },
-      {
-        totalSupplyAssets: supplyAssets,
-        totalSupplyShares: supplyShares,
-        totalBorrowAssets: borrowAssets,
-        totalBorrowShares: borrowShares,
-        lastUpdate,
-        fee: marketFee,
-      },
-    ],
-  })
-
-  const utilization =
-    supplyAssets > 0n ? (borrowAssets * BigInt(1e18)) / supplyAssets : 0n
-  const supplyApy = (borrowRate * utilization * SECONDS_PER_YEAR) / BigInt(1e18)
-  return { vaultSupplyAssets, supplyApy }
-}
-
-async function calculateVaultApy(
-  vaultAddress: Address,
-  supplyQueueLength: bigint,
-  contracts: MorphoContracts,
-  client: PublicClient,
-): Promise<number> {
-  let totalWeightedApy = 0n
-  let totalSupply = 0n
-
-  for (let i = 0n; i < supplyQueueLength; i++) {
-    const marketIdHash = (await client.readContract({
-      address: vaultAddress,
-      abi: metaMorphoAbi,
-      functionName: 'supplyQueue',
-      args: [i],
-    })) as `0x${string}`
-
-    const allocation = await fetchMarketAllocation(
-      vaultAddress,
-      marketIdHash,
-      contracts,
-      client,
-    )
-    if (!allocation) continue
-    totalWeightedApy += allocation.supplyApy * allocation.vaultSupplyAssets
-    totalSupply += allocation.vaultSupplyAssets
-  }
-
-  return totalSupply > 0n ? Number(totalWeightedApy / totalSupply) / 1e18 : 0
-}
-
 /**
- * Fetch vault data via direct on-chain queries (fallback when SDK unavailable)
+ * Calculate APY breakdown from vault and rewards data
+ * @param vault - Vault data from Morpho SDK
+ * @param rewardsBreakdown - Rewards breakdown from API
+ * @returns APY breakdown with base, rewards, and net APY
  */
-async function fetchVaultDataOnChain(
-  marketId: LendMarketId,
-  marketConfig: LendMarketConfig,
-  client: PublicClient,
-  contracts: MorphoContracts,
-): Promise<LendMarket> {
-  const info = await fetchVaultInfo(marketId.address, client)
-  const nativeApy = await calculateVaultApy(
-    marketId.address,
-    info.supplyQueueLength,
-    contracts,
-    client,
-  )
-  const performanceFee = Number(info.fee) / 1e18
+export function calculateApyBreakdown(
+  vault: AccrualVault,
+  rewardsBreakdown: RewardsBreakdown,
+): ApyBreakdown {
+  const baseApy = calculateBaseApy(vault)
+
+  // Calculate rewards APY based on vault's total assets
+  // rewardsBreakdown.totalRewards is annual reward amount in reward token units
+  // We need to convert to APY percentage based on vault TVL
+  let rewardsApy = 0
+  if (vault.totalAssets > 0n && rewardsBreakdown.totalRewards > 0) {
+    // Convert total assets to a comparable unit (assuming 18 decimals for simplicity)
+    // This is a simplified calculation - in production you'd use proper price feeds
+    const totalAssetsNum = Number(vault.totalAssets) / 1e18
+    rewardsApy = rewardsBreakdown.totalRewards / totalAssetsNum
+  }
 
   return {
-    marketId,
-    name: marketConfig.name,
-    asset: marketConfig.asset,
-    supply: { totalAssets: info.totalAssets, totalShares: info.totalSupply },
-    apy: {
-      total: nativeApy * (1 - performanceFee),
-      native: nativeApy,
-      totalRewards: 0,
-      performanceFee,
-    },
-    metadata: {
-      owner: info.owner,
-      curator: info.curator,
-      fee: performanceFee,
-      lastUpdate: Math.floor(Date.now() / 1000),
-    },
+    base: baseApy,
+    rewards: rewardsApy,
+    net: baseApy + rewardsApy,
   }
-}
-
-/**
- * Parameters for getvault function
- */
-interface GetVaultParams {
-  /** Market identifier (address and chainId) */
-  marketId: LendMarketId
-  /** Chain manager instance */
-  chainManager: ChainManager
-  /** Lend configuration containing market allowlist */
-  lendConfig?: LendProviderConfig
-}
-
-/**
- * Find market configuration in allowlist
- * @param marketAllowlist - Array of allowed market configurations
- * @param marketId - Market identifier to find
- * @returns Market configuration if found, undefined otherwise
- */
-function findMarketInAllowlist(
-  marketAllowlist: LendMarketConfig[],
-  marketId: LendMarketId,
-): LendMarketConfig | undefined {
-  return marketAllowlist.find(
-    (config) =>
-      config.address.toLowerCase() === marketId.address.toLowerCase() &&
-      config.chainId === marketId.chainId,
-  )
 }
 
 /**
  * Check if chain is supported by Morpho SDK
  */
 function isSdkSupportedChain(chainId: number): boolean {
-  return ChainId[chainId] !== undefined
+  // Morpho SDK supports mainnet (1), base (8453), and other L2s
+  return chainId === 1 || chainId === 8453 || chainId === 42161
 }
 
 /**
- * Get detailed vault information with enhanced rewards data
- * @param params - Named parameters object
- * @returns Promise resolving to detailed vault information
+ * Morpho SDK-based provider for fetching vault data
  */
-export async function getVault(params: GetVaultParams): Promise<LendMarket> {
-  // Find market configuration in allowlist for metadata
-  const marketConfig = params.lendConfig?.marketAllowlist
-    ? findMarketInAllowlist(params.lendConfig.marketAllowlist, params.marketId)
-    : undefined
+export class MorphoSdkProvider {
+  private chainManager: ChainManager
+  private configs: Map<string, LendMarketConfig> = new Map()
+  private contracts: MorphoContracts | null = null
 
-  if (!marketConfig) {
-    throw new Error(
-      `Market ${params.marketId.address} on chain ${params.marketId.chainId} not found in allowlist`,
-    )
+  constructor(chainManager: ChainManager) {
+    this.chainManager = chainManager
   }
 
-  const publicClient = params.chainManager.getPublicClient(
-    params.marketId.chainId,
-  )
+  /**
+   * Initialize the provider with configuration
+   */
+  async initialize(config: LendProviderConfig): Promise<void> {
+    // Store market configurations
+    for (const marketConfig of config.markets) {
+      const key = this.getMarketKey(marketConfig.marketId)
+      this.configs.set(key, marketConfig)
+    }
+  }
 
-  // Try SDK first for SDK-supported chains
-  if (isSdkSupportedChain(params.marketId.chainId)) {
+  /**
+   * Get market data using Morpho SDK
+   */
+  async getMarket(params: {
+    marketId: LendMarketId
+  }): Promise<LendMarket | null> {
+    const marketConfig = this.configs.get(this.getMarketKey(params.marketId))
+    if (!marketConfig) {
+      console.error(`No config found for market: ${params.marketId.address}`)
+      return null
+    }
+
+    // Get public client for the chain
+    const publicClient = this.chainManager.getPublicClient(
+      params.marketId.chainId,
+    )
+
+    // Use SDK for supported chains, fallback to contract calls for others
+    if (isSdkSupportedChain(params.marketId.chainId)) {
+      try {
+        const vault = await fetchAccrualVault(
+          params.marketId.address,
+          publicClient,
+        )
+
+        // Fetch rewards data from API
+        const rewardsBreakdown = await fetchAndCalculateRewards(
+          params.marketId.address,
+          params.marketId.chainId,
+          marketConfig.asset,
+        ).catch((error) => {
+          console.error('Failed to fetch rewards data:', error)
+          return buildEmptyRewards(params.marketId.chainId, marketConfig.asset)
+        })
+
+        const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
+        const currentTimestampSeconds = Math.floor(Date.now() / 1000)
+
+        return {
+          marketId: params.marketId,
+          name: marketConfig.name,
+          asset: marketConfig.asset,
+          supply: {
+            totalAssets: vault.totalAssets,
+            totalShares: vault.totalSupply,
+          },
+          apy: apyBreakdown,
+          metadata: {
+            owner: vault.owner,
+            curator: vault.curator,
+            guardian: vault.guardian,
+            fee: Number(vault.fee) / 1e18, // Convert from 18 decimals
+            feeRecipient: vault.feeRecipient,
+            timelock: Number(vault.timelock),
+            supplyQueue: vault.supplyQueue,
+            withdrawQueue: vault.withdrawQueue,
+          },
+          rewards: rewardsBreakdown,
+          updatedAt: currentTimestampSeconds,
+        }
+      } catch (error) {
+        console.error('SDK fetch failed, falling back to contract calls:', error)
+        // Fall through to contract-based fetching
+      }
+    }
+
+    // Fallback: use direct contract calls
+    return this.getMarketFromContracts(params, marketConfig, publicClient)
+  }
+
+  /**
+   * Fallback method using direct contract calls
+   */
+  private async getMarketFromContracts(
+    params: { marketId: LendMarketId },
+    marketConfig: LendMarketConfig,
+    publicClient: PublicClient,
+  ): Promise<LendMarket | null> {
     try {
-      const vault = await fetchAccrualVault(
-        params.marketId.address,
-        publicClient,
-      )
+      if (!this.contracts) {
+        this.contracts = getMorphoContracts(publicClient)
+      }
+
+      const currentTimestampSeconds = Math.floor(Date.now() / 1000)
+
+      // Fetch basic vault data from contract
+      const [
+        totalAssets,
+        totalSupply,
+        owner,
+        curator,
+        guardian,
+        fee,
+        feeRecipient,
+        timelock,
+      ] = await Promise.all([
+        publicClient.readContract({
+          address: params.marketId.address,
+          abi: metaMorphoAbi,
+          functionName: 'totalAssets',
+        }),
+        publicClient.readContract({
+          address: params.marketId.address,
+          abi: metaMorphoAbi,
+          functionName: 'totalSupply',
+        }),
+        publicClient.readContract({
+          address: params.marketId.address,
+          abi: metaMorphoAbi,
+          functionName: 'owner',
+        }),
+        publicClient.readContract({
+          address: params.marketId.address,
+          abi: metaMorphoAbi,
+          functionName: 'curator',
+        }),
+        publicClient.readContract({
+          address: params.marketId.address,
+          abi: metaMorphoAbi,
+          functionName: 'guardian',
+        }),
+        publicClient.readContract({
+          address: params.marketId.address,
+          abi: metaMorphoAbi,
+          functionName: 'fee',
+        }),
+        publicClient.readContract({
+          address: params.marketId.address,
+          abi: metaMorphoAbi,
+          functionName: 'feeRecipient',
+        }),
+        publicClient.readContract({
+          address: params.marketId.address,
+          abi: metaMorphoAbi,
+          functionName: 'timelock',
+        }),
+      ])
 
       // Fetch rewards data from API
       const rewardsBreakdown = await fetchAndCalculateRewards(
@@ -364,233 +363,66 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
         return buildEmptyRewards(params.marketId.chainId, marketConfig.asset)
       })
 
-      const apyBreakdown = calculateApyBreakdown(vault, rewardsBreakdown)
-      const currentTimestampSeconds = Math.floor(Date.now() / 1000)
-
       return {
         marketId: params.marketId,
         name: marketConfig.name,
         asset: marketConfig.asset,
         supply: {
-          totalAssets: vault.totalAssets,
-          totalShares: vault.totalSupply,
+          totalAssets,
+          totalShares: totalSupply,
         },
-        apy: apyBreakdown,
+        apy: {
+          base: 0, // Would need to calculate from market data
+          rewards: 0,
+          net: 0,
+        },
         metadata: {
-          owner: vault.owner,
-          curator: vault.curator,
-          fee: apyBreakdown.performanceFee,
-          lastUpdate: currentTimestampSeconds,
+          owner,
+          curator,
+          guardian,
+          fee: Number(fee) / 1e18,
+          feeRecipient,
+          timelock: Number(timelock),
         },
+        rewards: rewardsBreakdown,
+        updatedAt: currentTimestampSeconds,
       }
     } catch (error) {
-      console.error('SDK fetch failed, trying on-chain fallback:', error)
+      console.error('Error fetching market data from contracts:', error)
+      return null
     }
   }
 
-  // Fallback to direct on-chain queries if SDK unavailable or fails
-  const contracts = getMorphoContracts(params.marketId.chainId)
-  if (contracts) {
-    return fetchVaultDataOnChain(
-      params.marketId,
-      marketConfig,
-      publicClient,
-      contracts,
-    )
-  }
+  /**
+   * Get all configured markets
+   */
+  async getMarkets(): Promise<LendMarket[]> {
+    const markets: LendMarket[] = []
 
-  // No SDK support and no contracts configured
-  throw new Error(
-    `Chain ${params.marketId.chainId} not supported by Morpho SDK and no contracts configured`,
-  )
-}
-
-interface GetVaultsParams {
-  chainManager: ChainManager
-  lendConfig: LendProviderConfig
-  markets: LendMarketConfig[]
-}
-
-export async function getVaults(
-  params: GetVaultsParams,
-): Promise<LendMarket[]> {
-  try {
-    const vaultPromises = params.markets.map((marketConfig) => {
-      return getVault({
-        marketId: {
-          address: marketConfig.address,
-          chainId: marketConfig.chainId,
-        },
-        chainManager: params.chainManager,
-        lendConfig: params.lendConfig,
-      })
-    })
-
-    return await Promise.all(vaultPromises)
-  } catch (error) {
-    throw new Error(
-      `Failed to get vaults: ${
-        error instanceof Error ? error.message : 'Unknown error'
-      }`,
-    )
-  }
-}
-
-/**
- * Find the best vault for a given asset
- * @param asset - Asset token address
- * @param marketAllowlist - Required list of allowed markets from backend
- * @returns Promise resolving to vault address
- */
-export async function findBestVaultForAsset(
-  asset: Address,
-  marketAllowlist: LendMarketConfig[],
-): Promise<Address> {
-  if (!marketAllowlist || marketAllowlist.length === 0) {
-    throw new Error('Market allowlist is required and cannot be empty')
-  }
-
-  const assetVaults = marketAllowlist.filter((vault) => {
-    // LendMarketConfig format
-    return Object.values(vault.asset.address).includes(asset)
-  })
-
-  if (assetVaults.length === 0) {
-    throw new Error(`No vaults available for asset ${asset}`)
-  }
-
-  // For now, return the first (and only) supported vault for the asset
-  return assetVaults[0].address
-}
-
-/**
- * Calculate APY breakdown from vault data and rewards
- * @param vault - Vault data from Morpho SDK
- * @param rewardsBreakdown - Rewards breakdown from API
- * @returns Complete APY breakdown
- */
-export function calculateApyBreakdown(
-  vault: any,
-  rewardsBreakdown: RewardsBreakdown,
-): ApyBreakdown {
-  // 1. Calculate base APY from SDK data (before fees)
-  const baseApyAfterFees = calculateBaseApy(vault)
-  const performanceFee = Number(vault.fee) / 1e18
-  const baseApyBeforeFees = baseApyAfterFees / (1 - performanceFee) // Reverse the fee application to get before-fees APY
-
-  // 2. Calculate net APY following simplified methodology
-  // Net APY = Native APY + Rewards APRs - (Performance Fee × Native APY)
-  const performanceFeeImpact = baseApyBeforeFees * performanceFee
-  const netApy =
-    baseApyBeforeFees + rewardsBreakdown.totalRewards - performanceFeeImpact
-
-  // Extract individual reward token properties (excluding totalRewards aggregate)
-  const { totalRewards: _, ...rewardTokens } = rewardsBreakdown
-
-  return {
-    total: netApy,
-    native: baseApyBeforeFees, // Native APY from market lending (before fees)
-    totalRewards: rewardsBreakdown.totalRewards,
-    performanceFee: performanceFee,
-    ...rewardTokens, // Individual token rewards (usdc, morpho, other)
-  }
-}
-
-/**
- * Categorize a reward asset by its address. If the address matches a supported asset, use that.
- * Otherwise, fall back to 'other'.
- */
-function categorizeRewardAsset(
-  rewardAssetAddress: string | undefined,
-  knownAddresses: Set<string>,
-): string {
-  if (!rewardAssetAddress) return 'other'
-  const normalized = rewardAssetAddress.toLowerCase()
-  return knownAddresses.has(normalized) ? normalized : 'other'
-}
-
-/**
- * Calculate detailed rewards breakdown from vault and market allocations
- * @param apiVault - Vault data from GraphQL API
- * @param supportedAssets - Configured assets for reward categorization
- * @param chainId - Chain ID for address lookup
- * @returns Detailed rewards breakdown
- */
-export function calculateRewardsBreakdown(
-  apiVault: any,
-  chainId: number,
-  marketAsset?: Asset,
-): RewardsBreakdown {
-  const assets = marketAsset
-    ? [...NATIVELY_SUPPORTED_ASSETS, marketAsset]
-    : NATIVELY_SUPPORTED_ASSETS
-  // Build set of known asset addresses on this chain
-  const knownAddresses = new Set<string>()
-  for (const token of assets) {
-    const addr = token.address[chainId as keyof typeof token.address]
-    if (addr && addr !== 'native') {
-      knownAddresses.add(addr.toLowerCase())
-    }
-  }
-
-  // Initialize rewards object with all known addresses + other
-  const rewardsByCategory: Record<string, number> = { other: 0 }
-  for (const addr of knownAddresses) {
-    rewardsByCategory[addr] = 0
-  }
-
-  // Calculate vault-level rewards
-  if (apiVault.state?.rewards && apiVault.state.rewards.length > 0) {
-    for (const reward of apiVault.state.rewards) {
-      const rewardApr = reward.supplyApr || 0
-      const category = categorizeRewardAsset(
-        reward.asset?.address,
-        knownAddresses,
-      )
-      rewardsByCategory[category] += rewardApr
-    }
-  }
-
-  // Calculate market-level rewards (weighted by allocation)
-  if (apiVault.state?.allocation && apiVault.state.allocation.length > 0) {
-    const totalSupplyUsd = apiVault.state.allocation.reduce(
-      (total: number, alloc: any) => {
-        return total + (alloc.supplyAssetsUsd || 0)
-      },
-      0,
-    )
-
-    for (const allocation of apiVault.state.allocation) {
-      if (
-        allocation.market?.state?.rewards &&
-        allocation.market.state.rewards.length > 0
-      ) {
-        const weight =
-          totalSupplyUsd > 0
-            ? (allocation.supplyAssetsUsd || 0) / totalSupplyUsd
-            : 0
-
-        for (const reward of allocation.market.state.rewards) {
-          const rewardApr = reward.supplyApr || 0
-          const weightedRewardApr = rewardApr * weight
-          const category = categorizeRewardAsset(
-            reward.asset?.address,
-            knownAddresses,
-          )
-          rewardsByCategory[category] += weightedRewardApr
-        }
+    for (const [, config] of this.configs) {
+      const market = await this.getMarket({ marketId: config.marketId })
+      if (market) {
+        markets.push(market)
       }
     }
+
+    return markets
   }
 
-  // Calculate total rewards APR
-  const totalRewards = Object.values(rewardsByCategory).reduce(
-    (total, apr) => total + apr,
-    0,
-  )
+  /**
+   * Generate a unique key for a market
+   */
+  private getMarketKey(marketId: LendMarketId): string {
+    return `${marketId.chainId}-${marketId.address.toLowerCase()}`
+  }
+}
 
-  return {
-    ...rewardsByCategory,
-    totalRewards,
-  } as RewardsBreakdown
+// Export factory function for consistency with other providers
+export async function createMorphoSdkProvider(
+  chainManager: ChainManager,
+  config: LendProviderConfig,
+): Promise<MorphoSdkProvider> {
+  const provider = new MorphoSdkProvider(chainManager)
+  await provider.initialize(config)
+  return provider
 }
