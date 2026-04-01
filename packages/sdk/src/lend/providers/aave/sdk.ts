@@ -53,6 +53,14 @@ function findMarketInAllowlist(
 ): LendMarketConfig | undefined {
   return marketAllowlist.find(
     (config) =>
+
+/**
+ * Formatted reserve data from Aave math-utils formatReserves
+ */
+interface FormattedAaveReserve {
+  /** Supply APY as a decimal string (e.g., "0.05" for 5%) */
+  supplyAPY?: string
+}
       config.address.toLowerCase() === marketId.address.toLowerCase() &&
       config.chainId === marketId.chainId,
   )
@@ -64,7 +72,7 @@ function findMarketInAllowlist(
  * @returns APY breakdown with native APY and rewards
  */
 export function calculateApyBreakdown(reserve: {
-  formattedReserve?: any
+  formattedReserve?: FormattedAaveReserve
 }): ApyBreakdown {
   // Get supply APY from formatted reserve data
   const supplyApy = reserve.formattedReserve?.supplyAPY
