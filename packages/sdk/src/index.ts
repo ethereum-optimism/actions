@@ -1,4 +1,5 @@
 export type { Actions } from '@/actions.js'
+export type { PublicClient } from 'viem'
 export {
   AAVE,
   ARB,

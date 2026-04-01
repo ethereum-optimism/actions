@@ -837,4 +837,161 @@ describe('Actions SDK', () => {
       })
     })
   })
+
+  describe('Public Client Access', () => {
+    it('should return PublicClient for configured chain', () => {
+      const actions = new Actions<
+        TestWalletProvider['providerTypes'],
+        TestWalletProvider,
+        'privy'
+      >(
+        {
+          chains: [{ chainId: unichain.id }],
+          wallet: {
+            hostedWalletConfig: {
+              provider: {
+                type: 'privy',
+                config: {
+                  privyClient: createMockPrivyClient(
+                    'test-app-id',
+                    'test-app-secret',
+                  ),
+                  authorizationContext: getMockAuthorizationContext(),
+                },
+              },
+            },
+            smartWalletConfig: {
+              provider: { type: 'default' },
+            },
+          },
+        },
+        {
+          hostedWalletProviderRegistry: new TestHostedWalletProviderRegistry(),
+        },
+      )
+
+      const publicClient = actions.getPublicClient(unichain.id)
+
+      expect(publicClient).toBeDefined()
+      expect(publicClient).toHaveProperty('getBlockNumber')
+      expect(publicClient).toHaveProperty('getBalance')
+      expect(typeof publicClient.getBlockNumber).toBe('function')
+    })
+
+    it('should throw error for unsupported chain', () => {
+      const actions = new Actions<
+        TestWalletProvider['providerTypes'],
+        TestWalletProvider,
+        'privy'
+      >(
+        {
+          chains: [{ chainId: unichain.id }],
+          wallet: {
+            hostedWalletConfig: {
+              provider: {
+                type: 'privy',
+                config: {
+                  privyClient: createMockPrivyClient(
+                    'test-app-id',
+                    'test-app-secret',
+                  ),
+                  authorizationContext: getMockAuthorizationContext(),
+                },
+              },
+            },
+            smartWalletConfig: {
+              provider: { type: 'default' },
+            },
+          },
+        },
+        {
+          hostedWalletProviderRegistry: new TestHostedWalletProviderRegistry(),
+        },
+      )
+
+      expect(() => actions.getPublicClient(1)).toThrow(
+        'No public client configured for chain ID: 1',
+      )
+    })
+
+    it('should return same client instance on repeated calls', () => {
+      const actions = new Actions<
+        TestWalletProvider['providerTypes'],
+        TestWalletProvider,
+        'privy'
+      >(
+        {
+          chains: [{ chainId: unichain.id }],
+          wallet: {
+            hostedWalletConfig: {
+              provider: {
+                type: 'privy',
+                config: {
+                  privyClient: createMockPrivyClient(
+                    'test-app-id',
+                    'test-app-secret',
+                  ),
+                  authorizationContext: getMockAuthorizationContext(),
+                },
+              },
+            },
+            smartWalletConfig: {
+              provider: { type: 'default' },
+            },
+          },
+        },
+        {
+          hostedWalletProviderRegistry: new TestHostedWalletProviderRegistry(),
+        },
+      )
+
+      const client1 = actions.getPublicClient(unichain.id)
+      const client2 = actions.getPublicClient(unichain.id)
+
+      expect(client1).toBe(client2) // Same instance (ChainManager caches clients)
+    })
+
+    it.runIf(externalTest())(
+      'should use client to make on-chain call',
+      async () => {
+        const actions = new Actions<
+          TestWalletProvider['providerTypes'],
+          TestWalletProvider,
+          'privy'
+        >(
+          {
+            chains: [{ chainId: unichain.id }],
+            wallet: {
+              hostedWalletConfig: {
+                provider: {
+                  type: 'privy',
+                  config: {
+                    privyClient: createMockPrivyClient(
+                      'test-app-id',
+                      'test-app-secret',
+                    ),
+                    authorizationContext: getMockAuthorizationContext(),
+                  },
+                },
+              },
+              smartWalletConfig: {
+                provider: { type: 'default' },
+              },
+            },
+          },
+          {
+            hostedWalletProviderRegistry:
+              new TestHostedWalletProviderRegistry(),
+          },
+        )
+
+        const publicClient = actions.getPublicClient(unichain.id)
+        const blockNumber = await publicClient.getBlockNumber()
+
+        expect(typeof blockNumber).toBe('bigint')
+        expect(blockNumber).toBeGreaterThan(0n)
+      },
+      30000,
+    ) // 30 second timeout for network request
+  })
 })
