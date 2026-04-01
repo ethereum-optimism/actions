@@ -1,3 +1,5 @@
+import type { PublicClient } from 'viem'
+
 import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
@@ -11,6 +13,7 @@ import type {
   SwapSettings,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { getAllAssetAddresses } from '@/utils/assets.js'
 import { validateConfigAddresses } from '@/utils/validateAddresses.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
@@ -191,6 +194,25 @@ export class Actions<
       const addresses = getAllAssetAddresses(asset)
       return !addresses.some((addr) => blockedAddresses.has(addr))
     })
+  }
+
+  /**
+   * Get public client for a specific chain
+   * @description Access the viem PublicClient instance for making on-chain calls.
+   * Useful for interacting with custom contracts or reading blockchain state directly.
+   * The client respects custom RPC URLs configured in chain config.
+   * @param chainId - The chain ID to retrieve the public client for
+   * @returns PublicClient instance for the specified chain
+   * @throws Error if no client is configured for the chain ID
+   * @example
+   * ```typescript
+   * const publicClient = actions.getPublicClient(10) // Optimism
+   * const blockNumber = await publicClient.getBlockNumber()
+   * const balance = await publicClient.getBalance({ address: '0x...' })
+   * ```
+   */
+  public getPublicClient(chainId: SupportedChainId): PublicClient {
+    return this.chainManager.getPublicClient(chainId)
   }
 
   /**
