@@ -100,5 +100,6 @@ export type {
   WalletSwapParams,
 } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
+export { resolveAddress } from '@/utils/ens.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'

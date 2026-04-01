@@ -88,8 +88,8 @@ export interface WalletSwapParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp. Defaults to now + 1 minute. */
   deadline?: number
-  /** Recipient address. Defaults to wallet address. */
-  recipient?: Address
+  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  recipient?: Address | string
   /** Explicitly select a swap provider. Overrides routing config. */
   provider?: SwapProviderName
 }

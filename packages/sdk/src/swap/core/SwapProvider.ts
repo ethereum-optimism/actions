@@ -1,5 +1,6 @@
-import type { Address } from 'viem'
-import { formatUnits } from 'viem'
+import type { Address, PublicClient } from 'viem'
+import { formatUnits, isAddress } from 'viem'
+import { mainnet } from 'viem/chains'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
@@ -32,6 +33,7 @@ import {
   isNativeAsset,
   parseAssetAmount,
 } from '@/utils/assets.js'
+import { resolveAddress } from '@/utils/ens.js'
 import {
   validateAmountPositiveIfExists,
   validateAmountProvided,
@@ -56,6 +58,11 @@ const BPS_DENOMINATOR = 10000n
 
 /** Field used to distinguish a SwapQuote from raw SwapExecuteParams */
 export const QUOTE_DISCRIMINATOR = 'quotedAt' as const
+
+/** SwapExecuteParams with recipient narrowed to Address after ENS resolution */
+type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
+  recipient?: Address
+}
 
 /**
  * Abstract base class for swap providers.
@@ -131,16 +138,22 @@ export abstract class SwapProvider<
   async execute(
     params: SwapExecuteParams | SwapQuote,
   ): Promise<SwapTransaction> {
-    this.validateSwapExecute(params)
-
     if (QUOTE_DISCRIMINATOR in params) {
+      this.validateSwapExecute(params)
       return this.executeFromQuote(params)
     }
+
+    // Resolve ENS recipient before validation so validateRecipient always sees an Address
+    const recipient = params.recipient
+      ? await resolveAddress(params.recipient, this.getMainnetClient())
+      : undefined
+    const paramsResolved: SwapExecuteParamsResolved = { ...params, recipient }
+    this.validateSwapExecute(paramsResolved)
 
     // Raw params only
     validateNotBothAmounts(params.amountIn, params.amountOut)
     validateNotZeroAddress(params.walletAddress, 'walletAddress')
-    return this._execute(this.resolveParams(params))
+    return this._execute(this.resolveParams(paramsResolved))
   }
 
   /**
@@ -452,9 +465,10 @@ export abstract class SwapProvider<
     this.validateRecipient(params)
   }
 
-  private validateRecipient(params: SwapExecuteParams | SwapQuote): void {
-    if ('recipient' in params && params.recipient) {
-      validateNotZeroAddress(params.recipient, 'recipient')
+  private validateRecipient(params: SwapExecuteParams | SwapQuote | SwapExecuteParamsResolved): void {
+    const recipient = 'recipient' in params ? params.recipient : undefined
+    if (recipient && isAddress(recipient)) {
+      validateNotZeroAddress(recipient, 'recipient')
     }
   }
 
@@ -467,7 +481,7 @@ export abstract class SwapProvider<
     }
   }
 
-  private resolveParams(params: SwapExecuteParams): ResolvedSwapParams {
+  private resolveParams(params: SwapExecuteParamsResolved): ResolvedSwapParams {
     return {
       amountInRaw: parseAssetAmount(params.assetIn, params.amountIn),
       amountOutRaw: parseAssetAmount(params.assetOut, params.amountOut),
@@ -501,6 +515,15 @@ export abstract class SwapProvider<
       )
       return !blocked
     })
+  }
+
+  /** Returns the mainnet public client if configured, undefined otherwise */
+  private getMainnetClient(): PublicClient | undefined {
+    try {
+      return this.chainManager.getPublicClient(mainnet.id)
+    } catch {
+      return undefined
+    }
   }
 
   private findMatchingConfig(
