@@ -133,15 +133,15 @@ Option A is simpler and doesn't change the constructor. The provider is lazy-ini
 
 | File | Purpose |
 |------|---------|
-| `packages/sdk/src/wallet/node/wallets/hosted/local/LocalWallet.ts` | Wallet class extending `EOAWallet` |
-| `packages/sdk/src/wallet/node/providers/hosted/local/LocalHostedWalletProvider.ts` | Thin provider for `type: 'local'` registry entry |
+| `packages/sdk/src/wallet/node/wallets/local/LocalWallet.ts` | Wallet class extending `EOAWallet` |
+| `packages/sdk/src/wallet/node/providers/local/LocalWalletProvider.ts` | Thin provider for `type: 'local'` registry entry |
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
 | `packages/sdk/src/wallet/core/namespace/WalletNamespace.ts` | Update `toActionsWallet()` to accept `params \| LocalAccount` union; add `isLocalAccount()` check |
-| `packages/sdk/src/wallet/node/providers/hosted/types/index.ts` | Add `local` to type maps; add `LocalHostedWalletToActionsWalletOptions` |
+| `packages/sdk/src/wallet/node/providers/hosted/types/index.ts` | Add `local` to type maps; add `LocalWalletToActionsWalletOptions` |
 | `packages/sdk/src/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.ts` | Register `'local'` provider |
 | `packages/sdk/src/wallet/node/index.ts` | Export new classes and types |
 
@@ -149,8 +149,8 @@ Option A is simpler and doesn't change the constructor. The provider is lazy-ini
 
 | File | Coverage |
 |------|----------|
-| `packages/sdk/src/wallet/node/wallets/hosted/local/__tests__/LocalWallet.spec.ts` | Construction, signer assignment, address derivation, send/sendBatch |
-| `packages/sdk/src/wallet/node/providers/hosted/local/__tests__/LocalHostedWalletProvider.spec.ts` | `toActionsWallet({ account })` returns `Wallet`, `createSigner({ account })` returns `LocalAccount` |
+| `packages/sdk/src/wallet/node/wallets/local/__tests__/LocalWallet.spec.ts` | Construction, signer assignment, address derivation, send/sendBatch |
+| `packages/sdk/src/wallet/node/providers/local/__tests__/LocalWalletProvider.spec.ts` | `toActionsWallet({ account })` returns `Wallet`, `createSigner({ account })` returns `LocalAccount` |
 | WalletNamespace tests (existing or new) | `toActionsWallet(localAccount)` with Privy configured returns `LocalWallet`; `toActionsWallet(privyParams)` still returns Privy wallet |
 | Registry tests (existing file) | `'local'` factory: `getFactory`, `validateOptions`, `create` |
 | Integration test | Full flow: `createActions({ type: 'local' })` → `toActionsWallet(account)` → verify address |
@@ -161,7 +161,7 @@ Option A is simpler and doesn't change the constructor. The provider is lazy-ini
 // packages/sdk/src/wallet/node/providers/hosted/types/index.ts
 
 // Local provider takes a LocalAccount when called through provider path
-export interface LocalHostedWalletToActionsWalletOptions {
+export interface LocalWalletToActionsWalletOptions {
   account: LocalAccount
 }
 
@@ -175,13 +175,13 @@ interface NodeOptionsMap {
 interface NodeHostedProviderInstanceMap {
   privy: PrivyHostedWalletProvider
   turnkey: TurnkeyHostedWalletProvider
-  local: LocalHostedWalletProvider
+  local: LocalWalletProvider
 }
 
 interface NodeToActionsOptionsMap {
   privy: PrivyHostedWalletToActionsWalletOptions
   turnkey: TurnkeyHostedWalletToActionsWalletOptions
-  local: LocalHostedWalletToActionsWalletOptions  // { account: LocalAccount }
+  local: LocalWalletToActionsWalletOptions  // { account: LocalAccount }
 }
 ```
 
