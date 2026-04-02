@@ -142,8 +142,11 @@ describe('WalletLendNamespace', () => {
       })
 
       expect(result).toEqual({
-        receipt: { success: true },
-        userOpHash: '0xmockhash',
+        receipt: {
+          receipt: { success: true },
+          userOpHash: '0xmockhash',
+        },
+        explorerUrl: undefined,
       })
 
       expect(mockProvider.openPosition).toHaveBeenCalledWith({
@@ -195,8 +198,11 @@ describe('WalletLendNamespace', () => {
         130,
       )
       expect(result).toEqual({
-        receipt: { success: true },
-        userOpHash: '0xmockhash',
+        receipt: {
+          receipt: { success: true },
+          userOpHash: '0xmockhash',
+        },
+        explorerUrl: undefined,
       })
     })
   })
@@ -251,8 +257,11 @@ describe('WalletLendNamespace', () => {
 
     expect(mockWallet.sendBatch).toHaveBeenCalledWith([approval, position], 130)
     expect(result).toEqual({
-      receipt: { success: true },
-      userOpHash: '0xmockbatchhash',
+      receipt: {
+        receipt: { success: true },
+        userOpHash: '0xmockbatchhash',
+      },
+      explorerUrl: undefined,
     })
   })
 })

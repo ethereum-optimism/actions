@@ -103,7 +103,8 @@ export class WalletLendNamespace extends BaseLendNamespace {
       : await this.wallet.send(transactionData.position, chainId)
 
     // Extract transaction hash from receipt (works for both EOA and UserOp receipts)
-    const txHash = 'transactionHash' in receipt ? receipt.transactionHash : undefined
+    const txHash =
+      'transactionHash' in receipt ? receipt.transactionHash : undefined
     const explorerUrl = txHash ? getExplorerUrl(chainId, txHash) : undefined
 
     return {

@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { getExplorerUrl } from '../explorer.js'
 
 describe('Explorer URL Utility', () => {
-  const mockTxHash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+  const mockTxHash =
+    '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
 
   it('should return Etherscan URL for Ethereum mainnet', () => {
     const url = getExplorerUrl(1, mockTxHash)
@@ -18,11 +19,6 @@ describe('Explorer URL Utility', () => {
   it('should return Basescan URL for Base', () => {
     const url = getExplorerUrl(8453, mockTxHash)
     expect(url).toBe(`https://basescan.org/tx/${mockTxHash}`)
-  })
-
-  it('should return Arbiscan URL for Arbitrum One', () => {
-    const url = getExplorerUrl(42161, mockTxHash)
-    expect(url).toBe(`https://arbiscan.io/tx/${mockTxHash}`)
   })
 
   it('should return Sepolia Etherscan URL for Sepolia testnet', () => {

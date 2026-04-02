@@ -79,7 +79,8 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
     chainId: SupportedChainId,
   ): SwapReceipt {
     // Extract transaction hash from receipt (works for both EOA and UserOp receipts)
-    const txHash = 'transactionHash' in receipt ? receipt.transactionHash : undefined
+    const txHash =
+      'transactionHash' in receipt ? receipt.transactionHash : undefined
     const explorerUrl = txHash ? getExplorerUrl(chainId, txHash) : undefined
 
     return {
