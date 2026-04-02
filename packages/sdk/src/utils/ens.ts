@@ -1,7 +1,7 @@
 import type { Address, PublicClient } from 'viem'
 import { isAddress } from 'viem'
-import { normalize } from 'viem/ens'
 import { mainnet } from 'viem/chains'
+import { normalize } from 'viem/ens'
 
 /**
  * A string that looks like an ENS name (contains at least one dot).

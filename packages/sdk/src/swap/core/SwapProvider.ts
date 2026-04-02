@@ -465,7 +465,9 @@ export abstract class SwapProvider<
     this.validateRecipient(params)
   }
 
-  private validateRecipient(params: SwapExecuteParams | SwapQuote | SwapExecuteParamsResolved): void {
+  private validateRecipient(
+    params: SwapExecuteParams | SwapQuote | SwapExecuteParamsResolved,
+  ): void {
     const recipient = 'recipient' in params ? params.recipient : undefined
     if (recipient && isAddress(recipient)) {
       validateNotZeroAddress(recipient, 'recipient')

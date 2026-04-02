@@ -1,11 +1,10 @@
 import type { Address, Hex } from 'viem'
 
-import type { EnsName } from '@/utils/ens.js'
-
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
+import type { EnsName } from '@/utils/ens.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
