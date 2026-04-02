@@ -10,6 +10,7 @@ import type {
   SwapTransaction,
   WalletSwapParams,
 } from '@/types/swap/index.js'
+import { getExplorerUrl } from '@/utils/explorer.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
@@ -69,15 +70,22 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
 
     const swapTx = await provider.execute(executeParams)
     const receipt = await this.executeTransaction(swapTx, params.chainId)
-    return this.buildReceipt(swapTx, receipt)
+    return this.buildReceipt(swapTx, receipt, params.chainId)
   }
 
   private buildReceipt(
     swapTx: SwapTransaction,
     receipt: SwapReceipt['receipt'],
+    chainId: SupportedChainId,
   ): SwapReceipt {
+    // Extract transaction hash from receipt (works for both EOA and UserOp receipts)
+    const txHash =
+      'transactionHash' in receipt ? receipt.transactionHash : undefined
+    const explorerUrl = txHash ? getExplorerUrl(chainId, txHash) : undefined
+
     return {
       receipt,
+      explorerUrl,
       amountIn: swapTx.amountIn,
       amountOut: swapTx.amountOut,
       amountInRaw: swapTx.amountInRaw,

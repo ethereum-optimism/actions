@@ -339,6 +339,8 @@ export interface SwapTransaction {
 export interface SwapReceipt {
   /** Transaction receipt(s) */
   receipt: TransactionReturnType | BatchTransactionReturnType
+  /** Block explorer URL for the transaction (if available for the chain) */
+  explorerUrl?: string
   /** Human-readable input amount */
   amountIn: number
   /** Human-readable output amount */

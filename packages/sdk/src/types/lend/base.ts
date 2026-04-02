@@ -86,9 +86,12 @@ export interface LendTransaction {
 /**
  * Lending transaction receipt
  */
-export type LendTransactionReceipt =
-  | TransactionReturnType
-  | BatchTransactionReturnType
+export interface LendTransactionReceipt {
+  /** Transaction receipt(s) */
+  receipt: TransactionReturnType | BatchTransactionReturnType
+  /** Block explorer URL for the transaction (if available for the chain) */
+  explorerUrl?: string
+}
 
 /**
  * Lending market information
