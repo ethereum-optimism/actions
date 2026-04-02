@@ -10,11 +10,11 @@ origin: docs/brainstorms/2026-04-01-eoa-and-agent-wallet-support-brainstorm.md
 
 ## Overview
 
-Add local EOA wallet support to the Actions SDK via two complementary features:
+Add local EOA wallet support to the Actions SDK:
 
-1. **`actions.wallet.fromLocalAccount(account)`** — a provider-agnostic method that wraps any viem `LocalAccount` into an Actions `Wallet`. Works alongside any configured provider (Privy, Turnkey, or local).
+1. **`toActionsWallet()` accepts a `LocalAccount` directly** — regardless of configured provider. A developer with Privy can also pass a local account at any time. Runtime detection branches between provider params and `LocalAccount`.
 
-2. **`type: 'local'` provider** — a no-config provider option for developers who don't need an embedded wallet provider. Pairs with `fromLocalAccount()` for the full flow.
+2. **`type: 'local'` provider** — a no-config provider option for developers who don't need an embedded wallet provider.
 
 The SDK never handles raw private key material. Developers use viem's `privateKeyToAccount()` themselves and pass the resulting `LocalAccount` to the SDK.
 
@@ -50,9 +50,9 @@ const actions = createActions({
 // Use Privy wallet
 const privyWallet = await actions.wallet.toActionsWallet({ walletId: '...', address: '0x...' })
 
-// Also use a local account at any time — no provider change needed
+// Also use a local account at any time — same method, different param
 const agentAccount = privateKeyToAccount(process.env.AGENT_KEY as `0x${string}`)
-const agentWallet = await actions.wallet.fromLocalAccount(agentAccount)
+const agentWallet = await actions.wallet.toActionsWallet(agentAccount)
 ```
 
 ### Usage — Local Only
@@ -72,10 +72,7 @@ const actions = createActions({
 
 // Developer manages key material, passes account to SDK
 const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
-const wallet = await actions.wallet.fromLocalAccount(account)
-
-// Also available via toActionsWallet for local provider
-const wallet2 = await actions.wallet.toActionsWallet({ account })
+const wallet = await actions.wallet.toActionsWallet(account)
 ```
 
 ## Technical Considerations
@@ -83,13 +80,27 @@ const wallet2 = await actions.wallet.toActionsWallet({ account })
 ### Key Design Decisions
 
 **1. SDK never touches key material.**
-The developer calls `privateKeyToAccount()` themselves using viem. The SDK only receives a `LocalAccount` — no raw hex keys, no key scrubbing, no `toJSON()` overrides needed. All security concerns from the prior plan revision are eliminated by design.
+The developer calls `privateKeyToAccount()` themselves using viem. The SDK only receives a `LocalAccount` — no raw hex keys, no key scrubbing, no `toJSON()` overrides needed.
 
-**2. `fromLocalAccount()` is provider-agnostic.**
-It lives on `WalletNamespace` and works regardless of which hosted provider is configured. It creates a `LocalWallet` directly using the namespace's internal deps (chain manager, lend/swap providers, supported assets). This enables mixed usage (Privy for user wallets + local account for agent wallets).
+**2. `toActionsWallet()` accepts a union: provider params OR `LocalAccount`.**
+Runtime detection: if `params` has `type === 'local'` and `signMessage`/`signTransaction` methods, it's a `LocalAccount` — create a `LocalWallet` directly. Otherwise, delegate to the hosted provider as before. This works regardless of configured provider type.
+
+```typescript
+async toActionsWallet(
+  params: TToActionsMap[THostedProviderType] | LocalAccount,
+): Promise<Wallet> {
+  if (isLocalAccount(params)) {
+    return LocalWallet.create({ account: params, ...deps })
+  }
+  const provider = await this.resolveProvider()
+  return provider.hostedWalletToActionsWallet(params)
+}
+```
+
+The `isLocalAccount()` check can use viem's account shape: `typeof params === 'object' && 'type' in params && params.type === 'local' && 'signMessage' in params`.
 
 **3. `type: 'local'` is a thin no-config provider.**
-`NodeOptionsMap['local']` is `undefined`, so `ProviderSpec` resolves to just `{ type: 'local' }` — no `config` field needed. Its `toActionsWallet()` accepts `{ account: LocalAccount }`. Its `createSigner()` returns the same account passed in.
+`NodeOptionsMap['local']` is `undefined`, so `ProviderSpec` resolves to just `{ type: 'local' }` — no `config` field needed. Its `toActionsWallet()` and `createSigner()` accept `{ account: LocalAccount }` for when called through the provider path directly.
 
 **4. `LocalWallet` uses params object constructor.**
 Matches the Privy/Turnkey pattern of `static async create(params)` with a params object. No `performInitialization()` override needed — base class provides the no-op default.
@@ -100,13 +111,23 @@ Matches the Privy/Turnkey pattern of `static async create(params)` with a params
 Developer code:
   privateKeyToAccount('0x...') → LocalAccount
       │
-      ├──→ actions.wallet.fromLocalAccount(account)     // provider-agnostic
-      │       └── LocalWallet.create({ account, ...deps })
-      │
-      └──→ actions.wallet.toActionsWallet({ account })  // via local provider
-              └── LocalHostedWalletProvider.toActionsWallet({ account })
-                      └── LocalWallet.create({ account, ...deps })
+      └──→ actions.wallet.toActionsWallet(localAccount)
+              │
+              ├── isLocalAccount? YES → LocalWallet.create({ account, ...deps })
+              │
+              └── isLocalAccount? NO  → provider.hostedWalletToActionsWallet(params)
+                                         (Privy/Turnkey/local provider path)
 ```
+
+### `fromLocalAccount` deps problem
+
+`WalletNamespace.toActionsWallet()` currently delegates entirely to the provider, which holds the chain manager and other deps. For the `LocalAccount` branch, we need those deps to create a `LocalWallet`. Two approaches:
+
+**A. Resolve deps from the provider.** Call `resolveProvider()` to get the `WalletProvider`, then access `hostedWalletProvider.chainManager` etc. This works but requires the provider to be initialized even for local accounts.
+
+**B. Store deps on the namespace directly.** Pass chain manager and providers to `WalletNamespace` at construction time. Cleaner separation but requires a constructor change.
+
+Option A is simpler and doesn't change the constructor. The provider is lazy-initialized on first call anyway.
 
 ### Files to Create
 
@@ -119,7 +140,7 @@ Developer code:
 
 | File | Change |
 |------|--------|
-| `packages/sdk/src/wallet/core/namespace/WalletNamespace.ts` | Add `fromLocalAccount(account: LocalAccount): Promise<Wallet>` method |
+| `packages/sdk/src/wallet/core/namespace/WalletNamespace.ts` | Update `toActionsWallet()` to accept `params \| LocalAccount` union; add `isLocalAccount()` check |
 | `packages/sdk/src/wallet/node/providers/hosted/types/index.ts` | Add `local` to type maps; add `LocalHostedWalletToActionsWalletOptions` |
 | `packages/sdk/src/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.ts` | Register `'local'` provider |
 | `packages/sdk/src/wallet/node/index.ts` | Export new classes and types |
@@ -130,16 +151,16 @@ Developer code:
 |------|----------|
 | `packages/sdk/src/wallet/node/wallets/hosted/local/__tests__/LocalWallet.spec.ts` | Construction, signer assignment, address derivation, send/sendBatch |
 | `packages/sdk/src/wallet/node/providers/hosted/local/__tests__/LocalHostedWalletProvider.spec.ts` | `toActionsWallet({ account })` returns `Wallet`, `createSigner({ account })` returns `LocalAccount` |
-| `packages/sdk/src/wallet/core/namespace/__tests__/WalletNamespace.spec.ts` | `fromLocalAccount()` returns `Wallet` with correct address |
+| WalletNamespace tests (existing or new) | `toActionsWallet(localAccount)` with Privy configured returns `LocalWallet`; `toActionsWallet(privyParams)` still returns Privy wallet |
 | Registry tests (existing file) | `'local'` factory: `getFactory`, `validateOptions`, `create` |
-| Integration test | Full flow: `createActions({ type: 'local' })` → `fromLocalAccount(account)` → verify address |
+| Integration test | Full flow: `createActions({ type: 'local' })` → `toActionsWallet(account)` → verify address |
 
 ## Type System Changes
 
 ```typescript
 // packages/sdk/src/wallet/node/providers/hosted/types/index.ts
 
-// Local provider takes a LocalAccount when creating wallets
+// Local provider takes a LocalAccount when called through provider path
 export interface LocalHostedWalletToActionsWalletOptions {
   account: LocalAccount
 }
@@ -164,15 +185,21 @@ interface NodeToActionsOptionsMap {
 }
 ```
 
-With `NodeOptionsMap['local'] = undefined`, `ProviderSpec` resolves to `{ type: 'local' }` — no config needed.
+```typescript
+// packages/sdk/src/wallet/core/namespace/WalletNamespace.ts
+
+// toActionsWallet signature change
+async toActionsWallet(
+  params: TToActionsMap[THostedProviderType] | LocalAccount,
+): Promise<Wallet>
+```
 
 ## Acceptance Criteria
 
-- [ ] `actions.wallet.fromLocalAccount(account)` returns a `Wallet` with correct address
-- [ ] `fromLocalAccount()` works regardless of configured provider type (Privy, Turnkey, or local)
+- [ ] `actions.wallet.toActionsWallet(localAccount)` returns a `Wallet` with correct address
+- [ ] `toActionsWallet(localAccount)` works regardless of configured provider (Privy, Turnkey, local)
+- [ ] `toActionsWallet(privyParams)` still works for Privy (no regression)
 - [ ] `createActions({ ..., provider: { type: 'local' } })` works with no config
-- [ ] `actions.wallet.toActionsWallet({ account })` works for local provider
-- [ ] `actions.wallet.createSigner({ account })` returns the same `LocalAccount`
 - [ ] SDK never receives or handles raw private key hex strings
 - [ ] `LocalWallet` uses params object constructor matching Privy/Turnkey pattern
 - [ ] No `performInitialization()` override (base class no-op is sufficient)
@@ -187,8 +214,10 @@ With `NodeOptionsMap['local'] = undefined`, `ProviderSpec` resolves to `{ type: 
 **Dependencies:** None — this is the starting point of the agent wallet work.
 
 **Risks:**
-- `fromLocalAccount()` needs access to chain manager and providers from the `WalletNamespace` internals. Need to verify these are accessible (they flow through the `WalletProvider` → `HostedWalletProvider` today). May need to store deps on the namespace or resolve them from the provider.
+- Union type `params | LocalAccount` on `toActionsWallet()` may cause TypeScript to widen the type in ways that lose type safety for Privy/Turnkey params. Mitigation: use function overloads if needed.
+- `isLocalAccount()` runtime check must be robust — a provider's params object must never accidentally match the `LocalAccount` shape. viem's `LocalAccount` has distinctive properties (`type: 'local'`, `signMessage`, `signTransaction`, `publicKey`) that no provider params object would have.
 - `NodeOptionsMap['local'] = undefined` must be verified to work with `ProviderSpec` conditional (`undefined extends undefined` → `{ type: 'local' }` with no config).
+- Deps access: `toActionsWallet()` needs chain manager etc. to create a `LocalWallet` in the `LocalAccount` branch. Plan to resolve from the provider instance.
 
 ## Sources & References
 
