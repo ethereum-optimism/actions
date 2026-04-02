@@ -7,6 +7,7 @@ import type {
   LendTransaction,
   LendTransactionReceipt,
 } from '@/types/lend/index.js'
+import { getExplorerUrl } from '@/utils/explorer.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 import { BaseLendNamespace, type LendProviders } from './BaseLendNamespace.js'
@@ -94,13 +95,20 @@ export class WalletLendNamespace extends BaseLendNamespace {
   ): Promise<LendTransactionReceipt> {
     const { transactionData } = transaction
 
-    if (transactionData.approval) {
-      return this.wallet.sendBatch(
-        [transactionData.approval, transactionData.position],
-        chainId,
-      )
-    }
+    const receipt = transactionData.approval
+      ? await this.wallet.sendBatch(
+          [transactionData.approval, transactionData.position],
+          chainId,
+        )
+      : await this.wallet.send(transactionData.position, chainId)
 
-    return this.wallet.send(transactionData.position, chainId)
+    // Extract transaction hash from receipt (works for both EOA and UserOp receipts)
+    const txHash = 'transactionHash' in receipt ? receipt.transactionHash : undefined
+    const explorerUrl = txHash ? getExplorerUrl(chainId, txHash) : undefined
+
+    return {
+      receipt,
+      explorerUrl,
+    }
   }
 }
