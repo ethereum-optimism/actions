@@ -11,6 +11,17 @@ import type { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
+function isLocalAccount(value: unknown): value is LocalAccount {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    (value as Record<string, unknown>).type === 'local' &&
+    'signMessage' in value &&
+    'signTransaction' in value
+  )
+}
+
 /**
  * Provider factory function for lazy initialization
  */
@@ -141,16 +152,29 @@ export class WalletNamespace<
   }
 
   /**
-   * Convert a hosted wallet to an Actions wallet
-   * @description Converts a hosted wallet to an Actions wallet instance.
-   * @param params - Parameters for converting a hosted wallet to an Actions wallet
-   * @param params.walletId - Unique identifier for the hosted wallet
-   * @param params.address - Ethereum address of the hosted wallet
+   * Convert a hosted wallet or local account to an Actions wallet
+   * @description Accepts either provider-specific params (for Privy/Turnkey) or a viem
+   * LocalAccount directly. When a LocalAccount is passed, a LocalWallet is created
+   * regardless of which hosted provider is configured.
+   * @param params - Provider params or a viem LocalAccount
    * @returns Promise resolving to the Actions wallet instance
    */
   async toActionsWallet(
-    params: TToActionsMap[THostedProviderType],
+    params: TToActionsMap[THostedProviderType] | LocalAccount,
   ): Promise<Wallet> {
+    if (isLocalAccount(params)) {
+      const { LocalWallet } =
+        await import('@/wallet/node/wallets/local/LocalWallet.js')
+      const provider = await this.resolveProvider()
+      const hosted = provider.hostedWalletProvider
+      return LocalWallet.create({
+        account: params,
+        chainManager: hosted['chainManager'],
+        lendProviders: hosted['lendProviders'],
+        swapProviders: hosted['swapProviders'],
+        supportedAssets: hosted['supportedAssets'],
+      })
+    }
     const provider = await this.resolveProvider()
     return provider.hostedWalletToActionsWallet(params)
   }
