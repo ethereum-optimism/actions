@@ -4,6 +4,13 @@ import { normalize } from 'viem/ens'
 import { mainnet } from 'viem/chains'
 
 /**
+ * A string that looks like an ENS name (contains at least one dot).
+ * Mirrors the pattern of viem's Address type — structural constraint at the type level,
+ * with runtime validation handled by normalize() inside resolveAddress().
+ */
+export type EnsName = `${string}.${string}`
+
+/**
  * Resolve an Ethereum address or ENS name to a checksummed hex address.
  * Hex addresses (0x...) are returned as-is after format validation.
  * ENS names require a mainnet public client for on-chain resolution.
@@ -13,10 +20,10 @@ import { mainnet } from 'viem/chains'
  * @throws If input is invalid, ENS name cannot be resolved, or resolved address is zero
  */
 export async function resolveAddress(
-  input: string,
+  input: Address | EnsName,
   mainnetClient?: PublicClient,
 ): Promise<Address> {
-  if (isAddress(input)) return input as Address
+  if (isAddress(input)) return input
 
   if (!mainnetClient) {
     throw new Error(
@@ -25,27 +32,25 @@ export async function resolveAddress(
     )
   }
 
-  let normalized: string
-  try {
-    normalized = normalize(input)
-  } catch {
-    throw new Error(`Invalid address or ENS name: "${input}"`)
-  }
+  const normalized = (() => {
+    try {
+      return normalize(input)
+    } catch {
+      throw new Error(`Invalid address or ENS name: "${input}"`)
+    }
+  })()
 
-  let resolved: Address | null
-  try {
-    resolved = await mainnetClient.getEnsAddress({ name: normalized })
-  } catch (cause) {
-    throw new Error(`ENS resolution failed for "${input}": RPC error`, { cause })
-  }
+  const resolved = await mainnetClient
+    .getEnsAddress({ name: normalized })
+    .catch((cause: unknown) => {
+      throw new Error(`ENS resolution failed for "${input}": RPC error`, {
+        cause,
+      })
+    })
 
-  if (!resolved) {
-    throw new Error(`ENS name "${input}" could not be resolved`)
-  }
-
+  if (!resolved) throw new Error(`ENS name "${input}" could not be resolved`)
   if (resolved.toLowerCase() === '0x0000000000000000000000000000000000000000') {
     throw new Error(`ENS name "${input}" resolved to the zero address`)
   }
-
   return resolved
 }

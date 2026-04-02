@@ -83,16 +83,17 @@ describe('resolveAddress', () => {
   })
 
   describe('invalid input', () => {
-    it('throws for strings that are neither a hex address nor a valid ENS name', async () => {
+    it('throws for ENS-shaped strings that fail normalisation', async () => {
+      // Has a dot so satisfies EnsName, but contains invalid ENS characters
       await expect(
-        resolveAddress('not-valid!@#$', {} as PublicClient),
+        resolveAddress('not!valid.eth', {} as PublicClient),
       ).rejects.toThrow('Invalid address or ENS name')
     })
 
     it('includes the invalid input in the error message', async () => {
       await expect(
-        resolveAddress('!!bad!!', {} as PublicClient),
-      ).rejects.toThrow('"!!bad!!"')
+        resolveAddress('!!bad!!.eth', {} as PublicClient),
+      ).rejects.toThrow('"!!bad!!.eth"')
     })
   })
 })
