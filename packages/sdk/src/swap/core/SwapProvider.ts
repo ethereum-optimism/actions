@@ -64,6 +64,11 @@ type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
   recipient?: Address
 }
 
+/** SwapQuoteParams with recipient narrowed to Address after ENS resolution */
+type SwapQuoteParamsResolved = Omit<SwapQuoteParams, 'recipient'> & {
+  recipient?: Address
+}
+
 /**
  * Abstract base class for swap providers.
  * Public methods handle validation and conversion,
@@ -164,7 +169,11 @@ export abstract class SwapProvider<
    */
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     validateChainSupported(params.chainId, this.supportedChainIds())
-    return this._getQuote(params)
+    const recipient = params.recipient
+      ? await resolveAddress(params.recipient, this.getMainnetClient())
+      : undefined
+    const paramsResolved: SwapQuoteParamsResolved = { ...params, recipient }
+    return this._getQuote(paramsResolved)
   }
 
   /**
@@ -284,7 +293,8 @@ export abstract class SwapProvider<
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
-    const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
+    // ENS is resolved before _getQuote is called, so recipient is always an Address here
+    const recipient = (params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER) as Address
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
     return { slippage, now, deadline, recipient, amountInRaw }
   }

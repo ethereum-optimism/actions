@@ -23,7 +23,7 @@ export async function resolveAddress(
   input: Address | EnsName,
   mainnetClient?: PublicClient,
 ): Promise<Address> {
-  if (isAddress(input)) return input
+  if (isAddress(input, { strict: false })) return input
 
   if (!mainnetClient) {
     throw new Error(

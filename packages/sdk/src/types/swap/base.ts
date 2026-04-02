@@ -157,8 +157,8 @@ export interface SwapQuoteParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp */
   deadline?: number
-  /** Recipient address */
-  recipient?: Address
+  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  recipient?: Address | EnsName
   /** Explicitly select a swap provider */
   provider?: SwapProviderName
 }
