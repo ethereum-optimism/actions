@@ -1,5 +1,6 @@
 import type { PrivyClient } from '@privy-io/node'
 import { getAddress } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import { unichain } from 'viem/chains'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -330,6 +331,34 @@ describe('WalletNamespace', () => {
       expect(actionsWallet).toBeInstanceOf(Wallet)
       expect(actionsWallet.signer.address).toBe(hostedWallet.signer.address)
       expect(actionsWallet.address).toBe(hostedWallet.address)
+    })
+  })
+
+  describe('toActionsWallet with LocalAccount', () => {
+    it('should create a LocalWallet from a viem LocalAccount', async () => {
+      const hostedWalletProvider = new PrivyHostedWalletProvider({
+        privyClient: mockPrivyClient,
+        authorizationContext: getMockAuthorizationContext(),
+        chainManager: mockChainManager,
+      })
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        { morpho: mockLendProvider },
+      )
+      const walletProvider = new WalletProvider(
+        hostedWalletProvider,
+        smartWalletProvider,
+      )
+      const walletNamespace = new WalletNamespace(walletProvider)
+
+      const account = privateKeyToAccount(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      )
+
+      const wallet = await walletNamespace.toActionsWallet(account)
+
+      expect(wallet.address).toBe(account.address)
+      expect(wallet.signer).toBe(account)
     })
   })
 

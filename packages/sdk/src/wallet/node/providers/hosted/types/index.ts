@@ -2,11 +2,12 @@ import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import type { TurnkeySDKClientBase } from '@turnkey/core'
 import type { TurnkeyClient as TurnkeyHttpClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
-import type { Address } from 'viem'
+import type { Address, LocalAccount } from 'viem'
 
 import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
 import type { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
 import type { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
+import type { LocalWalletProvider } from '@/wallet/node/providers/local/LocalWalletProvider.js'
 
 /**
  * Node provider type keys
@@ -46,6 +47,8 @@ export interface NodeOptionsMap {
   turnkey: {
     client: TurnkeyHttpClient | TurnkeyServerClient | TurnkeySDKClientBase
   }
+  /** Local provider requires no configuration at creation time */
+  local: undefined
 }
 
 /**
@@ -75,12 +78,22 @@ export type PrivyHostedWalletToActionsWalletOptions = {
 }
 
 /**
+ * Options for converting a local account to an Actions wallet
+ * @description Parameters for wrapping a viem LocalAccount in an Actions wallet
+ * @property account A viem LocalAccount created by the developer (e.g. via privateKeyToAccount)
+ */
+export type LocalWalletToActionsWalletOptions = {
+  account: LocalAccount
+}
+
+/**
  * Node environment hosted wallet registry.
  * Registers server-safe providers for use in Node.
  */
 export type NodeHostedProviderInstanceMap = {
   privy: PrivyHostedWalletProvider
   turnkey: TurnkeyHostedWalletProvider
+  local: LocalWalletProvider
 }
 
 /**
@@ -91,6 +104,7 @@ export type NodeHostedProviderInstanceMap = {
 export type NodeToActionsOptionsMap = {
   privy: PrivyHostedWalletToActionsWalletOptions
   turnkey: TurnkeyHostedWalletToActionsWalletOptions
+  local: LocalWalletToActionsWalletOptions
 }
 
 /**
