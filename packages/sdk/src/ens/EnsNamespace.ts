@@ -29,6 +29,10 @@ export class EnsNamespace {
   /**
    * Resolve an ENS name or hex address to a checksummed hex address.
    * Hex addresses are returned as-is after format validation.
+   * Uses the mainnet client from your Actions chain configuration automatically.
+   *
+   * If you need to resolve outside of an {@link Actions} instance (e.g. in a
+   * provider or script), use the lower-level `resolveAddress` utility instead.
    * @param input - Hex address (0x...) or ENS name (e.g. "vitalik.eth")
    * @returns Resolved hex address
    * @throws If ENS name cannot be resolved or mainnet is not configured
