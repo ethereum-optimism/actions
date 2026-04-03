@@ -4,7 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 
 import { EnsNamespace } from './EnsNamespace.js'
-import { EnsNotConfiguredError, EnsRpcError } from './errors.js'
+import {
+  EnsNotConfiguredError,
+  EnsResolutionError,
+  EnsRpcError,
+} from './errors.js'
 import type { EnsName } from './types.js'
 
 const REAL_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as Address
@@ -150,7 +154,7 @@ describe('EnsNamespace', () => {
       })
       const ens = new EnsNamespace(mockChainManager(client))
       await expect(ens.lookupText(REAL_ADDRESS, 'avatar')).rejects.toThrow(
-        'cannot be normalized',
+        EnsResolutionError,
       )
     })
 

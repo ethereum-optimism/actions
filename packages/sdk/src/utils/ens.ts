@@ -1,5 +1,5 @@
 import type { Address, PublicClient } from 'viem'
-import { isAddress } from 'viem'
+import { isAddress, isAddressEqual, zeroAddress } from 'viem'
 import { normalize } from 'viem/ens'
 
 import {
@@ -62,7 +62,7 @@ export async function resolveAddress(
       `ENS name "${input}" could not be resolved`,
       input,
     )
-  if (resolved.toLowerCase() === '0x0000000000000000000000000000000000000000') {
+  if (isAddressEqual(resolved, zeroAddress)) {
     throw new EnsResolutionError(
       `ENS name "${input}" resolved to the zero address`,
       input,

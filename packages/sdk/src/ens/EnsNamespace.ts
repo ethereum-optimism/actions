@@ -5,7 +5,11 @@ import { normalize } from 'viem/ens'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { resolveAddress } from '@/utils/ens.js'
 
-import { EnsNotConfiguredError, EnsRpcError } from './errors.js'
+import {
+  EnsNotConfiguredError,
+  EnsResolutionError,
+  EnsRpcError,
+} from './errors.js'
 import { type EnsName, isEnsName } from './types.js'
 
 /**
@@ -62,7 +66,8 @@ export class EnsNamespace {
    * @throws {EnsRpcError} If the RPC call fails
    */
   async reverseResolve(address: Address): Promise<EnsName | null> {
-    if (this.reverseCache.has(address)) return this.reverseCache.get(address)!
+    if (this.reverseCache.has(address))
+      return this.reverseCache.get(address) ?? null
     const client = this.requireMainnetClient()
     const name = await client
       .getEnsName({ address })
@@ -100,7 +105,7 @@ export class EnsNamespace {
       try {
         return normalize(name)
       } catch (cause) {
-        throw new EnsRpcError(
+        throw new EnsResolutionError(
           `ENS name "${name}" is invalid and cannot be normalized`,
           name,
           { cause },
