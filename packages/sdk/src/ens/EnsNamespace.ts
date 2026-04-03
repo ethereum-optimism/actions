@@ -67,15 +67,7 @@ export class EnsNamespace {
     key: string,
   ): Promise<string | null> {
     const client = this.requireMainnetClient()
-    const address = await this.resolve(input)
-    const name = await client
-      .getEnsName({ address })
-      .catch((cause: unknown) => {
-        throw new Error(
-          `ENS reverse resolution failed for "${address}": RPC error`,
-          { cause },
-        )
-      })
+    const name = isEnsName(input) ? input : await this.reverseResolve(input)
     if (!name) return null
     const normalized = (() => {
       try {

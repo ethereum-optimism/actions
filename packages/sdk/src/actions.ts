@@ -48,7 +48,7 @@ export class Actions<
     SmartWalletProvider
   >
   private chainManager: ChainManager
-  private _ens?: EnsNamespace
+  private _ens: EnsNamespace
   private _lend?: ActionsLendNamespace
   private _lendProviders: LendProviders = {}
   private _swap?: ActionsSwapNamespace
@@ -153,7 +153,7 @@ export class Actions<
    * @returns EnsNamespace for ENS operations
    */
   get ens(): EnsNamespace {
-    return this._ens!
+    return this._ens
   }
 
   /**
