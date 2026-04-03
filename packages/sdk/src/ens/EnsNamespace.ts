@@ -3,23 +3,16 @@ import { mainnet } from 'viem/chains'
 import { normalize } from 'viem/ens'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import { type EnsName, resolveAddress } from '@/utils/ens.js'
+import { type EnsName, isEnsName, resolveAddress } from '@/utils/ens.js'
 
 /**
  * Namespace for human-readable name resolution on Ethereum.
  * Currently backed by ENS (Ethereum Name Service) on mainnet.
  *
- * @remarks
- * This namespace is designed to be extensible. Future versions could support
- * alternative name services alongside ENS, for example:
- * - **Unstoppable Domains** — `.crypto`, `.nft`, `.wallet` TLDs resolved via
- *   their own registry contracts (no mainnet dependency required)
- * - **Lens handles** — `@user.lens` social graph identifiers resolved to
- *   profile owner addresses via the Lens Protocol registry
- *
- * When that time comes, the natural evolution is a provider pattern similar
- * to `SwapProvider`: a `NameServiceProvider` base class with pluggable
- * implementations, and `EnsNamespace` becoming the orchestrator that routes
+ * Designed to be extensible: future versions could support alternative name
+ * services alongside ENS — e.g. Unstoppable Domains (.crypto, .nft, .wallet)
+ * or Lens handles (@user.lens). The natural evolution is a NameServiceProvider
+ * base class with pluggable implementations, with EnsNamespace routing
  * resolution to the correct provider based on name format.
  *
  * Requires Ethereum mainnet to be included in your chain configuration.
@@ -58,7 +51,7 @@ export class EnsNamespace {
           { cause },
         )
       })
-    return (name ?? null) as EnsName | null
+    return name && isEnsName(name) ? name : null
   }
 
   /**

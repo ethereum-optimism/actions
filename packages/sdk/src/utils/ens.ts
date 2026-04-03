@@ -11,6 +11,15 @@ import { normalize } from 'viem/ens'
 export type EnsName = `${string}.${string}`
 
 /**
+ * Type guard for EnsName. Mirrors the pattern of viem's isAddress.
+ * @param value - String to check
+ * @returns True if the value satisfies the EnsName structural constraint
+ */
+export function isEnsName(value: string): value is EnsName {
+  return value.includes('.')
+}
+
+/**
  * Resolve an Ethereum address or ENS name to a checksummed hex address.
  * Hex addresses (0x...) are returned as-is after format validation.
  * ENS names require a mainnet public client for on-chain resolution.
