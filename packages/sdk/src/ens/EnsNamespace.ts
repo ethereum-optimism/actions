@@ -12,6 +12,9 @@ import {
 } from './errors.js'
 import { type EnsName, isEnsName } from './types.js'
 
+/** Default TTL for cached ENS lookups — 5 minutes */
+const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000
+
 /**
  * Namespace for human-readable name resolution on Ethereum.
  * Currently backed by ENS (Ethereum Name Service) on mainnet.
@@ -26,12 +29,23 @@ import { type EnsName, isEnsName } from './types.js'
  */
 export class EnsNamespace {
   private chainManager: ChainManager
-  private resolveCache = new Map<string, Address>()
-  private reverseCache = new Map<Address, EnsName | null>()
-  private textCache = new Map<string, string | null>()
+  private readonly cacheTtlMs: number
+  private resolveCache = new Map<
+    string,
+    { value: Address; expiresAt: number }
+  >()
+  private reverseCache = new Map<
+    Address,
+    { value: EnsName | null; expiresAt: number }
+  >()
+  private textCache = new Map<
+    string,
+    { value: string | null; expiresAt: number }
+  >()
 
-  constructor(chainManager: ChainManager) {
+  constructor(chainManager: ChainManager, cacheTtlMs = DEFAULT_CACHE_TTL_MS) {
     this.chainManager = chainManager
+    this.cacheTtlMs = cacheTtlMs
   }
 
   /**
@@ -49,13 +63,16 @@ export class EnsNamespace {
    */
   async resolve(input: Address | EnsName): Promise<Address> {
     const cached = this.resolveCache.get(input)
-    if (cached) return cached
-    const address = await resolveAddress(
+    if (cached && Date.now() < cached.expiresAt) return cached.value
+    const value = await resolveAddress(
       input,
       this.chainManager.tryGetPublicClient(mainnet.id),
     )
-    this.resolveCache.set(input, address)
-    return address
+    this.resolveCache.set(input, {
+      value,
+      expiresAt: Date.now() + this.cacheTtlMs,
+    })
+    return value
   }
 
   /**
@@ -66,8 +83,8 @@ export class EnsNamespace {
    * @throws {EnsRpcError} If the RPC call fails
    */
   async reverseResolve(address: Address): Promise<EnsName | null> {
-    if (this.reverseCache.has(address))
-      return this.reverseCache.get(address) ?? null
+    const cached = this.reverseCache.get(address)
+    if (cached && Date.now() < cached.expiresAt) return cached.value
     const client = this.requireMainnetClient()
     const name = await client
       .getEnsName({ address })
@@ -78,9 +95,12 @@ export class EnsNamespace {
           { cause },
         )
       })
-    const result = name && isEnsName(name) ? name : null
-    this.reverseCache.set(address, result)
-    return result
+    const value = name && isEnsName(name) ? name : null
+    this.reverseCache.set(address, {
+      value,
+      expiresAt: Date.now() + this.cacheTtlMs,
+    })
+    return value
   }
 
   /**
@@ -100,7 +120,8 @@ export class EnsNamespace {
     const name = isEnsName(input) ? input : await this.reverseResolve(input)
     if (!name) return null
     const cacheKey = `${name}:${key}`
-    if (this.textCache.has(cacheKey)) return this.textCache.get(cacheKey)!
+    const cached = this.textCache.get(cacheKey)
+    if (cached && Date.now() < cached.expiresAt) return cached.value
     const normalized = (() => {
       try {
         return normalize(name)
@@ -112,18 +133,21 @@ export class EnsNamespace {
         )
       }
     })()
-    const value = await this.requireMainnetClient()
-      .getEnsText({ name: normalized, key })
-      .catch((cause: unknown) => {
-        throw new EnsRpcError(
-          `ENS text record lookup failed for "${name}" key "${key}": RPC error`,
-          name,
-          { cause },
-        )
-      })
-    const result = value ?? null
-    this.textCache.set(cacheKey, result)
-    return result
+    const value =
+      (await this.requireMainnetClient()
+        .getEnsText({ name: normalized, key })
+        .catch((cause: unknown) => {
+          throw new EnsRpcError(
+            `ENS text record lookup failed for "${name}" key "${key}": RPC error`,
+            name,
+            { cause },
+          )
+        })) ?? null
+    this.textCache.set(cacheKey, {
+      value,
+      expiresAt: Date.now() + this.cacheTtlMs,
+    })
+    return value
   }
 
   private requireMainnetClient() {

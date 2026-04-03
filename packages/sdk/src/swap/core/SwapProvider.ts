@@ -4,6 +4,7 @@ import { mainnet } from 'viem/chains'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import type { EnsName } from '@/ens/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/swap/core/markets.js'
 import type { SwapSettings } from '@/types/actions.js'
@@ -149,12 +150,7 @@ export abstract class SwapProvider<
     }
 
     // Resolve ENS recipient before validation so validateRecipient always sees an Address
-    const recipient = params.recipient
-      ? await resolveAddress(
-          params.recipient,
-          this.chainManager.tryGetPublicClient(mainnet.id),
-        )
-      : undefined
+    const recipient = await this.resolveRecipient(params.recipient)
     const paramsResolved: SwapExecuteParamsResolved = { ...params, recipient }
     this.validateSwapExecute(paramsResolved)
 
@@ -172,12 +168,7 @@ export abstract class SwapProvider<
    */
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     validateChainSupported(params.chainId, this.supportedChainIds())
-    const recipient = params.recipient
-      ? await resolveAddress(
-          params.recipient,
-          this.chainManager.tryGetPublicClient(mainnet.id),
-        )
-      : undefined
+    const recipient = await this.resolveRecipient(params.recipient)
     const paramsResolved: SwapQuoteParamsResolved = { ...params, recipient }
     return this._getQuote(paramsResolved)
   }
@@ -434,6 +425,17 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
+
+  private async resolveRecipient(
+    recipient: Address | EnsName | undefined,
+  ): Promise<Address | undefined> {
+    return recipient
+      ? resolveAddress(
+          recipient,
+          this.chainManager.tryGetPublicClient(mainnet.id),
+        )
+      : undefined
+  }
 
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     this.validateQuoteExpiration(quote)

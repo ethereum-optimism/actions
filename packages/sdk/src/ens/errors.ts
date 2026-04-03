@@ -1,19 +1,19 @@
 import { mainnet } from 'viem/chains'
 
 /**
- * Thrown when an ENS operation is attempted but Ethereum mainnet is not
+ * Thrown when an ENS operation is attempted but the required chain is not
  * included in the Actions chain configuration.
  */
 export class EnsNotConfiguredError extends Error {
   chainId: number
 
-  constructor() {
+  constructor(chainId = mainnet.id) {
     super(
       `ENS operations require Ethereum mainnet. ` +
-        `Add chain ID ${mainnet.id} to your chain configuration.`,
+        `Add chain ID ${chainId} to your chain configuration.`,
     )
     this.name = 'EnsNotConfiguredError'
-    this.chainId = mainnet.id
+    this.chainId = chainId
   }
 }
 
