@@ -188,6 +188,7 @@ export class EnsNamespace implements NameServiceProvider {
       createPublicClient({
         chain: mainnet,
         transport: http(FALLBACK_MAINNET_RPC),
+        batch: { multicall: true },
       })
     )
   }
