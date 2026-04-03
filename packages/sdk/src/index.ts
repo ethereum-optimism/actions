@@ -52,6 +52,7 @@ export {
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'
+export { EnsNamespace } from '@/ens/index.js'
 export { LendProvider, MorphoLendProvider } from '@/lend/index.js'
 export {
   SwapProvider,

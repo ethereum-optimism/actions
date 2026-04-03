@@ -1,3 +1,4 @@
+import { EnsNamespace } from '@/ens/index.js'
 import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
 import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
@@ -47,6 +48,7 @@ export class Actions<
     SmartWalletProvider
   >
   private chainManager: ChainManager
+  private _ens?: EnsNamespace
   private _lend?: ActionsLendNamespace
   private _lendProviders: LendProviders = {}
   private _swap?: ActionsSwapNamespace
@@ -75,6 +77,8 @@ export class Actions<
     this.hostedWalletProviderRegistry = deps.hostedWalletProviderRegistry
     this._assetsConfig = config.assets
     validateConfigAddresses(config)
+
+    this._ens = new EnsNamespace(this.chainManager)
 
     if (config.lend?.morpho) {
       this._lendProviders.morpho = new MorphoLendProvider(
@@ -140,6 +144,16 @@ export class Actions<
    */
   get lendProviders(): LendProviders {
     return this._lendProviders
+  }
+
+  /**
+   * Get ENS operations interface
+   * @description Access to Ethereum Name Service operations: resolve, reverseResolve, lookupText.
+   * Requires Ethereum mainnet (chain ID 1) to be included in your chain configuration.
+   * @returns EnsNamespace for ENS operations
+   */
+  get ens(): EnsNamespace {
+    return this._ens!
   }
 
   /**

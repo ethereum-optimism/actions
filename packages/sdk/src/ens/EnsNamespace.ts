@@ -1,0 +1,109 @@
+import type { Address } from 'viem'
+import { mainnet } from 'viem/chains'
+import { normalize } from 'viem/ens'
+
+import type { ChainManager } from '@/services/ChainManager.js'
+import { type EnsName, resolveAddress } from '@/utils/ens.js'
+
+/**
+ * ENS namespace providing Ethereum Name Service operations.
+ * Requires Ethereum mainnet to be included in your chain configuration.
+ */
+export class EnsNamespace {
+  private chainManager: ChainManager
+
+  constructor(chainManager: ChainManager) {
+    this.chainManager = chainManager
+  }
+
+  /**
+   * Resolve an ENS name or hex address to a checksummed hex address.
+   * Hex addresses are returned as-is after format validation.
+   * @param input - Hex address (0x...) or ENS name (e.g. "vitalik.eth")
+   * @returns Resolved hex address
+   * @throws If ENS name cannot be resolved or mainnet is not configured
+   */
+  async resolve(input: Address | EnsName): Promise<Address> {
+    return resolveAddress(input, this.getMainnetClient())
+  }
+
+  /**
+   * Reverse-resolve an address to its primary ENS name.
+   * @param address - Hex address to look up
+   * @returns ENS name, or null if none is set
+   * @throws If mainnet is not configured
+   */
+  async reverseResolve(address: Address): Promise<EnsName | null> {
+    const client = this.requireMainnetClient()
+    const name = await client
+      .getEnsName({ address })
+      .catch((cause: unknown) => {
+        throw new Error(
+          `ENS reverse resolution failed for "${address}": RPC error`,
+          { cause },
+        )
+      })
+    return (name ?? null) as EnsName | null
+  }
+
+  /**
+   * Look up a text record for an ENS name or address.
+   * Common keys: "avatar", "url", "email", "com.twitter", "com.github"
+   * @param input - Hex address (0x...) or ENS name
+   * @param key - Text record key
+   * @returns Text record value, or null if not set
+   * @throws If ENS name cannot be resolved or mainnet is not configured
+   */
+  async lookupText(
+    input: Address | EnsName,
+    key: string,
+  ): Promise<string | null> {
+    const client = this.requireMainnetClient()
+    const address = await this.resolve(input)
+    const name = await client
+      .getEnsName({ address })
+      .catch((cause: unknown) => {
+        throw new Error(
+          `ENS reverse resolution failed for "${address}": RPC error`,
+          { cause },
+        )
+      })
+    if (!name) return null
+    const normalized = (() => {
+      try {
+        return normalize(name)
+      } catch {
+        return null
+      }
+    })()
+    if (!normalized) return null
+    const value = await client
+      .getEnsText({ name: normalized, key })
+      .catch((cause: unknown) => {
+        throw new Error(
+          `ENS text record lookup failed for "${name}" key "${key}": RPC error`,
+          { cause },
+        )
+      })
+    return value ?? null
+  }
+
+  private getMainnetClient() {
+    try {
+      return this.chainManager.getPublicClient(mainnet.id)
+    } catch {
+      return undefined
+    }
+  }
+
+  private requireMainnetClient() {
+    const client = this.getMainnetClient()
+    if (!client) {
+      throw new Error(
+        `ENS operations require Ethereum mainnet. ` +
+          `Add chain ID ${mainnet.id} to your chain configuration.`,
+      )
+    }
+    return client
+  }
+}
