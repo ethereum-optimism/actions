@@ -4,11 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 
 import { EnsNamespace } from './EnsNamespace.js'
-import {
-  EnsNotConfiguredError,
-  EnsResolutionError,
-  EnsRpcError,
-} from './errors.js'
+import { EnsResolutionError, EnsRpcError } from './errors.js'
 import type { EnsName } from './types.js'
 
 const REAL_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as Address
@@ -33,52 +29,40 @@ function mockClient(
 }
 
 describe('EnsNamespace', () => {
-  describe('resolve', () => {
+  describe('getAddress', () => {
     it('resolves a hex address directly', async () => {
       const ens = new EnsNamespace(mockChainManager())
-      expect(await ens.resolve(REAL_ADDRESS)).toBe(REAL_ADDRESS)
+      expect(await ens.getAddress(REAL_ADDRESS)).toBe(REAL_ADDRESS)
     })
 
     it('resolves an ENS name via mainnet client', async () => {
       const client = mockClient()
       const ens = new EnsNamespace(mockChainManager(client))
-      expect(await ens.resolve(ENS_NAME)).toBe(REAL_ADDRESS)
+      expect(await ens.getAddress(ENS_NAME)).toBe(REAL_ADDRESS)
       expect(client.getEnsAddress).toHaveBeenCalledWith({ name: ENS_NAME })
-    })
-
-    it('throws EnsNotConfiguredError when mainnet not configured', async () => {
-      const ens = new EnsNamespace(mockChainManager())
-      await expect(ens.resolve(ENS_NAME)).rejects.toThrow(EnsNotConfiguredError)
     })
 
     it('caches resolved addresses on subsequent calls', async () => {
       const client = mockClient()
       const ens = new EnsNamespace(mockChainManager(client))
-      await ens.resolve(ENS_NAME)
-      await ens.resolve(ENS_NAME)
+      await ens.getAddress(ENS_NAME)
+      await ens.getAddress(ENS_NAME)
       expect(client.getEnsAddress).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('reverseResolve', () => {
+  describe('getName', () => {
     it('returns ENS name for a known address', async () => {
       const client = mockClient()
       const ens = new EnsNamespace(mockChainManager(client))
-      expect(await ens.reverseResolve(REAL_ADDRESS)).toBe(ENS_NAME)
+      expect(await ens.getName(REAL_ADDRESS)).toBe(ENS_NAME)
       expect(client.getEnsName).toHaveBeenCalledWith({ address: REAL_ADDRESS })
     })
 
     it('returns null when no primary name is set', async () => {
       const client = mockClient({ getEnsName: vi.fn().mockResolvedValue(null) })
       const ens = new EnsNamespace(mockChainManager(client))
-      expect(await ens.reverseResolve(REAL_ADDRESS)).toBeNull()
-    })
-
-    it('throws EnsNotConfiguredError when mainnet not configured', async () => {
-      const ens = new EnsNamespace(mockChainManager())
-      await expect(ens.reverseResolve(REAL_ADDRESS)).rejects.toThrow(
-        EnsNotConfiguredError,
-      )
+      expect(await ens.getName(REAL_ADDRESS)).toBeNull()
     })
 
     it('throws EnsRpcError on RPC failure', async () => {
@@ -86,56 +70,69 @@ describe('EnsNamespace', () => {
         getEnsName: vi.fn().mockRejectedValue(new Error('rpc down')),
       })
       const ens = new EnsNamespace(mockChainManager(client))
-      await expect(ens.reverseResolve(REAL_ADDRESS)).rejects.toThrow(
-        EnsRpcError,
-      )
+      await expect(ens.getName(REAL_ADDRESS)).rejects.toThrow(EnsRpcError)
     })
 
     it('caches results on subsequent calls', async () => {
       const client = mockClient()
       const ens = new EnsNamespace(mockChainManager(client))
-      await ens.reverseResolve(REAL_ADDRESS)
-      await ens.reverseResolve(REAL_ADDRESS)
+      await ens.getName(REAL_ADDRESS)
+      await ens.getName(REAL_ADDRESS)
       expect(client.getEnsName).toHaveBeenCalledTimes(1)
     })
 
     it('caches null results', async () => {
       const client = mockClient({ getEnsName: vi.fn().mockResolvedValue(null) })
       const ens = new EnsNamespace(mockChainManager(client))
-      await ens.reverseResolve(REAL_ADDRESS)
-      await ens.reverseResolve(REAL_ADDRESS)
+      await ens.getName(REAL_ADDRESS)
+      await ens.getName(REAL_ADDRESS)
       expect(client.getEnsName).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('lookupText', () => {
-    it('returns null when no primary name is set for address', async () => {
+  describe('getInfo', () => {
+    it('returns all-null EnsInfo when address has no primary name', async () => {
       const client = mockClient({ getEnsName: vi.fn().mockResolvedValue(null) })
       const ens = new EnsNamespace(mockChainManager(client))
-      expect(await ens.lookupText(REAL_ADDRESS, 'avatar')).toBeNull()
+      const info = await ens.getInfo(REAL_ADDRESS)
+      expect(info).toEqual({
+        avatar: null,
+        display: null,
+        description: null,
+        url: null,
+        email: null,
+        keywords: null,
+        twitter: null,
+        github: null,
+        discord: null,
+        reddit: null,
+      })
     })
 
-    it('returns text record value when set', async () => {
+    it('returns all text record fields when name is given', async () => {
       const client = mockClient({
-        getEnsText: vi.fn().mockResolvedValue('https://example.com/avatar.png'),
+        getEnsText: vi.fn().mockResolvedValue('test-value'),
       })
       const ens = new EnsNamespace(mockChainManager(client))
-      expect(await ens.lookupText(ENS_NAME, 'avatar')).toBe(
-        'https://example.com/avatar.png',
-      )
+      const info = await ens.getInfo(ENS_NAME)
+      expect(info.avatar).toBe('test-value')
+      expect(info.twitter).toBe('test-value')
+      expect(info.github).toBe('test-value')
     })
 
-    it('returns null when text record is not set', async () => {
+    it('returns null fields when text records are not set', async () => {
       const client = mockClient({ getEnsText: vi.fn().mockResolvedValue(null) })
       const ens = new EnsNamespace(mockChainManager(client))
-      expect(await ens.lookupText(ENS_NAME, 'avatar')).toBeNull()
+      const info = await ens.getInfo(ENS_NAME)
+      expect(info.avatar).toBeNull()
+      expect(info.twitter).toBeNull()
     })
 
-    it('throws EnsNotConfiguredError when mainnet not configured', async () => {
-      const ens = new EnsNamespace(mockChainManager())
-      await expect(ens.lookupText(ENS_NAME, 'avatar')).rejects.toThrow(
-        EnsNotConfiguredError,
-      )
+    it('fetches all 10 standard keys in parallel', async () => {
+      const client = mockClient({ getEnsText: vi.fn().mockResolvedValue(null) })
+      const ens = new EnsNamespace(mockChainManager(client))
+      await ens.getInfo(ENS_NAME)
+      expect(client.getEnsText).toHaveBeenCalledTimes(10)
     })
 
     it('throws EnsRpcError on text lookup RPC failure', async () => {
@@ -143,38 +140,32 @@ describe('EnsNamespace', () => {
         getEnsText: vi.fn().mockRejectedValue(new Error('rpc down')),
       })
       const ens = new EnsNamespace(mockChainManager(client))
-      await expect(ens.lookupText(ENS_NAME, 'avatar')).rejects.toThrow(
-        EnsRpcError,
-      )
+      await expect(ens.getInfo(ENS_NAME)).rejects.toThrow(EnsRpcError)
     })
 
-    it('throws when the resolved name fails normalization', async () => {
+    it('throws EnsResolutionError when the resolved name fails normalization', async () => {
       const client = mockClient({
         getEnsName: vi.fn().mockResolvedValue('not!valid.eth'),
       })
       const ens = new EnsNamespace(mockChainManager(client))
-      await expect(ens.lookupText(REAL_ADDRESS, 'avatar')).rejects.toThrow(
+      await expect(ens.getInfo(REAL_ADDRESS)).rejects.toThrow(
         EnsResolutionError,
       )
     })
 
     it('skips reverse resolution when input is already an EnsName', async () => {
-      const client = mockClient({
-        getEnsText: vi.fn().mockResolvedValue('https://example.com/avatar.png'),
-      })
+      const client = mockClient({ getEnsText: vi.fn().mockResolvedValue(null) })
       const ens = new EnsNamespace(mockChainManager(client))
-      await ens.lookupText(ENS_NAME, 'avatar')
+      await ens.getInfo(ENS_NAME)
       expect(client.getEnsName).not.toHaveBeenCalled()
     })
 
-    it('caches text record results on subsequent calls', async () => {
-      const client = mockClient({
-        getEnsText: vi.fn().mockResolvedValue('https://example.com/avatar.png'),
-      })
+    it('caches results on subsequent calls', async () => {
+      const client = mockClient({ getEnsText: vi.fn().mockResolvedValue(null) })
       const ens = new EnsNamespace(mockChainManager(client))
-      await ens.lookupText(ENS_NAME, 'avatar')
-      await ens.lookupText(ENS_NAME, 'avatar')
-      expect(client.getEnsText).toHaveBeenCalledTimes(1)
+      await ens.getInfo(ENS_NAME)
+      await ens.getInfo(ENS_NAME)
+      expect(client.getEnsText).toHaveBeenCalledTimes(10)
     })
   })
 })

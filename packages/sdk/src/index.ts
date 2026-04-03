@@ -53,10 +53,12 @@ export {
 } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'
 export {
+  type EnsInfo,
   EnsNamespace,
   EnsNotConfiguredError,
   EnsResolutionError,
   EnsRpcError,
+  type NameServiceProvider,
 } from '@/ens/index.js'
 export { LendProvider, MorphoLendProvider } from '@/lend/index.js'
 export {

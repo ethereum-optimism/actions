@@ -1,3 +1,5 @@
+import type { Address } from 'viem'
+
 /**
  * A dot-separated ENS name (e.g. `vitalik.eth`, `sub.vitalik.eth`, `example.com`).
  *
@@ -24,4 +26,39 @@ export function isEnsName(value: string): value is EnsName {
     !value.endsWith('.') &&
     !value.includes('..')
   )
+}
+
+/**
+ * Standard ENS profile text record fields as defined by ENSIP-5 and ENSIP-18.
+ * All fields are null when not set on the resolver.
+ */
+export interface EnsInfo {
+  avatar: string | null
+  display: string | null
+  description: string | null
+  url: string | null
+  email: string | null
+  keywords: string | null
+  /** com.twitter */
+  twitter: string | null
+  /** com.github */
+  github: string | null
+  /** com.discord */
+  discord: string | null
+  /** org.reddit */
+  reddit: string | null
+}
+
+/**
+ * Common interface for human-readable name service providers.
+ * Implemented by {@link EnsNamespace}; designed to support future providers
+ * such as Basename, Lens, Unstoppable Domains, etc.
+ */
+export interface NameServiceProvider {
+  /** Resolve a name or address to a checksummed hex address. */
+  getAddress(input: Address | EnsName): Promise<Address>
+  /** Reverse-resolve an address to its primary name, or null if not set. */
+  getName(address: Address): Promise<EnsName | null>
+  /** Fetch all standard profile text record fields in a single batched call. */
+  getInfo(input: Address | EnsName): Promise<EnsInfo>
 }

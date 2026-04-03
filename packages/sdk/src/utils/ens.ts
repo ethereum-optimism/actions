@@ -15,8 +15,8 @@ export { type EnsName, isEnsName } from '@/ens/types.js'
  * Low-level utility to resolve an ENS name or hex address to a checksummed hex address.
  * Use this when you manage your own viem PublicClient (e.g. inside providers or scripts).
  *
- * If you have an {@link Actions} instance, prefer `actions.ens.resolve()` instead —
- * it handles client lookup automatically from your chain configuration.
+ * If you have an {@link Actions} instance, prefer `actions.ens.getAddress()` instead —
+ * it handles client lookup and fallback automatically from your chain configuration.
  *
  * Hex addresses (0x...) are returned as-is after format validation.
  * ENS names require a mainnet public client for on-chain resolution.

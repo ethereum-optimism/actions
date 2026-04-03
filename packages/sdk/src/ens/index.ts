@@ -4,4 +4,9 @@ export {
   EnsResolutionError,
   EnsRpcError,
 } from './errors.js'
-export { type EnsName, isEnsName } from './types.js'
+export {
+  type EnsInfo,
+  type EnsName,
+  isEnsName,
+  type NameServiceProvider,
+} from './types.js'
