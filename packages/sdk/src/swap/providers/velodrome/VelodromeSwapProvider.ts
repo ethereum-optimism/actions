@@ -3,7 +3,7 @@ import { formatUnits } from 'viem'
 import { VELODROME } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { expandMarkets, findMarket } from '@/swap/core/markets.js'
-import { SwapProvider } from '@/swap/core/SwapProvider.js'
+import { SwapProvider, type SwapQuoteParamsResolved } from '@/swap/core/SwapProvider.js'
 import {
   getChainConfig,
   getSupportedChainIds,
@@ -29,7 +29,6 @@ import type {
   ResolvedSwapParams,
   SwapMarket,
   SwapQuote,
-  SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
@@ -113,7 +112,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
    * @returns SwapQuote with amounts, price, route, and encoded calldata
    * @throws If amountOut is provided (Velodrome only supports exact-input)
    */
-  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+  protected async _getQuote(params: SwapQuoteParamsResolved): Promise<SwapQuote> {
     const { chainId, assetIn, assetOut } = params
 
     if (params.amountOut !== undefined) {

@@ -65,7 +65,7 @@ type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
 }
 
 /** SwapQuoteParams with recipient narrowed to Address after ENS resolution */
-type SwapQuoteParamsResolved = Omit<SwapQuoteParams, 'recipient'> & {
+export type SwapQuoteParamsResolved = Omit<SwapQuoteParams, 'recipient'> & {
   recipient?: Address
 }
 
@@ -289,13 +289,11 @@ export abstract class SwapProvider<
    * @param params - Raw quote params from the user
    * @returns Resolved slippage, deadline, recipient, amountInRaw, and current timestamp
    */
-  protected resolveQuoteDefaults(params: SwapQuoteParams) {
+  protected resolveQuoteDefaults(params: SwapQuoteParamsResolved) {
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
-    // ENS is resolved before _getQuote is called, so recipient is always an Address here
-    const recipient = (params.recipient ??
-      UNIVERSAL_ROUTER_MSG_SENDER) as Address
+    const recipient = params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
     return { slippage, now, deadline, recipient, amountInRaw }
   }
@@ -591,7 +589,9 @@ export abstract class SwapProvider<
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction>
 
-  protected abstract _getQuote(params: SwapQuoteParams): Promise<SwapQuote>
+  protected abstract _getQuote(
+    params: SwapQuoteParamsResolved,
+  ): Promise<SwapQuote>
 
   /**
    * Build provider-specific approval transactions for a swap.
