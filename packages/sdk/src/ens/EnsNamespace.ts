@@ -5,6 +5,7 @@ import { normalize } from 'viem/ens'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { resolveAddress } from '@/utils/ens.js'
 
+import { EnsNotConfiguredError, EnsRpcError } from './errors.js'
 import { type EnsName, isEnsName } from './types.js'
 
 /**
@@ -21,6 +22,9 @@ import { type EnsName, isEnsName } from './types.js'
  */
 export class EnsNamespace {
   private chainManager: ChainManager
+  private resolveCache = new Map<string, Address>()
+  private reverseCache = new Map<Address, EnsName | null>()
+  private textCache = new Map<string, string | null>()
 
   constructor(chainManager: ChainManager) {
     this.chainManager = chainManager
@@ -35,29 +39,43 @@ export class EnsNamespace {
    * provider or script), use the lower-level `resolveAddress` utility instead.
    * @param input - Hex address (0x...) or ENS name (e.g. "vitalik.eth")
    * @returns Resolved hex address
-   * @throws If ENS name cannot be resolved or mainnet is not configured
+   * @throws {EnsNotConfiguredError} If mainnet is not in your chain configuration
+   * @throws {EnsResolutionError} If the name cannot be resolved
+   * @throws {EnsRpcError} If the RPC call fails
    */
   async resolve(input: Address | EnsName): Promise<Address> {
-    return resolveAddress(input, this.getMainnetClient())
+    const cached = this.resolveCache.get(input)
+    if (cached) return cached
+    const address = await resolveAddress(
+      input,
+      this.chainManager.tryGetPublicClient(mainnet.id),
+    )
+    this.resolveCache.set(input, address)
+    return address
   }
 
   /**
    * Reverse-resolve an address to its primary ENS name.
    * @param address - Hex address to look up
    * @returns ENS name, or null if none is set
-   * @throws If mainnet is not configured
+   * @throws {EnsNotConfiguredError} If mainnet is not in your chain configuration
+   * @throws {EnsRpcError} If the RPC call fails
    */
   async reverseResolve(address: Address): Promise<EnsName | null> {
+    if (this.reverseCache.has(address)) return this.reverseCache.get(address)!
     const client = this.requireMainnetClient()
     const name = await client
       .getEnsName({ address })
       .catch((cause: unknown) => {
-        throw new Error(
+        throw new EnsRpcError(
           `ENS reverse resolution failed for "${address}": RPC error`,
+          address,
           { cause },
         )
       })
-    return name && isEnsName(name) ? name : null
+    const result = name && isEnsName(name) ? name : null
+    this.reverseCache.set(address, result)
+    return result
   }
 
   /**
@@ -66,7 +84,9 @@ export class EnsNamespace {
    * @param input - Hex address (0x...) or ENS name
    * @param key - Text record key
    * @returns Text record value, or null if not set
-   * @throws If ENS name cannot be resolved or mainnet is not configured
+   * @throws {EnsNotConfiguredError} If mainnet is not in your chain configuration
+   * @throws {EnsResolutionError} If the name cannot be resolved or normalized
+   * @throws {EnsRpcError} If the RPC call fails
    */
   async lookupText(
     input: Address | EnsName,
@@ -74,12 +94,15 @@ export class EnsNamespace {
   ): Promise<string | null> {
     const name = isEnsName(input) ? input : await this.reverseResolve(input)
     if (!name) return null
+    const cacheKey = `${name}:${key}`
+    if (this.textCache.has(cacheKey)) return this.textCache.get(cacheKey)!
     const normalized = (() => {
       try {
         return normalize(name)
       } catch (cause) {
-        throw new Error(
+        throw new EnsRpcError(
           `ENS name "${name}" is invalid and cannot be normalized`,
+          name,
           { cause },
         )
       }
@@ -87,30 +110,20 @@ export class EnsNamespace {
     const value = await this.requireMainnetClient()
       .getEnsText({ name: normalized, key })
       .catch((cause: unknown) => {
-        throw new Error(
+        throw new EnsRpcError(
           `ENS text record lookup failed for "${name}" key "${key}": RPC error`,
+          name,
           { cause },
         )
       })
-    return value ?? null
-  }
-
-  private getMainnetClient() {
-    try {
-      return this.chainManager.getPublicClient(mainnet.id)
-    } catch {
-      return undefined
-    }
+    const result = value ?? null
+    this.textCache.set(cacheKey, result)
+    return result
   }
 
   private requireMainnetClient() {
-    const client = this.getMainnetClient()
-    if (!client) {
-      throw new Error(
-        `ENS operations require Ethereum mainnet. ` +
-          `Add chain ID ${mainnet.id} to your chain configuration.`,
-      )
-    }
+    const client = this.chainManager.tryGetPublicClient(mainnet.id)
+    if (!client) throw new EnsNotConfiguredError()
     return client
   }
 }

@@ -4,18 +4,17 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 
 import { EnsNamespace } from './EnsNamespace.js'
+import { EnsNotConfiguredError, EnsRpcError } from './errors.js'
 import type { EnsName } from './types.js'
 
 const REAL_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as Address
 const ENS_NAME = 'vitalik.eth' as EnsName
 
 function mockChainManager(client?: Partial<PublicClient>): ChainManager {
-  const getPublicClient = client
+  const tryGetPublicClient = client
     ? vi.fn().mockReturnValue(client)
-    : vi.fn().mockImplementation(() => {
-        throw new Error('chain not configured')
-      })
-  return { getPublicClient } as unknown as ChainManager
+    : vi.fn().mockReturnValue(undefined)
+  return { tryGetPublicClient } as unknown as ChainManager
 }
 
 function mockClient(
@@ -43,11 +42,17 @@ describe('EnsNamespace', () => {
       expect(client.getEnsAddress).toHaveBeenCalledWith({ name: ENS_NAME })
     })
 
-    it('throws with helpful message when mainnet not configured', async () => {
+    it('throws EnsNotConfiguredError when mainnet not configured', async () => {
       const ens = new EnsNamespace(mockChainManager())
-      await expect(ens.resolve(ENS_NAME)).rejects.toThrow(
-        'ENS resolution requires a mainnet public client',
-      )
+      await expect(ens.resolve(ENS_NAME)).rejects.toThrow(EnsNotConfiguredError)
+    })
+
+    it('caches resolved addresses on subsequent calls', async () => {
+      const client = mockClient()
+      const ens = new EnsNamespace(mockChainManager(client))
+      await ens.resolve(ENS_NAME)
+      await ens.resolve(ENS_NAME)
+      expect(client.getEnsAddress).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -65,21 +70,37 @@ describe('EnsNamespace', () => {
       expect(await ens.reverseResolve(REAL_ADDRESS)).toBeNull()
     })
 
-    it('throws with helpful message when mainnet not configured', async () => {
+    it('throws EnsNotConfiguredError when mainnet not configured', async () => {
       const ens = new EnsNamespace(mockChainManager())
       await expect(ens.reverseResolve(REAL_ADDRESS)).rejects.toThrow(
-        'ENS operations require Ethereum mainnet',
+        EnsNotConfiguredError,
       )
     })
 
-    it('wraps RPC errors with context', async () => {
+    it('throws EnsRpcError on RPC failure', async () => {
       const client = mockClient({
         getEnsName: vi.fn().mockRejectedValue(new Error('rpc down')),
       })
       const ens = new EnsNamespace(mockChainManager(client))
       await expect(ens.reverseResolve(REAL_ADDRESS)).rejects.toThrow(
-        'RPC error',
+        EnsRpcError,
       )
+    })
+
+    it('caches results on subsequent calls', async () => {
+      const client = mockClient()
+      const ens = new EnsNamespace(mockChainManager(client))
+      await ens.reverseResolve(REAL_ADDRESS)
+      await ens.reverseResolve(REAL_ADDRESS)
+      expect(client.getEnsName).toHaveBeenCalledTimes(1)
+    })
+
+    it('caches null results', async () => {
+      const client = mockClient({ getEnsName: vi.fn().mockResolvedValue(null) })
+      const ens = new EnsNamespace(mockChainManager(client))
+      await ens.reverseResolve(REAL_ADDRESS)
+      await ens.reverseResolve(REAL_ADDRESS)
+      expect(client.getEnsName).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -106,20 +127,20 @@ describe('EnsNamespace', () => {
       expect(await ens.lookupText(ENS_NAME, 'avatar')).toBeNull()
     })
 
-    it('throws with helpful message when mainnet not configured', async () => {
+    it('throws EnsNotConfiguredError when mainnet not configured', async () => {
       const ens = new EnsNamespace(mockChainManager())
       await expect(ens.lookupText(ENS_NAME, 'avatar')).rejects.toThrow(
-        'ENS operations require Ethereum mainnet',
+        EnsNotConfiguredError,
       )
     })
 
-    it('wraps RPC errors on text lookup with context', async () => {
+    it('throws EnsRpcError on text lookup RPC failure', async () => {
       const client = mockClient({
         getEnsText: vi.fn().mockRejectedValue(new Error('rpc down')),
       })
       const ens = new EnsNamespace(mockChainManager(client))
       await expect(ens.lookupText(ENS_NAME, 'avatar')).rejects.toThrow(
-        'RPC error',
+        EnsRpcError,
       )
     })
 
@@ -140,6 +161,16 @@ describe('EnsNamespace', () => {
       const ens = new EnsNamespace(mockChainManager(client))
       await ens.lookupText(ENS_NAME, 'avatar')
       expect(client.getEnsName).not.toHaveBeenCalled()
+    })
+
+    it('caches text record results on subsequent calls', async () => {
+      const client = mockClient({
+        getEnsText: vi.fn().mockResolvedValue('https://example.com/avatar.png'),
+      })
+      const ens = new EnsNamespace(mockChainManager(client))
+      await ens.lookupText(ENS_NAME, 'avatar')
+      await ens.lookupText(ENS_NAME, 'avatar')
+      expect(client.getEnsText).toHaveBeenCalledTimes(1)
     })
   })
 })

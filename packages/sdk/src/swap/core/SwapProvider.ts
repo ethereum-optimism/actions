@@ -1,4 +1,4 @@
-import type { Address, PublicClient } from 'viem'
+import type { Address } from 'viem'
 import { formatUnits, isAddress } from 'viem'
 import { mainnet } from 'viem/chains'
 
@@ -150,7 +150,10 @@ export abstract class SwapProvider<
 
     // Resolve ENS recipient before validation so validateRecipient always sees an Address
     const recipient = params.recipient
-      ? await resolveAddress(params.recipient, this.getMainnetClient())
+      ? await resolveAddress(
+          params.recipient,
+          this.chainManager.tryGetPublicClient(mainnet.id),
+        )
       : undefined
     const paramsResolved: SwapExecuteParamsResolved = { ...params, recipient }
     this.validateSwapExecute(paramsResolved)
@@ -170,7 +173,10 @@ export abstract class SwapProvider<
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     validateChainSupported(params.chainId, this.supportedChainIds())
     const recipient = params.recipient
-      ? await resolveAddress(params.recipient, this.getMainnetClient())
+      ? await resolveAddress(
+          params.recipient,
+          this.chainManager.tryGetPublicClient(mainnet.id),
+        )
       : undefined
     const paramsResolved: SwapQuoteParamsResolved = { ...params, recipient }
     return this._getQuote(paramsResolved)
@@ -526,15 +532,6 @@ export abstract class SwapProvider<
       )
       return !blocked
     })
-  }
-
-  /** Returns the mainnet public client if configured, undefined otherwise */
-  private getMainnetClient(): PublicClient | undefined {
-    try {
-      return this.chainManager.getPublicClient(mainnet.id)
-    } catch {
-      return undefined
-    }
   }
 
   private findMatchingConfig(

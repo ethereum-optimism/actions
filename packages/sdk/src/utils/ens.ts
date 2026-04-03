@@ -1,8 +1,12 @@
 import type { Address, PublicClient } from 'viem'
 import { isAddress } from 'viem'
-import { mainnet } from 'viem/chains'
 import { normalize } from 'viem/ens'
 
+import {
+  EnsNotConfiguredError,
+  EnsResolutionError,
+  EnsRpcError,
+} from '@/ens/errors.js'
 import type { EnsName } from '@/ens/types.js'
 
 export { type EnsName, isEnsName } from '@/ens/types.js'
@@ -19,7 +23,9 @@ export { type EnsName, isEnsName } from '@/ens/types.js'
  * @param input - Hex address (0x...) or ENS name (e.g. "vitalik.eth")
  * @param mainnetClient - Public client connected to Ethereum mainnet (required for ENS names)
  * @returns Resolved hex address
- * @throws If input is invalid, ENS name cannot be resolved, or resolved address is zero
+ * @throws {EnsNotConfiguredError} If mainnet client is not provided
+ * @throws {EnsResolutionError} If the name is invalid or cannot be resolved
+ * @throws {EnsRpcError} If the RPC call fails
  */
 export async function resolveAddress(
   input: Address | EnsName,
@@ -27,32 +33,40 @@ export async function resolveAddress(
 ): Promise<Address> {
   if (isAddress(input, { strict: false })) return input
 
-  if (!mainnetClient) {
-    throw new Error(
-      `ENS resolution requires a mainnet public client. ` +
-        `Add chain ID ${mainnet.id} to your chain configuration to resolve "${input}".`,
-    )
-  }
+  if (!mainnetClient) throw new EnsNotConfiguredError()
 
   const normalized = (() => {
     try {
       return normalize(input)
-    } catch {
-      throw new Error(`Invalid address or ENS name: "${input}"`)
+    } catch (cause) {
+      throw new EnsResolutionError(
+        `Invalid address or ENS name: "${input}"`,
+        input,
+        { cause },
+      )
     }
   })()
 
   const resolved = await mainnetClient
     .getEnsAddress({ name: normalized })
     .catch((cause: unknown) => {
-      throw new Error(`ENS resolution failed for "${input}": RPC error`, {
-        cause,
-      })
+      throw new EnsRpcError(
+        `ENS resolution failed for "${input}": RPC error`,
+        input,
+        { cause },
+      )
     })
 
-  if (!resolved) throw new Error(`ENS name "${input}" could not be resolved`)
+  if (!resolved)
+    throw new EnsResolutionError(
+      `ENS name "${input}" could not be resolved`,
+      input,
+    )
   if (resolved.toLowerCase() === '0x0000000000000000000000000000000000000000') {
-    throw new Error(`ENS name "${input}" resolved to the zero address`)
+    throw new EnsResolutionError(
+      `ENS name "${input}" resolved to the zero address`,
+      input,
+    )
   }
   return resolved
 }

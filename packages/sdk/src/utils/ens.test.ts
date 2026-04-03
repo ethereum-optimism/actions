@@ -41,9 +41,10 @@ describe('resolveAddress', () => {
       expect(client.getEnsAddress).toHaveBeenCalledWith({ name: 'vitalik.eth' })
     })
 
-    it('throws when no mainnet client is provided', async () => {
+    it('throws EnsNotConfiguredError when no mainnet client is provided', async () => {
+      const { EnsNotConfiguredError } = await import('@/ens/errors.js')
       await expect(resolveAddress('vitalik.eth')).rejects.toThrow(
-        'ENS resolution requires a mainnet public client',
+        EnsNotConfiguredError,
       )
     })
 

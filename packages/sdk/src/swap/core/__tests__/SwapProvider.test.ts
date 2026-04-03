@@ -2,6 +2,7 @@ import type { Address } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { EnsNotConfiguredError } from '@/ens/errors.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { MockSwapProvider } from '@/swap/__mocks__/MockSwapProvider.js'
@@ -633,7 +634,9 @@ describe('SwapProvider', () => {
       const chainManager = new MockChainManager({
         supportedChains: [84532 as SupportedChainId, 1 as SupportedChainId],
       })
-      const mainnetClient = chainManager.getPublicClient(1 as SupportedChainId)
+      const mainnetClient = chainManager.tryGetPublicClient(
+        1 as SupportedChainId,
+      )
       ;(mainnetClient as any).getEnsAddress = rejects
         ? vi.fn().mockRejectedValue(new Error('network error'))
         : vi.fn().mockResolvedValue(ensResult)
@@ -675,7 +678,7 @@ describe('SwapProvider', () => {
         const provider = new MockSwapProvider()
         await expect(
           provider.execute({ ...baseExecuteParams, recipient: 'vitalik.eth' }),
-        ).rejects.toThrow('ENS resolution requires a mainnet public client')
+        ).rejects.toThrow(EnsNotConfiguredError)
       })
 
       it('throws when ENS name cannot be resolved', async () => {
@@ -716,7 +719,7 @@ describe('SwapProvider', () => {
         const provider = new MockSwapProvider()
         await expect(
           provider.getQuote({ ...baseQuoteParams, recipient: 'vitalik.eth' }),
-        ).rejects.toThrow('ENS resolution requires a mainnet public client')
+        ).rejects.toThrow(EnsNotConfiguredError)
       })
 
       it('passes hex address recipient through without ENS lookup', async () => {
