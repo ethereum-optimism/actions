@@ -73,11 +73,13 @@ export class EnsNamespace {
     const normalized = (() => {
       try {
         return normalize(name)
-      } catch {
-        return null
+      } catch (cause) {
+        throw new Error(
+          `ENS name "${name}" is invalid and cannot be normalized`,
+          { cause },
+        )
       }
     })()
-    if (!normalized) return null
     const value = await this.requireMainnetClient()
       .getEnsText({ name: normalized, key })
       .catch((cause: unknown) => {

@@ -7,7 +7,7 @@ import { EnsNamespace } from './EnsNamespace.js'
 import type { EnsName } from './types.js'
 
 const REAL_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as Address
-const ENS_NAME = 'vitalik.eth'
+const ENS_NAME = 'vitalik.eth' as EnsName
 
 function mockChainManager(client?: Partial<PublicClient>): ChainManager {
   const getPublicClient = client
@@ -123,12 +123,22 @@ describe('EnsNamespace', () => {
       )
     })
 
+    it('throws when the resolved name fails normalization', async () => {
+      const client = mockClient({
+        getEnsName: vi.fn().mockResolvedValue('not!valid.eth'),
+      })
+      const ens = new EnsNamespace(mockChainManager(client))
+      await expect(ens.lookupText(REAL_ADDRESS, 'avatar')).rejects.toThrow(
+        'cannot be normalized',
+      )
+    })
+
     it('skips reverse resolution when input is already an EnsName', async () => {
       const client = mockClient({
         getEnsText: vi.fn().mockResolvedValue('https://example.com/avatar.png'),
       })
       const ens = new EnsNamespace(mockChainManager(client))
-      await ens.lookupText(ENS_NAME as EnsName, 'avatar')
+      await ens.lookupText(ENS_NAME, 'avatar')
       expect(client.getEnsName).not.toHaveBeenCalled()
     })
   })
