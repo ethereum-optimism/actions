@@ -12,10 +12,16 @@ export type EnsName = `${string}.${string}`
 
 /**
  * Type guard for EnsName. Mirrors the pattern of viem's isAddress.
- * Returns true for any dot-containing string — use normalize() for full validation.
+ * Rejects obviously invalid forms (leading/trailing dots, consecutive dots)
+ * but does not run full ENSIP-15 normalization — use normalize() for that.
  * @param value - String to check
  * @returns True if the value satisfies the EnsName structural constraint
  */
 export function isEnsName(value: string): value is EnsName {
-  return value.includes('.')
+  return (
+    value.includes('.') &&
+    !value.startsWith('.') &&
+    !value.endsWith('.') &&
+    !value.includes('..')
+  )
 }
