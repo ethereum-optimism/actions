@@ -3,7 +3,10 @@ import { formatUnits } from 'viem'
 import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { expandMarkets, findMarket } from '@/swap/core/markets.js'
-import { SwapProvider } from '@/swap/core/SwapProvider.js'
+import {
+  SwapProvider,
+  type SwapQuoteParamsResolved,
+} from '@/swap/core/SwapProvider.js'
 import {
   getSupportedChainIds,
   getUniswapAddresses,
@@ -27,7 +30,6 @@ import type {
   ResolvedSwapParams,
   SwapMarket,
   SwapQuote,
-  SwapQuoteParams,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
@@ -84,7 +86,9 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     )
   }
 
-  protected async _getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+  protected async _getQuote(
+    params: SwapQuoteParamsResolved,
+  ): Promise<SwapQuote> {
     const { chainId, assetIn, assetOut } = params
     const addresses = getUniswapAddresses(chainId)
     const publicClient = this.chainManager.getPublicClient(chainId)

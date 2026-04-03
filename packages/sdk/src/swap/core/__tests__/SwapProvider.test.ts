@@ -1,7 +1,10 @@
 import type { Address } from 'viem'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { EnsNotConfiguredError } from '@/ens/errors.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import { MockSwapProvider } from '@/swap/__mocks__/MockSwapProvider.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapMarketConfig } from '@/types/swap/index.js'
@@ -615,6 +618,120 @@ describe('SwapProvider', () => {
           10 as SupportedChainId,
         ),
       ).toThrow('not in the allowlist')
+    })
+  })
+
+  describe('ENS resolution', () => {
+    const RESOLVED_ADDRESS =
+      '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as Address
+    const WALLET_ADDRESS =
+      '0xabcdef0123456789abcdef0123456789abcdef01' as Address
+
+    function createProviderWithEns(
+      ensResult: Address | null,
+      rejects = false,
+    ): MockSwapProvider {
+      const chainManager = new MockChainManager({
+        supportedChains: [84532 as SupportedChainId, 1 as SupportedChainId],
+      })
+      const mainnetClient = chainManager.tryGetPublicClient(
+        1 as SupportedChainId,
+      )
+      ;(mainnetClient as any).getEnsAddress = rejects
+        ? vi.fn().mockRejectedValue(new Error('network error'))
+        : vi.fn().mockResolvedValue(ensResult)
+      return new MockSwapProvider(
+        {},
+        undefined,
+        chainManager as unknown as ChainManager,
+      )
+    }
+
+    const baseExecuteParams = {
+      amountIn: 100,
+      assetIn: MockUSDC,
+      assetOut: MockWETH,
+      chainId: 84532 as SupportedChainId,
+      walletAddress: WALLET_ADDRESS,
+    }
+
+    const baseQuoteParams = {
+      amountIn: 100,
+      assetIn: MockUSDC,
+      assetOut: MockWETH,
+      chainId: 84532 as SupportedChainId,
+    }
+
+    describe('execute()', () => {
+      it('resolves ENS name and passes the Address to _execute', async () => {
+        const provider = createProviderWithEns(RESOLVED_ADDRESS)
+        await provider.execute({
+          ...baseExecuteParams,
+          recipient: 'vitalik.eth',
+        })
+        expect(provider.mockExecute).toHaveBeenCalledWith(
+          expect.objectContaining({ recipient: RESOLVED_ADDRESS }),
+        )
+      })
+
+      it('throws when ENS recipient provided but no mainnet client configured', async () => {
+        const provider = new MockSwapProvider()
+        await expect(
+          provider.execute({ ...baseExecuteParams, recipient: 'vitalik.eth' }),
+        ).rejects.toThrow(EnsNotConfiguredError)
+      })
+
+      it('throws when ENS name cannot be resolved', async () => {
+        const provider = createProviderWithEns(null)
+        await expect(
+          provider.execute({
+            ...baseExecuteParams,
+            recipient: 'unresolvable.eth',
+          }),
+        ).rejects.toThrow('could not be resolved')
+      })
+
+      it('passes hex address recipient through without ENS lookup', async () => {
+        const provider = new MockSwapProvider()
+        await provider.execute({
+          ...baseExecuteParams,
+          recipient: RESOLVED_ADDRESS,
+        })
+        expect(provider.mockExecute).toHaveBeenCalledWith(
+          expect.objectContaining({ recipient: RESOLVED_ADDRESS }),
+        )
+      })
+    })
+
+    describe('getQuote()', () => {
+      it('resolves ENS name and passes the Address to _getQuote', async () => {
+        const provider = createProviderWithEns(RESOLVED_ADDRESS)
+        await provider.getQuote({
+          ...baseQuoteParams,
+          recipient: 'vitalik.eth',
+        })
+        expect(provider.mockGetQuote).toHaveBeenCalledWith(
+          expect.objectContaining({ recipient: RESOLVED_ADDRESS }),
+        )
+      })
+
+      it('throws when ENS recipient provided but no mainnet client configured', async () => {
+        const provider = new MockSwapProvider()
+        await expect(
+          provider.getQuote({ ...baseQuoteParams, recipient: 'vitalik.eth' }),
+        ).rejects.toThrow(EnsNotConfiguredError)
+      })
+
+      it('passes hex address recipient through without ENS lookup', async () => {
+        const provider = new MockSwapProvider()
+        await provider.getQuote({
+          ...baseQuoteParams,
+          recipient: RESOLVED_ADDRESS,
+        })
+        expect(provider.mockGetQuote).toHaveBeenCalledWith(
+          expect.objectContaining({ recipient: RESOLVED_ADDRESS }),
+        )
+      })
     })
   })
 })
