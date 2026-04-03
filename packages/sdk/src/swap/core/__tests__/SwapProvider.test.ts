@@ -662,7 +662,10 @@ describe('SwapProvider', () => {
     describe('execute()', () => {
       it('resolves ENS name and passes the Address to _execute', async () => {
         const provider = createProviderWithEns(RESOLVED_ADDRESS)
-        await provider.execute({ ...baseExecuteParams, recipient: 'vitalik.eth' })
+        await provider.execute({
+          ...baseExecuteParams,
+          recipient: 'vitalik.eth',
+        })
         expect(provider.mockExecute).toHaveBeenCalledWith(
           expect.objectContaining({ recipient: RESOLVED_ADDRESS }),
         )
@@ -687,7 +690,10 @@ describe('SwapProvider', () => {
 
       it('passes hex address recipient through without ENS lookup', async () => {
         const provider = new MockSwapProvider()
-        await provider.execute({ ...baseExecuteParams, recipient: RESOLVED_ADDRESS })
+        await provider.execute({
+          ...baseExecuteParams,
+          recipient: RESOLVED_ADDRESS,
+        })
         expect(provider.mockExecute).toHaveBeenCalledWith(
           expect.objectContaining({ recipient: RESOLVED_ADDRESS }),
         )
@@ -697,7 +703,10 @@ describe('SwapProvider', () => {
     describe('getQuote()', () => {
       it('resolves ENS name and passes the Address to _getQuote', async () => {
         const provider = createProviderWithEns(RESOLVED_ADDRESS)
-        await provider.getQuote({ ...baseQuoteParams, recipient: 'vitalik.eth' })
+        await provider.getQuote({
+          ...baseQuoteParams,
+          recipient: 'vitalik.eth',
+        })
         expect(provider.mockGetQuote).toHaveBeenCalledWith(
           expect.objectContaining({ recipient: RESOLVED_ADDRESS }),
         )
@@ -712,7 +721,10 @@ describe('SwapProvider', () => {
 
       it('passes hex address recipient through without ENS lookup', async () => {
         const provider = new MockSwapProvider()
-        await provider.getQuote({ ...baseQuoteParams, recipient: RESOLVED_ADDRESS })
+        await provider.getQuote({
+          ...baseQuoteParams,
+          recipient: RESOLVED_ADDRESS,
+        })
         expect(provider.mockGetQuote).toHaveBeenCalledWith(
           expect.objectContaining({ recipient: RESOLVED_ADDRESS }),
         )

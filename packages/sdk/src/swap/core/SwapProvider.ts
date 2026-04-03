@@ -294,7 +294,8 @@ export abstract class SwapProvider<
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
     // ENS is resolved before _getQuote is called, so recipient is always an Address here
-    const recipient = (params.recipient ?? UNIVERSAL_ROUTER_MSG_SENDER) as Address
+    const recipient = (params.recipient ??
+      UNIVERSAL_ROUTER_MSG_SENDER) as Address
     const amountInRaw = parseAssetAmount(params.assetIn, params.amountIn ?? 1)
     return { slippage, now, deadline, recipient, amountInRaw }
   }
