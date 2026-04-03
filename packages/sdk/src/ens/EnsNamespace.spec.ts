@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ChainManager } from '@/services/ChainManager.js'
 
 import { EnsNamespace } from './EnsNamespace.js'
+import type { EnsName } from './types.js'
 
 const REAL_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as Address
 const ENS_NAME = 'vitalik.eth'
@@ -120,6 +121,15 @@ describe('EnsNamespace', () => {
       await expect(ens.lookupText(ENS_NAME, 'avatar')).rejects.toThrow(
         'RPC error',
       )
+    })
+
+    it('skips reverse resolution when input is already an EnsName', async () => {
+      const client = mockClient({
+        getEnsText: vi.fn().mockResolvedValue('https://example.com/avatar.png'),
+      })
+      const ens = new EnsNamespace(mockChainManager(client))
+      await ens.lookupText(ENS_NAME as EnsName, 'avatar')
+      expect(client.getEnsName).not.toHaveBeenCalled()
     })
   })
 })

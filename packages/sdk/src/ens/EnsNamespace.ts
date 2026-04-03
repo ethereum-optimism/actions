@@ -3,7 +3,9 @@ import { mainnet } from 'viem/chains'
 import { normalize } from 'viem/ens'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import { type EnsName, isEnsName, resolveAddress } from '@/utils/ens.js'
+import { resolveAddress } from '@/utils/ens.js'
+
+import { type EnsName, isEnsName } from './types.js'
 
 /**
  * Namespace for human-readable name resolution on Ethereum.
@@ -66,7 +68,6 @@ export class EnsNamespace {
     input: Address | EnsName,
     key: string,
   ): Promise<string | null> {
-    const client = this.requireMainnetClient()
     const name = isEnsName(input) ? input : await this.reverseResolve(input)
     if (!name) return null
     const normalized = (() => {
@@ -77,7 +78,7 @@ export class EnsNamespace {
       }
     })()
     if (!normalized) return null
-    const value = await client
+    const value = await this.requireMainnetClient()
       .getEnsText({ name: normalized, key })
       .catch((cause: unknown) => {
         throw new Error(
