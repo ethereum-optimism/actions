@@ -8,16 +8,33 @@
 
 ## Executive Summary
 
-MetaMask announced **Advanced Permissions** on April 6, 2026 — a production implementation of ERC-7715 (`wallet_grantPermissions`) built on their ERC-7710 Delegation Framework. This is a **mature, standardized alternative** to the ZeroDev Kernel session keys approach currently planned in our agent wallet architecture.
+MetaMask announced **Advanced Permissions** on April 6, 2026 — a production implementation of ERC-7715 (`wallet_grantPermissions`) built on their ERC-7710 Delegation Framework.
 
-**Key finding:** ERC-7715 + ERC-7710 achieves the same security goals as ZeroDev (scoped permissions, on-chain enforcement, time-bound access) but offers:
+### ⚠️ Critical Finding: MetaMask-Only (Worse Vendor Lock-In)
+
+**ERC-7715/7710 is MetaMask-only as of April 2026.** While it's an "open standard," **no other wallets support it yet.** Safe is "exploring" it with no ship date. Rabby, Rainbow, Turnkey, Privy — no announcements.
+
+**This is WORSE vendor lock-in than ZeroDev Kernel:**
+- **ZeroDev:** User connects ANY wallet (MetaMask, Rabby, Rainbow, Turnkey, etc.) → signs tx to create smart account → keeps using their wallet
+- **ERC-7715/7710:** User MUST use MetaMask → locked into MetaMask ecosystem
+
+**Recommendation: Stick with ZeroDev Kernel** for wallet diversity. Revisit ERC-7715/7710 if 3+ wallets ship support.
+
+### What ERC-7715/7710 Offers (For MetaMask Users)
+
 - **Standard JSON-RPC API** (`wallet_grantPermissions`) for permission requests
-- **MetaMask native support** (no custom UI needed for MetaMask users)
+- **MetaMask native support** (no custom UI needed)
 - **Human-readable approval flow** built into MetaMask extension
 - **Caveat enforcers** for flexible policy composition
-- **Multi-wallet compatibility** (any ERC-7710-compliant wallet, not just ZeroDev Kernel)
+- **Same security model** as ZeroDev (on-chain enforcement, scoped permissions, time-bound access)
 
-This research evaluates whether we should pivot from ZeroDev Kernel to ERC-7715/7710 for our agent wallet implementation.
+### What It Lacks vs. ZeroDev
+
+- 🔴 **Wallet support:** MetaMask-only (vs. ZeroDev works with ANY wallet)
+- ⚠️ **Granularity:** Can't restrict function arguments (ZeroDev Call Policy can)
+- ⚠️ **Maturity:** Just launched April 2026 (vs. ZeroDev's battle-tested session keys)
+
+This research evaluates the trade-offs and recommends sticking with ZeroDev Kernel until ERC-7715/7710 gains multi-wallet adoption.
 
 ---
 
@@ -178,7 +195,7 @@ This table compares **all delegation/permission approaches** evaluated for agent
 | **Composable Policies** | ❌ | ❌ | ❌ | ❌ | ✅ ERC-7579 modules | ✅ Caveat enforcers | ❌ |
 | **Standard API** | ❌ | ❌ | ❌ | ❌ | ❌ Custom | ✅ ERC-7715 RPC | ❌ Custom |
 | **Native Wallet UI** | ❌ | ❌ | ⚠️ CDP only | ❌ | ❌ Custom dashboard | ✅ MetaMask native | ⚠️ Coinbase only |
-| **Multi-Wallet Support** | ✅ Any | ✅ Any | ❌ CDP only | ✅ Any | ❌ ZeroDev only | ✅ Any ERC-7710 wallet | ❌ Coinbase only |
+| **Multi-Wallet Support** | ✅ Any | ✅ Any | ❌ CDP only | ✅ Any | ✅ Any (user's EOA owns) | 🔴 MetaMask only (Apr 2026) | ❌ Coinbase only |
 | **Self-Custody** | ✅ Yes | ✅ Yes | ❌ Custodial (CDP) | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
 | **Prompt Injection Protection** | ❌ | ❌ | ⚠️ Partial | ❌ | ✅ Yes | ✅ Yes | ⚠️ Partial |
 | **Session Account** | N/A | N/A | ❌ | N/A | ✅ Session key | ✅ Session account (EOA/SA) | ⚠️ Sub Accounts |
@@ -188,7 +205,7 @@ This table compares **all delegation/permission approaches** evaluated for agent
 | **Multi-Chain** | ✅ Any EVM | ✅ Any EVM | ⚠️ Limited | ✅ 30+ chains | ✅ Any EVM | ✅ Any EVM | ✅ Coinbase chains |
 | **Setup Complexity** | Low | Medium | Low | Low | High | Medium | Medium |
 | **Setup Cost** | Free | Free | Free | Free | $20-50 | $20-50 | $10-30 |
-| **Vendor Lock-In** | None | ⚠️ AWS | 🔴 High (CDP) | None | ⚠️ ZeroDev | None | 🔴 High (Coinbase) |
+| **Vendor Lock-In** | None | ⚠️ AWS | 🔴 High (CDP) | None | ⚠️ ZeroDev SDK | 🔴 MetaMask (until other wallets adopt) | 🔴 High (Coinbase) |
 | **Migration Path** | Easy | Easy | 🔴 Difficult | Easy | ✅ Easy | ✅ Easy | 🔴 Difficult |
 | **Maturity** | N/A | N/A | Production | Production | Production | ⚠️ New (Apr 2026) | Production |
 | **Documentation** | N/A | Extensive | Good | Good | Good | Excellent | Good |
@@ -223,14 +240,14 @@ This table compares **all delegation/permission approaches** evaluated for agent
 
 | If You Need... | Recommended Approach | Reasoning |
 |----------------|---------------------|-----------|
-| **MetaMask native UX** | ERC-7715/7710 | Built-in approval flow, no custom dashboard |
-| **Multi-wallet support** | ERC-7715/7710 | Standard API, any ERC-7710 wallet |
+| **MetaMask-only users** | ERC-7715/7710 | Built-in approval flow, no custom dashboard |
+| **Multi-wallet support (today)** | ZeroDev Kernel | User connects ANY wallet, ZeroDev SA owned by their EOA |
 | **Maximum granularity** (function args) | ZeroDev Kernel | Call Policy restricts specific arguments |
 | **Simplest setup** | Coinbase AgentKit | Custodial, no smart account deployment |
 | **Modular policies** | ZeroDev Kernel | ERC-7579 plugin system |
-| **Standard-based** | ERC-7715/7710 | ERC-7715 + ERC-7710 specs |
-| **Self-custody + ease** | ERC-7715/7710 or ZeroDev | Both self-custody, ERC-7715 easier UX |
-| **No vendor lock-in** | ERC-7715/7710 | Open standard, multiple wallets |
+| **Standard-based (future-proof)** | ERC-7715/7710 | ERC-7715 + ERC-7710 specs (if other wallets adopt) |
+| **Self-custody + ease** | ZeroDev Kernel | User keeps their wallet, SA owned by their EOA |
+| **No vendor lock-in (today)** | ZeroDev Kernel | User wallet-agnostic (MetaMask, Rabby, Rainbow, Turnkey, etc.) |
 | **Maximum security** | ZeroDev + AWS KMS | Granular policies + secure key storage |
 | **Fastest time-to-market** | Coinbase AgentKit | Custodial, CDP handles everything |
 
@@ -254,14 +271,21 @@ Both approaches achieve the same core goals:
 
 ### Key Differences
 
-#### 1. **Standard vs. Custom**
+#### 1. **Standard vs. Custom — ⚠️ CRITICAL VENDOR LOCK-IN DIFFERENCE**
 
 | Aspect | ZeroDev Kernel | ERC-7715/7710 |
 |--------|---------------|---------------|
 | **Standard** | ERC-7579 (modular smart accounts), custom session keys | ERC-7715 (permission requests), ERC-7710 (delegations) |
-| **Wallet support** | ZeroDev Kernel only | Any ERC-7710-compliant wallet (MetaMask, Safe, others) |
+| **User's wallet** | ✅ **ANY wallet** (MetaMask, Rabby, Rainbow, Turnkey, Privy, etc.) | 🔴 **MetaMask ONLY** (as of April 2026) |
+| **How it works** | User signs tx with their existing wallet to create ZeroDev SA (owned by their EOA) | User MUST use MetaMask to call `wallet_grantPermissions` |
+| **Wallet lock-in** | ✅ **None** — user keeps using their preferred wallet | 🔴 **High** — user must switch to MetaMask or wait for other wallets to adopt ERC-7715 |
 | **Permission request** | Custom UI/dashboard | `wallet_grantPermissions` JSON-RPC |
-| **Approval flow** | Dashboard we build | MetaMask native UI (or wallet's native UI) |
+| **Approval flow** | Dashboard we build | MetaMask native UI (or wallet's native UI, *if they adopt*) |
+| **Future potential** | Limited to ZeroDev ecosystem | ✅ Open standard (if Safe, Rabby, etc. adopt ERC-7715/7710) |
+
+**Critical insight:** While ERC-7715/7710 is an "open standard," **in practice it's MetaMask-only right now.** Safe is "exploring" it but hasn't shipped. No timeline for Rabby, Rainbow, Turnkey, or other wallets.
+
+**ZeroDev Kernel is MORE wallet-agnostic TODAY** because the user just needs to sign a transaction with any wallet to create the smart account. They keep using their existing wallet.
 
 #### 2. **Permission Granularity**
 
@@ -357,17 +381,19 @@ From the MetaMask announcement:
 - Agent redeems permissions via `delegationManager.redeemDelegations()`
 
 **Pros:**
-- ✅ Standard API (future-proof)
+- ✅ Standard API (future-proof *if other wallets adopt*)
 - ✅ Native MetaMask support (no custom dashboard for MetaMask users)
-- ✅ Broader wallet compatibility (Safe, others can adopt ERC-7710)
 - ✅ Human-readable approval flow (MetaMask handles UI)
 - ✅ Composable caveat enforcers (standard building blocks)
 
 **Cons:**
+- 🔴 **MetaMask-only TODAY** — user MUST use MetaMask (high vendor lock-in until others adopt)
+- 🔴 **Excludes all non-MetaMask users** — Rabby, Rainbow, Turnkey, Privy, Coinbase Wallet users can't use it
 - ⚠️ Less granular than ZeroDev Call Policy (can't restrict specific function arguments)
 - ⚠️ New standard (launched April 2026 — less battle-tested)
 - ⚠️ MetaMask Smart Account is less modular than ZeroDev Kernel (no ERC-7579)
 - ⚠️ Some security gaps (delegatecall, permit() blocking) depend on wallet implementation
+- ⚠️ Uncertain adoption timeline (Safe "exploring" but no ship date; other wallets unknown)
 
 **Implementation Changes (from existing plan):**
 - **Issue 1 (Local EOA provider):** No change — still needed for agent's session account
@@ -406,9 +432,11 @@ From the MetaMask announcement:
 
 ---
 
-### Option C: Stick with ZeroDev Kernel (Original Plan)
+### Option C: Stick with ZeroDev Kernel (Original Plan) — ✅ WALLET-AGNOSTIC
 
 **Pros:**
+- ✅ **User wallet-agnostic** — works with ANY wallet (MetaMask, Rabby, Rainbow, Turnkey, Privy, Coinbase Wallet, etc.)
+- ✅ **No vendor lock-in** — user keeps using their preferred wallet
 - ✅ More granular control (Call Policy can restrict function arguments)
 - ✅ ERC-7579 modularity (can install custom validators)
 - ✅ Custom spending cap policy (four composable modes)
@@ -416,34 +444,47 @@ From the MetaMask announcement:
 
 **Cons:**
 - ⚠️ Custom dashboard required (Issue 7 is a lot of work)
-- ⚠️ Not a standard (wallet-specific)
-- ⚠️ MetaMask users don't get native experience
-- ⚠️ Harder to add wallet support beyond ZeroDev
+- ⚠️ Not a standard (ZeroDev-specific smart account)
+- ⚠️ MetaMask users don't get native MetaMask extension experience (but can still use MetaMask as their wallet)
 
-**Verdict:** Still viable if we prioritize granular control over standardization and UX simplicity.
+**Verdict:** **RECOMMENDED for wallet diversity.** Users can connect with any wallet. Better than forcing everyone to MetaMask.
 
 ---
 
 ## Recommendation
 
-### Phase 1: Research & Prototype (Now)
+### ⚠️ Critical Finding: Vendor Lock-In
 
-1. **Spike ERC-7715/7710 integration:**
-   - Build minimal proof-of-concept using MetaMask Smart Accounts Kit
-   - Test `wallet_requestExecutionPermissions` flow
-   - Evaluate MetaMask's caveat enforcers (do they meet our spending cap needs?)
-   - Check if we can add custom caveat enforcers (for permit() blocking, etc.)
+**ERC-7715/7710 is MetaMask-only as of April 2026.** While it's an "open standard," no other wallets have shipped support yet. Safe is "exploring" it with no timeline.
 
-2. **Evaluate security:**
-   - Review MetaMask Smart Accounts Kit source code
-   - Verify delegatecall and permit() handling
-   - Check if we can enforce our custom spending cap logic via caveat enforcers
+**This is WORSE vendor lock-in than ZeroDev Kernel:**
+- **ZeroDev:** User connects ANY wallet (MetaMask, Rabby, Rainbow, Turnkey, etc.) → signs tx to create smart account → keeps using their preferred wallet
+- **ERC-7715/7710:** User MUST use MetaMask extension → locked into MetaMask ecosystem
 
-3. **Test multi-chain:**
-   - Verify ERC-7715 multi-chain permission requests work as expected
-   - Check if MetaMask Smart Account deployment is deterministic across chains
+**For a product serving diverse crypto users, forcing MetaMask is a dealbreaker.**
 
-**Decision point:** If ERC-7715/7710 meets our security and functionality requirements, recommend pivot. Otherwise, proceed with ZeroDev Kernel.
+### Recommended Path: Stick with ZeroDev Kernel (Option C)
+
+**Reasoning:**
+1. **Wallet diversity matters** — crypto users have strong wallet preferences (Rabby for traders, Rainbow for mobile, Turnkey for embedded)
+2. **ZeroDev is wallet-agnostic** — user just signs a transaction with their existing wallet
+3. **Better UX for non-MetaMask users** — no "sorry, MetaMask only" message
+4. **Open future** — if ERC-7715/7710 gains multi-wallet adoption, we can add it later as an alternative flow
+
+**Trade-off accepted:**
+- We build a custom dashboard (Issue 7) instead of using MetaMask's native UI
+- This is WORTH IT to avoid excluding 40-60% of users who don't use MetaMask
+
+### Alternative: Monitor ERC-7715/7710 Adoption
+
+**Track these milestones:**
+1. **Safe ships ERC-7715 support** (they're "exploring" it)
+2. **Rabby announces ERC-7710 integration** (or other major wallets)
+3. **3+ wallets with production ERC-7715 support**
+
+**If these happen:** Revisit ERC-7715/7710 as a second flow (hybrid approach) for users who prefer native wallet UX.
+
+**Until then:** ZeroDev Kernel is the pragmatic choice for wallet diversity.
 
 ### Phase 2: Implementation (If Pivot)
 
