@@ -160,7 +160,83 @@ Examples:
 
 ---
 
-## Comparison: ZeroDev Kernel vs. ERC-7715/7710
+## Complete Delegation Approach Comparison
+
+### Feature Matrix: All Approaches Considered
+
+This table compares **all delegation/permission approaches** evaluated for agent wallet support, including those from our [prior research](https://github.com/its-applekid/agent-actions/blob/master/docs/2026-03-08-agent-actions-comparison-analysis.md).
+
+| Feature | .env File | AWS Secrets | Coinbase AgentKit | GOAT SDK | ZeroDev Kernel | **ERC-7715/7710** | Coinbase Smart Wallet |
+|---------|-----------|-------------|-------------------|----------|----------------|-------------------|----------------------|
+| **On-Chain Enforcement** | ❌ | ❌ | ⚠️ Partial (CDP policies off-chain) | ❌ | ✅ Yes | ✅ Yes | ⚠️ Partial (Spend Permissions limited) |
+| **Contract-Level Restrictions** | ❌ | ❌ | ❌ | ❌ | ✅ Call Policy | ✅ Target Enforcer | ❌ |
+| **Function Selector Restrictions** | ❌ | ❌ | ❌ | ❌ | ✅ Call Policy | ⚠️ Limited | ❌ |
+| **Function Argument Restrictions** | ❌ | ❌ | ❌ | ❌ | ✅ Call Policy | ❌ | ❌ |
+| **Spending Caps** | ❌ | ❌ | ✅ Token amounts only | ❌ | ✅ Custom policy (4 modes) | ✅ Allowance Enforcer | ✅ Token amounts only |
+| **Time-Bound Permissions** | ❌ | ❌ | ⚠️ CDP config | ❌ | ✅ Session key expiry | ✅ Expiry rules | ⚠️ Time windows |
+| **Revocable** | ❌ | ❌ | ✅ Via CDP dashboard | ❌ | ✅ Remove session key | ✅ Revoke delegation | ✅ Via Coinbase dashboard |
+| **Composable Policies** | ❌ | ❌ | ❌ | ❌ | ✅ ERC-7579 modules | ✅ Caveat enforcers | ❌ |
+| **Standard API** | ❌ | ❌ | ❌ | ❌ | ❌ Custom | ✅ ERC-7715 RPC | ❌ Custom |
+| **Native Wallet UI** | ❌ | ❌ | ⚠️ CDP only | ❌ | ❌ Custom dashboard | ✅ MetaMask native | ⚠️ Coinbase only |
+| **Multi-Wallet Support** | ✅ Any | ✅ Any | ❌ CDP only | ✅ Any | ❌ ZeroDev only | ✅ Any ERC-7710 wallet | ❌ Coinbase only |
+| **Self-Custody** | ✅ Yes | ✅ Yes | ❌ Custodial (CDP) | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Prompt Injection Protection** | ❌ | ❌ | ⚠️ Partial | ❌ | ✅ Yes | ✅ Yes | ⚠️ Partial |
+| **Session Account** | N/A | N/A | ❌ | N/A | ✅ Session key | ✅ Session account (EOA/SA) | ⚠️ Sub Accounts |
+| **Custom Policies** | ❌ | ❌ | ❌ | ❌ | ✅ PolicyBase | ✅ Custom enforcers | ❌ |
+| **Modular Architecture** | N/A | N/A | ❌ | N/A | ✅ ERC-7579 | ✅ ERC-7710 | ❌ |
+| **Gas Sponsorship** | ❌ | ❌ | ✅ CDP paymaster | ❌ | ✅ ZeroDev paymaster | ✅ Wallet paymaster | ✅ Coinbase paymaster |
+| **Multi-Chain** | ✅ Any EVM | ✅ Any EVM | ⚠️ Limited | ✅ 30+ chains | ✅ Any EVM | ✅ Any EVM | ✅ Coinbase chains |
+| **Setup Complexity** | Low | Medium | Low | Low | High | Medium | Medium |
+| **Setup Cost** | Free | Free | Free | Free | $20-50 | $20-50 | $10-30 |
+| **Vendor Lock-In** | None | ⚠️ AWS | 🔴 High (CDP) | None | ⚠️ ZeroDev | None | 🔴 High (Coinbase) |
+| **Migration Path** | Easy | Easy | 🔴 Difficult | Easy | ✅ Easy | ✅ Easy | 🔴 Difficult |
+| **Maturity** | N/A | N/A | Production | Production | Production | ⚠️ New (Apr 2026) | Production |
+| **Documentation** | N/A | Extensive | Good | Good | Good | Excellent | Good |
+
+### Security Comparison (Attack Vectors)
+
+| Attack Vector | .env File | AWS Secrets | Coinbase AgentKit | GOAT SDK | ZeroDev Kernel | **ERC-7715/7710** | Coinbase Smart Wallet |
+|---------------|-----------|-------------|-------------------|----------|----------------|-------------------|----------------------|
+| **Direct Prompt Injection** | 🔴 Critical | 🔴 Critical | ⚠️ Partial | 🔴 Critical | ✅ Protected | ✅ Protected | ⚠️ Partial |
+| **Indirect Prompt Injection** | 🔴 Critical | 🔴 Critical | ⚠️ Partial | 🔴 Critical | ✅ Protected | ✅ Protected | ⚠️ Partial |
+| **Key Exfiltration** | 🔴 Critical | 🔴 Critical | ✅ Protected (TEE) | 🔴 Critical | ⚠️ Partial (session key) | ⚠️ Partial (session key) | ✅ Protected (custodial) |
+| **Malicious Skill** | 🔴 Total loss | 🔴 Total loss | ⚠️ Cap-limited | 🔴 Total loss | 🟢 Policy-limited | 🟢 Policy-limited | ⚠️ Cap-limited |
+| **Social Engineering** | 🔴 Critical | 🔴 Critical | ⚠️ Partial | 🔴 Critical | ⚠️ Partial | ⚠️ Partial | ⚠️ Partial |
+| **Agent Self-Modification** | 🔴 Can modify limits | 🔴 Can modify limits | ✅ Protected (CDP) | 🔴 Can modify limits | ✅ Protected | ✅ Protected | ✅ Protected (Coinbase) |
+| **Custodial Compromise** | N/A | N/A | 🔴 Critical | N/A | ✅ Self-custody | ✅ Self-custody | ⚠️ Hybrid (CDP custody) |
+| **Cost of Breach** | 🔴 Total loss | 🔴 Total loss | 🟢 Cap-limited | 🔴 Total loss | 🟢 Cap-limited | 🟢 Cap-limited | 🟢 Cap-limited |
+
+### Operational Capabilities
+
+| Capability | .env File | AWS Secrets | Coinbase AgentKit | GOAT SDK | ZeroDev Kernel | **ERC-7715/7710** | Coinbase Smart Wallet |
+|------------|-----------|-------------|-------------------|----------|----------------|-------------------|----------------------|
+| **DeFi Protocol Access** | ⚠️ Manual | ⚠️ Manual | ⚠️ Limited (~5) | ✅ 200+ | ✅ Unlimited | ✅ Unlimited | ⚠️ Limited |
+| **Composability** | ✅ Full | ✅ Full | ❌ Low | ✅ High | ✅ High | ✅ High | ❌ Low |
+| **Human-Readable Approval** | ❌ | ❌ | ⚠️ CDP UI | ❌ | ❌ Custom UI | ✅ MetaMask native | ⚠️ Coinbase UI |
+| **Permission Adjustment** | ❌ | ❌ | ⚠️ Via CDP | ❌ | ⚠️ Via dashboard | ✅ Built-in | ⚠️ Via Coinbase |
+| **Dashboard Required** | No | No | No (CDP handles) | No | Yes (custom) | No (wallet handles) | No (Coinbase handles) |
+| **Per-Transaction Cost** | Gas only | Gas only | Gasless (Base) | Gas only | Gas + overhead | Gas + overhead | Gasless (sponsored) |
+| **Platform Fees** | None | None | ⚠️ CDP fees | None | None | None | ⚠️ Coinbase fees |
+| **Gas Optimization** | ✅ Flashbots | ✅ Flashbots | ❌ | ✅ Flashbots | ⚠️ Limited | ⚠️ Limited | ❌ |
+
+### Decision Matrix
+
+| If You Need... | Recommended Approach | Reasoning |
+|----------------|---------------------|-----------|
+| **MetaMask native UX** | ERC-7715/7710 | Built-in approval flow, no custom dashboard |
+| **Multi-wallet support** | ERC-7715/7710 | Standard API, any ERC-7710 wallet |
+| **Maximum granularity** (function args) | ZeroDev Kernel | Call Policy restricts specific arguments |
+| **Simplest setup** | Coinbase AgentKit | Custodial, no smart account deployment |
+| **Modular policies** | ZeroDev Kernel | ERC-7579 plugin system |
+| **Standard-based** | ERC-7715/7710 | ERC-7715 + ERC-7710 specs |
+| **Self-custody + ease** | ERC-7715/7710 or ZeroDev | Both self-custody, ERC-7715 easier UX |
+| **No vendor lock-in** | ERC-7715/7710 | Open standard, multiple wallets |
+| **Maximum security** | ZeroDev + AWS KMS | Granular policies + secure key storage |
+| **Fastest time-to-market** | Coinbase AgentKit | Custodial, CDP handles everything |
+
+---
+
+## Comparison: ZeroDev Kernel vs. ERC-7715/7710 (Detailed)
 
 ### Architectural Similarities
 

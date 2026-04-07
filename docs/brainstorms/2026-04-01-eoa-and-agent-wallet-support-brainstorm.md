@@ -65,6 +65,8 @@ The agent signs UserOperations with its session key. A bundler submits the UserO
 
 **Why not ERC-7710:** ERC-7710 (MetaMask Delegation Toolkit) is a viable alternative, but ZeroDev's session key system is more mature for our use case — it has built-in Call Policy, composable policy plugins, and the `PolicyBase` interface for custom spending caps. ZeroDev co-authored ERC-7715 (`wallet_grantPermissions`) which standardizes the permission-granting flow.
 
+**Update (2026-04-07):** MetaMask launched Advanced Permissions (ERC-7715 + ERC-7710) on April 6, 2026. See [MetaMask Advanced Permissions research](./2026-04-07-metamask-advanced-permissions-research.md) for a detailed comparison of ERC-7715/7710 vs ZeroDev Kernel, including a feature matrix of all delegation approaches considered.
+
 ### Gas Bootstrapping
 
 To reduce onboarding friction:
