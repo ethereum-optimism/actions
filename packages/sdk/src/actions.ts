@@ -115,6 +115,7 @@ export class Actions<
     if (Object.values(this._swapProviders).some(Boolean)) {
       this._swap = new ActionsSwapNamespace(
         this._swapProviders,
+        (r) => (r ? this._ens.getAddress(r) : Promise.resolve(undefined)),
         this._swapSettings,
       )
     }

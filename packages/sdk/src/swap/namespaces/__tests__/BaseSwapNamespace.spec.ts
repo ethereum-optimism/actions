@@ -67,6 +67,7 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace(
         { uniswap: cheapProvider, velodrome: expensiveProvider },
+        undefined,
         { routing: 'price' },
       )
 
@@ -94,6 +95,7 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace(
         { uniswap: failingProvider, velodrome: workingProvider },
+        undefined,
         { routing: 'price' },
       )
 
@@ -115,6 +117,7 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace(
         { uniswap: failingProvider },
+        undefined,
         { routing: 'price' },
       )
 
@@ -140,6 +143,7 @@ describe('BaseSwapNamespace', () => {
 
       const namespace = new ActionsSwapNamespace(
         { uniswap: cheapProvider, velodrome: expensiveProvider },
+        undefined,
         { routing: 'price' },
       )
 

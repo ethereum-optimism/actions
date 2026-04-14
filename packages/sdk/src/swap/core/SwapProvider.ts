@@ -1,10 +1,8 @@
 import type { Address } from 'viem'
 import { formatUnits, isAddress } from 'viem'
-import { mainnet } from 'viem/chains'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
-import type { EnsName } from '@/ens/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/swap/core/markets.js'
 import type { SwapSettings } from '@/types/actions.js'
@@ -34,7 +32,6 @@ import {
   isNativeAsset,
   parseAssetAmount,
 } from '@/utils/assets.js'
-import { resolveAddress } from '@/utils/ens.js'
 import {
   validateAmountPositiveIfExists,
   validateAmountProvided,
@@ -61,7 +58,7 @@ const BPS_DENOMINATOR = 10000n
 export const QUOTE_DISCRIMINATOR = 'quotedAt' as const
 
 /** SwapExecuteParams with recipient narrowed to Address after ENS resolution */
-type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
+export type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
   recipient?: Address
 }
 
@@ -142,22 +139,19 @@ export abstract class SwapProvider<
    * @returns Transaction data ready for wallet execution
    */
   async execute(
-    params: SwapExecuteParams | SwapQuote,
+    params: SwapExecuteParamsResolved | SwapQuote,
   ): Promise<SwapTransaction> {
     if (QUOTE_DISCRIMINATOR in params) {
       this.validateSwapExecute(params)
       return this.executeFromQuote(params)
     }
 
-    // Resolve ENS recipient before validation so validateRecipient always sees an Address
-    const recipient = await this.resolveRecipient(params.recipient)
-    const paramsResolved: SwapExecuteParamsResolved = { ...params, recipient }
-    this.validateSwapExecute(paramsResolved)
+    this.validateSwapExecute(params)
 
     // Raw params only
     validateNotBothAmounts(params.amountIn, params.amountOut)
     validateNotZeroAddress(params.walletAddress, 'walletAddress')
-    return this._execute(this.resolveParams(paramsResolved))
+    return this._execute(this.resolveParams(params))
   }
 
   /**
@@ -166,11 +160,9 @@ export abstract class SwapProvider<
    * @param params - Quote parameters (assets, amounts, chain, slippage)
    * @returns SwapQuote with pricing, amounts, and pre-encoded calldata
    */
-  async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+  async getQuote(params: SwapQuoteParamsResolved): Promise<SwapQuote> {
     validateChainSupported(params.chainId, this.supportedChainIds())
-    const recipient = await this.resolveRecipient(params.recipient)
-    const paramsResolved: SwapQuoteParamsResolved = { ...params, recipient }
-    return this._getQuote(paramsResolved)
+    return this._getQuote(params)
   }
 
   /**
@@ -425,17 +417,6 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Private helpers
   // ─────────────────────────────────────────────────────────────────────────────
-
-  private async resolveRecipient(
-    recipient: Address | EnsName | undefined,
-  ): Promise<Address | undefined> {
-    return recipient
-      ? resolveAddress(
-          recipient,
-          this.chainManager.tryGetPublicClient(mainnet.id),
-        )
-      : undefined
-  }
 
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     this.validateQuoteExpiration(quote)

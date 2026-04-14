@@ -1,6 +1,7 @@
 import type { Address, LocalAccount } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { EnsNamespace } from '@/ens/index.js'
 import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
@@ -72,9 +73,11 @@ export abstract class Wallet {
       this.lend = new WalletLendNamespace(this.lendProviders, this)
     }
     if (Object.values(this.swapProviders).some(Boolean)) {
+      const ens = new EnsNamespace(this.chainManager)
       this.swap = new WalletSwapNamespace(
         this.swapProviders,
         this,
+        (r) => (r ? ens.getAddress(r) : Promise.resolve(undefined)),
         swapSettings,
       )
     }
