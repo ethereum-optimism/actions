@@ -1,8 +1,8 @@
 import type { LocalAccount } from 'viem'
 
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
@@ -22,18 +22,17 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
 > {
   /**
    * Create a new Turnkey wallet provider
-   * @param client - Turnkey browser client instance
-   * @param organizationId - Turnkey organization ID that owns the signing key
    * @param chainManager - Chain manager used to resolve chains and RPC transports
+   * @param lendProviders - Optional lend providers for DeFi operations
+   * @param swapProviders - Optional swap providers for trading operations
    */
   constructor(
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
+    supportedAssets?: Asset[],
   ) {
-    super(chainManager, lendProviders)
+    super(chainManager, lendProviders, swapProviders, supportedAssets)
   }
 
   /**
@@ -58,6 +57,8 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       ethereumAddress,
       chainManager: this.chainManager,
       lendProviders: this.lendProviders,
+      swapProviders: this.swapProviders,
+      supportedAssets: this.supportedAssets,
     })
   }
 

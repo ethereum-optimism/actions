@@ -25,42 +25,36 @@ export function matchAssetBalance({
     return '0.00'
   }
 
-  let assetToken: (typeof allTokenBalances)[0] | undefined
-  let chainBalance: (typeof allTokenBalances)[0]['chainBalances'][0] | undefined
+  let assetToken: TokenBalance | undefined
+  let chainBalance: { balance: number; balanceRaw: bigint } | undefined
 
   if (marketData?.assetAddress && marketData?.marketId?.chainId) {
     const targetChainId = marketData.marketId.chainId
 
-    // For ETH markets, match by symbol (native token has no address)
-    // For ERC20 tokens, match by address and chainId
+    // For ETH markets, match by asset type (native token has no address)
+    // For ERC20 tokens, match by address on the target chain
     if (isEthSymbol(selectedAssetSymbol)) {
-      assetToken = allTokenBalances.find((token) => isEthSymbol(token.symbol))
+      assetToken = allTokenBalances.find((token) => isEthSymbol(token.asset.metadata.symbol))
     } else {
       const targetAddress = marketData.assetAddress.toLowerCase()
       for (const token of allTokenBalances) {
-        const matchingChainBalance = token.chainBalances.find(
-          (cb) =>
-            cb.tokenAddress.toLowerCase() === targetAddress &&
-            cb.chainId === targetChainId,
-        )
-        if (matchingChainBalance) {
+        const tokenAddr = token.asset.address[targetChainId]
+        if (tokenAddr && tokenAddr.toLowerCase() === targetAddress) {
           assetToken = token
-          chainBalance = matchingChainBalance
+          chainBalance = token.chains[targetChainId]
           break
         }
       }
     }
 
-    // Get chain-specific balance if we found the token
+    // Get chain-specific balance if we found the token but not the chain balance
     if (assetToken && !chainBalance) {
-      chainBalance = assetToken.chainBalances.find(
-        (cb) => cb.chainId === targetChainId,
-      )
+      chainBalance = assetToken.chains[targetChainId]
     }
   } else {
     // Fallback to symbol matching (less precise)
     assetToken = allTokenBalances.find(
-      (token) => token.symbol === selectedAssetSymbol,
+      (token) => token.asset.metadata.symbol === selectedAssetSymbol,
     )
   }
 
@@ -68,21 +62,15 @@ export function matchAssetBalance({
   const displayPrecision = isEth ? 4 : 2
   const precisionMultiplier = Math.pow(10, displayPrecision)
 
-  if (assetToken && chainBalance && BigInt(chainBalance.balance) > 0n) {
-    // Use the specific chain balance
-    const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
-    const balance =
-      parseFloat(`${chainBalance.balance}`) / Math.pow(10, decimals)
+  if (assetToken && chainBalance && chainBalance.balanceRaw > 0n) {
+    // Use the specific chain balance (already human-readable)
     const flooredBalance =
-      Math.floor(balance * precisionMultiplier) / precisionMultiplier
+      Math.floor(chainBalance.balance * precisionMultiplier) / precisionMultiplier
     return flooredBalance.toFixed(displayPrecision)
-  } else if (assetToken && BigInt(assetToken.totalBalance) > 0n) {
-    // Fallback to total balance if no specific chain balance
-    const decimals = selectedAssetSymbol.includes('USDC') ? 6 : 18
-    const balance =
-      parseFloat(`${assetToken.totalBalance}`) / Math.pow(10, decimals)
+  } else if (assetToken && assetToken.totalBalanceRaw > 0n) {
+    // Fallback to total balance (already human-readable)
     const flooredBalance =
-      Math.floor(balance * precisionMultiplier) / precisionMultiplier
+      Math.floor(assetToken.totalBalance * precisionMultiplier) / precisionMultiplier
     return flooredBalance.toFixed(displayPrecision)
   } else {
     return isEth ? '0.0000' : '0.00'

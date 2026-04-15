@@ -59,8 +59,6 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     ) => Promise<LendTransaction>
   >
 
-  protected readonly SUPPORTED_CHAIN_IDS = [1, 130, 8453, 84532] as const
-
   protected readonly SUPPORTED_CHAINS = {
     TESTNET: {
       chainId: 84532,
@@ -70,6 +68,10 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
 
   private mockConfig: MockLendProviderConfig
 
+  protocolSupportedChainIds(): number[] {
+    return [1, 130, 8453, 84532]
+  }
+
   constructor(
     config?: LendProviderConfig,
     mockConfig?: Partial<MockLendProviderConfig>,
@@ -77,7 +79,10 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
   ) {
     super(
       config || {},
-      chainManager || (new MockChainManager() as unknown as ChainManager),
+      chainManager ||
+        (new MockChainManager({
+          supportedChains: [84532],
+        }) as unknown as ChainManager),
     )
 
     this.mockConfig = {

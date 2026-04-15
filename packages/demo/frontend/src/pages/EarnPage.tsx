@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ActivityLogProvider } from '../providers/ActivityLogProvider'
 import { WALLET_PROVIDERS } from '@/constants/walletProviders'
 import { WelcomeWalletPicker } from '@/components/earn/WelcomeWalletPicker'
 
@@ -58,9 +57,7 @@ export function EarnPage() {
     return (
       <Suspense fallback={<LoadingFallback />}>
         <PrivyProvider>
-          <ActivityLogProvider walletProvider={walletProvider}>
-            <EarnWithPrivyServerWallet />
-          </ActivityLogProvider>
+          <EarnWithPrivyServerWallet />
         </PrivyProvider>
       </Suspense>
     )
@@ -70,9 +67,7 @@ export function EarnPage() {
     return (
       <Suspense fallback={<LoadingFallback />}>
         <DynamicProvider>
-          <ActivityLogProvider walletProvider={walletProvider}>
-            <EarnWithDynamicWallet />
-          </ActivityLogProvider>
+          <EarnWithDynamicWallet />
         </DynamicProvider>
       </Suspense>
     )
@@ -82,9 +77,7 @@ export function EarnPage() {
     return (
       <Suspense fallback={<LoadingFallback />}>
         <TurnkeyProvider>
-          <ActivityLogProvider walletProvider={walletProvider}>
-            <EarnWithTurnkeyWallet />
-          </ActivityLogProvider>
+          <EarnWithTurnkeyWallet />
         </TurnkeyProvider>
       </Suspense>
     )

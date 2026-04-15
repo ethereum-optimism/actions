@@ -1,16 +1,26 @@
 import {
   base,
   baseSepolia,
+  bob,
+  celo,
+  fraxtal,
+  ink,
+  lisk,
   mainnet,
+  metalL2,
+  mode,
   optimism,
   optimismSepolia,
   sepolia,
+  soneium,
+  superseed,
+  swellchain,
   unichain,
   unichainSepolia,
   worldchain,
 } from 'viem/chains'
 
-export const SUPPORTED_CHAIN_IDS = [
+export const ACTIONS_SUPPORTED_CHAIN_IDS = [
   mainnet.id,
   sepolia.id,
   optimism.id,
@@ -20,6 +30,16 @@ export const SUPPORTED_CHAIN_IDS = [
   unichain.id,
   unichainSepolia.id,
   worldchain.id,
+  bob.id,
+  celo.id,
+  fraxtal.id,
+  ink.id,
+  lisk.id,
+  metalL2.id,
+  mode.id,
+  soneium.id,
+  superseed.id,
+  swellchain.id,
 ] as const
 
-export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number]
+export type SupportedChainId = (typeof ACTIONS_SUPPORTED_CHAIN_IDS)[number]

@@ -1,6 +1,4 @@
 import { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
-import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js'
-import { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
 import type {
   NodeHostedProviderInstanceMap,
   NodeOptionsMap,
@@ -11,10 +9,8 @@ import type {
  * Node hosted wallet provider registry
  * @description
  * Environment-scoped registry that binds Node/server provider keys to their
- * factory implementations. This ensures browser-only hosted providers are
- * discoverable at runtime without importing Node-only code. The registry
- * pre-registers 'privy' and 'turnkey' providers and can be extended with
- * additional providers via `register`.
+ * factory implementations. Provider code is loaded lazily via dynamic import()
+ * so that unused wallet SDKs are not included in the bundle.
  */
 export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegistry<
   NodeHostedProviderInstanceMap,
@@ -28,11 +24,17 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
       validateOptions(options): options is NodeOptionsMap['privy'] {
         return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
       },
-      create({ chainManager, lendProviders, supportedAssets }, options) {
+      async create(
+        { chainManager, lendProviders, swapProviders, supportedAssets },
+        options,
+      ) {
+        const { PrivyHostedWalletProvider } =
+          await import('@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js')
         return new PrivyHostedWalletProvider({
           privyClient: options.privyClient,
           chainManager,
           lendProviders,
+          swapProviders,
           supportedAssets,
           authorizationContext: options.authorizationContext,
         })
@@ -45,11 +47,17 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
         const o = options as NodeOptionsMap['turnkey']
         return Boolean(o?.client)
       },
-      create({ chainManager, lendProviders, supportedAssets }, options) {
+      async create(
+        { chainManager, lendProviders, swapProviders, supportedAssets },
+        options,
+      ) {
+        const { TurnkeyHostedWalletProvider } =
+          await import('@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js')
         return new TurnkeyHostedWalletProvider(
           options.client,
           chainManager,
           lendProviders,
+          swapProviders,
           supportedAssets,
         )
       },

@@ -9,6 +9,7 @@ lerna-debug.log*
 
 # dependencies
 **/node_modules
+bun.lock
 /.pnp
 packages/*/.env
 app/*/.env

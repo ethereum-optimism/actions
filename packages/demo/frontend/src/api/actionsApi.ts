@@ -1,6 +1,9 @@
 import type {
+  Asset,
   LendMarketPosition,
   SupportedChainId,
+  SwapMarket,
+  SwapQuote,
   TokenBalance,
   LendMarket,
   LendTransactionReceipt,
@@ -94,12 +97,14 @@ class ActionsApiClient {
     })
     return result.map((balance) => ({
       ...balance,
-      totalBalance: BigInt(balance.totalBalance),
-      chainBalances: balance.chainBalances.map((chainBalance) => ({
-        ...chainBalance,
-        balance: BigInt(chainBalance.balance),
-      })),
-    }))
+      totalBalanceRaw: BigInt(balance.totalBalanceRaw),
+      chains: Object.fromEntries(
+        Object.entries(balance.chains).map(([chainId, chainBalance]) => [
+          chainId,
+          chainBalance ? { ...chainBalance, balanceRaw: BigInt(chainBalance.balanceRaw) } : chainBalance,
+        ]),
+      ),
+    })) as TokenBalance[]
   }
 
   async mintDemoUsdcToWallet(headers: HeadersInit = {}): Promise<{
@@ -187,6 +192,138 @@ class ActionsApiClient {
       }),
     })
     return result
+  }
+
+  async getAssets(headers: HeadersInit = {}): Promise<Asset[]> {
+    const { result } = await this.request<{
+      result: Asset[]
+    }>('/assets', {
+      method: 'GET',
+      headers,
+    })
+    return result
+  }
+
+  async getSwapMarkets(
+    chainId?: SupportedChainId,
+    headers: HeadersInit = {},
+  ): Promise<SwapMarket[]> {
+    const params = chainId ? `?chainId=${chainId}` : ''
+    const { result } = await this.request<{
+      result: Serialized<SwapMarket>[]
+    }>(`/swap/markets${params}`, {
+      method: 'GET',
+      headers,
+    })
+    return result.map((market) => ({
+      ...market,
+      tvl: market.tvl ? BigInt(market.tvl) : undefined,
+      volume24h: market.volume24h ? BigInt(market.volume24h) : undefined,
+    }))
+  }
+
+  async getSwapQuote(
+    {
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      amountIn,
+      amountOut,
+      provider,
+    }: {
+      tokenInAddress: Address
+      tokenOutAddress: Address
+      chainId: SupportedChainId
+      amountIn?: number
+      amountOut?: number
+      provider?: string
+    },
+    headers: HeadersInit = {},
+  ) {
+    const params = new URLSearchParams({
+      tokenInAddress,
+      tokenOutAddress,
+      chainId: chainId.toString(),
+    })
+    if (amountIn !== undefined) {
+      params.set('amountIn', amountIn.toString())
+    }
+    if (amountOut !== undefined) {
+      params.set('amountOut', amountOut.toString())
+    }
+    if (provider) {
+      params.set('provider', provider)
+    }
+
+    const { result } = await this.request<{
+      result: Serialized<SwapQuote>
+    }>(`/swap/quote?${params}`, {
+      method: 'GET',
+      headers,
+    })
+    return {
+      ...result,
+      amountIn: Number(result.amountIn),
+      amountOut: Number(result.amountOut),
+      amountInRaw: BigInt(result.amountInRaw),
+      amountOutRaw: BigInt(result.amountOutRaw),
+      amountOutMinRaw: BigInt(result.amountOutMinRaw),
+      gasEstimate: result.gasEstimate ? BigInt(result.gasEstimate) : undefined,
+    }
+  }
+
+  async executeSwap(
+    params: {
+      amountIn: number
+      tokenInAddress: Address
+      tokenOutAddress: Address
+      chainId: SupportedChainId
+      slippage?: number
+      provider?: string
+    },
+    headers: HeadersInit = {},
+  ): Promise<{
+    amountIn: number
+    amountOut: number
+    price: string
+    priceImpact: number
+    blockExplorerUrls?: string[]
+  }> {
+    const {
+      amountIn,
+      tokenInAddress,
+      tokenOutAddress,
+      chainId,
+      slippage,
+      provider,
+    } = params
+    const { result } = await this.request<{
+      result: {
+        amountIn: string
+        amountOut: string
+        price: string
+        priceImpact: number
+        blockExplorerUrls?: string[]
+      }
+    }>('/swap/execute', {
+      method: 'POST',
+      body: JSON.stringify({
+        amountIn,
+        tokenInAddress,
+        tokenOutAddress,
+        chainId,
+        slippage,
+        provider,
+      }),
+      headers,
+    })
+    return {
+      amountIn: Number(result.amountIn),
+      amountOut: Number(result.amountOut),
+      price: result.price,
+      priceImpact: result.priceImpact,
+      blockExplorerUrls: result.blockExplorerUrls,
+    }
   }
 }
 

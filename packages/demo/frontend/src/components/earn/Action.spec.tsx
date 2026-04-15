@@ -17,7 +17,6 @@ const defaultProps = {
   isMintingAsset: false,
   depositedAmount: null,
   assetSymbol: 'USDC',
-  assetLogo: '/usdc-logo.svg',
   onMintAsset: vi.fn(),
   onTransaction: vi.fn(),
 }
@@ -49,9 +48,12 @@ describe('Action', () => {
     expect(screen.queryByTestId('shimmer')).not.toBeInTheDocument()
   })
 
-  it('shows balance when balance is non-zero', () => {
+  it('shows balance and Lend button when balance is non-zero', () => {
     render(<Action {...defaultProps} assetBalance="100.00" />)
-    expect(screen.getByText('$100.00')).toBeInTheDocument()
+    expect(screen.getByText('100.00 USDC')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Lend USDC' }),
+    ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Get USDC' }),
     ).not.toBeInTheDocument()

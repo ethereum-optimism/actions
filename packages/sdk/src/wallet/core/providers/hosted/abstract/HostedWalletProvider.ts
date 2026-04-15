@@ -1,9 +1,8 @@
 import type { LocalAccount } from 'viem'
 
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
@@ -17,22 +16,19 @@ export abstract class HostedWalletProvider<
   TOptionsMap extends Record<TType, unknown>,
 > {
   protected chainManager: ChainManager
-  protected lendProviders: {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  }
+  protected lendProviders: LendProviders
+  protected swapProviders: SwapProviders
   protected supportedAssets?: Asset[]
 
   protected constructor(
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
   ) {
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
+    this.swapProviders = swapProviders || {}
     this.supportedAssets = supportedAssets
   }
   /**

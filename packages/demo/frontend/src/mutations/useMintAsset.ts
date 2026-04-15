@@ -3,8 +3,14 @@ import type { Asset } from '@eth-optimism/actions-sdk'
 
 interface UseMintAssetParams {
   mintAsset: (asset: Asset) => Promise<{ blockExplorerUrls?: string[] } | void>
-  logActivity?: (action: string) => {
-    confirm: (data?: { blockExplorerUrl?: string }) => void
+  logActivity?: (
+    action: string,
+    metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
+  ) => {
+    confirm: (data?: {
+      blockExplorerUrl?: string
+      metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata
+    }) => void
     error: () => void
   } | null
 }
@@ -14,7 +20,11 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
 
   return useMutation({
     mutationFn: async ({ asset }: { asset: Asset }) => {
-      const activity = logActivity?.('mint')
+      const isNative = asset.type === 'native'
+      const activity = logActivity?.('mint', {
+        amount: isNative ? undefined : '100',
+        assetSymbol: asset.metadata.symbol,
+      })
       try {
         const result = await mintAsset(asset)
 
@@ -33,12 +43,6 @@ export function useMintAsset({ mintAsset, logActivity }: UseMintAssetParams) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
-
-      // Delayed refetch in case chain indexing is slow
-      // Won't show loading because mutation state is reset after first refetch
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
-      }, 2000)
     },
     onError: (error) => {
       console.error('[useMintAsset] Mutation failed', { error })

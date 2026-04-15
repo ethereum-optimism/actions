@@ -433,7 +433,7 @@ describe('Actions SDK', () => {
         expect(actions.lend).toBeDefined()
         const supportedIds = actions.lend.supportedChainIds()
         expect(supportedIds).toContain(130) // Unichain
-        expect(supportedIds).toContain(8453) // Base
+        expect(supportedIds).toContain(84532) // Base Sepolia
       })
     })
 
@@ -499,7 +499,6 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -551,7 +550,6 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -636,7 +634,6 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
               wallet: {
                 hostedWalletConfig: {
                   provider: {
@@ -696,7 +693,6 @@ describe('Actions SDK', () => {
                   chainId: unichain.id,
                 },
               ],
-              lend: {},
               wallet: {
                 hostedWalletConfig: {
                   provider: {

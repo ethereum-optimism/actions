@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { CloseButton } from './earn/CtaButton'
 
 export interface ModalProps {
   isOpen: boolean
@@ -19,8 +20,23 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        minHeight: '100dvh',
+        zIndex: 100,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget && allowBackdropClose) {
           onClose()
@@ -28,8 +44,12 @@ export function Modal({
       }}
     >
       <div
-        className="relative bg-white rounded-2xl shadow-xl"
         style={{
+          position: 'relative',
+          backgroundColor: '#FFFFFF',
+          borderRadius: '16px',
+          boxShadow:
+            '0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
           width: '90%',
           maxWidth,
           padding: '24px',
@@ -38,6 +58,34 @@ export function Modal({
       >
         {children}
       </div>
+    </div>
+  )
+}
+
+export interface ModalHeaderProps {
+  title: string
+  onClose: () => void
+}
+
+/**
+ * Standard modal header with title and close button.
+ * Used by ReviewSwapModal, TokenSelectModal, etc.
+ */
+export function ModalHeader({ title, onClose }: ModalHeaderProps) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '24px',
+      }}
+    >
+      <div style={{ width: '24px' }} />
+      <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1a1b1e' }}>
+        {title}
+      </h2>
+      <CloseButton onClick={onClose} />
     </div>
   )
 }
@@ -56,10 +104,26 @@ export function ModalContent({
   children,
 }: ModalContentProps) {
   return (
-    <div className="flex flex-col items-center text-center gap-3">
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        gap: '12px',
+      }}
+    >
       {icon && <div>{icon}</div>}
 
-      <div className="flex flex-col items-center gap-1 px-9">
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '0 36px',
+        }}
+      >
         <h2
           style={{
             color: '#1a1b1e',

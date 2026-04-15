@@ -692,20 +692,14 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               <div
                                 style={{
                                   display: 'flex',
-                                  gap: '3rem',
+                                  gap: 'clamp(0.25rem, 1vw, 1.5rem)',
                                   alignItems: 'center',
-                                  justifyContent:
-                                    content[prevLayerRef.current - 1].images
-                                      ?.length === 2
-                                      ? 'center'
-                                      : 'flex-start',
+                                  justifyContent: 'space-between',
+                                  maxWidth: '100%',
                                 }}
                               >
                                 {content[prevLayerRef.current - 1].images?.map(
                                   (image, index) => {
-                                    const imageCount =
-                                      content[prevLayerRef.current - 1].images
-                                        ?.length || 3
                                     const img = (
                                       <img
                                         key={index}
@@ -725,10 +719,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         style={{
-                                          flex:
-                                            imageCount === 2
-                                              ? '0 0 30%'
-                                              : '1 1 0',
+                                          flex: '1 1 0',
                                           minWidth: 0,
                                         }}
                                         onMouseEnter={(e) => {
@@ -748,10 +739,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                       <div
                                         key={index}
                                         style={{
-                                          flex:
-                                            imageCount === 2
-                                              ? '0 0 30%'
-                                              : '1 1 0',
+                                          flex: '1 1 0',
                                           minWidth: 0,
                                         }}
                                       >
@@ -936,20 +924,14 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                               <div
                                 style={{
                                   display: 'flex',
-                                  gap: '3rem',
+                                  gap: 'clamp(0.25rem, 1vw, 1.5rem)',
                                   alignItems: 'center',
-                                  justifyContent:
-                                    content[prevLayerRef.current - 1].images
-                                      ?.length === 2
-                                      ? 'center'
-                                      : 'flex-start',
+                                  justifyContent: 'space-between',
+                                  maxWidth: '100%',
                                 }}
                               >
                                 {content[prevLayerRef.current - 1].images?.map(
                                   (image, index) => {
-                                    const imageCount =
-                                      content[prevLayerRef.current - 1].images
-                                        ?.length || 3
                                     const img = (
                                       <img
                                         key={index}
@@ -969,10 +951,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         style={{
-                                          flex:
-                                            imageCount === 2
-                                              ? '0 0 30%'
-                                              : '1 1 0',
+                                          flex: '1 1 0',
                                           minWidth: 0,
                                         }}
                                         onMouseEnter={(e) => {
@@ -992,10 +971,7 @@ function ScrollingStack({ content, onProgressUpdate }: ScrollingStackProps) {
                                       <div
                                         key={index}
                                         style={{
-                                          flex:
-                                            imageCount === 2
-                                              ? '0 0 30%'
-                                              : '1 1 0',
+                                          flex: '1 1 0',
                                           minWidth: 0,
                                         }}
                                       >

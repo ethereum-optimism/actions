@@ -1,22 +1,96 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import type { Address } from 'viem'
+import type { Asset } from '@eth-optimism/actions-sdk/react'
 import Earn from './Earn'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
-import type { Asset } from '@eth-optimism/actions-sdk/react'
 import { actionsApi } from '@/api/actionsApi'
-import type { LendProviderOperations } from '@/hooks/useLendProvider'
+import type { EarnOperations } from '@/hooks/useLendProvider'
+
+type AuthHeaders = { Authorization: string } | undefined
+
+function buildLendOperations(
+  getAuthHeaders: () => Promise<AuthHeaders>,
+): Pick<
+  EarnOperations,
+  | 'getTokenBalances'
+  | 'getMarkets'
+  | 'getPosition'
+  | 'openPosition'
+  | 'closePosition'
+> {
+  return {
+    getTokenBalances: async () =>
+      actionsApi.getWalletBalance(await getAuthHeaders()),
+    getMarkets: async () => actionsApi.getMarkets(await getAuthHeaders()),
+    getPosition: async (marketId) =>
+      actionsApi.getPosition({ marketId }, await getAuthHeaders()),
+    openPosition: async (params) =>
+      actionsApi.openLendPosition(params, await getAuthHeaders()),
+    closePosition: async (params) =>
+      actionsApi.closeLendPosition(params, await getAuthHeaders()),
+  }
+}
+
+function buildSwapOperations(
+  getAuthHeaders: () => Promise<AuthHeaders>,
+): Pick<
+  EarnOperations,
+  'executeSwap' | 'getConfiguredAssets' | 'getSwapMarkets' | 'getSwapQuote'
+> {
+  return {
+    executeSwap: async (quote) => {
+      const tokenInAddress = quote.assetIn.address[quote.chainId]
+      const tokenOutAddress = quote.assetOut.address[quote.chainId]
+      if (!tokenInAddress || !tokenOutAddress) {
+        throw new Error('Token address not found for chain')
+      }
+      // Server wallet re-quotes server-side; pass the quote params for execution
+      const result = await actionsApi.executeSwap(
+        {
+          amountIn: quote.amountIn,
+          tokenInAddress: tokenInAddress as Address,
+          tokenOutAddress: tokenOutAddress as Address,
+          chainId: quote.chainId,
+        },
+        await getAuthHeaders(),
+      )
+      return { blockExplorerUrl: result.blockExplorerUrls?.[0] }
+    },
+    getConfiguredAssets: async () =>
+      actionsApi.getAssets(await getAuthHeaders()),
+    getSwapMarkets: async () =>
+      actionsApi.getSwapMarkets(undefined, await getAuthHeaders()),
+    getSwapQuote: async (params) => {
+      try {
+        return await actionsApi.getSwapQuote(params, await getAuthHeaders())
+      } catch {
+        return null
+      }
+    },
+  }
+}
+
+function buildMintOperation(
+  getAuthHeaders: () => Promise<AuthHeaders>,
+  walletAddress: Address | null,
+): EarnOperations['mintAsset'] {
+  return async (asset: Asset) => {
+    if (asset.metadata.symbol === 'ETH' && asset.type === 'native') {
+      if (!walletAddress) throw new Error('Wallet address not available')
+      await actionsApi.dripEthToWallet(walletAddress)
+      return
+    }
+    return actionsApi.mintDemoUsdcToWallet(await getAuthHeaders())
+  }
+}
 
 interface EarnWithServerWalletProps {
   ready: boolean
   logout: () => Promise<void>
-  getAuthHeaders: () => Promise<{ Authorization: string } | undefined>
+  getAuthHeaders: () => Promise<AuthHeaders>
   selectedProvider: WalletProviderConfig
 }
 
-/**
- * Wrapper for server wallet providers
- * Builds operations object using API calls and delegates to Earn
- */
 export function EarnWithServerWallet({
   getAuthHeaders,
   logout,
@@ -25,44 +99,17 @@ export function EarnWithServerWallet({
 }: EarnWithServerWalletProps) {
   const [walletAddress, setWalletAddress] = useState<Address | null>(null)
 
-  const operations = useMemo<LendProviderOperations>(
+  const operations = useMemo<EarnOperations>(
     () => ({
-      getTokenBalances: async () => {
-        const headers = await getAuthHeaders()
-        return actionsApi.getWalletBalance(headers)
-      },
-      getMarkets: async () => {
-        const headers = await getAuthHeaders()
-        return actionsApi.getMarkets(headers)
-      },
-      getPosition: async (marketId) => {
-        const headers = await getAuthHeaders()
-        return actionsApi.getPosition({ marketId }, headers)
-      },
-      mintAsset: async (asset: Asset) => {
-        const headers = await getAuthHeaders()
-        if (asset.metadata.symbol === 'ETH' && asset.type === 'native') {
-          if (!walletAddress) throw new Error('Wallet address not available')
-          await actionsApi.dripEthToWallet(walletAddress)
-          return
-        }
-        return actionsApi.mintDemoUsdcToWallet(headers)
-      },
-      openPosition: async (params) => {
-        const headers = await getAuthHeaders()
-        return actionsApi.openLendPosition(params, headers)
-      },
-      closePosition: async (params) => {
-        const headers = await getAuthHeaders()
-        return actionsApi.closeLendPosition(params, headers)
-      },
+      ...buildLendOperations(getAuthHeaders),
+      ...buildSwapOperations(getAuthHeaders),
+      mintAsset: buildMintOperation(getAuthHeaders, walletAddress),
     }),
     [getAuthHeaders, walletAddress],
   )
 
   const fetchWalletAddress = useCallback(async () => {
-    const headers = await getAuthHeaders()
-    const { address } = await actionsApi.getWallet(headers)
+    const { address } = await actionsApi.getWallet(await getAuthHeaders())
     setWalletAddress(address)
   }, [getAuthHeaders])
 

@@ -1,7 +1,10 @@
-import type { Address, Hex } from 'viem'
+import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { LendProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+// Import and re-export shared transaction type for backwards compatibility
+import type { TransactionData } from '@/types/transaction.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
@@ -10,6 +13,7 @@ import type {
 export { LendProvider } from '@/lend/core/LendProvider.js'
 export { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
 export { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
+export type { TransactionData }
 
 /**
  * Lending market identifier
@@ -30,7 +34,7 @@ export type LendMarketConfigMetadata = {
   /** Asset information for this market */
   asset: Asset
   /** Lending provider type */
-  lendProvider: 'morpho' | 'aave'
+  lendProvider: LendProviderName
 }
 
 /**
@@ -44,19 +48,6 @@ export type LendMarketConfig = LendMarketId & LendMarketConfigMetadata
  * @description Requires market identifier (address and chainId)
  */
 export type GetLendMarketParams = LendMarketId
-
-/**
- * Transaction data for execution
- * @description Raw transaction data for wallet execution
- */
-export interface TransactionData {
-  /** Target contract address */
-  to: Address
-  /** Encoded function call data */
-  data: Hex
-  /** ETH value to send */
-  value: bigint
-}
 
 /**
  * Supply metrics for a lending market
@@ -145,7 +136,8 @@ export interface LendMarketInfo extends LendMarketBase {
 
 /**
  * APY breakdown for detailed display
- * @description Breakdown of APY components following Morpho's official methodology
+ * @description Breakdown of APY components following Morpho's official methodology.
+ * Individual token reward APRs are keyed by lowercase token address.
  */
 export interface ApyBreakdown {
   /** Total net APY after all components and fees */
@@ -154,12 +146,10 @@ export interface ApyBreakdown {
   native: number
   /** Total rewards APR from all sources */
   totalRewards: number
-  /** Individual token rewards APRs (dynamically populated) */
-  usdc?: number
-  morpho?: number
-  other?: number
   /** Performance/management fee rate */
   performanceFee: number
+  /** Individual token reward APRs keyed by address, plus 'other' for unrecognized */
+  [key: string]: number | undefined
 }
 
 /**

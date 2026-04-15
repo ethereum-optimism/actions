@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/ethereum-optimism/actions/issues"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "files": [
     "dist"
@@ -28,24 +28,26 @@
     "build": "pnpm clean && tsc && resolve-tspaths",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
-    "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --loglevel=warn",
+    "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --log-level=warn",
     "dev": "tsx src/index.ts",
     "dev:local": "LOCAL_DEV=true pnpm dev",
     "start": "node dist/index.js",
     "test": "vitest --run",
     "typecheck": "tsc --noEmit",
-    "attribution": "tsx scripts/attribution.ts"
+    "attribution": "tsx scripts/attribution.ts",
+    "deploy:uniswap": "tsx scripts/deployUniswapMarket.ts",
+    "deploy:velodrome": "tsx scripts/deployVelodromeMarket.ts"
   },
   "dependencies": {
     "@eth-optimism/actions-sdk": "workspace:*",
     "@eth-optimism/utils-app": "^0.0.6",
     "@eth-optimism/viem": "^0.4.13",
-    "@hono/node-server": "^1.14.0",
+    "@hono/node-server": "^1.19.13",
     "@privy-io/node": "^0.3.0",
     "commander": "^13.1.0",
     "dotenv": "^16.4.5",
     "envalid": "^8.1.0",
-    "hono": "^4.11.7",
+    "hono": "^4.12.12",
     "viem": "^2.24.1",
     "zod": "^4.0.5"
   },
