@@ -2,6 +2,7 @@ import { formatUnits } from 'viem'
 
 import { VELODROME } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { SwapQuoteParamsResolved } from '@/ens/types.js'
 import { expandMarkets, findMarket } from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
@@ -29,7 +30,6 @@ import type {
   ResolvedSwapParams,
   SwapMarket,
   SwapQuote,
-  SwapQuoteParamsResolved,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'

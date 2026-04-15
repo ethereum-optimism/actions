@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { SwapQuoteParamsResolved } from '@/ens/types.js'
 import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import type { SwapProviderName, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
@@ -10,7 +11,6 @@ import type {
   SwapProviders,
   SwapQuote,
   SwapQuoteParams,
-  SwapQuoteParamsResolved,
 } from '@/types/swap/index.js'
 import { passthroughResolver, type RecipientResolver } from '@/utils/ens.js'
 

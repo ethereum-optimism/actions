@@ -1,9 +1,9 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { SwapExecuteParamsResolved } from '@/ens/types.js'
 import { QUOTE_DISCRIMINATOR } from '@/swap/core/SwapProvider.js'
 import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type {
-  SwapExecuteParamsResolved,
   SwapProviders,
   SwapQuote,
   SwapQuoteParams,

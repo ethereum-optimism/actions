@@ -2,6 +2,7 @@ import { formatUnits } from 'viem'
 
 import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { SwapQuoteParamsResolved } from '@/ens/types.js'
 import { expandMarkets, findMarket } from '@/swap/core/markets.js'
 import { SwapProvider } from '@/swap/core/SwapProvider.js'
 import {
@@ -27,7 +28,6 @@ import type {
   ResolvedSwapParams,
   SwapMarket,
   SwapQuote,
-  SwapQuoteParamsResolved,
   SwapTransaction,
 } from '@/types/swap/index.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'

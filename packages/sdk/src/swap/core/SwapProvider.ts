@@ -3,6 +3,10 @@ import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import type {
+  SwapExecuteParamsResolved,
+  SwapQuoteParamsResolved,
+} from '@/ens/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/swap/core/markets.js'
 import type { SwapSettings } from '@/types/actions.js'
@@ -12,12 +16,10 @@ import type {
   GetSwapMarketsParams,
   ResolvedSwapParams,
   SwapExecuteParams,
-  SwapExecuteParamsResolved,
   SwapMarket,
   SwapMarketConfig,
   SwapProviderConfig,
   SwapQuote,
-  SwapQuoteParamsResolved,
   SwapTransaction,
   SwapTransactionData,
 } from '@/types/swap/index.js'

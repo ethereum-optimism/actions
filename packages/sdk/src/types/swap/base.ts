@@ -1,10 +1,10 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { EnsName } from '@/ens/types.js'
 import type { SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
-import type { EnsName } from '@/utils/ens.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
@@ -101,16 +101,6 @@ export interface WalletSwapParams {
  */
 export interface SwapExecuteParams extends WalletSwapParams {
   walletAddress: Address
-}
-
-/** SwapExecuteParams with recipient narrowed to Address after ENS resolution */
-export type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
-  recipient?: Address
-}
-
-/** SwapQuoteParams with recipient narrowed to Address after ENS resolution */
-export type SwapQuoteParamsResolved = Omit<SwapQuoteParams, 'recipient'> & {
-  recipient?: Address
 }
 
 /**

@@ -1,5 +1,7 @@
 import type { Address } from 'viem'
 
+import type { SwapExecuteParams, SwapQuoteParams } from '@/types/swap/base.js'
+
 /**
  * A dot-separated ENS name (e.g. `vitalik.eth`, `sub.vitalik.eth`, `example.com`).
  *
@@ -47,6 +49,16 @@ export interface EnsInfo {
   discord: string | null
   /** org.reddit */
   reddit: string | null
+}
+
+/** SwapExecuteParams with recipient narrowed to Address after ENS resolution */
+export type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
+  recipient?: Address
+}
+
+/** SwapQuoteParams with recipient narrowed to Address after ENS resolution */
+export type SwapQuoteParamsResolved = Omit<SwapQuoteParams, 'recipient'> & {
+  recipient?: Address
 }
 
 /**
