@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   nx: nrwl/nx@1.7.0
-  utils: ethereum-optimism/circleci-utils@1.0.17
+  utils: ethereum-optimism/circleci-utils@1.0.27
 
 commands:
   prepare-snapshot:
@@ -39,7 +39,7 @@ commands:
 jobs:
   publish-to-npm:
     docker:
-      - image: cimg/node:20.11
+      - image: cimg/node:22.14
     resource_class: large
     parameters:
       prepare-snapshot:
@@ -48,25 +48,17 @@ jobs:
     steps:
       - setup
       - run:
+          name: Install npm with OIDC trusted publishing support
+          command: npm install -g npm@11.12.1
+      - run:
           name: Build projects
           environment:
             NPM_TOKEN: nada
           command: NODE_OPTIONS='--max-old-space-size=4096' pnpm nx run-many --target=build --parallel=1
       - run:
-          name: Check NPM Token
+          name: Obtain OIDC token for npm trusted publishing
           command: |
-            if [ -z "${NPM_TOKEN}" ]; then
-              echo "NPM_TOKEN is not set. Please set it in CircleCI project settings."
-              exit 1
-            fi
-      - run:
-          name: Configure NPM Token and Registry
-          command: |
-            npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-
-      - run:
-          name: Verify NPM Token
-          command: npm whoami
+            echo "export NPM_ID_TOKEN=$(circleci run oidc get --claims '{\"aud\": \"npm:registry.npmjs.org\"}')" >> "$BASH_ENV"
 
       - when:
           condition:
@@ -113,7 +105,7 @@ workflows:
       - publish-to-npm:
           name: Publish new versions
           context:
-            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE && NPM_TOKEN
+            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE
             - circleci-repo-readonly-authenticated-github-token #needed for MISE
           filters:
             branches:
@@ -123,7 +115,7 @@ workflows:
           name: Publish snapshot versions
           prepare-snapshot: true
           context:
-            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE && NPM_TOKEN
+            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE
             - circleci-repo-readonly-authenticated-github-token #needed for MISE
           filters:
             branches:
