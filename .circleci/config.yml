@@ -158,7 +158,11 @@ jobs:
           at: .
       - run:
           name: Install Foundry
-          command: curl -L https://foundry.paradigm.xyz | bash && ~/.foundry/bin/foundryup
+          command: |
+            mkdir -p ~/.foundry/bin
+            curl -sSf -L https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/bin/foundryup
+            chmod +x ~/.foundry/bin/foundryup
+            ~/.foundry/bin/foundryup
       - run:
           name: Build Contracts
           command: export PATH="$HOME/.foundry/bin:$PATH" && cd packages/demo/contracts && pnpm build
