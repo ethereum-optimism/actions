@@ -82,6 +82,6 @@ export function validateAssetOnChain(
  */
 export function validateRecipient(recipient: string | undefined): void {
   if (recipient && isAddress(recipient)) {
-    validateNotZeroAddress(recipient as Address, 'recipient')
+    validateNotZeroAddress(recipient, 'recipient')
   }
 }
