@@ -170,6 +170,13 @@ jobs:
           name: Test Contracts
           command: export PATH="$HOME/.foundry/bin:$PATH" && cd packages/demo/contracts && pnpm test
 
+  # Rollup job to satisfy branch protection expecting "check"
+  check:
+    docker:
+      - image: cimg/node:20.11
+    steps:
+      - run: echo "All checks passed"
+
 workflows:
   release:
     jobs:
@@ -217,3 +224,9 @@ workflows:
             - install-and-build
           context:
             - circleci-repo-readonly-authenticated-github-token
+      - check:
+          requires:
+            - check-sdk
+            - check-backend
+            - check-frontend
+            - check-contracts
