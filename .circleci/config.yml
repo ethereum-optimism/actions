@@ -157,11 +157,14 @@ jobs:
       - attach_workspace:
           at: .
       - run:
+          name: Install Foundry
+          command: curl -L https://foundry.paradigm.xyz | bash && ~/.foundry/bin/foundryup
+      - run:
           name: Build Contracts
-          command: cd packages/demo/contracts && pnpm build
+          command: export PATH="$HOME/.foundry/bin:$PATH" && cd packages/demo/contracts && pnpm build
       - run:
           name: Test Contracts
-          command: cd packages/demo/contracts && pnpm test
+          command: export PATH="$HOME/.foundry/bin:$PATH" && cd packages/demo/contracts && pnpm test
 
 workflows:
   release:
