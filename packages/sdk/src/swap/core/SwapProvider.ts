@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { formatUnits, isAddress } from 'viem'
+import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
@@ -12,11 +12,12 @@ import type {
   GetSwapMarketsParams,
   ResolvedSwapParams,
   SwapExecuteParams,
+  SwapExecuteParamsResolved,
   SwapMarket,
   SwapMarketConfig,
   SwapProviderConfig,
   SwapQuote,
-  SwapQuoteParams,
+  SwapQuoteParamsResolved,
   SwapTransaction,
   SwapTransactionData,
 } from '@/types/swap/index.js'
@@ -40,6 +41,7 @@ import {
   validateNotBothAmounts,
   validateNotSameAsset,
   validateNotZeroAddress,
+  validateRecipient,
   validateSlippage,
 } from '@/utils/validation.js'
 
@@ -56,16 +58,6 @@ const BPS_DENOMINATOR = 10000n
 
 /** Field used to distinguish a SwapQuote from raw SwapExecuteParams */
 export const QUOTE_DISCRIMINATOR = 'quotedAt' as const
-
-/** SwapExecuteParams with recipient narrowed to Address after ENS resolution */
-export type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
-  recipient?: Address
-}
-
-/** SwapQuoteParams with recipient narrowed to Address after ENS resolution */
-export type SwapQuoteParamsResolved = Omit<SwapQuoteParams, 'recipient'> & {
-  recipient?: Address
-}
 
 /**
  * Abstract base class for swap providers.
@@ -460,16 +452,7 @@ export abstract class SwapProvider<
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
-    this.validateRecipient(params)
-  }
-
-  private validateRecipient(
-    params: SwapExecuteParams | SwapQuote | SwapExecuteParamsResolved,
-  ): void {
-    const recipient = 'recipient' in params ? params.recipient : undefined
-    if (recipient && isAddress(recipient)) {
-      validateNotZeroAddress(recipient, 'recipient')
-    }
+    validateRecipient('recipient' in params ? params.recipient : undefined)
   }
 
   private validateQuoteExpiration(quote: SwapQuote): void {

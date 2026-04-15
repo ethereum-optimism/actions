@@ -11,6 +11,19 @@ import type { EnsName } from '@/ens/types.js'
 
 export { type EnsName, isEnsName } from '@/ens/types.js'
 
+/** Resolves an ENS name or address to a checksummed hex Address, or returns undefined. */
+export type RecipientResolver = (
+  recipient: Address | EnsName | undefined,
+) => Promise<Address | undefined>
+
+/** Pass-through resolver used when no ENS resolution is configured. Throws on ENS names. */
+export const passthroughResolver: RecipientResolver = (r) => {
+  if (r !== undefined && !isAddress(r, { strict: false })) {
+    throw new Error(`ENS resolution is not configured; received "${r}"`)
+  }
+  return Promise.resolve(r as Address | undefined)
+}
+
 /**
  * Low-level utility to resolve an ENS name or hex address to a checksummed hex address.
  * Use this when you manage your own viem PublicClient (e.g. inside providers or scripts).

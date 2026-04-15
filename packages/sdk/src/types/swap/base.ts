@@ -103,6 +103,16 @@ export interface SwapExecuteParams extends WalletSwapParams {
   walletAddress: Address
 }
 
+/** SwapExecuteParams with recipient narrowed to Address after ENS resolution */
+export type SwapExecuteParamsResolved = Omit<SwapExecuteParams, 'recipient'> & {
+  recipient?: Address
+}
+
+/** SwapQuoteParams with recipient narrowed to Address after ENS resolution */
+export type SwapQuoteParamsResolved = Omit<SwapQuoteParams, 'recipient'> & {
+  recipient?: Address
+}
+
 /**
  * Fully resolved swap parameters with defaults applied and amounts as raw bigint.
  * Passed to provider _execute() implementations.

@@ -1,11 +1,5 @@
-import { type Address, isAddress } from 'viem'
-
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { EnsName } from '@/ens/types.js'
-import type {
-  SwapProvider,
-  SwapQuoteParamsResolved,
-} from '@/swap/core/SwapProvider.js'
+import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import type { SwapProviderName, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -16,20 +10,9 @@ import type {
   SwapProviders,
   SwapQuote,
   SwapQuoteParams,
+  SwapQuoteParamsResolved,
 } from '@/types/swap/index.js'
-
-/** Resolves an ENS name or address to a checksummed hex address. */
-export type RecipientResolver = (
-  recipient: Address | EnsName | undefined,
-) => Promise<Address | undefined>
-
-/** Pass-through resolver used when no ENS resolution is configured. Throws on ENS names. */
-const passthroughResolver: RecipientResolver = (r) => {
-  if (r !== undefined && !isAddress(r, { strict: false })) {
-    throw new Error(`ENS resolution is not configured; received "${r}"`)
-  }
-  return Promise.resolve(r)
-}
+import { passthroughResolver, type RecipientResolver } from '@/utils/ens.js'
 
 /**
  * Base swap namespace with shared read-only operations
