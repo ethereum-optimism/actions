@@ -18,7 +18,7 @@ origin: docs/brainstorms/2026-04-15-morpho-borrow-provider-brainstorm.md
 
 1. **Oracle formula corrected** — pseudocode `log10` replaced with the canonical Morpho expression; `baseVaultConversionSample` is now derived from `vault.asset().decimals()`, not a magic number; constructor asserts `price() > 0` and bounded `SCALE_FACTOR`. Flash-loan manipulation surface explicitly acknowledged with either a per-block delta cap or documented demo-trust disclaimer.
 2. **Calldata validator tightened** — use `MarketParamsLib.id`-equivalent (blue-sdk `getMarketId()` helper), not tuple-wrapped `encodeAbiParameters`; assert `tx.value === 0n`; wrap decode in try/catch (any error → `CalldataMismatchError{field:'decode'}`, never fall through).
-3. **`BorrowQuote` immutable** — `withBorrowAmount(x): BorrowQuote` builder pattern, no in-place mutation; `getQuote` parameters as a discriminated union (`kind: 'byCollateral' | 'byBorrow'`).
+3. **`BorrowQuote` immutable** — `withBorrowAmount(x): BorrowQuote` builder pattern, no in-place mutation; `getQuote` parameters as a discriminated union (`kind: 'byCollateral' | 'byBorrow'`). Slim-down: dropped `version` and `kind` from the quote itself, and `'partialShares'` from `CloseBorrowMode`.
 4. **Approval co-located in the same userOp** — ERC-4337 research confirms single-userOp atomicity across Privy/Kernel/Safe/LightAccount; approval + supplyCollateral + borrow land together or all revert. `BATCH_PARTIAL_FAILURE` is unreachable under this design.
 5. **Morpho Bundler3 rejected** — not deployed on baseSepolia, `initiator()` transient requires a smart-wallet authorization dance, pulls large transitive deps, and complicates calldata validation. Revisit on mainnet.
 6. **Phase 1 split into 1a (required) + 1b (deferred)** — `BaseNamespace` + shared Morpho dir (1a, prerequisite); `BaseProvider` + `BaseWalletNamespace` (1b, after Phase 3 proves the shape).
@@ -262,26 +262,24 @@ The validator's return type is `void` — it throws on any inconsistency and cat
 ```ts
 type BorrowQuote = {
   readonly _tag: 'BorrowQuote';
-  readonly version: number;
-  readonly kind: 'byCollateral' | 'byBorrow';
   readonly quotedAt: number;
   readonly quotedAtBlock: bigint;
   readonly market: BorrowMarketConfig;
-  readonly marketId: BorrowMarketId;
+  readonly marketId: BorrowMarketId;     // derived from marketParams; kept for API convenience
   readonly marketParams: MarketParams;
   readonly chainId: SupportedChainId;
 
   // Display-only (human-readable, parseFloat-reconstructed). Do NOT use for precision.
   readonly collateralAmount: number;
   readonly borrowAmount: number;
-  readonly healthFactor: number;        // e.g. 1.45 (MaxSafeInteger when debt=0 → surfaced as Infinity)
+  readonly healthFactor: number;        // e.g. 1.45 (Infinity when debt=0)
   readonly liquidationPrice: number;    // USD-equivalent of oracle price
   readonly ltv: number;                 // e.g. 0.624
 
   // Precision fields (bigint, on-chain-scale).
   readonly collateralAmountRaw: bigint;
   readonly borrowAmountRaw: bigint;
-  readonly healthFactorRaw: bigint;     // WAD (1e18-scaled)
+  readonly healthFactorRaw: bigint;     // WAD (1e18-scaled); MaxUint256 when debt=0
   readonly liquidationPriceRaw: bigint; // Morpho oracle scale (36 + loanDec - colDec)
   readonly ltvRaw: bigint;              // WAD
 
@@ -291,6 +289,8 @@ type BorrowQuote = {
   withRecipient(addr: Address): BorrowQuote;
 };
 ```
+
+Dropped from an earlier draft: `version` (redundant given `Object.freeze` immutability — each builder call returns a new object with its own identity) and `kind` (not load-bearing for execution; `withBorrowAmount` works regardless of which side was the user's original input).
 
 **Parameter types are discriminated unions** (no mutually-exclusive optional fields). Inputs are human-readable `number` — SDK converts to wei internally, matching existing Lend/Swap signatures:
 
@@ -304,10 +304,11 @@ type OpenBorrowInput =
   | { _tag?: never; market: BorrowMarketConfig; borrowAmount: number };
 
 type CloseBorrowMode =
-  | { mode: 'full' }
-  | { mode: 'partialAssets'; assets: number; withdrawCollateral?: boolean }
-  | { mode: 'partialShares'; sharesRaw: bigint; withdrawCollateral?: boolean };  // shares are internal-only, always bigint
+  | { mode: 'full' }                                                            // SDK fills shares = position.borrowSharesRaw (dust-safe)
+  | { mode: 'partialAssets'; assets: number; withdrawCollateral?: boolean };    // human-readable asset amount
 ```
+
+`kind` on `BorrowQuoteParams` stays — it's the user's explicit choice of which direction they're quoting, and the discriminated union eliminates the "both-fields-set" footgun. `'partialShares'` dropped from `CloseBorrowMode`; full-repay's shares path is handled internally by `mode: 'full'`. If a consumer ever needs exact-shares repay, we'll add it then.
 
 `BorrowMarketPosition` follows the same dual-field convention:
 
@@ -334,12 +335,6 @@ type BorrowMarketPosition = {
 - SDK → backend response: `bigint`s internally; backend wraps responses in `serializeBigInt(...)` (`packages/demo/backend/src/utils/serializers.ts:5-11`) which JSON-replaces bigint → decimal string.
 - Backend → frontend: strings on the wire; frontend manually re-hydrates specific fields with `BigInt(...)` at the API-client boundary (see `packages/demo/frontend/src/api/actionsApi.ts:81-107,138-142`). Borrow's API client adds `BigInt(...)` for every `*Raw` field returned.
 - Validator asserts calldata `args` against `*Raw` fields, not display fields.
-
-type RepayInput =
-  | { mode: 'full' }
-  | { mode: 'partialAssets'; assets: bigint }
-  | { mode: 'partialShares'; shares: bigint };
-```
 
 Staleness: `openPosition(quote)` rejects with `QuoteStaleError` if `Date.now() - quote.quotedAt > settings.quoteExpirationSeconds` **or** `currentBlock - quote.quotedAtBlock > maxQuoteAgeBlocks`. On baseSepolia (2s blocks), sensible defaults: `quoteExpirationSeconds = 60`, `maxQuoteAgeBlocks = 15` (~30s) — the block limit binds first on fast paths, time limit covers stalled bundler resubmit. Block tag `quotedAtBlock` is captured once at `_getQuote` entry; all reads (market, position, oracle) pinned to that block via `client.readContract({ blockNumber: quotedAtBlock, … })`.
 
@@ -609,8 +604,8 @@ Unit-test scenarios 2, 3; integration-test scenarios 1, 4, 5, 6.
 ### Functional
 
 - [ ] `getQuote({kind:'byCollateral'})` and `getQuote({kind:'byBorrow'})` produce mutually consistent results (round-trip within 1 wei).
-- [ ] `BorrowQuote` is deeply frozen; `quote.withBorrowAmount(x)` returns a new quote with recomputed `execution`, `healthFactor`/`healthFactorRaw`, `liquidationPrice`/`liquidationPriceRaw`, incremented `version`.
-- [ ] `openPosition(quote)` rejects if `quote._tag !== 'BorrowQuote'` OR if `quote.version` doesn't match `quote.execution.signedVersion` (future-proofing for mutation detection).
+- [ ] `BorrowQuote` is deeply frozen; `quote.withBorrowAmount(x)` returns a new quote with recomputed `execution`, `healthFactor`/`healthFactorRaw`, `liquidationPrice`/`liquidationPriceRaw`.
+- [ ] `openPosition(quote)` rejects if `quote._tag !== 'BorrowQuote'`.
 - [ ] `closePosition({mode:'full'})` post-condition `position.borrowSharesRaw === 0n`.
 - [ ] `closePosition({mode:'partialAssets', assets})` does not withdraw collateral unless `withdrawCollateral: true`.
 - [ ] `MorphoCalldataValidator` throws `CalldataMismatchError` with correct `field` for each tamper case (7 cases); throws `{field:'decode'}` on random-bytes input.
