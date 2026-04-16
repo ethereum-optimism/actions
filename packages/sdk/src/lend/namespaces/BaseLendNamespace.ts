@@ -1,16 +1,14 @@
 import { BaseNamespace } from '@/core/BaseNamespace.js'
 import type { LendProvider } from '@/lend/core/LendProvider.js'
-import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
-import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   GetLendMarketParams,
   GetLendMarketsParams,
   LendMarket,
-  LendMarketConfig,
   LendMarketId,
 } from '@/types/lend/index.js'
 import type { LendProviders } from '@/types/providers.js'
+import { findMarketInAllowlist } from '@/utils/markets.js'
 
 export type { LendProviders } from '@/types/providers.js'
 
@@ -54,14 +52,11 @@ export abstract class BaseLendNamespace extends BaseNamespace<
    */
   protected getProviderForMarket(
     marketId: LendMarketId,
-  ): MorphoLendProvider | AaveLendProvider {
+  ): ConfiguredLendProvider {
     for (const provider of this.getAllProviders()) {
-      const market = provider.config.marketAllowlist?.find(
-        (m: LendMarketConfig) =>
-          m.address.toLowerCase() === marketId.address.toLowerCase() &&
-          m.chainId === marketId.chainId,
-      )
-      if (market) return provider as MorphoLendProvider | AaveLendProvider
+      if (findMarketInAllowlist(provider.config.marketAllowlist, marketId)) {
+        return provider
+      }
     }
 
     throw new Error(
