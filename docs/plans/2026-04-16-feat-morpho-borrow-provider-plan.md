@@ -31,7 +31,7 @@ origin: docs/brainstorms/2026-04-15-morpho-borrow-provider-brainstorm.md
 
 - `convertToAssets` is **block-level manipulable spot data**; on a testnet with low vault TVL, flash-loan-style inflation is cheap. Demo mitigates with virtual-share seed + trust disclaimer; production would need TWAP.
 - `MorphoLendProvider._getPosition` hard-codes `formatUnits(balance, 6)` — fixed as a **separate small PR before Phase 3** (not bundled), per pattern-review.
-- Error taxonomy becomes a typed `SdkError` discriminated union in `core/error/`, not stringly-typed codes.
+- Error taxonomy follows **viem's pattern**: concrete named classes extending `Error` (or a viem-style `BaseError` with `shortMessage` / `metaMessages` / `cause`) at the call site, no abstract repo-wide base. Added only when a caller actually throws — PR #1 ships zero new error classes; Borrow-specific errors land in PR #3.
 - Test filename conventions enforced per existing precedent: `namespaces/__tests__/*.spec.ts`, backend `*.spec.ts`, `core/` and `providers/` `*.test.ts`.
 - RPC-call count in `_getQuote` collapses from 5–7 to 1 with `batch: { multicall: true }` on the viem public client.
 
@@ -58,7 +58,7 @@ Ship the feature in seven phases along dependency lines:
 1. **Phase 1a — Foundations (required, prerequisite).** Generic `BaseNamespace<TProviders, TProvider>`, `BaseWalletNamespace` (sharing `executeTransactionBatch`), shared `packages/sdk/src/providers/morpho/` directory (hard-moved from `lend/providers/morpho/`; all import sites updated in the same commit — no compat shim needed since the only SDK consumers today are the demo backend/frontend in this monorepo), common types (`FilterAssetChain`, `TransactionOptions`, `MarketProviderConfig<T>`).
 2. **Phase 1b — BaseProvider lift (deferred).** Extract `BaseProvider<TConfig, TSettings>` after Phase 3 proves the right shape across three concrete providers.
 3. **Phase 2 — Contracts & deploy.** New `DynamicVaultOracle.sol`, `DeployMorphoBorrowMarket.s.sol`, rename `DeployMorphoMarket.s.sol` → `DeployMorphoLendMarket.s.sol`, JSON-artifact-based `deploy-demo.sh` orchestration, Slither in CI, basescan verification.
-4. **Phase 3 — SDK BorrowProvider.** `BorrowProvider` abstract + `MorphoBorrowProvider` concrete + `MorphoCalldataValidator` + position/HF queries via blue-sdk's `AccrualPosition`; typed `SdkError` hierarchy introduced.
+4. **Phase 3 — SDK BorrowProvider.** `BorrowProvider` abstract + `MorphoBorrowProvider` concrete + `MorphoCalldataValidator` + position/HF queries via blue-sdk's `AccrualPosition`; concrete viem-style error classes (`CalldataMismatchError`, `QuoteStaleError`, `UnhealthyPositionError`, …) added at call sites as needed.
 5. **Phase 4 — Namespaces & wiring.** `BaseBorrowNamespace`, `ActionsBorrowNamespace`, `WalletBorrowNamespace`; `Actions.ts` and `Wallet.ts` wiring; settings cascade via `resolveSettings`.
 6. **Phase 5 — Backend.** `/borrow/{markets,quote,execute,repay,positions}` endpoints, Zod schemas with `satisfies` parity-checks against SDK types.
 7. **Phase 6 — Frontend.** Borrow tab with explicit `BorrowCtaState` machine, `ReviewBorrowModal`, `useBorrowProvider` + `useBorrowQuote` hooks, shared formatters, code-split, ActivityLog types.
@@ -137,6 +137,8 @@ Grep before writing new utilities, mocks, fixtures, or helpers. Known locations:
 
 If an existing helper nearly fits: extend or generalize it, don't write a second one. Follow neighbor-file naming conventions (`*Raw` suffix for bigint outputs; `getX` / `buildX` / `resolveX` / `validateX` verbs).
 
+**Prefer patterns already set by our direct dependencies — especially viem — over inventing new abstractions.** viem defines the idioms for errors (named concrete classes extending `BaseError`, no abstract repo-wide supertype), for type safety (const ABIs, discriminated unions, `as const` inference), for encoding/decoding (`encodeFunctionData` / `decodeFunctionData` with narrowed `args`), and for client configuration (multicall batching, transport composition). When a problem has a viem-native pattern, use it. Don't introduce a parallel "SDK-wide base" (errors, result types, option objects) without evidence of a concrete repeated need.
+
 ### Abstraction hierarchy
 
 - **Shareable code does not live inside a specific provider.** If logic is general enough to be used by more than one provider (Morpho + Aave, Lend + Borrow, etc.), it belongs in a base class, a shared utility, or the cross-domain `packages/sdk/src/providers/<protocol>/` directory — not in a concrete provider file.
@@ -171,7 +173,7 @@ If an existing helper nearly fits: extend or generalize it, don't write a second
 packages/sdk/src/
   core/
     error/
-      errors.ts                (extend) SdkError base + typed subclasses (CalldataMismatchError, QuoteStaleError, …)
+      errors.ts                (existing; typed subclasses added at call sites in PR #3 using viem-style BaseError pattern)
     BaseNamespace.ts           (new, Phase 1a) generic getAllProviders/supportedChainIds/market fan-out
     BaseWalletNamespace.ts     (new, Phase 1a) executeTransactionBatch shared logic
     BaseProvider.ts            (new, Phase 1b deferred) chainManager, supportedChainIds, buildApprovalTx
@@ -440,7 +442,7 @@ Because approval + supplyCollateral + borrow share a frame, `BATCH_PARTIAL_FAILU
 - `packages/sdk/src/core/BaseWalletNamespace.ts` — generic `executeTransactionBatch(transaction, chainId)` that handles the 2-call approval+position and 3-call permit2+permit2+swap shapes via a variadic Call[] arg.
 - `packages/sdk/src/providers/morpho/{contracts,abis,types,marketId}.ts` — shared Morpho code. `contracts.ts` pins `MORPHO_BLUE` and the IRM per chain. The file is hard-moved out of `lend/providers/morpho/`; all importers (MorphoLendProvider, lend sdk, lend tests, demo backend market config) are updated in the same commit. No compat shim — only the demo backend/frontend in this monorepo consume the SDK today.
 - `packages/sdk/src/types/common/{FilterAssetChain,TransactionOptions,MarketProviderConfig}.ts`
-- `packages/sdk/src/core/error/errors.ts` — extend with `SdkError` abstract base + `CalldataMismatchError`, `QuoteStaleError`, `UnhealthyPositionError`, `InsufficientLiquidityError`, `OracleUnavailableError`, `ChainMismatchError`, `MarketNotCreatedError`. Each carries structured payload; `TransactionConfirmedButRevertedError` already exists.
+- `packages/sdk/src/core/error/errors.ts` — untouched in PR #1. No new error classes without call sites. Concrete viem-style named error classes (`CalldataMismatchError`, `QuoteStaleError`, etc.) land in PR #3 where they're actually thrown.
 
 **Files refactored:**
 - `packages/sdk/src/lend/namespaces/BaseLendNamespace.ts` → extends new `BaseNamespace`; replace hard-coded `getAllProviders()` (lines 57–61) with inherited generic version.
@@ -455,7 +457,6 @@ Because approval + supplyCollateral + borrow share a frame, `BATCH_PARTIAL_FAILU
 **Deliverables:**
 - Existing lend + swap tests pass unchanged (behaviour preserved).
 - New `BaseNamespace.test.ts`, `BaseWalletNamespace.test.ts` cover the shared surface.
-- `SdkError` subclasses tested for payload shape.
 
 **Review checkpoint.** Merge-ready PR before Phase 3 begins.
 
@@ -580,7 +581,7 @@ type BorrowCtaState =
   | { kind: 'needsApproval'; isApproving: boolean }
   | { kind: 'ready'; isBorrowing: boolean; requiresConfirm: boolean }
   | { kind: 'pendingTx'; step: 'approve' | 'batch' }
-  | { kind: 'blocked'; error: SdkError };
+  | { kind: 'blocked'; error: Error };  // narrow at render-site via instanceof checks on concrete error classes
 ```
 
 Each state renders one button with its own loading flag — **never a shared `isLoading`**. `requiresConfirm: true` when projected HF < 1.2; clicking CTA opens `ReviewBorrowModal`.
@@ -619,7 +620,7 @@ Receipts emit `SupplyCollateral` and `Borrow`. Frontend writes `ActivityEntry{ty
 
 ### Error & failure propagation
 
-- **Pre-flight** (typed `SdkError` subclasses thrown from `BorrowProvider`): `NoCollateralError`, `InsufficientLiquidityError`, `UnhealthyPositionError`, `QuoteStaleError`, `ChainMismatchError`, `MarketNotCreatedError`, `BorrowProviderNotConfiguredError`.
+- **Pre-flight** (concrete named error classes thrown from `BorrowProvider`, each extending `Error` and following viem's pattern): `NoCollateralError`, `InsufficientLiquidityError`, `UnhealthyPositionError`, `QuoteStaleError`, `ChainMismatchError`, `MarketNotCreatedError`, `BorrowProviderNotConfiguredError`.
 - **Calldata integrity** (`CalldataMismatchError{field}`): fail-closed; catch-all wraps decode errors; return type `void`.
 - **RPC / oracle**: `OracleUnavailableError` (oracle revert caught with original error attached). Positions become "frozen but not lost" while oracle is down — documented.
 - **Execution**: single userOp atomicity eliminates partial-batch states. Only remaining non-atomic window: user backs out between quote and execute; dangling allowance detected and skipped next flow.
@@ -811,7 +812,7 @@ Integration-tested: happy path round-trip, dust-check, `Lend.closePosition` lock
 - `packages/sdk/src/lend/namespaces/__tests__/BaseLendNamespace.spec.ts` — filename-convention precedent (`.spec.ts` for namespaces).
 - `packages/demo/backend/src/services/lend.spec.ts` — backend filename precedent.
 - `packages/sdk/src/lend/__mocks__/MockLendProvider.ts:33-60` — `MockedFunction` pattern to replicate.
-- `packages/sdk/src/core/error/errors.ts` — existing `TransactionConfirmedButRevertedError`; new `SdkError` hierarchy lands here.
+- `packages/sdk/src/core/error/errors.ts` — existing `TransactionConfirmedButRevertedError`. New concrete error classes land here in PR #3 following viem's pattern (named class + optional `shortMessage` / `metaMessages` / `cause`).
 - `packages/demo/contracts/script/DeployMorphoMarket.s.sol` — template for `DeployMorphoBorrowMarket.s.sol`; rename to `DeployMorphoLendMarket.s.sol`.
 - `packages/demo/contracts/src/FixedPriceOracle.sol` — reference for scale formula.
 - `packages/demo/frontend/src/components/earn/ReviewSwapModal.tsx` — `ReviewBorrowModal` pattern reference.
@@ -868,12 +869,11 @@ Integration-tested: happy path round-trip, dust-check, `Lend.closePosition` lock
 - Issue ethereum-optimism/actions#373 — backport calldata validation to `SwapProvider`.
 - Issue ethereum-optimism/actions#379 — accept optional `*Raw` bigint amounts on namespace method inputs (applies to new Borrow namespaces from day one).
 - Issue ethereum-optimism/actions#380 — codify the Engineering Principles section into `CONTRIBUTING.md` / `CLAUDE.md` / `AGENTS.md` so it applies to every PR, not just borrow work.
-- Future: `MorphoLendProvider._getPosition` decimals fix (separate small PR).
 - Future: `getPositions` plural on LendProvider (API harmonization issue).
 
-## User-facing error taxonomy (typed `SdkError` subclasses)
+## User-facing error taxonomy (concrete viem-style error classes)
 
-Each error is a typed class extending `SdkError` with a structured payload — not a stringly-typed code. Frontend maps class → user message.
+Each error is a named class extending `Error` (mirroring viem's `BaseError` / `ContractFunctionRevertedError` / `InvalidAddressError` pattern — one concrete class per failure mode, no abstract repo-wide base). Classes carry structured fields on the instance (not a stringly-typed code). Frontend narrows via `instanceof` and maps to user message.
 
 | Class | Payload | User message |
 |---|---|---|
