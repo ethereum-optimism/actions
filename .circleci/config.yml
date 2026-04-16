@@ -71,33 +71,88 @@ jobs:
           publish: 'pnpm release:publish'
           version: 'pnpm release:version'
 
-  check:
+  # Shared install and build step
+  install-and-build:
     docker:
       - image: cimg/node:20.11
     resource_class: large
     steps:
       - setup
       - run:
-          name: Run Build
+          name: Build projects
           command: NODE_OPTIONS='--max-old-space-size=4096' pnpm nx run-many --target=build --parallel=1
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  # SDK checks
+  check-sdk:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: large
+    steps:
+      - attach_workspace:
+          at: .
       - run:
-          name: Run TypeChecker
-          command: pnpm typecheck
+          name: TypeCheck SDK
+          command: cd packages/sdk && pnpm typecheck
       - run:
-          name: Run Linters
-          command: pnpm lint
+          name: Lint SDK
+          command: cd packages/sdk && pnpm lint
       - run:
-          name: Run SDK Tests
+          name: Test SDK
           command: cd packages/sdk && pnpm test
+
+  # Backend checks
+  check-backend:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: large
+    steps:
+      - attach_workspace:
+          at: .
       - run:
-          name: Run Frontend Tests
-          command: cd packages/demo/frontend && pnpm test
+          name: TypeCheck Backend
+          command: cd packages/demo/backend && pnpm typecheck
       - run:
-          name: Run Backend Tests
+          name: Lint Backend
+          command: cd packages/demo/backend && pnpm lint
+      - run:
+          name: Test Backend
           command: cd packages/demo/backend && pnpm test
+
+  # Frontend checks
+  check-frontend:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: large
+    steps:
+      - attach_workspace:
+          at: .
       - run:
-          name: Run Contracts Build and Tests
-          command: cd packages/demo/contracts && pnpm build && pnpm test
+          name: TypeCheck Frontend
+          command: cd packages/demo/frontend && pnpm typecheck
+      - run:
+          name: Lint Frontend
+          command: cd packages/demo/frontend && pnpm lint
+      - run:
+          name: Test Frontend
+          command: cd packages/demo/frontend && pnpm test
+
+  # Contracts checks
+  check-contracts:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: large
+    steps:
+      - setup
+      - run:
+          name: Build Contracts
+          command: cd packages/demo/contracts && pnpm build
+      - run:
+          name: Test Contracts
+          command: cd packages/demo/contracts && pnpm test
 
 workflows:
   release:
@@ -123,7 +178,24 @@ workflows:
 
   check-workflow:
     jobs:
-      - check:
+      - install-and-build:
           context:
             - circleci-repo-readonly-authenticated-github-token
-
+      - check-sdk:
+          requires:
+            - install-and-build
+          context:
+            - circleci-repo-readonly-authenticated-github-token
+      - check-backend:
+          requires:
+            - install-and-build
+          context:
+            - circleci-repo-readonly-authenticated-github-token
+      - check-frontend:
+          requires:
+            - install-and-build
+          context:
+            - circleci-repo-readonly-authenticated-github-token
+      - check-contracts:
+          context:
+            - circleci-repo-readonly-authenticated-github-token
