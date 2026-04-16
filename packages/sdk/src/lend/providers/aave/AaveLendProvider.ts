@@ -179,23 +179,23 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         chainManager: this.chainManager,
       })
 
-      const balance = await publicClient.readContract({
+      const balanceRaw = await publicClient.readContract({
         address: aTokenAddress,
         abi: erc20Abi,
         functionName: 'balanceOf',
         args: [params.walletAddress],
       })
 
-      const balanceFormatted = formatUnits(
-        balance,
+      const balance = parseFloat(formatUnits(
+        balanceRaw,
         market.asset.metadata.decimals,
-      )
+      ))
 
       return {
         balance,
-        balanceFormatted,
+        balanceRaw,
         shares: balance, // In Aave, aTokens are 1:1 with underlying
-        sharesFormatted: balanceFormatted,
+        sharesRaw: balanceRaw,
         marketId: params.marketId,
       }
     } catch {
@@ -235,7 +235,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
 
     return {
-      amount: params.amountWei,
+      amount: parseFloat(formatUnits(params.amountWei, params.asset.metadata.decimals)),
+      amountRaw: params.amountWei,
       asset: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
@@ -274,7 +275,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     })
 
     return {
-      amount: params.amountWei,
+      amount: parseFloat(formatUnits(params.amountWei, params.asset.metadata.decimals)),
+      amountRaw: params.amountWei,
       asset: assetAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
@@ -324,13 +326,20 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       functionName: 'withdrawETH',
       args: [
         poolAddress, // pool
-        params.amount, // amount
+        params.amountRaw, // amount
         params.walletAddress, // to (receives native ETH)
       ],
     })
 
+    // Get asset info for decimals
+    const assetInfo = await this.getMarket({
+      address: params.marketId.address,
+      chainId: params.marketId.chainId,
+    })
+
     return {
-      amount: params.amount,
+      amount: parseFloat(formatUnits(params.amountRaw, assetInfo.asset.metadata.decimals)),
+      amountRaw: params.amountRaw,
       asset: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
@@ -338,7 +347,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         approval: this.buildApprovalTx(
           aWETHAddress,
           gatewayAddress,
-          params.amount,
+          params.amountRaw,
         ),
         position: {
           to: gatewayAddress,
@@ -369,13 +378,14 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       functionName: 'withdraw',
       args: [
         assetAddress, // asset
-        params.amount, // amount
+        params.amountRaw, // amount
         params.walletAddress, // to
       ],
     })
 
     return {
-      amount: params.amount,
+      amount: parseFloat(formatUnits(params.amountRaw, marketInfo.asset.metadata.decimals)),
+      amountRaw: params.amountRaw,
       asset: assetAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,

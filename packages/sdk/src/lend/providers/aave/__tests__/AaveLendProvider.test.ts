@@ -137,7 +137,7 @@ describe('AaveLendProvider', () => {
         walletAddress: MockReceiverAddress,
       })
 
-      expect(lendTransaction).toHaveProperty('amount', BigInt('1000000000'))
+      expect(lendTransaction).toHaveProperty('amountRaw', BigInt('1000000000'))
       expect(lendTransaction).toHaveProperty(
         'asset',
         asset.address[marketId.chainId],
@@ -170,9 +170,10 @@ describe('AaveLendProvider', () => {
       })
 
       expect(lendTransaction).toHaveProperty(
-        'amount',
+        'amountRaw',
         BigInt('1000000000000000000'),
       )
+      expect(lendTransaction).toHaveProperty('amount', 1)
       expect(lendTransaction.transactionData).not.toHaveProperty('approval')
       expect(lendTransaction.transactionData).toHaveProperty('position')
       // Native ETH deposits send ETH as msg.value via WETHGateway
@@ -226,7 +227,7 @@ describe('AaveLendProvider', () => {
         walletAddress,
       })
 
-      expect(withdrawTransaction).toHaveProperty('amount', BigInt('500000000'))
+      expect(withdrawTransaction).toHaveProperty('amountRaw', BigInt('500000000'))
       expect(withdrawTransaction).toHaveProperty(
         'asset',
         asset.address[marketId.chainId],
@@ -262,9 +263,10 @@ describe('AaveLendProvider', () => {
       })
 
       expect(withdrawTransaction).toHaveProperty(
-        'amount',
+        'amountRaw',
         BigInt('1000000000000000000'),
       )
+      expect(withdrawTransaction).toHaveProperty('amount', 1)
       // Native ETH withdrawals require approving aWETH to WETHGateway
       expect(withdrawTransaction.transactionData).toHaveProperty('approval')
       expect(withdrawTransaction.transactionData).toHaveProperty('position')

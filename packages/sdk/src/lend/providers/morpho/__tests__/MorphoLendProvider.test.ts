@@ -99,7 +99,7 @@ describe('MorphoLendProvider', () => {
         walletAddress,
       })
 
-      expect(withdrawTransaction).toHaveProperty('amount', BigInt('500000000'))
+      expect(withdrawTransaction).toHaveProperty('amountRaw', BigInt('500000000'))
       expect(withdrawTransaction).toHaveProperty(
         'asset',
         asset.address[marketId.chainId],
@@ -198,7 +198,7 @@ describe('MorphoLendProvider', () => {
         walletAddress: MockReceiverAddress,
       })
 
-      expect(lendTransaction).toHaveProperty('amount', BigInt('1000000000'))
+      expect(lendTransaction).toHaveProperty('amountRaw', BigInt('1000000000'))
       expect(lendTransaction).toHaveProperty(
         'asset',
         asset.address[marketId.chainId],

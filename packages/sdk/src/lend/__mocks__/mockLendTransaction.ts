@@ -12,8 +12,12 @@ export function createMockLendTransaction(params: {
   approval?: TransactionData
   position: TransactionData
 }): LendTransaction {
+  // Assume 6 decimals for mock conversion
+  const amountNumber = Number(params.amount) / (10 ** 6)
+  
   return {
-    amount: params.amount,
+    amount: amountNumber,
+    amountRaw: params.amount,
     asset: params.asset,
     marketId: params.marketId,
     apy: 0.05,
