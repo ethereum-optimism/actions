@@ -1,5 +1,5 @@
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import { erc20Abi, formatUnits } from 'viem'
+import { erc20Abi, formatUnits, type PublicClient } from 'viem'
 
 import { LendProvider } from '@/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/lend/providers/morpho/sdk.js'
@@ -17,6 +17,17 @@ import type {
   LendTransaction,
 } from '@/types/lend/index.js'
 import { getAssetAddress } from '@/utils/assets.js'
+import { findMarketInAllowlist } from '@/utils/markets.js'
+
+const ERC4626_ASSET_ABI = [
+  {
+    name: 'asset',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+  },
+] as const
 
 /**
  * Morpho lending provider implementation
@@ -176,11 +187,13 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
   protected async _getPosition(
     params: GetMarketBalanceParams,
   ): Promise<LendMarketPosition> {
-    const underlyingDecimals = this.findUnderlyingDecimals(params.marketId)
-
     try {
       const publicClient = this.chainManager.getPublicClient(
         params.marketId.chainId,
+      )
+      const underlyingDecimals = await this.resolveUnderlyingDecimals(
+        publicClient,
+        params.marketId,
       )
 
       // Get user's market token balance (shares in the vault)
@@ -222,19 +235,29 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
     }
   }
 
-  private findUnderlyingDecimals(marketId: LendMarketId): number {
-    const match = this._config.marketAllowlist?.find(
-      (m) =>
-        m.address.toLowerCase() === marketId.address.toLowerCase() &&
-        m.chainId === marketId.chainId,
-    )
+  /**
+   * Resolve the underlying asset decimals for a market.
+   * @description Prefers the allowlisted market config (free, no RPC).
+   * Falls back to an on-chain read of the vault's ERC-4626 `asset()` +
+   * ERC-20 `decimals()` when the allowlist is empty or doesn't contain the
+   * market (e.g. a provider configured without an allowlist).
+   */
+  private async resolveUnderlyingDecimals(
+    publicClient: PublicClient,
+    marketId: LendMarketId,
+  ): Promise<number> {
+    const match = findMarketInAllowlist(this._config.marketAllowlist, marketId)
+    if (match) return match.asset.metadata.decimals
 
-    if (!match) {
-      throw new Error(
-        `Market ${marketId.address} on chain ${marketId.chainId} is not in the allowlist`,
-      )
-    }
-
-    return match.asset.metadata.decimals
+    const underlying = await publicClient.readContract({
+      address: marketId.address,
+      abi: ERC4626_ASSET_ABI,
+      functionName: 'asset',
+    })
+    return publicClient.readContract({
+      address: underlying,
+      abi: erc20Abi,
+      functionName: 'decimals',
+    })
   }
 }

@@ -273,6 +273,40 @@ describe('MorphoLendProvider', () => {
       expect(position.balance).toBe(underlyingBalance)
       expect(position.balanceFormatted).toBe('1')
     })
+
+    it('falls back to on-chain asset() + decimals() when no allowlist match', async () => {
+      const providerWithoutAllowlist = new MorphoLendProvider(
+        {},
+        mockChainManager,
+      )
+      const client = mockChainManager.getPublicClient(
+        MockGauntletUSDCMarket.chainId,
+      )
+      const underlyingAddr = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      const onchainDecimals = 8 // simulate a non-USDC underlying
+      const shares = 10n ** 18n
+      const underlyingBalance = 10n ** 8n
+      vi.mocked(client.readContract)
+        // resolveUnderlyingDecimals: asset()
+        .mockResolvedValueOnce(underlyingAddr)
+        // resolveUnderlyingDecimals: decimals()
+        .mockResolvedValueOnce(onchainDecimals)
+        // balanceOf
+        .mockResolvedValueOnce(shares)
+        // convertToAssets
+        .mockResolvedValueOnce(underlyingBalance)
+
+      const position = await providerWithoutAllowlist.getPosition(
+        MockReceiverAddress,
+        {
+          address: MockGauntletUSDCMarket.address,
+          chainId: MockGauntletUSDCMarket.chainId,
+        },
+      )
+
+      expect(position.balanceFormatted).toBe('1')
+      expect(position.sharesFormatted).toBe('1')
+    })
   })
 
   describe('market allowlist configuration', () => {
