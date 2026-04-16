@@ -1,6 +1,30 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendMarket } from '@/types/lend/index.js'
+import type {
+  LendMarket,
+  LendMarketConfig,
+  LendMarketId,
+} from '@/types/lend/index.js'
+
+/**
+ * Find a market config in an allowlist by address + chainId (case-insensitive on address).
+ * @description Shared between `BaseLendNamespace.getProviderForMarket` and
+ * `MorphoLendProvider._getPosition` to avoid duplicate match logic.
+ * @param allowlist - Optional list of allowed markets (undefined or empty → always returns undefined)
+ * @param marketId - Market identifier to look up
+ * @returns The matching market config, or undefined if not present
+ */
+export function findMarketInAllowlist(
+  allowlist: readonly LendMarketConfig[] | undefined,
+  marketId: LendMarketId,
+): LendMarketConfig | undefined {
+  if (!allowlist || allowlist.length === 0) return undefined
+  return allowlist.find(
+    (m) =>
+      m.address.toLowerCase() === marketId.address.toLowerCase() &&
+      m.chainId === marketId.chainId,
+  )
+}
 
 /**
  * Validates that an asset matches the market's asset
