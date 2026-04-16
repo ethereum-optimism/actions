@@ -176,6 +176,8 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
   protected async _getPosition(
     params: GetMarketBalanceParams,
   ): Promise<LendMarketPosition> {
+    const underlyingDecimals = this.findUnderlyingDecimals(params.marketId)
+
     try {
       const publicClient = this.chainManager.getPublicClient(
         params.marketId.chainId,
@@ -205,15 +207,12 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         args: [shares],
       })
 
-      // Format the balances (USDC has 6 decimals)
-      const balanceFormatted = formatUnits(balance, 6)
-      const sharesFormatted = formatUnits(shares, 18) // Vault shares typically have 18 decimals
-
       return {
         balance,
-        balanceFormatted,
+        balanceFormatted: formatUnits(balance, underlyingDecimals),
         shares,
-        sharesFormatted,
+        // MetaMorpho vault shares are 18 decimals by contract invariant
+        sharesFormatted: formatUnits(shares, 18),
         marketId: params.marketId,
       }
     } catch {
@@ -221,5 +220,21 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}`,
       )
     }
+  }
+
+  private findUnderlyingDecimals(marketId: LendMarketId): number {
+    const match = this._config.marketAllowlist?.find(
+      (m) =>
+        m.address.toLowerCase() === marketId.address.toLowerCase() &&
+        m.chainId === marketId.chainId,
+    )
+
+    if (!match) {
+      throw new Error(
+        `Market ${marketId.address} on chain ${marketId.chainId} is not in the allowlist`,
+      )
+    }
+
+    return match.asset.metadata.decimals
   }
 }

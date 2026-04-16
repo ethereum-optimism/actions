@@ -235,6 +235,46 @@ describe('MorphoLendProvider', () => {
     })
   })
 
+  describe('getPosition', () => {
+    it('formats balance using the allowlist asset decimals (USDC, 6)', async () => {
+      const client = mockChainManager.getPublicClient(
+        MockGauntletUSDCMarket.chainId,
+      )
+      const shares = 10n ** 18n // 1 share
+      const underlyingBalance = 10n ** 6n // 1 USDC
+      vi.mocked(client.readContract)
+        .mockResolvedValueOnce(shares)
+        .mockResolvedValueOnce(underlyingBalance)
+
+      const position = await provider.getPosition(MockReceiverAddress, {
+        address: MockGauntletUSDCMarket.address,
+        chainId: MockGauntletUSDCMarket.chainId,
+      })
+
+      expect(position.balance).toBe(underlyingBalance)
+      expect(position.balanceFormatted).toBe('1')
+      expect(position.shares).toBe(shares)
+      expect(position.sharesFormatted).toBe('1')
+    })
+
+    it('formats balance using the allowlist asset decimals (WETH, 18)', async () => {
+      const client = mockChainManager.getPublicClient(MockWETHMarket.chainId)
+      const shares = 10n ** 18n
+      const underlyingBalance = 10n ** 18n // 1 WETH
+      vi.mocked(client.readContract)
+        .mockResolvedValueOnce(shares)
+        .mockResolvedValueOnce(underlyingBalance)
+
+      const position = await provider.getPosition(MockReceiverAddress, {
+        address: MockWETHMarket.address,
+        chainId: MockWETHMarket.chainId,
+      })
+
+      expect(position.balance).toBe(underlyingBalance)
+      expect(position.balanceFormatted).toBe('1')
+    })
+  })
+
   describe('market allowlist configuration', () => {
     it('should work without market allowlist', () => {
       const configWithoutAllowlist: LendProviderConfig = {}
