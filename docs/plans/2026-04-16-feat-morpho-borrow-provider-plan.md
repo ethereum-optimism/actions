@@ -55,7 +55,7 @@ Secondarily, the existing `LendProvider`/`SwapProvider`/namespace code diverged 
 
 Ship the feature in seven phases along dependency lines:
 
-1. **Phase 1a — Foundations (required, prerequisite).** Generic `BaseNamespace<TProviders, TProvider>`, `BaseWalletNamespace` (sharing `executeTransactionBatch`), shared `packages/sdk/src/providers/morpho/` directory (via re-export shim in `lend/providers/morpho/` for one release), common types (`FilterAssetChain`, `TransactionOptions`, `MarketProviderConfig<T>`).
+1. **Phase 1a — Foundations (required, prerequisite).** Generic `BaseNamespace<TProviders, TProvider>`, `BaseWalletNamespace` (sharing `executeTransactionBatch`), shared `packages/sdk/src/providers/morpho/` directory (hard-moved from `lend/providers/morpho/`; all import sites updated in the same commit — no compat shim needed since the only SDK consumers today are the demo backend/frontend in this monorepo), common types (`FilterAssetChain`, `TransactionOptions`, `MarketProviderConfig<T>`).
 2. **Phase 1b — BaseProvider lift (deferred).** Extract `BaseProvider<TConfig, TSettings>` after Phase 3 proves the right shape across three concrete providers.
 3. **Phase 2 — Contracts & deploy.** New `DynamicVaultOracle.sol`, `DeployMorphoBorrowMarket.s.sol`, rename `DeployMorphoMarket.s.sol` → `DeployMorphoLendMarket.s.sol`, JSON-artifact-based `deploy-demo.sh` orchestration, Slither in CI, basescan verification.
 4. **Phase 3 — SDK BorrowProvider.** `BorrowProvider` abstract + `MorphoBorrowProvider` concrete + `MorphoCalldataValidator` + position/HF queries via blue-sdk's `AccrualPosition`; typed `SdkError` hierarchy introduced.
@@ -64,6 +64,54 @@ Ship the feature in seven phases along dependency lines:
 7. **Phase 6 — Frontend.** Borrow tab with explicit `BorrowCtaState` machine, `ReviewBorrowModal`, `useBorrowProvider` + `useBorrowQuote` hooks, shared formatters, code-split, ActivityLog types.
 
 Phases 1a and 2 are independent and can run in parallel. Phase 3's integration tests gate on Phase 2 deployment. Phase 3 blocks Phases 4, 5, 6. Phase 1b unblocks optionally after Phase 3. Separate cleanup PR: fix `MorphoLendProvider._getPosition` decimals bug (10-line change) before Phase 3 begins.
+
+## Delivery Plan (PR Breakdown)
+
+This is too much work for one PR. Ship as five stacked PRs, with an optional tail cleanup PR.
+
+| # | PR title (proposed) | Size | Depends on | Scope |
+|---|---|---|---|---|
+| 1 | `refactor: shared namespace + provider foundations` | M | — | Phase 1a: `BaseNamespace`, `BaseWalletNamespace`, shared `providers/morpho/` directory with re-export shim, common types (`FilterAssetChain`, `TransactionOptions`, `MarketProviderConfig<T>`), `SdkError` class hierarchy in `core/error/`. Refactor existing Lend + Swap namespaces onto the new bases. Also includes `MorphoLendProvider._getPosition` decimal-bug fix. **Zero new features** — all existing tests must pass unchanged. Dedicated review checkpoint. |
+| 2 | `feat: morpho borrow market oracle and deploy` | M | — (parallel with PR #1) | Phase 2: `DynamicVaultOracle.sol` + Foundry tests (including flash-loan + donation fuzz), `DeployMorphoBorrowMarket.s.sol`, rename `DeployMorphoMarket.s.sol` → `DeployMorphoLendMarket.s.sol`, JSON-artifact `deploy-demo.sh`, Slither CI job, basescan verification job. Ends with the new borrow market deployed on baseSepolia. Standalone — no SDK code. |
+| 3 | `feat: morpho borrow provider sdk` | L | PR #1 merged, PR #2 deployed | Phases 3 + 4 combined: `BorrowProvider` abstract + `MorphoBorrowProvider` + `MorphoCalldataValidator` + immutable `BorrowQuote`; `BaseBorrowNamespace`/`ActionsBorrowNamespace`/`WalletBorrowNamespace`; wire into `Actions.ts` + `Wallet.ts` with `NullBorrowNamespace` proxy; settings cascade + bounds validation; unit + network-integration tests. After merge, `actions.borrow.openPosition(...)` works from a Node script. |
+| 4 | `feat: borrow backend endpoints` | S–M | PR #3 | Phase 5: `/borrow/{markets,quote,execute,repay,positions}` controllers + services (`*.spec.ts`), Zod schemas with `satisfies` parity-checks, `requireWalletBorrow` guard, in-memory cache for `/borrow/markets`. |
+| 5 | `feat: borrow tab frontend` | L | PR #4 | Phase 6: `BorrowCtaState` machine, `BorrowTab` (code-split), `ReviewBorrowModal`, `useBorrowProvider`/`useBorrowQuote`, HF + liquidation-price displays, shared `formatTokenAmount`/`formatUsd`, `ActionTabs`/`ModeToggle`/`AmountLabel` generalization, ActivityLog extensions, mobile tab un-hardcoding. End-to-end user flow goes live. |
+| 6 (optional tail) | `refactor: extract BaseProvider across lend/swap/borrow` | M | PR #3 | Phase 1b: `BaseProvider<TConfig, TSettings>` extraction. Deferred until PR #3 merges so we generalize from three concrete examples, not two. Not on the critical path. |
+
+### Stacking strategy
+
+Reviews may not come back in order, and we should not block forward progress. As each PR is ready:
+
+- **Branch off the previous PR's branch**, not `main`. Target the base PR as the merge base.
+- Example chain: `kevin/borrow-foundations` → `kevin/borrow-oracle-deploy` → `kevin/borrow-sdk` → `kevin/borrow-backend` → `kevin/borrow-frontend`.
+- When an upstream PR merges to `main`, rebase the dependent branch onto `main` and force-push (after coordinating with any reviewers who have in-flight comments).
+- PRs #1 and #2 can both target `main` independently (they're parallel, not stacked).
+- PRs #3–#5 stack linearly.
+
+### PR description convention
+
+Every non-leaf PR in the stack must include in its description:
+
+```
+Blocked by: #<previous-pr-number>
+
+This PR is part of the Morpho Borrow Provider feature. It builds on the changes
+in the preceding PR and should be reviewed after (or in parallel with) it.
+See docs/plans/2026-04-16-feat-morpho-borrow-provider-plan.md for the full plan.
+```
+
+PRs #1 and #2 note they are the base of the stack. PRs #3–#5 each link their immediate parent. Last PR (#5) includes the full stack list for reviewer orientation.
+
+### Commit conventions within each PR
+
+Each PR should land as a sequence of **minimal, atomic commits**. Guidelines:
+
+- **Each commit is a single logical change** that passes typecheck, lint, and build on its own. Prefer many small commits over a few large ones — easier to review, easier to bisect.
+- **Commit messages: 3–7 words, imperative mood, summarize the change.** No AI/Claude/Anthropic references. No trailing ticket numbers in the message body (link tickets in the PR description instead).
+- Good examples: `add BaseNamespace abstract class`, `move morpho contracts to shared dir`, `fix lend position decimal formatting`, `add dynamic vault oracle contract`, `wire borrow namespace into actions`, `split ModeToggle labels prop`.
+- Bad examples: `stuff`, `wip`, `update files`, `Implement the new BaseNamespace abstract class with generic getAllProviders method following the pattern from BaseSwapNamespace` (too long), `Claude wrote this`.
+- **Don't bundle unrelated changes.** A commit that adds a new component and renames an unrelated file should be two commits.
+- **When a hook or CI check fails, fix the issue and make a new commit** — don't rewrite history with `--amend` on shared branches. Amending on your own un-pushed local branch is fine.
 
 ## Technical Approach
 
@@ -84,8 +132,7 @@ packages/sdk/src/
       types.ts                 MarketParams, MorphoContractsRegistry
       calldata.ts              MorphoCalldataValidator (Morpho-specific, called from MorphoBorrowProvider)
       marketId.ts              canonical id derivation (reuses blue-sdk `getMarketId` helper)
-  lend/providers/morpho/
-    contracts.ts               re-export shim for one release cycle
+  lend/providers/morpho/       (existing contracts.ts deleted — hard-move to providers/morpho/)
   borrow/                      (new, Phase 3)
     core/BorrowProvider.ts
     providers/morpho/
@@ -101,7 +148,7 @@ packages/sdk/src/
   types/
     common/                    (new, Phase 1a)
       FilterAssetChain.ts
-      TransactionOptions.ts    (renamed from LendOptions; alias retained one release)
+      TransactionOptions.ts    (hard-renamed from LendOptions; demo consumers updated in same commit)
       MarketProviderConfig.ts
     borrow/
       base.ts                  BorrowMarketConfig, BorrowMarketId (branded Hex), BorrowMarketPosition, BorrowQuote (immutable), OpenBorrowInput, CloseBorrowMode, BorrowProviderConfig<T>, BorrowSettings
@@ -314,7 +361,7 @@ Because approval + supplyCollateral + borrow share a frame, `BATCH_PARTIAL_FAILU
 **Files created:**
 - `packages/sdk/src/core/BaseNamespace.ts` — `abstract class BaseNamespace<TProvider extends ProviderBase, TProviders extends Record<string, TProvider | undefined>>`. Generic `getAllProviders(): TProvider[]` via `Object.values(this.providers).filter((p): p is TProvider => p !== undefined)`. `supportedChainIds(): SupportedChainId[]` union of per-provider chain sets.
 - `packages/sdk/src/core/BaseWalletNamespace.ts` — generic `executeTransactionBatch(transaction, chainId)` that handles the 2-call approval+position and 3-call permit2+permit2+swap shapes via a variadic Call[] arg.
-- `packages/sdk/src/providers/morpho/{contracts,abis,types,marketId}.ts` — shared Morpho code. `contracts.ts` pins `MORPHO_BLUE` and the IRM per chain; imports remapped from `lend/providers/morpho/` via a re-export shim.
+- `packages/sdk/src/providers/morpho/{contracts,abis,types,marketId}.ts` — shared Morpho code. `contracts.ts` pins `MORPHO_BLUE` and the IRM per chain. The file is hard-moved out of `lend/providers/morpho/`; all importers (MorphoLendProvider, lend sdk, lend tests, demo backend market config) are updated in the same commit. No compat shim — only the demo backend/frontend in this monorepo consume the SDK today.
 - `packages/sdk/src/types/common/{FilterAssetChain,TransactionOptions,MarketProviderConfig}.ts`
 - `packages/sdk/src/core/error/errors.ts` — extend with `SdkError` abstract base + `CalldataMismatchError`, `QuoteStaleError`, `UnhealthyPositionError`, `InsufficientLiquidityError`, `OracleUnavailableError`, `ChainMismatchError`, `MarketNotCreatedError`. Each carries structured payload; `TransactionConfirmedButRevertedError` already exists.
 
@@ -322,8 +369,8 @@ Because approval + supplyCollateral + borrow share a frame, `BATCH_PARTIAL_FAILU
 - `packages/sdk/src/lend/namespaces/BaseLendNamespace.ts` → extends new `BaseNamespace`; replace hard-coded `getAllProviders()` (lines 57–61) with inherited generic version.
 - `packages/sdk/src/swap/namespaces/BaseSwapNamespace.ts` → extends new `BaseNamespace`.
 - `packages/sdk/src/lend/namespaces/WalletLendNamespace.ts` + `WalletSwapNamespace.ts` → extend `BaseWalletNamespace`, remove duplicated `executeTransaction` method.
-- `packages/sdk/src/lend/providers/morpho/contracts.ts` → one-line re-export `export * from '../../../providers/morpho/contracts.js';`. Removed after one release.
-- `types/lend/base.ts` → `LendOptions` → type alias to `TransactionOptions` from `types/common`.
+- `packages/sdk/src/lend/providers/morpho/contracts.ts` → deleted. All importers updated to point at `@/providers/morpho/contracts.js` in the same commit.
+- `types/lend/base.ts` → `LendOptions` deleted; all importers updated to `TransactionOptions` from `types/common` in the same commit.
 
 **Separate cleanup PR (lands before this phase):**
 - Fix `MorphoLendProvider._getPosition` decimal bug at `packages/sdk/src/lend/providers/morpho/MorphoLendProvider.ts:209` — use `asset.metadata.decimals`.
@@ -643,7 +690,7 @@ Integration-tested: happy path round-trip, dust-check, `Lend.closePosition` lock
 | MarketParams id mismatch (validator false-positive/negative) | Low | High | Use `getMarketId` from blue-sdk (matches assembly); fixture test asserts SDK-derived id == on-chain id for known market |
 | Privy `sendBatch` dispatches N userOps instead of 1 | Low | High | Unit test asserts single `sendTransaction({calls})` call to Privy client. If wrong, atomicity lost. |
 | Gas estimation underestimate on batch | Medium | Medium | 1.25× safety multiplier on `callGasLimit` |
-| Phase 1a namespace refactor breaks existing lend/swap | Low | High | Own review checkpoint; existing tests must pass unchanged; shim + alias for deprecated names |
+| Phase 1a namespace refactor breaks existing lend/swap | Low | High | Own review checkpoint; existing tests must pass unchanged; all import sites updated atomically (no shims — demo is sole consumer, so grep + edit covers the surface) |
 | Full-repay dust | Low | Medium | Re-fetch shares at execution; dedicated integration test |
 | LLTV 86% aggressive for dUSDC↔OP | Low | Medium | Demo-only; documented; production would use 62.5–77% |
 | Flash-loan oracle exploit on testnet | Medium | Low (testnet) | Acknowledged; risk disclosure on-screen; mitigates by faucet-gating OP and per-address borrow cap if needed |
