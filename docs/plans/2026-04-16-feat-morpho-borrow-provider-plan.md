@@ -249,11 +249,13 @@ For each of `supplyCollateral` / `borrow` / `repay` / `withdrawCollateral` the v
    `functionName` narrowing drives `args` type-safety — no `as any`.
 6. **MarketParams id** — recompute via `getMarketId(decoded.args[0])` (blue-sdk helper that matches `MarketParamsLib.id`'s assembly: `keccak256` over the packed 5×32-byte struct). Compare against `expectedMarketId`. Never use `encodeAbiParameters` with a `tuple` wrapper — that adds a 32-byte offset prefix and produces the wrong hash.
 7. **Recipient/onBehalf** — `onBehalf === wallet.address` by default. To accommodate future bundler paths, the validator accepts a `config.allowedOnBehalf: Set<Address>` and checks membership. Demo ships with `allowedOnBehalf = { wallet.address }`.
-8. **Amount/shares** — exact equality with the quote's declared amount. For `repay` with `mode: 'full'`, validator expects `assets === 0n && shares === position.borrowShares` (dust-safe). Shares are **re-fetched at execution time**, not carried from quote — protects against griefer repaying a micro amount between quote and execute (per security-sentinel H4).
+8. **Amount/shares** — exact equality with the quote's `*Raw` fields (e.g. `decoded.args[1] === quote.borrowAmountRaw`). For `repay` with `mode: 'full'`, validator expects `assets === 0n && shares === position.borrowSharesRaw` (dust-safe). Shares are **re-fetched at execution time**, not carried from quote — protects against griefer repaying a micro amount between quote and execute (per security-sentinel H4).
 
 The validator's return type is `void` — it throws on any inconsistency and catches any unexpected error into `CalldataMismatchError{field:'decode'}`. Validator unit tests include a "random bytes" negative case and a table-driven case per `field` (7 discriminators).
 
 ### Quote contract — immutable with builder
+
+**Number convention** (inherited from existing Swap/Lend types — see `packages/sdk/src/types/swap/base.ts:198-209`, `packages/sdk/src/types/asset.ts:27-33`): every bigint field in public types is suffixed `Raw`. Paired human-readable `number` fields (no suffix) are for display only and should not be used for precision arithmetic. Input params to SDK methods accept `number` (human-readable) and the provider `parseUnits`es internally — matching `LendProvider.openPosition`'s pattern at `packages/sdk/src/lend/core/LendProvider.ts:95-98`.
 
 `BorrowQuote` is **frozen** after construction. Mutators return a new quote:
 
@@ -268,33 +270,70 @@ type BorrowQuote = {
   readonly marketId: BorrowMarketId;
   readonly marketParams: MarketParams;
   readonly chainId: SupportedChainId;
-  readonly collateralAmount: bigint;
-  readonly borrowAmount: bigint;
-  readonly healthFactor: bigint;   // WAD
-  readonly liquidationPrice: bigint;
-  readonly ltv: bigint;
+
+  // Display-only (human-readable, parseFloat-reconstructed). Do NOT use for precision.
+  readonly collateralAmount: number;
+  readonly borrowAmount: number;
+  readonly healthFactor: number;        // e.g. 1.45 (MaxSafeInteger when debt=0 → surfaced as Infinity)
+  readonly liquidationPrice: number;    // USD-equivalent of oracle price
+  readonly ltv: number;                 // e.g. 0.624
+
+  // Precision fields (bigint, on-chain-scale).
+  readonly collateralAmountRaw: bigint;
+  readonly borrowAmountRaw: bigint;
+  readonly healthFactorRaw: bigint;     // WAD (1e18-scaled)
+  readonly liquidationPriceRaw: bigint; // Morpho oracle scale (36 + loanDec - colDec)
+  readonly ltvRaw: bigint;              // WAD
+
   readonly execution: { readonly calldata: Hex; readonly value: bigint; readonly to: Address };
 
-  withBorrowAmount(x: bigint): BorrowQuote;      // returns new quote; recomputes execution, HF, LP
+  withBorrowAmount(x: number): BorrowQuote;   // accepts human-readable; recomputes execution, HF, LP
   withRecipient(addr: Address): BorrowQuote;
 };
 ```
 
-**Parameter types are discriminated unions** (no mutually-exclusive optional fields):
+**Parameter types are discriminated unions** (no mutually-exclusive optional fields). Inputs are human-readable `number` — SDK converts to wei internally, matching existing Lend/Swap signatures:
 
 ```ts
 type BorrowQuoteParams =
-  | { kind: 'byCollateral'; collateralAmount: bigint; market: BorrowMarketConfig; includeCalldata?: boolean }
-  | { kind: 'byBorrow';     borrowAmount: bigint;     market: BorrowMarketConfig; includeCalldata?: boolean };
+  | { kind: 'byCollateral'; collateralAmount: number; market: BorrowMarketConfig; includeCalldata?: boolean }
+  | { kind: 'byBorrow';     borrowAmount: number;     market: BorrowMarketConfig; includeCalldata?: boolean };
 
 type OpenBorrowInput =
   | (BorrowQuote & { _tag: 'BorrowQuote' })          // branded — cannot be forged
-  | { _tag?: never; market: BorrowMarketConfig; borrowAmount: bigint; /* raw */ };
+  | { _tag?: never; market: BorrowMarketConfig; borrowAmount: number };
 
 type CloseBorrowMode =
   | { mode: 'full' }
-  | { mode: 'partialAssets'; assets: bigint; withdrawCollateral?: boolean }
-  | { mode: 'partialShares'; shares: bigint; withdrawCollateral?: boolean };
+  | { mode: 'partialAssets'; assets: number; withdrawCollateral?: boolean }
+  | { mode: 'partialShares'; sharesRaw: bigint; withdrawCollateral?: boolean };  // shares are internal-only, always bigint
+```
+
+`BorrowMarketPosition` follows the same dual-field convention:
+
+```ts
+type BorrowMarketPosition = {
+  readonly marketId: BorrowMarketId;
+  readonly collateral: number;
+  readonly collateralRaw: bigint;
+  readonly debt: number;
+  readonly debtRaw: bigint;              // AccrualPosition.borrowAssets
+  readonly borrowSharesRaw: bigint;      // internal; used for dust-safe full repay
+  readonly healthFactor: number;
+  readonly healthFactorRaw: bigint;      // WAD
+  readonly liquidationPrice: number;
+  readonly liquidationPriceRaw: bigint;
+  readonly ltv: number;
+  readonly ltvRaw: bigint;
+};
+```
+
+**Wire format across layers** (per existing Lend/Swap convention):
+- Frontend → backend: human-readable `number` in request bodies; Zod schema `amount: z.number().positive()` (matches `controllers/lend.ts:20`).
+- Backend → SDK: `number` passed through; SDK's `parseUnits(value.toString(), decimals)` handles conversion.
+- SDK → backend response: `bigint`s internally; backend wraps responses in `serializeBigInt(...)` (`packages/demo/backend/src/utils/serializers.ts:5-11`) which JSON-replaces bigint → decimal string.
+- Backend → frontend: strings on the wire; frontend manually re-hydrates specific fields with `BigInt(...)` at the API-client boundary (see `packages/demo/frontend/src/api/actionsApi.ts:81-107,138-142`). Borrow's API client adds `BigInt(...)` for every `*Raw` field returned.
+- Validator asserts calldata `args` against `*Raw` fields, not display fields.
 
 type RepayInput =
   | { mode: 'full' }
@@ -316,22 +355,15 @@ Bidirectional semantics (brainstorm §2):
 
 Use `@morpho-org/blue-sdk-viem`'s `AccrualPosition.fetch(user, marketId, client)`. The SDK client is instantiated with `batch: { multicall: true }` so `Market.fetch + AccrualPosition.fetch + oracle.price()` collapse into a single multicall3 RPC round-trip (5–7× latency improvement per performance-oracle review).
 
-Getters used:
-
-- `healthFactor: bigint` (WAD-scaled; `MaxUint256` when debt = 0)
-- `liquidationPrice: bigint`
-- `ltv: bigint` (WAD)
-- `borrowAssets: bigint`
-- `collateralValue: bigint`
-- `isHealthy: boolean`
+Blue-sdk's `AccrualPosition` returns bigints on the upstream getters (`healthFactor`, `liquidationPrice`, `ltv`, `borrowAssets`, `borrowShares`, `collateralValue`, `isHealthy`). The SDK's `_getPosition` wraps those into a `BorrowMarketPosition` that follows the repo's `Raw` convention — e.g., upstream `healthFactor: bigint` becomes `{ healthFactor: number (WAD/1e18), healthFactorRaw: bigint }`; upstream `borrowAssets` becomes `{ debt: number, debtRaw: bigint }`; upstream `borrowShares` becomes `borrowSharesRaw: bigint` (no display counterpart — shares are internal-only).
 
 No manual HF math in SDK core. Fixture tests against HF = 1.0, 1.0001, 0.9999 at LLTV=86% confirm SDK agrees with on-chain `_isHealthy`.
 
 **Full-repay uses shares, not assets:**
 ```ts
-repay(marketParams, 0n, position.borrowShares, user, '0x')
+repay(marketParams, 0n, position.borrowSharesRaw, user, '0x')
 ```
-`position.borrowShares` is re-fetched inside `_closePosition` immediately before encoding — not carried from quote time — to close the griefer-induced TOCTOU window.
+`borrowSharesRaw` is re-fetched inside `_closePosition` immediately before encoding — not carried from quote time — to close the griefer-induced TOCTOU window.
 
 ### Batching strategy (verified via ERC-4337 research)
 
@@ -340,8 +372,8 @@ repay(marketParams, 0n, position.borrowShares, user, '0x')
 ```ts
 const calls: Call[] = [];
 const allowance = await checkAllowance(dUSDC, MORPHO_BLUE, user);
-if (allowance < collateralAmount) {
-  calls.push({ to: dUSDC, data: encodeApprove(MORPHO_BLUE, collateralAmount), value: 0n });
+if (allowance < collateralAmountRaw) {
+  calls.push({ to: dUSDC, data: encodeApprove(MORPHO_BLUE, collateralAmountRaw), value: 0n });
 }
 calls.push({ to: MORPHO_BLUE, data: encodeSupplyCollateral(...), value: 0n });
 calls.push({ to: MORPHO_BLUE, data: encodeBorrow(...), value: 0n });
@@ -563,12 +595,12 @@ Unchanged from base plan — read/signing/backend/frontend namespaces remain per
 
 ### Integration test scenarios
 
-1. **Happy path end-to-end** (baseSepolia): mint → lend → yield accrual → borrow quote → openPosition → assert balances + position + events → closePosition({mode:'full'}) → assert `borrowShares === 0n` (dust check).
+1. **Happy path end-to-end** (baseSepolia): mint → lend → yield accrual → borrow quote → openPosition → assert balances + position + events → closePosition({mode:'full'}) → assert `position.borrowSharesRaw === 0n` (dust check).
 2. **Stale quote** (time + block), expect `QuoteStaleError`.
 3. **Calldata tamper** (per `field`), expect `CalldataMismatchError` with correct discriminator — unit test, not integration.
 4. **Oracle yield accrual**: vault yield increases → `maxBorrowable` grows without user action.
 5. **Lend close while pledged**: expect `CollateralLockedAsBorrowError`.
-6. **Full repay dust check**: after ≥100 blocks of accrual, full repay via shares → `borrowShares === 0n`.
+6. **Full repay dust check**: after ≥100 blocks of accrual, full repay via shares → `position.borrowSharesRaw === 0n`.
 
 Unit-test scenarios 2, 3; integration-test scenarios 1, 4, 5, 6.
 
@@ -577,12 +609,12 @@ Unit-test scenarios 2, 3; integration-test scenarios 1, 4, 5, 6.
 ### Functional
 
 - [ ] `getQuote({kind:'byCollateral'})` and `getQuote({kind:'byBorrow'})` produce mutually consistent results (round-trip within 1 wei).
-- [ ] `BorrowQuote` is deeply frozen; `quote.withBorrowAmount(x)` returns a new quote with recomputed `execution`, `healthFactor`, `liquidationPrice`, incremented `version`.
+- [ ] `BorrowQuote` is deeply frozen; `quote.withBorrowAmount(x)` returns a new quote with recomputed `execution`, `healthFactor`/`healthFactorRaw`, `liquidationPrice`/`liquidationPriceRaw`, incremented `version`.
 - [ ] `openPosition(quote)` rejects if `quote._tag !== 'BorrowQuote'` OR if `quote.version` doesn't match `quote.execution.signedVersion` (future-proofing for mutation detection).
-- [ ] `closePosition({mode:'full'})` post-condition `position.borrowShares === 0n`.
+- [ ] `closePosition({mode:'full'})` post-condition `position.borrowSharesRaw === 0n`.
 - [ ] `closePosition({mode:'partialAssets', assets})` does not withdraw collateral unless `withdrawCollateral: true`.
 - [ ] `MorphoCalldataValidator` throws `CalldataMismatchError` with correct `field` for each tamper case (7 cases); throws `{field:'decode'}` on random-bytes input.
-- [ ] Full-repay re-fetches `position.borrowShares` inside `_closePosition` — not from quote time.
+- [ ] Full-repay re-fetches `position.borrowSharesRaw` inside `_closePosition` — not from quote time.
 - [ ] `DynamicVaultOracle` constructor reverts on invalid `SCALE_FACTOR` or implausible `loanPerUnderlyingWad` (< 1e15 or > 1e21).
 - [ ] `DynamicVaultOracle.price()` fork-tested: monotonic increase under vault-yield simulation; donation attack moves price by less than virtual-share dilution bound.
 - [ ] `DeployMorphoBorrowMarket.s.sol` asserts `MORPHO_BLUE == EXPECTED_MORPHO_BLUE_FOR_CHAIN[chainId]` and `isLltvEnabled(86%)` before `createMarket`.
@@ -593,10 +625,10 @@ Unit-test scenarios 2, 3; integration-test scenarios 1, 4, 5, 6.
 - [ ] Approval and Borrow buttons each have independent loading; after approval confirms, CTA auto-advances without page refresh.
 - [ ] `ReviewBorrowModal` opens when projected HF < 1.2 and requires explicit checkbox to submit.
 - [ ] Quote countdown visible; auto-refresh at T-5s; hard-stop with "Refresh quote" when expired.
-- [ ] Repay input max clamped client-side to `position.borrowAssets`.
+- [ ] Repay input max clamped client-side to `position.debt` (human-readable; bigint equivalent is `position.debtRaw`).
 - [ ] `wallet.borrow` is always defined (null-namespace when no provider); method calls throw typed `BorrowProviderNotConfiguredError`.
 - [ ] `wallet.sendBatch(calls)` produces exactly one userOp with an `executeBatch` callData (unit test with mocked Privy client).
-- [ ] Allowance check skips approval when `allowance >= collateralAmount`.
+- [ ] Allowance check skips approval when `allowance >= collateralAmountRaw`.
 - [ ] `Lend.closePosition` on pledged dUSDC returns `CollateralLockedAsBorrowError`.
 - [ ] `maxBorrowSafetyBuffer` default is 0.95; bounds validated at config load.
 
