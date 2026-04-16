@@ -34,9 +34,9 @@ The borrow market uses **dUSDC (vault shares) as collateral**, not raw USDC. Thi
 A single new Morpho Blue market:
 - **loanToken:** OP_DEMO (what users borrow)
 - **collateralToken:** dUSDC (MetaMorpho vault shares -- yield-bearing)
-- **oracle:** New FixedPriceOracle pricing dUSDC in terms of OP
+- **oracle:** New dynamic oracle that calls `vault.convertToAssets()` to price dUSDC in terms of OP (tracks accrued vault yield)
 - **irm:** Same adaptive curve IRM used by the lending market
-- **lltv:** TBD (94.5% like the lending market, or more conservative)
+- **lltv:** 86% (conservative Morpho standard tier -- gives a health-factor buffer for yield-bearing collateral)
 
 No reverse market (OP collateral -> borrow USDC) is needed for the demo.
 
@@ -161,7 +161,7 @@ packages/sdk/src/
 - Rename `DeployMorphoMarket.s.sol` to `DeployMorphoLendMarket.s.sol`
 - New `DeployMorphoBorrowMarket.s.sol`:
   - Takes vault address (dUSDC) and OP address via env vars
-  - Deploys new FixedPriceOracle for dUSDC:OP pricing
+  - Deploys new dynamic oracle for dUSDC:OP pricing (reads `vault.convertToAssets()`)
   - Creates Morpho Blue market (loanToken=OP, collateralToken=dUSDC)
   - Mints OP and supplies directly to Morpho Blue as loanable liquidity
 - `deploy-demo.sh` updated to call both scripts sequentially, passing addresses between steps
@@ -194,24 +194,14 @@ packages/sdk/src/
 
 - **Market direction:** Single market only: dUSDC collateral -> borrow OP. No reverse market needed.
 - **Collateral source:** dUSDC vault shares used as yield-bearing collateral. Users earn yield while borrowing.
+- **Oracle pricing for dUSDC:** Dynamic oracle that calls `vault.convertToAssets()` to read real dUSDC value. Tracks accrued vault yield so collateral value grows with the vault.
+- **LLTV for borrow market:** 86% -- conservative Morpho standard tier, gives a health-factor buffer suited to yield-bearing collateral and a dynamic oracle.
+- **Max borrow safety buffer:** Configurable via cascading defaults: provider config -> BorrowConfig.settings. No hardcoded SDK default -- defaults to 100% (no buffer). Developers opt in to a safety margin if they want one.
 - **Deployment approach:** Separate .sol files (DeployMorphoLendMarket, DeployMorphoBorrowMarket), bash script orchestrates.
 - **Namespace pattern:** Full three namespaces (Base, Actions, Wallet) with generic shared abstractions.
 - **Type sharing:** Separate LendMarketId and BorrowMarketConfig types. SDK hashes MarketParams internally.
 - **Provider inheritance:** Shared BaseProvider abstract class for all three provider types.
 - **Calldata validation:** BorrowProvider validates calldata integrity from day one. Issue #373 tracks backporting to SwapProvider.
+- **Backend API endpoints:** Full parity with lend -- `/borrow/execute`, `/borrow/repay`, `/borrow/positions`, `/borrow/markets`, `/borrow/quote`.
+- **Activity log integration:** Add 'borrow' and 'repay' action types to ActivityLog. Update ActivityHighlightContext to highlight borrow tab on hover.
 - **Frontend approach:** Borrow tab reuses existing components, filters markets to those with collateral, Borrow/Repay toggle.
-
-## Open Questions
-
-None -- all questions resolved.
-
-## Additionally Resolved
-
-- **Backend API endpoints:** Yes, full parity with lend -- `/borrow/execute`, `/borrow/repay`, `/borrow/positions`, `/borrow/markets`, `/borrow/quote`.
-- **Activity log integration:** Yes -- add 'borrow' and 'repay' action types to ActivityLog. Update ActivityHighlightContext to highlight borrow tab on hover.
-
-## Also Resolved
-
-- **LLTV for borrow market:** Same 94.5% as lending market. Consistent, maximizes borrowing power for demo.
-- **Oracle pricing for dUSDC:** Dynamic oracle that calls `vault.convertToAssets()` to get real dUSDC value. More accurate than fixed 1:1.
-- **Max borrow safety buffer:** Configurable via cascading defaults: provider config -> BorrowConfig.settings. No hardcoded SDK default -- defaults to 100% (no buffer). Developers opt in to a safety margin if they want one.
