@@ -2,8 +2,8 @@ import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
 import { erc20Abi, formatUnits } from 'viem'
 
 import { LendProvider } from '@/lend/core/LendProvider.js'
-import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/lend/providers/morpho/contracts.js'
 import { getVault, getVaults } from '@/lend/providers/morpho/sdk.js'
+import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/providers/morpho/contracts.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {

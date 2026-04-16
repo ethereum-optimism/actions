@@ -12,7 +12,8 @@ import {
   fetchRewards,
   type RewardsBreakdown,
 } from '@/lend/providers/morpho/api.js'
-import { getMorphoContracts } from '@/lend/providers/morpho/contracts.js'
+import { getMorphoContracts } from '@/providers/morpho/contracts.js'
+import type { MorphoContracts } from '@/providers/morpho/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
@@ -21,7 +22,6 @@ import type {
   LendMarket,
   LendMarketConfig,
   LendMarketId,
-  MorphoContracts,
 } from '@/types/lend/index.js'
 import { SECONDS_PER_YEAR } from '@/utils/constants.js'
 

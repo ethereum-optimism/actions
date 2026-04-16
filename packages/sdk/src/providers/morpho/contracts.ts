@@ -14,7 +14,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type {
   MorphoContracts,
   MorphoContractsRegistry,
-} from '@/types/lend/contracts.js'
+} from '@/providers/morpho/types.js'
 
 /**
  * Morpho Blue core contract - same address on all chains via CREATE2

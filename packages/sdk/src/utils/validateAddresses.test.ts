@@ -18,7 +18,7 @@ import {
   WETH_GATEWAY_ADDRESSES_MAINNET,
   WETH_GATEWAY_ADDRESSES_TESTNET,
 } from '@/lend/providers/aave/addresses.js'
-import { MORPHO_CONTRACTS } from '@/lend/providers/morpho/contracts.js'
+import { MORPHO_CONTRACTS } from '@/providers/morpho/contracts.js'
 import { UNISWAP_ADDRESSES } from '@/swap/providers/uniswap/addresses.js'
 import { VELODROME_CHAINS } from '@/swap/providers/velodrome/addresses.js'
 import type { Asset } from '@/types/asset.js'
