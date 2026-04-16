@@ -33,7 +33,7 @@ export abstract class SmartWallet extends Wallet {
    * @param chainId
    */
   abstract sendBatch(
-    transactionData: TransactionData[],
+    transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<WaitForUserOperationReceiptReturnType>
 

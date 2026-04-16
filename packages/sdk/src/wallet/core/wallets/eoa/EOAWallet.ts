@@ -77,7 +77,7 @@ export abstract class EOAWallet extends Wallet {
    * @returns Promise resolving to array of transaction receipts (one per transaction)
    */
   async sendBatch(
-    transactionData: TransactionData[],
+    transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<EOATransactionReceipt[]> {
     const receipts: EOATransactionReceipt[] = []

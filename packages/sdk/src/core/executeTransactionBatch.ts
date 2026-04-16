@@ -33,5 +33,5 @@ export async function executeTransactionBatch(
   if (transactions.length === 1) {
     return wallet.send(transactions[0], chainId)
   }
-  return wallet.sendBatch([...transactions], chainId)
+  return wallet.sendBatch(transactions, chainId)
 }

@@ -218,7 +218,7 @@ export class DefaultSmartWallet extends SmartWallet {
    * @returns Promise resolving to the transaction hash
    */
   async sendBatch(
-    transactionData: TransactionData[],
+    transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<WaitForUserOperationReceiptReturnType> {
     const account = await this.getCoinbaseSmartAccount(chainId)

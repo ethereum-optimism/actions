@@ -44,7 +44,7 @@ export class TestWallet extends Wallet {
   }
 
   async sendBatch(
-    _transactionData: TransactionData[],
+    _transactionData: readonly TransactionData[],
     _chainId: SupportedChainId,
   ): Promise<EOATransactionReceipt[]> {
     return [] as unknown as EOATransactionReceipt[]

@@ -163,7 +163,7 @@ export abstract class Wallet {
    * @returns Promise resolving to the transaction hash
    */
   abstract sendBatch(
-    transactionData: TransactionData[],
+    transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<BatchTransactionReturnType>
 }
