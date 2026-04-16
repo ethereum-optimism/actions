@@ -34,6 +34,7 @@ function createMockChainManager(): ChainManager {
 
   return {
     getPublicClient: vi.fn().mockReturnValue(mockPublicClient),
+    tryGetPublicClient: vi.fn().mockReturnValue(undefined),
     getSupportedChains: vi.fn().mockReturnValue([CHAIN_ID]),
   } as unknown as ChainManager
 }

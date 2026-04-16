@@ -50,6 +50,16 @@ export class ChainManager {
   }
 
   /**
+   * Get public client for a specific chain, or undefined if not configured.
+   * Use this when the chain is optional (e.g. mainnet for ENS resolution).
+   * @param chainId - The chain ID to retrieve the public client for
+   * @returns PublicClient instance, or undefined if not configured
+   */
+  tryGetPublicClient(chainId: SupportedChainId): PublicClient | undefined {
+    return this.publicClients.get(chainId)
+  }
+
+  /**
    * Get bundler client for a specific chain
    * @param chainId - The chain ID to retrieve the bundler client for
    * @param account - SmartAccount to use with the bundler client
