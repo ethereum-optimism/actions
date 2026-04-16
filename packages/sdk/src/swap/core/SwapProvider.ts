@@ -3,6 +3,10 @@ import { formatUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import type {
+  SwapExecuteParamsResolved,
+  SwapQuoteParamsResolved,
+} from '@/ens/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/swap/core/markets.js'
 import type { SwapSettings } from '@/types/actions.js'
@@ -16,7 +20,6 @@ import type {
   SwapMarketConfig,
   SwapProviderConfig,
   SwapQuote,
-  SwapQuoteParams,
   SwapTransaction,
   SwapTransactionData,
 } from '@/types/swap/index.js'
@@ -40,6 +43,7 @@ import {
   validateNotBothAmounts,
   validateNotSameAsset,
   validateNotZeroAddress,
+  validateRecipient,
   validateSlippage,
 } from '@/utils/validation.js'
 
@@ -129,13 +133,14 @@ export abstract class SwapProvider<
    * @returns Transaction data ready for wallet execution
    */
   async execute(
-    params: SwapExecuteParams | SwapQuote,
+    params: SwapExecuteParamsResolved | SwapQuote,
   ): Promise<SwapTransaction> {
-    this.validateSwapExecute(params)
-
     if (QUOTE_DISCRIMINATOR in params) {
+      this.validateSwapExecute(params)
       return this.executeFromQuote(params)
     }
+
+    this.validateSwapExecute(params)
 
     // Raw params only
     validateNotBothAmounts(params.amountIn, params.amountOut)
@@ -149,7 +154,7 @@ export abstract class SwapProvider<
    * @param params - Quote parameters (assets, amounts, chain, slippage)
    * @returns SwapQuote with pricing, amounts, and pre-encoded calldata
    */
-  async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+  async getQuote(params: SwapQuoteParamsResolved): Promise<SwapQuote> {
     validateChainSupported(params.chainId, this.supportedChainIds())
     return this._getQuote(params)
   }
@@ -267,7 +272,7 @@ export abstract class SwapProvider<
    * @param params - Raw quote params from the user
    * @returns Resolved slippage, deadline, recipient, amountInRaw, and current timestamp
    */
-  protected resolveQuoteDefaults(params: SwapQuoteParams) {
+  protected resolveQuoteDefaults(params: SwapQuoteParamsResolved) {
     const slippage = params.slippage ?? this.defaultSlippage
     const now = Math.floor(Date.now() / 1000)
     const deadline = params.deadline ?? now + this.quoteExpirationSeconds
@@ -449,13 +454,7 @@ export abstract class SwapProvider<
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
-    this.validateRecipient(params)
-  }
-
-  private validateRecipient(params: SwapExecuteParams | SwapQuote): void {
-    if ('recipient' in params && params.recipient) {
-      validateNotZeroAddress(params.recipient, 'recipient')
-    }
+    validateRecipient('recipient' in params ? params.recipient : undefined)
   }
 
   private validateQuoteExpiration(quote: SwapQuote): void {
@@ -467,7 +466,7 @@ export abstract class SwapProvider<
     }
   }
 
-  private resolveParams(params: SwapExecuteParams): ResolvedSwapParams {
+  private resolveParams(params: SwapExecuteParamsResolved): ResolvedSwapParams {
     return {
       amountInRaw: parseAssetAmount(params.assetIn, params.amountIn),
       amountOutRaw: parseAssetAmount(params.assetOut, params.amountOut),
@@ -555,7 +554,9 @@ export abstract class SwapProvider<
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction>
 
-  protected abstract _getQuote(params: SwapQuoteParams): Promise<SwapQuote>
+  protected abstract _getQuote(
+    params: SwapQuoteParamsResolved,
+  ): Promise<SwapQuote>
 
   /**
    * Build provider-specific approval transactions for a swap.
