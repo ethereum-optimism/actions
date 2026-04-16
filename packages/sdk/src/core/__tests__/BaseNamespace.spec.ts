@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  BaseNamespace,
-  type NamespaceProvider,
-} from '@/core/BaseNamespace.js'
+import { BaseNamespace, type NamespaceProvider } from '@/core/BaseNamespace.js'
 
 class FakeProvider implements NamespaceProvider {
   constructor(private readonly chains: readonly number[]) {}

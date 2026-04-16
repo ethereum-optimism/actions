@@ -1,4 +1,6 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { executeTransactionBatch } from '@/core/executeTransactionBatch.js'
+import { BaseLendNamespace } from '@/lend/namespaces/BaseLendNamespace.js'
 import type {
   ClosePositionParams,
   GetPositionParams,
@@ -7,9 +9,8 @@ import type {
   LendTransaction,
   LendTransactionReceipt,
 } from '@/types/lend/index.js'
+import type { LendProviders } from '@/types/providers.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
-
-import { BaseLendNamespace, type LendProviders } from './BaseLendNamespace.js'
 
 /**
  * Wallet Lend Namespace
@@ -27,8 +28,6 @@ export class WalletLendNamespace extends BaseLendNamespace {
    * Open a lending position
    * @description Signs and sends a lend transaction from the wallet for the given amount and asset
    * @param params - Lending position parameters
-   * @param params.marketId - Market identifier to open position in
-   * @param params.amount - Amount to lend
    * @returns Promise resolving to transaction receipt
    */
   async openPosition(
@@ -41,14 +40,12 @@ export class WalletLendNamespace extends BaseLendNamespace {
       walletAddress: this.wallet.address,
     })
 
-    return this.executeTransaction(lendTransaction, params.marketId.chainId)
+    return this.dispatch(lendTransaction, params.marketId.chainId)
   }
 
   /**
    * Get position information for this wallet
    * @param params - Position query parameters
-   * @param params.marketId - Market identifier (required)
-   * @param params.asset - Asset filter (not yet supported)
    * @returns Promise resolving to position information
    */
   async getPosition(params: GetPositionParams): Promise<LendMarketPosition> {
@@ -68,8 +65,6 @@ export class WalletLendNamespace extends BaseLendNamespace {
   /**
    * Close a lending position (withdraw from market)
    * @param params - Position closing parameters
-   * @param params.marketId - Market identifier to close position in
-   * @param params.amount - Amount to withdraw
    * @returns Promise resolving to transaction receipt
    */
   async closePosition(
@@ -82,25 +77,17 @@ export class WalletLendNamespace extends BaseLendNamespace {
       walletAddress: this.wallet.address,
     })
 
-    return this.executeTransaction(closeTransaction, params.marketId.chainId)
+    return this.dispatch(closeTransaction, params.marketId.chainId)
   }
 
-  /**
-   * Execute a lend transaction with optional approval batching
-   */
-  private async executeTransaction(
+  private dispatch(
     transaction: LendTransaction,
     chainId: SupportedChainId,
   ): Promise<LendTransactionReceipt> {
     const { transactionData } = transaction
-
-    if (transactionData.approval) {
-      return this.wallet.sendBatch(
-        [transactionData.approval, transactionData.position],
-        chainId,
-      )
-    }
-
-    return this.wallet.send(transactionData.position, chainId)
+    const txs = transactionData.approval
+      ? [transactionData.approval, transactionData.position]
+      : [transactionData.position]
+    return executeTransactionBatch(this.wallet, txs, chainId)
   }
 }

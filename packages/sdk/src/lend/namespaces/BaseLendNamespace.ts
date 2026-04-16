@@ -1,22 +1,29 @@
+import { BaseNamespace } from '@/core/BaseNamespace.js'
+import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { AaveLendProvider } from '@/lend/providers/aave/AaveLendProvider.js'
 import type { MorphoLendProvider } from '@/lend/providers/morpho/MorphoLendProvider.js'
+import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   GetLendMarketParams,
   GetLendMarketsParams,
   LendMarket,
+  LendMarketConfig,
   LendMarketId,
 } from '@/types/lend/index.js'
 import type { LendProviders } from '@/types/providers.js'
 
 export type { LendProviders } from '@/types/providers.js'
 
+type ConfiguredLendProvider = LendProvider<LendProviderConfig>
+
 /**
  * Base Lend Namespace
- * @description Shared lending operations for Actions and Wallet namespaces
+ * @description Shared lending operations for Actions and Wallet namespaces.
  */
-export abstract class BaseLendNamespace {
-  constructor(protected readonly providers: LendProviders) {}
-
+export abstract class BaseLendNamespace extends BaseNamespace<
+  ConfiguredLendProvider,
+  LendProviders
+> {
   /**
    * Get all markets across all configured providers
    * @param params - Optional filtering parameters
@@ -40,27 +47,6 @@ export abstract class BaseLendNamespace {
   }
 
   /**
-   * Get supported chain IDs across all providers
-   * @returns Array of unique chain IDs supported by any provider
-   */
-  supportedChainIds(): number[] {
-    const allChains = this.getAllProviders().flatMap((p) =>
-      p.supportedChainIds(),
-    )
-    return [...new Set(allChains)]
-  }
-
-  /**
-   * Get all configured providers
-   * @returns Array of configured providers
-   */
-  protected getAllProviders(): Array<MorphoLendProvider | AaveLendProvider> {
-    return [this.providers.morpho, this.providers.aave].filter(
-      Boolean,
-    ) as Array<MorphoLendProvider | AaveLendProvider>
-  }
-
-  /**
    * Route a market to the correct provider
    * @param marketId - Market identifier to route
    * @returns The provider that handles this market
@@ -71,11 +57,11 @@ export abstract class BaseLendNamespace {
   ): MorphoLendProvider | AaveLendProvider {
     for (const provider of this.getAllProviders()) {
       const market = provider.config.marketAllowlist?.find(
-        (m: LendMarketId) =>
+        (m: LendMarketConfig) =>
           m.address.toLowerCase() === marketId.address.toLowerCase() &&
           m.chainId === marketId.chainId,
       )
-      if (market) return provider
+      if (market) return provider as MorphoLendProvider | AaveLendProvider
     }
 
     throw new Error(
