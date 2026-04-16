@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset } from '@/__mocks__/MockAssets.js'
 import { MockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import type { Asset } from '@/types/asset.js'
 import type { LendMarketConfig, LendMarketId } from '@/types/lend/index.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
@@ -101,7 +102,7 @@ describe('LendProvider', () => {
       const mockAsset = {
         metadata: { symbol: 'USDC', name: 'USD Coin' },
         address: { 84532: '0x123' as Address },
-      } as any
+      } as unknown as Asset
 
       const markets = await provider.getMarkets({ asset: mockAsset })
       expect(Array.isArray(markets)).toBe(true)

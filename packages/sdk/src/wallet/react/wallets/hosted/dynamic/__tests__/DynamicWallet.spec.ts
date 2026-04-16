@@ -140,7 +140,7 @@ describe('DynamicWallet', () => {
       })
     } catch (err) {
       expect((err as Error).message).toBe('Failed to initialize wallet')
-      expect((err as any).cause?.message).toBe(
+      expect((err as Error & { cause?: Error }).cause?.message).toBe(
         'Wallet not connected or not EVM compatible',
       )
     }

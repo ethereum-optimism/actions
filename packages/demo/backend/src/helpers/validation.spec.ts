@@ -1,3 +1,4 @@
+import type { Context } from 'hono'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
@@ -40,7 +41,10 @@ describe('validateRequest', () => {
         false,
       )
 
-      const result = await validateRequest(mockContext as any, ParamsSchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        ParamsSchema,
+      )
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -57,7 +61,10 @@ describe('validateRequest', () => {
         false,
       )
 
-      const result = await validateRequest(mockContext as any, ParamsSchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        ParamsSchema,
+      )
 
       expect(result.success).toBe(false)
       if (!result.success) {
@@ -88,7 +95,10 @@ describe('validateRequest', () => {
         false,
       )
 
-      const result = await validateRequest(mockContext as any, QuerySchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        QuerySchema,
+      )
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -100,7 +110,10 @@ describe('validateRequest', () => {
     it('should validate empty query parameters', async () => {
       const mockContext = createMockContext({}, {}, null, false)
 
-      const result = await validateRequest(mockContext as any, QuerySchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        QuerySchema,
+      )
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -122,7 +135,10 @@ describe('validateRequest', () => {
       const requestBody = { name: 'John', email: 'john@example.com', age: 25 }
       const mockContext = createMockContext({}, {}, requestBody, true)
 
-      const result = await validateRequest(mockContext as any, BodySchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        BodySchema,
+      )
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -134,7 +150,10 @@ describe('validateRequest', () => {
       const requestBody = { name: '', email: 'invalid-email', age: -5 }
       const mockContext = createMockContext({}, {}, requestBody, true)
 
-      const result = await validateRequest(mockContext as any, BodySchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        BodySchema,
+      )
 
       expect(result.success).toBe(false)
       if (!result.success) {
@@ -154,7 +173,10 @@ describe('validateRequest', () => {
       })
       const mockContext = createMockContext({}, {}, null, false)
 
-      const result = await validateRequest(mockContext as any, EmptyBodySchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        EmptyBodySchema,
+      )
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -185,7 +207,10 @@ describe('validateRequest', () => {
         true,
       )
 
-      const result = await validateRequest(mockContext as any, CombinedSchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        CombinedSchema,
+      )
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -204,7 +229,10 @@ describe('validateRequest', () => {
         true,
       )
 
-      const result = await validateRequest(mockContext as any, CombinedSchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        CombinedSchema,
+      )
 
       expect(result.success).toBe(false)
     })
@@ -225,7 +253,10 @@ describe('validateRequest', () => {
         true,
       )
 
-      const result = await validateRequest(mockContext as any, ParamsOnlySchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        ParamsOnlySchema,
+      )
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -246,7 +277,10 @@ describe('validateRequest', () => {
       // Mock json() to throw error
       mockContext.req.json.mockRejectedValue(new Error('Invalid JSON'))
 
-      const result = await validateRequest(mockContext as any, BodySchema)
+      const result = await validateRequest(
+        mockContext as unknown as Context,
+        BodySchema,
+      )
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -267,7 +301,7 @@ describe('validateRequest', () => {
       }
 
       const result = await validateRequest(
-        mockContext as any,
+        mockContext as unknown as Context,
         z.object({ params: z.object({}) }),
       )
 

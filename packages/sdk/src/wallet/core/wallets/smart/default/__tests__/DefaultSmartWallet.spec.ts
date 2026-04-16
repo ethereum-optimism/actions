@@ -145,7 +145,7 @@ describe('DefaultSmartWallet', () => {
       client: mockChainManager.getPublicClient(baseSepolia.id),
       owners: [mockSigner],
       nonce: BigInt(0),
-    } as any
+    } as unknown as Awaited<ReturnType<typeof toCoinbaseSmartAccount>>
     vi.mocked(toCoinbaseSmartAccount).mockResolvedValue(mockAccount)
     const bundlerClient = mockChainManager.getBundlerClient(
       chainId,
@@ -219,7 +219,7 @@ describe('DefaultSmartWallet', () => {
       client: mockChainManager.getPublicClient(baseSepolia.id),
       owners: [mockSigner],
       nonce: BigInt(0),
-    } as any
+    } as unknown as Awaited<ReturnType<typeof toCoinbaseSmartAccount>>
     vi.mocked(toCoinbaseSmartAccount).mockResolvedValue(mockAccount)
     const bundlerClient = mockChainManager.getBundlerClient(
       chainId,

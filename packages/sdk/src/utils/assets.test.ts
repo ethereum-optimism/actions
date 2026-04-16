@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset, MockWETHAsset } from '@/__mocks__/MockAssets.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { isAssetSupportedOnChain, parseAssetAmount } from '@/utils/assets.js'
 
 describe('Asset Utilities', () => {
@@ -10,7 +11,12 @@ describe('Asset Utilities', () => {
     })
 
     it('should return false for asset on unsupported chain', () => {
-      expect(isAssetSupportedOnChain(MockUSDCAsset, 999 as any)).toBe(false)
+      expect(
+        isAssetSupportedOnChain(
+          MockUSDCAsset,
+          999 as unknown as SupportedChainId,
+        ),
+      ).toBe(false)
     })
 
     it('should return correct metadata for MockUSDCAsset', () => {

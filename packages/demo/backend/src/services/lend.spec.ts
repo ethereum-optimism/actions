@@ -25,7 +25,9 @@ describe('Lend Service', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     const { getActions } = await import('../config/actions.js')
-    vi.mocked(getActions).mockReturnValue(mockActions as any)
+    vi.mocked(getActions).mockReturnValue(
+      mockActions as unknown as ReturnType<typeof getActions>,
+    )
   })
 
   describe('getMarkets', () => {
@@ -122,7 +124,9 @@ describe('Lend Service', () => {
   describe('closePosition', () => {
     it('should throw error when wallet not found', async () => {
       const { getWallet } = await import('./wallet.js')
-      vi.mocked(getWallet).mockResolvedValue(null as any)
+      vi.mocked(getWallet).mockResolvedValue(
+        null as unknown as Awaited<ReturnType<typeof getWallet>>,
+      )
 
       await expect(
         lendService.closePosition({

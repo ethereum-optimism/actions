@@ -117,10 +117,11 @@ describe('Morpho API Integration', () => {
 
       expect(vaultData).toBeDefined()
       expect(vaultData).not.toBeNull()
-      expect(vaultData.address.toLowerCase()).toBe(
+      if (!vaultData) throw new Error('unreachable')
+      expect(vaultData.address!.toLowerCase()).toBe(
         GAUNTLET_USDC_VAULT.toLowerCase(),
       )
-      expect(vaultData.state.rewards).toHaveLength(2)
+      expect(vaultData.state!.rewards).toHaveLength(2)
     })
 
     it('should return null when vault not found', async () => {
@@ -308,7 +309,8 @@ describe('Morpho API Integration', () => {
 
       expect(vaultData).toBeDefined()
       expect(vaultData).not.toBeNull()
-      expect(vaultData.address.toLowerCase()).toBe(
+      if (!vaultData) throw new Error('unreachable')
+      expect(vaultData.address!.toLowerCase()).toBe(
         GAUNTLET_USDC_VAULT.toLowerCase(),
       )
       expect(vaultData.state).toBeDefined()
