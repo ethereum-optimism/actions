@@ -137,6 +137,13 @@ Grep before writing new utilities, mocks, fixtures, or helpers. Known locations:
 
 If an existing helper nearly fits: extend or generalize it, don't write a second one. Follow neighbor-file naming conventions (`*Raw` suffix for bigint outputs; `getX` / `buildX` / `resolveX` / `validateX` verbs).
 
+### Abstraction hierarchy
+
+- **Shareable code does not live inside a specific provider.** If logic is general enough to be used by more than one provider (Morpho + Aave, Lend + Borrow, etc.), it belongs in a base class, a shared utility, or the cross-domain `packages/sdk/src/providers/<protocol>/` directory — not in a concrete provider file.
+- **Provider implementations stay thin.** `MorphoBorrowProvider`, `AaveLendProvider`, `UniswapSwapProvider` should hold only code that's specific to that exact protocol integration: contract calls, protocol-specific encoding, protocol-specific quirks. Validation, amount conversion, approval building, chain intersection, error wrapping, calldata verification — all belong higher up the hierarchy.
+- When you find yourself adding code to a concrete provider, ask: "Would a second concrete provider want this same code?" If yes, hoist to the base class or shared module before landing.
+- **Extraction trigger: the second usage, not the third.** The moment you would copy-paste from one provider to another, that's the signal to extract. Don't wait for the third duplication to "justify" the abstraction — by then the drift is already painful.
+
 ### Structure
 
 - **Single responsibility**: one concern per function, one domain per module. If a function name needs "and" to describe it, split it.
