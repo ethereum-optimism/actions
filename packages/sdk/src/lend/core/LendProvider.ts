@@ -67,12 +67,12 @@ export abstract class LendProvider<
    * All validation in public methods uses this set.
    * @returns Array of chain IDs usable through this provider instance
    */
-  supportedChainIds(): number[] {
+  supportedChainIds(): SupportedChainId[] {
     const configuredChains = this.chainManager.getSupportedChains()
     return this.protocolSupportedChainIds().filter(
-      (id) =>
+      (id): id is SupportedChainId =>
         (ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
-        (configuredChains as number[]).includes(id),
+        (configuredChains as readonly number[]).includes(id),
     )
   }
 
@@ -222,7 +222,7 @@ export abstract class LendProvider<
    * @returns true if chain is supported, false otherwise
    */
   protected isChainSupported(chainId: number): boolean {
-    return this.supportedChainIds().includes(chainId)
+    return (this.supportedChainIds() as readonly number[]).includes(chainId)
   }
 
   /**

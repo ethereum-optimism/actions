@@ -6,7 +6,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
  * implement this plus their domain-specific surface.
  */
 export interface NamespaceProvider {
-  supportedChainIds(): readonly number[]
+  supportedChainIds(): readonly SupportedChainId[]
 }
 
 /**
@@ -25,11 +25,11 @@ export abstract class BaseNamespace<
   /**
    * Union of chain IDs supported by any configured provider.
    */
-  supportedChainIds(): SupportedChainId[] {
+  supportedChainIds(): readonly SupportedChainId[] {
     const chainIds = new Set<SupportedChainId>()
     for (const provider of this.getAllProviders()) {
       for (const chainId of provider.supportedChainIds()) {
-        chainIds.add(chainId as SupportedChainId)
+        chainIds.add(chainId)
       }
     }
     return [...chainIds]

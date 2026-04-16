@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { BaseNamespace, type NamespaceProvider } from '@/core/BaseNamespace.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  BaseNamespace,
+  type NamespaceProvider,
+} from '@/core/BaseNamespace.js'
 
 class FakeProvider implements NamespaceProvider {
-  constructor(private readonly chains: readonly number[]) {}
-  supportedChainIds(): readonly number[] {
+  constructor(private readonly chains: readonly SupportedChainId[]) {}
+  supportedChainIds(): readonly SupportedChainId[] {
     return this.chains
   }
 }
@@ -44,11 +48,11 @@ describe('BaseNamespace', () => {
 
   it('unions supported chain ids across providers, deduplicated', () => {
     const morpho = new FakeProvider([1, 10, 8453])
-    const aave = new FakeProvider([10, 8453, 42161])
+    const aave = new FakeProvider([10, 8453, 42220])
     const ns = new TestNamespace({ morpho, aave })
 
-    expect(ns.supportedChainIds().sort((a, b) => a - b)).toEqual([
-      1, 10, 8453, 42161,
+    expect([...ns.supportedChainIds()].sort((a, b) => a - b)).toEqual([
+      1, 10, 8453, 42220,
     ])
   })
 })
