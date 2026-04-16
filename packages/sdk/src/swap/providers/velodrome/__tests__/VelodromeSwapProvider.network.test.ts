@@ -7,177 +7,74 @@
  * Run: pnpm test:network
  * Requires: anvil (from foundry) and network access
  */
-import { type ChildProcess, spawn } from 'node:child_process'
-
 import type { Address } from 'viem'
-import { createPublicClient, http } from 'viem'
-import { base, optimism } from 'viem/chains'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { ChainManager } from '@/services/ChainManager.js'
 import type { VelodromeSwapProviderConfig } from '@/swap/providers/velodrome/types.js'
 import { VelodromeSwapProvider } from '@/swap/providers/velodrome/VelodromeSwapProvider.js'
-import type { Asset } from '@/types/asset.js'
+import {
+  BASE_USDC,
+  BASE_WETH,
+  FORK_CHAINS,
+  OP_OP,
+  OP_USDC,
+  OP_WETH,
+} from '@/test/network/fixtures/index.js'
+import {
+  type AnvilFork,
+  startFork,
+  stopAllForks,
+} from '@/test/network/harness/index.js'
+import { createForkChainManager } from '@/test/network/harness/wallets.js'
 
-// ── Real mainnet assets ──
-
-const OP_USDC: Asset = {
-  type: 'erc20',
-  address: {
-    [optimism.id]: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85' as Address,
-  },
-  metadata: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
-}
-
-const OP_WETH: Asset = {
-  type: 'erc20',
-  address: {
-    [optimism.id]: '0x4200000000000000000000000000000000000006' as Address,
-  },
-  metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
-}
-
-const OP_OP: Asset = {
-  type: 'erc20',
-  address: {
-    [optimism.id]: '0x4200000000000000000000000000000000000042' as Address,
-  },
-  metadata: { name: 'Optimism', symbol: 'OP', decimals: 18 },
-}
-
-const BASE_USDC: Asset = {
-  type: 'erc20',
-  address: {
-    [base.id]: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address,
-  },
-  metadata: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
-}
-
-const BASE_WETH: Asset = {
-  type: 'erc20',
-  address: {
-    [base.id]: '0x4200000000000000000000000000000000000006' as Address,
-  },
-  metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
-}
-
-// ── Anvil fork helpers ──
-
-interface AnvilFork {
-  port: number
-  process: ChildProcess
-  rpcUrl: string
-}
-
-async function startAnvilFork(
-  forkUrl: string,
-  port: number,
-): Promise<AnvilFork> {
-  const proc = spawn(
-    'anvil',
-    ['--fork-url', forkUrl, '--port', String(port), '--silent'],
-    {
-      stdio: 'ignore',
-    },
-  )
-
-  const rpcUrl = `http://127.0.0.1:${port}`
-  for (let i = 0; i < 30; i++) {
-    try {
-      const res = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_blockNumber',
-          params: [],
-          id: 1,
-        }),
-      })
-      if (res.ok) return { port, process: proc, rpcUrl }
-    } catch {
-      // not ready yet
-    }
-    await new Promise((r) => setTimeout(r, 500))
-  }
-  proc.kill()
-  throw new Error(`Anvil fork on port ${port} did not start in time`)
-}
-
-function stopAnvilFork(fork: AnvilFork) {
-  fork.process.kill()
-}
-
-function createForkChainManager(
-  rpcUrl: string,
-  chain: typeof optimism | typeof base,
-): ChainManager {
-  const client = createPublicClient({ chain, transport: http(rpcUrl) })
-  return {
-    getPublicClient: () => client,
-    getSupportedChains: () => [chain.id],
-  } as unknown as ChainManager
-}
+let opFork: AnvilFork
+let baseFork: AnvilFork
 
 function createProvider(
-  chainId: SupportedChainId,
-  chainManager: ChainManager,
+  fork: AnvilFork,
   config: Partial<VelodromeSwapProviderConfig> = {},
 ): VelodromeSwapProvider {
+  const forkMap = new Map<SupportedChainId, AnvilFork>()
+  forkMap.set(fork.config.chainId, fork)
+  const chainManager = createForkChainManager(forkMap)
   return new VelodromeSwapProvider(
     { defaultSlippage: 0.005, ...config },
     chainManager,
   )
 }
 
-// ── Tests ──
-
 describe('VelodromeSwapProvider network fork tests', () => {
-  let opFork: AnvilFork
-  let baseFork: AnvilFork
-
   beforeAll(async () => {
-    const opRpc = process.env.OP_MAINNET_RPC || 'https://mainnet.optimism.io'
-    const baseRpc = process.env.BASE_MAINNET_RPC || 'https://mainnet.base.org'
-
     ;[opFork, baseFork] = await Promise.all([
-      startAnvilFork(opRpc, 18545),
-      startAnvilFork(baseRpc, 18546),
+      startFork(FORK_CHAINS.optimism),
+      startFork(FORK_CHAINS.base),
     ])
   }, 60_000)
 
-  afterAll(() => {
-    if (opFork) stopAnvilFork(opFork)
-    if (baseFork) stopAnvilFork(baseFork)
-  })
+  afterAll(() => stopAllForks())
 
   describe('Optimism — v2 router', () => {
     it('getQuote returns valid quote for USDC/OP volatile pool', async () => {
-      const chainManager = createForkChainManager(opFork.rpcUrl, optimism)
-      const provider = createProvider(
-        optimism.id as SupportedChainId,
-        chainManager,
-        {
-          marketAllowlist: [
-            {
-              assets: [OP_USDC, OP_OP],
-              stable: false,
-              chainId: optimism.id as SupportedChainId,
-            },
-          ],
-        },
-      )
+      const provider = createProvider(opFork, {
+        marketAllowlist: [
+          {
+            assets: [OP_USDC, OP_OP],
+            stable: false,
+            chainId: opFork.config.chainId,
+          },
+        ],
+      })
 
       const quote = await provider.getQuote({
         assetIn: OP_USDC,
         assetOut: OP_OP,
         amountIn: 10,
-        chainId: optimism.id as SupportedChainId,
+        chainId: opFork.config.chainId,
       })
 
       expect(quote.amountIn).toBe(10)
-      expect(quote.amountInRaw).toBe(10_000_000n) // 10 USDC = 10e6
+      expect(quote.amountInRaw).toBe(10_000_000n)
       expect(quote.amountOut).toBeGreaterThan(0)
       expect(quote.amountOutRaw).toBeGreaterThan(0n)
       expect(quote.price).toBeGreaterThan(0)
@@ -187,26 +84,21 @@ describe('VelodromeSwapProvider network fork tests', () => {
     })
 
     it('getQuote returns valid quote for USDC/WETH volatile pool', async () => {
-      const chainManager = createForkChainManager(opFork.rpcUrl, optimism)
-      const provider = createProvider(
-        optimism.id as SupportedChainId,
-        chainManager,
-        {
-          marketAllowlist: [
-            {
-              assets: [OP_USDC, OP_WETH],
-              stable: false,
-              chainId: optimism.id as SupportedChainId,
-            },
-          ],
-        },
-      )
+      const provider = createProvider(opFork, {
+        marketAllowlist: [
+          {
+            assets: [OP_USDC, OP_WETH],
+            stable: false,
+            chainId: opFork.config.chainId,
+          },
+        ],
+      })
 
       const quote = await provider.getQuote({
         assetIn: OP_USDC,
         assetOut: OP_WETH,
         amountIn: 100,
-        chainId: optimism.id as SupportedChainId,
+        chainId: opFork.config.chainId,
       })
 
       expect(quote.amountOut).toBeGreaterThan(0)
@@ -217,26 +109,21 @@ describe('VelodromeSwapProvider network fork tests', () => {
 
   describe('Base — v2 router (Aerodrome)', () => {
     it('getQuote returns valid quote for USDC/WETH volatile pool', async () => {
-      const chainManager = createForkChainManager(baseFork.rpcUrl, base)
-      const provider = createProvider(
-        base.id as SupportedChainId,
-        chainManager,
-        {
-          marketAllowlist: [
-            {
-              assets: [BASE_USDC, BASE_WETH],
-              stable: false,
-              chainId: base.id as SupportedChainId,
-            },
-          ],
-        },
-      )
+      const provider = createProvider(baseFork, {
+        marketAllowlist: [
+          {
+            assets: [BASE_USDC, BASE_WETH],
+            stable: false,
+            chainId: baseFork.config.chainId,
+          },
+        ],
+      })
 
       const quote = await provider.getQuote({
         assetIn: BASE_USDC,
         assetOut: BASE_WETH,
         amountIn: 100,
-        chainId: base.id as SupportedChainId,
+        chainId: baseFork.config.chainId,
       })
 
       expect(quote.amountOut).toBeGreaterThan(0)
@@ -247,26 +134,21 @@ describe('VelodromeSwapProvider network fork tests', () => {
 
   describe('Optimism — CL/Slipstream pool', () => {
     it('getQuote returns valid quote for WETH/USDC CL pool', async () => {
-      const chainManager = createForkChainManager(opFork.rpcUrl, optimism)
-      const provider = createProvider(
-        optimism.id as SupportedChainId,
-        chainManager,
-        {
-          marketAllowlist: [
-            {
-              assets: [OP_USDC, OP_WETH],
-              tickSpacing: 100,
-              chainId: optimism.id as SupportedChainId,
-            },
-          ],
-        },
-      )
+      const provider = createProvider(opFork, {
+        marketAllowlist: [
+          {
+            assets: [OP_USDC, OP_WETH],
+            tickSpacing: 100,
+            chainId: opFork.config.chainId,
+          },
+        ],
+      })
 
       const quote = await provider.getQuote({
         assetIn: OP_USDC,
         assetOut: OP_WETH,
         amountIn: 100,
-        chainId: optimism.id as SupportedChainId,
+        chainId: opFork.config.chainId,
       })
 
       expect(quote.amountOut).toBeGreaterThan(0)
@@ -279,26 +161,21 @@ describe('VelodromeSwapProvider network fork tests', () => {
 
   describe('Base — CL/Slipstream pool (Aerodrome)', () => {
     it('getQuote returns valid quote for USDC/WETH CL pool', async () => {
-      const chainManager = createForkChainManager(baseFork.rpcUrl, base)
-      const provider = createProvider(
-        base.id as SupportedChainId,
-        chainManager,
-        {
-          marketAllowlist: [
-            {
-              assets: [BASE_USDC, BASE_WETH],
-              tickSpacing: 100,
-              chainId: base.id as SupportedChainId,
-            },
-          ],
-        },
-      )
+      const provider = createProvider(baseFork, {
+        marketAllowlist: [
+          {
+            assets: [BASE_USDC, BASE_WETH],
+            tickSpacing: 100,
+            chainId: baseFork.config.chainId,
+          },
+        ],
+      })
 
       const quote = await provider.getQuote({
         assetIn: BASE_USDC,
         assetOut: BASE_WETH,
         amountIn: 100,
-        chainId: base.id as SupportedChainId,
+        chainId: baseFork.config.chainId,
       })
 
       expect(quote.amountOut).toBeGreaterThan(0)
@@ -307,27 +184,22 @@ describe('VelodromeSwapProvider network fork tests', () => {
       expect(quote.execution.swapCalldata).toMatch(/^0x/)
     })
 
-    it('execute(quote) produces valid transaction data', async () => {
-      const chainManager = createForkChainManager(baseFork.rpcUrl, base)
-      const provider = createProvider(
-        base.id as SupportedChainId,
-        chainManager,
-        {
-          marketAllowlist: [
-            {
-              assets: [BASE_USDC, BASE_WETH],
-              tickSpacing: 100,
-              chainId: base.id as SupportedChainId,
-            },
-          ],
-        },
-      )
+    it('execute returns valid transaction data', async () => {
+      const provider = createProvider(baseFork, {
+        marketAllowlist: [
+          {
+            assets: [BASE_USDC, BASE_WETH],
+            tickSpacing: 100,
+            chainId: baseFork.config.chainId,
+          },
+        ],
+      })
 
       const quote = await provider.getQuote({
         assetIn: BASE_USDC,
         assetOut: BASE_WETH,
         amountIn: 100,
-        chainId: base.id as SupportedChainId,
+        chainId: baseFork.config.chainId,
         recipient: '0x000000000000000000000000000000000000dEaD' as Address,
       })
 
