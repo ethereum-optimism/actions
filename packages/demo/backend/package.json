@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/ethereum-optimism/actions/issues"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "files": [
     "dist"
@@ -47,7 +47,7 @@
     "commander": "^13.1.0",
     "dotenv": "^16.4.5",
     "envalid": "^8.1.0",
-    "hono": "^4.12.12",
+    "hono": "^4.12.14",
     "viem": "^2.24.1",
     "zod": "^4.0.5"
   },

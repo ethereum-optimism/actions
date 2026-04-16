@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { SwapQuoteParamsResolved } from '@/ens/types.js'
 import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import type { SwapProviderName, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
@@ -11,15 +12,21 @@ import type {
   SwapQuote,
   SwapQuoteParams,
 } from '@/types/swap/index.js'
+import { passthroughResolver, type RecipientResolver } from '@/utils/ens.js'
 
 /**
  * Base swap namespace with shared read-only operations
  */
 export abstract class BaseSwapNamespace {
+  protected readonly resolveRecipient: RecipientResolver
+
   constructor(
     protected readonly providers: SwapProviders,
+    resolveRecipient?: RecipientResolver,
     protected readonly settings?: SwapSettings,
-  ) {}
+  ) {
+    this.resolveRecipient = resolveRecipient ?? passthroughResolver
+  }
 
   /**
    * Get a swap quote with pre-built execution data.
@@ -29,30 +36,31 @@ export abstract class BaseSwapNamespace {
    * @returns The best available SwapQuote
    */
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+    const recipient = await this.resolveRecipient(params.recipient)
+    const resolved: SwapQuoteParamsResolved = { ...params, recipient }
+
     // Explicit provider — skip routing
-    if (params.provider) {
-      const provider = this.resolveProvider(
-        params.provider,
-        params.assetIn,
-        params.assetOut,
-        params.chainId,
-      )
-      return provider.getQuote(params)
+    if (resolved.provider) {
+      return this.resolveProvider(
+        resolved.provider,
+        resolved.assetIn,
+        resolved.assetOut,
+        resolved.chainId,
+      ).getQuote(resolved)
     }
 
     // Price routing — quote all eligible providers, return best
     if (this.settings?.routing === 'price') {
-      return this.getBestQuote(params)
+      return this.getBestQuote(resolved)
     }
 
     // No routing — resolve single provider via fallback logic
-    const provider = this.resolveProvider(
+    return this.resolveProvider(
       undefined,
-      params.assetIn,
-      params.assetOut,
-      params.chainId,
-    )
-    return provider.getQuote(params)
+      resolved.assetIn,
+      resolved.assetOut,
+      resolved.chainId,
+    ).getQuote(resolved)
   }
 
   /**
@@ -61,7 +69,9 @@ export abstract class BaseSwapNamespace {
    * @returns The quote with the highest amountOut
    * @throws If no provider returns a valid quote
    */
-  private async getBestQuote(params: SwapQuoteParams): Promise<SwapQuote> {
+  private async getBestQuote(
+    params: SwapQuoteParamsResolved,
+  ): Promise<SwapQuote> {
     const quotes = await this.fetchAllQuotes(params)
 
     let best: SwapQuote | null = null
@@ -86,7 +96,9 @@ export abstract class BaseSwapNamespace {
    * @param params - Quote parameters
    * @returns Array of successful quotes (may be empty if all providers fail)
    */
-  private async fetchAllQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
+  private async fetchAllQuotes(
+    params: SwapQuoteParamsResolved,
+  ): Promise<SwapQuote[]> {
     const eligible = this.getAllProviders().filter((p) =>
       p.isMarketSupported(params.assetIn, params.assetOut, params.chainId),
     )
@@ -116,17 +128,21 @@ export abstract class BaseSwapNamespace {
    * @returns Array of SwapQuotes sorted by amountOut descending (best first)
    */
   async getQuotes(params: SwapQuoteParams): Promise<SwapQuote[]> {
-    if (params.provider) {
-      const provider = this.resolveProvider(
-        params.provider,
-        params.assetIn,
-        params.assetOut,
-        params.chainId,
-      )
-      return [await provider.getQuote(params)]
+    const recipient = await this.resolveRecipient(params.recipient)
+    const resolved: SwapQuoteParamsResolved = { ...params, recipient }
+
+    if (resolved.provider) {
+      return [
+        await this.resolveProvider(
+          resolved.provider,
+          resolved.assetIn,
+          resolved.assetOut,
+          resolved.chainId,
+        ).getQuote(resolved),
+      ]
     }
 
-    const quotes = await this.fetchAllQuotes(params)
+    const quotes = await this.fetchAllQuotes(resolved)
     return quotes.sort((a, b) =>
       a.amountOutRaw > b.amountOutRaw
         ? -1
