@@ -34,11 +34,7 @@ describe('executeTransactionBatch', () => {
   })
 
   it('calls wallet.sendBatch for multiple transactions', async () => {
-    const result = await executeTransactionBatch(
-      wallet,
-      [TX_A, TX_B],
-      CHAIN_ID,
-    )
+    const result = await executeTransactionBatch(wallet, [TX_A, TX_B], CHAIN_ID)
     expect(wallet.sendBatch).toHaveBeenCalledWith([TX_A, TX_B], CHAIN_ID)
     expect(wallet.send).not.toHaveBeenCalled()
     expect(result).toEqual({ kind: 'batch' })

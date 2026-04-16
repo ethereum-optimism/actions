@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { executeTransactionBatch } from '@/core/executeTransactionBatch.js'
 import type { SwapExecuteParamsResolved } from '@/ens/types.js'
 import { QUOTE_DISCRIMINATOR } from '@/swap/core/SwapProvider.js'
 import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
@@ -11,6 +12,7 @@ import type {
   SwapTransaction,
   WalletSwapParams,
 } from '@/types/swap/index.js'
+import type { TransactionData } from '@/types/transaction.js'
 import type { RecipientResolver } from '@/utils/ens.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
@@ -76,7 +78,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
     )
 
     const swapTx = await provider.execute(executeParams)
-    const receipt = await this.executeTransaction(swapTx, params.chainId)
+    const receipt = await this.dispatch(swapTx, params.chainId)
     return this.buildReceipt(swapTx, receipt)
   }
 
@@ -97,33 +99,17 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
     }
   }
 
-  /**
-   * Execute swap transaction with approval batching
-   */
-  private async executeTransaction(
+  private dispatch(
     swapTx: SwapTransaction,
     chainId: SupportedChainId,
   ): Promise<SwapReceipt['receipt']> {
     const { transactionData } = swapTx
-    const txs = []
-
-    // Add token approval if needed
-    if (transactionData.tokenApproval) {
-      txs.push(transactionData.tokenApproval)
-    }
-
-    // Add Permit2 approval if needed
+    const txs: TransactionData[] = []
+    if (transactionData.tokenApproval) txs.push(transactionData.tokenApproval)
     if (transactionData.permit2Approval) {
       txs.push(transactionData.permit2Approval)
     }
-
-    // Add main swap transaction
     txs.push(transactionData.swap)
-
-    // Execute as batch if multiple transactions, otherwise single
-    if (txs.length > 1) {
-      return this.wallet.sendBatch(txs, chainId)
-    }
-    return this.wallet.send(transactionData.swap, chainId)
+    return executeTransactionBatch(this.wallet, txs, chainId)
   }
 }

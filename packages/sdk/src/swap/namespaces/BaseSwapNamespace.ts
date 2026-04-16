@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { BaseNamespace } from '@/core/BaseNamespace.js'
 import type { SwapQuoteParamsResolved } from '@/ens/types.js'
 import type { SwapProvider } from '@/swap/core/SwapProvider.js'
 import type { SwapProviderName, SwapSettings } from '@/types/actions.js'
@@ -14,17 +15,23 @@ import type {
 } from '@/types/swap/index.js'
 import { passthroughResolver, type RecipientResolver } from '@/utils/ens.js'
 
+type ConfiguredSwapProvider = SwapProvider<SwapProviderConfig>
+
 /**
  * Base swap namespace with shared read-only operations
  */
-export abstract class BaseSwapNamespace {
+export abstract class BaseSwapNamespace extends BaseNamespace<
+  ConfiguredSwapProvider,
+  SwapProviders
+> {
   protected readonly resolveRecipient: RecipientResolver
 
   constructor(
-    protected readonly providers: SwapProviders,
+    providers: SwapProviders,
     resolveRecipient?: RecipientResolver,
     protected readonly settings?: SwapSettings,
   ) {
+    super(providers)
     this.resolveRecipient = resolveRecipient ?? passthroughResolver
   }
 
@@ -64,64 +71,7 @@ export abstract class BaseSwapNamespace {
   }
 
   /**
-   * Fetch quotes from all eligible providers in parallel and return the best.
-   * @param params - Quote parameters
-   * @returns The quote with the highest amountOut
-   * @throws If no provider returns a valid quote
-   */
-  private async getBestQuote(
-    params: SwapQuoteParamsResolved,
-  ): Promise<SwapQuote> {
-    const quotes = await this.fetchAllQuotes(params)
-
-    let best: SwapQuote | null = null
-    for (const quote of quotes) {
-      if (!best || quote.amountOutRaw > best.amountOutRaw) {
-        best = quote
-      }
-    }
-
-    if (!best) {
-      throw new Error(
-        `All providers failed to quote ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol}`,
-      )
-    }
-
-    return best
-  }
-
-  /**
-   * Fetch quotes from all eligible providers in parallel.
-   * Providers that don't support the pair or fail to quote are silently skipped.
-   * @param params - Quote parameters
-   * @returns Array of successful quotes (may be empty if all providers fail)
-   */
-  private async fetchAllQuotes(
-    params: SwapQuoteParamsResolved,
-  ): Promise<SwapQuote[]> {
-    const eligible = this.getAllProviders().filter((p) =>
-      p.isMarketSupported(params.assetIn, params.assetOut, params.chainId),
-    )
-
-    if (eligible.length === 0) {
-      throw new Error(
-        `No provider supports ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol} on chain ${params.chainId}`,
-      )
-    }
-
-    const results = await Promise.allSettled(
-      eligible.map((p) => p.getQuote(params)),
-    )
-
-    return results
-      .filter(
-        (r): r is PromiseFulfilledResult<SwapQuote> => r.status === 'fulfilled',
-      )
-      .map((r) => r.value)
-  }
-
-  /**
-   * Fetch quotes from all eligible providers in parallel.
+   * Fetch quotes from all providers with the wallet address as recipient.
    * Unlike getQuote(), returns all successful quotes instead of just the best.
    * If an explicit provider is specified, returns a single-element array from that provider.
    * @param params - Quote parameters (assets, amounts, chain, optional provider)
@@ -195,26 +145,6 @@ export abstract class BaseSwapNamespace {
   }
 
   /**
-   * Get all supported chain IDs across all providers
-   */
-  supportedChainIds(): SupportedChainId[] {
-    const chainIds = new Set<SupportedChainId>()
-    for (const provider of this.getAllProviders()) {
-      for (const chainId of provider.supportedChainIds()) {
-        chainIds.add(chainId)
-      }
-    }
-    return Array.from(chainIds)
-  }
-
-  // SwapProviders keys are optional (uniswap?, velodrome?, etc.) so filter out unconfigured ones
-  protected getAllProviders(): Array<SwapProvider<SwapProviderConfig>> {
-    return Object.values(this.providers).filter(
-      (p): p is SwapProvider<SwapProviderConfig> => p !== undefined,
-    )
-  }
-
-  /**
    * Resolve which provider handles a request.
    *
    * Precedence:
@@ -229,7 +159,7 @@ export abstract class BaseSwapNamespace {
     assetIn: Asset,
     assetOut: Asset,
     chainId: SupportedChainId,
-  ): SwapProvider<SwapProviderConfig> {
+  ): ConfiguredSwapProvider {
     const allProviders = this.getAllProviders()
     if (allProviders.length === 0) {
       throw new Error('No swap provider configured')
@@ -270,5 +200,62 @@ export abstract class BaseSwapNamespace {
     }
 
     return allProviders[0]
+  }
+
+  /**
+   * Fetch quotes from all eligible providers in parallel and return the best.
+   * @param params - Quote parameters
+   * @returns The quote with the highest amountOut
+   * @throws If no provider returns a valid quote
+   */
+  private async getBestQuote(
+    params: SwapQuoteParamsResolved,
+  ): Promise<SwapQuote> {
+    const quotes = await this.fetchAllQuotes(params)
+
+    let best: SwapQuote | null = null
+    for (const quote of quotes) {
+      if (!best || quote.amountOutRaw > best.amountOutRaw) {
+        best = quote
+      }
+    }
+
+    if (!best) {
+      throw new Error(
+        `All providers failed to quote ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol}`,
+      )
+    }
+
+    return best
+  }
+
+  /**
+   * Fetch quotes from all eligible providers in parallel.
+   * Providers that don't support the pair or fail to quote are silently skipped.
+   * @param params - Quote parameters
+   * @returns Array of successful quotes (may be empty if all providers fail)
+   */
+  private async fetchAllQuotes(
+    params: SwapQuoteParamsResolved,
+  ): Promise<SwapQuote[]> {
+    const eligible = this.getAllProviders().filter((p) =>
+      p.isMarketSupported(params.assetIn, params.assetOut, params.chainId),
+    )
+
+    if (eligible.length === 0) {
+      throw new Error(
+        `No provider supports ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol} on chain ${params.chainId}`,
+      )
+    }
+
+    const results = await Promise.allSettled(
+      eligible.map((p) => p.getQuote(params)),
+    )
+
+    return results
+      .filter(
+        (r): r is PromiseFulfilledResult<SwapQuote> => r.status === 'fulfilled',
+      )
+      .map((r) => r.value)
   }
 }
