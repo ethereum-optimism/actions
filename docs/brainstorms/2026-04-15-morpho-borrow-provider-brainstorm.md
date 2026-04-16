@@ -34,9 +34,9 @@ The borrow market uses **dUSDC (vault shares) as collateral**, not raw USDC. Thi
 A single new Morpho Blue market:
 - **loanToken:** OP_DEMO (what users borrow)
 - **collateralToken:** dUSDC (MetaMorpho vault shares -- yield-bearing)
-- **oracle:** New FixedPriceOracle pricing dUSDC in terms of OP
+- **oracle:** Dynamic oracle that calls `vault.convertToAssets()` to price dUSDC in terms of OP
 - **irm:** Same adaptive curve IRM used by the lending market
-- **lltv:** TBD (94.5% like the lending market, or more conservative)
+- **lltv:** 94.5% (same as lending market)
 
 No reverse market (OP collateral -> borrow USDC) is needed for the demo.
 
@@ -123,6 +123,8 @@ LendProvider, SwapProvider, BorrowProvider all extend BaseProvider.
 
 ### 7. Full Namespace Abstraction
 
+**Scope note:** This refactors existing Lend and Swap namespace code, Wallet.ts, and Actions.ts. Plan should sequence this as a prerequisite step before building Borrow namespaces, with its own review checkpoint.
+
 Refactor the namespace layer to be generic, reducing duplication across Lend/Swap/Borrow:
 
 **Shared base abstractions:**
@@ -200,18 +202,8 @@ packages/sdk/src/
 - **Provider inheritance:** Shared BaseProvider abstract class for all three provider types.
 - **Calldata validation:** BorrowProvider validates calldata integrity from day one. Issue #373 tracks backporting to SwapProvider.
 - **Frontend approach:** Borrow tab reuses existing components, filters markets to those with collateral, Borrow/Repay toggle.
-
-## Open Questions
-
-None -- all questions resolved.
-
-## Additionally Resolved
-
-- **Backend API endpoints:** Yes, full parity with lend -- `/borrow/execute`, `/borrow/repay`, `/borrow/positions`, `/borrow/markets`, `/borrow/quote`.
-- **Activity log integration:** Yes -- add 'borrow' and 'repay' action types to ActivityLog. Update ActivityHighlightContext to highlight borrow tab on hover.
-
-## Also Resolved
-
 - **LLTV for borrow market:** Same 94.5% as lending market. Consistent, maximizes borrowing power for demo.
 - **Oracle pricing for dUSDC:** Dynamic oracle that calls `vault.convertToAssets()` to get real dUSDC value. More accurate than fixed 1:1.
 - **Max borrow safety buffer:** Configurable via cascading defaults: provider config -> BorrowConfig.settings. No hardcoded SDK default -- defaults to 100% (no buffer). Developers opt in to a safety margin if they want one.
+- **Backend API endpoints:** Full parity with lend -- `/borrow/execute`, `/borrow/repay`, `/borrow/positions`, `/borrow/markets`, `/borrow/quote`.
+- **Activity log integration:** Add 'borrow' and 'repay' action types to ActivityLog. Update ActivityHighlightContext to highlight borrow tab on hover.
