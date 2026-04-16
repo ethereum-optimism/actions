@@ -80,6 +80,11 @@ export class WalletLendNamespace extends BaseLendNamespace {
     return this.dispatch(closeTransaction, params.marketId.chainId)
   }
 
+  /**
+   * Send a lend transaction, batching an ERC-20 approval ahead of the
+   * position call when one was provided by the provider. Defers to
+   * `executeTransactionBatch` for the actual 1-vs-N send/sendBatch dispatch.
+   */
   private dispatch(
     transaction: LendTransaction,
     chainId: SupportedChainId,

@@ -99,6 +99,11 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
     }
   }
 
+  /**
+   * Send a swap transaction, collecting any token/Permit2 approvals ahead
+   * of the swap call. Defers to `executeTransactionBatch` for the actual
+   * 1-vs-N send/sendBatch dispatch.
+   */
   private dispatch(
     swapTx: SwapTransaction,
     chainId: SupportedChainId,
