@@ -159,6 +159,22 @@ If an existing helper nearly fits: extend or generalize it, don't write a second
 - Comments explain **why**, not **what**. Reserve for non-obvious invariants, surprising behavior, or workaround context.
 - Delete dead code, unused imports, and commented-out blocks as you encounter them. No `// TODO: remove this` without an owner and a linked issue.
 
+### Introducing a new Provider
+
+When adding a new concrete provider to any SDK domain (Lend, Swap, Borrow, or a future domain):
+
+- **Extend the domain's existing base class** (`LendProvider`, `SwapProvider`, `BorrowProvider`). Do not roll your own abstraction parallel to these or skip the base.
+- **Implement the protected `_methods`, not the public ones.** Public methods (`openPosition`, `closePosition`, `getQuote`, etc.) live on the base and do the cross-provider work — validation, human-readable-to-wei conversion, approval building, calldata integrity verification. Your concrete class implements `_openPosition`, `_getQuote`, etc. If you find yourself overriding a public method, something is wrong with the base — hoist there, don't override here.
+- **Declare chain support via `protocolSupportedChainIds()`.** Return only chains where the protocol is actually deployed. The base intersects this with repo-wide and user-configured chains.
+- **Keep providers thin.** Only protocol-specific logic belongs inside the concrete class: contract calls, protocol-specific encoding, protocol quirks. No validation, no amount conversion, no allowlist checks, no error wrapping — those live on the base. Litmus test: if a second provider in the same domain would want this code, it belongs on the base or a shared utility, not in the provider file.
+- **Protocol-shared constants, ABIs, and registries go in `packages/sdk/src/providers/<protocol>/`** — not inside the domain directory. Anything that a Lend + Borrow pair of the same protocol could both use (contract addresses, IRM, ABI re-exports, market-id derivation) lives in this cross-domain home.
+- **Config shape parallels sibling providers.** `<Protocol><Domain>ProviderConfig` mirrors whatever the domain's other providers use (allowlist/blocklist, settings nesting, etc.). Don't invent a new config shape for one provider.
+- **Register in `types/providers.ts`**' domain-specific provider record (`LendProviders`, `SwapProviders`, etc.). Wire into `Actions.ts` and `Wallet.ts` following the existing construction pattern — users opt-in via `config.<domain>.<provider>`. Use the existing null-namespace proxy when the domain has one so `wallet.<domain>.<method>()` surfaces a typed error rather than silently no-oping.
+- **Ship a `Mock<Protocol><Domain>Provider`** in `__mocks__/` matching the existing mock shape (`MockedFunction` field reassignments in the constructor; see the domain's sibling mocks).
+- **Test with the subclass-to-expose-protected pattern** for any base-class behavior your provider exercises. Mock upstream SDKs and viem clients at their boundary; never mock pure utilities (`encodeFunctionData`, `decodeFunctionData`, `keccak256`, `encodeAbiParameters`).
+- **Errors are named concrete classes** (viem pattern) at the point they're thrown, not `throw new Error(string)`, when they expose something the caller needs to discriminate via `instanceof`.
+- **Document publicly** — JSDoc every public method with `@description` / `@param` / `@returns` / `@throws`. Update the SDK README's provider list.
+
 ### Enforcement
 
 - Run `pnpm typecheck && pnpm lint && pnpm test` before every commit.
