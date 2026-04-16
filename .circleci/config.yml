@@ -39,7 +39,7 @@ commands:
 jobs:
   publish-to-npm:
     docker:
-      - image: cimg/node:20.11
+      - image: cimg/node:22.14
     resource_class: large
     parameters:
       prepare-snapshot:
@@ -82,7 +82,7 @@ jobs:
   # Shared install and build step
   install-and-build:
     docker:
-      - image: cimg/node:20.11
+      - image: cimg/node:22.14
     resource_class: large
     steps:
       - setup

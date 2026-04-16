@@ -79,7 +79,7 @@
     "@turnkey/viem": ">=0.14.1"
   },
   "devDependencies": {
-    "@types/node": "^18",
+    "@types/node": "22.14.0",
     "dotenv": "^16.4.5",
     "eslint": "^9.31.0",
     "prettier": "^3.0.0",
