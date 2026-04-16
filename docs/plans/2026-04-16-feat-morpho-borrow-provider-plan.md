@@ -113,6 +113,49 @@ Each PR should land as a sequence of **minimal, atomic commits**. Guidelines:
 - **Don't bundle unrelated changes.** A commit that adds a new component and renames an unrelated file should be two commits.
 - **When a hook or CI check fails, fix the issue and make a new commit** — don't rewrite history with `--amend` on shared branches. Amending on your own un-pushed local branch is fine.
 
+## Engineering Principles
+
+Applies to every PR in this feature. Non-negotiable unless explicitly called out in review.
+
+### Testing
+
+- **Every new feature ships with tests.** Unit tests for logic in isolation; integration tests for cross-layer interactions (callbacks, userOp batching, error propagation).
+- Mock at boundaries (RPC, Privy, bundler). Do **not** mock pure utilities (`encodeFunctionData`, `decodeFunctionData`, `keccak256`, `encodeAbiParameters`) — those are load-bearing for calldata correctness.
+- A feature is "done" only when tests are green locally and in CI.
+- Every calldata-validator `field` discriminator, every error class, every public method gets at least one test case.
+
+### Reuse before invention
+
+Grep before writing new utilities, mocks, fixtures, or helpers. Known locations:
+
+- Mocks: `packages/sdk/src/__mocks__/`, `packages/sdk/src/lend/__mocks__/`, `packages/sdk/src/swap/__mocks__/`
+- Validation helpers: `packages/sdk/src/utils/validation.ts` (`validateChainSupported`, `validateAmountProvided`, `validateNotBothAmounts`, etc.)
+- Approval helpers: `packages/sdk/src/utils/approve.ts` (`buildErc20ApprovalTx`, `checkTokenAllowance`, `buildPermit2ApprovalTx`)
+- Asset math: `packages/sdk/src/utils/assets.ts` (`parseAssetAmount`, `formatAssetAmount`, `getAssetAddress`, `isNativeAsset`)
+- BigInt serialization (backend): `packages/demo/backend/src/utils/serializers.ts` (`serializeBigInt`)
+- Display formatters (frontend): `packages/demo/frontend/src/utils/formatters.ts`
+
+If an existing helper nearly fits: extend or generalize it, don't write a second one. Follow neighbor-file naming conventions (`*Raw` suffix for bigint outputs; `getX` / `buildX` / `resolveX` / `validateX` verbs).
+
+### Structure
+
+- **Single responsibility**: one concern per function, one domain per module. If a function name needs "and" to describe it, split it.
+- **Function length**: target ≤ 20 lines of logic. If longer, extract named sub-steps.
+- **File length**: target ≤ 200 lines. If longer, split along responsibility lines (pure helpers separate from provider glue; type definitions separate from implementations).
+- **Nesting**: max 2 levels of control flow inside a function. Prefer early returns and guard clauses over nested `if`/`else`.
+
+### Readability
+
+- Clear names beat clever tricks. `collateralAmountRaw` is better than `c`. No one-letter locals outside loop indices.
+- Comments explain **why**, not **what**. Reserve for non-obvious invariants, surprising behavior, or workaround context.
+- Delete dead code, unused imports, and commented-out blocks as you encounter them. No `// TODO: remove this` without an owner and a linked issue.
+
+### Enforcement
+
+- Run `pnpm typecheck && pnpm lint && pnpm test` before every commit.
+- **Zero new lint warnings.** Not just zero errors — a PR that silences warnings via `// eslint-disable` is a PR that needs justification in review. Treat the lint baseline as a ratchet: warnings only go down.
+- If a principle is intentionally violated to ship a time-critical fix, leave a `// TODO(@handle):` with a linked follow-up issue in the same PR — never in a later one.
+
 ## Technical Approach
 
 ### Architecture
@@ -643,6 +686,9 @@ Unit-test scenarios 2, 3; integration-test scenarios 1, 4, 5, 6.
 
 - [ ] Phase 1a merged separately with its own review.
 - [ ] Cleanup PR for `MorphoLendProvider._getPosition` decimal bug merged before Phase 3.
+- [ ] Every new public function/component ships with at least one test; every error class has a test that raises it.
+- [ ] Zero new lint warnings introduced (not just zero errors); no `eslint-disable` added without reviewer-approved justification.
+- [ ] `pnpm typecheck && pnpm lint && pnpm test` clean on every commit.
 - [ ] Integration test scenarios pass against baseSepolia deployment.
 - [ ] Docker images build cleanly for backend + frontend.
 - [ ] Default CI (`pnpm test` + `forge test`) completes in < 5 minutes; fork/integration tests behind nightly + `needs-integration` label.
