@@ -867,6 +867,7 @@ Integration-tested: happy path round-trip, dust-check, `Lend.closePosition` lock
 - Issue ethereum-optimism/actions#331 — `includeCalldata` flag for Swap quotes.
 - Issue ethereum-optimism/actions#373 — backport calldata validation to `SwapProvider`.
 - Issue ethereum-optimism/actions#379 — accept optional `*Raw` bigint amounts on namespace method inputs (applies to new Borrow namespaces from day one).
+- Issue ethereum-optimism/actions#380 — codify the Engineering Principles section into `CONTRIBUTING.md` / `CLAUDE.md` / `AGENTS.md` so it applies to every PR, not just borrow work.
 - Future: `MorphoLendProvider._getPosition` decimals fix (separate small PR).
 - Future: `getPositions` plural on LendProvider (API harmonization issue).
 
