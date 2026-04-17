@@ -2,10 +2,9 @@ import type { Address, PublicClient } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-
-import { EnsNamespace } from './EnsNamespace.js'
-import { EnsResolutionError, EnsRpcError } from './errors.js'
-import type { EnsName } from './types.js'
+import { EnsNamespace } from '@/services/ens/EnsNamespace.js'
+import { EnsResolutionError, EnsRpcError } from '@/services/ens/errors.js'
+import type { EnsName } from '@/services/ens/types.js'
 
 const REAL_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as Address
 const ENS_NAME = 'vitalik.eth' as EnsName
