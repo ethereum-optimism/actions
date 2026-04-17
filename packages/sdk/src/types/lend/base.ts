@@ -14,9 +14,9 @@ import type {
   TransactionReturnType,
 } from '@/wallet/core/wallets/abstract/types/index.js'
 
-export { LendProvider } from '@/lend/core/LendProvider.js'
-export { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
-export { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
+export { LendProvider } from '@/actions/lend/core/LendProvider.js'
+export { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
+export { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
 export type { TransactionData }
 
 /**

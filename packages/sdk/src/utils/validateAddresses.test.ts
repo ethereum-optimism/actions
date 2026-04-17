@@ -8,19 +8,19 @@ import {
 } from '@/__mocks__/MockPrivyClient.js'
 import { Actions } from '@/actions.js'
 import {
-  NATIVELY_SUPPORTED_ASSETS,
-  OP_DEMO,
-  USDC_DEMO,
-} from '@/constants/assets.js'
-import {
   POOL_ADDRESSES_MAINNET,
   POOL_ADDRESSES_TESTNET,
   WETH_GATEWAY_ADDRESSES_MAINNET,
   WETH_GATEWAY_ADDRESSES_TESTNET,
-} from '@/lend/providers/aave/addresses.js'
+} from '@/actions/lend/providers/aave/addresses.js'
+import { UNISWAP_ADDRESSES } from '@/actions/swap/providers/uniswap/addresses.js'
+import { VELODROME_CHAINS } from '@/actions/swap/providers/velodrome/addresses.js'
+import {
+  NATIVELY_SUPPORTED_ASSETS,
+  OP_DEMO,
+  USDC_DEMO,
+} from '@/constants/assets.js'
 import { MORPHO_CONTRACTS } from '@/providers/morpho/contracts.js'
-import { UNISWAP_ADDRESSES } from '@/swap/providers/uniswap/addresses.js'
-import { VELODROME_CHAINS } from '@/swap/providers/velodrome/addresses.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendMarketConfig } from '@/types/lend/index.js'
 import {

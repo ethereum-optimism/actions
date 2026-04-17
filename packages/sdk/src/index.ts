@@ -1,4 +1,14 @@
 export type { Actions } from '@/actions.js'
+export { LendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
+export {
+  SwapProvider,
+  type UniswapMarketConfig,
+  UniswapSwapProvider,
+  type UniswapSwapProviderConfig,
+  type VelodromeMarketConfig,
+  VelodromeSwapProvider,
+  type VelodromeSwapProviderConfig,
+} from '@/actions/swap/index.js'
 export {
   AAVE,
   ARB,
@@ -60,16 +70,6 @@ export {
   EnsRpcError,
   type NameServiceProvider,
 } from '@/ens/index.js'
-export { LendProvider, MorphoLendProvider } from '@/lend/index.js'
-export {
-  SwapProvider,
-  type UniswapMarketConfig,
-  UniswapSwapProvider,
-  type UniswapSwapProviderConfig,
-  type VelodromeMarketConfig,
-  VelodromeSwapProvider,
-  type VelodromeSwapProviderConfig,
-} from '@/swap/index.js'
 export type {
   ActionsConfig,
   ApyBreakdown,
