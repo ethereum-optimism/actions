@@ -1,5 +1,5 @@
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import { erc20Abi, formatUnits, type PublicClient } from 'viem'
+import { erc20Abi, erc4626Abi, formatUnits, type PublicClient } from 'viem'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/actions/lend/providers/morpho/sdk.js'
@@ -18,16 +18,6 @@ import type {
 } from '@/types/lend/index.js'
 import { getAssetAddress } from '@/utils/assets.js'
 import { findMarketInAllowlist } from '@/utils/markets.js'
-
-const ERC4626_ASSET_ABI = [
-  {
-    name: 'asset',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'address' }],
-  },
-] as const
 
 /**
  * Morpho lending provider implementation
@@ -207,15 +197,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       // Convert shares to underlying asset balance using convertToAssets
       const balance = await publicClient.readContract({
         address: params.marketId.address,
-        abi: [
-          {
-            name: 'convertToAssets',
-            type: 'function',
-            stateMutability: 'view',
-            inputs: [{ name: 'shares', type: 'uint256' }],
-            outputs: [{ name: '', type: 'uint256' }],
-          },
-        ],
+        abi: erc4626Abi,
         functionName: 'convertToAssets',
         args: [shares],
       })
@@ -251,7 +233,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
 
     const underlying = await publicClient.readContract({
       address: marketId.address,
-      abi: ERC4626_ASSET_ABI,
+      abi: erc4626Abi,
       functionName: 'asset',
     })
     return publicClient.readContract({

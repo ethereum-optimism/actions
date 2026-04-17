@@ -2,6 +2,7 @@ import type { Address, PublicClient } from 'viem'
 import { decodeFunctionData } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
+import { PERMIT2_ABI } from '@/utils/abi/permit2.js'
 import {
   buildApprovalTxIfNeeded,
   buildErc20ApprovalTx,
@@ -12,21 +13,6 @@ import {
   DEFAULT_PERMIT2_EXPIRY_SECONDS,
   getApprovalDeficit,
 } from '@/utils/approve.js'
-
-const PERMIT2_ABI = [
-  {
-    name: 'approve',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'token', type: 'address' },
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint160' },
-      { name: 'expiration', type: 'uint48' },
-    ],
-    outputs: [],
-  },
-] as const
 
 const TOKEN = '0x1111111111111111111111111111111111111111' as Address
 const OWNER = '0x2222222222222222222222222222222222222222' as Address
