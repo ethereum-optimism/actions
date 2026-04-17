@@ -1,5 +1,5 @@
 export type {
-  ReactHostedWalletProvidersSchema,
+  ReactEmbeddedWalletProvidersSchema,
   ReactProviderTypes,
-} from '@/wallet/react/providers/hosted/types/index.js'
-export { DynamicWallet } from '@/wallet/react/wallets/hosted/dynamic/DynamicWallet.js'
+} from '@/wallet/react/providers/embedded/types/index.js'
+export { DynamicWallet } from '@/wallet/react/wallets/embedded/dynamic/DynamicWallet.js'

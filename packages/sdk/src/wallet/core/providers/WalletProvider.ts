@@ -4,7 +4,7 @@ import type {
   CreateSmartWalletOptions,
   GetSmartWalletOptions,
 } from '@/types/wallet.js'
-import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import type { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
@@ -12,17 +12,17 @@ import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWall
 
 /**
  * Unified Wallet Provider
- * @description Main wallet provider that combines hosted wallet and smart wallet functionality.
+ * @description Main wallet provider that combines embedded wallet and smart wallet functionality.
  * Provides a unified interface for all wallet operations while supporting pluggable providers.
  */
 export class WalletProvider<
-  THostedProviderType extends string,
-  TToActionsMap extends Record<THostedProviderType, unknown>,
-  H extends HostedWalletProvider<THostedProviderType, TToActionsMap>,
+  TEmbeddedProviderType extends string,
+  TToActionsMap extends Record<TEmbeddedProviderType, unknown>,
+  H extends EmbeddedWalletProvider<TEmbeddedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   constructor(
-    public readonly hostedWalletProvider: H,
+    public readonly embeddedWalletProvider: H,
     public readonly smartWalletProvider: S,
   ) {}
 
@@ -49,32 +49,32 @@ export class WalletProvider<
     return this.smartWalletProvider.createWallet({ ...params })
   }
 
-  async hostedWalletToActionsWallet(
-    params: TToActionsMap[THostedProviderType],
+  async embeddedWalletToActionsWallet(
+    params: TToActionsMap[TEmbeddedProviderType],
   ): Promise<Wallet> {
-    return this.hostedWalletProvider.toActionsWallet(params)
+    return this.embeddedWalletProvider.toActionsWallet(params)
   }
 
   /**
-   * Create a viem LocalAccount signer from the hosted wallet
-   * @description Produces a signing account backed by the hosted wallet without wrapping
+   * Create a viem LocalAccount signer from the embedded wallet
+   * @description Produces a signing account backed by the embedded wallet without wrapping
    * it in a full Actions wallet. This is useful when you need to pass the signer
    * into an Actions smart wallet as a signer, for lower-level viem operations, or
    * for passing to other libraries that accept a viem `LocalAccount`.
    * @param params - Configuration for the signer
-   * @returns Promise resolving to a viem `LocalAccount` with the hosted wallet as the signer backend
+   * @returns Promise resolving to a viem `LocalAccount` with the embedded wallet as the signer backend
    */
   async createSigner(
-    params: TToActionsMap[THostedProviderType],
+    params: TToActionsMap[TEmbeddedProviderType],
   ): Promise<LocalAccount> {
-    return this.hostedWalletProvider.createSigner(params)
+    return this.embeddedWalletProvider.createSigner(params)
   }
 
   /**
    * Get an existing smart wallet with a provided signer
    * @description Retrieves a smart wallet using a directly provided signer. This is useful when
    * you already have a LocalAccount signer and want to access an existing smart wallet without
-   * going through the hosted wallet provider. Use this instead of getSmartWalletWithHostedSigner
+   * going through the embedded wallet provider. Use this instead of getSmartWalletWithEmbeddedSigner
    * when you have direct control over the signer.
    * @param signer - Local account to use for signing transactions on the smart wallet
    * @param getWalletParams - Wallet retrieval parameters
