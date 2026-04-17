@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   nx: nrwl/nx@1.7.0
-  utils: ethereum-optimism/circleci-utils@1.0.17
+  utils: ethereum-optimism/circleci-utils@1.0.27
 
 commands:
   prepare-snapshot:
@@ -39,7 +39,7 @@ commands:
 jobs:
   publish-to-npm:
     docker:
-      - image: cimg/node:20.11
+      - image: cimg/node:22.14
     resource_class: large
     parameters:
       prepare-snapshot:
@@ -48,25 +48,17 @@ jobs:
     steps:
       - setup
       - run:
+          name: Install npm with OIDC trusted publishing support
+          command: npm install -g npm@11.12.1
+      - run:
           name: Build projects
           environment:
             NPM_TOKEN: nada
           command: NODE_OPTIONS='--max-old-space-size=4096' pnpm nx run-many --target=build --parallel=1
       - run:
-          name: Check NPM Token
+          name: Obtain OIDC token for npm trusted publishing
           command: |
-            if [ -z "${NPM_TOKEN}" ]; then
-              echo "NPM_TOKEN is not set. Please set it in CircleCI project settings."
-              exit 1
-            fi
-      - run:
-          name: Configure NPM Token and Registry
-          command: |
-            npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-
-      - run:
-          name: Verify NPM Token
-          command: npm whoami
+            echo "export NPM_ID_TOKEN=$(circleci run oidc get --claims '{\"aud\": \"npm:registry.npmjs.org\"}')" >> "$BASH_ENV"
 
       - when:
           condition:
@@ -79,33 +71,88 @@ jobs:
           publish: 'pnpm release:publish'
           version: 'pnpm release:version'
 
-  check:
+  # Shared install and build step
+  install-and-build:
+    docker:
+      - image: cimg/node:22.14
+    resource_class: large
+    steps:
+      - setup
+      - run:
+          name: Build projects
+          command: NODE_OPTIONS='--max-old-space-size=4096' pnpm nx run-many --target=build --parallel=1
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  # SDK checks
+  check-sdk:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: large
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: TypeCheck SDK
+          command: cd packages/sdk && pnpm typecheck
+      - run:
+          name: Lint SDK
+          command: cd packages/sdk && pnpm lint
+      - run:
+          name: Test SDK
+          command: cd packages/sdk && pnpm test
+
+  # Backend checks
+  check-backend:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: large
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: TypeCheck Backend
+          command: cd packages/demo/backend && pnpm typecheck
+      - run:
+          name: Lint Backend
+          command: cd packages/demo/backend && pnpm lint
+      - run:
+          name: Test Backend
+          command: cd packages/demo/backend && pnpm test
+
+  # Frontend checks
+  check-frontend:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: large
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: TypeCheck Frontend
+          command: cd packages/demo/frontend && pnpm typecheck
+      - run:
+          name: Lint Frontend
+          command: cd packages/demo/frontend && pnpm lint
+      - run:
+          name: Test Frontend
+          command: cd packages/demo/frontend && pnpm test
+
+  # Contracts checks
+  check-contracts:
     docker:
       - image: cimg/node:20.11
     resource_class: large
     steps:
       - setup
       - run:
-          name: Run Build
-          command: NODE_OPTIONS='--max-old-space-size=4096' pnpm nx run-many --target=build --parallel=1
+          name: Build Contracts
+          command: cd packages/demo/contracts && pnpm build
       - run:
-          name: Run TypeChecker
-          command: pnpm typecheck
-      - run:
-          name: Run Linters
-          command: pnpm lint
-      - run:
-          name: Run SDK Tests
-          command: cd packages/sdk && pnpm test
-      - run:
-          name: Run Frontend Tests
-          command: cd packages/demo/frontend && pnpm test
-      - run:
-          name: Run Backend Tests
-          command: cd packages/demo/backend && pnpm test
-      - run:
-          name: Run Contracts Build and Tests
-          command: cd packages/demo/contracts && pnpm build && pnpm test
+          name: Test Contracts
+          command: cd packages/demo/contracts && pnpm test
 
 workflows:
   release:
@@ -113,7 +160,7 @@ workflows:
       - publish-to-npm:
           name: Publish new versions
           context:
-            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE && NPM_TOKEN
+            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE
             - circleci-repo-readonly-authenticated-github-token #needed for MISE
           filters:
             branches:
@@ -123,7 +170,7 @@ workflows:
           name: Publish snapshot versions
           prepare-snapshot: true
           context:
-            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE && NPM_TOKEN
+            - circleci-repo-actions # for GITHUB_TOKEN_GOVERNANCE
             - circleci-repo-readonly-authenticated-github-token #needed for MISE
           filters:
             branches:
@@ -131,7 +178,24 @@ workflows:
 
   check-workflow:
     jobs:
-      - check:
+      - install-and-build:
           context:
             - circleci-repo-readonly-authenticated-github-token
-
+      - check-sdk:
+          requires:
+            - install-and-build
+          context:
+            - circleci-repo-readonly-authenticated-github-token
+      - check-backend:
+          requires:
+            - install-and-build
+          context:
+            - circleci-repo-readonly-authenticated-github-token
+      - check-frontend:
+          requires:
+            - install-and-build
+          context:
+            - circleci-repo-readonly-authenticated-github-token
+      - check-contracts:
+          context:
+            - circleci-repo-readonly-authenticated-github-token
