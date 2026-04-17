@@ -6,10 +6,10 @@ import {
   EnsNotConfiguredError,
   EnsResolutionError,
   EnsRpcError,
-} from '@/services/ens/errors.js'
-import type { EnsName } from '@/services/ens/types.js'
+} from '@/services/nameservices/ens/errors.js'
+import type { EnsName } from '@/services/nameservices/ens/types.js'
 
-export { type EnsName, isEnsName } from '@/services/ens/types.js'
+export { type EnsName, isEnsName } from '@/services/nameservices/ens/types.js'
 
 /** Resolves an ENS name or address to a checksummed hex Address, or returns undefined. */
 export type RecipientResolver = (

@@ -8,7 +8,7 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   SwapExecuteParamsResolved,
   SwapQuoteParamsResolved,
-} from '@/services/ens/types.js'
+} from '@/services/nameservices/ens/types.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {

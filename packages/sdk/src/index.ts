@@ -68,12 +68,12 @@ export {
   EnsResolutionError,
   EnsRpcError,
   type NameServiceProvider,
-} from '@/services/ens/index.js'
+} from '@/services/nameservices/ens/index.js'
 export {
   type EnsName,
   isEnsName,
   resolveAddress,
-} from '@/services/ens/utils.js'
+} from '@/services/nameservices/ens/utils.js'
 export type {
   ActionsConfig,
   ApyBreakdown,

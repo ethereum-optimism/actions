@@ -2,7 +2,7 @@ import type { Address, PublicClient } from 'viem'
 import { zeroAddress } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
-import { resolveAddress } from '@/services/ens/utils.js'
+import { resolveAddress } from '@/services/nameservices/ens/utils.js'
 
 const REAL_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as Address
 const ZERO_ADDRESS = zeroAddress
@@ -43,7 +43,8 @@ describe('resolveAddress', () => {
     })
 
     it('throws EnsNotConfiguredError when no mainnet client is provided', async () => {
-      const { EnsNotConfiguredError } = await import('@/services/ens/errors.js')
+      const { EnsNotConfiguredError } =
+        await import('@/services/nameservices/ens/errors.js')
       await expect(resolveAddress('vitalik.eth')).rejects.toThrow(
         EnsNotConfiguredError,
       )

@@ -4,7 +4,7 @@ import { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespa
 import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { EnsNamespace } from '@/services/ens/index.js'
+import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'

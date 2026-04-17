@@ -1,7 +1,7 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { EnsName } from '@/services/ens/types.js'
+import type { EnsName } from '@/services/nameservices/ens/types.js'
 import type { SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'

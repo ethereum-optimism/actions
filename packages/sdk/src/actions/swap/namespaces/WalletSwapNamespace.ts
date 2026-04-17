@@ -1,8 +1,8 @@
 import { QUOTE_DISCRIMINATOR } from '@/actions/swap/core/SwapProvider.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { SwapExecuteParamsResolved } from '@/services/ens/types.js'
-import type { RecipientResolver } from '@/services/ens/utils.js'
+import type { SwapExecuteParamsResolved } from '@/services/nameservices/ens/types.js'
+import type { RecipientResolver } from '@/services/nameservices/ens/utils.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type {
   SwapProviders,

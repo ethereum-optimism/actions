@@ -20,7 +20,7 @@ import type {
 } from '@/actions/swap/providers/uniswap/types.js'
 import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { SwapQuoteParamsResolved } from '@/services/ens/types.js'
+import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
