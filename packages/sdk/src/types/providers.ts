@@ -1,5 +1,5 @@
-import type { LendProvider } from '@/lend/core/LendProvider.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
+import type { LendProvider } from '@/actions/lend/core/LendProvider.js'
+import type { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 

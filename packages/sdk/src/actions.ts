@@ -1,9 +1,12 @@
-import { EnsNamespace } from '@/ens/index.js'
-import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
-import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
+import { AaveLendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
+import { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
+import {
+  UniswapSwapProvider,
+  VelodromeSwapProvider,
+} from '@/actions/swap/index.js'
+import { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import { UniswapSwapProvider, VelodromeSwapProvider } from '@/swap/index.js'
-import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
+import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import type {
   ActionsConfig,
   AssetsConfig,
