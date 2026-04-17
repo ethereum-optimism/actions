@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { parseUnits } from 'viem'
 
+import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -22,7 +23,6 @@ import type {
   TransactionData,
 } from '@/types/lend/index.js'
 import { buildErc20ApprovalTx } from '@/utils/approve.js'
-import { validateMarketAsset } from '@/utils/markets.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
 /**

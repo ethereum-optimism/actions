@@ -1,4 +1,5 @@
 import type { LendProvider } from '@/actions/lend/core/LendProvider.js'
+import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
 import { BaseNamespace } from '@/actions/shared/BaseNamespace.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {
@@ -8,7 +9,6 @@ import type {
   LendMarketId,
 } from '@/types/lend/index.js'
 import type { LendProviders } from '@/types/providers.js'
-import { findMarketInAllowlist } from '@/utils/markets.js'
 
 export type { LendProviders } from '@/types/providers.js'
 

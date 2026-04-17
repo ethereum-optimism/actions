@@ -3,6 +3,7 @@ import { erc20Abi, erc4626Abi, formatUnits, type PublicClient } from 'viem'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/actions/lend/providers/morpho/sdk.js'
+import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
@@ -17,7 +18,6 @@ import type {
   LendTransaction,
 } from '@/types/lend/index.js'
 import { getAssetAddress } from '@/utils/assets.js'
-import { findMarketInAllowlist } from '@/utils/markets.js'
 
 /**
  * Morpho lending provider implementation
