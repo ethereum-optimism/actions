@@ -10,3 +10,8 @@ export {
   isEnsName,
   type NameServiceProvider,
 } from './types.js'
+export {
+  passthroughResolver,
+  type RecipientResolver,
+  resolveAddress,
+} from './utils.js'

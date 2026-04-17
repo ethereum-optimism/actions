@@ -4,11 +4,11 @@ import { formatUnits } from 'viem'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   SwapExecuteParamsResolved,
   SwapQuoteParamsResolved,
-} from '@/ens/types.js'
-import type { ChainManager } from '@/services/ChainManager.js'
+} from '@/services/ens/types.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {

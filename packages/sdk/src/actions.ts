@@ -5,8 +5,8 @@ import {
   VelodromeSwapProvider,
 } from '@/actions/swap/index.js'
 import { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
-import { EnsNamespace } from '@/ens/index.js'
 import { ChainManager } from '@/services/ChainManager.js'
+import { EnsNamespace } from '@/services/ens/index.js'
 import type {
   ActionsConfig,
   AssetsConfig,

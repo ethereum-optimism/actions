@@ -1,7 +1,8 @@
 import { QUOTE_DISCRIMINATOR } from '@/actions/swap/core/SwapProvider.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { SwapExecuteParamsResolved } from '@/ens/types.js'
+import type { SwapExecuteParamsResolved } from '@/services/ens/types.js'
+import type { RecipientResolver } from '@/services/ens/utils.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type {
   SwapProviders,
@@ -12,7 +13,6 @@ import type {
   WalletSwapParams,
 } from '@/types/swap/index.js'
 import type { TransactionData } from '@/types/transaction.js'
-import type { RecipientResolver } from '@/utils/ens.js'
 import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 

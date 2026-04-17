@@ -22,7 +22,7 @@ import type {
 } from '@/actions/swap/providers/velodrome/types.js'
 import { VELODROME } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { SwapQuoteParamsResolved } from '@/ens/types.js'
+import type { SwapQuoteParamsResolved } from '@/services/ens/types.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,

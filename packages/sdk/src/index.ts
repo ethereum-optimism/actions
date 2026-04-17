@@ -68,7 +68,12 @@ export {
   EnsResolutionError,
   EnsRpcError,
   type NameServiceProvider,
-} from '@/ens/index.js'
+} from '@/services/ens/index.js'
+export {
+  type EnsName,
+  isEnsName,
+  resolveAddress,
+} from '@/services/ens/utils.js'
 export type {
   ActionsConfig,
   ApyBreakdown,
@@ -107,7 +112,6 @@ export type {
   WalletSwapParams,
 } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
-export { type EnsName, isEnsName, resolveAddress } from '@/utils/ens.js'
 export * from '@/wallet/core/error/errors.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'

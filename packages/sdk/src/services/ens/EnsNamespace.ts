@@ -3,7 +3,7 @@ import { mainnet } from 'viem/chains'
 import { normalize } from 'viem/ens'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import { resolveAddress } from '@/utils/ens.js'
+import { resolveAddress } from '@/services/ens/utils.js'
 
 import { EnsResolutionError, EnsRpcError } from './errors.js'
 import {
