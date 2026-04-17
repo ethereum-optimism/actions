@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { retryOnStaleRead } from '@/core/utils/retryOnStaleRead.js'
+import { retryOnStaleRead } from '@/wallet/core/utils/retryOnStaleRead.js'
 
 describe('retryOnStaleRead', () => {
   it('returns immediately when value is fresh', async () => {

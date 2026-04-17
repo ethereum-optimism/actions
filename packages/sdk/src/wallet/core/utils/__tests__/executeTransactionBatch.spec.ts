@@ -1,8 +1,8 @@
 import type { Address } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { executeTransactionBatch } from '@/core/executeTransactionBatch.js'
 import type { TransactionData } from '@/types/transaction.js'
+import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 const CHAIN_ID = 10 as const

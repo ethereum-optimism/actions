@@ -61,7 +61,6 @@ export {
   ACTIONS_SUPPORTED_CHAIN_IDS,
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
-export * from '@/core/error/errors.js'
 export {
   type EnsInfo,
   EnsNamespace,
@@ -109,5 +108,6 @@ export type {
 } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 export { type EnsName, isEnsName, resolveAddress } from '@/utils/ens.js'
+export * from '@/wallet/core/error/errors.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'

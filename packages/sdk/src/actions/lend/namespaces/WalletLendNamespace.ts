@@ -1,6 +1,5 @@
 import { BaseLendNamespace } from '@/actions/lend/namespaces/BaseLendNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { executeTransactionBatch } from '@/core/executeTransactionBatch.js'
 import type {
   ClosePositionParams,
   GetPositionParams,
@@ -10,6 +9,7 @@ import type {
   LendTransactionReceipt,
 } from '@/types/lend/index.js'
 import type { LendProviders } from '@/types/providers.js'
+import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
