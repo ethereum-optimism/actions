@@ -1,6 +1,6 @@
+import { BaseNamespace } from '@/actions/shared/BaseNamespace.js'
 import type { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { BaseNamespace } from '@/core/BaseNamespace.js'
 import type { SwapQuoteParamsResolved } from '@/ens/types.js'
 import type { SwapProviderName, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'

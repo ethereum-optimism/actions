@@ -3,7 +3,7 @@ import { erc20Abi, formatUnits, type PublicClient } from 'viem'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/actions/lend/providers/morpho/sdk.js'
-import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/providers/morpho/contracts.js'
+import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {

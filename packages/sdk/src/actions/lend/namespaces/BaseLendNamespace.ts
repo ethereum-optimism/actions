@@ -1,5 +1,5 @@
 import type { LendProvider } from '@/actions/lend/core/LendProvider.js'
-import { BaseNamespace } from '@/core/BaseNamespace.js'
+import { BaseNamespace } from '@/actions/shared/BaseNamespace.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   GetLendMarketParams,

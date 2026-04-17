@@ -11,9 +11,9 @@ import {
   fetchRewards,
   type RewardsBreakdown,
 } from '@/actions/lend/providers/morpho/api.js'
+import { getMorphoContracts } from '@/actions/shared/morpho/contracts.js'
+import type { MorphoContracts } from '@/actions/shared/morpho/types.js'
 import { NATIVELY_SUPPORTED_ASSETS } from '@/constants/assets.js'
-import { getMorphoContracts } from '@/providers/morpho/contracts.js'
-import type { MorphoContracts } from '@/providers/morpho/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
