@@ -1,4 +1,5 @@
 import type { Address } from 'viem'
+import { isAddress } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
@@ -72,5 +73,15 @@ export function validateAssetOnChain(
     throw new Error(
       `Asset ${asset.metadata.symbol} not supported on chain ${chainId}`,
     )
+  }
+}
+
+/**
+ * Validate that a resolved recipient address is not the zero address.
+ * ENS names are skipped — only resolved `Address` values are checked.
+ */
+export function validateRecipient(recipient: string | undefined): void {
+  if (recipient && isAddress(recipient)) {
+    validateNotZeroAddress(recipient, 'recipient')
   }
 }

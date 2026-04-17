@@ -1,6 +1,7 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { EnsName } from '@/ens/types.js'
 import type { SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -88,8 +89,8 @@ export interface WalletSwapParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp. Defaults to now + 1 minute. */
   deadline?: number
-  /** Recipient address. Defaults to wallet address. */
-  recipient?: Address
+  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  recipient?: Address | EnsName
   /** Explicitly select a swap provider. Overrides routing config. */
   provider?: SwapProviderName
 }
@@ -156,8 +157,8 @@ export interface SwapQuoteParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp */
   deadline?: number
-  /** Recipient address */
-  recipient?: Address
+  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  recipient?: Address | EnsName
   /** Explicitly select a swap provider */
   provider?: SwapProviderName
 }
