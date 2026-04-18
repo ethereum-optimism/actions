@@ -1,12 +1,24 @@
 # Default owners
 * @ethereum-optimism/ecosystem
 
-# Infra and security files — reviewed by cloud-security
-# (rules below override the catch-all above; GitHub uses last-match-wins)
-.github/workflows/ @ethereum-optimism/cloud-security
-.circleci/ @ethereum-optimism/cloud-security
-Dockerfile @ethereum-optimism/cloud-security
-pnpm-lock.yaml @ethereum-optimism/cloud-security
-.nvmrc @ethereum-optimism/cloud-security
-mise.toml @ethereum-optimism/cloud-security
-netlify.toml @ethereum-optimism/cloud-security
+# Infra & security — cloud-security-team approval required
+# (rules below override the catch-all per GitHub last-match-wins semantics)
+
+# CI / CD pipelines
+.github/workflows/ @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+.circleci/ @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+
+# Container definitions
+Dockerfile @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+.dockerignore @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+*/docker-compose*.yml @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+
+# Dependency lockfile
+pnpm-lock.yaml @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+
+# Runtime version pinning
+.nvmrc @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+mise.toml @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
+
+# Deploy configuration
+netlify.toml @ethereum-optimism/ecosystem @ethereum-optimism/cloud-security
