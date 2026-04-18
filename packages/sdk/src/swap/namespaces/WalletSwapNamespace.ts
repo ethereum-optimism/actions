@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { SwapExecuteParamsResolved } from '@/ens/types.js'
 import { QUOTE_DISCRIMINATOR } from '@/swap/core/SwapProvider.js'
 import { BaseSwapNamespace } from '@/swap/namespaces/BaseSwapNamespace.js'
 import type { SwapSettings } from '@/types/actions.js'
@@ -10,6 +11,7 @@ import type {
   SwapTransaction,
   WalletSwapParams,
 } from '@/types/swap/index.js'
+import type { RecipientResolver } from '@/utils/ens.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
@@ -20,9 +22,10 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
   constructor(
     providers: SwapProviders,
     private readonly wallet: Wallet,
+    resolveRecipient?: RecipientResolver,
     settings?: SwapSettings,
   ) {
-    super(providers, settings)
+    super(providers, resolveRecipient, settings)
   }
 
   /**
@@ -54,11 +57,16 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    */
   async execute(params: WalletSwapParams | SwapQuote): Promise<SwapReceipt> {
     // Inject walletAddress — raw params need it for validation,
-    // quotes need it for on-chain allowance checks during approval building
-    const executeParams =
+    // quotes need it for on-chain allowance checks during approval building.
+    // Resolve ENS recipient here so providers only ever receive an Address.
+    const executeParams: SwapExecuteParamsResolved | SwapQuote =
       QUOTE_DISCRIMINATOR in params
         ? { ...params, recipient: this.wallet.address }
-        : { ...params, walletAddress: this.wallet.address }
+        : {
+            ...params,
+            walletAddress: this.wallet.address,
+            recipient: await this.resolveRecipient(params.recipient),
+          }
 
     const provider = this.resolveProvider(
       params.provider,
