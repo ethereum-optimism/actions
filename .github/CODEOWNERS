@@ -1,12 +1,12 @@
 # Default owners
 * @ethereum-optimism/ecosystem
 
-# Infra and security files — reviewed by cloud-security-team
+# Infra and security files — reviewed by cloud-security
 # (rules below override the catch-all above; GitHub uses last-match-wins)
-.github/workflows/ @ethereum-optimism/cloud-security-team
-.circleci/ @ethereum-optimism/cloud-security-team
-Dockerfile @ethereum-optimism/cloud-security-team
-pnpm-lock.yaml @ethereum-optimism/cloud-security-team
-.nvmrc @ethereum-optimism/cloud-security-team
-mise.toml @ethereum-optimism/cloud-security-team
-netlify.toml @ethereum-optimism/cloud-security-team
+.github/workflows/ @ethereum-optimism/cloud-security
+.circleci/ @ethereum-optimism/cloud-security
+Dockerfile @ethereum-optimism/cloud-security
+pnpm-lock.yaml @ethereum-optimism/cloud-security
+.nvmrc @ethereum-optimism/cloud-security
+mise.toml @ethereum-optimism/cloud-security
+netlify.toml @ethereum-optimism/cloud-security
