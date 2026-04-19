@@ -1,6 +1,8 @@
+import type { AccrualVault } from '@morpho-org/blue-sdk'
 import { mainnet } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
+import type { MorphoApiVault } from '@/actions/lend/providers/morpho/api.js'
 import {
   calculateBaseApy,
   calculateRewardsBreakdown,
@@ -20,7 +22,7 @@ describe('Vault Utilities', () => {
         allocations: new Map(),
       }
 
-      const result = calculateBaseApy(vault)
+      const result = calculateBaseApy(vault as unknown as AccrualVault)
       expect(result).toBe(0)
     })
 
@@ -44,7 +46,7 @@ describe('Vault Utilities', () => {
         ]),
       }
 
-      const result = calculateBaseApy(vault)
+      const result = calculateBaseApy(vault as unknown as AccrualVault)
 
       // Expected calculation:
       // Weighted APY = (5% * 500K) / 1M = 2.5% before fees
@@ -84,7 +86,7 @@ describe('Vault Utilities', () => {
         ]),
       }
 
-      const result = calculateBaseApy(vault)
+      const result = calculateBaseApy(vault as unknown as AccrualVault)
 
       // Expected calculation:
       // Weighted APY = (4% * 300K + 6% * 700K) / 1M = (1.2% + 4.2%) = 5.4%
@@ -124,7 +126,7 @@ describe('Vault Utilities', () => {
         ]),
       }
 
-      const result = calculateBaseApy(vault)
+      const result = calculateBaseApy(vault as unknown as AccrualVault)
 
       // Should only count the allocation with shares
       // 3% * (1 - 0.1) = 2.7%
@@ -149,7 +151,7 @@ describe('Vault Utilities', () => {
         ]),
       }
 
-      const result = calculateBaseApy(vault)
+      const result = calculateBaseApy(vault as unknown as AccrualVault)
       expect(result).toBe(0)
     })
   })
@@ -163,7 +165,10 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault as unknown as MorphoApiVault,
+        CHAIN_ID,
+      )
 
       expect(result[USDC_ADDRESS]).toBe(0)
       expect(result[MORPHO_ADDRESS]).toBe(0)
@@ -198,7 +203,10 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault as unknown as MorphoApiVault,
+        CHAIN_ID,
+      )
 
       expect(result[USDC_ADDRESS]).toBeCloseTo(0.03, 4)
       expect(result[MORPHO_ADDRESS]).toBeCloseTo(0.015, 4)
@@ -251,7 +259,10 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault as unknown as MorphoApiVault,
+        CHAIN_ID,
+      )
 
       // Expected calculation:
       // USDC: 2% * (600k / 1M) = 1.2%
@@ -298,7 +309,10 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault as unknown as MorphoApiVault,
+        CHAIN_ID,
+      )
 
       expect(result[USDC_ADDRESS]).toBeCloseTo(0.01, 4) // Vault-level
       expect(result[MORPHO_ADDRESS]).toBeCloseTo(0.015, 4) // Market-level (100% weight)
@@ -323,7 +337,10 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault as unknown as MorphoApiVault,
+        CHAIN_ID,
+      )
 
       expect(result[USDC_ADDRESS]).toBe(0)
       expect(result[MORPHO_ADDRESS]).toBe(0)
@@ -358,7 +375,10 @@ describe('Vault Utilities', () => {
         },
       }
 
-      const result = calculateRewardsBreakdown(apiVault, CHAIN_ID)
+      const result = calculateRewardsBreakdown(
+        apiVault as unknown as MorphoApiVault,
+        CHAIN_ID,
+      )
 
       // Should be zero because total supply is zero (weight = 0)
       expect(result[USDC_ADDRESS]).toBe(0)
