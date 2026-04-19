@@ -1,4 +1,9 @@
-import { type AccrualPosition, ChainId } from '@morpho-org/blue-sdk'
+import {
+  type AccrualPosition,
+  type AccrualVault,
+  ChainId,
+  type VaultMarketAllocation,
+} from '@morpho-org/blue-sdk'
 import {
   adaptiveCurveIrmAbi,
   blueAbi,
@@ -10,6 +15,7 @@ import type { Address, PublicClient } from 'viem'
 import { NATIVELY_SUPPORTED_ASSETS } from '@/constants/assets.js'
 import {
   fetchRewards,
+  type MorphoApiVault,
   type RewardsBreakdown,
 } from '@/lend/providers/morpho/api.js'
 import { getMorphoContracts } from '@/lend/providers/morpho/contracts.js'
@@ -71,7 +77,7 @@ function buildEmptyRewards(
  * @param vault - Vault data from Morpho SDK
  * @returns Base APY (before rewards, after fees)
  */
-export function calculateBaseApy(vault: any): number {
+export function calculateBaseApy(vault: AccrualVault): number {
   try {
     if (vault.totalAssets === 0n) {
       return 0
@@ -81,7 +87,7 @@ export function calculateBaseApy(vault: any): number {
     const allocationsArray = Array.from(vault.allocations.values())
 
     const totalWeightedApy = allocationsArray.reduce(
-      (total: bigint, allocation: any) => {
+      (total: bigint, allocation: VaultMarketAllocation) => {
         const position: AccrualPosition = allocation.position
         const market = position.market
 
@@ -470,7 +476,7 @@ export async function findBestVaultForAsset(
  * @returns Complete APY breakdown
  */
 export function calculateApyBreakdown(
-  vault: any,
+  vault: AccrualVault,
   rewardsBreakdown: RewardsBreakdown,
 ): ApyBreakdown {
   // 1. Calculate base APY from SDK data (before fees)
@@ -517,7 +523,7 @@ function categorizeRewardAsset(
  * @returns Detailed rewards breakdown
  */
 export function calculateRewardsBreakdown(
-  apiVault: any,
+  apiVault: MorphoApiVault,
   chainId: number,
   marketAsset?: Asset,
 ): RewardsBreakdown {
@@ -553,12 +559,9 @@ export function calculateRewardsBreakdown(
 
   // Calculate market-level rewards (weighted by allocation)
   if (apiVault.state?.allocation && apiVault.state.allocation.length > 0) {
-    const totalSupplyUsd = apiVault.state.allocation.reduce(
-      (total: number, alloc: any) => {
-        return total + (alloc.supplyAssetsUsd || 0)
-      },
-      0,
-    )
+    const totalSupplyUsd = apiVault.state.allocation.reduce((total, alloc) => {
+      return total + (alloc.supplyAssetsUsd || 0)
+    }, 0)
 
     for (const allocation of apiVault.state.allocation) {
       if (

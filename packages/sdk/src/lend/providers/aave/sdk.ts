@@ -1,5 +1,5 @@
 import { UiPoolDataProvider } from '@aave/contract-helpers'
-import { formatReserves } from '@aave/math-utils'
+import { formatReserves, type FormatReserveUSDResponse } from '@aave/math-utils'
 import { providers } from 'ethers'
 import type { Address } from 'viem'
 
@@ -64,7 +64,7 @@ function findMarketInAllowlist(
  * @returns APY breakdown with native APY and rewards
  */
 export function calculateApyBreakdown(reserve: {
-  formattedReserve?: any
+  formattedReserve?: FormatReserveUSDResponse
 }): ApyBreakdown {
   // Get supply APY from formatted reserve data
   const supplyApy = reserve.formattedReserve?.supplyAPY

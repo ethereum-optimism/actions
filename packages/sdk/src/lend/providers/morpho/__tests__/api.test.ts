@@ -117,10 +117,10 @@ describe('Morpho API Integration', () => {
 
       expect(vaultData).toBeDefined()
       expect(vaultData).not.toBeNull()
-      expect(vaultData.address.toLowerCase()).toBe(
+      expect(vaultData!.address.toLowerCase()).toBe(
         GAUNTLET_USDC_VAULT.toLowerCase(),
       )
-      expect(vaultData.state.rewards).toHaveLength(2)
+      expect(vaultData!.state!.rewards).toHaveLength(2)
     })
 
     it('should return null when vault not found', async () => {
@@ -308,10 +308,10 @@ describe('Morpho API Integration', () => {
 
       expect(vaultData).toBeDefined()
       expect(vaultData).not.toBeNull()
-      expect(vaultData.address.toLowerCase()).toBe(
+      expect(vaultData!.address.toLowerCase()).toBe(
         GAUNTLET_USDC_VAULT.toLowerCase(),
       )
-      expect(vaultData.state).toBeDefined()
+      expect(vaultData!.state).toBeDefined()
     }, 30000)
 
     it('should fetch and calculate rewards breakdown', async () => {
