@@ -2,42 +2,10 @@ import type { Address, PublicClient } from 'viem'
 import { encodeFunctionData, erc20Abi, maxUint256 } from 'viem'
 
 import type { TransactionData } from '@/types/transaction.js'
+import { PERMIT2_ABI } from '@/utils/abi/permit2.js'
 
 /** Default Permit2 approval expiry: 30 days in seconds */
 export const DEFAULT_PERMIT2_EXPIRY_SECONDS = 30 * 24 * 60 * 60
-
-/**
- * Permit2 ABI (subset for approvals)
- */
-const PERMIT2_ABI = [
-  {
-    name: 'allowance',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'token', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    outputs: [
-      { name: 'amount', type: 'uint160' },
-      { name: 'expiration', type: 'uint48' },
-      { name: 'nonce', type: 'uint48' },
-    ],
-  },
-  {
-    name: 'approve',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'token', type: 'address' },
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint160' },
-      { name: 'expiration', type: 'uint48' },
-    ],
-    outputs: [],
-  },
-] as const
 
 /**
  * Permit2 allowance info
