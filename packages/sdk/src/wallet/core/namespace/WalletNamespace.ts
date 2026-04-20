@@ -12,14 +12,26 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 
 function isLocalAccount(value: unknown): value is LocalAccount {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'type' in value &&
-    (value as Record<string, unknown>).type === 'local' &&
-    'signMessage' in value &&
-    'signTransaction' in value
-  )
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+  const record = value as Record<string, unknown>
+  if (record.type !== 'local') {
+    return false
+  }
+  if (typeof record.address !== 'string') {
+    return false
+  }
+  if (
+    typeof record.signMessage !== 'function' ||
+    typeof record.signTransaction !== 'function'
+  ) {
+    return false
+  }
+  if ('signTypedData' in record && typeof record.signTypedData !== 'function') {
+    return false
+  }
+  return true
 }
 
 /**

@@ -66,7 +66,7 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
     this.register<'local'>({
       type: 'local',
       validateOptions(options): options is NodeOptionsMap['local'] {
-        return options === undefined || options === null
+        return options === undefined
       },
       async create({
         chainManager,

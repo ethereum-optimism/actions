@@ -101,7 +101,9 @@ describe('NodeHostedWalletProviderRegistry', () => {
 
     expect(factory.type).toBe('local')
     expect(factory.validateOptions?.(undefined)).toBe(true)
-    expect(factory.validateOptions?.(null)).toBe(true)
+    expect(
+      factory.validateOptions?.(null as unknown as NodeOptionsMap['local']),
+    ).toBe(false)
     expect(factory.validateOptions?.({})).toBe(false)
     expect(factory.validateOptions?.('something')).toBe(false)
   })
