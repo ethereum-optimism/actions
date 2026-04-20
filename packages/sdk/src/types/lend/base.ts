@@ -3,6 +3,10 @@ import type { Address } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { LendProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import type {
+  FilterAssetChain,
+  TransactionOptions,
+} from '@/types/common/index.js'
 // Import and re-export shared transaction type for backwards compatibility
 import type { TransactionData } from '@/types/transaction.js'
 import type {
@@ -10,9 +14,9 @@ import type {
   TransactionReturnType,
 } from '@/wallet/core/wallets/abstract/types/index.js'
 
-export { LendProvider } from '@/lend/core/LendProvider.js'
-export { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
-export { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
+export { LendProvider } from '@/actions/lend/core/LendProvider.js'
+export { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
+export { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
 export type { TransactionData }
 
 /**
@@ -187,19 +191,6 @@ export interface LendMarket {
 }
 
 /**
- * Lending options
- * @description Configuration options for lending operations
- */
-export interface LendOptions {
-  /** Deadline for transaction (timestamp) */
-  deadline?: number
-  /** Gas limit override */
-  gasLimit?: bigint
-  /** Gas price override */
-  gasPrice?: bigint
-}
-
-/**
  * Individual lending provider configuration
  * @description Configuration for a single lending provider
  */
@@ -238,7 +229,7 @@ export interface LendOpenPositionBaseParams {
   /** Wallet address for receiving shares and as owner (auto-populated by WalletLendNamespace) */
   walletAddress?: Address
   /** Optional lending configuration */
-  options?: LendOptions
+  options?: TransactionOptions
 }
 
 /**
@@ -277,7 +268,7 @@ export interface LendClosePositionParams {
   /** Wallet address for receiving assets and as owner */
   walletAddress: Address
   /** Optional withdrawal configuration */
-  options?: LendOptions
+  options?: TransactionOptions
 }
 
 /**
@@ -294,7 +285,7 @@ export interface ClosePositionParams {
   /** Wallet address for receiving assets and as owner (auto-populated by WalletLendNamespace) */
   walletAddress?: Address
   /** Optional withdrawal configuration */
-  options?: LendOptions
+  options?: TransactionOptions
 }
 
 /**
@@ -306,17 +297,6 @@ export interface GetPositionParams {
   marketId?: LendMarketId
   /** Optional asset to filter positions by */
   asset?: Asset
-}
-
-/**
- * Common filter parameters for asset and chain
- * @description Base interface for filtering by asset and/or chain
- */
-export interface FilterAssetChain {
-  /** Optional asset to filter by */
-  asset?: Asset
-  /** Optional chain ID to filter by */
-  chainId?: SupportedChainId
 }
 
 /**

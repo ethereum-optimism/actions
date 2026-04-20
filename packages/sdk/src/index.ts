@@ -1,4 +1,14 @@
 export type { Actions } from '@/actions.js'
+export { LendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
+export {
+  SwapProvider,
+  type UniswapMarketConfig,
+  UniswapSwapProvider,
+  type UniswapSwapProviderConfig,
+  type VelodromeMarketConfig,
+  VelodromeSwapProvider,
+  type VelodromeSwapProviderConfig,
+} from '@/actions/swap/index.js'
 export {
   AAVE,
   ARB,
@@ -51,7 +61,6 @@ export {
   ACTIONS_SUPPORTED_CHAIN_IDS,
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
-export * from '@/core/error/errors.js'
 export {
   type EnsInfo,
   EnsNamespace,
@@ -59,17 +68,12 @@ export {
   EnsResolutionError,
   EnsRpcError,
   type NameServiceProvider,
-} from '@/ens/index.js'
-export { LendProvider, MorphoLendProvider } from '@/lend/index.js'
+} from '@/services/nameservices/ens/index.js'
 export {
-  SwapProvider,
-  type UniswapMarketConfig,
-  UniswapSwapProvider,
-  type UniswapSwapProviderConfig,
-  type VelodromeMarketConfig,
-  VelodromeSwapProvider,
-  type VelodromeSwapProviderConfig,
-} from '@/swap/index.js'
+  type EnsName,
+  isEnsName,
+  resolveAddress,
+} from '@/services/nameservices/ens/utils.js'
 export type {
   ActionsConfig,
   ApyBreakdown,
@@ -82,7 +86,6 @@ export type {
   LendMarketMetadata,
   LendMarketPosition,
   LendMarketSupply,
-  LendOptions,
   LendProviderConfig,
   LendTransaction,
   LendTransactionReceipt,
@@ -103,11 +106,12 @@ export type {
   SwapTransaction,
   TokenBalance,
   TransactionData,
+  TransactionOptions,
   UserOperationTransactionReceipt,
   WalletConfig,
   WalletSwapParams,
 } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
-export { type EnsName, isEnsName, resolveAddress } from '@/utils/ens.js'
+export * from '@/wallet/core/error/errors.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
