@@ -86,19 +86,6 @@ export class WalletNamespace<
     }
   }
 
-  private resolveProvider(): Promise<
-    WalletProvider<THostedProviderType, TToActionsMap, H, S>
-  > {
-    if (this._provider) return Promise.resolve(this._provider)
-    if (!this._initPromise) {
-      this._initPromise = this._providerFactory().then((provider) => {
-        this._provider = provider
-        return provider
-      })
-    }
-    return this._initPromise
-  }
-
   /**
    * Get direct access to the hosted wallet provider
    * @description Provides direct access to the underlying hosted wallet provider when
@@ -209,5 +196,18 @@ export class WalletNamespace<
   async getSmartWallet(params: GetSmartWalletOptions) {
     const provider = await this.resolveProvider()
     return provider.getSmartWallet(params)
+  }
+
+  private resolveProvider(): Promise<
+    WalletProvider<THostedProviderType, TToActionsMap, H, S>
+  > {
+    if (this._provider) return Promise.resolve(this._provider)
+    if (!this._initPromise) {
+      this._initPromise = this._providerFactory().then((provider) => {
+        this._provider = provider
+        return provider
+      })
+    }
+    return this._initPromise
   }
 }
