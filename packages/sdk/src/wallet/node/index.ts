@@ -5,3 +5,4 @@ export type {
   NodeProviderTypes,
 } from '@/wallet/node/providers/hosted/types/index.js'
 export { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
+export { LocalWallet } from '@/wallet/node/wallets/local/LocalWallet.js'

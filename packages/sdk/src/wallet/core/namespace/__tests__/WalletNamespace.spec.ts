@@ -1,5 +1,6 @@
 import type { PrivyClient } from '@privy-io/node'
 import { getAddress } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import { unichain } from 'viem/chains'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -52,7 +53,12 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
 
       expect(await walletNamespace.hostedWalletProvider()).toBe(
         hostedWalletProvider,
@@ -79,7 +85,12 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
 
       expect(await walletNamespace.smartWalletProvider()).toBe(
         smartWalletProvider,
@@ -103,12 +114,17 @@ describe('WalletNamespace', () => {
         smartWalletProvider,
       )
       const createSmartWalletSpy = vi.spyOn(walletProvider, 'createSmartWallet')
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
 
       // Create a hosted wallet to use as signer
       const privyWallet = createMockPrivyWallet()
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toActionsWallet({
+        await walletProvider.hostedWalletProvider!.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
@@ -143,12 +159,17 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
 
       // Create a hosted wallet to use as signer
       const privyWallet = createMockPrivyWallet()
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toActionsWallet({
+        await walletProvider.hostedWalletProvider!.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
@@ -228,11 +249,16 @@ describe('WalletNamespace', () => {
         smartWalletProvider,
       )
       const getSmartWalletSpy = vi.spyOn(walletProvider, 'getSmartWallet')
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
 
       const privyWallet = createMockPrivyWallet()
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toActionsWallet({
+        await walletProvider.hostedWalletProvider!.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
@@ -269,11 +295,16 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
 
       const privyWallet = createMockPrivyWallet()
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toActionsWallet({
+        await walletProvider.hostedWalletProvider!.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
@@ -305,16 +336,21 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
 
       const privyWallet = createMockPrivyWallet()
       const hostedWallet =
-        await walletProvider.hostedWalletProvider.toActionsWallet({
+        await walletProvider.hostedWalletProvider!.toActionsWallet({
           walletId: privyWallet.id,
           address: getAddress(privyWallet.address),
         })
       const toActionsWalletSpy = vi.spyOn(
-        walletProvider.hostedWalletProvider,
+        walletProvider.hostedWalletProvider!,
         'toActionsWallet',
       )
 
@@ -330,6 +366,85 @@ describe('WalletNamespace', () => {
       expect(actionsWallet).toBeInstanceOf(Wallet)
       expect(actionsWallet.signer.address).toBe(hostedWallet.signer.address)
       expect(actionsWallet.address).toBe(hostedWallet.address)
+    })
+  })
+
+  describe('toActionsWallet with LocalAccount', () => {
+    it('should create a LocalWallet from a viem LocalAccount', async () => {
+      const hostedWalletProvider = new PrivyHostedWalletProvider({
+        privyClient: mockPrivyClient,
+        authorizationContext: getMockAuthorizationContext(),
+        chainManager: mockChainManager,
+      })
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        { morpho: mockLendProvider },
+      )
+      const walletProvider = new WalletProvider(
+        hostedWalletProvider,
+        smartWalletProvider,
+      )
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
+
+      const account = privateKeyToAccount(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      )
+
+      const wallet = await walletNamespace.toActionsWallet(account)
+
+      expect(wallet.address).toBe(account.address)
+      expect(wallet.signer).toBe(account)
+    })
+
+    it('should expose lend namespace when an Aave provider is configured', async () => {
+      const mockAaveProvider = createMockLendProvider()
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        { aave: mockAaveProvider },
+      )
+      const walletProvider = new WalletProvider(undefined, smartWalletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: { aave: mockAaveProvider },
+        swapProviders: {},
+        supportedAssets: [],
+      })
+
+      const account = privateKeyToAccount(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      )
+
+      const wallet = await walletNamespace.toActionsWallet(account)
+
+      expect(wallet.lend).toBeDefined()
+    })
+
+    it('should accept a LocalAccount when no hosted wallet provider is configured', async () => {
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        { morpho: mockLendProvider },
+      )
+      const walletProvider = new WalletProvider(undefined, smartWalletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
+
+      const account = privateKeyToAccount(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      )
+
+      const wallet = await walletNamespace.toActionsWallet(account)
+
+      expect(wallet.address).toBe(account.address)
+      expect(wallet.signer).toBe(account)
     })
   })
 
@@ -349,7 +464,12 @@ describe('WalletNamespace', () => {
         smartWalletProvider,
       )
       const createSignerSpy = vi.spyOn(walletProvider, 'createSigner')
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
 
       const privyWallet = createMockPrivyWallet()
       const params = {
@@ -378,7 +498,12 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
 
       const privyWallet = createMockPrivyWallet()
       const signer = await walletNamespace.createSigner({

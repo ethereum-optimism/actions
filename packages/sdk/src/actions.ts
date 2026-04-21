@@ -229,7 +229,42 @@ export class Actions<
       SmartWalletProvider
     >
   > {
-    const hostedWalletProviderConfig = config.hostedWalletConfig.provider
+    const hostedWalletProvider = config.hostedWalletConfig
+      ? await this.createHostedWalletProvider(config.hostedWalletConfig)
+      : undefined
+
+    const smartWalletProvider: SmartWalletProvider = (() => {
+      if (
+        !config.smartWalletConfig ||
+        config.smartWalletConfig.provider.type === 'default'
+      ) {
+        return new DefaultSmartWalletProvider(
+          this.chainManager,
+          this._lendProviders,
+          this._swapProviders,
+          this.getSupportedAssets(),
+          config.smartWalletConfig.provider.attributionSuffix,
+        )
+      }
+      throw new Error(
+        `Unsupported smart wallet provider: ${config.smartWalletConfig.provider.type}`,
+      )
+    })()
+
+    return new WalletProvider(hostedWalletProvider, smartWalletProvider)
+  }
+
+  private async createHostedWalletProvider(
+    hostedWalletConfig: NonNullable<
+      ActionsConfig<
+        THostedWalletProviderType,
+        THostedWalletProvidersSchema['providerConfigs']
+      >['wallet']['hostedWalletConfig']
+    >,
+  ): Promise<
+    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
+  > {
+    const hostedWalletProviderConfig = hostedWalletConfig.provider
     const factory = this.hostedWalletProviderRegistry.getFactory(
       hostedWalletProviderConfig.type,
     )
@@ -243,7 +278,7 @@ export class Actions<
         `Invalid options for hosted wallet provider: ${hostedWalletProviderConfig.type}`,
       )
     }
-    const hostedWalletProvider = await factory.create(
+    return factory.create(
       {
         chainManager: this.chainManager,
         lendProviders: this._lendProviders,
@@ -253,26 +288,6 @@ export class Actions<
       },
       options,
     )
-
-    let smartWalletProvider: SmartWalletProvider
-    if (
-      !config.smartWalletConfig ||
-      config.smartWalletConfig.provider.type === 'default'
-    ) {
-      smartWalletProvider = new DefaultSmartWalletProvider(
-        this.chainManager,
-        this._lendProviders,
-        this._swapProviders,
-        this.getSupportedAssets(),
-        config.smartWalletConfig.provider.attributionSuffix,
-      )
-    } else {
-      throw new Error(
-        `Unsupported smart wallet provider: ${config.smartWalletConfig.provider.type}`,
-      )
-    }
-
-    return new WalletProvider(hostedWalletProvider, smartWalletProvider)
   }
 
   /**
@@ -294,6 +309,12 @@ export class Actions<
       THostedWalletProvidersSchema['providerToActionsOptions'],
       THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
       SmartWalletProvider
-    >(providerFactory)
+    >(providerFactory, {
+      chainManager: this.chainManager,
+      lendProviders: this._lendProviders,
+      swapProviders: this._swapProviders,
+      supportedAssets: this.getSupportedAssets(),
+      swapSettings: this._swapSettings,
+    })
   }
 }

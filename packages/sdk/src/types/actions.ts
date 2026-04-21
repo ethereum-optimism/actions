@@ -1,5 +1,6 @@
 import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap/types.js'
 import type { VelodromeSwapProviderConfig } from '@/actions/swap/providers/velodrome/types.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
@@ -92,6 +93,28 @@ export interface AssetsConfig {
 }
 
 /**
+ * Shared dependencies derived from `ActionsConfig` at SDK construction time.
+ * @description Immutable bundle of resolved providers and services that the
+ * Actions SDK threads through its internal namespaces. Consumers that need
+ * provider references should receive an `ActionsContext` rather than a raw
+ * `ActionsConfig` — the providers in the context are already constructed and
+ * hold their own per-provider configuration (market allowlists, slippage
+ * defaults, etc.).
+ */
+export interface ActionsContext {
+  /** Chain manager wrapping the configured chains */
+  chainManager: ChainManager
+  /** Configured lend provider instances (each holds its own config) */
+  lendProviders: LendProviders
+  /** Configured swap provider instances (each holds its own config) */
+  swapProviders: SwapProviders
+  /** Resolved supported asset list (allowlist minus blocklist) */
+  supportedAssets: Asset[]
+  /** Shared swap settings applied across swap providers */
+  swapSettings?: SwapSettings
+}
+
+/**
  * Actions SDK configuration
  * @description Configuration object for initializing the Actions SDK
  */
@@ -113,14 +136,17 @@ export interface ActionsConfig<
 
 /**
  * Wallet configuration
- * @description Configuration for wallet providers
+ * @description Configuration for wallet providers. `hostedWalletConfig` is
+ * optional; when omitted, `wallet.toActionsWallet` accepts only a viem
+ * `LocalAccount` and `wallet.createSigner` / `wallet.hostedWalletProvider`
+ * are not available.
  */
 export type WalletConfig<
   THostedProviderType extends string,
   TConfigMap extends { [K in THostedProviderType]: unknown },
 > = {
-  /** Hosted wallet configuration */
-  hostedWalletConfig: HostedWalletConfig<THostedProviderType, TConfigMap>
+  /** Hosted wallet configuration (optional) */
+  hostedWalletConfig?: HostedWalletConfig<THostedProviderType, TConfigMap>
   /** Smart wallet configuration for ERC-4337 infrastructure */
   smartWalletConfig: SmartWalletConfig
 }
