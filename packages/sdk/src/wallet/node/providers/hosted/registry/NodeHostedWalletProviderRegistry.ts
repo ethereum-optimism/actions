@@ -62,27 +62,5 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
         )
       },
     })
-
-    this.register<'local'>({
-      type: 'local',
-      validateOptions(options): options is NodeOptionsMap['local'] {
-        return options === undefined
-      },
-      async create({
-        chainManager,
-        lendProviders,
-        swapProviders,
-        supportedAssets,
-      }) {
-        const { LocalWalletProvider } =
-          await import('@/wallet/node/providers/local/LocalWalletProvider.js')
-        return new LocalWalletProvider({
-          chainManager,
-          lendProviders,
-          swapProviders,
-          supportedAssets,
-        })
-      },
-    })
   }
 }

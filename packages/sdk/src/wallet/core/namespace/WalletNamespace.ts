@@ -1,7 +1,7 @@
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapSettings } from '@/types/actions.js'
+import type { ActionsContext, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type {
@@ -50,6 +50,20 @@ type WalletProviderFactory<
 > = () => Promise<WalletProvider<THostedProviderType, TToActionsMap, H, S>>
 
 /**
+ * Adaptive `toActionsWallet` parameter type
+ * @description Evaluates to the hosted provider's options map entry plus
+ * `LocalAccount` when a hosted provider is configured, or to `LocalAccount`
+ * only when no hosted provider is configured (`THostedProviderType` is
+ * `never`).
+ */
+type ToActionsWalletParam<
+  THostedProviderType extends string,
+  TToActionsMap extends Record<THostedProviderType, unknown>,
+> = [THostedProviderType] extends [never]
+  ? LocalAccount
+  : TToActionsMap[THostedProviderType] | LocalAccount
+
+/**
  * Wallet namespace that provides unified wallet operations
  * @description Provides access to wallet functionality through a single provider interface.
  * Supports lazy initialization — the wallet provider is created on first method call,
@@ -87,13 +101,7 @@ export class WalletNamespace<
     providerOrFactory:
       | WalletProvider<THostedProviderType, TToActionsMap, H, S>
       | WalletProviderFactory<THostedProviderType, TToActionsMap, H, S>,
-    deps: {
-      chainManager: ChainManager
-      lendProviders?: LendProviders
-      swapProviders?: SwapProviders
-      supportedAssets?: Asset[]
-      swapSettings?: SwapSettings
-    },
+    context: ActionsContext,
   ) {
     if (typeof providerOrFactory === 'function') {
       this._providerFactory = providerOrFactory
@@ -101,11 +109,11 @@ export class WalletNamespace<
       this._provider = providerOrFactory
       this._providerFactory = () => Promise.resolve(providerOrFactory)
     }
-    this.chainManager = deps.chainManager
-    this.lendProviders = deps.lendProviders ?? {}
-    this.swapProviders = deps.swapProviders ?? {}
-    this.supportedAssets = deps.supportedAssets ?? []
-    this.swapSettings = deps.swapSettings
+    this.chainManager = context.chainManager
+    this.lendProviders = context.lendProviders
+    this.swapProviders = context.swapProviders
+    this.supportedAssets = context.supportedAssets
+    this.swapSettings = context.swapSettings
   }
 
   /**
@@ -114,9 +122,15 @@ export class WalletNamespace<
    * advanced functionality beyond the unified interface is needed.
    * Lazily initializes the provider if not yet created.
    * @returns Promise resolving to the configured hosted wallet provider instance
+   * @throws Error if no hosted wallet provider is configured
    */
   async hostedWalletProvider(): Promise<H> {
     const provider = await this.resolveProvider()
+    if (!provider.hostedWalletProvider) {
+      throw new Error(
+        'Hosted wallet provider not configured. Please add hostedWalletConfig to ActionsConfig.wallet.',
+      )
+    }
     return provider.hostedWalletProvider
   }
 
@@ -175,13 +189,14 @@ export class WalletNamespace<
   /**
    * Convert a hosted wallet or local account to an Actions wallet
    * @description Accepts either provider-specific params (for Privy/Turnkey) or a viem
-   * LocalAccount directly. When a LocalAccount is passed, a LocalWallet is created
-   * regardless of which hosted provider is configured.
+   * `LocalAccount` directly, depending on configuration. When a hosted wallet provider
+   * is configured, both shapes are accepted; when none is configured, only a
+   * `LocalAccount` is accepted and provider params are a type error.
    * @param params - Provider params or a viem LocalAccount
    * @returns Promise resolving to the Actions wallet instance
    */
   async toActionsWallet(
-    params: TToActionsMap[THostedProviderType] | LocalAccount,
+    params: ToActionsWalletParam<THostedProviderType, TToActionsMap>,
   ): Promise<Wallet> {
     if (isLocalAccount(params)) {
       return LocalWallet.create({
@@ -193,7 +208,9 @@ export class WalletNamespace<
       })
     }
     const provider = await this.resolveProvider()
-    return provider.hostedWalletToActionsWallet(params)
+    return provider.hostedWalletToActionsWallet(
+      params as TToActionsMap[THostedProviderType],
+    )
   }
 
   /**

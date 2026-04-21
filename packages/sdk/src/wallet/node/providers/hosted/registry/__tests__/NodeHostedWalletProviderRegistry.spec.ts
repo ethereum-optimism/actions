@@ -13,7 +13,6 @@ import { PrivyHostedWalletProvider } from '@/wallet/node/providers/hosted/privy/
 import { NodeHostedWalletProviderRegistry } from '@/wallet/node/providers/hosted/registry/NodeHostedWalletProviderRegistry.js'
 import { TurnkeyHostedWalletProvider } from '@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js'
 import type { NodeOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
-import { LocalWalletProvider } from '@/wallet/node/providers/local/LocalWalletProvider.js'
 
 describe('NodeHostedWalletProviderRegistry', () => {
   const mockChainManager = new MockChainManager({
@@ -93,31 +92,6 @@ describe('NodeHostedWalletProviderRegistry', () => {
     )
 
     expect(provider).toBeInstanceOf(TurnkeyHostedWalletProvider)
-  })
-
-  it('returns local factory and validates options', () => {
-    const registry = new NodeHostedWalletProviderRegistry()
-    const factory = registry.getFactory('local')
-
-    expect(factory.type).toBe('local')
-    expect(factory.validateOptions?.(undefined)).toBe(true)
-    expect(
-      factory.validateOptions?.(null as unknown as NodeOptionsMap['local']),
-    ).toBe(false)
-    expect(factory.validateOptions?.({})).toBe(false)
-    expect(factory.validateOptions?.('something')).toBe(false)
-  })
-
-  it('creates a LocalWalletProvider instance', async () => {
-    const registry = new NodeHostedWalletProviderRegistry()
-    const factory = registry.getFactory('local')
-
-    const provider = await factory.create(
-      { chainManager: mockChainManager },
-      undefined as NodeOptionsMap['local'],
-    )
-
-    expect(provider).toBeInstanceOf(LocalWalletProvider)
   })
 
   it('throws for unknown provider type', () => {

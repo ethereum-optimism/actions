@@ -226,30 +226,9 @@ export class Actions<
       SmartWalletProvider
     >
   > {
-    const hostedWalletProviderConfig = config.hostedWalletConfig.provider
-    const factory = this.hostedWalletProviderRegistry.getFactory(
-      hostedWalletProviderConfig.type,
-    )
-    const options = (
-      'config' in hostedWalletProviderConfig
-        ? hostedWalletProviderConfig.config
-        : undefined
-    ) as unknown
-    if (!factory.validateOptions(options)) {
-      throw new Error(
-        `Invalid options for hosted wallet provider: ${hostedWalletProviderConfig.type}`,
-      )
-    }
-    const hostedWalletProvider = await factory.create(
-      {
-        chainManager: this.chainManager,
-        lendProviders: this._lendProviders,
-        swapProviders: this._swapProviders,
-        supportedAssets: this.getSupportedAssets(),
-        swapSettings: this._swapSettings,
-      },
-      options,
-    )
+    const hostedWalletProvider = config.hostedWalletConfig
+      ? await this.createHostedWalletProvider(config.hostedWalletConfig)
+      : undefined
 
     let smartWalletProvider: SmartWalletProvider
     if (
@@ -270,6 +249,42 @@ export class Actions<
     }
 
     return new WalletProvider(hostedWalletProvider, smartWalletProvider)
+  }
+
+  private async createHostedWalletProvider(
+    hostedWalletConfig: NonNullable<
+      ActionsConfig<
+        THostedWalletProviderType,
+        THostedWalletProvidersSchema['providerConfigs']
+      >['wallet']['hostedWalletConfig']
+    >,
+  ): Promise<
+    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
+  > {
+    const hostedWalletProviderConfig = hostedWalletConfig.provider
+    const factory = this.hostedWalletProviderRegistry.getFactory(
+      hostedWalletProviderConfig.type,
+    )
+    const options = (
+      'config' in hostedWalletProviderConfig
+        ? hostedWalletProviderConfig.config
+        : undefined
+    ) as unknown
+    if (!factory.validateOptions(options)) {
+      throw new Error(
+        `Invalid options for hosted wallet provider: ${hostedWalletProviderConfig.type}`,
+      )
+    }
+    return factory.create(
+      {
+        chainManager: this.chainManager,
+        lendProviders: this._lendProviders,
+        swapProviders: this._swapProviders,
+        supportedAssets: this.getSupportedAssets(),
+        swapSettings: this._swapSettings,
+      },
+      options,
+    )
   }
 
   /**
