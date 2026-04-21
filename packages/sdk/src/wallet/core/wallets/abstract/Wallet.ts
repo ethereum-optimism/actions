@@ -1,11 +1,11 @@
 import type { Address, LocalAccount } from 'viem'
 
+import { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
+import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { EnsNamespace } from '@/ens/index.js'
-import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
@@ -163,7 +163,7 @@ export abstract class Wallet {
    * @returns Promise resolving to the transaction hash
    */
   abstract sendBatch(
-    transactionData: TransactionData[],
+    transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<BatchTransactionReturnType>
 }

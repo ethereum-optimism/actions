@@ -1,7 +1,7 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { EnsName } from '@/ens/types.js'
+import type { EnsName } from '@/services/nameservices/ens/types.js'
 import type { SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -10,9 +10,9 @@ import type {
   TransactionReturnType,
 } from '@/wallet/core/wallets/abstract/types/index.js'
 
-export { SwapProvider } from '@/swap/core/SwapProvider.js'
-export { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
-export { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
+export { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
+export { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
+export { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 export type { SwapProviders } from '@/types/providers.js'
 
 /**
