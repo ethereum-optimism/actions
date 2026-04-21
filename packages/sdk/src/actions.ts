@@ -291,6 +291,12 @@ export class Actions<
       THostedWalletProvidersSchema['providerToActionsOptions'],
       THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
       SmartWalletProvider
-    >(providerFactory)
+    >(providerFactory, {
+      chainManager: this.chainManager,
+      lendProviders: this._lendProviders,
+      swapProviders: this._swapProviders,
+      supportedAssets: this.getSupportedAssets(),
+      swapSettings: this._swapSettings,
+    })
   }
 }

@@ -53,7 +53,7 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       expect(await walletNamespace.hostedWalletProvider()).toBe(
         hostedWalletProvider,
@@ -80,7 +80,7 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       expect(await walletNamespace.smartWalletProvider()).toBe(
         smartWalletProvider,
@@ -104,7 +104,7 @@ describe('WalletNamespace', () => {
         smartWalletProvider,
       )
       const createSmartWalletSpy = vi.spyOn(walletProvider, 'createSmartWallet')
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       // Create a hosted wallet to use as signer
       const privyWallet = createMockPrivyWallet()
@@ -144,7 +144,7 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       // Create a hosted wallet to use as signer
       const privyWallet = createMockPrivyWallet()
@@ -229,7 +229,7 @@ describe('WalletNamespace', () => {
         smartWalletProvider,
       )
       const getSmartWalletSpy = vi.spyOn(walletProvider, 'getSmartWallet')
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       const privyWallet = createMockPrivyWallet()
       const hostedWallet =
@@ -270,7 +270,7 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       const privyWallet = createMockPrivyWallet()
       const hostedWallet =
@@ -306,7 +306,7 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       const privyWallet = createMockPrivyWallet()
       const hostedWallet =
@@ -349,7 +349,7 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       const account = privateKeyToAccount(
         '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
@@ -378,7 +378,7 @@ describe('WalletNamespace', () => {
         smartWalletProvider,
       )
       const createSignerSpy = vi.spyOn(walletProvider, 'createSigner')
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       const privyWallet = createMockPrivyWallet()
       const params = {
@@ -407,7 +407,7 @@ describe('WalletNamespace', () => {
         hostedWalletProvider,
         smartWalletProvider,
       )
-      const walletNamespace = new WalletNamespace(walletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, { chainManager: mockChainManager })
 
       const privyWallet = createMockPrivyWallet()
       const signer = await walletNamespace.createSigner({

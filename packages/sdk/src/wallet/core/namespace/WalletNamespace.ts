@@ -1,5 +1,9 @@
 import type { LocalAccount } from 'viem'
 
+import type { ChainManager } from '@/services/ChainManager.js'
+import type { SwapSettings } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type {
   CreateSmartWalletOptions,
   GetSmartWalletOptions,
@@ -10,6 +14,7 @@ import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/ab
 import type { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
+import { LocalWallet } from '@/wallet/node/wallets/local/LocalWallet.js'
 
 function isLocalAccount(value: unknown): value is LocalAccount {
   if (typeof value !== 'object' || value === null) {
@@ -72,11 +77,23 @@ export class WalletNamespace<
   private _initPromise: Promise<
     WalletProvider<THostedProviderType, TToActionsMap, H, S>
   > | null = null
+  private readonly chainManager: ChainManager
+  private readonly lendProviders: LendProviders
+  private readonly swapProviders: SwapProviders
+  private readonly supportedAssets: Asset[]
+  private readonly swapSettings?: SwapSettings
 
   constructor(
     providerOrFactory:
       | WalletProvider<THostedProviderType, TToActionsMap, H, S>
       | WalletProviderFactory<THostedProviderType, TToActionsMap, H, S>,
+    deps: {
+      chainManager: ChainManager
+      lendProviders?: LendProviders
+      swapProviders?: SwapProviders
+      supportedAssets?: Asset[]
+      swapSettings?: SwapSettings
+    },
   ) {
     if (typeof providerOrFactory === 'function') {
       this._providerFactory = providerOrFactory
@@ -84,6 +101,11 @@ export class WalletNamespace<
       this._provider = providerOrFactory
       this._providerFactory = () => Promise.resolve(providerOrFactory)
     }
+    this.chainManager = deps.chainManager
+    this.lendProviders = deps.lendProviders ?? {}
+    this.swapProviders = deps.swapProviders ?? {}
+    this.supportedAssets = deps.supportedAssets ?? []
+    this.swapSettings = deps.swapSettings
   }
 
   /**
@@ -162,16 +184,12 @@ export class WalletNamespace<
     params: TToActionsMap[THostedProviderType] | LocalAccount,
   ): Promise<Wallet> {
     if (isLocalAccount(params)) {
-      const { LocalWallet } =
-        await import('@/wallet/node/wallets/local/LocalWallet.js')
-      const provider = await this.resolveProvider()
-      const hosted = provider.hostedWalletProvider
       return LocalWallet.create({
         account: params,
-        chainManager: hosted['chainManager'],
-        lendProviders: hosted['lendProviders'],
-        swapProviders: hosted['swapProviders'],
-        supportedAssets: hosted['supportedAssets'],
+        chainManager: this.chainManager,
+        lendProviders: this.lendProviders,
+        swapProviders: this.swapProviders,
+        supportedAssets: this.supportedAssets,
       })
     }
     const provider = await this.resolveProvider()
