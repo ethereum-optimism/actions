@@ -233,23 +233,23 @@ export class Actions<
       ? await this.createHostedWalletProvider(config.hostedWalletConfig)
       : undefined
 
-    let smartWalletProvider: SmartWalletProvider
-    if (
-      !config.smartWalletConfig ||
-      config.smartWalletConfig.provider.type === 'default'
-    ) {
-      smartWalletProvider = new DefaultSmartWalletProvider(
-        this.chainManager,
-        this._lendProviders,
-        this._swapProviders,
-        this.getSupportedAssets(),
-        config.smartWalletConfig.provider.attributionSuffix,
-      )
-    } else {
+    const smartWalletProvider: SmartWalletProvider = (() => {
+      if (
+        !config.smartWalletConfig ||
+        config.smartWalletConfig.provider.type === 'default'
+      ) {
+        return new DefaultSmartWalletProvider(
+          this.chainManager,
+          this._lendProviders,
+          this._swapProviders,
+          this.getSupportedAssets(),
+          config.smartWalletConfig.provider.attributionSuffix,
+        )
+      }
       throw new Error(
         `Unsupported smart wallet provider: ${config.smartWalletConfig.provider.type}`,
       )
-    }
+    })()
 
     return new WalletProvider(hostedWalletProvider, smartWalletProvider)
   }

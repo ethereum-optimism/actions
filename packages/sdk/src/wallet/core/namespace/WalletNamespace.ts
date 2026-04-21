@@ -21,22 +21,13 @@ function isLocalAccount(value: unknown): value is LocalAccount {
     return false
   }
   const record = value as Record<string, unknown>
-  if (record.type !== 'local') {
-    return false
-  }
-  if (typeof record.address !== 'string') {
-    return false
-  }
-  if (
-    typeof record.signMessage !== 'function' ||
-    typeof record.signTransaction !== 'function'
-  ) {
-    return false
-  }
-  if ('signTypedData' in record && typeof record.signTypedData !== 'function') {
-    return false
-  }
-  return true
+  return (
+    record.type === 'local' &&
+    typeof record.address === 'string' &&
+    typeof record.signMessage === 'function' &&
+    typeof record.signTransaction === 'function' &&
+    (!('signTypedData' in record) || typeof record.signTypedData === 'function')
+  )
 }
 
 /**
