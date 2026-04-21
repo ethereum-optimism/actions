@@ -400,6 +400,52 @@ describe('WalletNamespace', () => {
       expect(wallet.address).toBe(account.address)
       expect(wallet.signer).toBe(account)
     })
+
+    it('should expose lend namespace when an Aave provider is configured', async () => {
+      const mockAaveProvider = createMockLendProvider()
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        { aave: mockAaveProvider },
+      )
+      const walletProvider = new WalletProvider(undefined, smartWalletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: { aave: mockAaveProvider },
+        swapProviders: {},
+        supportedAssets: [],
+      })
+
+      const account = privateKeyToAccount(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      )
+
+      const wallet = await walletNamespace.toActionsWallet(account)
+
+      expect(wallet.lend).toBeDefined()
+    })
+
+    it('should accept a LocalAccount when no hosted wallet provider is configured', async () => {
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        { morpho: mockLendProvider },
+      )
+      const walletProvider = new WalletProvider(undefined, smartWalletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        supportedAssets: [],
+      })
+
+      const account = privateKeyToAccount(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      )
+
+      const wallet = await walletNamespace.toActionsWallet(account)
+
+      expect(wallet.address).toBe(account.address)
+      expect(wallet.signer).toBe(account)
+    })
   })
 
   describe('createSigner', () => {
