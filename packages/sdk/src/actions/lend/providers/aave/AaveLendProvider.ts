@@ -279,11 +279,13 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
-        approval: this.buildApprovalTx(
-          assetAddress,
-          poolAddress,
-          params.amountWei,
-        ),
+        approval: await this.buildApprovalTx({
+          chainId: params.marketId.chainId,
+          token: assetAddress,
+          owner: params.walletAddress,
+          spender: poolAddress,
+          amount: params.amountWei,
+        }),
         position: {
           to: poolAddress,
           data: supplyCallData,
@@ -335,11 +337,13 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
-        approval: this.buildApprovalTx(
-          aWETHAddress,
-          gatewayAddress,
-          params.amount,
-        ),
+        approval: await this.buildApprovalTx({
+          chainId: params.marketId.chainId,
+          token: aWETHAddress,
+          owner: params.walletAddress,
+          spender: gatewayAddress,
+          amount: params.amount,
+        }),
         position: {
           to: gatewayAddress,
           data: withdrawCallData,

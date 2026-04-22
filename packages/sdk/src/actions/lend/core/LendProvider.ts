@@ -22,7 +22,7 @@ import type {
   LendTransaction,
   TransactionData,
 } from '@/types/lend/index.js'
-import { buildErc20ApprovalTx } from '@/utils/approve.js'
+import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
 /**
@@ -273,18 +273,24 @@ export abstract class LendProvider<
   }
 
   /**
-   * Build an ERC20 approval transaction
-   * @param tokenAddress - Address of the token to approve
-   * @param spender - Address to approve spending for
-   * @param amount - Amount to approve
-   * @returns Transaction data for the approval
+   * Build an ERC20 approval transaction only if the on-chain allowance is insufficient.
+   * Reads the current allowance via the chain's public client and approves only the
+   * deficit, returning `undefined` when the existing allowance already covers `amount`.
+   * @param params - Token, owner, spender, required amount, and chainId
+   * @returns Approval transaction for the deficit, or undefined if allowance is sufficient
    */
-  protected buildApprovalTx(
-    tokenAddress: Address,
-    spender: Address,
-    amount: bigint,
-  ): TransactionData {
-    return buildErc20ApprovalTx(tokenAddress, spender, amount)
+  protected buildApprovalTx(params: {
+    chainId: SupportedChainId
+    token: Address
+    owner: Address
+    spender: Address
+    amount: bigint
+  }): Promise<TransactionData | undefined> {
+    const { chainId, ...rest } = params
+    return buildApprovalTxIfNeeded({
+      publicClient: this.chainManager.getPublicClient(chainId),
+      ...rest,
+    })
   }
 
   /**

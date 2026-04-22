@@ -69,11 +69,13 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
         transactionData: {
-          approval: this.buildApprovalTx(
-            assetAddress,
-            params.marketId.address,
-            params.amountWei,
-          ),
+          approval: await this.buildApprovalTx({
+            chainId: params.marketId.chainId,
+            token: assetAddress,
+            owner: params.walletAddress,
+            spender: params.marketId.address,
+            amount: params.amountWei,
+          }),
           position: {
             to: params.marketId.address,
             data: depositCallData,
