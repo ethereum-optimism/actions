@@ -33,6 +33,11 @@ app/*/.env
 !**/vitest.config.js
 !**/next.config.js
 
+# editor swap/backup files
+*.swp
+*.swo
+*~
+
 # misc
 .DS_Store
 .env
