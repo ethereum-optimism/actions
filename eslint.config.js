@@ -19,7 +19,7 @@ const importRule = fixupPluginRules(importPlugin);
 const typescript = fixupPluginRules(tseslintPlugin);
 
   // JavaScript and TypeScript files
-module.exports = {
+const baseConfig = {
   files: ['**/*.{js,jsx,ts,tsx}'],
   ignores: ['**/.storybook/**', '**/dist/**'],
   plugins: {
@@ -104,3 +104,15 @@ module.exports = {
     'lib/**',
   ]
 }
+
+// actions-cli: agent-consumed output must be JSON-only; any stray console
+// call pollutes stdout/stderr and breaks the subprocess contract.
+const cliConfig = {
+  files: ['packages/cli/src/**/*.{ts,tsx}'],
+  rules: {
+    'no-console': 'error',
+  },
+}
+
+module.exports = [baseConfig, cliConfig]
+
