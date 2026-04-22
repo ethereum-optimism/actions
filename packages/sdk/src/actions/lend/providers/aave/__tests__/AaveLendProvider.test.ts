@@ -1,3 +1,4 @@
+import { encodeFunctionData, erc20Abi } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MockReceiverAddress } from '@/actions/lend/__mocks__/MockMarkets.js'
@@ -201,6 +202,59 @@ describe('AaveLendProvider', () => {
           walletAddress: MockReceiverAddress,
         }),
       ).rejects.toThrow('Failed to open position')
+    })
+
+    it('should skip approval when existing allowance is sufficient', async () => {
+      const amount = 1000
+      const asset = MockAaveUSDCAsset
+      const marketId = {
+        address: MockAaveUSDCMarket.address,
+        chainId: MockAaveUSDCMarket.chainId,
+      }
+      // Allowance already covers the 1000 USDC (1e9 wei) deposit
+      const client = mockChainManager.getPublicClient(marketId.chainId)
+      vi.mocked(client.readContract).mockResolvedValueOnce(10n ** 18n)
+
+      const lendTransaction = await provider.openPosition({
+        amount,
+        asset,
+        marketId,
+        walletAddress: MockReceiverAddress,
+      })
+
+      expect(lendTransaction.transactionData.approval).toBeUndefined()
+      expect(lendTransaction.transactionData).toHaveProperty('position')
+    })
+
+    it('should approve only the deficit when existing allowance is partial', async () => {
+      const amount = 1000 // 1e9 wei at 6 decimals
+      const asset = MockAaveUSDCAsset
+      const marketId = {
+        address: MockAaveUSDCMarket.address,
+        chainId: MockAaveUSDCMarket.chainId,
+      }
+      // Base Aave V3 Pool
+      const basePoolAddress = '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5'
+      const existingAllowance = 400_000_000n // 400 USDC
+      const expectedDeficit = 600_000_000n // required 1e9 - existing 4e8
+      const client = mockChainManager.getPublicClient(marketId.chainId)
+      vi.mocked(client.readContract).mockResolvedValueOnce(existingAllowance)
+
+      const lendTransaction = await provider.openPosition({
+        amount,
+        asset,
+        marketId,
+        walletAddress: MockReceiverAddress,
+      })
+
+      expect(lendTransaction.transactionData.approval).toBeDefined()
+      expect(lendTransaction.transactionData.approval!.data).toBe(
+        encodeFunctionData({
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [basePoolAddress, expectedDeficit],
+        }),
+      )
     })
   })
 
