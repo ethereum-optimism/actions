@@ -1,7 +1,7 @@
+import { serializeBigInt } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 
 import { getActions } from '@/config/actions.js'
-import { serializeBigInt } from '@/utils/serializers.js'
 
 /**
  * GET - Retrieve configured supported assets
