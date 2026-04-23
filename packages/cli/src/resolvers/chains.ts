@@ -69,3 +69,66 @@ export function shortnameFor(chainId: SupportedChainId): string {
   }
   return name
 }
+
+/**
+ * @description Parses a raw `--chain-id` flag value and validates it is
+ * present in the configured chain set.
+ * @param raw - The flag value as passed on argv.
+ * @param configuredChainIds - Chain IDs in the resolved config.
+ * @returns The validated `SupportedChainId`.
+ * @throws `CliError` with code `validation` when the value is not a
+ * positive integer or is not present in `configuredChainIds`.
+ */
+export function resolveChainId(
+  raw: string,
+  configuredChainIds: readonly SupportedChainId[],
+): SupportedChainId {
+  const parsed = Number(raw)
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new CliError(
+      'validation',
+      `Invalid --chain-id: ${raw} (expected a positive integer)`,
+      { chainId: raw },
+    )
+  }
+  if (!configuredChainIds.includes(parsed as SupportedChainId)) {
+    throw new CliError('validation', `Chain ${parsed} is not configured`, {
+      chainId: parsed,
+      allowed: configuredChainIds,
+    })
+  }
+  return parsed as SupportedChainId
+}
+
+export interface ChainFlags {
+  chain?: string
+  chainId?: string
+}
+
+/**
+ * @description Resolves the mutually-exclusive `--chain` / `--chain-id`
+ * option pair into a single `SupportedChainId`, or `undefined` when
+ * neither is provided. Callers apply the "undefined = no filter"
+ * convention as they see fit.
+ * @param flags - Parsed commander options; either flag may be set.
+ * @param configuredChainIds - Chain IDs in the resolved config.
+ * @returns The selected chain id, or `undefined` if neither flag was used.
+ * @throws `CliError` with code `validation` when both flags are set or
+ * when the provided value is unknown.
+ */
+export function resolveChainFlags(
+  flags: ChainFlags,
+  configuredChainIds: readonly SupportedChainId[],
+): SupportedChainId | undefined {
+  const { chain, chainId } = flags
+  if (chain && chainId) {
+    throw new CliError(
+      'validation',
+      'Pass either --chain or --chain-id, not both',
+      { chain, chainId },
+    )
+  }
+  if (chain) return resolveChain(chain, configuredChainIds)
+  if (chainId) return resolveChainId(chainId, configuredChainIds)
+  return undefined
+}

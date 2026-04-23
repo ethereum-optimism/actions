@@ -93,4 +93,48 @@ describe('runWalletBalance', () => {
       expect((err as CliError).code).toBe('config')
     }
   })
+
+  it('filters balances to a single chain via --chain', async () => {
+    process.env.PRIVATE_KEY = ANVIL_ACCOUNT_0
+    vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
+      config: { chains: [{ chainId: 84532 }, { chainId: 11155420 }] } as never,
+      actions: {} as never,
+      signer: {} as never,
+      wallet: {
+        address: '0x0',
+        getBalance: async () => [
+          {
+            asset: { metadata: { symbol: 'ETH' } },
+            totalBalance: 3,
+            totalBalanceRaw: 3n,
+            chains: {
+              84532: { balance: 1, balanceRaw: 1n },
+              11155420: { balance: 2, balanceRaw: 2n },
+            },
+          },
+        ],
+      } as never,
+    })
+    await runWalletBalance({ chain: 'base-sepolia' })
+    const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
+    expect(Object.keys(body[0].chains)).toEqual(['84532'])
+    expect(body[0].totalBalanceRaw).toBe('1')
+  })
+
+  it('rejects when both --chain and --chain-id are set', async () => {
+    process.env.PRIVATE_KEY = ANVIL_ACCOUNT_0
+    vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
+      config: { chains: [{ chainId: 84532 }] } as never,
+      actions: {} as never,
+      signer: {} as never,
+      wallet: { address: '0x0', getBalance: async () => [] } as never,
+    })
+    try {
+      await runWalletBalance({ chain: 'base-sepolia', chainId: '84532' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
 })
