@@ -20,6 +20,14 @@ export function walletCommand(): Command {
   command
     .command('balance')
     .description('Print ETH and ERC-20 balances across every configured chain.')
+    .option(
+      '--chain <shortname>',
+      'filter to one chain by shortname (e.g. base-sepolia); mutually exclusive with --chain-id',
+    )
+    .option(
+      '--chain-id <id>',
+      'filter to one chain by numeric id (e.g. 84532); mutually exclusive with --chain',
+    )
     .action(runWalletBalance)
   return command
 }

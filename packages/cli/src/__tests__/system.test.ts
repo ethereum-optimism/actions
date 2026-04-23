@@ -128,6 +128,30 @@ describe('actions CLI (built binary)', () => {
     }, 30_000)
   })
 
+  describe('wallet balance --chain flags', () => {
+    it('rejects both --chain and --chain-id with code:validation exit 2', async () => {
+      const { stdout, stderr, code } = await run(
+        ['wallet', 'balance', '--chain', 'base-sepolia', '--chain-id', '84532'],
+        { PRIVATE_KEY: ANVIL_ACCOUNT_0 },
+      )
+      expect(code).toBe(2)
+      expect(stdout).toBe('')
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/not both/)
+    })
+
+    it('rejects unknown --chain-id with code:validation exit 2', async () => {
+      const { stderr, code } = await run(
+        ['wallet', 'balance', '--chain-id', '999999999'],
+        { PRIVATE_KEY: ANVIL_ACCOUNT_0 },
+      )
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+    })
+  })
+
   describe('unknown command', () => {
     it('exits 1 with commander plain-text stderr (not writeError JSON)', async () => {
       const { stdout, stderr, code } = await run(['nonsense-command'])

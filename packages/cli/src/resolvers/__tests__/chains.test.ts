@@ -78,3 +78,56 @@ describe('resolver round-trip', () => {
     }
   })
 })
+
+describe('resolveChainId', () => {
+  it('accepts a configured numeric chain id', async () => {
+    const { resolveChainId } = await import('@/resolvers/chains.js')
+    expect(resolveChainId(String(baseSepolia.id), ALL)).toBe(baseSepolia.id)
+  })
+
+  it('rejects non-integers', async () => {
+    const { resolveChainId } = await import('@/resolvers/chains.js')
+    expect(() => resolveChainId('abc', ALL)).toThrow(CliError)
+  })
+
+  it('rejects ids not in the configured set', async () => {
+    const { resolveChainId } = await import('@/resolvers/chains.js')
+    expect(() => resolveChainId('1', [baseSepolia.id])).toThrow(CliError)
+  })
+})
+
+describe('resolveChainFlags', () => {
+  it('returns undefined when no flag is set', async () => {
+    const { resolveChainFlags } = await import('@/resolvers/chains.js')
+    expect(resolveChainFlags({}, ALL)).toBeUndefined()
+  })
+
+  it('resolves --chain shortname', async () => {
+    const { resolveChainFlags } = await import('@/resolvers/chains.js')
+    expect(resolveChainFlags({ chain: 'base-sepolia' }, ALL)).toBe(
+      baseSepolia.id,
+    )
+  })
+
+  it('resolves --chain-id numeric', async () => {
+    const { resolveChainFlags } = await import('@/resolvers/chains.js')
+    expect(
+      resolveChainFlags({ chainId: String(optimismSepolia.id) }, ALL),
+    ).toBe(optimismSepolia.id)
+  })
+
+  it('throws validation when both flags are set', async () => {
+    const { resolveChainFlags } = await import('@/resolvers/chains.js')
+    try {
+      resolveChainFlags(
+        { chain: 'base-sepolia', chainId: String(baseSepolia.id) },
+        ALL,
+      )
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+      expect((err as CliError).message).toMatch(/not both/)
+    }
+  })
+})
