@@ -1,3 +1,4 @@
+import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runWalletBalance } from '@/commands/wallet/balance.js'
@@ -10,7 +11,7 @@ const ANVIL_ACCOUNT_0 =
 
 describe('runWalletBalance', () => {
   const originalEnv = process.env
-  let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>
+  let writeSpy: MockInstance
 
   beforeEach(() => {
     process.env = { ...originalEnv }

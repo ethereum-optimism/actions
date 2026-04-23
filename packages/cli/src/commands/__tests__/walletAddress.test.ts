@@ -1,4 +1,5 @@
 import { privateKeyToAccount } from 'viem/accounts'
+import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runWalletAddress } from '@/commands/wallet/address.js'
@@ -11,7 +12,7 @@ const EXPECTED_ADDRESS = privateKeyToAccount(ANVIL_ACCOUNT_0).address
 
 describe('runWalletAddress', () => {
   const originalEnv = process.env
-  let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>
+  let writeSpy: MockInstance
 
   beforeEach(() => {
     process.env = { ...originalEnv }
