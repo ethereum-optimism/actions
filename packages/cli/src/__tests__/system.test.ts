@@ -60,9 +60,9 @@ describe('actions CLI (built binary)', () => {
     })
   })
 
-  describe('actions assets', () => {
-    it('emits JSON, exits 0, no ANSI on stdout', async () => {
-      const { stdout, stderr, code } = await run(['assets'])
+  describe('--json mode', () => {
+    it('actions --json assets -> JSON array, no ANSI', async () => {
+      const { stdout, stderr, code } = await run(['--json', 'assets'])
       expect(code).toBe(0)
       expect(stderr).toBe('')
       expect(stdout).not.toMatch(ANSI_PATTERN)
@@ -70,11 +70,9 @@ describe('actions CLI (built binary)', () => {
       expect(Array.isArray(body)).toBe(true)
       expect(body.length).toBeGreaterThan(0)
     })
-  })
 
-  describe('actions chains', () => {
-    it('emits JSON array with chainId + shortname per chain', async () => {
-      const { stdout, code } = await run(['chains'])
+    it('actions --json chains -> JSON array with chainId + shortname', async () => {
+      const { stdout, code } = await run(['--json', 'chains'])
       expect(code).toBe(0)
       const body = JSON.parse(stdout) as Array<{
         chainId: number
@@ -86,22 +84,9 @@ describe('actions CLI (built binary)', () => {
         expect(typeof entry.shortname).toBe('string')
       }
     })
-  })
 
-  describe('actions wallet address', () => {
-    it('missing PRIVATE_KEY -> stderr JSON code:config exit 3', async () => {
-      const { stdout, stderr, code } = await run(['wallet', 'address'], {
-        PRIVATE_KEY: '',
-      })
-      expect(code).toBe(3)
-      expect(stdout).toBe('')
-      const body = JSON.parse(stderr)
-      expect(body.code).toBe('config')
-      expect(body.retryable).toBe(false)
-    })
-
-    it('happy path with ANVIL_ACCOUNT_0 returns deterministic address', async () => {
-      const { stdout, code } = await run(['wallet', 'address'], {
+    it('actions --json wallet address -> JSON doc with deterministic address', async () => {
+      const { stdout, code } = await run(['--json', 'wallet', 'address'], {
         PRIVATE_KEY: ANVIL_ACCOUNT_0,
       })
       expect(code).toBe(0)
@@ -111,11 +96,21 @@ describe('actions CLI (built binary)', () => {
         '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'.toLowerCase(),
       )
     })
-  })
 
-  describe('actions wallet balance', () => {
-    it('blackhole RPC -> stderr JSON code:network retryable:true exit 4', async () => {
-      const { stderr, code } = await run(['wallet', 'balance'], {
+    it('missing PRIVATE_KEY with --json -> stderr JSON code:config exit 3', async () => {
+      const { stdout, stderr, code } = await run(
+        ['--json', 'wallet', 'address'],
+        { PRIVATE_KEY: '' },
+      )
+      expect(code).toBe(3)
+      expect(stdout).toBe('')
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('config')
+      expect(body.retryable).toBe(false)
+    })
+
+    it('blackhole RPC with --json -> stderr JSON code:network retryable:true exit 4', async () => {
+      const { stderr, code } = await run(['--json', 'wallet', 'balance'], {
         PRIVATE_KEY: ANVIL_ACCOUNT_0,
         BASE_SEPOLIA_RPC_URL: 'http://127.0.0.1:1',
         OP_SEPOLIA_RPC_URL: 'http://127.0.0.1:1',
@@ -126,12 +121,18 @@ describe('actions CLI (built binary)', () => {
       expect(body.code).toBe('network')
       expect(body.retryable).toBe(true)
     }, 30_000)
-  })
 
-  describe('wallet balance --chain flags', () => {
-    it('rejects both --chain and --chain-id with code:validation exit 2', async () => {
+    it('both --chain and --chain-id with --json -> stderr JSON code:validation exit 2', async () => {
       const { stdout, stderr, code } = await run(
-        ['wallet', 'balance', '--chain', 'base-sepolia', '--chain-id', '84532'],
+        [
+          '--json',
+          'wallet',
+          'balance',
+          '--chain',
+          'base-sepolia',
+          '--chain-id',
+          '84532',
+        ],
         { PRIVATE_KEY: ANVIL_ACCOUNT_0 },
       )
       expect(code).toBe(2)
@@ -141,14 +142,34 @@ describe('actions CLI (built binary)', () => {
       expect(body.error).toMatch(/not both/)
     })
 
-    it('rejects unknown --chain-id with code:validation exit 2', async () => {
+    it('unknown --chain-id with --json -> stderr JSON code:validation exit 2', async () => {
       const { stderr, code } = await run(
-        ['wallet', 'balance', '--chain-id', '999999999'],
+        ['--json', 'wallet', 'balance', '--chain-id', '999999999'],
         { PRIVATE_KEY: ANVIL_ACCOUNT_0 },
       )
       expect(code).toBe(2)
       const body = JSON.parse(stderr)
       expect(body.code).toBe('validation')
+    })
+  })
+
+  describe('default (human) mode', () => {
+    it('actions assets -> plain text, not JSON', async () => {
+      const { stdout, stderr, code } = await run(['assets'])
+      expect(code).toBe(0)
+      expect(stderr).toBe('')
+      expect(() => JSON.parse(stdout)).toThrow()
+      expect(stdout.length).toBeGreaterThan(0)
+    })
+
+    it('missing PRIVATE_KEY -> stderr "Error (config): ..." exit 3', async () => {
+      const { stdout, stderr, code } = await run(['wallet', 'address'], {
+        PRIVATE_KEY: '',
+      })
+      expect(code).toBe(3)
+      expect(stdout).toBe('')
+      expect(stderr).toMatch(/^Error \(config\):/)
+      expect(() => JSON.parse(stderr)).toThrow()
     })
   })
 

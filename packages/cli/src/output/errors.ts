@@ -1,5 +1,7 @@
 import { serializeBigInt } from '@eth-optimism/actions-sdk'
 
+import { isJsonMode } from '@/output/mode.js'
+
 /**
  * @description Error categories consumed by the caller. The code determines
  * the process exit value and the default retryability - callers may override
@@ -206,15 +208,22 @@ export function writeError(err: unknown): never {
   const cliErr = err instanceof CliError ? err : undefined
   const code: ErrorCode = cliErr?.code ?? 'unknown'
   const message = err instanceof Error ? err.message : String(err)
-  const body = serializeBigInt({
-    error: message,
-    code,
-    retryable: cliErr?.retryable ?? RETRYABLE_DEFAULT[code],
-    retry_after_ms: cliErr?.retryAfterMs,
-    details: cliErr ? safeDetails(cliErr.details) : undefined,
-  })
+  const retryable = cliErr?.retryable ?? RETRYABLE_DEFAULT[code]
+  const body = isJsonMode()
+    ? JSON.stringify(
+        serializeBigInt({
+          error: message,
+          code,
+          retryable,
+          retry_after_ms: cliErr?.retryAfterMs,
+          details: cliErr ? safeDetails(cliErr.details) : undefined,
+        }),
+        null,
+        2,
+      ) + '\n'
+    : `Error (${code}): ${message}\n`
   try {
-    process.stderr.write(JSON.stringify(body, null, 2) + '\n')
+    process.stderr.write(body)
   } catch (writeErr) {
     if (!isEpipe(writeErr)) throw writeErr
   }

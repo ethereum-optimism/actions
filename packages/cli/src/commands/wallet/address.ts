@@ -1,13 +1,12 @@
 import { walletContext } from '@/context/walletContext.js'
-import { writeJson } from '@/output/json.js'
+import { printOutput } from '@/output/printOutput.js'
 
 /**
- * @description Handler for `actions wallet address`. Returns the EOA
- * address derived from `PRIVATE_KEY`. Pure - no RPC call, no factory
- * lookup.
+ * @description Handler for `actions wallet address`. Emits the EOA
+ * address derived from `PRIVATE_KEY`. Pure, no RPC call.
  * @returns Promise that resolves once stdout has been written.
  */
 export async function runWalletAddress(): Promise<void> {
   const { wallet } = await walletContext()
-  writeJson({ address: wallet.address })
+  printOutput('address', { address: wallet.address })
 }

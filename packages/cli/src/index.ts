@@ -6,6 +6,7 @@ import { runAssets } from '@/commands/assets.js'
 import { runChains } from '@/commands/chains.js'
 import { walletCommand } from '@/commands/wallet/index.js'
 import { writeError } from '@/output/errors.js'
+import { setJsonMode } from '@/output/mode.js'
 
 function isEpipe(err: unknown): boolean {
   return (
@@ -33,6 +34,10 @@ const colorizeHelp = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR
 const program = new Command()
   .name('actions')
   .description('Command-line interface for the Actions SDK.')
+  .option('--json', 'emit machine-readable JSON on stdout and stderr')
+  .hook('preAction', (thisCommand) => {
+    setJsonMode(Boolean(thisCommand.opts().json))
+  })
   .configureHelp({
     ...new Help(),
     subcommandTerm: (cmd) =>
