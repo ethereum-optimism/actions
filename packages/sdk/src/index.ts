@@ -112,6 +112,7 @@ export type {
   WalletSwapParams,
 } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
+export { serializeBigInt } from '@/utils/serializers.js'
 export * from '@/wallet/core/error/errors.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
