@@ -1,11 +1,12 @@
 import { baseSepolia, optimismSepolia } from 'viem/chains'
+import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runChains } from '@/commands/chains.js'
 import * as baseCtx from '@/context/baseContext.js'
 
 describe('runChains', () => {
-  let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>
+  let writeSpy: MockInstance
 
   beforeEach(() => {
     writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
