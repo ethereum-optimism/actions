@@ -25,7 +25,7 @@ function load(): CliEnv {
 
 /**
  * @description Test-only: resets the lazy env cache so repeated `cleanEnv`
- * invocations can be observed. Production code must never call this — the
+ * invocations can be observed. Production code must never call this - the
  * subprocess model means the cache lives as long as the process.
  */
 export function __resetEnvCacheForTests(): void {
@@ -36,7 +36,7 @@ export function __resetEnvCacheForTests(): void {
  * @description Lazily reads a required env var through envalid. The first
  * call parses `process.env`; subsequent calls reuse the cached result for
  * the life of the subprocess. Throws `CliError('config')` if the var is not
- * set — `cleanEnv` is never called at module top level, so `actions --help`
+ * set - `cleanEnv` is never called at module top level, so `actions --help`
  * works with no env configured.
  * @param name - Env var name.
  * @returns The env var value.

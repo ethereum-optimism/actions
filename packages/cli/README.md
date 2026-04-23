@@ -22,13 +22,13 @@ embedding TypeScript. For the full agent contract see
 | `UNICHAIN_RPC_URL`          | optional     | RPC override for Unichain.                               |
 
 `actions --help` and the read-only commands (`assets`, `chains`) work
-with no env set — `PRIVATE_KEY` is read lazily inside wallet-scoped
+with no env set - `PRIVATE_KEY` is read lazily inside wallet-scoped
 commands.
 
 ### Env hygiene
 
 Prefer [`direnv`](https://direnv.net/) or a `.env` file over prefixing
-commands with `PRIVATE_KEY=0x... actions ...` — the latter lands in
+commands with `PRIVATE_KEY=0x... actions ...` - the latter lands in
 `~/.bash_history`.
 
 ## Local development
@@ -52,7 +52,7 @@ PR 1 ships a baked demo `NodeActionsConfig` under `src/demo/`. The
 allowlisted assets and markets mirror
 `packages/demo/backend/src/config/` so the CLI and backend operate
 against the same demo set. Chains: Base Sepolia, Optimism Sepolia,
-Unichain. Bundlers are intentionally omitted — the EOA signer pays gas
+Unichain. Bundlers are intentionally omitted - the EOA signer pays gas
 directly.
 
 The interactive agent-onboarding flow (#411) will swap `loadConfig()`'s

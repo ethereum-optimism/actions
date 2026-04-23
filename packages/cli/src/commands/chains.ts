@@ -4,7 +4,7 @@ import { shortnameFor } from '@/resolvers/chains.js'
 
 /**
  * @description Handler for `actions chains`. Emits the configured chain
- * set as JSON — each entry carries `chainId`, canonical `shortname`, and
+ * set as JSON - each entry carries `chainId`, canonical `shortname`, and
  * any explicit `rpcUrls`. No SDK call; the data comes from the resolved
  * config and the chain resolver's inverse map.
  * @returns Promise that resolves once stdout has been written.

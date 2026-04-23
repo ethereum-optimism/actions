@@ -15,7 +15,7 @@ function rpcUrls(key: CliEnvKey): string[] | undefined {
 
 /**
  * @description Returns the CLI's baked demo chain set: Base Sepolia,
- * Optimism Sepolia, Unichain — mirroring the demo backend's market
+ * Optimism Sepolia, Unichain - mirroring the demo backend's market
  * footprint. RPC URLs come from the matching `*_RPC_URL` env vars when
  * set, otherwise viem's chain defaults apply. Bundler configuration is
  * omitted intentionally: the CLI signs transactions from an EOA and the

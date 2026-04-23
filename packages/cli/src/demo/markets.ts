@@ -22,7 +22,7 @@ export const GauntletUSDCDemo: LendMarketConfig = {
 
 /**
  * @description Aave v3 ETH market on Optimism Sepolia. The market address is
- * the WETH reserve token — Aave exposes ETH deposits through its WETH
+ * the WETH reserve token - Aave exposes ETH deposits through its WETH
  * gateway. Mirrored from the demo backend's config.
  */
 export const AaveETH: LendMarketConfig = {

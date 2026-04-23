@@ -51,7 +51,7 @@ export function resolveChain(
 }
 
 /**
- * @description Inverse of `resolveChain` — maps a `SupportedChainId` back
+ * @description Inverse of `resolveChain` - maps a `SupportedChainId` back
  * to its canonical shortname. Used by the `chains` command to render the
  * configured chain set. The round-trip
  * `shortnameFor(resolveChain(name)) === name` holds for every name in the

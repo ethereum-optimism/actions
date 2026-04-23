@@ -5,7 +5,7 @@ import { CliError } from '@/output/errors.js'
 /**
  * @description Resolves an asset symbol (e.g. `USDC_DEMO`, `eth`) to the
  * matching `Asset` entry from an allowlist. Matching is case-insensitive on
- * `metadata.symbol`. The resolver is config-agnostic — callers pass the
+ * `metadata.symbol`. The resolver is config-agnostic - callers pass the
  * allowlist explicitly so the same function works for demo config, user
  * config (#411), and tests.
  * @param symbol - User-provided asset symbol from CLI argv.
