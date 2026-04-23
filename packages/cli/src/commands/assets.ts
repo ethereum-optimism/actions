@@ -3,7 +3,7 @@ import { writeJson } from '@/output/json.js'
 
 /**
  * @description Handler for `actions assets`. Returns the configured
- * allowlist of assets as a JSON array on stdout. Read-only — no signer
+ * allowlist of assets as a JSON array on stdout. Read-only - no signer
  * needed.
  * @returns Promise that resolves once stdout has been written.
  */

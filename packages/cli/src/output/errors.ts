@@ -2,7 +2,7 @@ import { serializeBigInt } from '@eth-optimism/actions-sdk'
 
 /**
  * @description Agent-consumable error categories. The code determines the
- * process exit value and the default retryability — callers may override
+ * process exit value and the default retryability - callers may override
  * the latter through `CliError.retryableOverride`.
  */
 export type ErrorCode =
@@ -174,7 +174,7 @@ function redactRecord(
  * to stderr. Drops known-sensitive keys (signer metadata, request bodies),
  * reduces viem error instances to `{ errorName, shortMessage }`, and strips
  * API-key segments from any RPC/bundler URLs it encounters. The allowlist is
- * intentionally conservative — unknown scalars are preserved only when their
+ * intentionally conservative - unknown scalars are preserved only when their
  * key is in `SCALAR_ALLOWLIST`.
  * @param details - Arbitrary data attached to a `CliError`.
  * @returns A safe-to-emit clone of `details`.
