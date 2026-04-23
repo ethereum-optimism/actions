@@ -1,7 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runAssets } from '@/commands/assets.js'
 import * as baseCtx from '@/context/baseContext.js'
+import { setJsonMode } from '@/output/mode.js'
+
+beforeEach(() => setJsonMode(true))
+afterEach(() => setJsonMode(false))
 
 describe('runAssets', () => {
   const writeSpy = vi

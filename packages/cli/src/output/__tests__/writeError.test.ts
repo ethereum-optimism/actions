@@ -1,6 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CliError, writeError } from '@/output/errors.js'
+import { setJsonMode } from '@/output/mode.js'
+
+beforeEach(() => setJsonMode(true))
+afterEach(() => setJsonMode(false))
 
 const exitSpy = vi
   .spyOn(process, 'exit')
@@ -88,6 +92,14 @@ describe('writeError', () => {
     const raw = stderrSpy.mock.calls[0]?.[0]
     const text = String(raw)
     expect(text.endsWith('\n')).toBe(true)
+  })
+
+  it('emits human-readable text when json mode is off', () => {
+    setJsonMode(false)
+    writeError(new CliError('config', 'no key'))
+    const text = String(stderrSpy.mock.calls[0]?.[0])
+    expect(text).toBe('Error (config): no key\n')
+    expect(() => JSON.parse(text)).toThrow()
   })
 
   it('swallows EPIPE from the stderr write', () => {

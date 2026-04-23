@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runChains } from '@/commands/chains.js'
 import * as baseCtx from '@/context/baseContext.js'
+import { setJsonMode } from '@/output/mode.js'
+
+beforeEach(() => setJsonMode(true))
+afterEach(() => setJsonMode(false))
 
 describe('runChains', () => {
   let writeSpy: MockInstance
