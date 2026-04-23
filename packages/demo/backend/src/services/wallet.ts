@@ -6,7 +6,11 @@ import type {
   UserOperationTransactionReceipt,
   Wallet,
 } from '@eth-optimism/actions-sdk'
-import { getAssetAddress, USDC_DEMO } from '@eth-optimism/actions-sdk'
+import {
+  getAssetAddress,
+  serializeBigInt,
+  USDC_DEMO,
+} from '@eth-optimism/actions-sdk'
 import type { User } from '@privy-io/node'
 import type { Address } from 'viem'
 import { encodeFunctionData, formatUnits, getAddress } from 'viem'
@@ -15,7 +19,6 @@ import { baseSepolia } from 'viem/chains'
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getActions, getPrivyClient } from '@/config/actions.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
-import { serializeBigInt } from '@/utils/serializers.js'
 
 /**
  * Options for getting all wallets
