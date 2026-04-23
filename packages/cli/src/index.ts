@@ -32,7 +32,7 @@ const colorizeHelp = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR
 
 const program = new Command()
   .name('actions')
-  .description('Agent-first CLI for the Actions SDK.')
+  .description('Command-line interface for the Actions SDK.')
   .configureHelp({
     ...new Help(),
     subcommandTerm: (cmd) =>

@@ -5,8 +5,7 @@ import { runWalletBalance } from '@/commands/wallet/balance.js'
 
 /**
  * @description Builds the `wallet` subcommand tree. Registered children
- * are the wallet-scoped commands that require `PRIVATE_KEY`. PR 2/3 add
- * `wallet lend …` and `wallet swap …` under this command.
+ * are the wallet-scoped commands that require `PRIVATE_KEY`.
  * @returns Commander `Command` configured with its subcommands.
  */
 export function walletCommand(): Command {

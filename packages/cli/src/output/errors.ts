@@ -1,8 +1,8 @@
 import { serializeBigInt } from '@eth-optimism/actions-sdk'
 
 /**
- * @description Agent-consumable error categories. The code determines the
- * process exit value and the default retryability - callers may override
+ * @description Error categories consumed by the caller. The code determines
+ * the process exit value and the default retryability - callers may override
  * the latter through `CliError.retryableOverride`.
  */
 export type ErrorCode =
@@ -31,7 +31,7 @@ const RETRYABLE_DEFAULT: Record<ErrorCode, boolean> = {
 /**
  * @description Structured error raised from command handlers. Carries a
  * discriminator `code`, an optional `details` payload, and optional
- * retry hints the agent can use without parsing free-form messages.
+ * retry hints the caller can use without parsing free-form messages.
  */
 export class CliError extends Error {
   constructor(
@@ -63,7 +63,7 @@ export function exitCodeFor(code: ErrorCode): number {
  * @description Default retryability hint for an `ErrorCode`. Callers may
  * override per-instance via `CliError.retryableOverride`.
  * @param code - Error category.
- * @returns `true` when the agent may retry without user intervention.
+ * @returns `true` when the caller may retry without user intervention.
  */
 export function retryableDefaultFor(code: ErrorCode): boolean {
   return RETRYABLE_DEFAULT[code]
@@ -195,7 +195,7 @@ function isEpipe(err: unknown): boolean {
 
 /**
  * @description Writes an error envelope to stderr and exits with the
- * taxonomy's mapped exit code. The body matches the agent contract
+ * taxonomy's mapped exit code. The body matches the contract
  * `{ error, code, retryable, retry_after_ms?, details? }`. `details` is
  * always redacted; `bigint` values in any field are coerced to strings.
  * EPIPE on the stderr write is swallowed (the parent has closed the pipe).
