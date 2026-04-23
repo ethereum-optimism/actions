@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { Command } from 'commander'
+import { Command, Help } from 'commander'
+import pico from 'picocolors'
 
 import { runAssets } from '@/commands/assets.js'
 import { runChains } from '@/commands/chains.js'
@@ -27,9 +28,20 @@ process.on('uncaughtException', (err) => {
 })
 process.on('unhandledRejection', (err) => writeError(err))
 
+const colorizeHelp = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR
+
 const program = new Command()
   .name('actions')
   .description('Agent-first CLI for the Actions SDK.')
+  .configureHelp({
+    ...new Help(),
+    subcommandTerm: (cmd) =>
+      colorizeHelp ? pico.cyan(cmd.name()) : cmd.name(),
+    commandUsage: (cmd) => {
+      const usage = new Help().commandUsage(cmd)
+      return colorizeHelp ? pico.bold(usage) : usage
+    },
+  })
 
 program
   .command('assets')

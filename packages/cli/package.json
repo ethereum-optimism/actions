@@ -35,6 +35,7 @@
     "@eth-optimism/actions-sdk": "workspace:*",
     "commander": "^13.1.0",
     "envalid": "^8.1.0",
+    "picocolors": "^1.1.1",
     "viem": "^2.24.1"
   },
   "devDependencies": {
