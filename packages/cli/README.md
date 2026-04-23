@@ -1,16 +1,14 @@
 # actions-cli
 
-Agent-first command-line interface for the Actions SDK. Emits JSON on
-stdout, JSON error envelopes on stderr, distinct exit codes per failure
-category. Consumed as a subprocess by agent runtimes (e.g. the `opie`
-Slack bot).
+Command-line interface for the Actions SDK. Emits JSON on stdout, JSON
+error envelopes on stderr, distinct exit codes per failure category.
+Designed to be consumed as a subprocess: spawn, read stdout, parse.
 
 ## Audience
 
-`actions-cli` is designed for programmatic callers (LLM agents,
-automations, CI jobs) that need to invoke SDK operations without
-embedding TypeScript. For the full agent contract see
-[`SKILL.md`](./SKILL.md).
+`actions-cli` is for programmatic callers (automations, CI jobs, shell
+scripts) that need to invoke SDK operations without embedding TypeScript.
+For the skill contract see [`SKILL.md`](./SKILL.md).
 
 ## Environment
 
@@ -22,7 +20,7 @@ embedding TypeScript. For the full agent contract see
 | `UNICHAIN_RPC_URL`          | optional     | RPC override for Unichain.                               |
 
 `actions --help` and the read-only commands (`assets`, `chains`) work
-with no env set - `PRIVATE_KEY` is read lazily inside wallet-scoped
+with no env set. `PRIVATE_KEY` is read lazily inside wallet-scoped
 commands.
 
 ### Env hygiene
@@ -48,24 +46,8 @@ Smoke-test the built binary:
 
 ## Demo configuration
 
-PR 1 ships a baked demo `NodeActionsConfig` under `src/demo/`. The
-allowlisted assets and markets mirror
+The package ships a baked demo `NodeActionsConfig` under `src/demo/`.
+The allowlisted assets and markets mirror
 `packages/demo/backend/src/config/` so the CLI and backend operate
 against the same demo set. Chains: Base Sepolia, Optimism Sepolia,
-Unichain. Bundlers are intentionally omitted - the EOA signer pays gas
-directly.
-
-The interactive agent-onboarding flow (#411) will swap `loadConfig()`'s
-source for per-user state without touching callers. Keep every `Actions`
-construction site behind `loadConfig()` so the follow-up remains a
-drop-in replacement.
-
-## References
-
-- Agent skill: [`SKILL.md`](./SKILL.md)
-- Brainstorm (on `kevin/actions-cli`):
-  [`docs/brainstorms/2026-04-21-actions-cli-brainstorm.md`](https://github.com/ethereum-optimism/actions/blob/kevin/actions-cli/docs/brainstorms/2026-04-21-actions-cli-brainstorm.md)
-- Plan (on `kevin/actions-cli`):
-  [`docs/plans/2026-04-21-feat-actions-cli-scaffolding-plan.md`](https://github.com/ethereum-optimism/actions/blob/kevin/actions-cli/docs/plans/2026-04-21-feat-actions-cli-scaffolding-plan.md)
-- Parent issue: [#407](https://github.com/ethereum-optimism/actions/issues/407)
-- This PR: [#408](https://github.com/ethereum-optimism/actions/issues/408)
+Unichain. Bundlers are omitted - the EOA signer pays gas directly.

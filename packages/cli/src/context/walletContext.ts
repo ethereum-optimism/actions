@@ -27,12 +27,11 @@ function parseSigner(privateKey: string): LocalAccount {
 }
 
 /**
- * @description Builds the tier-1 context for wallet-scoped commands
- * (`wallet address`, `wallet balance`, and PR 2/3 lend/swap handlers).
- * Derives a viem `LocalAccount` from `PRIVATE_KEY` and wraps it in an
- * EOA-backed Actions wallet via `actions.wallet.toActionsWallet(localAccount)`.
- * No smart-wallet factory call, no bundler dependency - the signer pays
- * gas directly from its own balance.
+ * @description Builds the context for wallet-scoped commands. Derives a
+ * viem `LocalAccount` from `PRIVATE_KEY` and wraps it in an EOA-backed
+ * Actions wallet via `actions.wallet.toActionsWallet(localAccount)`. No
+ * smart-wallet factory call, no bundler dependency - the signer pays gas
+ * directly from its own balance.
  * @returns Context with config, actions, signer, and the EOA-backed wallet.
  * @throws `CliError` with code `config` when `PRIVATE_KEY` is missing or
  * malformed.

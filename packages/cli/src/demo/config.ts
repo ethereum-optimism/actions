@@ -14,8 +14,8 @@ import { AaveETH, GauntletUSDCDemo } from '@/demo/markets.js'
  * and market set so CLI behaviour stays aligned with the demo backend.
  * Divergences: `hostedWalletConfig` is omitted (the CLI uses an EOA-backed
  * wallet via `actions.wallet.toActionsWallet(localAccount)`); `swap` is
- * omitted entirely (PR 3 adds it); chain bundlers are omitted (no ERC-4337
- * gas abstraction - the signer pays gas directly).
+ * omitted; chain bundlers are omitted (no ERC-4337 gas abstraction - the
+ * signer pays gas directly).
  * @returns `NodeActionsConfig` with no hosted wallet provider configured.
  */
 export function getDemoConfig(): NodeActionsConfig<never> {
