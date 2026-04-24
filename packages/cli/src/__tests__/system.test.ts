@@ -151,6 +151,46 @@ describe('actions CLI (built binary)', () => {
       const body = JSON.parse(stderr)
       expect(body.code).toBe('validation')
     })
+
+    it('unknown --market on lend open -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run(
+        [
+          '--json',
+          'wallet',
+          'lend',
+          'open',
+          '--market',
+          'no-such-market',
+          '--amount',
+          '1',
+        ],
+        { PRIVATE_KEY: ANVIL_ACCOUNT_0 },
+      )
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Unknown market/)
+    })
+
+    it('non-positive --amount on lend close -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run(
+        [
+          '--json',
+          'wallet',
+          'lend',
+          'close',
+          '--market',
+          'aave-eth',
+          '--amount',
+          '0',
+        ],
+        { PRIVATE_KEY: ANVIL_ACCOUNT_0 },
+      )
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Invalid --amount/)
+    })
   })
 
   describe('default (human) mode', () => {
