@@ -382,28 +382,35 @@ export abstract class SwapProvider<
   /**
    * Build a SwapTransaction from a quote by fetching approvals and wrapping the swap calldata.
    * Used by both the quote-execute path and provider _execute implementations.
-   * @param quote - SwapQuote with recipient set for allowance checks
+   * Normalises `quote.recipient` to `quote.quotedRecipient` when absent so
+   * provider `_buildApprovals` implementations can dereference `quote.recipient`
+   * without per-provider fallback logic.
+   * @param quote - SwapQuote (recipient may be unset; defaults to quotedRecipient)
    */
   protected async buildSwapTransactions(
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
-    const approvals = await this._buildApprovals(quote)
+    const normalized: SwapQuote = {
+      ...quote,
+      recipient: quote.recipient ?? quote.quotedRecipient,
+    }
+    const approvals = await this._buildApprovals(normalized)
 
     const swapTx: TransactionData = {
-      to: quote.execution.routerAddress,
-      data: quote.execution.swapCalldata,
-      value: quote.execution.value,
+      to: normalized.execution.routerAddress,
+      data: normalized.execution.swapCalldata,
+      value: normalized.execution.value,
     }
 
     return {
-      amountIn: quote.amountIn,
-      amountOut: quote.amountOut,
-      amountInRaw: quote.amountInRaw,
-      amountOutRaw: quote.amountOutRaw,
-      assetIn: quote.assetIn,
-      assetOut: quote.assetOut,
-      price: quote.price,
-      priceImpact: quote.priceImpact,
+      amountIn: normalized.amountIn,
+      amountOut: normalized.amountOut,
+      amountInRaw: normalized.amountInRaw,
+      amountOutRaw: normalized.amountOutRaw,
+      assetIn: normalized.assetIn,
+      assetOut: normalized.assetOut,
+      price: normalized.price,
+      priceImpact: normalized.priceImpact,
       transactionData: { ...approvals, swap: swapTx },
     }
   }
