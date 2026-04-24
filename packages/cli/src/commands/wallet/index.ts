@@ -3,6 +3,7 @@ import { Command } from 'commander'
 import { runWalletAddress } from '@/commands/wallet/address.js'
 import { runWalletBalance } from '@/commands/wallet/balance.js'
 import { walletLendCommand } from '@/commands/wallet/lend/index.js'
+import { walletSwapCommand } from '@/commands/wallet/swap/index.js'
 
 /**
  * @description Builds the `wallet` subcommand tree. Registered children
@@ -30,5 +31,6 @@ export function walletCommand(): Command {
     )
     .action(runWalletBalance)
   command.addCommand(walletLendCommand())
+  command.addCommand(walletSwapCommand())
   return command
 }
