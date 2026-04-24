@@ -253,6 +253,14 @@ export interface SwapQuote {
 }
 
 /**
+ * A SwapQuote with recipient guaranteed to be set.
+ * Produced by SwapProvider.buildSwapTransactions before invoking
+ * provider-specific _buildApprovals, so sub-providers can dereference
+ * `quote.recipient` without per-provider fallback logic.
+ */
+export type NormalizedSwapQuote = SwapQuote & { recipient: Address }
+
+/**
  * Market information for a swap hop
  */
 export interface SwapMarketInfo {

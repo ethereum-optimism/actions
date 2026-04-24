@@ -14,6 +14,7 @@ import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
+  NormalizedSwapQuote,
   ResolvedSwapParams,
   SwapExecuteParams,
   SwapMarket,
@@ -390,7 +391,7 @@ export abstract class SwapProvider<
   protected async buildSwapTransactions(
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
-    const normalized: SwapQuote = {
+    const normalized: NormalizedSwapQuote = {
       ...quote,
       recipient: quote.recipient ?? quote.quotedRecipient,
     }
@@ -568,11 +569,11 @@ export abstract class SwapProvider<
   /**
    * Build provider-specific approval transactions for a swap.
    * Called by the base class during executeFromQuote with a validated recipient.
-   * @param quote - SwapQuote with recipient set to the real wallet address
+   * @param quote - NormalizedSwapQuote with recipient guaranteed to be set
    * @returns Approval transactions needed before the swap (tokenApproval, permit2Approval)
    */
   protected abstract _buildApprovals(
-    quote: SwapQuote,
+    quote: NormalizedSwapQuote,
   ): Promise<Omit<SwapTransactionData, 'swap'>>
 
   protected abstract _getMarket(

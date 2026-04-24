@@ -25,6 +25,7 @@ import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
+  NormalizedSwapQuote,
   ResolvedSwapParams,
   SwapMarket,
   SwapQuote,
@@ -64,7 +65,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
     return this.buildSwapTransactions(swapQuote)
   }
 
-  protected async _buildApprovals(quote: SwapQuote) {
+  protected async _buildApprovals(quote: NormalizedSwapQuote) {
     const addresses = getUniswapAddresses(quote.chainId)
 
     return this.buildPermit2Approvals(
@@ -73,8 +74,8 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         assetOut: quote.assetOut,
         slippage: quote.slippage,
         deadline: quote.deadline,
-        recipient: quote.recipient ?? quote.quotedRecipient,
-        walletAddress: quote.recipient ?? quote.quotedRecipient,
+        recipient: quote.recipient,
+        walletAddress: quote.recipient,
         chainId: quote.chainId,
         amountInRaw: quote.amountInRaw,
       },

@@ -118,6 +118,47 @@ describe('WalletSwapNamespace', () => {
       )
     })
 
+    it('defaults recipient to wallet address when omitted', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      await namespace.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: ETH,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      expect(provider.mockExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipient: mockWalletAddress,
+        }),
+      )
+    })
+
+    it('preserves explicit recipient over wallet address', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+      const customRecipient =
+        '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address
+
+      await namespace.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: ETH,
+        chainId: 84532 as SupportedChainId,
+        recipient: customRecipient,
+      })
+
+      expect(provider.mockExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipient: customRecipient,
+        }),
+      )
+    })
+
     it('throws when no provider configured', async () => {
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({}, wallet)
