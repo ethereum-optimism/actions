@@ -1,6 +1,8 @@
 import type {
   Asset,
   EOATransactionReceipt,
+  LendMarket,
+  LendMarketPosition,
   SupportedChainId,
   TokenBalance,
   UserOperationTransactionReceipt,
@@ -46,6 +48,9 @@ interface Printers {
   balance: readonly TokenBalance[]
   lendOpen: LendActionDoc
   lendClose: LendActionDoc
+  lendMarkets: readonly LendMarket[]
+  lendMarket: LendMarket
+  lendPosition: LendMarketPosition
 }
 
 function formatAssets(assets: Printers['assets']): void {
@@ -113,6 +118,33 @@ function formatLendAction(doc: LendActionDoc): void {
   }
 }
 
+function formatLendMarket(m: LendMarket): void {
+  writeLine(
+    `${m.name}  symbol=${m.asset.metadata.symbol} chain=${m.marketId.chainId} apy=${(m.apy.total * 100).toFixed(2)}%`,
+  )
+  writeLine(`  address=${m.marketId.address}`)
+  writeLine(
+    `  totalAssets=${m.supply.totalAssets} totalShares=${m.supply.totalShares}`,
+  )
+}
+
+function formatLendMarkets(markets: readonly LendMarket[]): void {
+  if (markets.length === 0) {
+    writeLine('(no markets)')
+    return
+  }
+  for (const m of markets) formatLendMarket(m)
+}
+
+function formatLendPosition(p: LendMarketPosition): void {
+  writeLine(
+    `position: balance=${p.balanceFormatted} shares=${p.sharesFormatted} chain=${p.marketId.chainId}`,
+  )
+  writeLine(
+    `  market=${p.marketId.address} balanceWei=${p.balance} sharesRaw=${p.shares}`,
+  )
+}
+
 const TEXT_FORMATTERS: {
   [K in keyof Printers]: (data: Printers[K]) => void
 } = {
@@ -122,6 +154,9 @@ const TEXT_FORMATTERS: {
   balance: formatBalance,
   lendOpen: formatLendAction,
   lendClose: formatLendAction,
+  lendMarkets: formatLendMarkets,
+  lendMarket: formatLendMarket,
+  lendPosition: formatLendPosition,
 }
 
 /**
