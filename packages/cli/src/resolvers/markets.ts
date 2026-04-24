@@ -1,5 +1,6 @@
 import type {
   LendMarketConfig,
+  LendProviderConfig,
   NodeActionsConfig,
 } from '@eth-optimism/actions-sdk'
 
@@ -13,7 +14,11 @@ function collectMarkets(
   config: NodeActionsConfig<never>,
 ): readonly LendMarketConfig[] {
   const out: LendMarketConfig[] = []
-  for (const provider of Object.values(config.lend ?? {})) {
+  // `LendConfig` mixes provider configs with a sibling `settings: LendSettings`
+  // entry; only provider entries carry `marketAllowlist`, so skip `settings`.
+  for (const [key, value] of Object.entries(config.lend ?? {})) {
+    if (key === 'settings') continue
+    const provider = value as LendProviderConfig | undefined
     if (provider?.marketAllowlist) out.push(...provider.marketAllowlist)
   }
   return out
