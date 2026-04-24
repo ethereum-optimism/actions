@@ -14,7 +14,7 @@ afterEach(() => setJsonMode(false))
 const stubQuote = (provider: string, amountOutRaw: bigint) => ({
   assetIn: { metadata: { symbol: 'USDC_DEMO' } },
   assetOut: { metadata: { symbol: 'OP_DEMO' } },
-  chainId: 130,
+  chainId: 84532,
   amountIn: 5,
   amountInRaw: 5000000n,
   amountOut: 4.9,
@@ -62,7 +62,7 @@ describe('runSwapQuote', () => {
       in: 'USDC_DEMO',
       out: 'OP_DEMO',
       amountIn: '5',
-      chain: 'unichain',
+      chain: 'base-sepolia',
     })
     const call = captured[0] as {
       assetIn: { metadata: { symbol: string } }
@@ -75,7 +75,7 @@ describe('runSwapQuote', () => {
     }
     expect(call.assetIn.metadata.symbol).toBe('USDC_DEMO')
     expect(call.assetOut.metadata.symbol).toBe('OP_DEMO')
-    expect(call.chainId).toBe(130)
+    expect(call.chainId).toBe(84532)
     expect(call.amountIn).toBe(5)
     expect(call.amountOut).toBeUndefined()
     expect(call.slippage).toBeUndefined()
@@ -95,7 +95,7 @@ describe('runSwapQuote', () => {
       in: 'USDC_DEMO',
       out: 'OP_DEMO',
       amountIn: '1',
-      chain: 'unichain',
+      chain: 'base-sepolia',
       slippage: '0.5',
     })
     const call = captured[0] as { slippage: number }
@@ -112,7 +112,7 @@ describe('runSwapQuote', () => {
       in: 'USDC_DEMO',
       out: 'OP_DEMO',
       amountIn: '1',
-      chain: 'unichain',
+      chain: 'base-sepolia',
       provider: 'velodrome',
     })
     const call = captured[0] as { provider: string }
@@ -127,7 +127,7 @@ describe('runSwapQuote', () => {
         out: 'OP_DEMO',
         amountIn: '1',
         amountOut: '1',
-        chain: 'unichain',
+        chain: 'base-sepolia',
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -142,7 +142,7 @@ describe('runSwapQuote', () => {
       await runSwapQuote({
         in: 'USDC_DEMO',
         out: 'OP_DEMO',
-        chain: 'unichain',
+        chain: 'base-sepolia',
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -158,7 +158,7 @@ describe('runSwapQuote', () => {
         in: 'NOPE',
         out: 'OP_DEMO',
         amountIn: '1',
-        chain: 'unichain',
+        chain: 'base-sepolia',
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -174,7 +174,7 @@ describe('runSwapQuote', () => {
         in: 'USDC_DEMO',
         out: 'OP_DEMO',
         amountIn: '1',
-        chain: 'unichain',
+        chain: 'base-sepolia',
         provider: 'sushiswap',
       })
       throw new Error('did not throw')
@@ -192,7 +192,7 @@ describe('runSwapQuote', () => {
           in: 'USDC_DEMO',
           out: 'OP_DEMO',
           amountIn: '1',
-          chain: 'unichain',
+          chain: 'base-sepolia',
           slippage: bad,
         })
         throw new Error(`did not throw for ${bad}`)
@@ -231,7 +231,7 @@ describe('runSwapQuotes', () => {
       in: 'USDC_DEMO',
       out: 'OP_DEMO',
       amountIn: '5',
-      chain: 'unichain',
+      chain: 'base-sepolia',
     })
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
     expect(body).toHaveLength(2)

@@ -31,7 +31,7 @@ describe('runSwapMarkets', () => {
   it('emits the array of markets', async () => {
     mockActions(async () => [
       {
-        marketId: { poolId: '0xpool', chainId: 130 },
+        marketId: { poolId: '0xpool', chainId: 84532 },
         assets: [
           { metadata: { symbol: 'USDC_DEMO' } },
           { metadata: { symbol: 'OP_DEMO' } },
@@ -53,8 +53,8 @@ describe('runSwapMarkets', () => {
       captured.push(params)
       return []
     })
-    await runSwapMarkets({ chain: 'unichain' })
-    expect(captured[0]).toEqual({ chainId: 130 })
+    await runSwapMarkets({ chain: 'base-sepolia' })
+    expect(captured[0]).toEqual({ chainId: 84532 })
   })
 
   it('rejects unknown --chain values with CliError(validation)', async () => {

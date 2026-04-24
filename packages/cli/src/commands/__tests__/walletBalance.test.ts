@@ -122,7 +122,7 @@ describe('runWalletBalance', () => {
     ]
     vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
       config: {
-        chains: [{ chainId: 84532 }, { chainId: 11155420 }, { chainId: 130 }],
+        chains: [{ chainId: 84532 }, { chainId: 11155420 }],
       } as never,
       actions: {} as never,
       signer: {} as never,
