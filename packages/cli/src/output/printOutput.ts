@@ -4,6 +4,8 @@ import type {
   LendMarket,
   LendMarketPosition,
   SupportedChainId,
+  SwapMarket,
+  SwapQuote,
   TokenBalance,
   UserOperationTransactionReceipt,
 } from '@eth-optimism/actions-sdk'
@@ -41,6 +43,21 @@ export interface LendActionDoc {
   >
 }
 
+export interface SwapExecuteDoc {
+  action: 'execute'
+  assetIn: { symbol: string }
+  assetOut: { symbol: string }
+  amountIn: number
+  amountOut: number
+  amountInRaw: bigint
+  amountOutRaw: bigint
+  price: number
+  priceImpact: number
+  transactions: ReadonlyArray<
+    EOATransactionReceipt | UserOperationTransactionReceipt
+  >
+}
+
 interface Printers {
   assets: readonly Asset[]
   chains: readonly ChainRow[]
@@ -51,6 +68,11 @@ interface Printers {
   lendMarkets: readonly LendMarket[]
   lendMarket: LendMarket
   lendPosition: LendMarketPosition
+  swapMarkets: readonly SwapMarket[]
+  swapMarket: SwapMarket
+  swapQuote: SwapQuote
+  swapQuotes: readonly SwapQuote[]
+  swapExecute: SwapExecuteDoc
 }
 
 function formatAssets(assets: Printers['assets']): void {
@@ -145,6 +167,54 @@ function formatLendPosition(p: LendMarketPosition): void {
   )
 }
 
+function formatSwapMarket(m: SwapMarket): void {
+  const [a, b] = m.assets
+  writeLine(
+    `${a.metadata.symbol}/${b.metadata.symbol}  pool=${m.marketId.poolId} chain=${m.marketId.chainId} provider=${m.provider} fee=${m.fee}`,
+  )
+}
+
+function formatSwapMarkets(markets: readonly SwapMarket[]): void {
+  if (markets.length === 0) {
+    writeLine('(no markets)')
+    return
+  }
+  for (const m of markets) formatSwapMarket(m)
+}
+
+function formatSwapQuote(q: SwapQuote): void {
+  writeLine(
+    `${q.amountIn} ${q.assetIn.metadata.symbol} -> ${q.amountOut} ${q.assetOut.metadata.symbol} (provider=${q.provider}, chain=${q.chainId})`,
+  )
+  writeLine(
+    `  price=${q.price} priceImpact=${(q.priceImpact * 100).toFixed(3)}% slippage=${(q.slippage * 100).toFixed(3)}%`,
+  )
+  writeLine(`  amountOutMin=${q.amountOutMin} expiresAt=${q.expiresAt}`)
+}
+
+function formatSwapQuotes(quotes: readonly SwapQuote[]): void {
+  if (quotes.length === 0) {
+    writeLine('(no quotes)')
+    return
+  }
+  for (const q of quotes) formatSwapQuote(q)
+}
+
+function formatSwapExecute(doc: SwapExecuteDoc): void {
+  writeLine(
+    `swapped ${doc.amountIn} ${doc.assetIn.symbol} for ${doc.amountOut} ${doc.assetOut.symbol} (price=${doc.price})`,
+  )
+  for (const tx of doc.transactions) {
+    if ('transactionHash' in tx) {
+      writeLine(`  tx=${tx.transactionHash} status=${tx.status}`)
+    } else {
+      const userOpHash = (tx as { userOpHash?: string }).userOpHash ?? '?'
+      const success = (tx as { success?: boolean }).success
+      writeLine(`  userOp=${userOpHash} success=${success}`)
+    }
+  }
+}
+
 const TEXT_FORMATTERS: {
   [K in keyof Printers]: (data: Printers[K]) => void
 } = {
@@ -157,6 +227,11 @@ const TEXT_FORMATTERS: {
   lendMarkets: formatLendMarkets,
   lendMarket: formatLendMarket,
   lendPosition: formatLendPosition,
+  swapMarkets: formatSwapMarkets,
+  swapMarket: formatSwapMarket,
+  swapQuote: formatSwapQuote,
+  swapQuotes: formatSwapQuotes,
+  swapExecute: formatSwapExecute,
 }
 
 /**

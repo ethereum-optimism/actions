@@ -67,7 +67,9 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
         : {
             ...params,
             walletAddress: this.wallet.address,
-            recipient: await this.resolveRecipient(params.recipient),
+            recipient: await this.resolveRecipient(
+              params.recipient ?? this.wallet.address,
+            ),
           }
 
     const provider = this.resolveProvider(

@@ -26,6 +26,16 @@ actions --json wallet balance --chain base-sepolia
   providers (no wallet).
 - `actions lend market --market <name>` - inspect one market by name
   (no wallet).
+- `actions swap markets [--chain <name>]` - all swap markets across
+  configured providers (no wallet).
+- `actions swap market --pool <id> --chain <name>` - inspect one swap
+  market by pool id (no wallet).
+- `actions swap quote --in <symbol> --out <symbol>
+  (--amount-in <n> | --amount-out <n>) --chain <name>
+  [--provider uniswap|velodrome] [--slippage <pct>]` - best quote
+  (no wallet).
+- `actions swap quotes ...` - same flag set; returns every provider's
+  quote sorted best price first.
 - `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
 - `actions wallet balance [--chain <name> | --chain-id <id>]` - balances
   per chain + asset; the chain flags are mutually exclusive.
@@ -35,6 +45,10 @@ actions --json wallet balance --chain base-sepolia
   assets to a market in the config allowlist.
 - `actions wallet lend close --market <name> --amount <n>` - withdraw
   assets from a lending position.
+- `actions wallet swap execute --in <symbol> --out <symbol>
+  (--amount-in <n> | --amount-out <n>) --chain <name>
+  [--provider uniswap|velodrome] [--slippage <pct>]` - execute a swap
+  on the resolved chain.
 
 ## Wallet model
 
@@ -53,13 +67,45 @@ demo, fund the EOA with testnet ETH on Base Sepolia.
   `unichain`) via `--chain`, or a numeric id via `--chain-id`
   (mutually exclusive). Run `actions --json chains` for the current
   list.
-- **Markets** - pass the market `name` from the config allowlist
+- **Markets (lend)** - pass the market `name` from the config allowlist
   (e.g. `Gauntlet USDC`, `Aave ETH`). Case-insensitive; whitespace
   and hyphens are ignored, so `gauntlet-usdc` and `gauntletusdc`
   resolve to the same entry. The market entry carries its own chain
   and asset, so no `--chain` is needed.
+- **Markets (swap)** - addressed pair-wise via `--in/--out/--chain` for
+  quotes and execution. `--pool <id>` is only used for direct
+  `swap market` lookups; the `poolId` surfaces in `swap markets`.
 - **Amounts** - human-readable decimal numbers (e.g. `10`, `0.5`).
   The SDK converts to wei using the asset's decimals.
+- **Slippage** - `--slippage` accepts a percent (e.g. `0.5` for 0.5%);
+  the CLI converts to the SDK's decimal form internally.
+- **Amount direction** - exactly one of `--amount-in` (exact-in) or
+  `--amount-out` (exact-out) is required for `swap quote`,
+  `swap quotes`, and `wallet swap execute`.
+- **Provider selection** - `--provider uniswap|velodrome` forces a
+  provider and skips routing. Omit to let the SDK pick the best
+  available.
+
+## Presentation hints (for LLM/agent callers)
+
+These are rules for rendering CLI output to humans, not rules for the
+CLI itself.
+
+- **Chain labels - only when disambiguating.** When showing a list
+  (balances, markets, positions, pools), mention the chain only for
+  entries that share their name/symbol/market with another entry on a
+  different chain in the same response. If every row is uniquely
+  identifiable by its name alone, drop the chain label. Count chain
+  occurrences **after** skipping zero balances. Example: two chains
+  in the raw payload, but only one has a non-zero balance of `X` -
+  render as `X <amount>` with no chain. When the user explicitly scopes
+  a question to one chain, still omit the label.
+- **Zero rows - skip.** Don't render zero balances, empty positions,
+  or pools with no meaningful data, unless the user specifically asked
+  about that zero value ("do I have any X on op-sepolia").
+- **Raw addresses - omit by default.** Wallet/pool/market/contract
+  addresses in a listing add noise. Show them only when the user asks
+  for them explicitly, and even then truncate (`0xabc…def`).
 
 ## Output
 
@@ -127,6 +173,41 @@ NL -> command examples:
 - "deposit 0.5 ETH into Aave on op-sepolia" -> `actions --json wallet lend open --market aave-eth --amount 0.5`
 - "withdraw 5 USDC from Gauntlet" -> `actions --json wallet lend close --market gauntlet-usdc --amount 5`
 - "how much do I have in Gauntlet" -> `actions --json wallet lend position --market gauntlet-usdc`
+
+## Swap semantics
+
+`swap quote` returns the SDK `SwapQuote` shape verbatim: amounts (both
+display and `Raw` bigint), price + price-impact, slippage (decimal),
+deadline, and pre-built `execution` calldata. `swap quotes` is the
+multi-provider variant sorted by `amountOutRaw` desc.
+
+`wallet swap execute` emits a structured envelope on stdout:
+
+```json
+{
+  "action": "execute",
+  "assetIn":  { "symbol": "USDC_DEMO" },
+  "assetOut": { "symbol": "OP_DEMO" },
+  "amountIn": 5, "amountOut": 4.9,
+  "amountInRaw":  "5000000",
+  "amountOutRaw": "4900000000000000000",
+  "price": 0.98, "priceImpact": 0.001,
+  "transactions": [ { "transactionHash": "0x...", "status": "success", ... } ]
+}
+```
+
+`transactions` is always an array. EOA execution can fan out into
+token-approval + Permit2-approval + swap (up to 3 receipts); smart
+wallets collapse to a single UserOp receipt. A receipt with
+`status: "reverted"` is normalised to `code: "onchain"` exit 5.
+
+NL -> command examples:
+
+- "swap 5 USDC for OP on Unichain" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 5 --chain unichain`
+- "buy 1 OP with USDC" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-out 1 --chain unichain`
+- "what's the best price for 100 USDC -> OP" -> `actions --json swap quote --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain`
+- "compare provider quotes" -> `actions --json swap quotes --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain`
+- "execute on Velodrome with 1% slippage" -> `actions --json wallet swap execute --in USDC_DEMO --out OP_DEMO --amount-in 100 --chain unichain --provider velodrome --slippage 1`
 
 ## RPC trust
 
