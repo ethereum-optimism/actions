@@ -1,8 +1,11 @@
 import type {
   Asset,
+  EOATransactionReceipt,
   SupportedChainId,
   TokenBalance,
+  UserOperationTransactionReceipt,
 } from '@eth-optimism/actions-sdk'
+import type { Address } from 'viem'
 
 import { writeJson } from '@/output/json.js'
 import { isJsonMode } from '@/output/mode.js'
@@ -21,11 +24,28 @@ export interface AddressDoc {
   address: string
 }
 
+export interface LendActionDoc {
+  action: 'open' | 'close'
+  market: {
+    name: string
+    address: Address
+    chainId: SupportedChainId
+    provider: string
+  }
+  asset: { symbol: string }
+  amount: number
+  transactions: ReadonlyArray<
+    EOATransactionReceipt | UserOperationTransactionReceipt
+  >
+}
+
 interface Printers {
   assets: readonly Asset[]
   chains: readonly ChainRow[]
   address: AddressDoc
   balance: readonly TokenBalance[]
+  lendOpen: LendActionDoc
+  lendClose: LendActionDoc
 }
 
 function formatAssets(assets: Printers['assets']): void {
@@ -77,6 +97,22 @@ function formatBalance(balances: Printers['balance']): void {
   }
 }
 
+function formatLendAction(doc: LendActionDoc): void {
+  const verb = doc.action === 'open' ? 'opened' : 'closed'
+  writeLine(
+    `${verb} position: ${doc.amount} ${doc.asset.symbol} on ${doc.market.name} (${doc.market.provider}, chain ${doc.market.chainId})`,
+  )
+  for (const tx of doc.transactions) {
+    if ('transactionHash' in tx) {
+      writeLine(`  tx=${tx.transactionHash} status=${tx.status}`)
+    } else {
+      const userOpHash = (tx as { userOpHash?: string }).userOpHash ?? '?'
+      const success = (tx as { success?: boolean }).success
+      writeLine(`  userOp=${userOpHash} success=${success}`)
+    }
+  }
+}
+
 const TEXT_FORMATTERS: {
   [K in keyof Printers]: (data: Printers[K]) => void
 } = {
@@ -84,6 +120,8 @@ const TEXT_FORMATTERS: {
   chains: formatChains,
   address: formatAddress,
   balance: formatBalance,
+  lendOpen: formatLendAction,
+  lendClose: formatLendAction,
 }
 
 /**
