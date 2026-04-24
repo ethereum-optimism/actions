@@ -86,6 +86,27 @@ demo, fund the EOA with testnet ETH on Base Sepolia.
   provider and skips routing. Omit to let the SDK pick the best
   available.
 
+## Presentation hints (for LLM/agent callers)
+
+These are rules for rendering CLI output to humans, not rules for the
+CLI itself.
+
+- **Chain labels - only when disambiguating.** When showing a list
+  (balances, markets, positions, pools), mention the chain only for
+  entries that share their name/symbol/market with another entry on a
+  different chain in the same response. If every row is uniquely
+  identifiable by its name alone, drop the chain label. Count chain
+  occurrences **after** skipping zero balances. Example: two chains
+  in the raw payload, but only one has a non-zero balance of `X` -
+  render as `X <amount>` with no chain. When the user explicitly scopes
+  a question to one chain, still omit the label.
+- **Zero rows - skip.** Don't render zero balances, empty positions,
+  or pools with no meaningful data, unless the user specifically asked
+  about that zero value ("do I have any X on op-sepolia").
+- **Raw addresses - omit by default.** Wallet/pool/market/contract
+  addresses in a listing add noise. Show them only when the user asks
+  for them explicitly, and even then truncate (`0xabc…def`).
+
 ## Output
 
 With `--json`:
