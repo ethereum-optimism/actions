@@ -197,7 +197,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
           chain.contracts.router,
           chain.metadata.routerType,
           quote.amountInRaw,
-          quote.recipient!,
+          quote.recipient ?? quote.quotedRecipient,
           publicClient,
         )
 
