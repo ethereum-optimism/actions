@@ -191,6 +191,68 @@ describe('actions CLI (built binary)', () => {
       expect(body.code).toBe('validation')
       expect(body.error).toMatch(/Invalid --amount/)
     })
+
+    it('swap quote without --amount-in or --amount-out -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run([
+        '--json',
+        'swap',
+        'quote',
+        '--in',
+        'USDC_DEMO',
+        '--out',
+        'OP_DEMO',
+        '--chain',
+        'unichain',
+      ])
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/--amount-in or --amount-out/)
+    })
+
+    it('swap quote with both --amount-in and --amount-out -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run([
+        '--json',
+        'swap',
+        'quote',
+        '--in',
+        'USDC_DEMO',
+        '--out',
+        'OP_DEMO',
+        '--amount-in',
+        '1',
+        '--amount-out',
+        '1',
+        '--chain',
+        'unichain',
+      ])
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/not both/)
+    })
+
+    it('swap quote with unknown --provider -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run([
+        '--json',
+        'swap',
+        'quote',
+        '--in',
+        'USDC_DEMO',
+        '--out',
+        'OP_DEMO',
+        '--amount-in',
+        '1',
+        '--chain',
+        'unichain',
+        '--provider',
+        'sushiswap',
+      ])
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Invalid --provider/)
+    })
   })
 
   describe('default (human) mode', () => {
