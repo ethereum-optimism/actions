@@ -22,9 +22,15 @@ actions --json wallet balance --chain base-sepolia
 
 - `actions assets` - configured asset allowlist.
 - `actions chains` - configured chain shortnames + IDs.
+- `actions lend markets` - all lending markets across configured
+  providers (no wallet).
+- `actions lend market --market <name>` - inspect one market by name
+  (no wallet).
 - `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
 - `actions wallet balance [--chain <name> | --chain-id <id>]` - balances
   per chain + asset; the chain flags are mutually exclusive.
+- `actions wallet lend position --market <name>` - the wallet's current
+  balance and shares in a market.
 - `actions wallet lend open --market <name> --amount <n>` - supply
   assets to a market in the config allowlist.
 - `actions wallet lend close --market <name> --amount <n>` - withdraw
@@ -106,11 +112,21 @@ A receipt with `status: "reverted"` is normalised to a `code: "onchain"`
 error envelope on stderr (exit 5), so callers do not need to inspect
 receipt status to detect failure.
 
+`wallet lend position` returns the SDK `LendMarketPosition` shape
+verbatim: `{ balance, balanceFormatted, shares, sharesFormatted, marketId }`
+with bigint fields stringified.
+
+`lend markets` and `lend market` return the SDK `LendMarket` shape(s)
+verbatim: `{ marketId, name, asset, supply, apy, metadata }`. These do
+not require `PRIVATE_KEY`.
+
 NL -> command examples:
 
+- "what markets can I lend in" -> `actions --json lend markets`
 - "supply 10 USDC to Gauntlet" -> `actions --json wallet lend open --market gauntlet-usdc --amount 10`
 - "deposit 0.5 ETH into Aave on op-sepolia" -> `actions --json wallet lend open --market aave-eth --amount 0.5`
 - "withdraw 5 USDC from Gauntlet" -> `actions --json wallet lend close --market gauntlet-usdc --amount 5`
+- "how much do I have in Gauntlet" -> `actions --json wallet lend position --market gauntlet-usdc`
 
 ## RPC trust
 
