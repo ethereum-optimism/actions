@@ -74,7 +74,7 @@ describe('runWalletSwapExecute', () => {
       in: 'USDC_DEMO',
       out: 'OP_DEMO',
       amountIn: '5',
-      chain: 'unichain',
+      chain: 'base-sepolia',
     })
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
     expect(body.action).toBe('execute')
@@ -85,7 +85,7 @@ describe('runWalletSwapExecute', () => {
     expect(body.transactions).toHaveLength(2)
     expect(body.transactions[0].transactionHash).toBe('0xapprove')
     const call = captured[0] as { chainId: number }
-    expect(call.chainId).toBe(130)
+    expect(call.chainId).toBe(84532)
   })
 
   it('wraps a single receipt into a one-element array', async () => {
@@ -94,7 +94,7 @@ describe('runWalletSwapExecute', () => {
       in: 'USDC_DEMO',
       out: 'OP_DEMO',
       amountOut: '5',
-      chain: 'unichain',
+      chain: 'base-sepolia',
     })
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
     expect(body.transactions).toHaveLength(1)
@@ -112,7 +112,7 @@ describe('runWalletSwapExecute', () => {
         in: 'USDC_DEMO',
         out: 'OP_DEMO',
         amountIn: '1',
-        chain: 'unichain',
+        chain: 'base-sepolia',
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -130,7 +130,7 @@ describe('runWalletSwapExecute', () => {
         in: 'USDC_DEMO',
         out: 'OP_DEMO',
         amountIn: '1',
-        chain: 'unichain',
+        chain: 'base-sepolia',
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -148,7 +148,7 @@ describe('runWalletSwapExecute', () => {
         out: 'OP_DEMO',
         amountIn: '1',
         amountOut: '1',
-        chain: 'unichain',
+        chain: 'base-sepolia',
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -164,7 +164,7 @@ describe('runWalletSwapExecute', () => {
         in: 'USDC_DEMO',
         out: 'OP_DEMO',
         amountIn: '1',
-        chain: 'unichain',
+        chain: 'base-sepolia',
       })
       throw new Error('did not throw')
     } catch (err) {
@@ -181,7 +181,7 @@ describe('runWalletSwapExecute', () => {
         in: 'USDC_DEMO',
         out: 'OP_DEMO',
         amountIn: '1',
-        chain: 'unichain',
+        chain: 'base-sepolia',
       })
       throw new Error('did not throw')
     } catch (err) {

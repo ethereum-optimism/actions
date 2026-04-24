@@ -1,5 +1,5 @@
 import type { SupportedChainId } from '@eth-optimism/actions-sdk'
-import { baseSepolia, optimismSepolia, unichain } from 'viem/chains'
+import { baseSepolia, optimismSepolia } from 'viem/chains'
 
 import { type CliEnvKey, optionalEnv } from '@/config/env.js'
 
@@ -14,12 +14,12 @@ function rpcUrls(key: CliEnvKey): string[] | undefined {
 }
 
 /**
- * @description Returns the CLI's baked demo chain set: Base Sepolia,
- * Optimism Sepolia, Unichain - mirroring the demo backend's market
- * footprint. RPC URLs come from the matching `*_RPC_URL` env vars when
- * set, otherwise viem's chain defaults apply. Bundler configuration is
- * omitted intentionally: the CLI signs transactions from an EOA and the
- * signer pays gas directly (no ERC-4337 gas abstraction for now).
+ * @description Returns the CLI's baked demo chain set: Base Sepolia and
+ * Optimism Sepolia - mirroring the demo backend's market footprint. RPC
+ * URLs come from the matching `*_RPC_URL` env vars when set, otherwise
+ * viem's chain defaults apply. Bundler configuration is omitted
+ * intentionally: the CLI signs transactions from an EOA and the signer
+ * pays gas directly (no ERC-4337 gas abstraction for now).
  * @returns Array of chain configs suitable for `NodeActionsConfig.chains`.
  */
 export function getDemoChains(): DemoChainConfig[] {
@@ -31,10 +31,6 @@ export function getDemoChains(): DemoChainConfig[] {
     {
       chainId: optimismSepolia.id,
       rpcUrls: rpcUrls('OP_SEPOLIA_RPC_URL'),
-    },
-    {
-      chainId: unichain.id,
-      rpcUrls: rpcUrls('UNICHAIN_RPC_URL'),
     },
   ]
 }
