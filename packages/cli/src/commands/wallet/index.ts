@@ -2,6 +2,7 @@ import { Command } from 'commander'
 
 import { runWalletAddress } from '@/commands/wallet/address.js'
 import { runWalletBalance } from '@/commands/wallet/balance.js'
+import { lendCommand } from '@/commands/wallet/lend/index.js'
 
 /**
  * @description Builds the `wallet` subcommand tree. Registered children
@@ -28,5 +29,6 @@ export function walletCommand(): Command {
       'filter to one chain by numeric id (e.g. 84532); mutually exclusive with --chain',
     )
     .action(runWalletBalance)
+  command.addCommand(lendCommand())
   return command
 }
