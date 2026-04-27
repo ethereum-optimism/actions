@@ -61,7 +61,10 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       deadline: params.deadline,
       recipient: params.recipient,
     })
-    return this.buildSwapTransactions(swapQuote)
+    return this.buildSwapTransactions({
+      ...swapQuote,
+      approvalMode: params.approvalMode,
+    })
   }
 
   protected async _buildApprovals(quote: SwapQuote) {
@@ -77,6 +80,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         walletAddress: quote.recipient!,
         chainId: quote.chainId,
         amountInRaw: quote.amountInRaw,
+        approvalMode: this.resolveApprovalMode(quote),
       },
       quote.amountInRaw,
       addresses.permit2,

@@ -1,5 +1,5 @@
 import type { Address, PublicClient } from 'viem'
-import { decodeFunctionData } from 'viem'
+import { decodeFunctionData, maxUint160, maxUint256 } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
 import { PERMIT2_ABI } from '@/utils/abi/permit2.js'
@@ -12,6 +12,8 @@ import {
   checkTokenAllowance,
   DEFAULT_PERMIT2_EXPIRY_SECONDS,
   getApprovalDeficit,
+  resolveErc20ApprovalAmount,
+  resolvePermit2ApprovalAmount,
 } from '@/utils/approve.js'
 
 const TOKEN = '0x1111111111111111111111111111111111111111' as Address
@@ -75,14 +77,40 @@ describe('checkTokenAllowance', () => {
 })
 
 describe('buildTokenApprovalTx', () => {
-  it('builds max approval to Permit2', () => {
-    const tx = buildTokenApprovalTx(TOKEN, PERMIT2)
+  it('builds approval to Permit2 for the given amount', () => {
+    const tx = buildTokenApprovalTx(TOKEN, PERMIT2, maxUint256)
 
     expect(tx.to).toBe(TOKEN)
     expect(tx.value).toBe(0n)
     expect(tx.data).toMatch(/^0x/)
     // Should encode approve(permit2, maxUint256)
     expect(tx.data.length).toBeGreaterThan(10)
+  })
+
+  it('respects an exact-amount caller override', () => {
+    const tx = buildTokenApprovalTx(TOKEN, PERMIT2, 12345n)
+    expect(tx.to).toBe(TOKEN)
+    expect(tx.data).toMatch(/^0x/)
+  })
+})
+
+describe('resolveErc20ApprovalAmount', () => {
+  it('returns required amount for "exact"', () => {
+    expect(resolveErc20ApprovalAmount('exact', 100n)).toBe(100n)
+  })
+
+  it('returns maxUint256 for "max"', () => {
+    expect(resolveErc20ApprovalAmount('max', 100n)).toBe(maxUint256)
+  })
+})
+
+describe('resolvePermit2ApprovalAmount', () => {
+  it('returns required amount for "exact"', () => {
+    expect(resolvePermit2ApprovalAmount('exact', 100n)).toBe(100n)
+  })
+
+  it('returns maxUint160 for "max" (Permit2 allowance is uint160-typed)', () => {
+    expect(resolvePermit2ApprovalAmount('max', 100n)).toBe(maxUint160)
   })
 })
 
