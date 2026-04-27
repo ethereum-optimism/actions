@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset } from '@/__mocks__/MockAssets.js'
 import { MockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
-import type { LendMarketConfig, LendMarketId } from '@/types/lend/index.js'
+import { LendProvider } from '@/actions/lend/core/LendProvider.js'
+import type {
+  LendMarketConfig,
+  LendMarketId,
+  LendOpenPositionParams,
+  LendTransaction,
+} from '@/types/lend/index.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
 // Test helper class that exposes protected validation methods as public
@@ -164,6 +170,75 @@ describe('LendProvider', () => {
       expect(result.asset).toBe('0x123')
       expect(result.marketId).toBe('0x1234')
       expect(result.apy).toBe(0.05)
+    })
+  })
+
+  describe('approvalMode resolution', () => {
+    const mockAsset = {
+      address: {
+        84532: '0x1111111111111111111111111111111111111111' as Address,
+      },
+      metadata: { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+      type: 'erc20' as const,
+    }
+    const baseParams = {
+      amount: 1000,
+      asset: mockAsset,
+      marketId: {
+        address: '0x2222222222222222222222222222222222222222' as Address,
+        chainId: 84532,
+      } as LendMarketId,
+      walletAddress: '0x3333333333333333333333333333333333333333' as Address,
+    }
+
+    // MockLendProvider replaces `openPosition` with a vi.fn() in its
+    // constructor. To exercise the real base-class flow (which builds the
+    // approval tx around `_openPosition`'s output), call through the prototype.
+    const callBaseOpenPosition = (
+      provider: MockLendProvider,
+      params: LendOpenPositionParams,
+    ): Promise<LendTransaction> =>
+      LendProvider.prototype.openPosition.call(
+        provider,
+        params,
+      ) as Promise<LendTransaction>
+
+    // Last 32 bytes of approve(spender, amount) hold `amount`.
+    const approvalAmountHex = (result: LendTransaction): string =>
+      (result.transactionData.approval?.data ?? '').slice(-64)
+
+    // 1000 USDC at 6 decimals = 1_000_000_000 = 0x3b9aca00
+    const EXACT_AMOUNT_HEX = '3b9aca00'
+    const MAX_UINT256_HEX = 'f'.repeat(64)
+
+    it('defaults to "exact" — approval encodes the required amount', async () => {
+      const provider = new MockLendProvider()
+      const result = await callBaseOpenPosition(provider, baseParams)
+      expect(approvalAmountHex(result).replace(/^0+/, '')).toBe(EXACT_AMOUNT_HEX)
+    })
+
+    it('honours per-call "max" override — approval uses maxUint256', async () => {
+      const provider = new MockLendProvider()
+      const result = await callBaseOpenPosition(provider, {
+        ...baseParams,
+        approvalMode: 'max',
+      })
+      expect(approvalAmountHex(result)).toBe(MAX_UINT256_HEX)
+    })
+
+    it('honours per-provider config approvalMode default', async () => {
+      const provider = new MockLendProvider({ approvalMode: 'max' })
+      const result = await callBaseOpenPosition(provider, baseParams)
+      expect(approvalAmountHex(result)).toBe(MAX_UINT256_HEX)
+    })
+
+    it('per-call override beats per-provider config', async () => {
+      const provider = new MockLendProvider({ approvalMode: 'max' })
+      const result = await callBaseOpenPosition(provider, {
+        ...baseParams,
+        approvalMode: 'exact',
+      })
+      expect(approvalAmountHex(result).replace(/^0+/, '')).toBe(EXACT_AMOUNT_HEX)
     })
   })
 

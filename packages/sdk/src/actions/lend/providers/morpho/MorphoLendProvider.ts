@@ -5,7 +5,6 @@ import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/actions/lend/providers/morpho/sdk.js'
 import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
-import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   GetLendMarketsParams,
@@ -14,6 +13,7 @@ import type {
   LendMarket,
   LendMarketId,
   LendMarketPosition,
+  LendOpenPosition,
   LendOpenPositionInternalParams,
   LendTransaction,
 } from '@/types/lend/index.js'
@@ -29,23 +29,15 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
   }
 
   /**
-   * Create a new Morpho lending provider
-   * @param config - Morpho lending configuration
-   * @param chainManager - Chain manager for blockchain interactions
-   */
-  constructor(config: LendProviderConfig, chainManager: ChainManager) {
-    super(config, chainManager)
-  }
-
-  /**
-   * Open a lending position in a Morpho market
-   * @description Opens a lending position by supplying assets to a Morpho market
-   * @param params - Position opening parameters
-   * @returns Promise resolving to lending transaction details
+   * Describe a Morpho deposit. The base class wraps this into a
+   * `LendTransaction` with the appropriate ERC-20 approval based on
+   * `params.approvalMode`.
+   * @param params - Position opening parameters (amount in wei, walletAddress, approvalMode)
+   * @returns Spender + deposit calldata + APY snapshot
    */
   protected async _openPosition(
     params: LendOpenPositionInternalParams,
-  ): Promise<LendTransaction> {
+  ): Promise<LendOpenPosition> {
     try {
       // Get asset address for the chain (throws for native assets)
       const assetAddress = getAssetAddress(
@@ -59,27 +51,20 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         chainId: params.marketId.chainId,
       })
 
-      const assets = params.amountWei
-      const receiver = params.walletAddress
-      const depositCallData = MetaMorphoAction.deposit(assets, receiver)
+      const depositCallData = MetaMorphoAction.deposit(
+        params.amountWei,
+        params.walletAddress,
+      )
 
       return {
-        amount: params.amountWei,
+        spender: params.marketId.address,
         asset: assetAddress,
-        marketId: params.marketId.address,
-        apy: vaultInfo.apy.total,
-        transactionData: {
-          approval: this.buildApprovalTx(
-            assetAddress,
-            params.marketId.address,
-            params.amountWei,
-          ),
-          position: {
-            to: params.marketId.address,
-            data: depositCallData,
-            value: 0n,
-          },
+        transaction: {
+          to: params.marketId.address,
+          data: depositCallData,
+          value: 0n,
         },
+        apy: vaultInfo.apy.total,
       }
     } catch {
       throw new Error(

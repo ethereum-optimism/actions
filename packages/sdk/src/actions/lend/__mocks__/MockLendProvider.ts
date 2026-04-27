@@ -15,6 +15,7 @@ import type {
   LendMarket,
   LendMarketId,
   LendMarketPosition,
+  LendOpenPosition,
   LendOpenPositionInternalParams,
   LendOpenPositionParams,
   LendTransaction,
@@ -172,8 +173,22 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
 
   protected async _openPosition(
     params: LendOpenPositionInternalParams,
-  ): Promise<LendTransaction> {
-    return this.createMockOpenPositionInternal(params)
+  ): Promise<LendOpenPosition> {
+    const assetAddress = params.asset.address[params.marketId.chainId]
+    if (!assetAddress || assetAddress === 'native') {
+      throw new Error(`Asset not supported on chain ${params.marketId.chainId}`)
+    }
+
+    return {
+      spender: params.marketId.address,
+      asset: assetAddress as Address,
+      transaction: {
+        to: params.marketId.address,
+        data: '0x6e553f65' as Address,
+        value: 0n,
+      },
+      apy: this.mockConfig.defaultApy,
+    }
   }
 
   protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {

@@ -83,16 +83,19 @@ export class Actions<
 
     this._ens = new EnsNamespace(this.chainManager)
 
+    const lendSettings = config.lend?.settings
     if (config.lend?.morpho) {
       this._lendProviders.morpho = new MorphoLendProvider(
         config.lend.morpho,
         this.chainManager,
+        lendSettings,
       )
     }
     if (config.lend?.aave) {
       this._lendProviders.aave = new AaveLendProvider(
         config.lend.aave,
         this.chainManager,
+        lendSettings,
       )
     }
     if (this._lendProviders.morpho || this._lendProviders.aave) {
