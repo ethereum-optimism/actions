@@ -68,7 +68,7 @@ The bullets below are the rules. Each links to the section in CONTRIBUTING.md wi
 - Implement protected `_methods` (`_openPosition`, `_getQuote`, …); public methods stay on the base.
 - Declare chain support via `protocolSupportedChainIds()`.
 - Avoid pulling in the protocol's full SDK unless it provides material correctness or ergonomics value. Prefer viem + ABI snippets.
-- Today: protocol code lives under `packages/sdk/src/actions/<domain>/providers/<protocol>/`. When a protocol first spans multiple domains, promote its shared constants/ABIs/registries to `packages/sdk/src/providers/<protocol>/` (introduce that home in its own small PR ahead of the second domain).
+- Protocol code lives under `packages/sdk/src/actions/<domain>/providers/<protocol>/`. When a protocol first spans multiple domains (e.g. Aave Lend + Borrow), extract its shared constants/ABIs/registries to a cross-domain home in its own small PR ahead of the second domain. Pick the location when the need arises; no shared cross-domain home exists yet.
 - Config shape (`<Protocol><Domain>ProviderConfig`) parallels sibling providers.
 - Register in `packages/sdk/src/types/providers.ts` under the right domain record. Wire into `Actions` (`packages/sdk/src/actions.ts`) and the `Wallet` / `SmartWallet` classes (`packages/sdk/src/wallet/core/wallets/`) following the existing construction pattern.
 - Ship a `Mock<Protocol><Domain>Provider` in `__mocks__/` matching the existing mock shape.
