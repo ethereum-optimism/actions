@@ -82,13 +82,8 @@ export abstract class EOAWallet extends Wallet {
   ): Promise<EOATransactionReceipt[]> {
     const receipts: EOATransactionReceipt[] = []
     for (const tx of transactionData) {
+      // 1 confirmation is typically enough.
       const receipt = await this.send(tx, chainId)
-      const publicClient = this.chainManager.getPublicClient(chainId)
-      // wait an extra confirmation so give time for nonce to be updated
-      await publicClient.waitForTransactionReceipt({
-        hash: receipt.transactionHash,
-        confirmations: 2,
-      })
       receipts.push(receipt)
     }
     return receipts
