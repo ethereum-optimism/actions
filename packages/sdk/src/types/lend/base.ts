@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { LendProviderName } from '@/types/actions.js'
+import type { ApprovalMode, LendProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   FilterAssetChain,
@@ -199,6 +199,8 @@ export interface LendProviderConfig {
   marketAllowlist?: LendMarketConfig[]
   /** Blocklist of markets to exclude from lending */
   marketBlocklist?: LendMarketConfig[]
+  /** Approval-amount strategy override for this provider. Overrides `LendSettings.approvalMode`. */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -230,6 +232,11 @@ export interface LendOpenPositionBaseParams {
   walletAddress?: Address
   /** Optional lending configuration */
   options?: TransactionOptions
+  /**
+   * Override the wallet-level approval-amount strategy for this single supply.
+   * Falls back to `ActionsConfig.wallet.approvalMode` and finally to `"exact"`.
+   */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -246,12 +253,14 @@ export interface LendOpenPositionParams extends LendOpenPositionBaseParams {
  */
 export interface LendOpenPositionInternalParams extends Omit<
   LendOpenPositionBaseParams,
-  'walletAddress'
+  'walletAddress' | 'approvalMode'
 > {
   /** Amount to lend in wei */
   amountWei: bigint
   /** Wallet address for receiving shares and as owner (required in internal params) */
   walletAddress: Address
+  /** Resolved approval-amount strategy (per-call → wallet config → "exact"). */
+  approvalMode: ApprovalMode
 }
 
 /**
