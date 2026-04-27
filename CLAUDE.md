@@ -1,5 +1,7 @@
 # CLAUDE.md
 
-See [AGENTS.md](./AGENTS.md).
+This repo follows the [agents.md](https://agents.md) convention. Pointers:
 
-This repo follows the [agents.md](https://agents.md) convention: contributor-facing guidance for AI coding agents (including Claude Code) lives in `AGENTS.md`. Engineering principles, rationale, and the full PR workflow live in [CONTRIBUTING.md](./CONTRIBUTING.md). Integration instructions for agents helping a developer *consume* the published SDK live in [llms-full.txt](./llms-full.txt).
+- [`AGENTS.md`](./AGENTS.md): rules for AI coding agents working on this repo (Claude Code, Codex, Cursor, etc.)
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md): canonical engineering principles, prose, rationale, and PR workflow
+- [`llms-full.txt`](./llms-full.txt): integration playbook for agents helping a developer *consume* the published SDK
