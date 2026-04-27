@@ -14,7 +14,9 @@ function collectMarkets(
 ): readonly LendMarketConfig[] {
   const out: LendMarketConfig[] = []
   for (const provider of Object.values(config.lend ?? {})) {
-    if (provider?.marketAllowlist) out.push(...provider.marketAllowlist)
+    if (provider && 'marketAllowlist' in provider && provider.marketAllowlist) {
+      out.push(...provider.marketAllowlist)
+    }
   }
   return out
 }
