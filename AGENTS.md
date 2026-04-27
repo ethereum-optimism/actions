@@ -2,14 +2,14 @@
 
 Instructions for AI coding agents working on the **Actions SDK monorepo itself**. If you are an agent helping a developer *integrate* the published SDK into their app, see [`llms-full.txt`](./llms-full.txt) instead.
 
-This file is the actionable rules. The full prose, rationale, and examples live in [CONTRIBUTING.md](./CONTRIBUTING.md). When in doubt, read CONTRIBUTING.md — it is canonical.
+This file is the actionable rules. The full prose, rationale, and examples live in [CONTRIBUTING.md](./CONTRIBUTING.md). When in doubt, read CONTRIBUTING.md; it is canonical.
 
 ## Repo at a glance
 
 - **Monorepo**: pnpm workspaces. Packages in `packages/`.
-  - `packages/sdk/` — the published TypeScript SDK (`@eth-optimism/actions-sdk`)
-  - `packages/demo/backend/` — Hono-based Node.js demo
-  - `packages/demo/frontend/` — React + Vite demo
+  - `packages/sdk/`: the published TypeScript SDK (`@eth-optimism/actions-sdk`)
+  - `packages/demo/backend/`: Hono-based Node.js demo
+  - `packages/demo/frontend/`: React + Vite demo
 - **Node**: >= 18.
 - **SDK shape**: provider pattern. Domains live under `packages/sdk/src/actions/<domain>/` with a `core/` base class, `providers/<protocol>/` concrete implementations, `namespaces/`, `__mocks__/`. Cross-environment factories in `nodeActionsFactory.ts` / `reactActionsFactory.ts`. Built on viem.
 - **Today's domains**: `lend/`, `swap/`. `borrow/` is anticipated; new domains follow the same shape.
@@ -57,14 +57,14 @@ The bullets below are the rules. Each links to the section in CONTRIBUTING.md wi
 
 ### [Abstraction hierarchy](./CONTRIBUTING.md#abstraction-hierarchy)
 
-- Concrete providers stay thin. Validation, amount conversion, approval building, calldata verification, error wrapping, chain intersection — all on the base.
+- Concrete providers stay thin. Validation, amount conversion, approval building, calldata verification, error wrapping, and chain intersection all belong on the base.
 - If a second provider in the same domain would want code you're writing inside a concrete provider, **hoist before landing**.
 
 ### [Adding a new provider](./CONTRIBUTING.md#introducing-a-new-provider)
 
 - Extend the domain's existing base class (`LendProvider`, `SwapProvider`). Never roll a parallel abstraction.
 - **One protocol version per provider, one domain per PR.** No bundled V2 + V3, no bundled Lend + Borrow.
-- For forks of supported protocols (Spark of Aave, Uniswap V3 forks, Compound forks), introduce a shared intermediate base class — don't copy-paste a full provider.
+- For forks of supported protocols (Spark of Aave, Uniswap V3 forks, Compound forks), introduce a shared intermediate base class. Don't copy-paste a full provider.
 - Implement protected `_methods` (`_openPosition`, `_getQuote`, …); public methods stay on the base.
 - Declare chain support via `protocolSupportedChainIds()`.
 - Avoid pulling in the protocol's full SDK unless it provides material correctness or ergonomics value. Prefer viem + ABI snippets.
@@ -87,6 +87,7 @@ The bullets below are the rules. Each links to the section in CONTRIBUTING.md wi
 - Clear names beat clever tricks. Comments explain **why**, not **what**.
 - Delete dead code, unused imports, and commented-out blocks as you encounter them.
 - `const` over `let`; never `var`. Async/await over promise chains.
+- **No em-dashes (`—`) in code comments, JSDoc, or repo docs.** Use commas, colons, semicolons, periods, or parentheses instead.
 
 ### [Documentation](./CONTRIBUTING.md#documentation)
 
@@ -99,7 +100,7 @@ The bullets below are the rules. Each links to the section in CONTRIBUTING.md wi
 - Throw named concrete error classes; callers discriminate via `instanceof`.
 - Wrap protocol/SDK errors at the concrete-provider/base seam.
 - Validate at boundaries, not at every internal hop.
-- Never `try { } catch {}` without rethrow, log, or recovery. Never `throw new Error(err.message)` — preserve `cause`.
+- Never `try { } catch {}` without rethrow, log, or recovery. Never `throw new Error(err.message)`; preserve `cause`.
 
 ### [Performance and async](./CONTRIBUTING.md#performance-and-async)
 
@@ -111,7 +112,7 @@ The bullets below are the rules. Each links to the section in CONTRIBUTING.md wi
 
 - Never log or persist secrets (private keys, tokens, signed messages).
 - Validate addresses and amounts at boundaries; coerce `string` → `Address` and `number` → `bigint` explicitly.
-- Verify calldata integrity before signing — the base layer does this; don't skip it.
+- Verify calldata integrity before signing. The base layer does this; don't skip it.
 - No `eval`, no `new Function`, no dynamic code generation in production paths.
 
 ### [Dependencies](./CONTRIBUTING.md#dependency-hygiene)
@@ -146,5 +147,5 @@ See [CONTRIBUTING.md § Workflow for Pull Requests](./CONTRIBUTING.md#workflow-f
 
 - Read neighbor files before writing a new one.
 - Use viem's idiom before inventing a new one.
-- Duplicate once before you abstract — second usage triggers extraction.
+- Duplicate once before you abstract. The second usage triggers extraction.
 - Read [CONTRIBUTING.md](./CONTRIBUTING.md) for the rationale, then choose the option that keeps the SDK small, idiomatic, and easy to extend.
