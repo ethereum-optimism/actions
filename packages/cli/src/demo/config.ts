@@ -28,6 +28,7 @@ export function getDemoConfig(): NodeActionsConfig<never> {
     lend: {
       morpho: { marketAllowlist: [GauntletUSDCDemo] },
       aave: { marketAllowlist: [AaveETH] },
+      settings: { approvalMode: 'max' },
     },
     swap: {
       uniswap: {
@@ -40,6 +41,7 @@ export function getDemoConfig(): NodeActionsConfig<never> {
         defaultSlippage: 0.005,
         marketAllowlist: [{ assets: [USDC_DEMO, OP_DEMO], stable: false }],
       },
+      settings: { approvalMode: 'max' },
     },
     assets: { allow: [USDC_DEMO, OP_DEMO, ETH] },
     chains: getDemoChains(),
