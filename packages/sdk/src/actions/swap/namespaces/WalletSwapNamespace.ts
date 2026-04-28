@@ -53,24 +53,38 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
 
   /**
    * Execute a token swap.
-   * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote (skips re-quoting).
+   * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote
+   * (skips re-quoting). When a pre-built quote is passed, its recipient must
+   * equal this wallet's address — otherwise the calldata would route output
+   * tokens to a different address (a real risk on Velodrome v2/leaf paths
+   * where the recipient is encoded directly into the swap call). Re-quote via
+   * `wallet.swap.getQuote(...)` to bind the quote to this wallet.
    * @param params - Swap parameters or a pre-built SwapQuote from getQuote()
    * @returns Swap receipt with transaction details
+   * @throws If `params` is a SwapQuote whose recipient differs from this wallet
    */
   async execute(params: WalletSwapParams | SwapQuote): Promise<SwapReceipt> {
     // Inject walletAddress — raw params need it for validation,
     // quotes need it for on-chain allowance checks during approval building.
     // Resolve ENS recipient here so providers only ever receive an Address.
-    const executeParams: SwapExecuteParamsResolved | SwapQuote =
-      QUOTE_DISCRIMINATOR in params
-        ? { ...params, recipient: this.wallet.address }
-        : {
-            ...params,
-            walletAddress: this.wallet.address,
-            recipient: await this.resolveRecipient(
-              params.recipient ?? this.wallet.address,
-            ),
-          }
+    let executeParams: SwapExecuteParamsResolved | SwapQuote
+    if (QUOTE_DISCRIMINATOR in params) {
+      if (params.recipient !== this.wallet.address) {
+        throw new Error(
+          `SwapQuote was generated for a different recipient (${params.recipient}). ` +
+            `Re-quote via wallet.swap.getQuote(...) so calldata is bound to this wallet (${this.wallet.address}).`,
+        )
+      }
+      executeParams = params
+    } else {
+      executeParams = {
+        ...params,
+        walletAddress: this.wallet.address,
+        recipient: await this.resolveRecipient(
+          params.recipient ?? this.wallet.address,
+        ),
+      }
+    }
 
     const provider = this.resolveProvider(
       params.provider,
