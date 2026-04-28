@@ -64,27 +64,10 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * @throws If `params` is a SwapQuote whose recipient differs from this wallet
    */
   async execute(params: WalletSwapParams | SwapQuote): Promise<SwapReceipt> {
-    // Inject walletAddress — raw params need it for validation,
-    // quotes need it for on-chain allowance checks during approval building.
-    // Resolve ENS recipient here so providers only ever receive an Address.
-    let executeParams: SwapExecuteParamsResolved | SwapQuote
-    if (QUOTE_DISCRIMINATOR in params) {
-      if (params.recipient !== this.wallet.address) {
-        throw new Error(
-          `SwapQuote was generated for a different recipient (${params.recipient}). ` +
-            `Re-quote via wallet.swap.getQuote(...) so calldata is bound to this wallet (${this.wallet.address}).`,
-        )
-      }
-      executeParams = params
-    } else {
-      executeParams = {
-        ...params,
-        walletAddress: this.wallet.address,
-        recipient: await this.resolveRecipient(
-          params.recipient ?? this.wallet.address,
-        ),
-      }
-    }
+    const executeParams =
+      QUOTE_DISCRIMINATOR in params
+        ? this.requireQuoteForThisWallet(params)
+        : await this.resolveRawParams(params)
 
     const provider = this.resolveProvider(
       params.provider,
@@ -96,6 +79,39 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
     const swapTx = await provider.execute(executeParams)
     const receipt = await this.dispatch(swapTx, params.chainId)
     return this.buildReceipt(swapTx, receipt)
+  }
+
+  /**
+   * Validate that a pre-built quote is bound to this wallet. Throws when the
+   * quote's recipient differs from `wallet.address` — silently swapping
+   * recipients would route output tokens to the wrong address on routers that
+   * encode the recipient directly into calldata (e.g. Velodrome v2/leaf).
+   */
+  private requireQuoteForThisWallet(quote: SwapQuote): SwapQuote {
+    if (quote.recipient !== this.wallet.address) {
+      throw new Error(
+        `SwapQuote was generated for a different recipient (${quote.recipient}). ` +
+          `Re-quote via wallet.swap.getQuote(...) so calldata is bound to this wallet (${this.wallet.address}).`,
+      )
+    }
+    return quote
+  }
+
+  /**
+   * Inject `walletAddress` (needed for validation and on-chain allowance
+   * checks) and resolve any ENS recipient so providers only ever receive an
+   * `Address`.
+   */
+  private async resolveRawParams(
+    params: WalletSwapParams,
+  ): Promise<SwapExecuteParamsResolved> {
+    return {
+      ...params,
+      walletAddress: this.wallet.address,
+      recipient: await this.resolveRecipient(
+        params.recipient ?? this.wallet.address,
+      ),
+    }
   }
 
   private buildReceipt(
