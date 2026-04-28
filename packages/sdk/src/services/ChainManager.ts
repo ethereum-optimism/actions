@@ -188,7 +188,8 @@ export class ChainManager {
         )
       }
       const pollingInterval =
-        chainConfig.pollingInterval ?? defaultPollingInterval(chainConfig.chainId)
+        chainConfig.pollingInterval ??
+        defaultPollingInterval(chainConfig.chainId)
       const client = createPublicClient({
         chain,
         transport: this.getTransportForChain(chainConfig.chainId),
