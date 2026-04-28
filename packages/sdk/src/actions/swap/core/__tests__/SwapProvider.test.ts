@@ -225,6 +225,52 @@ describe('SwapProvider', () => {
     })
   })
 
+  describe('buildSwapTransactions()', () => {
+    it('normalizes quote.recipient to quotedRecipient when absent', async () => {
+      const provider = new MockSwapProvider()
+      const quote = await provider.getQuote({
+        assetIn: MockUSDC,
+        assetOut: MockWETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+      // Raw quote has no recipient, only quotedRecipient
+      expect(quote.recipient).toBeUndefined()
+      expect(quote.quotedRecipient).toBeDefined()
+
+      await provider.testBuildSwapTransactions(quote)
+
+      expect(provider.mockBuildApprovals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipient: quote.quotedRecipient,
+        }),
+      )
+    })
+
+    it('preserves quote.recipient when already set', async () => {
+      const provider = new MockSwapProvider()
+      const customRecipient =
+        '0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' as Address
+      const quote = await provider.getQuote({
+        assetIn: MockUSDC,
+        assetOut: MockWETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      await provider.testBuildSwapTransactions({
+        ...quote,
+        recipient: customRecipient,
+      })
+
+      expect(provider.mockBuildApprovals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipient: customRecipient,
+        }),
+      )
+    })
+  })
+
   describe('getQuote()', () => {
     it('should throw if chain not supported', async () => {
       const provider = new MockSwapProvider()

@@ -27,6 +27,7 @@ import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
+  NormalizedSwapQuote,
   ResolvedSwapParams,
   SwapMarket,
   SwapQuote,
@@ -186,7 +187,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     }
   }
 
-  protected async _buildApprovals(quote: SwapQuote) {
+  protected async _buildApprovals(quote: NormalizedSwapQuote) {
     const chain = getChainConfig(quote.chainId)
     const publicClient = this.chainManager.getPublicClient(quote.chainId)
 
@@ -197,7 +198,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
           chain.contracts.router,
           chain.metadata.routerType,
           quote.amountInRaw,
-          quote.recipient!,
+          quote.recipient,
           publicClient,
         )
 
