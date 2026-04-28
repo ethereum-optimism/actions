@@ -1,3 +1,5 @@
+import { isAddressEqual } from 'viem'
+
 import { QUOTE_DISCRIMINATOR } from '@/actions/swap/core/SwapProvider.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -53,22 +55,21 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
 
   /**
    * Execute a token swap.
-   * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote (skips re-quoting).
+   * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote
+   * (skips re-quoting). When a pre-built quote is passed, its recipient must
+   * equal this wallet's address — otherwise the calldata would route output
+   * tokens to a different address (a real risk on Velodrome v2/leaf paths
+   * where the recipient is encoded directly into the swap call). Re-quote via
+   * `wallet.swap.getQuote(...)` to bind the quote to this wallet.
    * @param params - Swap parameters or a pre-built SwapQuote from getQuote()
    * @returns Swap receipt with transaction details
+   * @throws If `params` is a SwapQuote whose recipient differs from this wallet
    */
   async execute(params: WalletSwapParams | SwapQuote): Promise<SwapReceipt> {
-    // Inject walletAddress — raw params need it for validation,
-    // quotes need it for on-chain allowance checks during approval building.
-    // Resolve ENS recipient here so providers only ever receive an Address.
-    const executeParams: SwapExecuteParamsResolved | SwapQuote =
+    const executeParams =
       QUOTE_DISCRIMINATOR in params
-        ? { ...params, recipient: this.wallet.address }
-        : {
-            ...params,
-            walletAddress: this.wallet.address,
-            recipient: await this.resolveRecipient(params.recipient),
-          }
+        ? this.requireQuoteForThisWallet(params)
+        : await this.resolveRawParams(params)
 
     const provider = this.resolveProvider(
       params.provider,
@@ -80,6 +81,39 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
     const swapTx = await provider.execute(executeParams)
     const receipt = await this.dispatch(swapTx, params.chainId)
     return this.buildReceipt(swapTx, receipt)
+  }
+
+  /**
+   * Validate that a pre-built quote is bound to this wallet. Throws when the
+   * quote's recipient differs from `wallet.address` — silently swapping
+   * recipients would route output tokens to the wrong address on routers that
+   * encode the recipient directly into calldata (e.g. Velodrome v2/leaf).
+   */
+  private requireQuoteForThisWallet(quote: SwapQuote): SwapQuote {
+    if (!isAddressEqual(quote.recipient, this.wallet.address)) {
+      throw new Error(
+        `SwapQuote was generated for a different recipient (${quote.recipient}). ` +
+          `Re-quote via wallet.swap.getQuote(...) so calldata is bound to this wallet (${this.wallet.address}).`,
+      )
+    }
+    return quote
+  }
+
+  /**
+   * Inject `walletAddress` (needed for validation and on-chain allowance
+   * checks) and resolve any ENS recipient so providers only ever receive an
+   * `Address`.
+   */
+  private async resolveRawParams(
+    params: WalletSwapParams,
+  ): Promise<SwapExecuteParamsResolved> {
+    return {
+      ...params,
+      walletAddress: this.wallet.address,
+      recipient: await this.resolveRecipient(
+        params.recipient ?? this.wallet.address,
+      ),
+    }
   }
 
   private buildReceipt(

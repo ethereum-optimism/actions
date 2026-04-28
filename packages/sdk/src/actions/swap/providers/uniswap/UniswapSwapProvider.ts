@@ -76,8 +76,8 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         assetOut: quote.assetOut,
         slippage: quote.slippage,
         deadline: quote.deadline,
-        recipient: quote.recipient!,
-        walletAddress: quote.recipient!,
+        recipient: quote.recipient,
+        walletAddress: quote.recipient,
         chainId: quote.chainId,
         amountInRaw: quote.amountInRaw,
         approvalMode: this.resolveApprovalMode(quote),
@@ -166,7 +166,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: quote.gasEstimate,
-      quotedRecipient: recipient,
+      recipient,
     }
   }
 
