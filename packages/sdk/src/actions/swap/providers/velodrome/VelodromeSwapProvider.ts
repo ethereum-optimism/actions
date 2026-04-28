@@ -182,7 +182,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: internalQuote.gasEstimate,
-      quotedRecipient: recipient,
+      recipient,
     }
   }
 
@@ -197,7 +197,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
           chain.contracts.router,
           chain.metadata.routerType,
           quote.amountInRaw,
-          quote.recipient!,
+          quote.recipient,
           publicClient,
         )
 

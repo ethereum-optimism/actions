@@ -110,6 +110,10 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this.validateMarketAllowed(assetIn, assetOut, chainId)
   }
 
+  public testBuildSwapTransactions(quote: SwapQuote): Promise<SwapTransaction> {
+    return this.buildSwapTransactions(quote)
+  }
+
   protected async _execute(
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {
@@ -202,7 +206,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: 150000n,
-      quotedRecipient: (params.recipient ??
+      recipient: (params.recipient ??
         '0x0000000000000000000000000000000000000001') as Address,
     }
   }

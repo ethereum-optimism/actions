@@ -429,10 +429,11 @@ export abstract class SwapProvider<
   }
 
   /**
-   * Build a SwapTransaction from a quote by fetching approvals and wrapping the swap calldata.
-   * Used by both the quote-execute path and provider _execute implementations.
-   * Reads `quote.approvalMode` (populated by `execute()` at entry).
-   * @param quote - SwapQuote with recipient and approvalMode set
+   * Build a SwapTransaction from a quote by fetching approvals and wrapping
+   * the swap calldata. Quotes are required to have `recipient` set by the
+   * provider's `_getQuote`; sub-providers can dereference `quote.recipient`
+   * directly. Reads `quote.approvalMode` (populated by `execute()` at entry)
+   * for approval-amount sizing.
    */
   protected async buildSwapTransactions(
     quote: SwapQuote,
@@ -465,33 +466,6 @@ export abstract class SwapProvider<
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     this.validateQuoteExpiration(quote)
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
-
-    if (!quote.recipient) {
-      throw new Error(
-        'SwapQuote.recipient is required for execution. Pass the quote through WalletSwapNamespace.execute() which injects the wallet address.',
-      )
-    }
-
-    // If the recipient changed since the quote was built (e.g. quote from
-    // ActionsSwapNamespace executed through WalletSwapNamespace), re-encode
-    // calldata with the correct recipient to prevent tokens going to the wrong address.
-    if (quote.recipient !== quote.quotedRecipient) {
-      const freshQuote = await this._getQuote({
-        assetIn: quote.assetIn,
-        assetOut: quote.assetOut,
-        amountIn: quote.amountIn,
-        chainId: quote.chainId,
-        slippage: quote.slippage,
-        deadline: quote.deadline,
-        recipient: quote.recipient,
-      })
-      return this.buildSwapTransactions({
-        ...freshQuote,
-        recipient: quote.recipient,
-        approvalMode: quote.approvalMode,
-      })
-    }
-
     return this.buildSwapTransactions(quote)
   }
 
@@ -505,7 +479,7 @@ export abstract class SwapProvider<
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
-    validateRecipient('recipient' in params ? params.recipient : undefined)
+    validateRecipient(params.recipient)
   }
 
   private validateQuoteExpiration(quote: SwapQuote): void {
@@ -614,8 +588,9 @@ export abstract class SwapProvider<
 
   /**
    * Build provider-specific approval transactions for a swap.
-   * Called by the base class with a validated recipient and resolved approvalMode.
-   * Implementations read `quote.approvalMode` to choose between exact and max approvals.
+   * Called by the base class during executeFromQuote with a validated recipient
+   * and resolved approvalMode. Implementations read `quote.approvalMode` to
+   * choose between exact and max approvals.
    * @param quote - SwapQuote with recipient and approvalMode set
    * @returns Approval transactions needed before the swap (tokenApproval, permit2Approval)
    */

@@ -191,12 +191,11 @@ describe('EOAWallet', () => {
         .mockResolvedValueOnce(mockReceipt2.transactionHash)
         .mockResolvedValueOnce(mockReceipt3.transactionHash)
 
+      // sendBatch waits for one confirmation per transaction (delegating to
+      // `send()`); no longer takes a second confirmations:2 pass.
       vi.mocked(mockPublicClient.waitForTransactionReceipt)
         .mockResolvedValueOnce(mockReceipt)
-        .mockResolvedValueOnce(mockReceipt)
         .mockResolvedValueOnce(mockReceipt2)
-        .mockResolvedValueOnce(mockReceipt2)
-        .mockResolvedValueOnce(mockReceipt3)
         .mockResolvedValueOnce(mockReceipt3)
     })
 
@@ -226,33 +225,17 @@ describe('EOAWallet', () => {
       )
     })
 
-    it('should wait for extra confirmations after each transaction', async () => {
+    it('waits for exactly one confirmation per transaction', async () => {
       await wallet.sendBatch(
         [mockTransactionData1, mockTransactionData2],
         unichain.id,
       )
 
-      // Should be called twice per transaction:
-      // 1. Initial wait in send()
-      // 2. Extra confirmation wait (confirmations: 2) in sendBatch()
+      // sendBatch delegates to send() once per transaction and does not make
+      // an additional confirmations:2 pass. One inclusion wait per tx.
       expect(mockPublicClient.waitForTransactionReceipt).toHaveBeenCalledTimes(
-        4,
+        2,
       )
-
-      // Check that extra confirmation wait was called with confirmations: 2
-      expect(
-        mockPublicClient.waitForTransactionReceipt,
-      ).toHaveBeenNthCalledWith(2, {
-        hash: mockReceipt.transactionHash,
-        confirmations: 2,
-      })
-
-      expect(
-        mockPublicClient.waitForTransactionReceipt,
-      ).toHaveBeenNthCalledWith(4, {
-        hash: mockReceipt2.transactionHash,
-        confirmations: 2,
-      })
     })
 
     it('should get public client for each transaction', async () => {
@@ -261,8 +244,8 @@ describe('EOAWallet', () => {
         unichain.id,
       )
 
-      // Called twice per transaction (once in send, once for extra confirmation)
-      expect(mockChainManager.getPublicClient).toHaveBeenCalledTimes(4)
+      // One getPublicClient call per transaction (via send()).
+      expect(mockChainManager.getPublicClient).toHaveBeenCalledTimes(2)
       expect(mockChainManager.getPublicClient).toHaveBeenCalledWith(unichain.id)
     })
 

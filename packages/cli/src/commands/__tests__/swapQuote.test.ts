@@ -31,7 +31,7 @@ const stubQuote = (provider: string, amountOutRaw: bigint) => ({
   deadline: 1,
   quotedAt: 1,
   expiresAt: 2,
-  quotedRecipient: '0xrecipient',
+  recipient: '0xrecipient',
 })
 
 describe('runSwapQuote', () => {
