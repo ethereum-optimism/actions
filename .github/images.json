@@ -1,0 +1,16 @@
+{
+  "shared_paths": [
+    ".github/workflows/factory.yaml",
+    ".github/images.json",
+    "apko/**"
+  ],
+  "images": {
+    "ecosystem-verbs-backend": {
+      "mode": "apko",
+      "apko_config": "apko/ecosystem-verbs-backend.apko.yaml",
+      "melange_configs": "apko/ecosystem-verbs-backend.melange.yaml",
+      "tag": "latest",
+      "paths": ["packages/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "apko/**"]
+    }
+  }
+}

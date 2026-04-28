@@ -1,0 +1,31 @@
+package:
+  name: ecosystem-verbs-backend
+  version: 0.0.0
+  epoch: 0
+  description: ecosystem-verbs-backend
+  copyright:
+    - license: MIT
+
+environment:
+  contents:
+    repositories:
+      - https://packages.wolfi.dev/os
+    keyring:
+      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    packages:
+      - nodejs-22
+      - pnpm
+      - busybox
+      - ca-certificates-bundle
+      - python3
+      - build-base
+      - git
+
+pipeline:
+  - runs: |
+      export PNPM_HOME=/root/.pnpm
+      export PATH=$PNPM_HOME:$PATH
+      pnpm install --frozen-lockfile
+      pnpm nx build @eth-optimism/actions-service
+      mkdir -p ${{targets.destdir}}/usr/src/app
+      pnpm deploy --filter @eth-optimism/actions-service --prod ${{targets.destdir}}/usr/src/app
