@@ -429,7 +429,7 @@ export abstract class SwapProvider<
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
-    validateRecipient('recipient' in params ? params.recipient : undefined)
+    validateRecipient(params.recipient)
   }
 
   private validateQuoteExpiration(quote: SwapQuote): void {
