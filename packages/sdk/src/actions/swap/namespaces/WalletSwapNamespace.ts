@@ -1,3 +1,5 @@
+import { isAddressEqual } from 'viem'
+
 import { QUOTE_DISCRIMINATOR } from '@/actions/swap/core/SwapProvider.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -88,7 +90,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * encode the recipient directly into calldata (e.g. Velodrome v2/leaf).
    */
   private requireQuoteForThisWallet(quote: SwapQuote): SwapQuote {
-    if (quote.recipient !== this.wallet.address) {
+    if (!isAddressEqual(quote.recipient, this.wallet.address)) {
       throw new Error(
         `SwapQuote was generated for a different recipient (${quote.recipient}). ` +
           `Re-quote via wallet.swap.getQuote(...) so calldata is bound to this wallet (${this.wallet.address}).`,

@@ -298,6 +298,37 @@ describe('WalletSwapNamespace', () => {
       // Single getQuote call — no re-quote, no re-encode.
       expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
     })
+
+    it('executes when quote.recipient differs only in case from wallet.address', async () => {
+      // Address with hex letters so case actually changes the string. The
+      // wallet uses checksummed casing; the quote uses lowercase. Without
+      // `isAddressEqual` the strict `!==` would falsely reject.
+      const checksummedAddress =
+        '0xAbCdEf1234567890aBcDeF1234567890ABcDeF12' as Address
+      const lowercaseAddress = checksummedAddress.toLowerCase() as Address
+
+      const provider = createMockSwapProvider()
+      const wallet = {
+        address: checksummedAddress,
+        send: vi.fn().mockResolvedValue({ transactionHash: '0xtx1' }),
+        sendBatch: vi.fn().mockResolvedValue({ transactionHash: '0xtx2' }),
+      } as unknown as Wallet
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        recipient: lowercaseAddress,
+      })
+
+      expect(quote.recipient).toBe(lowercaseAddress)
+      expect(quote.recipient).not.toBe(checksummedAddress)
+
+      const result = await namespace.execute(quote)
+      expect(result.price).toBeDefined()
+    })
   })
 
   describe('inherits read-only methods', () => {
