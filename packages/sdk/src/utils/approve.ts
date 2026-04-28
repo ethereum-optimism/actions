@@ -1,10 +1,5 @@
 import type { Address, PublicClient } from 'viem'
-import {
-  encodeFunctionData,
-  erc20Abi,
-  maxUint160,
-  maxUint256,
-} from 'viem'
+import { encodeFunctionData, erc20Abi, maxUint160, maxUint256 } from 'viem'
 
 import type { ApprovalMode } from '@/types/actions.js'
 import type { TransactionData } from '@/types/transaction.js'
