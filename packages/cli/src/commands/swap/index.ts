@@ -16,7 +16,7 @@ const QUOTE_OPTIONS_HELP = {
     '--amount-out <n>',
     'exact-out amount (mutually exclusive with --amount-in)',
   ],
-  chain: ['--chain <name>', 'chain shortname (e.g. unichain, op-sepolia)'],
+  chain: ['--chain <name>', 'chain shortname (e.g. base-sepolia, op-sepolia)'],
   provider: [
     '--provider <name>',
     'force a provider: uniswap or velodrome (omit to let routing decide)',
@@ -58,7 +58,7 @@ export function swapCommand(): Command {
     .command('market')
     .description('Inspect one swap market by pool id and chain.')
     .requiredOption('--pool <id>', 'pool identifier (keccak256 of PoolKey)')
-    .requiredOption('--chain <name>', 'chain shortname (e.g. unichain)')
+    .requiredOption('--chain <name>', 'chain shortname (e.g. base-sepolia)')
     .action(runSwapMarket)
   addQuoteOptions(
     command.command('quote').description('Get the best swap quote.'),
