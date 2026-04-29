@@ -91,7 +91,7 @@ describe('VelodromeSwapProvider router type routing', () => {
   })
 
   describe('universal router (Base Sepolia)', () => {
-    it('executes swap via Universal Router', async () => {
+    it('executes swap via Universal Router with standard approve', async () => {
       const provider = createProvider(BASE_SEPOLIA_CHAIN_ID)
       const result = await provider.execute({
         amountIn: 100,
@@ -102,12 +102,13 @@ describe('VelodromeSwapProvider router type routing', () => {
       })
 
       expect(result.transactionData.swap).toBeDefined()
-      // Universal Router: uses ERC20.transfer (not approve)
+      // Universal Router pulls tokens via transferFrom (payerIsUser=true), so the
+      // approval is a standard ERC20 approve(router, amount) — NOT a transfer.
+      // See encoding.v2.test.ts and the regression test in VelodromeSwapProvider.test.ts.
       expect(result.transactionData.tokenApproval).toBeDefined()
-      // tokenApproval should be a transfer() call, not approve()
       const approvalData = result.transactionData.tokenApproval!.data
-      // transfer() selector = 0xa9059cbb
-      expect(approvalData.startsWith('0xa9059cbb')).toBe(true)
+      // approve(spender, amount) selector = 0x095ea7b3
+      expect(approvalData.startsWith('0x095ea7b3')).toBe(true)
     })
 
     it('quotes via pool.getAmountOut for Universal Router', async () => {

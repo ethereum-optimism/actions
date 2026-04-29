@@ -1,3 +1,5 @@
+import type { Hex } from 'viem'
+import { decodeAbiParameters } from 'viem'
 import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset, MockWETHAsset } from '@/__mocks__/MockAssets.js'
@@ -37,6 +39,35 @@ describe('encodeCLSwap', () => {
     expect(commands).toBe('0x00')
     expect(inputs).toHaveLength(1)
     expect(deadline).toBe(BigInt(DEADLINE))
+  })
+
+  // Regression for #438: payerIsUser must be true so the router pulls tokens via
+  // transferFrom against an ERC20 allowance. See encoding.v2.test.ts for context.
+  it('encodes V3_SWAP_EXACT_IN with payerIsUser = true', () => {
+    const data = encodeCLSwap({
+      assetIn: MockUSDCAsset,
+      assetOut: MockWETHAsset,
+      amountInRaw: 1000000n,
+      amountOutMin: 400000000000000000n,
+      tickSpacing: 100,
+      recipient: RECIPIENT,
+      deadline: DEADLINE,
+      chainId: BASE_CHAIN_ID,
+    })
+
+    const { args } = decode<[Hex, Hex[], bigint]>(UNIVERSAL_ROUTER_ABI, data)
+    const [, inputs] = args
+    const [, , , , payerIsUser] = decodeAbiParameters(
+      [
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'bytes' },
+        { type: 'bool' },
+      ],
+      inputs[0],
+    )
+    expect(payerIsUser).toBe(true)
   })
 
   it('produces different calldata than V2 universal router swap', () => {
