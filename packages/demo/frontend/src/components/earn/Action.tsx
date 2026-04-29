@@ -169,17 +169,14 @@ export function Action({
       setAmount('')
       trackEvent('transaction_success', eventData)
     } catch (e) {
-      let displayMessage: string | undefined
-      if (e instanceof ChainNotSupportedError) {
-        displayMessage = `Chain ${e.chainId} is not supported`
-      } else if (
-        e instanceof MarketNotAllowedError ||
-        e instanceof ZeroAddressError
-      ) {
-        displayMessage = e.shortMessage
-      } else if (e instanceof ActionsError) {
-        displayMessage = e.shortMessage
-      }
+      const displayMessage =
+        e instanceof ChainNotSupportedError
+          ? `Chain ${e.chainId} is not supported`
+          : e instanceof MarketNotAllowedError ||
+              e instanceof ZeroAddressError ||
+              e instanceof ActionsError
+            ? e.shortMessage
+            : undefined
       setModalMessage(displayMessage)
       setModalStatus('error')
       trackEvent('transaction_error', eventData)
