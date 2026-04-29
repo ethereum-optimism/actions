@@ -1,9 +1,4 @@
-import {
-  ActionsError,
-  ChainNotSupportedError,
-  MarketNotAllowedError,
-  ZeroAddressError,
-} from '@eth-optimism/actions-sdk'
+import { ActionsError } from '@eth-optimism/actions-sdk'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import TransactionModal from './TransactionModal'
@@ -170,13 +165,7 @@ export function Action({
       trackEvent('transaction_success', eventData)
     } catch (e) {
       const displayMessage =
-        e instanceof ChainNotSupportedError
-          ? `Chain ${e.chainId} is not supported`
-          : e instanceof MarketNotAllowedError ||
-              e instanceof ZeroAddressError ||
-              e instanceof ActionsError
-            ? e.shortMessage
-            : undefined
+        e instanceof ActionsError ? e.shortMessage : undefined
       setModalMessage(displayMessage)
       setModalStatus('error')
       trackEvent('transaction_error', eventData)
