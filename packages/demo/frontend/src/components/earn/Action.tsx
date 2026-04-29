@@ -1,3 +1,9 @@
+import {
+  ActionsError,
+  ChainNotSupportedError,
+  MarketNotAllowedError,
+  ZeroAddressError,
+} from '@eth-optimism/actions-sdk'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import TransactionModal from './TransactionModal'
@@ -84,6 +90,7 @@ export function Action({
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<'loading' | 'error'>('loading')
+  const [modalMessage, setModalMessage] = useState<string | undefined>()
   const [toast, setToast] = useState<{
     visible: boolean
     title: string
@@ -161,7 +168,19 @@ export function Action({
       })
       setAmount('')
       trackEvent('transaction_success', eventData)
-    } catch {
+    } catch (e) {
+      let displayMessage: string | undefined
+      if (e instanceof ChainNotSupportedError) {
+        displayMessage = `Chain ${e.chainId} is not supported`
+      } else if (
+        e instanceof MarketNotAllowedError ||
+        e instanceof ZeroAddressError
+      ) {
+        displayMessage = e.shortMessage
+      } else if (e instanceof ActionsError) {
+        displayMessage = e.shortMessage
+      }
+      setModalMessage(displayMessage)
       setModalStatus('error')
       trackEvent('transaction_error', eventData)
     } finally {
@@ -240,9 +259,11 @@ export function Action({
       <TransactionModal
         isOpen={modalOpen}
         status={modalStatus}
+        errorMessage={modalMessage}
         onClose={() => {
           setModalOpen(false)
           setModalStatus('loading')
+          setModalMessage(undefined)
         }}
       />
 

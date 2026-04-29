@@ -4,6 +4,7 @@ import { formatUnits } from 'viem'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
@@ -42,7 +43,7 @@ export function resolveTokens(
 export function getWrappedNativeAddress(chainId: SupportedChainId): Address {
   const addr = WETH.address[chainId]
   if (!addr || addr === 'native') {
-    throw new Error(`No WETH address configured for chain ${chainId}`)
+    throw new ChainNotSupportedError(chainId, [])
   }
   return addr
 }

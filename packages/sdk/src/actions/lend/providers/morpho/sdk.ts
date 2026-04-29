@@ -14,6 +14,11 @@ import {
 import { getMorphoContracts } from '@/actions/shared/morpho/contracts.js'
 import type { MorphoContracts } from '@/actions/shared/morpho/types.js'
 import { NATIVELY_SUPPORTED_ASSETS } from '@/constants/assets.js'
+import {
+  ChainNotSupportedError,
+  MarketNotAllowedError,
+  ProviderNotConfiguredError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
@@ -337,9 +342,11 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
     : undefined
 
   if (!marketConfig) {
-    throw new Error(
-      `Market ${params.marketId.address} on chain ${params.marketId.chainId} not found in allowlist`,
-    )
+    throw new MarketNotAllowedError({
+      address: params.marketId.address,
+      chainId: params.marketId.chainId,
+      reason: 'Market not found in allowlist',
+    })
   }
 
   const publicClient = params.chainManager.getPublicClient(
@@ -400,9 +407,7 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
   }
 
   // No SDK support and no contracts configured
-  throw new Error(
-    `Chain ${params.marketId.chainId} not supported by Morpho SDK and no contracts configured`,
-  )
+  throw new ChainNotSupportedError(params.marketId.chainId, [])
 }
 
 interface GetVaultsParams {
@@ -447,7 +452,10 @@ export async function findBestVaultForAsset(
   marketAllowlist: LendMarketConfig[],
 ): Promise<Address> {
   if (!marketAllowlist || marketAllowlist.length === 0) {
-    throw new Error('Market allowlist is required and cannot be empty')
+    throw new ProviderNotConfiguredError(
+      'marketAllowlist',
+      'Market allowlist is required and cannot be empty',
+    )
   }
 
   const assetVaults = marketAllowlist.filter((vault) => {
@@ -456,7 +464,10 @@ export async function findBestVaultForAsset(
   })
 
   if (assetVaults.length === 0) {
-    throw new Error(`No vaults available for asset ${asset}`)
+    throw new MarketNotAllowedError({
+      chainId: 0,
+      reason: `No vaults available for asset ${asset}`,
+    })
   }
 
   // For now, return the first (and only) supported vault for the asset

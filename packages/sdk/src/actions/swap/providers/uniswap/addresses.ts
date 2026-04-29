@@ -12,6 +12,7 @@ import {
 
 import { PERMIT2_ADDRESS } from '@/constants/contracts.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 
 /**
  * Uniswap contract addresses
@@ -97,7 +98,10 @@ export function getUniswapAddresses(
 ): UniswapAddresses {
   const addresses = UNISWAP_ADDRESSES[chainId]
   if (!addresses) {
-    throw new Error(`Uniswap not supported on chain ${chainId}`)
+    throw new ChainNotSupportedError(
+      chainId,
+      Object.keys(UNISWAP_ADDRESSES).map(Number),
+    )
   }
   return addresses
 }

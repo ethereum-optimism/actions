@@ -3,6 +3,7 @@ import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { WETH } from '@/constants/assets.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {
@@ -56,8 +57,9 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       // Get Pool address for this chain
       const poolAddress = getPoolAddress(params.marketId.chainId)
       if (!poolAddress) {
-        throw new Error(
-          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
+        throw new ChainNotSupportedError(
+          params.marketId.chainId,
+          this.supportedChainIds(),
         )
       }
 
@@ -94,8 +96,9 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       // Get Pool address for this chain
       const poolAddress = getPoolAddress(params.marketId.chainId)
       if (!poolAddress) {
-        throw new Error(
-          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
+        throw new ChainNotSupportedError(
+          params.marketId.chainId,
+          this.supportedChainIds(),
         )
       }
 
@@ -162,8 +165,9 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       const poolAddress = getPoolAddress(params.marketId.chainId)
 
       if (!poolAddress) {
-        throw new Error(
-          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
+        throw new ChainNotSupportedError(
+          params.marketId.chainId,
+          this.supportedChainIds(),
         )
       }
 
@@ -216,8 +220,9 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   ): Promise<LendTransaction> {
     const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
     if (!gatewayAddress) {
-      throw new Error(
-        `WETHGateway not available on chain ${params.marketId.chainId}`,
+      throw new ChainNotSupportedError(
+        params.marketId.chainId,
+        this.supportedChainIds(),
       )
     }
 
@@ -304,8 +309,9 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   ): Promise<LendTransaction> {
     const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
     if (!gatewayAddress) {
-      throw new Error(
-        `WETHGateway not available on chain ${params.marketId.chainId}`,
+      throw new ChainNotSupportedError(
+        params.marketId.chainId,
+        this.supportedChainIds(),
       )
     }
 

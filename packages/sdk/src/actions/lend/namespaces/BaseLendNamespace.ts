@@ -1,6 +1,7 @@
 import type { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
 import { BaseNamespace } from '@/actions/shared/BaseNamespace.js'
+import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {
   GetLendMarketParams,
@@ -59,8 +60,9 @@ export abstract class BaseLendNamespace extends BaseNamespace<
       }
     }
 
-    throw new Error(
-      `No provider configured for market ${marketId.address} on chain ${marketId.chainId}`,
+    throw new ProviderNotConfiguredError(
+      marketId.address,
+      `No provider configured for market on chain ${marketId.chainId}`,
     )
   }
 }

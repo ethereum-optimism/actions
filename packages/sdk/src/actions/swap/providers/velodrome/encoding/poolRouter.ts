@@ -3,6 +3,7 @@ import type { Address, Hex, PublicClient } from 'viem'
 import type { VelodromeChainConfig } from '@/actions/swap/providers/velodrome/config.js'
 import type { ResolvedPoolConfig } from '@/actions/swap/providers/velodrome/types.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice } from '@/types/swap/index.js'
 
@@ -36,7 +37,7 @@ export async function fetchPoolQuote(
 
   if (poolConfig.type === 'cl') {
     if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
-      throw new Error(`CL pools not supported on chain ${chainId}`)
+      throw new ChainNotSupportedError(chainId, [])
     }
     const internalQuote = await getCLQuote({
       assetIn,

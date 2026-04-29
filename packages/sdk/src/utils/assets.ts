@@ -2,6 +2,10 @@ import type { Address } from 'viem'
 import { parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  AssetNotSupportedOnChainError,
+  NativeAssetAddressError,
+} from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 
 /**
@@ -75,14 +79,10 @@ export function getAssetAddress(
 ): Address {
   const address = asset.address[chainId]
   if (!address) {
-    throw new Error(
-      `Asset ${asset.metadata.symbol} is not supported on chain ${chainId}`,
-    )
+    throw new AssetNotSupportedOnChainError(asset.metadata.symbol, chainId)
   }
   if (address === 'native') {
-    throw new Error(
-      `Asset ${asset.metadata.symbol} is a native asset and has no contract address.`,
-    )
+    throw new NativeAssetAddressError(asset.metadata.symbol)
   }
   return address
 }

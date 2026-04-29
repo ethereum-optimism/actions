@@ -15,6 +15,7 @@ import {
   UNIVERSAL_ROUTER_MSG_SENDER,
 } from '@/actions/swap/providers/velodrome/encoding/helpers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 import { isNativeAsset } from '@/utils/assets.js'
@@ -109,9 +110,12 @@ async function fetchAmountOutViaPool(
     !poolAddress ||
     poolAddress === '0x0000000000000000000000000000000000000000'
   ) {
-    throw new Error(
-      `No Velodrome pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (stable=${stable})`,
-    )
+    throw new MarketNotAllowedError({
+      assetInSymbol: assetIn.metadata.symbol,
+      assetOutSymbol: assetOut.metadata.symbol,
+      chainId: params.chainId,
+      reason: `No Velodrome pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (stable=${stable})`,
+    })
   }
 
   return (await publicClient.readContract({

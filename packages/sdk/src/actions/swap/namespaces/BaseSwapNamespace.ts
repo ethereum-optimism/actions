@@ -1,6 +1,10 @@
 import { BaseNamespace } from '@/actions/shared/BaseNamespace.js'
 import type { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  MarketNotAllowedError,
+  ProviderNotConfiguredError,
+} from '@/core/error/errors.js'
 import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
 import {
   passthroughResolver,
@@ -118,7 +122,7 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
     if (provider) {
       const named = this.providers[provider]
       if (!named) {
-        throw new Error(`Swap provider "${provider}" not configured`)
+        throw new ProviderNotConfiguredError(provider)
       }
       return named.getMarket(params)
     }
@@ -130,9 +134,11 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
         continue
       }
     }
-    throw new Error(
-      `Market with poolId ${params.poolId} not found on chain ${params.chainId}`,
-    )
+    throw new MarketNotAllowedError({
+      address: params.poolId,
+      chainId: params.chainId,
+      reason: 'Market not found',
+    })
   }
 
   /**
@@ -165,14 +171,14 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
   ): ConfiguredSwapProvider {
     const allProviders = this.getAllProviders()
     if (allProviders.length === 0) {
-      throw new Error('No swap provider configured')
+      throw new ProviderNotConfiguredError('swap')
     }
 
     // 1. Explicit provider param
     if (provider) {
       const named = this.providers[provider]
       if (!named) {
-        throw new Error(`Swap provider "${provider}" not configured`)
+        throw new ProviderNotConfiguredError(provider)
       }
       return named
     }
@@ -224,9 +230,12 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
     }
 
     if (!best) {
-      throw new Error(
-        `All providers failed to quote ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol}`,
-      )
+      throw new MarketNotAllowedError({
+        assetInSymbol: params.assetIn.metadata.symbol,
+        assetOutSymbol: params.assetOut.metadata.symbol,
+        chainId: params.chainId,
+        reason: 'All providers failed to quote this pair',
+      })
     }
 
     return best
@@ -246,9 +255,12 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
     )
 
     if (eligible.length === 0) {
-      throw new Error(
-        `No provider supports ${params.assetIn.metadata.symbol}/${params.assetOut.metadata.symbol} on chain ${params.chainId}`,
-      )
+      throw new MarketNotAllowedError({
+        assetInSymbol: params.assetIn.metadata.symbol,
+        assetOutSymbol: params.assetOut.metadata.symbol,
+        chainId: params.chainId,
+        reason: 'No configured provider supports this pair on this chain',
+      })
     }
 
     const results = await Promise.allSettled(

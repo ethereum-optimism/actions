@@ -2,6 +2,16 @@ import type { Address } from 'viem'
 import { isAddress } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  AmountRequiredError,
+  AssetNotSupportedOnChainError,
+  ChainNotSupportedError,
+  ConflictingAmountsError,
+  InvalidAmountError,
+  SameAssetError,
+  SlippageOutOfRangeError,
+  ZeroAddressError,
+} from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import { isAssetSupportedOnChain } from '@/utils/assets.js'
 
@@ -12,13 +22,13 @@ export function validateAmountProvided(
   amountOut?: number,
 ): void {
   if (amountIn === undefined && amountOut === undefined) {
-    throw new Error('Either amountIn or amountOut must be provided')
+    throw new AmountRequiredError()
   }
 }
 
 export function validateAmountPositiveIfExists(amount?: number): void {
   if (amount !== undefined && amount <= 0) {
-    throw new Error('Amount must be positive')
+    throw new InvalidAmountError(amount)
   }
 }
 
@@ -27,7 +37,7 @@ export function validateNotBothAmounts(
   amountOut?: number,
 ): void {
   if (amountIn !== undefined && amountOut !== undefined) {
-    throw new Error('Provide either amountIn or amountOut, not both')
+    throw new ConflictingAmountsError()
   }
 }
 
@@ -36,21 +46,19 @@ export function validateNotSameAsset(assetIn: Asset, assetOut: Asset): void {
     assetIn.metadata.symbol.toLowerCase() ===
     assetOut.metadata.symbol.toLowerCase()
   ) {
-    throw new Error('Cannot swap an asset for itself')
+    throw new SameAssetError(assetIn.metadata.symbol)
   }
 }
 
 export function validateNotZeroAddress(address: Address, label: string): void {
   if (address === ZERO_ADDRESS) {
-    throw new Error(`${label} cannot be the zero address`)
+    throw new ZeroAddressError(label, address)
   }
 }
 
 export function validateSlippage(slippage: number, maxSlippage: number): void {
   if (slippage < 0 || slippage > maxSlippage) {
-    throw new Error(
-      `Slippage ${slippage} exceeds allowed range [0, ${maxSlippage * 100}%]`,
-    )
+    throw new SlippageOutOfRangeError(slippage, maxSlippage)
   }
 }
 
@@ -59,9 +67,7 @@ export function validateChainSupported(
   supportedChainIds: readonly number[],
 ): void {
   if (!supportedChainIds.includes(chainId)) {
-    throw new Error(
-      `Chain ${chainId} is not supported. Supported chains: ${supportedChainIds.join(', ')}`,
-    )
+    throw new ChainNotSupportedError(chainId, supportedChainIds)
   }
 }
 
@@ -70,9 +76,7 @@ export function validateAssetOnChain(
   chainId: SupportedChainId,
 ): void {
   if (!isAssetSupportedOnChain(asset, chainId)) {
-    throw new Error(
-      `Asset ${asset.metadata.symbol} not supported on chain ${chainId}`,
-    )
+    throw new AssetNotSupportedOnChainError(asset.metadata.symbol, chainId)
   }
 }
 

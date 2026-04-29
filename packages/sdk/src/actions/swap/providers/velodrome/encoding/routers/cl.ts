@@ -12,6 +12,7 @@ import {
   UNIVERSAL_ROUTER_MSG_SENDER,
 } from '@/actions/swap/providers/velodrome/encoding/helpers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 
@@ -62,9 +63,12 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
     !poolAddress ||
     poolAddress === '0x0000000000000000000000000000000000000000'
   ) {
-    throw new Error(
-      `No CL pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (tickSpacing=${tickSpacing})`,
-    )
+    throw new MarketNotAllowedError({
+      assetInSymbol: assetIn.metadata.symbol,
+      assetOutSymbol: assetOut.metadata.symbol,
+      chainId,
+      reason: `No CL pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (tickSpacing=${tickSpacing})`,
+    })
   }
 
   // Quote via QuoterV2.quoteExactInputSingle

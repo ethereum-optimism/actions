@@ -109,7 +109,7 @@ describe('ReactHostedWalletProviderRegistry', () => {
     const registry = new ReactHostedWalletProviderRegistry()
     // @ts-expect-error: testing runtime error for unknown type
     expect(() => registry.getFactory('unknown')).toThrow(
-      'Unknown hosted wallet provider: unknown',
+      "Provider 'unknown' is not configured",
     )
   })
 })

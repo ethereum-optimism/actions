@@ -10,6 +10,10 @@ import {
 } from '@/actions/lend/providers/aave/addresses.js'
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  ChainNotSupportedError,
+  MarketNotAllowedError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
 import type {
@@ -95,14 +99,16 @@ export async function getReserve(
     : undefined
 
   if (!marketConfig) {
-    throw new Error(
-      `Market ${params.marketId.address} on chain ${params.marketId.chainId} not found in allowlist`,
-    )
+    throw new MarketNotAllowedError({
+      address: params.marketId.address,
+      chainId: params.marketId.chainId,
+      reason: 'Market not found in allowlist',
+    })
   }
 
   const addresses = getAaveAddresses(params.marketId.chainId)
   if (!addresses) {
-    throw new Error(`Aave V3 not deployed on chain ${params.marketId.chainId}`)
+    throw new ChainNotSupportedError(params.marketId.chainId, [])
   }
 
   const poolAddress = addresses.pool
@@ -244,7 +250,7 @@ export async function getATokenAddress(params: {
 }): Promise<Address> {
   const poolAddress = getPoolAddress(params.chainId)
   if (!poolAddress) {
-    throw new Error(`Aave V3 not deployed on chain ${params.chainId}`)
+    throw new ChainNotSupportedError(params.chainId, [])
   }
 
   try {
