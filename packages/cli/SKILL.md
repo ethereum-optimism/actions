@@ -35,7 +35,8 @@ actions --json wallet balance --chain base-sepolia
   [--provider uniswap|velodrome] [--slippage <pct>]` - best quote
   (no wallet).
 - `actions swap quotes ...` - same flag set; returns every provider's
-  quote sorted best price first.
+  quote sorted best price first. Omit `--provider` to compare across
+  providers in a single call - don't fan out one call per provider.
 - `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
 - `actions wallet balance [--chain <name> | --chain-id <id>]` - balances
   per chain + asset; the chain flags are mutually exclusive.
@@ -84,7 +85,9 @@ demo, fund the EOA with testnet ETH on Base Sepolia.
   `swap quotes`, and `wallet swap execute`.
 - **Provider selection** - `--provider uniswap|velodrome` forces a
   provider and skips routing. Omit to let the SDK pick the best
-  available.
+  available. For `swap quotes`, omitting `--provider` is also how you
+  compare across providers - the response includes one entry per
+  provider, sorted best price first.
 
 ## Presentation hints (for LLM/agent callers)
 
