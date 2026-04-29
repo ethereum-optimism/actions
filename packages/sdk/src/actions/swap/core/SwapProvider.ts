@@ -5,10 +5,10 @@ import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
+  AddressRequiredError,
   MarketNotAllowedError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
-  ZeroAddressError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
@@ -438,7 +438,7 @@ export abstract class SwapProvider<
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
 
     if (!quote.recipient) {
-      throw new ZeroAddressError('recipient', undefined)
+      throw new AddressRequiredError('recipient')
     }
 
     // If the recipient changed since the quote was built (e.g. quote from

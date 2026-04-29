@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ActionsError,
+  AddressRequiredError,
   AmountRequiredError,
   AssetMetadataRequiredError,
   AssetNotSupportedOnChainError,
@@ -114,6 +115,14 @@ describe('ActionsError hierarchy', () => {
     expect(err.shortMessage).toContain('Velodrome')
   })
 
+  it('AddressRequiredError', () => {
+    const err = new AddressRequiredError('walletAddress')
+    expect(err.name).toBe('AddressRequiredError')
+    expect(err.label).toBe('walletAddress')
+    expect(err).toBeInstanceOf(ActionsError)
+    expect(err.shortMessage).toBe('walletAddress is required')
+  })
+
   it('ZeroAddressError', () => {
     const err = new ZeroAddressError('walletAddress', '0x0')
     expect(err.name).toBe('ZeroAddressError')
@@ -160,6 +169,7 @@ describe('ActionsError hierarchy', () => {
 
   it('all errors are instanceof BaseError', () => {
     const errors = [
+      new AddressRequiredError('x'),
       new ChainNotSupportedError(1, []),
       new MarketNotAllowedError({ chainId: 1 }),
       new ProviderNotConfiguredError('x'),

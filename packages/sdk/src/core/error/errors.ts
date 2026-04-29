@@ -156,6 +156,16 @@ export class ExactOutputNotSupportedError extends ActionsError {
 // Address
 // ─────────────────────────────────────────────────────────────────────────────
 
+export class AddressRequiredError extends ActionsError {
+  override name = 'AddressRequiredError' as const
+  label: string
+
+  constructor(label: string) {
+    super(`${label} is required`)
+    this.label = label
+  }
+}
+
 export class ZeroAddressError extends ActionsError {
   override name = 'ZeroAddressError' as const
   label: string

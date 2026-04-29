@@ -5,10 +5,10 @@ import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
+  AddressRequiredError,
   AssetMetadataRequiredError,
   MarketIdRequiredError,
   MarketNotAllowedError,
-  ZeroAddressError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'
@@ -92,7 +92,7 @@ export abstract class LendProvider<
    */
   async openPosition(params: LendOpenPositionParams): Promise<LendTransaction> {
     if (!params.walletAddress) {
-      throw new ZeroAddressError('walletAddress')
+      throw new AddressRequiredError('walletAddress')
     }
 
     this.validateConfigSupported(params.marketId)
@@ -188,7 +188,7 @@ export abstract class LendProvider<
    */
   async closePosition(params: ClosePositionParams): Promise<LendTransaction> {
     if (!params.walletAddress) {
-      throw new ZeroAddressError('walletAddress')
+      throw new AddressRequiredError('walletAddress')
     }
 
     this.validateConfigSupported(params.marketId)
