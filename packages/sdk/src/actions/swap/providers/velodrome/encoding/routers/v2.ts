@@ -192,7 +192,10 @@ export function encodeSwap(params: EncodeSwapParams): Hex {
 /**
  * Encode a V2_SWAP_EXACT_IN command for the Universal Router.
  * Route: encodePacked(tokenIn, stable, tokenOut) — 41 bytes per hop.
- * payerIsUser = false: tokens are pre-transferred to the Router by the smart wallet.
+ *
+ * payerIsUser = true: the router pulls tokens from msg.sender via standard
+ * transferFrom against an existing ERC20 allowance. Works for both EOAs (sequential
+ * approve + execute) and smart wallets (atomic approve + execute in one UserOp).
  */
 function encodeUniversalV2Swap(
   tokenIn: Address,
@@ -218,7 +221,7 @@ function encodeUniversalV2Swap(
       params.amountInRaw,
       params.amountOutMin,
       routes,
-      false, // payerIsUser
+      true, // payerIsUser — router pulls from msg.sender via transferFrom
       false, // isUni — false for Velodrome/Aerodrome
     ],
   )

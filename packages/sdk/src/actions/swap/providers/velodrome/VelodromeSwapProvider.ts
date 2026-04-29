@@ -195,7 +195,6 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       : await buildTokenApproval(
           getAssetAddress(quote.assetIn, quote.chainId),
           chain.contracts.router,
-          chain.metadata.routerType,
           quote.amountInRaw,
           quote.recipient,
           publicClient,

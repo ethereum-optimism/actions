@@ -112,6 +112,10 @@ const V3_SWAP_EXACT_IN = 0x00
 /**
  * Encode a V3_SWAP_EXACT_IN command for a CL/Slipstream pool on the Universal Router.
  * Path: encodePacked([tokenIn (20), tickSpacing as int24 (3), tokenOut (20)]) — 43 bytes.
+ *
+ * payerIsUser = true: the router pulls tokens from msg.sender via standard
+ * transferFrom against an existing ERC20 allowance. Works for both EOAs (sequential
+ * approve + execute) and smart wallets (atomic approve + execute in one UserOp).
  * @param params - CL swap encoding parameters
  * @returns Encoded calldata as hex string
  */
@@ -144,7 +148,7 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
       amountInRaw,
       amountOutMin,
       path,
-      false, // payerIsUser — tokens pre-transferred to router
+      true, // payerIsUser — router pulls from msg.sender via transferFrom
     ],
   )
 
