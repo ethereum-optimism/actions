@@ -111,6 +111,24 @@ jobs:
           name: Test SDK
           command: cd packages/sdk && pnpm test
 
+  # CLI checks
+  check-cli:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: large
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: TypeCheck CLI
+          command: cd packages/cli && pnpm typecheck
+      - run:
+          name: Lint CLI
+          command: cd packages/cli && pnpm lint
+      - run:
+          name: Test CLI
+          command: cd packages/cli && pnpm test
+
   # Backend checks
   check-backend:
     docker:
@@ -189,6 +207,11 @@ workflows:
           context:
             - circleci-repo-readonly-authenticated-github-token
       - check-sdk:
+          requires:
+            - install-and-build
+          context:
+            - circleci-repo-readonly-authenticated-github-token
+      - check-cli:
           requires:
             - install-and-build
           context:
