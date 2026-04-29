@@ -213,7 +213,7 @@ const V4_SWAP = 0x10
 
 // V4 action types
 const SWAP_EXACT_IN_SINGLE = 0x06
-const SWAP_EXACT_OUT_SINGLE = 0x07
+const SWAP_EXACT_OUT_SINGLE = 0x08
 const SETTLE_ALL = 0x0c
 const TAKE_ALL = 0x0f
 
