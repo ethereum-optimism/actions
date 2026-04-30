@@ -212,7 +212,7 @@ function encodeUniversalV2Swap(
   tokenOut: Address,
   params: EncodeSwapParams,
 ): Hex {
-  const commands = `0x${V2_SWAP_EXACT_IN.toString(16).padStart(2, '0')}` as Hex
+  const commands = encodePacked(['uint8'], [V2_SWAP_EXACT_IN])
   const routes = encodePacked(
     ['address', 'bool', 'address'],
     [tokenIn, params.stable, tokenOut],

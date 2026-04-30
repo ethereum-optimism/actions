@@ -136,7 +136,7 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
     chainId,
   )
 
-  const commands = `0x${V3_SWAP_EXACT_IN.toString(16).padStart(2, '0')}` as Hex
+  const commands = encodePacked(['uint8'], [V3_SWAP_EXACT_IN])
 
   // CL path: [tokenIn (20)] [tickSpacing as int24 (3)] [tokenOut (20)] — 43 bytes
   const path = encodePacked(
