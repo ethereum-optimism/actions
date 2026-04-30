@@ -1,6 +1,13 @@
-import { type Address, type PublicClient, zeroAddress } from 'viem'
+import {
+  type Address,
+  decodeAbiParameters,
+  decodeFunctionData,
+  type PublicClient,
+  zeroAddress,
+} from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
+import { UNIVERSAL_ROUTER_ABI } from '@/actions/swap/providers/uniswap/abis.js'
 import {
   calculatePriceImpact,
   encodeUniversalRouterSwap,
@@ -300,6 +307,61 @@ describe('encodeUniversalRouterSwap', () => {
 
     expect(calldata).toMatch(/^0x/)
     expect(calldata.length).toBeGreaterThan(10)
+  })
+
+  it('tags V4 action bytes per Uniswap v4-periphery Actions.sol', () => {
+    // Regression: SWAP_EXACT_OUT_SINGLE was previously encoded as 0x07, which
+    // V4Router treats as multi-hop SWAP_EXACT_IN. The router decoded our
+    // single-hop EXACT_OUTPUT_SINGLE_PARAMS struct as a PathKey[] path and
+    // bare-reverted on pool lookup. Correct codes:
+    //   0x06 SWAP_EXACT_IN_SINGLE
+    //   0x08 SWAP_EXACT_OUT_SINGLE
+    const decodeActions = (calldata: `0x${string}`): `0x${string}` => {
+      const { args } = decodeFunctionData({
+        abi: UNIVERSAL_ROUTER_ABI,
+        data: calldata,
+      })
+      const [, inputs] = args as readonly [
+        `0x${string}`,
+        ReadonlyArray<`0x${string}`>,
+        bigint,
+      ]
+      const [actions] = decodeAbiParameters(
+        [{ type: 'bytes' }, { type: 'bytes[]' }],
+        inputs[0]!,
+      )
+      return actions as `0x${string}`
+    }
+
+    const exactIn = encodeUniversalRouterSwap({
+      amountInRaw: 100000000n,
+      assetIn: USDC,
+      assetOut: WETH,
+      slippage: 0.005,
+      deadline: 1700000000,
+      recipient: '0xrecipient' as Address,
+      chainId: CHAIN_ID,
+      quote: baseQuote,
+      universalRouterAddress: '0xrouter' as Address,
+      fee: FEE,
+      tickSpacing: TICK_SPACING,
+    })
+    expect(decodeActions(exactIn)).toBe('0x060c0f')
+
+    const exactOut = encodeUniversalRouterSwap({
+      amountOutRaw: 500000000000000000n,
+      assetIn: USDC,
+      assetOut: WETH,
+      slippage: 0.005,
+      deadline: 1700000000,
+      recipient: '0xrecipient' as Address,
+      chainId: CHAIN_ID,
+      quote: baseQuote,
+      universalRouterAddress: '0xrouter' as Address,
+      fee: FEE,
+      tickSpacing: TICK_SPACING,
+    })
+    expect(decodeActions(exactOut)).toBe('0x080c0f')
   })
 
   it('produces different calldata for exact-in vs exact-out', () => {
