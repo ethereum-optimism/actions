@@ -55,5 +55,5 @@ npm-debug.log*
 # deployment output files
 latest-faucet-deployment.json
 
-# compound-engineering local config (per-developer)
-compound-engineering.local.md
+# per-developer local config (e.g., compound-engineering.local.md)
+*.local.md
