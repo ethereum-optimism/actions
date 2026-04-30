@@ -1,4 +1,5 @@
 import type { Address, PublicClient } from 'viem'
+import { decodeFunctionData, erc20Abi, maxUint256 } from 'viem'
 import { mode, optimism } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -95,6 +96,44 @@ describe('VelodromeSwapProvider', () => {
       expect(result.transactionData.tokenApproval).toBeDefined()
       // No Permit2 for Velodrome
       expect(result.transactionData.permit2Approval).toBeUndefined()
+    })
+
+    it('approves the exact swap amount in default exact mode', async () => {
+      const provider = createProvider()
+      const result = await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: OP,
+        chainId: CHAIN_ID,
+        walletAddress: MOCK_WALLET,
+      })
+
+      const decoded = decodeFunctionData({
+        abi: erc20Abi,
+        data: result.transactionData.tokenApproval!.data,
+      })
+      expect(decoded.functionName).toBe('approve')
+      // 100 USDC at 6 decimals
+      expect(decoded.args[1]).toBe(100_000_000n)
+    })
+
+    it('approves maxUint256 when approvalMode is "max"', async () => {
+      const provider = createProvider()
+      const result = await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: OP,
+        chainId: CHAIN_ID,
+        walletAddress: MOCK_WALLET,
+        approvalMode: 'max',
+      })
+
+      const decoded = decodeFunctionData({
+        abi: erc20Abi,
+        data: result.transactionData.tokenApproval!.data,
+      })
+      expect(decoded.functionName).toBe('approve')
+      expect(decoded.args[1]).toBe(maxUint256)
     })
 
     it('throws for exact-output swaps', async () => {

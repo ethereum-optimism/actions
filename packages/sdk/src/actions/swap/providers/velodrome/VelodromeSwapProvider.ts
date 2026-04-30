@@ -31,7 +31,11 @@ import type {
   SwapQuote,
   SwapTransaction,
 } from '@/types/swap/index.js'
-import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
+import {
+  buildErc20ApprovalTx,
+  checkTokenAllowance,
+  resolveErc20ApprovalAmount,
+} from '@/utils/approve.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 /**
@@ -73,7 +77,10 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       deadline: params.deadline,
       recipient: params.recipient,
     })
-    return this.buildSwapTransactions(swapQuote)
+    return this.buildSwapTransactions({
+      ...swapQuote,
+      approvalMode: params.approvalMode,
+    })
   }
 
   /**
@@ -187,19 +194,32 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   }
 
   protected async _buildApprovals(quote: SwapQuote) {
+    if (isNativeAsset(quote.assetIn)) {
+      return { tokenApproval: undefined }
+    }
+
     const chain = getChainConfig(quote.chainId)
     const publicClient = this.chainManager.getPublicClient(quote.chainId)
+    const token = getAssetAddress(quote.assetIn, quote.chainId)
+    const spender = chain.contracts.router
+    const required = quote.amountInRaw
 
-    const tokenApproval = isNativeAsset(quote.assetIn)
-      ? undefined
-      : await buildApprovalTxIfNeeded({
-          publicClient,
-          token: getAssetAddress(quote.assetIn, quote.chainId),
-          owner: quote.recipient,
-          spender: chain.contracts.router,
-          amount: quote.amountInRaw,
-        })
+    const allowance = await checkTokenAllowance({
+      publicClient,
+      token,
+      owner: quote.recipient,
+      spender,
+    })
 
+    if (allowance >= required) {
+      return { tokenApproval: undefined }
+    }
+
+    const tokenApproval = buildErc20ApprovalTx(
+      token,
+      spender,
+      resolveErc20ApprovalAmount(this.resolveApprovalMode(quote), required),
+    )
     return { tokenApproval }
   }
 
