@@ -8,7 +8,6 @@ import {
   getValidMarketConfigs,
 } from '@/actions/swap/providers/velodrome/config.js'
 import {
-  buildTokenApproval,
   encodePoolSwap,
   fetchPoolQuote,
 } from '@/actions/swap/providers/velodrome/encoding/index.js'
@@ -33,6 +32,7 @@ import type {
   SwapQuote,
   SwapTransaction,
 } from '@/types/swap/index.js'
+import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 /**
@@ -193,13 +193,13 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
     const tokenApproval = isNativeAsset(quote.assetIn)
       ? undefined
-      : await buildTokenApproval(
-          getAssetAddress(quote.assetIn, quote.chainId),
-          chain.contracts.router,
-          quote.amountInRaw,
-          quote.recipient,
+      : await buildApprovalTxIfNeeded({
           publicClient,
-        )
+          token: getAssetAddress(quote.assetIn, quote.chainId),
+          owner: quote.recipient,
+          spender: chain.contracts.router,
+          amount: quote.amountInRaw,
+        })
 
     return { tokenApproval }
   }
