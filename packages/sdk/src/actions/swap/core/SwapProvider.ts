@@ -430,9 +430,12 @@ export abstract class SwapProvider<
 
   /**
    * Build a SwapTransaction from a quote by fetching approvals and wrapping
-   * the swap calldata. Quotes are required to have `recipient` set by the
-   * provider's `_getQuote`; sub-providers can dereference `quote.recipient`
-   * directly. Reads `quote.approvalMode` (populated by `execute()` at entry).
+   * the swap calldata. Used by both the quote-execute path and provider
+   * `_execute` implementations. Quotes are required to have `recipient` set
+   * by the provider's `_getQuote`; sub-providers can dereference
+   * `quote.recipient` directly. Reads `quote.approvalMode` (populated by
+   * `execute()` at entry).
+   * @param quote - SwapQuote with recipient and approvalMode set
    */
   protected async buildSwapTransactions(
     quote: SwapQuote,
