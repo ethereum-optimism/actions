@@ -8,6 +8,7 @@ import {
   encodeCLSwap,
   encodeSwap,
 } from '@/actions/swap/providers/velodrome/encoding/index.js'
+import { V3_SWAP_EXACT_IN_INPUT_PARAMS } from '@/actions/swap/providers/velodrome/encoding/routers/cl.js'
 
 import {
   BASE_CHAIN_ID,
@@ -57,17 +58,14 @@ describe('encodeCLSwap', () => {
 
     const { args } = decode<[Hex, Hex[], bigint]>(UNIVERSAL_ROUTER_ABI, data)
     const [, inputs] = args
-    const [, , , , payerIsUser] = decodeAbiParameters(
-      [
-        { type: 'address' },
-        { type: 'uint256' },
-        { type: 'uint256' },
-        { type: 'bytes' },
-        { type: 'bool' },
-      ],
+    const decoded = decodeAbiParameters(
+      V3_SWAP_EXACT_IN_INPUT_PARAMS,
       inputs[0],
     )
-    expect(payerIsUser).toBe(true)
+    const payerIsUserIdx = V3_SWAP_EXACT_IN_INPUT_PARAMS.findIndex(
+      (p) => p.name === 'payerIsUser',
+    )
+    expect(decoded[payerIsUserIdx]).toBe(true)
   })
 
   it('produces different calldata than V2 universal router swap', () => {

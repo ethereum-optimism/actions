@@ -13,6 +13,7 @@ import {
   V2_ROUTER_ABI,
 } from '@/actions/swap/providers/velodrome/abis.js'
 import { encodeSwap } from '@/actions/swap/providers/velodrome/encoding/index.js'
+import { V2_SWAP_EXACT_IN_INPUT_PARAMS } from '@/actions/swap/providers/velodrome/encoding/routers/v2.js'
 
 import {
   BASE_CHAIN_ID,
@@ -218,18 +219,14 @@ describe('encodeSwap', () => {
 
       const { args } = decode<[Hex, Hex[], bigint]>(UNIVERSAL_ROUTER_ABI, data)
       const [, inputs] = args
-      const [, , , , payerIsUser] = decodeAbiParameters(
-        [
-          { type: 'address' },
-          { type: 'uint256' },
-          { type: 'uint256' },
-          { type: 'bytes' },
-          { type: 'bool' },
-          { type: 'bool' },
-        ],
+      const decoded = decodeAbiParameters(
+        V2_SWAP_EXACT_IN_INPUT_PARAMS,
         inputs[0],
       )
-      expect(payerIsUser).toBe(true)
+      const payerIsUserIdx = V2_SWAP_EXACT_IN_INPUT_PARAMS.findIndex(
+        (p) => p.name === 'payerIsUser',
+      )
+      expect(decoded[payerIsUserIdx]).toBe(true)
     })
   })
 
