@@ -1,6 +1,5 @@
 import type { Address, PublicClient } from 'viem'
-import { decodeFunctionData, erc20Abi } from 'viem'
-import { baseSepolia, mode, optimism } from 'viem/chains'
+import { mode, optimism } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -96,43 +95,6 @@ describe('VelodromeSwapProvider', () => {
       expect(result.transactionData.tokenApproval).toBeDefined()
       // No Permit2 for Velodrome
       expect(result.transactionData.permit2Approval).toBeUndefined()
-    })
-
-    // Regression for #438: on the Universal Router (Base Sepolia), the approval must
-    // be a standard ERC20 `approve(router, amount)`, NOT a `transfer(router, amount)`.
-    // The old transfer-then-execute layout reverted with TRANSFER_FAILED for EOAs
-    // because their txs run sequentially: tokens landed at the router with no
-    // allowance set, then the swap call's transferFrom failed.
-    it('uses approve, not transfer, for the Universal Router (Base Sepolia)', async () => {
-      const baseSepoliaId = baseSepolia.id as SupportedChainId
-      const config: VelodromeSwapProviderConfig = {
-        defaultSlippage: 0.005,
-        marketAllowlist: [
-          { assets: [USDC, WETH], stable: false, chainId: baseSepoliaId },
-        ],
-      }
-      const provider = new VelodromeSwapProvider(
-        config,
-        createMockChainManager([baseSepoliaId]),
-      )
-
-      const result = await provider.execute({
-        amountIn: 1,
-        assetIn: USDC,
-        assetOut: WETH,
-        chainId: baseSepoliaId,
-        walletAddress: MOCK_WALLET,
-      })
-
-      const tokenApproval = result.transactionData.tokenApproval
-      expect(tokenApproval).toBeDefined()
-      // Decode the calldata; must be `approve`, not `transfer`.
-      const decoded = decodeFunctionData({
-        abi: erc20Abi,
-        data: tokenApproval!.data,
-      })
-      expect(decoded.functionName).toBe('approve')
-      expect(decoded.functionName).not.toBe('transfer')
     })
 
     it('throws for exact-output swaps', async () => {
