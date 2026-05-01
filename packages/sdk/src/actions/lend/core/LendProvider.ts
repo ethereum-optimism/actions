@@ -5,7 +5,11 @@ import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
+import type {
+  ApprovalMode,
+  LendProviderConfig,
+  LendSettings,
+} from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   ClosePositionParams,
@@ -116,15 +120,7 @@ export abstract class LendProvider<
     }
 
     const position = await this._openPosition(internal)
-
-    const approval =
-      position.kind === 'erc20'
-        ? buildErc20ApprovalTx(
-            position.asset,
-            position.spender,
-            resolveErc20ApprovalAmount(approvalMode, amountWei),
-          )
-        : undefined
+    const approval = this.buildLendApproval(position, approvalMode, amountWei)
 
     return {
       amount: amountWei,
@@ -301,6 +297,24 @@ export abstract class LendProvider<
     amount: bigint,
   ): TransactionData {
     return buildErc20ApprovalTx(tokenAddress, spender, amount)
+  }
+
+  /**
+   * Build the approval transaction for a `_openPosition` result. Returns
+   * `undefined` for native deposits (no ERC-20 allowance needed).
+   */
+  private buildLendApproval(
+    position: LendOpenPosition,
+    approvalMode: ApprovalMode,
+    amountWei: bigint,
+  ): TransactionData | undefined {
+    return position.kind === 'erc20'
+      ? buildErc20ApprovalTx(
+          position.asset,
+          position.spender,
+          resolveErc20ApprovalAmount(approvalMode, amountWei),
+        )
+      : undefined
   }
 
   /**
