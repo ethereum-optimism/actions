@@ -13,6 +13,7 @@ import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { createBundlerClient } from 'viem/account-abstraction'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainConfig } from '@/types/chain.js'
 
 /**
@@ -44,7 +45,10 @@ export class ChainManager {
   getPublicClient(chainId: SupportedChainId): PublicClient {
     const client = this.publicClients.get(chainId)
     if (!client) {
-      throw new Error(`No public client configured for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     return client
   }
@@ -73,7 +77,10 @@ export class ChainManager {
     const chainConfig = this.getChainConfig(chainId)
     const bundlerConfig = chainConfig.bundler
     if (!bundlerConfig) {
-      throw new Error(`No bundler configured for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     if (bundlerConfig.type === 'pimlico') {
       return this.getPimlicoBundlerClient(
@@ -84,7 +91,10 @@ export class ChainManager {
     }
     const bundlerUrl = this.getBundlerUrl(chainId)
     if (!bundlerUrl) {
-      throw new Error(`No bundler URL configured for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     const client = createPublicClient({
       chain: this.getChain(chainId),
@@ -118,7 +128,10 @@ export class ChainManager {
   getBundlerUrl(chainId: SupportedChainId): string | undefined {
     const chainConfig = this.getChainConfig(chainId)
     if (!chainConfig.bundler) {
-      throw new Error(`No bundler configured for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     return chainConfig.bundler.url
   }
@@ -167,12 +180,13 @@ export class ChainManager {
     for (const chainConfig of chains) {
       const chain = chainById[chainConfig.chainId]
       if (!chain) {
-        throw new Error(`Chain not found for ID: ${chainConfig.chainId}`)
+        throw new ChainNotSupportedError({ chainId: chainConfig.chainId })
       }
       if (clients.has(chainConfig.chainId)) {
-        throw new Error(
-          `Public client already configured for chain ID: ${chainConfig.chainId}`,
-        )
+        throw new ChainNotSupportedError({
+          chainId: chainConfig.chainId,
+          supportedChainIds: Array.from(clients.keys()),
+        })
       }
       const client = createPublicClient({
         chain,
@@ -193,7 +207,10 @@ export class ChainManager {
   private getChainConfig(chainId: SupportedChainId): ChainConfig {
     const chainConfig = this.chainConfigs.find((c) => c.chainId === chainId)
     if (!chainConfig) {
-      throw new Error(`No chain config found for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     return chainConfig
   }

@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 
 import { VELODROME_CHAINS, type VelodromeChainConfig } from './addresses.js'
 import type { VelodromeMarketConfig } from './types.js'
@@ -20,7 +21,10 @@ export function getChainConfig(
 ): VelodromeChainConfig {
   const config = VELODROME_CHAINS[chainId]
   if (!config) {
-    throw new Error(`Velodrome/Aerodrome not supported on chain ${chainId}`)
+    throw new ChainNotSupportedError({
+      chainId,
+      supportedChainIds: getSupportedChainIds(),
+    })
   }
   return config
 }

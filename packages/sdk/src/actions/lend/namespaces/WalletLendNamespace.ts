@@ -1,5 +1,6 @@
 import { BaseLendNamespace } from '@/actions/lend/namespaces/BaseLendNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { MarketIdRequiredError } from '@/core/error/errors.js'
 import type {
   ClosePositionParams,
   GetPositionParams,
@@ -50,7 +51,7 @@ export class WalletLendNamespace extends BaseLendNamespace {
    */
   async getPosition(params: GetPositionParams): Promise<LendMarketPosition> {
     if (!params.marketId) {
-      throw new Error('marketId is required')
+      throw new MarketIdRequiredError()
     }
 
     const provider = this.getProviderForMarket(params.marketId)

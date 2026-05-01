@@ -518,7 +518,7 @@ describe('VelodromeSwapProvider', () => {
           amountIn: 100,
           chainId: MODE_CHAIN_ID,
         }),
-      ).rejects.toThrow('CL pools not supported on chain')
+      ).rejects.toThrow('is not supported')
     })
   })
 

@@ -4,6 +4,11 @@ import { formatUnits } from 'viem'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import {
+  MarketNotAllowedError,
+  ProviderNotConfiguredError,
+  QuoteExpiredError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   SwapExecuteParamsResolved,
@@ -262,9 +267,12 @@ export abstract class SwapProvider<
         marketBlocklist,
       )
       if (isBlocked) {
-        throw new Error(
-          `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is blocked on chain ${chainId}`,
-        )
+        throw new MarketNotAllowedError({
+          assetInSymbol: assetIn.metadata.symbol,
+          assetOutSymbol: assetOut.metadata.symbol,
+          chainId,
+          reason: 'Pair is blocked',
+        })
       }
     }
 
@@ -276,9 +284,12 @@ export abstract class SwapProvider<
         marketAllowlist,
       )
       if (!isAllowed) {
-        throw new Error(
-          `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is not in the allowlist for chain ${chainId}`,
-        )
+        throw new MarketNotAllowedError({
+          assetInSymbol: assetIn.metadata.symbol,
+          assetOutSymbol: assetOut.metadata.symbol,
+          chainId,
+          reason: 'Pair is not in the allowlist',
+        })
       }
     }
   }
@@ -325,9 +336,10 @@ export abstract class SwapProvider<
   ): SwapMarketConfig | undefined {
     const { marketAllowlist } = this._config
     if (!marketAllowlist?.length) {
-      throw new Error(
-        'No markets configured. Provide a marketAllowlist in swap provider config.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'marketAllowlist',
+        details: 'Provide a marketAllowlist in swap provider config.',
+      })
     }
     return this.findMatchingConfig(assetIn, assetOut, chainId, marketAllowlist)
   }
@@ -475,9 +487,10 @@ export abstract class SwapProvider<
   private validateQuoteExpiration(quote: SwapQuote): void {
     const now = Math.floor(Date.now() / 1000)
     if (now >= quote.expiresAt) {
-      throw new Error(
-        `Quote expired at ${quote.expiresAt}, current time is ${now}`,
-      )
+      throw new QuoteExpiredError({
+        expiresAt: quote.expiresAt,
+        currentTime: now,
+      })
     }
   }
 

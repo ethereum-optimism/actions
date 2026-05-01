@@ -4,6 +4,12 @@ import { parseUnits } from 'viem'
 import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import {
+  AddressRequiredError,
+  AssetMetadataRequiredError,
+  MarketIdRequiredError,
+  MarketNotAllowedError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   ApprovalMode,
@@ -97,7 +103,7 @@ export abstract class LendProvider<
    */
   async openPosition(params: LendOpenPositionParams): Promise<LendTransaction> {
     if (!params.walletAddress) {
-      throw new Error('walletAddress is required')
+      throw new AddressRequiredError('walletAddress')
     }
 
     this.validateConfigSupported(params.marketId)
@@ -189,13 +195,13 @@ export abstract class LendProvider<
   ): Promise<LendMarketPosition> {
     // For now, require marketId (asset-only and empty params not yet supported)
     if (!marketId) {
-      throw new Error(
-        'marketId is required. Querying all positions or by asset is not yet supported.',
+      throw new MarketIdRequiredError(
+        'Querying all positions or by asset is not yet supported.',
       )
     }
 
     if (asset) {
-      throw new Error(
+      throw new MarketIdRequiredError(
         'Filtering by asset is not yet supported. Please provide only marketId.',
       )
     }
@@ -216,7 +222,7 @@ export abstract class LendProvider<
    */
   async closePosition(params: ClosePositionParams): Promise<LendTransaction> {
     if (!params.walletAddress) {
-      throw new Error('walletAddress is required')
+      throw new AddressRequiredError('walletAddress')
     }
 
     this.validateConfigSupported(params.marketId)
@@ -232,7 +238,7 @@ export abstract class LendProvider<
 
     const assetMetadata = params.asset?.metadata
     if (!assetMetadata) {
-      throw new Error('Asset metadata is required for decimal conversion')
+      throw new AssetMetadataRequiredError('decimal conversion')
     }
 
     // Convert human-readable amount to wei using the asset's decimals
@@ -282,9 +288,11 @@ export abstract class LendProvider<
     )
 
     if (!foundMarket) {
-      throw new Error(
-        `Market ${marketId.address} on chain ${marketId.chainId} is not in the market allowlist`,
-      )
+      throw new MarketNotAllowedError({
+        address: marketId.address,
+        chainId: marketId.chainId,
+        reason: 'Market is not in the market allowlist',
+      })
     }
   }
 

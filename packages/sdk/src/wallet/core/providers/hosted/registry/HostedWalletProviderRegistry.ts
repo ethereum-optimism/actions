@@ -1,3 +1,4 @@
+import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import type { HostedProviderFactory } from '@/wallet/core/providers/hosted/types/index.js'
 
 /**
@@ -29,7 +30,7 @@ export abstract class HostedWalletProviderRegistry<
     const factory = this.registry.get(type) as
       | HostedProviderFactory<TType, TInstanceMap[TType], TConfigMap[TType]>
       | undefined
-    if (!factory) throw new Error(`Unknown hosted wallet provider: ${type}`)
+    if (!factory) throw new ProviderNotConfiguredError({ provider: type })
     return factory
   }
 
