@@ -139,7 +139,7 @@ describe('AaveLendProvider', () => {
 
       expect(lendTransaction).toHaveProperty('amount', BigInt('1000000000'))
       expect(lendTransaction).toHaveProperty(
-        'asset',
+        'assetAddress',
         asset.address[marketId.chainId],
       )
       expect(lendTransaction).toHaveProperty('marketId', marketId.address)
@@ -228,7 +228,7 @@ describe('AaveLendProvider', () => {
 
       expect(withdrawTransaction).toHaveProperty('amount', BigInt('500000000'))
       expect(withdrawTransaction).toHaveProperty(
-        'asset',
+        'assetAddress',
         asset.address[marketId.chainId],
       )
       expect(withdrawTransaction).toHaveProperty('marketId', marketId.address)

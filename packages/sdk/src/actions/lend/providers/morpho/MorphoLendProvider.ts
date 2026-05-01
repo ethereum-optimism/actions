@@ -66,9 +66,8 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       )
 
       return {
-        kind: 'erc20',
         spender: params.marketId.address,
-        asset: assetAddress,
+        assetAddress,
         transaction: {
           to: params.marketId.address,
           data: depositCallData,
@@ -115,7 +114,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
 
       return {
         amount: params.amount,
-        asset: assetAddress,
+        assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
         transactionData: {

@@ -167,7 +167,7 @@ describe('LendProvider', () => {
       })
 
       expect(result.amount).toBe(1000000000n)
-      expect(result.asset).toBe('0x123')
+      expect(result.assetAddress).toBe('0x123')
       expect(result.marketId).toBe('0x1234')
       expect(result.apy).toBe(0.05)
     })

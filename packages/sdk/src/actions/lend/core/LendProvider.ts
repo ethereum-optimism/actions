@@ -32,6 +32,7 @@ import {
   resolveApprovalMode,
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
+import { isNativeAsset } from '@/utils/assets.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
 /**
@@ -107,24 +108,27 @@ export abstract class LendProvider<
       params.asset.metadata.decimals,
     )
 
-    const approvalMode = resolveApprovalMode(
-      params.approvalMode,
-      this._config.approvalMode,
-      this._settings.approvalMode,
-    )
-    const internal: LendOpenPositionInternalParams = {
+    const position = await this._openPosition({
       ...params,
       amountWei,
       walletAddress: params.walletAddress,
-      approvalMode,
-    }
+    })
 
-    const position = await this._openPosition(internal)
-    const approval = this.buildLendApproval(position, approvalMode, amountWei)
+    // Native deposits send ETH inline as msg.value; no approval is needed.
+    // ERC-20 deposits resolve approval mode and build an approve(spender, amount) tx.
+    let approval: TransactionData | undefined
+    if (!isNativeAsset(params.asset)) {
+      const approvalMode = resolveApprovalMode(
+        params.approvalMode,
+        this._config.approvalMode,
+        this._settings.approvalMode,
+      )
+      approval = this.buildLendApproval(position, approvalMode, amountWei)
+    }
 
     return {
       amount: amountWei,
-      asset: position.asset,
+      assetAddress: position.assetAddress,
       marketId: params.marketId.address,
       apy: position.apy,
       transactionData: {
@@ -300,21 +304,25 @@ export abstract class LendProvider<
   }
 
   /**
-   * Build the approval transaction for a `_openPosition` result. Returns
-   * `undefined` for native deposits (no ERC-20 allowance needed).
+   * Build the approval transaction for an ERC-20 lend deposit. Caller is
+   * expected to skip this for native deposits.
+   * @throws if the provider's `_openPosition` result is missing `spender`
    */
   private buildLendApproval(
     position: LendOpenPosition,
     approvalMode: ApprovalMode,
     amountWei: bigint,
-  ): TransactionData | undefined {
-    return position.kind === 'erc20'
-      ? buildErc20ApprovalTx(
-          position.asset,
-          position.spender,
-          resolveErc20ApprovalAmount(approvalMode, amountWei),
-        )
-      : undefined
+  ): TransactionData {
+    if (!position.spender) {
+      throw new Error(
+        `LendOpenPosition.spender is required for ERC-20 deposits (assetAddress: ${position.assetAddress})`,
+      )
+    }
+    return buildErc20ApprovalTx(
+      position.assetAddress,
+      position.spender,
+      resolveErc20ApprovalAmount(approvalMode, amountWei),
+    )
   }
 
   /**

@@ -234,8 +234,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
 
     return {
-      kind: 'native',
-      asset: wethAddress,
+      assetAddress: wethAddress,
       transaction: {
         to: gatewayAddress,
         data: depositCallData,
@@ -269,9 +268,8 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     })
 
     return {
-      kind: 'erc20',
       spender: poolAddress,
-      asset: assetAddress,
+      assetAddress,
       transaction: {
         to: poolAddress,
         data: supplyCallData,
@@ -319,7 +317,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: params.amount,
-      asset: wethAddress,
+      assetAddress: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
@@ -364,7 +362,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: params.amount,
-      asset: assetAddress,
+      assetAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
