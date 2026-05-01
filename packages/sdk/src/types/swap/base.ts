@@ -239,26 +239,14 @@ export interface SwapQuote {
   /** Estimated gas cost as raw bigint (native decimals) */
   gasEstimate?: bigint
   /**
-   * Wallet address that will execute this quote.
-   * Set by WalletSwapNamespace before execution — not available on price-only quotes.
-   * Used to check existing on-chain allowances and skip redundant approvals.
+   * Recipient address baked into execution.swapCalldata at quote time.
+   * Required. To execute a quote on a wallet, the quote must have been
+   * generated for that wallet (recipient === wallet.address); otherwise
+   * WalletSwapNamespace.execute throws. Re-quote via wallet.swap.getQuote
+   * when the executor differs from the quote's recipient.
    */
-  recipient?: Address
-  /**
-   * The recipient address baked into execution.swapCalldata at quote time.
-   * If recipient differs from quotedRecipient at execute time, calldata is re-encoded
-   * with the correct recipient to prevent tokens from being sent to the wrong address.
-   */
-  quotedRecipient: Address
+  recipient: Address
 }
-
-/**
- * A SwapQuote with recipient guaranteed to be set.
- * Produced by SwapProvider.buildSwapTransactions before invoking
- * provider-specific _buildApprovals, so sub-providers can dereference
- * `quote.recipient` without per-provider fallback logic.
- */
-export type NormalizedSwapQuote = SwapQuote & { recipient: Address }
 
 /**
  * Market information for a swap hop

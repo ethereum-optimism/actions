@@ -5,7 +5,6 @@ import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
-  AddressRequiredError,
   MarketNotAllowedError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
@@ -20,7 +19,6 @@ import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
-  NormalizedSwapQuote,
   ResolvedSwapParams,
   SwapExecuteParams,
   SwapMarket,
@@ -394,37 +392,31 @@ export abstract class SwapProvider<
   }
 
   /**
-   * Build a SwapTransaction from a quote by fetching approvals and wrapping the swap calldata.
-   * Used by both the quote-execute path and provider _execute implementations.
-   * Normalises `quote.recipient` to `quote.quotedRecipient` when absent so
-   * provider `_buildApprovals` implementations can dereference `quote.recipient`
-   * without per-provider fallback logic.
-   * @param quote - SwapQuote (recipient may be unset; defaults to quotedRecipient)
+   * Build a SwapTransaction from a quote by fetching approvals and wrapping
+   * the swap calldata. Quotes are required to have `recipient` set by the
+   * provider's `_getQuote`; sub-providers can dereference `quote.recipient`
+   * directly.
    */
   protected async buildSwapTransactions(
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
-    const normalized: NormalizedSwapQuote = {
-      ...quote,
-      recipient: quote.recipient ?? quote.quotedRecipient,
-    }
-    const approvals = await this._buildApprovals(normalized)
+    const approvals = await this._buildApprovals(quote)
 
     const swapTx: TransactionData = {
-      to: normalized.execution.routerAddress,
-      data: normalized.execution.swapCalldata,
-      value: normalized.execution.value,
+      to: quote.execution.routerAddress,
+      data: quote.execution.swapCalldata,
+      value: quote.execution.value,
     }
 
     return {
-      amountIn: normalized.amountIn,
-      amountOut: normalized.amountOut,
-      amountInRaw: normalized.amountInRaw,
-      amountOutRaw: normalized.amountOutRaw,
-      assetIn: normalized.assetIn,
-      assetOut: normalized.assetOut,
-      price: normalized.price,
-      priceImpact: normalized.priceImpact,
+      amountIn: quote.amountIn,
+      amountOut: quote.amountOut,
+      amountInRaw: quote.amountInRaw,
+      amountOutRaw: quote.amountOutRaw,
+      assetIn: quote.assetIn,
+      assetOut: quote.assetOut,
+      price: quote.price,
+      priceImpact: quote.priceImpact,
       transactionData: { ...approvals, swap: swapTx },
     }
   }
@@ -436,30 +428,6 @@ export abstract class SwapProvider<
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     this.validateQuoteExpiration(quote)
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
-
-    if (!quote.recipient) {
-      throw new AddressRequiredError('recipient')
-    }
-
-    // If the recipient changed since the quote was built (e.g. quote from
-    // ActionsSwapNamespace executed through WalletSwapNamespace), re-encode
-    // calldata with the correct recipient to prevent tokens going to the wrong address.
-    if (quote.recipient !== quote.quotedRecipient) {
-      const freshQuote = await this._getQuote({
-        assetIn: quote.assetIn,
-        assetOut: quote.assetOut,
-        amountIn: quote.amountIn,
-        chainId: quote.chainId,
-        slippage: quote.slippage,
-        deadline: quote.deadline,
-        recipient: quote.recipient,
-      })
-      return this.buildSwapTransactions({
-        ...freshQuote,
-        recipient: quote.recipient,
-      })
-    }
-
     return this.buildSwapTransactions(quote)
   }
 
@@ -473,7 +441,7 @@ export abstract class SwapProvider<
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
-    validateRecipient('recipient' in params ? params.recipient : undefined)
+    validateRecipient(params.recipient)
   }
 
   private validateQuoteExpiration(quote: SwapQuote): void {
@@ -580,12 +548,12 @@ export abstract class SwapProvider<
 
   /**
    * Build provider-specific approval transactions for a swap.
-   * Called by the base class during executeFromQuote with a validated recipient.
-   * @param quote - NormalizedSwapQuote with recipient guaranteed to be set
+   * Called by the base class during executeFromQuote.
+   * @param quote - SwapQuote with recipient set by the provider's _getQuote
    * @returns Approval transactions needed before the swap (tokenApproval, permit2Approval)
    */
   protected abstract _buildApprovals(
-    quote: NormalizedSwapQuote,
+    quote: SwapQuote,
   ): Promise<Omit<SwapTransactionData, 'swap'>>
 
   protected abstract _getMarket(
