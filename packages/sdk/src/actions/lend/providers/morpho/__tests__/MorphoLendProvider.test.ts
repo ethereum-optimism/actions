@@ -1,4 +1,5 @@
 import { fetchAccrualVault } from '@morpho-org/blue-sdk-viem'
+import { encodeFunctionData, erc20Abi } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -232,6 +233,56 @@ describe('MorphoLendProvider', () => {
           walletAddress: MockReceiverAddress,
         }),
       ).rejects.toThrow('Failed to open position')
+    })
+
+    it('should skip approval when existing allowance is sufficient', async () => {
+      const amount = 1000
+      const asset = MockGauntletUSDCMarket.asset
+      const marketId = {
+        address: MockGauntletUSDCMarket.address,
+        chainId: MockGauntletUSDCMarket.chainId,
+      }
+      const client = mockChainManager.getPublicClient(marketId.chainId)
+      vi.mocked(client.readContract).mockResolvedValueOnce(10n ** 18n)
+
+      const lendTransaction = await provider.openPosition({
+        amount,
+        asset,
+        marketId,
+        walletAddress: MockReceiverAddress,
+      })
+
+      expect(lendTransaction.transactionData.approval).toBeUndefined()
+      expect(lendTransaction.transactionData).toHaveProperty('position')
+    })
+
+    it('should approve only the deficit when existing allowance is partial', async () => {
+      const amount = 1000 // 1e9 wei at 6 decimals
+      const asset = MockGauntletUSDCMarket.asset
+      const marketId = {
+        address: MockGauntletUSDCMarket.address,
+        chainId: MockGauntletUSDCMarket.chainId,
+      }
+      const existingAllowance = 400_000_000n
+      const expectedDeficit = 600_000_000n
+      const client = mockChainManager.getPublicClient(marketId.chainId)
+      vi.mocked(client.readContract).mockResolvedValueOnce(existingAllowance)
+
+      const lendTransaction = await provider.openPosition({
+        amount,
+        asset,
+        marketId,
+        walletAddress: MockReceiverAddress,
+      })
+
+      expect(lendTransaction.transactionData.approval).toBeDefined()
+      expect(lendTransaction.transactionData.approval!.data).toBe(
+        encodeFunctionData({
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [marketId.address, expectedDeficit],
+        }),
+      )
     })
   })
 
