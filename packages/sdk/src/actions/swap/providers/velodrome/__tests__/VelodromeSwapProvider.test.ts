@@ -16,7 +16,9 @@ import type { Asset } from '@/types/asset.js'
 
 const CHAIN_ID = optimism.id as SupportedChainId
 
-function createMockChainManager(): ChainManager {
+function createMockChainManager(
+  supportedChains: SupportedChainId[] = [CHAIN_ID],
+): ChainManager {
   const mockPublicClient = {
     readContract: vi
       .fn()
@@ -35,7 +37,7 @@ function createMockChainManager(): ChainManager {
   return {
     getPublicClient: vi.fn().mockReturnValue(mockPublicClient),
     tryGetPublicClient: vi.fn().mockReturnValue(undefined),
-    getSupportedChains: vi.fn().mockReturnValue([CHAIN_ID]),
+    getSupportedChains: vi.fn().mockReturnValue(supportedChains),
   } as unknown as ChainManager
 }
 

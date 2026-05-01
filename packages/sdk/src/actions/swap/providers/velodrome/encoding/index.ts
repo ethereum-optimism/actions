@@ -1,6 +1,5 @@
 export type { PoolQuoteResult } from './poolRouter.js'
 export { encodePoolSwap, fetchPoolQuote } from './poolRouter.js'
-export { buildTokenApproval } from './routers/approval.js'
 export type { EncodeCLSwapParams, GetCLQuoteParams } from './routers/cl.js'
 export { encodeCLSwap, getCLQuote } from './routers/cl.js'
 export type { EncodeSwapParams, GetQuoteParams } from './routers/v2.js'

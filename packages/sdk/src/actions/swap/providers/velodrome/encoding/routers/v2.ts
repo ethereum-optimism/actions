@@ -23,6 +23,16 @@ import { isNativeAsset } from '@/utils/assets.js'
 /** Universal Router V2_SWAP_EXACT_IN command byte */
 const V2_SWAP_EXACT_IN = 0x08
 
+/** ABI param shape for the V2_SWAP_EXACT_IN input payload. Shared with tests. */
+export const V2_SWAP_EXACT_IN_INPUT_PARAMS = [
+  { name: 'recipient', type: 'address' },
+  { name: 'amountIn', type: 'uint256' },
+  { name: 'amountOutMin', type: 'uint256' },
+  { name: 'route', type: 'bytes' },
+  { name: 'payerIsUser', type: 'bool' },
+  { name: 'isUni', type: 'bool' },
+] as const
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Quoting
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,36 +206,29 @@ export function encodeSwap(params: EncodeSwapParams): Hex {
 /**
  * Encode a V2_SWAP_EXACT_IN command for the Universal Router.
  * Route: encodePacked(tokenIn, stable, tokenOut) — 41 bytes per hop.
- * payerIsUser = false: tokens are pre-transferred to the Router by the smart wallet.
+ *
+ * payerIsUser = true: the router pulls tokens from msg.sender via standard
+ * transferFrom against an existing ERC20 allowance. Works for both EOAs (sequential
+ * approve + execute) and smart wallets (atomic approve + execute in one UserOp).
  */
 function encodeUniversalV2Swap(
   tokenIn: Address,
   tokenOut: Address,
   params: EncodeSwapParams,
 ): Hex {
-  const commands = `0x${V2_SWAP_EXACT_IN.toString(16).padStart(2, '0')}` as Hex
+  const commands = encodePacked(['uint8'], [V2_SWAP_EXACT_IN])
   const routes = encodePacked(
     ['address', 'bool', 'address'],
     [tokenIn, params.stable, tokenOut],
   )
-  const input = encodeAbiParameters(
-    [
-      { type: 'address' },
-      { type: 'uint256' },
-      { type: 'uint256' },
-      { type: 'bytes' },
-      { type: 'bool' },
-      { type: 'bool' },
-    ],
-    [
-      UNIVERSAL_ROUTER_MSG_SENDER, // recipient = msg.sender (Universal Router sentinel)
-      params.amountInRaw,
-      params.amountOutMin,
-      routes,
-      false, // payerIsUser
-      false, // isUni — false for Velodrome/Aerodrome
-    ],
-  )
+  const input = encodeAbiParameters(V2_SWAP_EXACT_IN_INPUT_PARAMS, [
+    UNIVERSAL_ROUTER_MSG_SENDER, // recipient = msg.sender (Universal Router sentinel)
+    params.amountInRaw,
+    params.amountOutMin,
+    routes,
+    true, // payerIsUser — router pulls from msg.sender via transferFrom
+    false, // isUni — false for Velodrome/Aerodrome
+  ])
   return encodeFunctionData({
     abi: UNIVERSAL_ROUTER_ABI,
     functionName: 'execute',

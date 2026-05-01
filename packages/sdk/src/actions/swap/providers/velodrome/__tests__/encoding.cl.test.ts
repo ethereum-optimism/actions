@@ -1,3 +1,5 @@
+import type { Hex } from 'viem'
+import { decodeAbiParameters } from 'viem'
 import { describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset, MockWETHAsset } from '@/__mocks__/MockAssets.js'
@@ -6,6 +8,7 @@ import {
   encodeCLSwap,
   encodeSwap,
 } from '@/actions/swap/providers/velodrome/encoding/index.js'
+import { V3_SWAP_EXACT_IN_INPUT_PARAMS } from '@/actions/swap/providers/velodrome/encoding/routers/cl.js'
 
 import {
   BASE_CHAIN_ID,
@@ -37,6 +40,32 @@ describe('encodeCLSwap', () => {
     expect(commands).toBe('0x00')
     expect(inputs).toHaveLength(1)
     expect(deadline).toBe(BigInt(DEADLINE))
+  })
+
+  // Regression for #438: payerIsUser must be true so the router pulls tokens via
+  // transferFrom against an ERC20 allowance. See encoding.v2.test.ts for context.
+  it('encodes V3_SWAP_EXACT_IN with payerIsUser = true', () => {
+    const data = encodeCLSwap({
+      assetIn: MockUSDCAsset,
+      assetOut: MockWETHAsset,
+      amountInRaw: 1000000n,
+      amountOutMin: 400000000000000000n,
+      tickSpacing: 100,
+      recipient: RECIPIENT,
+      deadline: DEADLINE,
+      chainId: BASE_CHAIN_ID,
+    })
+
+    const { args } = decode<[Hex, Hex[], bigint]>(UNIVERSAL_ROUTER_ABI, data)
+    const [, inputs] = args
+    const decoded = decodeAbiParameters(
+      V3_SWAP_EXACT_IN_INPUT_PARAMS,
+      inputs[0],
+    )
+    const payerIsUserIdx = V3_SWAP_EXACT_IN_INPUT_PARAMS.findIndex(
+      (p) => p.name === 'payerIsUser',
+    )
+    expect(decoded[payerIsUserIdx]).toBe(true)
   })
 
   it('produces different calldata than V2 universal router swap', () => {
