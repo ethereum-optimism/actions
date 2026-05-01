@@ -5,11 +5,17 @@ interface TransactionModalProps {
   isOpen: boolean
   status: 'loading' | 'error'
   onClose: () => void
+  errorMessage?: string
 }
 
 const spinnerKeyframes = `@keyframes txm-spin { to { transform: rotate(360deg); } }`
 
-function TransactionModal({ isOpen, status, onClose }: TransactionModalProps) {
+function TransactionModal({
+  isOpen,
+  status,
+  onClose,
+  errorMessage,
+}: TransactionModalProps) {
   if (!isOpen) return null
 
   const icon =
@@ -75,7 +81,7 @@ function TransactionModal({ isOpen, status, onClose }: TransactionModalProps) {
   const description =
     status === 'loading'
       ? 'Please wait while your transaction is being processed...'
-      : 'Try again later.'
+      : (errorMessage ?? 'Try again later.')
 
   return createPortal(
     <Modal

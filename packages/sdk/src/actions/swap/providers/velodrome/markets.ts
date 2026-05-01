@@ -4,6 +4,7 @@ import { concat, keccak256 } from 'viem'
 import { assetPairs } from '@/actions/swap/core/markets.js'
 import { VELODROME } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { AssetMetadataRequiredError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapMarket } from '@/types/swap/index.js'
 
@@ -22,12 +23,12 @@ export function resolvePoolConfig(
   const hasStable = config.stable !== undefined
   const hasTick = config.tickSpacing !== undefined
   if (hasStable && hasTick) {
-    throw new Error(
+    throw new AssetMetadataRequiredError(
       'stable and tickSpacing are mutually exclusive — set one, not both',
     )
   }
   if (!hasStable && !hasTick) {
-    throw new Error(
+    throw new AssetMetadataRequiredError(
       'Either stable (v2 AMM) or tickSpacing (CL) must be configured',
     )
   }

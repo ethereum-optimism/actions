@@ -170,7 +170,7 @@ describe('WalletSwapNamespace', () => {
           assetOut: ETH,
           chainId: 84532 as SupportedChainId,
         }),
-      ).rejects.toThrow('No swap provider configured')
+      ).rejects.toThrow("A 'swap' provider is not configured")
     })
 
     it('executes swap from a SwapQuote (skips re-quoting)', async () => {

@@ -61,6 +61,7 @@ export {
   ACTIONS_SUPPORTED_CHAIN_IDS,
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
+export * from '@/core/error/errors.js'
 export {
   type EnsInfo,
   EnsNamespace,

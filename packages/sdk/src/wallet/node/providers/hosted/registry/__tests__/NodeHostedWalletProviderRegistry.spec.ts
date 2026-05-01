@@ -98,7 +98,7 @@ describe('NodeHostedWalletProviderRegistry', () => {
     const registry = new NodeHostedWalletProviderRegistry()
     // @ts-expect-error: testing runtime error for unknown type
     expect(() => registry.getFactory('unknown')).toThrow(
-      'Unknown hosted wallet provider: unknown',
+      "A 'unknown' provider is not configured",
     )
   })
 })

@@ -20,6 +20,7 @@ import type {
 } from '@/actions/swap/providers/uniswap/types.js'
 import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { AssetMetadataRequiredError } from '@/core/error/errors.js'
 import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -210,7 +211,7 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       | UniswapMarketConfig
       | undefined
     if (config?.fee === undefined || config?.tickSpacing === undefined) {
-      throw new Error(
+      throw new AssetMetadataRequiredError(
         `fee and tickSpacing must be configured for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
       )
     }
