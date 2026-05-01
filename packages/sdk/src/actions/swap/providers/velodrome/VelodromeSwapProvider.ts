@@ -21,7 +21,9 @@ import type {
 } from '@/actions/swap/providers/velodrome/types.js'
 import { VELODROME } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
@@ -45,6 +47,14 @@ import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
  * v2 routers (Optimism, Base), leaf routers (Relay chains), and Universal Router (Base Sepolia).
  */
 export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderConfig> {
+  constructor(
+    config: VelodromeSwapProviderConfig,
+    chainManager: ChainManager,
+    settings?: SwapSettings,
+  ) {
+    super(config, chainManager, settings)
+  }
+
   /** @returns Chain IDs where Velodrome/Aerodrome contracts are deployed */
   protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()

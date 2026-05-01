@@ -78,7 +78,7 @@ export abstract class SwapProvider<
   protected readonly _settings: SwapSettings
   protected readonly chainManager: ChainManager
 
-  constructor(
+  protected constructor(
     config: TConfig,
     chainManager: ChainManager,
     settings?: SwapSettings,

@@ -20,7 +20,9 @@ import type {
 } from '@/actions/swap/providers/uniswap/types.js'
 import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
@@ -37,6 +39,14 @@ import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
  * Uniswap V4 swap provider using Universal Router and Permit2 approvals.
  */
 export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig> {
+  constructor(
+    config: UniswapSwapProviderConfig,
+    chainManager: ChainManager,
+    settings?: SwapSettings,
+  ) {
+    super(config, chainManager, settings)
+  }
+
   protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
   }
