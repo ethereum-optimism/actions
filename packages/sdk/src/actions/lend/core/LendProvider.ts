@@ -5,11 +5,7 @@ import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  ApprovalMode,
-  LendProviderConfig,
-  LendSettings,
-} from '@/types/actions.js'
+import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   ClosePositionParams,
@@ -29,6 +25,7 @@ import type {
 } from '@/types/lend/index.js'
 import {
   buildErc20ApprovalTx,
+  resolveApprovalMode,
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
 import { validateChainSupported } from '@/utils/validation.js'
@@ -106,7 +103,11 @@ export abstract class LendProvider<
       params.asset.metadata.decimals,
     )
 
-    const approvalMode = this.resolveApprovalMode(params)
+    const approvalMode = resolveApprovalMode(
+      params.approvalMode,
+      this._config.approvalMode,
+      this._settings.approvalMode,
+    )
     const internal: LendOpenPositionInternalParams = {
       ...params,
       amountWei,
@@ -300,23 +301,6 @@ export abstract class LendProvider<
     amount: bigint,
   ): TransactionData {
     return buildErc20ApprovalTx(tokenAddress, spender, amount)
-  }
-
-  /**
-   * Resolve a lend operation's approval-amount strategy with provider →
-   * shared → default precedence (mirrors how swap settings resolve).
-   * Order: per-call `params.approvalMode`, then `this._config.approvalMode`,
-   * then `this._settings.approvalMode`, then `"exact"`.
-   */
-  protected resolveApprovalMode(params: {
-    approvalMode?: ApprovalMode
-  }): ApprovalMode {
-    return (
-      params.approvalMode ??
-      this._config.approvalMode ??
-      this._settings.approvalMode ??
-      'exact'
-    )
   }
 
   /**

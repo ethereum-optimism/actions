@@ -61,6 +61,19 @@ export function buildTokenApprovalTx(
 }
 
 /**
+ * Resolve the effective {@link ApprovalMode} from the per-call → per-provider
+ * → shared-settings precedence chain, defaulting to `"exact"`. Mirrors how
+ * `defaultSlippage` resolves across the same layers.
+ */
+export function resolveApprovalMode(
+  perCall: ApprovalMode | undefined,
+  providerDefault: ApprovalMode | undefined,
+  globalDefault: ApprovalMode | undefined,
+): ApprovalMode {
+  return perCall ?? providerDefault ?? globalDefault ?? 'exact'
+}
+
+/**
  * Pick an approval amount for an ERC-20 → spender allowance based on the
  * caller's chosen {@link ApprovalMode}.
  * @param mode `"exact"` returns `requiredAmount`; `"max"` returns `maxUint256`.

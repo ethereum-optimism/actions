@@ -12,6 +12,7 @@ import {
   checkTokenAllowance,
   DEFAULT_PERMIT2_EXPIRY_SECONDS,
   getApprovalDeficit,
+  resolveApprovalMode,
   resolveErc20ApprovalAmount,
   resolvePermit2ApprovalAmount,
 } from '@/utils/approve.js'
@@ -91,6 +92,24 @@ describe('buildTokenApprovalTx', () => {
     const tx = buildTokenApprovalTx(TOKEN, PERMIT2, 12345n)
     expect(tx.to).toBe(TOKEN)
     expect(tx.data).toMatch(/^0x/)
+  })
+})
+
+describe('resolveApprovalMode', () => {
+  it('prefers per-call when set', () => {
+    expect(resolveApprovalMode('max', 'exact', 'exact')).toBe('max')
+  })
+
+  it('falls through to provider default when per-call is undefined', () => {
+    expect(resolveApprovalMode(undefined, 'max', 'exact')).toBe('max')
+  })
+
+  it('falls through to global default when per-call and provider are undefined', () => {
+    expect(resolveApprovalMode(undefined, undefined, 'max')).toBe('max')
+  })
+
+  it('defaults to "exact" when nothing is set', () => {
+    expect(resolveApprovalMode(undefined, undefined, undefined)).toBe('exact')
   })
 })
 

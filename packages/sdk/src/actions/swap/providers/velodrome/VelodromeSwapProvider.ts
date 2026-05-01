@@ -34,6 +34,7 @@ import type {
 import {
   buildErc20ApprovalTx,
   checkTokenAllowance,
+  resolveApprovalMode,
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
@@ -218,7 +219,14 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const tokenApproval = buildErc20ApprovalTx(
       token,
       spender,
-      resolveErc20ApprovalAmount(this.resolveApprovalMode(quote), required),
+      resolveErc20ApprovalAmount(
+        resolveApprovalMode(
+          quote.approvalMode,
+          this._config.approvalMode,
+          this._settings.approvalMode,
+        ),
+        required,
+      ),
     )
     return { tokenApproval }
   }

@@ -29,6 +29,7 @@ import {
   buildTokenApprovalTx,
   checkPermit2Allowance,
   checkTokenAllowance,
+  resolveApprovalMode,
   resolveErc20ApprovalAmount,
   resolvePermit2ApprovalAmount,
 } from '@/utils/approve.js'
@@ -87,22 +88,6 @@ export abstract class SwapProvider<
     this.chainManager = chainManager
   }
 
-  /**
-   * Resolve a swap's approval-amount strategy. Mirrors how `defaultSlippage`
-   * is resolved: per-call → per-provider config → shared settings → default.
-   * Order: `quote.approvalMode` (or per-call `params.approvalMode`), then
-   * `this._config.approvalMode`, then `this._settings.approvalMode`, then
-   * `"exact"`.
-   */
-  protected resolveApprovalMode(quote: SwapQuote): ApprovalMode {
-    return (
-      quote.approvalMode ??
-      this._config.approvalMode ??
-      this._settings.approvalMode ??
-      'exact'
-    )
-  }
-
   get config(): TConfig {
     return this._config
   }
@@ -153,15 +138,13 @@ export abstract class SwapProvider<
   async execute(
     params: SwapExecuteParamsResolved | SwapQuote,
   ): Promise<SwapTransaction> {
-    // Resolve approval mode once at entry: per-call → per-provider config →
-    // shared settings → "exact" (matches `defaultSlippage` resolution). The
-    // resolved value is set back on the params object so all downstream
-    // methods read a single populated field.
-    const resolvedApprovalMode =
-      params.approvalMode ??
-      this._config.approvalMode ??
-      this._settings.approvalMode ??
-      'exact'
+    // Resolve approval mode once at entry; the resolved value is set back on
+    // the params object so all downstream methods read a single populated field.
+    const resolvedApprovalMode = resolveApprovalMode(
+      params.approvalMode,
+      this._config.approvalMode,
+      this._settings.approvalMode,
+    )
 
     if (QUOTE_DISCRIMINATOR in params) {
       this.validateSwapExecute(params)

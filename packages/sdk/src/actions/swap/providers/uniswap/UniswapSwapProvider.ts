@@ -30,6 +30,7 @@ import type {
   SwapQuote,
   SwapTransaction,
 } from '@/types/swap/index.js'
+import { resolveApprovalMode } from '@/utils/approve.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
 
 /**
@@ -80,7 +81,11 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         walletAddress: quote.recipient,
         chainId: quote.chainId,
         amountInRaw: quote.amountInRaw,
-        approvalMode: this.resolveApprovalMode(quote),
+        approvalMode: resolveApprovalMode(
+          quote.approvalMode,
+          this._config.approvalMode,
+          this._settings.approvalMode,
+        ),
       },
       quote.amountInRaw,
       addresses.permit2,
