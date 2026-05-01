@@ -60,9 +60,9 @@ export abstract class BaseLendNamespace extends BaseNamespace<
       }
     }
 
-    throw new ProviderNotConfiguredError(
-      marketId.address,
-      `No provider configured for market on chain ${marketId.chainId}`,
-    )
+    throw new ProviderNotConfiguredError({
+      provider: marketId.address,
+      details: `No provider configured for market on chain ${marketId.chainId}`,
+    })
   }
 }

@@ -307,7 +307,9 @@ describe('Actions SDK', () => {
         )
 
         expect(actions['lendProviders']).toEqual({})
-        expect(() => actions.lend).toThrow("Provider 'lend' is not configured")
+        expect(() => actions.lend).toThrow(
+          "A 'lend' provider is not configured",
+        )
       })
     })
 

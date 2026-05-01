@@ -57,10 +57,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       // Get Pool address for this chain
       const poolAddress = getPoolAddress(params.marketId.chainId)
       if (!poolAddress) {
-        throw new ChainNotSupportedError(
-          params.marketId.chainId,
-          this.supportedChainIds(),
-        )
+        throw new ChainNotSupportedError({
+          chainId: params.marketId.chainId,
+          supportedChainIds: this.supportedChainIds(),
+        })
       }
 
       // Get market information for APY
@@ -96,10 +96,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       // Get Pool address for this chain
       const poolAddress = getPoolAddress(params.marketId.chainId)
       if (!poolAddress) {
-        throw new ChainNotSupportedError(
-          params.marketId.chainId,
-          this.supportedChainIds(),
-        )
+        throw new ChainNotSupportedError({
+          chainId: params.marketId.chainId,
+          supportedChainIds: this.supportedChainIds(),
+        })
       }
 
       const marketInfo = await this.getMarket({
@@ -165,10 +165,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       const poolAddress = getPoolAddress(params.marketId.chainId)
 
       if (!poolAddress) {
-        throw new ChainNotSupportedError(
-          params.marketId.chainId,
-          this.supportedChainIds(),
-        )
+        throw new ChainNotSupportedError({
+          chainId: params.marketId.chainId,
+          supportedChainIds: this.supportedChainIds(),
+        })
       }
 
       // Get the aToken address from Pool.getReserveData
@@ -220,10 +220,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   ): Promise<LendTransaction> {
     const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
     if (!gatewayAddress) {
-      throw new ChainNotSupportedError(
-        params.marketId.chainId,
-        this.supportedChainIds(),
-      )
+      throw new ChainNotSupportedError({
+        chainId: params.marketId.chainId,
+        supportedChainIds: this.supportedChainIds(),
+      })
     }
 
     // Generate depositETH transaction
@@ -309,10 +309,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   ): Promise<LendTransaction> {
     const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
     if (!gatewayAddress) {
-      throw new ChainNotSupportedError(
-        params.marketId.chainId,
-        this.supportedChainIds(),
-      )
+      throw new ChainNotSupportedError({
+        chainId: params.marketId.chainId,
+        supportedChainIds: this.supportedChainIds(),
+      })
     }
 
     const wethAddress = getAssetAddress(WETH, params.marketId.chainId)

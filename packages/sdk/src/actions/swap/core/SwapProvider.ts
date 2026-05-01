@@ -322,10 +322,10 @@ export abstract class SwapProvider<
   ): SwapMarketConfig | undefined {
     const { marketAllowlist } = this._config
     if (!marketAllowlist?.length) {
-      throw new ProviderNotConfiguredError(
-        'marketAllowlist',
-        'Provide a marketAllowlist in swap provider config.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'marketAllowlist',
+        details: 'Provide a marketAllowlist in swap provider config.',
+      })
     }
     return this.findMatchingConfig(assetIn, assetOut, chainId, marketAllowlist)
   }
@@ -479,7 +479,10 @@ export abstract class SwapProvider<
   private validateQuoteExpiration(quote: SwapQuote): void {
     const now = Math.floor(Date.now() / 1000)
     if (now >= quote.expiresAt) {
-      throw new QuoteExpiredError(quote.expiresAt, now)
+      throw new QuoteExpiredError({
+        expiresAt: quote.expiresAt,
+        currentTime: now,
+      })
     }
   }
 

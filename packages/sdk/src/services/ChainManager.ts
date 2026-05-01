@@ -45,7 +45,10 @@ export class ChainManager {
   getPublicClient(chainId: SupportedChainId): PublicClient {
     const client = this.publicClients.get(chainId)
     if (!client) {
-      throw new ChainNotSupportedError(chainId, this.getSupportedChains())
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     return client
   }
@@ -74,7 +77,10 @@ export class ChainManager {
     const chainConfig = this.getChainConfig(chainId)
     const bundlerConfig = chainConfig.bundler
     if (!bundlerConfig) {
-      throw new ChainNotSupportedError(chainId, this.getSupportedChains())
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     if (bundlerConfig.type === 'pimlico') {
       return this.getPimlicoBundlerClient(
@@ -85,7 +91,10 @@ export class ChainManager {
     }
     const bundlerUrl = this.getBundlerUrl(chainId)
     if (!bundlerUrl) {
-      throw new ChainNotSupportedError(chainId, this.getSupportedChains())
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     const client = createPublicClient({
       chain: this.getChain(chainId),
@@ -119,7 +128,10 @@ export class ChainManager {
   getBundlerUrl(chainId: SupportedChainId): string | undefined {
     const chainConfig = this.getChainConfig(chainId)
     if (!chainConfig.bundler) {
-      throw new ChainNotSupportedError(chainId, this.getSupportedChains())
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     return chainConfig.bundler.url
   }
@@ -168,13 +180,13 @@ export class ChainManager {
     for (const chainConfig of chains) {
       const chain = chainById[chainConfig.chainId]
       if (!chain) {
-        throw new ChainNotSupportedError(chainConfig.chainId, [])
+        throw new ChainNotSupportedError({ chainId: chainConfig.chainId })
       }
       if (clients.has(chainConfig.chainId)) {
-        throw new ChainNotSupportedError(
-          chainConfig.chainId,
-          Array.from(clients.keys()),
-        )
+        throw new ChainNotSupportedError({
+          chainId: chainConfig.chainId,
+          supportedChainIds: Array.from(clients.keys()),
+        })
       }
       const client = createPublicClient({
         chain,
@@ -195,7 +207,10 @@ export class ChainManager {
   private getChainConfig(chainId: SupportedChainId): ChainConfig {
     const chainConfig = this.chainConfigs.find((c) => c.chainId === chainId)
     if (!chainConfig) {
-      throw new ChainNotSupportedError(chainId, this.getSupportedChains())
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     return chainConfig
   }

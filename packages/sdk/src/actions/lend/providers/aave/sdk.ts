@@ -108,7 +108,7 @@ export async function getReserve(
 
   const addresses = getAaveAddresses(params.marketId.chainId)
   if (!addresses) {
-    throw new ChainNotSupportedError(params.marketId.chainId, [])
+    throw new ChainNotSupportedError({ chainId: params.marketId.chainId })
   }
 
   const poolAddress = addresses.pool
@@ -250,7 +250,7 @@ export async function getATokenAddress(params: {
 }): Promise<Address> {
   const poolAddress = getPoolAddress(params.chainId)
   if (!poolAddress) {
-    throw new ChainNotSupportedError(params.chainId, [])
+    throw new ChainNotSupportedError({ chainId: params.chainId })
   }
 
   try {

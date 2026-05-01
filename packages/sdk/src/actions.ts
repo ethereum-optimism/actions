@@ -136,10 +136,10 @@ export class Actions<
    */
   get lend(): ActionsLendNamespace {
     if (!this._lend) {
-      throw new ProviderNotConfiguredError(
-        'lend',
-        'Please add lend configuration to ActionsConfig.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'lend',
+        details: 'Please add lend configuration to ActionsConfig.',
+      })
     }
     return this._lend
   }
@@ -171,10 +171,10 @@ export class Actions<
    */
   get swap(): ActionsSwapNamespace {
     if (!this._swap) {
-      throw new ProviderNotConfiguredError(
-        'swap',
-        'Please add swap configuration to ActionsConfig.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'swap',
+        details: 'Please add swap configuration to ActionsConfig.',
+      })
     }
     return this._swap
   }
@@ -249,9 +249,9 @@ export class Actions<
           config.smartWalletConfig.provider.attributionSuffix,
         )
       }
-      throw new ProviderNotConfiguredError(
-        config.smartWalletConfig.provider.type,
-      )
+      throw new ProviderNotConfiguredError({
+        provider: config.smartWalletConfig.provider.type,
+      })
     })()
 
     return new WalletProvider(hostedWalletProvider, smartWalletProvider)
@@ -277,10 +277,10 @@ export class Actions<
         : undefined
     ) as unknown
     if (!factory.validateOptions(options)) {
-      throw new ProviderNotConfiguredError(
-        hostedWalletProviderConfig.type,
-        'Invalid options',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: hostedWalletProviderConfig.type,
+        details: 'Invalid options',
+      })
     }
     return factory.create(
       {

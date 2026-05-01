@@ -67,7 +67,7 @@ export function validateChainSupported(
   supportedChainIds: readonly number[],
 ): void {
   if (!supportedChainIds.includes(chainId)) {
-    throw new ChainNotSupportedError(chainId, supportedChainIds)
+    throw new ChainNotSupportedError({ chainId, supportedChainIds })
   }
 }
 

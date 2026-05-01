@@ -50,7 +50,7 @@ describe('BaseSwapNamespace', () => {
           amountIn: 100,
           chainId: 84532 as SupportedChainId,
         }),
-      ).rejects.toThrow("Provider 'swap' is not configured")
+      ).rejects.toThrow("A 'swap' provider is not configured")
     })
   })
 

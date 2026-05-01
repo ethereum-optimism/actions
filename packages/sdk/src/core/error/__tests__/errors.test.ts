@@ -13,6 +13,7 @@ import {
   InvalidAmountError,
   MarketIdRequiredError,
   MarketNotAllowedError,
+  MarketNotFoundError,
   NativeAssetAddressError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
@@ -23,7 +24,10 @@ import {
 
 describe('ActionsError hierarchy', () => {
   it('ChainNotSupportedError', () => {
-    const err = new ChainNotSupportedError(999, [10, 8453])
+    const err = new ChainNotSupportedError({
+      chainId: 999,
+      supportedChainIds: [10, 8453],
+    })
     expect(err.name).toBe('ChainNotSupportedError')
     expect(err.chainId).toBe(999)
     expect(err.supportedChainIds).toEqual([10, 8453])
@@ -58,7 +62,10 @@ describe('ActionsError hierarchy', () => {
   })
 
   it('ProviderNotConfiguredError', () => {
-    const err = new ProviderNotConfiguredError('lend', 'Please configure lend')
+    const err = new ProviderNotConfiguredError({
+      provider: 'lend',
+      details: 'Please configure lend',
+    })
     expect(err.name).toBe('ProviderNotConfiguredError')
     expect(err.provider).toBe('lend')
     expect(err).toBeInstanceOf(ActionsError)
@@ -100,7 +107,7 @@ describe('ActionsError hierarchy', () => {
   })
 
   it('QuoteExpiredError', () => {
-    const err = new QuoteExpiredError(1000, 2000)
+    const err = new QuoteExpiredError({ expiresAt: 1000, currentTime: 2000 })
     expect(err.name).toBe('QuoteExpiredError')
     expect(err.expiresAt).toBe(1000)
     expect(err.currentTime).toBe(2000)
@@ -159,6 +166,24 @@ describe('ActionsError hierarchy', () => {
     expect(err.shortMessage).toContain('ETH')
   })
 
+  it('MarketNotFoundError with poolId', () => {
+    const err = new MarketNotFoundError({ chainId: 10, poolId: '0xabc' })
+    expect(err.name).toBe('MarketNotFoundError')
+    expect(err.chainId).toBe(10)
+    expect(err.poolId).toBe('0xabc')
+    expect(err).toBeInstanceOf(ActionsError)
+    expect(err).toBeInstanceOf(BaseError)
+    expect(err.shortMessage).toContain('0xabc')
+    expect(err.shortMessage).toContain('10')
+  })
+
+  it('MarketNotFoundError without poolId', () => {
+    const err = new MarketNotFoundError({ chainId: 8453 })
+    expect(err.chainId).toBe(8453)
+    expect(err.poolId).toBeUndefined()
+    expect(err.shortMessage).toContain('8453')
+  })
+
   it('AssetMetadataRequiredError', () => {
     const err = new AssetMetadataRequiredError('decimals field is missing')
     expect(err.name).toBe('AssetMetadataRequiredError')
@@ -170,15 +195,16 @@ describe('ActionsError hierarchy', () => {
   it('all errors are instanceof BaseError', () => {
     const errors = [
       new AddressRequiredError('x'),
-      new ChainNotSupportedError(1, []),
+      new ChainNotSupportedError({ chainId: 1 }),
       new MarketNotAllowedError({ chainId: 1 }),
-      new ProviderNotConfiguredError('x'),
+      new MarketNotFoundError({ chainId: 1 }),
+      new ProviderNotConfiguredError({ provider: 'x' }),
       new MarketIdRequiredError(),
       new AmountRequiredError(),
       new InvalidAmountError(0),
       new ConflictingAmountsError(),
       new SameAssetError('ETH'),
-      new QuoteExpiredError(0, 1),
+      new QuoteExpiredError({ expiresAt: 0, currentTime: 1 }),
       new ExactOutputNotSupportedError('X'),
       new ZeroAddressError('label'),
       new SlippageOutOfRangeError(1, 0.5),

@@ -16,12 +16,17 @@ export class ChainNotSupportedError extends ActionsError {
   chainId: number
   supportedChainIds: readonly number[]
 
-  constructor(chainId: number, supportedChainIds: readonly number[]) {
-    super(`Chain ${chainId} is not supported`, {
-      metaMessages: [`Supported chains: ${supportedChainIds.join(', ')}`],
+  constructor(params: {
+    chainId: number
+    supportedChainIds?: readonly number[]
+  }) {
+    super(`Chain ${params.chainId} is not supported`, {
+      metaMessages: params.supportedChainIds?.length
+        ? [`Supported chains: ${params.supportedChainIds.join(', ')}`]
+        : undefined,
     })
-    this.chainId = chainId
-    this.supportedChainIds = supportedChainIds
+    this.chainId = params.chainId
+    this.supportedChainIds = params.supportedChainIds ?? []
   }
 }
 
@@ -57,15 +62,32 @@ export class MarketNotAllowedError extends ActionsError {
   }
 }
 
+export class MarketNotFoundError extends ActionsError {
+  override name = 'MarketNotFoundError' as const
+  chainId: number
+  poolId?: string
+
+  constructor(params: { chainId: number; poolId?: string; reason?: string }) {
+    super(
+      params.poolId
+        ? `Market with poolId ${params.poolId} not found on chain ${params.chainId}`
+        : `Market not found on chain ${params.chainId}`,
+      { metaMessages: params.reason ? [params.reason] : undefined },
+    )
+    this.chainId = params.chainId
+    this.poolId = params.poolId
+  }
+}
+
 export class ProviderNotConfiguredError extends ActionsError {
   override name = 'ProviderNotConfiguredError' as const
   provider: string
 
-  constructor(provider: string, details?: string) {
-    super(`Provider '${provider}' is not configured`, {
-      metaMessages: details ? [details] : undefined,
+  constructor(params: { provider: string; details?: string }) {
+    super(`A '${params.provider}' provider is not configured`, {
+      metaMessages: params.details ? [params.details] : undefined,
     })
-    this.provider = provider
+    this.provider = params.provider
   }
 }
 
@@ -128,15 +150,15 @@ export class QuoteExpiredError extends ActionsError {
   expiresAt: number
   currentTime: number
 
-  constructor(expiresAt: number, currentTime: number) {
+  constructor(params: { expiresAt: number; currentTime: number }) {
     super('Quote expired', {
       metaMessages: [
-        `Expired at: ${expiresAt}`,
-        `Current time: ${currentTime}`,
+        `Expired at: ${params.expiresAt}`,
+        `Current time: ${params.currentTime}`,
       ],
     })
-    this.expiresAt = expiresAt
-    this.currentTime = currentTime
+    this.expiresAt = params.expiresAt
+    this.currentTime = params.currentTime
   }
 }
 

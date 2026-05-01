@@ -3,6 +3,7 @@ import type { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   MarketNotAllowedError,
+  MarketNotFoundError,
   ProviderNotConfiguredError,
 } from '@/core/error/errors.js'
 import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
@@ -122,7 +123,7 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
     if (provider) {
       const named = this.providers[provider]
       if (!named) {
-        throw new ProviderNotConfiguredError(provider)
+        throw new ProviderNotConfiguredError({ provider })
       }
       return named.getMarket(params)
     }
@@ -134,10 +135,9 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
         continue
       }
     }
-    throw new MarketNotAllowedError({
-      address: params.poolId,
+    throw new MarketNotFoundError({
       chainId: params.chainId,
-      reason: 'Market not found',
+      poolId: params.poolId,
     })
   }
 
@@ -171,14 +171,14 @@ export abstract class BaseSwapNamespace extends BaseNamespace<
   ): ConfiguredSwapProvider {
     const allProviders = this.getAllProviders()
     if (allProviders.length === 0) {
-      throw new ProviderNotConfiguredError('swap')
+      throw new ProviderNotConfiguredError({ provider: 'swap' })
     }
 
     // 1. Explicit provider param
     if (provider) {
       const named = this.providers[provider]
       if (!named) {
-        throw new ProviderNotConfiguredError(provider)
+        throw new ProviderNotConfiguredError({ provider })
       }
       return named
     }

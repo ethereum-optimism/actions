@@ -37,7 +37,7 @@ export async function fetchPoolQuote(
 
   if (poolConfig.type === 'cl') {
     if (!chain.contracts.clPoolFactory || !chain.contracts.clQuoterV2) {
-      throw new ChainNotSupportedError(chainId, [])
+      throw new ChainNotSupportedError({ chainId })
     }
     const internalQuote = await getCLQuote({
       assetIn,

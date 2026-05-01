@@ -21,7 +21,10 @@ export function getChainConfig(
 ): VelodromeChainConfig {
   const config = VELODROME_CHAINS[chainId]
   if (!config) {
-    throw new ChainNotSupportedError(chainId, getSupportedChainIds())
+    throw new ChainNotSupportedError({
+      chainId,
+      supportedChainIds: getSupportedChainIds(),
+    })
   }
   return config
 }

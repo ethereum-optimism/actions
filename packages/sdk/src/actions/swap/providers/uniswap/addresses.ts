@@ -98,10 +98,10 @@ export function getUniswapAddresses(
 ): UniswapAddresses {
   const addresses = UNISWAP_ADDRESSES[chainId]
   if (!addresses) {
-    throw new ChainNotSupportedError(
+    throw new ChainNotSupportedError({
       chainId,
-      Object.keys(UNISWAP_ADDRESSES).map(Number),
-    )
+      supportedChainIds: Object.keys(UNISWAP_ADDRESSES).map(Number),
+    })
   }
   return addresses
 }

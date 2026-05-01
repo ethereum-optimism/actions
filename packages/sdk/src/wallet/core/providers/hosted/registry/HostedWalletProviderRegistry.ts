@@ -30,7 +30,7 @@ export abstract class HostedWalletProviderRegistry<
     const factory = this.registry.get(type) as
       | HostedProviderFactory<TType, TInstanceMap[TType], TConfigMap[TType]>
       | undefined
-    if (!factory) throw new ProviderNotConfiguredError(type)
+    if (!factory) throw new ProviderNotConfiguredError({ provider: type })
     return factory
   }
 

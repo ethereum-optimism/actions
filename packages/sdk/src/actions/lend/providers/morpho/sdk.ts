@@ -407,7 +407,7 @@ export async function getVault(params: GetVaultParams): Promise<LendMarket> {
   }
 
   // No SDK support and no contracts configured
-  throw new ChainNotSupportedError(params.marketId.chainId, [])
+  throw new ChainNotSupportedError({ chainId: params.marketId.chainId })
 }
 
 interface GetVaultsParams {
@@ -452,10 +452,10 @@ export async function findBestVaultForAsset(
   marketAllowlist: LendMarketConfig[],
 ): Promise<Address> {
   if (!marketAllowlist || marketAllowlist.length === 0) {
-    throw new ProviderNotConfiguredError(
-      'marketAllowlist',
-      'Market allowlist is required and cannot be empty',
-    )
+    throw new ProviderNotConfiguredError({
+      provider: 'marketAllowlist',
+      details: 'Market allowlist is required and cannot be empty',
+    })
   }
 
   const assetVaults = marketAllowlist.filter((vault) => {

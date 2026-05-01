@@ -43,7 +43,7 @@ export function resolveTokens(
 export function getWrappedNativeAddress(chainId: SupportedChainId): Address {
   const addr = WETH.address[chainId]
   if (!addr || addr === 'native') {
-    throw new ChainNotSupportedError(chainId, [])
+    throw new ChainNotSupportedError({ chainId })
   }
   return addr
 }
