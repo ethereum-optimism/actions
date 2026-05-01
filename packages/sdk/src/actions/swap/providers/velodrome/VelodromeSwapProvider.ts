@@ -26,7 +26,6 @@ import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
-  NormalizedSwapQuote,
   ResolvedSwapParams,
   SwapMarket,
   SwapQuote,
@@ -183,11 +182,11 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: internalQuote.gasEstimate,
-      quotedRecipient: recipient,
+      recipient,
     }
   }
 
-  protected async _buildApprovals(quote: NormalizedSwapQuote) {
+  protected async _buildApprovals(quote: SwapQuote) {
     const chain = getChainConfig(quote.chainId)
     const publicClient = this.chainManager.getPublicClient(quote.chainId)
 

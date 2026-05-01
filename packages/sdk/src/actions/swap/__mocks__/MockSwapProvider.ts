@@ -10,7 +10,6 @@ import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
   GetSwapMarketsParams,
-  NormalizedSwapQuote,
   ResolvedSwapParams,
   SwapMarket,
   SwapProviderConfig,
@@ -38,7 +37,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     (params: SwapQuoteParams) => Promise<SwapQuote>
   >
   public mockBuildApprovals: MockedFunction<
-    (quote: NormalizedSwapQuote) => Promise<{
+    (quote: SwapQuote) => Promise<{
       tokenApproval?: TransactionData
       permit2Approval?: TransactionData
     }>
@@ -125,7 +124,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
     return this.mockGetQuote(params)
   }
 
-  protected async _buildApprovals(quote: NormalizedSwapQuote) {
+  protected async _buildApprovals(quote: SwapQuote) {
     return this.mockBuildApprovals(quote)
   }
 
@@ -207,7 +206,7 @@ export class MockSwapProvider extends SwapProvider<SwapProviderConfig> {
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: 150000n,
-      quotedRecipient: (params.recipient ??
+      recipient: (params.recipient ??
         '0x0000000000000000000000000000000000000001') as Address,
     }
   }
