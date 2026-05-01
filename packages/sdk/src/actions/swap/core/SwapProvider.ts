@@ -423,6 +423,11 @@ export abstract class SwapProvider<
   protected async buildSwapTransactions(
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
+    if (!quote.recipient) {
+      throw new Error(
+        'SwapQuote.recipient missing — _getQuote must populate it',
+      )
+    }
     const approvals = await this._buildApprovals(quote)
 
     const swapTx: TransactionData = {
