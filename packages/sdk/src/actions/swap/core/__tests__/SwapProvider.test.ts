@@ -226,28 +226,7 @@ describe('SwapProvider', () => {
   })
 
   describe('buildSwapTransactions()', () => {
-    it('normalizes quote.recipient to quotedRecipient when absent', async () => {
-      const provider = new MockSwapProvider()
-      const quote = await provider.getQuote({
-        assetIn: MockUSDC,
-        assetOut: MockWETH,
-        amountIn: 100,
-        chainId: 84532 as SupportedChainId,
-      })
-      // Raw quote has no recipient, only quotedRecipient
-      expect(quote.recipient).toBeUndefined()
-      expect(quote.quotedRecipient).toBeDefined()
-
-      await provider.testBuildSwapTransactions(quote)
-
-      expect(provider.mockBuildApprovals).toHaveBeenCalledWith(
-        expect.objectContaining({
-          recipient: quote.quotedRecipient,
-        }),
-      )
-    })
-
-    it('preserves quote.recipient when already set', async () => {
+    it('passes quote.recipient through to _buildApprovals', async () => {
       const provider = new MockSwapProvider()
       const customRecipient =
         '0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' as Address
@@ -256,18 +235,26 @@ describe('SwapProvider', () => {
         assetOut: MockWETH,
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
-      })
-
-      await provider.testBuildSwapTransactions({
-        ...quote,
         recipient: customRecipient,
       })
+      expect(quote.recipient).toBe(customRecipient)
+
+      await provider.testBuildSwapTransactions(quote)
 
       expect(provider.mockBuildApprovals).toHaveBeenCalledWith(
-        expect.objectContaining({
-          recipient: customRecipient,
-        }),
+        expect.objectContaining({ recipient: customRecipient }),
       )
+    })
+
+    it('defaults quote.recipient to UNIVERSAL_ROUTER_MSG_SENDER when no recipient is provided', async () => {
+      const provider = new MockSwapProvider()
+      const quote = await provider.getQuote({
+        assetIn: MockUSDC,
+        assetOut: MockWETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+      expect(quote.recipient).toBe('0x0000000000000000000000000000000000000001')
     })
   })
 
