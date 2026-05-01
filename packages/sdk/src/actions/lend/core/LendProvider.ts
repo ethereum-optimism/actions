@@ -117,7 +117,7 @@ export abstract class LendProvider<
     const position = await this._openPosition(internal)
 
     const approval =
-      position.spender !== undefined
+      position.kind === 'erc20'
         ? buildErc20ApprovalTx(
             position.asset,
             position.spender,

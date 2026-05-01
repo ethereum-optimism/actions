@@ -225,7 +225,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
 
     return {
-      // No spender — base class skips approval since this is a native deposit
+      kind: 'native',
       asset: wethAddress,
       transaction: {
         to: gatewayAddress,
@@ -260,6 +260,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     })
 
     return {
+      kind: 'erc20',
       spender: poolAddress,
       asset: assetAddress,
       transaction: {

@@ -269,21 +269,32 @@ export interface LendOpenPositionInternalParams extends Omit<
  * including the ERC-20 approval transaction (if any). Providers describe
  * **what** the deposit looks like; the base owns **how** the approval is
  * built (amount sizing via `approvalMode`, native-asset skip, etc.).
+ *
+ * Discriminated by `kind`:
+ * - `native`: ETH (or chain native) sent inline as `msg.value`; no approval.
+ * - `erc20`: ERC-20 deposit; base builds an `approve(spender, amount)` call.
  */
-export interface LendOpenPosition {
-  /**
-   * ERC-20 spender that needs allowance to pull `params.amountWei` from the
-   * wallet. Omit (or set `undefined`) for native-asset deposits where the
-   * value is sent inline as `msg.value` and no approval is required.
-   */
-  spender?: Address
-  /** Underlying token address being deposited (or its wrapped form for native paths). */
-  asset: Address
-  /** The deposit transaction itself (provider-specific calldata). */
-  transaction: TransactionData
-  /** APY snapshot at the time the description was built. */
-  apy: number
-}
+export type LendOpenPosition =
+  | {
+      kind: 'native'
+      /** Underlying token address being deposited (typically the wrapped form). */
+      asset: Address
+      /** The deposit transaction itself (provider-specific calldata, with `value` set). */
+      transaction: TransactionData
+      /** APY snapshot at the time the description was built. */
+      apy: number
+    }
+  | {
+      kind: 'erc20'
+      /** ERC-20 spender that needs allowance to pull `params.amountWei` from the wallet. */
+      spender: Address
+      /** ERC-20 token address being deposited. */
+      asset: Address
+      /** The deposit transaction itself (provider-specific calldata). */
+      transaction: TransactionData
+      /** APY snapshot at the time the description was built. */
+      apy: number
+    }
 
 /**
  * Parameters for withdraw operation (internal)

@@ -57,6 +57,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       )
 
       return {
+        kind: 'erc20',
         spender: params.marketId.address,
         asset: assetAddress,
         transaction: {

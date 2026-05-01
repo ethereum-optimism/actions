@@ -180,6 +180,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
     }
 
     return {
+      kind: 'erc20',
       spender: params.marketId.address,
       asset: assetAddress as Address,
       transaction: {
