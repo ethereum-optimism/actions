@@ -1,4 +1,5 @@
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
+import { decodeAbiParameters } from 'viem'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -12,6 +13,7 @@ import {
   V2_ROUTER_ABI,
 } from '@/actions/swap/providers/velodrome/abis.js'
 import { encodeSwap } from '@/actions/swap/providers/velodrome/encoding/index.js'
+import { V2_SWAP_EXACT_IN_INPUT_PARAMS } from '@/actions/swap/providers/velodrome/encoding/routers/v2.js'
 
 import {
   BASE_CHAIN_ID,
@@ -196,6 +198,35 @@ describe('encodeSwap', () => {
       expect(commands).toBe('0x08')
       expect(inputs).toHaveLength(1)
       expect(deadline).toBe(BigInt(DEADLINE))
+    })
+
+    // Regression for #438: payerIsUser must be true so the router pulls tokens via
+    // transferFrom against an ERC20 allowance. payerIsUser=false requires tokens to
+    // be pre-deposited to the router, which only works when caller batches atomically.
+    it('encodes V2_SWAP_EXACT_IN with payerIsUser = true', () => {
+      const data = encodeSwap({
+        assetIn: MockUSDCAsset,
+        assetOut: MockWETHAsset,
+        amountInRaw: 1000000n,
+        amountOutMin: 400000000000000000n,
+        routerType: 'universal',
+        stable: false,
+        factoryAddress: FACTORY,
+        recipient: RECIPIENT,
+        deadline: DEADLINE,
+        chainId: BASE_CHAIN_ID,
+      })
+
+      const { args } = decode<[Hex, Hex[], bigint]>(UNIVERSAL_ROUTER_ABI, data)
+      const [, inputs] = args
+      const decoded = decodeAbiParameters(
+        V2_SWAP_EXACT_IN_INPUT_PARAMS,
+        inputs[0],
+      )
+      const payerIsUserIdx = V2_SWAP_EXACT_IN_INPUT_PARAMS.findIndex(
+        (p) => p.name === 'payerIsUser',
+      )
+      expect(decoded[payerIsUserIdx]).toBe(true)
     })
   })
 
