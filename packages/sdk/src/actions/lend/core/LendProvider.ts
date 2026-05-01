@@ -56,7 +56,7 @@ export abstract class LendProvider<
    * @param chainManager - Chain manager for blockchain interactions
    * @param settings - Shared lend settings applied across all providers
    */
-  constructor(
+  protected constructor(
     config: TConfig,
     chainManager: ChainManager,
     settings?: LendSettings,

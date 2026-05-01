@@ -3,7 +3,8 @@ import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { WETH } from '@/constants/assets.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -30,6 +31,14 @@ import { getATokenAddress, getReserve, getReserves } from './sdk.js'
  * @description Lending provider implementation using Aave V3 protocol
  */
 export class AaveLendProvider extends LendProvider<LendProviderConfig> {
+  constructor(
+    config: LendProviderConfig,
+    chainManager: ChainManager,
+    settings?: LendSettings,
+  ) {
+    super(config, chainManager, settings)
+  }
+
   protocolSupportedChainIds(): number[] {
     return getSupportedChainIds()
   }
