@@ -2,6 +2,7 @@ import type { SupportedChainId } from '@eth-optimism/actions-sdk'
 import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 
 import { CliError } from '@/output/errors.js'
+import { splitCsv } from '@/utils/strings.js'
 
 const SHORTNAMES: Record<string, SupportedChainId> = {
   base: base.id,
@@ -96,17 +97,6 @@ export interface ChainFlags {
   chainId?: string
 }
 
-function splitList(raw: string): string[] {
-  return raw
-    .split(',')
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0)
-}
-
-function dedupe(ids: SupportedChainId[]): SupportedChainId[] {
-  return [...new Set(ids)]
-}
-
 /**
  * @description Resolves the mutually-exclusive `--chain` / `--chain-id` option pair into a list of `SupportedChainId`s, or `undefined` when neither flag is set. Both flags accept a single value (`base-sepolia`, `84532`) or a comma-separated list (`base-sepolia,op-sepolia`, `84532,130`). Whitespace around commas is tolerated; duplicates are collapsed.
  * @param flags - Parsed commander options; either flag may be set.
@@ -128,7 +118,7 @@ export function resolveChainFlags(
   }
   if (!chain && !chainId) return undefined
   const raw = (chain ?? chainId) as string
-  const parts = splitList(raw)
+  const parts = splitCsv(raw)
   if (parts.length === 0) {
     throw new CliError(
       'validation',
@@ -139,5 +129,5 @@ export function resolveChainFlags(
   const resolver = chain
     ? (part: string) => resolveChain(part, configuredChainIds)
     : (part: string) => resolveChainId(part, configuredChainIds)
-  return dedupe(parts.map(resolver))
+  return [...new Set(parts.map(resolver))]
 }
