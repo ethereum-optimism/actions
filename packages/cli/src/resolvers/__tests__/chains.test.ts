@@ -102,18 +102,45 @@ describe('resolveChainFlags', () => {
     expect(resolveChainFlags({}, ALL)).toBeUndefined()
   })
 
-  it('resolves --chain shortname', async () => {
+  it('resolves a single --chain shortname into a one-element array', async () => {
     const { resolveChainFlags } = await import('@/resolvers/chains.js')
-    expect(resolveChainFlags({ chain: 'base-sepolia' }, ALL)).toBe(
+    expect(resolveChainFlags({ chain: 'base-sepolia' }, ALL)).toEqual([
       baseSepolia.id,
-    )
+    ])
   })
 
-  it('resolves --chain-id numeric', async () => {
+  it('resolves a single --chain-id numeric into a one-element array', async () => {
     const { resolveChainFlags } = await import('@/resolvers/chains.js')
     expect(
       resolveChainFlags({ chainId: String(optimismSepolia.id) }, ALL),
-    ).toBe(optimismSepolia.id)
+    ).toEqual([optimismSepolia.id])
+  })
+
+  it('resolves comma-separated --chain shortnames preserving order', async () => {
+    const { resolveChainFlags } = await import('@/resolvers/chains.js')
+    expect(
+      resolveChainFlags({ chain: 'base-sepolia,op-sepolia' }, ALL),
+    ).toEqual([baseSepolia.id, optimismSepolia.id])
+  })
+
+  it('resolves comma-separated --chain-id values preserving order', async () => {
+    const { resolveChainFlags } = await import('@/resolvers/chains.js')
+    expect(
+      resolveChainFlags(
+        { chainId: `${baseSepolia.id},${optimism.id}` },
+        ALL,
+      ),
+    ).toEqual([baseSepolia.id, optimism.id])
+  })
+
+  it('tolerates whitespace and dedupes within a comma-separated value', async () => {
+    const { resolveChainFlags } = await import('@/resolvers/chains.js')
+    expect(
+      resolveChainFlags(
+        { chain: ' base-sepolia , op-sepolia , base-sepolia ' },
+        ALL,
+      ),
+    ).toEqual([baseSepolia.id, optimismSepolia.id])
   })
 
   it('throws validation when both flags are set', async () => {
@@ -129,5 +156,17 @@ describe('resolveChainFlags', () => {
       expect((err as CliError).code).toBe('validation')
       expect((err as CliError).message).toMatch(/not both/)
     }
+  })
+
+  it('throws validation when the value is empty or only commas', async () => {
+    const { resolveChainFlags } = await import('@/resolvers/chains.js')
+    expect(() => resolveChainFlags({ chain: ',,' }, ALL)).toThrow(CliError)
+  })
+
+  it('throws validation when any element is unknown', async () => {
+    const { resolveChainFlags } = await import('@/resolvers/chains.js')
+    expect(() =>
+      resolveChainFlags({ chain: 'base-sepolia,mars' }, ALL),
+    ).toThrow(CliError)
   })
 })

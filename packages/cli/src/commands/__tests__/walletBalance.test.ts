@@ -181,6 +181,19 @@ describe('runWalletBalance', () => {
     expect(body[0].totalBalanceRaw).toBe('1')
   })
 
+  it('passes a multi-chain chainIds array when --chain is comma-separated', async () => {
+    process.env.PRIVATE_KEY = ANVIL_ACCOUNT_0
+    const getBalance = vi.fn(async () => [])
+    vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
+      config: { chains: [{ chainId: 84532 }, { chainId: 11155420 }] } as never,
+      actions: {} as never,
+      signer: {} as never,
+      wallet: { address: '0x0', getBalance } as never,
+    })
+    await runWalletBalance({ chain: 'base-sepolia,op-sepolia' })
+    expect(getBalance).toHaveBeenCalledWith({ chainIds: [84532, 11155420] })
+  })
+
   it('calls getBalance with no options when no chain flag is set', async () => {
     process.env.PRIVATE_KEY = ANVIL_ACCOUNT_0
     const getBalance = vi.fn(async () => [])
