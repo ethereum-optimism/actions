@@ -257,3 +257,31 @@ export class AssetMetadataRequiredError extends ActionsError {
     this.context = context
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Generic input validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Thrown when a caller-supplied parameter does not match the expected shape
+ * (wrong type, empty when non-empty is required, etc.). The `expected` string
+ * documents the type signature the caller should have produced.
+ */
+export class InvalidParamsError extends ActionsError {
+  override name = 'InvalidParamsError' as const
+  param: string
+  expected: string
+  received?: string
+
+  constructor(params: { param: string; expected: string; received?: string }) {
+    super(`Invalid params: ${params.param}`, {
+      metaMessages: [
+        `Expected: ${params.expected}`,
+        ...(params.received ? [`Received: ${params.received}`] : []),
+      ],
+    })
+    this.param = params.param
+    this.expected = params.expected
+    this.received = params.received
+  }
+}
