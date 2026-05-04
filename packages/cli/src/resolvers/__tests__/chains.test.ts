@@ -110,10 +110,7 @@ describe('resolveChainFlags', () => {
   it('resolves comma-separated --chain-id values preserving order', async () => {
     const { resolveChainFlags } = await import('@/resolvers/chains.js')
     expect(
-      resolveChainFlags(
-        { chainId: `${baseSepolia.id},${optimism.id}` },
-        ALL,
-      ),
+      resolveChainFlags({ chainId: `${baseSepolia.id},${optimism.id}` }, ALL),
     ).toEqual([baseSepolia.id, optimism.id])
   })
 
