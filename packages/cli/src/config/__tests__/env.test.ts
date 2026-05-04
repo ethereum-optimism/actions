@@ -15,7 +15,6 @@ describe('requireEnv / optionalEnv', () => {
     delete process.env.PRIVATE_KEY
     delete process.env.BASE_SEPOLIA_RPC_URL
     delete process.env.OP_SEPOLIA_RPC_URL
-    delete process.env.UNICHAIN_RPC_URL
     __resetEnvCacheForTests()
   })
 
@@ -68,7 +67,6 @@ describe('requireEnv (lazy contract)', () => {
     delete process.env.PRIVATE_KEY
     delete process.env.BASE_SEPOLIA_RPC_URL
     delete process.env.OP_SEPOLIA_RPC_URL
-    delete process.env.UNICHAIN_RPC_URL
   })
 
   afterEach(() => {

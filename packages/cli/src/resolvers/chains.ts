@@ -1,12 +1,5 @@
 import type { SupportedChainId } from '@eth-optimism/actions-sdk'
-import {
-  base,
-  baseSepolia,
-  optimism,
-  optimismSepolia,
-  unichain,
-  unichainSepolia,
-} from 'viem/chains'
+import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 
 import { CliError } from '@/output/errors.js'
 
@@ -15,8 +8,6 @@ const SHORTNAMES: Record<string, SupportedChainId> = {
   'base-sepolia': baseSepolia.id,
   optimism: optimism.id,
   'op-sepolia': optimismSepolia.id,
-  unichain: unichain.id,
-  'unichain-sepolia': unichainSepolia.id,
 }
 
 const CHAIN_IDS: Record<number, string> = Object.fromEntries(

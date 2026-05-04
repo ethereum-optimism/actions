@@ -1,12 +1,5 @@
 import type { SupportedChainId } from '@eth-optimism/actions-sdk'
-import {
-  base,
-  baseSepolia,
-  optimism,
-  optimismSepolia,
-  unichain,
-  unichainSepolia,
-} from 'viem/chains'
+import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
 import { CliError } from '@/output/errors.js'
@@ -17,24 +10,15 @@ const ALL: SupportedChainId[] = [
   baseSepolia.id,
   optimism.id,
   optimismSepolia.id,
-  unichain.id,
-  unichainSepolia.id,
 ]
 
-const SHORTNAMES = [
-  'base',
-  'base-sepolia',
-  'optimism',
-  'op-sepolia',
-  'unichain',
-  'unichain-sepolia',
-] as const
+const SHORTNAMES = ['base', 'base-sepolia', 'optimism', 'op-sepolia'] as const
 
 describe('resolveChain', () => {
   it('resolves each canonical shortname to its chain id', () => {
     expect(resolveChain('base-sepolia', ALL)).toBe(baseSepolia.id)
     expect(resolveChain('op-sepolia', ALL)).toBe(optimismSepolia.id)
-    expect(resolveChain('unichain', ALL)).toBe(unichain.id)
+    expect(resolveChain('optimism', ALL)).toBe(optimism.id)
   })
 
   it('is case-insensitive', () => {
@@ -67,7 +51,7 @@ describe('shortnameFor', () => {
   it('returns the canonical shortname for each supported chain id', () => {
     expect(shortnameFor(baseSepolia.id)).toBe('base-sepolia')
     expect(shortnameFor(optimismSepolia.id)).toBe('op-sepolia')
-    expect(shortnameFor(unichainSepolia.id)).toBe('unichain-sepolia')
+    expect(shortnameFor(optimism.id)).toBe('optimism')
   })
 })
 

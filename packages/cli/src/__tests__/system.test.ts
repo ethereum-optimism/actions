@@ -114,7 +114,6 @@ describe('actions CLI (built binary)', () => {
         PRIVATE_KEY: ANVIL_ACCOUNT_0,
         BASE_SEPOLIA_RPC_URL: 'http://127.0.0.1:1',
         OP_SEPOLIA_RPC_URL: 'http://127.0.0.1:1',
-        UNICHAIN_RPC_URL: 'http://127.0.0.1:1',
       })
       expect(code).toBe(4)
       const body = JSON.parse(stderr)

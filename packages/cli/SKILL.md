@@ -39,9 +39,10 @@ demo, fund the EOA with testnet ETH on Base Sepolia.
 - **Assets** - pass the `metadata.symbol` value from the allowlist
   (e.g. `USDC_DEMO`, `OP_DEMO`, `ETH`). Case-insensitive. Run
   `actions --json assets` for the current list.
-- **Chains** - pass a shortname (`base-sepolia`, `op-sepolia`,
-  `unichain`) via `--chain`, or a numeric id via `--chain-id`
-  (mutually exclusive). Run `actions --json chains` for the current
+- **Chains** - pass a shortname (`base-sepolia`, `op-sepolia`) via
+  `--chain`, or a numeric id via `--chain-id` (mutually exclusive).
+  Both flags accept a comma-separated list to scope the SDK fan-out
+  to multiple chains. Run `actions --json chains` for the current
   list.
 
 ## Output
