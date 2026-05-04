@@ -7,17 +7,27 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
 
 /**
- * Fetch ETH balance across all supported chains
+ * Options accepted by the balance fetch helpers.
+ * @property chainIds - Subset of supported chain ids to query. When omitted, all supported chains are queried. Callers are expected to validate this list (see `validateChainIds`); the helpers themselves trust their input.
+ */
+export interface BalanceFetchOptions {
+  chainIds?: readonly SupportedChainId[]
+}
+
+/**
+ * Fetch ETH balance across the requested chains (or all supported chains).
  * @param chainManager - The chain manager
  * @param walletAddress - The wallet address
+ * @param options - Optional `chainIds` filter (caller-validated)
  * @returns Promise resolving to ETH balance
  */
 export async function fetchETHBalance(
   chainManager: ChainManager,
   walletAddress: Address,
+  options?: BalanceFetchOptions,
 ): Promise<TokenBalance> {
-  const supportedChains = chainManager.getSupportedChains()
-  const chainBalancePromises = supportedChains.map(async (chainId) => {
+  const targetChains = options?.chainIds ?? chainManager.getSupportedChains()
+  const chainBalancePromises = targetChains.map(async (chainId) => {
     const publicClient = chainManager.getPublicClient(chainId)
     const balanceRaw = await publicClient.getBalance({
       address: walletAddress,
@@ -48,15 +58,18 @@ export async function fetchETHBalance(
 }
 
 /**
- * Fetch total balance for this asset across all supported chains
+ * Fetch total balance for this asset across the requested chains (or all
+ * supported chains). Chains where the asset has no configured address are
+ * silently skipped, matching the unfiltered behavior.
  */
 export async function fetchERC20Balance(
   chainManager: ChainManager,
   walletAddress: Address,
   asset: Asset,
+  options?: BalanceFetchOptions,
 ): Promise<TokenBalance> {
-  const supportedChains = chainManager.getSupportedChains()
-  const chainsWithToken = supportedChains.filter(
+  const targetChains = options?.chainIds ?? chainManager.getSupportedChains()
+  const chainsWithToken = targetChains.filter(
     (chainId) => asset.address[chainId],
   )
 

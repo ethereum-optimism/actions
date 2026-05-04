@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { unichain } from 'viem/chains'
+import { base, optimism, unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { MockUSDCAsset } from '@/__mocks__/MockAssets.js'
@@ -19,6 +19,12 @@ describe('TokenBalance', () => {
       defaultBalance: 1000000n,
     }) as any
   })
+
+  const multiChainManager = (): ChainManager =>
+    new MockChainManager({
+      supportedChains: [optimism.id, base.id, unichain.id],
+      defaultBalance: 1000000n,
+    }) as unknown as ChainManager
 
   describe('fetchBalance', () => {
     it('should fetch token balance across supported chains', async () => {
@@ -83,6 +89,55 @@ describe('TokenBalance', () => {
             balanceRaw: 1000000n,
           },
         },
+      })
+    })
+
+    it('queries only the requested chains when chainIds is provided', async () => {
+      const cm = multiChainManager()
+
+      const balance = await fetchETHBalance(cm, walletAddress, {
+        chainIds: [base.id],
+      })
+
+      expect(balance.chains).toEqual({
+        [base.id]: { balance: 0.000000000001, balanceRaw: 1000000n },
+      })
+      expect(balance.totalBalanceRaw).toBe(1000000n)
+      expect(cm.getPublicClient).toHaveBeenCalledTimes(1)
+      expect(cm.getPublicClient).toHaveBeenCalledWith(base.id)
+    })
+  })
+
+  describe('fetchERC20Balance with chainIds filter', () => {
+    it('queries only the requested chains', async () => {
+      const cm = multiChainManager()
+
+      const balance = await fetchERC20Balance(
+        cm,
+        walletAddress,
+        MockUSDCAsset,
+        { chainIds: [optimism.id, base.id] },
+      )
+
+      expect(Object.keys(balance.chains).map(Number).sort()).toEqual(
+        [optimism.id, base.id].sort(),
+      )
+      expect(balance.totalBalanceRaw).toBe(2000000n)
+    })
+
+    it('silently skips requested chains where the asset has no address', async () => {
+      const cm = multiChainManager()
+      const opOnly: Asset = {
+        ...MockUSDCAsset,
+        address: { [optimism.id]: MockUSDCAsset.address[optimism.id] } as any,
+      }
+
+      const balance = await fetchERC20Balance(cm, walletAddress, opOnly, {
+        chainIds: [optimism.id, base.id],
+      })
+
+      expect(balance.chains).toEqual({
+        [optimism.id]: { balance: 1, balanceRaw: 1000000n },
       })
     })
   })
