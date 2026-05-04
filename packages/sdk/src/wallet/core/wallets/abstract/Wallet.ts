@@ -6,12 +6,15 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import {
-  type BalanceFetchOptions,
   fetchERC20Balance,
   fetchETHBalance,
 } from '@/services/tokenBalance.js'
 import type { SwapSettings } from '@/types/actions.js'
-import type { Asset, TokenBalance } from '@/types/asset.js'
+import type {
+  Asset,
+  BalanceFetchOptions,
+  TokenBalance,
+} from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import { validateChainIds } from '@/utils/validation.js'

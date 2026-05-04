@@ -4,15 +4,11 @@ import { erc20Abi, formatEther, formatUnits } from 'viem'
 import { ETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { Asset, TokenBalance } from '@/types/asset.js'
-
-/**
- * Options accepted by the balance fetch helpers.
- * @property chainIds - Subset of supported chain ids to query. When omitted, all supported chains are queried. Callers are expected to validate this list (see `validateChainIds`); the helpers themselves trust their input.
- */
-export interface BalanceFetchOptions {
-  chainIds?: readonly SupportedChainId[]
-}
+import type {
+  Asset,
+  BalanceFetchOptions,
+  TokenBalance,
+} from '@/types/asset.js'
 
 /**
  * Fetch ETH balance across the requested chains (or all supported chains).
