@@ -11,6 +11,7 @@ import {
   ConflictingAmountsError,
   ExactOutputNotSupportedError,
   InvalidAmountError,
+  InvalidParamsError,
   MarketIdRequiredError,
   MarketNotAllowedError,
   MarketNotFoundError,
@@ -211,10 +212,25 @@ describe('ActionsError hierarchy', () => {
       new AssetNotSupportedOnChainError('X', 1),
       new NativeAssetAddressError('ETH'),
       new AssetMetadataRequiredError(),
+      new InvalidParamsError({ param: 'x', expected: 'y' }),
     ]
     for (const err of errors) {
       expect(err).toBeInstanceOf(ActionsError)
       expect(err).toBeInstanceOf(BaseError)
     }
+  })
+
+  it('InvalidParamsError carries param + expected (and optional received)', () => {
+    const err = new InvalidParamsError({
+      param: 'chainIds',
+      expected: 'SupportedChainId[] (non-empty)',
+      received: '[]',
+    })
+    expect(err.name).toBe('InvalidParamsError')
+    expect(err.param).toBe('chainIds')
+    expect(err.expected).toBe('SupportedChainId[] (non-empty)')
+    expect(err.received).toBe('[]')
+    expect(err.shortMessage).toContain('chainIds')
+    expect(err).toBeInstanceOf(ActionsError)
   })
 })
