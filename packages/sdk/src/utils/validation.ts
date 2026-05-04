@@ -8,11 +8,13 @@ import {
   ChainNotSupportedError,
   ConflictingAmountsError,
   InvalidAmountError,
+  InvalidParamsError,
   SameAssetError,
   SlippageOutOfRangeError,
   ZeroAddressError,
 } from '@/core/error/errors.js'
-import type { Asset } from '@/types/asset.js'
+import type { ChainManager } from '@/services/ChainManager.js'
+import type { Asset, BalanceFetchOptions } from '@/types/asset.js'
 import { isAssetSupportedOnChain } from '@/utils/assets.js'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -69,6 +71,27 @@ export function validateChainSupported(
   if (!supportedChainIds.includes(chainId)) {
     throw new ChainNotSupportedError({ chainId, supportedChainIds })
   }
+}
+
+/**
+ * Guard for `BalanceFetchOptions` — verifies a caller-supplied `chainIds` filter is non-empty and each id is a member of `chainManager.getSupportedChains()`. No-op when `chainIds` is omitted.
+ * @throws InvalidParamsError when `chainIds` is `[]`.
+ * @throws ChainNotSupportedError when any id is not configured on the manager.
+ */
+export function validateBalanceFetchOptions(
+  options: BalanceFetchOptions | undefined,
+  chainManager: ChainManager,
+): void {
+  if (options?.chainIds === undefined) return
+  if (options.chainIds.length === 0) {
+    throw new InvalidParamsError({
+      param: 'chainIds',
+      expected: 'SupportedChainId[] (non-empty)',
+      received: '[]',
+    })
+  }
+  const supported = chainManager.getSupportedChains()
+  for (const id of options.chainIds) validateChainSupported(id, supported)
 }
 
 export function validateAssetOnChain(

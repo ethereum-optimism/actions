@@ -121,7 +121,7 @@ describe('WalletLendNamespace', () => {
       const marketId = mockMarketId
       const mockTransaction = {
         amount: 1000000000n,
-        asset: mockAsset.address[130],
+        assetAddress: mockAsset.address[130] as Address,
         marketId: marketId.address,
         apy: 0.05,
         transactionData: {
@@ -169,7 +169,7 @@ describe('WalletLendNamespace', () => {
 
       const mockTransaction = {
         amount: 100n,
-        asset: getRandomAddress(),
+        assetAddress: getRandomAddress(),
         marketId: closeParams.marketId.address,
         apy: 0.05,
         transactionData: {
@@ -234,7 +234,7 @@ describe('WalletLendNamespace', () => {
     }
     const mockTransaction = {
       amount: 1000000000n,
-      asset: mockAsset.address[130],
+      assetAddress: mockAsset.address[130] as Address,
       marketId: marketId.address,
       apy: 0.05,
       timestamp: Date.now(),

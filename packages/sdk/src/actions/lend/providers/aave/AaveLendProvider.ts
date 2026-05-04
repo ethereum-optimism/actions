@@ -5,7 +5,7 @@ import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { WETH } from '@/constants/assets.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -13,6 +13,7 @@ import type {
   LendMarket,
   LendMarketId,
   LendMarketPosition,
+  LendOpenPosition,
   LendOpenPositionInternalParams,
   LendTransaction,
 } from '@/types/lend/index.js'
@@ -31,28 +32,30 @@ import { getATokenAddress, getReserve, getReserves } from './sdk.js'
  * @description Lending provider implementation using Aave V3 protocol
  */
 export class AaveLendProvider extends LendProvider<LendProviderConfig> {
+  constructor(
+    config: LendProviderConfig,
+    chainManager: ChainManager,
+    settings?: LendSettings,
+  ) {
+    super(config, chainManager, settings)
+  }
+
   protocolSupportedChainIds(): number[] {
     return getSupportedChainIds()
   }
 
   /**
-   * Create a new Aave lending provider
-   * @param config - Aave lending configuration
-   * @param chainManager - Chain manager for blockchain interactions
-   */
-  constructor(config: LendProviderConfig, chainManager: ChainManager) {
-    super(config, chainManager)
-  }
-
-  /**
-   * Open a lending position in an Aave market
-   * @description Opens a lending position by supplying assets to an Aave reserve
-   * @param params - Position opening parameters
-   * @returns Promise resolving to lending transaction details
+   * Describe an Aave deposit. The base class wraps this into a
+   * `LendTransaction` with the appropriate ERC-20 approval based on
+   * `params.approvalMode`. Native-ETH paths return `spender: undefined` since
+   * deposits via the WETHGateway send value as `msg.value` rather than via
+   * `transferFrom`.
+   * @param params - Position opening parameters (amount in wei, walletAddress, approvalMode)
+   * @returns Spender + deposit calldata + APY snapshot
    */
   protected async _openPosition(
     params: LendOpenPositionInternalParams,
-  ): Promise<LendTransaction> {
+  ): Promise<LendOpenPosition> {
     try {
       // Get Pool address for this chain
       const poolAddress = getPoolAddress(params.marketId.chainId)
@@ -69,13 +72,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
         chainId: params.marketId.chainId,
       })
 
-      // Check if this is a native ETH market
       if (isNativeAsset(params.asset)) {
-        return this._openETHPosition(params, poolAddress, marketInfo)
+        return this._buildETHOpenPosition(params, poolAddress, marketInfo)
       }
-
-      // Standard ERC-20 flow
-      return this._openERC20Position(params, poolAddress, marketInfo)
+      return this._buildERC20OpenPosition(params, poolAddress, marketInfo)
     } catch {
       throw new Error(
         `Failed to open position with ${params.amountWei} of ${params.asset.metadata.symbol}`,
@@ -210,14 +210,14 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   }
 
   /**
-   * Open position for native ETH using WETHGateway
-   * @description Deposits native ETH via WETHGateway which wraps and deposits in one tx
+   * Describe a native-ETH deposit via Aave's WETHGateway. ETH is sent as
+   * `msg.value` and wrapped to aWETH inline — no ERC-20 approval needed.
    */
-  private async _openETHPosition(
+  private async _buildETHOpenPosition(
     params: LendOpenPositionInternalParams,
     poolAddress: Address,
     marketInfo: LendMarket,
-  ): Promise<LendTransaction> {
+  ): Promise<LendOpenPosition> {
     const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
     if (!gatewayAddress) {
       throw new ChainNotSupportedError({
@@ -226,7 +226,6 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       })
     }
 
-    // Generate depositETH transaction
     const depositCallData = encodeFunctionData({
       abi: WETH_GATEWAY_ABI,
       functionName: 'depositETH',
@@ -240,33 +239,28 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
 
     return {
-      amount: params.amountWei,
-      asset: wethAddress,
-      marketId: params.marketId.address,
-      apy: marketInfo.apy.total,
-      transactionData: {
-        position: {
-          to: gatewayAddress,
-          data: depositCallData,
-          value: params.amountWei, // Send ETH as msg.value
-        },
+      assetAddress: wethAddress,
+      transaction: {
+        to: gatewayAddress,
+        data: depositCallData,
+        value: params.amountWei, // Send ETH as msg.value
       },
+      apy: marketInfo.apy.total,
     }
   }
 
   /**
-   * Open position for standard ERC-20 tokens
-   * @description Standard approve + supply flow for non-WETH assets
+   * Describe a standard ERC-20 deposit. The base class builds the approval to
+   * `poolAddress` based on `params.approvalMode`.
    */
-  private async _openERC20Position(
+  private async _buildERC20OpenPosition(
     params: LendOpenPositionInternalParams,
     poolAddress: Address,
     marketInfo: LendMarket,
-  ): Promise<LendTransaction> {
+  ): Promise<LendOpenPosition> {
     // Get asset address for the chain (throws for native assets)
     const assetAddress = getAssetAddress(params.asset, params.marketId.chainId)
 
-    // Generate supply transaction
     const supplyCallData = encodeFunctionData({
       abi: POOL_ABI,
       functionName: 'supply',
@@ -279,22 +273,14 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     })
 
     return {
-      amount: params.amountWei,
-      asset: assetAddress,
-      marketId: params.marketId.address,
-      apy: marketInfo.apy.total,
-      transactionData: {
-        approval: this.buildApprovalTx(
-          assetAddress,
-          poolAddress,
-          params.amountWei,
-        ),
-        position: {
-          to: poolAddress,
-          data: supplyCallData,
-          value: 0n,
-        },
+      spender: poolAddress,
+      assetAddress,
+      transaction: {
+        to: poolAddress,
+        data: supplyCallData,
+        value: 0n,
       },
+      apy: marketInfo.apy.total,
     }
   }
 
@@ -337,7 +323,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: params.amount,
-      asset: wethAddress,
+      assetAddress: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
@@ -382,7 +368,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: params.amount,
-      asset: assetAddress,
+      assetAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {

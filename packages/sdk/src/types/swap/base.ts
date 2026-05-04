@@ -2,7 +2,7 @@ import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { EnsName } from '@/services/nameservices/ens/types.js'
-import type { SwapProviderName } from '@/types/actions.js'
+import type { ApprovalMode, SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
 import type {
@@ -30,6 +30,8 @@ export interface SwapProviderConfig {
   marketAllowlist?: SwapMarketConfig[]
   /** Blocklist of swap markets to exclude */
   marketBlocklist?: SwapMarketConfig[]
+  /** Approval-amount strategy override for this provider. Overrides `SwapSettings.approvalMode`. */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -93,6 +95,11 @@ export interface WalletSwapParams {
   recipient?: Address | EnsName
   /** Explicitly select a swap provider. Overrides routing config. */
   provider?: SwapProviderName
+  /**
+   * Override the wallet-level approval-amount strategy for this single swap.
+   * Falls back to `ActionsConfig.wallet.approvalMode` and finally to `"exact"`.
+   */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -117,6 +124,8 @@ export interface ResolvedSwapParams {
   recipient: Address
   walletAddress: Address
   chainId: SupportedChainId
+  /** Resolved approval-amount strategy (per-call → wallet config → "exact"). */
+  approvalMode: ApprovalMode
 }
 
 /**
@@ -246,6 +255,13 @@ export interface SwapQuote {
    * when the executor differs from the quote's recipient.
    */
   recipient: Address
+  /**
+   * Per-call override for the approval-amount strategy. When set, the provider
+   * uses this for the swap's approvals instead of the wallet-level config
+   * default. When unset, the provider falls back to the wallet's
+   * `approvalMode` config and finally to `"exact"`.
+   */
+  approvalMode?: ApprovalMode
 }
 
 /**

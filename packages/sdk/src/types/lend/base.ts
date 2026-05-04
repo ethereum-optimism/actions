@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { LendProviderName } from '@/types/actions.js'
+import type { ApprovalMode, LendProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   FilterAssetChain,
@@ -72,8 +72,8 @@ export interface LendTransaction {
   hash?: string
   /** Amount lent */
   amount: bigint
-  /** Asset address */
-  asset: Address
+  /** Underlying ERC-20 address (the wrapped form for native deposits) */
+  assetAddress: Address
   /** Market ID */
   marketId: string
   /** Estimated APY at time of lending */
@@ -199,6 +199,8 @@ export interface LendProviderConfig {
   marketAllowlist?: LendMarketConfig[]
   /** Blocklist of markets to exclude from lending */
   marketBlocklist?: LendMarketConfig[]
+  /** Approval-amount strategy override for this provider. Overrides `LendSettings.approvalMode`. */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -230,6 +232,11 @@ export interface LendOpenPositionBaseParams {
   walletAddress?: Address
   /** Optional lending configuration */
   options?: TransactionOptions
+  /**
+   * Override the wallet-level approval-amount strategy for this single supply.
+   * Falls back to `ActionsConfig.wallet.approvalMode` and finally to `"exact"`.
+   */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -246,12 +253,37 @@ export interface LendOpenPositionParams extends LendOpenPositionBaseParams {
  */
 export interface LendOpenPositionInternalParams extends Omit<
   LendOpenPositionBaseParams,
-  'walletAddress'
+  'walletAddress' | 'approvalMode'
 > {
   /** Amount to lend in wei */
   amountWei: bigint
   /** Wallet address for receiving shares and as owner (required in internal params) */
   walletAddress: Address
+}
+
+/**
+ * Provider-supplied description of a lend open-position operation. The base
+ * `LendProvider` consumes this to build the surrounding `LendTransaction`,
+ * including the ERC-20 approval transaction (if any). Providers describe
+ * **what** the deposit looks like; the base derives **how** the approval is
+ * built from `params.asset` (native vs. ERC-20).
+ *
+ * For native-asset deposits, omit `spender` — the base reads `params.asset.type`
+ * and skips approval construction entirely. For ERC-20 deposits, `spender` is
+ * required and the base will throw if it's missing.
+ */
+export interface LendOpenPosition {
+  /** Underlying ERC-20 address being deposited (the wrapped form for native deposits). */
+  assetAddress: Address
+  /**
+   * ERC-20 spender that needs allowance to pull `params.amountWei` from the
+   * wallet. Required for ERC-20 deposits; omit for native deposits.
+   */
+  spender?: Address
+  /** The deposit transaction itself (provider-specific calldata; `value` set for native). */
+  transaction: TransactionData
+  /** APY snapshot at the time the description was built. */
+  apy: number
 }
 
 /**
@@ -327,11 +359,11 @@ export interface LendProviderMethods {
   /**
    * Provider implementation of openPosition method
    * @param params - Open position operation parameters
-   * @returns Promise resolving to transaction data
+   * @returns Promise resolving to a `LendOpenPosition` description
    */
   _openPosition(
     params: LendOpenPositionInternalParams,
-  ): Promise<TransactionData>
+  ): Promise<LendOpenPosition>
 
   /**
    * Provider implementation of closePosition method
