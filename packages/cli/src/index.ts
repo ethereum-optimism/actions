@@ -24,7 +24,7 @@ const colorizeHelp = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR
 
 const program = new Command()
   .name('actions')
-  .description('Command-line interface for the Actions SDK.')
+  .description('Command Line Interface for the Actions SDK.')
   .option('--json', 'emit machine-readable JSON on stdout and stderr')
   .hook('preAction', (thisCommand) => {
     setJsonMode(Boolean(thisCommand.opts().json))
