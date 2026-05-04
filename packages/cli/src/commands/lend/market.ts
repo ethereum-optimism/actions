@@ -1,5 +1,5 @@
-import { rethrowAsCliError } from '@/commands/wallet/lend/util.js'
 import { baseContext } from '@/context/baseContext.js'
+import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 import { resolveMarket } from '@/resolvers/markets.js'
 

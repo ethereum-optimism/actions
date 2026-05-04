@@ -1,9 +1,7 @@
 import { walletContext } from '@/context/walletContext.js'
-import { CliError } from '@/output/errors.js'
+import { CliError, rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 import { resolveMarket } from '@/resolvers/markets.js'
-
-import { rethrowAsCliError } from './util.js'
 
 export interface LendPositionFlags {
   market: string

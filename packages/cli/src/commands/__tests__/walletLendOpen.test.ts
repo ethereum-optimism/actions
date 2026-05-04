@@ -1,3 +1,4 @@
+import { ContractFunctionRevertedError } from 'viem'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -172,9 +173,11 @@ describe('runWalletLendOpen', () => {
 
   it('maps simulation reverts to CliError(onchain)', async () => {
     mockWallet(async () => {
-      const e = new Error('execution reverted: ERC20: insufficient allowance')
-      e.name = 'ContractFunctionRevertedError'
-      throw e
+      throw new ContractFunctionRevertedError({
+        abi: [],
+        data: undefined,
+        functionName: 'supply',
+      })
     })
     try {
       await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })

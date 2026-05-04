@@ -80,31 +80,3 @@ export function ensureOnchainSuccess(receipts: readonly SingleReceipt[]): void {
     })
   }
 }
-
-const ONCHAIN_HINTS = [
-  'execution reverted',
-  'revert',
-  'ContractFunctionRevertedError',
-  'ContractFunctionExecutionError',
-]
-
-/**
- * @description Re-throws SDK exceptions as the right `CliError` code.
- * Pre-flight reverts (gas estimation, eth_call simulation) and viem
- * `ContractFunctionRevertedError` map to `onchain`; everything else
- * (RPC down, timeout, fetch failure) defaults to retryable `network`.
- * Existing `CliError` instances pass through unchanged.
- * @param err - Caught exception.
- * @returns Never; always throws.
- */
-export function rethrowAsCliError(err: unknown): never {
-  if (err instanceof CliError) throw err
-  const message = err instanceof Error ? err.message : String(err)
-  const name = err instanceof Error ? err.name : ''
-  const looksOnchain = ONCHAIN_HINTS.some(
-    (h) => message.includes(h) || name.includes(h),
-  )
-  throw new CliError(looksOnchain ? 'onchain' : 'network', message, {
-    cause: err,
-  })
-}
