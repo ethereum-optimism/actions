@@ -2,8 +2,8 @@ import { walletContext } from '@/context/walletContext.js'
 import { CliError, rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 import { resolveMarket } from '@/resolvers/markets.js'
-
-import { ensureOnchainSuccess, parseAmount, toReceiptArray } from './util.js'
+import { parseAmount } from '@/utils/parseAmount.js'
+import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
 
 export interface LendCloseFlags {
   market: string

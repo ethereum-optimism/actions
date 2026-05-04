@@ -1,16 +1,15 @@
 import type {
   Asset,
-  EOATransactionReceipt,
   LendMarket,
   LendMarketPosition,
   SupportedChainId,
   TokenBalance,
-  UserOperationTransactionReceipt,
 } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 
 import { writeJson } from '@/output/json.js'
 import { isJsonMode } from '@/output/mode.js'
+import type { WalletTransactionReceipt } from '@/utils/receipts.js'
 
 function writeLine(line = ''): void {
   process.stdout.write(line + '\n')
@@ -36,9 +35,7 @@ export interface LendActionDoc {
   }
   asset: { symbol: string }
   amount: number
-  transactions: ReadonlyArray<
-    EOATransactionReceipt | UserOperationTransactionReceipt
-  >
+  transactions: readonly WalletTransactionReceipt[]
 }
 
 interface Printers {
