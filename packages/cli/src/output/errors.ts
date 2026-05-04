@@ -186,7 +186,12 @@ export function safeDetails(details: unknown): unknown {
   return redactValue(details)
 }
 
-function isEpipe(err: unknown): boolean {
+/**
+ * @description Detects Node `EPIPE` errors thrown when stdout/stderr is closed by the receiving process (e.g. `actions ... | head -n 5`). Used at the process boundary to exit cleanly instead of treating a closed pipe as a runtime failure.
+ * @param err - Any thrown value.
+ * @returns `true` if `err` looks like an EPIPE error.
+ */
+export function isEpipeError(err: unknown): boolean {
   return (
     err !== null &&
     typeof err === 'object' &&
@@ -225,7 +230,7 @@ export function writeError(err: unknown): never {
   try {
     process.stderr.write(body)
   } catch (writeErr) {
-    if (!isEpipe(writeErr)) throw writeErr
+    if (!isEpipeError(writeErr)) throw writeErr
   }
   process.exit(EXIT[code])
 }
