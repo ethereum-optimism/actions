@@ -208,7 +208,11 @@ export function isEpipeError(err: unknown): boolean {
 export function writeError(err: unknown): never {
   const cliErr = err instanceof CliError ? err : undefined
   const code: ErrorCode = cliErr?.code ?? 'unknown'
-  const message = err instanceof Error ? err.message : String(err)
+  const rawMessage = err instanceof Error ? err.message : String(err)
+  // SDK exception messages can include the RPC URL (and embedded API key); the
+  // `details` payload is already redacted via `safeDetails`, so apply the same
+  // strip to the top-level `error` field before we emit it.
+  const message = stripRpcKey(rawMessage)
   const retryable = cliErr?.retryable ?? RETRYABLE_DEFAULT[code]
   const body = isJsonMode()
     ? JSON.stringify(
