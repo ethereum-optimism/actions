@@ -1,7 +1,7 @@
 {
   "name": "actions-cli",
   "private": true,
-  "description": "Agent-first command-line interface for the Actions SDK.",
+  "description": "Command Line Interface for the Actions SDK.",
   "repository": {
     "type": "git",
     "url": "https://github.com/ethereum-optimism/actions.git",
