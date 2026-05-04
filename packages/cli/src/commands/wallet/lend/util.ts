@@ -37,16 +37,6 @@ export function parseAmount(raw: string): number {
   return value
 }
 
-function isEOAReceipt(value: SingleReceipt): value is EOATransactionReceipt {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'transactionHash' in value &&
-    'status' in value &&
-    typeof (value as { status?: unknown }).status === 'string'
-  )
-}
-
 /**
  * @description Normalises the SDK's union receipt type to a flat array.
  * EOA `send` returns a single receipt; `sendBatch` returns an array;
@@ -62,30 +52,25 @@ export function toReceiptArray(
 }
 
 /**
- * @description Inspects receipts for failure markers and raises
- * `CliError('onchain')` when any leg failed. EOA receipts use
- * `status: 'reverted'`; UserOp receipts use `success: false`. Called
- * after the SDK call resolves.
+ * @description Inspects receipts for failure markers and raises `CliError('onchain')` when any leg failed or carries an unrecognised shape. Default-deny: anything that is not an explicit success (`status === 'success'` for EOA, `success === true` for UserOp) is treated as failure, so a malformed receipt from a misbehaving RPC cannot be silently reported as success.
  * @param receipts - Receipts returned by the SDK.
- * @throws `CliError` with code `onchain` when any receipt failed.
+ * @throws `CliError` with code `onchain` on revert, UserOp failure, or unrecognised shape.
  */
 export function ensureOnchainSuccess(receipts: readonly SingleReceipt[]): void {
   for (const r of receipts) {
-    if (isEOAReceipt(r) && r.status === 'reverted') {
-      throw new CliError('onchain', 'Transaction reverted', {
-        transactionHash: r.transactionHash,
-        blockNumber: r.blockNumber,
-      })
+    if ('success' in r) {
+      if (r.success !== true) {
+        throw new CliError('onchain', 'UserOperation failed', {
+          userOpHash: r.userOpHash,
+        })
+      }
+      continue
     }
-    if (
-      !isEOAReceipt(r) &&
-      'success' in r &&
-      (r as { success?: unknown }).success === false
-    ) {
-      throw new CliError('onchain', 'UserOperation failed', {
-        userOpHash: (r as { userOpHash?: unknown }).userOpHash,
-      })
-    }
+    if (r.status === 'success') continue
+    throw new CliError('onchain', `Transaction status: ${String(r.status)}`, {
+      transactionHash: r.transactionHash,
+      blockNumber: r.blockNumber,
+    })
   }
 }
 

@@ -130,6 +130,21 @@ describe('runWalletLendOpen', () => {
     }
   })
 
+  it('rejects receipts with an unrecognised status (default-deny)', async () => {
+    // A misbehaving RPC could omit `status` or return a numeric value; the
+    // CLI must not treat that as success.
+    mockWallet(async () => [
+      { transactionHash: '0xmalformed', blockNumber: 1n } as never,
+    ])
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('onchain')
+    }
+  })
+
   it('maps RPC failures to CliError(network) and marks them retryable', async () => {
     mockWallet(async () => {
       throw new Error('HTTP request failed. Status: ECONNREFUSED')
