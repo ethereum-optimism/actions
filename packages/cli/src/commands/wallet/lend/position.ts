@@ -1,7 +1,9 @@
 import { walletContext } from '@/context/walletContext.js'
-import { CliError, rethrowAsCliError } from '@/output/errors.js'
+import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 import { resolveMarket } from '@/resolvers/markets.js'
+
+import { requireLendCapability } from './requireLendCapability.js'
 
 export interface LendPositionFlags {
   market: string
@@ -20,12 +22,7 @@ export async function runWalletLendPosition(
   flags: LendPositionFlags,
 ): Promise<void> {
   const { wallet, config } = await walletContext()
-  if (!wallet.lend) {
-    throw new CliError(
-      'config',
-      'Lending is not configured (no providers in config.lend)',
-    )
-  }
+  requireLendCapability(wallet)
   const market = resolveMarket(flags.market, config)
   try {
     const position = await wallet.lend.getPosition({
