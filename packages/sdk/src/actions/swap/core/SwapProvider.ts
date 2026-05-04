@@ -4,6 +4,11 @@ import { formatUnits } from 'viem'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import {
+  MarketNotAllowedError,
+  ProviderNotConfiguredError,
+  QuoteExpiredError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   SwapExecuteParamsResolved,
@@ -246,9 +251,12 @@ export abstract class SwapProvider<
         marketBlocklist,
       )
       if (isBlocked) {
-        throw new Error(
-          `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is blocked on chain ${chainId}`,
-        )
+        throw new MarketNotAllowedError({
+          assetInSymbol: assetIn.metadata.symbol,
+          assetOutSymbol: assetOut.metadata.symbol,
+          chainId,
+          reason: 'Pair is blocked',
+        })
       }
     }
 
@@ -260,9 +268,12 @@ export abstract class SwapProvider<
         marketAllowlist,
       )
       if (!isAllowed) {
-        throw new Error(
-          `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is not in the allowlist for chain ${chainId}`,
-        )
+        throw new MarketNotAllowedError({
+          assetInSymbol: assetIn.metadata.symbol,
+          assetOutSymbol: assetOut.metadata.symbol,
+          chainId,
+          reason: 'Pair is not in the allowlist',
+        })
       }
     }
   }
@@ -309,9 +320,10 @@ export abstract class SwapProvider<
   ): SwapMarketConfig | undefined {
     const { marketAllowlist } = this._config
     if (!marketAllowlist?.length) {
-      throw new Error(
-        'No markets configured. Provide a marketAllowlist in swap provider config.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'marketAllowlist',
+        details: 'Provide a marketAllowlist in swap provider config.',
+      })
     }
     return this.findMatchingConfig(assetIn, assetOut, chainId, marketAllowlist)
   }
@@ -380,9 +392,10 @@ export abstract class SwapProvider<
   }
 
   /**
-   * Build a SwapTransaction from a quote by fetching approvals and wrapping the swap calldata.
-   * Used by both the quote-execute path and provider _execute implementations.
-   * @param quote - SwapQuote with recipient set for allowance checks
+   * Build a SwapTransaction from a quote by fetching approvals and wrapping
+   * the swap calldata. Quotes are required to have `recipient` set by the
+   * provider's `_getQuote`; sub-providers can dereference `quote.recipient`
+   * directly.
    */
   protected async buildSwapTransactions(
     quote: SwapQuote,
@@ -415,32 +428,6 @@ export abstract class SwapProvider<
   private async executeFromQuote(quote: SwapQuote): Promise<SwapTransaction> {
     this.validateQuoteExpiration(quote)
     validateNotZeroAddress(quote.execution.routerAddress, 'routerAddress')
-
-    if (!quote.recipient) {
-      throw new Error(
-        'SwapQuote.recipient is required for execution. Pass the quote through WalletSwapNamespace.execute() which injects the wallet address.',
-      )
-    }
-
-    // If the recipient changed since the quote was built (e.g. quote from
-    // ActionsSwapNamespace executed through WalletSwapNamespace), re-encode
-    // calldata with the correct recipient to prevent tokens going to the wrong address.
-    if (quote.recipient !== quote.quotedRecipient) {
-      const freshQuote = await this._getQuote({
-        assetIn: quote.assetIn,
-        assetOut: quote.assetOut,
-        amountIn: quote.amountIn,
-        chainId: quote.chainId,
-        slippage: quote.slippage,
-        deadline: quote.deadline,
-        recipient: quote.recipient,
-      })
-      return this.buildSwapTransactions({
-        ...freshQuote,
-        recipient: quote.recipient,
-      })
-    }
-
     return this.buildSwapTransactions(quote)
   }
 
@@ -454,15 +441,16 @@ export abstract class SwapProvider<
     validateAmountPositiveIfExists(params.amountIn)
     validateAmountPositiveIfExists(params.amountOut)
     validateSlippage(params.slippage ?? this.defaultSlippage, this.maxSlippage)
-    validateRecipient('recipient' in params ? params.recipient : undefined)
+    validateRecipient(params.recipient)
   }
 
   private validateQuoteExpiration(quote: SwapQuote): void {
     const now = Math.floor(Date.now() / 1000)
     if (now >= quote.expiresAt) {
-      throw new Error(
-        `Quote expired at ${quote.expiresAt}, current time is ${now}`,
-      )
+      throw new QuoteExpiredError({
+        expiresAt: quote.expiresAt,
+        currentTime: now,
+      })
     }
   }
 
@@ -560,8 +548,8 @@ export abstract class SwapProvider<
 
   /**
    * Build provider-specific approval transactions for a swap.
-   * Called by the base class during executeFromQuote with a validated recipient.
-   * @param quote - SwapQuote with recipient set to the real wallet address
+   * Called by the base class during executeFromQuote.
+   * @param quote - SwapQuote with recipient set by the provider's _getQuote
    * @returns Approval transactions needed before the swap (tokenApproval, permit2Approval)
    */
   protected abstract _buildApprovals(

@@ -118,6 +118,47 @@ describe('WalletSwapNamespace', () => {
       )
     })
 
+    it('defaults recipient to wallet address when omitted', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      await namespace.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: ETH,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      expect(provider.mockExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipient: mockWalletAddress,
+        }),
+      )
+    })
+
+    it('preserves explicit recipient over wallet address', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+      const customRecipient =
+        '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address
+
+      await namespace.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: ETH,
+        chainId: 84532 as SupportedChainId,
+        recipient: customRecipient,
+      })
+
+      expect(provider.mockExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipient: customRecipient,
+        }),
+      )
+    })
+
     it('throws when no provider configured', async () => {
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({}, wallet)
@@ -129,7 +170,7 @@ describe('WalletSwapNamespace', () => {
           assetOut: ETH,
           chainId: 84532 as SupportedChainId,
         }),
-      ).rejects.toThrow('No swap provider configured')
+      ).rejects.toThrow("A 'swap' provider is not configured")
     })
 
     it('executes swap from a SwapQuote (skips re-quoting)', async () => {
@@ -170,7 +211,7 @@ describe('WalletSwapNamespace', () => {
       })
 
       // Quote should have wallet address as the encoded recipient
-      expect(quote.quotedRecipient).toBe(mockWalletAddress)
+      expect(quote.recipient).toBe(mockWalletAddress)
     })
 
     it('preserves explicit recipient over wallet address', async () => {
@@ -188,43 +229,61 @@ describe('WalletSwapNamespace', () => {
         recipient: customRecipient,
       })
 
-      expect(quote.quotedRecipient).toBe(customRecipient)
+      expect(quote.recipient).toBe(customRecipient)
     })
   })
 
   describe('execute with recipient mismatch', () => {
-    it('re-encodes when quote recipient differs from wallet', async () => {
+    it('throws when quote.recipient does not match wallet.address', async () => {
       const provider = createMockSwapProvider()
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
 
-      // Get quote without wallet (simulates ActionsSwapNamespace quote)
+      // Get quote without wallet (simulates ActionsSwapNamespace quote — recipient
+      // defaults to UNIVERSAL_ROUTER_MSG_SENDER, not the executing wallet)
       const quote = await provider.getQuote({
         assetIn: USDC,
         assetOut: ETH,
         amountIn: 100,
         chainId: 84532 as SupportedChainId,
-        // No recipient — uses placeholder
       })
 
-      // quotedRecipient should be the placeholder, not the wallet
-      expect(quote.quotedRecipient).not.toBe(mockWalletAddress)
+      expect(quote.recipient).not.toBe(mockWalletAddress)
 
-      // Execute through wallet namespace — should re-quote with correct recipient
-      const result = await namespace.execute(quote)
-      expect(result.price).toBeDefined()
-
-      // Provider's getQuote should have been called twice:
-      // 1) original quote, 2) re-quote with wallet address
-      expect(provider.mockGetQuote).toHaveBeenCalledTimes(2)
+      await expect(namespace.execute(quote)).rejects.toThrow(
+        /generated for a different recipient/i,
+      )
+      // Provider's getQuote was called once (the original); execute did not re-quote.
+      expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
     })
 
-    it('skips re-encode when quote already has correct recipient', async () => {
+    it('throws on a quote built for a different wallet address', async () => {
+      const provider = createMockSwapProvider()
+      const wallet = createMockWallet()
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+      const otherWallet =
+        '0x9999999999999999999999999999999999999999' as Address
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        recipient: otherWallet,
+      })
+
+      expect(quote.recipient).toBe(otherWallet)
+
+      await expect(namespace.execute(quote)).rejects.toThrow(
+        /generated for a different recipient/i,
+      )
+    })
+
+    it('executes when quote.recipient equals wallet.address', async () => {
       const provider = createMockSwapProvider()
       const wallet = createMockWallet()
       const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
 
-      // Get quote through wallet namespace (has correct recipient)
       const quote = await namespace.getQuote({
         assetIn: USDC,
         assetOut: ETH,
@@ -232,14 +291,43 @@ describe('WalletSwapNamespace', () => {
         chainId: 84532 as SupportedChainId,
       })
 
-      expect(quote.quotedRecipient).toBe(mockWalletAddress)
+      expect(quote.recipient).toBe(mockWalletAddress)
 
-      // Execute — should NOT re-quote
       const result = await namespace.execute(quote)
       expect(result.price).toBeDefined()
-
-      // getQuote called only once (the original)
+      // Single getQuote call — no re-quote, no re-encode.
       expect(provider.mockGetQuote).toHaveBeenCalledTimes(1)
+    })
+
+    it('executes when quote.recipient differs only in case from wallet.address', async () => {
+      // Address with hex letters so case actually changes the string. The
+      // wallet uses checksummed casing; the quote uses lowercase. Without
+      // `isAddressEqual` the strict `!==` would falsely reject.
+      const checksummedAddress =
+        '0xAbCdEf1234567890aBcDeF1234567890ABcDeF12' as Address
+      const lowercaseAddress = checksummedAddress.toLowerCase() as Address
+
+      const provider = createMockSwapProvider()
+      const wallet = {
+        address: checksummedAddress,
+        send: vi.fn().mockResolvedValue({ transactionHash: '0xtx1' }),
+        sendBatch: vi.fn().mockResolvedValue({ transactionHash: '0xtx2' }),
+      } as unknown as Wallet
+      const namespace = new WalletSwapNamespace({ uniswap: provider }, wallet)
+
+      const quote = await provider.getQuote({
+        assetIn: USDC,
+        assetOut: ETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+        recipient: lowercaseAddress,
+      })
+
+      expect(quote.recipient).toBe(lowercaseAddress)
+      expect(quote.recipient).not.toBe(checksummedAddress)
+
+      const result = await namespace.execute(quote)
+      expect(result.price).toBeDefined()
     })
   })
 

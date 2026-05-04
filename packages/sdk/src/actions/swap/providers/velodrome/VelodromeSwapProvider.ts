@@ -8,7 +8,6 @@ import {
   getValidMarketConfigs,
 } from '@/actions/swap/providers/velodrome/config.js'
 import {
-  buildTokenApproval,
   encodePoolSwap,
   fetchPoolQuote,
 } from '@/actions/swap/providers/velodrome/encoding/index.js'
@@ -22,6 +21,10 @@ import type {
 } from '@/actions/swap/providers/velodrome/types.js'
 import { VELODROME } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  ExactOutputNotSupportedError,
+  MarketNotAllowedError,
+} from '@/core/error/errors.js'
 import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
 import type { Asset } from '@/types/asset.js'
 import type {
@@ -32,6 +35,7 @@ import type {
   SwapQuote,
   SwapTransaction,
 } from '@/types/swap/index.js'
+import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 /**
@@ -55,9 +59,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     params: ResolvedSwapParams,
   ): Promise<SwapTransaction> {
     if (params.amountOutRaw !== undefined) {
-      throw new Error(
-        'Velodrome/Aerodrome does not support exact-output swaps. Provide amountIn instead of amountOut.',
-      )
+      throw new ExactOutputNotSupportedError('Velodrome/Aerodrome')
     }
 
     const swapQuote = await this._getQuote({
@@ -119,9 +121,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     const { chainId, assetIn, assetOut } = params
 
     if (params.amountOut !== undefined) {
-      throw new Error(
-        'Velodrome/Aerodrome does not support exact-output swaps. Provide amountIn instead of amountOut.',
-      )
+      throw new ExactOutputNotSupportedError('Velodrome/Aerodrome')
     }
 
     const chain = getChainConfig(chainId)
@@ -182,7 +182,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       quotedAt: now,
       expiresAt: deadline,
       gasEstimate: internalQuote.gasEstimate,
-      quotedRecipient: recipient,
+      recipient,
     }
   }
 
@@ -192,14 +192,13 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
 
     const tokenApproval = isNativeAsset(quote.assetIn)
       ? undefined
-      : await buildTokenApproval(
-          getAssetAddress(quote.assetIn, quote.chainId),
-          chain.contracts.router,
-          chain.metadata.routerType,
-          quote.amountInRaw,
-          quote.recipient!,
+      : await buildApprovalTxIfNeeded({
           publicClient,
-        )
+          token: getAssetAddress(quote.assetIn, quote.chainId),
+          owner: quote.recipient,
+          spender: chain.contracts.router,
+          amount: quote.amountInRaw,
+        })
 
     return { tokenApproval }
   }
@@ -217,9 +216,12 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       | VelodromeMarketConfig
       | undefined
     if (!config) {
-      throw new Error(
-        `No market config for pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol}`,
-      )
+      throw new MarketNotAllowedError({
+        assetInSymbol: assetIn.metadata.symbol,
+        assetOutSymbol: assetOut.metadata.symbol,
+        chainId,
+        reason: 'No market config for this pair',
+      })
     }
     return resolvePoolConfig(config)
   }
