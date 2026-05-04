@@ -7,7 +7,7 @@ import type {
 import { CliError } from '@/output/errors.js'
 
 function normalize(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, '')
+  return value.toLowerCase().replace(/[\s-]/g, '')
 }
 
 function collectMarkets(
