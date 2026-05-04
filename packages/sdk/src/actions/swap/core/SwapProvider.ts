@@ -14,7 +14,7 @@ import type {
   SwapExecuteParamsResolved,
   SwapQuoteParamsResolved,
 } from '@/services/nameservices/ens/types.js'
-import type { SwapSettings } from '@/types/actions.js'
+import type { ApprovalMode, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
@@ -34,6 +34,9 @@ import {
   buildTokenApprovalTx,
   checkPermit2Allowance,
   checkTokenAllowance,
+  resolveApprovalMode,
+  resolveErc20ApprovalAmount,
+  resolvePermit2ApprovalAmount,
 } from '@/utils/approve.js'
 import {
   getAssetAddress,
@@ -80,7 +83,7 @@ export abstract class SwapProvider<
   protected readonly _settings: SwapSettings
   protected readonly chainManager: ChainManager
 
-  constructor(
+  protected constructor(
     config: TConfig,
     chainManager: ChainManager,
     settings?: SwapSettings,
@@ -140,9 +143,20 @@ export abstract class SwapProvider<
   async execute(
     params: SwapExecuteParamsResolved | SwapQuote,
   ): Promise<SwapTransaction> {
+    // Resolve approval mode once at entry; the resolved value is set back on
+    // the params object so all downstream methods read a single populated field.
+    const resolvedApprovalMode = resolveApprovalMode(
+      params.approvalMode,
+      this._config.approvalMode,
+      this._settings.approvalMode,
+    )
+
     if (QUOTE_DISCRIMINATOR in params) {
       this.validateSwapExecute(params)
-      return this.executeFromQuote(params)
+      return this.executeFromQuote({
+        ...params,
+        approvalMode: resolvedApprovalMode,
+      })
     }
 
     this.validateSwapExecute(params)
@@ -150,7 +164,9 @@ export abstract class SwapProvider<
     // Raw params only
     validateNotBothAmounts(params.amountIn, params.amountOut)
     validateNotZeroAddress(params.walletAddress, 'walletAddress')
-    return this._execute(this.resolveParams(params))
+    return this._execute(
+      this.resolveParams({ ...params, approvalMode: resolvedApprovalMode }),
+    )
   }
 
   /**
@@ -332,7 +348,16 @@ export abstract class SwapProvider<
    * Build Permit2 approval transactions for an ERC20 swap input.
    * Skipped for native assets. Checks both ERC20→Permit2 and Permit2→spender allowances in parallel.
    * Uses the resolved `permit2ExpirationSeconds` from provider → global → default.
-   * @param params - Resolved swap params (wallet address, asset info, chain)
+   *
+   * Approval amounts honour `params.approvalMode`:
+   * - `"exact"` approves only `requiredAmount` for both the outer ERC-20→Permit2
+   * allowance and the inner Permit2→spender allowance. Each subsequent swap
+   * needs its own approval transaction.
+   * - `"max"` approves `maxUint256` for the outer ERC-20 allowance and
+   * `maxUint160` (Permit2's allowance type) for the inner Permit2 allowance.
+   * Subsequent swaps within the expiration window skip the re-approval round
+   * trip entirely.
+   * @param params - Resolved swap params (wallet address, asset info, chain, approvalMode)
    * @param requiredAmount - Amount as raw bigint that must be approved
    * @param permit2Address - Permit2 contract address
    * @param permit2Spender - The router/contract that Permit2 should approve (e.g. Universal Router)
@@ -371,7 +396,11 @@ export abstract class SwapProvider<
 
     const tokenApproval =
       tokenAllowance < requiredAmount
-        ? buildTokenApprovalTx(token, permit2Address)
+        ? buildTokenApprovalTx(
+            token,
+            permit2Address,
+            resolveErc20ApprovalAmount(params.approvalMode, requiredAmount),
+          )
         : undefined
 
     // Permit2 expiration is in Unix seconds (matching EVM block.timestamp)
@@ -383,7 +412,10 @@ export abstract class SwapProvider<
             permit2Address,
             token,
             spender: permit2Spender,
-            amount: requiredAmount,
+            amount: resolvePermit2ApprovalAmount(
+              params.approvalMode,
+              requiredAmount,
+            ),
             expirySeconds: this.permit2ExpirationSeconds,
           })
         : undefined
@@ -393,13 +425,21 @@ export abstract class SwapProvider<
 
   /**
    * Build a SwapTransaction from a quote by fetching approvals and wrapping
-   * the swap calldata. Quotes are required to have `recipient` set by the
-   * provider's `_getQuote`; sub-providers can dereference `quote.recipient`
-   * directly.
+   * the swap calldata. Used by both the quote-execute path and provider
+   * `_execute` implementations. Quotes are required to have `recipient` set
+   * by the provider's `_getQuote`; sub-providers can dereference
+   * `quote.recipient` directly. Reads `quote.approvalMode` (populated by
+   * `execute()` at entry).
+   * @param quote - SwapQuote with recipient and approvalMode set
    */
   protected async buildSwapTransactions(
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
+    if (!quote.recipient) {
+      throw new Error(
+        'SwapQuote.recipient missing — _getQuote must populate it',
+      )
+    }
     const approvals = await this._buildApprovals(quote)
 
     const swapTx: TransactionData = {
@@ -454,7 +494,9 @@ export abstract class SwapProvider<
     }
   }
 
-  private resolveParams(params: SwapExecuteParamsResolved): ResolvedSwapParams {
+  private resolveParams(
+    params: SwapExecuteParamsResolved & { approvalMode: ApprovalMode },
+  ): ResolvedSwapParams {
     return {
       amountInRaw: parseAssetAmount(params.assetIn, params.amountIn),
       amountOutRaw: parseAssetAmount(params.assetOut, params.amountOut),
@@ -468,6 +510,7 @@ export abstract class SwapProvider<
       recipient: params.recipient ?? params.walletAddress,
       walletAddress: params.walletAddress,
       chainId: params.chainId,
+      approvalMode: params.approvalMode,
     }
   }
 
@@ -548,8 +591,10 @@ export abstract class SwapProvider<
 
   /**
    * Build provider-specific approval transactions for a swap.
-   * Called by the base class during executeFromQuote.
-   * @param quote - SwapQuote with recipient set by the provider's _getQuote
+   * Called by the base class during executeFromQuote with a validated
+   * recipient and resolved approvalMode. Implementations read
+   * `quote.approvalMode` to choose between exact and max approvals.
+   * @param quote - SwapQuote with recipient set by the provider's _getQuote and approvalMode populated by execute() at entry
    * @returns Approval transactions needed before the swap (tokenApproval, permit2Approval)
    */
   protected abstract _buildApprovals(

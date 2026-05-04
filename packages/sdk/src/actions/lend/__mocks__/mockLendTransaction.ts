@@ -7,14 +7,14 @@ import type { LendTransaction, TransactionData } from '@/types/lend/index.js'
  */
 export function createMockLendTransaction(params: {
   amount: bigint
-  asset: Address
+  assetAddress: Address
   marketId: Address
   approval?: TransactionData
   position: TransactionData
 }): LendTransaction {
   return {
     amount: params.amount,
-    asset: params.asset,
+    assetAddress: params.assetAddress,
     marketId: params.marketId,
     apy: 0.05,
     transactionData: {

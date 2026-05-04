@@ -256,6 +256,23 @@ describe('SwapProvider', () => {
       })
       expect(quote.recipient).toBe('0x0000000000000000000000000000000000000001')
     })
+
+    it('throws if quote.recipient is missing (chokepoint guard)', async () => {
+      const provider = new MockSwapProvider()
+      const quote = await provider.getQuote({
+        assetIn: MockUSDC,
+        assetOut: MockWETH,
+        amountIn: 100,
+        chainId: 84532 as SupportedChainId,
+      })
+
+      // Simulate a faulty _getQuote by stripping recipient. The base guard
+      // should fire before _buildApprovals.
+      const { recipient: _recipient, ...rest } = quote
+      await expect(
+        provider.testBuildSwapTransactions(rest as typeof quote),
+      ).rejects.toThrow(/recipient missing/)
+    })
   })
 
   describe('getQuote()', () => {

@@ -19,11 +19,28 @@ type RequireAtLeastOne<T> = {
 }[keyof T]
 
 /**
- * Lending configuration — at least one provider must be configured
+ * Shared lend settings applied across all providers.
+ * Provider-level values override these when set.
+ */
+export interface LendSettings {
+  /**
+   * Default approval-amount strategy for ERC-20 → market approvals on supply.
+   * Per-call params override this; provider-level config overrides it for a
+   * single provider.
+   */
+  approvalMode?: ApprovalMode
+}
+
+/**
+ * Lending configuration — at least one provider must be configured.
+ * Shared settings go in `settings`; per-provider settings go under the provider key.
  */
 export type LendConfig = RequireAtLeastOne<{
   [K in keyof LendProviders]: LendProviderConfig
-}>
+}> & {
+  /** Shared settings applied across all lend providers */
+  settings?: LendSettings
+}
 
 /** Names of available swap providers — derived from SwapProviders registry */
 export type SwapProviderName = keyof SwapProviders
@@ -55,6 +72,12 @@ export interface SwapSettings {
   routing?: SwapRoutingStrategy
   /** Provider to prefer when routing produces a tie, or to always use when no routing strategy is set. */
   defaultProvider?: SwapProviderName
+  /**
+   * Default approval-amount strategy for swap approvals (Permit2 outer +
+   * inner). Per-call params override this; provider-level config overrides it
+   * for a single provider.
+   */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -113,6 +136,22 @@ export interface ActionsContext {
   /** Shared swap settings applied across swap providers */
   swapSettings?: SwapSettings
 }
+
+/**
+ * Approval amount strategy used when the SDK needs to grant a contract
+ * permission to spend the user's tokens (Permit2, Aave Pool, Morpho vault, ...).
+ *
+ * `"exact"` approves exactly the amount required for the current operation.
+ * Each subsequent operation needs its own approval transaction.
+ *
+ * `"max"` approves `maxUint256` for ERC-20 spenders / `maxUint160` for
+ * Permit2's inner allowance. Subsequent operations skip the re-approval
+ * round trip until the underlying allowance is consumed or expires.
+ *
+ * Default is `"exact"` for safety. Demo / dogfood configs typically opt into
+ * `"max"` to avoid an extra approval tx per swap or supply.
+ */
+export type ApprovalMode = 'exact' | 'max'
 
 /**
  * Actions SDK configuration

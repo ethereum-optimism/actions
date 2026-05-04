@@ -11,7 +11,11 @@ import {
   MarketNotAllowedError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type {
+  ApprovalMode,
+  LendProviderConfig,
+  LendSettings,
+} from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   ClosePositionParams,
@@ -23,13 +27,26 @@ import type {
   LendMarketConfig,
   LendMarketId,
   LendMarketPosition,
+  LendOpenPosition,
   LendOpenPositionInternalParams,
   LendOpenPositionParams,
   LendTransaction,
   TransactionData,
 } from '@/types/lend/index.js'
-import { buildErc20ApprovalTx } from '@/utils/approve.js'
+import {
+  buildErc20ApprovalTx,
+  resolveApprovalMode,
+  resolveErc20ApprovalAmount,
+} from '@/utils/approve.js'
+import { isNativeAsset } from '@/utils/assets.js'
 import { validateChainSupported } from '@/utils/validation.js'
+
+/** Inputs for the base class's ERC-20 lend approval helper. */
+interface BuildLendApprovalParams {
+  position: LendOpenPosition
+  approvalMode: ApprovalMode
+  amountWei: bigint
+}
 
 /**
  * Lending provider abstract class
@@ -41,6 +58,9 @@ export abstract class LendProvider<
   /** Lending provider configuration */
   protected readonly _config: TConfig
 
+  /** Shared lend settings (defaults applied across all lend providers) */
+  protected readonly _settings: LendSettings
+
   /** Chain manager for blockchain interactions */
   protected readonly chainManager: ChainManager
 
@@ -48,23 +68,21 @@ export abstract class LendProvider<
    * Create a new lending provider
    * @param config - Provider-specific lending configuration
    * @param chainManager - Chain manager for blockchain interactions
+   * @param settings - Shared lend settings applied across all providers
    */
-  protected constructor(config: TConfig, chainManager: ChainManager) {
+  protected constructor(
+    config: TConfig,
+    chainManager: ChainManager,
+    settings?: LendSettings,
+  ) {
     this._config = config
+    this._settings = settings ?? {}
     this.chainManager = chainManager
   }
 
   public get config(): TConfig {
     return this._config
   }
-
-  /**
-   * Chain IDs supported by the underlying protocol.
-   * @description Each provider implements this to declare the chains its protocol
-   * is deployed on, without any SDK-level or developer-config filtering.
-   * @returns Array of chain IDs the protocol natively supports
-   */
-  abstract protocolSupportedChainIds(): number[]
 
   /**
    * Effective supported chain IDs.
@@ -103,11 +121,36 @@ export abstract class LendProvider<
       params.asset.metadata.decimals,
     )
 
-    return this._openPosition({
+    const position = await this._openPosition({
       ...params,
       amountWei,
       walletAddress: params.walletAddress,
     })
+
+    // Native deposits send ETH inline as msg.value; no approval is needed.
+    // ERC-20 deposits resolve approval mode and build an approve(spender, amount) tx.
+    const approval = isNativeAsset(params.asset)
+      ? undefined
+      : this.buildLendApproval({
+          position,
+          approvalMode: resolveApprovalMode(
+            params.approvalMode,
+            this._config.approvalMode,
+            this._settings.approvalMode,
+          ),
+          amountWei,
+        })
+
+    return {
+      amount: amountWei,
+      assetAddress: position.assetAddress,
+      marketId: params.marketId.address,
+      apy: position.apy,
+      transactionData: {
+        ...(approval ? { approval } : {}),
+        position: position.transaction,
+      },
+    }
   }
 
   /**
@@ -263,6 +306,40 @@ export abstract class LendProvider<
   }
 
   /**
+   * Build an ERC20 approval transaction
+   * @param tokenAddress - Address of the token to approve
+   * @param spender - Address to approve spending for
+   * @param amount - Amount to approve
+   * @returns Transaction data for the approval
+   */
+  protected buildApprovalTx(
+    tokenAddress: Address,
+    spender: Address,
+    amount: bigint,
+  ): TransactionData {
+    return buildErc20ApprovalTx(tokenAddress, spender, amount)
+  }
+
+  /**
+   * Build the approval transaction for an ERC-20 lend deposit. Caller is
+   * expected to skip this for native deposits.
+   * @throws if the provider's `_openPosition` result is missing `spender`
+   */
+  private buildLendApproval(params: BuildLendApprovalParams): TransactionData {
+    const { position, approvalMode, amountWei } = params
+    if (!position.spender) {
+      throw new Error(
+        `LendOpenPosition.spender is required for ERC-20 deposits (assetAddress: ${position.assetAddress})`,
+      )
+    }
+    return buildErc20ApprovalTx(
+      position.assetAddress,
+      position.spender,
+      resolveErc20ApprovalAmount(approvalMode, amountWei),
+    )
+  }
+
+  /**
    * Helper method to filter market configurations
    * @param chainId - Chain ID to filter by
    * @param asset - Asset to filter by
@@ -281,31 +358,30 @@ export abstract class LendProvider<
   }
 
   /**
-   * Build an ERC20 approval transaction
-   * @param tokenAddress - Address of the token to approve
-   * @param spender - Address to approve spending for
-   * @param amount - Amount to approve
-   * @returns Transaction data for the approval
-   */
-  protected buildApprovalTx(
-    tokenAddress: Address,
-    spender: Address,
-    amount: bigint,
-  ): TransactionData {
-    return buildErc20ApprovalTx(tokenAddress, spender, amount)
-  }
-
-  /**
    * Abstract methods that must be implemented by providers
    */
 
   /**
-   * Provider implementation of openPosition method
+   * Chain IDs supported by the underlying protocol.
+   * @description Each provider implements this to declare the chains its protocol
+   * is deployed on, without any SDK-level or developer-config filtering.
+   * @returns Array of chain IDs the protocol natively supports
+   */
+  abstract protocolSupportedChainIds(): number[]
+
+  /**
+   * Describe a deposit for opening a lending position. Providers describe
+   * **what** needs to happen (the spender that needs allowance + the deposit
+   * calldata + APY snapshot); the base class owns **how** the approval is
+   * built (amount sized via `approvalMode`, native deposits skipped, etc.).
+   *
+   * Return `spender: undefined` for native-asset deposits where value is sent
+   * inline as `msg.value` and no ERC-20 approval is required.
    * @description Must be implemented by providers
    */
   protected abstract _openPosition(
     params: LendOpenPositionInternalParams,
-  ): Promise<LendTransaction>
+  ): Promise<LendOpenPosition>
 
   /**
    * Provider implementation of getMarket method

@@ -25,7 +25,9 @@ import {
   ExactOutputNotSupportedError,
   MarketNotAllowedError,
 } from '@/core/error/errors.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
@@ -35,7 +37,12 @@ import type {
   SwapQuote,
   SwapTransaction,
 } from '@/types/swap/index.js'
-import { buildApprovalTxIfNeeded } from '@/utils/approve.js'
+import {
+  buildErc20ApprovalTx,
+  checkTokenAllowance,
+  resolveApprovalMode,
+  resolveErc20ApprovalAmount,
+} from '@/utils/approve.js'
 import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
 
 /**
@@ -44,6 +51,14 @@ import { getAssetAddress, isNativeAsset } from '@/utils/assets.js'
  * v2 routers (Optimism, Base), leaf routers (Relay chains), and Universal Router (Base Sepolia).
  */
 export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderConfig> {
+  constructor(
+    config: VelodromeSwapProviderConfig,
+    chainManager: ChainManager,
+    settings?: SwapSettings,
+  ) {
+    super(config, chainManager, settings)
+  }
+
   /** @returns Chain IDs where Velodrome/Aerodrome contracts are deployed */
   protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
@@ -75,7 +90,10 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       deadline: params.deadline,
       recipient: params.recipient,
     })
-    return this.buildSwapTransactions(swapQuote)
+    return this.buildSwapTransactions({
+      ...swapQuote,
+      approvalMode: params.approvalMode,
+    })
   }
 
   /**
@@ -187,19 +205,39 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
   }
 
   protected async _buildApprovals(quote: SwapQuote) {
+    if (isNativeAsset(quote.assetIn)) {
+      return { tokenApproval: undefined }
+    }
+
     const chain = getChainConfig(quote.chainId)
     const publicClient = this.chainManager.getPublicClient(quote.chainId)
+    const token = getAssetAddress(quote.assetIn, quote.chainId)
+    const spender = chain.contracts.router
+    const required = quote.amountInRaw
 
-    const tokenApproval = isNativeAsset(quote.assetIn)
-      ? undefined
-      : await buildApprovalTxIfNeeded({
-          publicClient,
-          token: getAssetAddress(quote.assetIn, quote.chainId),
-          owner: quote.recipient,
-          spender: chain.contracts.router,
-          amount: quote.amountInRaw,
-        })
+    const allowance = await checkTokenAllowance({
+      publicClient,
+      token,
+      owner: quote.recipient,
+      spender,
+    })
 
+    if (allowance >= required) {
+      return { tokenApproval: undefined }
+    }
+
+    const tokenApproval = buildErc20ApprovalTx(
+      token,
+      spender,
+      resolveErc20ApprovalAmount(
+        resolveApprovalMode(
+          quote.approvalMode,
+          this._config.approvalMode,
+          this._settings.approvalMode,
+        ),
+        required,
+      ),
+    )
     return { tokenApproval }
   }
 

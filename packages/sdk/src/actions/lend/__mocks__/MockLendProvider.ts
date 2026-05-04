@@ -15,6 +15,7 @@ import type {
   LendMarket,
   LendMarketId,
   LendMarketPosition,
+  LendOpenPosition,
   LendOpenPositionInternalParams,
   LendOpenPositionParams,
   LendTransaction,
@@ -52,7 +53,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
   >
   public withdraw: MockedFunction<
     (
-      asset: Address,
+      assetAddress: Address,
       amount: bigint,
       chainId: number,
       marketId?: string,
@@ -172,8 +173,22 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
 
   protected async _openPosition(
     params: LendOpenPositionInternalParams,
-  ): Promise<LendTransaction> {
-    return this.createMockOpenPositionInternal(params)
+  ): Promise<LendOpenPosition> {
+    const assetAddress = params.asset.address[params.marketId.chainId]
+    if (!assetAddress || assetAddress === 'native') {
+      throw new Error(`Asset not supported on chain ${params.marketId.chainId}`)
+    }
+
+    return {
+      spender: params.marketId.address,
+      assetAddress: assetAddress as Address,
+      transaction: {
+        to: params.marketId.address,
+        data: '0x6e553f65' as Address,
+        value: 0n,
+      },
+      apy: this.mockConfig.defaultApy,
+    }
   }
 
   protected async _getMarket(marketId: LendMarketId): Promise<LendMarket> {
@@ -224,7 +239,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: amountWei,
-      asset: assetAddress,
+      assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
       transactionData: {
@@ -255,7 +270,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: amountWei,
-      asset: assetAddress,
+      assetAddress,
       marketId: marketId.address,
       apy: this.mockConfig.defaultApy,
       transactionData: {
@@ -349,7 +364,7 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: BigInt(amount),
-      asset: assetAddress,
+      assetAddress,
       marketId: marketId.address,
       apy: 0,
       transactionData: {
@@ -363,14 +378,14 @@ export class MockLendProvider extends LendProvider<LendProviderConfig> {
   }
 
   private async createMockWithdraw(
-    asset: Address,
+    assetAddress: Address,
     amount: bigint,
     _chainId: number,
     marketId?: string,
   ): Promise<LendTransaction> {
     return {
       amount,
-      asset,
+      assetAddress,
       marketId: marketId || 'mock-market',
       apy: 0,
       transactionData: {

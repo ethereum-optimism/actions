@@ -21,7 +21,9 @@ import type {
 import { UNISWAP } from '@/constants/providers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { AssetMetadataRequiredError } from '@/core/error/errors.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { SwapQuoteParamsResolved } from '@/services/nameservices/ens/types.js'
+import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketParams,
@@ -31,12 +33,21 @@ import type {
   SwapQuote,
   SwapTransaction,
 } from '@/types/swap/index.js'
+import { resolveApprovalMode } from '@/utils/approve.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
 
 /**
  * Uniswap V4 swap provider using Universal Router and Permit2 approvals.
  */
 export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig> {
+  constructor(
+    config: UniswapSwapProviderConfig,
+    chainManager: ChainManager,
+    settings?: SwapSettings,
+  ) {
+    super(config, chainManager, settings)
+  }
+
   protocolSupportedChainIds(): SupportedChainId[] {
     return getSupportedChainIds()
   }
@@ -62,7 +73,10 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
       deadline: params.deadline,
       recipient: params.recipient,
     })
-    return this.buildSwapTransactions(swapQuote)
+    return this.buildSwapTransactions({
+      ...swapQuote,
+      approvalMode: params.approvalMode,
+    })
   }
 
   protected async _buildApprovals(quote: SwapQuote) {
@@ -78,6 +92,11 @@ export class UniswapSwapProvider extends SwapProvider<UniswapSwapProviderConfig>
         walletAddress: quote.recipient,
         chainId: quote.chainId,
         amountInRaw: quote.amountInRaw,
+        approvalMode: resolveApprovalMode(
+          quote.approvalMode,
+          this._config.approvalMode,
+          this._settings.approvalMode,
+        ),
       },
       quote.amountInRaw,
       addresses.permit2,
