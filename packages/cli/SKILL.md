@@ -67,10 +67,14 @@ Without `--json` (default):
 
 ## Balance semantics
 
-`actions wallet balance` is all-or-nothing: internally the SDK uses
-nested `Promise.all` over (asset x chain), so any single failing RPC
-rejects the whole call with a `network` error. Retries may succeed on a
+Within a single `actions wallet balance` call, the SDK fans out via
+`Promise.all` over (asset x chain), so any single failing RPC rejects
+the whole call with a `network` error. Retries may succeed on a
 different call - do not assume per-chain isolation.
+
+To shrink the failure surface, scope the call with `--chain` or
+`--chain-id` (both accept a comma-separated list). The SDK only
+queries the chains you pass.
 
 ## RPC trust
 
