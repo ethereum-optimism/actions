@@ -4,6 +4,7 @@
 
 Features / API additions
 
+#451 — Add chainIds param to wallet.getBalance()
 #428 — Configurable approval-amount strategy: callers can now choose between exact-amount and unlimited approvals when opening positions.
 #356 — Wallet refactor: native support for local EOA wallets; the embedded (4337) wallet is now optional rather than required.
 #383 — Shared namespace foundations: reorganizes shared internals to support multiple action domains (lend, borrow, swap) under a common surface.
