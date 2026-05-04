@@ -5,14 +5,10 @@ import { runWalletLendOpen } from '@/commands/wallet/lend/open.js'
 import { runWalletLendPosition } from '@/commands/wallet/lend/position.js'
 
 /**
- * @description Builds the `wallet lend` subcommand tree. Children
- * resolve their market through the config allowlist and dispatch to
- * the matching `wallet.lend.*` method. Read-only `markets` and
- * `market` aliases live on the root `actions lend` tree to avoid
- * forcing PRIVATE_KEY for purely public reads.
+ * @description Builds the `wallet lend` subcommand tree. Children resolve their market through the config allowlist and dispatch to the matching `wallet.lend.*` method. Read-only `markets` and `market` aliases live on the root `actions lend` tree to avoid forcing PRIVATE_KEY for purely public reads.
  * @returns Commander `Command` configured with `open`, `close`, and `position`.
  */
-export function lendCommand(): Command {
+export function walletLendCommand(): Command {
   const command = new Command('lend').description(
     'Open, close, and inspect lending positions on configured markets.',
   )
