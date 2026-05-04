@@ -122,15 +122,17 @@ export abstract class LendProvider<
 
     // Native deposits send ETH inline as msg.value; no approval is needed.
     // ERC-20 deposits resolve approval mode and build an approve(spender, amount) tx.
-    let approval: TransactionData | undefined
-    if (!isNativeAsset(params.asset)) {
-      const approvalMode = resolveApprovalMode(
-        params.approvalMode,
-        this._config.approvalMode,
-        this._settings.approvalMode,
-      )
-      approval = this.buildLendApproval(position, approvalMode, amountWei)
-    }
+    const approval = isNativeAsset(params.asset)
+      ? undefined
+      : this.buildLendApproval(
+          position,
+          resolveApprovalMode(
+            params.approvalMode,
+            this._config.approvalMode,
+            this._settings.approvalMode,
+          ),
+          amountWei,
+        )
 
     return {
       amount: amountWei,
