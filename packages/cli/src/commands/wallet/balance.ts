@@ -1,32 +1,10 @@
-import type { SupportedChainId, TokenBalance } from '@eth-optimism/actions-sdk'
-
 import { walletContext } from '@/context/walletContext.js'
 import { CliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 import { type ChainFlags, resolveChainFlags } from '@/resolvers/chains.js'
 
-function filterToChain(
-  balances: TokenBalance[],
-  chainId: SupportedChainId,
-): TokenBalance[] {
-  return balances.map((tb) => {
-    const entry = tb.chains[chainId]
-    return {
-      ...tb,
-      totalBalance: entry?.balance ?? 0,
-      totalBalanceRaw: entry?.balanceRaw ?? 0n,
-      chains: entry ? { [chainId]: entry } : {},
-    }
-  })
-}
-
 /**
- * @description Handler for `actions wallet balance`. Fetches ETH and
- * allowlisted ERC-20 balances across every configured chain. Pass
- * `--chain <shortname>` or `--chain-id <id>` (mutually exclusive) to
- * scope the output to one chain. The SDK implements `getBalance` as
- * `Promise.all` over (asset x chain), so any single RPC failure rejects
- * the whole batch; surface that as a retryable `network` error.
+ * @description Handler for `actions wallet balance`. Fetches ETH and allowlisted ERC-20 balances across every configured chain. Pass `--chain <shortname>` or `--chain-id <id>` (mutually exclusive) to scope the SDK fan-out to one chain. The SDK validates the chain id against the configured chains and surfaces typed errors; RPC failures fall through here as retryable `network` errors.
  * @param flags - Commander-parsed options; chain selection is optional.
  * @returns Promise that resolves once stdout has been written.
  */
@@ -37,11 +15,10 @@ export async function runWalletBalance(flags: ChainFlags = {}): Promise<void> {
     config.chains.map((c) => c.chainId),
   )
   try {
-    const balances = await wallet.getBalance()
-    printOutput(
-      'balance',
-      chainId ? filterToChain(balances, chainId) : balances,
+    const balances = await wallet.getBalance(
+      chainId ? { chainIds: [chainId] } : undefined,
     )
+    printOutput('balance', balances)
   } catch (err) {
     if (err instanceof CliError) throw err
     throw new CliError(
