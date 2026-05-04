@@ -5,11 +5,16 @@ import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespa
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { EnsNamespace } from '@/services/nameservices/ens/index.js'
-import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
+import {
+  type BalanceFetchOptions,
+  fetchERC20Balance,
+  fetchETHBalance,
+} from '@/services/tokenBalance.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset, TokenBalance } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
+import { validateChainIds } from '@/utils/validation.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
@@ -84,16 +89,29 @@ export abstract class Wallet {
   }
 
   /**
-   * Get asset balances across all supported chains
-   * @description Fetches ETH and ERC20 token balances for this wallet across all supported networks.
-   * Uses the configured supported assets from ActionsConfig.assets if provided.
+   * Get asset balances across the requested chains (or all supported chains).
+   * @description Fetches ETH and ERC20 token balances for this wallet. By default queries every chain returned by the SDK's `ChainManager`. Pass `options.chainIds` to restrict the query to a subset of those chains; each id is validated against the configured chains and an `InvalidParamsError` / `ChainNotSupportedError` is thrown for unusable input. Uses the configured supported assets from `ActionsConfig.assets` if provided.
+   * @param options - Optional `chainIds` filter
    * @returns Promise resolving to array of token balances with chain breakdown
    */
-  async getBalance(): Promise<TokenBalance[]> {
+  async getBalance(options?: BalanceFetchOptions): Promise<TokenBalance[]> {
+    const chainIds = validateChainIds(options?.chainIds, this.chainManager)
+    const fetchOptions: BalanceFetchOptions | undefined = chainIds
+      ? { chainIds }
+      : undefined
     const tokenBalancePromises = this.supportedAssets.map(async (asset) => {
-      return fetchERC20Balance(this.chainManager, this.address, asset)
+      return fetchERC20Balance(
+        this.chainManager,
+        this.address,
+        asset,
+        fetchOptions,
+      )
     })
-    const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
+    const ethBalancePromise = fetchETHBalance(
+      this.chainManager,
+      this.address,
+      fetchOptions,
+    )
 
     return Promise.all([ethBalancePromise, ...tokenBalancePromises])
   }
