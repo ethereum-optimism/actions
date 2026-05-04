@@ -41,6 +41,13 @@ import {
 import { isNativeAsset } from '@/utils/assets.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
+/** Inputs for the base class's ERC-20 lend approval helper. */
+interface BuildLendApprovalParams {
+  position: LendOpenPosition
+  approvalMode: ApprovalMode
+  amountWei: bigint
+}
+
 /**
  * Lending provider abstract class
  * @description Base class for lending provider implementations
@@ -124,15 +131,15 @@ export abstract class LendProvider<
     // ERC-20 deposits resolve approval mode and build an approve(spender, amount) tx.
     const approval = isNativeAsset(params.asset)
       ? undefined
-      : this.buildLendApproval(
+      : this.buildLendApproval({
           position,
-          resolveApprovalMode(
+          approvalMode: resolveApprovalMode(
             params.approvalMode,
             this._config.approvalMode,
             this._settings.approvalMode,
           ),
           amountWei,
-        )
+        })
 
     return {
       amount: amountWei,
@@ -318,11 +325,8 @@ export abstract class LendProvider<
    * expected to skip this for native deposits.
    * @throws if the provider's `_openPosition` result is missing `spender`
    */
-  private buildLendApproval(
-    position: LendOpenPosition,
-    approvalMode: ApprovalMode,
-    amountWei: bigint,
-  ): TransactionData {
+  private buildLendApproval(params: BuildLendApprovalParams): TransactionData {
+    const { position, approvalMode, amountWei } = params
     if (!position.spender) {
       throw new Error(
         `LendOpenPosition.spender is required for ERC-20 deposits (assetAddress: ${position.assetAddress})`,
