@@ -1,7 +1,7 @@
 import { walletContext } from '@/context/walletContext.js'
 import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
-import { resolveMarket } from '@/resolvers/markets.js'
+import { collectMarkets, resolveMarket } from '@/resolvers/markets.js'
 import { parseAmount } from '@/utils/parseAmount.js'
 import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
 
@@ -26,7 +26,7 @@ export interface LendOpenFlags {
 export async function runWalletLendOpen(flags: LendOpenFlags): Promise<void> {
   const { wallet, config } = await walletContext()
   requireLendCapability(wallet)
-  const market = resolveMarket(flags.market, config)
+  const market = resolveMarket(flags.market, collectMarkets(config))
   const amount = parseAmount(flags.amount)
   try {
     const receipt = await wallet.lend.openPosition({

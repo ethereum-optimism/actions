@@ -1,7 +1,7 @@
 import { baseContext } from '@/context/baseContext.js'
 import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
-import { resolveMarket } from '@/resolvers/markets.js'
+import { collectMarkets, resolveMarket } from '@/resolvers/markets.js'
 
 export interface LendMarketFlags {
   market: string
@@ -17,7 +17,7 @@ export interface LendMarketFlags {
  */
 export async function runLendMarket(flags: LendMarketFlags): Promise<void> {
   const { actions, config } = baseContext()
-  const market = resolveMarket(flags.market, config)
+  const market = resolveMarket(flags.market, collectMarkets(config))
   try {
     const result = await actions.lend.getMarket({
       address: market.address,
