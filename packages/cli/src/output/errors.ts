@@ -71,6 +71,9 @@ export function retryableDefaultFor(code: ErrorCode): boolean {
   return RETRYABLE_DEFAULT[code]
 }
 
+// Matches `/v<n>/<key>/rpc[?...]` — the Alchemy/Infura/Tenderly URL shape
+// where `<key>` is an API secret. Stripped before any RPC URL is surfaced in
+// error output so a leaked stack trace or `--json` payload can't expose it.
 const RPC_KEY_PATH = /\/v\d+\/[^/]+\/rpc(\?[^\s#]*)?/g
 
 const SCALAR_ALLOWLIST = new Set([
