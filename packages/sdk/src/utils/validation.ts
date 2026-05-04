@@ -8,12 +8,10 @@ import {
   ChainNotSupportedError,
   ConflictingAmountsError,
   InvalidAmountError,
-  InvalidParamsError,
   SameAssetError,
   SlippageOutOfRangeError,
   ZeroAddressError,
 } from '@/core/error/errors.js'
-import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import { isAssetSupportedOnChain } from '@/utils/assets.js'
 
@@ -71,44 +69,6 @@ export function validateChainSupported(
   if (!supportedChainIds.includes(chainId)) {
     throw new ChainNotSupportedError({ chainId, supportedChainIds })
   }
-}
-
-/**
- * Validate a caller-supplied subset of chain ids against the chains configured
- * on the SDK's ChainManager. Returns `undefined` when no filter is provided so
- * downstream code can fall back to "all supported chains". When a filter is
- * provided, returns the deduped list in caller order.
- * @throws InvalidParamsError when `chainIds` is an empty array.
- * @throws ChainNotSupportedError when any element is not in `chainManager.getSupportedChains()`.
- */
-export function validateChainIds(
-  chainIds: readonly SupportedChainId[] | undefined,
-  chainManager: ChainManager,
-): SupportedChainId[] | undefined {
-  if (chainIds === undefined) return undefined
-  if (chainIds.length === 0) {
-    throw new InvalidParamsError({
-      param: 'chainIds',
-      expected: 'SupportedChainId[] (non-empty)',
-      received: '[]',
-    })
-  }
-  const supported = chainManager.getSupportedChains()
-  const supportedSet = new Set(supported)
-  const seen = new Set<SupportedChainId>()
-  const resolved: SupportedChainId[] = []
-  for (const chainId of chainIds) {
-    if (!supportedSet.has(chainId)) {
-      throw new ChainNotSupportedError({
-        chainId,
-        supportedChainIds: supported,
-      })
-    }
-    if (seen.has(chainId)) continue
-    seen.add(chainId)
-    resolved.push(chainId)
-  }
-  return resolved
 }
 
 export function validateAssetOnChain(

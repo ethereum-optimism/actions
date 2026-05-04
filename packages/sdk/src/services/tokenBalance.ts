@@ -4,11 +4,7 @@ import { erc20Abi, formatEther, formatUnits } from 'viem'
 import { ETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  Asset,
-  BalanceFetchOptions,
-  TokenBalance,
-} from '@/types/asset.js'
+import type { Asset, BalanceFetchOptions, TokenBalance } from '@/types/asset.js'
 
 /**
  * Fetch ETH balance across the requested chains (or all supported chains).
@@ -22,7 +18,9 @@ export async function fetchETHBalance(
   walletAddress: Address,
   options?: BalanceFetchOptions,
 ): Promise<TokenBalance> {
-  const targetChains = options?.chainIds ?? chainManager.getSupportedChains()
+  const targetChains = [
+    ...new Set(options?.chainIds ?? chainManager.getSupportedChains()),
+  ]
   const chainBalancePromises = targetChains.map(async (chainId) => {
     const publicClient = chainManager.getPublicClient(chainId)
     const balanceRaw = await publicClient.getBalance({
@@ -64,7 +62,9 @@ export async function fetchERC20Balance(
   asset: Asset,
   options?: BalanceFetchOptions,
 ): Promise<TokenBalance> {
-  const targetChains = options?.chainIds ?? chainManager.getSupportedChains()
+  const targetChains = [
+    ...new Set(options?.chainIds ?? chainManager.getSupportedChains()),
+  ]
   const chainsWithToken = targetChains.filter(
     (chainId) => asset.address[chainId],
   )

@@ -3,21 +3,15 @@ import type { Address, LocalAccount } from 'viem'
 import { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
 import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { InvalidParamsError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { EnsNamespace } from '@/services/nameservices/ens/index.js'
-import {
-  fetchERC20Balance,
-  fetchETHBalance,
-} from '@/services/tokenBalance.js'
+import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import type { SwapSettings } from '@/types/actions.js'
-import type {
-  Asset,
-  BalanceFetchOptions,
-  TokenBalance,
-} from '@/types/asset.js'
+import type { Asset, BalanceFetchOptions, TokenBalance } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
-import { validateChainIds } from '@/utils/validation.js'
+import { validateChainSupported } from '@/utils/validation.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
@@ -98,22 +92,24 @@ export abstract class Wallet {
    * @returns Promise resolving to array of token balances with chain breakdown
    */
   async getBalance(options?: BalanceFetchOptions): Promise<TokenBalance[]> {
-    const chainIds = validateChainIds(options?.chainIds, this.chainManager)
-    const fetchOptions: BalanceFetchOptions | undefined = chainIds
-      ? { chainIds }
-      : undefined
+    if (options?.chainIds !== undefined) {
+      if (options.chainIds.length === 0) {
+        throw new InvalidParamsError({
+          param: 'chainIds',
+          expected: 'SupportedChainId[] (non-empty)',
+          received: '[]',
+        })
+      }
+      const supported = this.chainManager.getSupportedChains()
+      for (const id of options.chainIds) validateChainSupported(id, supported)
+    }
     const tokenBalancePromises = this.supportedAssets.map(async (asset) => {
-      return fetchERC20Balance(
-        this.chainManager,
-        this.address,
-        asset,
-        fetchOptions,
-      )
+      return fetchERC20Balance(this.chainManager, this.address, asset, options)
     })
     const ethBalancePromise = fetchETHBalance(
       this.chainManager,
       this.address,
-      fetchOptions,
+      options,
     )
 
     return Promise.all([ethBalancePromise, ...tokenBalancePromises])

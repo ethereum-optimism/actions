@@ -273,11 +273,7 @@ export class InvalidParamsError extends ActionsError {
   expected: string
   received?: string
 
-  constructor(params: {
-    param: string
-    expected: string
-    received?: string
-  }) {
+  constructor(params: { param: string; expected: string; received?: string }) {
     super(`Invalid params: ${params.param}`, {
       metaMessages: [
         `Expected: ${params.expected}`,

@@ -40,7 +40,11 @@ describe('Wallet (base)', () => {
 
     expect(result).toBeTruthy()
     expect(fetchETHBalance).toHaveBeenCalledTimes(1)
-    expect(fetchETHBalance).toHaveBeenCalledWith(chainManager, address, undefined)
+    expect(fetchETHBalance).toHaveBeenCalledWith(
+      chainManager,
+      address,
+      undefined,
+    )
     // No supportedAssets configured, so no ERC20 balance fetches
     expect(fetchERC20Balance).toHaveBeenCalledTimes(0)
   })
