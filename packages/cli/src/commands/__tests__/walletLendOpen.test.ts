@@ -103,16 +103,27 @@ describe('runWalletLendOpen', () => {
     }
   })
 
-  it('rejects non-positive amounts with CliError(validation)', async () => {
+  it.each([
+    '0',
+    '-1',
+    'foo',
+    'NaN',
+    '1e-19', // scientific notation rounds to 0 wei after parseUnits
+    '1e10', // scientific notation
+    '0x10', // hex literal
+    '+1', // leading sign
+    ' 1 ', // whitespace
+    '.5', // bare decimal
+    '1.', // trailing dot
+    '9007199254740993', // > MAX_SAFE_INTEGER, loses precision through float
+  ])('rejects amount %p with CliError(validation)', async (bad) => {
     mockWallet(async () => successReceipt('0x'))
-    for (const bad of ['0', '-1', 'foo', 'NaN']) {
-      try {
-        await runWalletLendOpen({ market: 'gauntlet-usdc', amount: bad })
-        throw new Error(`did not throw for ${bad}`)
-      } catch (err) {
-        expect(err).toBeInstanceOf(CliError)
-        expect((err as CliError).code).toBe('validation')
-      }
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: bad })
+      throw new Error(`did not throw for ${bad}`)
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
     }
   })
 
