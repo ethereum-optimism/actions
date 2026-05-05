@@ -12,12 +12,7 @@ const ALL: SupportedChainId[] = [
   optimismSepolia.id,
 ]
 
-const SHORTNAMES = [
-  'base',
-  'base-sepolia',
-  'optimism',
-  'op-sepolia',
-] as const
+const SHORTNAMES = ['base', 'base-sepolia', 'optimism', 'op-sepolia'] as const
 
 describe('resolveChain', () => {
   it('resolves each canonical shortname to its chain id', () => {
