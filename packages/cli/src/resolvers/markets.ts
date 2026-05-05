@@ -43,7 +43,11 @@ export function resolveMarket(
   if (matches.length === 0) {
     throw new CliError('validation', `Unknown market: ${name}`, {
       market: name,
-      allowed: allow.map((m) => m.name),
+      allowed: allow.map((m) => ({
+        name: m.name,
+        chainId: m.chainId,
+        symbol: m.asset.metadata.symbol,
+      })),
     })
   }
   if (matches.length > 1) {

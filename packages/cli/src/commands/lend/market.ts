@@ -3,19 +3,10 @@ import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 import { collectMarkets, resolveMarket } from '@/resolvers/markets.js'
 
-export interface LendMarketFlags {
-  market: string
-}
-
 /**
- * @description Handler for `actions lend market --market <name>`.
- * Resolves the market name through the config allowlist, then calls
- * `actions.lend.getMarket({address, chainId})` and emits the SDK shape
- * verbatim. Read-only, no signer needed.
- * @param flags - Commander-parsed required option.
- * @returns Promise that resolves once stdout has been written.
+ * @description Handler for `actions lend market --market <name>`. Resolves the market name through the config allowlist, then calls `actions.lend.getMarket({address, chainId})` and emits the SDK shape verbatim. Read-only, no signer needed.
  */
-export async function runLendMarket(flags: LendMarketFlags): Promise<void> {
+export async function runLendMarket(flags: { market: string }): Promise<void> {
   const { actions, config } = baseContext()
   const market = resolveMarket(flags.market, collectMarkets(config))
   try {

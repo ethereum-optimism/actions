@@ -5,22 +5,12 @@ import { collectMarkets, resolveMarket } from '@/resolvers/markets.js'
 
 import { requireLendCapability } from './requireLendCapability.js'
 
-export interface LendPositionFlags {
-  market: string
-}
-
 /**
- * @description Handler for `actions wallet lend position --market <name>`.
- * Resolves the market through the config allowlist and calls
- * `wallet.lend.getPosition({marketId})` to fetch the EOA's current
- * balance and shares in that market. Emits the SDK `LendMarketPosition`
- * shape verbatim (bigints stringified by the JSON sink).
- * @param flags - Commander-parsed required option.
- * @returns Promise that resolves once stdout has been written.
+ * @description Handler for `actions wallet lend position --market <name>`. Resolves the market through the config allowlist and calls `wallet.lend.getPosition({marketId})` to fetch the EOA's current balance and shares in that market. Emits the SDK `LendMarketPosition` shape verbatim (bigints stringified by the JSON sink).
  */
-export async function runWalletLendPosition(
-  flags: LendPositionFlags,
-): Promise<void> {
+export async function runWalletLendPosition(flags: {
+  market: string
+}): Promise<void> {
   const { wallet, config } = await walletContext()
   requireLendCapability(wallet)
   const market = resolveMarket(flags.market, collectMarkets(config))

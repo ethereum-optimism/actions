@@ -32,9 +32,17 @@ describe('resolveMarket', () => {
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('validation')
-      expect(
-        ((err as CliError).details as { allowed: string[] }).allowed,
-      ).toEqual(['Gauntlet USDC', 'Aave ETH'])
+      const details = (err as CliError).details as {
+        allowed: Array<{ name: string; chainId: number; symbol: string }>
+      }
+      expect(details.allowed.map((m) => m.name)).toEqual([
+        'Gauntlet USDC',
+        'Aave ETH',
+      ])
+      for (const m of details.allowed) {
+        expect(typeof m.chainId).toBe('number')
+        expect(typeof m.symbol).toBe('string')
+      }
     }
   })
 
