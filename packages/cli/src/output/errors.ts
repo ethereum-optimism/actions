@@ -1,4 +1,5 @@
 import { serializeBigInt } from '@eth-optimism/actions-sdk'
+import { BaseError } from 'viem'
 
 import { isJsonMode } from '@/output/mode.js'
 
@@ -71,10 +72,12 @@ export function retryableDefaultFor(code: ErrorCode): boolean {
   return RETRYABLE_DEFAULT[code]
 }
 
-// Matches `/v<n>/<key>/rpc[?...]` — the Alchemy/Infura/Tenderly URL shape
-// where `<key>` is an API secret. Stripped before any RPC URL is surfaced in
-// error output so a leaked stack trace or `--json` payload can't expose it.
-const RPC_KEY_PATH = /\/v\d+\/[^/]+\/rpc(\?[^\s#]*)?/g
+// RPC and bundler URLs frequently embed API keys in the path or query string,
+// and the shape varies across providers (Alchemy, Infura, Tenderly, Pimlico,
+// self-hosted). Treat any http(s) URL surfaced in error output as sensitive
+// and replace it wholesale rather than trying to redact individual segments.
+const URL_PATTERN = /https?:\/\/[^\s'"<>]+/g
+const REDACTED_URL = '[redacted-url]'
 
 const SCALAR_ALLOWLIST = new Set([
   'chainId',
@@ -102,40 +105,29 @@ const SENSITIVE_KEYS = new Set([
   'signature',
 ])
 
-function stripRpcKey(url: string): string {
-  return url.replace(RPC_KEY_PATH, '/v*/***/rpc')
+function redactUrls(s: string): string {
+  return s.replace(URL_PATTERN, REDACTED_URL)
 }
 
 function redactValue(value: unknown): unknown {
   if (value === null || value === undefined) return value
-  if (typeof value === 'string') return stripRpcKey(value)
+  if (typeof value === 'string') return redactUrls(value)
   if (typeof value === 'number' || typeof value === 'boolean') return value
   if (typeof value === 'bigint') return value
   if (Array.isArray(value)) return value.map(redactValue)
-  if (isViemError(value)) return reduceViemError(value)
+  if (value instanceof BaseError) return reduceViemError(value)
   if (typeof value === 'object')
     return redactRecord(value as Record<string, unknown>)
   return undefined
 }
 
-function isViemError(
-  value: unknown,
-): value is { name: string; shortMessage: string } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { shortMessage?: unknown }).shortMessage === 'string' &&
-    typeof (value as { name?: unknown }).name === 'string'
-  )
-}
-
-function reduceViemError(err: { name: string; shortMessage: string }): {
+function reduceViemError(err: BaseError): {
   errorName: string
   shortMessage: string
 } {
   return {
     errorName: err.name,
-    shortMessage: stripRpcKey(err.shortMessage),
+    shortMessage: redactUrls(err.shortMessage),
   }
 }
 
@@ -146,7 +138,7 @@ function redactRecord(
   for (const [key, raw] of Object.entries(record)) {
     if (SENSITIVE_KEYS.has(key)) continue
     if (raw && typeof raw === 'object') {
-      if (isViemError(raw)) {
+      if (raw instanceof BaseError) {
         out[key] = reduceViemError(raw)
         continue
       }
@@ -155,7 +147,7 @@ function redactRecord(
       continue
     }
     if (typeof raw === 'string') {
-      out[key] = stripRpcKey(raw)
+      out[key] = redactUrls(raw)
       continue
     }
     if (SCALAR_ALLOWLIST.has(key)) {
@@ -177,10 +169,11 @@ function redactRecord(
 /**
  * @description Redacts a `CliError.details` payload before it is serialised
  * to stderr. Drops known-sensitive keys (signer metadata, request bodies),
- * reduces viem error instances to `{ errorName, shortMessage }`, and strips
- * API-key segments from any RPC/bundler URLs it encounters. The allowlist is
- * intentionally conservative - unknown scalars are preserved only when their
- * key is in `SCALAR_ALLOWLIST`.
+ * reduces viem error instances to `{ errorName, shortMessage }`, and replaces
+ * any http(s) URL it encounters with `[redacted-url]` to keep API keys out of
+ * stack traces and `--json` payloads. The allowlist is intentionally
+ * conservative - unknown scalars are preserved only when their key is in
+ * `SCALAR_ALLOWLIST`.
  * @param details - Arbitrary data attached to a `CliError`.
  * @returns A safe-to-emit clone of `details`.
  */

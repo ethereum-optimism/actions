@@ -1,11 +1,9 @@
-import type { LocalAccount } from 'viem'
+import type { Hex, LocalAccount } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 import { requireEnv } from '@/config/env.js'
 import { type BaseContext, baseContext } from '@/context/baseContext.js'
 import { CliError } from '@/output/errors.js'
-
-type Hex = `0x${string}`
 
 export interface WalletContext extends BaseContext {
   signer: LocalAccount
