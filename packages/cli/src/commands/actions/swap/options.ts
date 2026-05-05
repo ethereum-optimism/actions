@@ -21,7 +21,7 @@ export const QUOTE_OPTIONS_HELP = {
   ],
   slippage: [
     '--slippage <pct>',
-    'slippage tolerance as a percent in [0, 5] (e.g. 0.5 for 0.5%); the SDK applies its own ceiling on top',
+    'slippage tolerance as a percent (e.g. 0.5 = 0.5%); upper bound is operator-configured via SwapSettings.maxSlippage (SDK default 50%)',
   ],
 } as const
 

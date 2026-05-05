@@ -46,37 +46,22 @@ export function parseAmountFlags(
 // Rejects scientific notation, hex, signs, and leading/trailing whitespace.
 const DECIMAL_PCT = /^(?:0|[1-9]\d*)(?:\.\d+)?$/
 
-// Maximum slippage the CLI accepts as a percent. Above this is almost
-// always a typo or MEV bait. Operators with legitimate high-slippage flows
-// should lower `SwapSettings.maxSlippage` in their SDK config and skip
-// `--slippage` (the SDK applies its own ceiling). 5% is permissive enough
-// for thin-liquidity pools without being a footgun.
-export const MAX_SLIPPAGE_PCT = 5
-
 /**
- * @description Parses a `--slippage <pct>` value. Accepts a plain decimal percent literal (e.g. `0.5` = 0.5%) and converts to the decimal form the SDK expects (e.g. `0.005`). The CLI caps at `MAX_SLIPPAGE_PCT` (5%) to block obviously-bad inputs; the SDK applies its own ceiling on top via `SwapSettings.maxSlippage`. Rejects scientific notation, hex, leading signs, and whitespace.
+ * @description Parses a `--slippage <pct>` value. Accepts a plain decimal percent literal (e.g. `0.5` = 0.5%) and converts to the decimal form the SDK expects (e.g. `0.005`). The upper bound is the SDK's `SwapSettings.maxSlippage` (default 50%), enforced inside `validateSlippage` and surfaced as `SlippageOutOfRangeError` → CLI `validation`. Operators tighten in config; the CLI just validates shape (no scientific notation, hex, leading signs, or whitespace).
  * @param raw - Flag value as passed on argv, or undefined.
  * @returns Decimal slippage when provided, else undefined.
- * @throws `CliError` with code `validation` when not a plain decimal in `[0, MAX_SLIPPAGE_PCT]`.
+ * @throws `CliError` with code `validation` when not a plain non-negative decimal.
  */
 export function parseSlippage(raw: string | undefined): number | undefined {
   if (raw === undefined) return undefined
   if (!DECIMAL_PCT.test(raw)) {
     throw new CliError(
       'validation',
-      `Invalid --slippage: ${raw} (expected a percent in [0, ${MAX_SLIPPAGE_PCT}], e.g. 0.5)`,
-      { slippage: raw, max: MAX_SLIPPAGE_PCT },
+      `Invalid --slippage: ${raw} (expected a non-negative decimal percent, e.g. 0.5)`,
+      { slippage: raw },
     )
   }
-  const value = Number(raw)
-  if (value > MAX_SLIPPAGE_PCT) {
-    throw new CliError(
-      'validation',
-      `Invalid --slippage: ${raw} (expected a percent in [0, ${MAX_SLIPPAGE_PCT}])`,
-      { slippage: raw, max: MAX_SLIPPAGE_PCT },
-    )
-  }
-  return value / 100
+  return Number(raw) / 100
 }
 
 /**

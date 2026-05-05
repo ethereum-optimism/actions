@@ -186,9 +186,12 @@ describe('runSwapQuote', () => {
     }
   })
 
-  it('rejects out-of-range slippage with CliError(validation)', async () => {
+  it('rejects malformed --slippage with CliError(validation)', async () => {
+    // The CLI only validates shape (no scientific/hex/signs/whitespace).
+    // The upper bound is the SDK's `SwapSettings.maxSlippage` and surfaces
+    // as `SlippageOutOfRangeError` (an `ActionsError`, mapped to validation).
     mockActions(async () => stubQuote('uniswap', 1n))
-    for (const bad of ['-1', '101', 'foo']) {
+    for (const bad of ['-1', 'foo', '1e2', ' 1 ', '0x10', '.5']) {
       try {
         await runSwapQuote({
           in: 'USDC_DEMO',
