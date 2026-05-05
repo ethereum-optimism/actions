@@ -116,6 +116,7 @@ export type QuoteFlags =
 export type WalletExecuteFlags = QuoteFlags & {
   approvalMode?: string
   recipient?: string
+  deadline?: string
 }
 
 // Mirrors the SDK's `ApprovalMode = 'exact' | 'max'` (declared in
@@ -140,6 +141,18 @@ export function parseApprovalMode(
 /**
  * @description Adds wallet-only knobs (`approvalMode`) on top of the shared quote params produced by `buildQuoteParams`.
  */
+function parseDeadline(raw: string | undefined): number | undefined {
+  if (raw === undefined) return undefined
+  if (!/^[1-9]\d*$/.test(raw)) {
+    throw new CliError(
+      'validation',
+      `Invalid --deadline: ${raw} (expected a positive Unix timestamp in seconds)`,
+      { deadline: raw },
+    )
+  }
+  return Number(raw)
+}
+
 export function buildWalletExecuteParams(
   flags: WalletExecuteFlags,
   allow: readonly Asset[],
@@ -151,10 +164,12 @@ export function buildWalletExecuteParams(
   // `BaseSwapNamespace.resolveRecipient` resolves ENS → address before any
   // provider sees the value. The CLI passes the raw string through.
   const recipient = flags.recipient as WalletSwapParams['recipient'] | undefined
+  const deadline = parseDeadline(flags.deadline)
   return {
     ...base,
     ...(approvalMode ? { approvalMode } : {}),
     ...(recipient ? { recipient } : {}),
+    ...(deadline !== undefined ? { deadline } : {}),
   }
 }
 

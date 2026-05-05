@@ -24,6 +24,10 @@ export function walletSwapCommand(): Command {
       '--recipient <addr|ens>',
       'address or ENS name to receive the output tokens (defaults to the wallet address)',
     )
+    .option(
+      '--deadline <unix>',
+      'transaction deadline as a Unix timestamp in seconds (defaults to now + 60s)',
+    )
     .action(runWalletSwapExecute)
   return command
 }

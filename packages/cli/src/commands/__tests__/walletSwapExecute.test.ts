@@ -169,6 +169,40 @@ describe('runWalletSwapExecute', () => {
     }
   })
 
+  it('forwards --deadline to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return stubResult(successReceipt('0x'))
+    })
+    await runWalletSwapExecute({
+      in: 'USDC_DEMO',
+      out: 'OP_DEMO',
+      amountIn: '1',
+      chain: 'base-sepolia',
+      deadline: '1800000000',
+    })
+    const call = captured[0] as { deadline?: number }
+    expect(call.deadline).toBe(1800000000)
+  })
+
+  it('rejects non-numeric --deadline with CliError(validation)', async () => {
+    mockWallet(async () => stubResult(successReceipt('0x')))
+    try {
+      await runWalletSwapExecute({
+        in: 'USDC_DEMO',
+        out: 'OP_DEMO',
+        amountIn: '1',
+        chain: 'base-sepolia',
+        deadline: 'soon',
+      })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
+
   it('forwards --recipient to the SDK when set', async () => {
     const captured: unknown[] = []
     mockWallet(async (params) => {
