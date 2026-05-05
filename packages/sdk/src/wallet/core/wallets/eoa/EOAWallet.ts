@@ -5,7 +5,7 @@ import type {
   LocalAccount,
   WalletClient,
 } from 'viem'
-import { createWalletClient } from 'viem'
+import { createWalletClient, nonceManager } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { TransactionData } from '@/types/lend/index.js'
@@ -23,8 +23,10 @@ export abstract class EOAWallet extends Wallet {
   /**
    * Create a WalletClient for this EOA wallet.
    *
-   * Creates a viem-compatible WalletClient configured with this wallet's account
-   * and the specified chain. Supports fallback transport for multiple RPC URLs.
+   * Attaches viem's default `nonceManager` to the signer so back-to-back
+   * `sendTransaction` calls receive sequential nonces without re-fetching
+   * `eth_getTransactionCount('pending')` per tx. This avoids races on
+   * load-balanced RPCs where pending state lags by one block.
    * @param chainId - The chain ID to create the wallet client for
    * @returns Promise resolving to a WalletClient configured for the specified chain
    */
@@ -39,8 +41,11 @@ export abstract class EOAWallet extends Wallet {
       []
     >
   > {
+    const account: LocalAccount = this.signer.nonceManager
+      ? this.signer
+      : { ...this.signer, nonceManager }
     return createWalletClient({
-      account: this.signer,
+      account,
       chain: this.chainManager.getChain(chainId),
       transport: this.chainManager.getTransportForChain(chainId),
     })
@@ -70,8 +75,14 @@ export abstract class EOAWallet extends Wallet {
   /**
    * Send multiple transactions sequentially from this EOA wallet.
    *
-   * Executes transactions one at a time in order, waiting for 2 confirmations
-   * between each to ensure nonce updates. Returns an array of receipts.
+   * Each transaction is awaited to inclusion (one confirmation) via `send()`
+   * before the next is signed. The `nonceManager` attached in `walletClient()`
+   * keeps nonces in sequence locally, so the wait does not need extra
+   * confirmations to guarantee nonce monotonicity.
+   *
+   * Note: this method assumes a sequencer-ordered chain (e.g. OP-stack L2s).
+   * On chains with deeper reorg risk, consider an additional confirmations
+   * pass at the call site.
    * @param transactionData - Array of transactions to send
    * @param chainId - Chain to send the transactions on
    * @returns Promise resolving to array of transaction receipts (one per transaction)
@@ -82,7 +93,6 @@ export abstract class EOAWallet extends Wallet {
   ): Promise<EOATransactionReceipt[]> {
     const receipts: EOATransactionReceipt[] = []
     for (const tx of transactionData) {
-      // 1 confirmation is typically enough.
       const receipt = await this.send(tx, chainId)
       receipts.push(receipt)
     }
