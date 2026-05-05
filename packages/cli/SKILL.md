@@ -22,8 +22,9 @@ actions --json wallet balance --chain base-sepolia
 
 - `actions assets` - configured asset allowlist.
 - `actions chains` - configured chain shortnames + IDs.
-- `actions lend markets` - all lending markets across configured
-  providers (no wallet).
+- `actions lend markets [--asset <symbol>] [--chain <name> | --chain-id <id>]` -
+  lending markets across configured providers, optionally filtered to one
+  asset and/or one chain (no wallet).
 - `actions lend market --market <name>` - inspect one market by name
   (no wallet).
 - `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
@@ -31,10 +32,13 @@ actions --json wallet balance --chain base-sepolia
   per chain + asset; the chain flags are mutually exclusive.
 - `actions wallet lend position --market <name>` - the wallet's current
   balance and shares in a market.
-- `actions wallet lend open --market <name> --amount <n>` - supply
-  assets to a market in the config allowlist.
-- `actions wallet lend close --market <name> --amount <n>` - withdraw
-  assets from a lending position.
+- `actions wallet lend open --market <name> --amount <n> [--approval-mode <exact|max>]` -
+  supply assets to a market. `--approval-mode max` approves max-uint to
+  amortise approvals across future supplies (default: `exact`).
+- `actions wallet lend close --market <name> (--amount <n> | --max)` -
+  withdraw assets. Pass `--max` to withdraw the wallet's full balance in
+  the market (the CLI fetches the position first; subject to inflight
+  interest accrual).
 
 ## Wallet model
 

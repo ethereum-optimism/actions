@@ -84,7 +84,7 @@ describe('writeError', () => {
     expect(raw).not.toContain('0xcafe')
   })
 
-  it('strips RPC API keys from the top-level error message (json mode)', () => {
+  it('redacts RPC URLs from the top-level error message (json mode)', () => {
     writeError(
       new Error(
         'HTTP request failed. URL: https://api.pimlico.io/v2/8453/rpc?apikey=LEAKED',
@@ -92,17 +92,19 @@ describe('writeError', () => {
     )
     const raw = JSON.stringify(capturedBody())
     expect(raw).not.toContain('LEAKED')
-    expect(raw).toContain('/v*/***/rpc')
+    expect(raw).not.toContain('pimlico.io')
+    expect(raw).toContain('[redacted-url]')
   })
 
-  it('strips RPC API keys from the top-level error message (text mode)', () => {
+  it('redacts RPC URLs from the top-level error message (text mode)', () => {
     setJsonMode(false)
     writeError(
       new Error('fetch failed for https://eth.alchemyapi.io/v2/SECRETKEY/rpc'),
     )
     const text = String(stderrSpy.mock.calls[0]?.[0])
     expect(text).not.toContain('SECRETKEY')
-    expect(text).toContain('/v*/***/rpc')
+    expect(text).not.toContain('alchemyapi.io')
+    expect(text).toContain('[redacted-url]')
   })
 
   it('reports unknown code for non-CliError throws', () => {
