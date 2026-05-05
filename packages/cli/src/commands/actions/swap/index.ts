@@ -2,41 +2,9 @@ import { Command } from 'commander'
 
 import { runSwapMarket } from '@/commands/actions/swap/market.js'
 import { runSwapMarkets } from '@/commands/actions/swap/markets.js'
+import { addQuoteOptions } from '@/commands/actions/swap/options.js'
 import { runSwapQuote } from '@/commands/actions/swap/quote.js'
 import { runSwapQuotes } from '@/commands/actions/swap/quotes.js'
-
-const QUOTE_OPTIONS_HELP = {
-  in: ['--in <symbol>', 'token to sell (e.g. USDC_DEMO)'],
-  out: ['--out <symbol>', 'token to buy (e.g. OP_DEMO)'],
-  amountIn: [
-    '--amount-in <n>',
-    'exact-in amount (mutually exclusive with --amount-out)',
-  ],
-  amountOut: [
-    '--amount-out <n>',
-    'exact-out amount (mutually exclusive with --amount-in)',
-  ],
-  chain: ['--chain <name>', 'chain shortname (e.g. base-sepolia, op-sepolia)'],
-  provider: [
-    '--provider <name>',
-    'force a provider: uniswap or velodrome (omit to let routing decide)',
-  ],
-  slippage: [
-    '--slippage <pct>',
-    'slippage tolerance as a percent (e.g. 0.5 for 0.5%)',
-  ],
-} as const
-
-function addQuoteOptions(cmd: Command): Command {
-  return cmd
-    .requiredOption(...QUOTE_OPTIONS_HELP.in)
-    .requiredOption(...QUOTE_OPTIONS_HELP.out)
-    .option(...QUOTE_OPTIONS_HELP.amountIn)
-    .option(...QUOTE_OPTIONS_HELP.amountOut)
-    .requiredOption(...QUOTE_OPTIONS_HELP.chain)
-    .option(...QUOTE_OPTIONS_HELP.provider)
-    .option(...QUOTE_OPTIONS_HELP.slippage)
-}
 
 /**
  * @description Builds the root `swap` subcommand tree. Children read
