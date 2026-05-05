@@ -1,7 +1,7 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { runLendMarkets } from '@/commands/lend/markets.js'
+import { runLendMarkets } from '@/commands/actions/lend/markets.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { CliError } from '@/output/errors.js'
 import { setJsonMode } from '@/output/mode.js'

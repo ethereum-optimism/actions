@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { runAssets } from '@/commands/assets.js'
+import { runAssets } from '@/commands/actions/assets.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { setJsonMode } from '@/output/mode.js'
 

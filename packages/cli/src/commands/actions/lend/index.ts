@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 
-import { runLendMarket } from '@/commands/lend/market.js'
-import { runLendMarkets } from '@/commands/lend/markets.js'
+import { runLendMarket } from '@/commands/actions/lend/market.js'
+import { runLendMarkets } from '@/commands/actions/lend/markets.js'
 
 /**
  * @description Builds the root `lend` subcommand tree. Children read
