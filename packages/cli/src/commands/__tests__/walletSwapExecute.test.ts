@@ -169,6 +169,23 @@ describe('runWalletSwapExecute', () => {
     }
   })
 
+  it('forwards --recipient to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return stubResult(successReceipt('0x'))
+    })
+    await runWalletSwapExecute({
+      in: 'USDC_DEMO',
+      out: 'OP_DEMO',
+      amountIn: '1',
+      chain: 'base-sepolia',
+      recipient: 'vitalik.eth',
+    })
+    const call = captured[0] as { recipient?: string }
+    expect(call.recipient).toBe('vitalik.eth')
+  })
+
   it('forwards --approval-mode to the SDK when set', async () => {
     const captured: unknown[] = []
     mockWallet(async (params) => {

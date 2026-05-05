@@ -115,6 +115,7 @@ export type QuoteFlags =
  */
 export type WalletExecuteFlags = QuoteFlags & {
   approvalMode?: string
+  recipient?: string
 }
 
 // Mirrors the SDK's `ApprovalMode = 'exact' | 'max'` (declared in
@@ -146,7 +147,15 @@ export function buildWalletExecuteParams(
 ): WalletSwapParams {
   const base = buildQuoteParams(flags, allow, chainIds)
   const approvalMode = parseApprovalMode(flags.approvalMode)
-  return approvalMode ? { ...base, approvalMode } : base
+  // Recipient validation (address-vs-ENS) is the SDK's responsibility:
+  // `BaseSwapNamespace.resolveRecipient` resolves ENS → address before any
+  // provider sees the value. The CLI passes the raw string through.
+  const recipient = flags.recipient as WalletSwapParams['recipient'] | undefined
+  return {
+    ...base,
+    ...(approvalMode ? { approvalMode } : {}),
+    ...(recipient ? { recipient } : {}),
+  }
 }
 
 /**
