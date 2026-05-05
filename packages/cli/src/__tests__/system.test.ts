@@ -200,7 +200,7 @@ describe('actions CLI (built binary)', () => {
         '--out',
         'OP_DEMO',
         '--chain',
-        'unichain',
+        'base-sepolia',
       ])
       expect(code).toBe(2)
       const body = JSON.parse(stderr)
@@ -222,7 +222,7 @@ describe('actions CLI (built binary)', () => {
         '--amount-out',
         '1',
         '--chain',
-        'unichain',
+        'base-sepolia',
       ])
       expect(code).toBe(2)
       const body = JSON.parse(stderr)
@@ -242,7 +242,7 @@ describe('actions CLI (built binary)', () => {
         '--amount-in',
         '1',
         '--chain',
-        'unichain',
+        'base-sepolia',
         '--provider',
         'sushiswap',
       ])

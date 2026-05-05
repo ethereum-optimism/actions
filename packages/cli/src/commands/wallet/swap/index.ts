@@ -28,7 +28,7 @@ export function walletSwapCommand(): Command {
     )
     .requiredOption(
       '--chain <name>',
-      'chain shortname (e.g. unichain, op-sepolia)',
+      'chain shortname (e.g. base-sepolia, op-sepolia)',
     )
     .option(
       '--provider <name>',
