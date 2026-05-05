@@ -39,12 +39,25 @@ export function resolveMarket(
   allow: readonly LendMarketConfig[],
 ): LendMarketConfig {
   const target = normalize(name)
-  const match = allow.find((m) => normalize(m.name) === target)
-  if (!match) {
+  const matches = allow.filter((m) => normalize(m.name) === target)
+  if (matches.length === 0) {
     throw new CliError('validation', `Unknown market: ${name}`, {
       market: name,
       allowed: allow.map((m) => m.name),
     })
   }
-  return match
+  if (matches.length > 1) {
+    // Two providers list a market that normalises to the same key — the agent
+    // would otherwise silently pick whichever appears first in iteration order.
+    // Surface the ambiguity so the operator fixes the config.
+    throw new CliError('validation', `Ambiguous market: ${name}`, {
+      market: name,
+      matches: matches.map((m) => ({
+        name: m.name,
+        chainId: m.chainId,
+        provider: m.lendProvider,
+      })),
+    })
+  }
+  return matches[0] as LendMarketConfig
 }

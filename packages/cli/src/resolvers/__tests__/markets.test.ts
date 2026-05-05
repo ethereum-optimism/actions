@@ -52,3 +52,27 @@ describe('collectMarkets', () => {
     expect(all.map((m) => m.name)).toEqual(['Gauntlet USDC', 'Aave ETH'])
   })
 })
+
+describe('resolveMarket collision behaviour', () => {
+  it('throws CliError(validation) with matches list when two providers normalise to the same name', () => {
+    const dup: typeof markets = [
+      { ...markets[0]!, name: 'USDC' },
+      { ...markets[1]!, name: 'usdc', lendProvider: 'aave' as const },
+    ]
+    try {
+      resolveMarket('usdc', dup)
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+      expect((err as CliError).message).toMatch(/Ambiguous/)
+      const details = (err as CliError).details as {
+        matches: Array<{ provider: string }>
+      }
+      expect(details.matches.map((m) => m.provider).sort()).toEqual([
+        'aave',
+        'morpho',
+      ])
+    }
+  })
+})
