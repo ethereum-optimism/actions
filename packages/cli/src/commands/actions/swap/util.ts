@@ -41,18 +41,27 @@ export function parseAmountFlags(
     : { amountOut: parseAmount(amountOut!, '--amount-out') }
 }
 
+// Plain non-negative decimal (matches parseAmount's regex but allows zero).
+// Rejects scientific notation, hex, signs, and leading/trailing whitespace.
+const DECIMAL_PCT = /^(?:0|[1-9]\d*)(?:\.\d+)?$/
+
 /**
- * @description Parses a `--slippage <pct>` value. Accepts a percent
- * literal (e.g. `0.5` = 0.5%) and converts to the decimal form the SDK
- * expects (e.g. `0.005`). `100` is the upper bound.
+ * @description Parses a `--slippage <pct>` value. Accepts a plain decimal percent literal (e.g. `0.5` = 0.5%) and converts to the decimal form the SDK expects (e.g. `0.005`). `100` is the upper bound. Rejects scientific notation, hex, leading signs, and whitespace for the same reasons `parseAmount` does.
  * @param raw - Flag value as passed on argv, or undefined.
  * @returns Decimal slippage in `[0, 1]` when provided, else undefined.
- * @throws `CliError` with code `validation` when not a number in `[0, 100]`.
+ * @throws `CliError` with code `validation` when not a plain decimal in `[0, 100]`.
  */
 export function parseSlippage(raw: string | undefined): number | undefined {
   if (raw === undefined) return undefined
+  if (!DECIMAL_PCT.test(raw)) {
+    throw new CliError(
+      'validation',
+      `Invalid --slippage: ${raw} (expected a percent in [0, 100], e.g. 0.5)`,
+      { slippage: raw },
+    )
+  }
   const value = Number(raw)
-  if (!Number.isFinite(value) || value < 0 || value > 100) {
+  if (value > 100) {
     throw new CliError(
       'validation',
       `Invalid --slippage: ${raw} (expected a percent in [0, 100])`,
