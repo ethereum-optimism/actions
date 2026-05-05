@@ -15,7 +15,7 @@ function normalize(value: string): string {
  * @param config - Resolved CLI config.
  * @returns Flat array of every allowlisted market across all providers.
  */
-export function collectMarkets(
+export function configuredMarkets(
   config: NodeActionsConfig<never>,
 ): readonly LendMarketConfig[] {
   const out: LendMarketConfig[] = []
@@ -28,7 +28,7 @@ export function collectMarkets(
 }
 
 /**
- * @description Resolves a `--market <name>` flag value to the matching `LendMarketConfig` entry from a caller-supplied allowlist. Match is case-insensitive and ignores whitespace / hyphens, so all of `Gauntlet USDC`, `gauntlet-usdc`, `GauntletUSDC`, and `gauntletusdc` resolve to the same market. Throws `CliError('validation')` on miss with an `allowed` list cribbed from the canonical `.name` fields. Mirrors `resolveChain` / `resolveAsset` — pass a pre-collected allowlist (typically `collectMarkets(config)`).
+ * @description Resolves a `--market <name>` flag value to the matching `LendMarketConfig` entry from a caller-supplied allowlist. Match is case-insensitive and ignores whitespace / hyphens, so all of `Gauntlet USDC`, `gauntlet-usdc`, `GauntletUSDC`, and `gauntletusdc` resolve to the same market. Throws `CliError('validation')` on miss with an `allowed` list cribbed from the canonical `.name` fields. Mirrors `resolveChain` / `resolveAsset` — pass a pre-collected allowlist (typically `configuredMarkets(config)`).
  * @param name - User-provided market name from CLI argv.
  * @param allow - Market allowlist to search.
  * @returns The matching market entry (carries `address`, `chainId`, `asset`, `lendProvider`).

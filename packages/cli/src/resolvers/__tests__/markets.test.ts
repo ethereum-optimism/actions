@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { getDemoConfig } from '@/demo/config.js'
 import { CliError } from '@/output/errors.js'
-import { collectMarkets, resolveMarket } from '@/resolvers/markets.js'
+import { configuredMarkets, resolveMarket } from '@/resolvers/markets.js'
 
-const markets = collectMarkets(getDemoConfig())
+const markets = configuredMarkets(getDemoConfig())
 
 describe('resolveMarket', () => {
   it('matches by exact .name', () => {
@@ -54,9 +54,9 @@ describe('resolveMarket', () => {
   })
 })
 
-describe('collectMarkets', () => {
+describe('configuredMarkets', () => {
   it('flattens every provider allowlist and skips the settings sibling', () => {
-    const all = collectMarkets(getDemoConfig())
+    const all = configuredMarkets(getDemoConfig())
     expect(all.map((m) => m.name)).toEqual(['Gauntlet USDC', 'Aave ETH'])
   })
 })
