@@ -15,6 +15,11 @@ export function walletSwapCommand(): Command {
     command
       .command('execute')
       .description('Execute a swap on a configured chain.'),
-  ).action(runWalletSwapExecute)
+  )
+    .option(
+      '--approval-mode <exact|max>',
+      'ERC-20 approval strategy: "exact" approves only this swap (default, gas-heavier on repeat); "max" approves max-uint to amortise across future swaps',
+    )
+    .action(runWalletSwapExecute)
   return command
 }

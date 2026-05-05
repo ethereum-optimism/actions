@@ -1,6 +1,6 @@
 import {
-  buildQuoteParams,
-  type QuoteFlags,
+  buildWalletExecuteParams,
+  type WalletExecuteFlags,
 } from '@/commands/actions/swap/util.js'
 import { walletContext } from '@/context/walletContext.js'
 import { CliError, rethrowWithContext } from '@/output/errors.js'
@@ -20,7 +20,9 @@ import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
  * @param flags - Commander-parsed required + optional options.
  * @returns Promise that resolves once stdout has been written.
  */
-export async function runWalletSwapExecute(flags: QuoteFlags): Promise<void> {
+export async function runWalletSwapExecute(
+  flags: WalletExecuteFlags,
+): Promise<void> {
   const { wallet, config } = await walletContext()
   if (!wallet.swap) {
     throw new CliError(
@@ -28,7 +30,7 @@ export async function runWalletSwapExecute(flags: QuoteFlags): Promise<void> {
       'Swap is not configured (no providers in config.swap)',
     )
   }
-  const params = buildQuoteParams(
+  const params = buildWalletExecuteParams(
     flags,
     configuredAssets(config),
     config.chains.map((c) => c.chainId),

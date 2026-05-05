@@ -3,6 +3,7 @@ import type {
   SupportedChainId,
   SwapProviderName,
   SwapQuoteParams,
+  WalletSwapParams,
 } from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
@@ -108,6 +109,45 @@ interface QuoteFlagsBase {
 export type QuoteFlags =
   | (QuoteFlagsBase & { amountIn: string; amountOut?: never })
   | (QuoteFlagsBase & { amountIn?: never; amountOut: string })
+
+/**
+ * @description Wallet-scoped swap-execute flags. Extends `QuoteFlags` with the write-only knobs that don't make sense on the read-only `swap quote/quotes` paths.
+ */
+export type WalletExecuteFlags = QuoteFlags & {
+  approvalMode?: string
+}
+
+// Mirrors the SDK's `ApprovalMode = 'exact' | 'max'` (declared in
+// `@/types/actions` but not re-exported from the SDK barrel).
+const APPROVAL_MODES = ['exact', 'max'] as const
+type ApprovalMode = (typeof APPROVAL_MODES)[number]
+
+export function parseApprovalMode(
+  raw: string | undefined,
+): ApprovalMode | undefined {
+  if (raw === undefined) return undefined
+  if ((APPROVAL_MODES as readonly string[]).includes(raw)) {
+    return raw as ApprovalMode
+  }
+  throw new CliError(
+    'validation',
+    `Invalid --approval-mode: ${raw} (expected exact or max)`,
+    { approvalMode: raw },
+  )
+}
+
+/**
+ * @description Adds wallet-only knobs (`approvalMode`) on top of the shared quote params produced by `buildQuoteParams`.
+ */
+export function buildWalletExecuteParams(
+  flags: WalletExecuteFlags,
+  allow: readonly Asset[],
+  chainIds: readonly SupportedChainId[],
+): WalletSwapParams {
+  const base = buildQuoteParams(flags, allow, chainIds)
+  const approvalMode = parseApprovalMode(flags.approvalMode)
+  return approvalMode ? { ...base, approvalMode } : base
+}
 
 /**
  * @description Builds a `SwapQuoteParams` object from the CLI flag set
