@@ -1,5 +1,33 @@
 # @eth-optimism/actions-sdk
 
+## 0.6.0
+
+### Minor Changes
+
+- [#450](https://github.com/ethereum-optimism/actions/pull/450) [`395d75b`](https://github.com/ethereum-optimism/actions/commit/395d75b42d6fcf59697e1b7080fe2bd624912a04) Thanks [@its-everdred](https://github.com/its-everdred)! - Features / API additions
+
+  #451 — Add chainIds param to wallet.getBalance()
+  #428 — Configurable approval-amount strategy: callers can now choose between exact-amount and unlimited approvals when opening positions.
+  #356 — Wallet refactor: native support for local EOA wallets; the embedded (4337) wallet is now optional rather than required.
+  #383 — Shared namespace foundations: reorganizes shared internals to support multiple action domains (lend, borrow, swap) under a common surface.
+  #445 — Introduces an ActionsError base class and migrates bare throws across the SDK into named subclasses, giving consumers structured errors to catch.
+
+  Fixes
+
+  #443 — Bug fix in VelodromeProvider impacting EOA swaps, which previously reverted with TRANSFER_FAILED because the encoder always pre-transferred tokens to the router.
+  #434 — Bug fix in swap execution where a quote’s recipient did not match the execute call’s recipient; the SDK now rejects the mismatch instead of silently routing funds to the wrong address.
+  #441 — Bug fix in UniswapV4Provider affecting exact-output single-hop swaps, which used the wrong action byte and produced invalid calldata.
+  #426 — Bug fix in swap execution for calls that omitted a recipient; the SDK now defaults to the wallet address instead of leaving it unset.
+
+  Tooling
+
+  #385 — Bump runtime to Node 22.14.0.
+  #372 — Parallelize the test suite.
+
+### Patch Changes
+
+- [#443](https://github.com/ethereum-optimism/actions/pull/443) [`b2682e6`](https://github.com/ethereum-optimism/actions/commit/b2682e6cf9d6bd85233e9227d6660c03f6c885e6) Thanks [@its-everdred](https://github.com/its-everdred)! - Fix Velodrome universal-router approvals for EOA wallets. The encoder previously hardcoded `payerIsUser: false` and pre-`transfer`d tokens to the router, which only works when the caller batches atomically (4337). EOAs (and any sequentially dispatched flow) reverted with `TRANSFER_FAILED`. The router has a first-class `payerIsUser: true` path that pulls tokens via standard `transferFrom`; the SDK now uses it. Behaviorally equivalent for smart wallets, correct for EOAs.
+
 ## 0.5.0
 
 ### Minor Changes
