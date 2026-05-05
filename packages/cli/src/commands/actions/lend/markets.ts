@@ -1,7 +1,7 @@
 import { baseContext } from '@/context/baseContext.js'
 import { CliError, rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
-import { resolveAsset } from '@/resolvers/assets.js'
+import { configuredAssets, resolveAsset } from '@/resolvers/assets.js'
 import { type ChainFlags, resolveChainFlags } from '@/resolvers/chains.js'
 
 export interface LendMarketsFlags extends ChainFlags {
@@ -18,7 +18,7 @@ export async function runLendMarkets(
 ): Promise<void> {
   const { actions, config } = baseContext()
   const asset = flags.asset
-    ? resolveAsset(flags.asset, config.assets?.allow ?? [])
+    ? resolveAsset(flags.asset, configuredAssets(config))
     : undefined
   const chainIds = resolveChainFlags(
     flags,

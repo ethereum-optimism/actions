@@ -5,6 +5,7 @@ import {
 import { baseContext } from '@/context/baseContext.js'
 import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
+import { configuredAssets } from '@/resolvers/assets.js'
 
 /**
  * @description Handler for
@@ -20,7 +21,7 @@ export async function runSwapQuote(flags: QuoteFlags): Promise<void> {
   const { actions, config } = baseContext()
   const params = buildQuoteParams(
     flags,
-    config.assets?.allow ?? [],
+    configuredAssets(config),
     config.chains.map((c) => c.chainId),
   )
   try {

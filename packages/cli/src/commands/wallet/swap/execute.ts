@@ -5,6 +5,7 @@ import {
 import { walletContext } from '@/context/walletContext.js'
 import { CliError, rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
+import { configuredAssets } from '@/resolvers/assets.js'
 import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
 
 /**
@@ -29,7 +30,7 @@ export async function runWalletSwapExecute(flags: QuoteFlags): Promise<void> {
   }
   const params = buildQuoteParams(
     flags,
-    config.assets?.allow ?? [],
+    configuredAssets(config),
     config.chains.map((c) => c.chainId),
   )
   try {
