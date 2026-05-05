@@ -177,9 +177,16 @@ describe('runWalletLendClose', () => {
   })
 
   it('rejects --amount and --max together with CliError(validation)', async () => {
+    // Statically rejected by `LendCloseFlags`; the runtime mutex check is
+    // still needed because commander hands the handler a loosely-typed
+    // object. Cast through `never` to exercise the runtime guard.
     mockWallet(async () => successReceipt('0x'))
     try {
-      await runWalletLendClose({ market: 'aave-eth', amount: '1', max: true })
+      await runWalletLendClose({
+        market: 'aave-eth',
+        amount: '1',
+        max: true,
+      } as never)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
@@ -191,7 +198,8 @@ describe('runWalletLendClose', () => {
   it('rejects close with neither --amount nor --max as CliError(validation)', async () => {
     mockWallet(async () => successReceipt('0x'))
     try {
-      await runWalletLendClose({ market: 'aave-eth' })
+      // Same: statically rejected, runtime guard exercised.
+      await runWalletLendClose({ market: 'aave-eth' } as never)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)

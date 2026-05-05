@@ -15,15 +15,19 @@ const APPROVAL_MODES = [
   'max',
 ] as const satisfies readonly ApprovalMode[]
 
-export interface LendActionFlags {
+export interface LendOpenFlags {
   market: string
-  /** Required for `open`; one of `amount` or `max` is required for `close`. */
-  amount?: string
-  /** Only consumed by `close`; mutually exclusive with `amount`. */
-  max?: boolean
-  /** Only consumed by `open`; ignored on `close`. */
+  amount: string
+  /** Optional override of the wallet-level approval-amount strategy. */
   approvalMode?: string
 }
+
+/**
+ * @description At-least-one-of `amount` / `max`. The `?: never` branches make TS reject `{ market }` (neither set) and `{ market, amount, max }` (both set) at the call site; the runtime mutex check still runs because commander's argv parsing is loosely typed.
+ */
+export type LendCloseFlags =
+  | { market: string; amount: string; max?: never }
+  | { market: string; amount?: never; max: true }
 
 type LendAction = 'open' | 'close'
 
@@ -40,49 +44,59 @@ function parseApprovalMode(raw: string | undefined): ApprovalMode | undefined {
 }
 
 /**
- * @description Shared backbone for the wallet-scoped lend write commands. `open` and `close` are mechanically identical apart from which `wallet.lend.*Position` method is called, the literal `action` value embedded in the output envelope, and `--approval-mode` (which only `open` consumes). This helper resolves the market, validates the amount, dispatches to the SDK, normalises the receipt array, raises on revert, and emits a `LendActionDoc` envelope.
- * @param action - Which `wallet.lend.*Position` method to invoke.
- * @param flags - Commander-parsed required options.
+ * @description Shared backbone for the wallet-scoped lend write commands. `open` and `close` are mechanically identical apart from which `wallet.lend.*Position` method is called, the literal `action` value embedded in the output envelope, and the action-specific flags (`open` consumes `--approval-mode`; `close` accepts `--max`). This helper resolves the market, validates the amount, dispatches to the SDK, normalises the receipt array, raises on revert, and emits a `LendActionDoc` envelope.
  */
 export async function runLendAction(
+  action: 'open',
+  flags: LendOpenFlags,
+): Promise<void>
+export async function runLendAction(
+  action: 'close',
+  flags: LendCloseFlags,
+): Promise<void>
+export async function runLendAction(
   action: LendAction,
-  flags: LendActionFlags,
+  flags: LendOpenFlags | LendCloseFlags,
 ): Promise<void> {
+  // Commander parses argv as a loosely-typed object, so mutex enforcement
+  // still runs at runtime even though the public union excludes the bad
+  // `{ amount, max: true }` shape statically.
+  const isMaxClose = action === 'close' && hasMax(flags)
+  const looseAmount = (flags as { amount?: string }).amount
+  if (isMaxClose && looseAmount !== undefined) {
+    throw new CliError(
+      'validation',
+      'Pass either --amount or --max, not both',
+      { amount: looseAmount, max: true },
+    )
+  }
+  if (!isMaxClose && looseAmount === undefined) {
+    throw new CliError(
+      'validation',
+      action === 'close'
+        ? 'Either --amount or --max is required'
+        : 'Required option --amount <n> not specified',
+    )
+  }
   const { wallet, config } = await walletContext()
   requireLendCapability(wallet)
   const market = resolveMarket(flags.market, collectMarkets(config))
   const marketId = { address: market.address, chainId: market.chainId }
   const approvalMode =
-    action === 'open' ? parseApprovalMode(flags.approvalMode) : undefined
-  if (action === 'close' && flags.max && flags.amount !== undefined) {
-    throw new CliError(
-      'validation',
-      'Pass either --amount or --max, not both',
-      { amount: flags.amount, max: true },
-    )
-  }
-  if (action !== 'close' || !flags.max) {
-    if (flags.amount === undefined) {
-      throw new CliError(
-        'validation',
-        action === 'close'
-          ? 'Either --amount or --max is required'
-          : 'Required option --amount <n> not specified',
-      )
-    }
-  }
+    action === 'open'
+      ? parseApprovalMode((flags as LendOpenFlags).approvalMode)
+      : undefined
   try {
     // For `close --max`, read the wallet's current position first and pass
     // its formatted balance through `parseAmount` for the same validation
     // path as a user-supplied amount. This races inflight interest accrual,
     // so the dispatched amount may be slightly less than the live balance
     // by the time the tx lands.
-    const amount =
-      action === 'close' && flags.max
-        ? parseAmount(
-            (await wallet.lend.getPosition({ marketId })).balanceFormatted,
-          )
-        : parseAmount(flags.amount as string)
+    const amount = isMaxClose
+      ? parseAmount(
+          (await wallet.lend.getPosition({ marketId })).balanceFormatted,
+        )
+      : parseAmount(looseAmount as string)
     const receipt =
       action === 'open'
         ? await wallet.lend.openPosition({
@@ -113,4 +127,10 @@ export async function runLendAction(
   } catch (err) {
     rethrowAsCliError(err)
   }
+}
+
+function hasMax(
+  flags: LendOpenFlags | LendCloseFlags,
+): flags is { market: string; amount?: never; max: true } {
+  return 'max' in flags && flags.max === true
 }
