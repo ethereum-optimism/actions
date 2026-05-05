@@ -16,8 +16,8 @@ import { mainnet, sepolia } from 'viem/chains'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainConfig } from '@/types/chain.js'
 
-/** viem `pollingInterval` (ms) for L2-class chains with ~2s blocks. */
-const FAST_CHAIN_POLLING_INTERVAL_MS = 1500
+/** viem `pollingInterval` (ms) for L2-class chains with ~1-2s blocks. */
+const FAST_CHAIN_POLLING_INTERVAL_MS = 1000
 /** viem `pollingInterval` (ms) for L1-class chains with ~12s blocks. */
 const SLOW_CHAIN_POLLING_INTERVAL_MS = 4000
 
