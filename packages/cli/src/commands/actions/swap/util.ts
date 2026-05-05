@@ -94,15 +94,20 @@ export function parseProvider(
   return needle
 }
 
-export interface QuoteFlags {
+interface QuoteFlagsBase {
   in: string
   out: string
-  amountIn?: string
-  amountOut?: string
   chain: string
   provider?: string
   slippage?: string
 }
+
+/**
+ * @description At-least-one-of `amountIn` / `amountOut`. The `?: never` branches make TS reject `{ ... }` (neither set) and `{ amountIn, amountOut }` (both set) at the call site; the runtime mutex check in `parseAmountFlags` still runs because commander's argv parsing is loosely typed.
+ */
+export type QuoteFlags =
+  | (QuoteFlagsBase & { amountIn: string; amountOut?: never })
+  | (QuoteFlagsBase & { amountIn?: never; amountOut: string })
 
 /**
  * @description Builds a `SwapQuoteParams` object from the CLI flag set

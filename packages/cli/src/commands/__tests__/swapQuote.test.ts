@@ -120,6 +120,8 @@ describe('runSwapQuote', () => {
   })
 
   it('rejects when both --amount-in and --amount-out are set', async () => {
+    // Statically rejected by `QuoteFlags`; cast through `never` to exercise
+    // the runtime guard (commander argv is loosely typed).
     mockActions(async () => stubQuote('uniswap', 1n))
     try {
       await runSwapQuote({
@@ -128,7 +130,7 @@ describe('runSwapQuote', () => {
         amountIn: '1',
         amountOut: '1',
         chain: 'base-sepolia',
-      })
+      } as never)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
@@ -143,7 +145,7 @@ describe('runSwapQuote', () => {
         in: 'USDC_DEMO',
         out: 'OP_DEMO',
         chain: 'base-sepolia',
-      })
+      } as never)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)

@@ -170,6 +170,9 @@ describe('runWalletSwapExecute', () => {
   })
 
   it('rejects when both --amount-in and --amount-out are set', async () => {
+    // Statically rejected by `QuoteFlags`; runtime mutex still runs because
+    // commander hands the handler a loosely-typed object. Cast through
+    // `never` to exercise the runtime guard.
     mockWallet(async () => stubResult(successReceipt('0x')))
     try {
       await runWalletSwapExecute({
@@ -178,7 +181,7 @@ describe('runWalletSwapExecute', () => {
         amountIn: '1',
         amountOut: '1',
         chain: 'base-sepolia',
-      })
+      } as never)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
