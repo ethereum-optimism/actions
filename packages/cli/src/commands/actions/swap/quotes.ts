@@ -1,5 +1,5 @@
 import { buildQuoteParams, type QuoteFlags } from '@/commands/actions/swap/util.js'
-import { rethrowAsCliError } from '@/commands/wallet/lend/util.js'
+import { rethrowAsCliError } from '@/output/errors.js'
 import { baseContext } from '@/context/baseContext.js'
 import { printOutput } from '@/output/printOutput.js'
 

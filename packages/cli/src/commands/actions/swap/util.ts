@@ -5,7 +5,7 @@ import type {
   SwapQuoteParams,
 } from '@eth-optimism/actions-sdk'
 
-import { parseAmount } from '@/commands/wallet/lend/util.js'
+import { parseAmount } from '@/utils/parseAmount.js'
 import { CliError } from '@/output/errors.js'
 import { resolveAsset } from '@/resolvers/assets.js'
 import { resolveChain } from '@/resolvers/chains.js'
