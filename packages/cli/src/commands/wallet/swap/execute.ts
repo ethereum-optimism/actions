@@ -1,9 +1,6 @@
 import { buildQuoteParams, type QuoteFlags } from '@/commands/actions/swap/util.js'
-import {
-  ensureOnchainSuccess,
-  rethrowAsCliError,
-  toReceiptArray,
-} from '@/commands/wallet/lend/util.js'
+import { rethrowAsCliError } from "@/output/errors.js"
+import { ensureOnchainSuccess, toReceiptArray } from "@/utils/receipts.js"
 import { walletContext } from '@/context/walletContext.js'
 import { CliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'

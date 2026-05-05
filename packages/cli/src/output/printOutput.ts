@@ -50,9 +50,7 @@ export interface SwapExecuteDoc {
   amountOutRaw: bigint
   price: number
   priceImpact: number
-  transactions: ReadonlyArray<
-    EOATransactionReceipt | UserOperationTransactionReceipt
-  >
+  transactions: readonly WalletTransactionReceipt[]
 }
 
 interface Printers {
