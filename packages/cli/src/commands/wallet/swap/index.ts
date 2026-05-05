@@ -2,15 +2,29 @@ import { Command } from 'commander'
 
 import { addQuoteOptions } from '@/commands/actions/swap/options.js'
 import { runWalletSwapExecute } from '@/commands/wallet/swap/execute.js'
+import { runWalletSwapQuote } from '@/commands/wallet/swap/quote.js'
+import { runWalletSwapQuotes } from '@/commands/wallet/swap/quotes.js'
 
 /**
- * @description Builds the `wallet swap` subcommand tree. Read-only `markets`, `market`, `quote`, `quotes` aliases live on the root `actions swap` tree to avoid forcing PRIVATE_KEY for purely public reads. The wallet tree exposes only `execute`.
- * @returns Commander `Command` configured with `execute`.
+ * @description Builds the `wallet swap` subcommand tree. Read-only `markets` and `market` live on the root `actions swap` tree (no `PRIVATE_KEY` needed). Wallet-scoped `quote` / `quotes` exist here too so the SDK defaults each quote's `recipient` to the wallet address — the safe path for routers that encode recipient into calldata (Velodrome v2/leaf). `execute` is the write path.
+ * @returns Commander `Command` configured with `quote`, `quotes`, and `execute`.
  */
 export function walletSwapCommand(): Command {
   const command = new Command('swap').description(
-    'Execute swaps from the EOA derived from PRIVATE_KEY.',
+    'Wallet-scoped swap commands (require PRIVATE_KEY).',
   )
+  addQuoteOptions(
+    command
+      .command('quote')
+      .description('Get the best swap quote bound to the wallet as recipient.'),
+  ).action(runWalletSwapQuote)
+  addQuoteOptions(
+    command
+      .command('quotes')
+      .description(
+        'Get every available provider quote (best price first) bound to the wallet as recipient.',
+      ),
+  ).action(runWalletSwapQuotes)
   addQuoteOptions(
     command
       .command('execute')
