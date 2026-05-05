@@ -21,6 +21,10 @@ export function swapCommand(): Command {
     .command('markets')
     .description('List swap markets across configured providers.')
     .option('--chain <name>', 'filter to a single chain by shortname')
+    .option(
+      '--asset <symbol>',
+      'filter to markets containing this asset (e.g. USDC_DEMO). Case-insensitive.',
+    )
     .action(runSwapMarkets)
   command
     .command('market')
