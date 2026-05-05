@@ -43,8 +43,7 @@ interface Printers {
   chains: readonly ChainRow[]
   address: AddressDoc
   balance: readonly TokenBalance[]
-  lendOpen: LendActionDoc
-  lendClose: LendActionDoc
+  lendAction: LendActionDoc
   lendMarkets: readonly LendMarket[]
   lendMarket: LendMarket
   lendPosition: LendMarketPosition
@@ -149,8 +148,7 @@ const TEXT_FORMATTERS: {
   chains: formatChains,
   address: formatAddress,
   balance: formatBalance,
-  lendOpen: formatLendAction,
-  lendClose: formatLendAction,
+  lendAction: formatLendAction,
   lendMarkets: formatLendMarkets,
   lendMarket: formatLendMarket,
   lendPosition: formatLendPosition,
