@@ -1,3 +1,4 @@
+import { ContractFunctionRevertedError } from 'viem'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -83,14 +84,41 @@ describe('runWalletLendClose', () => {
     }
   })
 
-  it('rejects non-positive amounts with CliError(validation)', async () => {
+  it.each([
+    '0',
+    '-1',
+    'foo',
+    'NaN',
+    '1e10',
+    '0x10',
+    ' 1 ',
+    '.5',
+    '9007199254740993',
+  ])('rejects amount %p with CliError(validation)', async (bad) => {
     mockWallet(async () => successReceipt('0x'))
     try {
-      await runWalletLendClose({ market: 'aave-eth', amount: '0' })
-      throw new Error('did not throw')
+      await runWalletLendClose({ market: 'aave-eth', amount: bad })
+      throw new Error(`did not throw for ${bad}`)
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('validation')
+    }
+  })
+
+  it('maps simulation reverts to CliError(onchain)', async () => {
+    mockWallet(async () => {
+      throw new ContractFunctionRevertedError({
+        abi: [],
+        data: undefined,
+        functionName: 'withdraw',
+      })
+    })
+    try {
+      await runWalletLendClose({ market: 'aave-eth', amount: '1' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('onchain')
     }
   })
 

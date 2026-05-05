@@ -38,23 +38,14 @@ describe('runWalletLendOpen', () => {
     vi.restoreAllMocks()
   })
 
-  const mockWallet = (
-    openPosition: (params: unknown) => Promise<unknown>,
-    lendProviders: 'morpho' | 'aave' | 'both' = 'both',
-  ) => {
-    const lend =
-      lendProviders === 'morpho' ||
-      lendProviders === 'both' ||
-      lendProviders === 'aave'
-        ? { openPosition, closePosition: async () => null }
-        : undefined
+  const mockWallet = (openPosition: (params: unknown) => Promise<unknown>) => {
     vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
       config: getDemoConfig(),
       actions: {} as never,
       signer: {} as never,
       wallet: {
         address: '0xabc',
-        lend,
+        lend: { openPosition, closePosition: async () => null },
       } as never,
     })
   }
