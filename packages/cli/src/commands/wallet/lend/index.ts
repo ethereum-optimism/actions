@@ -35,9 +35,13 @@ export function walletLendCommand(): Command {
       '--market <name>',
       'market name from the config allowlist (e.g. "Gauntlet USDC", "gauntlet-usdc")',
     )
-    .requiredOption(
+    .option(
       '--amount <n>',
-      'amount to withdraw in human-readable units (e.g. 10 for 10 USDC)',
+      'amount to withdraw in human-readable units (e.g. 10 for 10 USDC); mutually exclusive with --max',
+    )
+    .option(
+      '--max',
+      "withdraw the wallet's entire balance in this market (subject to inflight interest accrual; the CLI fetches the position first)",
     )
     .action(runWalletLendClose)
   command

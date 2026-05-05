@@ -17,7 +17,10 @@ const APPROVAL_MODES = [
 
 export interface LendActionFlags {
   market: string
-  amount: string
+  /** Required for `open`; one of `amount` or `max` is required for `close`. */
+  amount?: string
+  /** Only consumed by `close`; mutually exclusive with `amount`. */
+  max?: boolean
   /** Only consumed by `open`; ignored on `close`. */
   approvalMode?: string
 }
@@ -48,11 +51,38 @@ export async function runLendAction(
   const { wallet, config } = await walletContext()
   requireLendCapability(wallet)
   const market = resolveMarket(flags.market, collectMarkets(config))
-  const amount = parseAmount(flags.amount)
+  const marketId = { address: market.address, chainId: market.chainId }
   const approvalMode =
     action === 'open' ? parseApprovalMode(flags.approvalMode) : undefined
+  if (action === 'close' && flags.max && flags.amount !== undefined) {
+    throw new CliError(
+      'validation',
+      'Pass either --amount or --max, not both',
+      { amount: flags.amount, max: true },
+    )
+  }
+  if (action !== 'close' || !flags.max) {
+    if (flags.amount === undefined) {
+      throw new CliError(
+        'validation',
+        action === 'close'
+          ? 'Either --amount or --max is required'
+          : 'Required option --amount <n> not specified',
+      )
+    }
+  }
   try {
-    const marketId = { address: market.address, chainId: market.chainId }
+    // For `close --max`, read the wallet's current position first and pass
+    // its formatted balance through `parseAmount` for the same validation
+    // path as a user-supplied amount. This races inflight interest accrual,
+    // so the dispatched amount may be slightly less than the live balance
+    // by the time the tx lands.
+    const amount =
+      action === 'close' && flags.max
+        ? parseAmount(
+            (await wallet.lend.getPosition({ marketId })).balanceFormatted,
+          )
+        : parseAmount(flags.amount as string)
     const receipt =
       action === 'open'
         ? await wallet.lend.openPosition({

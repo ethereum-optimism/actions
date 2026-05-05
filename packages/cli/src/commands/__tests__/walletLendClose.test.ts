@@ -38,14 +38,21 @@ describe('runWalletLendClose', () => {
     vi.restoreAllMocks()
   })
 
-  const mockWallet = (closePosition: (params: unknown) => Promise<unknown>) => {
+  const mockWallet = (
+    closePosition: (params: unknown) => Promise<unknown>,
+    getPosition?: (params: unknown) => Promise<unknown>,
+  ) => {
     vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
       config: getDemoConfig(),
       actions: {} as never,
       signer: {} as never,
       wallet: {
         address: '0xabc',
-        lend: { closePosition, openPosition: async () => null },
+        lend: {
+          closePosition,
+          openPosition: async () => null,
+          getPosition: getPosition ?? (async () => null),
+        },
       } as never,
     })
   }
@@ -147,6 +154,48 @@ describe('runWalletLendClose', () => {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('network')
       expect((err as CliError).retryable).toBe(true)
+    }
+  })
+
+  it('--max fetches the current position and uses balanceFormatted as the amount', async () => {
+    const closeCalls: unknown[] = []
+    const getPosition = vi.fn(async () => ({
+      balanceFormatted: '0.42',
+      balance: 420000000000000000n,
+      sharesFormatted: '0.4',
+      shares: 400000000000000000n,
+      marketId: { address: '0xabc', chainId: 11155420 },
+    }))
+    mockWallet(async (params) => {
+      closeCalls.push(params)
+      return successReceipt('0xclose')
+    }, getPosition)
+    await runWalletLendClose({ market: 'aave-eth', max: true })
+    expect(getPosition).toHaveBeenCalledTimes(1)
+    const call = closeCalls[0] as { amount: number }
+    expect(call.amount).toBe(0.42)
+  })
+
+  it('rejects --amount and --max together with CliError(validation)', async () => {
+    mockWallet(async () => successReceipt('0x'))
+    try {
+      await runWalletLendClose({ market: 'aave-eth', amount: '1', max: true })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+      expect((err as CliError).message).toMatch(/not both/)
+    }
+  })
+
+  it('rejects close with neither --amount nor --max as CliError(validation)', async () => {
+    mockWallet(async () => successReceipt('0x'))
+    try {
+      await runWalletLendClose({ market: 'aave-eth' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
     }
   })
 
