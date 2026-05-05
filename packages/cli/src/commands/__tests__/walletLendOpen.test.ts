@@ -104,6 +104,36 @@ describe('runWalletLendOpen', () => {
     }
   })
 
+  it('forwards --approval-mode to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return successReceipt('0x')
+    })
+    await runWalletLendOpen({
+      market: 'gauntlet-usdc',
+      amount: '1',
+      approvalMode: 'max',
+    })
+    const call = captured[0] as { approvalMode?: string }
+    expect(call.approvalMode).toBe('max')
+  })
+
+  it('rejects invalid --approval-mode with CliError(validation)', async () => {
+    mockWallet(async () => successReceipt('0x'))
+    try {
+      await runWalletLendOpen({
+        market: 'gauntlet-usdc',
+        amount: '1',
+        approvalMode: 'infinite',
+      })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
+
   it.each([
     '0',
     '-1',

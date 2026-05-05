@@ -23,6 +23,10 @@ export function walletLendCommand(): Command {
       '--amount <n>',
       'amount to supply in human-readable units (e.g. 10 for 10 USDC)',
     )
+    .option(
+      '--approval-mode <exact|max>',
+      'ERC-20 approval strategy: "exact" approves only this call (default, gas-heavier on repeat); "max" approves max-uint to amortise across future supplies',
+    )
     .action(runWalletLendOpen)
   command
     .command('close')
