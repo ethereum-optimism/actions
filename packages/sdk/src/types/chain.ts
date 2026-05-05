@@ -11,12 +11,6 @@ export interface ChainConfig {
   rpcUrls?: string[]
   /** Bundler configuration */
   bundler?: BundlerConfig
-  /**
-   * Polling interval (ms) for the chain's PublicClient. Used by viem's
-   * `waitForTransactionReceipt` and friends when the transport is HTTP.
-   * Defaults to 4000ms (viem default). Lower this for fast L2s.
-   */
-  pollingInterval?: number
 }
 
 export interface BaseBundlerConfig {

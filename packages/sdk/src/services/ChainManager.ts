@@ -16,17 +16,15 @@ import { mainnet, sepolia } from 'viem/chains'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainConfig } from '@/types/chain.js'
 
-/** viem `pollingInterval` (ms) used for fast chains (L2s with ~2s blocks). */
-export const DEFAULT_POLLING_INTERVAL_MS = 1500
-/** viem `pollingInterval` (ms) used for L1-class chains with ~12s blocks. */
-export const MAINNET_POLLING_INTERVAL_MS = 4000
+/** viem `pollingInterval` (ms) for L2-class chains with ~2s blocks. */
+const FAST_CHAIN_POLLING_INTERVAL_MS = 1500
+/** viem `pollingInterval` (ms) for L1-class chains with ~12s blocks. */
+const SLOW_CHAIN_POLLING_INTERVAL_MS = 4000
 
-function defaultPollingInterval(chainId: number): number {
-  if (chainId === mainnet.id || chainId === sepolia.id) {
-    return MAINNET_POLLING_INTERVAL_MS
-  }
-  return DEFAULT_POLLING_INTERVAL_MS
-}
+const SLOW_CHAIN_IDS: ReadonlySet<SupportedChainId> = new Set([
+  mainnet.id,
+  sepolia.id,
+])
 
 /**
  * Chain Manager Service
@@ -187,9 +185,9 @@ export class ChainManager {
           `Public client already configured for chain ID: ${chainConfig.chainId}`,
         )
       }
-      const pollingInterval =
-        chainConfig.pollingInterval ??
-        defaultPollingInterval(chainConfig.chainId)
+      const pollingInterval = SLOW_CHAIN_IDS.has(chainConfig.chainId)
+        ? SLOW_CHAIN_POLLING_INTERVAL_MS
+        : FAST_CHAIN_POLLING_INTERVAL_MS
       const client = createPublicClient({
         chain,
         transport: this.getTransportForChain(chainConfig.chainId),
