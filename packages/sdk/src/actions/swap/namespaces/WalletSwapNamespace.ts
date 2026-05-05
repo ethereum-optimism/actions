@@ -3,6 +3,7 @@ import { isAddressEqual } from 'viem'
 import { QUOTE_DISCRIMINATOR } from '@/actions/swap/core/SwapProvider.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { QuoteRecipientMismatchError } from '@/core/error/errors.js'
 import type { SwapExecuteParamsResolved } from '@/services/nameservices/ens/types.js'
 import type { RecipientResolver } from '@/services/nameservices/ens/utils.js'
 import type { SwapSettings } from '@/types/actions.js'
@@ -91,10 +92,10 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    */
   private requireQuoteForThisWallet(quote: SwapQuote): SwapQuote {
     if (!isAddressEqual(quote.recipient, this.wallet.address)) {
-      throw new Error(
-        `SwapQuote was generated for a different recipient (${quote.recipient}). ` +
-          `Re-quote via wallet.swap.getQuote(...) so calldata is bound to this wallet (${this.wallet.address}).`,
-      )
+      throw new QuoteRecipientMismatchError({
+        quoteRecipient: quote.recipient,
+        walletAddress: this.wallet.address,
+      })
     }
     return quote
   }
