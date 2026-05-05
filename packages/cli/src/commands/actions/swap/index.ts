@@ -2,7 +2,10 @@ import { Command } from 'commander'
 
 import { runSwapMarket } from '@/commands/actions/swap/market.js'
 import { runSwapMarkets } from '@/commands/actions/swap/markets.js'
-import { addQuoteOptions } from '@/commands/actions/swap/options.js'
+import {
+  addQuoteOptions,
+  QUOTE_OPTIONS_HELP,
+} from '@/commands/actions/swap/options.js'
 import { runSwapQuote } from '@/commands/actions/swap/quote.js'
 import { runSwapQuotes } from '@/commands/actions/swap/quotes.js'
 
@@ -31,6 +34,7 @@ export function swapCommand(): Command {
     .description('Inspect one swap market by pool id and chain.')
     .requiredOption('--pool <id>', 'pool identifier (keccak256 of PoolKey)')
     .requiredOption('--chain <name>', 'chain shortname (e.g. base-sepolia)')
+    .option(...QUOTE_OPTIONS_HELP.provider)
     .action(runSwapMarket)
   addQuoteOptions(
     command.command('quote').description('Get the best swap quote.'),

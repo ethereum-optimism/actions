@@ -21,7 +21,9 @@ describe('runSwapMarket', () => {
     vi.restoreAllMocks()
   })
 
-  const mockActions = (getMarket: (params: unknown) => Promise<unknown>) => {
+  const mockActions = (
+    getMarket: (params: unknown, provider?: unknown) => Promise<unknown>,
+  ) => {
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
       config: getDemoConfig(),
       actions: { swap: { getMarket } } as never,
@@ -52,6 +54,35 @@ describe('runSwapMarket', () => {
     mockActions(async () => ({}))
     try {
       await runSwapMarket({ pool: '0x', chain: 'no-such-chain' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
+
+  it('forwards --provider to the SDK when set', async () => {
+    const captured: unknown[][] = []
+    mockActions(async (params, provider) => {
+      captured.push([params, provider])
+      return { marketId: params, assets: [], fee: 0, provider: 'uniswap' }
+    })
+    await runSwapMarket({
+      pool: '0xpool',
+      chain: 'base-sepolia',
+      provider: 'uniswap',
+    })
+    expect(captured[0]?.[1]).toBe('uniswap')
+  })
+
+  it('rejects unknown --provider with CliError(validation)', async () => {
+    mockActions(async () => ({}))
+    try {
+      await runSwapMarket({
+        pool: '0x',
+        chain: 'base-sepolia',
+        provider: 'badprovider',
+      })
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
