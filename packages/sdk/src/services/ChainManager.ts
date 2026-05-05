@@ -26,6 +26,12 @@ const SLOW_CHAIN_IDS: ReadonlySet<SupportedChainId> = new Set([
   sepolia.id,
 ])
 
+function pollingIntervalForChain(chainId: SupportedChainId): number {
+  return SLOW_CHAIN_IDS.has(chainId)
+    ? SLOW_CHAIN_POLLING_INTERVAL_MS
+    : FAST_CHAIN_POLLING_INTERVAL_MS
+}
+
 /**
  * Chain Manager Service
  * @description Manages public clients and chain infrastructure for the Verbs SDK.
@@ -100,6 +106,7 @@ export class ChainManager {
     const client = createPublicClient({
       chain: this.getChain(chainId),
       transport: http(bundlerUrl),
+      pollingInterval: pollingIntervalForChain(chainId),
     })
     return createBundlerClient({
       account,
@@ -185,13 +192,10 @@ export class ChainManager {
           `Public client already configured for chain ID: ${chainConfig.chainId}`,
         )
       }
-      const pollingInterval = SLOW_CHAIN_IDS.has(chainConfig.chainId)
-        ? SLOW_CHAIN_POLLING_INTERVAL_MS
-        : FAST_CHAIN_POLLING_INTERVAL_MS
       const client = createPublicClient({
         chain,
         transport: this.getTransportForChain(chainConfig.chainId),
-        pollingInterval,
+        pollingInterval: pollingIntervalForChain(chainConfig.chainId),
       })
 
       clients.set(chainConfig.chainId, client)
