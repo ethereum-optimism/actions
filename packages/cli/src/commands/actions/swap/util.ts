@@ -37,8 +37,8 @@ export function parseAmountFlags(
     )
   }
   return amountIn
-    ? { amountIn: parseAmount(amountIn) }
-    : { amountOut: parseAmount(amountOut!) }
+    ? { amountIn: parseAmount(amountIn, '--amount-in') }
+    : { amountOut: parseAmount(amountOut!, '--amount-out') }
 }
 
 /**
