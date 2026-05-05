@@ -1,3 +1,4 @@
+import { ContractFunctionRevertedError } from 'viem'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -105,6 +106,28 @@ describe('runWalletSwapExecute', () => {
         { ...successReceipt('0xrevert'), status: 'reverted' as const },
       ]),
     )
+    try {
+      await runWalletSwapExecute({
+        in: 'USDC_DEMO',
+        out: 'OP_DEMO',
+        amountIn: '1',
+        chain: 'base-sepolia',
+      })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('onchain')
+    }
+  })
+
+  it('maps simulation reverts to CliError(onchain)', async () => {
+    mockWallet(async () => {
+      throw new ContractFunctionRevertedError({
+        abi: [],
+        data: undefined,
+        functionName: 'execute',
+      })
+    })
     try {
       await runWalletSwapExecute({
         in: 'USDC_DEMO',
