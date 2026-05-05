@@ -123,9 +123,40 @@ describe('EOAWallet', () => {
       expect(callArgs.account).toMatchObject({
         address: mockLocalAccount.address,
       })
-      expect(callArgs.account).toHaveProperty('nonceManager')
       expect(callArgs.chain).toBe(unichain)
       expect(walletClient).toBe(mockWalletClient)
+    })
+
+    it('attaches a nonce manager so back-to-back sends get sequential nonces', async () => {
+      await wallet.walletClient(unichain.id)
+
+      const callArgs = vi.mocked(createWalletClient).mock.calls[0][0]
+      const account = callArgs.account as { nonceManager?: unknown }
+      expect(account.nonceManager).toMatchObject({
+        consume: expect.any(Function),
+        increment: expect.any(Function),
+        get: expect.any(Function),
+        reset: expect.any(Function),
+      })
+    })
+
+    it('respects a nonce manager already set on the signer', async () => {
+      const customNonceManager = {
+        consume: vi.fn(),
+        increment: vi.fn(),
+        get: vi.fn(),
+        reset: vi.fn(),
+      }
+      ;(mockLocalAccount as LocalAccount).nonceManager =
+        customNonceManager as unknown as LocalAccount['nonceManager']
+
+      await wallet.walletClient(unichain.id)
+
+      const callArgs = vi.mocked(createWalletClient).mock.calls[0][0]
+      const account = callArgs.account as { nonceManager?: unknown }
+      expect(account.nonceManager).toBe(customNonceManager)
+
+      delete (mockLocalAccount as LocalAccount).nonceManager
     })
   })
 
@@ -194,8 +225,8 @@ describe('EOAWallet', () => {
         .mockResolvedValueOnce(mockReceipt2.transactionHash)
         .mockResolvedValueOnce(mockReceipt3.transactionHash)
 
-      // sendBatch waits for one confirmation per transaction (delegating to
-      // `send()`); no longer takes a second confirmations:2 pass.
+      // sendBatch performs exactly one inclusion wait per transaction (the
+      // wait inside `send()`). One mock per tx.
       vi.mocked(mockPublicClient.waitForTransactionReceipt)
         .mockResolvedValueOnce(mockReceipt)
         .mockResolvedValueOnce(mockReceipt2)
@@ -234,11 +265,13 @@ describe('EOAWallet', () => {
         unichain.id,
       )
 
-      // sendBatch delegates to send() once per transaction and does not make
-      // an additional confirmations:2 pass. One inclusion wait per tx.
+      // One inclusion wait per tx, via `send()`.
       expect(mockPublicClient.waitForTransactionReceipt).toHaveBeenCalledTimes(
         2,
       )
+      expect(
+        mockPublicClient.waitForTransactionReceipt,
+      ).not.toHaveBeenCalledWith(expect.objectContaining({ confirmations: 2 }))
     })
 
     it('should get public client for each transaction', async () => {
