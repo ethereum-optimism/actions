@@ -22,7 +22,7 @@ describe('runLendMarkets', () => {
 
   const mockActions = (getMarkets: () => Promise<unknown>) => {
     vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
-      config: {} as never,
+      config: { chains: [{ chainId: 84532 }, { chainId: 11155420 }] } as never,
       actions: { lend: { getMarkets } } as never,
     })
   }
@@ -67,6 +67,34 @@ describe('runLendMarkets', () => {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('network')
       expect((err as CliError).retryable).toBe(true)
+    }
+  })
+
+  it('forwards --chain to the SDK as chainId', async () => {
+    const getMarkets = vi.fn(async () => [])
+    vi.spyOn(baseCtx, 'baseContext').mockReturnValue({
+      config: {
+        chains: [{ chainId: 84532 }, { chainId: 11155420 }],
+        assets: { allow: [] },
+      } as never,
+      actions: { lend: { getMarkets } } as never,
+    })
+    await runLendMarkets({ chain: 'base-sepolia' })
+    expect(getMarkets).toHaveBeenCalledWith({
+      asset: undefined,
+      chainId: 84532,
+    })
+  })
+
+  it('rejects multi-chain --chain values with CliError(validation)', async () => {
+    mockActions(async () => [])
+    try {
+      await runLendMarkets({ chain: 'base-sepolia,op-sepolia' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+      expect((err as CliError).message).toMatch(/single chain/)
     }
   })
 })
