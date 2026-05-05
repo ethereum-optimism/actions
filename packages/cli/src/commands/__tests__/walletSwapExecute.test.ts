@@ -99,7 +99,7 @@ describe('runWalletSwapExecute', () => {
     expect(body.transactions).toHaveLength(1)
   })
 
-  it('maps reverted receipts to CliError(onchain)', async () => {
+  it('maps reverted receipts to CliError(onchain) with swap context details', async () => {
     mockWallet(async () =>
       stubResult([
         successReceipt('0xapprove'),
@@ -117,6 +117,14 @@ describe('runWalletSwapExecute', () => {
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
       expect((err as CliError).code).toBe('onchain')
+      const details = (err as CliError).details as {
+        chainId?: number
+        assetIn?: string
+        assetOut?: string
+      }
+      expect(details.chainId).toBe(84532)
+      expect(details.assetIn).toBe('USDC_DEMO')
+      expect(details.assetOut).toBe('OP_DEMO')
     }
   })
 
