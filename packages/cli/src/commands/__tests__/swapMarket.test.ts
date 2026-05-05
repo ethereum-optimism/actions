@@ -42,8 +42,8 @@ describe('runSwapMarket', () => {
         provider: 'uniswap',
       }
     })
-    await runSwapMarket({ pool: '0xpool', chain: 'unichain' })
-    expect(captured[0]).toEqual({ poolId: '0xpool', chainId: 130 })
+    await runSwapMarket({ pool: '0xpool', chain: 'base-sepolia' })
+    expect(captured[0]).toEqual({ poolId: '0xpool', chainId: 84532 })
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
     expect(body.provider).toBe('uniswap')
   })
@@ -64,7 +64,7 @@ describe('runSwapMarket', () => {
       throw new Error('fetch failed')
     })
     try {
-      await runSwapMarket({ pool: '0x', chain: 'unichain' })
+      await runSwapMarket({ pool: '0x', chain: 'base-sepolia' })
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)

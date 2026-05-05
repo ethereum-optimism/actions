@@ -1,6 +1,9 @@
-import { buildQuoteParams, type QuoteFlags } from '@/commands/actions/swap/util.js'
-import { rethrowAsCliError } from '@/output/errors.js'
+import {
+  buildQuoteParams,
+  type QuoteFlags,
+} from '@/commands/actions/swap/util.js'
 import { baseContext } from '@/context/baseContext.js'
+import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 
 /**
