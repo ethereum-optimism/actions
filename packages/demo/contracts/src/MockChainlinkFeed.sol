@@ -8,8 +8,11 @@ import {AggregatorV3Interface} from "morpho-blue-oracles/morpho-chainlink/interf
 ///         and testing. Drop-in replacement for a real Chainlink aggregator on chains
 ///         where one does not yet exist; mainnet swap-in is a one-line address change
 ///         in the consumer.
-/// @dev Truly immutable: no setters, no admin, no upgradeability. `getRoundData`
-///      returns the same data as `latestRoundData` regardless of `_roundId`.
+/// @dev No setters, no admin, no upgradeability. `_answer`, `_decimals`, and
+///      `_deployedAt` are immutable. `_description` is a storage slot only
+///      because Solidity does not support immutable strings; nothing in this
+///      contract writes to it after construction. `getRoundData` returns the
+///      same data as `latestRoundData` regardless of `_roundId`.
 contract MockChainlinkFeed is AggregatorV3Interface {
     int256 private immutable _answer;
     uint8 private immutable _decimals;
