@@ -179,8 +179,18 @@ echo ""
 BORROW_MARKET_ID=$(read_state "morpho.borrow.marketId")
 
 if [[ -z "$BORROW_MARKET_ID" ]]; then
+    # Pass any partial state through so the script reuses prior contracts
+    # rather than orphaning them on rerun. address(0) sentinel (rather than
+    # an unset env var) keeps vm.envOr's parse path simple.
+    EXISTING_MOCK_FEED=$(read_state "morpho.borrow.mockFeed")
+    EXISTING_ORACLE=$(read_state "morpho.borrow.oracle")
+    [[ -z "$EXISTING_MOCK_FEED" ]] && EXISTING_MOCK_FEED="0x0000000000000000000000000000000000000000"
+    [[ -z "$EXISTING_ORACLE" ]] && EXISTING_ORACLE="0x0000000000000000000000000000000000000000"
+
     echo ">>> Deploying Morpho borrow market..."
     if ! OUTPUT=$(DEMO_VAULT_ADDRESS="$VAULT_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" DEMO_USDC_ADDRESS="$USDC_ADDR" \
+        BORROW_MOCK_FEED_ADDRESS="$EXISTING_MOCK_FEED" \
+        BORROW_ORACLE_ADDRESS="$EXISTING_ORACLE" \
         forge script script/DeployMorphoBorrowMarket.s.sol:DeployMorphoBorrowMarket \
         "${FORGE_ARGS[@]}" --broadcast 2>&1); then
         echo "$OUTPUT"

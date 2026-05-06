@@ -17,6 +17,13 @@ interface IDemoOP {
     function approve(address spender, uint256 amount) external returns (bool);
 }
 
+/// @dev Morpho's IERC4626 in lib/morpho-blue-oracles only declares
+///      convertToAssets. We need asset() for the vault-underlying validation
+///      below, so declare it locally rather than pulling a fuller interface.
+interface IVaultAsset {
+    function asset() external view returns (address);
+}
+
 /// @title DeployMorphoBorrowMarket
 /// @notice Deploys the borrow-direction Morpho Blue market: dUSDC vault shares as
 ///         collateral, OP as the loan token. Wires a `MorphoChainlinkOracleV2` that
@@ -65,32 +72,50 @@ contract DeployMorphoBorrowMarket is Script {
         address expectedAsset = vm.envOr("DEMO_USDC_ADDRESS", address(0));
         if (expectedAsset != address(0)) {
             require(
-                IERC4626(vaultAddr).asset() == expectedAsset,
+                IVaultAsset(vaultAddr).asset() == expectedAsset,
                 "DEMO_VAULT_ADDRESS asset does not match DEMO_USDC_ADDRESS"
             );
         }
 
+        // Reuse existing mock feed and oracle if the orchestrator records them
+        // in state. A rerun after a partial-write or a post-marketId revert
+        // would otherwise deploy fresh contracts, orphaning the prior pair.
+        // Matches the lend script's DEMO_USDC_ADDRESS / DEMO_OP_ADDRESS env-reuse.
+        address existingMockFeed = vm.envOr("BORROW_MOCK_FEED_ADDRESS", address(0));
+        address existingOracle = vm.envOr("BORROW_ORACLE_ADDRESS", address(0));
+
         vm.startBroadcast();
 
-        // Mock OP/USD feed.
-        MockChainlinkFeed mockFeed = new MockChainlinkFeed(MOCK_FEED_ANSWER, MOCK_FEED_DECIMALS, "OP / USD (mock)");
-        console.log("BorrowMockFeed:", address(mockFeed));
+        MockChainlinkFeed mockFeed;
+        if (existingMockFeed != address(0)) {
+            mockFeed = MockChainlinkFeed(existingMockFeed);
+            console.log("BorrowMockFeed (existing):", existingMockFeed);
+        } else {
+            mockFeed = new MockChainlinkFeed(MOCK_FEED_ANSWER, MOCK_FEED_DECIMALS, "OP / USD (mock)");
+            console.log("BorrowMockFeed:", address(mockFeed));
+        }
 
         // Yield-tracking oracle: dUSDC.convertToAssets gives USDC (~ 1:1 USD),
         // divided by mock OP/USD price gives dUSDC denominated in OP.
-        MorphoChainlinkOracleV2 oracle = new MorphoChainlinkOracleV2(
-            IERC4626(vaultAddr),
-            BASE_VAULT_CONVERSION_SAMPLE,
-            AggregatorV3Interface(address(0)),
-            AggregatorV3Interface(address(0)),
-            BASE_TOKEN_DECIMALS,
-            IERC4626(address(0)),
-            1,
-            AggregatorV3Interface(address(mockFeed)),
-            AggregatorV3Interface(address(0)),
-            QUOTE_TOKEN_DECIMALS
-        );
-        console.log("BorrowOracle:", address(oracle));
+        MorphoChainlinkOracleV2 oracle;
+        if (existingOracle != address(0)) {
+            oracle = MorphoChainlinkOracleV2(existingOracle);
+            console.log("BorrowOracle (existing):", existingOracle);
+        } else {
+            oracle = new MorphoChainlinkOracleV2(
+                IERC4626(vaultAddr),
+                BASE_VAULT_CONVERSION_SAMPLE,
+                AggregatorV3Interface(address(0)),
+                AggregatorV3Interface(address(0)),
+                BASE_TOKEN_DECIMALS,
+                IERC4626(address(0)),
+                1,
+                AggregatorV3Interface(address(mockFeed)),
+                AggregatorV3Interface(address(0)),
+                QUOTE_TOKEN_DECIMALS
+            );
+            console.log("BorrowOracle:", address(oracle));
+        }
 
         // Create market: dUSDC collateral, OP loan.
         MarketParams memory marketParams = MarketParams({
