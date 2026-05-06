@@ -171,27 +171,43 @@ fi
 echo ""
 
 # --- Step 5: Deploy Morpho Borrow Market ---
+# Idempotency: skip when morpho.borrow.marketId is already set. To recover from
+# a stale state file (e.g., the on-chain market exists but the JSON was wiped,
+# or vice versa), clear morpho.borrow.* keys and rerun. Morpho Blue reverts
+# MARKET_ALREADY_CREATED on a duplicate createMarket; clearing only the marketId
+# key triggers a re-deploy of the oracle and a fresh market.
 BORROW_MARKET_ID=$(read_state "morpho.borrow.marketId")
 
 if [[ -z "$BORROW_MARKET_ID" ]]; then
     echo ">>> Deploying Morpho borrow market..."
-    OUTPUT=$(DEMO_VAULT_ADDRESS="$VAULT_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
+    if ! OUTPUT=$(DEMO_VAULT_ADDRESS="$VAULT_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
         forge script script/DeployMorphoBorrowMarket.s.sol:DeployMorphoBorrowMarket \
-        "${FORGE_ARGS[@]}" --broadcast 2>&1)
+        "${FORGE_ARGS[@]}" --broadcast 2>&1); then
+        echo "$OUTPUT"
+        echo "ERROR: forge script DeployMorphoBorrowMarket failed"
+        exit 1
+    fi
     echo "$OUTPUT"
 
     BORROW_MOCK_FEED=$(parse_address "BorrowMockFeed:" "$OUTPUT")
     BORROW_ORACLE=$(parse_address "BorrowOracle:" "$OUTPUT")
-    BORROW_MARKET_ID=$(parse_bytes32 "$OUTPUT")
+    # Anchor the bytes32 grep on the BorrowMarketId label so forge --broadcast
+    # transaction hashes (also 64-hex) cannot be misread as the market id.
+    # console.logBytes32 prints the value on the line after the label.
+    BORROW_MARKET_ID=$(echo "$OUTPUT" | grep -A1 "BorrowMarketId:" | grep -oE '0x[0-9a-fA-F]{64}' | head -1)
 
     if [[ -z "$BORROW_MARKET_ID" || -z "$BORROW_ORACLE" || -z "$BORROW_MOCK_FEED" ]]; then
         echo "ERROR: Failed to parse borrow market addresses/id from forge output"
         exit 1
     fi
 
+    # Write marketId first: it is the idempotency guard. If the script aborts
+    # mid-write, a rerun must re-deploy from scratch (otherwise we orphan
+    # contracts because the oracle address is part of the market id hash and
+    # a fresh oracle produces a different id).
+    write_state "morpho.borrow.marketId" "$BORROW_MARKET_ID"
     write_state "morpho.borrow.mockFeed" "$BORROW_MOCK_FEED"
     write_state "morpho.borrow.oracle" "$BORROW_ORACLE"
-    write_state "morpho.borrow.marketId" "$BORROW_MARKET_ID"
     echo "Morpho borrow market deployed: marketId=$BORROW_MARKET_ID"
 else
     echo ">>> Morpho borrow market already deployed: marketId=$BORROW_MARKET_ID"
