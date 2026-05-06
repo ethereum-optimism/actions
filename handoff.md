@@ -1,12 +1,38 @@
 # Handoff: Borrow PR #2 brainstorm in progress
 
-> **Cleanup instruction for the next agent:** once you've finished reading
-> this file and absorbed the context, **delete this `handoff.md` file and
-> remove the commit that introduced it** (the most recent commit on
-> `kevin/borrow-pr2` at handoff time) before doing any other work. Use
-> `git reset --hard HEAD~1` if the handoff commit is the tip; otherwise
-> drop it via interactive rebase. Force-push the result. The handoff is
-> ephemeral context, not part of the PR.
+> **MANDATORY cleanup before doing any other work:**
+>
+> Once you've finished reading this file and absorbed the context, you
+> **MUST remove the handoff commit(s) from `kevin/borrow-pr2`'s git
+> history** — not just delete the file, not just revert. The handoff is
+> ephemeral context that must never appear in the PR diff.
+>
+> Steps (run from the worktree root):
+>
+> ```bash
+> # 1. Identify every commit that touches handoff.md
+> git log --oneline -- handoff.md
+>
+> # 2. If those commits are contiguous at HEAD (most common case),
+> #    reset back past them. Example for a single handoff commit at HEAD:
+> git reset --hard HEAD~1
+> # If there are N handoff commits at HEAD: git reset --hard HEAD~N
+>
+> # 3. If handoff commits are interleaved with real work, rebase them out:
+> git rebase -i origin/main   # then drop each handoff commit
+>
+> # 4. Force-push (with lease, to avoid clobbering anything you don't expect):
+> git push --force-with-lease origin kevin/borrow-pr2
+>
+> # 5. Verify cleanup — both checks should return nothing:
+> git log --oneline -- handoff.md
+> ls handoff.md 2>/dev/null
+> ```
+>
+> Force-pushing this **specific branch** (`kevin/borrow-pr2`) is
+> authorized for this cleanup. Do NOT force-push `main` or any other
+> branch. Do NOT amend or rewrite real work commits in the process —
+> only the handoff commits should disappear.
 
 This file is a context dump for the next agent picking up work on
 **Borrow PR #2: dynamic oracle and demo borrow market deploy**
