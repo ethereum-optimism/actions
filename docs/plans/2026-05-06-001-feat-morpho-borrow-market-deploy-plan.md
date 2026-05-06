@@ -49,7 +49,7 @@ over-engineers (bespoke oracle replaced with audited Morpho contract).
   idempotency pattern; record results under nested
   `morpho.borrow.{oracle, mockFeed, marketId}`.
 - R6. Fork-test the full deploy against a pinned baseSepolia block.
-- R7. Stay within "one domain per PR" (`AGENTS.md`) — no SDK, backend, or
+- R7. Stay within "one domain per PR" (`AGENTS.md`); no SDK, backend, or
   frontend changes.
 
 ---
@@ -76,30 +76,30 @@ over-engineers (bespoke oracle replaced with audited Morpho contract).
 
 ### Relevant Code and Patterns
 
-- `packages/demo/contracts/script/DeployMorphoMarket.s.sol` — sibling deploy
+- `packages/demo/contracts/script/DeployMorphoMarket.s.sol`; sibling deploy
   script. Uses `vm.envOr("DEMO_USDC_ADDRESS", ...)` env-reuse pattern, logs
   `DemoUSDC:` / `DemoOP:` / `Vault:` / `Oracle:` for stdout parsing, and
   computes `marketId = keccak256(abi.encode(MarketParams))`. Mirror this
-  shape — do not extend it.
-- `packages/demo/contracts/src/FixedPriceOracle.sol` — used by the lend
+  shape; do not extend it.
+- `packages/demo/contracts/src/FixedPriceOracle.sol`; used by the lend
   market. **Not** reused for the borrow market: it returns a hardcoded
   `1e24` and does not read vault `convertToAssets`. The new oracle needs
   to track yield.
-- `packages/demo/contracts/script/deploy-demo.sh` — orchestrator. Uses
+- `packages/demo/contracts/script/deploy-demo.sh`; orchestrator. Uses
   `read_state` / `write_state` node one-liners + `parse_address` /
   `parse_bytes32` regex. New step wires in identically.
-- `packages/demo/contracts/state/deployments.json` — chain `84532` keyed
+- `packages/demo/contracts/state/deployments.json`; chain `84532` keyed
   state. Existing `morpho.oracle` is `null` (lend script logs it but the
-  bash step doesn't always parse it back) — do not rely on it; use the
+  bash step doesn't always parse it back); do not rely on it; use the
   new nested `morpho.borrow.*` keys.
-- `packages/demo/contracts/lib/` — existing submodules (`forge-std`,
+- `packages/demo/contracts/lib/`; existing submodules (`forge-std`,
   `solady`, `v4-periphery`). No `.gitmodules` file present (forge writes
   one on first install).
-- `packages/demo/contracts/foundry.toml` — minimal default profile.
-- `packages/demo/contracts/test/` — currently only `Faucet.t.sol`. Test
+- `packages/demo/contracts/foundry.toml`; minimal default profile.
+- `packages/demo/contracts/test/`; currently only `Faucet.t.sol`. Test
   conventions are still being established here; both new tests are
   greenfield within the package.
-- `.circleci/config.yml:165-185` — existing `check-contracts` job runs
+- `.circleci/config.yml:165-185`; existing `check-contracts` job runs
   `pnpm build` + `pnpm test` from `packages/demo/contracts`; no changes
   needed (it picks up new tests automatically).
 
@@ -112,7 +112,7 @@ over-engineers (bespoke oracle replaced with audited Morpho contract).
 ### External References
 
 - Morpho's [`morpho-blue-oracles`](https://github.com/morpho-org/morpho-blue-oracles)
-  README — formula and `MorphoChainlinkOracleV2` constructor docs.
+  README; formula and `MorphoChainlinkOracleV2` constructor docs.
 - Morpho's `MorphoChainlinkOracleV2Factory` is documented as Ethereum-mainnet
   only; we instantiate `MorphoChainlinkOracleV2` directly via `new` (the
   factory is a CREATE2 + event convenience layer, not load-bearing).
@@ -131,12 +131,12 @@ over-engineers (bespoke oracle replaced with audited Morpho contract).
 - **Oracle wiring: mock feed lives in `quoteFeed1` slot (OP/USD).**
   `baseFeed1`/`baseFeed2`/`quoteFeed2` set to `address(0)` (Morpho treats as
   `1`). USDC ≈ USD so no base feed is needed. Net effect: oracle returns
-  `dUSDC.convertToAssets(1) × 1 / 0.10` denominated in OP — i.e., dUSDC
+  `dUSDC.convertToAssets(1) × 1 / 0.10` denominated in OP; i.e., dUSDC
   collateral value grows with vault yield, divided by the OP peg.
 - **`baseTokenDecimals = 6` (USDC underlying), NOT 18 (vault).** This is
   the single most likely 12-orders-of-magnitude bug in this PR. Inline
   comment required at the constructor call site.
-- **`baseVaultConversionSample = 1e18`** — sample size for the vault
+- **`baseVaultConversionSample = 1e18`**; sample size for the vault
   conversion ratio. 1e18 is the standard for 18-dec ERC-4626 vaults.
 - **LLTV 86%.** Morpho-enabled tier appropriate for yield-bearing
   collateral. The lend market's 94.5% is a bootstrap-yield artifact in the
@@ -163,31 +163,31 @@ over-engineers (bespoke oracle replaced with audited Morpho contract).
 
 ### Resolved During Planning
 
-- **OP/USDC peg value (origin Q1)** — Resolved at 1 OP = $0.10. Encoded as
+- **OP/USDC peg value (origin Q1)**; Resolved at 1 OP = $0.10. Encoded as
   `1e7` in the 8-decimal `latestRoundData.answer`.
-- **Liquidity seed size (origin Q2)** — 100k OP.
-- **Donation-attack mitigation (origin Q3)** — Skipped; 100k OP seed makes
+- **Liquidity seed size (origin Q2)**; 100k OP.
+- **Donation-attack mitigation (origin Q3)**; Skipped; 100k OP seed makes
   the market non-empty.
-- **Verify-contract shape (origin Q4)** — Skipped entirely in this PR.
-- **`baseTokenDecimals` value (origin Q6)** — Pinned at 6 (USDC underlying).
-- **Mock-feed slot in oracle wiring** — `quoteFeed1` (OP/USD); base slots
+- **Verify-contract shape (origin Q4)**; Skipped entirely in this PR.
+- **`baseTokenDecimals` value (origin Q6)**; Pinned at 6 (USDC underlying).
+- **Mock-feed slot in oracle wiring**; `quoteFeed1` (OP/USD); base slots
   set to `address(0)`.
-- **Mock-feed decimals** — 8 (Chainlink standard).
-- **`baseVaultConversionSample`** — `1e18`.
+- **Mock-feed decimals**; 8 (Chainlink standard).
+- **`baseVaultConversionSample`**; `1e18`.
 
 ### Deferred to Implementation
 
-- **Fork-test pin block (origin Q5)** — Pick a baseSepolia block number
+- **Fork-test pin block (origin Q5)**; Pick a baseSepolia block number
   after 2026-04-15 (current vault deploy) where Morpho Blue, MetaMorpho
   factory, and the existing demo vault all exist. Confirm at implementation
   time by querying chain history (e.g., via `cast block-number` against an
   archive RPC); the implementer should hardcode the chosen block in the
   fork-test setUp.
-- **Exact Morpho Blue + MetaMorpho factory addresses for fork test** —
+- **Exact Morpho Blue + MetaMorpho factory addresses for fork test**;
   Reuse the constants already in `DeployMorphoMarket.s.sol` (`MORPHO`,
   `METAMORPHO_FACTORY_V1_1`, `IRM`); no chain mapping needed.
 - **Mock-feed `roundId` / `startedAt` / `updatedAt` / `answeredInRound`
-  values** — Morpho's `MorphoChainlinkOracleV2` does not validate freshness,
+  values**; Morpho's `MorphoChainlinkOracleV2` does not validate freshness,
   so static values (e.g., `block.timestamp` at deploy) are fine; pin
   whatever passes default `forge test` warnings.
 
@@ -272,11 +272,11 @@ and U3 can compile against it.
   resolves with `forge build`. If it doesn't, add an explicit remapping.
 
 **Patterns to follow:**
-- Existing `lib/forge-std`, `lib/solady`, `lib/v4-periphery` — same
+- Existing `lib/forge-std`, `lib/solady`, `lib/v4-periphery`; same
   install path; no special remappings used today.
 
 **Test scenarios:**
-- Test expectation: none — pure dependency wiring with no behavior of its
+- Test expectation: none; pure dependency wiring with no behavior of its
   own. U2 and U3 verify the dependency works end-to-end.
 
 **Verification:**
@@ -315,7 +315,7 @@ today; swappable for a real feed when one becomes available on baseSepolia.
 - Happy path: deploying with `(1e7, 8)` then calling `latestRoundData()`
   returns `(_, 1e7, _, _, _)` and `decimals()` returns `8`.
 - Happy path: `description()` returns a non-empty string and `version()`
-  returns `1` (or whatever Chainlink convention dictates — confirm in U2).
+  returns `1` (or whatever Chainlink convention dictates; confirm in U2).
 - Edge case: `answer` is preserved even when `decimals` is `0` (defensive
   immutability check on the storage layout).
 
@@ -351,7 +351,7 @@ forge broadcast. Log each address in a format `deploy-demo.sh` can parse.
   - `BASE_TOKEN_DECIMALS = 6` ← inline comment: "USDC underlying, NOT vault"
   - `QUOTE_TOKEN_DECIMALS = 18` (OP)
   - Reuse `MORPHO`, `METAMORPHO_FACTORY_V1_1`, `IRM` from sibling script
-    (or move to a shared constants file — defer that refactor).
+    (or move to a shared constants file; defer that refactor).
 - Construct the oracle with: `baseVault = vault`, `baseFeed1 = baseFeed2 = address(0)`,
   `quoteFeed1 = mockFeed`, `quoteFeed2 = address(0)`,
   `baseVaultConversionSample = 1e18`, `baseTokenDecimals = 6`,
@@ -369,16 +369,16 @@ forge broadcast. Log each address in a format `deploy-demo.sh` can parse.
 **Technical design:** *(directional)*
 
 ```solidity
-// At the oracle constructor — load-bearing comment:
+// At the oracle constructor; load-bearing comment:
 new MorphoChainlinkOracleV2(
     IERC4626(vault),       // baseVault
     1e18,                   // baseVaultConversionSample
     AggregatorV3Interface(address(0)), // baseFeed1
     AggregatorV3Interface(address(0)), // baseFeed2
-    6,                      // baseTokenDecimals — USDC underlying, NOT vault's 18
+    6,                      // baseTokenDecimals; USDC underlying, NOT vault's 18
     IERC4626(address(0)),  // quoteVault
     1,                      // quoteVaultConversionSample
-    AggregatorV3Interface(mockFeed),   // quoteFeed1 — OP/USD peg
+    AggregatorV3Interface(mockFeed),   // quoteFeed1; OP/USD peg
     AggregatorV3Interface(address(0)), // quoteFeed2
     18                      // quoteTokenDecimals
 );
@@ -417,14 +417,14 @@ verified separately).
 
 **Approach:**
 - `setUp()` forks baseSepolia at a pinned block (deferred to implementation
-  — see Open Questions).
+ ; see Open Questions).
 - Use `vm.deal` / `vm.startPrank` to simulate a deployer account.
-- Invoke the script's `run()` directly (forge convention) — no broadcast on
+- Invoke the script's `run()` directly (forge convention); no broadcast on
   fork.
 - Assert market id, oracle address, and that oracle returns a plausible
   price at the pinned block.
 
-**Execution note:** Test-first encouraged here — the oracle wiring is the
+**Execution note:** Test-first encouraged here; the oracle wiring is the
 single highest-risk piece in this PR, so writing the price assertion first
 and watching it fail until the oracle is wired correctly is the most
 direct way to catch a decimals slip.
@@ -446,14 +446,14 @@ direct way to catch a decimals slip.
   surfacing the trap.
 - Integration: after the script runs, deployer's OP balance dropped by
   exactly 100k (or stays at 0 if mint went straight to Morpho).
-- Integration: market is borrowable — `IMorpho.market(id).totalSupplyAssets`
+- Integration: market is borrowable; `IMorpho.market(id).totalSupplyAssets`
   ≥ 100k OP after the run.
 
 **Verification:**
 - `forge test --match-contract DeployMorphoBorrowMarketTest --fork-url <baseSepolia RPC>`
   passes from `packages/demo/contracts/`.
 - The same test passes under the existing `check-contracts` CI job
-  (CI provides an RPC env var or default — verify at implementation time
+  (CI provides an RPC env var or default; verify at implementation time
   whether the existing config has one).
 
 ---
@@ -474,7 +474,7 @@ to include the new keys.
 - Modify: `packages/demo/contracts/state/deployments.json`
 
 **Approach:**
-- Insert Step 5 after the existing Step 4 ("Deploy Velodrome Pool") — order
+- Insert Step 5 after the existing Step 4 ("Deploy Velodrome Pool"); order
   is independent, but place it adjacent to the lend Step 2 if scripts are
   reorganized; otherwise append.
 - Guard: `MARKET_ID=$(read_state "morpho.borrow.marketId")`. If non-empty,
@@ -497,14 +497,14 @@ to include the new keys.
   the script).
 - `state/deployments.json` schema bump: add an empty `"borrow": {}` skeleton
   under `"morpho"` so a fresh deployer sees the shape, but it is not
-  load-bearing — `write_state` will create the path on first run regardless.
+  load-bearing; `write_state` will create the path on first run regardless.
 
 **Patterns to follow:**
-- Existing Step 2 (Morpho Market) — same `read_state` guard, env var
+- Existing Step 2 (Morpho Market); same `read_state` guard, env var
   injection, `parse_*` helpers, and `write_state` calls.
 
 **Test scenarios:**
-- Test expectation: none — bash plumbing without behavior of its own.
+- Test expectation: none; bash plumbing without behavior of its own.
   Manual smoke-test plus U4's fork test cover the end-to-end behavior.
 
 **Verification:**
@@ -518,7 +518,7 @@ to include the new keys.
 
 ## System-Wide Impact
 
-- **Interaction graph:** Borrow market is its own Morpho Blue market —
+- **Interaction graph:** Borrow market is its own Morpho Blue market;
   independent of the lend market. No callbacks back into existing code; the
   oracle reads `convertToAssets` on the lend market's vault, but that's a
   pure read.
@@ -528,13 +528,13 @@ to include the new keys.
   this in PR description.
 - **State lifecycle risks:** Re-running `deploy-demo.sh` mid-flight (e.g.,
   after the script wrote `oracle` but before `marketId`) would re-broadcast
-  the oracle deploy on the next run. Acceptable — wastes ~1¢ of testnet
+  the oracle deploy on the next run. Acceptable; wastes ~1¢ of testnet
   ETH; not a correctness issue. The same risk exists for lend.
 - **API surface parity:** None. PR #2 adds no SDK/backend/frontend surface.
 - **Integration coverage:** U4's fork test is the only cross-layer
   guarantee. If the fork test passes but mainnet behavior differs, the
   cause will almost certainly be the decimals trap or a wrong Morpho
-  address — both surfaced by the test.
+  address; both surfaced by the test.
 - **Unchanged invariants:** The existing lend market (`morpho.vault`,
   `morpho.oracle`) is untouched. Its `FixedPriceOracle` keeps returning
   `1e24`. The new oracle's address is recorded under a separate state key.
@@ -545,7 +545,7 @@ to include the new keys.
 
 | Risk | Mitigation |
 |------|------------|
-| `baseTokenDecimals` set to 18 (vault) instead of 6 (USDC underlying) — would skew oracle price by 1e12. | Inline comment at the constructor call site; U4's price-within-10%-of-peg assertion fails loudly if the trap fires. |
+| `baseTokenDecimals` set to 18 (vault) instead of 6 (USDC underlying); would skew oracle price by 1e12. | Inline comment at the constructor call site; U4's price-within-10%-of-peg assertion fails loudly if the trap fires. |
 | `quoteFeed1` placement is wrong direction (collateral grows in wrong axis). | U4 fork test asserts `oraclePrice ≈ 10 × 1e36` (1 dUSDC = 10 OP at $0.10/OP); a flipped slot would assert `0.1 × 1e36`. |
 | Morpho Blue / MetaMorpho factory addresses drift between baseSepolia and where the script's hardcoded constants point. | Reuse the constants from the existing lend script (already validated against current baseSepolia deployments); no new chain mapping. |
 | `parse_bytes32` matches the wrong bytes32 line if the script emits >1. | The script only logs one bytes32 (`BorrowMarketId:`); enforced by U3 review and U4 stdout assertion. |
@@ -561,7 +561,7 @@ to include the new keys.
 - After merge, run `/ce-compound` to capture the decimals trap, the
   state-guard idempotency pattern, and the "audit-Morpho-not-bespoke-oracle"
   decision into `docs/solutions/`.
-- No `pnpm changeset` needed — PR #2 does not touch `packages/sdk/`.
+- No `pnpm changeset` needed; PR #2 does not touch `packages/sdk/`.
 
 ---
 

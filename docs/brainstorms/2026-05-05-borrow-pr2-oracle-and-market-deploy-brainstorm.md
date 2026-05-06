@@ -37,7 +37,7 @@ or where the plan over-engineers.
    `packages/sdk/src/actions/lend/providers/morpho/MorphoLendProvider.ts:221-238`.
 2. **Dropped:** Renaming `DeployMorphoMarket.s.sol` →
    `DeployMorphoLendMarket.s.sol`. The existing script deploys vault + market
-   + bootstraps borrow yield in one shot — the rename would be misleading and
+   + bootstraps borrow yield in one shot; the rename would be misleading and
    add `deploy-demo.sh` + README churn for no semantic gain.
 3. **Replaced:** Bespoke `DynamicVaultOracle.sol` swapped for Morpho's
    audited `MorphoChainlinkOracleV2` (from `morpho-org/morpho-blue-oracles`)
@@ -54,7 +54,7 @@ or where the plan over-engineers.
    contracts explicitly disclaim production use (`README.md:3`); a noisy
    slither rollout fits a dedicated cleanup PR better than this one. Source
    verification is nice-to-have for explorer browsing but not required for
-   the borrow flow to function — defer to a follow-up if/when an operator
+   the borrow flow to function; defer to a follow-up if/when an operator
    wants the green badge.
 6. **Deferred:** `[profile.deep]` in `foundry.toml`. Default fuzz runs are
    sufficient for the small surface PR #2 introduces.
@@ -62,7 +62,7 @@ or where the plan over-engineers.
 ## Key Decisions
 
 - **Scope = oracle + market deploy. No SDK code, no source verification.**
-  Per `AGENTS.md:66` "one domain per PR" — the borrow provider skeleton lands
+  Per `AGENTS.md:66` "one domain per PR"; the borrow provider skeleton lands
   in PR #3, not bundled here.
 - **Oracle: `MorphoChainlinkOracleV2` (Morpho-audited) +
   `MockChainlinkFeed.sol` (~30 LOC).** Composed via direct construction in
@@ -84,14 +84,14 @@ or where the plan over-engineers.
 - **Idempotency: bash-side state guard only.** Skip the forge invocation if
   `state/deployments.json` already records `morpho.borrow.marketId`. On
   stale state file vs chain truth, Morpho Blue reverts with
-  `MARKET_ALREADY_CREATED` — operator clears the stale key and re-runs.
+  `MARKET_ALREADY_CREATED`; operator clears the stale key and re-runs.
   Matches the lend market step exactly.
 - **State schema: nested `morpho.borrow.{oracle, mockFeed, marketId}`** in
   `state/deployments.json`, leaving `morpho.vault` and the existing (currently
   null) `morpho.oracle` key untouched. Additive change; no consumer migration.
 - **Donation-attack mitigation: skipped.** The 100k OP liquidity seed (below)
   creates the initial share supply itself; donation inflation has nothing
-  to manipulate. The plan's dEaD-share trick exists for empty markets — this
+  to manipulate. The plan's dEaD-share trick exists for empty markets; this
   market is non-empty post-deploy.
 - **Liquidity seed: deployer mints 100k OP and supplies directly to Morpho
   Blue** as borrowable liquidity. No faucet. Same pattern as the existing
@@ -105,9 +105,9 @@ or where the plan over-engineers.
 PR #2 contracts test scope (replaces the plan's 11-test suite for
 `DynamicVaultOracle`):
 
-- `MockChainlinkFeed.t.sol` — happy-path `latestRoundData`, `decimals()`,
+- `MockChainlinkFeed.t.sol`; happy-path `latestRoundData`, `decimals()`,
   immutability of `answer`. ~3 tests, trivial.
-- `DeployMorphoBorrowMarket.t.sol` — fork test against a baseSepolia fork
+- `DeployMorphoBorrowMarket.t.sol`; fork test against a baseSepolia fork
   pinned at a recent block: full script run, assert market id matches
   expected hash, assert oracle returns plausible price (within 10% of the
   hardcoded peg), assert idempotency by re-running and checking no duplicate
@@ -116,18 +116,18 @@ PR #2 contracts test scope (replaces the plan's 11-test suite for
 
 ## Resolved Questions
 
-1. **OP/USDC peg value** — **1 OP = $0.10.** Mock feed returns this constant
+1. **OP/USDC peg value**; **1 OP = $0.10.** Mock feed returns this constant
    at Chainlink-standard 8 decimals. At this peg, 100 USDC of dUSDC
-   collateral supports a max-borrow of ~860 OP at 86% LLTV — comfortable
+   collateral supports a max-borrow of ~860 OP at 86% LLTV; comfortable
    demo headroom.
-2. **Liquidity seed size** — **100k OP** minted and supplied directly to
+2. **Liquidity seed size**; **100k OP** minted and supplied directly to
    Morpho Blue by the deployer. Roughly 100 typical demo borrows before
    utilization gets interesting.
-3. **Virtual-share donation seed amount** — **Skip.** The 100k OP liquidity
+3. **Virtual-share donation seed amount**; **Skip.** The 100k OP liquidity
    seed (Q2) creates the initial share supply itself, so donation inflation
    has nothing to manipulate. The dEaD-share trick exists for empty markets;
    this market is non-empty post-deploy.
-4. **Verify-contract shape** — **Skipped entirely in PR #2.** Source
+4. **Verify-contract shape**; **Skipped entirely in PR #2.** Source
    verification is nice-to-have for explorer browsing but not required for
    the borrow flow to function; deferred to a follow-up if/when wanted.
 
@@ -141,7 +141,7 @@ PR #2 contracts test scope (replaces the plan's 11-test suite for
    deploy).
 2. **`baseTokenDecimals` for the oracle**: per Morpho's README, this is the
    *underlying* asset's decimals (USDC = 6), not the vault's (18). Confirm
-   in plan and add an inline comment in the deploy script — this is the
+   in plan and add an inline comment in the deploy script; this is the
    single most likely place to introduce a 12-orders-of-magnitude bug.
 
 ## Out of Scope (deferred to later PRs or follow-ups)
