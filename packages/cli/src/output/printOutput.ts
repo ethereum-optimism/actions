@@ -1,5 +1,6 @@
 import type {
   Asset,
+  LendAction,
   LendMarket,
   LendMarketPosition,
   LendProviderName,
@@ -29,7 +30,7 @@ export interface AddressDoc {
 }
 
 export interface LendActionDoc {
-  action: 'open' | 'close'
+  action: LendAction
   market: {
     name: string
     address: Address

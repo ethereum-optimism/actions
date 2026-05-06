@@ -1,4 +1,8 @@
-import { APPROVAL_MODES, type ApprovalMode } from '@eth-optimism/actions-sdk'
+import {
+  APPROVAL_MODES,
+  type ApprovalMode,
+  type LendAction,
+} from '@eth-optimism/actions-sdk'
 
 import { walletContext } from '@/context/walletContext.js'
 import { CliError, rethrowAsCliError } from '@/output/errors.js'
@@ -22,8 +26,6 @@ export interface LendOpenFlags {
 export type LendCloseFlags =
   | { market: string; amount: string; max?: never }
   | { market: string; amount?: never; max: true }
-
-type LendAction = 'open' | 'close'
 
 function parseApprovalMode(raw: string | undefined): ApprovalMode | undefined {
   if (raw === undefined) return undefined
