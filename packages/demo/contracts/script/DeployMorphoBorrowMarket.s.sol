@@ -58,6 +58,18 @@ contract DeployMorphoBorrowMarket is Script {
         address vaultAddr = vm.envAddress("DEMO_VAULT_ADDRESS");
         address opAddr = vm.envAddress("DEMO_OP_ADDRESS");
 
+        // Defense in depth: when the orchestrator passes DEMO_USDC_ADDRESS,
+        // require the vault's underlying to match. A wrong vault would skew
+        // SCALE_FACTOR by 10^(underlying_decimals - 6) and silently mis-price
+        // the market, far harder to debug after deploy.
+        address expectedAsset = vm.envOr("DEMO_USDC_ADDRESS", address(0));
+        if (expectedAsset != address(0)) {
+            require(
+                IERC4626(vaultAddr).asset() == expectedAsset,
+                "DEMO_VAULT_ADDRESS asset does not match DEMO_USDC_ADDRESS"
+            );
+        }
+
         vm.startBroadcast();
 
         // Mock OP/USD feed.

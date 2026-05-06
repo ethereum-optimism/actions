@@ -180,7 +180,7 @@ BORROW_MARKET_ID=$(read_state "morpho.borrow.marketId")
 
 if [[ -z "$BORROW_MARKET_ID" ]]; then
     echo ">>> Deploying Morpho borrow market..."
-    if ! OUTPUT=$(DEMO_VAULT_ADDRESS="$VAULT_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
+    if ! OUTPUT=$(DEMO_VAULT_ADDRESS="$VAULT_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" DEMO_USDC_ADDRESS="$USDC_ADDR" \
         forge script script/DeployMorphoBorrowMarket.s.sol:DeployMorphoBorrowMarket \
         "${FORGE_ARGS[@]}" --broadcast 2>&1); then
         echo "$OUTPUT"
