@@ -54,11 +54,6 @@ interface IMorpho {
         );
 }
 
-/// @notice Minimal IOracle interface (mirrors morpho-blue's IOracle)
-interface IOracle {
-    function price() external view returns (uint256);
-}
-
 /// @notice Minimal interface for MetaMorpho vault
 interface IMetaMorpho {
     /// @notice Submits a new supply cap for a market (requires timelock)

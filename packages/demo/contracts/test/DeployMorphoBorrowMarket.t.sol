@@ -3,7 +3,8 @@ pragma solidity ^0.8.21;
 
 import {Test, console} from "forge-std/Test.sol";
 import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
-import {IMorpho, IOracle, MarketParams} from "../src/interfaces/IMorpho.sol";
+import {IMorpho, MarketParams} from "../src/interfaces/IMorpho.sol";
+import {IOracle} from "../src/interfaces/IOracle.sol";
 import {MorphoConstants} from "../src/MorphoConstants.sol";
 import {MorphoChainlinkOracleV2} from "morpho-blue-oracles/morpho-chainlink/MorphoChainlinkOracleV2.sol";
 import {IERC4626} from "morpho-blue-oracles/morpho-chainlink/interfaces/IERC4626.sol";
