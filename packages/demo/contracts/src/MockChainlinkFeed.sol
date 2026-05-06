@@ -17,6 +17,11 @@ contract MockChainlinkFeed is AggregatorV3Interface {
     uint256 private immutable _deployedAt;
 
     constructor(int256 answer_, uint8 decimals_, string memory description_) {
+        // Reject zero or negative answers up front. Morpho's
+        // ChainlinkDataFeedLib reverts on negative reads but accepts zero,
+        // which then divides by zero in downstream price math: revert here
+        // so a misconfigured deploy fails at construction instead of later.
+        require(answer_ > 0, "MockChainlinkFeed: answer must be positive");
         _answer = answer_;
         _decimals = decimals_;
         _description = description_;
