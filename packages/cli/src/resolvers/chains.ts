@@ -1,18 +1,16 @@
-import type { SupportedChainId } from '@eth-optimism/actions-sdk'
-import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
+import {
+  CHAIN_SHORTNAMES,
+  type SupportedChainId,
+} from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
 import { splitCsv } from '@/utils/strings.js'
 
-const SHORTNAMES: Record<string, SupportedChainId> = {
-  base: base.id,
-  'base-sepolia': baseSepolia.id,
-  optimism: optimism.id,
-  'op-sepolia': optimismSepolia.id,
-}
-
-const CHAIN_IDS: Record<number, string> = Object.fromEntries(
-  Object.entries(SHORTNAMES).map(([name, id]) => [id, name]),
+const SHORTNAMES: Record<string, SupportedChainId> = Object.fromEntries(
+  Object.entries(CHAIN_SHORTNAMES).map(([id, name]) => [
+    name,
+    Number(id) as SupportedChainId,
+  ]),
 )
 
 /**
@@ -34,9 +32,7 @@ export function resolveChain(
   if (id === undefined || !configuredChainIds.includes(id)) {
     throw new CliError('validation', `Unknown chain: ${shortname}`, {
       chain: shortname,
-      allowed: configuredChainIds
-        .map((cid) => CHAIN_IDS[cid])
-        .filter((name): name is string => name !== undefined),
+      allowed: configuredChainIds.map((cid) => CHAIN_SHORTNAMES[cid]),
     })
   }
   return id
@@ -53,13 +49,7 @@ export function resolveChain(
  * @throws `CliError` with code `validation` when the chain has no shortname.
  */
 export function shortnameFor(chainId: SupportedChainId): string {
-  const name = CHAIN_IDS[chainId]
-  if (!name) {
-    throw new CliError('validation', `No shortname for chainId: ${chainId}`, {
-      chainId,
-    })
-  }
-  return name
+  return CHAIN_SHORTNAMES[chainId]
 }
 
 /**
