@@ -1,17 +1,16 @@
-import type {
-  Asset,
-  SupportedChainId,
-  SwapProviderName,
-  SwapQuoteParams,
-  WalletSwapParams,
+import {
+  type Asset,
+  type SupportedChainId,
+  SWAP_PROVIDER_NAMES,
+  type SwapProviderName,
+  type SwapQuoteParams,
+  type WalletSwapParams,
 } from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
 import { resolveAsset } from '@/resolvers/assets.js'
 import { resolveChain } from '@/resolvers/chains.js'
 import { parseAmount } from '@/utils/parseAmount.js'
-
-const PROVIDERS: readonly SwapProviderName[] = ['uniswap', 'velodrome']
 
 /**
  * @description Validates that exactly one of `--amount-in` / `--amount-out`
@@ -76,15 +75,19 @@ export function parseProvider(
   raw: string | undefined,
 ): SwapProviderName | undefined {
   if (raw === undefined) return undefined
-  const needle = raw.toLowerCase() as SwapProviderName
-  if (!PROVIDERS.includes(needle)) {
+  const needle = raw.toLowerCase()
+  if (!isSwapProviderName(needle)) {
     throw new CliError(
       'validation',
-      `Invalid --provider: ${raw} (expected one of ${PROVIDERS.join(', ')})`,
-      { provider: raw, allowed: PROVIDERS.slice() },
+      `Invalid --provider: ${raw} (expected one of ${SWAP_PROVIDER_NAMES.join(', ')})`,
+      { provider: raw, allowed: SWAP_PROVIDER_NAMES.slice() },
     )
   }
   return needle
+}
+
+function isSwapProviderName(value: string): value is SwapProviderName {
+  return (SWAP_PROVIDER_NAMES as readonly string[]).includes(value)
 }
 
 interface QuoteFlagsBase {

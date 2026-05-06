@@ -1,4 +1,7 @@
+import { SWAP_PROVIDER_NAMES } from '@eth-optimism/actions-sdk'
 import type { Command } from 'commander'
+
+const PROVIDER_HELP = `force a provider: ${SWAP_PROVIDER_NAMES.join(' or ')} (omit to let routing decide)`
 
 /**
  * @description Shared `[flag, description]` pairs for the swap quote-shaped commands. `actions swap quote/quotes` and `actions wallet swap execute` consume the same input contract; centralising the definitions keeps help text and flag names in lockstep.
@@ -15,10 +18,7 @@ export const QUOTE_OPTIONS_HELP = {
     'exact-out amount (mutually exclusive with --amount-in)',
   ],
   chain: ['--chain <name>', 'chain shortname (e.g. base-sepolia, op-sepolia)'],
-  provider: [
-    '--provider <name>',
-    'force a provider: uniswap or velodrome (omit to let routing decide)',
-  ],
+  provider: ['--provider <name>', PROVIDER_HELP],
   slippage: [
     '--slippage <pct>',
     'slippage tolerance as a percent (e.g. 0.5 = 0.5%); upper bound is operator-configured via SwapSettings.maxSlippage (SDK default 50%)',
