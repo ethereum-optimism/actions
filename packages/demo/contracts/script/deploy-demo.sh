@@ -3,8 +3,10 @@ set -euo pipefail
 
 # Orchestrator for deploying demo infrastructure:
 #   1. Deploy tokens (DemoUSDC + DemoOP)
-#   2. Deploy Morpho market + vault
+#   2. Deploy Morpho lend market + vault
 #   3. Deploy Uniswap V4 pool with liquidity
+#   4. Deploy Velodrome pool with liquidity
+#   5. Deploy Morpho borrow market (dUSDC collateral / OP loan)
 #
 # Usage:
 #   ./script/deploy-demo.sh --rpc-url <url> --private-key <key>
@@ -165,6 +167,34 @@ if [[ -z "$VELO_POOL" ]]; then
     echo "Velodrome pool deployed: Pool=$VELO_POOL"
 else
     echo ">>> Velodrome pool already deployed: Pool=$VELO_POOL"
+fi
+echo ""
+
+# --- Step 5: Deploy Morpho Borrow Market ---
+BORROW_MARKET_ID=$(read_state "morpho.borrow.marketId")
+
+if [[ -z "$BORROW_MARKET_ID" ]]; then
+    echo ">>> Deploying Morpho borrow market..."
+    OUTPUT=$(DEMO_VAULT_ADDRESS="$VAULT_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
+        forge script script/DeployMorphoBorrowMarket.s.sol:DeployMorphoBorrowMarket \
+        "${FORGE_ARGS[@]}" --broadcast 2>&1)
+    echo "$OUTPUT"
+
+    BORROW_MOCK_FEED=$(parse_address "BorrowMockFeed:" "$OUTPUT")
+    BORROW_ORACLE=$(parse_address "BorrowOracle:" "$OUTPUT")
+    BORROW_MARKET_ID=$(parse_bytes32 "$OUTPUT")
+
+    if [[ -z "$BORROW_MARKET_ID" || -z "$BORROW_ORACLE" || -z "$BORROW_MOCK_FEED" ]]; then
+        echo "ERROR: Failed to parse borrow market addresses/id from forge output"
+        exit 1
+    fi
+
+    write_state "morpho.borrow.mockFeed" "$BORROW_MOCK_FEED"
+    write_state "morpho.borrow.oracle" "$BORROW_ORACLE"
+    write_state "morpho.borrow.marketId" "$BORROW_MARKET_ID"
+    echo "Morpho borrow market deployed: marketId=$BORROW_MARKET_ID"
+else
+    echo ">>> Morpho borrow market already deployed: marketId=$BORROW_MARKET_ID"
 fi
 
 echo ""
