@@ -89,6 +89,7 @@ export type {
   LendMarketPosition,
   LendMarketSupply,
   LendProviderConfig,
+  LendProviderName,
   LendTransaction,
   LendTransactionReceipt,
   SwapConfig,

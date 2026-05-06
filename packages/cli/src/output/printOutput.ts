@@ -2,6 +2,7 @@ import type {
   Asset,
   LendMarket,
   LendMarketPosition,
+  LendProviderName,
   SupportedChainId,
   SwapMarket,
   SwapQuote,
@@ -33,7 +34,7 @@ export interface LendActionDoc {
     name: string
     address: Address
     chainId: SupportedChainId
-    provider: string
+    provider: LendProviderName
   }
   asset: { symbol: string }
   amount: number
