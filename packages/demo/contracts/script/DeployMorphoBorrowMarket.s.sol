@@ -4,6 +4,7 @@ pragma solidity ^0.8.21;
 import {Script, console} from "forge-std/Script.sol";
 import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
 import {IMorpho, MarketParams} from "../src/interfaces/IMorpho.sol";
+import {MorphoConstants} from "../src/MorphoConstants.sol";
 import {MorphoChainlinkOracleV2} from "morpho-blue-oracles/morpho-chainlink/MorphoChainlinkOracleV2.sol";
 import {IERC4626} from "morpho-blue-oracles/morpho-chainlink/interfaces/IERC4626.sol";
 import {AggregatorV3Interface} from "morpho-blue-oracles/morpho-chainlink/interfaces/AggregatorV3Interface.sol";
@@ -34,10 +35,7 @@ interface IVaultAsset {
 ///         to the deployer and supplies it as borrowable liquidity in the same run
 ///         so the market is non-empty post-deploy.
 contract DeployMorphoBorrowMarket is Script {
-    address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-    address constant IRM = 0x46415998764C29aB2a25CbeA6254146D50D22687;
-
-    /// @dev 86% — Morpho-enabled tier appropriate for yield-bearing collateral.
+    /// @dev 86%: Morpho-enabled tier appropriate for yield-bearing collateral.
     ///      Not the lend market's 94.5% (that's a bootstrap-yield artifact in the
     ///      opposite direction).
     uint256 constant LLTV = 86e16;
@@ -119,9 +117,9 @@ contract DeployMorphoBorrowMarket is Script {
 
         // Create market: dUSDC collateral, OP loan.
         MarketParams memory marketParams = MarketParams({
-            loanToken: opAddr, collateralToken: vaultAddr, oracle: address(oracle), irm: IRM, lltv: LLTV
+            loanToken: opAddr, collateralToken: vaultAddr, oracle: address(oracle), irm: MorphoConstants.IRM, lltv: LLTV
         });
-        IMorpho(MORPHO).createMarket(marketParams);
+        IMorpho(MorphoConstants.MORPHO).createMarket(marketParams);
 
         marketId = keccak256(abi.encode(marketParams));
         console.log("BorrowMarketId:");
@@ -129,8 +127,8 @@ contract DeployMorphoBorrowMarket is Script {
 
         // Seed borrowable OP liquidity.
         IDemoOP(opAddr).mint(msg.sender, BORROWABLE_OP);
-        IDemoOP(opAddr).approve(MORPHO, BORROWABLE_OP);
-        IMorpho(MORPHO).supply(marketParams, BORROWABLE_OP, 0, msg.sender, "");
+        IDemoOP(opAddr).approve(MorphoConstants.MORPHO, BORROWABLE_OP);
+        IMorpho(MorphoConstants.MORPHO).supply(marketParams, BORROWABLE_OP, 0, msg.sender, "");
 
         vm.stopBroadcast();
 

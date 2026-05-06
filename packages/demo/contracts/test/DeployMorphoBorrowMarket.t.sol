@@ -4,6 +4,7 @@ pragma solidity ^0.8.21;
 import {Test, console} from "forge-std/Test.sol";
 import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
 import {IMorpho, IOracle, MarketParams} from "../src/interfaces/IMorpho.sol";
+import {MorphoConstants} from "../src/MorphoConstants.sol";
 import {MorphoChainlinkOracleV2} from "morpho-blue-oracles/morpho-chainlink/MorphoChainlinkOracleV2.sol";
 import {IERC4626} from "morpho-blue-oracles/morpho-chainlink/interfaces/IERC4626.sol";
 import {AggregatorV3Interface} from "morpho-blue-oracles/morpho-chainlink/interfaces/AggregatorV3Interface.sol";
@@ -20,8 +21,6 @@ interface IDemoOP {
 ///      rather than invoking script.run() so msg.sender semantics are
 ///      controlled within the test context.
 contract DeployMorphoBorrowMarketTest is Test {
-    address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-    address constant IRM = 0x46415998764C29aB2a25CbeA6254146D50D22687;
     uint256 constant LLTV = 86e16;
 
     /// @dev Mirrors DeployMorphoBorrowMarket constants. Kept in sync with the
@@ -102,9 +101,13 @@ contract DeployMorphoBorrowMarketTest is Test {
         MorphoChainlinkOracleV2 oracle = _deployOracle(CORRECT_BASE_TOKEN_DECIMALS);
 
         MarketParams memory marketParams = MarketParams({
-            loanToken: DEMO_OP, collateralToken: DEMO_VAULT, oracle: address(oracle), irm: IRM, lltv: LLTV
+            loanToken: DEMO_OP,
+            collateralToken: DEMO_VAULT,
+            oracle: address(oracle),
+            irm: MorphoConstants.IRM,
+            lltv: LLTV
         });
-        IMorpho(MORPHO).createMarket(marketParams);
+        IMorpho(MorphoConstants.MORPHO).createMarket(marketParams);
 
         bytes32 marketId = keccak256(abi.encode(marketParams));
 
@@ -112,10 +115,10 @@ contract DeployMorphoBorrowMarketTest is Test {
         // here is the test contract for both mint and supply, avoiding the
         // sender mismatch that occurs when calling script.run() directly.
         IDemoOP(DEMO_OP).mint(address(this), BORROWABLE_OP);
-        IDemoOP(DEMO_OP).approve(MORPHO, BORROWABLE_OP);
-        IMorpho(MORPHO).supply(marketParams, BORROWABLE_OP, 0, address(this), "");
+        IDemoOP(DEMO_OP).approve(MorphoConstants.MORPHO, BORROWABLE_OP);
+        IMorpho(MorphoConstants.MORPHO).supply(marketParams, BORROWABLE_OP, 0, address(this), "");
 
-        (uint128 totalSupplyAssets,,,, uint128 lastUpdate,) = IMorpho(MORPHO).market(marketId);
+        (uint128 totalSupplyAssets,,,, uint128 lastUpdate,) = IMorpho(MorphoConstants.MORPHO).market(marketId);
         assertGt(lastUpdate, 0, "market should be registered in Morpho Blue");
         assertEq(totalSupplyAssets, BORROWABLE_OP, "exactly 100k OP should be seeded as supply");
     }
