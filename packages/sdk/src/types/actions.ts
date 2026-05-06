@@ -151,7 +151,9 @@ export interface ActionsContext {
  * Default is `"exact"` for safety. Demo / dogfood configs typically opt into
  * `"max"` to avoid an extra approval tx per swap or supply.
  */
-export type ApprovalMode = 'exact' | 'max'
+export const APPROVAL_MODES = ['exact', 'max'] as const
+
+export type ApprovalMode = (typeof APPROVAL_MODES)[number]
 
 /**
  * Actions SDK configuration

@@ -1,3 +1,5 @@
+import { APPROVAL_MODES, type ApprovalMode } from '@eth-optimism/actions-sdk'
+
 import { walletContext } from '@/context/walletContext.js'
 import { CliError, rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
@@ -6,14 +8,6 @@ import { parseAmount } from '@/utils/parseAmount.js'
 import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
 
 import { requireLendCapability } from './requireLendCapability.js'
-
-// Mirrors the SDK's `ApprovalMode = 'exact' | 'max'` (declared in
-// `@/types/actions` but not re-exported from the SDK barrel).
-type ApprovalMode = 'exact' | 'max'
-const APPROVAL_MODES = [
-  'exact',
-  'max',
-] as const satisfies readonly ApprovalMode[]
 
 export interface LendOpenFlags {
   market: string
@@ -38,7 +32,7 @@ function parseApprovalMode(raw: string | undefined): ApprovalMode | undefined {
   }
   throw new CliError(
     'validation',
-    `Invalid --approval-mode: ${raw} (expected exact or max)`,
+    `Invalid --approval-mode: ${raw} (expected ${APPROVAL_MODES.join(' or ')})`,
     { approvalMode: raw },
   )
 }

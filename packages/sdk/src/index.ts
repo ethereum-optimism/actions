@@ -77,6 +77,7 @@ export {
 } from '@/services/nameservices/ens/utils.js'
 export type {
   ActionsConfig,
+  ApprovalMode,
   ApyBreakdown,
   Asset,
   EOATransactionReceipt,
@@ -112,6 +113,7 @@ export type {
   WalletConfig,
   WalletSwapParams,
 } from '@/types/index.js'
+export { APPROVAL_MODES } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 export { serializeBigInt } from '@/utils/serializers.js'
 export * from '@/wallet/core/error/errors.js'

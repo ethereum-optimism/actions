@@ -1,3 +1,4 @@
+import { APPROVAL_MODES } from '@eth-optimism/actions-sdk'
 import { Command } from 'commander'
 
 import { runWalletLendClose } from '@/commands/wallet/lend/close.js'
@@ -24,7 +25,7 @@ export function walletLendCommand(): Command {
       'amount to supply in human-readable units (e.g. 10 for 10 USDC)',
     )
     .option(
-      '--approval-mode <exact|max>',
+      `--approval-mode <${APPROVAL_MODES.join('|')}>`,
       'ERC-20 approval strategy: "exact" approves only this call (default, gas-heavier on repeat); "max" approves max-uint to amortise across future supplies',
     )
     .action(runWalletLendOpen)
