@@ -112,6 +112,7 @@ export type {
   WalletConfig,
   WalletSwapParams,
 } from '@/types/index.js'
+export { SWAP_PROVIDER_NAMES } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 export { serializeBigInt } from '@/utils/serializers.js'
 export * from '@/wallet/core/error/errors.js'

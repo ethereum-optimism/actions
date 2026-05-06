@@ -4,14 +4,23 @@ import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  LendProviders,
+  SwapProviderName,
+  SwapProviders,
+} from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
 export type { LendProviderConfig, SwapProviderConfig }
-// Re-export centralized provider maps
-export type { LendProviders, SwapProviders } from '@/types/providers.js'
+// Re-export centralized provider maps and constants
+export type {
+  LendProviders,
+  SwapProviderName,
+  SwapProviders,
+} from '@/types/providers.js'
+export { SWAP_PROVIDER_NAMES } from '@/types/providers.js'
 
 /** Require at least one property to be defined */
 type RequireAtLeastOne<T> = {
@@ -41,9 +50,6 @@ export type LendConfig = RequireAtLeastOne<{
   /** Shared settings applied across all lend providers */
   settings?: LendSettings
 }
-
-/** Names of available swap providers — derived from SwapProviders registry */
-export type SwapProviderName = keyof SwapProviders
 
 /** Names of available lend providers — derived from LendProviders registry */
 export type LendProviderName = keyof LendProviders
