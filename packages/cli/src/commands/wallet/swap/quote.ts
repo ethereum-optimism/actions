@@ -1,5 +1,5 @@
 import {
-  buildQuoteParams,
+  buildSwapInputs,
   type QuoteFlags,
 } from '@/commands/actions/swap/util.js'
 import { walletContext } from '@/context/walletContext.js'
@@ -20,7 +20,7 @@ export async function runWalletSwapQuote(flags: QuoteFlags): Promise<void> {
       'Swap is not configured (no providers in config.swap)',
     )
   }
-  const params = buildQuoteParams(
+  const params = buildSwapInputs(
     flags,
     configuredAssets(config),
     config.chains.map((c) => c.chainId),

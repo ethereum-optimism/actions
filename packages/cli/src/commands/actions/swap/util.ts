@@ -3,7 +3,6 @@ import {
   type SupportedChainId,
   SWAP_PROVIDER_NAMES,
   type SwapProviderName,
-  type SwapQuoteParams,
   type WalletSwapParams,
 } from '@eth-optimism/actions-sdk'
 
@@ -99,6 +98,7 @@ interface QuoteFlagsBase {
 }
 
 /**
+<<<<<<< HEAD
  * @description At-least-one-of `amountIn` / `amountOut`. The `?: never` branches make TS reject `{ ... }` (neither set) and `{ amountIn, amountOut }` (both set) at the call site; the runtime mutex check in `parseAmountFlags` still runs because commander's argv parsing is loosely typed.
  */
 export type QuoteFlags =
@@ -153,7 +153,7 @@ export function buildWalletExecuteParams(
   allow: readonly Asset[],
   chainIds: readonly SupportedChainId[],
 ): WalletSwapParams {
-  const base = buildQuoteParams(flags, allow, chainIds)
+  const base = buildSwapInputs(flags, allow, chainIds)
   const approvalMode = parseApprovalMode(flags.approvalMode)
   // Recipient validation (address-vs-ENS) is the SDK's responsibility:
   // `BaseSwapNamespace.resolveRecipient` resolves ENS → address before any
@@ -169,20 +169,22 @@ export function buildWalletExecuteParams(
 }
 
 /**
- * @description Builds a `SwapQuoteParams` object from the CLI flag set
- * shared by `quote`, `quotes`, and `execute`. Validates the assets and
- * chain are in the active config, enforces the amount-in/out XOR, and
- * converts the percent slippage to decimal.
+ * @description Builds the shared swap input shape from CLI flags.
+ * `WalletSwapParams` is the structural superset of `SwapQuoteParams`
+ * (one extra optional `approvalMode`), so the same value flows into
+ * `actions.swap.getQuote(s)` and `wallet.swap.execute` without
+ * coercion. Validates assets and chain against config, enforces the
+ * amount-in/out XOR, and converts percent slippage to decimal.
  * @param flags - Commander-parsed flags.
  * @param allow - Asset allowlist from config.
  * @param chainIds - Configured chain IDs.
- * @returns Resolved quote parameters ready for the SDK.
+ * @returns Resolved swap input ready for any of the SDK swap calls.
  */
-export function buildQuoteParams(
+export function buildSwapInputs(
   flags: QuoteFlags,
   allow: readonly Asset[],
   chainIds: readonly SupportedChainId[],
-): SwapQuoteParams {
+): WalletSwapParams {
   const assetIn = resolveAsset(flags.in, allow)
   const assetOut = resolveAsset(flags.out, allow)
   const chainId = resolveChain(flags.chain, chainIds)
