@@ -1,4 +1,5 @@
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   LendMarket,
@@ -38,9 +39,11 @@ export function validateMarketAsset(market: LendMarket, asset: Asset): void {
       market.asset.address[market.marketId.chainId as SupportedChainId]
     const providedAssetAddress =
       asset.address[market.marketId.chainId as SupportedChainId]
-    throw new Error(
-      `Asset mismatch: provided ${providedAssetAddress} but market ${market.marketId.address} uses ${marketAssetAddress}`,
-    )
+    throw new MarketNotAllowedError({
+      address: market.marketId.address,
+      chainId: market.marketId.chainId,
+      reason: `Asset mismatch: provided ${providedAssetAddress} but market ${market.marketId.address} uses ${marketAssetAddress}`,
+    })
   }
 }
 

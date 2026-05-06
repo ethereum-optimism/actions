@@ -1,9 +1,9 @@
 import { Command } from 'commander'
 
-import { runSwapMarket } from '@/commands/swap/market.js'
-import { runSwapMarkets } from '@/commands/swap/markets.js'
-import { runSwapQuote } from '@/commands/swap/quote.js'
-import { runSwapQuotes } from '@/commands/swap/quotes.js'
+import { runSwapMarket } from '@/commands/actions/swap/market.js'
+import { runSwapMarkets } from '@/commands/actions/swap/markets.js'
+import { runSwapQuote } from '@/commands/actions/swap/quote.js'
+import { runSwapQuotes } from '@/commands/actions/swap/quotes.js'
 
 const QUOTE_OPTIONS_HELP = {
   in: ['--in <symbol>', 'token to sell (e.g. USDC_DEMO)'],

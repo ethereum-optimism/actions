@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 
-import { runLendMarket } from '@/commands/lend/market.js'
-import { runLendMarkets } from '@/commands/lend/markets.js'
+import { runLendMarket } from '@/commands/actions/lend/market.js'
+import { runLendMarkets } from '@/commands/actions/lend/markets.js'
 
 /**
  * @description Builds the root `lend` subcommand tree. Children read
@@ -17,6 +17,18 @@ export function lendCommand(): Command {
   command
     .command('markets')
     .description('List all lending markets across configured providers.')
+    .option(
+      '--asset <symbol>',
+      'filter to markets denominated in one asset (e.g. USDC_DEMO). Case-insensitive.',
+    )
+    .option(
+      '--chain <shortname>',
+      'filter to markets on one chain by shortname (e.g. base-sepolia); mutually exclusive with --chain-id',
+    )
+    .option(
+      '--chain-id <id>',
+      'filter to markets on one chain by numeric id (e.g. 84532); mutually exclusive with --chain',
+    )
     .action(runLendMarkets)
   command
     .command('market')

@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { MarketNotFoundError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   GetSwapMarketsParams,
@@ -69,7 +70,7 @@ export function findMarket<T extends SwapMarketConfig>(
     )
     if (match) return match
   }
-  throw new Error(`Market with poolId ${poolId} not found on chain ${chainId}`)
+  throw new MarketNotFoundError({ chainId, poolId })
 }
 
 /**

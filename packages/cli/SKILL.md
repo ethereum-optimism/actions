@@ -22,8 +22,9 @@ actions --json wallet balance --chain base-sepolia
 
 - `actions assets` - configured asset allowlist.
 - `actions chains` - configured chain shortnames + IDs.
-- `actions lend markets` - all lending markets across configured
-  providers (no wallet).
+- `actions lend markets [--asset <symbol>] [--chain <name> | --chain-id <id>]` -
+  lending markets across configured providers, optionally filtered to one
+  asset and/or one chain (no wallet).
 - `actions lend market --market <name>` - inspect one market by name
   (no wallet).
 - `actions swap markets [--chain <name>]` - all swap markets across
@@ -35,17 +36,19 @@ actions --json wallet balance --chain base-sepolia
   [--provider uniswap|velodrome] [--slippage <pct>]` - best quote
   (no wallet).
 - `actions swap quotes ...` - same flag set; returns every provider's
-  quote sorted best price first. Omit `--provider` to compare across
-  providers in a single call - don't fan out one call per provider.
+  quote sorted best price first.
 - `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
 - `actions wallet balance [--chain <name> | --chain-id <id>]` - balances
   per chain + asset; the chain flags are mutually exclusive.
 - `actions wallet lend position --market <name>` - the wallet's current
   balance and shares in a market.
-- `actions wallet lend open --market <name> --amount <n>` - supply
-  assets to a market in the config allowlist.
-- `actions wallet lend close --market <name> --amount <n>` - withdraw
-  assets from a lending position.
+- `actions wallet lend open --market <name> --amount <n> [--approval-mode <exact|max>]` -
+  supply assets to a market. `--approval-mode max` approves max-uint to
+  amortise approvals across future supplies (default: `exact`).
+- `actions wallet lend close --market <name> (--amount <n> | --max)` -
+  withdraw assets. Pass `--max` to withdraw the wallet's full balance in
+  the market (the CLI fetches the position first; subject to inflight
+  interest accrual).
 - `actions wallet swap execute --in <symbol> --out <symbol>
   (--amount-in <n> | --amount-out <n>) --chain <name>
   [--provider uniswap|velodrome] [--slippage <pct>]` - execute a swap
@@ -64,9 +67,10 @@ demo, fund the EOA with testnet ETH on Base Sepolia.
 - **Assets** - pass the `metadata.symbol` value from the allowlist
   (e.g. `USDC_DEMO`, `OP_DEMO`, `ETH`). Case-insensitive. Run
   `actions --json assets` for the current list.
-- **Chains** - pass a shortname (`base-sepolia`, `op-sepolia`,
-  `unichain`) via `--chain`, or a numeric id via `--chain-id`
-  (mutually exclusive). Run `actions --json chains` for the current
+- **Chains** - pass a shortname (`base-sepolia`, `op-sepolia`) via
+  `--chain`, or a numeric id via `--chain-id` (mutually exclusive).
+  Both flags accept a comma-separated list to scope the SDK fan-out
+  to multiple chains. Run `actions --json chains` for the current
   list.
 - **Markets (lend)** - pass the market `name` from the config allowlist
   (e.g. `Gauntlet USDC`, `Aave ETH`). Case-insensitive; whitespace
@@ -85,9 +89,7 @@ demo, fund the EOA with testnet ETH on Base Sepolia.
   `swap quotes`, and `wallet swap execute`.
 - **Provider selection** - `--provider uniswap|velodrome` forces a
   provider and skips routing. Omit to let the SDK pick the best
-  available. For `swap quotes`, omitting `--provider` is also how you
-  compare across providers - the response includes one entry per
-  provider, sorted best price first.
+  available.
 
 ## Presentation hints (for LLM/agent callers)
 
@@ -132,10 +134,14 @@ Without `--json` (default):
 
 ## Balance semantics
 
-`actions wallet balance` is all-or-nothing: internally the SDK uses
-nested `Promise.all` over (asset x chain), so any single failing RPC
-rejects the whole call with a `network` error. Retries may succeed on a
+Within a single `actions wallet balance` call, the SDK fans out via
+`Promise.all` over (asset x chain), so any single failing RPC rejects
+the whole call with a `network` error. Retries may succeed on a
 different call - do not assume per-chain isolation.
+
+To shrink the failure surface, scope the call with `--chain` or
+`--chain-id` (both accept a comma-separated list). The SDK only
+queries the chains you pass.
 
 ## Lend semantics
 

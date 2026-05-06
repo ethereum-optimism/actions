@@ -6,10 +6,9 @@ import { promisify } from 'node:util'
 
 import { beforeAll, describe, expect, it } from 'vitest'
 
-const execFileP = promisify(execFile)
+import { ANVIL_ACCOUNT_0 } from '@/__mocks__/anvilAccounts.js'
 
-const ANVIL_ACCOUNT_0 =
-  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+const execFileP = promisify(execFile)
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const BIN = resolve(HERE, '../../dist/index.js')
@@ -114,7 +113,6 @@ describe('actions CLI (built binary)', () => {
         PRIVATE_KEY: ANVIL_ACCOUNT_0,
         BASE_SEPOLIA_RPC_URL: 'http://127.0.0.1:1',
         OP_SEPOLIA_RPC_URL: 'http://127.0.0.1:1',
-        UNICHAIN_RPC_URL: 'http://127.0.0.1:1',
       })
       expect(code).toBe(4)
       const body = JSON.parse(stderr)

@@ -1,7 +1,7 @@
 {
   "name": "actions-cli",
   "private": true,
-  "description": "Agent-first command-line interface for the Actions SDK.",
+  "description": "Command Line Interface for the Actions SDK.",
   "repository": {
     "type": "git",
     "url": "https://github.com/ethereum-optimism/actions.git",
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/ethereum-optimism/actions/issues"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "bin": {
     "actions": "./dist/index.js"

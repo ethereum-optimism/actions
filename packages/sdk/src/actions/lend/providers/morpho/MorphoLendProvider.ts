@@ -5,7 +5,8 @@ import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/actions/lend/providers/morpho/sdk.js'
 import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -24,6 +25,14 @@ import { getAssetAddress } from '@/utils/assets.js'
  * @description Lending provider implementation using Morpho protocol
  */
 export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
+  constructor(
+    config: LendProviderConfig,
+    chainManager: ChainManager,
+    settings?: LendSettings,
+  ) {
+    super(config, chainManager, settings)
+  }
+
   protocolSupportedChainIds(): number[] {
     return getMorphoSupportedChainIds()
   }
@@ -58,7 +67,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
 
       return {
         spender: params.marketId.address,
-        asset: assetAddress,
+        assetAddress,
         transaction: {
           to: params.marketId.address,
           data: depositCallData,
@@ -105,7 +114,7 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
 
       return {
         amount: params.amount,
-        asset: assetAddress,
+        assetAddress,
         marketId: params.marketId.address,
         apy: vaultInfo.apy.total,
         transactionData: {

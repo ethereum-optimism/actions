@@ -1,7 +1,11 @@
-import { buildQuoteParams, type QuoteFlags } from '@/commands/swap/util.js'
-import { rethrowAsCliError } from '@/commands/wallet/lend/util.js'
+import {
+  buildQuoteParams,
+  type QuoteFlags,
+} from '@/commands/actions/swap/util.js'
 import { baseContext } from '@/context/baseContext.js'
+import { rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
+import { configuredAssets } from '@/resolvers/assets.js'
 
 /**
  * @description Handler for `actions swap quotes ...`. Same flag set as
@@ -16,7 +20,7 @@ export async function runSwapQuotes(flags: QuoteFlags): Promise<void> {
   const { actions, config } = baseContext()
   const params = buildQuoteParams(
     flags,
-    config.assets?.allow ?? [],
+    configuredAssets(config),
     config.chains.map((c) => c.chainId),
   )
   try {

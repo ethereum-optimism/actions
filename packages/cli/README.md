@@ -17,7 +17,6 @@ For the skill contract see [`SKILL.md`](./SKILL.md).
 | `PRIVATE_KEY`               | wallet cmds  | 0x-prefixed 32-byte hex. Signer for all wallet commands. |
 | `BASE_SEPOLIA_RPC_URL`      | optional     | RPC override for Base Sepolia (falls back to viem).      |
 | `OP_SEPOLIA_RPC_URL`        | optional     | RPC override for Optimism Sepolia.                       |
-| `UNICHAIN_RPC_URL`          | optional     | RPC override for Unichain.                               |
 
 `actions --help` and the read-only commands (`assets`, `chains`) work
 with no env set. `PRIVATE_KEY` is read lazily inside wallet-scoped
@@ -49,5 +48,5 @@ Smoke-test the built binary:
 The package ships a baked demo `NodeActionsConfig` under `src/demo/`.
 The allowlisted assets and markets mirror
 `packages/demo/backend/src/config/` so the CLI and backend operate
-against the same demo set. Chains: Base Sepolia, Optimism Sepolia,
-Unichain. Bundlers are omitted - the EOA signer pays gas directly.
+against the same demo set. Chains: Base Sepolia and Optimism Sepolia.
+Bundlers are omitted - the EOA signer pays gas directly.

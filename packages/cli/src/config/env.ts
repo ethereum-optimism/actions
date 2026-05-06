@@ -6,7 +6,6 @@ type CliEnv = {
   PRIVATE_KEY: string | undefined
   BASE_SEPOLIA_RPC_URL: string | undefined
   OP_SEPOLIA_RPC_URL: string | undefined
-  UNICHAIN_RPC_URL: string | undefined
 }
 
 export type CliEnvKey = keyof CliEnv
@@ -18,7 +17,6 @@ function load(): CliEnv {
     PRIVATE_KEY: str({ default: undefined }),
     BASE_SEPOLIA_RPC_URL: str({ default: undefined }),
     OP_SEPOLIA_RPC_URL: str({ default: undefined }),
-    UNICHAIN_RPC_URL: str({ default: undefined }),
   }) as CliEnv
   return cache
 }

@@ -2,6 +2,7 @@ import type { SupportedChainId } from '@eth-optimism/actions-sdk'
 import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
 
 import { CliError } from '@/output/errors.js'
+import { splitCsv } from '@/utils/strings.js'
 
 const SHORTNAMES: Record<string, SupportedChainId> = {
   base: base.id,
@@ -97,20 +98,16 @@ export interface ChainFlags {
 }
 
 /**
- * @description Resolves the mutually-exclusive `--chain` / `--chain-id`
- * option pair into a single `SupportedChainId`, or `undefined` when
- * neither is provided. Callers apply the "undefined = no filter"
- * convention as they see fit.
+ * @description Resolves the mutually-exclusive `--chain` / `--chain-id` option pair into a list of `SupportedChainId`s, or `undefined` when neither flag is set. Both flags accept a single value (`base-sepolia`, `84532`) or a comma-separated list (`base-sepolia,op-sepolia`, `84532,130`). Whitespace around commas is tolerated; duplicates are collapsed.
  * @param flags - Parsed commander options; either flag may be set.
  * @param configuredChainIds - Chain IDs in the resolved config.
- * @returns The selected chain id, or `undefined` if neither flag was used.
- * @throws `CliError` with code `validation` when both flags are set or
- * when the provided value is unknown.
+ * @returns The selected chain ids, or `undefined` if neither flag was used.
+ * @throws `CliError` with code `validation` when both flags are set, when the value is empty, or when any element is unknown.
  */
 export function resolveChainFlags(
   flags: ChainFlags,
   configuredChainIds: readonly SupportedChainId[],
-): SupportedChainId | undefined {
+): SupportedChainId[] | undefined {
   const { chain, chainId } = flags
   if (chain && chainId) {
     throw new CliError(
@@ -119,7 +116,18 @@ export function resolveChainFlags(
       { chain, chainId },
     )
   }
-  if (chain) return resolveChain(chain, configuredChainIds)
-  if (chainId) return resolveChainId(chainId, configuredChainIds)
-  return undefined
+  if (!chain && !chainId) return undefined
+  const raw = (chain ?? chainId) as string
+  const parts = splitCsv(raw)
+  if (parts.length === 0) {
+    throw new CliError(
+      'validation',
+      `Invalid ${chain ? '--chain' : '--chain-id'}: ${raw} (expected one or more comma-separated values)`,
+      { value: raw },
+    )
+  }
+  const resolver = chain
+    ? (part: string) => resolveChain(part, configuredChainIds)
+    : (part: string) => resolveChainId(part, configuredChainIds)
+  return [...new Set(parts.map(resolver))]
 }

@@ -2,8 +2,8 @@ import { Command } from 'commander'
 
 import { runWalletAddress } from '@/commands/wallet/address.js'
 import { runWalletBalance } from '@/commands/wallet/balance.js'
-import { lendCommand } from '@/commands/wallet/lend/index.js'
-import { swapCommand } from '@/commands/wallet/swap/index.js'
+import { walletLendCommand } from '@/commands/wallet/lend/index.js'
+import { walletSwapCommand } from '@/commands/wallet/swap/index.js'
 
 /**
  * @description Builds the `wallet` subcommand tree. Registered children
@@ -22,15 +22,15 @@ export function walletCommand(): Command {
     .command('balance')
     .description('Print ETH and ERC-20 balances across every configured chain.')
     .option(
-      '--chain <shortname>',
-      'filter to one chain by shortname (e.g. base-sepolia); mutually exclusive with --chain-id',
+      '--chain <shortnames>',
+      'filter to one or more chains by shortname; comma-separated (e.g. base-sepolia or base-sepolia,op-sepolia); mutually exclusive with --chain-id',
     )
     .option(
-      '--chain-id <id>',
-      'filter to one chain by numeric id (e.g. 84532); mutually exclusive with --chain',
+      '--chain-id <ids>',
+      'filter to one or more chains by numeric id; comma-separated (e.g. 84532 or 84532,130); mutually exclusive with --chain',
     )
     .action(runWalletBalance)
-  command.addCommand(lendCommand())
-  command.addCommand(swapCommand())
+  command.addCommand(walletLendCommand())
+  command.addCommand(walletSwapCommand())
   return command
 }

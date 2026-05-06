@@ -5,6 +5,7 @@ import {
   VelodromeSwapProvider,
 } from '@/actions/swap/index.js'
 import { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
+import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import type {
@@ -138,9 +139,10 @@ export class Actions<
    */
   get lend(): ActionsLendNamespace {
     if (!this._lend) {
-      throw new Error(
-        'Lend provider not configured. Please add lend configuration to ActionsConfig.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'lend',
+        details: 'Please add lend configuration to ActionsConfig.',
+      })
     }
     return this._lend
   }
@@ -172,9 +174,10 @@ export class Actions<
    */
   get swap(): ActionsSwapNamespace {
     if (!this._swap) {
-      throw new Error(
-        'Swap provider not configured. Please add swap configuration to ActionsConfig.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'swap',
+        details: 'Please add swap configuration to ActionsConfig.',
+      })
     }
     return this._swap
   }
@@ -249,9 +252,9 @@ export class Actions<
           config.smartWalletConfig.provider.attributionSuffix,
         )
       }
-      throw new Error(
-        `Unsupported smart wallet provider: ${config.smartWalletConfig.provider.type}`,
-      )
+      throw new ProviderNotConfiguredError({
+        provider: config.smartWalletConfig.provider.type,
+      })
     })()
 
     return new WalletProvider(hostedWalletProvider, smartWalletProvider)
@@ -277,9 +280,10 @@ export class Actions<
         : undefined
     ) as unknown
     if (!factory.validateOptions(options)) {
-      throw new Error(
-        `Invalid options for hosted wallet provider: ${hostedWalletProviderConfig.type}`,
-      )
+      throw new ProviderNotConfiguredError({
+        provider: hostedWalletProviderConfig.type,
+        details: 'Invalid options',
+      })
     }
     return factory.create(
       {

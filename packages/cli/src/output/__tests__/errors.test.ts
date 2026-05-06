@@ -1,3 +1,4 @@
+import { BaseError } from 'viem'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -6,6 +7,10 @@ import {
   retryableDefaultFor,
   safeDetails,
 } from '@/output/errors.js'
+
+class FakeHttpRequestError extends BaseError {
+  override name = 'HttpRequestError'
+}
 
 describe('CliError', () => {
   it('defaults retryability by code', () => {
@@ -59,38 +64,41 @@ describe('safeDetails', () => {
     expect(safeDetails(undefined)).toBeUndefined()
   })
 
-  it('strips API-key path segments from bundler URLs', () => {
+  it('replaces bundler URLs with a redaction marker', () => {
     const url = 'https://api.pimlico.io/v2/8453/rpc?apikey=SECRET'
     const out = safeDetails({ bundlerUrl: url }) as { bundlerUrl: string }
-    expect(out.bundlerUrl).not.toContain('SECRET')
-    expect(out.bundlerUrl).not.toContain('8453')
-    expect(out.bundlerUrl).toContain('api.pimlico.io')
-    expect(out.bundlerUrl).toMatch(/\/v\*\/\*\*\*\/rpc/)
+    expect(out.bundlerUrl).toBe('[redacted-url]')
   })
 
-  it('strips API-key segments from strings nested in arrays', () => {
+  it('replaces URLs nested in arrays without touching plain strings', () => {
     const out = safeDetails({
       urls: ['https://api.pimlico.io/v2/8453/rpc?apikey=SECRET', 'plain'],
     }) as { urls: string[] }
-    expect(out.urls[0]).not.toContain('SECRET')
+    expect(out.urls[0]).toBe('[redacted-url]')
     expect(out.urls[1]).toBe('plain')
   })
 
-  it('reduces viem-shaped errors to errorName + shortMessage', () => {
-    const viemErr = {
-      name: 'HttpRequestError',
-      shortMessage: 'HTTP request failed.',
-      details: 'verbose dump with headers and bodies',
-      metaMessages: ['URL: https://api.pimlico.io/v2/8453/rpc?apikey=SECRET'],
-      request: { method: 'POST', headers: { auth: 'Bearer SECRET' } },
-    }
+  it('redacts URLs embedded inside a longer string', () => {
+    const out = safeDetails({
+      shortMessage:
+        'HTTP request failed. URL: https://api.pimlico.io/v2/8453/rpc?apikey=SECRET',
+    }) as { shortMessage: string }
+    expect(out.shortMessage).toBe('HTTP request failed. URL: [redacted-url]')
+  })
+
+  it('reduces viem BaseError instances to errorName + shortMessage', () => {
+    const viemErr = new FakeHttpRequestError(
+      'HTTP request failed. URL: https://api.pimlico.io/v2/8453/rpc?apikey=SECRET',
+      {
+        details: 'verbose dump with headers and bodies',
+        metaMessages: ['Bearer SECRET'],
+      },
+    )
     const out = safeDetails({ cause: viemErr }) as {
       cause: { errorName: string; shortMessage: string }
     }
-    expect(out.cause).toEqual({
-      errorName: 'HttpRequestError',
-      shortMessage: 'HTTP request failed.',
-    })
+    expect(out.cause.errorName).toBe('HttpRequestError')
+    expect(out.cause.shortMessage).toContain('[redacted-url]')
     expect(JSON.stringify(out)).not.toContain('SECRET')
   })
 

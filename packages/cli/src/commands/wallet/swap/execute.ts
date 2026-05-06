@@ -1,12 +1,12 @@
-import { buildQuoteParams, type QuoteFlags } from '@/commands/swap/util.js'
 import {
-  ensureOnchainSuccess,
-  rethrowAsCliError,
-  toReceiptArray,
-} from '@/commands/wallet/lend/util.js'
+  buildQuoteParams,
+  type QuoteFlags,
+} from '@/commands/actions/swap/util.js'
 import { walletContext } from '@/context/walletContext.js'
-import { CliError } from '@/output/errors.js'
+import { CliError, rethrowAsCliError } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
+import { configuredAssets } from '@/resolvers/assets.js'
+import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
 
 /**
  * @description Handler for `actions wallet swap execute --in <symbol>
@@ -30,7 +30,7 @@ export async function runWalletSwapExecute(flags: QuoteFlags): Promise<void> {
   }
   const params = buildQuoteParams(
     flags,
-    config.assets?.allow ?? [],
+    configuredAssets(config),
     config.chains.map((c) => c.chainId),
   )
   try {

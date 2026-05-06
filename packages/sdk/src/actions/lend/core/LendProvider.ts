@@ -4,6 +4,12 @@ import { parseUnits } from 'viem'
 import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import {
+  AddressRequiredError,
+  AssetMetadataRequiredError,
+  MarketIdRequiredError,
+  MarketNotAllowedError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   ApprovalMode,
@@ -29,9 +35,18 @@ import type {
 } from '@/types/lend/index.js'
 import {
   buildErc20ApprovalTx,
+  resolveApprovalMode,
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
+import { isNativeAsset } from '@/utils/assets.js'
 import { validateChainSupported } from '@/utils/validation.js'
+
+/** Inputs for the base class's ERC-20 lend approval helper. */
+interface BuildLendApprovalParams {
+  position: LendOpenPosition
+  approvalMode: ApprovalMode
+  amountWei: bigint
+}
 
 /**
  * Lending provider abstract class
@@ -55,7 +70,7 @@ export abstract class LendProvider<
    * @param chainManager - Chain manager for blockchain interactions
    * @param settings - Shared lend settings applied across all providers
    */
-  constructor(
+  protected constructor(
     config: TConfig,
     chainManager: ChainManager,
     settings?: LendSettings,
@@ -95,7 +110,7 @@ export abstract class LendProvider<
    */
   async openPosition(params: LendOpenPositionParams): Promise<LendTransaction> {
     if (!params.walletAddress) {
-      throw new Error('walletAddress is required')
+      throw new AddressRequiredError('walletAddress')
     }
 
     this.validateConfigSupported(params.marketId)
@@ -106,28 +121,29 @@ export abstract class LendProvider<
       params.asset.metadata.decimals,
     )
 
-    const approvalMode = this.resolveApprovalMode(params)
-    const internal: LendOpenPositionInternalParams = {
+    const position = await this._openPosition({
       ...params,
       amountWei,
       walletAddress: params.walletAddress,
-      approvalMode,
-    }
+    })
 
-    const position = await this._openPosition(internal)
-
-    const approval =
-      position.spender !== undefined
-        ? buildErc20ApprovalTx(
-            position.asset,
-            position.spender,
-            resolveErc20ApprovalAmount(approvalMode, amountWei),
-          )
-        : undefined
+    // Native deposits send ETH inline as msg.value; no approval is needed.
+    // ERC-20 deposits resolve approval mode and build an approve(spender, amount) tx.
+    const approval = isNativeAsset(params.asset)
+      ? undefined
+      : this.buildLendApproval({
+          position,
+          approvalMode: resolveApprovalMode(
+            params.approvalMode,
+            this._config.approvalMode,
+            this._settings.approvalMode,
+          ),
+          amountWei,
+        })
 
     return {
       amount: amountWei,
-      asset: position.asset,
+      assetAddress: position.assetAddress,
       marketId: params.marketId.address,
       apy: position.apy,
       transactionData: {
@@ -188,13 +204,13 @@ export abstract class LendProvider<
   ): Promise<LendMarketPosition> {
     // For now, require marketId (asset-only and empty params not yet supported)
     if (!marketId) {
-      throw new Error(
-        'marketId is required. Querying all positions or by asset is not yet supported.',
+      throw new MarketIdRequiredError(
+        'Querying all positions or by asset is not yet supported.',
       )
     }
 
     if (asset) {
-      throw new Error(
+      throw new MarketIdRequiredError(
         'Filtering by asset is not yet supported. Please provide only marketId.',
       )
     }
@@ -215,7 +231,7 @@ export abstract class LendProvider<
    */
   async closePosition(params: ClosePositionParams): Promise<LendTransaction> {
     if (!params.walletAddress) {
-      throw new Error('walletAddress is required')
+      throw new AddressRequiredError('walletAddress')
     }
 
     this.validateConfigSupported(params.marketId)
@@ -231,7 +247,7 @@ export abstract class LendProvider<
 
     const assetMetadata = params.asset?.metadata
     if (!assetMetadata) {
-      throw new Error('Asset metadata is required for decimal conversion')
+      throw new AssetMetadataRequiredError('decimal conversion')
     }
 
     // Convert human-readable amount to wei using the asset's decimals
@@ -281,9 +297,11 @@ export abstract class LendProvider<
     )
 
     if (!foundMarket) {
-      throw new Error(
-        `Market ${marketId.address} on chain ${marketId.chainId} is not in the market allowlist`,
-      )
+      throw new MarketNotAllowedError({
+        address: marketId.address,
+        chainId: marketId.chainId,
+        reason: 'Market is not in the market allowlist',
+      })
     }
   }
 
@@ -303,19 +321,21 @@ export abstract class LendProvider<
   }
 
   /**
-   * Resolve a lend operation's approval-amount strategy with provider →
-   * shared → default precedence (mirrors how swap settings resolve).
-   * Order: per-call `params.approvalMode`, then `this._config.approvalMode`,
-   * then `this._settings.approvalMode`, then `"exact"`.
+   * Build the approval transaction for an ERC-20 lend deposit. Caller is
+   * expected to skip this for native deposits.
+   * @throws if the provider's `_openPosition` result is missing `spender`
    */
-  protected resolveApprovalMode(params: {
-    approvalMode?: ApprovalMode
-  }): ApprovalMode {
-    return (
-      params.approvalMode ??
-      this._config.approvalMode ??
-      this._settings.approvalMode ??
-      'exact'
+  private buildLendApproval(params: BuildLendApprovalParams): TransactionData {
+    const { position, approvalMode, amountWei } = params
+    if (!position.spender) {
+      throw new Error(
+        `LendOpenPosition.spender is required for ERC-20 deposits (assetAddress: ${position.assetAddress})`,
+      )
+    }
+    return buildErc20ApprovalTx(
+      position.assetAddress,
+      position.spender,
+      resolveErc20ApprovalAmount(approvalMode, amountWei),
     )
   }
 

@@ -72,8 +72,8 @@ export interface LendTransaction {
   hash?: string
   /** Amount lent */
   amount: bigint
-  /** Asset address */
-  asset: Address
+  /** Underlying ERC-20 address (the wrapped form for native deposits) */
+  assetAddress: Address
   /** Market ID */
   marketId: string
   /** Estimated APY at time of lending */
@@ -259,27 +259,28 @@ export interface LendOpenPositionInternalParams extends Omit<
   amountWei: bigint
   /** Wallet address for receiving shares and as owner (required in internal params) */
   walletAddress: Address
-  /** Resolved approval-amount strategy (per-call → wallet config → "exact"). */
-  approvalMode: ApprovalMode
 }
 
 /**
  * Provider-supplied description of a lend open-position operation. The base
  * `LendProvider` consumes this to build the surrounding `LendTransaction`,
  * including the ERC-20 approval transaction (if any). Providers describe
- * **what** the deposit looks like; the base owns **how** the approval is
- * built (amount sizing via `approvalMode`, native-asset skip, etc.).
+ * **what** the deposit looks like; the base derives **how** the approval is
+ * built from `params.asset` (native vs. ERC-20).
+ *
+ * For native-asset deposits, omit `spender` — the base reads `params.asset.type`
+ * and skips approval construction entirely. For ERC-20 deposits, `spender` is
+ * required and the base will throw if it's missing.
  */
 export interface LendOpenPosition {
+  /** Underlying ERC-20 address being deposited (the wrapped form for native deposits). */
+  assetAddress: Address
   /**
    * ERC-20 spender that needs allowance to pull `params.amountWei` from the
-   * wallet. Omit (or set `undefined`) for native-asset deposits where the
-   * value is sent inline as `msg.value` and no approval is required.
+   * wallet. Required for ERC-20 deposits; omit for native deposits.
    */
   spender?: Address
-  /** Underlying token address being deposited (or its wrapped form for native paths). */
-  asset: Address
-  /** The deposit transaction itself (provider-specific calldata). */
+  /** The deposit transaction itself (provider-specific calldata; `value` set for native). */
   transaction: TransactionData
   /** APY snapshot at the time the description was built. */
   apy: number

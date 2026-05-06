@@ -1,12 +1,11 @@
 import { privateKeyToAccount } from 'viem/accounts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { ANVIL_ACCOUNT_0 } from '@/__mocks__/anvilAccounts.js'
 import { __resetEnvCacheForTests } from '@/config/env.js'
 import { walletContext } from '@/context/walletContext.js'
 import { CliError } from '@/output/errors.js'
 
-const ANVIL_ACCOUNT_0 =
-  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
 const EXPECTED_ADDRESS = privateKeyToAccount(ANVIL_ACCOUNT_0).address
 
 describe('walletContext', () => {

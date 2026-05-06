@@ -9,7 +9,7 @@ import { runWalletSwapExecute } from '@/commands/wallet/swap/execute.js'
  * reads. The wallet tree exposes only `execute`.
  * @returns Commander `Command` configured with `execute`.
  */
-export function swapCommand(): Command {
+export function walletSwapCommand(): Command {
   const command = new Command('swap').description(
     'Execute swaps from the EOA derived from PRIVATE_KEY.',
   )

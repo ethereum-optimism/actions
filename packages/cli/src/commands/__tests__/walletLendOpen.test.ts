@@ -1,6 +1,8 @@
+import { ContractFunctionRevertedError } from 'viem'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ANVIL_ACCOUNT_0 } from '@/__mocks__/anvilAccounts.js'
 import { runWalletLendOpen } from '@/commands/wallet/lend/open.js'
 import { __resetEnvCacheForTests } from '@/config/env.js'
 import * as walletCtx from '@/context/walletContext.js'
@@ -10,9 +12,6 @@ import { setJsonMode } from '@/output/mode.js'
 
 beforeEach(() => setJsonMode(true))
 afterEach(() => setJsonMode(false))
-
-const ANVIL_ACCOUNT_0 =
-  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
 
 const successReceipt = (hash: string) => ({
   transactionHash: hash,
@@ -37,23 +36,14 @@ describe('runWalletLendOpen', () => {
     vi.restoreAllMocks()
   })
 
-  const mockWallet = (
-    openPosition: (params: unknown) => Promise<unknown>,
-    lendProviders: 'morpho' | 'aave' | 'both' = 'both',
-  ) => {
-    const lend =
-      lendProviders === 'morpho' ||
-      lendProviders === 'both' ||
-      lendProviders === 'aave'
-        ? { openPosition, closePosition: async () => null }
-        : undefined
+  const mockWallet = (openPosition: (params: unknown) => Promise<unknown>) => {
     vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
       config: getDemoConfig(),
       actions: {} as never,
       signer: {} as never,
       wallet: {
         address: '0xabc',
-        lend,
+        lend: { openPosition, closePosition: async () => null },
       } as never,
     })
   }
@@ -103,16 +93,57 @@ describe('runWalletLendOpen', () => {
     }
   })
 
-  it('rejects non-positive amounts with CliError(validation)', async () => {
+  it('forwards --approval-mode to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return successReceipt('0x')
+    })
+    await runWalletLendOpen({
+      market: 'gauntlet-usdc',
+      amount: '1',
+      approvalMode: 'max',
+    })
+    const call = captured[0] as { approvalMode?: string }
+    expect(call.approvalMode).toBe('max')
+  })
+
+  it('rejects invalid --approval-mode with CliError(validation)', async () => {
     mockWallet(async () => successReceipt('0x'))
-    for (const bad of ['0', '-1', 'foo', 'NaN']) {
-      try {
-        await runWalletLendOpen({ market: 'gauntlet-usdc', amount: bad })
-        throw new Error(`did not throw for ${bad}`)
-      } catch (err) {
-        expect(err).toBeInstanceOf(CliError)
-        expect((err as CliError).code).toBe('validation')
-      }
+    try {
+      await runWalletLendOpen({
+        market: 'gauntlet-usdc',
+        amount: '1',
+        approvalMode: 'infinite',
+      })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
+
+  it.each([
+    '0',
+    '-1',
+    'foo',
+    'NaN',
+    '1e-19', // scientific notation rounds to 0 wei after parseUnits
+    '1e10', // scientific notation
+    '0x10', // hex literal
+    '+1', // leading sign
+    ' 1 ', // whitespace
+    '.5', // bare decimal
+    '1.', // trailing dot
+    '9007199254740993', // > MAX_SAFE_INTEGER, loses precision through float
+  ])('rejects amount %p with CliError(validation)', async (bad) => {
+    mockWallet(async () => successReceipt('0x'))
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: bad })
+      throw new Error(`did not throw for ${bad}`)
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
     }
   })
 
@@ -120,6 +151,21 @@ describe('runWalletLendOpen', () => {
     mockWallet(async () => [
       successReceipt('0xapprove'),
       { ...successReceipt('0xrevert'), status: 'reverted' as const },
+    ])
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('onchain')
+    }
+  })
+
+  it('rejects receipts with an unrecognised status (default-deny)', async () => {
+    // A misbehaving RPC could omit `status` or return a numeric value; the
+    // CLI must not treat that as success.
+    mockWallet(async () => [
+      { transactionHash: '0xmalformed', blockNumber: 1n } as never,
     ])
     try {
       await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })
@@ -146,9 +192,11 @@ describe('runWalletLendOpen', () => {
 
   it('maps simulation reverts to CliError(onchain)', async () => {
     mockWallet(async () => {
-      const e = new Error('execution reverted: ERC20: insufficient allowance')
-      e.name = 'ContractFunctionRevertedError'
-      throw e
+      throw new ContractFunctionRevertedError({
+        abi: [],
+        data: undefined,
+        functionName: 'supply',
+      })
     })
     try {
       await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })

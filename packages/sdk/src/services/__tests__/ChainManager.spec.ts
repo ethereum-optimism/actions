@@ -90,7 +90,7 @@ describe('ChainManager', () => {
       ]
 
       expect(() => new ChainManager(invalidChainConfigs)).toThrow(
-        'Chain not found for ID: 99999',
+        'Chain 99999 is not supported',
       )
     })
 
@@ -100,7 +100,7 @@ describe('ChainManager', () => {
         { chainId: unichain.id, rpcUrls: ['https://another.rpc'] },
       ]
       expect(() => new ChainManager(multiChainConfigs)).toThrow(
-        `Public client already configured for chain ID: ${unichain.id}`,
+        `Chain ${unichain.id} is not supported`,
       )
     })
   })
@@ -117,7 +117,7 @@ describe('ChainManager', () => {
       const unsupportedChainId = 999 as unknown as SupportedChainId
 
       expect(() => chainManager.getPublicClient(unsupportedChainId)).toThrow(
-        'No public client configured for chain ID: 999',
+        'Chain 999 is not supported',
       )
     })
   })
@@ -183,7 +183,7 @@ describe('ChainManager', () => {
 
       expect(() =>
         chainManager.getTransportForChain(unsupportedChainId),
-      ).toThrow('No chain config found for chain ID: 999')
+      ).toThrow('Chain 999 is not supported')
     })
   })
 
@@ -306,7 +306,7 @@ describe('ChainManager', () => {
       const mgr = new ChainManager(configs)
 
       expect(() => mgr.getBundlerClient(unichain.id, mockAccount)).toThrow(
-        `No bundler configured for chain ID: ${unichain.id}`,
+        `Chain ${unichain.id} is not supported`,
       )
     })
 
@@ -325,7 +325,7 @@ describe('ChainManager', () => {
       const mgr = new ChainManager(configs)
 
       expect(() => mgr.getBundlerClient(unichain.id, mockAccount)).toThrow(
-        `No bundler URL configured for chain ID: ${unichain.id}`,
+        `Chain ${unichain.id} is not supported`,
       )
     })
   })

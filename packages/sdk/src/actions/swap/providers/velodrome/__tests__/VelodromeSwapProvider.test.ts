@@ -1,6 +1,6 @@
 import type { Address, PublicClient } from 'viem'
-import { decodeFunctionData, erc20Abi } from 'viem'
-import { baseSepolia, mode, optimism } from 'viem/chains'
+import { decodeFunctionData, erc20Abi, maxUint256 } from 'viem'
+import { mode, optimism } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -98,41 +98,42 @@ describe('VelodromeSwapProvider', () => {
       expect(result.transactionData.permit2Approval).toBeUndefined()
     })
 
-    // Regression for #438: on the Universal Router (Base Sepolia), the approval must
-    // be a standard ERC20 `approve(router, amount)`, NOT a `transfer(router, amount)`.
-    // The old transfer-then-execute layout reverted with TRANSFER_FAILED for EOAs
-    // because their txs run sequentially: tokens landed at the router with no
-    // allowance set, then the swap call's transferFrom failed.
-    it('uses approve, not transfer, for the Universal Router (Base Sepolia)', async () => {
-      const baseSepoliaId = baseSepolia.id as SupportedChainId
-      const config: VelodromeSwapProviderConfig = {
-        defaultSlippage: 0.005,
-        marketAllowlist: [
-          { assets: [USDC, WETH], stable: false, chainId: baseSepoliaId },
-        ],
-      }
-      const provider = new VelodromeSwapProvider(
-        config,
-        createMockChainManager([baseSepoliaId]),
-      )
-
+    it('approves the exact swap amount in default exact mode', async () => {
+      const provider = createProvider()
       const result = await provider.execute({
-        amountIn: 1,
+        amountIn: 100,
         assetIn: USDC,
-        assetOut: WETH,
-        chainId: baseSepoliaId,
+        assetOut: OP,
+        chainId: CHAIN_ID,
         walletAddress: MOCK_WALLET,
       })
 
-      const tokenApproval = result.transactionData.tokenApproval
-      expect(tokenApproval).toBeDefined()
-      // Decode the calldata; must be `approve`, not `transfer`.
       const decoded = decodeFunctionData({
         abi: erc20Abi,
-        data: tokenApproval!.data,
+        data: result.transactionData.tokenApproval!.data,
       })
       expect(decoded.functionName).toBe('approve')
-      expect(decoded.functionName).not.toBe('transfer')
+      // 100 USDC at 6 decimals
+      expect(decoded.args[1]).toBe(100_000_000n)
+    })
+
+    it('approves maxUint256 when approvalMode is "max"', async () => {
+      const provider = createProvider()
+      const result = await provider.execute({
+        amountIn: 100,
+        assetIn: USDC,
+        assetOut: OP,
+        chainId: CHAIN_ID,
+        walletAddress: MOCK_WALLET,
+        approvalMode: 'max',
+      })
+
+      const decoded = decodeFunctionData({
+        abi: erc20Abi,
+        data: result.transactionData.tokenApproval!.data,
+      })
+      expect(decoded.functionName).toBe('approve')
+      expect(decoded.args[1]).toBe(maxUint256)
     })
 
     it('throws for exact-output swaps', async () => {
@@ -517,7 +518,7 @@ describe('VelodromeSwapProvider', () => {
           amountIn: 100,
           chainId: MODE_CHAIN_ID,
         }),
-      ).rejects.toThrow('CL pools not supported on chain')
+      ).rejects.toThrow('is not supported')
     })
   })
 

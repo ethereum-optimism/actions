@@ -1,8 +1,8 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { runSwapQuote } from '@/commands/swap/quote.js'
-import { runSwapQuotes } from '@/commands/swap/quotes.js'
+import { runSwapQuote } from '@/commands/actions/swap/quote.js'
+import { runSwapQuotes } from '@/commands/actions/swap/quotes.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { getDemoConfig } from '@/demo/config.js'
 import { CliError } from '@/output/errors.js'
@@ -31,7 +31,7 @@ const stubQuote = (provider: string, amountOutRaw: bigint) => ({
   deadline: 1,
   quotedAt: 1,
   expiresAt: 2,
-  recipient: '0xrecipient',
+  quotedRecipient: '0xrecipient',
 })
 
 describe('runSwapQuote', () => {

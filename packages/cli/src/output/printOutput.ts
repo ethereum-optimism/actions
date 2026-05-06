@@ -1,18 +1,17 @@
 import type {
   Asset,
-  EOATransactionReceipt,
   LendMarket,
   LendMarketPosition,
   SupportedChainId,
   SwapMarket,
   SwapQuote,
   TokenBalance,
-  UserOperationTransactionReceipt,
 } from '@eth-optimism/actions-sdk'
 import type { Address } from 'viem'
 
 import { writeJson } from '@/output/json.js'
 import { isJsonMode } from '@/output/mode.js'
+import type { WalletTransactionReceipt } from '@/utils/receipts.js'
 
 function writeLine(line = ''): void {
   process.stdout.write(line + '\n')
@@ -38,9 +37,7 @@ export interface LendActionDoc {
   }
   asset: { symbol: string }
   amount: number
-  transactions: ReadonlyArray<
-    EOATransactionReceipt | UserOperationTransactionReceipt
-  >
+  transactions: readonly WalletTransactionReceipt[]
 }
 
 export interface SwapExecuteDoc {
@@ -53,9 +50,7 @@ export interface SwapExecuteDoc {
   amountOutRaw: bigint
   price: number
   priceImpact: number
-  transactions: ReadonlyArray<
-    EOATransactionReceipt | UserOperationTransactionReceipt
-  >
+  transactions: readonly WalletTransactionReceipt[]
 }
 
 interface Printers {
@@ -63,8 +58,7 @@ interface Printers {
   chains: readonly ChainRow[]
   address: AddressDoc
   balance: readonly TokenBalance[]
-  lendOpen: LendActionDoc
-  lendClose: LendActionDoc
+  lendAction: LendActionDoc
   lendMarkets: readonly LendMarket[]
   lendMarket: LendMarket
   lendPosition: LendMarketPosition
@@ -222,8 +216,7 @@ const TEXT_FORMATTERS: {
   chains: formatChains,
   address: formatAddress,
   balance: formatBalance,
-  lendOpen: formatLendAction,
-  lendClose: formatLendAction,
+  lendAction: formatLendAction,
   lendMarkets: formatLendMarkets,
   lendMarket: formatLendMarket,
   lendPosition: formatLendPosition,

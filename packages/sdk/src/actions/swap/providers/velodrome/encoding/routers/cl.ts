@@ -12,6 +12,7 @@ import {
   UNIVERSAL_ROUTER_MSG_SENDER,
 } from '@/actions/swap/providers/velodrome/encoding/helpers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
 import type { SwapPrice, SwapRoute } from '@/types/swap/index.js'
 
@@ -62,9 +63,12 @@ export async function getCLQuote(params: GetCLQuoteParams): Promise<SwapPrice> {
     !poolAddress ||
     poolAddress === '0x0000000000000000000000000000000000000000'
   ) {
-    throw new Error(
-      `No CL pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (tickSpacing=${tickSpacing})`,
-    )
+    throw new MarketNotAllowedError({
+      assetInSymbol: assetIn.metadata.symbol,
+      assetOutSymbol: assetOut.metadata.symbol,
+      chainId,
+      reason: `No CL pool found for ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} (tickSpacing=${tickSpacing})`,
+    })
   }
 
   // Quote via QuoterV2.quoteExactInputSingle
@@ -109,6 +113,15 @@ export interface EncodeCLSwapParams {
 /** Universal Router V3_SWAP_EXACT_IN command byte */
 const V3_SWAP_EXACT_IN = 0x00
 
+/** ABI param shape for the V3_SWAP_EXACT_IN input payload. Shared with tests. */
+export const V3_SWAP_EXACT_IN_INPUT_PARAMS = [
+  { name: 'recipient', type: 'address' },
+  { name: 'amountIn', type: 'uint256' },
+  { name: 'amountOutMin', type: 'uint256' },
+  { name: 'path', type: 'bytes' },
+  { name: 'payerIsUser', type: 'bool' },
+] as const
+
 /**
  * Encode a V3_SWAP_EXACT_IN command for a CL/Slipstream pool on the Universal Router.
  * Path: encodePacked([tokenIn (20), tickSpacing as int24 (3), tokenOut (20)]) — 43 bytes.
@@ -127,7 +140,7 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
     chainId,
   )
 
-  const commands = `0x${V3_SWAP_EXACT_IN.toString(16).padStart(2, '0')}` as Hex
+  const commands = encodePacked(['uint8'], [V3_SWAP_EXACT_IN])
 
   // CL path: [tokenIn (20)] [tickSpacing as int24 (3)] [tokenOut (20)] — 43 bytes
   const path = encodePacked(
@@ -135,22 +148,13 @@ export function encodeCLSwap(params: EncodeCLSwapParams): Hex {
     [tokenIn, tickSpacing, tokenOut],
   )
 
-  const input = encodeAbiParameters(
-    [
-      { type: 'address' },
-      { type: 'uint256' },
-      { type: 'uint256' },
-      { type: 'bytes' },
-      { type: 'bool' },
-    ],
-    [
-      UNIVERSAL_ROUTER_MSG_SENDER, // recipient = msg.sender (Universal Router sentinel)
-      amountInRaw,
-      amountOutMin,
-      path,
-      true, // payerIsUser — router pulls from msg.sender via transferFrom
-    ],
-  )
+  const input = encodeAbiParameters(V3_SWAP_EXACT_IN_INPUT_PARAMS, [
+    UNIVERSAL_ROUTER_MSG_SENDER, // recipient = msg.sender (Universal Router sentinel)
+    amountInRaw,
+    amountOutMin,
+    path,
+    true, // payerIsUser — router pulls from msg.sender via transferFrom
+  ])
 
   return encodeFunctionData({
     abi: UNIVERSAL_ROUTER_ABI,

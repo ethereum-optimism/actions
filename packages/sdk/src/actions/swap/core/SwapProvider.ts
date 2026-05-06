@@ -4,6 +4,11 @@ import { formatUnits } from 'viem'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import {
+  MarketNotAllowedError,
+  ProviderNotConfiguredError,
+  QuoteExpiredError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   SwapExecuteParamsResolved,
@@ -29,6 +34,7 @@ import {
   buildTokenApprovalTx,
   checkPermit2Allowance,
   checkTokenAllowance,
+  resolveApprovalMode,
   resolveErc20ApprovalAmount,
   resolvePermit2ApprovalAmount,
 } from '@/utils/approve.js'
@@ -77,7 +83,7 @@ export abstract class SwapProvider<
   protected readonly _settings: SwapSettings
   protected readonly chainManager: ChainManager
 
-  constructor(
+  protected constructor(
     config: TConfig,
     chainManager: ChainManager,
     settings?: SwapSettings,
@@ -85,22 +91,6 @@ export abstract class SwapProvider<
     this._config = config
     this._settings = settings ?? {}
     this.chainManager = chainManager
-  }
-
-  /**
-   * Resolve a swap's approval-amount strategy. Mirrors how `defaultSlippage`
-   * is resolved: per-call → per-provider config → shared settings → default.
-   * Order: `quote.approvalMode` (or per-call `params.approvalMode`), then
-   * `this._config.approvalMode`, then `this._settings.approvalMode`, then
-   * `"exact"`.
-   */
-  protected resolveApprovalMode(quote: SwapQuote): ApprovalMode {
-    return (
-      quote.approvalMode ??
-      this._config.approvalMode ??
-      this._settings.approvalMode ??
-      'exact'
-    )
   }
 
   get config(): TConfig {
@@ -153,15 +143,13 @@ export abstract class SwapProvider<
   async execute(
     params: SwapExecuteParamsResolved | SwapQuote,
   ): Promise<SwapTransaction> {
-    // Resolve approval mode once at entry: per-call → per-provider config →
-    // shared settings → "exact" (matches `defaultSlippage` resolution). The
-    // resolved value is set back on the params object so all downstream
-    // methods read a single populated field.
-    const resolvedApprovalMode =
-      params.approvalMode ??
-      this._config.approvalMode ??
-      this._settings.approvalMode ??
-      'exact'
+    // Resolve approval mode once at entry; the resolved value is set back on
+    // the params object so all downstream methods read a single populated field.
+    const resolvedApprovalMode = resolveApprovalMode(
+      params.approvalMode,
+      this._config.approvalMode,
+      this._settings.approvalMode,
+    )
 
     if (QUOTE_DISCRIMINATOR in params) {
       this.validateSwapExecute(params)
@@ -279,9 +267,12 @@ export abstract class SwapProvider<
         marketBlocklist,
       )
       if (isBlocked) {
-        throw new Error(
-          `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is blocked on chain ${chainId}`,
-        )
+        throw new MarketNotAllowedError({
+          assetInSymbol: assetIn.metadata.symbol,
+          assetOutSymbol: assetOut.metadata.symbol,
+          chainId,
+          reason: 'Pair is blocked',
+        })
       }
     }
 
@@ -293,9 +284,12 @@ export abstract class SwapProvider<
         marketAllowlist,
       )
       if (!isAllowed) {
-        throw new Error(
-          `Pair ${assetIn.metadata.symbol}/${assetOut.metadata.symbol} is not in the allowlist for chain ${chainId}`,
-        )
+        throw new MarketNotAllowedError({
+          assetInSymbol: assetIn.metadata.symbol,
+          assetOutSymbol: assetOut.metadata.symbol,
+          chainId,
+          reason: 'Pair is not in the allowlist',
+        })
       }
     }
   }
@@ -342,9 +336,10 @@ export abstract class SwapProvider<
   ): SwapMarketConfig | undefined {
     const { marketAllowlist } = this._config
     if (!marketAllowlist?.length) {
-      throw new Error(
-        'No markets configured. Provide a marketAllowlist in swap provider config.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'marketAllowlist',
+        details: 'Provide a marketAllowlist in swap provider config.',
+      })
     }
     return this.findMatchingConfig(assetIn, assetOut, chainId, marketAllowlist)
   }
@@ -430,14 +425,21 @@ export abstract class SwapProvider<
 
   /**
    * Build a SwapTransaction from a quote by fetching approvals and wrapping
-   * the swap calldata. Quotes are required to have `recipient` set by the
-   * provider's `_getQuote`; sub-providers can dereference `quote.recipient`
-   * directly. Reads `quote.approvalMode` (populated by `execute()` at entry)
-   * for approval-amount sizing.
+   * the swap calldata. Used by both the quote-execute path and provider
+   * `_execute` implementations. Quotes are required to have `recipient` set
+   * by the provider's `_getQuote`; sub-providers can dereference
+   * `quote.recipient` directly. Reads `quote.approvalMode` (populated by
+   * `execute()` at entry).
+   * @param quote - SwapQuote with recipient and approvalMode set
    */
   protected async buildSwapTransactions(
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
+    if (!quote.recipient) {
+      throw new Error(
+        'SwapQuote.recipient missing — _getQuote must populate it',
+      )
+    }
     const approvals = await this._buildApprovals(quote)
 
     const swapTx: TransactionData = {
@@ -485,9 +487,10 @@ export abstract class SwapProvider<
   private validateQuoteExpiration(quote: SwapQuote): void {
     const now = Math.floor(Date.now() / 1000)
     if (now >= quote.expiresAt) {
-      throw new Error(
-        `Quote expired at ${quote.expiresAt}, current time is ${now}`,
-      )
+      throw new QuoteExpiredError({
+        expiresAt: quote.expiresAt,
+        currentTime: now,
+      })
     }
   }
 
@@ -588,10 +591,10 @@ export abstract class SwapProvider<
 
   /**
    * Build provider-specific approval transactions for a swap.
-   * Called by the base class during executeFromQuote with a validated recipient
-   * and resolved approvalMode. Implementations read `quote.approvalMode` to
-   * choose between exact and max approvals.
-   * @param quote - SwapQuote with recipient and approvalMode set
+   * Called by the base class during executeFromQuote with a validated
+   * recipient and resolved approvalMode. Implementations read
+   * `quote.approvalMode` to choose between exact and max approvals.
+   * @param quote - SwapQuote with recipient set by the provider's _getQuote and approvalMode populated by execute() at entry
    * @returns Approval transactions needed before the swap (tokenApproval, permit2Approval)
    */
   protected abstract _buildApprovals(

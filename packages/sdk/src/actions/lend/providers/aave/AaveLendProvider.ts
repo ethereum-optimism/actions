@@ -3,7 +3,9 @@ import { encodeFunctionData, erc20Abi, formatUnits } from 'viem'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { WETH } from '@/constants/assets.js'
-import type { LendProviderConfig } from '@/types/actions.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
+import type { ChainManager } from '@/services/ChainManager.js'
+import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
 import type {
   GetLendMarketsParams,
   GetMarketBalanceParams,
@@ -30,6 +32,14 @@ import { getATokenAddress, getReserve, getReserves } from './sdk.js'
  * @description Lending provider implementation using Aave V3 protocol
  */
 export class AaveLendProvider extends LendProvider<LendProviderConfig> {
+  constructor(
+    config: LendProviderConfig,
+    chainManager: ChainManager,
+    settings?: LendSettings,
+  ) {
+    super(config, chainManager, settings)
+  }
+
   protocolSupportedChainIds(): number[] {
     return getSupportedChainIds()
   }
@@ -50,9 +60,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       // Get Pool address for this chain
       const poolAddress = getPoolAddress(params.marketId.chainId)
       if (!poolAddress) {
-        throw new Error(
-          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
-        )
+        throw new ChainNotSupportedError({
+          chainId: params.marketId.chainId,
+          supportedChainIds: this.supportedChainIds(),
+        })
       }
 
       // Get market information for APY
@@ -85,9 +96,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       // Get Pool address for this chain
       const poolAddress = getPoolAddress(params.marketId.chainId)
       if (!poolAddress) {
-        throw new Error(
-          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
-        )
+        throw new ChainNotSupportedError({
+          chainId: params.marketId.chainId,
+          supportedChainIds: this.supportedChainIds(),
+        })
       }
 
       const marketInfo = await this.getMarket({
@@ -153,9 +165,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
       const poolAddress = getPoolAddress(params.marketId.chainId)
 
       if (!poolAddress) {
-        throw new Error(
-          `Aave V3 not deployed on chain ${params.marketId.chainId}`,
-        )
+        throw new ChainNotSupportedError({
+          chainId: params.marketId.chainId,
+          supportedChainIds: this.supportedChainIds(),
+        })
       }
 
       // Get the aToken address from Pool.getReserveData
@@ -207,9 +220,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   ): Promise<LendOpenPosition> {
     const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
     if (!gatewayAddress) {
-      throw new Error(
-        `WETHGateway not available on chain ${params.marketId.chainId}`,
-      )
+      throw new ChainNotSupportedError({
+        chainId: params.marketId.chainId,
+        supportedChainIds: this.supportedChainIds(),
+      })
     }
 
     const depositCallData = encodeFunctionData({
@@ -225,8 +239,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
     const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
 
     return {
-      // No spender — base class skips approval since this is a native deposit
-      asset: wethAddress,
+      assetAddress: wethAddress,
       transaction: {
         to: gatewayAddress,
         data: depositCallData,
@@ -261,7 +274,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       spender: poolAddress,
-      asset: assetAddress,
+      assetAddress,
       transaction: {
         to: poolAddress,
         data: supplyCallData,
@@ -282,9 +295,10 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
   ): Promise<LendTransaction> {
     const gatewayAddress = getWETHGatewayAddress(params.marketId.chainId)
     if (!gatewayAddress) {
-      throw new Error(
-        `WETHGateway not available on chain ${params.marketId.chainId}`,
-      )
+      throw new ChainNotSupportedError({
+        chainId: params.marketId.chainId,
+        supportedChainIds: this.supportedChainIds(),
+      })
     }
 
     const wethAddress = getAssetAddress(WETH, params.marketId.chainId)
@@ -309,7 +323,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: params.amount,
-      asset: wethAddress,
+      assetAddress: wethAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {
@@ -354,7 +368,7 @@ export class AaveLendProvider extends LendProvider<LendProviderConfig> {
 
     return {
       amount: params.amount,
-      asset: assetAddress,
+      assetAddress,
       marketId: params.marketId.address,
       apy: marketInfo.apy.total,
       transactionData: {

@@ -1,7 +1,7 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { runSwapMarket } from '@/commands/swap/market.js'
+import { runSwapMarket } from '@/commands/actions/swap/market.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { getDemoConfig } from '@/demo/config.js'
 import { CliError } from '@/output/errors.js'

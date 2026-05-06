@@ -14,12 +14,7 @@ function rpcUrls(key: CliEnvKey): string[] | undefined {
 }
 
 /**
- * @description Returns the CLI's baked demo chain set: Base Sepolia and
- * Optimism Sepolia - mirroring the demo backend's market footprint. RPC
- * URLs come from the matching `*_RPC_URL` env vars when set, otherwise
- * viem's chain defaults apply. Bundler configuration is omitted
- * intentionally: the CLI signs transactions from an EOA and the signer
- * pays gas directly (no ERC-4337 gas abstraction for now).
+ * @description Returns the CLI's baked demo chain set: Base Sepolia and Optimism Sepolia, mirroring the demo backend's market footprint. RPC URLs come from the matching `*_RPC_URL` env vars when set, otherwise viem's chain defaults apply. Bundler configuration is omitted intentionally: the CLI signs transactions from an EOA and the signer pays gas directly (no ERC-4337 gas abstraction for now).
  * @returns Array of chain configs suitable for `NodeActionsConfig.chains`.
  */
 export function getDemoChains(): DemoChainConfig[] {

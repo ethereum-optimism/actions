@@ -1,6 +1,7 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ANVIL_ACCOUNT_0 } from '@/__mocks__/anvilAccounts.js'
 import { runWalletBalance } from '@/commands/wallet/balance.js'
 import { __resetEnvCacheForTests } from '@/config/env.js'
 import * as walletCtx from '@/context/walletContext.js'
@@ -9,9 +10,6 @@ import { setJsonMode } from '@/output/mode.js'
 
 beforeEach(() => setJsonMode(true))
 afterEach(() => setJsonMode(false))
-
-const ANVIL_ACCOUNT_0 =
-  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
 
 describe('runWalletBalance', () => {
   const originalEnv = process.env
@@ -122,7 +120,7 @@ describe('runWalletBalance', () => {
     ]
     vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
       config: {
-        chains: [{ chainId: 84532 }, { chainId: 11155420 }],
+        chains: [{ chainId: 84532 }, { chainId: 11155420 }, { chainId: 84532 }],
       } as never,
       actions: {} as never,
       signer: {} as never,
@@ -158,31 +156,53 @@ describe('runWalletBalance', () => {
     expect(Object.keys(usdc.chains)).toEqual(['84532'])
   })
 
-  it('filters balances to a single chain via --chain', async () => {
+  it('passes chainIds to the SDK when --chain is set and emits the SDK response unchanged', async () => {
     process.env.PRIVATE_KEY = ANVIL_ACCOUNT_0
+    const getBalance = vi.fn(async () => [
+      {
+        asset: { metadata: { symbol: 'ETH' } },
+        totalBalance: 1,
+        totalBalanceRaw: 1n,
+        chains: { 84532: { balance: 1, balanceRaw: 1n } },
+      },
+    ])
     vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
       config: { chains: [{ chainId: 84532 }, { chainId: 11155420 }] } as never,
       actions: {} as never,
       signer: {} as never,
-      wallet: {
-        address: '0x0',
-        getBalance: async () => [
-          {
-            asset: { metadata: { symbol: 'ETH' } },
-            totalBalance: 3,
-            totalBalanceRaw: 3n,
-            chains: {
-              84532: { balance: 1, balanceRaw: 1n },
-              11155420: { balance: 2, balanceRaw: 2n },
-            },
-          },
-        ],
-      } as never,
+      wallet: { address: '0x0', getBalance } as never,
     })
     await runWalletBalance({ chain: 'base-sepolia' })
+    expect(getBalance).toHaveBeenCalledWith({ chainIds: [84532] })
     const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
     expect(Object.keys(body[0].chains)).toEqual(['84532'])
     expect(body[0].totalBalanceRaw).toBe('1')
+  })
+
+  it('passes a multi-chain chainIds array when --chain is comma-separated', async () => {
+    process.env.PRIVATE_KEY = ANVIL_ACCOUNT_0
+    const getBalance = vi.fn(async () => [])
+    vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
+      config: { chains: [{ chainId: 84532 }, { chainId: 11155420 }] } as never,
+      actions: {} as never,
+      signer: {} as never,
+      wallet: { address: '0x0', getBalance } as never,
+    })
+    await runWalletBalance({ chain: 'base-sepolia,op-sepolia' })
+    expect(getBalance).toHaveBeenCalledWith({ chainIds: [84532, 11155420] })
+  })
+
+  it('calls getBalance with no options when no chain flag is set', async () => {
+    process.env.PRIVATE_KEY = ANVIL_ACCOUNT_0
+    const getBalance = vi.fn(async () => [])
+    vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
+      config: { chains: [{ chainId: 84532 }] } as never,
+      actions: {} as never,
+      signer: {} as never,
+      wallet: { address: '0x0', getBalance } as never,
+    })
+    await runWalletBalance()
+    expect(getBalance).toHaveBeenCalledWith(undefined)
   })
 
   it('rejects when both --chain and --chain-id are set', async () => {
