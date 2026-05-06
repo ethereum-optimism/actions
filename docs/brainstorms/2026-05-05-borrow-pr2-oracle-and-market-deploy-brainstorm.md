@@ -13,9 +13,9 @@ related:
 
 The second sub-PR in the borrow track. Stands up the on-chain pieces the
 SDK's borrow provider (PR #3) will sit on top of: a dUSDC-collateral / OP-loan
-Morpho Blue market, an oracle that tracks accrued vault yield, an idempotent
-deploy step in `deploy-demo.sh`, and a CircleCI verify-contract job. No SDK
-code, no backend, no frontend. baseSepolia only.
+Morpho Blue market, an oracle that tracks accrued vault yield, and an
+idempotent deploy step in `deploy-demo.sh`. No SDK code, no backend, no
+frontend, no Basescan source verification. baseSepolia only.
 
 The borrow narrative: a user supplies USDC into the existing demo lending
 vault, receives dUSDC vault shares, then borrows OP against those shares in a
@@ -50,15 +50,18 @@ or where the plan over-engineers.
    `deploy-demo.sh`. Existing script uses node one-liners and stdout
    `parse_address`/`parse_bytes32`; no concurrent writers; no need to
    modernize as a side-effect of PR #2.
-5. **Deferred:** Slither CI job. Demo contracts explicitly disclaim production
-   use (`README.md:3`); a noisy slither rollout fits a dedicated cleanup PR
-   better than this one. PR #2 ships verify-contract only.
+5. **Deferred:** Slither CI job and Basescan source verification. Demo
+   contracts explicitly disclaim production use (`README.md:3`); a noisy
+   slither rollout fits a dedicated cleanup PR better than this one. Source
+   verification is nice-to-have for explorer browsing but not required for
+   the borrow flow to function — defer to a follow-up if/when an operator
+   wants the green badge.
 6. **Deferred:** `[profile.deep]` in `foundry.toml`. Default fuzz runs are
    sufficient for the small surface PR #2 introduces.
 
 ## Key Decisions
 
-- **Scope = oracle + market deploy + verify-contract CI. No SDK code.**
+- **Scope = oracle + market deploy. No SDK code, no source verification.**
   Per `AGENTS.md:66` "one domain per PR" — the borrow provider skeleton lands
   in PR #3, not bundled here.
 - **Oracle: `MorphoChainlinkOracleV2` (Morpho-audited) +
@@ -86,19 +89,16 @@ or where the plan over-engineers.
 - **State schema: nested `morpho.borrow.{oracle, mockFeed, marketId}`** in
   `state/deployments.json`, leaving `morpho.vault` and the existing (currently
   null) `morpho.oracle` key untouched. Additive change; no consumer migration.
-- **Donation-attack mitigation: ≥ 1 USD-equivalent virtual share supply seeded
-  to `0x…dEaD`** in the same forge run, before any user-facing liquidity.
-  Plan's choice; still applies because vault-share inflation is independent
-  of which oracle reads it.
-- **Liquidity seed: deployer mints OP and supplies directly to Morpho Blue**
-  as borrowable liquidity. No faucet. Same pattern as the existing lend
-  market's bootstrap.
+- **Donation-attack mitigation: skipped.** The 100k OP liquidity seed (below)
+  creates the initial share supply itself; donation inflation has nothing
+  to manipulate. The plan's dEaD-share trick exists for empty markets — this
+  market is non-empty post-deploy.
+- **Liquidity seed: deployer mints 100k OP and supplies directly to Morpho
+  Blue** as borrowable liquidity. No faucet. Same pattern as the existing
+  lend market's bootstrap.
 - **Foundry deps: add `morpho-org/morpho-blue-oracles` as a `lib/` submodule**
   via `forge install`. Avoids vendoring; matches existing pattern with
   `forge-std`, `solady`, `v4-periphery`.
-- **CI: one new `verify-contracts` job** running on main-branch merges, using
-  forge's `broadcast/.../run-latest.json` + Basescan API key. Slot alongside
-  existing `check-contracts` job (no dep change off `install-and-build`).
 
 ## Test Strategy
 
@@ -114,25 +114,32 @@ PR #2 contracts test scope (replaces the plan's 11-test suite for
   tx is broadcast.
 - No fuzz, no invariant. Default `forge test`.
 
+## Resolved Questions
+
+1. **OP/USDC peg value** — **1 OP = $0.10.** Mock feed returns this constant
+   at Chainlink-standard 8 decimals. At this peg, 100 USDC of dUSDC
+   collateral supports a max-borrow of ~860 OP at 86% LLTV — comfortable
+   demo headroom.
+2. **Liquidity seed size** — **100k OP** minted and supplied directly to
+   Morpho Blue by the deployer. Roughly 100 typical demo borrows before
+   utilization gets interesting.
+3. **Virtual-share donation seed amount** — **Skip.** The 100k OP liquidity
+   seed (Q2) creates the initial share supply itself, so donation inflation
+   has nothing to manipulate. The dEaD-share trick exists for empty markets;
+   this market is non-empty post-deploy.
+4. **Verify-contract shape** — **Skipped entirely in PR #2.** Source
+   verification is nice-to-have for explorer browsing but not required for
+   the borrow flow to function; deferred to a follow-up if/when wanted.
+
 ## Open Questions
 
 (To resolve in `/workflows:plan` before implementation.)
 
-1. **OP/USDC peg value** baked into the mock feed: 1 OP = $1 (clean demo
-   math) or 1 OP ≈ current real price (realistic but ages poorly)? Once
-   chosen, oracle is immutable — drift requires redeploying oracle + creating
-   a new market id.
-2. **Liquidity seed size**: how much OP to mint and supply as borrowable
-   inventory? Plan didn't pin a number.
-3. **Virtual-share donation seed amount**: floor at exactly 1 USD-equivalent,
-   or 10×/100× to be defensive? Plan said "≥ 1 USD-equivalent."
-4. **Verify-contract API key**: where does the Basescan API key live in
-   CircleCI? Existing config has none. Need to coordinate with the
-   project-secrets owner before merging the CI job.
-5. **Fork-test pin block**: which baseSepolia block do we pin the fork test
+1. **Fork-test pin block**: which baseSepolia block do we pin the fork test
    against? Needs Morpho Blue + MetaMorpho factory + the existing demo vault
-   to all exist at that block.
-6. **`baseTokenDecimals` for the oracle**: per Morpho's README, this is the
+   to all exist at that block. Pick a block after 2026-04-15 (current vault
+   deploy).
+2. **`baseTokenDecimals` for the oracle**: per Morpho's README, this is the
    *underlying* asset's decimals (USDC = 6), not the vault's (18). Confirm
    in plan and add an inline comment in the deploy script — this is the
    single most likely place to introduce a 12-orders-of-magnitude bug.
@@ -143,6 +150,7 @@ PR #2 contracts test scope (replaces the plan's 11-test suite for
 - Backend borrow endpoints (PR #4).
 - Frontend borrow tab (PR #5).
 - Slither CI job (separate cleanup PR).
+- Basescan source verification (follow-up if/when wanted).
 - TWAP / per-block delta cap on the oracle (production hardening).
 - Replacing the mock feed with a real Chainlink feed when a baseSepolia or
   base mainnet feed is available.
@@ -151,5 +159,5 @@ PR #2 contracts test scope (replaces the plan's 11-test suite for
 ## Next Steps
 
 → `/workflows:plan` to translate the decisions above into a step-by-step
-implementation plan with concrete file diffs, env-var setup for the verify
-job, and the calibration values for items 1–5 in Open Questions.
+implementation plan with concrete file diffs and the calibration values
+for the two remaining Open Questions.
