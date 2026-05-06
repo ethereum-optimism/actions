@@ -51,11 +51,7 @@ contract DeployMorphoMarket is Script {
 
         // Create market params
         MarketParams memory marketParams = MarketParams({
-            loanToken: address(usdc),
-            collateralToken: address(op),
-            oracle: address(oracle),
-            irm: IRM,
-            lltv: LLTV
+            loanToken: address(usdc), collateralToken: address(op), oracle: address(oracle), irm: IRM, lltv: LLTV
         });
 
         // Create Morpho market
@@ -63,9 +59,8 @@ contract DeployMorphoMarket is Script {
 
         // Create MetaMorpho vault with 0 timelock (V1.1)
         bytes32 salt = keccak256(abi.encodePacked("actions-demo-vault", block.timestamp));
-        address vault = IMetaMorphoFactory(METAMORPHO_FACTORY_V1_1).createMetaMorpho(
-            msg.sender, 0, address(usdc), "Actions Demo USDC Vault", "dUSDC", salt
-        );
+        address vault = IMetaMorphoFactory(METAMORPHO_FACTORY_V1_1)
+            .createMetaMorpho(msg.sender, 0, address(usdc), "Actions Demo USDC Vault", "dUSDC", salt);
         console.log("Vault:", vault);
 
         // Submit and immediately accept cap (0 timelock)
