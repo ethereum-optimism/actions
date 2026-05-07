@@ -22,9 +22,23 @@ actions --json wallet balance --chain base-sepolia
 
 - `actions assets` - configured asset allowlist.
 - `actions chains` - configured chain shortnames + IDs.
+- `actions lend markets [--asset <symbol>] [--chain <name> | --chain-id <id>]` -
+  lending markets across configured providers, optionally filtered to one
+  asset and/or one chain (no wallet).
+- `actions lend market --market <name>` - inspect one market by name
+  (no wallet).
 - `actions wallet address` - EOA address derived from `PRIVATE_KEY`.
 - `actions wallet balance [--chain <name> | --chain-id <id>]` - balances
   per chain + asset; the chain flags are mutually exclusive.
+- `actions wallet lend position --market <name>` - the wallet's current
+  balance and shares in a market.
+- `actions wallet lend open --market <name> --amount <n> [--approval-mode <exact|max>]` -
+  supply assets to a market. `--approval-mode max` approves max-uint to
+  amortise approvals across future supplies (default: `exact`).
+- `actions wallet lend close --market <name> (--amount <n> | --max)` -
+  withdraw assets. Pass `--max` to withdraw the wallet's full balance in
+  the market (the CLI fetches the position first; subject to inflight
+  interest accrual).
 
 ## Wallet model
 
@@ -44,6 +58,13 @@ demo, fund the EOA with testnet ETH on Base Sepolia.
   Both flags accept a comma-separated list to scope the SDK fan-out
   to multiple chains. Run `actions --json chains` for the current
   list.
+- **Markets** - pass the market `name` from the config allowlist
+  (e.g. `Gauntlet USDC`, `Aave ETH`). Case-insensitive; whitespace
+  and hyphens are ignored, so `gauntlet-usdc` and `gauntletusdc`
+  resolve to the same entry. The market entry carries its own chain
+  and asset, so no `--chain` is needed.
+- **Amounts** - human-readable decimal numbers (e.g. `10`, `0.5`).
+  The SDK converts to wei using the asset's decimals.
 
 ## Output
 
@@ -75,6 +96,46 @@ different call - do not assume per-chain isolation.
 To shrink the failure surface, scope the call with `--chain` or
 `--chain-id` (both accept a comma-separated list). The SDK only
 queries the chains you pass.
+
+## Lend semantics
+
+`wallet lend open` and `wallet lend close` emit a structured envelope
+on stdout:
+
+```json
+{
+  "action": "open" | "close",
+  "market": { "name": "...", "address": "0x...", "chainId": ..., "provider": "..." },
+  "asset":  { "symbol": "..." },
+  "amount": <number>,
+  "transactions": [ { "transactionHash": "0x...", "status": "success", ... } ]
+}
+```
+
+`transactions` is always an array. On EOA the SDK sends approval +
+position as two sequential transactions when an approval is required,
+so `open` returns 1-2 receipts and `close` returns 1. Bigint receipt
+fields (`blockNumber`, `gasUsed`) are stringified.
+
+A receipt with `status: "reverted"` is normalised to a `code: "onchain"`
+error envelope on stderr (exit 5), so callers do not need to inspect
+receipt status to detect failure.
+
+`wallet lend position` returns the SDK `LendMarketPosition` shape
+verbatim: `{ balance, balanceFormatted, shares, sharesFormatted, marketId }`
+with bigint fields stringified.
+
+`lend markets` and `lend market` return the SDK `LendMarket` shape(s)
+verbatim: `{ marketId, name, asset, supply, apy, metadata }`. These do
+not require `PRIVATE_KEY`.
+
+NL -> command examples:
+
+- "what markets can I lend in" -> `actions --json lend markets`
+- "supply 10 USDC to Gauntlet" -> `actions --json wallet lend open --market gauntlet-usdc --amount 10`
+- "deposit 0.5 ETH into Aave on op-sepolia" -> `actions --json wallet lend open --market aave-eth --amount 0.5`
+- "withdraw 5 USDC from Gauntlet" -> `actions --json wallet lend close --market gauntlet-usdc --amount 5`
+- "how much do I have in Gauntlet" -> `actions --json wallet lend position --market gauntlet-usdc`
 
 ## RPC trust
 

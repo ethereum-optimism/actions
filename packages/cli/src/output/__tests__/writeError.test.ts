@@ -1,6 +1,12 @@
+import {
+  ChainNotSupportedError,
+  InvalidParamsError,
+  ProviderNotConfiguredError,
+} from '@eth-optimism/actions-sdk'
+import { ContractFunctionRevertedError } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { CliError, writeError } from '@/output/errors.js'
+import { CliError, toCliError, writeError } from '@/output/errors.js'
 import { setJsonMode } from '@/output/mode.js'
 
 beforeEach(() => setJsonMode(true))
@@ -78,6 +84,29 @@ describe('writeError', () => {
     expect(raw).not.toContain('0xcafe')
   })
 
+  it('redacts RPC URLs from the top-level error message (json mode)', () => {
+    writeError(
+      new Error(
+        'HTTP request failed. URL: https://api.pimlico.io/v2/8453/rpc?apikey=LEAKED',
+      ),
+    )
+    const raw = JSON.stringify(capturedBody())
+    expect(raw).not.toContain('LEAKED')
+    expect(raw).not.toContain('pimlico.io')
+    expect(raw).toContain('[redacted-url]')
+  })
+
+  it('redacts RPC URLs from the top-level error message (text mode)', () => {
+    setJsonMode(false)
+    writeError(
+      new Error('fetch failed for https://eth.alchemyapi.io/v2/SECRETKEY/rpc'),
+    )
+    const text = String(stderrSpy.mock.calls[0]?.[0])
+    expect(text).not.toContain('SECRETKEY')
+    expect(text).not.toContain('alchemyapi.io')
+    expect(text).toContain('[redacted-url]')
+  })
+
   it('reports unknown code for non-CliError throws', () => {
     writeError(new Error('boom'))
     expect(exitSpy).toHaveBeenCalledWith(1)
@@ -117,5 +146,70 @@ describe('writeError', () => {
       throw new Error('disk full')
     })
     expect(() => writeError(new CliError('unknown', 'x'))).toThrow('disk full')
+  })
+})
+
+describe('toCliError', () => {
+  it('passes existing CliError through unchanged', () => {
+    const original = new CliError('validation', 'x')
+    expect(toCliError(original)).toBe(original)
+  })
+
+  it('maps ProviderNotConfiguredError to code: config', () => {
+    const err = toCliError(
+      new ProviderNotConfiguredError({ provider: 'morpho' }),
+    )
+    expect(err.code).toBe('config')
+    const details = err.details as { errorName: string; provider: string }
+    expect(details.errorName).toBe('ProviderNotConfiguredError')
+    expect(details.provider).toBe('morpho')
+  })
+
+  it('maps ChainNotSupportedError to code: validation with structured details', () => {
+    const err = toCliError(
+      new ChainNotSupportedError({
+        chainId: 999,
+        supportedChainIds: [10, 8453],
+      }),
+    )
+    expect(err.code).toBe('validation')
+    const details = err.details as {
+      errorName: string
+      chainId: number
+      supportedChainIds: readonly number[]
+    }
+    expect(details.errorName).toBe('ChainNotSupportedError')
+    expect(details.chainId).toBe(999)
+    expect(details.supportedChainIds).toEqual([10, 8453])
+  })
+
+  it('maps InvalidParamsError to code: validation', () => {
+    const err = toCliError(
+      new InvalidParamsError({
+        param: 'chainIds',
+        expected: 'SupportedChainId[] (non-empty)',
+        received: '[]',
+      }),
+    )
+    expect(err.code).toBe('validation')
+    const details = err.details as { param: string; expected: string }
+    expect(details.param).toBe('chainIds')
+    expect(details.expected).toContain('non-empty')
+  })
+
+  it('maps viem ContractFunctionRevertedError to code: onchain', () => {
+    const revert = new ContractFunctionRevertedError({
+      abi: [],
+      data: undefined,
+      functionName: 'supply',
+    })
+    const err = toCliError(revert)
+    expect(err.code).toBe('onchain')
+  })
+
+  it('falls back to retryable network for unknown errors', () => {
+    const err = toCliError(new Error('HTTP request failed: ECONNREFUSED'))
+    expect(err.code).toBe('network')
+    expect(err.retryable).toBe(true)
   })
 })

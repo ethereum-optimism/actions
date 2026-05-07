@@ -2,8 +2,9 @@
 import { Command, Help } from 'commander'
 import pico from 'picocolors'
 
-import { runAssets } from '@/commands/assets.js'
-import { runChains } from '@/commands/chains.js'
+import { runAssets } from '@/commands/actions/assets.js'
+import { runChains } from '@/commands/actions/chains.js'
+import { lendCommand } from '@/commands/actions/lend/index.js'
 import { walletCommand } from '@/commands/wallet/index.js'
 import { isEpipeError, writeError } from '@/output/errors.js'
 import { setJsonMode } from '@/output/mode.js'
@@ -49,6 +50,7 @@ program
   .description('List the configured chains with their shortnames.')
   .action(runChains)
 
+program.addCommand(lendCommand())
 program.addCommand(walletCommand())
 
 program.parseAsync(process.argv).catch(writeError)

@@ -6,10 +6,9 @@ import { promisify } from 'node:util'
 
 import { beforeAll, describe, expect, it } from 'vitest'
 
-const execFileP = promisify(execFile)
+import { ANVIL_ACCOUNT_0 } from '@/__mocks__/anvilAccounts.js'
 
-const ANVIL_ACCOUNT_0 =
-  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+const execFileP = promisify(execFile)
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const BIN = resolve(HERE, '../../dist/index.js')
@@ -149,6 +148,46 @@ describe('actions CLI (built binary)', () => {
       expect(code).toBe(2)
       const body = JSON.parse(stderr)
       expect(body.code).toBe('validation')
+    })
+
+    it('unknown --market on lend open -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run(
+        [
+          '--json',
+          'wallet',
+          'lend',
+          'open',
+          '--market',
+          'no-such-market',
+          '--amount',
+          '1',
+        ],
+        { PRIVATE_KEY: ANVIL_ACCOUNT_0 },
+      )
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Unknown market/)
+    })
+
+    it('non-positive --amount on lend close -> stderr JSON code:validation exit 2', async () => {
+      const { stderr, code } = await run(
+        [
+          '--json',
+          'wallet',
+          'lend',
+          'close',
+          '--market',
+          'aave-eth',
+          '--amount',
+          '0',
+        ],
+        { PRIVATE_KEY: ANVIL_ACCOUNT_0 },
+      )
+      expect(code).toBe(2)
+      const body = JSON.parse(stderr)
+      expect(body.code).toBe('validation')
+      expect(body.error).toMatch(/Invalid --amount/)
     })
   })
 

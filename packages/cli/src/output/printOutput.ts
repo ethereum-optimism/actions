@@ -1,11 +1,15 @@
 import type {
   Asset,
+  LendMarket,
+  LendMarketPosition,
   SupportedChainId,
   TokenBalance,
 } from '@eth-optimism/actions-sdk'
+import type { Address } from 'viem'
 
 import { writeJson } from '@/output/json.js'
 import { isJsonMode } from '@/output/mode.js'
+import type { WalletTransactionReceipt } from '@/utils/receipts.js'
 
 function writeLine(line = ''): void {
   process.stdout.write(line + '\n')
@@ -21,11 +25,28 @@ export interface AddressDoc {
   address: string
 }
 
+export interface LendActionDoc {
+  action: 'open' | 'close'
+  market: {
+    name: string
+    address: Address
+    chainId: SupportedChainId
+    provider: string
+  }
+  asset: { symbol: string }
+  amount: number
+  transactions: readonly WalletTransactionReceipt[]
+}
+
 interface Printers {
   assets: readonly Asset[]
   chains: readonly ChainRow[]
   address: AddressDoc
   balance: readonly TokenBalance[]
+  lendAction: LendActionDoc
+  lendMarkets: readonly LendMarket[]
+  lendMarket: LendMarket
+  lendPosition: LendMarketPosition
 }
 
 function formatAssets(assets: Printers['assets']): void {
@@ -77,6 +98,54 @@ function formatBalance(balances: Printers['balance']): void {
   }
 }
 
+const LEND_ACTION_VERBS = {
+  open: 'opened',
+  close: 'closed',
+} as const satisfies Record<LendActionDoc['action'], string>
+
+function formatLendAction(doc: LendActionDoc): void {
+  const verb = LEND_ACTION_VERBS[doc.action]
+  writeLine(
+    `${verb} position: ${doc.amount} ${doc.asset.symbol} on ${doc.market.name} (${doc.market.provider}, chain ${doc.market.chainId})`,
+  )
+  for (const tx of doc.transactions) {
+    if ('transactionHash' in tx) {
+      writeLine(`  tx=${tx.transactionHash} status=${tx.status}`)
+    } else {
+      const userOpHash = (tx as { userOpHash?: string }).userOpHash ?? '?'
+      const success = (tx as { success?: boolean }).success
+      writeLine(`  userOp=${userOpHash} success=${success}`)
+    }
+  }
+}
+
+function formatLendMarket(m: LendMarket): void {
+  writeLine(
+    `${m.name}  symbol=${m.asset.metadata.symbol} chain=${m.marketId.chainId} apy=${(m.apy.total * 100).toFixed(2)}%`,
+  )
+  writeLine(`  address=${m.marketId.address}`)
+  writeLine(
+    `  totalAssets=${m.supply.totalAssets} totalShares=${m.supply.totalShares}`,
+  )
+}
+
+function formatLendMarkets(markets: readonly LendMarket[]): void {
+  if (markets.length === 0) {
+    writeLine('(no markets)')
+    return
+  }
+  for (const m of markets) formatLendMarket(m)
+}
+
+function formatLendPosition(p: LendMarketPosition): void {
+  writeLine(
+    `position: balance=${p.balanceFormatted} shares=${p.sharesFormatted} chain=${p.marketId.chainId}`,
+  )
+  writeLine(
+    `  market=${p.marketId.address} balanceWei=${p.balance} sharesRaw=${p.shares}`,
+  )
+}
+
 const TEXT_FORMATTERS: {
   [K in keyof Printers]: (data: Printers[K]) => void
 } = {
@@ -84,6 +153,10 @@ const TEXT_FORMATTERS: {
   chains: formatChains,
   address: formatAddress,
   balance: formatBalance,
+  lendAction: formatLendAction,
+  lendMarkets: formatLendMarkets,
+  lendMarket: formatLendMarket,
+  lendPosition: formatLendPosition,
 }
 
 /**
