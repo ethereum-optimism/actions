@@ -20,16 +20,16 @@ import type { ChainConfig } from '@/types/chain.js'
 /** viem `pollingInterval` (ms) for L2-class chains with ~1-2s blocks. */
 const L2_POLLING_INTERVAL_MS = 1000
 /** viem `pollingInterval` (ms) for L1-class chains with ~12s blocks. */
-const MAINNET_POLLING_INTERVAL_MS = 4000
+const L1_POLLING_INTERVAL_MS = 4000
 
-const SLOW_CHAIN_IDS: ReadonlySet<SupportedChainId> = new Set([
+const L1_CHAIN_IDS: ReadonlySet<SupportedChainId> = new Set([
   mainnet.id,
   sepolia.id,
 ])
 
 function pollingIntervalForChain(chainId: SupportedChainId): number {
-  return SLOW_CHAIN_IDS.has(chainId)
-    ? MAINNET_POLLING_INTERVAL_MS
+  return L1_CHAIN_IDS.has(chainId)
+    ? L1_POLLING_INTERVAL_MS
     : L2_POLLING_INTERVAL_MS
 }
 
