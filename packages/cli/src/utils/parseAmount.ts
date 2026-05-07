@@ -1,31 +1,28 @@
 import { CliError } from '@/output/errors.js'
+import { parseDecimal } from '@/utils/parseDecimal.js'
 
-// Plain positive decimal: digits, optional `.` followed by more digits. No
-// scientific notation, no hex, no leading `+`/`-`/`.`/whitespace. The SDK
-// converts to wei using the asset's decimals; permitting `1e-19` here would
-// silently round to 0 wei after `parseUnits`.
-const DECIMAL_AMOUNT = /^(?:0|[1-9]\d*)(?:\.\d+)?$/
+const HINT = 'expected a positive decimal, e.g. 10 or 0.5'
 
 function rejectAmount(raw: string, flag: string): never {
-  throw new CliError(
-    'validation',
-    `Invalid ${flag}: ${raw} (expected a positive decimal, e.g. 10 or 0.5)`,
-    { amount: raw, flag },
-  )
+  throw new CliError('validation', `Invalid ${flag}: ${raw} (${HINT})`, {
+    amount: raw,
+    flag,
+  })
 }
 
 /**
- * @description Parses a CLI-provided amount string. Accepts plain positive decimals (`10`, `0.5`, `1.25`). Rejects scientific notation, hex, leading signs, whitespace, bigint-style suffixes, and integer parts above `Number.MAX_SAFE_INTEGER` (which lose precision through the float round-trip into the SDK). The `flag` label is surfaced in the error so callers can disambiguate `--amount` from `--amount-in` / `--amount-out` etc.
+ * @description Parses a CLI-provided amount string. Accepts plain positive decimals (`10`, `0.5`, `1.25`). Shape validation is delegated to `parseDecimal` (viem-backed: rejects scientific notation, hex, signs, whitespace). Adds amount-specific guards on top: integer parts above `Number.MAX_SAFE_INTEGER` (which lose precision through the float round-trip into the SDK's `parseUnits(asset.decimals)`) and zero (amounts must be strictly positive). The `flag` label is surfaced in the error so callers can disambiguate `--amount` from `--amount-in` / `--amount-out` etc.
  * @param raw - Flag value as passed on argv.
  * @param flag - Flag label for error messages (e.g. `--amount`, `--amount-in`). Defaults to `--amount`.
  * @returns The validated amount as a number.
  * @throws `CliError` with code `validation` when the value is not a positive plain decimal.
  */
 export function parseAmount(raw: string, flag = '--amount'): number {
-  if (!DECIMAL_AMOUNT.test(raw)) rejectAmount(raw, flag)
-  const intPart = raw.split('.')[0] ?? ''
-  if (BigInt(intPart) > BigInt(Number.MAX_SAFE_INTEGER)) rejectAmount(raw, flag)
-  const value = Number(raw)
+  const value = parseDecimal(raw, flag, HINT)
   if (value <= 0) rejectAmount(raw, flag)
+  const intPart = raw.split('.')[0] ?? ''
+  if (intPart && BigInt(intPart) > BigInt(Number.MAX_SAFE_INTEGER)) {
+    rejectAmount(raw, flag)
+  }
   return value
 }
