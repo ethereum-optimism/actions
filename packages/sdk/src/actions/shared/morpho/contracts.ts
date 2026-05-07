@@ -78,7 +78,7 @@ export function getMorphoContracts(
 /**
  * Get all chain IDs where Morpho contracts are deployed.
  * Returns chains present in the local contracts registry.
- * Filtering against ACTIONS_SUPPORTED_CHAIN_IDS and developer-configured chains
+ * Filtering against SUPPORTED_CHAIN_IDS and developer-configured chains
  * is handled by the LendProvider base class.
  */
 export function getSupportedChainIds(): number[] {

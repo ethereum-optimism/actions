@@ -1,17 +1,11 @@
 import {
-  CHAIN_SHORTNAMES,
+  chainIdFromShortname,
+  SUPPORTED_CHAIN_SHORTNAMES,
   type SupportedChainId,
 } from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
 import { splitCsv } from '@/utils/strings.js'
-
-const SHORTNAMES: Record<string, SupportedChainId> = Object.fromEntries(
-  Object.entries(CHAIN_SHORTNAMES).map(([id, name]) => [
-    name,
-    Number(id) as SupportedChainId,
-  ]),
-)
 
 /**
  * Canonical chain examples for help text. Hard-coded to base/op sepolia
@@ -28,7 +22,8 @@ export const CHAIN_EXAMPLES = {
  * @description Resolves a chain shortname (e.g. `base-sepolia`) to a
  * `SupportedChainId`. Restricted to the configured chain set so unknown
  * shortnames or chains not in the active config surface as validation
- * errors before the SDK sees them. Match is case-insensitive.
+ * errors before the SDK sees them. Match is case-insensitive and accepts
+ * both the canonical shortname and the viem-derived chain-name slug.
  * @param shortname - User-provided chain shortname from CLI argv.
  * @param configuredChainIds - Chain IDs present in the resolved config.
  * @returns The matching `SupportedChainId`.
@@ -39,11 +34,11 @@ export function resolveChain(
   shortname: string,
   configuredChainIds: readonly SupportedChainId[],
 ): SupportedChainId {
-  const id = SHORTNAMES[shortname.toLowerCase()]
+  const id = chainIdFromShortname(shortname)
   if (id === undefined || !configuredChainIds.includes(id)) {
     throw new CliError('validation', `Unknown chain: ${shortname}`, {
       chain: shortname,
-      allowed: configuredChainIds.map((cid) => CHAIN_SHORTNAMES[cid]),
+      allowed: configuredChainIds.map((cid) => SUPPORTED_CHAIN_SHORTNAMES[cid]),
     })
   }
   return id
@@ -60,7 +55,7 @@ export function resolveChain(
  * @throws `CliError` with code `validation` when the chain has no shortname.
  */
 export function shortnameFor(chainId: SupportedChainId): string {
-  return CHAIN_SHORTNAMES[chainId]
+  return SUPPORTED_CHAIN_SHORTNAMES[chainId]
 }
 
 /**

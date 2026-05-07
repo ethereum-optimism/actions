@@ -57,9 +57,10 @@ export {
   WLD,
   WSTETH,
 } from '@/constants/assets.js'
-export { CHAIN_SHORTNAMES } from '@/constants/chainShortnames.js'
 export {
-  ACTIONS_SUPPORTED_CHAIN_IDS,
+  chainIdFromShortname,
+  SUPPORTED_CHAIN_IDS,
+  SUPPORTED_CHAIN_SHORTNAMES,
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'
