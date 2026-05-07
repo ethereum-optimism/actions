@@ -1,0 +1,225 @@
+import { ContractFunctionRevertedError } from 'viem'
+import type { MockInstance } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { ANVIL_ACCOUNT_0 } from '@/__mocks__/anvilAccounts.js'
+import { runWalletLendOpen } from '@/commands/wallet/lend/open.js'
+import { __resetEnvCacheForTests } from '@/config/env.js'
+import * as walletCtx from '@/context/walletContext.js'
+import { getDemoConfig } from '@/demo/config.js'
+import { CliError } from '@/output/errors.js'
+import { setJsonMode } from '@/output/mode.js'
+
+beforeEach(() => setJsonMode(true))
+afterEach(() => setJsonMode(false))
+
+const successReceipt = (hash: string) => ({
+  transactionHash: hash,
+  status: 'success' as const,
+  blockNumber: 1n,
+  gasUsed: 21000n,
+})
+
+describe('runWalletLendOpen', () => {
+  const originalEnv = process.env
+  let writeSpy: MockInstance
+
+  beforeEach(() => {
+    process.env = { ...originalEnv, PRIVATE_KEY: ANVIL_ACCOUNT_0 }
+    __resetEnvCacheForTests()
+    writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+  })
+
+  afterEach(() => {
+    process.env = originalEnv
+    __resetEnvCacheForTests()
+    vi.restoreAllMocks()
+  })
+
+  const mockWallet = (openPosition: (params: unknown) => Promise<unknown>) => {
+    vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
+      config: getDemoConfig(),
+      actions: {} as never,
+      signer: {} as never,
+      wallet: {
+        address: '0xabc',
+        lend: { openPosition, closePosition: async () => null },
+      } as never,
+    })
+  }
+
+  it('emits a structured envelope with normalised array of receipts', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return [successReceipt('0xapprove'), successReceipt('0xposition')]
+    })
+    await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '10' })
+    const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
+    expect(body.action).toBe('open')
+    expect(body.market.name).toBe('Gauntlet USDC')
+    expect(body.market.provider).toBe('morpho')
+    expect(body.asset.symbol).toBe('USDC_DEMO')
+    expect(body.amount).toBe(10)
+    expect(body.transactions).toHaveLength(2)
+    expect(body.transactions[0].transactionHash).toBe('0xapprove')
+    expect(body.transactions[1].transactionHash).toBe('0xposition')
+    expect(body.transactions[0].blockNumber).toBe('1')
+    expect(captured).toHaveLength(1)
+    const call = captured[0] as {
+      amount: number
+      marketId: { chainId: number }
+    }
+    expect(call.amount).toBe(10)
+    expect(call.marketId.chainId).toBe(84532)
+  })
+
+  it('wraps a single receipt into a one-element array', async () => {
+    mockWallet(async () => successReceipt('0xonly'))
+    await runWalletLendOpen({ market: 'aave-eth', amount: '0.5' })
+    const body = JSON.parse(String(writeSpy.mock.calls[0]?.[0]))
+    expect(body.transactions).toHaveLength(1)
+    expect(body.transactions[0].transactionHash).toBe('0xonly')
+  })
+
+  it('rejects unknown markets with CliError(validation)', async () => {
+    mockWallet(async () => successReceipt('0x'))
+    try {
+      await runWalletLendOpen({ market: 'no-such-market', amount: '1' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
+
+  it('forwards --approval-mode to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return successReceipt('0x')
+    })
+    await runWalletLendOpen({
+      market: 'gauntlet-usdc',
+      amount: '1',
+      approvalMode: 'max',
+    })
+    const call = captured[0] as { approvalMode?: string }
+    expect(call.approvalMode).toBe('max')
+  })
+
+  it('rejects invalid --approval-mode with CliError(validation)', async () => {
+    mockWallet(async () => successReceipt('0x'))
+    try {
+      await runWalletLendOpen({
+        market: 'gauntlet-usdc',
+        amount: '1',
+        approvalMode: 'infinite',
+      })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
+
+  it.each([
+    '0',
+    '-1',
+    'foo',
+    'NaN',
+    '1e-19', // scientific notation rounds to 0 wei after parseUnits
+    '1e10', // scientific notation
+    '0x10', // hex literal
+    '+1', // leading sign
+    ' 1 ', // whitespace
+    '.5', // bare decimal
+    '1.', // trailing dot
+    '9007199254740993', // > MAX_SAFE_INTEGER, loses precision through float
+  ])('rejects amount %p with CliError(validation)', async (bad) => {
+    mockWallet(async () => successReceipt('0x'))
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: bad })
+      throw new Error(`did not throw for ${bad}`)
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
+
+  it('maps reverted receipts to CliError(onchain)', async () => {
+    mockWallet(async () => [
+      successReceipt('0xapprove'),
+      { ...successReceipt('0xrevert'), status: 'reverted' as const },
+    ])
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('onchain')
+    }
+  })
+
+  it('rejects receipts with an unrecognised status (default-deny)', async () => {
+    // A misbehaving RPC could omit `status` or return a numeric value; the
+    // CLI must not treat that as success.
+    mockWallet(async () => [
+      { transactionHash: '0xmalformed', blockNumber: 1n } as never,
+    ])
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('onchain')
+    }
+  })
+
+  it('maps RPC failures to CliError(network) and marks them retryable', async () => {
+    mockWallet(async () => {
+      throw new Error('HTTP request failed. Status: ECONNREFUSED')
+    })
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('network')
+      expect((err as CliError).retryable).toBe(true)
+    }
+  })
+
+  it('maps simulation reverts to CliError(onchain)', async () => {
+    mockWallet(async () => {
+      throw new ContractFunctionRevertedError({
+        abi: [],
+        data: undefined,
+        functionName: 'supply',
+      })
+    })
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('onchain')
+    }
+  })
+
+  it('rejects with CliError(config) when wallet.lend is undefined', async () => {
+    vi.spyOn(walletCtx, 'walletContext').mockResolvedValue({
+      config: getDemoConfig(),
+      actions: {} as never,
+      signer: {} as never,
+      wallet: { address: '0xabc' } as never,
+    })
+    try {
+      await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('config')
+    }
+  })
+})
