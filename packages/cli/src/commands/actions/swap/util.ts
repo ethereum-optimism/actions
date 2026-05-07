@@ -10,6 +10,7 @@ import { CliError } from '@/output/errors.js'
 import { resolveAsset } from '@/resolvers/assets.js'
 import { resolveChain } from '@/resolvers/chains.js'
 import { parseAmount } from '@/utils/parseAmount.js'
+import { parseSlippage } from '@/utils/parseSlippage.js'
 
 /**
  * @description Validates that exactly one of `--amount-in` / `--amount-out`
@@ -38,28 +39,6 @@ export function parseAmountFlags(
   return amountIn
     ? { amountIn: parseAmount(amountIn, '--amount-in') }
     : { amountOut: parseAmount(amountOut!, '--amount-out') }
-}
-
-// Plain non-negative decimal (matches parseAmount's regex but allows zero).
-// Rejects scientific notation, hex, signs, and leading/trailing whitespace.
-const DECIMAL_PCT = /^(?:0|[1-9]\d*)(?:\.\d+)?$/
-
-/**
- * @description Parses a `--slippage <pct>` value. Accepts a plain decimal percent literal (e.g. `0.5` = 0.5%) and converts to the decimal form the SDK expects (e.g. `0.005`). The upper bound is the SDK's `SwapSettings.maxSlippage` (default 50%), enforced inside `validateSlippage` and surfaced as `SlippageOutOfRangeError` → CLI `validation`. Operators tighten in config; the CLI just validates shape (no scientific notation, hex, leading signs, or whitespace).
- * @param raw - Flag value as passed on argv, or undefined.
- * @returns Decimal slippage when provided, else undefined.
- * @throws `CliError` with code `validation` when not a plain non-negative decimal.
- */
-export function parseSlippage(raw: string | undefined): number | undefined {
-  if (raw === undefined) return undefined
-  if (!DECIMAL_PCT.test(raw)) {
-    throw new CliError(
-      'validation',
-      `Invalid --slippage: ${raw} (expected a non-negative decimal percent, e.g. 0.5)`,
-      { slippage: raw },
-    )
-  }
-  return Number(raw) / 100
 }
 
 /**

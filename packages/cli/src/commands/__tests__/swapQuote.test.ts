@@ -191,7 +191,7 @@ describe('runSwapQuote', () => {
     // The upper bound is the SDK's `SwapSettings.maxSlippage` and surfaces
     // as `SlippageOutOfRangeError` (an `ActionsError`, mapped to validation).
     mockActions(async () => stubQuote('uniswap', 1n))
-    for (const bad of ['-1', 'foo', '1e2', ' 1 ', '0x10', '.5']) {
+    for (const bad of ['-1', 'foo', '1e2', ' 1 ', '0x10']) {
       try {
         await runSwapQuote({
           in: 'USDC_DEMO',
