@@ -14,6 +14,17 @@ const SHORTNAMES: Record<string, SupportedChainId> = Object.fromEntries(
 )
 
 /**
+ * Canonical chain examples for help text. Hard-coded to base/op sepolia
+ * so help output stays stable regardless of the runtime config.
+ */
+export const CHAIN_EXAMPLES = {
+  shortname: 'base-sepolia',
+  shortnameList: 'base-sepolia,op-sepolia',
+  chainId: '84532',
+  chainIdList: '84532,11155420',
+} as const
+
+/**
  * @description Resolves a chain shortname (e.g. `base-sepolia`) to a
  * `SupportedChainId`. Restricted to the configured chain set so unknown
  * shortnames or chains not in the active config surface as validation
