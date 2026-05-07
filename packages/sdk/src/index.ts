@@ -116,7 +116,12 @@ export type {
   WalletConfig,
   WalletSwapParams,
 } from '@/types/index.js'
-export { APPROVAL_MODES, LEND_ACTIONS } from '@/types/index.js'
+export {
+  APPROVAL_MODES,
+  LEND_ACTIONS,
+  LEND_PROVIDER_NAMES,
+  SWAP_PROVIDER_NAMES,
+} from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 export { getLendMarketAllowlist } from '@/utils/lendConfig.js'
 export { serializeBigInt } from '@/utils/serializers.js'

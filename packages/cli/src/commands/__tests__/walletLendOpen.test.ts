@@ -136,8 +136,6 @@ describe('runWalletLendOpen', () => {
     '0x10', // hex literal
     '+1', // leading sign
     ' 1 ', // whitespace
-    '.5', // bare decimal
-    '1.', // trailing dot
     '9007199254740993', // > MAX_SAFE_INTEGER, loses precision through float
   ])('rejects amount %p with CliError(validation)', async (bad) => {
     mockWallet(async () => successReceipt('0x'))

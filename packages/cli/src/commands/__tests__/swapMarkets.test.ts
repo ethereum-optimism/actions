@@ -54,7 +54,29 @@ describe('runSwapMarkets', () => {
       return []
     })
     await runSwapMarkets({ chain: 'base-sepolia' })
-    expect(captured[0]).toEqual({ chainId: 84532 })
+    expect(captured[0]).toEqual({ chainId: 84532, asset: undefined })
+  })
+
+  it('forwards --asset to the SDK after resolution', async () => {
+    const captured: unknown[] = []
+    mockActions(async (params) => {
+      captured.push(params)
+      return []
+    })
+    await runSwapMarkets({ asset: 'USDC_DEMO' })
+    const call = captured[0] as { asset?: { metadata: { symbol: string } } }
+    expect(call.asset?.metadata.symbol).toBe('USDC_DEMO')
+  })
+
+  it('rejects unknown --asset with CliError(validation)', async () => {
+    mockActions(async () => [])
+    try {
+      await runSwapMarkets({ asset: 'NOPE' })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
   })
 
   it('rejects unknown --chain values with CliError(validation)', async () => {

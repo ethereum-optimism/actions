@@ -1,16 +1,18 @@
-import type {
-  Asset,
-  SupportedChainId,
-  SwapProviderName,
-  SwapQuoteParams,
+import {
+  APPROVAL_MODES,
+  type ApprovalMode,
+  type Asset,
+  type SupportedChainId,
+  SWAP_PROVIDER_NAMES,
+  type SwapProviderName,
+  type WalletSwapParams,
 } from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
 import { resolveAsset } from '@/resolvers/assets.js'
 import { resolveChain } from '@/resolvers/chains.js'
 import { parseAmount } from '@/utils/parseAmount.js'
-
-const PROVIDERS: readonly SwapProviderName[] = ['uniswap', 'velodrome']
+import { parseSlippage } from '@/utils/parseSlippage.js'
 
 /**
  * @description Validates that exactly one of `--amount-in` / `--amount-out`
@@ -37,29 +39,8 @@ export function parseAmountFlags(
     )
   }
   return amountIn
-    ? { amountIn: parseAmount(amountIn) }
-    : { amountOut: parseAmount(amountOut!) }
-}
-
-/**
- * @description Parses a `--slippage <pct>` value. Accepts a percent
- * literal (e.g. `0.5` = 0.5%) and converts to the decimal form the SDK
- * expects (e.g. `0.005`). `100` is the upper bound.
- * @param raw - Flag value as passed on argv, or undefined.
- * @returns Decimal slippage in `[0, 1]` when provided, else undefined.
- * @throws `CliError` with code `validation` when not a number in `[0, 100]`.
- */
-export function parseSlippage(raw: string | undefined): number | undefined {
-  if (raw === undefined) return undefined
-  const value = Number(raw)
-  if (!Number.isFinite(value) || value < 0 || value > 100) {
-    throw new CliError(
-      'validation',
-      `Invalid --slippage: ${raw} (expected a percent in [0, 100])`,
-      { slippage: raw },
-    )
-  }
-  return value / 100
+    ? { amountIn: parseAmount(amountIn, '--amount-in') }
+    : { amountOut: parseAmount(amountOut!, '--amount-out') }
 }
 
 /**
@@ -74,42 +55,111 @@ export function parseProvider(
   raw: string | undefined,
 ): SwapProviderName | undefined {
   if (raw === undefined) return undefined
-  const needle = raw.toLowerCase() as SwapProviderName
-  if (!PROVIDERS.includes(needle)) {
+  const needle = raw.toLowerCase()
+  if (!isSwapProviderName(needle)) {
     throw new CliError(
       'validation',
-      `Invalid --provider: ${raw} (expected one of ${PROVIDERS.join(', ')})`,
-      { provider: raw, allowed: PROVIDERS.slice() },
+      `Invalid --provider: ${raw} (expected one of ${SWAP_PROVIDER_NAMES.join(', ')})`,
+      { provider: raw, allowed: SWAP_PROVIDER_NAMES.slice() },
     )
   }
   return needle
 }
 
-export interface QuoteFlags {
+function isSwapProviderName(value: string): value is SwapProviderName {
+  return (SWAP_PROVIDER_NAMES as readonly string[]).includes(value)
+}
+
+interface QuoteFlagsBase {
   in: string
   out: string
-  amountIn?: string
-  amountOut?: string
   chain: string
   provider?: string
   slippage?: string
 }
 
 /**
- * @description Builds a `SwapQuoteParams` object from the CLI flag set
- * shared by `quote`, `quotes`, and `execute`. Validates the assets and
- * chain are in the active config, enforces the amount-in/out XOR, and
- * converts the percent slippage to decimal.
+ * @description At-least-one-of `amountIn` / `amountOut`. The `?: never` branches make TS reject `{ ... }` (neither set) and `{ amountIn, amountOut }` (both set) at the call site; the runtime mutex check in `parseAmountFlags` still runs because commander's argv parsing is loosely typed.
+ */
+export type QuoteFlags =
+  | (QuoteFlagsBase & { amountIn: string; amountOut?: never })
+  | (QuoteFlagsBase & { amountIn?: never; amountOut: string })
+
+/**
+ * @description Wallet-scoped swap-execute flags. Extends `QuoteFlags` with the write-only knobs that don't make sense on the read-only `swap quote/quotes` paths.
+ */
+export type WalletExecuteFlags = QuoteFlags & {
+  approvalMode?: string
+  recipient?: string
+  deadline?: string
+}
+
+export function parseApprovalMode(
+  raw: string | undefined,
+): ApprovalMode | undefined {
+  if (raw === undefined) return undefined
+  if ((APPROVAL_MODES as readonly string[]).includes(raw)) {
+    return raw as ApprovalMode
+  }
+  throw new CliError(
+    'validation',
+    `Invalid --approval-mode: ${raw} (expected exact or max)`,
+    { approvalMode: raw },
+  )
+}
+
+/**
+ * @description Adds wallet-only knobs (`approvalMode`) on top of the shared quote params produced by `buildQuoteParams`.
+ */
+function parseDeadline(raw: string | undefined): number | undefined {
+  if (raw === undefined) return undefined
+  if (!/^[1-9]\d*$/.test(raw)) {
+    throw new CliError(
+      'validation',
+      `Invalid --deadline: ${raw} (expected a positive Unix timestamp in seconds)`,
+      { deadline: raw },
+    )
+  }
+  return Number(raw)
+}
+
+export function buildWalletExecuteParams(
+  flags: WalletExecuteFlags,
+  allow: readonly Asset[],
+  chainIds: readonly SupportedChainId[],
+): WalletSwapParams {
+  const base = buildSwapInputs(flags, allow, chainIds)
+  const approvalMode = parseApprovalMode(flags.approvalMode)
+  // Recipient validation (address-vs-ENS) is the SDK's responsibility:
+  // `BaseSwapNamespace.resolveRecipient` resolves ENS → address before any
+  // provider sees the value. The CLI passes the raw string through.
+  const recipient = flags.recipient as WalletSwapParams['recipient'] | undefined
+  const deadline = parseDeadline(flags.deadline)
+  return {
+    ...base,
+    ...(approvalMode ? { approvalMode } : {}),
+    ...(recipient ? { recipient } : {}),
+    ...(deadline !== undefined ? { deadline } : {}),
+  }
+}
+
+/**
+ * @description Builds the shared swap input shape from CLI flags.
+ * `WalletSwapParams` is the structural superset of `SwapQuoteParams`
+ * (one extra optional `approvalMode`), so the same value flows into
+ * `actions.swap.getQuote(s)` and `wallet.swap.execute` without
+ * coercion. Validates assets and chain against config, enforces the
+ * amount-in/out XOR, and converts percent slippage to decimal.
  * @param flags - Commander-parsed flags.
  * @param allow - Asset allowlist from config.
  * @param chainIds - Configured chain IDs.
- * @returns Resolved quote parameters ready for the SDK.
+ * @returns Resolved swap input ready for any of the SDK swap calls.
  */
-export function buildQuoteParams(
+export function buildSwapInputs(
   flags: QuoteFlags,
   allow: readonly Asset[],
   chainIds: readonly SupportedChainId[],
-): SwapQuoteParams {
+): WalletSwapParams {
   const assetIn = resolveAsset(flags.in, allow)
   const assetOut = resolveAsset(flags.out, allow)
   const chainId = resolveChain(flags.chain, chainIds)

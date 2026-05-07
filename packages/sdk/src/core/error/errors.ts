@@ -285,3 +285,40 @@ export class InvalidParamsError extends ActionsError {
     this.received = params.received
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Swap Quote
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Thrown when a pre-built `SwapQuote` is dispatched against a wallet whose
+ * address differs from the quote's `recipient`. Some routers (Velodrome
+ * v2/leaf) encode the recipient directly into calldata, so silently swapping
+ * recipients would route output tokens to the wrong address.
+ */
+export class QuoteRecipientMismatchError extends ActionsError {
+  override name = 'QuoteRecipientMismatchError' as const
+  quoteRecipient: string
+  walletAddress: string
+
+  constructor(params: { quoteRecipient: string; walletAddress: string }) {
+    super(
+      `SwapQuote was generated for a different recipient (${params.quoteRecipient}); re-quote via wallet.swap.getQuote(...) so calldata is bound to this wallet (${params.walletAddress})`,
+    )
+    this.quoteRecipient = params.quoteRecipient
+    this.walletAddress = params.walletAddress
+  }
+}
+
+/**
+ * Thrown when a provider's `_getQuote` returns a `SwapQuote` without a
+ * `recipient`. The base namespace requires every quote to be wallet-bound
+ * before approvals or calldata are built.
+ */
+export class QuoteRecipientMissingError extends ActionsError {
+  override name = 'QuoteRecipientMissingError' as const
+
+  constructor() {
+    super('SwapQuote.recipient missing — _getQuote must populate it')
+  }
+}

@@ -1,5 +1,5 @@
 import {
-  buildQuoteParams,
+  buildSwapInputs,
   type QuoteFlags,
 } from '@/commands/actions/swap/util.js'
 import { baseContext } from '@/context/baseContext.js'
@@ -18,7 +18,7 @@ import { configuredAssets } from '@/resolvers/assets.js'
  */
 export async function runSwapQuotes(flags: QuoteFlags): Promise<void> {
   const { actions, config } = baseContext()
-  const params = buildQuoteParams(
+  const params = buildSwapInputs(
     flags,
     configuredAssets(config),
     config.chains.map((c) => c.chainId),

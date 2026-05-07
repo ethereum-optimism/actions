@@ -120,6 +120,8 @@ describe('runSwapQuote', () => {
   })
 
   it('rejects when both --amount-in and --amount-out are set', async () => {
+    // Statically rejected by `QuoteFlags`; cast through `never` to exercise
+    // the runtime guard (commander argv is loosely typed).
     mockActions(async () => stubQuote('uniswap', 1n))
     try {
       await runSwapQuote({
@@ -128,7 +130,7 @@ describe('runSwapQuote', () => {
         amountIn: '1',
         amountOut: '1',
         chain: 'base-sepolia',
-      })
+      } as never)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
@@ -143,7 +145,7 @@ describe('runSwapQuote', () => {
         in: 'USDC_DEMO',
         out: 'OP_DEMO',
         chain: 'base-sepolia',
-      })
+      } as never)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)
@@ -184,9 +186,12 @@ describe('runSwapQuote', () => {
     }
   })
 
-  it('rejects out-of-range slippage with CliError(validation)', async () => {
+  it('rejects malformed --slippage with CliError(validation)', async () => {
+    // The CLI only validates shape (no scientific/hex/signs/whitespace).
+    // The upper bound is the SDK's `SwapSettings.maxSlippage` and surfaces
+    // as `SlippageOutOfRangeError` (an `ActionsError`, mapped to validation).
     mockActions(async () => stubQuote('uniswap', 1n))
-    for (const bad of ['-1', '101', 'foo']) {
+    for (const bad of ['-1', 'foo', '1e2', ' 1 ', '0x10']) {
       try {
         await runSwapQuote({
           in: 'USDC_DEMO',

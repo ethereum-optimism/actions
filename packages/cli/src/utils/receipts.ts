@@ -24,6 +24,32 @@ export function toReceiptArray(
 }
 
 /**
+ * @description Default-deny failure check: anything that isn't an explicit `success === true` (UserOp) or `status === 'success'` (EOA) is a failure, including unrecognised shapes from a misbehaving RPC.
+ * @param r - Receipt to inspect.
+ * @returns `true` if the receipt is anything other than an explicit success.
+ */
+function isReceiptFailure(r: WalletTransactionReceipt): boolean {
+  return 'success' in r ? r.success !== true : r.status !== 'success'
+}
+
+/**
+ * @description Builds the `CliError` envelope for a failed receipt, picking the right diagnostic fields per receipt shape.
+ * @param r - Receipt that matched `isReceiptFailure`.
+ * @returns A `CliError('onchain')` with shape-appropriate context.
+ */
+function receiptFailure(r: WalletTransactionReceipt): CliError {
+  if ('success' in r) {
+    return new CliError('onchain', 'UserOperation failed', {
+      userOpHash: r.userOpHash,
+    })
+  }
+  return new CliError('onchain', `Transaction status: ${String(r.status)}`, {
+    transactionHash: r.transactionHash,
+    blockNumber: r.blockNumber,
+  })
+}
+
+/**
  * @description Inspects receipts for failure markers and raises `CliError('onchain')` when any leg failed or carries an unrecognised shape. Default-deny: anything that is not an explicit success (`status === 'success'` for EOA, `success === true` for UserOp) is treated as failure, so a malformed receipt from a misbehaving RPC cannot be silently reported as success.
  * @param receipts - Receipts returned by the SDK.
  * @throws `CliError` with code `onchain` on revert, UserOp failure, or unrecognised shape.
@@ -32,18 +58,6 @@ export function ensureOnchainSuccess(
   receipts: readonly WalletTransactionReceipt[],
 ): void {
   for (const r of receipts) {
-    if ('success' in r) {
-      if (r.success !== true) {
-        throw new CliError('onchain', 'UserOperation failed', {
-          userOpHash: r.userOpHash,
-        })
-      }
-      continue
-    }
-    if (r.status === 'success') continue
-    throw new CliError('onchain', `Transaction status: ${String(r.status)}`, {
-      transactionHash: r.transactionHash,
-      blockNumber: r.blockNumber,
-    })
+    if (isReceiptFailure(r)) throw receiptFailure(r)
   }
 }

@@ -1,3 +1,4 @@
+import { ContractFunctionRevertedError } from 'viem'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -98,13 +99,43 @@ describe('runWalletSwapExecute', () => {
     expect(body.transactions).toHaveLength(1)
   })
 
-  it('maps reverted receipts to CliError(onchain)', async () => {
+  it('maps reverted receipts to CliError(onchain) with swap context details', async () => {
     mockWallet(async () =>
       stubResult([
         successReceipt('0xapprove'),
         { ...successReceipt('0xrevert'), status: 'reverted' as const },
       ]),
     )
+    try {
+      await runWalletSwapExecute({
+        in: 'USDC_DEMO',
+        out: 'OP_DEMO',
+        amountIn: '1',
+        chain: 'base-sepolia',
+      })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('onchain')
+      const details = (err as CliError).details as {
+        chainId?: number
+        assetIn?: string
+        assetOut?: string
+      }
+      expect(details.chainId).toBe(84532)
+      expect(details.assetIn).toBe('USDC_DEMO')
+      expect(details.assetOut).toBe('OP_DEMO')
+    }
+  })
+
+  it('maps simulation reverts to CliError(onchain)', async () => {
+    mockWallet(async () => {
+      throw new ContractFunctionRevertedError({
+        abi: [],
+        data: undefined,
+        functionName: 'execute',
+      })
+    })
     try {
       await runWalletSwapExecute({
         in: 'USDC_DEMO',
@@ -138,7 +169,95 @@ describe('runWalletSwapExecute', () => {
     }
   })
 
+  it('forwards --deadline to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return stubResult(successReceipt('0x'))
+    })
+    await runWalletSwapExecute({
+      in: 'USDC_DEMO',
+      out: 'OP_DEMO',
+      amountIn: '1',
+      chain: 'base-sepolia',
+      deadline: '1800000000',
+    })
+    const call = captured[0] as { deadline?: number }
+    expect(call.deadline).toBe(1800000000)
+  })
+
+  it('rejects non-numeric --deadline with CliError(validation)', async () => {
+    mockWallet(async () => stubResult(successReceipt('0x')))
+    try {
+      await runWalletSwapExecute({
+        in: 'USDC_DEMO',
+        out: 'OP_DEMO',
+        amountIn: '1',
+        chain: 'base-sepolia',
+        deadline: 'soon',
+      })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
+
+  it('forwards --recipient to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return stubResult(successReceipt('0x'))
+    })
+    await runWalletSwapExecute({
+      in: 'USDC_DEMO',
+      out: 'OP_DEMO',
+      amountIn: '1',
+      chain: 'base-sepolia',
+      recipient: 'vitalik.eth',
+    })
+    const call = captured[0] as { recipient?: string }
+    expect(call.recipient).toBe('vitalik.eth')
+  })
+
+  it('forwards --approval-mode to the SDK when set', async () => {
+    const captured: unknown[] = []
+    mockWallet(async (params) => {
+      captured.push(params)
+      return stubResult(successReceipt('0x'))
+    })
+    await runWalletSwapExecute({
+      in: 'USDC_DEMO',
+      out: 'OP_DEMO',
+      amountIn: '1',
+      chain: 'base-sepolia',
+      approvalMode: 'max',
+    })
+    const call = captured[0] as { approvalMode?: string }
+    expect(call.approvalMode).toBe('max')
+  })
+
+  it('rejects invalid --approval-mode with CliError(validation)', async () => {
+    mockWallet(async () => stubResult(successReceipt('0x')))
+    try {
+      await runWalletSwapExecute({
+        in: 'USDC_DEMO',
+        out: 'OP_DEMO',
+        amountIn: '1',
+        chain: 'base-sepolia',
+        approvalMode: 'infinite',
+      })
+      throw new Error('did not throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CliError)
+      expect((err as CliError).code).toBe('validation')
+    }
+  })
+
   it('rejects when both --amount-in and --amount-out are set', async () => {
+    // Statically rejected by `QuoteFlags`; runtime mutex still runs because
+    // commander hands the handler a loosely-typed object. Cast through
+    // `never` to exercise the runtime guard.
     mockWallet(async () => stubResult(successReceipt('0x')))
     try {
       await runWalletSwapExecute({
@@ -147,7 +266,7 @@ describe('runWalletSwapExecute', () => {
         amountIn: '1',
         amountOut: '1',
         chain: 'base-sepolia',
-      })
+      } as never)
       throw new Error('did not throw')
     } catch (err) {
       expect(err).toBeInstanceOf(CliError)

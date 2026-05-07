@@ -1,9 +1,9 @@
 import {
-  buildQuoteParams,
-  type QuoteFlags,
+  buildWalletExecuteParams,
+  type WalletExecuteFlags,
 } from '@/commands/actions/swap/util.js'
 import { walletContext } from '@/context/walletContext.js'
-import { CliError, rethrowAsCliError } from '@/output/errors.js'
+import { CliError, rethrowWithContext } from '@/output/errors.js'
 import { printOutput } from '@/output/printOutput.js'
 import { configuredAssets } from '@/resolvers/assets.js'
 import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
@@ -20,7 +20,9 @@ import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
  * @param flags - Commander-parsed required + optional options.
  * @returns Promise that resolves once stdout has been written.
  */
-export async function runWalletSwapExecute(flags: QuoteFlags): Promise<void> {
+export async function runWalletSwapExecute(
+  flags: WalletExecuteFlags,
+): Promise<void> {
   const { wallet, config } = await walletContext()
   if (!wallet.swap) {
     throw new CliError(
@@ -28,7 +30,7 @@ export async function runWalletSwapExecute(flags: QuoteFlags): Promise<void> {
       'Swap is not configured (no providers in config.swap)',
     )
   }
-  const params = buildQuoteParams(
+  const params = buildWalletExecuteParams(
     flags,
     configuredAssets(config),
     config.chains.map((c) => c.chainId),
@@ -50,6 +52,13 @@ export async function runWalletSwapExecute(flags: QuoteFlags): Promise<void> {
       transactions: receipts,
     })
   } catch (err) {
-    rethrowAsCliError(err)
+    // Enrich the envelope so an agent retrying after a revert / RPC failure
+    // has the chain + pair + slippage in `details` without re-parsing flags.
+    rethrowWithContext(err, {
+      chainId: params.chainId,
+      assetIn: params.assetIn.metadata.symbol,
+      assetOut: params.assetOut.metadata.symbol,
+      slippage: params.slippage,
+    })
   }
 }

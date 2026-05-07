@@ -120,12 +120,13 @@ function formatBalance(balances: Printers['balance']): void {
   }
 }
 
-function formatLendAction(doc: LendActionDoc): void {
-  const verb = doc.action === 'open' ? 'opened' : 'closed'
-  writeLine(
-    `${verb} position: ${doc.amount} ${doc.asset.symbol} on ${doc.market.name} (${doc.market.provider}, chain ${doc.market.chainId})`,
-  )
-  for (const tx of doc.transactions) {
+const LEND_ACTION_VERBS = {
+  open: 'opened',
+  close: 'closed',
+} as const satisfies Record<LendActionDoc['action'], string>
+
+function formatReceiptList(txs: readonly WalletTransactionReceipt[]): void {
+  for (const tx of txs) {
     if ('transactionHash' in tx) {
       writeLine(`  tx=${tx.transactionHash} status=${tx.status}`)
     } else {
@@ -134,6 +135,14 @@ function formatLendAction(doc: LendActionDoc): void {
       writeLine(`  userOp=${userOpHash} success=${success}`)
     }
   }
+}
+
+function formatLendAction(doc: LendActionDoc): void {
+  const verb = LEND_ACTION_VERBS[doc.action]
+  writeLine(
+    `${verb} position: ${doc.amount} ${doc.asset.symbol} on ${doc.market.name} (${doc.market.provider}, chain ${doc.market.chainId})`,
+  )
+  formatReceiptList(doc.transactions)
 }
 
 function formatLendMarket(m: LendMarket): void {
@@ -200,15 +209,7 @@ function formatSwapExecute(doc: SwapExecuteDoc): void {
   writeLine(
     `swapped ${doc.amountIn} ${doc.assetIn.symbol} for ${doc.amountOut} ${doc.assetOut.symbol} (price=${doc.price})`,
   )
-  for (const tx of doc.transactions) {
-    if ('transactionHash' in tx) {
-      writeLine(`  tx=${tx.transactionHash} status=${tx.status}`)
-    } else {
-      const userOpHash = (tx as { userOpHash?: string }).userOpHash ?? '?'
-      const success = (tx as { success?: boolean }).success
-      writeLine(`  userOp=${userOpHash} success=${success}`)
-    }
-  }
+  formatReceiptList(doc.transactions)
 }
 
 const TEXT_FORMATTERS: {
