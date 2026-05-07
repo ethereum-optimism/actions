@@ -98,7 +98,6 @@ interface QuoteFlagsBase {
 }
 
 /**
-<<<<<<< HEAD
  * @description At-least-one-of `amountIn` / `amountOut`. The `?: never` branches make TS reject `{ ... }` (neither set) and `{ amountIn, amountOut }` (both set) at the call site; the runtime mutex check in `parseAmountFlags` still runs because commander's argv parsing is loosely typed.
  */
 export type QuoteFlags =
