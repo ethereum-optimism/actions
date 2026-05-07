@@ -94,7 +94,7 @@ Forge deployment script that creates a complete Morpho lending market for demo p
 
 - `DemoUSDC` - Mintable ERC20 loan token (6 decimals) _(or reuses existing via env var)_
 - `DemoOP` - Mintable ERC20 collateral token (18 decimals) _(or reuses existing via env var)_
-- `FixedPriceOracle` - Returns 1:1 price (1 USDC per 1 OP)
+- `FixedPriceOracle` - Returns 1 OP = $0.10 (matches the borrow market's mock Chainlink peg)
 - Morpho Blue market with 94.5% LLTV
 - MetaMorpho V1.1 vault ("Actions Demo USDC Vault" / "dUSDC")
 - Yield-generating borrow position (99.9% utilization)

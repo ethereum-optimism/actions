@@ -35,8 +35,11 @@ or where the plan over-engineers.
 1. **Dropped:** `MorphoLendProvider._getPosition` decimals fix. PR #1 (#383)
    already shipped `resolveUnderlyingDecimals()` at
    `packages/sdk/src/actions/lend/providers/morpho/MorphoLendProvider.ts:221-238`.
-2. **Kept:** Rename `DeployMorphoMarket.s.sol` → `DeployMorphoLendMarket.s.sol`.
-   Initial call was to drop it as misleading; reversed once the second market
+2. **Kept:** Rename `DeployMorphoMarket.s.sol` → `DeployMorphoLendMarket.s.sol`,
+   and align its hardcoded `FixedPriceOracle` peg from $1.00 (`PRICE = 1e24`)
+   to $0.10 (`PRICE = 1e23`) so it matches the borrow market's mock Chainlink
+   feed. Two markets sharing one peg keeps the demo narrative coherent. Initial
+   call was to drop both as misleading / churn; reversed once the second market
    landed and the asymmetry became reviewer-visible.
 3. **Replaced:** Bespoke `DynamicVaultOracle.sol` swapped for Morpho's
    audited `MorphoChainlinkOracleV2` (from `morpho-org/morpho-blue-oracles`)

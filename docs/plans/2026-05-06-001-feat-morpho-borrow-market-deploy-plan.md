@@ -81,8 +81,9 @@ over-engineers (bespoke oracle replaced with audited Morpho contract).
   shape; do not extend it.
 - `packages/demo/contracts/src/FixedPriceOracle.sol`; used by the lend
   market. **Not** reused for the borrow market: it returns a hardcoded
-  `1e24` and does not read vault `convertToAssets`. The new oracle needs
-  to track yield.
+  `1e23` (1 OP = $0.10) and does not read vault `convertToAssets`. The new
+  oracle needs to track yield. The `1e23` constant was aligned to the
+  borrow market's mock Chainlink peg as part of this PR (was `1e24`).
 - `packages/demo/contracts/script/deploy-demo.sh`; orchestrator. Uses
   `read_state` / `write_state` node one-liners + `parse_address` /
   `parse_bytes32` regex. New step wires in identically.
@@ -534,8 +535,11 @@ to include the new keys.
   cause will almost certainly be the decimals trap or a wrong Morpho
   address; both surfaced by the test.
 - **Unchanged invariants:** The existing lend market (`morpho.vault`,
-  `morpho.oracle`) is untouched. Its `FixedPriceOracle` keeps returning
-  `1e24`. The new oracle's address is recorded under a separate state key.
+  `morpho.oracle`) is untouched on already-deployed chains. On fresh
+  redeploys, its `FixedPriceOracle` now returns `1e23` (1 OP = $0.10)
+  instead of `1e24` (1:1) so both markets share one peg. The bootstrap
+  borrow (999k USDC against 100M OP collateral at 94.5% LLTV) still has
+  ~10× headroom under the new price.
 
 ---
 
