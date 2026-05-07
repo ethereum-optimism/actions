@@ -18,9 +18,9 @@ import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainConfig } from '@/types/chain.js'
 
 /** viem `pollingInterval` (ms) for L2-class chains with ~1-2s blocks. */
-const FAST_CHAIN_POLLING_INTERVAL_MS = 1000
+const L2_POLLING_INTERVAL_MS = 1000
 /** viem `pollingInterval` (ms) for L1-class chains with ~12s blocks. */
-const SLOW_CHAIN_POLLING_INTERVAL_MS = 4000
+const MAINNET_POLLING_INTERVAL_MS = 4000
 
 const SLOW_CHAIN_IDS: ReadonlySet<SupportedChainId> = new Set([
   mainnet.id,
@@ -29,8 +29,8 @@ const SLOW_CHAIN_IDS: ReadonlySet<SupportedChainId> = new Set([
 
 function pollingIntervalForChain(chainId: SupportedChainId): number {
   return SLOW_CHAIN_IDS.has(chainId)
-    ? SLOW_CHAIN_POLLING_INTERVAL_MS
-    : FAST_CHAIN_POLLING_INTERVAL_MS
+    ? MAINNET_POLLING_INTERVAL_MS
+    : L2_POLLING_INTERVAL_MS
 }
 
 /**
