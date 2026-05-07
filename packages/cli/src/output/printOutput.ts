@@ -98,8 +98,13 @@ function formatBalance(balances: Printers['balance']): void {
   }
 }
 
+const LEND_ACTION_VERBS = {
+  open: 'opened',
+  close: 'closed',
+} as const satisfies Record<LendActionDoc['action'], string>
+
 function formatLendAction(doc: LendActionDoc): void {
-  const verb = doc.action === 'open' ? 'opened' : 'closed'
+  const verb = LEND_ACTION_VERBS[doc.action]
   writeLine(
     `${verb} position: ${doc.amount} ${doc.asset.symbol} on ${doc.market.name} (${doc.market.provider}, chain ${doc.market.chainId})`,
   )
