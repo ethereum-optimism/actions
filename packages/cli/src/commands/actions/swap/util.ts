@@ -1,4 +1,6 @@
 import {
+  APPROVAL_MODES,
+  type ApprovalMode,
   type Asset,
   type SupportedChainId,
   SWAP_PROVIDER_NAMES,
@@ -91,11 +93,6 @@ export type WalletExecuteFlags = QuoteFlags & {
   recipient?: string
   deadline?: string
 }
-
-// Mirrors the SDK's `ApprovalMode = 'exact' | 'max'` (declared in
-// `@/types/actions` but not re-exported from the SDK barrel).
-const APPROVAL_MODES = ['exact', 'max'] as const
-type ApprovalMode = (typeof APPROVAL_MODES)[number]
 
 export function parseApprovalMode(
   raw: string | undefined,
