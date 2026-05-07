@@ -16,11 +16,12 @@ import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js
 export type { LendProviderConfig, SwapProviderConfig }
 // Re-export centralized provider maps and constants
 export type {
+  LendProviderName,
   LendProviders,
   SwapProviderName,
   SwapProviders,
 } from '@/types/providers.js'
-export { SWAP_PROVIDER_NAMES } from '@/types/providers.js'
+export { LEND_PROVIDER_NAMES, SWAP_PROVIDER_NAMES } from '@/types/providers.js'
 
 /** Require at least one property to be defined */
 type RequireAtLeastOne<T> = {
@@ -50,9 +51,6 @@ export type LendConfig = RequireAtLeastOne<{
   /** Shared settings applied across all lend providers */
   settings?: LendSettings
 }
-
-/** Names of available lend providers — derived from LendProviders registry */
-export type LendProviderName = keyof LendProviders
 
 /** Routing strategy for selecting a provider when multiple are configured. */
 export type SwapRoutingStrategy = 'price'
