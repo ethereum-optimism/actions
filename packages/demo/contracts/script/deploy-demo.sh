@@ -97,13 +97,13 @@ else
 fi
 echo ""
 
-# --- Step 2: Deploy Morpho Market ---
+# --- Step 2: Deploy Morpho Lend Market ---
 VAULT_ADDR=$(read_state "morpho.vault")
 
 if [[ -z "$VAULT_ADDR" ]]; then
-    echo ">>> Deploying Morpho market..."
+    echo ">>> Deploying Morpho lend market..."
     OUTPUT=$(DEMO_USDC_ADDRESS="$USDC_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
-        forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
+        forge script script/DeployMorphoLendMarket.s.sol:DeployMorphoLendMarket \
         "${FORGE_ARGS[@]}" --broadcast 2>&1)
     echo "$OUTPUT"
 

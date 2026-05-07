@@ -64,8 +64,6 @@ over-engineers (bespoke oracle replaced with audited Morpho contract).
 - TWAP / per-block delta cap on the oracle (production hardening).
 - Replacing the mock feed with a real Chainlink feed.
 - AaveBorrowProvider deploy.
-- Renaming `DeployMorphoMarket.s.sol` to `…LendMarket.s.sol` (existing
-  script also bootstraps borrow yield; rename would mislead).
 - Donation-attack `0x…dEaD` virtual-share seed (the 100k OP liquidity seed
   obviates it).
 - `[profile.deep]` fuzz tuning in `foundry.toml`.
@@ -76,7 +74,7 @@ over-engineers (bespoke oracle replaced with audited Morpho contract).
 
 ### Relevant Code and Patterns
 
-- `packages/demo/contracts/script/DeployMorphoMarket.s.sol`; sibling deploy
+- `packages/demo/contracts/script/DeployMorphoLendMarket.s.sol`; sibling deploy
   script. Uses `vm.envOr("DEMO_USDC_ADDRESS", ...)` env-reuse pattern, logs
   `DemoUSDC:` / `DemoOP:` / `Vault:` / `Oracle:` for stdout parsing, and
   computes `marketId = keccak256(abi.encode(MarketParams))`. Mirror this
@@ -184,7 +182,7 @@ over-engineers (bespoke oracle replaced with audited Morpho contract).
   archive RPC); the implementer should hardcode the chosen block in the
   fork-test setUp.
 - **Exact Morpho Blue + MetaMorpho factory addresses for fork test**;
-  Reuse the constants already in `DeployMorphoMarket.s.sol` (`MORPHO`,
+  Reuse the constants already in `DeployMorphoLendMarket.s.sol` (`MORPHO`,
   `METAMORPHO_FACTORY_V1_1`, `IRM`); no chain mapping needed.
 - **Mock-feed `roundId` / `startedAt` / `updatedAt` / `answeredInRound`
   values**; Morpho's `MorphoChainlinkOracleV2` does not validate freshness,
@@ -338,7 +336,7 @@ forge broadcast. Log each address in a format `deploy-demo.sh` can parse.
 - Create: `packages/demo/contracts/script/DeployMorphoBorrowMarket.s.sol`
 
 **Approach:**
-- Mirror `DeployMorphoMarket.s.sol`'s shape: top-level constants, optional
+- Mirror `DeployMorphoLendMarket.s.sol`'s shape: top-level constants, optional
   env-var reuse for `DEMO_VAULT_ADDRESS` and `DEMO_OP_ADDRESS`, single
   `vm.startBroadcast()` … `vm.stopBroadcast()` block, `console.log` each
   output address.
@@ -385,7 +383,7 @@ new MorphoChainlinkOracleV2(
 ```
 
 **Patterns to follow:**
-- `packages/demo/contracts/script/DeployMorphoMarket.s.sol` for env reuse,
+- `packages/demo/contracts/script/DeployMorphoLendMarket.s.sol` for env reuse,
   logging, and broadcast structure.
 - Imports of `IMorpho` / `MarketParams` from
   `packages/demo/contracts/src/interfaces/IMorpho.sol`.
@@ -569,7 +567,7 @@ to include the new keys.
 
 - **Origin document:** `docs/brainstorms/2026-05-05-borrow-pr2-oracle-and-market-deploy-brainstorm.md`
 - Existing lend script:
-  `packages/demo/contracts/script/DeployMorphoMarket.s.sol`
+  `packages/demo/contracts/script/DeployMorphoLendMarket.s.sol`
 - Orchestrator:
   `packages/demo/contracts/script/deploy-demo.sh`
 - State file:

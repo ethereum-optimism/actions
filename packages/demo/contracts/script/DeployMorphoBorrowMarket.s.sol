@@ -117,7 +117,11 @@ contract DeployMorphoBorrowMarket is Script {
 
         // Create market: dUSDC collateral, OP loan.
         MarketParams memory marketParams = MarketParams({
-            loanToken: opAddr, collateralToken: vaultAddr, oracle: address(oracle), irm: MorphoConstants.IRM, lltv: LLTV
+            loanToken: opAddr,
+            collateralToken: vaultAddr,
+            oracle: address(oracle),
+            irm: MorphoConstants.IRM,
+            lltv: LLTV
         });
         IMorpho(MorphoConstants.MORPHO).createMarket(marketParams);
 

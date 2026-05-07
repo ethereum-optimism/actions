@@ -35,10 +35,9 @@ or where the plan over-engineers.
 1. **Dropped:** `MorphoLendProvider._getPosition` decimals fix. PR #1 (#383)
    already shipped `resolveUnderlyingDecimals()` at
    `packages/sdk/src/actions/lend/providers/morpho/MorphoLendProvider.ts:221-238`.
-2. **Dropped:** Renaming `DeployMorphoMarket.s.sol` →
-   `DeployMorphoLendMarket.s.sol`. The existing script deploys vault + market
-   + bootstraps borrow yield in one shot; the rename would be misleading and
-   add `deploy-demo.sh` + README churn for no semantic gain.
+2. **Kept:** Rename `DeployMorphoMarket.s.sol` → `DeployMorphoLendMarket.s.sol`.
+   Initial call was to drop it as misleading; reversed once the second market
+   landed and the asymmetry became reviewer-visible.
 3. **Replaced:** Bespoke `DynamicVaultOracle.sol` swapped for Morpho's
    audited `MorphoChainlinkOracleV2` (from `morpho-org/morpho-blue-oracles`)
    wired to a tiny `MockChainlinkFeed.sol`. Reuses code that already handles

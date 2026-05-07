@@ -86,7 +86,7 @@ forge script script/DeployDemoTokens.s.sol:DeployDemoTokens \
   --private-key <your_private_key>
 ```
 
-### DeployMorphoMarket.s.sol
+### DeployMorphoLendMarket.s.sol
 
 Forge deployment script that creates a complete Morpho lending market for demo purposes. Uses MetaMorpho V1.1 factory for instant single-transaction deployment.
 
@@ -102,7 +102,7 @@ Forge deployment script that creates a complete Morpho lending market for demo p
 **Deploy to Base Sepolia (standalone):**
 
 ```bash
-forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
+forge script script/DeployMorphoLendMarket.s.sol:DeployMorphoLendMarket \
   --rpc-url https://sepolia.base.org \
   --broadcast \
   --private-key <your_private_key>
@@ -112,7 +112,7 @@ forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
 
 ```bash
 DEMO_USDC_ADDRESS=0x... DEMO_OP_ADDRESS=0x... \
-  forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
+  forge script script/DeployMorphoLendMarket.s.sol:DeployMorphoLendMarket \
   --rpc-url https://sepolia.base.org \
   --broadcast \
   --private-key <your_private_key>
