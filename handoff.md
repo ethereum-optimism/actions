@@ -222,6 +222,26 @@ PRs #4, #5, and #6 respectively.
 - **Repo:** `ethereum-optimism/actions` (pnpm monorepo, Node ≥ 18). Project
   conventions live in `AGENTS.md` and `CONTRIBUTING.md`.
 
+### Local sibling worktrees (this machine)
+
+Borrow PRs #2-#6 are all being worked on as co-resident local worktrees.
+On the orangekid box the paths are `/home/orangekid/github/actions-borrow-prN`
+(per the worktree-path line above). On the Mac (`kevinw@oplabs.co`) the
+parallel paths are:
+
+- `/Users/kevin/github/optimism/actions-borrow-pr2` (`kevin/borrow-pr2`)
+- `/Users/kevin/github/optimism/actions-borrow-pr3` (`kevin/borrow-pr3`)
+- `/Users/kevin/github/optimism/actions-borrow-pr4` (`kevin/borrow-pr4`)
+- `/Users/kevin/github/optimism/actions-borrow-pr5` (`kevin/borrow-pr5`)
+- `/Users/kevin/github/optimism/actions-borrow-pr6` (`kevin/borrow-pr6`)
+
+Sibling agents can read each other's state directly via `git -C <path>
+log/status` and direct file reads, including unpushed commits and
+in-flight brainstorm docs, without waiting for `git push`. Treat the
+local worktree as authoritative for "what's actually staged" when
+origin lags. **Edit only your own worktree.** Cross-branch propagation
+still goes through rebase, not direct edits.
+
 ## What PR #2 already shipped (load-bearing context)
 
 PR #2 added the on-chain pieces this SDK work consumes. Read these files
