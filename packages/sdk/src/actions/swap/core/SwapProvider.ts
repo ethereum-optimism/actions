@@ -8,6 +8,7 @@ import {
   MarketNotAllowedError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
+  QuoteRecipientMissingError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
@@ -436,9 +437,7 @@ export abstract class SwapProvider<
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
     if (!quote.recipient) {
-      throw new Error(
-        'SwapQuote.recipient missing — _getQuote must populate it',
-      )
+      throw new QuoteRecipientMissingError()
     }
     const approvals = await this._buildApprovals(quote)
 

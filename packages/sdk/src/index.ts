@@ -77,6 +77,7 @@ export {
 } from '@/services/nameservices/ens/utils.js'
 export type {
   ActionsConfig,
+  ApprovalMode,
   ApyBreakdown,
   Asset,
   EOATransactionReceipt,
@@ -88,6 +89,7 @@ export type {
   LendMarketPosition,
   LendMarketSupply,
   LendProviderConfig,
+  LendProviderName,
   LendTransaction,
   LendTransactionReceipt,
   SwapConfig,
@@ -111,6 +113,11 @@ export type {
   UserOperationTransactionReceipt,
   WalletConfig,
   WalletSwapParams,
+} from '@/types/index.js'
+export {
+  APPROVAL_MODES,
+  LEND_PROVIDER_NAMES,
+  SWAP_PROVIDER_NAMES,
 } from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
 export { serializeBigInt } from '@/utils/serializers.js'

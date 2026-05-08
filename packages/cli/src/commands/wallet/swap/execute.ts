@@ -1,0 +1,64 @@
+import {
+  buildWalletExecuteParams,
+  type WalletExecuteFlags,
+} from '@/commands/actions/swap/util.js'
+import { walletContext } from '@/context/walletContext.js'
+import { CliError, rethrowWithContext } from '@/output/errors.js'
+import { printOutput } from '@/output/printOutput.js'
+import { configuredAssets } from '@/resolvers/assets.js'
+import { ensureOnchainSuccess, toReceiptArray } from '@/utils/receipts.js'
+
+/**
+ * @description Handler for `actions wallet swap execute --in <symbol>
+ * --out <symbol> (--amount-in <n> | --amount-out <n>) --chain <name>
+ * [--slippage <pct>] [--provider uniswap|velodrome]`. Builds a
+ * `WalletSwapParams` from CLI flags and delegates to
+ * `wallet.swap.execute`, which re-quotes, dispatches Permit2 / token
+ * approval + swap as a sendBatch, and waits for receipts. The CLI
+ * normalises the union receipt type to an array, surfaces reverts as
+ * `onchain` (exit 5), and emits a structured envelope.
+ * @param flags - Commander-parsed required + optional options.
+ * @returns Promise that resolves once stdout has been written.
+ */
+export async function runWalletSwapExecute(
+  flags: WalletExecuteFlags,
+): Promise<void> {
+  const { wallet, config } = await walletContext()
+  if (!wallet.swap) {
+    throw new CliError(
+      'config',
+      'Swap is not configured (no providers in config.swap)',
+    )
+  }
+  const params = buildWalletExecuteParams(
+    flags,
+    configuredAssets(config),
+    config.chains.map((c) => c.chainId),
+  )
+  try {
+    const result = await wallet.swap.execute(params)
+    const receipts = toReceiptArray(result.receipt)
+    ensureOnchainSuccess(receipts)
+    printOutput('swapExecute', {
+      action: 'execute',
+      assetIn: { symbol: result.assetIn.metadata.symbol },
+      assetOut: { symbol: result.assetOut.metadata.symbol },
+      amountIn: result.amountIn,
+      amountOut: result.amountOut,
+      amountInRaw: result.amountInRaw,
+      amountOutRaw: result.amountOutRaw,
+      price: result.price,
+      priceImpact: result.priceImpact,
+      transactions: receipts,
+    })
+  } catch (err) {
+    // Enrich the envelope so an agent retrying after a revert / RPC failure
+    // has the chain + pair + slippage in `details` without re-parsing flags.
+    rethrowWithContext(err, {
+      chainId: params.chainId,
+      assetIn: params.assetIn.metadata.symbol,
+      assetOut: params.assetOut.metadata.symbol,
+      slippage: params.slippage,
+    })
+  }
+}

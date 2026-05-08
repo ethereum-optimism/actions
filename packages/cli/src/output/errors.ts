@@ -143,6 +143,27 @@ export function rethrowAsCliError(err: unknown): never {
   throw toCliError(err)
 }
 
+/**
+ * @description Re-throws a caught exception as a `CliError` enriched with caller-supplied context (e.g. chainId, asset symbols) on top of whatever `toCliError` already extracted. The new `details` payload merges the existing one with `context`; existing keys win on conflict so SDK-error metadata isn't clobbered. Use this in handler `catch` blocks when the error code alone isn't actionable for the agent.
+ * @param err - Caught exception.
+ * @param context - Plain record of fields to merge into `details`.
+ * @returns Never; always throws.
+ */
+export function rethrowWithContext(
+  err: unknown,
+  context: Record<string, unknown>,
+): never {
+  const cliErr = toCliError(err)
+  const existing = (cliErr.details ?? {}) as Record<string, unknown>
+  throw new CliError(
+    cliErr.code,
+    cliErr.message,
+    { ...context, ...existing },
+    cliErr.retryableOverride,
+    cliErr.retryAfterMs,
+  )
+}
+
 const SCALAR_ALLOWLIST = new Set([
   'chainId',
   'code',
