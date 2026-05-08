@@ -171,6 +171,58 @@ Future protocol-specific fields (Liquity redemption priority, Euler
 sub-account index) are added as `?` slots when those providers ship; no
 `extensions` indirection until a second protocol forces it.
 
+### 4a. `BorrowMarketId` and `BorrowMarketConfig`
+
+A lend market is one asset; a borrow market is two assets (collateral and
+borrow). The market types reflect that. Market identity is also
+fundamentally different across protocols.
+
+**`BorrowMarketId` is a tagged union.** PR #3 ships only the Morpho variant;
+the union is structured for forward-compat with Aave/Compound/Liquity/Euler
+(forward-looking finding #3).
+
+```ts
+type BorrowMarketId =
+  | { kind: 'morpho-blue'; marketId: Hex; chainId: SupportedChainId }
+  // future:
+  // | { kind: 'aave-v3';      collateralAsset: Address; borrowAsset: Address; chainId }
+  // | { kind: 'compound-v3';  cometAddress: Address;    chainId }
+  // | { kind: 'liquity-v2';   branchAddress: Address;   troveId: Hex; chainId }
+  // | { kind: 'euler-v2';     controllerVault: Address; collateralVault: Address;
+  //                            subAccountIndex: number; chainId }
+```
+
+**Per-protocol identity:**
+
+- **Morpho Blue** has a real on-chain market: `marketId = keccak256(abi.encode(loanToken, collateralToken, oracle, irm, lltv))`. The bytes32 commits to the entire parameter set; same loan + collateral with different LLTVs are distinct markets.
+- **Aave V3** has no market object. There is a single `Pool` per chain holding many reserves; users borrow any asset against any other (subject to per-asset rules). The SDK's `(collateralAsset, borrowAsset)` pair is a virtual abstraction. `getPosition` for Aave attributes a slice of the user's Pool state to one chosen pair; HF and liquidation price are global to the user's Aave account, not per-pair.
+- **Compound V3 / Liquity V2 / Euler V2** each have their own identity scheme (see forward-looking finding #3).
+
+**`BorrowMarketConfig`:**
+
+```ts
+type BorrowMarketConfig = BorrowMarketId & {
+  name: string
+  collateralAsset: Asset                 // dUSDC for Morpho, USDC for Aave
+  borrowAsset: Asset                     // OP for Morpho, any reserve for Aave
+  borrowProvider: BorrowProviderName     // which protocol owns the borrow side
+  lendProvider: LendProviderName         // which lend market produced the collateral
+  healthBufferPct?: number               // per-market override of BorrowSettings (Decision 7)
+}
+```
+
+`borrowProvider` mirrors `LendMarketConfig.lendProvider`. `lendProvider` is
+also present so the frontend / backend can render and orchestrate the
+"Lend USDC via Morpho → Borrow OP via Morpho" flow as a single connected
+operation, and so consumers know which provider's `lend.open` to invoke
+when bootstrapping a fresh borrow position.
+
+Both assets are denormalized into config (despite Morpho's marketId already
+committing to them) for ergonomics: UI rendering needs `Asset` objects
+(symbol, decimals, logo); resolving these from a bytes32 every render is
+expensive, and provider-agnostic consumers (PR #4 backend, PR #5 frontend)
+benefit from a uniform shape across protocols.
+
 ### 5. `getMarketId` validation lives as a standalone helper
 
 ```ts
@@ -199,6 +251,9 @@ recipient ≠ wallet). Identical to swap's pattern at
 
 ```ts
 // Read-only, no wallet binding
+actions.borrow.getMarket(marketId: BorrowMarketId): BorrowMarket
+actions.borrow.getMarkets(params: GetBorrowMarketsParams): BorrowMarket[]
+actions.borrow.getPosition({ marketId, walletAddress }): BorrowMarketPosition
 actions.borrow.getPrice(params): BorrowPrice
 actions.borrow.getQuote(params): BorrowQuote
 
@@ -209,6 +264,27 @@ wallet.borrow.depositCollateral(params | BorrowQuote): BorrowReceipt
 wallet.borrow.withdrawCollateral(params | BorrowQuote): BorrowReceipt
 wallet.borrow.repay(params | BorrowQuote): BorrowReceipt
 ```
+
+`getMarket(s)` and `getPosition` mirror lend's `ActionsLendNamespace` shape.
+`getPosition` replaces lend's `getMarketBalance` for symmetry with the rest of
+the borrow surface.
+
+`GetBorrowMarketsParams` is borrow-specific (not the shared `FilterAssetChain`
+that lend uses) because borrow markets carry two assets:
+
+```ts
+interface GetBorrowMarketsParams {
+  collateralAsset?: Asset           // filter: markets accepting this collateral
+  borrowAsset?: Asset               // filter: markets lending this asset
+  chainId?: SupportedChainId
+  markets?: BorrowMarketConfig[]    // explicit allowlist (matches lend's pattern)
+}
+```
+
+Filter semantics: both unset → all configured markets; one set → markets
+matching that side; both set → markets matching the exact pair. Searches the
+`BorrowProviderConfig.marketAllowlist` config rather than chain (per
+Decision 5: config is the source of truth).
 
 ```ts
 type BorrowAction =
