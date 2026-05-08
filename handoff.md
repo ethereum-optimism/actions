@@ -17,6 +17,383 @@ treat the resolved sections as load-bearing.**
 
 ## Resolved decisions
 
+### Decision 7 — Health-buffer config (locked, escalated from PR #5)
+
+PR #5's Borrow tab needs a `healthBufferPct` config value to compute
+the safe-ceiling LTV (`safe_ceiling = LLTV * (1 - healthBufferPct)`).
+The Health bar normalizes 100% to safe-ceiling; the Max button
+prefills to safe-ceiling. SDK owns the config; demo reads it.
+
+**Resolutions:**
+
+1. **Granularity — global default + per-market override.** Same
+   pattern as `approvalMode`.
+
+   ```ts
+   interface BorrowSettings {
+     // ...
+     healthBufferPct?: number      // default 0.05
+   }
+
+   interface BorrowMarketConfig {
+     // ...
+     healthBufferPct?: number      // per-market override
+   }
+   ```
+
+   Resolution rule (consumer side):
+
+   ```ts
+   const buffer =
+     market.healthBufferPct ??
+     actions.borrow.settings.healthBufferPct ??
+     0.05
+   ```
+
+2. **Default value:** `0.05` (5%) for the demo, settable via
+   `BorrowSettings`.
+
+3. **API shape:** no separate `getBorrowSafetyConfig()` getter —
+   settings + market config are sufficient. Avoids new API surface
+   for two field reads.
+
+4. **Units:** fraction (0.05), not percent (5). Matches every other
+   ratio field in the borrow types (`borrowApy`, `liquidationBonus`,
+   `ltv`, `maxLtv`).
+
+5. **Enforcement:** SDK does **not** enforce the buffer. It's a UX
+   recommendation, not a protocol rule. Consumers (demo frontend)
+   decide whether to gate user actions in the buffer zone. PR #5
+   plans to render a "buffer zone" warning rather than block.
+
+**Quote/price augmentation:** `BorrowQuote` and `BorrowPrice` both
+gain a precomputed `safeCeilingLtv: number` field
+(`= maxLtv * (1 - healthBufferPct)`) so frontends don't recompute
+the bar normalization on every render.
+
+**Type surface that lands in PR #3:**
+
+- New `BorrowSettings` interface with `healthBufferPct?: number`.
+- New `BorrowMarketConfig` interface with `healthBufferPct?: number`
+  (analogous to `LendMarketConfig`).
+- `BorrowQuote.safeCeilingLtv: number` and
+  `BorrowPrice.safeCeilingLtv: number` added to Decision 6's shapes.
+
+**PR #5 cleanup:** the frontend constant
+`BORROW_HEALTH_BUFFER_PCT = 0.05` becomes a one-line swap to read from
+`actions.borrow.settings.healthBufferPct`. PR #5 stub stays in place
+until PR #3 lands.
+
+---
+
+### Decision 5 — Calldata pre-build validation surface (locked)
+
+**Standalone helper only.** Pure functions exported from
+`packages/sdk/src/actions/shared/morpho/marketParams.ts`:
+
+```ts
+// Pure: keccak256(abi.encode(MarketParams)) → bytes32
+export function computeMorphoMarketId(params: MarketParams): Hex
+
+// Convenience: compute + compare
+export function verifyMorphoMarketId(
+  marketId: Hex,
+  params: MarketParams,
+): boolean
+```
+
+No provider method. Pure functions have no dependency on provider
+state, and binding them to a provider class would add API surface
+without payoff. Standalone exports are tree-shakeable.
+
+**Production rule:** runtime code reads `marketId` from
+`deployments.json`'s `morpho.borrow.marketId` — does **not** recompute
+from `MarketParams` at runtime. The helper exists for verification
+(does the configured `marketId` match the configured params?), tests
+(fork tests deriving ids from params), and external consumers.
+
+**Why this isn't deferred:** parent issue #390 names calldata pre-build
+validation as a new SDK capability. Shipping the Morpho helper in PR #3
+sets the pattern for sibling helpers that future protocols (Aave V3
+reserve config, Comet base/collateral lookup, Liquity branch resolution)
+will follow.
+
+---
+
+### Decision 6 — Quote/commit pattern (locked)
+
+Mirrors swap's pattern at `packages/sdk/src/types/swap/base.ts` +
+`WalletSwapNamespace`. Read-only namespace surfaces `getPrice` and
+`getQuote`; wallet methods accept either fresh params (re-quote
+internally) or a pre-built `BorrowQuote` (uses pre-built calldata,
+throws if recipient ≠ wallet).
+
+**Namespace surface:**
+
+```ts
+// Read-only — no wallet binding
+actions.borrow.getPrice(params): BorrowPrice    // light: HF/LTV/APY/fees preview
+actions.borrow.getQuote(params): BorrowQuote    // full: pre-built bundle, recipient-bound
+
+// Wallet — accepts params OR pre-built quote
+wallet.borrow.openPosition(params | BorrowQuote):       BorrowReceipt
+wallet.borrow.closePosition(params | BorrowQuote):      BorrowReceipt
+wallet.borrow.depositCollateral(params | BorrowQuote):  BorrowReceipt
+wallet.borrow.withdrawCollateral(params | BorrowQuote): BorrowReceipt
+wallet.borrow.repay(params | BorrowQuote):              BorrowReceipt
+```
+
+**`BorrowQuote` shape:**
+
+```ts
+type BorrowAction =
+  | 'open' | 'close' | 'depositCollateral' | 'withdrawCollateral' | 'repay'
+
+interface BorrowQuote {
+  marketId: BorrowMarketId
+  action: BorrowAction
+
+  // Action-specific input echo (raw + display, per #379 convention)
+  borrowAmount?: number
+  borrowAmountRaw?: bigint
+  collateralAmount?: number
+  collateralAmountRaw?: bigint
+
+  // Position state preview — central UX value
+  positionBefore: BorrowMarketPosition | null   // null on first-time open
+  positionAfter:  BorrowMarketPosition
+
+  // Fee breakdown
+  fees: BorrowFees
+
+  // Buffer-aware safe ceiling (Decision 7) — = maxLtv * (1 - healthBufferPct)
+  safeCeilingLtv: number
+
+  // Pre-built bundle (varies in size: Morpho 3 txs, Aave 4)
+  execution: { transactions: TxRequest[] }
+
+  // Metadata (mirrors swap)
+  provider: BorrowProviderName
+  recipient: Address
+  quotedAt: number
+  expiresAt: number
+  gasEstimate?: bigint
+}
+```
+
+**`BorrowPrice` shape (lighter, no execution):**
+
+```ts
+interface BorrowPrice {
+  marketId: BorrowMarketId
+  action: BorrowAction
+  positionAfter: BorrowMarketPosition   // hypothetical state
+  fees: BorrowFees
+  safeCeilingLtv: number                // Decision 7
+}
+```
+
+**`BorrowFees` shape:**
+
+```ts
+interface BorrowFees {
+  // Required — applies to every protocol we ship now
+  borrowApy: number              // current borrow APY as decimal (e.g. 0.045 = 4.5%)
+  liquidationBonus: number       // discount liquidator gets (e.g. 0.05 = 5%)
+
+  // Forward-looking (Liquity-style protocols only — not implemented in PR #3)
+  originationFee?: {
+    amount: number
+    amountRaw: bigint
+    asset: Asset
+    description: string
+  }
+}
+```
+
+**Recipient binding (mirrors swap):** quote bakes recipient into bundle
+calldata. Wallet `execute` rejects mismatched quotes; consumer must
+re-quote via `wallet.borrow.getQuote(...)` when executor differs from
+quote's recipient.
+
+**How fees actually flow (informational, ties Decision 4 + 6):**
+
+- Morpho/Aave/Comet/Euler: no upfront fee. Interest accrues on the
+  debt itself (`borrowAmount` grows over time, repaid in borrow
+  asset). Liquidation bonus is paid from collateral only if the
+  position is liquidated. Reserve factor is hidden behind the gross
+  APY surfaced to the user.
+- Liquity (future): upfront fee deducted from minted BOLD plus
+  user-chosen rate. `originationFee` populates only here.
+
+**Dropped from scope:**
+
+- Liquity-specific surfaces (per-trove rate, redemption priority,
+  upfront fee field population). Fields exist as `?` slots but are
+  not wired in PR #3.
+
+---
+
+### Decision 4 — `BorrowMarketPosition` fields (locked)
+
+```ts
+interface BorrowMarketPosition {
+  marketId: BorrowMarketId
+
+  // Collateral side
+  collateralAsset: Asset
+  collateralAmount: bigint              // raw wei
+  collateralAmountFormatted: string
+
+  // Debt side
+  borrowAsset: Asset
+  borrowAmount: bigint                  // raw wei
+  borrowAmountFormatted: string
+
+  // Risk state (#390 first-class fields)
+  healthFactor: number                  // 1.0 = at liquidation; Infinity if no debt
+  liquidationPrice: bigint              // USD, in collateralAsset's price decimals
+  liquidationPriceFormatted: string
+
+  // Required across all protocols we ship
+  borrowApy: number                     // current borrow APY as decimal
+  liquidationBonus: number              // liquidator discount as decimal
+
+  // Optional, where the protocol exposes them
+  ltv?: number                          // current LTV as decimal
+  maxLtv?: number                       // protocol's LLTV for this market
+}
+```
+
+**Notes:**
+
+- `healthFactor` is `Infinity` when `borrowAmount === 0n` (collateral
+  with no debt — surfaces from `getPosition` even when no borrow is
+  active).
+- `liquidationPrice` is USD-denominated using the collateral asset's
+  oracle decimals (typically 8 for Chainlink). Both raw and formatted
+  surface so frontends don't re-derive.
+- `borrowApy` and `liquidationBonus` are required (not optional) —
+  Morpho/Aave/Comet/Euler all expose them; surfacing them on every
+  position lets the frontend render fee context without an extra
+  market read.
+- `collateralValueUsd` / `borrowValueUsd` are intentionally **not**
+  fields — frontends compute from `collateralAmount * price` to keep
+  the position type narrow and avoid stale-cache confusion.
+- Field set is stable for Morpho/Aave/Comet/Euler. Future
+  protocol-specific fields (Liquity redemption priority, Euler sub-
+  account index) will be added as `?` slots when those providers
+  ship; no `extensions` indirection until a second protocol forces it.
+
+---
+
+### Decision 3 — `amount` XOR `amountRaw` shape (locked, #379 from day one)
+
+```ts
+type AmountExact =
+  | { amount:    number }    // human-readable, e.g. 1.5
+  | { amountRaw: bigint }    // raw wei, e.g. 1500000000000000000n
+
+type AmountWithMax = AmountExact | { max: true }
+```
+
+**Per-method usage:**
+
+| Method | Field(s) | Type |
+|---|---|---|
+| `openPosition` | `borrowAmount` (req), `collateralAmount?` | `AmountExact` |
+| `depositCollateral` | `amount` | `AmountExact` |
+| `closePosition` | `borrowAmount` (req), `collateralAmount?` | `AmountWithMax` |
+| `withdrawCollateral` | `amount` | `AmountWithMax` |
+| `repay` | `amount` | `AmountWithMax` |
+
+**Why `{ max: true }` rather than `'max'`:** keeps `amount` strictly
+typed as `number`. `'max'` only meaningful on operations targeting an
+existing balance (close/withdraw/repay) — opens and deposits always
+need a specific amount. Wallet "max" (use full wallet balance) is a
+frontend concern: call `balanceOf`, pass it as `amountRaw`.
+
+**Status of #379 in lend:** lend has not migrated yet (uses
+`amount: number` plain). Borrow ships first with this convention; lend
+retrofit is downstream.
+
+---
+
+### Decision 2 — Borrow namespace primitives + `closePosition` shape (locked)
+
+**Final API surface:**
+
+```ts
+borrow.openPosition({  collateralAmount?, borrowAmount })
+borrow.closePosition({ collateralAmount?, borrowAmount })
+borrow.depositCollateral({ amount })
+borrow.withdrawCollateral({ amount })
+borrow.repay({ amount })
+```
+
+5 borrow primitives. `closePosition` is the symmetric inverse of
+`openPosition`: same param names, same shape, both `bigint | 'max'`
+(exact wire format defers to Decision 3 / #379). On both sides
+`borrowAmount` is required; `collateralAmount` is optional.
+
+**Per-protocol semantics:**
+
+- **Morpho:** typical close passes both `('max', 'max')`. Provider
+  emits `[repay(shares=balance), withdrawCollateral(max)]`. If caller
+  omits `collateralAmount`, dUSDC stays stranded earning 0% — SDK is
+  honest about this; frontend defaults to passing both.
+- **Aave:** typical close passes `borrowAmount: 'max'` only — aTokens
+  stay earning yield. If `collateralAmount` is passed, the borrow
+  provider builds `Pool.withdraw` calldata directly (no cross-namespace
+  delegation per Decision 1).
+- **Liquity (future):** when both amounts are `'max'`, provider emits
+  `closeTrove` natively. Otherwise emits `repayBold` /
+  `withdrawColl` / `adjustTrove` as appropriate.
+- **Compound V3 / Euler V2 (future):** providers translate the
+  user-facing `'max'` to the protocol's idiomatic full-repay path
+  (`type(uint256).max` / EVC batch).
+
+**Implementation notes:**
+
+- `closePosition` with `borrowAmount: 'max'` uses Morpho's
+  `repay(shares=position.borrowShares, assets=0)` idiom internally to
+  dodge the `toSharesUp` 1-wei-dust bug. Shares-as-user-param is
+  dropped entirely — Morpho-internal detail only.
+- Standalone `depositCollateral` / `withdrawCollateral` / `repay`
+  handle partial / non-close operations: top-up to fix HF, release
+  excess collateral, partial debt reduction.
+- No "repay without protocol side-effect" escape hatches. Aave-flag
+  resets on full-repay are implementation details inside the provider.
+
+**Forward-looking — quote/commit pattern (deferred to Decision 6):**
+
+The borrow surface needs a quote→commit flow analogous to swap, so
+callers can preview HF, liquidation price, and post-action position
+state before committing. Decision 6 will define the `BorrowQuote`
+shape and which methods produce quotes vs. direct execution. Likely
+candidates for quote-bearing methods: `openPosition`, `closePosition`,
+`depositCollateral`, `withdrawCollateral`, `repay` (effectively all of
+them, since every borrow action moves health factor).
+
+**Dropped:**
+
+- `partialShares` mode from `CloseBorrowMode` — shares is internal-only.
+- `closePosition` as a 2-verb-magic method without an explicit
+  collateral param (rejected in favor of explicit
+  `collateralAmount?`).
+- Cross-namespace delegation (borrow provider reaching into lend
+  provider for `Pool.withdraw` calldata).
+
+**Open downstream concern (PR #391 backend):**
+
+Lend's `closePosition` currently has no check for dUSDC pledged as
+borrow collateral. Per Decision 1, dUSDC-as-collateral lives in the
+borrow namespace. PR #391's check is "lend's `closePosition` must
+verify the user isn't withdrawing dUSDC that's pledged in a borrow
+position." Backend concern, not PR #3.
+
+---
+
 ### Decision 1 — Optional collateral on `borrow.openPosition` (locked)
 
 **Shape:**
@@ -106,32 +483,13 @@ these don't require a breaking change later.
    ERC-4337 makes this functionally a non-issue, but gas-estimation
    surfaces should not assume a fixed count.
 
-## Outstanding decisions (Decision 1 done; 5 to go)
+## Outstanding decisions
 
-- **Decision 2 — `closePosition` / repay shape.** Original plan: drop
-  `partialShares` from `CloseBorrowMode`; use Morpho's
-  `repay(shares=max)` convention to dodge the `toSharesUp` 1-wei-dust
-  bug on full repayments. **Open sub-question: does `closePosition`
-  also withdraw collateral on full repay?** (Decision 1 left this
-  hanging — close-side asymmetry mitigation.)
-- **Decision 3 — `amount` XOR `amountRaw` discriminated union (#379).**
-  Issue is open and explicitly says *"same convention applied to new
-  Borrow namespaces from day one."* Borrow params should ship with
-  this from the start, not retrofit later.
-- **Decision 4 — `BorrowMarketPosition` fields.** Health factor
-  (decimal, not basis points) and liquidation price (USD) are
-  first-class per #390. Lock exact field set + naming
-  (`healthFactor`, `liquidationPrice`, `liquidationPriceFormatted`?).
-  Reserve room for protocol-extension fields per forward-looking
-  finding #5.
-- **Decision 5 — Calldata pre-build validation surface.** Parent #390
-  calls out validation as a new SDK capability. Use Morpho's
-  `MarketParamsLib.id` / `getMarketId()` (per original plan) — public
-  API: stand-alone helper, method on the provider, or both?
-- **Decision 6 — Quote shape: immutable `BorrowQuote` with
-  `withBorrowAmount(x)` builder vs simple object.** Original plan
-  picked the immutable builder. Re-validate against current SDK
-  conventions before adopting.
+All seven decisions resolved (six original + Decision 7 escalated
+from PR #5). Next step: synthesize into
+`docs/brainstorms/2026-05-08-borrow-pr3-sdk-borrow-provider-brainstorm.md`,
+then `git rm handoff.md` in a standalone commit (PR #2 convention),
+then `/ce-plan` → `/ce-work`.
 
 **Other architectural points the conversation surfaced (informational):**
 
