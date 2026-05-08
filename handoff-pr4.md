@@ -106,9 +106,30 @@ buildable + tests green.
 Work on these three branches happens **in parallel**. Keeping the
 stack fresh matters more than usual.
 
+### Local sibling worktrees (this machine)
+
+All four borrow branches have co-resident worktrees on this
+filesystem. Agents (and humans) can read sibling state directly,
+including unpushed commits and in-flight docs, without waiting for
+`git push`:
+
+- `/Users/kevin/github/optimism/actions-borrow-pr3` (`kevin/borrow-pr3`)
+- `/Users/kevin/github/optimism/actions-borrow-pr4` (`kevin/borrow-pr4`)
+- `/Users/kevin/github/optimism/actions-borrow-pr5` (`kevin/borrow-pr5`)
+- `/Users/kevin/github/optimism/actions-borrow-pr6` (`kevin/borrow-pr6`)
+
+Inspect with `git -C <path> log --oneline -10`, `git -C <path> status`,
+or direct file reads under that path. Treat the local worktree as
+authoritative for "what's actually staged" when origin lags.
+**Edit only your own worktree.** Cross-branch propagation still
+goes through rebase, not direct edits.
+
+### Stack hygiene
+
 - **Pull base before doing anything:**
   `git fetch origin && git rebase origin/kevin/borrow-pr3`. If PR #3
   hasn't pushed yet, pull `origin/main` instead and flag the gap.
+  (Or read pr3's local worktree above to see in-flight state.)
 - **Rebase, do not merge.** Linear history keeps downstream branches
   cheap to update.
 - **Push your branch regularly** (after every small commit, or at
