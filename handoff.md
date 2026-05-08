@@ -9,61 +9,129 @@
 
 ## Brainstorm state — where we left off
 
-**Active question:** Where does "supply dUSDC as collateral to Morpho
-Blue" live in the SDK abstractions? The user is exploring this — no
-decision locked in. Four options on the table, ranked by user-implied
-preference:
+**Decisions resolved during the 2026-05-07 / 2026-05-08 sessions are
+recorded under "Resolved decisions" below. Outstanding decisions are
+listed at the end of this section. Sibling agents working on
+subsequent borrow PRs (#391 backend, #392 frontend, #427 Aave) can
+treat the resolved sections as load-bearing.**
 
-1. **`borrow.supplyCollateral` primitive (status quo from original plan).**
-   Supply lives in the borrow namespace as its own method. Aave's
-   provider treats it as a no-op (Aave's `Pool.supply` doubles as
-   collateral). Preserves "lend = yield" abstraction, respects
-   one-domain-per-PR. Recommended baseline.
-2. **Overload `MorphoLendProvider` with both vault and Blue-collateral
-   markets.** Single class branches on market kind. Violates
-   "one protocol version per provider" in spirit (different on-chain
-   calls, different position shapes, different APY semantics).
-3. **New `MorphoBlueLendProvider` sibling.** Vault keeps current
-   provider; Blue-collateral gets its own `LendProvider` subclass. Demo
-   flow: `lend.open(USDC, vault)` → `lend.open(dUSDC, blueMarket)` →
-   `borrow.open(OP)`, frontend bundles into one userOp. Cost:
-   `LendMarket` needs a `kind: 'vault' | 'collateralOnly'` discriminator
-   so frontends can render correctly; `LendMarketId` (currently
-   `{address, chainId}`) collides with Morpho Blue's `bytes32` marketId.
-4. **Bake supplyCollateral inside `borrow.openPosition` itself.** Single
-   user-facing call internally builds `[approval?, supplyCollateral,
-   borrow]`. Smallest API surface, biggest "what does this method do"
-   ambiguity — and breaks the symmetry of "open/close just opens/closes
-   a debt" once a position already has collateral posted.
+## Resolved decisions
 
-User's framing (verbatim): *"the value prop of actions sdk is clear
-abstractions: lend deposits assets into a vault. borrow takes assets
-out. even if the demo has to hide an extra lend tx thats okay."* Read:
-they want the **abstractions to be clean even at the cost of demo
-complexity**. Lean toward option 1 unless option 3's cross-provider
-symmetry argument wins on second look.
+### Decision 1 — Optional collateral on `borrow.openPosition` (locked)
 
-**Other decisions outstanding (from #390 + the original plan):**
+**Shape:**
+```ts
+actions.borrow.openPosition({
+  market,
+  collateralAsset?,    // required for Morpho fresh positions; optional for Aave
+  collateralAmount?,
+  borrowAmount,
+})
+```
 
-- **`closePosition` / repay shape.** Original plan: drop `partialShares`
-  from `CloseBorrowMode`; use Morpho's `repay(shares=max)` convention
-  to dodge the `toSharesUp` 1-wei-dust bug on full repayments.
-  Confirm or revisit.
-- **`amount` XOR `amountRaw` discriminated union (#379).** Issue is
-  open and explicitly says *"same convention applied to new Borrow
-  namespaces from day one."* Borrow params should ship with this from
-  the start, not retrofit later.
-- **`BorrowMarketPosition` fields.** Health factor (decimal, not
-  basis points) and liquidation price (USD) are first-class per #390.
-  Lock the exact field set + naming (`healthFactor`, `liquidationPrice`,
-  `liquidationPriceFormatted`?).
-- **Calldata pre-build validation surface.** Parent #390 calls out
-  validation as a new SDK capability. Use Morpho's
+**Rule:** each borrow provider builds its own bundle. Do **not** have
+`AaveBorrowProvider` (or any other) reach into `LendProvider` to
+construct the deposit tx. Namespaces stay orthogonal; borrow works
+without lend being registered.
+
+**Why this won over the lend-side sibling provider:**
+
+- **Liquity V2 forces it.** CDP-style `openTrove(collAmount, boldAmount, …)`
+  is atomic at the protocol level. There is no "supply collateral, then
+  borrow later" path — BOLD is minted only when debt opens. If
+  collateral lived in the lend namespace, Liquity (and any future
+  CDP-shaped protocol: Sky/Maker, Inverse, etc.) cannot be modeled.
+- **Euler V2 strongly prefers it.** Native flow is one
+  `EVC.batch([deposit, enableCollateral, enableController, borrow])`.
+  Splitting across `lend.open` and `borrow.openPosition` would double
+  userOps and fight the protocol design.
+- **Compound V3 (Comet) is neutral.** Two-call shape
+  (`supply(collateral)` + `withdraw(base, amount)`) works equally well
+  in either namespace placement.
+- **Aave V3 still works.** `collateralAmount` is optional; users who
+  pre-supplied via `lend.open` (for yield) just pass `borrowAmount`
+  and the provider skips the deposit tx.
+
+**Trade-off accepted:** `openPosition` owns two verbs (deposit +
+borrow) on protocols that need it. Asymmetry with `closePosition`
+remains an open question (Decision 2).
+
+**Implementation notes for downstream PRs:**
+
+- Top-ups (add collateral to fix HF on existing position) are scoped
+  out of PR #3. Add a `borrow.addCollateral` primitive when sibling
+  issue #391 (backend) or #392 (frontend) needs it.
+- Aave's bundle for first-time-borrow-with-collateral is potentially
+  4 txs: `[approve, Pool.supply, setUserUseReserveAsCollateral(true), Pool.borrow]`.
+  The borrow provider must emit `setUserUseReserveAsCollateral` because
+  Aave's flag persists across supplies (a previously-disabled asset
+  won't auto-re-enable).
+- `MorphoLendProvider` (PR #1) is **untouched** by this PR. It stays
+  vault-only.
+
+## Forward-looking findings (carry into PR #3 design and beyond)
+
+These came out of the cross-protocol research (Compound V3, Liquity V2,
+Euler V2). Don't solve them in PR #3, but design the borrow types so
+these don't require a breaking change later.
+
+1. **Operator/authorization patterns vary.** Comet uses `allow`,
+   Morpho uses `setAuthorization`, Euler uses EVC enables, Aave uses
+   only ERC-20 approval. The base `BorrowProvider` should expose a
+   hook for "authorize an operator before the bundle if the protocol
+   requires it" — not Aave-shaped, not pure ERC-20.
+2. **`borrowAsset` is sometimes market-derived.** Morpho, Comet, and
+   Liquity derive the borrow asset from the market. Aave lets the user
+   pick. SDK should treat it as market-derived by default; require it
+   only where the provider needs it.
+3. **`BorrowMarketId` will be a tagged union.** Morpho `bytes32`,
+   Aave `(asset, chainId)`, Comet `(comet contract, chainId)`,
+   Liquity `(branchAddress, troveId)` with troveId per-position,
+   Euler `(controllerVault, collateralVault, subAccountIndex)`. PR #3
+   ships only the Morpho variant, but the type should be designed for
+   the union from day one (mirroring the `LendMarketId` widening we
+   touched on but did not need for PR #3 itself).
+4. **Liquity-specific param leak: `interestRate`.** Required by
+   `openTrove`, no Morpho/Aave analogue. Reserve an optional
+   protocol-extension slot on `BorrowParams` (e.g., `extensions?: {
+   liquity?: { annualInterestRate, interestRateDelegate? } }`) so
+   future protocols can attach required params without reshaping the
+   base type.
+5. **Liquity-specific position state: redemption risk.**
+   `BorrowMarketPosition` will eventually need extension fields for
+   things like Liquity's redemption priority or Euler's
+   sub-account index. Don't pre-abstract in PR #3; leave room.
+6. **Bundle size grows with protocol complexity.** Morpho 3 txs, Aave
+   first-time-with-collateral 4, Comet 2–3, Euler first-time 4–5.
+   ERC-4337 makes this functionally a non-issue, but gas-estimation
+   surfaces should not assume a fixed count.
+
+## Outstanding decisions (Decision 1 done; 5 to go)
+
+- **Decision 2 — `closePosition` / repay shape.** Original plan: drop
+  `partialShares` from `CloseBorrowMode`; use Morpho's
+  `repay(shares=max)` convention to dodge the `toSharesUp` 1-wei-dust
+  bug on full repayments. **Open sub-question: does `closePosition`
+  also withdraw collateral on full repay?** (Decision 1 left this
+  hanging — close-side asymmetry mitigation.)
+- **Decision 3 — `amount` XOR `amountRaw` discriminated union (#379).**
+  Issue is open and explicitly says *"same convention applied to new
+  Borrow namespaces from day one."* Borrow params should ship with
+  this from the start, not retrofit later.
+- **Decision 4 — `BorrowMarketPosition` fields.** Health factor
+  (decimal, not basis points) and liquidation price (USD) are
+  first-class per #390. Lock exact field set + naming
+  (`healthFactor`, `liquidationPrice`, `liquidationPriceFormatted`?).
+  Reserve room for protocol-extension fields per forward-looking
+  finding #5.
+- **Decision 5 — Calldata pre-build validation surface.** Parent #390
+  calls out validation as a new SDK capability. Use Morpho's
   `MarketParamsLib.id` / `getMarketId()` (per original plan) — public
   API: stand-alone helper, method on the provider, or both?
-- **Quote shape: immutable `BorrowQuote` with `withBorrowAmount(x)`
-  builder vs simple object.** Original plan picked the immutable
-  builder. Re-validate against current SDK conventions before adopting.
+- **Decision 6 — Quote shape: immutable `BorrowQuote` with
+  `withBorrowAmount(x)` builder vs simple object.** Original plan
+  picked the immutable builder. Re-validate against current SDK
+  conventions before adopting.
 
 **Other architectural points the conversation surfaced (informational):**
 
@@ -267,8 +335,11 @@ purely informational in case fork tests or contracts work surfaces.
   (`6febb45b`); diff against `origin/main` to see what PR #2 brought in.
 - Worktree clean except this `handoff.md` (now committed for cross-agent
   pickup; delete once the brainstorm doc is written).
-- No SDK code changes yet. Next move: resolve the active brainstorm
-  question above, write `docs/brainstorms/2026-05-07-borrow-pr3-sdk-borrow-provider-brainstorm.md`,
+- No SDK code changes yet. Next move: resolve A-vs-B above (decisions
+  #2–#6 from the original list still untouched: repay/closePosition
+  shape, `amount` XOR `amountRaw` per #379, `BorrowMarketPosition`
+  field set, `getMarketId` validation surface, `BorrowQuote` shape).
+  Then write `docs/brainstorms/2026-05-08-borrow-pr3-sdk-borrow-provider-brainstorm.md`,
   then `/ce-plan` → `/ce-work`.
 
 ## Useful resume commands
