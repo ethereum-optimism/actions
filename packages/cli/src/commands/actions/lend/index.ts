@@ -2,6 +2,9 @@ import { Command } from 'commander'
 
 import { runLendMarket } from '@/commands/actions/lend/market.js'
 import { runLendMarkets } from '@/commands/actions/lend/markets.js'
+import { loadConfig } from '@/config/loadConfig.js'
+import { configuredAssets } from '@/resolvers/assets.js'
+import { CHAIN_EXAMPLES } from '@/resolvers/chains.js'
 
 /**
  * @description Builds the root `lend` subcommand tree. Children read
@@ -11,6 +14,8 @@ import { runLendMarkets } from '@/commands/actions/lend/markets.js'
  * @returns Commander `Command` configured with `markets` and `market`.
  */
 export function lendCommand(): Command {
+  const assetExample =
+    configuredAssets(loadConfig())[0]?.metadata.symbol ?? 'USDC'
   const command = new Command('lend').description(
     'Read-only lending market commands (no PRIVATE_KEY required).',
   )
@@ -19,15 +24,15 @@ export function lendCommand(): Command {
     .description('List all lending markets across configured providers.')
     .option(
       '--asset <symbol>',
-      'filter to markets denominated in one asset (e.g. USDC_DEMO). Case-insensitive.',
+      `filter to markets denominated in one asset (e.g. ${assetExample}). Case-insensitive.`,
     )
     .option(
       '--chain <shortname>',
-      'filter to markets on one chain by shortname (e.g. base-sepolia); mutually exclusive with --chain-id',
+      `filter to markets on one chain by shortname (e.g. ${CHAIN_EXAMPLES.shortname}); mutually exclusive with --chain-id`,
     )
     .option(
       '--chain-id <id>',
-      'filter to markets on one chain by numeric id (e.g. 84532); mutually exclusive with --chain',
+      `filter to markets on one chain by numeric id (e.g. ${CHAIN_EXAMPLES.chainId}); mutually exclusive with --chain`,
     )
     .action(runLendMarkets)
   command

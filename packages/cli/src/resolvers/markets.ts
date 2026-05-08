@@ -1,7 +1,7 @@
-import type {
-  LendMarketConfig,
-  LendProviderConfig,
-  NodeActionsConfig,
+import {
+  getLendMarketAllowlist,
+  type LendMarketConfig,
+  type NodeActionsConfig,
 } from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
@@ -11,20 +11,14 @@ function normalize(value: string): string {
 }
 
 /**
- * @description Walks `ActionsConfig.lend` and flattens every provider's `marketAllowlist` into a single list. Used by callers as the input to `resolveMarket`. The implementation skips the `settings` sibling key — `LendConfig` mixes provider configs with a sibling `LendSettings` entry, and only provider entries carry `marketAllowlist`.
+ * @description Returns every market allowlisted across the configured lend providers. Thin wrapper around `getLendMarketAllowlist(config.lend)`; kept here so CLI call sites read `configuredMarkets(config)` symmetrically with `configuredAssets(config)` / `configuredChains(config)`.
  * @param config - Resolved CLI config.
  * @returns Flat array of every allowlisted market across all providers.
  */
 export function configuredMarkets(
   config: NodeActionsConfig<never>,
 ): readonly LendMarketConfig[] {
-  const out: LendMarketConfig[] = []
-  for (const [key, value] of Object.entries(config.lend ?? {})) {
-    if (key === 'settings') continue
-    const provider = value as LendProviderConfig | undefined
-    if (provider?.marketAllowlist) out.push(...provider.marketAllowlist)
-  }
-  return out
+  return getLendMarketAllowlist(config.lend)
 }
 
 /**

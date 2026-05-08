@@ -1,7 +1,9 @@
 import type {
   Asset,
+  LendAction,
   LendMarket,
   LendMarketPosition,
+  LendProviderName,
   SupportedChainId,
   SwapMarket,
   SwapQuote,
@@ -28,12 +30,12 @@ export interface AddressDoc {
 }
 
 export interface LendActionDoc {
-  action: 'open' | 'close'
+  action: LendAction
   market: {
     name: string
     address: Address
     chainId: SupportedChainId
-    provider: string
+    provider: LendProviderName
   }
   asset: { symbol: string }
   amount: number

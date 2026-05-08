@@ -1,25 +1,29 @@
-import type { SupportedChainId } from '@eth-optimism/actions-sdk'
-import { base, baseSepolia, optimism, optimismSepolia } from 'viem/chains'
+import {
+  chainIdFromShortname,
+  SUPPORTED_CHAIN_SHORTNAMES,
+  type SupportedChainId,
+} from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
 import { splitCsv } from '@/utils/strings.js'
 
-const SHORTNAMES: Record<string, SupportedChainId> = {
-  base: base.id,
-  'base-sepolia': baseSepolia.id,
-  optimism: optimism.id,
-  'op-sepolia': optimismSepolia.id,
-}
-
-const CHAIN_IDS: Record<number, string> = Object.fromEntries(
-  Object.entries(SHORTNAMES).map(([name, id]) => [id, name]),
-)
+/**
+ * Canonical chain examples for help text. Hard-coded to base/op sepolia
+ * so help output stays stable regardless of the runtime config.
+ */
+export const CHAIN_EXAMPLES = {
+  shortname: 'base-sepolia',
+  shortnameList: 'base-sepolia,op-sepolia',
+  chainId: '84532',
+  chainIdList: '84532,11155420',
+} as const
 
 /**
  * @description Resolves a chain shortname (e.g. `base-sepolia`) to a
  * `SupportedChainId`. Restricted to the configured chain set so unknown
  * shortnames or chains not in the active config surface as validation
- * errors before the SDK sees them. Match is case-insensitive.
+ * errors before the SDK sees them. Match is case-insensitive and accepts
+ * both the canonical shortname and the viem-derived chain-name slug.
  * @param shortname - User-provided chain shortname from CLI argv.
  * @param configuredChainIds - Chain IDs present in the resolved config.
  * @returns The matching `SupportedChainId`.
@@ -30,13 +34,11 @@ export function resolveChain(
   shortname: string,
   configuredChainIds: readonly SupportedChainId[],
 ): SupportedChainId {
-  const id = SHORTNAMES[shortname.toLowerCase()]
+  const id = chainIdFromShortname(shortname)
   if (id === undefined || !configuredChainIds.includes(id)) {
     throw new CliError('validation', `Unknown chain: ${shortname}`, {
       chain: shortname,
-      allowed: configuredChainIds
-        .map((cid) => CHAIN_IDS[cid])
-        .filter((name): name is string => name !== undefined),
+      allowed: configuredChainIds.map((cid) => SUPPORTED_CHAIN_SHORTNAMES[cid]),
     })
   }
   return id
@@ -53,13 +55,7 @@ export function resolveChain(
  * @throws `CliError` with code `validation` when the chain has no shortname.
  */
 export function shortnameFor(chainId: SupportedChainId): string {
-  const name = CHAIN_IDS[chainId]
-  if (!name) {
-    throw new CliError('validation', `No shortname for chainId: ${chainId}`, {
-      chainId,
-    })
-  }
-  return name
+  return SUPPORTED_CHAIN_SHORTNAMES[chainId]
 }
 
 /**

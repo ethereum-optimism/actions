@@ -160,6 +160,15 @@ export const APPROVAL_MODES = ['exact', 'max'] as const
 export type ApprovalMode = (typeof APPROVAL_MODES)[number]
 
 /**
+ * The lend write actions exposed by the SDK's wallet namespace
+ * (`openPosition` / `closePosition`). Useful for callers that emit
+ * action-tagged output envelopes or branch on the action being performed.
+ */
+export const LEND_ACTIONS = ['open', 'close'] as const
+
+export type LendAction = (typeof LEND_ACTIONS)[number]
+
+/**
  * Actions SDK configuration
  * @description Configuration object for initializing the Actions SDK
  */

@@ -44,6 +44,9 @@ describe('runWalletLendOpen', () => {
       wallet: {
         address: '0xabc',
         lend: { openPosition, closePosition: async () => null },
+        has(namespace: 'lend' | 'swap') {
+          return namespace === 'lend'
+        },
       } as never,
     })
   }
@@ -210,7 +213,12 @@ describe('runWalletLendOpen', () => {
       config: getDemoConfig(),
       actions: {} as never,
       signer: {} as never,
-      wallet: { address: '0xabc' } as never,
+      wallet: {
+        address: '0xabc',
+        has() {
+          return false
+        },
+      } as never,
     })
     try {
       await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })

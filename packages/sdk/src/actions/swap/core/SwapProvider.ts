@@ -3,7 +3,7 @@ import { formatUnits } from 'viem'
 
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
   MarketNotAllowedError,
   ProviderNotConfiguredError,
@@ -222,7 +222,7 @@ export abstract class SwapProvider<
     const configuredChains = this.chainManager.getSupportedChains()
     return this.protocolSupportedChainIds().filter(
       (id) =>
-        (ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
+        (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
         configuredChains.includes(id),
     )
   }
