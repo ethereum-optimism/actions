@@ -1,5 +1,68 @@
 # @eth-optimism/actions-sdk
 
+## 0.7.0
+
+### Minor Changes
+
+- [#430](https://github.com/ethereum-optimism/actions/pull/430) [`e24b93a`](https://github.com/ethereum-optimism/actions/commit/e24b93a8efd716f06843a41383d037d3316c9cbf) Thanks [@its-everdred](https://github.com/its-everdred)! - SDK: barrel-export the lend / approval / capability vocabulary that downstream
+  tooling was reaching past the public API to consume.
+  - Re-export `ApprovalMode`, `LendProviderName`, and the new `LendAction` literal
+    from the package root.
+  - Add a runtime mirror for each: `APPROVAL_MODES` and `LEND_ACTIONS`.
+    `ApprovalMode` and `LendAction` are now derived from these tuples, so the
+    type and the runtime list cannot drift.
+  - Add `CHAIN_SHORTNAMES`, a canonical `Record<SupportedChainId, string>` of
+    human-friendly chain shortnames (`base`, `op-sepolia`, ...). Use this as
+    the source of truth for `--chain` parsing and any other surface that maps
+    user-typed chain strings to a `SupportedChainId`. Adding a new
+    `SupportedChainId` requires a corresponding entry here.
+  - Add `getLendMarketAllowlist(lend)`, which flattens every provider's
+    `marketAllowlist` from a `LendConfig` and skips the `settings` sibling.
+  - Add `Wallet.has(namespace)` capability check for the `lend` and `swap`
+    namespaces. Lets callers branch on whether a namespace was registered
+    without poking at internal fields.
+
+  CLI: drop the local mirrors and reach for the SDK exports instead. Help-text
+  examples now derive from the resolved config (asset symbols, chain shortnames,
+  chain ids) rather than hard-coding `USDC_DEMO` / `base-sepolia` / `84532`.
+  `runLendMarket` passes the resolved `LendMarketConfig` straight through to
+  `actions.lend.getMarket` instead of rebuilding `{address, chainId}`.
+
+- [#430](https://github.com/ethereum-optimism/actions/pull/430) [`afc2b97`](https://github.com/ethereum-optimism/actions/commit/afc2b97e7d83e1ce15c8b51a07d81874e98cd9b9) Thanks [@its-everdred](https://github.com/its-everdred)! - Perf: cut EOA swap dispatch wall-time on fast L2s.
+  - `EOAWallet.sendBatch` no longer waits for `confirmations: 2` between sub-txs.
+    One inclusion wait per tx is enough now that `EOAWallet.walletClient` attaches
+    viem's default `nonceManager` to the signer, which keeps nonces sequential
+    locally instead of relying on `eth_getTransactionCount('pending')` on every
+    send (avoids races on load-balanced RPCs).
+  - `ChainManager` now defaults the viem `pollingInterval` per chain class:
+    1000ms for L2-class chains (~1-2s blocks) and 4000ms for L1 mainnet/sepolia
+    (~12s blocks). Saves ~3 RPC poll cycles per receipt wait on Base/OP/Unichain.
+    This default applies to the public client used by `getPublicClient()` and to
+    the public client wrapping the simple bundler client. There is no override
+    knob; if a real consumer needs one we'll add it then.
+
+  Behavioural notes for consumers:
+  - `sendBatch` is sequential and assumes a sequencer-ordered chain (e.g.
+    OP-stack L2s). On reorg-heavy chains, callers should consider an additional
+    confirmations pass at the call site.
+  - The Velodrome swap path uses **direct ERC-20 max approval** to its universal
+    router when `approvalMode: 'max'` is requested — there is no Permit2
+    intermediary as on Uniswap. The full allowance persists at the router until
+    manually revoked. Continue to scope `approvalMode: 'max'` to demo/testnet
+    paths.
+
+- [#424](https://github.com/ethereum-optimism/actions/pull/424) [`cf12b15`](https://github.com/ethereum-optimism/actions/commit/cf12b156df39a3ba16b776253f6df94e93a2df52) Thanks [@its-everdred](https://github.com/its-everdred)! - Export `SWAP_PROVIDER_NAMES`, `LEND_PROVIDER_NAMES`, and `APPROVAL_MODES` runtime constants from the SDK barrel. The existing `SwapProviderName`, `LendProviderName`, and `ApprovalMode` types are now derived from these constants, so adding a new value is a single-line change. Consumers (CLI, custom validators) that need to enumerate names at runtime can drop their hardcoded copies and import the canonical lists.
+
+- [#461](https://github.com/ethereum-optimism/actions/pull/461) [`f288e42`](https://github.com/ethereum-optimism/actions/commit/f288e42c6970f524867a4bb0ce7c3b3a61db6a6d) Thanks [@its-everdred](https://github.com/its-everdred)! - - Drop 2-confirmation wait in `EOAWallet.sendBatch`; attach viem `nonceManager` to the signer.
+  - Default viem `pollingInterval` to 1000ms on L2 chains and 4000ms on L1.
+  - Export `APPROVAL_MODES`, `LEND_PROVIDER_NAMES`, `SWAP_PROVIDER_NAMES`, and `LEND_ACTIONS` runtime tuples; derive matching types from them.
+  - Export `CHAIN_SHORTNAMES`, a canonical `SupportedChainId` → shortname map derived from viem.
+  - Barrel-export `ApprovalMode`, `LendProviderName`, and the new `LendAction` literal.
+  - Add `getLendMarketAllowlist(lend)` to flatten provider allowlists from a `LendConfig`.
+  - Add `Wallet.has(namespace)` capability check for `'lend'` and `'swap'`.
+  - Fix Velodrome universal router to use `payerIsUser: true`, resolving `TRANSFER_FAILED` on EOA swaps.
+  - Fix Uniswap V4 exact-output single-hop action byte.
+
 ## 0.6.0
 
 ### Minor Changes
