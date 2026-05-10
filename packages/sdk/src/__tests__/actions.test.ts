@@ -307,7 +307,9 @@ describe('Actions SDK', () => {
         )
 
         expect(actions['lendProviders']).toEqual({})
-        expect(() => actions.lend).toThrow('Lend provider not configured')
+        expect(() => actions.lend).toThrow(
+          "A 'lend' provider is not configured",
+        )
       })
     })
 
@@ -433,7 +435,7 @@ describe('Actions SDK', () => {
         expect(actions.lend).toBeDefined()
         const supportedIds = actions.lend.supportedChainIds()
         expect(supportedIds).toContain(130) // Unichain
-        expect(supportedIds).toContain(8453) // Base
+        expect(supportedIds).toContain(84532) // Base Sepolia
       })
     })
 

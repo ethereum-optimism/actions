@@ -14,7 +14,8 @@ export function errorResponse(
   error?: unknown,
 ) {
   if (status >= 500 && error) {
-    console.error(`${message}:`, error)
+    const name = error instanceof Error ? error.name : undefined
+    console.error(`${message}:`, { name, error })
   }
   return c.json({ error: message }, status)
 }

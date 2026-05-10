@@ -11,15 +11,13 @@ import type { WaitForUserOperationReceiptReturnType } from 'viem/account-abstrac
 import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { TransactionConfirmedButRevertedError } from '@/core/error/errors.js'
-import { retryOnStaleRead } from '@/core/utils/retryOnStaleRead.js'
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
-import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import { parseAssetAmount } from '@/utils/assets.js'
+import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
+import { retryOnStaleRead } from '@/wallet/core/utils/retryOnStaleRead.js'
 import { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
 import {
@@ -69,13 +67,8 @@ export class DefaultSmartWallet extends SmartWallet {
     signers: Signer[],
     signer: LocalAccount,
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-    },
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
     deploymentAddress?: Address,
     nonce?: bigint,
@@ -122,13 +115,8 @@ export class DefaultSmartWallet extends SmartWallet {
     signer: LocalAccount
     chainManager: ChainManager
     signers?: Signer[]
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    }
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-    }
+    lendProviders?: LendProviders
+    swapProviders?: SwapProviders
     supportedAssets?: Asset[]
     deploymentAddress?: Address
     nonce?: bigint
@@ -230,7 +218,7 @@ export class DefaultSmartWallet extends SmartWallet {
    * @returns Promise resolving to the transaction hash
    */
   async sendBatch(
-    transactionData: TransactionData[],
+    transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<WaitForUserOperationReceiptReturnType> {
     const account = await this.getCoinbaseSmartAccount(chainId)

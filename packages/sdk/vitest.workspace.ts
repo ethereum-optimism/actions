@@ -6,16 +6,17 @@ export default defineWorkspace([
     test: {
       name: 'unit',
       include: ['src/**/*.{test,spec}.ts'],
-      exclude: ['src/**/*.supersim.test.ts', 'node_modules/**'],
+      exclude: ['src/**/*.network.test.ts', 'node_modules/**'],
       environment: 'node',
     },
   },
   {
     extends: './vitest.config.ts',
     test: {
-      name: 'supersim',
-      include: ['src/**/*.supersim.test.ts'],
+      name: 'network',
+      include: ['src/**/*.network.test.ts'],
       environment: 'node',
+      testTimeout: 60_000,
     },
   },
 ])

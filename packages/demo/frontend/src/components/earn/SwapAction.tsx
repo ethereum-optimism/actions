@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import type { Asset, SupportedChainId } from '@eth-optimism/actions-sdk/react'
+import type {
+  SupportedChainId,
+  SwapMarket,
+  SwapQuote,
+} from '@eth-optimism/actions-sdk/react'
 import type { Address } from 'viem'
 
 import type { SwapAsset } from '@/hooks/useSwapAssets'
@@ -11,6 +15,8 @@ import { CtaButton, MaxButton } from './CtaButton'
 import { TokenButton } from './TokenButton'
 import { TokenSelectModal } from './TokenSelectModal'
 import { ReviewSwapModal } from './ReviewSwapModal'
+import { DemoProviderTooltip } from './DemoProviderTooltip'
+import { SwapMarketSelector } from './SwapMarketSelector'
 import { trackEvent } from '@/utils/analytics'
 import {
   deriveUsdRates,
@@ -24,27 +30,21 @@ import { colors } from '@/constants/colors'
 interface SwapActionProps {
   assets: SwapAsset[]
   isLoadingBalances: boolean
-  onSwap: (params: {
-    amountIn: number
-    assetIn: Asset
-    assetOut: Asset
-    chainId: SupportedChainId
-  }) => Promise<{
+  onSwap: (quote: SwapQuote) => Promise<{
     blockExplorerUrl?: string
   }>
-  onGetPrice: (params: {
+  onGetQuote: (params: {
     tokenInAddress: Address
     tokenOutAddress: Address
     chainId: SupportedChainId
     amountIn?: number
     amountOut?: number
-  }) => Promise<{
-    price: string
-    priceImpact: number
-    amountIn: number
-    amountOut: number
-  } | null>
+  }) => Promise<SwapQuote | null>
   isExecuting: boolean
+  selectedProvider?: string | null
+  swapMarkets?: SwapMarket[]
+  isLoadingMarkets?: boolean
+  onSelectProvider?: (provider: string) => void
   onLogActivity?: (
     action: string,
     metadata?: import('@/providers/ActivityLogProvider').ActivityMetadata,
@@ -210,8 +210,12 @@ export function SwapAction({
   assets,
   isLoadingBalances,
   onSwap,
-  onGetPrice,
+  onGetQuote,
   isExecuting,
+  selectedProvider,
+  swapMarkets = [],
+  isLoadingMarkets = false,
+  onSelectProvider,
   onLogActivity,
 }: SwapActionProps) {
   const { hoveredAction } = useActivityHighlight()
@@ -237,12 +241,7 @@ export function SwapAction({
   const [amountIn, setAmountIn] = useState('')
   const [amountOut, setAmountOut] = useState('')
   const [editDirection, setEditDirection] = useState<'in' | 'out'>('in')
-  const [priceQuote, setPriceQuote] = useState<{
-    price: string
-    priceImpact: number
-    amountIn: number
-    amountOut: number
-  } | null>(null)
+  const [quote, setQuote] = useState<SwapQuote | null>(null)
   const [isLoadingPrice, setIsLoadingPrice] = useState(false)
 
   // Modal states
@@ -286,15 +285,15 @@ export function SwapAction({
       !tokenOutAddress ||
       !chainId
     ) {
-      setPriceQuote(null)
+      setQuote(null)
       return
     }
 
     setIsLoadingPrice(true)
-    const fetchPrice = async () => {
+    const fetchQuote = async () => {
       const activity = onLogActivity?.('getPrice')
       try {
-        const quote = await onGetPrice({
+        const result = await onGetQuote({
           tokenInAddress,
           tokenOutAddress,
           chainId,
@@ -303,23 +302,23 @@ export function SwapAction({
             : { amountOut: parseFloat(activeAmount) }),
         })
         activity?.confirm()
-        setPriceQuote(quote)
-        if (quote) {
+        setQuote(result)
+        if (result) {
           if (editDirection === 'in') {
-            setAmountOut(quote.amountOut.toString())
+            setAmountOut(result.amountOut.toString())
           } else {
-            setAmountIn(quote.amountIn.toString())
+            setAmountIn(result.amountIn.toString())
           }
         }
       } catch {
         activity?.confirm({ error: 'Failed to fetch price' })
-        setPriceQuote(null)
+        setQuote(null)
       } finally {
         setIsLoadingPrice(false)
       }
     }
 
-    const debounce = setTimeout(fetchPrice, 500)
+    const debounce = setTimeout(fetchQuote, 500)
     return () => clearTimeout(debounce)
   }, [
     activeAmount,
@@ -327,7 +326,7 @@ export function SwapAction({
     tokenInAddress,
     tokenOutAddress,
     chainId,
-    onGetPrice,
+    onGetQuote,
     onLogActivity,
   ])
 
@@ -339,7 +338,7 @@ export function SwapAction({
     setAmountIn(prevOut)
     setAmountOut(prevIn)
     setEditDirection('in')
-    setPriceQuote(null)
+    setQuote(null)
   }
 
   const handleAmountInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -369,6 +368,10 @@ export function SwapAction({
 
   const handleTokenSelect = useCallback(
     (index: number) => {
+      // No-op if selecting the token already in this slot
+      if (tokenSelectTarget === 'in' && index === assetInIndex) return
+      if (tokenSelectTarget === 'out' && index === assetOutIndex) return
+
       if (tokenSelectTarget === 'in') {
         if (index === assetOutIndex) setAssetOutIndex(assetInIndex)
         setAssetInIndex(index)
@@ -377,19 +380,26 @@ export function SwapAction({
         setAssetOutIndex(index)
       }
       setAmountOut('')
-      setPriceQuote(null)
+      setQuote(null)
       setEditDirection('in')
     },
     [tokenSelectTarget, assetInIndex, assetOutIndex],
   )
 
   const handleReview = () => {
-    if (!amountIn || parseFloat(amountIn) <= 0 || !priceQuote) return
+    if (!amountIn || parseFloat(amountIn) <= 0 || !quote) return
     setReviewOpen(true)
   }
 
   const handleConfirmSwap = async () => {
-    if (!amountIn || parseFloat(amountIn) <= 0 || !assetIn || !assetOut) return
+    if (
+      !amountIn ||
+      parseFloat(amountIn) <= 0 ||
+      !assetIn ||
+      !assetOut ||
+      !quote
+    )
+      return
 
     const inSymbol = displaySymbol(assetIn.asset.metadata.symbol)
     const outSymbol = displaySymbol(assetOut.asset.metadata.symbol)
@@ -409,6 +419,7 @@ export function SwapAction({
       assetOutSymbol: assetOut.asset.metadata.symbol,
       assetOutLogo: assetOut.logo,
       chainId: assetIn.chainId,
+      provider: selectedProvider ?? undefined,
     })
 
     setReviewOpen(false)
@@ -416,12 +427,7 @@ export function SwapAction({
     setTxModalStatus('loading')
 
     try {
-      const result = await onSwap({
-        amountIn: parseFloat(amountIn),
-        assetIn: assetIn.asset,
-        assetOut: assetOut.asset,
-        chainId: assetIn.chainId,
-      })
+      const result = await onSwap(quote)
 
       activity?.confirm({ blockExplorerUrl: result.blockExplorerUrl })
 
@@ -434,14 +440,15 @@ export function SwapAction({
 
       setAmountIn('')
       setAmountOut('')
-      setPriceQuote(null)
+      setQuote(null)
 
       trackEvent('swap_success', {
         assetIn: assetIn.asset.metadata.symbol,
         assetOut: assetOut.asset.metadata.symbol,
         amount: parseFloat(amountIn),
       })
-    } catch {
+    } catch (err) {
+      console.error('[swap] execution failed:', err)
       activity?.error()
       setTxModalStatus('error')
       trackEvent('swap_error', {
@@ -464,7 +471,7 @@ export function SwapAction({
     !amountIn ||
     amountValue <= 0 ||
     amountValue > maxAmount ||
-    !priceQuote
+    !quote
 
   // Compute USD-per-token for each side
   const parsedSellAmt = parseFloat(amountIn) || 0
@@ -497,10 +504,32 @@ export function SwapAction({
     )
   }
 
-  const formattedPrice = priceQuote ? formatSwapAmount(priceQuote.price) : null
+  const formattedPrice = quote ? formatSwapAmount(quote.price) : null
 
   return (
     <>
+      {onSelectProvider && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <h3
+              style={{
+                color: '#1a1b1e',
+                fontSize: '16px',
+                fontWeight: 600,
+              }}
+            >
+              Select Market
+            </h3>
+            <DemoProviderTooltip />
+          </div>
+          <SwapMarketSelector
+            markets={swapMarkets}
+            selectedProvider={selectedProvider ?? null}
+            onSelect={onSelectProvider}
+            isLoading={isLoadingMarkets}
+          />
+        </div>
+      )}
       <div
         className="w-full transition-all"
         style={{
@@ -551,7 +580,7 @@ export function SwapAction({
                 ? 'Getting Quote...'
                 : 'Review'}
           </CtaButton>
-          {priceQuote && assetIn && assetOut && formattedPrice && (
+          {quote && assetIn && assetOut && formattedPrice && (
             <ExchangeRate
               assetIn={assetIn}
               assetOut={assetOut}
@@ -568,7 +597,7 @@ export function SwapAction({
         onSelect={handleTokenSelect}
       />
 
-      {assetIn && assetOut && priceQuote && (
+      {assetIn && assetOut && quote && (
         <ReviewSwapModal
           isOpen={reviewOpen}
           onClose={() => setReviewOpen(false)}
@@ -577,8 +606,9 @@ export function SwapAction({
           assetOut={assetOut}
           amountIn={amountIn}
           amountOut={amountOut}
-          priceQuote={priceQuote}
+          priceQuote={quote}
           isExecuting={isExecuting}
+          selectedProvider={selectedProvider}
         />
       )}
 

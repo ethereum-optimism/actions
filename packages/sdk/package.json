@@ -10,7 +10,8 @@
     "url": "https://github.com/ethereum-optimism/actions/issues"
   },
   "type": "module",
-  "version": "0.3.0",
+  "sideEffects": false,
+  "version": "0.7.0",
   "description": "TypeScript SDK for Actions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -44,7 +45,7 @@
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --log-level=warn",
     "test": "vitest --run --project unit",
-    "test:supersim": "vitest --run --project supersim",
+    "test:network": "vitest --run --project network",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "keywords": [
@@ -78,7 +79,7 @@
     "@turnkey/viem": ">=0.14.1"
   },
   "devDependencies": {
-    "@types/node": "^18",
+    "@types/node": "22.14.0",
     "dotenv": "^16.4.5",
     "eslint": "^9.31.0",
     "prettier": "^3.0.0",

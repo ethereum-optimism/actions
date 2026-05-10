@@ -1,0 +1,22 @@
+{
+  "shared_paths": [
+    ".github/workflows/build-images.yaml",
+    ".github/images.json",
+    "Dockerfile",
+    ".dockerignore",
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "nx.json",
+    "tsconfig.base.json"
+  ],
+  "images": {
+    "ecosystem-verbs-backend": {
+      "context": ".",
+      "dockerfile": "Dockerfile",
+      "target": "actions-service",
+      "build_args": "DOCKER_TARGET=actions-service",
+      "paths": ["packages/**"]
+    }
+  }
+}

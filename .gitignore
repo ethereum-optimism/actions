@@ -9,6 +9,7 @@ lerna-debug.log*
 
 # dependencies
 **/node_modules
+bun.lock
 /.pnp
 packages/*/.env
 app/*/.env
@@ -53,3 +54,6 @@ npm-debug.log*
 
 # deployment output files
 latest-faucet-deployment.json
+
+# per-developer local config (e.g., compound-engineering.local.md)
+*.local.md

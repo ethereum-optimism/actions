@@ -2,7 +2,7 @@ import type { ConnectedWallet } from '@privy-io/react-auth'
 import type { LocalAccount } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { PrivyHostedWalletProvider } from '@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js'

@@ -1,3 +1,4 @@
+import { ActionsError } from '@eth-optimism/actions-sdk'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import TransactionModal from './TransactionModal'
@@ -84,6 +85,7 @@ export function Action({
   const [amount, setAmount] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStatus, setModalStatus] = useState<'loading' | 'error'>('loading')
+  const [modalMessage, setModalMessage] = useState<string | undefined>()
   const [toast, setToast] = useState<{
     visible: boolean
     title: string
@@ -161,7 +163,10 @@ export function Action({
       })
       setAmount('')
       trackEvent('transaction_success', eventData)
-    } catch {
+    } catch (e) {
+      const displayMessage =
+        e instanceof ActionsError ? e.shortMessage : undefined
+      setModalMessage(displayMessage)
       setModalStatus('error')
       trackEvent('transaction_error', eventData)
     } finally {
@@ -240,9 +245,11 @@ export function Action({
       <TransactionModal
         isOpen={modalOpen}
         status={modalStatus}
+        errorMessage={modalMessage}
         onClose={() => {
           setModalOpen(false)
           setModalStatus('loading')
+          setModalMessage(undefined)
         }}
       />
 

@@ -144,6 +144,29 @@ else
     echo ">>> Uniswap pool already deployed: PoolID=$POOL_ID"
 fi
 
+# --- Step 4: Deploy Velodrome Pool ---
+VELO_POOL=$(read_state "velodrome.pool")
+
+if [[ -z "$VELO_POOL" ]]; then
+    echo ">>> Deploying Velodrome pool..."
+    OUTPUT=$(DEMO_USDC_ADDRESS="$USDC_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
+        forge script script/DeployVelodromeMarket.s.sol:DeployVelodromeMarket \
+        "${FORGE_ARGS[@]}" --broadcast 2>&1)
+    echo "$OUTPUT"
+
+    VELO_POOL=$(parse_address "Pool:" "$OUTPUT")
+
+    if [[ -z "$VELO_POOL" ]]; then
+        echo "ERROR: Failed to parse Velodrome pool address from forge output"
+        exit 1
+    fi
+
+    write_state "velodrome.pool" "$VELO_POOL"
+    echo "Velodrome pool deployed: Pool=$VELO_POOL"
+else
+    echo ">>> Velodrome pool already deployed: Pool=$VELO_POOL"
+fi
+
 echo ""
 echo "=== Deployment Complete ==="
 echo "State saved to: $STATE_FILE"

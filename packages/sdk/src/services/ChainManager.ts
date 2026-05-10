@@ -11,9 +11,27 @@ import {
 } from 'viem'
 import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { createBundlerClient } from 'viem/account-abstraction'
+import { mainnet, sepolia } from 'viem/chains'
 
-import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainConfig } from '@/types/chain.js'
+
+/** viem `pollingInterval` (ms) for L2-class chains with ~1-2s blocks. */
+const L2_POLLING_INTERVAL_MS = 1000
+/** viem `pollingInterval` (ms) for L1-class chains with ~12s blocks. */
+const L1_POLLING_INTERVAL_MS = 4000
+
+const L1_CHAIN_IDS: ReadonlySet<SupportedChainId> = new Set([
+  mainnet.id,
+  sepolia.id,
+])
+
+function pollingIntervalForChain(chainId: SupportedChainId): number {
+  return L1_CHAIN_IDS.has(chainId)
+    ? L1_POLLING_INTERVAL_MS
+    : L2_POLLING_INTERVAL_MS
+}
 
 /**
  * Chain Manager Service
@@ -22,7 +40,7 @@ import type { ChainConfig } from '@/types/chain.js'
  */
 export class ChainManager {
   /** Map of chain IDs to their corresponding public clients */
-  private publicClients: Map<(typeof SUPPORTED_CHAIN_IDS)[number], PublicClient>
+  private publicClients: Map<SupportedChainId, PublicClient>
   /** Configuration for each supported chain */
   private chainConfigs: ChainConfig[]
 
@@ -41,12 +59,25 @@ export class ChainManager {
    * @returns PublicClient instance for the specified chain
    * @throws Error if no client is configured for the chain ID
    */
-  getPublicClient(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): PublicClient {
+  getPublicClient(chainId: SupportedChainId): PublicClient {
     const client = this.publicClients.get(chainId)
     if (!client) {
-      throw new Error(`No public client configured for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     return client
+  }
+
+  /**
+   * Get public client for a specific chain, or undefined if not configured.
+   * Use this when the chain is optional (e.g. mainnet for ENS resolution).
+   * @param chainId - The chain ID to retrieve the public client for
+   * @returns PublicClient instance, or undefined if not configured
+   */
+  tryGetPublicClient(chainId: SupportedChainId): PublicClient | undefined {
+    return this.publicClients.get(chainId)
   }
 
   /**
@@ -57,13 +88,16 @@ export class ChainManager {
    * @throws Error if no bundler URL is configured for the chain ID
    */
   getBundlerClient(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
+    chainId: SupportedChainId,
     account: SmartAccount,
   ): BundlerClient | SmartAccountClient {
     const chainConfig = this.getChainConfig(chainId)
     const bundlerConfig = chainConfig.bundler
     if (!bundlerConfig) {
-      throw new Error(`No bundler configured for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     if (bundlerConfig.type === 'pimlico') {
       return this.getPimlicoBundlerClient(
@@ -74,11 +108,15 @@ export class ChainManager {
     }
     const bundlerUrl = this.getBundlerUrl(chainId)
     if (!bundlerUrl) {
-      throw new Error(`No bundler URL configured for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     const client = createPublicClient({
       chain: this.getChain(chainId),
       transport: http(bundlerUrl),
+      pollingInterval: pollingIntervalForChain(chainId),
     })
     return createBundlerClient({
       account,
@@ -94,9 +132,7 @@ export class ChainManager {
    * @returns RPC URL as a string
    * @throws Error if no chain config is found for the chain ID
    */
-  getRpcUrls(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
-  ): string[] | undefined {
+  getRpcUrls(chainId: SupportedChainId): string[] | undefined {
     const chainConfig = this.getChainConfig(chainId)
     return chainConfig.rpcUrls
   }
@@ -107,12 +143,13 @@ export class ChainManager {
    * @returns Bundler URL as a string or undefined if not configured
    * @throws Error if no chain config is found for the chain ID
    */
-  getBundlerUrl(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
-  ): string | undefined {
+  getBundlerUrl(chainId: SupportedChainId): string | undefined {
     const chainConfig = this.getChainConfig(chainId)
     if (!chainConfig.bundler) {
-      throw new Error(`No bundler configured for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     return chainConfig.bundler.url
   }
@@ -122,7 +159,7 @@ export class ChainManager {
    * @param chainId - The chain ID to retrieve information for
    * @returns Chain object containing chain details
    */
-  getChain(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]): Chain {
+  getChain(chainId: SupportedChainId): Chain {
     return chainById[chainId]
   }
 
@@ -140,7 +177,7 @@ export class ChainManager {
    * @returns Transport configured with fallback RPC URLs or default http transport
    * @throws Error if no chain config is found for the chain ID
    */
-  getTransportForChain(chainId: (typeof SUPPORTED_CHAIN_IDS)[number]) {
+  getTransportForChain(chainId: SupportedChainId) {
     const rpcUrls = this.getRpcUrls(chainId)
     return rpcUrls?.length
       ? fallback(rpcUrls.map((rpcUrl) => http(rpcUrl)))
@@ -155,25 +192,24 @@ export class ChainManager {
    */
   private createPublicClients(
     chains: ChainConfig[],
-  ): Map<(typeof SUPPORTED_CHAIN_IDS)[number], PublicClient> {
-    const clients = new Map<
-      (typeof SUPPORTED_CHAIN_IDS)[number],
-      PublicClient
-    >()
+  ): Map<SupportedChainId, PublicClient> {
+    const clients = new Map<SupportedChainId, PublicClient>()
 
     for (const chainConfig of chains) {
       const chain = chainById[chainConfig.chainId]
       if (!chain) {
-        throw new Error(`Chain not found for ID: ${chainConfig.chainId}`)
+        throw new ChainNotSupportedError({ chainId: chainConfig.chainId })
       }
       if (clients.has(chainConfig.chainId)) {
-        throw new Error(
-          `Public client already configured for chain ID: ${chainConfig.chainId}`,
-        )
+        throw new ChainNotSupportedError({
+          chainId: chainConfig.chainId,
+          supportedChainIds: Array.from(clients.keys()),
+        })
       }
       const client = createPublicClient({
         chain,
         transport: this.getTransportForChain(chainConfig.chainId),
+        pollingInterval: pollingIntervalForChain(chainConfig.chainId),
       })
 
       clients.set(chainConfig.chainId, client)
@@ -187,12 +223,13 @@ export class ChainManager {
    * @param chainId The chain ID to retrieve the chain config for
    * @returns ChainConfig object containing chain details
    */
-  private getChainConfig(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
-  ): ChainConfig {
+  private getChainConfig(chainId: SupportedChainId): ChainConfig {
     const chainConfig = this.chainConfigs.find((c) => c.chainId === chainId)
     if (!chainConfig) {
-      throw new Error(`No chain config found for chain ID: ${chainId}`)
+      throw new ChainNotSupportedError({
+        chainId,
+        supportedChainIds: this.getSupportedChains(),
+      })
     }
     return chainConfig
   }
@@ -205,7 +242,7 @@ export class ChainManager {
    * @returns Pimlico bundler client for the specified chain
    */
   private getPimlicoBundlerClient(
-    chainId: (typeof SUPPORTED_CHAIN_IDS)[number],
+    chainId: SupportedChainId,
     account: SmartAccount,
     sponsorshipPolicyId?: string,
   ) {

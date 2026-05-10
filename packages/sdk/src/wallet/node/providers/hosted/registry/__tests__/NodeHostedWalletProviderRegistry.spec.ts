@@ -54,11 +54,11 @@ describe('NodeHostedWalletProviderRegistry', () => {
     ).toBe(false)
   })
 
-  it('creates a PrivyHostedWalletProvider instance', () => {
+  it('creates a PrivyHostedWalletProvider instance', async () => {
     const registry = new NodeHostedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
-    const provider = factory.create({ chainManager: mockChainManager }, {
+    const provider = await factory.create({ chainManager: mockChainManager }, {
       privyClient: mockPrivyClient,
       authorizationContext: getMockAuthorizationContext(),
     } as NodeOptionsMap['privy'])
@@ -80,11 +80,11 @@ describe('NodeHostedWalletProviderRegistry', () => {
     expect(factory.validateOptions?.({})).toBe(false)
   })
 
-  it('creates a TurnkeyHostedWalletProvider instance', () => {
+  it('creates a TurnkeyHostedWalletProvider instance', async () => {
     const registry = new NodeHostedWalletProviderRegistry()
     const factory = registry.getFactory('turnkey')
 
-    const provider = factory.create(
+    const provider = await factory.create(
       { chainManager: mockChainManager },
       {
         client: mockTurnkeyClient,
@@ -98,7 +98,7 @@ describe('NodeHostedWalletProviderRegistry', () => {
     const registry = new NodeHostedWalletProviderRegistry()
     // @ts-expect-error: testing runtime error for unknown type
     expect(() => registry.getFactory('unknown')).toThrow(
-      'Unknown hosted wallet provider: unknown',
+      "A 'unknown' provider is not configured",
     )
   })
 })

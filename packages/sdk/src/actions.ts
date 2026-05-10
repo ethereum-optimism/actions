@@ -1,18 +1,23 @@
-import type { LendProvider } from '@/lend/index.js'
-import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
-import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
+import { AaveLendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
+import { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
+import {
+  UniswapSwapProvider,
+  VelodromeSwapProvider,
+} from '@/actions/swap/index.js'
+import { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
+import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import { SUPPORTED_TOKENS } from '@/supported/tokens.js'
-import type { SwapProvider } from '@/swap/index.js'
-import { UniswapSwapProvider } from '@/swap/index.js'
-import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
+import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import type {
   ActionsConfig,
   AssetsConfig,
-  LendProviderConfig,
-  SwapProviderConfig,
+  LendProviders,
+  SwapProviders,
+  SwapSettings,
 } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import { getAllAssetAddresses } from '@/utils/assets.js'
+import { validateConfigAddresses } from '@/utils/validateAddresses.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
@@ -47,18 +52,13 @@ export class Actions<
     SmartWalletProvider
   >
   private chainManager: ChainManager
+  private _ens: EnsNamespace
   private _lend?: ActionsLendNamespace
-  private _lendProviders: {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  } = {}
+  private _lendProviders: LendProviders = {}
   private _swap?: ActionsSwapNamespace
-  private _swapProviders: {
-    uniswap?: SwapProvider<SwapProviderConfig>
-  } = {}
+  private _swapProviders: SwapProviders = {}
+  private _swapSettings?: SwapSettings
   private _assetsConfig?: AssetsConfig
-  private hostedWalletProvider!: THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
-  private smartWalletProvider!: SmartWalletProvider
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
     THostedWalletProvidersSchema['providerInstances'],
     THostedWalletProvidersSchema['providerConfigs'],
@@ -80,29 +80,51 @@ export class Actions<
     this.chainManager = new ChainManager(config.chains)
     this.hostedWalletProviderRegistry = deps.hostedWalletProviderRegistry
     this._assetsConfig = config.assets
+    validateConfigAddresses(config)
 
+    this._ens = new EnsNamespace(this.chainManager)
+
+    const lendSettings = config.lend?.settings
     if (config.lend?.morpho) {
       this._lendProviders.morpho = new MorphoLendProvider(
         config.lend.morpho,
         this.chainManager,
+        lendSettings,
       )
     }
     if (config.lend?.aave) {
       this._lendProviders.aave = new AaveLendProvider(
         config.lend.aave,
         this.chainManager,
+        lendSettings,
       )
     }
     if (this._lendProviders.morpho || this._lendProviders.aave) {
       this._lend = new ActionsLendNamespace(this._lendProviders)
     }
 
+    const swapSettings = config.swap?.settings
     if (config.swap?.uniswap) {
       this._swapProviders.uniswap = new UniswapSwapProvider(
         config.swap.uniswap,
         this.chainManager,
+        swapSettings,
       )
-      this._swap = new ActionsSwapNamespace(this._swapProviders)
+    }
+    if (config.swap?.velodrome) {
+      this._swapProviders.velodrome = new VelodromeSwapProvider(
+        config.swap.velodrome,
+        this.chainManager,
+        swapSettings,
+      )
+    }
+    this._swapSettings = swapSettings
+    if (Object.values(this._swapProviders).some(Boolean)) {
+      this._swap = new ActionsSwapNamespace(
+        this._swapProviders,
+        (r) => (r ? this._ens.getAddress(r) : Promise.resolve(undefined)),
+        this._swapSettings,
+      )
     }
 
     this.wallet = this.createWalletNamespace(config.wallet)
@@ -117,9 +139,10 @@ export class Actions<
    */
   get lend(): ActionsLendNamespace {
     if (!this._lend) {
-      throw new Error(
-        'Lend provider not configured. Please add lend configuration to ActionsConfig.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'lend',
+        details: 'Please add lend configuration to ActionsConfig.',
+      })
     }
     return this._lend
   }
@@ -128,11 +151,18 @@ export class Actions<
    * Get the lend provider instances
    * @returns Object containing configured lend providers
    */
-  get lendProviders(): {
-    morpho?: LendProvider<LendProviderConfig>
-    aave?: LendProvider<LendProviderConfig>
-  } {
+  get lendProviders(): LendProviders {
     return this._lendProviders
+  }
+
+  /**
+   * Get ENS operations interface
+   * @description Access to Ethereum Name Service operations: resolve, reverseResolve, lookupText.
+   * Requires Ethereum mainnet (chain ID 1) to be included in your chain configuration.
+   * @returns EnsNamespace for ENS operations
+   */
+  get ens(): EnsNamespace {
+    return this._ens
   }
 
   /**
@@ -144,9 +174,10 @@ export class Actions<
    */
   get swap(): ActionsSwapNamespace {
     if (!this._swap) {
-      throw new Error(
-        'Swap provider not configured. Please add swap configuration to ActionsConfig.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'swap',
+        details: 'Please add swap configuration to ActionsConfig.',
+      })
     }
     return this._swap
   }
@@ -155,46 +186,35 @@ export class Actions<
    * Get the swap provider instances
    * @returns Object containing configured swap providers
    */
-  get swapProviders(): {
-    uniswap?: SwapProvider<SwapProviderConfig>
-  } {
+  get swapProviders(): SwapProviders {
     return this._swapProviders
   }
 
   /**
    * Get the list of supported assets based on configuration
    * @description Returns filtered assets based on allow/block lists in assets config.
-   * If no config provided, returns all SUPPORTED_TOKENS.
+   * If no config provided, returns empty array. Developers must explicitly configure
+   * their supported assets via ActionsConfig.assets.allow.
    * @returns Array of supported assets
    */
   public getSupportedAssets(): Asset[] {
-    // If no assets config, return all supported tokens
     if (!this._assetsConfig) {
-      return SUPPORTED_TOKENS
+      return []
     }
 
-    // If allow list provided, return only those
-    if (this._assetsConfig.allow && this._assetsConfig.allow.length > 0) {
-      return this._assetsConfig.allow
+    const allow = this._assetsConfig.allow ?? []
+    const block = this._assetsConfig.block
+
+    if (!block?.length) {
+      return allow
     }
 
-    // If block list provided, filter out blocked assets
-    if (this._assetsConfig.block && this._assetsConfig.block.length > 0) {
-      const blockedAddresses = new Set(
-        this._assetsConfig.block.flatMap((asset) =>
-          Object.values(asset.address).map((addr) => addr.toLowerCase()),
-        ),
-      )
-      return SUPPORTED_TOKENS.filter((token) => {
-        const tokenAddresses = Object.values(token.address).map((addr) =>
-          addr.toLowerCase(),
-        )
-        return !tokenAddresses.some((addr) => blockedAddresses.has(addr))
-      })
-    }
+    const blockedAddresses = new Set(block.flatMap(getAllAssetAddresses))
 
-    // Default to all supported tokens
-    return SUPPORTED_TOKENS
+    return allow.filter((asset) => {
+      const addresses = getAllAssetAddresses(asset)
+      return !addresses.some((addr) => blockedAddresses.has(addr))
+    })
   }
 
   /**
@@ -202,18 +222,55 @@ export class Actions<
    * @param config - Wallet configuration
    * @returns WalletProvider instance
    */
-  private createWalletProvider(
+  private async createWalletProvider(
     config: ActionsConfig<
       THostedWalletProviderType,
       THostedWalletProvidersSchema['providerConfigs']
     >['wallet'],
-  ): WalletProvider<
-    THostedWalletProviderType,
-    THostedWalletProvidersSchema['providerToActionsOptions'],
-    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
-    SmartWalletProvider
+  ): Promise<
+    WalletProvider<
+      THostedWalletProviderType,
+      THostedWalletProvidersSchema['providerToActionsOptions'],
+      THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
+      SmartWalletProvider
+    >
   > {
-    const hostedWalletProviderConfig = config.hostedWalletConfig.provider
+    const hostedWalletProvider = config.hostedWalletConfig
+      ? await this.createHostedWalletProvider(config.hostedWalletConfig)
+      : undefined
+
+    const smartWalletProvider: SmartWalletProvider = (() => {
+      if (
+        !config.smartWalletConfig ||
+        config.smartWalletConfig.provider.type === 'default'
+      ) {
+        return new DefaultSmartWalletProvider(
+          this.chainManager,
+          this._lendProviders,
+          this._swapProviders,
+          this.getSupportedAssets(),
+          config.smartWalletConfig.provider.attributionSuffix,
+        )
+      }
+      throw new ProviderNotConfiguredError({
+        provider: config.smartWalletConfig.provider.type,
+      })
+    })()
+
+    return new WalletProvider(hostedWalletProvider, smartWalletProvider)
+  }
+
+  private async createHostedWalletProvider(
+    hostedWalletConfig: NonNullable<
+      ActionsConfig<
+        THostedWalletProviderType,
+        THostedWalletProvidersSchema['providerConfigs']
+      >['wallet']['hostedWalletConfig']
+    >,
+  ): Promise<
+    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
+  > {
+    const hostedWalletProviderConfig = hostedWalletConfig.provider
     const factory = this.hostedWalletProviderRegistry.getFactory(
       hostedWalletProviderConfig.type,
     )
@@ -223,47 +280,27 @@ export class Actions<
         : undefined
     ) as unknown
     if (!factory.validateOptions(options)) {
-      throw new Error(
-        `Invalid options for hosted wallet provider: ${hostedWalletProviderConfig.type}`,
-      )
+      throw new ProviderNotConfiguredError({
+        provider: hostedWalletProviderConfig.type,
+        details: 'Invalid options',
+      })
     }
-    this.hostedWalletProvider = factory.create(
+    return factory.create(
       {
         chainManager: this.chainManager,
         lendProviders: this._lendProviders,
         swapProviders: this._swapProviders,
         supportedAssets: this.getSupportedAssets(),
+        swapSettings: this._swapSettings,
       },
       options,
     )
-
-    if (
-      !config.smartWalletConfig ||
-      config.smartWalletConfig.provider.type === 'default'
-    ) {
-      this.smartWalletProvider = new DefaultSmartWalletProvider(
-        this.chainManager,
-        this._lendProviders,
-        this._swapProviders,
-        this.getSupportedAssets(),
-        config.smartWalletConfig.provider.attributionSuffix,
-      )
-    } else {
-      throw new Error(
-        `Unsupported smart wallet provider: ${config.smartWalletConfig.provider.type}`,
-      )
-    }
-
-    const walletProvider = new WalletProvider(
-      this.hostedWalletProvider,
-      this.smartWalletProvider,
-    )
-
-    return walletProvider
   }
 
   /**
    * Create the wallet namespace instance
+   * @description Creates a WalletNamespace with lazy provider initialization.
+   * The wallet provider is not created until the first wallet method is called.
    * @param config - Wallet configuration
    * @returns WalletNamespace instance
    */
@@ -273,12 +310,18 @@ export class Actions<
       THostedWalletProvidersSchema['providerConfigs']
     >['wallet'],
   ) {
-    const walletProvider = this.createWalletProvider(config)
+    const providerFactory = () => this.createWalletProvider(config)
     return new WalletNamespace<
       THostedWalletProviderType,
       THostedWalletProvidersSchema['providerToActionsOptions'],
       THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
       SmartWalletProvider
-    >(walletProvider)
+    >(providerFactory, {
+      chainManager: this.chainManager,
+      lendProviders: this._lendProviders,
+      swapProviders: this._swapProviders,
+      supportedAssets: this.getSupportedAssets(),
+      swapSettings: this._swapSettings,
+    })
   }
 }

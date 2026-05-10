@@ -22,13 +22,24 @@ export interface Asset {
  * Detailed token balance information
  */
 export interface TokenBalance {
-  symbol: string
-  totalBalance: bigint
-  totalFormattedBalance: string
-  chainBalances: Array<{
-    chainId: SupportedChainId
-    balance: bigint
-    tokenAddress: Address | 'native'
-    formattedBalance: string
-  }>
+  asset: Asset
+  totalBalance: number
+  totalBalanceRaw: bigint
+  chains: Partial<
+    Record<
+      SupportedChainId,
+      {
+        balance: number
+        balanceRaw: bigint
+      }
+    >
+  >
+}
+
+/**
+ * Options accepted by the SDK's balance fetch surface (`Wallet.getBalance` and the underlying `fetchETHBalance` / `fetchERC20Balance` helpers).
+ * @property chainIds - Subset of supported chain ids to query. When omitted, all supported chains are queried. `Wallet.getBalance` validates this list via `validateChainIds`; the service helpers themselves trust their input.
+ */
+export interface BalanceFetchOptions {
+  chainIds?: readonly SupportedChainId[]
 }

@@ -1,9 +1,8 @@
 import type { LocalAccount } from 'viem'
 
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
-import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
@@ -29,15 +28,11 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
    */
   constructor(
     chainManager: ChainManager,
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    },
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-    },
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
+    supportedAssets?: Asset[],
   ) {
-    super(chainManager, lendProviders, swapProviders)
+    super(chainManager, lendProviders, swapProviders, supportedAssets)
   }
 
   /**
@@ -63,6 +58,7 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       chainManager: this.chainManager,
       lendProviders: this.lendProviders,
       swapProviders: this.swapProviders,
+      supportedAssets: this.supportedAssets,
     })
   }
 

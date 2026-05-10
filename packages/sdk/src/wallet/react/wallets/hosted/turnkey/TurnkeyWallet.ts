@@ -1,10 +1,9 @@
 import type { TurnkeySDKClientBase } from '@turnkey/react-wallet-kit'
 import type { Address, LocalAccount } from 'viem'
 
-import type { LendProvider } from '@/lend/core/LendProvider.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapProvider } from '@/swap/core/SwapProvider.js'
-import type { LendProviderConfig, SwapProviderConfig } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/turnkey/utils/createSigner.js'
 
@@ -41,13 +40,9 @@ export class TurnkeyWallet extends EOAWallet {
     organizationId: string
     signWith: string
     ethereumAddress?: string
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    }
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-    }
+    lendProviders?: LendProviders
+    swapProviders?: SwapProviders
+    supportedAssets?: Asset[]
   }) {
     const {
       chainManager,
@@ -57,8 +52,9 @@ export class TurnkeyWallet extends EOAWallet {
       ethereumAddress,
       lendProviders,
       swapProviders,
+      supportedAssets,
     } = params
-    super(chainManager, lendProviders, swapProviders)
+    super(chainManager, lendProviders, swapProviders, supportedAssets)
     this.client = client
     this.organizationId = organizationId
     this.signWith = signWith
@@ -71,13 +67,9 @@ export class TurnkeyWallet extends EOAWallet {
     organizationId: string
     signWith: string
     ethereumAddress?: string
-    lendProviders?: {
-      morpho?: LendProvider<LendProviderConfig>
-      aave?: LendProvider<LendProviderConfig>
-    }
-    swapProviders?: {
-      uniswap?: SwapProvider<SwapProviderConfig>
-    }
+    lendProviders?: LendProviders
+    swapProviders?: SwapProviders
+    supportedAssets?: Asset[]
   }): Promise<TurnkeyWallet> {
     const wallet = new TurnkeyWallet(params)
     await wallet.initialize()

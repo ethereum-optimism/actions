@@ -1,4 +1,4 @@
-import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import type { SupportedChainId } from '@/constants/supportedChains.js'
 
 /**
  * Chain configuration
@@ -6,7 +6,7 @@ import type { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
  */
 export interface ChainConfig {
   /** Chain ID */
-  chainId: (typeof SUPPORTED_CHAIN_IDS)[number]
+  chainId: SupportedChainId
   /** RPC URL for the chain */
   rpcUrls?: string[]
   /** Bundler configuration */

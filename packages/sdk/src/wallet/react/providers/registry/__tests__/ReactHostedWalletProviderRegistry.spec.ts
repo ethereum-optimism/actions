@@ -49,11 +49,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
     ).toBe(true)
   })
 
-  it('creates a DynamicHostedWalletProvider instance', () => {
+  it('creates a DynamicHostedWalletProvider instance', async () => {
     const registry = new ReactHostedWalletProviderRegistry()
     const factory = registry.getFactory('dynamic')
 
-    const provider = factory.create(
+    const provider = await factory.create(
       { chainManager: mockChainManager },
       undefined as ReactOptionsMap['dynamic'],
     )
@@ -71,11 +71,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
     ).toBe(true)
   })
 
-  it('creates a PrivyHostedWalletProvider instance', () => {
+  it('creates a PrivyHostedWalletProvider instance', async () => {
     const registry = new ReactHostedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
-    const provider = factory.create(
+    const provider = await factory.create(
       { chainManager: mockChainManager },
       undefined as ReactOptionsMap['privy'],
     )
@@ -93,11 +93,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
     ).toBe(true)
   })
 
-  it('creates a TurnkeyHostedWalletProvider instance', () => {
+  it('creates a TurnkeyHostedWalletProvider instance', async () => {
     const registry = new ReactHostedWalletProviderRegistry()
     const factory = registry.getFactory('turnkey')
 
-    const provider = factory.create(
+    const provider = await factory.create(
       { chainManager: mockChainManager },
       undefined as ReactOptionsMap['turnkey'],
     )
@@ -109,7 +109,7 @@ describe('ReactHostedWalletProviderRegistry', () => {
     const registry = new ReactHostedWalletProviderRegistry()
     // @ts-expect-error: testing runtime error for unknown type
     expect(() => registry.getFactory('unknown')).toThrow(
-      'Unknown hosted wallet provider: unknown',
+      "A 'unknown' provider is not configured",
     )
   })
 })

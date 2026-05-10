@@ -1,34 +1,89 @@
 export type { Actions } from '@/actions.js'
-export {
-  ETH,
-  MORPHO,
-  OP_DEMO,
-  USDC,
-  USDC_DEMO,
-  WETH,
-} from '@/constants/assets.js'
-export {
-  SUPPORTED_CHAIN_IDS,
-  type SupportedChainId,
-} from '@/constants/supportedChains.js'
-export * from '@/core/error/errors.js'
-export { LendProvider, MorphoLendProvider } from '@/lend/index.js'
-export {
-  getTokenAddress,
-  getTokenBySymbol,
-  SUPPORTED_TOKENS,
-} from '@/supported/tokens.js'
+export { LendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
 export {
   SwapProvider,
   type UniswapMarketConfig,
   UniswapSwapProvider,
   type UniswapSwapProviderConfig,
-} from '@/swap/index.js'
+  type VelodromeMarketConfig,
+  VelodromeSwapProvider,
+  type VelodromeSwapProviderConfig,
+} from '@/actions/swap/index.js'
+export {
+  AAVE,
+  ARB,
+  BAL,
+  CBBTC,
+  CBETH,
+  COMP,
+  CRV,
+  DAI,
+  EETH,
+  ENA,
+  ENS,
+  ETH,
+  ETHFI,
+  FRAX,
+  GRT,
+  LDO,
+  LINK,
+  MKR,
+  MORPHO,
+  NATIVELY_SUPPORTED_ASSETS,
+  ONDO,
+  ONEINCH,
+  OP,
+  OP_DEMO,
+  PENDLE,
+  PEPE,
+  POL,
+  PYUSD,
+  RENDER,
+  RETH,
+  RPL,
+  SHIB,
+  SKY,
+  SNX,
+  STETH,
+  SUSHI,
+  UNI,
+  USDC,
+  USDC_DEMO,
+  USDE,
+  USDT,
+  WBTC,
+  WEETH,
+  WETH,
+  WLD,
+  WSTETH,
+} from '@/constants/assets.js'
+export {
+  chainIdFromShortname,
+  SUPPORTED_CHAIN_IDS,
+  SUPPORTED_CHAIN_SHORTNAMES,
+  type SupportedChainId,
+} from '@/constants/supportedChains.js'
+export * from '@/core/error/errors.js'
+export {
+  type EnsInfo,
+  EnsNamespace,
+  EnsNotConfiguredError,
+  EnsResolutionError,
+  EnsRpcError,
+  type NameServiceProvider,
+} from '@/services/nameservices/ens/index.js'
+export {
+  type EnsName,
+  isEnsName,
+  resolveAddress,
+} from '@/services/nameservices/ens/utils.js'
 export type {
   ActionsConfig,
+  ApprovalMode,
   ApyBreakdown,
   Asset,
   EOATransactionReceipt,
+  LendAction,
   LendConfig,
   LendMarket,
   LendMarketConfig,
@@ -36,8 +91,8 @@ export type {
   LendMarketMetadata,
   LendMarketPosition,
   LendMarketSupply,
-  LendOptions,
   LendProviderConfig,
+  LendProviderName,
   LendTransaction,
   LendTransactionReceipt,
   SwapConfig,
@@ -45,18 +100,32 @@ export type {
   SwapMarket,
   SwapMarketConfig,
   SwapMarketId,
-  SwapPrice,
-  SwapPriceParams,
   SwapProviderConfig,
+  SwapProviderName,
+  SwapQuote,
+  SwapQuoteExecution,
+  SwapQuoteParams,
   SwapReceipt,
   SwapRoute,
+  SwapRoutingStrategy,
+  SwapSettings,
   SwapTransaction,
   TokenBalance,
   TransactionData,
+  TransactionOptions,
   UserOperationTransactionReceipt,
   WalletConfig,
   WalletSwapParams,
 } from '@/types/index.js'
+export {
+  APPROVAL_MODES,
+  LEND_ACTIONS,
+  LEND_PROVIDER_NAMES,
+  SWAP_PROVIDER_NAMES,
+} from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
+export { getLendMarketAllowlist } from '@/utils/lendConfig.js'
+export { serializeBigInt } from '@/utils/serializers.js'
+export * from '@/wallet/core/error/errors.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 export { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWallet.js'

@@ -102,22 +102,18 @@ export function EarnWithFrontendWallet({
       },
       openPosition: async (params) => wallet!.lend!.openPosition(params),
       closePosition: async (params) => wallet!.lend!.closePosition(params),
-      executeSwap: async ({ amountIn, assetIn, assetOut, chainId }) => {
-        const receipt = await wallet!.swap!.execute({
-          amountIn,
-          assetIn,
-          assetOut,
-          chainId,
-        })
+      executeSwap: async (quote) => {
+        const receipt = await wallet!.swap!.execute(quote)
         const txReceipt = receipt.receipt
         const blockExplorerUrl = getBlockExplorerUrl(
-          chainId,
+          quote.chainId,
           txReceipt as Parameters<typeof getBlockExplorerUrl>[1],
         )
         return { blockExplorerUrl }
       },
       getConfiguredAssets: async () => actions.getSupportedAssets(),
-      getSwapPrice: async (params) => {
+      getSwapMarkets: async () => actions.swap.getMarkets(),
+      getSwapQuote: async (params) => {
         try {
           const assets = actions.getSupportedAssets()
           const assetIn = assets.find(
@@ -128,19 +124,14 @@ export function EarnWithFrontendWallet({
           )
           if (!assetIn || !assetOut) return null
 
-          const price = await actions.swap.price({
+          return await actions.swap.getQuote({
             assetIn,
             assetOut,
             chainId: params.chainId,
             amountIn: params.amountIn,
             amountOut: params.amountOut,
+            provider: params.provider,
           })
-          return {
-            price: price.price,
-            priceImpact: price.priceImpact,
-            amountIn: price.amountIn,
-            amountOut: price.amountOut,
-          }
         } catch {
           return null
         }

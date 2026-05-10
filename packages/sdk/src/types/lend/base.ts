@@ -1,7 +1,12 @@
 import type { Address } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import type { ApprovalMode, LendProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
+import type {
+  FilterAssetChain,
+  TransactionOptions,
+} from '@/types/common/index.js'
 // Import and re-export shared transaction type for backwards compatibility
 import type { TransactionData } from '@/types/transaction.js'
 import type {
@@ -9,9 +14,9 @@ import type {
   TransactionReturnType,
 } from '@/wallet/core/wallets/abstract/types/index.js'
 
-export { LendProvider } from '@/lend/core/LendProvider.js'
-export { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
-export { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
+export { LendProvider } from '@/actions/lend/core/LendProvider.js'
+export { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
+export { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
 export type { TransactionData }
 
 /**
@@ -33,7 +38,7 @@ export type LendMarketConfigMetadata = {
   /** Asset information for this market */
   asset: Asset
   /** Lending provider type */
-  lendProvider: 'morpho' | 'aave'
+  lendProvider: LendProviderName
 }
 
 /**
@@ -67,8 +72,8 @@ export interface LendTransaction {
   hash?: string
   /** Amount lent */
   amount: bigint
-  /** Asset address */
-  asset: Address
+  /** Underlying ERC-20 address (the wrapped form for native deposits) */
+  assetAddress: Address
   /** Market ID */
   marketId: string
   /** Estimated APY at time of lending */
@@ -135,7 +140,8 @@ export interface LendMarketInfo extends LendMarketBase {
 
 /**
  * APY breakdown for detailed display
- * @description Breakdown of APY components following Morpho's official methodology
+ * @description Breakdown of APY components following Morpho's official methodology.
+ * Individual token reward APRs are keyed by lowercase token address.
  */
 export interface ApyBreakdown {
   /** Total net APY after all components and fees */
@@ -144,12 +150,10 @@ export interface ApyBreakdown {
   native: number
   /** Total rewards APR from all sources */
   totalRewards: number
-  /** Individual token rewards APRs (dynamically populated) */
-  usdc?: number
-  morpho?: number
-  other?: number
   /** Performance/management fee rate */
   performanceFee: number
+  /** Individual token reward APRs keyed by address, plus 'other' for unrecognized */
+  [key: string]: number | undefined
 }
 
 /**
@@ -187,19 +191,6 @@ export interface LendMarket {
 }
 
 /**
- * Lending options
- * @description Configuration options for lending operations
- */
-export interface LendOptions {
-  /** Deadline for transaction (timestamp) */
-  deadline?: number
-  /** Gas limit override */
-  gasLimit?: bigint
-  /** Gas price override */
-  gasPrice?: bigint
-}
-
-/**
  * Individual lending provider configuration
  * @description Configuration for a single lending provider
  */
@@ -208,6 +199,8 @@ export interface LendProviderConfig {
   marketAllowlist?: LendMarketConfig[]
   /** Blocklist of markets to exclude from lending */
   marketBlocklist?: LendMarketConfig[]
+  /** Approval-amount strategy override for this provider. Overrides `LendSettings.approvalMode`. */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -238,7 +231,12 @@ export interface LendOpenPositionBaseParams {
   /** Wallet address for receiving shares and as owner (auto-populated by WalletLendNamespace) */
   walletAddress?: Address
   /** Optional lending configuration */
-  options?: LendOptions
+  options?: TransactionOptions
+  /**
+   * Override the wallet-level approval-amount strategy for this single supply.
+   * Falls back to `ActionsConfig.wallet.approvalMode` and finally to `"exact"`.
+   */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -255,12 +253,37 @@ export interface LendOpenPositionParams extends LendOpenPositionBaseParams {
  */
 export interface LendOpenPositionInternalParams extends Omit<
   LendOpenPositionBaseParams,
-  'walletAddress'
+  'walletAddress' | 'approvalMode'
 > {
   /** Amount to lend in wei */
   amountWei: bigint
   /** Wallet address for receiving shares and as owner (required in internal params) */
   walletAddress: Address
+}
+
+/**
+ * Provider-supplied description of a lend open-position operation. The base
+ * `LendProvider` consumes this to build the surrounding `LendTransaction`,
+ * including the ERC-20 approval transaction (if any). Providers describe
+ * **what** the deposit looks like; the base derives **how** the approval is
+ * built from `params.asset` (native vs. ERC-20).
+ *
+ * For native-asset deposits, omit `spender` — the base reads `params.asset.type`
+ * and skips approval construction entirely. For ERC-20 deposits, `spender` is
+ * required and the base will throw if it's missing.
+ */
+export interface LendOpenPosition {
+  /** Underlying ERC-20 address being deposited (the wrapped form for native deposits). */
+  assetAddress: Address
+  /**
+   * ERC-20 spender that needs allowance to pull `params.amountWei` from the
+   * wallet. Required for ERC-20 deposits; omit for native deposits.
+   */
+  spender?: Address
+  /** The deposit transaction itself (provider-specific calldata; `value` set for native). */
+  transaction: TransactionData
+  /** APY snapshot at the time the description was built. */
+  apy: number
 }
 
 /**
@@ -277,7 +300,7 @@ export interface LendClosePositionParams {
   /** Wallet address for receiving assets and as owner */
   walletAddress: Address
   /** Optional withdrawal configuration */
-  options?: LendOptions
+  options?: TransactionOptions
 }
 
 /**
@@ -294,7 +317,7 @@ export interface ClosePositionParams {
   /** Wallet address for receiving assets and as owner (auto-populated by WalletLendNamespace) */
   walletAddress?: Address
   /** Optional withdrawal configuration */
-  options?: LendOptions
+  options?: TransactionOptions
 }
 
 /**
@@ -306,17 +329,6 @@ export interface GetPositionParams {
   marketId?: LendMarketId
   /** Optional asset to filter positions by */
   asset?: Asset
-}
-
-/**
- * Common filter parameters for asset and chain
- * @description Base interface for filtering by asset and/or chain
- */
-export interface FilterAssetChain {
-  /** Optional asset to filter by */
-  asset?: Asset
-  /** Optional chain ID to filter by */
-  chainId?: SupportedChainId
 }
 
 /**
@@ -347,11 +359,11 @@ export interface LendProviderMethods {
   /**
    * Provider implementation of openPosition method
    * @param params - Open position operation parameters
-   * @returns Promise resolving to transaction data
+   * @returns Promise resolving to a `LendOpenPosition` description
    */
   _openPosition(
     params: LendOpenPositionInternalParams,
-  ): Promise<TransactionData>
+  ): Promise<LendOpenPosition>
 
   /**
    * Provider implementation of closePosition method

@@ -65,17 +65,15 @@ const mockPosition: LendMarketPosition = {
 
 const mockTokenBalances: TokenBalance[] = [
   {
-    symbol: 'USDC',
-    totalBalance: 100000000n,
-    totalFormattedBalance: '100.00',
-    chainBalances: [
-      {
-        chainId: CHAIN_ID,
-        balance: 100000000n,
-        tokenAddress: ASSET_ADDRESS,
-        formattedBalance: '100.00',
+    asset: mockAsset,
+    totalBalance: 100,
+    totalBalanceRaw: 100000000n,
+    chains: {
+      [CHAIN_ID]: {
+        balance: 100,
+        balanceRaw: 100000000n,
       },
-    ],
+    },
   },
 ]
 
@@ -212,17 +210,15 @@ describe('Activity Logging', () => {
     // Return updated balance after mutation to trigger shouldLogFetch
     const updatedBalances: TokenBalance[] = [
       {
-        symbol: 'USDC',
-        totalBalance: 90000000n,
-        totalFormattedBalance: '90.00',
-        chainBalances: [
-          {
-            chainId: CHAIN_ID,
-            balance: 90000000n,
-            tokenAddress: ASSET_ADDRESS,
-            formattedBalance: '90.00',
+        asset: mockAsset,
+        totalBalance: 90,
+        totalBalanceRaw: 90000000n,
+        chains: {
+          [CHAIN_ID]: {
+            balance: 90,
+            balanceRaw: 90000000n,
           },
-        ],
+        },
       },
     ]
     const updatedPosition: LendMarketPosition = {
