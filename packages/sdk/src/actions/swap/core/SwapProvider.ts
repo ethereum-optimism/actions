@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
+import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
@@ -65,9 +66,6 @@ const DEFAULTS = {
 
 /** Basis points denominator for slippage calculations (1 bp = 0.01%) */
 const BPS_DENOMINATOR = 10000n
-
-/** Field used to distinguish a SwapQuote from raw SwapExecuteParams */
-export const QUOTE_DISCRIMINATOR = 'quotedAt' as const
 
 /**
  * Abstract base class for swap providers.
