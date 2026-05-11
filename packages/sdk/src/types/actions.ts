@@ -2,6 +2,7 @@ import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap
 import type { VelodromeSwapProviderConfig } from '@/actions/swap/providers/velodrome/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
+import type { BorrowProviderConfig } from '@/types/borrow/index.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
@@ -9,7 +10,7 @@ import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
-export type { LendProviderConfig, SwapProviderConfig }
+export type { BorrowProviderConfig, LendProviderConfig, SwapProviderConfig }
 // Re-export centralized provider maps
 export type { LendProviders, SwapProviders } from '@/types/providers.js'
 
@@ -40,6 +41,43 @@ export type LendConfig = RequireAtLeastOne<{
 }> & {
   /** Shared settings applied across all lend providers */
   settings?: LendSettings
+}
+
+/**
+ * Shared borrow settings applied across all providers.
+ * Provider-level values override these when set.
+ */
+export interface BorrowSettings {
+  /**
+   * Default approval-amount strategy for ERC-20 → market approvals.
+   * Per-call params override this; provider-level config overrides it for a
+   * single provider. Defaults to `"exact"` because borrow flows are high-stakes
+   * and infinite allowance should be an explicit opt-in.
+   */
+  approvalMode?: ApprovalMode
+  /**
+   * Quote expiration in seconds from now. Defaults to 30 — tighter than swap
+   * because borrow quotes depend on two oracle prices and can drift faster.
+   */
+  quoteExpirationSeconds?: number
+  /**
+   * Default safety buffer applied to a market's liquidation LTV when computing
+   * `safeCeilingLtv`. Defaults to `0.05`. UX recommendation only; the SDK
+   * does not enforce the buffer.
+   */
+  healthBufferPct?: number
+}
+
+/**
+ * Borrow configuration — at least one provider must be configured.
+ * Shared settings go in `settings`; per-provider settings go under the provider key.
+ */
+export type BorrowConfig = RequireAtLeastOne<{
+  /** Morpho Blue borrow provider configuration */
+  morpho?: BorrowProviderConfig
+}> & {
+  /** Shared settings applied across all borrow providers */
+  settings?: BorrowSettings
 }
 
 /** Names of available swap providers — derived from SwapProviders registry */
@@ -165,6 +203,8 @@ export interface ActionsConfig<
   wallet: WalletConfig<THostedWalletProviderType, TConfigMap>
   /** Lending providers configuration (optional) */
   lend?: LendConfig
+  /** Borrow providers configuration (optional) */
+  borrow?: BorrowConfig
   /** Swap providers configuration (optional) */
   swap?: SwapConfig
   /** Assets configuration (optional) */
