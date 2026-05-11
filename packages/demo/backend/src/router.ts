@@ -67,6 +67,7 @@ router.post(
 
 // Borrow endpoints
 router.get('/borrow/markets', borrowController.getMarkets)
+router.post('/borrow/price', borrowController.getPrice)
 
 // Assets endpoints
 router.get('/assets', assetsController.getAssets)
