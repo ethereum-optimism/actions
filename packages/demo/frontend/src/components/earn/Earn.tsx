@@ -11,6 +11,8 @@ import {
   LendProviderContextProvider,
   useLendProviderContext,
 } from '@/contexts/LendProviderContext'
+import { BorrowProviderContextProvider } from '@/contexts/BorrowProviderContext'
+import { BorrowTab } from './borrow/BorrowTab'
 import { MarketSelector } from './MarketSelector'
 import type { EarnOperations } from '@/hooks/useLendProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
@@ -128,7 +130,7 @@ function MobileMenu({
         </div>
 
         <div style={{ padding: '8px 0' }}>
-          {(['lend', 'swap'] as const).map((tab) => (
+          {(['lend', 'swap', 'borrow'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -149,7 +151,7 @@ function MobileMenu({
                 fontFamily: 'Inter',
               }}
             >
-              {tab === 'lend' ? 'Lend' : 'Swap'}
+              {tab === 'lend' ? 'Lend' : tab === 'swap' ? 'Swap' : 'Borrow'}
             </button>
           ))}
         </div>
@@ -417,14 +419,16 @@ function Earn({
         ready={ready}
         logPrefix={logPrefix}
       >
-        <ActivityHighlightProvider>
-          <EarnContent
-            logout={logout}
-            walletAddress={walletAddress}
-            providerConfig={providerConfig}
-            operations={operations}
-          />
-        </ActivityHighlightProvider>
+        <BorrowProviderContextProvider walletAddress={walletAddress}>
+          <ActivityHighlightProvider>
+            <EarnContent
+              logout={logout}
+              walletAddress={walletAddress}
+              providerConfig={providerConfig}
+              operations={operations}
+            />
+          </ActivityHighlightProvider>
+        </BorrowProviderContextProvider>
       </LendProviderContextProvider>
     </ActivityLogProvider>
   )
@@ -553,6 +557,8 @@ function EarnContent({
                   onLogActivity={logActivity}
                 />
               )}
+
+              {activeTab === 'borrow' && <BorrowTab />}
 
               <div className="lg:hidden">
                 <ActivityLog />
