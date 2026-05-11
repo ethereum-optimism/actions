@@ -67,6 +67,13 @@ parse_bytes32() {
     echo "$output" | grep -oE '0x[0-9a-fA-F]{64}' | head -1
 }
 
+# Extract a decimal integer following a labeled line from forge output:
+# "  BorrowMarketParamsLltv: 860000000000000000"
+parse_uint() {
+    local label="$1" output="$2"
+    echo "$output" | grep "$label" | grep -oE '[0-9]+' | tail -1
+}
+
 echo "=== Demo Infrastructure Deployment ==="
 echo "Chain: $CHAIN_ID (Base Sepolia)"
 echo ""
@@ -206,8 +213,22 @@ if [[ -z "$BORROW_MARKET_ID" ]]; then
     # console.logBytes32 prints the value on the line after the label.
     BORROW_MARKET_ID=$(echo "$OUTPUT" | grep -A1 "BorrowMarketId:" | grep -oE '0x[0-9a-fA-F]{64}' | head -1)
 
+    # MarketParams fields, emitted by the deploy script so the SDK and demo
+    # backend can encode write-side calldata without re-deriving constants.
+    BORROW_PARAMS_LOAN_TOKEN=$(parse_address "BorrowMarketParamsLoanToken:" "$OUTPUT")
+    BORROW_PARAMS_COLLATERAL_TOKEN=$(parse_address "BorrowMarketParamsCollateralToken:" "$OUTPUT")
+    BORROW_PARAMS_ORACLE=$(parse_address "BorrowMarketParamsOracle:" "$OUTPUT")
+    BORROW_PARAMS_IRM=$(parse_address "BorrowMarketParamsIrm:" "$OUTPUT")
+    BORROW_PARAMS_LLTV=$(parse_uint "BorrowMarketParamsLltv:" "$OUTPUT")
+
     if [[ -z "$BORROW_MARKET_ID" || -z "$BORROW_ORACLE" || -z "$BORROW_MOCK_FEED" ]]; then
         echo "ERROR: Failed to parse borrow market addresses/id from forge output"
+        exit 1
+    fi
+    if [[ -z "$BORROW_PARAMS_LOAN_TOKEN" || -z "$BORROW_PARAMS_COLLATERAL_TOKEN" \
+        || -z "$BORROW_PARAMS_ORACLE" || -z "$BORROW_PARAMS_IRM" \
+        || -z "$BORROW_PARAMS_LLTV" ]]; then
+        echo "ERROR: Failed to parse borrow market params from forge output"
         exit 1
     fi
 
@@ -218,6 +239,11 @@ if [[ -z "$BORROW_MARKET_ID" ]]; then
     write_state "morpho.borrow.marketId" "$BORROW_MARKET_ID"
     write_state "morpho.borrow.mockFeed" "$BORROW_MOCK_FEED"
     write_state "morpho.borrow.oracle" "$BORROW_ORACLE"
+    write_state "morpho.borrow.marketParams.loanToken" "$BORROW_PARAMS_LOAN_TOKEN"
+    write_state "morpho.borrow.marketParams.collateralToken" "$BORROW_PARAMS_COLLATERAL_TOKEN"
+    write_state "morpho.borrow.marketParams.oracle" "$BORROW_PARAMS_ORACLE"
+    write_state "morpho.borrow.marketParams.irm" "$BORROW_PARAMS_IRM"
+    write_state "morpho.borrow.marketParams.lltv" "$BORROW_PARAMS_LLTV"
     echo "Morpho borrow market deployed: marketId=$BORROW_MARKET_ID"
 else
     echo ">>> Morpho borrow market already deployed: marketId=$BORROW_MARKET_ID"

@@ -10,7 +10,14 @@
       "borrow": {
         "mockFeed": null,
         "oracle": null,
-        "marketId": null
+        "marketId": null,
+        "marketParams": {
+          "loanToken": null,
+          "collateralToken": null,
+          "oracle": null,
+          "irm": null,
+          "lltv": null
+        }
       }
     },
     "uniswap": {

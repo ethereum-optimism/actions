@@ -129,6 +129,16 @@ contract DeployMorphoBorrowMarket is Script {
         console.log("BorrowMarketId:");
         console.logBytes32(marketId);
 
+        // Emit each MarketParams field so deploy-demo.sh can persist them to
+        // state/deployments.json without re-deriving constants. Consumers
+        // (SDK MorphoBorrowProvider, demo backend) read these to encode
+        // supplyCollateral/borrow/repay calldata without an extra RPC.
+        console.log("BorrowMarketParamsLoanToken:", marketParams.loanToken);
+        console.log("BorrowMarketParamsCollateralToken:", marketParams.collateralToken);
+        console.log("BorrowMarketParamsOracle:", marketParams.oracle);
+        console.log("BorrowMarketParamsIrm:", marketParams.irm);
+        console.log("BorrowMarketParamsLltv:", marketParams.lltv);
+
         // Seed borrowable OP liquidity.
         IDemoOP(opAddr).mint(msg.sender, BORROWABLE_OP);
         IDemoOP(opAddr).approve(MorphoConstants.MORPHO, BORROWABLE_OP);
