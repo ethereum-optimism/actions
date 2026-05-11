@@ -14,7 +14,7 @@
  * verify the bytes32 against on-chain state, so any consistent value is
  * fine for the stub.
  */
-import { OP_DEMO, USDC_DEMO } from '@eth-optimism/actions-sdk/react'
+import { OP_DEMO, USDC_DEMO } from '@eth-optimism/actions-sdk'
 import { baseSepolia } from 'viem/chains'
 import type { BorrowMarket } from '@/types/borrow'
 

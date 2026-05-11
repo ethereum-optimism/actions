@@ -349,6 +349,7 @@ function LendTab({
         isMintingAsset={isMintingAsset}
         depositedAmount={depositedAmount}
         assetSymbol={selectedMarket?.asset.metadata.symbol || 'USDC'}
+        asset={selectedMarket?.asset}
         onMintAsset={handleMintAsset}
         onTransaction={handleTransactionWithTracking}
         marketId={selectedMarket?.marketId}

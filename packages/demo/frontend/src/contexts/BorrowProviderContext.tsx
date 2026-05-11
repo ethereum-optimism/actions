@@ -13,9 +13,8 @@ import {
  */
 export type BorrowProviderContextValue = UseBorrowProviderReturn
 
-const BorrowProviderContext = createContext<BorrowProviderContextValue | null>(
-  null,
-)
+export const BorrowProviderContext =
+  createContext<BorrowProviderContextValue | null>(null)
 
 export function BorrowProviderContextProvider({
   walletAddress,
