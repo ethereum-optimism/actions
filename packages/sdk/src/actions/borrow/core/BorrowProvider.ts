@@ -133,6 +133,7 @@ export abstract class BorrowProvider<
       walletAddress: base.walletAddress,
       recipient: base.recipient,
       options: params.options,
+      approvalMode: base.approvalMode,
       borrowAmountWei,
       collateralAmountWei,
     }
@@ -159,6 +160,7 @@ export abstract class BorrowProvider<
       walletAddress: base.walletAddress,
       recipient: base.recipient,
       options: params.options,
+      approvalMode: base.approvalMode,
       borrowAmount,
       collateralAmount,
     }
@@ -178,6 +180,7 @@ export abstract class BorrowProvider<
       walletAddress: base.walletAddress,
       recipient: base.recipient,
       options: params.options,
+      approvalMode: base.approvalMode,
       amountWei,
     }
     return this._depositCollateral(internal)
@@ -196,6 +199,7 @@ export abstract class BorrowProvider<
       walletAddress: base.walletAddress,
       recipient: base.recipient,
       options: params.options,
+      approvalMode: base.approvalMode,
       amount,
     }
     return this._withdrawCollateral(internal)
@@ -212,6 +216,7 @@ export abstract class BorrowProvider<
       walletAddress: base.walletAddress,
       recipient: base.recipient,
       options: params.options,
+      approvalMode: base.approvalMode,
       amount,
     }
     return this._repay(internal)
@@ -377,21 +382,19 @@ export abstract class BorrowProvider<
   private normalizeBaseParams(params: BorrowOpenPositionBaseParams): {
     walletAddress: Address
     recipient: Address
+    approvalMode: ApprovalMode
   } {
     if (!params.walletAddress) {
       throw new AddressRequiredError('walletAddress')
     }
     this.validateConfigSupported(params.market)
-    // Resolve approval mode eagerly so concretes don't have to re-derive it.
-    // The resolved value is not yet threaded through internal params — that
-    // wiring lands when the first concrete provider needs it (Phase 4).
-    this.resolveApprovalMode(params.approvalMode)
     return {
       walletAddress: params.walletAddress,
       // Recipient defaults to the wallet. WalletBorrowNamespace binds this
       // explicitly via the wallet's address; direct callers can supply
       // `walletAddress` and receive funds at the same address.
       recipient: params.walletAddress,
+      approvalMode: this.resolveApprovalMode(params.approvalMode),
     }
   }
 

@@ -394,6 +394,8 @@ export interface BorrowInternalBaseParams {
   walletAddress: Address
   recipient: Address
   options?: TransactionOptions
+  /** Resolved approval-amount strategy (per-call → provider → settings → `"exact"`). */
+  approvalMode: ApprovalMode
 }
 
 /** Internal params after `openPosition` amount normalization. */

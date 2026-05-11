@@ -185,3 +185,165 @@ describe('MorphoBorrowProvider — _getPosition', () => {
     expect(position.ltv).not.toBeNull()
   })
 })
+
+const oneEth = 1_000_000_000_000_000_000n
+const walletAddress = '0x000000000000000000000000000000000000beef' as const
+
+function stateMulticallResult(
+  opts: {
+    collateral?: bigint
+    borrowShares?: bigint
+    allowance?: bigint
+  } = {},
+) {
+  return [
+    positionTuple({
+      collateral: opts.collateral ?? 0n,
+      borrowShares: opts.borrowShares ?? 0n,
+    }),
+    marketTuple(),
+    1_000_000_000_000_000_000_000_000_000_000_000_000n,
+    opts.allowance ?? 0n,
+  ]
+}
+
+describe('MorphoBorrowProvider — depositCollateral', () => {
+  it('builds [approve, supplyCollateral] when no allowance is set', async () => {
+    const cm = makeChainManagerWithMulticall(async () => stateMulticallResult())
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.depositCollateral({
+      market,
+      walletAddress,
+      amount: { amountRaw: oneEth },
+    })
+    expect(quote.action).toBe('depositCollateral')
+    expect(quote.execution.transactions).toHaveLength(2)
+    expect(quote.execution.approvalsSkipped).toBe(false)
+    expect(quote.collateralAmountRaw).toBe(oneEth)
+    expect(quote.recipient).toBe(walletAddress)
+  })
+
+  it('omits the approval tx when allowance already covers the amount', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({ allowance: oneEth * 10n }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.depositCollateral({
+      market,
+      walletAddress,
+      amount: { amountRaw: oneEth },
+    })
+    expect(quote.execution.transactions).toHaveLength(1)
+    expect(quote.execution.approvalsSkipped).toBe(true)
+  })
+})
+
+describe('MorphoBorrowProvider — withdrawCollateral', () => {
+  it('encodes a single tx with the requested amount', async () => {
+    const cm = makeChainManagerWithMulticall(async () => [
+      positionTuple({ collateral: oneEth * 5n }),
+      marketTuple(),
+      1n,
+    ])
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.withdrawCollateral({
+      market,
+      walletAddress,
+      amount: { amountRaw: oneEth },
+    })
+    expect(quote.action).toBe('withdrawCollateral')
+    expect(quote.execution.transactions).toHaveLength(1)
+    expect(quote.execution.approvalsSkipped).toBe(true)
+    expect(quote.collateralAmountRaw).toBe(oneEth)
+  })
+
+  it('uses live collateral balance when amount is `{ max: true }`', async () => {
+    const cm = makeChainManagerWithMulticall(async () => [
+      positionTuple({ collateral: oneEth * 7n }),
+      marketTuple(),
+      1n,
+    ])
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.withdrawCollateral({
+      market,
+      walletAddress,
+      amount: { max: true },
+    })
+    expect(quote.collateralAmountRaw).toBe(oneEth * 7n)
+  })
+})
+
+describe('MorphoBorrowProvider — repay', () => {
+  it('switches to shares-based repay when amount is `{ max: true }`', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        borrowShares: oneEth * 3n,
+        allowance: oneEth * 999n,
+      }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.repay({
+      market,
+      walletAddress,
+      amount: { max: true },
+    })
+    expect(quote.action).toBe('repay')
+    // Allowance covers, so no approval tx prepended.
+    expect(quote.execution.transactions).toHaveLength(1)
+    expect(quote.execution.approvalsSkipped).toBe(true)
+  })
+})
+
+describe('MorphoBorrowProvider — openPosition', () => {
+  it('emits [approve, supplyCollateral, borrow] for a fresh position', async () => {
+    const cm = makeChainManagerWithMulticall(async () => stateMulticallResult())
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.openPosition({
+      market,
+      walletAddress,
+      borrowAmount: { amountRaw: oneEth },
+      collateralAmount: { amountRaw: oneEth * 5n },
+    })
+    expect(quote.action).toBe('open')
+    expect(quote.execution.transactions).toHaveLength(3)
+    expect(quote.borrowAmountRaw).toBe(oneEth)
+    expect(quote.collateralAmountRaw).toBe(oneEth * 5n)
+    expect(quote.expiresAt).toBeGreaterThan(quote.quotedAt)
+  })
+
+  it('emits a single borrow tx when collateral is already supplied', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({ collateral: oneEth * 10n }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.openPosition({
+      market,
+      walletAddress,
+      borrowAmount: { amountRaw: oneEth },
+    })
+    expect(quote.execution.transactions).toHaveLength(1)
+  })
+})
+
+describe('MorphoBorrowProvider — closePosition', () => {
+  it('builds [approve?, repay(max), withdrawCollateral(max)] when both are max', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        collateral: oneEth * 2n,
+        borrowShares: oneEth * 1n,
+      }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.closePosition({
+      market,
+      walletAddress,
+      borrowAmount: { max: true },
+      collateralAmount: { max: true },
+    })
+    expect(quote.action).toBe('close')
+    // approve (none, since allowance=0 but repay amount in assets is positive) +
+    // repay + withdrawCollateral.
+    expect(quote.execution.transactions.length).toBeGreaterThanOrEqual(2)
+    expect(quote.collateralAmountRaw).toBe(oneEth * 2n)
+  })
+})
