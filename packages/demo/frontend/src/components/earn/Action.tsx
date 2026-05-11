@@ -198,7 +198,14 @@ export function Action({
         className="py-6 px-6"
         style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}
       >
-        <ModeToggle mode={mode} onModeChange={setMode} />
+        <ModeToggle
+          mode={mode}
+          onModeChange={setMode}
+          options={[
+            { value: 'lend', label: 'Lend' },
+            { value: 'withdraw', label: 'Withdraw' },
+          ]}
+        />
 
         <div
           className="transition-all"

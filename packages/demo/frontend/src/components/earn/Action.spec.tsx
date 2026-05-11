@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { Action } from './Action'
 
@@ -57,5 +57,34 @@ describe('Action', () => {
     expect(
       screen.queryByRole('button', { name: 'Get USDC' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('switches between Lend and Withdraw mode via ModeToggle', () => {
+    render(
+      <Action
+        {...defaultProps}
+        assetBalance="100.00"
+        depositedAmount="50.00"
+      />,
+    )
+    // Default mode is 'lend'
+    expect(
+      screen.getByRole('button', { name: 'Lend USDC' }),
+    ).toBeInTheDocument()
+
+    // ModeToggle exposes both toggle buttons; clicking 'Withdraw' switches mode
+    fireEvent.click(screen.getByRole('button', { name: 'Withdraw' }))
+    expect(
+      screen.getByRole('button', { name: 'Withdraw USDC' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Lend USDC' }),
+    ).not.toBeInTheDocument()
+
+    // Clicking 'Lend' switches back
+    fireEvent.click(screen.getByRole('button', { name: 'Lend' }))
+    expect(
+      screen.getByRole('button', { name: 'Lend USDC' }),
+    ).toBeInTheDocument()
   })
 })
