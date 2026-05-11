@@ -279,4 +279,126 @@ describe('Borrow Service', () => {
       )
     })
   })
+
+  describe('closePosition', () => {
+    beforeEach(async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(mockWallet as never)
+    })
+
+    it('calls wallet.borrow.closePosition with fresh params', async () => {
+      const receipt = { tag: 'close' } as never
+      mockWalletBorrow.closePosition.mockResolvedValue(receipt)
+      const result = await borrowService.closePosition({
+        idToken: 'idtok',
+        marketId: baseMarketId,
+        borrowAmount: { max: true },
+        collateralAmount: { max: true },
+      })
+      expect(mockWalletBorrow.closePosition).toHaveBeenCalledWith({
+        marketId: baseMarketId,
+        borrowAmount: { max: true },
+        collateralAmount: { max: true },
+      })
+      expect(result).toBe(receipt)
+    })
+
+    it('forwards a pre-built quote unchanged', async () => {
+      const quote = { action: 'close', tag: 'q' } as never
+      const receipt = { tag: 'r' } as never
+      mockWalletBorrow.closePosition.mockResolvedValue(receipt)
+      const result = await borrowService.closePosition({
+        idToken: 'idtok',
+        quote,
+      })
+      expect(mockWalletBorrow.closePosition).toHaveBeenCalledWith(quote)
+      expect(result).toBe(receipt)
+    })
+  })
+
+  describe('depositCollateral', () => {
+    beforeEach(async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(mockWallet as never)
+    })
+
+    it('calls wallet.borrow.depositCollateral with fresh params', async () => {
+      const receipt = { tag: 'dep' } as never
+      mockWalletBorrow.depositCollateral.mockResolvedValue(receipt)
+      const result = await borrowService.depositCollateral({
+        idToken: 'idtok',
+        marketId: baseMarketId,
+        amount: { amount: 50 },
+      })
+      expect(mockWalletBorrow.depositCollateral).toHaveBeenCalledWith({
+        marketId: baseMarketId,
+        amount: { amount: 50 },
+      })
+      expect(result).toBe(receipt)
+    })
+
+    it('forwards a pre-built quote unchanged', async () => {
+      const quote = { action: 'depositCollateral' } as never
+      const receipt = { tag: 'r' } as never
+      mockWalletBorrow.depositCollateral.mockResolvedValue(receipt)
+      await borrowService.depositCollateral({ idToken: 'idtok', quote })
+      expect(mockWalletBorrow.depositCollateral).toHaveBeenCalledWith(quote)
+    })
+  })
+
+  describe('withdrawCollateral', () => {
+    beforeEach(async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(mockWallet as never)
+    })
+
+    it('calls wallet.borrow.withdrawCollateral with fresh params', async () => {
+      const receipt = { tag: 'w' } as never
+      mockWalletBorrow.withdrawCollateral.mockResolvedValue(receipt)
+      await borrowService.withdrawCollateral({
+        idToken: 'idtok',
+        marketId: baseMarketId,
+        amount: { max: true },
+      })
+      expect(mockWalletBorrow.withdrawCollateral).toHaveBeenCalledWith({
+        marketId: baseMarketId,
+        amount: { max: true },
+      })
+    })
+
+    it('forwards a pre-built quote unchanged', async () => {
+      const quote = { action: 'withdrawCollateral' } as never
+      mockWalletBorrow.withdrawCollateral.mockResolvedValue({} as never)
+      await borrowService.withdrawCollateral({ idToken: 'idtok', quote })
+      expect(mockWalletBorrow.withdrawCollateral).toHaveBeenCalledWith(quote)
+    })
+  })
+
+  describe('repay', () => {
+    beforeEach(async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(mockWallet as never)
+    })
+
+    it('calls wallet.borrow.repay with fresh params', async () => {
+      const receipt = { tag: 'rep' } as never
+      mockWalletBorrow.repay.mockResolvedValue(receipt)
+      await borrowService.repay({
+        idToken: 'idtok',
+        marketId: baseMarketId,
+        amount: { amount: 1 },
+      })
+      expect(mockWalletBorrow.repay).toHaveBeenCalledWith({
+        marketId: baseMarketId,
+        amount: { amount: 1 },
+      })
+    })
+
+    it('forwards a pre-built quote unchanged', async () => {
+      const quote = { action: 'repay' } as never
+      mockWalletBorrow.repay.mockResolvedValue({} as never)
+      await borrowService.repay({ idToken: 'idtok', quote })
+      expect(mockWalletBorrow.repay).toHaveBeenCalledWith(quote)
+    })
+  })
 })

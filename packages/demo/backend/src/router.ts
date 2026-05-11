@@ -79,6 +79,22 @@ router.post(
   authMiddleware,
   borrowController.openPosition,
 )
+router.post(
+  '/borrow/position/close',
+  authMiddleware,
+  borrowController.closePosition,
+)
+router.post(
+  '/borrow/position/deposit-collateral',
+  authMiddleware,
+  borrowController.depositCollateral,
+)
+router.post(
+  '/borrow/position/withdraw-collateral',
+  authMiddleware,
+  borrowController.withdrawCollateral,
+)
+router.post('/borrow/position/repay', authMiddleware, borrowController.repay)
 
 // Assets endpoints
 router.get('/assets', assetsController.getAssets)
