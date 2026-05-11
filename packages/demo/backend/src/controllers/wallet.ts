@@ -102,38 +102,34 @@ export class WalletController {
   }
 
   /**
-   * GET - Borrow position for a wallet (Morpho variant). Wraps in try/catch
-   * to avoid the bare-throw inconsistency in `getLendPosition`.
+   * GET - Borrow position for a wallet (Morpho variant). SDK errors
+   * propagate to the borrow-scoped `app.onError` handler.
    */
   async getBorrowPosition(c: Context) {
-    try {
-      const validation = await validateRequest(c, BorrowPositionRequestSchema)
-      if (!validation.success) return validation.response
-      const {
-        params: { chainId, marketId: marketIdHex },
-      } = validation.data
-      const marketId = {
-        kind: 'morpho-blue' as const,
-        marketId: marketIdHex as Hex,
-        chainId,
-      }
-
-      const authResult = requireAuth(c)
-      if ('error' in authResult) return authResult.error
-
-      const wallet = await walletService.getWallet(authResult.auth.idToken)
-      if (!wallet) {
-        return errorResponse(c, 'Wallet not found', 404)
-      }
-
-      const position = await walletService.getBorrowPosition({
-        marketId,
-        walletAddress: wallet.address as Address,
-      })
-      return c.json({ result: position })
-    } catch (error) {
-      return errorResponse(c, 'Failed to get borrow position', 500, error)
+    const validation = await validateRequest(c, BorrowPositionRequestSchema)
+    if (!validation.success) return validation.response
+    const {
+      params: { chainId, marketId: marketIdHex },
+    } = validation.data
+    const marketId = {
+      kind: 'morpho-blue' as const,
+      marketId: marketIdHex as Hex,
+      chainId,
     }
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const wallet = await walletService.getWallet(authResult.auth.idToken)
+    if (!wallet) {
+      return errorResponse(c, 'Wallet not found', 404)
+    }
+
+    const position = await walletService.getBorrowPosition({
+      marketId,
+      walletAddress: wallet.address as Address,
+    })
+    return c.json({ result: position })
   }
 
   /**

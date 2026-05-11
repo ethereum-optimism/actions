@@ -2,7 +2,7 @@ import { serializeBigInt } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import { z } from 'zod'
 
-import { errorResponse, requireAuth } from '@/helpers/errors.js'
+import { requireAuth } from '@/helpers/errors.js'
 import {
   AddressSchema,
   AmountExactSchema,
@@ -68,18 +68,15 @@ const QuoteRequestSchema = z.object({
 
 /**
  * GET - Retrieve borrow markets, optionally filtered by chain.
+ * Errors propagate to the borrow-scoped `app.onError` handler.
  */
 export async function getMarkets(c: Context) {
-  try {
-    const validation = await validateRequest(c, GetMarketsRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, GetMarketsRequestSchema)
+  if (!validation.success) return validation.response
 
-    const { chainId } = validation.data.query
-    const markets = await borrowService.getMarkets(chainId ? { chainId } : {})
-    return c.json({ result: serializeBigInt(markets) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to get borrow markets', 500, error)
-  }
+  const { chainId } = validation.data.query
+  const markets = await borrowService.getMarkets(chainId ? { chainId } : {})
+  return c.json({ result: serializeBigInt(markets) })
 }
 
 /**
@@ -87,15 +84,11 @@ export async function getMarkets(c: Context) {
  * safeCeilingLtv) without building executable calldata.
  */
 export async function getPrice(c: Context) {
-  try {
-    const validation = await validateRequest(c, PriceRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, PriceRequestSchema)
+  if (!validation.success) return validation.response
 
-    const price = await borrowService.getPrice(validation.data.body)
-    return c.json({ result: serializeBigInt(price) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to get borrow price', 500, error)
-  }
+  const price = await borrowService.getPrice(validation.data.body)
+  return c.json({ result: serializeBigInt(price) })
 }
 
 /**
@@ -104,21 +97,17 @@ export async function getPrice(c: Context) {
  * the body is rejected with a 400 by the strict schema.
  */
 export async function getQuote(c: Context) {
-  try {
-    const validation = await validateRequest(c, QuoteRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, QuoteRequestSchema)
+  if (!validation.success) return validation.response
 
-    const authResult = requireAuth(c)
-    if ('error' in authResult) return authResult.error
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
 
-    const quote = await borrowService.getQuote({
-      idToken: authResult.auth.idToken,
-      ...validation.data.body,
-    })
-    return c.json({ result: serializeBigInt(quote) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to get borrow quote', 500, error)
-  }
+  const quote = await borrowService.getQuote({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  })
+  return c.json({ result: serializeBigInt(quote) })
 }
 
 // ---------- Mutations ----------
@@ -139,21 +128,17 @@ const OpenRequestSchema = z.object({
  * params or a pre-built quote with action='open'.
  */
 export async function openPosition(c: Context) {
-  try {
-    const validation = await validateRequest(c, OpenRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, OpenRequestSchema)
+  if (!validation.success) return validation.response
 
-    const authResult = requireAuth(c)
-    if ('error' in authResult) return authResult.error
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
 
-    const result = await borrowService.openPosition({
-      idToken: authResult.auth.idToken,
-      ...validation.data.body,
-    } as Parameters<typeof borrowService.openPosition>[0])
-    return c.json({ result: serializeBigInt(result) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to open borrow position', 500, error)
-  }
+  const result = await borrowService.openPosition({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.openPosition>[0])
+  return c.json({ result: serializeBigInt(result) })
 }
 
 const CloseParamsBody = z.strictObject({
@@ -167,21 +152,17 @@ const CloseRequestSchema = z.object({
 })
 
 export async function closePosition(c: Context) {
-  try {
-    const validation = await validateRequest(c, CloseRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, CloseRequestSchema)
+  if (!validation.success) return validation.response
 
-    const authResult = requireAuth(c)
-    if ('error' in authResult) return authResult.error
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
 
-    const result = await borrowService.closePosition({
-      idToken: authResult.auth.idToken,
-      ...validation.data.body,
-    } as Parameters<typeof borrowService.closePosition>[0])
-    return c.json({ result: serializeBigInt(result) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to close borrow position', 500, error)
-  }
+  const result = await borrowService.closePosition({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.closePosition>[0])
+  return c.json({ result: serializeBigInt(result) })
 }
 
 const DepositCollateralParamsBody = z.strictObject({
@@ -197,21 +178,17 @@ const DepositCollateralRequestSchema = z.object({
 })
 
 export async function depositCollateral(c: Context) {
-  try {
-    const validation = await validateRequest(c, DepositCollateralRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, DepositCollateralRequestSchema)
+  if (!validation.success) return validation.response
 
-    const authResult = requireAuth(c)
-    if ('error' in authResult) return authResult.error
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
 
-    const result = await borrowService.depositCollateral({
-      idToken: authResult.auth.idToken,
-      ...validation.data.body,
-    } as Parameters<typeof borrowService.depositCollateral>[0])
-    return c.json({ result: serializeBigInt(result) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to deposit collateral', 500, error)
-  }
+  const result = await borrowService.depositCollateral({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.depositCollateral>[0])
+  return c.json({ result: serializeBigInt(result) })
 }
 
 const WithdrawCollateralParamsBody = z.strictObject({
@@ -227,21 +204,17 @@ const WithdrawCollateralRequestSchema = z.object({
 })
 
 export async function withdrawCollateral(c: Context) {
-  try {
-    const validation = await validateRequest(c, WithdrawCollateralRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, WithdrawCollateralRequestSchema)
+  if (!validation.success) return validation.response
 
-    const authResult = requireAuth(c)
-    if ('error' in authResult) return authResult.error
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
 
-    const result = await borrowService.withdrawCollateral({
-      idToken: authResult.auth.idToken,
-      ...validation.data.body,
-    } as Parameters<typeof borrowService.withdrawCollateral>[0])
-    return c.json({ result: serializeBigInt(result) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to withdraw collateral', 500, error)
-  }
+  const result = await borrowService.withdrawCollateral({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.withdrawCollateral>[0])
+  return c.json({ result: serializeBigInt(result) })
 }
 
 const RepayParamsBody = z.strictObject({
@@ -254,19 +227,15 @@ const RepayRequestSchema = z.object({
 })
 
 export async function repay(c: Context) {
-  try {
-    const validation = await validateRequest(c, RepayRequestSchema)
-    if (!validation.success) return validation.response
+  const validation = await validateRequest(c, RepayRequestSchema)
+  if (!validation.success) return validation.response
 
-    const authResult = requireAuth(c)
-    if ('error' in authResult) return authResult.error
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
 
-    const result = await borrowService.repay({
-      idToken: authResult.auth.idToken,
-      ...validation.data.body,
-    } as Parameters<typeof borrowService.repay>[0])
-    return c.json({ result: serializeBigInt(result) })
-  } catch (error) {
-    return errorResponse(c, 'Failed to repay borrow', 500, error)
-  }
+  const result = await borrowService.repay({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.repay>[0])
+  return c.json({ result: serializeBigInt(result) })
 }
