@@ -2,9 +2,8 @@ import { serializeBigInt } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import { z } from 'zod'
 
-import { requireAuth } from '@/helpers/errors.js'
+import { errorResponse, requireAuth } from '@/helpers/errors.js'
 import {
-  AddressSchema,
   AmountExactSchema,
   AmountWithMaxSchema,
   BorrowMarketIdSchema,
@@ -28,42 +27,10 @@ function quoteBodySchema(action: string) {
   })
 }
 
-const BorrowActionSchema = z.enum([
-  'open',
-  'close',
-  'depositCollateral',
-  'withdrawCollateral',
-  'repay',
-])
-
 const GetMarketsRequestSchema = z.object({
   query: z.object({
     chainId: ChainIdStringSchema.optional(),
   }),
-})
-
-const PriceRequestSchema = z.object({
-  body: z.object({
-    action: BorrowActionSchema,
-    marketId: BorrowMarketIdSchema,
-    borrowAmount: AmountExactSchema.optional(),
-    collateralAmount: AmountExactSchema.optional(),
-    recipient: AddressSchema.optional(),
-  }),
-})
-
-// Quote body is strict so that an extra `recipient` field is rejected
-// (rather than silently dropped). Per plan R1: recipient is derived from
-// the authenticated idToken, never accepted from the request body.
-const QuoteRequestSchema = z.object({
-  body: z
-    .object({
-      action: BorrowActionSchema,
-      marketId: BorrowMarketIdSchema,
-      borrowAmount: AmountExactSchema.optional(),
-      collateralAmount: AmountExactSchema.optional(),
-    })
-    .strict(),
 })
 
 /**
@@ -80,34 +47,34 @@ export async function getMarkets(c: Context) {
 }
 
 /**
- * POST - Get a lightweight borrow price preview (positionAfter / fees /
- * safeCeilingLtv) without building executable calldata.
+ * POST - Get a lightweight borrow price preview. Currently a stub
+ * pending SDK support: PR #3's borrow namespace does not expose
+ * `getPrice` (only `getMarket`, `getMarkets`, `getPosition`). Returns
+ * 501 until a follow-up adds price preview to the SDK or to the
+ * provider's public surface.
  */
 export async function getPrice(c: Context) {
-  const validation = await validateRequest(c, PriceRequestSchema)
-  if (!validation.success) return validation.response
-
-  const price = await borrowService.getPrice(validation.data.body)
-  return c.json({ result: serializeBigInt(price) })
+  return errorResponse(
+    c,
+    'Borrow price preview not yet supported; SDK exposes only execute.',
+    501,
+  )
 }
 
 /**
- * POST - Build a recipient-bound borrow quote (auth required). Recipient
- * is derived from the authenticated idToken; supplying a `recipient` in
- * the body is rejected with a 400 by the strict schema.
+ * POST - Build a recipient-bound borrow quote. Currently a stub pending
+ * SDK support: PR #3's borrow namespace builds quotes implicitly inside
+ * `wallet.borrow.*` (execute-only), with no standalone quote-build
+ * endpoint. Returns 501 until a follow-up exposes a quote-only path.
  */
 export async function getQuote(c: Context) {
-  const validation = await validateRequest(c, QuoteRequestSchema)
-  if (!validation.success) return validation.response
-
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
-
-  const quote = await borrowService.getQuote({
-    idToken: authResult.auth.idToken,
-    ...validation.data.body,
-  })
-  return c.json({ result: serializeBigInt(quote) })
+  return errorResponse(
+    c,
+    'Borrow quote endpoint not yet supported; use the mutation endpoints which build quotes internally.',
+    501,
+  )
 }
 
 // ---------- Mutations ----------
@@ -116,7 +83,6 @@ const OpenParamsBody = z.strictObject({
   marketId: BorrowMarketIdSchema,
   borrowAmount: AmountExactSchema,
   collateralAmount: AmountExactSchema.optional(),
-  collateralAsset: AddressSchema,
 })
 
 const OpenRequestSchema = z.object({

@@ -1,220 +1,167 @@
-import type { Address } from 'viem'
+import type {
+  BorrowClosePositionParams,
+  BorrowDepositCollateralParams,
+  BorrowMarket,
+  BorrowMarketConfig,
+  BorrowMarketId,
+  BorrowOpenPositionParams,
+  BorrowQuote,
+  BorrowReceipt,
+  BorrowRepayParams,
+  BorrowWithdrawCollateralParams,
+  GetBorrowMarketsParams,
+} from '@eth-optimism/actions-sdk'
+import { MarketNotAllowedError } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
+import { ALL_BORROW_MARKETS } from '@/config/markets.js'
 import { getWallet } from '@/services/wallet.js'
-import {
-  type AmountExact,
-  type AmountWithMax,
-  asActionsBorrow,
-  asWalletBorrow,
-  type BorrowAction,
-  type BorrowMarket,
-  type BorrowMarketId,
-  type BorrowPrice,
-  type BorrowQuote,
-  type BorrowReceipt,
-  type GetBorrowMarketsParams,
-  type GetBorrowPriceParams,
-} from '@/types/borrow-sdk-stubs.js'
+
+/**
+ * Resolve a `BorrowMarketId` (from a request body) to its
+ * `BorrowMarketConfig` in the backend allowlist. Used by mutations whose
+ * SDK signature requires the full config rather than just the id.
+ */
+export function resolveMarketConfig(
+  marketId: BorrowMarketId,
+): BorrowMarketConfig {
+  const config = ALL_BORROW_MARKETS.find(
+    (m) =>
+      m.kind === marketId.kind &&
+      m.chainId === marketId.chainId &&
+      m.marketId.toLowerCase() === marketId.marketId.toLowerCase(),
+  )
+  if (!config) {
+    throw new MarketNotAllowedError({
+      address: marketId.marketId,
+      chainId: marketId.chainId,
+      reason: 'Market not in backend allowlist',
+    })
+  }
+  return config
+}
 
 export async function getMarkets(
   params: GetBorrowMarketsParams = {},
 ): Promise<BorrowMarket[]> {
   const actions = getActions()
-  return await asActionsBorrow(actions).getMarkets(params)
-}
-
-// ---------- /borrow/price + cache ----------
-
-const PRICE_CACHE_TTL_MS = 10_000 // 10s for demo; plan R4 suggested 1-2s
-
-interface CacheEntry<V> {
-  value: V
-  expiresAt: number
-}
-
-const priceCache = new Map<string, CacheEntry<BorrowPrice>>()
-
-function priceCacheKey(params: GetBorrowPriceParams): string {
-  return JSON.stringify(params, (_key, value) =>
-    typeof value === 'bigint' ? value.toString() : value,
-  )
-}
-
-/** For tests: drop all cached entries. */
-export function _clearPriceCache(): void {
-  priceCache.clear()
-}
-
-export async function getPrice(
-  params: GetBorrowPriceParams,
-): Promise<BorrowPrice> {
-  const key = priceCacheKey(params)
-  const entry = priceCache.get(key)
-  if (entry && entry.expiresAt > Date.now()) {
-    return entry.value
-  }
-
-  const actions = getActions()
-  const result = await asActionsBorrow(actions).getPrice(params)
-  priceCache.set(key, {
-    value: result,
-    expiresAt: Date.now() + PRICE_CACHE_TTL_MS,
-  })
-  return result
-}
-
-// ---------- /borrow/quote ----------
-
-export interface GetQuoteServiceParams {
-  idToken: string
-  action: BorrowAction
-  marketId: BorrowMarketId
-  borrowAmount?: AmountExact
-  collateralAmount?: AmountExact
-}
-
-/**
- * Builds a recipient-bound borrow quote. The recipient is resolved from
- * the authenticated `idToken`, not the caller-supplied body, per plan R1.
- * Uncached: the bundle carries the recipient and an `expiresAt`; caching
- * would make staleness a footgun.
- */
-export async function getQuote(
-  params: GetQuoteServiceParams,
-): Promise<BorrowQuote> {
-  const wallet = await getWallet(params.idToken)
-  if (!wallet) {
-    throw new Error('Wallet not found')
-  }
-
-  const actions = getActions()
-  return await asActionsBorrow(actions).getQuote({
-    action: params.action,
-    marketId: params.marketId,
-    borrowAmount: params.borrowAmount,
-    collateralAmount: params.collateralAmount,
-    recipient: wallet.address as Address,
-  })
+  return await actions.borrow.getMarkets(params)
 }
 
 // ---------- Mutations ----------
 
-/**
- * Resolves the wallet from idToken; throws if missing. Shared by every
- * mutation entry point.
- */
 async function resolveWalletOrThrow(idToken: string) {
   const wallet = await getWallet(idToken)
   if (!wallet) {
     throw new Error('Wallet not found')
   }
+  if (!wallet.borrow) {
+    throw new Error('Borrow functionality not configured for this wallet')
+  }
   return wallet
 }
 
-export type OpenPositionServiceParams = { idToken: string } & (
-  | {
-      marketId: BorrowMarketId
-      borrowAmount: AmountExact
-      collateralAmount?: AmountExact
-      collateralAsset: Address
-    }
-  | { quote: BorrowQuote }
-)
+export type BorrowOpenServiceInput =
+  | ({ idToken: string } & Omit<BorrowOpenPositionParams, 'market'> & {
+        marketId: BorrowMarketId
+      })
+  | { idToken: string; quote: BorrowQuote }
 
 export async function openPosition(
-  params: OpenPositionServiceParams,
+  input: BorrowOpenServiceInput,
 ): Promise<BorrowReceipt> {
-  const wallet = await resolveWalletOrThrow(params.idToken)
-  const ns = asWalletBorrow(wallet)
-  if ('quote' in params) {
-    return await ns.openPosition(params.quote)
+  const wallet = await resolveWalletOrThrow(input.idToken)
+  if ('quote' in input) {
+    return await wallet.borrow!.openPosition(input.quote)
   }
-  return await ns.openPosition({
-    marketId: params.marketId,
-    borrowAmount: params.borrowAmount,
-    collateralAmount: params.collateralAmount,
-    collateralAsset: params.collateralAsset,
-  })
+  const { idToken: _ignored, marketId, ...rest } = input
+  const params: BorrowOpenPositionParams = {
+    ...rest,
+    market: resolveMarketConfig(marketId),
+  }
+  return await wallet.borrow!.openPosition(params)
 }
 
-export type ClosePositionServiceParams = { idToken: string } & (
-  | {
-      marketId: BorrowMarketId
-      borrowAmount: AmountWithMax
-      collateralAmount?: AmountWithMax
-    }
-  | { quote: BorrowQuote }
-)
+export type BorrowCloseServiceInput =
+  | ({ idToken: string } & Omit<BorrowClosePositionParams, 'market'> & {
+        marketId: BorrowMarketId
+      })
+  | { idToken: string; quote: BorrowQuote }
 
 export async function closePosition(
-  params: ClosePositionServiceParams,
+  input: BorrowCloseServiceInput,
 ): Promise<BorrowReceipt> {
-  const wallet = await resolveWalletOrThrow(params.idToken)
-  const ns = asWalletBorrow(wallet)
-  if ('quote' in params) {
-    return await ns.closePosition(params.quote)
+  const wallet = await resolveWalletOrThrow(input.idToken)
+  if ('quote' in input) {
+    return await wallet.borrow!.closePosition(input.quote)
   }
-  return await ns.closePosition({
-    marketId: params.marketId,
-    borrowAmount: params.borrowAmount,
-    collateralAmount: params.collateralAmount,
-  })
+  const { idToken: _ignored, marketId, ...rest } = input
+  const params: BorrowClosePositionParams = {
+    ...rest,
+    market: resolveMarketConfig(marketId),
+  }
+  return await wallet.borrow!.closePosition(params)
 }
 
-export type DepositCollateralServiceParams = { idToken: string } & (
-  | { marketId: BorrowMarketId; amount: AmountExact }
-  | { quote: BorrowQuote }
-)
+export type BorrowDepositCollateralServiceInput =
+  | ({ idToken: string } & Omit<BorrowDepositCollateralParams, 'market'> & {
+        marketId: BorrowMarketId
+      })
+  | { idToken: string; quote: BorrowQuote }
 
 export async function depositCollateral(
-  params: DepositCollateralServiceParams,
+  input: BorrowDepositCollateralServiceInput,
 ): Promise<BorrowReceipt> {
-  const wallet = await resolveWalletOrThrow(params.idToken)
-  const ns = asWalletBorrow(wallet)
-  if ('quote' in params) {
-    return await ns.depositCollateral(params.quote)
+  const wallet = await resolveWalletOrThrow(input.idToken)
+  if ('quote' in input) {
+    return await wallet.borrow!.depositCollateral(input.quote)
   }
-  return await ns.depositCollateral({
-    marketId: params.marketId,
-    amount: params.amount,
-  })
+  const { idToken: _ignored, marketId, ...rest } = input
+  const params: BorrowDepositCollateralParams = {
+    ...rest,
+    market: resolveMarketConfig(marketId),
+  }
+  return await wallet.borrow!.depositCollateral(params)
 }
 
-export type WithdrawCollateralServiceParams = { idToken: string } & (
-  | { marketId: BorrowMarketId; amount: AmountWithMax }
-  | { quote: BorrowQuote }
-)
+export type BorrowWithdrawCollateralServiceInput =
+  | ({ idToken: string } & Omit<BorrowWithdrawCollateralParams, 'market'> & {
+        marketId: BorrowMarketId
+      })
+  | { idToken: string; quote: BorrowQuote }
 
 export async function withdrawCollateral(
-  params: WithdrawCollateralServiceParams,
+  input: BorrowWithdrawCollateralServiceInput,
 ): Promise<BorrowReceipt> {
-  const wallet = await resolveWalletOrThrow(params.idToken)
-  const ns = asWalletBorrow(wallet)
-  if ('quote' in params) {
-    return await ns.withdrawCollateral(params.quote)
+  const wallet = await resolveWalletOrThrow(input.idToken)
+  if ('quote' in input) {
+    return await wallet.borrow!.withdrawCollateral(input.quote)
   }
-  return await ns.withdrawCollateral({
-    marketId: params.marketId,
-    amount: params.amount,
-  })
+  const { idToken: _ignored, marketId, ...rest } = input
+  const params: BorrowWithdrawCollateralParams = {
+    ...rest,
+    market: resolveMarketConfig(marketId),
+  }
+  return await wallet.borrow!.withdrawCollateral(params)
 }
 
-export type RepayServiceParams = { idToken: string } & (
-  | { marketId: BorrowMarketId; amount: AmountWithMax }
-  | { quote: BorrowQuote }
-)
+export type BorrowRepayServiceInput =
+  | ({ idToken: string } & Omit<BorrowRepayParams, 'market'> & {
+        marketId: BorrowMarketId
+      })
+  | { idToken: string; quote: BorrowQuote }
 
 export async function repay(
-  params: RepayServiceParams,
+  input: BorrowRepayServiceInput,
 ): Promise<BorrowReceipt> {
-  const wallet = await resolveWalletOrThrow(params.idToken)
-  const ns = asWalletBorrow(wallet)
-  if ('quote' in params) {
-    return await ns.repay(params.quote)
+  const wallet = await resolveWalletOrThrow(input.idToken)
+  if ('quote' in input) {
+    return await wallet.borrow!.repay(input.quote)
   }
-  return await ns.repay({
-    marketId: params.marketId,
-    amount: params.amount,
-  })
+  const { idToken: _ignored, marketId, ...rest } = input
+  const params: BorrowRepayParams = {
+    ...rest,
+    market: resolveMarketConfig(marketId),
+  }
+  return await wallet.borrow!.repay(params)
 }

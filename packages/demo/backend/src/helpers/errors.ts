@@ -1,18 +1,20 @@
+import {
+  AmountRequiredError,
+  BorrowMarketParamsMismatchError,
+  ChainNotSupportedError,
+  ConflictingAmountsError,
+  InvalidAmountError,
+  MarketIdRequiredError,
+  MarketNotAllowedError,
+  MarketNotFoundError,
+  ProviderNotConfiguredError,
+  QuoteExpiredError,
+  QuoteRecipientMismatchError,
+} from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 import type { AuthContext } from '@/middleware/auth.js'
-import {
-  BorrowProviderNotConfiguredError,
-  ChainNotSupportedError,
-  HealthFactorTooLowError,
-  InsufficientCollateralError,
-  InsufficientLiquidityError,
-  MarketNotAllowedError,
-  MarketNotFoundError,
-  QuoteExpiredError,
-  QuoteRecipientMismatchError,
-} from '@/types/borrow-sdk-stubs.js'
 
 /**
  * Return a consistent JSON error response.
@@ -71,17 +73,30 @@ export function mapSdkError(error: unknown): MappedSdkError | undefined {
     if (error instanceof MarketNotFoundError) {
       return { status: 404, message: 'Market not found.' }
     }
+    if (error instanceof MarketIdRequiredError) {
+      return { status: 400, message: 'Market id is required.' }
+    }
     if (error instanceof ChainNotSupportedError) {
       return { status: 400, message: 'Chain not supported.' }
     }
-    if (error instanceof InsufficientLiquidityError) {
-      return { status: 422, message: 'Insufficient liquidity in the market.' }
+    if (error instanceof AmountRequiredError) {
+      return { status: 400, message: 'Amount is required.' }
     }
-    if (error instanceof InsufficientCollateralError) {
-      return { status: 422, message: 'Insufficient collateral.' }
+    if (error instanceof InvalidAmountError) {
+      return { status: 400, message: 'Invalid amount.' }
     }
-    if (error instanceof HealthFactorTooLowError) {
-      return { status: 422, message: 'Resulting health factor is too low.' }
+    if (error instanceof ConflictingAmountsError) {
+      return {
+        status: 400,
+        message:
+          'Conflicting amounts; provide exactly one of amount or amountRaw.',
+      }
+    }
+    if (error instanceof BorrowMarketParamsMismatchError) {
+      return {
+        status: 422,
+        message: 'Borrow market parameters do not match the configured market.',
+      }
     }
     if (error instanceof QuoteExpiredError) {
       return { status: 410, message: 'Quote has expired; please re-quote.' }
@@ -92,8 +107,11 @@ export function mapSdkError(error: unknown): MappedSdkError | undefined {
         message: 'Quote recipient does not match the executing wallet.',
       }
     }
-    if (error instanceof BorrowProviderNotConfiguredError) {
-      return { status: 503, message: 'Borrow provider not configured.' }
+    if (error instanceof ProviderNotConfiguredError) {
+      return {
+        status: 503,
+        message: 'Provider not configured for this market.',
+      }
     }
     return undefined
   } catch {
