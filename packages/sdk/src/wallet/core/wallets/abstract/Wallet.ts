@@ -1,14 +1,19 @@
 import type { Address, LocalAccount } from 'viem'
 
+import { WalletBorrowNamespace } from '@/actions/borrow/namespaces/WalletBorrowNamespace.js'
 import { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
 import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import type { SwapSettings } from '@/types/actions.js'
+import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
 import type { Asset, BalanceFetchOptions, TokenBalance } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import { validateBalanceFetchOptions } from '@/utils/validation.js'
 import type {
@@ -26,6 +31,10 @@ export abstract class Wallet {
   lend?: WalletLendNamespace
   /** Providers for lending market operations */
   protected lendProviders: LendProviders
+  /** Borrow namespace with all borrow operations */
+  borrow?: WalletBorrowNamespace
+  /** Providers for borrow market operations */
+  protected borrowProviders: BorrowProviders
   /** Swap namespace with all swap operations */
   swap?: WalletSwapNamespace
   /** Providers for swap operations */
@@ -65,10 +74,13 @@ export abstract class Wallet {
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
     swapSettings?: SwapSettings,
+    borrowProviders?: BorrowProviders,
+    borrowSettings?: BorrowSettings,
   ) {
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
     this.swapProviders = swapProviders || {}
+    this.borrowProviders = borrowProviders || {}
     this.supportedAssets = supportedAssets || []
     if (this.lendProviders.morpho || this.lendProviders.aave) {
       this.lend = new WalletLendNamespace(this.lendProviders, this)
@@ -82,6 +94,13 @@ export abstract class Wallet {
         swapSettings,
       )
     }
+    if (Object.values(this.borrowProviders).some(Boolean)) {
+      this.borrow = new WalletBorrowNamespace(
+        this.borrowProviders,
+        this,
+        borrowSettings,
+      )
+    }
   }
 
   /**
@@ -92,7 +111,7 @@ export abstract class Wallet {
    * @param namespace - Wallet namespace name to probe.
    * @returns `true` when the namespace is configured.
    */
-  has(namespace: 'lend' | 'swap'): boolean {
+  has(namespace: 'lend' | 'swap' | 'borrow'): boolean {
     return this[namespace] !== undefined
   }
 

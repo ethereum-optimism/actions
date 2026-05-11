@@ -4,7 +4,11 @@ import { keccak256, slice, toHex } from 'viem'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { Signer } from '@/wallet/core/wallets/smart/abstract/types/index.js'
@@ -29,6 +33,8 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
   private lendProviders: LendProviders
   /** Providers for swap operations */
   private swapProviders: SwapProviders
+  /** Providers for borrow operations */
+  private borrowProviders: BorrowProviders
   /** Supported assets for this wallet provider */
   private supportedAssets?: Asset[]
   /** Optional 16-byte attribution suffix appended to callData */
@@ -41,6 +47,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
    * @param swapProviders - Providers for swap operations
    * @param supportedAssets - Optional list of supported assets
    * @param attributionSuffix - Optional attribution suffix
+   * @param borrowProviders - Providers for borrow operations
    */
   constructor(
     chainManager: ChainManager,
@@ -48,11 +55,13 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
     attributionSuffix?: string,
+    borrowProviders?: BorrowProviders,
   ) {
     super()
     this.chainManager = chainManager
     this.lendProviders = lendProviders || {}
     this.swapProviders = swapProviders || {}
+    this.borrowProviders = borrowProviders || {}
     this.supportedAssets = supportedAssets
     if (attributionSuffix) {
       this.attributionSuffix =
@@ -92,6 +101,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       chainManager: this.chainManager,
       lendProviders: this.lendProviders,
       swapProviders: this.swapProviders,
+      borrowProviders: this.borrowProviders,
       supportedAssets: this.supportedAssets,
       nonce,
       attributionSuffix: this.attributionSuffix,
@@ -182,6 +192,7 @@ export class DefaultSmartWalletProvider extends SmartWalletProvider {
       chainManager: this.chainManager,
       lendProviders: this.lendProviders,
       swapProviders: this.swapProviders,
+      borrowProviders: this.borrowProviders,
       supportedAssets: this.supportedAssets,
       deploymentAddress: walletAddress,
       attributionSuffix: this.attributionSuffix,

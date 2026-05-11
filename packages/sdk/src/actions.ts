@@ -1,3 +1,5 @@
+import { ActionsBorrowNamespace } from '@/actions/borrow/namespaces/ActionsBorrowNamespace.js'
+import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
 import { AaveLendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
 import { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
 import {
@@ -11,6 +13,8 @@ import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import type {
   ActionsConfig,
   AssetsConfig,
+  BorrowProviders,
+  BorrowSettings,
   LendProviders,
   SwapProviders,
   SwapSettings,
@@ -58,6 +62,9 @@ export class Actions<
   private _swap?: ActionsSwapNamespace
   private _swapProviders: SwapProviders = {}
   private _swapSettings?: SwapSettings
+  private _borrow?: ActionsBorrowNamespace
+  private _borrowProviders: BorrowProviders = {}
+  private _borrowSettings?: BorrowSettings
   private _assetsConfig?: AssetsConfig
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
     THostedWalletProvidersSchema['providerInstances'],
@@ -127,6 +134,19 @@ export class Actions<
       )
     }
 
+    const borrowSettings = config.borrow?.settings
+    if (config.borrow?.morpho) {
+      this._borrowProviders.morpho = new MorphoBorrowProvider(
+        config.borrow.morpho,
+        this.chainManager,
+        borrowSettings,
+      )
+    }
+    this._borrowSettings = borrowSettings
+    if (Object.values(this._borrowProviders).some(Boolean)) {
+      this._borrow = new ActionsBorrowNamespace(this._borrowProviders)
+    }
+
     this.wallet = this.createWalletNamespace(config.wallet)
   }
 
@@ -191,6 +211,31 @@ export class Actions<
   }
 
   /**
+   * Get borrow operations interface
+   * @description Access to borrow operations like markets, position queries, and quotes.
+   * Throws an error if no borrow provider is configured in ActionsConfig.
+   * @returns ActionsBorrowNamespace for borrow operations
+   * @throws Error if borrow provider not configured
+   */
+  get borrow(): ActionsBorrowNamespace {
+    if (!this._borrow) {
+      throw new ProviderNotConfiguredError({
+        provider: 'borrow',
+        details: 'Please add borrow configuration to ActionsConfig.',
+      })
+    }
+    return this._borrow
+  }
+
+  /**
+   * Get the borrow provider instances
+   * @returns Object containing configured borrow providers
+   */
+  get borrowProviders(): BorrowProviders {
+    return this._borrowProviders
+  }
+
+  /**
    * Get the list of supported assets based on configuration
    * @description Returns filtered assets based on allow/block lists in assets config.
    * If no config provided, returns empty array. Developers must explicitly configure
@@ -250,6 +295,7 @@ export class Actions<
           this._swapProviders,
           this.getSupportedAssets(),
           config.smartWalletConfig.provider.attributionSuffix,
+          this._borrowProviders,
         )
       }
       throw new ProviderNotConfiguredError({
@@ -320,8 +366,10 @@ export class Actions<
       chainManager: this.chainManager,
       lendProviders: this._lendProviders,
       swapProviders: this._swapProviders,
+      borrowProviders: this._borrowProviders,
       supportedAssets: this.getSupportedAssets(),
       swapSettings: this._swapSettings,
+      borrowSettings: this._borrowSettings,
     })
   }
 }

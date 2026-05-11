@@ -3,7 +3,11 @@ import type { LocalAccount } from 'viem'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { ActionsContext, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import type {
   CreateSmartWalletOptions,
   GetSmartWalletOptions,
@@ -85,6 +89,7 @@ export class WalletNamespace<
   private readonly chainManager: ChainManager
   private readonly lendProviders: LendProviders
   private readonly swapProviders: SwapProviders
+  private readonly borrowProviders: BorrowProviders
   private readonly supportedAssets: Asset[]
   private readonly swapSettings?: SwapSettings
 
@@ -103,6 +108,7 @@ export class WalletNamespace<
     this.chainManager = context.chainManager
     this.lendProviders = context.lendProviders
     this.swapProviders = context.swapProviders
+    this.borrowProviders = context.borrowProviders ?? {}
     this.supportedAssets = context.supportedAssets
     this.swapSettings = context.swapSettings
   }
@@ -195,6 +201,7 @@ export class WalletNamespace<
         chainManager: this.chainManager,
         lendProviders: this.lendProviders,
         swapProviders: this.swapProviders,
+        borrowProviders: this.borrowProviders,
         supportedAssets: this.supportedAssets,
       })
     }

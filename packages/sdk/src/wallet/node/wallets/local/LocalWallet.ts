@@ -2,7 +2,11 @@ import type { Address, LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 
 /**
@@ -20,6 +24,7 @@ export class LocalWallet extends EOAWallet {
     chainManager: ChainManager
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
+    borrowProviders?: BorrowProviders
     supportedAssets?: Asset[]
   }) {
     const {
@@ -27,9 +32,17 @@ export class LocalWallet extends EOAWallet {
       chainManager,
       lendProviders,
       swapProviders,
+      borrowProviders,
       supportedAssets,
     } = params
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
+    super(
+      chainManager,
+      lendProviders,
+      swapProviders,
+      supportedAssets,
+      undefined,
+      borrowProviders,
+    )
     this.signer = account
     this.address = account.address
   }
@@ -39,6 +52,7 @@ export class LocalWallet extends EOAWallet {
     chainManager: ChainManager
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
+    borrowProviders?: BorrowProviders
     supportedAssets?: Asset[]
   }): Promise<LocalWallet> {
     const wallet = new LocalWallet(params)
