@@ -3,8 +3,10 @@ set -euo pipefail
 
 # Orchestrator for deploying demo infrastructure:
 #   1. Deploy tokens (DemoUSDC + DemoOP)
-#   2. Deploy Morpho market + vault
+#   2. Deploy Morpho lend market + vault
 #   3. Deploy Uniswap V4 pool with liquidity
+#   4. Deploy Velodrome pool with liquidity
+#   5. Deploy Morpho borrow market (dUSDC collateral / OP loan)
 #
 # Usage:
 #   ./script/deploy-demo.sh --rpc-url <url> --private-key <key>
@@ -95,13 +97,13 @@ else
 fi
 echo ""
 
-# --- Step 2: Deploy Morpho Market ---
+# --- Step 2: Deploy Morpho Lend Market ---
 VAULT_ADDR=$(read_state "morpho.vault")
 
 if [[ -z "$VAULT_ADDR" ]]; then
-    echo ">>> Deploying Morpho market..."
+    echo ">>> Deploying Morpho lend market..."
     OUTPUT=$(DEMO_USDC_ADDRESS="$USDC_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
-        forge script script/DeployMorphoMarket.s.sol:DeployMorphoMarket \
+        forge script script/DeployMorphoLendMarket.s.sol:DeployMorphoLendMarket \
         "${FORGE_ARGS[@]}" --broadcast 2>&1)
     echo "$OUTPUT"
 
@@ -165,6 +167,60 @@ if [[ -z "$VELO_POOL" ]]; then
     echo "Velodrome pool deployed: Pool=$VELO_POOL"
 else
     echo ">>> Velodrome pool already deployed: Pool=$VELO_POOL"
+fi
+echo ""
+
+# --- Step 5: Deploy Morpho Borrow Market ---
+# Idempotency: skip when morpho.borrow.marketId is already set. To recover from
+# a stale state file (e.g., the on-chain market exists but the JSON was wiped,
+# or vice versa), clear morpho.borrow.* keys and rerun. Morpho Blue reverts
+# MARKET_ALREADY_CREATED on a duplicate createMarket; clearing only the marketId
+# key triggers a re-deploy of the oracle and a fresh market.
+BORROW_MARKET_ID=$(read_state "morpho.borrow.marketId")
+
+if [[ -z "$BORROW_MARKET_ID" ]]; then
+    # Pass any partial state through so the script reuses prior contracts
+    # rather than orphaning them on rerun. address(0) sentinel (rather than
+    # an unset env var) keeps vm.envOr's parse path simple.
+    EXISTING_MOCK_FEED=$(read_state "morpho.borrow.mockFeed")
+    EXISTING_ORACLE=$(read_state "morpho.borrow.oracle")
+    [[ -z "$EXISTING_MOCK_FEED" ]] && EXISTING_MOCK_FEED="0x0000000000000000000000000000000000000000"
+    [[ -z "$EXISTING_ORACLE" ]] && EXISTING_ORACLE="0x0000000000000000000000000000000000000000"
+
+    echo ">>> Deploying Morpho borrow market..."
+    if ! OUTPUT=$(DEMO_VAULT_ADDRESS="$VAULT_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" DEMO_USDC_ADDRESS="$USDC_ADDR" \
+        BORROW_MOCK_FEED_ADDRESS="$EXISTING_MOCK_FEED" \
+        BORROW_ORACLE_ADDRESS="$EXISTING_ORACLE" \
+        forge script script/DeployMorphoBorrowMarket.s.sol:DeployMorphoBorrowMarket \
+        "${FORGE_ARGS[@]}" --broadcast 2>&1); then
+        echo "$OUTPUT"
+        echo "ERROR: forge script DeployMorphoBorrowMarket failed"
+        exit 1
+    fi
+    echo "$OUTPUT"
+
+    BORROW_MOCK_FEED=$(parse_address "BorrowMockFeed:" "$OUTPUT")
+    BORROW_ORACLE=$(parse_address "BorrowOracle:" "$OUTPUT")
+    # Anchor the bytes32 grep on the BorrowMarketId label so forge --broadcast
+    # transaction hashes (also 64-hex) cannot be misread as the market id.
+    # console.logBytes32 prints the value on the line after the label.
+    BORROW_MARKET_ID=$(echo "$OUTPUT" | grep -A1 "BorrowMarketId:" | grep -oE '0x[0-9a-fA-F]{64}' | head -1)
+
+    if [[ -z "$BORROW_MARKET_ID" || -z "$BORROW_ORACLE" || -z "$BORROW_MOCK_FEED" ]]; then
+        echo "ERROR: Failed to parse borrow market addresses/id from forge output"
+        exit 1
+    fi
+
+    # Write marketId first: it is the idempotency guard. If the script aborts
+    # mid-write, a rerun must re-deploy from scratch (otherwise we orphan
+    # contracts because the oracle address is part of the market id hash and
+    # a fresh oracle produces a different id).
+    write_state "morpho.borrow.marketId" "$BORROW_MARKET_ID"
+    write_state "morpho.borrow.mockFeed" "$BORROW_MOCK_FEED"
+    write_state "morpho.borrow.oracle" "$BORROW_ORACLE"
+    echo "Morpho borrow market deployed: marketId=$BORROW_MARKET_ID"
+else
+    echo ">>> Morpho borrow market already deployed: marketId=$BORROW_MARKET_ID"
 fi
 
 echo ""

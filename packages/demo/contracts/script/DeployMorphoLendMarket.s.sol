@@ -7,11 +7,11 @@ import {DemoOP} from "../src/DemoOP.sol";
 import {FixedPriceOracle} from "../src/FixedPriceOracle.sol";
 import {IMorpho, IMetaMorpho, IMetaMorphoFactory, MarketParams} from "../src/interfaces/IMorpho.sol";
 
-/// @title DeployMorphoMarket
+/// @title DeployMorphoLendMarket
 /// @notice Deploys a complete Morpho lending market with yield generation in a single transaction.
 ///         Uses MetaMorpho V1.1 factory which allows 0 timelock for instant cap acceptance.
 ///         Optionally accepts DEMO_USDC_ADDRESS and DEMO_OP_ADDRESS env vars to reuse existing tokens.
-contract DeployMorphoMarket is Script {
+contract DeployMorphoLendMarket is Script {
     address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     address constant METAMORPHO_FACTORY_V1_1 = 0x2c3FE6D71F8d54B063411Abb446B49f13725F784;
     address constant IRM = 0x46415998764C29aB2a25CbeA6254146D50D22687;
