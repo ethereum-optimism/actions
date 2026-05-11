@@ -17,10 +17,12 @@ import { useLendProviderContext } from '@/contexts/LendProviderContext'
 import type { MarketPosition } from '@/types/market'
 import { Dropdown } from '../Dropdown'
 import { BorrowAction } from './BorrowAction'
+import { BorrowPositions } from './BorrowPositions'
 
 export function BorrowTab() {
   const { marketPositions, isInitialLoad } = useLendProviderContext()
-  const { markets, handleMarketSelect } = useBorrowProviderContext()
+  const { markets, handleMarketSelect, borrowPositions } =
+    useBorrowProviderContext()
 
   const positionsWithDeposits = useMemo(
     () =>
@@ -80,6 +82,12 @@ export function BorrowTab() {
 
       {hasCollateral && selectedLendPosition && (
         <BorrowAction selectedLendPosition={selectedLendPosition} />
+      )}
+
+      {borrowPositions.length > 0 && (
+        <div style={{ marginTop: '24px' }}>
+          <BorrowPositions positions={borrowPositions} />
+        </div>
       )}
     </>
   )
