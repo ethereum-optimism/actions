@@ -2,7 +2,7 @@ import { serializeBigInt } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import { z } from 'zod'
 
-import { errorResponse } from '@/helpers/errors.js'
+import { errorResponse, requireAuth } from '@/helpers/errors.js'
 import {
   AddressSchema,
   AmountExactSchema,
@@ -36,6 +36,20 @@ const PriceRequestSchema = z.object({
   }),
 })
 
+// Quote body is strict so that an extra `recipient` field is rejected
+// (rather than silently dropped). Per plan R1: recipient is derived from
+// the authenticated idToken, never accepted from the request body.
+const QuoteRequestSchema = z.object({
+  body: z
+    .object({
+      action: BorrowActionSchema,
+      marketId: BorrowMarketIdSchema,
+      borrowAmount: AmountExactSchema.optional(),
+      collateralAmount: AmountExactSchema.optional(),
+    })
+    .strict(),
+})
+
 /**
  * GET - Retrieve borrow markets, optionally filtered by chain.
  */
@@ -65,5 +79,28 @@ export async function getPrice(c: Context) {
     return c.json({ result: serializeBigInt(price) })
   } catch (error) {
     return errorResponse(c, 'Failed to get borrow price', 500, error)
+  }
+}
+
+/**
+ * POST - Build a recipient-bound borrow quote (auth required). Recipient
+ * is derived from the authenticated idToken; supplying a `recipient` in
+ * the body is rejected with a 400 by the strict schema.
+ */
+export async function getQuote(c: Context) {
+  try {
+    const validation = await validateRequest(c, QuoteRequestSchema)
+    if (!validation.success) return validation.response
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const quote = await borrowService.getQuote({
+      idToken: authResult.auth.idToken,
+      ...validation.data.body,
+    })
+    return c.json({ result: serializeBigInt(quote) })
+  } catch (error) {
+    return errorResponse(c, 'Failed to get borrow quote', 500, error)
   }
 }

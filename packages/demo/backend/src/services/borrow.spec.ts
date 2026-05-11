@@ -6,6 +6,10 @@ vi.mock('../config/actions.js', () => ({
   getActions: vi.fn(),
 }))
 
+vi.mock('./wallet.js', () => ({
+  getWallet: vi.fn(),
+}))
+
 const mockBorrowProvider = {
   getMarket: vi.fn(),
   getMarkets: vi.fn(),
@@ -17,6 +21,8 @@ const mockBorrowProvider = {
 const mockActions = {
   borrow: mockBorrowProvider,
 }
+
+const mockWalletAddress = '0xabcdef0123456789abcdef0123456789abcdef01'
 
 describe('Borrow Service', () => {
   beforeEach(async () => {
@@ -136,6 +142,60 @@ describe('Borrow Service', () => {
         borrowAmount: { amountRaw: 1500000n },
       })
       expect(mockBorrowProvider.getPrice).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('getQuote', () => {
+    const baseParams = {
+      idToken: 'idtok',
+      action: 'open' as const,
+      marketId: {
+        kind: 'morpho-blue' as const,
+        marketId: ('0x' + 'a'.repeat(64)) as `0x${string}`,
+        chainId: 84532 as never,
+      },
+      borrowAmount: { amount: 5 },
+    }
+
+    it('looks up the wallet from the idToken and passes its address as recipient', async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue({
+        address: mockWalletAddress,
+      } as never)
+      const quote = { tag: 'q' } as never
+      mockBorrowProvider.getQuote.mockResolvedValue(quote)
+
+      const result = await borrowService.getQuote(baseParams)
+
+      expect(getWallet).toHaveBeenCalledWith('idtok')
+      expect(mockBorrowProvider.getQuote).toHaveBeenCalledWith({
+        action: 'open',
+        marketId: baseParams.marketId,
+        borrowAmount: { amount: 5 },
+        collateralAmount: undefined,
+        recipient: mockWalletAddress,
+      })
+      expect(result).toBe(quote)
+    })
+
+    it('throws when the wallet cannot be resolved', async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(null)
+      await expect(borrowService.getQuote(baseParams)).rejects.toThrow(
+        'Wallet not found',
+      )
+      expect(mockBorrowProvider.getQuote).not.toHaveBeenCalled()
+    })
+
+    it('propagates errors from the SDK', async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue({
+        address: mockWalletAddress,
+      } as never)
+      mockBorrowProvider.getQuote.mockRejectedValue(new Error('quote-failed'))
+      await expect(borrowService.getQuote(baseParams)).rejects.toThrow(
+        'quote-failed',
+      )
     })
   })
 })
