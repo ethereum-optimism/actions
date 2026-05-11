@@ -1,42 +1,79 @@
 # Handoff: Borrow PR #3 (SDK BorrowProvider)
 
-> **Status: ready for `/ce-work`.** Brainstorm and deepened implementation
-> plan are both committed and pushed. Begin work against the plan file.
+> **Status: Phases 1-5 landed.** Plan-defined Phase 6 (top-level wiring),
+> Phase 7 (mocks + fork test), Phase 8 (changeset + docs) remain.
 
-## Next agent: start here
+## Where we are
 
-1. **Read the plan first.** It carries the locked design, phase ordering,
-   acceptance criteria, and the per-phase commit breakdown:
-   - `docs/plans/2026-05-11-feat-borrow-provider-sdk-plan.md` (~1200 lines)
-   - Skim the Enhancement Summary at the top — it lists the corrections
-     applied during `/deepen-plan` (1 multicall RTT, full
-     `AccrualPosition` delegation, `quoteExpirationSeconds = 30`,
-     `approvalMode = 'exact'` default, etc.).
-2. **Read the brainstorm second** for context on the seven locked
-   decisions:
-   - `docs/brainstorms/2026-05-08-borrow-pr3-sdk-borrow-provider-brainstorm.md`
-3. **Run `/ce-work`** against the plan file. Start with Phase 1 (types).
-   Phases are dependency-ordered; do not start Phase 4 until the
-   **PR #2 follow-up** lands writing
-   `morpho.borrow.marketParams` to `deployments.json` (see plan's
-   "Dependencies & Prerequisites" — Phase 4 is **gated** on this).
-4. **Commit cadence.** Small commits per the user's preference: build →
-   tests → lint:fix → commit (3-7 word messages, no PR numbers, no
-   AI/Claude mentions). See plan's per-phase commit counts.
-5. **Do not delete this handoff.** The user keeps it as a sibling-agent
-   context anchor across the stacked PRs. The brainstorm and plan are
-   the canonical docs; this file is a pointer.
+| Phase | Done | Notes |
+|---|---|---|
+| **1.** Types | ✅ | `types/borrow/base.ts` + `BorrowConfig`/`BorrowSettings` in `actions.ts` |
+| **2.** Shared helpers | ✅ | `marketParams.ts` (compute/verify) + decimals extraction + `QUOTE_DISCRIMINATOR` promoted to `actions/shared/` |
+| **3.** Abstract `BorrowProvider` base | ✅ | Mirrors `LendProvider` shape; owns amount normalization + approval-mode cascading + allowlist enforcement |
+| **4.** `MorphoBorrowProvider` | ✅ | Reads via raw `blueAbi` multicall (1 RTT), passes results through Morpho's `Market`/`AccrualPosition` for math. Write side encodes `supplyCollateral`/`borrow`/`repay`/`withdrawCollateral` with allowance pre-flight. `BorrowMarketParamsMismatchError` thrown at construction. |
+| **5.** Namespaces | ✅ | `BaseBorrowNamespace`, `ActionsBorrowNamespace`, `WalletBorrowNamespace` with QUOTE_DISCRIMINATOR routing + recipient binding + dispatch via `executeTransactionBatch` |
+| **6.** Top-level wiring | 🔲 | `Actions.ts` borrow block + `WalletNamespace` accessor; thread `borrowProviders` through `ActionsContext` (currently optional during rollout) |
+| **7.** `MockBorrowProvider` + fork test | 🔲 | 7.1 unblocked. 7.2 fork test reads `marketParams` from `deployments.json` (already plumbed in commit `bc80b1fa`) |
+| **8.** Changeset + docs | 🔲 | Minor bump on `@eth-optimism/actions-service`; `llms-full.txt` borrow section |
 
-## Open items to verify during implementation (not blockers)
+## Significant deviations from the plan
 
-- During Phase 4.2, confirm `AccrualPosition.fetch` exposes every field
-  the adapter needs. If a field is missing, do a one-shot read for it
-  only — **do not** reimplement Morpho's math (plan-locked decision).
-- During Phase 5.3, the `QuoteRecipientMismatchError` shape: swap
-  currently throws a plain `Error`. Either match swap's pattern or
-  promote to a typed error and refactor swap in the same Phase 2.5
-  commit that extracts `QUOTE_DISCRIMINATOR`. Both are acceptable per
-  plan §"Pattern fit"; user's call during implementation.
+These differ from the plan/brainstorm and matter to readers downstream:
+
+1. **`@morpho-org/blue-sdk`'s chain registry does not include baseSepolia.**
+   The plan locked "full delegation to `AccrualPosition.fetch` /
+   `Market.fetch`" — those helpers route through `getChainAddresses(chainId)`
+   and throw on baseSepolia. We instead read raw state via `blueAbi`
+   multicall, then construct `Market` + `AccrualPosition` locally so the
+   SDK's getters (`healthFactor`, `ltv`, `liquidationPrice`, `borrowAssets`)
+   still compute the math. Net effect: same math, no per-chain registry
+   coupling. Documented in `MorphoBorrowProvider.ts` header.
+2. **`BorrowProviderName`** moved to `types/providers.ts` (alongside
+   `LendProviderName`/`SwapProviderName`) when main consolidated those.
+   `actions.ts` re-exports it. The original plan put it in
+   `types/borrow/base.ts` — superseded by main's restructure.
+3. **`marketParams` write to `deployments.json`** built in this branch
+   (commit `bc80b1fa`) — PR #2 didn't include this follow-up so we added
+   it ourselves: the Solidity deploy script now logs each `MarketParams`
+   field, and `deploy-demo.sh` parses them into
+   `morpho.borrow.marketParams.{loanToken,collateralToken,oracle,irm,lltv}`.
+   No deploy has run yet; values are still `null` in JSON.
+4. **`ActionsContext.borrowProviders` is currently optional.** Full
+   threading to every `WalletNamespace`/`HostedWalletProvider` site is
+   deferred to Phase 6 to avoid a sprawling diff. The borrow namespaces
+   themselves are wired and tested.
+5. **Wallet-namespace max-path re-encoding (Phase 5.3 in plan) is
+   deferred.** Quotes encode the `borrowShares` snapshot taken at quote
+   time. The wallet namespace re-quotes via `provider.openPosition` / etc.
+   when called with raw params (not a quote), which re-fetches fresh
+   shares. The "rebuild calldata in-place at dispatch time" optimization
+   for accepted quotes can land in Phase 5 polish or alongside Phase 6.
+
+## Open items for Phase 6+
+
+- **Thread `borrowProviders` through `ActionsContext` consumers.** Today
+  `borrowProviders?: BorrowProviders` is optional in `types/actions.ts:178`;
+  every `WalletNamespace`/`HostedWalletProvider`/`Wallet` site that holds
+  an `ActionsContext` needs the field, plus a default `{}` when no borrow
+  config is supplied.
+- **`actions.borrow` and `wallet.borrow` accessors** in `Actions.ts` and
+  `WalletNamespace.ts`, mirroring the lend block at `actions.ts:87-104`.
+- **`MockBorrowProvider`** mirrors `MockLendProvider` and lands in Phase 7.1.
+  Backend (PR #4) consumes it.
+- **Fork test** lives at the contracts package and exercises open / get /
+  close round-trip against an anvil fork of baseSepolia. Reads marketId +
+  MarketParams from `deployments.json`.
+
+## Next agent: how to continue
+
+1. Run `/ce-work` against the plan file pointing at Phase 6. The plan's
+   Phase 6 section calls out the exact files and patterns.
+2. Phase 7.1 (`MockBorrowProvider`) is independent of Phase 6 and can run
+   in parallel if you split.
+3. Commit cadence stays the same: build → tests → lint:fix → commit (3-7
+   word messages, no PR numbers, no AI/Claude mentions).
+4. **Update this handoff after each phase.** Per user direction
+   (2026-05-11), the handoff is the rolling status doc across phases.
 
 ## Decision history (reference only)
 
