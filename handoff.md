@@ -1,7 +1,7 @@
 # Handoff: Borrow PR #3 (SDK BorrowProvider)
 
-> **Status: Phases 1-5 landed.** Plan-defined Phase 6 (top-level wiring),
-> Phase 7 (mocks + fork test), Phase 8 (changeset + docs) remain.
+> **Status: Phases 1-6 landed.** Phase 7 (mocks + fork test) and Phase 8
+> (changeset + docs) remain.
 
 ## Where we are
 
@@ -12,7 +12,7 @@
 | **3.** Abstract `BorrowProvider` base | ✅ | Mirrors `LendProvider` shape; owns amount normalization + approval-mode cascading + allowlist enforcement |
 | **4.** `MorphoBorrowProvider` | ✅ | Reads via raw `blueAbi` multicall (1 RTT), passes results through Morpho's `Market`/`AccrualPosition` for math. Write side encodes `supplyCollateral`/`borrow`/`repay`/`withdrawCollateral` with allowance pre-flight. `BorrowMarketParamsMismatchError` thrown at construction. |
 | **5.** Namespaces | ✅ | `BaseBorrowNamespace`, `ActionsBorrowNamespace`, `WalletBorrowNamespace` with QUOTE_DISCRIMINATOR routing + recipient binding + dispatch via `executeTransactionBatch` |
-| **6.** Top-level wiring | 🔲 | `Actions.ts` borrow block + `WalletNamespace` accessor; thread `borrowProviders` through `ActionsContext` (currently optional during rollout) |
+| **6.** Top-level wiring | ✅ | `actions.borrow` accessor on `Actions`; `wallet.borrow` accessor on `Wallet` (instantiated when borrow providers are configured). `borrowProviders` threaded through `WalletNamespace` → `LocalWallet` and `DefaultSmartWalletProvider` → `DefaultSmartWallet`. Hosted-provider deps (`HostedProviderDeps`) intentionally NOT extended to keep declaration-emit inference shallow — hosted wallets can opt in later. |
 | **7.** `MockBorrowProvider` + fork test | 🔲 | 7.1 unblocked. 7.2 fork test reads `marketParams` from `deployments.json` (already plumbed in commit `bc80b1fa`) |
 | **8.** Changeset + docs | 🔲 | Minor bump on `@eth-optimism/actions-service`; `llms-full.txt` borrow section |
 
@@ -38,41 +38,46 @@ These differ from the plan/brainstorm and matter to readers downstream:
    field, and `deploy-demo.sh` parses them into
    `morpho.borrow.marketParams.{loanToken,collateralToken,oracle,irm,lltv}`.
    No deploy has run yet; values are still `null` in JSON.
-4. **`ActionsContext.borrowProviders` is currently optional.** Full
-   threading to every `WalletNamespace`/`HostedWalletProvider` site is
-   deferred to Phase 6 to avoid a sprawling diff. The borrow namespaces
-   themselves are wired and tested.
+4. **`ActionsContext.borrowProviders` stays optional.** The
+   non-hosted-wallet path (Actions → WalletNamespace → LocalWallet → Wallet)
+   passes it through. Hosted-wallet factories ignore it for now —
+   `HostedProviderDeps` did not get the new field because adding it tripped
+   TypeScript's declaration-emit inference depth (saw `SUPPORTED_CHAINS`
+   + `createSignerMock` flagged as non-portable). Workaround: I added an
+   explicit `readonly Chain[]` annotation to `SUPPORTED_CHAINS` and cast
+   the privy mock's `createSignerMock` shape, but kept hosted deps
+   conservative. A future PR can extend `HostedProviderDeps` once we have
+   a clearer fix.
 5. **Wallet-namespace max-path re-encoding (Phase 5.3 in plan) is
    deferred.** Quotes encode the `borrowShares` snapshot taken at quote
    time. The wallet namespace re-quotes via `provider.openPosition` / etc.
    when called with raw params (not a quote), which re-fetches fresh
    shares. The "rebuild calldata in-place at dispatch time" optimization
-   for accepted quotes can land in Phase 5 polish or alongside Phase 6.
+   for accepted quotes can land alongside Phase 7 polish.
 
-## Open items for Phase 6+
+## Open items for Phase 7+
 
-- **Thread `borrowProviders` through `ActionsContext` consumers.** Today
-  `borrowProviders?: BorrowProviders` is optional in `types/actions.ts:178`;
-  every `WalletNamespace`/`HostedWalletProvider`/`Wallet` site that holds
-  an `ActionsContext` needs the field, plus a default `{}` when no borrow
-  config is supplied.
-- **`actions.borrow` and `wallet.borrow` accessors** in `Actions.ts` and
-  `WalletNamespace.ts`, mirroring the lend block at `actions.ts:87-104`.
 - **`MockBorrowProvider`** mirrors `MockLendProvider` and lands in Phase 7.1.
   Backend (PR #4) consumes it.
 - **Fork test** lives at the contracts package and exercises open / get /
   close round-trip against an anvil fork of baseSepolia. Reads marketId +
-  MarketParams from `deployments.json`.
+  MarketParams from `deployments.json` (the schema additions landed in
+  commit `bc80b1fa`; the deploy itself still needs to run on the demo box
+  to populate the JSON).
+- **Changeset + `llms-full.txt`** Phase 8.
+- **Optional follow-ups not in scope:**
+  - Extend `HostedProviderDeps` with `borrowProviders` (and update Privy /
+    Turnkey / Dynamic wallet factories to thread it). Blocked on resolving
+    the TS inference-depth issue noted above.
+  - Max-path re-encoding in `WalletBorrowNamespace.dispatch` to absorb
+    interest accrual between quote and dispatch.
 
 ## Next agent: how to continue
 
-1. Run `/ce-work` against the plan file pointing at Phase 6. The plan's
-   Phase 6 section calls out the exact files and patterns.
-2. Phase 7.1 (`MockBorrowProvider`) is independent of Phase 6 and can run
-   in parallel if you split.
-3. Commit cadence stays the same: build → tests → lint:fix → commit (3-7
+1. Run `/ce-work` against the plan file pointing at Phase 7.
+2. Commit cadence stays the same: build → tests → lint:fix → commit (3-7
    word messages, no PR numbers, no AI/Claude mentions).
-4. **Update this handoff after each phase.** Per user direction
+3. **Update this handoff after each phase.** Per user direction
    (2026-05-11), the handoff is the rolling status doc across phases.
 
 ## Decision history (reference only)
