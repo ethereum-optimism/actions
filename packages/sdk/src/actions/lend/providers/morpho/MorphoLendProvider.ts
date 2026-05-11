@@ -1,10 +1,11 @@
 import { MetaMorphoAction } from '@morpho-org/blue-sdk-viem'
-import { erc20Abi, erc4626Abi, formatUnits, type PublicClient } from 'viem'
+import { erc20Abi, erc4626Abi, formatUnits } from 'viem'
 
 import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/actions/lend/providers/morpho/sdk.js'
 import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
+import { resolveUnderlyingDecimals } from '@/actions/shared/morpho/decimals.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
 import type {
@@ -175,10 +176,15 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
       const publicClient = this.chainManager.getPublicClient(
         params.marketId.chainId,
       )
-      const underlyingDecimals = await this.resolveUnderlyingDecimals(
-        publicClient,
+      const match = findMarketInAllowlist(
+        this._config.marketAllowlist,
         params.marketId,
       )
+      const underlyingDecimals = await resolveUnderlyingDecimals({
+        publicClient,
+        vaultAddress: params.marketId.address,
+        allowlistDecimals: match?.asset.metadata.decimals,
+      })
 
       // Get user's market token balance (shares in the vault)
       const shares = await publicClient.readContract({
@@ -209,31 +215,5 @@ export class MorphoLendProvider extends LendProvider<LendProviderConfig> {
         `Failed to get market balance for ${params.walletAddress} in market ${params.marketId.address}`,
       )
     }
-  }
-
-  /**
-   * Resolve the underlying asset decimals for a market.
-   * @description Prefers the allowlisted market config (free, no RPC).
-   * Falls back to an on-chain read of the vault's ERC-4626 `asset()` +
-   * ERC-20 `decimals()` when the allowlist is empty or doesn't contain the
-   * market (e.g. a provider configured without an allowlist).
-   */
-  private async resolveUnderlyingDecimals(
-    publicClient: PublicClient,
-    marketId: LendMarketId,
-  ): Promise<number> {
-    const match = findMarketInAllowlist(this._config.marketAllowlist, marketId)
-    if (match) return match.asset.metadata.decimals
-
-    const underlying = await publicClient.readContract({
-      address: marketId.address,
-      abi: erc4626Abi,
-      functionName: 'asset',
-    })
-    return publicClient.readContract({
-      address: underlying,
-      abi: erc20Abi,
-      functionName: 'decimals',
-    })
   }
 }
