@@ -8,6 +8,88 @@ origin: docs/brainstorms/2026-05-08-borrow-pr5-frontend-tab-brainstorm.md
 
 # feat: demo frontend Borrow tab
 
+## Re-Alignment with PR #3 / PR #4 (2026-05-11, after Phase 1)
+
+After Phase 1 extractions landed, PR #3's brainstorm
+(`docs/brainstorms/2026-05-08-borrow-pr3-sdk-borrow-provider-brainstorm.md`
+on `origin/kevin/borrow-pr3`) and PR #4's brainstorm + plan
+(`docs/brainstorms/2026-05-08-borrow-pr4-backend-endpoints-brainstorm.md`,
+`docs/plans/2026-05-11-feat-borrow-pr4-backend-endpoints-plan.md` on
+`origin/kevin/borrow-pr4`) were reviewed and their locked contracts adopted.
+Implementation from Phase 2 onward uses the corrected shapes below; the
+in-document type contracts in earlier sections are superseded where they
+conflict.
+
+### Adopted from PR #3 (locked)
+
+1. **5 wallet methods, not 2**: `openPosition`, `closePosition`,
+   `depositCollateral`, `withdrawCollateral`, `repay`. PR #5 stub implements
+   all five, even if the demo UI only surfaces Borrow + Repay in V1.
+2. **`AmountExact` / `AmountWithMax` discriminated unions** for all amount
+   fields (per #379, applied to borrow from day one). Replaces my plan's
+   `BorrowExecuteParams.amount: bigint`.
+3. **`BorrowMarketId` is a tagged union** (`{ kind: 'morpho-blue'; marketId: Hex; chainId }`)
+   forward-compat for Aave / Comet / Liquity / Euler. Replaces my plan's
+   `{ address, chainId }` shape.
+4. **`BorrowMarketPosition`** is the canonical position shape with
+   `healthFactor: number` (1.0 = liquidation, Infinity if no debt),
+   `liquidationPrice: bigint`, `borrowApy`, `liquidationBonus`, optional
+   `ltv` / `maxLtv`. Replaces my plan's `BorrowPosition` shape.
+5. **`safeCeilingLtv`** is precomputed by the SDK on `BorrowQuote` /
+   `BorrowPrice`. PR #5 reads it; does not recompute.
+6. **Quote / commit pattern** mirrors swap. `getPrice` is lightweight (no
+   recipient binding); `getQuote` is recipient-bound with baked calldata.
+   Wallet methods accept either params or `{ quote }`.
+7. **`BorrowMarketConfig`**: `{ kind, marketId, chainId, name, collateralAsset, borrowAsset, borrowProvider, lendProvider, healthBufferPct? }`.
+8. **Health buffer**: `BorrowSettings.healthBufferPct?` (default 0.05) +
+   per-market override. PR #5's stub constant maps to
+   `actions.borrow.settings.healthBufferPct` on backend wire-up.
+
+### Adopted from PR #4 (locked)
+
+9. **Endpoint surface** (1:1 with SDK methods):
+
+   ```
+   GET  /borrow/markets                                     public
+   POST /borrow/price                                        public
+   POST /borrow/quote                                        public
+   GET  /wallet/borrow/:chainId/:marketId/position           auth
+   POST /borrow/position/open                                auth
+   POST /borrow/position/close                               auth
+   POST /borrow/position/deposit-collateral                  auth
+   POST /borrow/position/withdraw-collateral                 auth
+   POST /borrow/position/repay                               auth
+   ```
+
+10. **Bigint serialization**: bigints go on the wire as decimal strings
+    (existing `serializeBigInt` helper convention). PR #5's stub client
+    parses strings back to bigint at the API boundary.
+11. **Error envelope**: HTTP status + freeform message. No code field.
+12. **Mutation bodies**: discriminated union (`params | { quote }`).
+
+### What stays from my deepen-plan
+
+- `useCollateralStatus` neutral selector hook (still right; reads
+  `BorrowMarketPosition[]` from the borrow context, returns the position(s)
+  that secure a given lend asset).
+- `<BorrowHealthCard>` shared across three flows (Borrow / Repay / Lend
+  Withdraw). Now consumes `healthFactor` decimal and `safeCeilingLtv` from
+  the quote, plus computes the bar value as `currentLtv / safeCeilingLtv`.
+- `<ReviewBorrowHealthModal>` with `flow` discriminator from day one.
+- The canonical Aave-style HF decimal surfaces as the secondary label in
+  the review modal (PR #3's `healthFactor` field powers this directly).
+- All YAGNI cuts (no `<ActionCard>`, no `<LendPositionSelector>`, no
+  TanStack mutation/query files in the stub phase).
+
+### Notes for implementers
+
+- The earlier "Type Contracts" code blocks in this plan reflect v1 shapes
+  superseded by the above. Trust this Re-Alignment section over the body
+  where they disagree.
+- PR #5's stub `borrowApi.ts` exposes the 9-endpoint surface. The Class
+  shape mirrors `ActionsApiClient`. When PR #4 lands, swap the in-memory
+  resolution for `request<T>(...)` against the real backend.
+
 ## Enhancement Summary
 
 **Deepened on:** 2026-05-11
