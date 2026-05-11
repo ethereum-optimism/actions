@@ -1,11 +1,49 @@
 # Handoff: Borrow PR #3 (SDK BorrowProvider)
 
-> **Status: brainstorm in progress, mid-flight.** The previous agent ran
-> partial `/ce-brainstorm` discovery + decision-laddering with the user
-> but did **not** write a brainstorm doc to `docs/brainstorms/`. Pick up
-> from "Brainstorm state — where we left off" below before doing anything
-> else. Once the brainstorm doc lands, `git rm handoff.md` in a standalone
-> commit (the PR #2 convention) and proceed to `/ce-plan` → `/ce-work`.
+> **Status: ready for `/ce-work`.** Brainstorm and deepened implementation
+> plan are both committed and pushed. Begin work against the plan file.
+
+## Next agent: start here
+
+1. **Read the plan first.** It carries the locked design, phase ordering,
+   acceptance criteria, and the per-phase commit breakdown:
+   - `docs/plans/2026-05-11-feat-borrow-provider-sdk-plan.md` (~1200 lines)
+   - Skim the Enhancement Summary at the top — it lists the corrections
+     applied during `/deepen-plan` (1 multicall RTT, full
+     `AccrualPosition` delegation, `quoteExpirationSeconds = 30`,
+     `approvalMode = 'exact'` default, etc.).
+2. **Read the brainstorm second** for context on the seven locked
+   decisions:
+   - `docs/brainstorms/2026-05-08-borrow-pr3-sdk-borrow-provider-brainstorm.md`
+3. **Run `/ce-work`** against the plan file. Start with Phase 1 (types).
+   Phases are dependency-ordered; do not start Phase 4 until the
+   **PR #2 follow-up** lands writing
+   `morpho.borrow.marketParams` to `deployments.json` (see plan's
+   "Dependencies & Prerequisites" — Phase 4 is **gated** on this).
+4. **Commit cadence.** Small commits per the user's preference: build →
+   tests → lint:fix → commit (3-7 word messages, no PR numbers, no
+   AI/Claude mentions). See plan's per-phase commit counts.
+5. **Do not delete this handoff.** The user keeps it as a sibling-agent
+   context anchor across the stacked PRs. The brainstorm and plan are
+   the canonical docs; this file is a pointer.
+
+## Open items to verify during implementation (not blockers)
+
+- During Phase 4.2, confirm `AccrualPosition.fetch` exposes every field
+  the adapter needs. If a field is missing, do a one-shot read for it
+  only — **do not** reimplement Morpho's math (plan-locked decision).
+- During Phase 5.3, the `QuoteRecipientMismatchError` shape: swap
+  currently throws a plain `Error`. Either match swap's pattern or
+  promote to a typed error and refactor swap in the same Phase 2.5
+  commit that extracts `QUOTE_DISCRIMINATOR`. Both are acceptable per
+  plan §"Pattern fit"; user's call during implementation.
+
+## Decision history (reference only)
+
+Sections below preserve the decision-by-decision history that led to
+the brainstorm and plan. Useful for understanding *why* a choice was
+made; not load-bearing for implementation. **The plan supersedes any
+phrasing here that conflicts.**
 
 ## Brainstorm state — where we left off
 
@@ -707,18 +745,23 @@ purely informational in case fork tests or contracts work surfaces.
 
 ## Status as of this handoff
 
-- PR #2 is merged-ready in draft state at PR #457; expect review iteration
-  before merge.
-- This branch (`kevin/borrow-pr3`) is at the same HEAD as PR #2's tip
-  (`6febb45b`); diff against `origin/main` to see what PR #2 brought in.
-- Worktree clean except this `handoff.md` (now committed for cross-agent
-  pickup; delete once the brainstorm doc is written).
-- No SDK code changes yet. Next move: resolve A-vs-B above (decisions
-  #2–#6 from the original list still untouched: repay/closePosition
-  shape, `amount` XOR `amountRaw` per #379, `BorrowMarketPosition`
-  field set, `getMarketId` validation surface, `BorrowQuote` shape).
-  Then write `docs/brainstorms/2026-05-08-borrow-pr3-sdk-borrow-provider-brainstorm.md`,
-  then `/ce-plan` → `/ce-work`.
+- **Brainstorm:** committed at
+  `docs/brainstorms/2026-05-08-borrow-pr3-sdk-borrow-provider-brainstorm.md`.
+  All seven decisions locked.
+- **Plan:** committed at
+  `docs/plans/2026-05-11-feat-borrow-provider-sdk-plan.md`. Deepened
+  with 11-agent review pass on 2026-05-11; Enhancement Summary at the
+  top of the plan documents the corrections applied.
+- **PR #2 (#457):** draft, in review. Local worktree at
+  `/Users/kevin/github/optimism/actions-borrow-pr2` is authoritative for
+  the deploy script + `deployments.json` shape until the PR merges.
+- **PR #2 follow-up (gating Phase 4):** `deployments.json` must be
+  extended to write `morpho.borrow.marketParams: { loanToken,
+  collateralToken, oracle, irm, lltv }` alongside `marketId`. Phase 1-3
+  of this PR's plan ship unblocked; **Phase 4 cannot start without the
+  follow-up.**
+- **No SDK code changes yet on this branch.** Next move: `/ce-work`
+  against the plan, beginning at Phase 1.
 
 ## Useful resume commands
 
