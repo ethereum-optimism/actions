@@ -13,6 +13,16 @@ deepened: 2026-05-11
 
 **Deepened on:** 2026-05-11 via 10 parallel review/research agents (kieran-typescript, code-simplicity, architecture-strategist, security-sentinel, pattern-recognition, performance-oracle, agent-native, best-practices, framework-docs, sharp-edges skill).
 
+**Re-aligned to PR #3 brainstorm v2 on:** 2026-05-11 after PR #3 committed its full brainstorm (`docs/brainstorms/2026-05-08-borrow-pr3-sdk-borrow-provider-brainstorm.md` on `kevin/borrow-pr3`) which refined the SDK type shape beyond the handoff snapshot this plan was originally based on. Material deltas folded back into this plan:
+
+- **`BorrowMarketId` is a tagged union**, not `{ id, chainId }`. Shape: `{ kind: 'morpho-blue'; marketId: Hex; chainId: SupportedChainId }`. PR #4 ships only the Morpho variant; the union is structured for forward-compat (Aave / Comet / Liquity / Euler).
+- **`BorrowMarketConfig` extends `BorrowMarketId`** with `name`, `collateralAsset`, `borrowAsset`, `borrowProvider`, `lendProvider`, optional `healthBufferPct` per-market override.
+- **`actions.borrow.getPosition` exists on the read-only namespace** (no wallet binding). PR #4's `GET /wallet/borrow/.../position` derives `walletAddress` from the authenticated idToken, then calls `actions.borrow.getPosition({ marketId, walletAddress })` — cleaner than the originally-planned `wallet.borrow.getPosition()` call.
+- **`safeCeilingLtv: number`** is a first-class field on `BorrowQuote` and `BorrowPrice` (PR #3 Decision 7, escalated from PR #5). PR #4 surfaces it unchanged.
+- **`healthBufferPct?`** appears on `BorrowMarketConfig` (per-market override) and `BorrowSettings` (global default 0.05). PR #4's `MorphoBorrowDemo` literal may set the override; otherwise SDK default applies. Resolution rule (on SDK / consumer side): `market.healthBufferPct ?? settings.healthBufferPct ?? 0.05`.
+- **PR #3 Decision 5 resolved**: `computeMorphoMarketId` and `verifyMorphoMarketId` are SDK-internal standalone helpers (in `packages/sdk/src/actions/shared/morpho/marketParams.ts`). PR #4 does NOT expose either via HTTP. Out of scope. Original Open Question 5 in this plan is closed.
+- **`GetBorrowMarketsParams`** = `{ collateralAsset?, borrowAsset?, chainId?, markets? }` (borrow-specific, not the shared `FilterAssetChain` lend uses, because borrow markets carry two assets). `GET /borrow/markets` accepts these as optional query filters; collateralAsset / borrowAsset filters require resolving query strings to `Asset` objects via `resolveAsset` (existing helper).
+
 ### Key improvements folded in
 
 1. **Shared branded-schema helpers** (`helpers/schemas.ts`): `AddressSchema`, `Bytes32Schema`, `ChainIdSchema` use zod `.transform()` to emit typed `Address` / `Hex` / `SupportedChainId`. Eliminates `as Address` / `as SupportedChainId` casts that lend currently scatters.
@@ -279,12 +289,37 @@ export const AmountWithMaxSchema = z
 - `withdrawCollateral`: `amount: AmountWithMax` required.
 - `repay`: `amount: AmountWithMax` required.
 
+**`BorrowMarketId` tagged-union schema** (re-aligned to PR #3 brainstorm v2):
+
+```ts
+// helpers/schemas.ts continued — PR #3 v2 shape
+export const BorrowMarketIdSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('morpho-blue'),
+    marketId: Bytes32Schema,
+    chainId: ChainIdSchema,
+  }),
+  // Aave / Comet / Liquity / Euler variants added when those providers land.
+])
+```
+
+Path params for `GET /wallet/borrow/:chainId/:marketId/position` arrive as strings; controller assembles the tagged union before passing to `actions.borrow.getPosition`:
+
+```ts
+const path = c.req.param() // { chainId: '84532', marketId: '0xabc...' }
+const marketId: BorrowMarketId = {
+  kind: 'morpho-blue',
+  marketId: path.marketId.toLowerCase() as Hex,
+  chainId: Number(path.chainId) as SupportedChainId,
+}
+```
+
 **Schema-enforce `collateralAsset` on Morpho fresh open** (sharp-edges §5):
 
 ```ts
 const OpenParamsSchema = z
   .strictObject({
-    marketId: z.strictObject({ id: Bytes32Schema, chainId: ChainIdSchema }),
+    marketId: BorrowMarketIdSchema,
     borrowAmount: AmountExactSchema,
     collateralAmount: AmountExactSchema.optional(),
     collateralAsset: AddressSchema.optional(),
@@ -311,7 +346,7 @@ const OpenBodySchema = z
   .strictObject({
     quote: BorrowQuoteSchema.optional(),
     // params variant fields (all optional at schema level; refine enforces exactly-one)
-    marketId: z.strictObject({ id: Bytes32Schema, chainId: ChainIdSchema }).optional(),
+    marketId: BorrowMarketIdSchema.optional(),
     borrowAmount: AmountExactSchema.optional(),
     collateralAmount: AmountExactSchema.optional(),
     collateralAsset: AddressSchema.optional(),
@@ -433,7 +468,21 @@ Added in deepening to remove the hard PR #3 blocker on Phase 1. Lets PR #4 progr
 
 **Deepening update**: Phase 0 stubs unblock this phase. PR #3 still needs to land for the real wire-up, but Phase 1 commits can proceed against `types/borrow-sdk-stubs.ts`.
 
-- **Commit 1**: Add `MorphoBorrowDemo: BorrowMarketConfig` literal + `ALL_BORROW_MARKETS` in `config/markets.ts` (naming parallels existing `GauntletUSDCDemo` — see pattern-recognition §3). Read `deployments.json`'s `morpho.borrow.{marketId, oracle}` for chain 84532. If deploy hasn't run, add a runtime assert `assertDeploymentReady()` that throws at module init when `ALL_BORROW_MARKETS` is empty (gated by `NODE_ENV !== 'production'`) — keeps invalid states unrepresentable rather than tolerating nulls (kieran-ts §7).
+- **Commit 1**: Add `MorphoBorrowDemo: BorrowMarketConfig` literal + `ALL_BORROW_MARKETS` in `config/markets.ts` (naming parallels existing `GauntletUSDCDemo` — see pattern-recognition §3). **Re-aligned to PR #3 brainstorm v2**: the literal shape is the tagged union extended with config fields:
+  ```ts
+  export const MorphoBorrowDemo: BorrowMarketConfig = {
+    kind: 'morpho-blue',
+    marketId: '<0xbytes32 from deployments.json>',
+    chainId: baseSepolia.id,
+    name: 'Demo dUSDC / OP',
+    collateralAsset: dUSDC_DEMO,           // existing Asset reference; verify export
+    borrowAsset: OP_DEMO,                  // existing Asset reference; verify export
+    borrowProvider: 'morpho',
+    lendProvider: 'morpho',                // dUSDC came from MorphoLendProvider
+    // healthBufferPct?: undefined         // defaults to BorrowSettings.healthBufferPct (0.05)
+  }
+  ```
+  Read `deployments.json`'s `morpho.borrow.{marketId, oracle}` for chain 84532. If deploy hasn't run, add a runtime assert `assertDeploymentReady()` that throws at module init when `ALL_BORROW_MARKETS` is empty (gated by `NODE_ENV !== 'production'`) — keeps invalid states unrepresentable rather than tolerating nulls (kieran-ts §7).
 - **Commit 2**: Wire `borrow: { morpho: { marketAllowlist: ALL_BORROW_MARKETS } }` in `config/actions.ts` (use `ALL_BORROW_MARKETS` directly; do NOT mirror lend's bug of using `[GauntletUSDCDemo]` inline — see architecture-strategist §3). Add `types/borrow.ts` with `Parameters<>[0]`-derived service param types (see "Service-layer types derived from SDK" above). Re-export from `types/index.ts`.
 
 ### Phase 2 — Read endpoints (simplest, no auth)
@@ -445,7 +494,13 @@ Added in deepening to remove the hard PR #3 blocker on Phase 1. Lets PR #4 progr
 
 ### Phase 3 — Wallet position read
 
-- **Commit 5**: Extend `services/wallet.ts` with `getBorrowPosition({ marketId, wallet })`. Also add the `wallet.borrow` not-configured guard analogous to the existing `wallet.lend` guard at `services/wallet.ts:69-71` (pattern-recognition §8). Extend `controllers/wallet.ts` with `getBorrowPosition` method (zod schema uses `Bytes32Schema` + `ChainIdStringSchema` from Phase 0 commit B; **always wraps body in try/catch with `errorResponse(c, 'Failed to get borrow position', 500, error)`** — fixes but does not propagate the existing inconsistency in sibling `getLendPosition` per pattern-recognition §1). Register `GET /wallet/borrow/:chainId/:marketId/position`. Tests: zero-position 200 (`healthFactor: Infinity`, `borrowAmount: "0"`, `collateralAmount: "0"`), active 200, auth miss 401, invalid path 400, unsupported chain 400.
+- **Commit 5**: Extend `services/wallet.ts` with `getBorrowPosition({ marketId, walletAddress })` that calls `actions.borrow.getPosition({ marketId, walletAddress })` — **re-aligned to PR #3 brainstorm v2**: position lives on the read-only namespace, so the service no longer needs `wallet.borrow!.getPosition()`. The `wallet.borrow` non-null assertion is irrelevant here (read-only path); the not-configured guard is still relevant in mutation services (Phase 4+) and added there. Extend `controllers/wallet.ts` with `getBorrowPosition` method:
+  - zod schema uses `Bytes32Schema` + `ChainIdStringSchema` from Phase 0 commit B for path params
+  - **always wraps body in try/catch with `errorResponse(c, 'Failed to get borrow position', 500, error)`** (fixes but does not propagate the existing inconsistency in sibling `getLendPosition` per pattern-recognition §1)
+  - Derives `walletAddress` from `requireAuth(c)` idToken (exact accessor: `authResult.auth` shape; if the existing `AuthContext` doesn't expose the wallet address, resolve via existing wallet service helper — confirm during implementation)
+  - Constructs the tagged-union `BorrowMarketId = { kind: 'morpho-blue', marketId: <bytes32>, chainId: <number> }` from path params
+  - Calls `walletService.getBorrowPosition({ marketId, walletAddress })`
+  Register `GET /wallet/borrow/:chainId/:marketId/position`. Tests: zero-position 200 (`healthFactor: Infinity`, `borrowAmount: "0"`, `collateralAmount: "0"`), active 200, auth miss 401, invalid path 400, unsupported chain 400.
 
 ### Phase 4 — Core mutations (open + close)
 
@@ -495,7 +550,7 @@ PR #5 explicitly needs `repay` (per its handoff: "Activity log needs borrow/repa
 
 ### Hard dependencies
 
-1. **PR #3 SDK exports** (BLOCKING for Phase 1). Required exports: `BorrowProvider`, `MorphoBorrowProvider`, `BorrowConfig`, `BorrowProviders`, `BorrowMarketConfig`, `BorrowMarketId`, `BorrowMarket`, `BorrowMarketPosition`, `BorrowQuote`, `BorrowPrice`, `BorrowFees`, `BorrowReceipt`, `BorrowAction`, `AmountExact`, `AmountWithMax`, and the SDK error classes (`MarketNotAllowedError`, etc.). The local sibling worktree at `/Users/kevin/github/optimism/actions-borrow-pr3` (per handoff-pr4.md "Local sibling worktrees" note) can be inspected for in-flight progress without waiting for origin push.
+1. **PR #3 SDK exports** (BLOCKING for Phase 1). Required exports (re-aligned to PR #3 brainstorm v2): `BorrowProvider` (abstract base), `MorphoBorrowProvider`, `BorrowConfig`, `BorrowProviders`, `BorrowSettings` (carries `healthBufferPct`), `BorrowProviderConfig`, `BorrowProviderName`, `BorrowMarketConfig` (tagged-union extension), `BorrowMarketId` (tagged union — Morpho variant only in PR #3), `BorrowMarket`, `BorrowMarketPosition`, `BorrowQuote` (includes `safeCeilingLtv`), `BorrowPrice` (includes `safeCeilingLtv`), `BorrowFees`, `BorrowReceipt`, `BorrowAction`, `AmountExact`, `AmountWithMax`, `GetBorrowMarketsParams`, plus the SDK error classes. **NOT required by PR #4**: `computeMorphoMarketId`, `verifyMorphoMarketId` (SDK-internal per PR #3 Decision 5). The local sibling worktree at `/Users/kevin/github/optimism/actions-borrow-pr3` (per handoff-pr4.md "Local sibling worktrees" note) can be inspected for in-flight progress without waiting for origin push.
 2. **PR #2 deploy run** for chain 84532. `packages/demo/contracts/state/deployments.json` currently has `morpho.borrow.{mockFeed: null, oracle: null, marketId: null}`. The `BorrowMarketConfig` literal in `config/markets.ts` needs a real `marketId`. Either (a) run the deploy before Phase 1 commit 1, or (b) ship Phase 1 with a placeholder that throws clearly until deploy lands.
 
 ### Soft dependencies / risks
