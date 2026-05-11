@@ -4,6 +4,7 @@ import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
 import * as assetsController from './controllers/assets.js'
+import * as borrowController from './controllers/borrow.js'
 import * as lendController from './controllers/lend.js'
 import * as swapController from './controllers/swap.js'
 import { WalletController } from './controllers/wallet.js'
@@ -63,6 +64,9 @@ router.post(
   authMiddleware,
   lendController.closePosition,
 )
+
+// Borrow endpoints
+router.get('/borrow/markets', borrowController.getMarkets)
 
 // Assets endpoints
 router.get('/assets', assetsController.getAssets)
