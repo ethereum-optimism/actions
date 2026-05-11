@@ -15,7 +15,7 @@
 | **5.** Namespaces | ✅ | `BaseBorrowNamespace`, `ActionsBorrowNamespace`, `WalletBorrowNamespace` with QUOTE_DISCRIMINATOR routing + recipient binding + dispatch via `executeTransactionBatch` |
 | **6.** Top-level wiring | ✅ | `actions.borrow` accessor on `Actions`; `wallet.borrow` accessor on `Wallet` (instantiated when borrow providers are configured). `borrowProviders` threaded through `WalletNamespace` → `LocalWallet` and `DefaultSmartWalletProvider` → `DefaultSmartWallet`. Hosted-provider deps (`HostedProviderDeps`) intentionally NOT extended to keep declaration-emit inference shallow — hosted wallets can opt in later. |
 | **7.1.** `MockBorrowProvider` | ✅ | Mirrors `MockLendProvider`; every public method is a `vi.fn()` over a default impl so tests can override with `mockResolvedValue`/`mockRejectedValue`. |
-| **7.2.** Fork test | 🔲 | Deferred — needs the demo deploy to populate `deployments.json` first. The schema additions are already in (commit `bc80b1fa`). Once the deploy runs, the test pattern is the same as `VelodromeSwapProvider.network.test.ts`. |
+| **7.2.** Fork test | ✅ | `MorphoBorrowProvider.network.test.ts` forks baseSepolia via anvil. Skips itself cleanly with `console.warn` when `deployments.json` is still null; pass once the deploy is run (read-side `getMarket`/`getPosition` + write-side calldata bundle shape). |
 | **8.** Changeset + docs | ✅ | `.changeset/borrow-provider-sdk.md` minor bump; `llms-full.txt` has the new borrow section + key types. |
 
 ## Significant deviations from the plan
@@ -63,10 +63,10 @@ These differ from the plan/brainstorm and matter to readers downstream:
   `morpho.borrow.*` fields (marketId, mockFeed, oracle, marketParams)
   are populated. The Solidity script + bash orchestrator are wired
   (commit `bc80b1fa`); just need to point a funded deployer at it.
-- **Phase 7.2 fork test** — once the deploy is live, write a
-  `MorphoBorrowProvider.network.test.ts` following the
-  `VelodromeSwapProvider.network.test.ts` shape. Open / getPosition /
-  close round-trip is the minimum acceptance from the plan.
+  Command: `packages/demo/contracts/script/deploy-demo.sh --rpc-url <baseSepolia-rpc> --private-key <deployer-key>`.
+  The script is idempotent (skips already-deployed steps).
+- **Re-run `pnpm test:network`** after the deploy to confirm the borrow
+  fork test passes. Currently skipping with a clean console.warn.
 - **Optional follow-ups not in scope:**
   - Extend `HostedProviderDeps` with `borrowProviders` (and update Privy /
     Turnkey / Dynamic wallet factories to thread it). Blocked on resolving
