@@ -16,6 +16,7 @@ import { createPortal } from 'react-dom'
 import { stubPriceUsd } from '@/api/borrowApi'
 import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
+import { useActivityLogger } from '@/hooks/useActivityLogger'
 import {
   computeMaxBorrowSafeUsd,
   computeProjection,
@@ -71,6 +72,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     handleMarketSelect,
     handleTransaction,
   } = useBorrowProviderContext()
+  const { logActivity } = useActivityLogger()
 
   const [mode, setMode] = useState<'borrow' | 'repay'>('borrow')
   const [amount, setAmount] = useState('')
@@ -226,7 +228,12 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   }
 
   const handleReviewConfirm = async () => {
-    if (!activeMarket) return
+    if (!activeMarket || !activeAsset) return
+    const symbol = activeAsset.metadata.symbol.replace('_DEMO', '')
+    const activity = logActivity(mode, {
+      amount: amountNum.toString(),
+      assetSymbol: symbol,
+    })
     setIsExecuting(true)
     setReviewModalOpen(false)
     setTxModalOpen(true)
@@ -248,15 +255,17 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
           amount: { amount: amountNum },
         })
       }
+      activity?.confirm()
       setTxModalOpen(false)
       setAmount('')
       setToast({
         visible: true,
         title: mode === 'borrow' ? 'Borrowed' : 'Repaid',
-        description: `${amountNum} ${activeAsset?.metadata.symbol.replace('_DEMO', '')}`,
+        description: `${amountNum} ${symbol}`,
       })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Transaction failed'
+      activity?.error()
       setTxStatus('error')
       setTxError(msg)
     } finally {

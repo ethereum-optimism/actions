@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
 import { borrowApi } from '@/api/borrowApi'
 import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
+import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { assertBufferValid } from '@/utils/borrowMath'
 import type {
   BorrowAction,
@@ -90,6 +91,7 @@ export interface UseBorrowProviderReturn {
 export function useBorrowProvider(
   walletAddress: Address | null,
 ): UseBorrowProviderReturn {
+  const { logActivity } = useActivityLogger()
   const [markets, setMarkets] = useState<readonly BorrowMarket[]>([])
   const [selectedMarket, setSelectedMarket] = useState<BorrowMarket | null>(
     null,
@@ -107,6 +109,7 @@ export function useBorrowProvider(
   // Load markets once at mount.
   useEffect(() => {
     let cancelled = false
+    const activity = logActivity('getBorrowMarkets')
     setIsLoadingMarkets(true)
     borrowApi
       .getMarkets()
@@ -114,7 +117,9 @@ export function useBorrowProvider(
         if (cancelled) return
         setMarkets(m)
         if (!selectedMarket && m.length > 0) setSelectedMarket(m[0])
+        activity?.confirm()
       })
+      .catch(() => activity?.error())
       .finally(() => {
         if (!cancelled) setIsLoadingMarkets(false)
       })
@@ -126,21 +131,29 @@ export function useBorrowProvider(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const fetchPositions = useCallback(async (address: Address | null) => {
-    if (!address) {
-      setBorrowPositions([])
-      setIsInitialLoad(false)
-      return
-    }
-    setIsLoadingPositions(true)
-    try {
-      const positions = await borrowApi.getPositions(address)
-      setBorrowPositions(positions)
-    } finally {
-      setIsLoadingPositions(false)
-      setIsInitialLoad(false)
-    }
-  }, [])
+  const fetchPositions = useCallback(
+    async (address: Address | null) => {
+      if (!address) {
+        setBorrowPositions([])
+        setIsInitialLoad(false)
+        return
+      }
+      const activity = logActivity('getBorrowPosition')
+      setIsLoadingPositions(true)
+      try {
+        const positions = await borrowApi.getPositions(address)
+        setBorrowPositions(positions)
+        activity?.confirm()
+      } catch (e) {
+        activity?.error()
+        throw e
+      } finally {
+        setIsLoadingPositions(false)
+        setIsInitialLoad(false)
+      }
+    },
+    [logActivity],
+  )
 
   // Refresh positions when wallet changes. Wipe stub state on switch so
   // the new wallet sees its own positions (or none), not the previous
