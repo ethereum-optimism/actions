@@ -1,13 +1,12 @@
 import {
+  type BorrowMarketConfig,
   ETH,
   type LendMarketConfig,
   USDC,
   WETH,
 } from '@eth-optimism/actions-sdk'
-import type { Address, Hex } from 'viem'
+import { type Address, type Hex, zeroAddress } from 'viem'
 import { baseSepolia, optimismSepolia, unichain } from 'viem/chains'
-
-import type { BorrowMarketConfig } from '@/types/borrow-sdk-stubs.js'
 
 import { OP_DEMO, USDC_DEMO } from './assets.js'
 
@@ -56,6 +55,15 @@ export const MorphoBorrowDemo: BorrowMarketConfig = {
   borrowAsset: OP_DEMO,
   borrowProvider: 'morpho',
   lendProvider: 'morpho',
+  // Placeholder marketParams; populated alongside marketId when the borrow
+  // deploy runs and writes packages/demo/contracts/state/deployments.json.
+  marketParams: {
+    loanToken: zeroAddress,
+    collateralToken: zeroAddress,
+    oracle: zeroAddress,
+    irm: zeroAddress,
+    lltv: 0n,
+  },
 }
 
 export const ALL_BORROW_MARKETS: BorrowMarketConfig[] = [MorphoBorrowDemo]

@@ -1,4 +1,5 @@
 import type {
+  BorrowMarketId,
   EOATransactionReceipt,
   LendMarketId,
   SmartWallet,
@@ -18,10 +19,6 @@ import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getActions, getPrivyClient } from '@/config/actions.js'
-import {
-  asActionsBorrow,
-  type BorrowMarketId,
-} from '@/types/borrow-sdk-stubs.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
 /**
@@ -108,7 +105,10 @@ export async function getBorrowPosition({
   walletAddress: Address
 }) {
   const actions = getActions()
-  const position = await asActionsBorrow(actions).getPosition({
+  if (!actions.borrow) {
+    throw new Error('Borrow not configured')
+  }
+  const position = await actions.borrow.getPosition({
     marketId,
     walletAddress,
   })
