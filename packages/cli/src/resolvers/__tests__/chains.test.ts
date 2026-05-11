@@ -12,12 +12,16 @@ const ALL: SupportedChainId[] = [
   optimismSepolia.id,
 ]
 
-const SHORTNAMES = ['base', 'base-sepolia', 'optimism', 'op-sepolia'] as const
+const SHORTNAMES = ['base', 'base-sepolia', 'op-mainnet', 'op-sepolia'] as const
 
 describe('resolveChain', () => {
   it('resolves each canonical shortname to its chain id', () => {
     expect(resolveChain('base-sepolia', ALL)).toBe(baseSepolia.id)
     expect(resolveChain('op-sepolia', ALL)).toBe(optimismSepolia.id)
+    expect(resolveChain('op-mainnet', ALL)).toBe(optimism.id)
+  })
+
+  it('also accepts curated aliases on top of the viem name', () => {
     expect(resolveChain('optimism', ALL)).toBe(optimism.id)
   })
 
@@ -51,7 +55,7 @@ describe('shortnameFor', () => {
   it('returns the canonical shortname for each supported chain id', () => {
     expect(shortnameFor(baseSepolia.id)).toBe('base-sepolia')
     expect(shortnameFor(optimismSepolia.id)).toBe('op-sepolia')
-    expect(shortnameFor(optimism.id)).toBe('optimism')
+    expect(shortnameFor(optimism.id)).toBe('op-mainnet')
   })
 })
 

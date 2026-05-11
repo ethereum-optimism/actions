@@ -1,6 +1,6 @@
 import {
-  ACTIONS_SUPPORTED_CHAIN_IDS,
   serializeBigInt,
+  SUPPORTED_CHAIN_IDS,
   type SupportedChainId,
 } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
@@ -11,7 +11,7 @@ import { errorResponse, requireAuth } from '@/helpers/errors.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as swapService from '@/services/swap.js'
 
-const supportedChainIds = ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]
+const supportedChainIds = SUPPORTED_CHAIN_IDS as readonly number[]
 const providerEnum = z.enum(['uniswap', 'velodrome']).optional()
 
 const chainIdFromString = z

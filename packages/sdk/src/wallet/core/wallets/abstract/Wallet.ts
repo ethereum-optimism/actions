@@ -85,6 +85,18 @@ export abstract class Wallet {
   }
 
   /**
+   * Check whether a wallet namespace (`lend`, `swap`) is configured on this
+   * wallet. Useful for callers that branch on capability instead of catching
+   * a `TypeError` from `wallet.lend!.openPosition(...)` later. Returns `false`
+   * when the namespace is undefined (no providers were registered for it).
+   * @param namespace - Wallet namespace name to probe.
+   * @returns `true` when the namespace is configured.
+   */
+  has(namespace: 'lend' | 'swap'): boolean {
+    return this[namespace] !== undefined
+  }
+
+  /**
    * Get asset balances across the requested chains (or all supported chains).
    * @description Fetches ETH and ERC20 token balances for this wallet. By default queries every chain returned by the SDK's `ChainManager`. Pass `options.chainIds` to restrict the query to a subset of those chains; each id is validated against the configured chains and an `InvalidParamsError` / `ChainNotSupportedError` is thrown for unusable input. Uses the configured supported assets from `ActionsConfig.assets` if provided.
    * @param options - Optional `chainIds` filter

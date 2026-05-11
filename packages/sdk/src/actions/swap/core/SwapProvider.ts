@@ -3,11 +3,12 @@ import { formatUnits } from 'viem'
 
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
   MarketNotAllowedError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
+  QuoteRecipientMissingError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
@@ -221,7 +222,7 @@ export abstract class SwapProvider<
     const configuredChains = this.chainManager.getSupportedChains()
     return this.protocolSupportedChainIds().filter(
       (id) =>
-        (ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
+        (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
         configuredChains.includes(id),
     )
   }
@@ -436,9 +437,7 @@ export abstract class SwapProvider<
     quote: SwapQuote,
   ): Promise<SwapTransaction> {
     if (!quote.recipient) {
-      throw new Error(
-        'SwapQuote.recipient missing — _getQuote must populate it',
-      )
+      throw new QuoteRecipientMissingError()
     }
     const approvals = await this._buildApprovals(quote)
 

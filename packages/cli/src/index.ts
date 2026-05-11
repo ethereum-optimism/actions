@@ -5,6 +5,7 @@ import pico from 'picocolors'
 import { runAssets } from '@/commands/actions/assets.js'
 import { runChains } from '@/commands/actions/chains.js'
 import { lendCommand } from '@/commands/actions/lend/index.js'
+import { swapCommand } from '@/commands/actions/swap/index.js'
 import { walletCommand } from '@/commands/wallet/index.js'
 import { isEpipeError, writeError } from '@/output/errors.js'
 import { setJsonMode } from '@/output/mode.js'
@@ -51,6 +52,7 @@ program
   .action(runChains)
 
 program.addCommand(lendCommand())
+program.addCommand(swapCommand())
 program.addCommand(walletCommand())
 
 program.parseAsync(process.argv).catch(writeError)

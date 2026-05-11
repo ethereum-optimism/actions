@@ -3,7 +3,7 @@ import { parseUnits } from 'viem'
 
 import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
   AddressRequiredError,
   AssetMetadataRequiredError,
@@ -95,7 +95,7 @@ export abstract class LendProvider<
     const configuredChains = this.chainManager.getSupportedChains()
     return this.protocolSupportedChainIds().filter(
       (id): id is SupportedChainId =>
-        (ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
+        (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
         (configuredChains as readonly number[]).includes(id),
     )
   }

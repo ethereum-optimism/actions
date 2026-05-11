@@ -4,19 +4,37 @@ import type { LendProviderConfig } from '@/types/lend/index.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 
 /**
+ * Runtime list of lend provider names. Source of truth for both the
+ * `LendProviderName` type union and any consumer (CLI, validators) that
+ * needs to enumerate provider names at runtime.
+ */
+export const LEND_PROVIDER_NAMES = ['morpho', 'aave'] as const
+
+/** Names of available lend providers. */
+export type LendProviderName = (typeof LEND_PROVIDER_NAMES)[number]
+
+/**
  * Map of available lend providers keyed by provider name.
- * Add new lend providers here — this is the single source of truth.
+ * Add new providers by extending `LEND_PROVIDER_NAMES`.
  */
 export type LendProviders = {
-  morpho?: LendProvider<LendProviderConfig>
-  aave?: LendProvider<LendProviderConfig>
+  [K in LendProviderName]?: LendProvider<LendProviderConfig>
 }
 
 /**
+ * Runtime list of swap provider names. Source of truth for both the
+ * `SwapProviderName` type union and any consumer (CLI, validators) that
+ * needs to enumerate provider names at runtime.
+ */
+export const SWAP_PROVIDER_NAMES = ['uniswap', 'velodrome'] as const
+
+/** Names of available swap providers. */
+export type SwapProviderName = (typeof SWAP_PROVIDER_NAMES)[number]
+
+/**
  * Map of available swap providers keyed by provider name.
- * Add new swap providers here — this is the single source of truth.
+ * Add new providers by extending `SWAP_PROVIDER_NAMES`.
  */
 export type SwapProviders = {
-  uniswap?: SwapProvider<SwapProviderConfig>
-  velodrome?: SwapProvider<SwapProviderConfig>
+  [K in SwapProviderName]?: SwapProvider<SwapProviderConfig>
 }

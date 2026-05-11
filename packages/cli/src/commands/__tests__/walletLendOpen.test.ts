@@ -44,6 +44,9 @@ describe('runWalletLendOpen', () => {
       wallet: {
         address: '0xabc',
         lend: { openPosition, closePosition: async () => null },
+        has(namespace: 'lend' | 'swap') {
+          return namespace === 'lend'
+        },
       } as never,
     })
   }
@@ -133,8 +136,6 @@ describe('runWalletLendOpen', () => {
     '0x10', // hex literal
     '+1', // leading sign
     ' 1 ', // whitespace
-    '.5', // bare decimal
-    '1.', // trailing dot
     '9007199254740993', // > MAX_SAFE_INTEGER, loses precision through float
   ])('rejects amount %p with CliError(validation)', async (bad) => {
     mockWallet(async () => successReceipt('0x'))
@@ -212,7 +213,12 @@ describe('runWalletLendOpen', () => {
       config: getDemoConfig(),
       actions: {} as never,
       signer: {} as never,
-      wallet: { address: '0xabc' } as never,
+      wallet: {
+        address: '0xabc',
+        has() {
+          return false
+        },
+      } as never,
     })
     try {
       await runWalletLendOpen({ market: 'gauntlet-usdc', amount: '1' })

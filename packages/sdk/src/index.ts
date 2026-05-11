@@ -58,7 +58,9 @@ export {
   WSTETH,
 } from '@/constants/assets.js'
 export {
-  ACTIONS_SUPPORTED_CHAIN_IDS,
+  chainIdFromShortname,
+  SUPPORTED_CHAIN_IDS,
+  SUPPORTED_CHAIN_SHORTNAMES,
   type SupportedChainId,
 } from '@/constants/supportedChains.js'
 export * from '@/core/error/errors.js'
@@ -77,9 +79,11 @@ export {
 } from '@/services/nameservices/ens/utils.js'
 export type {
   ActionsConfig,
+  ApprovalMode,
   ApyBreakdown,
   Asset,
   EOATransactionReceipt,
+  LendAction,
   LendConfig,
   LendMarket,
   LendMarketConfig,
@@ -88,6 +92,7 @@ export type {
   LendMarketPosition,
   LendMarketSupply,
   LendProviderConfig,
+  LendProviderName,
   LendTransaction,
   LendTransactionReceipt,
   SwapConfig,
@@ -112,7 +117,14 @@ export type {
   WalletConfig,
   WalletSwapParams,
 } from '@/types/index.js'
+export {
+  APPROVAL_MODES,
+  LEND_ACTIONS,
+  LEND_PROVIDER_NAMES,
+  SWAP_PROVIDER_NAMES,
+} from '@/types/index.js'
 export { getAssetAddress, isAssetSupportedOnChain } from '@/utils/assets.js'
+export { getLendMarketAllowlist } from '@/utils/lendConfig.js'
 export { serializeBigInt } from '@/utils/serializers.js'
 export * from '@/wallet/core/error/errors.js'
 export { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'

@@ -57,7 +57,8 @@ describe('LocalWallet', () => {
 
     expect(createWalletClient).toHaveBeenCalledOnce()
     const args = vi.mocked(createWalletClient).mock.calls[0][0]
-    expect(args.account).toBe(mockAccount)
+    expect(args.account).toMatchObject({ address: mockAccount.address })
+    expect(args.account).toHaveProperty('nonceManager')
     expect(args.chain).toBe(mockChainManager.getChain(unichain.id))
     expect(walletClient).toBe(mockWalletClient)
   })

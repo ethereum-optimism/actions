@@ -11,10 +11,27 @@ import {
 } from 'viem'
 import type { BundlerClient, SmartAccount } from 'viem/account-abstraction'
 import { createBundlerClient } from 'viem/account-abstraction'
+import { mainnet, sepolia } from 'viem/chains'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { ChainNotSupportedError } from '@/core/error/errors.js'
 import type { ChainConfig } from '@/types/chain.js'
+
+/** viem `pollingInterval` (ms) for L2-class chains with ~1-2s blocks. */
+const L2_POLLING_INTERVAL_MS = 1000
+/** viem `pollingInterval` (ms) for L1-class chains with ~12s blocks. */
+const L1_POLLING_INTERVAL_MS = 4000
+
+const L1_CHAIN_IDS: ReadonlySet<SupportedChainId> = new Set([
+  mainnet.id,
+  sepolia.id,
+])
+
+function pollingIntervalForChain(chainId: SupportedChainId): number {
+  return L1_CHAIN_IDS.has(chainId)
+    ? L1_POLLING_INTERVAL_MS
+    : L2_POLLING_INTERVAL_MS
+}
 
 /**
  * Chain Manager Service
@@ -99,6 +116,7 @@ export class ChainManager {
     const client = createPublicClient({
       chain: this.getChain(chainId),
       transport: http(bundlerUrl),
+      pollingInterval: pollingIntervalForChain(chainId),
     })
     return createBundlerClient({
       account,
@@ -191,6 +209,7 @@ export class ChainManager {
       const client = createPublicClient({
         chain,
         transport: this.getTransportForChain(chainConfig.chainId),
+        pollingInterval: pollingIntervalForChain(chainConfig.chainId),
       })
 
       clients.set(chainConfig.chainId, client)

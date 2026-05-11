@@ -123,7 +123,8 @@ describe('DynamicWallet', () => {
 
     expect(createWalletClient).toHaveBeenCalledOnce()
     const args = vi.mocked(createWalletClient).mock.calls[0][0]
-    expect(args.account).toBe(mockLocalAccount)
+    expect(args.account).toMatchObject({ address: mockLocalAccount.address })
+    expect(args.account).toHaveProperty('nonceManager')
     expect(args.chain).toBe(mockChainManager.getChain(unichain.id))
     expect(walletClient).toBe(mockWalletClient)
   })

@@ -45,6 +45,9 @@ describe('runWalletLendPosition', () => {
               closePosition: async () => null,
             }
           : undefined,
+        has(namespace: 'lend' | 'swap') {
+          return namespace === 'lend' && withLend
+        },
       } as never,
     })
   }

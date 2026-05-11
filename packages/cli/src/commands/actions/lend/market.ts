@@ -10,10 +10,7 @@ export async function runLendMarket(flags: { market: string }): Promise<void> {
   const { actions, config } = baseContext()
   const market = resolveMarket(flags.market, configuredMarkets(config))
   try {
-    const result = await actions.lend.getMarket({
-      address: market.address,
-      chainId: market.chainId,
-    })
+    const result = await actions.lend.getMarket(market)
     printOutput('lendMarket', result)
   } catch (err) {
     rethrowAsCliError(err)
