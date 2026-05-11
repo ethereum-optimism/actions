@@ -34,6 +34,11 @@ import type {
 } from '@/types/borrow'
 
 // Stub demo prices. Real backend gets these from on-chain oracles.
+// Exported so the frontend's projection math (in BorrowAction) can read
+// the same numbers the stub computes against without duplication.
+// TODO(PR #4): replace consumer reads of stubPriceUsd with
+// borrowProviderContext.getPrice() responses that carry positionAfter
+// from the real backend.
 const STUB_PRICES_USD: Readonly<Record<string, number>> = {
   USDC: 1.0,
   USDC_DEMO: 1.0,
@@ -46,10 +51,14 @@ const STUB_PRICES_USD: Readonly<Record<string, number>> = {
 const STUB_LATENCY_MS = 600
 const STUB_QUOTE_TTL_MS = 30_000
 
-function priceForSymbol(symbol: string): number {
+export function stubPriceUsd(symbol: string): number {
   return (
     STUB_PRICES_USD[symbol] ?? STUB_PRICES_USD[symbol.replace('_DEMO', '')] ?? 0
   )
+}
+
+function priceForSymbol(symbol: string): number {
+  return stubPriceUsd(symbol)
 }
 
 function delay(ms: number): Promise<void> {

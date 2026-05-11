@@ -1,27 +1,60 @@
 /**
  * Top-level Borrow tab layout.
  *
- * Phase 2: renders just the no-collateral empty state when the user has
- * no lend positions, or the lend-position selector header plus a
- * placeholder borrow card when they do. The full `<BorrowAction>`,
- * `<BorrowHealthCard>`, asset modal, and review modal land in Phase 3.
+ * Wires the lend-position selector (chooses the collateral source) to
+ * the borrow provider context (selects the matching borrow market) and
+ * mounts the borrow form when collateral is selected. Lend positions
+ * with zero deposit are filtered out; if the user has no eligible
+ * positions, the no-collateral banner is shown.
  *
- * Once a borrow position exists, `<BorrowPositions>` renders beneath the
- * card. That comes in Phase 4.
+ * The selector is inlined here (one consumer); promote to its own file
+ * only when a second consumer appears.
  */
 
+import { useEffect, useMemo, useState } from 'react'
+import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useLendProviderContext } from '@/contexts/LendProviderContext'
+import type { MarketPosition } from '@/types/market'
+import { Dropdown } from '../Dropdown'
+import { BorrowAction } from './BorrowAction'
 
 export function BorrowTab() {
   const { marketPositions, isInitialLoad } = useLendProviderContext()
+  const { markets, handleMarketSelect } = useBorrowProviderContext()
 
-  const positionsWithDeposits = marketPositions.filter(
-    (p) =>
-      p.depositedAmount &&
-      parseFloat(p.depositedAmount) > 0 &&
-      p.depositedAmount !== '0' &&
-      p.depositedAmount !== '0.00',
+  const positionsWithDeposits = useMemo(
+    () =>
+      marketPositions.filter(
+        (p) =>
+          p.depositedAmount &&
+          parseFloat(p.depositedAmount) > 0 &&
+          p.depositedAmount !== '0' &&
+          p.depositedAmount !== '0.00',
+      ),
+    [marketPositions],
   )
+
+  const [selectedLendPosition, setSelectedLendPosition] =
+    useState<MarketPosition | null>(null)
+
+  // Default-select the first eligible lend position once they load.
+  useEffect(() => {
+    if (!selectedLendPosition && positionsWithDeposits.length > 0) {
+      setSelectedLendPosition(positionsWithDeposits[0])
+    }
+  }, [positionsWithDeposits, selectedLendPosition])
+
+  // Sync the borrow context's selected market to whatever borrow market
+  // accepts the chosen lend asset as collateral.
+  useEffect(() => {
+    if (!selectedLendPosition) return
+    const matchingMarket = markets.find(
+      (m) =>
+        m.collateralAsset.metadata.symbol ===
+        selectedLendPosition.asset.metadata.symbol,
+    )
+    if (matchingMarket) handleMarketSelect(matchingMarket)
+  }, [selectedLendPosition, markets, handleMarketSelect])
 
   const hasCollateral = !isInitialLoad && positionsWithDeposits.length > 0
 
@@ -34,12 +67,104 @@ export function BorrowTab() {
         >
           Select Lend Position
         </h3>
-        {hasCollateral ? <SelectedLendPositionStub /> : <NoCollateralBanner />}
+        {hasCollateral ? (
+          <LendPositionSelector
+            positions={positionsWithDeposits}
+            selected={selectedLendPosition}
+            onSelect={setSelectedLendPosition}
+          />
+        ) : (
+          <NoCollateralBanner />
+        )}
       </div>
 
-      {hasCollateral && <BorrowFormPlaceholder />}
+      {hasCollateral && selectedLendPosition && (
+        <BorrowAction selectedLendPosition={selectedLendPosition} />
+      )}
     </>
   )
+}
+
+function LendPositionSelector({
+  positions,
+  selected,
+  onSelect,
+}: {
+  positions: MarketPosition[]
+  selected: MarketPosition | null
+  onSelect: (position: MarketPosition) => void
+}) {
+  return (
+    <Dropdown<MarketPosition>
+      options={positions}
+      selected={selected}
+      onSelect={onSelect}
+      keyOf={(p) => `${p.marketId.address}-${p.marketId.chainId}`}
+      isSelected={(a, b) =>
+        !!b &&
+        a.marketId.address === b.marketId.address &&
+        a.marketId.chainId === b.marketId.chainId
+      }
+      placeholder="Select a lend position"
+      renderOption={(position) => <LendPositionRow position={position} />}
+    />
+  )
+}
+
+function LendPositionRow({ position }: { position: MarketPosition }) {
+  const formattedUsd = formatUsd(position.depositedAmount)
+  return (
+    <div className="flex items-center gap-2 w-full" style={{ minWidth: 0 }}>
+      <img
+        src={position.marketLogo}
+        alt={position.marketName}
+        style={{ width: '20px', height: '20px', flexShrink: 0 }}
+      />
+      <span
+        style={{
+          color: '#1a1b1e',
+          fontSize: '14px',
+          fontWeight: 500,
+          fontFamily: 'Inter',
+        }}
+      >
+        {position.marketName}
+      </span>
+      <span style={{ color: '#9195A6', fontSize: '14px' }}>on</span>
+      <img
+        src={position.networkLogo}
+        alt={position.networkName}
+        style={{ width: '16px', height: '16px', flexShrink: 0 }}
+      />
+      <span
+        style={{
+          color: '#1a1b1e',
+          fontSize: '14px',
+          fontFamily: 'Inter',
+        }}
+      >
+        {position.networkName}
+      </span>
+      <span
+        style={{
+          marginLeft: 'auto',
+          color: '#1a1b1e',
+          fontSize: '14px',
+          fontWeight: 600,
+          fontFamily: 'Inter',
+        }}
+      >
+        {formattedUsd}
+      </span>
+    </div>
+  )
+}
+
+function formatUsd(deposited: string | null): string {
+  if (!deposited) return '$0.00'
+  const num = parseFloat(deposited)
+  if (!Number.isFinite(num)) return '$0.00'
+  return `$${num.toFixed(2)}`
 }
 
 function NoCollateralBanner() {
@@ -60,44 +185,6 @@ function NoCollateralBanner() {
     >
       <InfoIcon />
       <span>To borrow you need to lend any asset to be used as collateral</span>
-    </div>
-  )
-}
-
-function SelectedLendPositionStub() {
-  return (
-    <div
-      style={{
-        padding: '14px 16px',
-        backgroundColor: '#FFFFFF',
-        border: '1px solid #E0E2EB',
-        borderRadius: '12px',
-        color: '#9195A6',
-        fontSize: '14px',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-      }}
-    >
-      Lend position selector coming in Phase 3
-    </div>
-  )
-}
-
-function BorrowFormPlaceholder() {
-  return (
-    <div
-      style={{
-        marginTop: '24px',
-        padding: '24px',
-        backgroundColor: '#FFFFFF',
-        border: '1px solid #E0E2EB',
-        borderRadius: '24px',
-        color: '#9195A6',
-        fontSize: '14px',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-        textAlign: 'center',
-      }}
-    >
-      Borrow form coming in Phase 3
     </div>
   )
 }
