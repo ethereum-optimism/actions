@@ -1,7 +1,8 @@
 # Handoff: Borrow PR #3 (SDK BorrowProvider)
 
-> **Status: Phases 1-6 landed.** Phase 7 (mocks + fork test) and Phase 8
-> (changeset + docs) remain.
+> **Status: Phases 1-8 landed.** PR is shape-complete for the SDK side. Only
+> the fork test (Phase 7.2) is deferred, blocked on the demo deploy actually
+> running on baseSepolia to populate `deployments.json`.
 
 ## Where we are
 
@@ -13,8 +14,9 @@
 | **4.** `MorphoBorrowProvider` | ✅ | Reads via raw `blueAbi` multicall (1 RTT), passes results through Morpho's `Market`/`AccrualPosition` for math. Write side encodes `supplyCollateral`/`borrow`/`repay`/`withdrawCollateral` with allowance pre-flight. `BorrowMarketParamsMismatchError` thrown at construction. |
 | **5.** Namespaces | ✅ | `BaseBorrowNamespace`, `ActionsBorrowNamespace`, `WalletBorrowNamespace` with QUOTE_DISCRIMINATOR routing + recipient binding + dispatch via `executeTransactionBatch` |
 | **6.** Top-level wiring | ✅ | `actions.borrow` accessor on `Actions`; `wallet.borrow` accessor on `Wallet` (instantiated when borrow providers are configured). `borrowProviders` threaded through `WalletNamespace` → `LocalWallet` and `DefaultSmartWalletProvider` → `DefaultSmartWallet`. Hosted-provider deps (`HostedProviderDeps`) intentionally NOT extended to keep declaration-emit inference shallow — hosted wallets can opt in later. |
-| **7.** `MockBorrowProvider` + fork test | 🔲 | 7.1 unblocked. 7.2 fork test reads `marketParams` from `deployments.json` (already plumbed in commit `bc80b1fa`) |
-| **8.** Changeset + docs | 🔲 | Minor bump on `@eth-optimism/actions-service`; `llms-full.txt` borrow section |
+| **7.1.** `MockBorrowProvider` | ✅ | Mirrors `MockLendProvider`; every public method is a `vi.fn()` over a default impl so tests can override with `mockResolvedValue`/`mockRejectedValue`. |
+| **7.2.** Fork test | 🔲 | Deferred — needs the demo deploy to populate `deployments.json` first. The schema additions are already in (commit `bc80b1fa`). Once the deploy runs, the test pattern is the same as `VelodromeSwapProvider.network.test.ts`. |
+| **8.** Changeset + docs | ✅ | `.changeset/borrow-provider-sdk.md` minor bump; `llms-full.txt` has the new borrow section + key types. |
 
 ## Significant deviations from the plan
 
@@ -55,16 +57,16 @@ These differ from the plan/brainstorm and matter to readers downstream:
    shares. The "rebuild calldata in-place at dispatch time" optimization
    for accepted quotes can land alongside Phase 7 polish.
 
-## Open items for Phase 7+
+## Outstanding follow-ups
 
-- **`MockBorrowProvider`** mirrors `MockLendProvider` and lands in Phase 7.1.
-  Backend (PR #4) consumes it.
-- **Fork test** lives at the contracts package and exercises open / get /
-  close round-trip against an anvil fork of baseSepolia. Reads marketId +
-  MarketParams from `deployments.json` (the schema additions landed in
-  commit `bc80b1fa`; the deploy itself still needs to run on the demo box
-  to populate the JSON).
-- **Changeset + `llms-full.txt`** Phase 8.
+- **Run the borrow deploy on baseSepolia** so `deployments.json`'s
+  `morpho.borrow.*` fields (marketId, mockFeed, oracle, marketParams)
+  are populated. The Solidity script + bash orchestrator are wired
+  (commit `bc80b1fa`); just need to point a funded deployer at it.
+- **Phase 7.2 fork test** — once the deploy is live, write a
+  `MorphoBorrowProvider.network.test.ts` following the
+  `VelodromeSwapProvider.network.test.ts` shape. Open / getPosition /
+  close round-trip is the minimum acceptance from the plan.
 - **Optional follow-ups not in scope:**
   - Extend `HostedProviderDeps` with `borrowProviders` (and update Privy /
     Turnkey / Dynamic wallet factories to thread it). Blocked on resolving
@@ -74,10 +76,11 @@ These differ from the plan/brainstorm and matter to readers downstream:
 
 ## Next agent: how to continue
 
-1. Run `/ce-work` against the plan file pointing at Phase 7.
-2. Commit cadence stays the same: build → tests → lint:fix → commit (3-7
+1. The PR is ready to open against `main`. Push (`git push`) if not already.
+2. Coordinate with the demo deploy step to unblock the fork test.
+3. Commit cadence stays the same: build → tests → lint:fix → commit (3-7
    word messages, no PR numbers, no AI/Claude mentions).
-3. **Update this handoff after each phase.** Per user direction
+4. **Update this handoff after each phase.** Per user direction
    (2026-05-11), the handoff is the rolling status doc across phases.
 
 ## Decision history (reference only)
