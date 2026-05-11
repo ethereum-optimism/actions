@@ -6,6 +6,7 @@ import { errorResponse, requireAuth } from '@/helpers/errors.js'
 import {
   AddressSchema,
   AmountExactSchema,
+  AmountWithMaxSchema,
   BorrowMarketIdSchema,
   ChainIdStringSchema,
 } from '@/helpers/schemas.js'
@@ -152,5 +153,120 @@ export async function openPosition(c: Context) {
     return c.json({ result: serializeBigInt(result) })
   } catch (error) {
     return errorResponse(c, 'Failed to open borrow position', 500, error)
+  }
+}
+
+const CloseParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  borrowAmount: AmountWithMaxSchema,
+  collateralAmount: AmountWithMaxSchema.optional(),
+})
+
+const CloseRequestSchema = z.object({
+  body: z.union([CloseParamsBody, quoteBodySchema('close')]),
+})
+
+export async function closePosition(c: Context) {
+  try {
+    const validation = await validateRequest(c, CloseRequestSchema)
+    if (!validation.success) return validation.response
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const result = await borrowService.closePosition({
+      idToken: authResult.auth.idToken,
+      ...validation.data.body,
+    } as Parameters<typeof borrowService.closePosition>[0])
+    return c.json({ result: serializeBigInt(result) })
+  } catch (error) {
+    return errorResponse(c, 'Failed to close borrow position', 500, error)
+  }
+}
+
+const DepositCollateralParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  amount: AmountExactSchema,
+})
+
+const DepositCollateralRequestSchema = z.object({
+  body: z.union([
+    DepositCollateralParamsBody,
+    quoteBodySchema('depositCollateral'),
+  ]),
+})
+
+export async function depositCollateral(c: Context) {
+  try {
+    const validation = await validateRequest(c, DepositCollateralRequestSchema)
+    if (!validation.success) return validation.response
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const result = await borrowService.depositCollateral({
+      idToken: authResult.auth.idToken,
+      ...validation.data.body,
+    } as Parameters<typeof borrowService.depositCollateral>[0])
+    return c.json({ result: serializeBigInt(result) })
+  } catch (error) {
+    return errorResponse(c, 'Failed to deposit collateral', 500, error)
+  }
+}
+
+const WithdrawCollateralParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  amount: AmountWithMaxSchema,
+})
+
+const WithdrawCollateralRequestSchema = z.object({
+  body: z.union([
+    WithdrawCollateralParamsBody,
+    quoteBodySchema('withdrawCollateral'),
+  ]),
+})
+
+export async function withdrawCollateral(c: Context) {
+  try {
+    const validation = await validateRequest(c, WithdrawCollateralRequestSchema)
+    if (!validation.success) return validation.response
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const result = await borrowService.withdrawCollateral({
+      idToken: authResult.auth.idToken,
+      ...validation.data.body,
+    } as Parameters<typeof borrowService.withdrawCollateral>[0])
+    return c.json({ result: serializeBigInt(result) })
+  } catch (error) {
+    return errorResponse(c, 'Failed to withdraw collateral', 500, error)
+  }
+}
+
+const RepayParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  amount: AmountWithMaxSchema,
+})
+
+const RepayRequestSchema = z.object({
+  body: z.union([RepayParamsBody, quoteBodySchema('repay')]),
+})
+
+export async function repay(c: Context) {
+  try {
+    const validation = await validateRequest(c, RepayRequestSchema)
+    if (!validation.success) return validation.response
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const result = await borrowService.repay({
+      idToken: authResult.auth.idToken,
+      ...validation.data.body,
+    } as Parameters<typeof borrowService.repay>[0])
+    return c.json({ result: serializeBigInt(result) })
+  } catch (error) {
+    return errorResponse(c, 'Failed to repay borrow', 500, error)
   }
 }
