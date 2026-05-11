@@ -1,5 +1,9 @@
-import { serializeBigInt } from '@eth-optimism/actions-sdk'
-import { BaseError } from 'viem'
+import {
+  ActionsError,
+  ProviderNotConfiguredError,
+  serializeBigInt,
+} from '@eth-optimism/actions-sdk'
+import { BaseError, ContractFunctionRevertedError } from 'viem'
 
 import { isJsonMode } from '@/output/mode.js'
 
@@ -78,6 +82,87 @@ export function retryableDefaultFor(code: ErrorCode): boolean {
 // and replace it wholesale rather than trying to redact individual segments.
 const URL_PATTERN = /https?:\/\/[^\s'"<>]+/g
 const REDACTED_URL = '[redacted-url]'
+
+// Own-property keys set by viem's `BaseError` constructor that we must NOT
+// surface as part of an SDK error's `details` payload — they are framework
+// metadata, not caller-relevant context.
+const VIEM_BASE_ERROR_KEYS = new Set([
+  'name',
+  'details',
+  'docsPath',
+  'metaMessages',
+  'shortMessage',
+  'version',
+])
+
+function sdkErrorDetails(err: ActionsError): Record<string, unknown> {
+  const out: Record<string, unknown> = { errorName: err.name }
+  for (const [k, v] of Object.entries(err)) {
+    if (VIEM_BASE_ERROR_KEYS.has(k)) continue
+    out[k] = v
+  }
+  return out
+}
+
+/**
+ * @description Maps any thrown value into a `CliError` with the right code:
+ * - `CliError` instances pass through unchanged.
+ * - `ProviderNotConfiguredError` → `config`.
+ * - Other `ActionsError` subclasses → `validation` (carries the SDK error's own properties as `details`).
+ * - viem `ContractFunctionRevertedError` → `onchain`.
+ * - Anything else → retryable `network`.
+ *
+ * The mapping is preferred over substring matching against `err.message`
+ * because typed SDK errors carry structured metadata (chainId, symbol, etc.)
+ * that the agent can act on without parsing free-form text.
+ * @param err - Caught exception.
+ * @returns The corresponding `CliError`.
+ */
+export function toCliError(err: unknown): CliError {
+  if (err instanceof CliError) return err
+  if (err instanceof ProviderNotConfiguredError) {
+    return new CliError('config', err.shortMessage, sdkErrorDetails(err))
+  }
+  if (err instanceof ActionsError) {
+    return new CliError('validation', err.shortMessage, sdkErrorDetails(err))
+  }
+  if (err instanceof ContractFunctionRevertedError) {
+    return new CliError('onchain', err.shortMessage, { cause: err })
+  }
+  const message = err instanceof Error ? err.message : String(err)
+  return new CliError('network', message, { cause: err })
+}
+
+/**
+ * @description Re-throws a caught exception as the right `CliError`.
+ * Convenience wrapper around `toCliError` for handlers' `catch` blocks.
+ * @param err - Caught exception.
+ * @returns Never; always throws.
+ */
+export function rethrowAsCliError(err: unknown): never {
+  throw toCliError(err)
+}
+
+/**
+ * @description Re-throws a caught exception as a `CliError` enriched with caller-supplied context (e.g. chainId, asset symbols) on top of whatever `toCliError` already extracted. The new `details` payload merges the existing one with `context`; existing keys win on conflict so SDK-error metadata isn't clobbered. Use this in handler `catch` blocks when the error code alone isn't actionable for the agent.
+ * @param err - Caught exception.
+ * @param context - Plain record of fields to merge into `details`.
+ * @returns Never; always throws.
+ */
+export function rethrowWithContext(
+  err: unknown,
+  context: Record<string, unknown>,
+): never {
+  const cliErr = toCliError(err)
+  const existing = (cliErr.details ?? {}) as Record<string, unknown>
+  throw new CliError(
+    cliErr.code,
+    cliErr.message,
+    { ...context, ...existing },
+    cliErr.retryableOverride,
+    cliErr.retryAfterMs,
+  )
+}
 
 const SCALAR_ALLOWLIST = new Set([
   'chainId',
@@ -208,7 +293,11 @@ export function isEpipeError(err: unknown): boolean {
 export function writeError(err: unknown): never {
   const cliErr = err instanceof CliError ? err : undefined
   const code: ErrorCode = cliErr?.code ?? 'unknown'
-  const message = err instanceof Error ? err.message : String(err)
+  const rawMessage = err instanceof Error ? err.message : String(err)
+  // SDK exception messages can include the RPC URL (and embedded API key); the
+  // `details` payload is already redacted via `safeDetails`, so apply the same
+  // strip to the top-level `error` field before we emit it.
+  const message = redactUrls(rawMessage)
   const retryable = cliErr?.retryable ?? RETRYABLE_DEFAULT[code]
   const body = isJsonMode()
     ? JSON.stringify(

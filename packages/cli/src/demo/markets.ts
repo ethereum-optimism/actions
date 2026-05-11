@@ -1,10 +1,10 @@
 import {
   ETH,
+  getAssetAddress,
   type LendMarketConfig,
   USDC_DEMO,
   WETH,
 } from '@eth-optimism/actions-sdk'
-import type { Address } from 'viem'
 import { baseSepolia, optimismSepolia } from 'viem/chains'
 
 /**
@@ -26,7 +26,7 @@ export const GauntletUSDCDemo: LendMarketConfig = {
  * gateway. Mirrored from the demo backend's config.
  */
 export const AaveETH: LendMarketConfig = {
-  address: WETH.address[optimismSepolia.id] as Address,
+  address: getAssetAddress(WETH, optimismSepolia.id),
   chainId: optimismSepolia.id,
   name: 'Aave ETH',
   asset: ETH,

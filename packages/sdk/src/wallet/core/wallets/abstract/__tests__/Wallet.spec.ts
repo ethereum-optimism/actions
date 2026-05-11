@@ -125,4 +125,19 @@ describe('Wallet (base)', () => {
     expect(wallet.lend).toBeDefined()
     expect(wallet.lend).toEqual({})
   })
+
+  describe('has', () => {
+    it("returns false for a namespace that wasn't configured", () => {
+      const wallet = new TestWallet(chainManager, address, signer)
+      expect(wallet.has('lend')).toBe(false)
+      expect(wallet.has('swap')).toBe(false)
+    })
+
+    it('returns true once a namespace has been attached', () => {
+      const wallet = new TestWallet(chainManager, address, signer)
+      wallet.lend = {} as WalletLendNamespace
+      expect(wallet.has('lend')).toBe(true)
+      expect(wallet.has('swap')).toBe(false)
+    })
+  })
 })

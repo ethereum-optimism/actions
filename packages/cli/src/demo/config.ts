@@ -10,12 +10,12 @@ import { AaveETH, GauntletUSDCDemo } from '@/demo/markets.js'
 
 /**
  * @description Returns the baked demo `NodeActionsConfig` the CLI boots
- * against. Mirrors `packages/demo/backend/src/config/actions.ts` in asset
- * and market set so CLI behaviour stays aligned with the demo backend.
- * Divergences: `hostedWalletConfig` is omitted (the CLI uses an EOA-backed
- * wallet via `actions.wallet.toActionsWallet(localAccount)`); `swap` is
- * omitted; chain bundlers are omitted (no ERC-4337 gas abstraction - the
- * signer pays gas directly).
+ * against. Mirrors `packages/demo/backend/src/config/actions.ts` in
+ * asset, lend, and swap allowlists so CLI behaviour stays aligned with
+ * the demo backend. Divergences: `hostedWalletConfig` is omitted (the
+ * CLI uses an EOA-backed wallet via
+ * `actions.wallet.toActionsWallet(localAccount)`); chain bundlers are
+ * omitted (no ERC-4337 gas abstraction - the signer pays gas directly).
  * @returns `NodeActionsConfig` with no hosted wallet provider configured.
  */
 export function getDemoConfig(): NodeActionsConfig<never> {
@@ -28,6 +28,18 @@ export function getDemoConfig(): NodeActionsConfig<never> {
     lend: {
       morpho: { marketAllowlist: [GauntletUSDCDemo] },
       aave: { marketAllowlist: [AaveETH] },
+    },
+    swap: {
+      uniswap: {
+        defaultSlippage: 0.005,
+        marketAllowlist: [
+          { assets: [USDC_DEMO, OP_DEMO], fee: 100, tickSpacing: 2 },
+        ],
+      },
+      velodrome: {
+        defaultSlippage: 0.005,
+        marketAllowlist: [{ assets: [USDC_DEMO, OP_DEMO], stable: false }],
+      },
     },
     assets: { allow: [USDC_DEMO, OP_DEMO, ETH] },
     chains: getDemoChains(),

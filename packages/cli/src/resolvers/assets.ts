@@ -1,6 +1,17 @@
-import type { Asset } from '@eth-optimism/actions-sdk'
+import type { Asset, NodeActionsConfig } from '@eth-optimism/actions-sdk'
 
 import { CliError } from '@/output/errors.js'
+
+/**
+ * @description Returns the configured asset allowlist as a flat readonly array, or an empty array when no `assets.allow` is configured. Mirrors `configuredMarkets(config)` in `resolvers/markets.ts` so callers don't repeat the `config.assets?.allow ?? []` fallback at every site.
+ * @param config - Resolved CLI config.
+ * @returns Asset allowlist (possibly empty).
+ */
+export function configuredAssets(
+  config: NodeActionsConfig<never>,
+): readonly Asset[] {
+  return config.assets?.allow ?? []
+}
 
 /**
  * @description Resolves an asset symbol (e.g. `USDC_DEMO`, `eth`) to the

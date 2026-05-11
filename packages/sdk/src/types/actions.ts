@@ -8,6 +8,7 @@ import type { LendProviderConfig } from '@/types/lend/index.js'
 import type {
   BorrowProviders,
   LendProviders,
+  SwapProviderName,
   SwapProviders,
 } from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
@@ -15,11 +16,19 @@ import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js
 
 // Re-export provider configs for convenience
 export type { BorrowProviderConfig, LendProviderConfig, SwapProviderConfig }
-// Re-export centralized provider maps
+// Re-export centralized provider maps and constants
 export type {
+  BorrowProviderName,
   BorrowProviders,
+  LendProviderName,
   LendProviders,
+  SwapProviderName,
   SwapProviders,
+} from '@/types/providers.js'
+export {
+  BORROW_PROVIDER_NAMES,
+  LEND_PROVIDER_NAMES,
+  SWAP_PROVIDER_NAMES,
 } from '@/types/providers.js'
 
 /** Require at least one property to be defined */
@@ -87,15 +96,6 @@ export type BorrowConfig = RequireAtLeastOne<{
   /** Shared settings applied across all borrow providers */
   settings?: BorrowSettings
 }
-
-/** Names of available swap providers — derived from SwapProviders registry */
-export type SwapProviderName = keyof SwapProviders
-
-/** Names of available lend providers — derived from LendProviders registry */
-export type LendProviderName = keyof LendProviders
-
-/** Names of available borrow providers — derived from BorrowProviders registry */
-export type BorrowProviderName = keyof BorrowProviders
 
 /** Routing strategy for selecting a provider when multiple are configured. */
 export type SwapRoutingStrategy = 'price'
@@ -208,7 +208,18 @@ export interface ActionsContext {
  * Default is `"exact"` for safety. Demo / dogfood configs typically opt into
  * `"max"` to avoid an extra approval tx per swap or supply.
  */
-export type ApprovalMode = 'exact' | 'max'
+export const APPROVAL_MODES = ['exact', 'max'] as const
+
+export type ApprovalMode = (typeof APPROVAL_MODES)[number]
+
+/**
+ * The lend write actions exposed by the SDK's wallet namespace
+ * (`openPosition` / `closePosition`). Useful for callers that emit
+ * action-tagged output envelopes or branch on the action being performed.
+ */
+export const LEND_ACTIONS = ['open', 'close'] as const
+
+export type LendAction = (typeof LEND_ACTIONS)[number]
 
 /**
  * Actions SDK configuration

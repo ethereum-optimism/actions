@@ -1,7 +1,7 @@
 import { type Address, parseUnits } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { ACTIONS_SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
+import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
   AddressRequiredError,
   MarketNotAllowedError,
@@ -100,7 +100,7 @@ export abstract class BorrowProvider<
     const configured = this.chainManager.getSupportedChains()
     return this.protocolSupportedChainIds().filter(
       (id): id is SupportedChainId =>
-        (ACTIONS_SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
+        (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
         (configured as readonly number[]).includes(id),
     )
   }

@@ -58,4 +58,14 @@ contract MockChainlinkFeedTest is Test {
         assertEq(answer, 7);
         assertEq(zeroDec.decimals(), 0);
     }
+
+    function test_constructorRevertsOnZeroAnswer() public {
+        vm.expectRevert(bytes("MockChainlinkFeed: answer must be positive"));
+        new MockChainlinkFeed(int256(0), 8, "zero");
+    }
+
+    function test_constructorRevertsOnNegativeAnswer() public {
+        vm.expectRevert(bytes("MockChainlinkFeed: answer must be positive"));
+        new MockChainlinkFeed(int256(-1), 8, "negative");
+    }
 }

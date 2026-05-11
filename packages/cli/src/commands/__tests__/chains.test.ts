@@ -2,7 +2,7 @@ import { baseSepolia, optimismSepolia } from 'viem/chains'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { runChains } from '@/commands/chains.js'
+import { runChains } from '@/commands/actions/chains.js'
 import * as baseCtx from '@/context/baseContext.js'
 import { setJsonMode } from '@/output/mode.js'
 

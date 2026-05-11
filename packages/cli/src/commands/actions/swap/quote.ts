@@ -1,0 +1,33 @@
+import {
+  buildSwapInputs,
+  type QuoteFlags,
+} from '@/commands/actions/swap/util.js'
+import { baseContext } from '@/context/baseContext.js'
+import { rethrowAsCliError } from '@/output/errors.js'
+import { printOutput } from '@/output/printOutput.js'
+import { configuredAssets } from '@/resolvers/assets.js'
+
+/**
+ * @description Handler for
+ * `actions swap quote --in <symbol> --out <symbol>
+ * (--amount-in <n> | --amount-out <n>) --chain <name>
+ * [--provider uniswap|velodrome] [--slippage <pct>]`.
+ * Returns one `SwapQuote` (best price by default; explicit `--provider`
+ * skips routing). Read-only.
+ * @param flags - Commander-parsed required + optional options.
+ * @returns Promise that resolves once stdout has been written.
+ */
+export async function runSwapQuote(flags: QuoteFlags): Promise<void> {
+  const { actions, config } = baseContext()
+  const params = buildSwapInputs(
+    flags,
+    configuredAssets(config),
+    config.chains.map((c) => c.chainId),
+  )
+  try {
+    const quote = await actions.swap.getQuote(params)
+    printOutput('swapQuote', quote)
+  } catch (err) {
+    rethrowAsCliError(err)
+  }
+}
