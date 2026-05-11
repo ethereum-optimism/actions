@@ -18,11 +18,30 @@ const mockBorrowProvider = {
   getQuote: vi.fn(),
 }
 
+const mockWalletBorrow = {
+  openPosition: vi.fn(),
+  closePosition: vi.fn(),
+  depositCollateral: vi.fn(),
+  withdrawCollateral: vi.fn(),
+  repay: vi.fn(),
+}
+
 const mockActions = {
   borrow: mockBorrowProvider,
 }
 
 const mockWalletAddress = '0xabcdef0123456789abcdef0123456789abcdef01'
+
+const mockWallet = {
+  address: mockWalletAddress,
+  borrow: mockWalletBorrow,
+}
+
+const baseMarketId = {
+  kind: 'morpho-blue' as const,
+  marketId: ('0x' + 'a'.repeat(64)) as `0x${string}`,
+  chainId: 84532 as never,
+}
 
 describe('Borrow Service', () => {
   beforeEach(async () => {
@@ -195,6 +214,68 @@ describe('Borrow Service', () => {
       mockBorrowProvider.getQuote.mockRejectedValue(new Error('quote-failed'))
       await expect(borrowService.getQuote(baseParams)).rejects.toThrow(
         'quote-failed',
+      )
+    })
+  })
+
+  describe('openPosition', () => {
+    const fullParams = {
+      idToken: 'idtok',
+      marketId: baseMarketId,
+      borrowAmount: { amount: 5 },
+      collateralAmount: { amount: 100 },
+      collateralAsset: mockWalletAddress as never,
+    }
+
+    beforeEach(async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(mockWallet as never)
+    })
+
+    it('calls wallet.borrow.openPosition with fresh params', async () => {
+      const receipt = { tag: 'open-receipt' } as never
+      mockWalletBorrow.openPosition.mockResolvedValue(receipt)
+
+      const result = await borrowService.openPosition(fullParams)
+
+      expect(mockWalletBorrow.openPosition).toHaveBeenCalledWith({
+        marketId: baseMarketId,
+        borrowAmount: { amount: 5 },
+        collateralAmount: { amount: 100 },
+        collateralAsset: mockWalletAddress,
+      })
+      expect(result).toBe(receipt)
+    })
+
+    it('forwards a pre-built quote unchanged to the SDK', async () => {
+      const quote = { action: 'open', tag: 'q' } as never
+      const receipt = { tag: 'q-receipt' } as never
+      mockWalletBorrow.openPosition.mockResolvedValue(receipt)
+
+      const result = await borrowService.openPosition({
+        idToken: 'idtok',
+        quote,
+      })
+
+      expect(mockWalletBorrow.openPosition).toHaveBeenCalledWith(quote)
+      expect(result).toBe(receipt)
+    })
+
+    it('throws when the wallet cannot be resolved', async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue(null)
+      await expect(borrowService.openPosition(fullParams)).rejects.toThrow(
+        'Wallet not found',
+      )
+      expect(mockWalletBorrow.openPosition).not.toHaveBeenCalled()
+    })
+
+    it('propagates SDK errors', async () => {
+      mockWalletBorrow.openPosition.mockRejectedValue(
+        new Error('insufficient liquidity'),
+      )
+      await expect(borrowService.openPosition(fullParams)).rejects.toThrow(
+        'insufficient liquidity',
       )
     })
   })

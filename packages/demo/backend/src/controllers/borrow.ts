@@ -12,6 +12,21 @@ import {
 import { validateRequest } from '@/helpers/validation.js'
 import * as borrowService from '@/services/borrow.js'
 
+/**
+ * Quote bodies are passed opaquely to the SDK; we only enforce that the
+ * action discriminator matches the route. Deep validation of the quote
+ * shape is the SDK's responsibility at execute time.
+ */
+function quoteBodySchema(action: string) {
+  return z.strictObject({
+    quote: z
+      .object({
+        action: z.literal(action),
+      })
+      .passthrough(),
+  })
+}
+
 const BorrowActionSchema = z.enum([
   'open',
   'close',
@@ -102,5 +117,40 @@ export async function getQuote(c: Context) {
     return c.json({ result: serializeBigInt(quote) })
   } catch (error) {
     return errorResponse(c, 'Failed to get borrow quote', 500, error)
+  }
+}
+
+// ---------- Mutations ----------
+
+const OpenParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  borrowAmount: AmountExactSchema,
+  collateralAmount: AmountExactSchema.optional(),
+  collateralAsset: AddressSchema,
+})
+
+const OpenRequestSchema = z.object({
+  body: z.union([OpenParamsBody, quoteBodySchema('open')]),
+})
+
+/**
+ * POST - Open a borrow position (Morpho variant). Body is either fresh
+ * params or a pre-built quote with action='open'.
+ */
+export async function openPosition(c: Context) {
+  try {
+    const validation = await validateRequest(c, OpenRequestSchema)
+    if (!validation.success) return validation.response
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const result = await borrowService.openPosition({
+      idToken: authResult.auth.idToken,
+      ...validation.data.body,
+    } as Parameters<typeof borrowService.openPosition>[0])
+    return c.json({ result: serializeBigInt(result) })
+  } catch (error) {
+    return errorResponse(c, 'Failed to open borrow position', 500, error)
   }
 }
