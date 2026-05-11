@@ -1,8 +1,15 @@
+import type { Address } from 'viem'
+
 import { getActions } from '@/config/actions.js'
+import { getWallet } from '@/services/wallet.js'
 import {
+  type AmountExact,
   asActionsBorrow,
+  type BorrowAction,
   type BorrowMarket,
+  type BorrowMarketId,
   type BorrowPrice,
+  type BorrowQuote,
   type GetBorrowMarketsParams,
   type GetBorrowPriceParams,
 } from '@/types/borrow-sdk-stubs.js'
@@ -52,4 +59,38 @@ export async function getPrice(
     expiresAt: Date.now() + PRICE_CACHE_TTL_MS,
   })
   return result
+}
+
+// ---------- /borrow/quote ----------
+
+export interface GetQuoteServiceParams {
+  idToken: string
+  action: BorrowAction
+  marketId: BorrowMarketId
+  borrowAmount?: AmountExact
+  collateralAmount?: AmountExact
+}
+
+/**
+ * Builds a recipient-bound borrow quote. The recipient is resolved from
+ * the authenticated `idToken`, not the caller-supplied body, per plan R1.
+ * Uncached: the bundle carries the recipient and an `expiresAt`; caching
+ * would make staleness a footgun.
+ */
+export async function getQuote(
+  params: GetQuoteServiceParams,
+): Promise<BorrowQuote> {
+  const wallet = await getWallet(params.idToken)
+  if (!wallet) {
+    throw new Error('Wallet not found')
+  }
+
+  const actions = getActions()
+  return await asActionsBorrow(actions).getQuote({
+    action: params.action,
+    marketId: params.marketId,
+    borrowAmount: params.borrowAmount,
+    collateralAmount: params.collateralAmount,
+    recipient: wallet.address as Address,
+  })
 }
