@@ -4,12 +4,15 @@ import { getActions } from '@/config/actions.js'
 import { getWallet } from '@/services/wallet.js'
 import {
   type AmountExact,
+  type AmountWithMax,
   asActionsBorrow,
+  asWalletBorrow,
   type BorrowAction,
   type BorrowMarket,
   type BorrowMarketId,
   type BorrowPrice,
   type BorrowQuote,
+  type BorrowReceipt,
   type GetBorrowMarketsParams,
   type GetBorrowPriceParams,
 } from '@/types/borrow-sdk-stubs.js'
@@ -92,5 +95,126 @@ export async function getQuote(
     borrowAmount: params.borrowAmount,
     collateralAmount: params.collateralAmount,
     recipient: wallet.address as Address,
+  })
+}
+
+// ---------- Mutations ----------
+
+/**
+ * Resolves the wallet from idToken; throws if missing. Shared by every
+ * mutation entry point.
+ */
+async function resolveWalletOrThrow(idToken: string) {
+  const wallet = await getWallet(idToken)
+  if (!wallet) {
+    throw new Error('Wallet not found')
+  }
+  return wallet
+}
+
+export type OpenPositionServiceParams = { idToken: string } & (
+  | {
+      marketId: BorrowMarketId
+      borrowAmount: AmountExact
+      collateralAmount?: AmountExact
+      collateralAsset: Address
+    }
+  | { quote: BorrowQuote }
+)
+
+export async function openPosition(
+  params: OpenPositionServiceParams,
+): Promise<BorrowReceipt> {
+  const wallet = await resolveWalletOrThrow(params.idToken)
+  const ns = asWalletBorrow(wallet)
+  if ('quote' in params) {
+    return await ns.openPosition(params.quote)
+  }
+  return await ns.openPosition({
+    marketId: params.marketId,
+    borrowAmount: params.borrowAmount,
+    collateralAmount: params.collateralAmount,
+    collateralAsset: params.collateralAsset,
+  })
+}
+
+export type ClosePositionServiceParams = { idToken: string } & (
+  | {
+      marketId: BorrowMarketId
+      borrowAmount: AmountWithMax
+      collateralAmount?: AmountWithMax
+    }
+  | { quote: BorrowQuote }
+)
+
+export async function closePosition(
+  params: ClosePositionServiceParams,
+): Promise<BorrowReceipt> {
+  const wallet = await resolveWalletOrThrow(params.idToken)
+  const ns = asWalletBorrow(wallet)
+  if ('quote' in params) {
+    return await ns.closePosition(params.quote)
+  }
+  return await ns.closePosition({
+    marketId: params.marketId,
+    borrowAmount: params.borrowAmount,
+    collateralAmount: params.collateralAmount,
+  })
+}
+
+export type DepositCollateralServiceParams = { idToken: string } & (
+  | { marketId: BorrowMarketId; amount: AmountExact }
+  | { quote: BorrowQuote }
+)
+
+export async function depositCollateral(
+  params: DepositCollateralServiceParams,
+): Promise<BorrowReceipt> {
+  const wallet = await resolveWalletOrThrow(params.idToken)
+  const ns = asWalletBorrow(wallet)
+  if ('quote' in params) {
+    return await ns.depositCollateral(params.quote)
+  }
+  return await ns.depositCollateral({
+    marketId: params.marketId,
+    amount: params.amount,
+  })
+}
+
+export type WithdrawCollateralServiceParams = { idToken: string } & (
+  | { marketId: BorrowMarketId; amount: AmountWithMax }
+  | { quote: BorrowQuote }
+)
+
+export async function withdrawCollateral(
+  params: WithdrawCollateralServiceParams,
+): Promise<BorrowReceipt> {
+  const wallet = await resolveWalletOrThrow(params.idToken)
+  const ns = asWalletBorrow(wallet)
+  if ('quote' in params) {
+    return await ns.withdrawCollateral(params.quote)
+  }
+  return await ns.withdrawCollateral({
+    marketId: params.marketId,
+    amount: params.amount,
+  })
+}
+
+export type RepayServiceParams = { idToken: string } & (
+  | { marketId: BorrowMarketId; amount: AmountWithMax }
+  | { quote: BorrowQuote }
+)
+
+export async function repay(
+  params: RepayServiceParams,
+): Promise<BorrowReceipt> {
+  const wallet = await resolveWalletOrThrow(params.idToken)
+  const ns = asWalletBorrow(wallet)
+  if ('quote' in params) {
+    return await ns.repay(params.quote)
+  }
+  return await ns.repay({
+    marketId: params.marketId,
+    amount: params.amount,
   })
 }
