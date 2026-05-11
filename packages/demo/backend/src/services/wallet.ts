@@ -18,6 +18,10 @@ import { baseSepolia } from 'viem/chains'
 
 import { mintableErc20Abi } from '@/abis/mintableErc20Abi.js'
 import { getActions, getPrivyClient } from '@/config/actions.js'
+import {
+  asActionsBorrow,
+  type BorrowMarketId,
+} from '@/types/borrow-sdk-stubs.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
 /**
@@ -93,6 +97,21 @@ export async function getLendPosition({
   wallet: Wallet
 }) {
   const position = await wallet.lend!.getPosition({ marketId })
+  return serializeBigInt(position)
+}
+
+export async function getBorrowPosition({
+  marketId,
+  walletAddress,
+}: {
+  marketId: BorrowMarketId
+  walletAddress: Address
+}) {
+  const actions = getActions()
+  const position = await asActionsBorrow(actions).getPosition({
+    marketId,
+    walletAddress,
+  })
   return serializeBigInt(position)
 }
 
