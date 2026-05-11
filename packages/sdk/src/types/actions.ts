@@ -5,14 +5,22 @@ import type { Asset } from '@/types/asset.js'
 import type { BorrowProviderConfig } from '@/types/borrow/index.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
 export type { BorrowProviderConfig, LendProviderConfig, SwapProviderConfig }
 // Re-export centralized provider maps
-export type { LendProviders, SwapProviders } from '@/types/providers.js'
+export type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 
 /** Require at least one property to be defined */
 type RequireAtLeastOne<T> = {
@@ -85,6 +93,9 @@ export type SwapProviderName = keyof SwapProviders
 
 /** Names of available lend providers — derived from LendProviders registry */
 export type LendProviderName = keyof LendProviders
+
+/** Names of available borrow providers — derived from BorrowProviders registry */
+export type BorrowProviderName = keyof BorrowProviders
 
 /** Routing strategy for selecting a provider when multiple are configured. */
 export type SwapRoutingStrategy = 'price'
@@ -167,12 +178,20 @@ export interface ActionsContext {
   chainManager: ChainManager
   /** Configured lend provider instances (each holds its own config) */
   lendProviders: LendProviders
+  /**
+   * Configured borrow provider instances (each holds its own config).
+   * Optional during the borrow rollout; required wiring lands alongside
+   * `Actions.ts` borrow provider construction.
+   */
+  borrowProviders?: BorrowProviders
   /** Configured swap provider instances (each holds its own config) */
   swapProviders: SwapProviders
   /** Resolved supported asset list (allowlist minus blocklist) */
   supportedAssets: Asset[]
   /** Shared swap settings applied across swap providers */
   swapSettings?: SwapSettings
+  /** Shared borrow settings applied across borrow providers */
+  borrowSettings?: BorrowSettings
 }
 
 /**

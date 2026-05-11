@@ -1,5 +1,7 @@
+import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import type { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import type { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
+import type { BorrowProviderConfig } from '@/types/borrow/index.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 
@@ -10,6 +12,14 @@ import type { SwapProviderConfig } from '@/types/swap/index.js'
 export type LendProviders = {
   morpho?: LendProvider<LendProviderConfig>
   aave?: LendProvider<LendProviderConfig>
+}
+
+/**
+ * Map of available borrow providers keyed by provider name.
+ * Add new borrow providers here — this is the single source of truth.
+ */
+export type BorrowProviders = {
+  morpho?: BorrowProvider<BorrowProviderConfig>
 }
 
 /**

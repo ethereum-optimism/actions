@@ -1,7 +1,11 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { ApprovalMode, LendProviderName } from '@/types/actions.js'
+import type {
+  ApprovalMode,
+  BorrowProviderName,
+  LendProviderName,
+} from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionOptions } from '@/types/common/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -24,13 +28,6 @@ export type BorrowMarketId = {
   /** Chain the market is deployed on */
   chainId: SupportedChainId
 }
-
-/**
- * Names of borrow providers shipped today.
- * @description Future entries (`'aave' | 'comet' | 'euler' | 'liquity'`) will be added
- * alongside their providers.
- */
-export type BorrowProviderName = 'morpho'
 
 /**
  * Morpho Blue market parameter struct.
