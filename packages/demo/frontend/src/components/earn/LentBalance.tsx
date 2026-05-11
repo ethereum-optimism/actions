@@ -3,6 +3,7 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import type { MarketPosition } from '@/types/market'
 import Shimmer from './Shimmer'
+import { PositionsTable } from './PositionsTable'
 
 interface LentBalanceProps {
   marketPositions: MarketPosition[]
@@ -47,14 +48,12 @@ function LentBalance({
     if (isLoadingPosition) {
       return { loading: true, amount: '0' }
     }
-    // Always prefer the position query value over the potentially stale marketPositions value
     return {
       loading: false,
       amount: currentDepositedAmount ?? market.depositedAmount ?? '0',
     }
   }
 
-  // Filter to only show markets with deposits > 0 and sort alphabetically by asset symbol
   const marketsWithDeposits = marketPositions
     .filter(
       (market) =>
@@ -80,7 +79,7 @@ function LentBalance({
       })
     }
   }, [showApyTooltip])
-  // Format deposited amount to 4 decimals and return parts
+
   const formatDepositedAmount = (amount: string) => {
     const num = parseFloat(amount)
     if (isNaN(num)) return { main: '0.00', secondary: '00' }
@@ -99,493 +98,434 @@ function LentBalance({
   const isCardHighlighted =
     hoveredAction === 'getMarket' || hoveredAction === 'getPosition'
 
-  return (
+  const mobileLayout = (
     <>
-      <div
-        className="w-full transition-all"
-        style={{
-          backgroundColor: isCardHighlighted
-            ? colors.highlight.background
-            : '#FFFFFF',
-          border: `1px solid ${isCardHighlighted ? colors.highlight.border : '#E0E2EB'}`,
-          borderRadius: '24px',
-          boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
-          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-        }}
-      >
-        <div className="py-6 px-6">
-          <h2
-            className="font-semibold"
-            style={{ color: '#1a1b1e', fontSize: '16px', marginBottom: '16px' }}
+      {marketsWithDeposits.map((market, index) => (
+        <div
+          key={`mobile-${market.marketId.address}-${market.marketId.chainId}`}
+          className="transition-all"
+          style={{
+            borderTop: index > 0 ? '1px solid #E0E2EB' : 'none',
+            paddingTop: index > 0 ? '12px' : '0',
+          }}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <div
+              className="flex items-center gap-2 transition-all rounded px-1 -mx-1"
+              style={{
+                backgroundColor:
+                  hoveredAction === 'getMarket'
+                    ? colors.highlight.background
+                    : 'transparent',
+              }}
+            >
+              <img
+                src={market.assetLogo}
+                alt={market.asset.metadata.symbol}
+                style={{ width: '20px', height: '20px' }}
+              />
+              <span
+                style={{
+                  color: '#1a1b1e',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  fontFamily: 'Inter',
+                }}
+              >
+                {market.asset.metadata.symbol.replace('_DEMO', '')}
+              </span>
+              <span
+                style={{
+                  color: '#9195A6',
+                  fontSize: '12px',
+                  fontFamily: 'Inter',
+                }}
+              >
+                {market.apy !== null
+                  ? `${(market.apy * 100).toFixed(2)}%`
+                  : '0.00%'}
+              </span>
+            </div>
+            <span
+              className="transition-all rounded px-1"
+              style={{
+                color: '#1a1b1e',
+                fontSize: '14px',
+                fontWeight: 500,
+                fontFamily: 'Inter',
+                backgroundColor:
+                  hoveredAction === 'getPosition'
+                    ? colors.highlight.background
+                    : 'transparent',
+              }}
+            >
+              {(() => {
+                const { loading, amount } = getDisplayState(market)
+                if (loading)
+                  return (
+                    <div
+                      style={{ display: 'flex', justifyContent: 'flex-end' }}
+                    >
+                      <Shimmer width="60px" height="16px" variant="rectangle" />
+                    </div>
+                  )
+                const fmt = formatDepositedAmount(amount)
+                return (
+                  <>
+                    {market.asset.metadata.symbol !== 'ETH' && '$'}
+                    {fmt.main}
+                    <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                      {fmt.secondary}
+                    </span>
+                  </>
+                )
+              })()}
+            </span>
+          </div>
+          <div
+            className="flex items-center gap-1 transition-all rounded px-1 -mx-1"
+            style={{
+              backgroundColor:
+                hoveredAction === 'getMarket'
+                  ? colors.highlight.background
+                  : 'transparent',
+            }}
           >
-            Lent Balance
-          </h2>
-          {isInitialLoad ? (
-            // Shimmer state - matches empty state text height
-            <div className="flex items-start">
-              <Shimmer width="100%" height="20px" variant="rectangle" />
+            <img
+              src={market.marketLogo}
+              alt={market.marketName}
+              style={{ width: '16px', height: '16px' }}
+            />
+            <span
+              style={{
+                color: '#9195A6',
+                fontSize: '12px',
+                fontFamily: 'Inter',
+              }}
+            >
+              {market.marketName}
+            </span>
+            <span style={{ color: '#9195A6', fontSize: '12px' }}>·</span>
+            <img
+              src={market.networkLogo}
+              alt={market.networkName}
+              style={{ width: '16px', height: '16px' }}
+            />
+            <span
+              style={{
+                color: '#9195A6',
+                fontSize: '12px',
+                fontFamily: 'Inter',
+              }}
+            >
+              {market.networkName}
+            </span>
+          </div>
+        </div>
+      ))}
+    </>
+  )
+
+  const desktopTable = (
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <thead>
+        <tr style={{ borderBottom: '1px solid #E0E2EB' }}>
+          <th
+            style={{
+              textAlign: 'left',
+              padding: '12px 8px',
+              color: '#9195A6',
+              fontSize: '12px',
+              fontWeight: 500,
+              fontFamily: 'Inter',
+              minWidth: '120px',
+            }}
+          >
+            Market
+          </th>
+          <th
+            style={{
+              textAlign: 'left',
+              padding: '12px 8px',
+              color: '#9195A6',
+              fontSize: '12px',
+              fontWeight: 500,
+              fontFamily: 'Inter',
+              minWidth: '130px',
+            }}
+          >
+            Network
+          </th>
+          <th
+            style={{
+              textAlign: 'left',
+              padding: '12px 8px',
+              color: '#9195A6',
+              fontSize: '12px',
+              fontWeight: 500,
+              fontFamily: 'Inter',
+              minWidth: '80px',
+            }}
+          >
+            Asset
+          </th>
+          <th
+            style={{
+              textAlign: 'right',
+              padding: '12px 8px',
+              color: '#9195A6',
+              fontSize: '12px',
+              fontWeight: 500,
+              fontFamily: 'Inter',
+              minWidth: '70px',
+              position: 'relative',
+            }}
+          >
+            <div
+              ref={apyRef}
+              onMouseEnter={() => setShowApyTooltip(true)}
+              onMouseLeave={() => setShowApyTooltip(false)}
+              style={{ display: 'inline-flex', cursor: 'pointer' }}
+            >
+              APY
             </div>
-          ) : isEmpty ? (
-            <div className="flex items-start font-normal text-sm leading-5 text-secondary">
-              No active markets yet. Lend to see your balances here.
-            </div>
-          ) : (
-            <>
-              {/* Mobile Card Layout */}
-              <div className="md:hidden flex flex-col gap-3">
-                {marketsWithDeposits.map((market, index) => (
-                  <div
-                    key={`mobile-${market.marketId.address}-${market.marketId.chainId}`}
-                    className="transition-all"
+          </th>
+          <th
+            style={{
+              textAlign: 'right',
+              padding: '12px 8px',
+              color: '#9195A6',
+              fontSize: '12px',
+              fontWeight: 500,
+              fontFamily: 'Inter',
+              minWidth: '80px',
+            }}
+          >
+            Interest
+          </th>
+          <th
+            style={{
+              textAlign: 'right',
+              padding: '12px 8px',
+              color: '#9195A6',
+              fontSize: '12px',
+              fontWeight: 500,
+              fontFamily: 'Inter',
+              minWidth: '100px',
+            }}
+          >
+            Value
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {marketsWithDeposits.map((market) => (
+          <tr
+            key={`desktop-${market.marketId.address}-${market.marketId.chainId}`}
+          >
+            <td
+              className="transition-all"
+              style={{
+                padding: '16px 8px',
+                backgroundColor:
+                  hoveredAction === 'getMarket'
+                    ? colors.highlight.background
+                    : 'transparent',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <img
+                  src={market.marketLogo}
+                  alt={market.marketName}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                <span
+                  style={{
+                    color: '#1a1b1e',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    fontFamily: 'Inter',
+                  }}
+                >
+                  {market.marketName}
+                </span>
+              </div>
+            </td>
+            <td
+              className="transition-all"
+              style={{
+                padding: '16px 8px',
+                backgroundColor:
+                  hoveredAction === 'getMarket'
+                    ? colors.highlight.background
+                    : 'transparent',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <img
+                  src={market.networkLogo}
+                  alt={market.networkName}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                <span
+                  style={{
+                    color: '#1a1b1e',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    fontFamily: 'Inter',
+                  }}
+                >
+                  {market.networkName}
+                </span>
+              </div>
+            </td>
+            <td
+              className="transition-all"
+              style={{
+                padding: '16px 8px',
+                backgroundColor:
+                  hoveredAction === 'getMarket'
+                    ? colors.highlight.background
+                    : 'transparent',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <img
+                  src={market.assetLogo}
+                  alt={market.asset.metadata.symbol}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                <span
+                  style={{
+                    color: '#1a1b1e',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    fontFamily: 'Inter',
+                  }}
+                >
+                  {market.asset.metadata.symbol.replace('_DEMO', '')}
+                </span>
+              </div>
+            </td>
+            <td
+              className="transition-all"
+              style={{
+                padding: '16px 8px',
+                textAlign: 'right',
+                backgroundColor:
+                  hoveredAction === 'getMarket'
+                    ? colors.highlight.background
+                    : 'transparent',
+              }}
+            >
+              <span
+                style={{
+                  color: '#1a1b1e',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  fontFamily: 'Inter',
+                }}
+              >
+                {market.apy !== null
+                  ? `${(market.apy * 100).toFixed(2)}%`
+                  : '0.00%'}
+              </span>
+            </td>
+            <td
+              className="transition-all"
+              style={{
+                padding: '16px 8px',
+                textAlign: 'right',
+                backgroundColor:
+                  hoveredAction === 'getPosition'
+                    ? colors.highlight.background
+                    : 'transparent',
+              }}
+            >
+              {(() => {
+                const interest = getInterest
+                  ? getInterest(market.marketId, market.depositedAmount || '0')
+                  : 0
+                return (
+                  <span
                     style={{
-                      borderTop: index > 0 ? '1px solid #E0E2EB' : 'none',
-                      paddingTop: index > 0 ? '12px' : '0',
+                      color: '#22C55E',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      fontFamily: 'Inter',
                     }}
                   >
-                    {/* Row 1: Asset + APY (left), Amount (right) */}
-                    <div className="flex items-center justify-between mb-1">
-                      <div
-                        className="flex items-center gap-2 transition-all rounded px-1 -mx-1"
-                        style={{
-                          backgroundColor:
-                            hoveredAction === 'getMarket'
-                              ? colors.highlight.background
-                              : 'transparent',
-                        }}
-                      >
-                        <img
-                          src={market.assetLogo}
-                          alt={market.asset.metadata.symbol}
-                          style={{ width: '20px', height: '20px' }}
-                        />
-                        <span
-                          style={{
-                            color: '#1a1b1e',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            fontFamily: 'Inter',
-                          }}
-                        >
-                          {market.asset.metadata.symbol.replace('_DEMO', '')}
-                        </span>
-                        <span
-                          style={{
-                            color: '#9195A6',
-                            fontSize: '12px',
-                            fontFamily: 'Inter',
-                          }}
-                        >
-                          {market.apy !== null
-                            ? `${(market.apy * 100).toFixed(2)}%`
-                            : '0.00%'}
-                        </span>
-                      </div>
-                      <span
-                        className="transition-all rounded px-1"
-                        style={{
-                          color: '#1a1b1e',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          fontFamily: 'Inter',
-                          backgroundColor:
-                            hoveredAction === 'getPosition'
-                              ? colors.highlight.background
-                              : 'transparent',
-                        }}
-                      >
-                        {(() => {
-                          const { loading, amount } = getDisplayState(market)
-                          if (loading)
-                            return (
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  justifyContent: 'flex-end',
-                                }}
-                              >
-                                <Shimmer
-                                  width="60px"
-                                  height="16px"
-                                  variant="rectangle"
-                                />
-                              </div>
-                            )
-                          const fmt = formatDepositedAmount(amount)
-                          return (
-                            <>
-                              {market.asset.metadata.symbol !== 'ETH' && '$'}
-                              {fmt.main}
-                              <span
-                                style={{ color: '#9195A6', fontSize: '12px' }}
-                              >
-                                {fmt.secondary}
-                              </span>
-                            </>
-                          )
-                        })()}
-                      </span>
-                    </div>
-                    {/* Row 2: Market · Network */}
-                    <div
-                      className="flex items-center gap-1 transition-all rounded px-1 -mx-1"
-                      style={{
-                        backgroundColor:
-                          hoveredAction === 'getMarket'
-                            ? colors.highlight.background
-                            : 'transparent',
-                      }}
-                    >
-                      <img
-                        src={market.marketLogo}
-                        alt={market.marketName}
-                        style={{ width: '16px', height: '16px' }}
-                      />
-                      <span
-                        style={{
-                          color: '#9195A6',
-                          fontSize: '12px',
-                          fontFamily: 'Inter',
-                        }}
-                      >
-                        {market.marketName}
-                      </span>
-                      <span style={{ color: '#9195A6', fontSize: '12px' }}>
-                        ·
-                      </span>
-                      <img
-                        src={market.networkLogo}
-                        alt={market.networkName}
-                        style={{ width: '16px', height: '16px' }}
-                      />
-                      <span
-                        style={{
-                          color: '#9195A6',
-                          fontSize: '12px',
-                          fontFamily: 'Inter',
-                        }}
-                      >
-                        {market.networkName}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Desktop Table */}
-              <div
-                className="hidden md:block"
-                style={{ overflowX: 'auto', overflowY: 'visible' }}
+                    +{interest.toFixed(3)}
+                  </span>
+                )
+              })()}
+            </td>
+            <td
+              className="transition-all"
+              style={{
+                padding: '16px 8px',
+                textAlign: 'right',
+                backgroundColor:
+                  hoveredAction === 'getPosition'
+                    ? colors.highlight.background
+                    : 'transparent',
+              }}
+            >
+              <span
+                style={{
+                  color: '#1a1b1e',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  fontFamily: 'Inter',
+                }}
               >
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  {/* Header */}
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #E0E2EB' }}>
-                      <th
+                {(() => {
+                  const { loading, amount } = getDisplayState(market)
+                  if (loading)
+                    return (
+                      <div
                         style={{
-                          textAlign: 'left',
-                          padding: '12px 8px',
-                          color: '#9195A6',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          fontFamily: 'Inter',
-                          minWidth: '120px',
+                          display: 'flex',
+                          justifyContent: 'flex-end',
                         }}
                       >
-                        Market
-                      </th>
-                      <th
-                        style={{
-                          textAlign: 'left',
-                          padding: '12px 8px',
-                          color: '#9195A6',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          fontFamily: 'Inter',
-                          minWidth: '130px',
-                        }}
-                      >
-                        Network
-                      </th>
-                      <th
-                        style={{
-                          textAlign: 'left',
-                          padding: '12px 8px',
-                          color: '#9195A6',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          fontFamily: 'Inter',
-                          minWidth: '80px',
-                        }}
-                      >
-                        Asset
-                      </th>
-                      <th
-                        style={{
-                          textAlign: 'right',
-                          padding: '12px 8px',
-                          color: '#9195A6',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          fontFamily: 'Inter',
-                          minWidth: '70px',
-                          position: 'relative',
-                        }}
-                      >
-                        <div
-                          ref={apyRef}
-                          onMouseEnter={() => setShowApyTooltip(true)}
-                          onMouseLeave={() => setShowApyTooltip(false)}
-                          style={{
-                            display: 'inline-flex',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          APY
-                        </div>
-                      </th>
-                      <th
-                        style={{
-                          textAlign: 'right',
-                          padding: '12px 8px',
-                          color: '#9195A6',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          fontFamily: 'Inter',
-                          minWidth: '80px',
-                        }}
-                      >
-                        Interest
-                      </th>
-                      <th
-                        style={{
-                          textAlign: 'right',
-                          padding: '12px 8px',
-                          color: '#9195A6',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          fontFamily: 'Inter',
-                          minWidth: '100px',
-                        }}
-                      >
-                        Value
-                      </th>
-                    </tr>
-                  </thead>
+                        <Shimmer
+                          width="60px"
+                          height="16px"
+                          variant="rectangle"
+                        />
+                      </div>
+                    )
+                  const fmt = formatDepositedAmount(amount)
+                  return (
+                    <>
+                      {market.asset.metadata.symbol !== 'ETH' && '$'}
+                      {fmt.main}
+                      <span style={{ color: '#9195A6', fontSize: '12px' }}>
+                        {fmt.secondary}
+                      </span>
+                    </>
+                  )
+                })()}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 
-                  {/* Body */}
-                  <tbody>
-                    {marketsWithDeposits.map((market) => (
-                      <tr
-                        key={`desktop-${market.marketId.address}-${market.marketId.chainId}`}
-                      >
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            backgroundColor:
-                              hoveredAction === 'getMarket'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={market.marketLogo}
-                              alt={market.marketName}
-                              style={{ width: '20px', height: '20px' }}
-                            />
-                            <span
-                              style={{
-                                color: '#1a1b1e',
-                                fontSize: '14px',
-                                fontWeight: 400,
-                                fontFamily: 'Inter',
-                              }}
-                            >
-                              {market.marketName}
-                            </span>
-                          </div>
-                        </td>
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            backgroundColor:
-                              hoveredAction === 'getMarket'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={market.networkLogo}
-                              alt={market.networkName}
-                              style={{ width: '20px', height: '20px' }}
-                            />
-                            <span
-                              style={{
-                                color: '#1a1b1e',
-                                fontSize: '14px',
-                                fontWeight: 400,
-                                fontFamily: 'Inter',
-                              }}
-                            >
-                              {market.networkName}
-                            </span>
-                          </div>
-                        </td>
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            backgroundColor:
-                              hoveredAction === 'getMarket'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={market.assetLogo}
-                              alt={market.asset.metadata.symbol}
-                              style={{ width: '20px', height: '20px' }}
-                            />
-                            <span
-                              style={{
-                                color: '#1a1b1e',
-                                fontSize: '14px',
-                                fontWeight: 400,
-                                fontFamily: 'Inter',
-                              }}
-                            >
-                              {market.asset.metadata.symbol.replace(
-                                '_DEMO',
-                                '',
-                              )}
-                            </span>
-                          </div>
-                        </td>
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            textAlign: 'right',
-                            backgroundColor:
-                              hoveredAction === 'getMarket'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
-                          <span
-                            style={{
-                              color: '#1a1b1e',
-                              fontSize: '14px',
-                              fontWeight: 400,
-                              fontFamily: 'Inter',
-                            }}
-                          >
-                            {market.apy !== null
-                              ? `${(market.apy * 100).toFixed(2)}%`
-                              : '0.00%'}
-                          </span>
-                        </td>
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            textAlign: 'right',
-                            backgroundColor:
-                              hoveredAction === 'getPosition'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
-                          {(() => {
-                            const interest = getInterest
-                              ? getInterest(
-                                  market.marketId,
-                                  market.depositedAmount || '0',
-                                )
-                              : 0
-                            return (
-                              <span
-                                style={{
-                                  color: '#22C55E',
-                                  fontSize: '14px',
-                                  fontWeight: 500,
-                                  fontFamily: 'Inter',
-                                }}
-                              >
-                                +{interest.toFixed(3)}
-                              </span>
-                            )
-                          })()}
-                        </td>
-                        <td
-                          className="transition-all"
-                          style={{
-                            padding: '16px 8px',
-                            textAlign: 'right',
-                            backgroundColor:
-                              hoveredAction === 'getPosition'
-                                ? colors.highlight.background
-                                : 'transparent',
-                          }}
-                        >
-                          <span
-                            style={{
-                              color: '#1a1b1e',
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              fontFamily: 'Inter',
-                            }}
-                          >
-                            {(() => {
-                              const { loading, amount } =
-                                getDisplayState(market)
-                              if (loading)
-                                return (
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      justifyContent: 'flex-end',
-                                    }}
-                                  >
-                                    <Shimmer
-                                      width="60px"
-                                      height="16px"
-                                      variant="rectangle"
-                                    />
-                                  </div>
-                                )
-                              const fmt = formatDepositedAmount(amount)
-                              return (
-                                <>
-                                  {market.asset.metadata.symbol !== 'ETH' &&
-                                    '$'}
-                                  {fmt.main}
-                                  <span
-                                    style={{
-                                      color: '#9195A6',
-                                      fontSize: '12px',
-                                    }}
-                                  >
-                                    {fmt.secondary}
-                                  </span>
-                                </>
-                              )
-                            })()}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+  return (
+    <>
+      <PositionsTable
+        title="Lent Balance"
+        isInitialLoad={isInitialLoad}
+        isEmpty={isEmpty}
+        emptyContent="No active markets yet. Lend to see your balances here."
+        desktopTable={desktopTable}
+        mobileLayout={mobileLayout}
+        isCardHighlighted={isCardHighlighted}
+      />
       {showApyTooltip && (
         <div
           style={{
