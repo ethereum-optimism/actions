@@ -27,7 +27,6 @@ import type {
   BorrowQuote,
   BorrowReceipt,
 } from '@eth-optimism/actions-sdk'
-import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
 import { ALL_BORROW_MARKETS } from '@/constants/borrowMarkets'
 import { computeSafeCeilingLtv } from '@/utils/borrowMath'
 
@@ -165,14 +164,6 @@ function buildPosition(
   }
 }
 
-function resolveBufferPct(): number {
-  // BorrowMarket does not carry `healthBufferPct`; per-market overrides
-  // live on `BorrowMarketConfig` (not on the read-only Market shape).
-  // For the stub we use the global default; PR #4 wire-up will fetch
-  // the resolved value from `actions.borrow.settings.healthBufferPct`.
-  return BORROW_HEALTH_BUFFER_PCT
-}
-
 function placeholderTxHash(): Hex {
   const rand = Math.floor(Math.random() * 0xffffffff)
     .toString(16)
@@ -264,7 +255,10 @@ export class BorrowApiClient {
         borrowApy: market.borrowApy,
         liquidationBonus: market.liquidationBonus,
       },
-      safeCeilingLtv: computeSafeCeilingLtv(market.maxLtv, resolveBufferPct()),
+      safeCeilingLtv: computeSafeCeilingLtv(
+        market.maxLtv,
+        market.healthBufferPct,
+      ),
     }
   }
 
@@ -315,7 +309,10 @@ export class BorrowApiClient {
       positionBefore: before,
       positionAfter: after,
       fees,
-      safeCeilingLtv: computeSafeCeilingLtv(market.maxLtv, resolveBufferPct()),
+      safeCeilingLtv: computeSafeCeilingLtv(
+        market.maxLtv,
+        market.healthBufferPct,
+      ),
       execution: { transactions: [], approvalsSkipped: true },
       provider: 'morpho',
       recipient: params.recipient,
@@ -350,7 +347,7 @@ export class BorrowApiClient {
 
     const next = buildPosition(market, nextCollateral, nextBorrow)
     this.upsertPosition(walletAddress, next)
-    return this.successReceipt('open')
+    return this.successReceipt('open', params.marketId)
   }
 
   async closePosition(
@@ -388,7 +385,7 @@ export class BorrowApiClient {
       const next = buildPosition(market, nextCollateral, nextBorrow)
       this.upsertPosition(walletAddress, next)
     }
-    return this.successReceipt('close')
+    return this.successReceipt('close', params.marketId)
   }
 
   async depositCollateral(
@@ -410,7 +407,7 @@ export class BorrowApiClient {
       before?.borrowAmount ?? 0n,
     )
     this.upsertPosition(walletAddress, next)
-    return this.successReceipt('depositCollateral')
+    return this.successReceipt('depositCollateral', params.marketId)
   }
 
   async withdrawCollateral(
@@ -434,7 +431,7 @@ export class BorrowApiClient {
       const next = buildPosition(market, nextCollateral, before.borrowAmount)
       this.upsertPosition(walletAddress, next)
     }
-    return this.successReceipt('withdrawCollateral')
+    return this.successReceipt('withdrawCollateral', params.marketId)
   }
 
   async repay(
@@ -458,7 +455,7 @@ export class BorrowApiClient {
       const next = buildPosition(market, before.collateralAmount, nextBorrow)
       this.upsertPosition(walletAddress, next)
     }
-    return this.successReceipt('repay')
+    return this.successReceipt('repay', params.marketId)
   }
 
   // ---------- Internal ----------
@@ -534,12 +531,21 @@ export class BorrowApiClient {
     )
   }
 
-  private async successReceipt(action: BorrowAction): Promise<BorrowReceipt> {
+  private async successReceipt(
+    action: BorrowAction,
+    marketId: BorrowMarketId,
+  ): Promise<BorrowReceipt> {
     await delay(STUB_LATENCY_MS)
+    const transactionHash = placeholderTxHash()
     return {
       action,
+      marketId,
+      transactionHash,
+      // PR #3 denormalizes `transactionHash` onto the envelope; the
+      // underlying `receipt` is the raw EOA / batched / userOp shape. For
+      // the stub we mirror the EOA single-tx shape minimally.
       receipt: {
-        transactionHash: placeholderTxHash(),
+        transactionHash,
       } as unknown as BorrowReceipt['receipt'],
     }
   }

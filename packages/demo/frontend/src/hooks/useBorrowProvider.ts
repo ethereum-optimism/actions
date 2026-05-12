@@ -28,14 +28,7 @@ import {
   type StubOpenParams,
   type StubRepayParams,
 } from '@/api/borrowApi'
-import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
-import { assertBufferValid } from '@/utils/borrowMath'
-
-// Validate the buffer constant once at module load. If PR #3 ships a
-// negative or >= 1 value via the actions config, this throws immediately
-// rather than silently producing nonsense bar values.
-assertBufferValid(BORROW_HEALTH_BUFFER_PCT)
 
 export type BorrowMode = 'borrow' | 'repay'
 

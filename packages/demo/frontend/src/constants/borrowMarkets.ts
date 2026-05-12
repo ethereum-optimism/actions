@@ -37,6 +37,11 @@ export const MORPHO_USDC_OP_BASE_SEPOLIA: BorrowMarket = {
   // available, none borrowed.
   totalBorrowed: 0n,
   totalCollateral: 100_000n * 10n ** 18n,
+  // Precomputed by the provider via the resolution rule
+  // `market.healthBufferPct ?? settings.healthBufferPct ?? 0.05`.
+  // For the stub we hardcode the default; real backend returns it on
+  // `GET /borrow/markets` per PR #3.
+  healthBufferPct: 0.05,
 }
 
 export const ALL_BORROW_MARKETS: readonly BorrowMarket[] = [

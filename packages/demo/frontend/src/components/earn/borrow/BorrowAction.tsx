@@ -18,7 +18,6 @@ import type {
   BorrowMarketPosition,
 } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/api/borrowApi'
-import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import {
@@ -126,7 +125,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
   const activeAsset = repayAsset ?? activeMarket?.borrowAsset ?? null
 
-  const bufferPct = activeMarket?.healthBufferPct ?? BORROW_HEALTH_BUFFER_PCT
+  const bufferPct = activeMarket?.healthBufferPct ?? 0
   const maxLtv = activeMarket?.maxLtv ?? 0
   const safeCeilingLtv = computeSafeCeilingLtv(maxLtv, bufferPct)
   const borrowApy = activeMarket?.borrowApy ?? 0

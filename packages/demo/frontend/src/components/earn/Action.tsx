@@ -1,5 +1,5 @@
 import { ActionsError, type Asset } from '@eth-optimism/actions-sdk'
-import { useMemo, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import TransactionModal from './TransactionModal'
 import { Toast } from './Toast'
@@ -8,7 +8,7 @@ import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
 import { isEthSymbol } from '@/utils/assetUtils'
 import { stubPriceUsd } from '@/api/borrowApi'
-import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
+import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useCollateralStatus } from '@/hooks/useCollateralStatus'
 import { computeProjection, computeSafeCeilingLtv } from '@/utils/borrowMath'
 import { BorrowHealthCard } from './borrow/BorrowHealthCard'
@@ -104,6 +104,20 @@ export function Action({
   // the typed withdraw, and route the submit through ReviewBorrowHealthModal.
   const collateralStatus = useCollateralStatus(asset ?? null)
   const pledgedPosition = collateralStatus.positions[0] ?? null
+  // Same fallback pattern as useCollateralStatus: read via raw useContext
+  // so Lend tests don't need to wrap in <BorrowProviderContextProvider>.
+  const borrowCtx = useContext(BorrowProviderContext)
+  const borrowMarkets = borrowCtx?.markets ?? []
+  const pledgedMarket = pledgedPosition
+    ? (borrowMarkets.find(
+        (m) =>
+          m.marketId.kind === pledgedPosition.marketId.kind &&
+          m.marketId.chainId === pledgedPosition.marketId.chainId &&
+          pledgedPosition.marketId.kind === 'morpho-blue' &&
+          m.marketId.kind === 'morpho-blue' &&
+          m.marketId.marketId === pledgedPosition.marketId.marketId,
+      ) ?? null)
+    : null
   const [toast, setToast] = useState<{
     visible: boolean
     title: string
@@ -148,7 +162,7 @@ export function Action({
       parseFloat(pledgedPosition.borrowAmountFormatted || '0') * borrPrice
     const withdrawValueUsd = (parseFloat(amount) || 0) * collPrice
     const maxLtv = pledgedPosition.maxLtv ?? 0
-    const bufferPct = BORROW_HEALTH_BUFFER_PCT
+    const bufferPct = pledgedMarket?.healthBufferPct ?? 0
     const safeCeilingLtv = computeSafeCeilingLtv(maxLtv, bufferPct)
     const currentLtv = collValueUsd > 0 ? borrValueUsd / collValueUsd : 0
     const projection = computeProjection(
@@ -167,7 +181,7 @@ export function Action({
       projection,
       borrSymbol: pledgedPosition.borrowAsset.metadata.symbol,
     }
-  }, [amount, asset, pledgedPosition, showHealthCard])
+  }, [amount, asset, pledgedPosition, pledgedMarket, showHealthCard])
 
   const projectedLtv =
     collateralProjection && collateralProjection.projection.kind === 'projected'
