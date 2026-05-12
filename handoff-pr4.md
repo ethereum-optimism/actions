@@ -2,7 +2,18 @@
 
 > **What this file is.** PR #4 (demo backend `/borrow` endpoints) is feature-complete and pushed as draft PR [#465](https://github.com/ethereum-optimism/actions/pull/465). This document captures the asks and known gaps that fall on PR #3 (SDK) or PR #5 (Frontend) so those agents can address them in their own scope.
 >
-> **Update 2026-05-12:** PR #3 shipped ASK-A1, ASK-A2, ASK-A3 and the `BorrowMarket.healthBufferPct` surface. PR #4 wired all of them in (see "Resolved" markers below). The only remaining cross-PR items are on PR #5.
+> **Update 2026-05-12:** PR #3 shipped ASK-A1, ASK-A2, ASK-A3 and the `BorrowMarket.healthBufferPct` surface. PR #4 wired all of them in (see "Resolved" markers below). PR #5's two blockers (501 stubs on price/quote; explorer URL decoration) are also resolved. **Answers to PR #5's confirmation questions are in §"Confirmations for PR #5" below.**
+
+## Confirmations for PR #5
+
+Answering PR #5's list at `handoff-pr5.md` "Confirmations PR #5 needs from PR #4":
+
+1. **Bigint wire format.** Yes, all `bigint` fields serialize to decimal strings via the SDK's `serializeBigInt` (every controller wraps responses in `c.json({ result: serializeBigInt(value) })`). PR #5 deserializes at the API boundary with `BigInt(field)`.
+2. **Error envelope.** Yes, HTTP status + freeform `error` string, no `code` field. Bodies look like `{ error: 'Market is not in the allowlist.' }` with the status code carrying the category. SDK error classes are mapped to status by `helpers/errors.ts:mapSdkError` (see `handoff-pr4.md` table for the matrix). Borrow routes flow through the borrow-scoped `app.onError`; lend / swap keep their per-route 500s.
+3. **`/borrow/price` recipient.** Public route, optional `walletAddress` in body (frontend passes the connected wallet address; field is `walletAddress`, not `recipient`). Sending an empty / missing address still works for hypothetical previews — the SDK validates downstream.
+4. **`/borrow/markets` shape.** Returns `BorrowMarket[]` (the read shape, no `marketParams`). PR #4 calls `actions.borrow.getMarkets(params)` and passes the result through unchanged. If PR #5 needs `marketParams` for any reason, file a follow-up (the backend `MorphoBorrowDemo` config has them, but the public route exposes the read shape).
+5. **`getBorrowPosition` — never null, never 404 for zero positions.** The SDK's `actions.borrow.getPosition` returns a `BorrowMarketPosition` object even when the wallet has no position (zero amounts, `healthFactor: null`, `ltv: null`). PR #4 passes it through verbatim. So the response is **always** 200 + position object. The only 404 case on this route is "wallet not found" (caller has no Privy embedded wallet — extremely rare for authenticated users). PR #5's stub returning `null` for "no position" diverges from this; the wire-up should switch to treating zero-amount positions as the empty state and branch on `position.borrowAmount === '0'` (string compare after JSON parse) rather than `position === null`.
+6. **`{ quote }` body variant.** Yes, both variants stay accepted on every mutation route. The discriminated union is `params | { quote: BorrowQuote }` per route. PR #5's plan to use the `params` variant is fine — the backend re-quotes via the SDK's wallet method, which builds the quote internally and dispatches atomically. Sending `{ quote }` is the fast path if PR #5 ever wants user confirmation between quote-build and submit; currently no public quote-producing endpoint outside `/borrow/quote`, but `BorrowQuote` from that endpoint is exactly the shape that round-trips into the mutation bodies.
 >
 > **Read these sections first:**
 > - PR #3 agents: §"Needs from PR #3 (SDK)"
