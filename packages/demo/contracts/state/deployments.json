@@ -22,6 +22,9 @@
     },
     "uniswap": {
       "poolId": "0xf55820a35859dec5c7cf136d711b0ec06e381edcd1f1a5343b2dac0af7ba3df3"
+    },
+    "velodrome": {
+      "pool": "0x7e1B2e0c6771C91Ba83E62C399d8CdD312983Fac"
     }
   }
 }
