@@ -8,15 +8,15 @@
       "vault": "0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1",
       "oracle": null,
       "borrow": {
-        "mockFeed": null,
-        "oracle": null,
-        "marketId": null,
+        "mockFeed": "0x4304F8aD8F74805d0Ab3E13d6668F1F7F7048663",
+        "oracle": "0xB31E326bF4BdB5Ab98eF19C16dd420C8d6176e86",
+        "marketId": "0x7dc82421423b50debf8c1f9f967f34367e0fb7bcdb1bda0cef27c319d89cd12f",
         "marketParams": {
-          "loanToken": null,
-          "collateralToken": null,
-          "oracle": null,
-          "irm": null,
-          "lltv": null
+          "loanToken": "0xD6169405013E92387b78457Fa77d377cE8cD3EE8",
+          "collateralToken": "0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1",
+          "oracle": "0xB31E326bF4BdB5Ab98eF19C16dd420C8d6176e86",
+          "irm": "0x46415998764C29aB2a25CbeA6254146D50D22687",
+          "lltv": "860000000000000000"
         }
       }
     },
