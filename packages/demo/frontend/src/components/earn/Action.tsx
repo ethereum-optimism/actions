@@ -135,7 +135,21 @@ export function Action({
   const balanceValue = parseFloat(assetBalance || '0')
   const needsMint = balanceValue <= 0 && mode === 'lend'
   const amountValue = parseFloat(effectiveAmount) || 0
-  const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
+  // Per PR #4's ASK-B1: when the lent asset is securing a borrow, Max
+  // must subtract the pledged collateral so users can't queue a withdraw
+  // that would liquidate. SDK has not yet enforced this server-side; the
+  // frontend is the only guard.
+  const pledgedCollateralAmount = pledgedPosition
+    ? parseFloat(pledgedPosition.collateralAmountFormatted || '0')
+    : 0
+  const rawMaxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
+  const maxAmount =
+    mode === 'withdraw' && pledgedCollateralAmount > 0
+      ? Math.max(
+          0,
+          parseFloat(rawMaxAmount) - pledgedCollateralAmount,
+        ).toString()
+      : rawMaxAmount
   const hasDeposit = parseFloat(depositedAmount || '0') > 0
 
   const isActionDisabled = needsMint
