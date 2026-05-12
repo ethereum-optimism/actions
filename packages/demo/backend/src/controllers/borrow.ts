@@ -1,9 +1,11 @@
 import { serializeBigInt } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
+import type { Address } from 'viem'
 import { z } from 'zod'
 
-import { errorResponse, requireAuth } from '@/helpers/errors.js'
+import { requireAuth } from '@/helpers/errors.js'
 import {
+  AddressSchema,
   AmountExactSchema,
   AmountWithMaxSchema,
   BorrowMarketIdSchema,
@@ -11,6 +13,7 @@ import {
 } from '@/helpers/schemas.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as borrowService from '@/services/borrow.js'
+import * as walletService from '@/services/wallet.js'
 
 /**
  * Quote bodies are passed opaquely to the SDK; we only enforce that the
@@ -34,6 +37,54 @@ const GetMarketsRequestSchema = z.object({
 })
 
 /**
+ * Body shape for `/borrow/price` and `/borrow/quote`. Discriminated by
+ * `action`; each variant carries the per-action amount fields. Backend
+ * resolves `marketId` to a full `BorrowMarketConfig` server-side.
+ *
+ * `walletAddress` is optional in the body — `/borrow/quote` injects it
+ * from the authenticated idToken (so recipient is auth-bound, not
+ * caller-supplied); `/borrow/price` accepts it from the body since the
+ * price preview doesn't bake calldata.
+ */
+const PriceQuoteBodySchema = z.discriminatedUnion('action', [
+  z.strictObject({
+    action: z.literal('open'),
+    marketId: BorrowMarketIdSchema,
+    borrowAmount: AmountExactSchema,
+    collateralAmount: AmountExactSchema.optional(),
+    walletAddress: AddressSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('close'),
+    marketId: BorrowMarketIdSchema,
+    borrowAmount: AmountWithMaxSchema,
+    collateralAmount: AmountWithMaxSchema.optional(),
+    walletAddress: AddressSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('depositCollateral'),
+    marketId: BorrowMarketIdSchema,
+    amount: AmountExactSchema,
+    walletAddress: AddressSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('withdrawCollateral'),
+    marketId: BorrowMarketIdSchema,
+    amount: AmountWithMaxSchema,
+    walletAddress: AddressSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('repay'),
+    marketId: BorrowMarketIdSchema,
+    amount: AmountWithMaxSchema,
+    walletAddress: AddressSchema.optional(),
+  }),
+])
+
+const PriceRequestSchema = z.object({ body: PriceQuoteBodySchema })
+const QuoteRequestSchema = z.object({ body: PriceQuoteBodySchema })
+
+/**
  * GET - Retrieve borrow markets, optionally filtered by chain.
  * Errors propagate to the borrow-scoped `app.onError` handler.
  */
@@ -47,34 +98,52 @@ export async function getMarkets(c: Context) {
 }
 
 /**
- * POST - Get a lightweight borrow price preview. Currently a stub
- * pending SDK support: PR #3's borrow namespace does not expose
- * `getPrice` (only `getMarket`, `getMarkets`, `getPosition`). Returns
- * 501 until a follow-up adds price preview to the SDK or to the
- * provider's public surface.
+ * POST - Lightweight borrow price preview: positionAfter + fees +
+ * safeCeilingLtv, no calldata bundle. Public route; the body supplies
+ * the `walletAddress` whose hypothetical position is being previewed.
  */
 export async function getPrice(c: Context) {
-  return errorResponse(
-    c,
-    'Borrow price preview not yet supported; SDK exposes only execute.',
-    501,
-  )
+  const validation = await validateRequest(c, PriceRequestSchema)
+  if (!validation.success) return validation.response
+
+  const price = await borrowService.getPrice(validation.data.body)
+  return c.json({ result: serializeBigInt(price) })
 }
 
 /**
- * POST - Build a recipient-bound borrow quote. Currently a stub pending
- * SDK support: PR #3's borrow namespace builds quotes implicitly inside
- * `wallet.borrow.*` (execute-only), with no standalone quote-build
- * endpoint. Returns 501 until a follow-up exposes a quote-only path.
+ * POST - Recipient-bound borrow quote with pre-built calldata. Auth
+ * required; `walletAddress` is derived from the authenticated idToken
+ * so quote calldata can't be bound to a third party. The strict body
+ * schema rejects a caller-supplied `walletAddress` (400) to make the
+ * derivation unambiguous.
  */
 export async function getQuote(c: Context) {
+  const validation = await validateRequest(c, QuoteRequestSchema)
+  if (!validation.success) return validation.response
+
+  if (validation.data.body.walletAddress) {
+    return c.json(
+      {
+        error:
+          'walletAddress is derived from auth; do not include it in the body.',
+      },
+      400,
+    )
+  }
+
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
-  return errorResponse(
-    c,
-    'Borrow quote endpoint not yet supported; use the mutation endpoints which build quotes internally.',
-    501,
-  )
+
+  const wallet = await walletService.getWallet(authResult.auth.idToken)
+  if (!wallet) {
+    return c.json({ error: 'Wallet not found' }, 404)
+  }
+
+  const quote = await borrowService.getQuote({
+    ...validation.data.body,
+    walletAddress: wallet.address as Address,
+  })
+  return c.json({ result: serializeBigInt(quote) })
 }
 
 // ---------- Mutations ----------

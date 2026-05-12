@@ -63,7 +63,7 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
       allow: [USDC_DEMO, OP_DEMO, ETH],
     },
     chains: [UNICHAIN, BASE_SEPOLIA, OPTIMISM_SEPOLIA],
-  } as unknown as NodeActionsConfig<'privy'>
+  }
 }
 
 export function initializeActions(config?: NodeActionsConfig<'privy'>): void {

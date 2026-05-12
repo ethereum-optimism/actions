@@ -142,11 +142,15 @@ describe('Borrow Service', () => {
           collateralAmount: { amount: 100 },
         }),
       )
-      expect(result).toBe(receipt)
+      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
 
     it('forwards a pre-built quote unchanged to the SDK', async () => {
-      const quote = { action: 'open', tag: 'q' } as never
+      const quote = {
+        action: 'open',
+        marketId: baseMarketId,
+        tag: 'q',
+      } as never
       const receipt = { tag: 'q-receipt' } as never
       mockWalletBorrow.openPosition.mockResolvedValue(receipt)
 
@@ -156,7 +160,7 @@ describe('Borrow Service', () => {
       })
 
       expect(mockWalletBorrow.openPosition).toHaveBeenCalledWith(quote)
-      expect(result).toBe(receipt)
+      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
 
     it('throws when the wallet cannot be resolved', async () => {
@@ -200,11 +204,15 @@ describe('Borrow Service', () => {
           collateralAmount: { max: true },
         }),
       )
-      expect(result).toBe(receipt)
+      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
 
     it('forwards a pre-built quote unchanged', async () => {
-      const quote = { action: 'close', tag: 'q' } as never
+      const quote = {
+        action: 'close',
+        marketId: baseMarketId,
+        tag: 'q',
+      } as never
       const receipt = { tag: 'r' } as never
       mockWalletBorrow.closePosition.mockResolvedValue(receipt)
       const result = await borrowService.closePosition({
@@ -212,7 +220,7 @@ describe('Borrow Service', () => {
         quote,
       })
       expect(mockWalletBorrow.closePosition).toHaveBeenCalledWith(quote)
-      expect(result).toBe(receipt)
+      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
   })
 
@@ -236,11 +244,14 @@ describe('Borrow Service', () => {
           amount: { amount: 50 },
         }),
       )
-      expect(result).toBe(receipt)
+      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
 
     it('forwards a pre-built quote unchanged', async () => {
-      const quote = { action: 'depositCollateral' } as never
+      const quote = {
+        action: 'depositCollateral',
+        marketId: baseMarketId,
+      } as never
       const receipt = { tag: 'r' } as never
       mockWalletBorrow.depositCollateral.mockResolvedValue(receipt)
       await borrowService.depositCollateral({ idToken: 'idtok', quote })
@@ -271,7 +282,10 @@ describe('Borrow Service', () => {
     })
 
     it('forwards a pre-built quote unchanged', async () => {
-      const quote = { action: 'withdrawCollateral' } as never
+      const quote = {
+        action: 'withdrawCollateral',
+        marketId: baseMarketId,
+      } as never
       mockWalletBorrow.withdrawCollateral.mockResolvedValue({} as never)
       await borrowService.withdrawCollateral({ idToken: 'idtok', quote })
       expect(mockWalletBorrow.withdrawCollateral).toHaveBeenCalledWith(quote)
@@ -301,7 +315,7 @@ describe('Borrow Service', () => {
     })
 
     it('forwards a pre-built quote unchanged', async () => {
-      const quote = { action: 'repay' } as never
+      const quote = { action: 'repay', marketId: baseMarketId } as never
       mockWalletBorrow.repay.mockResolvedValue({} as never)
       await borrowService.repay({ idToken: 'idtok', quote })
       expect(mockWalletBorrow.repay).toHaveBeenCalledWith(quote)
