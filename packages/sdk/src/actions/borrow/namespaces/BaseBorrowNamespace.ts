@@ -7,6 +7,9 @@ import type {
   BorrowMarketConfig,
   BorrowMarketId,
   BorrowMarketPosition,
+  BorrowPrice,
+  BorrowQuote,
+  BorrowQuoteParams,
   GetBorrowMarketParams,
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
@@ -44,6 +47,49 @@ export abstract class BaseBorrowNamespace extends BaseNamespace<
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
     return this.getProviderForMarket(params.marketId).getPosition(params)
+  }
+
+  /**
+   * Build a `BorrowQuote` for any of the five borrow actions without
+   * dispatching it. The `action` discriminator selects which provider verb
+   * runs; the rest of the params match that verb's normal input.
+   *
+   * Useful for backend preview / confirmation endpoints that need
+   * recipient-bound, expiring calldata. Callers must supply
+   * `walletAddress` directly on read-only namespaces; the wallet
+   * namespace's overrides inject it from the connected wallet.
+   */
+  async getQuote(params: BorrowQuoteParams): Promise<BorrowQuote> {
+    const provider = this.getProviderForMarket(params.market)
+    switch (params.action) {
+      case 'open':
+        return provider.openPosition(params)
+      case 'close':
+        return provider.closePosition(params)
+      case 'depositCollateral':
+        return provider.depositCollateral(params)
+      case 'withdrawCollateral':
+        return provider.withdrawCollateral(params)
+      case 'repay':
+        return provider.repay(params)
+    }
+  }
+
+  /**
+   * Lighter alternative to `getQuote` for preview UIs: returns just the
+   * position transition + fees + safe-ceiling LTV, without the
+   * pre-built transaction bundle. Internally builds a full quote and
+   * strips the execution data.
+   */
+  async getPrice(params: BorrowQuoteParams): Promise<BorrowPrice> {
+    const quote = await this.getQuote(params)
+    return {
+      marketId: quote.marketId,
+      action: quote.action,
+      positionAfter: quote.positionAfter,
+      fees: quote.fees,
+      safeCeilingLtv: quote.safeCeilingLtv,
+    }
   }
 
   /**
