@@ -9,9 +9,11 @@ set -euo pipefail
 #   5. Deploy Morpho borrow market (dUSDC collateral / OP loan)
 #
 # Usage:
-#   ./script/deploy-demo.sh --rpc-url <url> --private-key <key>
+#   ./script/deploy-demo.sh [--skip-velodrome]
 #
-# State is tracked in state/deployments.json to avoid redeployment.
+# Reads BASE_SEPOLIA_RPC_URL and DEMO_MARKET_SETUP_PRIVATE_KEY from
+# packages/demo/backend/.env. State is tracked in state/deployments.json
+# to avoid redeployment.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTRACTS_DIR="$(dirname "$SCRIPT_DIR")"
@@ -25,55 +27,39 @@ CHAIN_ID="84532" # Base Sepolia
 DEPLOY_DEMO_LOG="${DEPLOY_DEMO_LOG:-$CONTRACTS_DIR/../../../deploy-demo.log}"
 exec > >(tee "$DEPLOY_DEMO_LOG") 2>&1
 
-# Parse arguments (pass through to forge)
-FORGE_ARGS=()
+# Parse arguments
 SKIP_VELODROME=0
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --rpc-url) RPC_URL="$2"; FORGE_ARGS+=("$1" "$2"); shift 2 ;;
-        --private-key) PRIVATE_KEY="$2"; FORGE_ARGS+=("$1" "$2"); shift 2 ;;
         --skip-velodrome) SKIP_VELODROME=1; shift ;;
-        *) FORGE_ARGS+=("$1"); shift ;;
+        *) echo "Unknown argument: $1"; exit 1 ;;
     esac
 done
 
-# Fall back to packages/demo/backend/.env when either flag is missing. Lets
-# the user invoke `pnpm deploy:demo` with no args once their .env carries
-# the deployer key plus a baseSepolia RPC.
-#
-# RPC precedence:
-#   1. --rpc-url flag
-#   2. BASE_SEPOLIA_RPC_URL env var (preferred — full JSON-RPC)
-#   3. https://sepolia.base.org (public fallback; works for view calls and
-#      light deploys, may rate-limit)
-#
-# We deliberately do NOT use BASE_SEPOLIA_BUNDLER_URL here — bundler
-# endpoints (Pimlico, Alchemy AA, etc.) only serve userOp-related methods
-# and return empty data for arbitrary eth_call, which makes forge
-# scripts revert at the first contract read.
+# Read RPC URL and deployer key from packages/demo/backend/.env. Only
+# BASE_SEPOLIA_RPC_URL and DEMO_MARKET_SETUP_PRIVATE_KEY are honored;
+# the generic RPC_URL from .env (typically supersim's localhost) is
+# intentionally ignored.
 BACKEND_ENV="$CONTRACTS_DIR/../backend/.env"
-if [[ -z "${RPC_URL:-}" || -z "${PRIVATE_KEY:-}" ]] && [[ -f "$BACKEND_ENV" ]]; then
-    # shellcheck disable=SC1090
-    set -a; source "$BACKEND_ENV"; set +a
-    if [[ -z "${RPC_URL:-}" ]]; then
-        if [[ -n "${BASE_SEPOLIA_RPC_URL:-}" ]]; then
-            RPC_URL="$BASE_SEPOLIA_RPC_URL"
-        else
-            RPC_URL="https://sepolia.base.org"
-        fi
-        FORGE_ARGS+=(--rpc-url "$RPC_URL")
-    fi
-    if [[ -z "${PRIVATE_KEY:-}" && -n "${DEMO_MARKET_SETUP_PRIVATE_KEY:-}" ]]; then
-        PRIVATE_KEY="$DEMO_MARKET_SETUP_PRIVATE_KEY"
-        FORGE_ARGS+=(--private-key "$PRIVATE_KEY")
-    fi
-fi
-
-if [[ -z "${RPC_URL:-}" || -z "${PRIVATE_KEY:-}" ]]; then
-    echo "Usage: $0 --rpc-url <url> --private-key <key>"
-    echo "Or populate DEMO_MARKET_SETUP_PRIVATE_KEY (and optionally BASE_SEPOLIA_RPC_URL) in packages/demo/backend/.env"
+if [[ ! -f "$BACKEND_ENV" ]]; then
+    echo "ERROR: missing $BACKEND_ENV"
+    echo "Populate BASE_SEPOLIA_RPC_URL and DEMO_MARKET_SETUP_PRIVATE_KEY there."
     exit 1
 fi
+# shellcheck disable=SC1090
+set -a; source "$BACKEND_ENV"; set +a
+
+if [[ -z "${BASE_SEPOLIA_RPC_URL:-}" || -z "${DEMO_MARKET_SETUP_PRIVATE_KEY:-}" ]]; then
+    echo "ERROR: $BACKEND_ENV must define BASE_SEPOLIA_RPC_URL and DEMO_MARKET_SETUP_PRIVATE_KEY"
+    exit 1
+fi
+
+FORGE_ARGS=(
+    --rpc-url "$BASE_SEPOLIA_RPC_URL"
+    --private-key "$DEMO_MARKET_SETUP_PRIVATE_KEY"
+)
+
+echo ">>> RPC: $BASE_SEPOLIA_RPC_URL"
 
 # Read a value from state file.
 # Converts dotted keys (e.g. `velodrome.pool` or
