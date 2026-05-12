@@ -152,7 +152,10 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   /**
    * Send the quote's transaction bundle through the wallet. Defers to
    * `executeTransactionBatch` for the actual 1-vs-N send/sendBatch
-   * dispatch — same primitive used by lend and swap.
+   * dispatch (same primitive used by lend and swap), then denormalizes
+   * the underlying receipt's identifying hash(es) onto the envelope so
+   * downstream consumers (backend response decoration, etc.) don't have
+   * to downcast the receipt union.
    */
   private async dispatch(quote: BorrowQuote): Promise<BorrowReceipt> {
     const receipt = await executeTransactionBatch(
@@ -167,6 +170,27 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
       collateralAmount: quote.collateralAmountRaw,
       marketId: quote.marketId,
       positionAfter: quote.positionAfter,
+      ...extractReceiptHashes(receipt),
     }
   }
+}
+
+/**
+ * Pull the user-facing identifier hash(es) out of the underlying receipt
+ * union so they can be set on the `BorrowReceipt` envelope. Batched EOA
+ * receipts surface as `transactionHashes`, single EOA receipts as
+ * `transactionHash`, and ERC-4337 receipts as `userOpHash` (the inner
+ * `receipt.transactionHash` is also present, but the userOp hash is the
+ * right identifier for explorers that index UserOperations).
+ */
+function extractReceiptHashes(
+  receipt: BorrowReceipt['receipt'],
+): Pick<BorrowReceipt, 'transactionHash' | 'transactionHashes' | 'userOpHash'> {
+  if (Array.isArray(receipt)) {
+    return { transactionHashes: receipt.map((r) => r.transactionHash) }
+  }
+  if ('userOpHash' in receipt) {
+    return { userOpHash: receipt.userOpHash }
+  }
+  return { transactionHash: receipt.transactionHash }
 }

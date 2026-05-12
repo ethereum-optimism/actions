@@ -60,8 +60,15 @@ type WalletMocks = {
 }
 
 function makeWallet(): { wallet: Wallet; mocks: WalletMocks } {
-  const send = vi.fn().mockResolvedValue({ hash: '0xsend' })
-  const sendBatch = vi.fn().mockResolvedValue({ hash: '0xbatch' })
+  const send = vi.fn().mockResolvedValue({
+    transactionHash: '0xeoatxhash',
+  })
+  const sendBatch = vi
+    .fn()
+    .mockResolvedValue([
+      { transactionHash: '0xeoabatch0' },
+      { transactionHash: '0xeoabatch1' },
+    ])
   const wallet = {
     address: walletAddress,
     send,
@@ -236,6 +243,48 @@ describe('WalletBorrowNamespace — re-quote', () => {
       amount: { amountRaw: 1n },
     })
     expect(provider.depositCollateral).toHaveBeenCalled()
+  })
+})
+
+describe('WalletBorrowNamespace — receipt envelope hashes', () => {
+  it('surfaces transactionHash for a single EOA tx', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    const receipt = await namespace.openPosition(makeQuote())
+    expect(receipt.transactionHash).toBe('0xeoatxhash')
+    expect(receipt.transactionHashes).toBeUndefined()
+    expect(receipt.userOpHash).toBeUndefined()
+  })
+
+  it('surfaces transactionHashes for batched EOA txs', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    const quote = makeQuote({
+      execution: {
+        transactions: [
+          {
+            to: '0x0000000000000000000000000000000000000001',
+            data: '0xaa',
+            value: 0n,
+          },
+          {
+            to: '0x0000000000000000000000000000000000000002',
+            data: '0xbb',
+            value: 0n,
+          },
+        ],
+      },
+    })
+    const receipt = await namespace.openPosition(quote)
+    expect(receipt.transactionHashes).toEqual(['0xeoabatch0', '0xeoabatch1'])
+    expect(receipt.transactionHash).toBeUndefined()
+    expect(receipt.userOpHash).toBeUndefined()
   })
 })
 
