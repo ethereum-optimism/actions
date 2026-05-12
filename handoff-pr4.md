@@ -2,6 +2,8 @@
 
 > **What this file is.** PR #4 (demo backend `/borrow` endpoints) is feature-complete and pushed as draft PR [#465](https://github.com/ethereum-optimism/actions/pull/465). This document captures the asks and known gaps that fall on PR #3 (SDK) or PR #5 (Frontend) so those agents can address them in their own scope.
 >
+> **Update 2026-05-12:** PR #3 shipped ASK-A1, ASK-A2, ASK-A3 and the `BorrowMarket.healthBufferPct` surface. PR #4 wired all of them in (see "Resolved" markers below). The only remaining cross-PR items are on PR #5.
+>
 > **Read these sections first:**
 > - PR #3 agents: §"Needs from PR #3 (SDK)"
 > - PR #5 agents: §"Needs from PR #5 (Frontend)" + §"Wire contracts PR #5 must consume"
@@ -33,7 +35,11 @@ All five mutation routes accept either fresh params or `{ quote: BorrowQuote }`.
 
 ## Needs from PR #3 (SDK)
 
-### ASK-A1 — Expose standalone quote-build on `actions.borrow`
+### ✅ ASK-A1 — Expose standalone quote-build on `actions.borrow` [RESOLVED]
+
+**Resolved 2026-05-12.** PR #3 shipped `BaseBorrowNamespace.getQuote(BorrowQuoteParams)` and `.getPrice(BorrowQuoteParams)` discriminated by `action`. PR #4 wired both into `services/borrow.ts` (`getPrice`, `getQuote`) and replaced the controller 501 stubs with real handlers. `/borrow/price` is public and accepts an optional `walletAddress` in the body; `/borrow/quote` requires auth and derives `walletAddress` from the idToken (rejecting any body-supplied `walletAddress` with 400).
+
+### ASK-A1 — Original ask (kept for context)
 
 **Problem.** PR #4's `/borrow/price` and `/borrow/quote` are 501 stubs. The SDK's `actions.borrow` namespace exposes only `getMarket`, `getMarkets`, `getPosition`. The `BorrowProvider` base has `public async openPosition(params): Promise<BorrowQuote>` (and the other four verbs) that builds quotes without dispatching — but those methods are not surfaced on the read-only namespace.
 
@@ -55,7 +61,11 @@ The provider methods already exist and return `BorrowQuote`. The namespace just 
 
 Once shipped, PR #4 backend swap is a ~30-line change: replace the 501 stubs with `actions.borrow.getQuote(params)` / `getPrice(params)` calls. PR #4 already has the controller schemas, routes, auth wiring, and the body-recipient-from-idToken plumbing in place — just `errorResponse(501)` swaps for the real SDK call.
 
-### ASK-A2 — Surface tx hashes on `BorrowReceipt` for block-explorer decoration
+### ✅ ASK-A2 — Surface tx hashes on `BorrowReceipt` [RESOLVED]
+
+**Resolved 2026-05-12.** PR #3 denormalized `transactionHash?`, `transactionHashes?`, `userOpHash?` onto the `BorrowReceipt` envelope. PR #4's mutation services now decorate every response via `decorateReceipt(receipt, chainId)` using the existing `getBlockExplorerUrls` helper — same pattern lend uses. Return type is `BorrowReceiptWithUrls = BorrowReceipt & { blockExplorerUrls: string[] }`.
+
+### ASK-A2 — Original ask (kept for context)
 
 **Problem.** `BorrowReceipt` shape (`types/borrow/base.ts:365-378`) carries `receipt: TransactionReturnType | BatchTransactionReturnType` plus `action`, amounts, `marketId`, `positionAfter?`. It does not directly expose `transactionHash` / `transactionHashes` / `userOpHash` at the top level the way `LendTransactionReceipt` does.
 
@@ -67,7 +77,11 @@ Once shipped, PR #4 backend swap is a ~30-line change: replace the 501 stubs wit
 
 (a) matches the lend precedent and lets backends decorate without import-time coupling to the internal receipt union.
 
-### ASK-A3 — Re-evaluate the `as unknown as NodeActionsConfig<'privy'>` cast
+### ✅ ASK-A3 — `as unknown as NodeActionsConfig<'privy'>` cast removed [RESOLVED]
+
+**Resolved 2026-05-12.** PR #3 confirmed `NodeActionsConfig` already accepts `borrow?: BorrowConfig` via its `ActionsConfig` re-parameterization. PR #4 dropped the cast in `config/actions.ts`.
+
+### ASK-A3 — Original ask (kept for context)
 
 **Problem.** `packages/demo/backend/src/config/actions.ts:66` casts the literal because `NodeActionsConfig` did not previously accept a `borrow` key. PR #3 added `BorrowConfig` to `ActionsConfig` (`types/actions.ts:237`), so the cast is now redundant. **PR #4 will drop it as cleanup; flagged here in case `NodeActionsConfig` is a wrapper that still excludes the `borrow` field.** If so, PR #3 should extend `NodeActionsConfig` to mirror `ActionsConfig.borrow?`.
 
@@ -198,14 +212,14 @@ Each market has an optional `healthBufferPct?: number`; if unset, fall back to `
 
 ## Known gaps in PR #4 itself (not blocking PR #3 / PR #5)
 
-These are PR #4's own follow-ups, listed so reviewers can decide what's in-scope:
+Updated 2026-05-12 after PR #3 unblocks landed:
 
-- **Block explorer URL decoration on mutation responses.** Pending ASK-A2 from PR #3. Once tx hashes are surfaced on `BorrowReceipt`, PR #4 adds the same `services/lend.ts:54-62` pattern.
-- **Controller-level tests.** Service-layer + helpers covered (102 tests). No integration tests assert the Hono wiring end-to-end (zod 400, requireAuth 401, route-action 422 paths).
-- **`as unknown as NodeActionsConfig<'privy'>` cast** in `config/actions.ts:66` — will be removed as part of the ASK-A3 cleanup.
-- **`/borrow/markets` filter coverage.** Only `chainId` is wired; SDK supports `collateralAsset` / `borrowAsset` filters too.
-- **Single-market endpoint** `/borrow/market/:chainId/:marketId` — not in scope; frontend can filter the `/borrow/markets` list.
-- **Lend / swap retrofit to shared `helpers/schemas.ts` and `mapSdkError`.** User explicitly skipped this PR. File a follow-up if desired (architecture-strategist's deepening recommendation).
+- ✅ **Block explorer URL decoration on mutation responses.** Wired via `decorateReceipt` in `services/borrow.ts` once ASK-A2 landed.
+- ✅ **`as unknown as NodeActionsConfig<'privy'>` cast** in `config/actions.ts:66` — removed.
+- **Controller-level tests** still open. Service-layer + helpers covered (102 tests). No integration tests assert the Hono wiring end-to-end (zod 400, requireAuth 401, route-action 422 paths). If PR #5 surfaces a wiring bug, that's the gap.
+- **`/borrow/markets` filter coverage.** Only `chainId` is wired through the controller; SDK supports `collateralAsset` / `borrowAsset` filters too. Frontend can filter client-side for now.
+- **Single-market endpoint** `/borrow/market/:chainId/:marketId` — not in scope; frontend filters the `/borrow/markets` list.
+- **Lend / swap retrofit to shared `helpers/schemas.ts` and `mapSdkError`.** User explicitly skipped this PR. File a follow-up if desired.
 
 ## Glossary
 
