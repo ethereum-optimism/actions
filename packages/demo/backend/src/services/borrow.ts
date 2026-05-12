@@ -5,17 +5,36 @@ import type {
   BorrowMarketConfig,
   BorrowMarketId,
   BorrowOpenPositionParams,
+  BorrowPrice,
   BorrowQuote,
+  BorrowQuoteParams,
   BorrowReceipt,
   BorrowRepayParams,
   BorrowWithdrawCollateralParams,
   GetBorrowMarketsParams,
+  SupportedChainId,
 } from '@eth-optimism/actions-sdk'
 import { MarketNotAllowedError } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
 import { ALL_BORROW_MARKETS } from '@/config/markets.js'
 import { getWallet } from '@/services/wallet.js'
+import { getBlockExplorerUrls } from '@/utils/explorers.js'
+
+type BorrowReceiptWithUrls = BorrowReceipt & { blockExplorerUrls: string[] }
+
+function decorateReceipt(
+  receipt: BorrowReceipt,
+  chainId: SupportedChainId,
+): BorrowReceiptWithUrls {
+  const blockExplorerUrls = getBlockExplorerUrls({
+    chainId,
+    userOpHash: receipt.userOpHash,
+    transactionHash: receipt.transactionHash,
+    transactionHashes: receipt.transactionHashes,
+  })
+  return { ...receipt, blockExplorerUrls }
+}
 
 /**
  * Resolve a `BorrowMarketId` (from a request body) to its
@@ -48,6 +67,39 @@ export async function getMarkets(
   return await actions.borrow.getMarkets(params)
 }
 
+// ---------- /borrow/price + /borrow/quote (read-only quote build) ----------
+
+/**
+ * Backend-shaped input that the controller passes to `getQuote` / `getPrice`.
+ * `marketId` is resolved to a full `BorrowMarketConfig` here; `walletAddress`
+ * comes from auth (quote) or from the public body (price).
+ */
+export type BorrowQuoteServiceInput = Omit<BorrowQuoteParams, 'market'> & {
+  marketId: BorrowMarketId
+}
+
+function quoteParamsFromInput(
+  input: BorrowQuoteServiceInput,
+): BorrowQuoteParams {
+  const { marketId, ...rest } = input
+  const market = resolveMarketConfig(marketId)
+  return { ...rest, market } as BorrowQuoteParams
+}
+
+export async function getPrice(
+  input: BorrowQuoteServiceInput,
+): Promise<BorrowPrice> {
+  const actions = getActions()
+  return await actions.borrow.getPrice(quoteParamsFromInput(input))
+}
+
+export async function getQuote(
+  input: BorrowQuoteServiceInput,
+): Promise<BorrowQuote> {
+  const actions = getActions()
+  return await actions.borrow.getQuote(quoteParamsFromInput(input))
+}
+
 // ---------- Mutations ----------
 
 async function resolveWalletOrThrow(idToken: string) {
@@ -69,17 +121,16 @@ export type BorrowOpenServiceInput =
 
 export async function openPosition(
   input: BorrowOpenServiceInput,
-): Promise<BorrowReceipt> {
+): Promise<BorrowReceiptWithUrls> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   if ('quote' in input) {
-    return await wallet.borrow!.openPosition(input.quote)
+    const receipt = await wallet.borrow!.openPosition(input.quote)
+    return decorateReceipt(receipt, input.quote.marketId.chainId)
   }
   const { idToken: _ignored, marketId, ...rest } = input
-  const params: BorrowOpenPositionParams = {
-    ...rest,
-    market: resolveMarketConfig(marketId),
-  }
-  return await wallet.borrow!.openPosition(params)
+  const market = resolveMarketConfig(marketId)
+  const receipt = await wallet.borrow!.openPosition({ ...rest, market })
+  return decorateReceipt(receipt, market.chainId)
 }
 
 export type BorrowCloseServiceInput =
@@ -90,17 +141,16 @@ export type BorrowCloseServiceInput =
 
 export async function closePosition(
   input: BorrowCloseServiceInput,
-): Promise<BorrowReceipt> {
+): Promise<BorrowReceiptWithUrls> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   if ('quote' in input) {
-    return await wallet.borrow!.closePosition(input.quote)
+    const receipt = await wallet.borrow!.closePosition(input.quote)
+    return decorateReceipt(receipt, input.quote.marketId.chainId)
   }
   const { idToken: _ignored, marketId, ...rest } = input
-  const params: BorrowClosePositionParams = {
-    ...rest,
-    market: resolveMarketConfig(marketId),
-  }
-  return await wallet.borrow!.closePosition(params)
+  const market = resolveMarketConfig(marketId)
+  const receipt = await wallet.borrow!.closePosition({ ...rest, market })
+  return decorateReceipt(receipt, market.chainId)
 }
 
 export type BorrowDepositCollateralServiceInput =
@@ -111,17 +161,16 @@ export type BorrowDepositCollateralServiceInput =
 
 export async function depositCollateral(
   input: BorrowDepositCollateralServiceInput,
-): Promise<BorrowReceipt> {
+): Promise<BorrowReceiptWithUrls> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   if ('quote' in input) {
-    return await wallet.borrow!.depositCollateral(input.quote)
+    const receipt = await wallet.borrow!.depositCollateral(input.quote)
+    return decorateReceipt(receipt, input.quote.marketId.chainId)
   }
   const { idToken: _ignored, marketId, ...rest } = input
-  const params: BorrowDepositCollateralParams = {
-    ...rest,
-    market: resolveMarketConfig(marketId),
-  }
-  return await wallet.borrow!.depositCollateral(params)
+  const market = resolveMarketConfig(marketId)
+  const receipt = await wallet.borrow!.depositCollateral({ ...rest, market })
+  return decorateReceipt(receipt, market.chainId)
 }
 
 export type BorrowWithdrawCollateralServiceInput =
@@ -132,17 +181,16 @@ export type BorrowWithdrawCollateralServiceInput =
 
 export async function withdrawCollateral(
   input: BorrowWithdrawCollateralServiceInput,
-): Promise<BorrowReceipt> {
+): Promise<BorrowReceiptWithUrls> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   if ('quote' in input) {
-    return await wallet.borrow!.withdrawCollateral(input.quote)
+    const receipt = await wallet.borrow!.withdrawCollateral(input.quote)
+    return decorateReceipt(receipt, input.quote.marketId.chainId)
   }
   const { idToken: _ignored, marketId, ...rest } = input
-  const params: BorrowWithdrawCollateralParams = {
-    ...rest,
-    market: resolveMarketConfig(marketId),
-  }
-  return await wallet.borrow!.withdrawCollateral(params)
+  const market = resolveMarketConfig(marketId)
+  const receipt = await wallet.borrow!.withdrawCollateral({ ...rest, market })
+  return decorateReceipt(receipt, market.chainId)
 }
 
 export type BorrowRepayServiceInput =
@@ -153,15 +201,14 @@ export type BorrowRepayServiceInput =
 
 export async function repay(
   input: BorrowRepayServiceInput,
-): Promise<BorrowReceipt> {
+): Promise<BorrowReceiptWithUrls> {
   const wallet = await resolveWalletOrThrow(input.idToken)
   if ('quote' in input) {
-    return await wallet.borrow!.repay(input.quote)
+    const receipt = await wallet.borrow!.repay(input.quote)
+    return decorateReceipt(receipt, input.quote.marketId.chainId)
   }
   const { idToken: _ignored, marketId, ...rest } = input
-  const params: BorrowRepayParams = {
-    ...rest,
-    market: resolveMarketConfig(marketId),
-  }
-  return await wallet.borrow!.repay(params)
+  const market = resolveMarketConfig(marketId)
+  const receipt = await wallet.borrow!.repay({ ...rest, market })
+  return decorateReceipt(receipt, market.chainId)
 }
