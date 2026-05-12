@@ -13,22 +13,24 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
-import { borrowApi } from '@/api/borrowApi'
+import type {
+  BorrowAction,
+  BorrowMarket,
+  BorrowMarketPosition,
+  BorrowPrice,
+  BorrowQuote,
+  BorrowReceipt,
+} from '@eth-optimism/actions-sdk'
+import {
+  borrowApi,
+  type StubCloseParams,
+  type StubCollateralParams,
+  type StubOpenParams,
+  type StubRepayParams,
+} from '@/api/borrowApi'
 import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { assertBufferValid } from '@/utils/borrowMath'
-import type {
-  BorrowAction,
-  BorrowCloseParams,
-  BorrowCollateralParams,
-  BorrowMarket,
-  BorrowMarketPosition,
-  BorrowOpenParams,
-  BorrowPrice,
-  BorrowQuote,
-  BorrowRepayParams,
-  BorrowTransactionReceipt,
-} from '@/types/borrow'
 
 // Validate the buffer constant once at module load. If PR #3 ships a
 // negative or >= 1 value via the actions config, this throws immediately
@@ -38,11 +40,11 @@ assertBufferValid(BORROW_HEALTH_BUFFER_PCT)
 export type BorrowMode = 'borrow' | 'repay'
 
 export interface BorrowOperationParams {
-  open: BorrowOpenParams
-  close: BorrowCloseParams
-  depositCollateral: BorrowCollateralParams
-  withdrawCollateral: BorrowCollateralParams
-  repay: BorrowRepayParams
+  open: StubOpenParams
+  close: StubCloseParams
+  depositCollateral: StubCollateralParams
+  withdrawCollateral: StubCollateralParams
+  repay: StubRepayParams
 }
 
 export interface UseBorrowProviderReturn {
@@ -65,7 +67,7 @@ export interface UseBorrowProviderReturn {
   handleTransaction: <A extends BorrowAction>(
     action: A,
     params: BorrowOperationParams[A],
-  ) => Promise<BorrowTransactionReceipt>
+  ) => Promise<BorrowReceipt>
 
   getPrice: (params: {
     action: BorrowAction
@@ -181,38 +183,38 @@ export function useBorrowProvider(
     async <A extends BorrowAction>(
       action: A,
       params: BorrowOperationParams[A],
-    ): Promise<BorrowTransactionReceipt> => {
+    ): Promise<BorrowReceipt> => {
       if (!walletAddress) throw new Error('Wallet not connected')
-      let receipt: BorrowTransactionReceipt
+      let receipt: BorrowReceipt
       switch (action) {
         case 'open':
           receipt = await borrowApi.openPosition(
             walletAddress,
-            params as BorrowOpenParams,
+            params as StubOpenParams,
           )
           break
         case 'close':
           receipt = await borrowApi.closePosition(
             walletAddress,
-            params as BorrowCloseParams,
+            params as StubCloseParams,
           )
           break
         case 'depositCollateral':
           receipt = await borrowApi.depositCollateral(
             walletAddress,
-            params as BorrowCollateralParams,
+            params as StubCollateralParams,
           )
           break
         case 'withdrawCollateral':
           receipt = await borrowApi.withdrawCollateral(
             walletAddress,
-            params as BorrowCollateralParams,
+            params as StubCollateralParams,
           )
           break
         case 'repay':
           receipt = await borrowApi.repay(
             walletAddress,
-            params as BorrowRepayParams,
+            params as StubRepayParams,
           )
           break
       }

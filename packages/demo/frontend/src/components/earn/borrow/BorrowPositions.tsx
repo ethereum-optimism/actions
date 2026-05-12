@@ -8,6 +8,7 @@
  * matching log entry is hovered.
  */
 
+import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
 import {
@@ -16,7 +17,6 @@ import {
   type HealthTier,
 } from '@/utils/borrowMath'
 import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
-import type { BorrowMarketPosition } from '@/types/borrow'
 import { PositionsTable } from '../PositionsTable'
 
 const TIER_TEXT: Record<HealthTier, string> = {

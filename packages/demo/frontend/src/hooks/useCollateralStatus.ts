@@ -17,9 +17,8 @@
  */
 
 import { useContext, useMemo } from 'react'
+import type { Asset, BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
-import type { Asset } from '@eth-optimism/actions-sdk'
-import type { BorrowMarketPosition } from '@/types/borrow'
 
 export interface CollateralStatus {
   readonly positions: readonly BorrowMarketPosition[]

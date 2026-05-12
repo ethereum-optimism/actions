@@ -3,35 +3,33 @@
  *
  * Mirrors the shape of `ActionsApiClient` (api/actionsApi.ts) but resolves
  * promises against in-memory state instead of fetching the backend. When
- * PR #4 lands, swap the body of each method for a `request<T>` against the
- * real `/borrow/*` endpoints (see PR #4 brainstorm for the surface). The
- * exported `borrowApi` singleton import-site stays identical.
+ * PR #4 is wired into the frontend, swap the body of each method for a
+ * `request<T>` against the real `/borrow/*` endpoints. The exported
+ * `borrowApi` singleton import-site stays identical.
  *
  * Pricing is hardcoded (USDC = $1, OP = $0.10) so the mock can compute
  * `healthFactor`, `ltv`, and `safeCeilingLtv` for `BorrowMarketPosition` /
- * `BorrowQuote` / `BorrowPrice` without an oracle.
+ * `BorrowQuote` / `BorrowPrice` without an oracle. PR #3's SDK types are
+ * used directly here so the in-memory mock and the eventual real backend
+ * round-trip the same shapes.
  */
 
 import type { Address, Hex } from 'viem'
-import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
-import { ALL_BORROW_MARKETS } from '@/constants/borrowMarkets'
-import { computeHealthFactor, computeSafeCeilingLtv } from '@/utils/borrowMath'
 import type {
-  AmountExact,
-  AmountWithMax,
+  Amount,
+  AmountOrMax,
   BorrowAction,
-  BorrowCloseParams,
-  BorrowCollateralParams,
   BorrowFees,
   BorrowMarket,
   BorrowMarketId,
   BorrowMarketPosition,
-  BorrowOpenParams,
   BorrowPrice,
   BorrowQuote,
-  BorrowRepayParams,
-  BorrowTransactionReceipt,
-} from '@/types/borrow'
+  BorrowReceipt,
+} from '@eth-optimism/actions-sdk'
+import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
+import { ALL_BORROW_MARKETS } from '@/constants/borrowMarkets'
+import { computeSafeCeilingLtv } from '@/utils/borrowMath'
 
 // Stub demo prices. Real backend gets these from on-chain oracles.
 // Exported so the frontend's projection math (in BorrowAction) can read
@@ -76,13 +74,13 @@ function humanToRaw(human: number, decimals: number): bigint {
   return BigInt(Math.floor(human * 10 ** decimals))
 }
 
-function resolveAmount(amount: AmountExact, decimals: number): bigint {
+function resolveAmount(amount: Amount, decimals: number): bigint {
   if ('amountRaw' in amount) return amount.amountRaw
   return humanToRaw(amount.amount, decimals)
 }
 
-function resolveAmountWithMax(
-  amount: AmountWithMax,
+function resolveAmountOrMax(
+  amount: AmountOrMax,
   decimals: number,
   maxFallback: bigint,
 ): bigint {
@@ -123,24 +121,26 @@ function buildPosition(
   const collateralValueUsd = collHuman * collPrice
   const borrowValueUsd = borrHuman * borrPrice
 
+  // SDK contract: healthFactor and ltv are `null` when no debt is open
+  // (JSON-serializable; replaces the Infinity sentinel used in earlier
+  // PR #5 drafts).
   const currentLtv =
-    collateralValueUsd > 0 ? borrowValueUsd / collateralValueUsd : 0
-  const healthFactor = computeHealthFactor(
-    collateralValueUsd,
-    market.maxLtv,
-    borrowValueUsd,
-  )
+    borrowAmount > 0n && collateralValueUsd > 0
+      ? borrowValueUsd / collateralValueUsd
+      : null
+  const healthFactor =
+    borrowAmount > 0n && borrowValueUsd > 0
+      ? (collateralValueUsd * market.maxLtv) / borrowValueUsd
+      : null
 
-  // Liquidation price: price of the borrow asset at which the position
-  // would be liquidated, holding collateral constant. For OP/USDC:
-  //   liq when borrowValue == collateralValue * maxLtv
-  //   => borrPrice == (collValueUsd * maxLtv) / borrAmountHuman
+  // Liquidation price: borrow-asset price at which the position would
+  // liquidate, holding collateral constant.
   const liqPriceHuman =
     borrHuman > 0
       ? (collateralValueUsd * market.maxLtv) / borrHuman
       : Number.POSITIVE_INFINITY
-  // PR #3 specifies `liquidationPrice: bigint` (USD, in collateralAsset
-  // price decimals). For the stub we standardize on 6 decimals.
+  // PR #3 specifies `liquidationPrice: bigint` (loan-asset units).
+  // Stub standardizes on 6 decimals.
   const liquidationPrice = Number.isFinite(liqPriceHuman)
     ? BigInt(Math.round(liqPriceHuman * 1e6))
     : 0n
@@ -165,17 +165,51 @@ function buildPosition(
   }
 }
 
-function resolveBufferPct(market: BorrowMarket): number {
-  return market.healthBufferPct ?? BORROW_HEALTH_BUFFER_PCT
+function resolveBufferPct(): number {
+  // BorrowMarket does not carry `healthBufferPct`; per-market overrides
+  // live on `BorrowMarketConfig` (not on the read-only Market shape).
+  // For the stub we use the global default; PR #4 wire-up will fetch
+  // the resolved value from `actions.borrow.settings.healthBufferPct`.
+  return BORROW_HEALTH_BUFFER_PCT
 }
 
 function placeholderTxHash(): Hex {
-  // Deterministic enough for a stub.
   const rand = Math.floor(Math.random() * 0xffffffff)
     .toString(16)
     .padStart(8, '0')
   return `0x${rand.padStart(64, '0')}` as Hex
 }
+
+// ---------- Internal stub-only param shapes ----------
+// These mirror PR #3's `BorrowOpenPositionParams` etc., but use
+// `marketId: BorrowMarketId` instead of the full `BorrowMarketConfig`
+// object so the stub doesn't need to round-trip a config. The eventual
+// HTTP swap maps these straight to the backend's `/borrow/position/*`
+// request bodies.
+
+export interface StubOpenParams {
+  marketId: BorrowMarketId
+  borrowAmount: Amount
+  collateralAmount?: Amount
+}
+
+export interface StubCloseParams {
+  marketId: BorrowMarketId
+  borrowAmount: AmountOrMax
+  collateralAmount?: AmountOrMax
+}
+
+export interface StubCollateralParams {
+  marketId: BorrowMarketId
+  amount: AmountOrMax
+}
+
+export interface StubRepayParams {
+  marketId: BorrowMarketId
+  amount: AmountOrMax
+}
+
+// ---------- Mock client ----------
 
 export class BorrowApiClient {
   // walletKey -> positions
@@ -215,8 +249,8 @@ export class BorrowApiClient {
     action: BorrowAction
     marketId: BorrowMarketId
     walletAddress: Address
-    borrowAmount?: AmountExact | { max: true }
-    collateralAmount?: AmountExact | { max: true }
+    borrowAmount?: AmountOrMax
+    collateralAmount?: AmountOrMax
   }): Promise<BorrowPrice> {
     const market = findMarket(params.marketId)
     if (!market) throw new Error('Market not found')
@@ -230,10 +264,7 @@ export class BorrowApiClient {
         borrowApy: market.borrowApy,
         liquidationBonus: market.liquidationBonus,
       },
-      safeCeilingLtv: computeSafeCeilingLtv(
-        market.maxLtv,
-        resolveBufferPct(market),
-      ),
+      safeCeilingLtv: computeSafeCeilingLtv(market.maxLtv, resolveBufferPct()),
     }
   }
 
@@ -242,8 +273,8 @@ export class BorrowApiClient {
     marketId: BorrowMarketId
     walletAddress: Address
     recipient: Address
-    borrowAmount?: AmountExact | { max: true }
-    collateralAmount?: AmountExact | { max: true }
+    borrowAmount?: AmountOrMax
+    collateralAmount?: AmountOrMax
   }): Promise<BorrowQuote> {
     const market = findMarket(params.marketId)
     if (!market) throw new Error('Market not found')
@@ -284,12 +315,9 @@ export class BorrowApiClient {
       positionBefore: before,
       positionAfter: after,
       fees,
-      safeCeilingLtv: computeSafeCeilingLtv(
-        market.maxLtv,
-        resolveBufferPct(market),
-      ),
-      execution: { transactions: [] },
-      provider: market.borrowProvider,
+      safeCeilingLtv: computeSafeCeilingLtv(market.maxLtv, resolveBufferPct()),
+      execution: { transactions: [], approvalsSkipped: true },
+      provider: 'morpho',
       recipient: params.recipient,
       quotedAt: now,
       expiresAt: now + STUB_QUOTE_TTL_MS,
@@ -300,12 +328,11 @@ export class BorrowApiClient {
 
   async openPosition(
     walletAddress: Address,
-    params: BorrowOpenParams,
-  ): Promise<BorrowTransactionReceipt> {
+    params: StubOpenParams,
+  ): Promise<BorrowReceipt> {
     const market = findMarket(params.marketId)
     if (!market) throw new Error('Market not found')
-    const before =
-      (await this.getPosition(walletAddress, params.marketId)) ?? null
+    const before = await this.getPosition(walletAddress, params.marketId)
 
     const collateralDelta = params.collateralAmount
       ? resolveAmount(
@@ -323,25 +350,25 @@ export class BorrowApiClient {
 
     const next = buildPosition(market, nextCollateral, nextBorrow)
     this.upsertPosition(walletAddress, next)
-    return this.successReceipt()
+    return this.successReceipt('open')
   }
 
   async closePosition(
     walletAddress: Address,
-    params: BorrowCloseParams,
-  ): Promise<BorrowTransactionReceipt> {
+    params: StubCloseParams,
+  ): Promise<BorrowReceipt> {
     const market = findMarket(params.marketId)
     if (!market) throw new Error('Market not found')
     const before = await this.getPosition(walletAddress, params.marketId)
     if (!before) throw new Error('No position to close')
 
-    const repayRaw = resolveAmountWithMax(
+    const repayRaw = resolveAmountOrMax(
       params.borrowAmount,
       market.borrowAsset.metadata.decimals,
       before.borrowAmount,
     )
     const withdrawRaw = params.collateralAmount
-      ? resolveAmountWithMax(
+      ? resolveAmountOrMax(
           params.collateralAmount,
           market.collateralAsset.metadata.decimals,
           before.collateralAmount,
@@ -361,18 +388,18 @@ export class BorrowApiClient {
       const next = buildPosition(market, nextCollateral, nextBorrow)
       this.upsertPosition(walletAddress, next)
     }
-    return this.successReceipt()
+    return this.successReceipt('close')
   }
 
   async depositCollateral(
     walletAddress: Address,
-    params: BorrowCollateralParams,
-  ): Promise<BorrowTransactionReceipt> {
+    params: StubCollateralParams,
+  ): Promise<BorrowReceipt> {
     const market = findMarket(params.marketId)
     if (!market) throw new Error('Market not found')
     const before = await this.getPosition(walletAddress, params.marketId)
     const baseCollateral = before?.collateralAmount ?? 0n
-    const delta = resolveAmountWithMax(
+    const delta = resolveAmountOrMax(
       params.amount,
       market.collateralAsset.metadata.decimals,
       baseCollateral,
@@ -383,18 +410,18 @@ export class BorrowApiClient {
       before?.borrowAmount ?? 0n,
     )
     this.upsertPosition(walletAddress, next)
-    return this.successReceipt()
+    return this.successReceipt('depositCollateral')
   }
 
   async withdrawCollateral(
     walletAddress: Address,
-    params: BorrowCollateralParams,
-  ): Promise<BorrowTransactionReceipt> {
+    params: StubCollateralParams,
+  ): Promise<BorrowReceipt> {
     const market = findMarket(params.marketId)
     if (!market) throw new Error('Market not found')
     const before = await this.getPosition(walletAddress, params.marketId)
     if (!before) throw new Error('No position to withdraw from')
-    const delta = resolveAmountWithMax(
+    const delta = resolveAmountOrMax(
       params.amount,
       market.collateralAsset.metadata.decimals,
       before.collateralAmount,
@@ -407,18 +434,18 @@ export class BorrowApiClient {
       const next = buildPosition(market, nextCollateral, before.borrowAmount)
       this.upsertPosition(walletAddress, next)
     }
-    return this.successReceipt()
+    return this.successReceipt('withdrawCollateral')
   }
 
   async repay(
     walletAddress: Address,
-    params: BorrowRepayParams,
-  ): Promise<BorrowTransactionReceipt> {
+    params: StubRepayParams,
+  ): Promise<BorrowReceipt> {
     const market = findMarket(params.marketId)
     if (!market) throw new Error('Market not found')
     const before = await this.getPosition(walletAddress, params.marketId)
     if (!before) throw new Error('No position to repay')
-    const delta = resolveAmountWithMax(
+    const delta = resolveAmountOrMax(
       params.amount,
       market.borrowAsset.metadata.decimals,
       before.borrowAmount,
@@ -431,7 +458,7 @@ export class BorrowApiClient {
       const next = buildPosition(market, before.collateralAmount, nextBorrow)
       this.upsertPosition(walletAddress, next)
     }
-    return this.successReceipt()
+    return this.successReceipt('repay')
   }
 
   // ---------- Internal ----------
@@ -441,8 +468,8 @@ export class BorrowApiClient {
     before: BorrowMarketPosition | null,
     params: {
       action: BorrowAction
-      borrowAmount?: AmountExact | { max: true }
-      collateralAmount?: AmountExact | { max: true }
+      borrowAmount?: AmountOrMax
+      collateralAmount?: AmountOrMax
     },
   ): BorrowMarketPosition {
     const collDec = market.collateralAsset.metadata.decimals
@@ -451,10 +478,10 @@ export class BorrowApiClient {
     let borr = before?.borrowAmount ?? 0n
 
     const collDelta = params.collateralAmount
-      ? resolveAmountWithMax(params.collateralAmount, collDec, coll)
+      ? resolveAmountOrMax(params.collateralAmount, collDec, coll)
       : 0n
     const borrDelta = params.borrowAmount
-      ? resolveAmountWithMax(params.borrowAmount, borrDec, borr)
+      ? resolveAmountOrMax(params.borrowAmount, borrDec, borr)
       : 0n
 
     switch (params.action) {
@@ -507,11 +534,13 @@ export class BorrowApiClient {
     )
   }
 
-  private async successReceipt(): Promise<BorrowTransactionReceipt> {
+  private async successReceipt(action: BorrowAction): Promise<BorrowReceipt> {
     await delay(STUB_LATENCY_MS)
     return {
-      status: 'success',
-      transactionHash: placeholderTxHash(),
+      action,
+      receipt: {
+        transactionHash: placeholderTxHash(),
+      } as unknown as BorrowReceipt['receipt'],
     }
   }
 }

@@ -7,8 +7,8 @@
  */
 
 import { createPortal } from 'react-dom'
+import type { BorrowMarket } from '@eth-optimism/actions-sdk'
 import { Modal, ModalHeader } from '../../Modal'
-import type { BorrowMarket } from '@/types/borrow'
 
 export interface BorrowAssetModalProps {
   isOpen: boolean
@@ -145,6 +145,13 @@ function AssetCell({ market }: { market: BorrowMarket }) {
 }
 
 function LiquidityCell({ market }: { market: BorrowMarket }) {
+  // Available liquidity = totalCollateral - totalBorrowed in the borrow
+  // asset's wei units. For the stub we approximate with the difference;
+  // PR #4's backend returns this pre-derived if added.
+  const available = market.totalCollateral - market.totalBorrowed
+  const decimals = market.borrowAsset.metadata.decimals
+  const human = Number(available) / 10 ** decimals
+  const symbol = market.borrowAsset.metadata.symbol.replace('_DEMO', '')
   return (
     <span
       style={{
@@ -154,9 +161,15 @@ function LiquidityCell({ market }: { market: BorrowMarket }) {
       }}
     >
       <span style={{ color: '#1a1b1e', fontSize: '14px' }}>
-        {market.liquidity.amountFormatted}{' '}
-        {market.borrowAsset.metadata.symbol.replace('_DEMO', '')}
+        {formatHuman(human)} {symbol}
       </span>
     </span>
   )
+}
+
+function formatHuman(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '0'
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return n.toFixed(2)
 }

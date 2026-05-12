@@ -13,6 +13,10 @@
 
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import type {
+  BorrowMarket,
+  BorrowMarketPosition,
+} from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/api/borrowApi'
 import { BORROW_HEALTH_BUFFER_PCT } from '@/config/borrow'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
@@ -22,7 +26,6 @@ import {
   computeProjection,
   computeSafeCeilingLtv,
 } from '@/utils/borrowMath'
-import type { BorrowMarket, BorrowMarketPosition } from '@/types/borrow'
 import type { MarketPosition } from '@/types/market'
 import { AmountInput } from '../AmountInput'
 import { CtaButton, MaxButton } from '../CtaButton'
