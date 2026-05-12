@@ -27,10 +27,12 @@ exec > >(tee "$DEPLOY_DEMO_LOG") 2>&1
 
 # Parse arguments (pass through to forge)
 FORGE_ARGS=()
+SKIP_VELODROME=0
 while [[ $# -gt 0 ]]; do
     case $1 in
         --rpc-url) RPC_URL="$2"; FORGE_ARGS+=("$1" "$2"); shift 2 ;;
         --private-key) PRIVATE_KEY="$2"; FORGE_ARGS+=("$1" "$2"); shift 2 ;;
+        --skip-velodrome) SKIP_VELODROME=1; shift ;;
         *) FORGE_ARGS+=("$1"); shift ;;
     esac
 done
@@ -186,7 +188,9 @@ fi
 # --- Step 4: Deploy Velodrome Pool ---
 VELO_POOL=$(read_state "velodrome.pool")
 
-if [[ -z "$VELO_POOL" ]]; then
+if [[ "$SKIP_VELODROME" == "1" ]]; then
+    echo ">>> Skipping Velodrome pool (--skip-velodrome)"
+elif [[ -z "$VELO_POOL" ]]; then
     echo ">>> Deploying Velodrome pool..."
     OUTPUT=$(DEMO_USDC_ADDRESS="$USDC_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
         forge script script/DeployVelodromeMarket.s.sol:DeployVelodromeMarket \
