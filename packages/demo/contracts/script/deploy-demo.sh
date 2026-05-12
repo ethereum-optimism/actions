@@ -39,13 +39,28 @@ done
 
 # Fall back to packages/demo/backend/.env when either flag is missing. Lets
 # the user invoke `pnpm deploy:demo` with no args once their .env carries
-# BASE_SEPOLIA_BUNDLER_URL (as the rpc) and DEMO_MARKET_SETUP_PRIVATE_KEY.
+# the deployer key plus a baseSepolia RPC.
+#
+# RPC precedence:
+#   1. --rpc-url flag
+#   2. BASE_SEPOLIA_RPC_URL env var (preferred — full JSON-RPC)
+#   3. https://sepolia.base.org (public fallback; works for view calls and
+#      light deploys, may rate-limit)
+#
+# We deliberately do NOT use BASE_SEPOLIA_BUNDLER_URL here — bundler
+# endpoints (Pimlico, Alchemy AA, etc.) only serve userOp-related methods
+# and return empty data for arbitrary eth_call, which makes forge
+# scripts revert at the first contract read.
 BACKEND_ENV="$CONTRACTS_DIR/../backend/.env"
 if [[ -z "${RPC_URL:-}" || -z "${PRIVATE_KEY:-}" ]] && [[ -f "$BACKEND_ENV" ]]; then
     # shellcheck disable=SC1090
     set -a; source "$BACKEND_ENV"; set +a
-    if [[ -z "${RPC_URL:-}" && -n "${BASE_SEPOLIA_BUNDLER_URL:-}" ]]; then
-        RPC_URL="$BASE_SEPOLIA_BUNDLER_URL"
+    if [[ -z "${RPC_URL:-}" ]]; then
+        if [[ -n "${BASE_SEPOLIA_RPC_URL:-}" ]]; then
+            RPC_URL="$BASE_SEPOLIA_RPC_URL"
+        else
+            RPC_URL="https://sepolia.base.org"
+        fi
         FORGE_ARGS+=(--rpc-url "$RPC_URL")
     fi
     if [[ -z "${PRIVATE_KEY:-}" && -n "${DEMO_MARKET_SETUP_PRIVATE_KEY:-}" ]]; then
@@ -56,7 +71,7 @@ fi
 
 if [[ -z "${RPC_URL:-}" || -z "${PRIVATE_KEY:-}" ]]; then
     echo "Usage: $0 --rpc-url <url> --private-key <key>"
-    echo "Or populate BASE_SEPOLIA_BUNDLER_URL + DEMO_MARKET_SETUP_PRIVATE_KEY in packages/demo/backend/.env"
+    echo "Or populate DEMO_MARKET_SETUP_PRIVATE_KEY (and optionally BASE_SEPOLIA_RPC_URL) in packages/demo/backend/.env"
     exit 1
 fi
 
