@@ -18,6 +18,13 @@ CONTRACTS_DIR="$(dirname "$SCRIPT_DIR")"
 STATE_FILE="$CONTRACTS_DIR/state/deployments.json"
 CHAIN_ID="84532" # Base Sepolia
 
+# Mirror stdout/stderr to a log file so it can be inspected after the run.
+# Override with `DEPLOY_DEMO_LOG=/some/path pnpm deploy:demo`. The default
+# lives at the repo root (gitignored as *.log) so contributors don't need
+# to write outside the worktree.
+DEPLOY_DEMO_LOG="${DEPLOY_DEMO_LOG:-$CONTRACTS_DIR/../../../deploy-demo.log}"
+exec > >(tee "$DEPLOY_DEMO_LOG") 2>&1
+
 # Parse arguments (pass through to forge)
 FORGE_ARGS=()
 while [[ $# -gt 0 ]]; do
@@ -28,14 +35,37 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Fall back to packages/demo/backend/.env when either flag is missing. Lets
+# the user invoke `pnpm deploy:demo` with no args once their .env carries
+# BASE_SEPOLIA_BUNDLER_URL (as the rpc) and DEMO_MARKET_SETUP_PRIVATE_KEY.
+BACKEND_ENV="$CONTRACTS_DIR/../backend/.env"
+if [[ -z "${RPC_URL:-}" || -z "${PRIVATE_KEY:-}" ]] && [[ -f "$BACKEND_ENV" ]]; then
+    # shellcheck disable=SC1090
+    set -a; source "$BACKEND_ENV"; set +a
+    if [[ -z "${RPC_URL:-}" && -n "${BASE_SEPOLIA_BUNDLER_URL:-}" ]]; then
+        RPC_URL="$BASE_SEPOLIA_BUNDLER_URL"
+        FORGE_ARGS+=(--rpc-url "$RPC_URL")
+    fi
+    if [[ -z "${PRIVATE_KEY:-}" && -n "${DEMO_MARKET_SETUP_PRIVATE_KEY:-}" ]]; then
+        PRIVATE_KEY="$DEMO_MARKET_SETUP_PRIVATE_KEY"
+        FORGE_ARGS+=(--private-key "$PRIVATE_KEY")
+    fi
+fi
+
 if [[ -z "${RPC_URL:-}" || -z "${PRIVATE_KEY:-}" ]]; then
     echo "Usage: $0 --rpc-url <url> --private-key <key>"
+    echo "Or populate BASE_SEPOLIA_BUNDLER_URL + DEMO_MARKET_SETUP_PRIVATE_KEY in packages/demo/backend/.env"
     exit 1
 fi
 
-# Read a value from state file
+# Read a value from state file.
+# Converts dotted keys (e.g. `velodrome.pool` or
+# `morpho.borrow.marketParams.loanToken`) into a fully optional chain
+# (`velodrome?.pool`, etc.) so a missing intermediate node returns the
+# empty string instead of throwing `Cannot read properties of undefined`.
 read_state() {
-    node -e "const s=require('$STATE_FILE'); console.log(s['$CHAIN_ID']?.${1} ?? '')"
+    local key="${1//./?.}"
+    node -e "const s=require('$STATE_FILE'); console.log(s['$CHAIN_ID']?.${key} ?? '')"
 }
 
 # Write a value to state file
