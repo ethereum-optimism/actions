@@ -168,6 +168,7 @@ function makeStubMarket(marketId: BorrowMarketConfig): BorrowMarket {
     borrowApy: 0.05,
     liquidationBonus: 0.05,
     maxLtv: 0.86,
+    healthBufferPct: 0.05,
     totalBorrowed: 0n,
     totalCollateral: 0n,
   }

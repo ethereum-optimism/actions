@@ -738,8 +738,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         market.params.liquidationIncentiveFactor,
       ),
       maxLtv: wadToNumber(config.marketParams.lltv),
+      healthBufferPct: this.resolveHealthBufferPct(config),
       totalBorrowed: market.totalBorrowAssets,
-      // Morpho doesn't expose aggregate collateral as a single accumulator —
+      // Morpho doesn't expose aggregate collateral as a single accumulator,
       // it would require summing per-user balances. Frontends that need the
       // figure can derive it from indexer data; we surface `0n` rather than
       // a misleading number.

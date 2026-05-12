@@ -254,6 +254,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       borrowApy: this.mockConfig.defaultBorrowApy,
       liquidationBonus: this.mockConfig.defaultLiquidationBonus,
       maxLtv: this.mockConfig.defaultMaxLtv,
+      healthBufferPct: this.resolveHealthBufferPct(config),
       totalBorrowed: this.mockConfig.defaultMockBalance,
       totalCollateral: this.mockConfig.defaultMockBalance,
     }

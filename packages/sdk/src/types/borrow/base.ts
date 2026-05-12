@@ -110,6 +110,13 @@ export interface BorrowMarket {
   liquidationBonus: number
   /** Liquidation LTV (LLTV) as a decimal fraction */
   maxLtv: number
+  /**
+   * Resolved safety buffer for this market, expressed as a decimal
+   * (`market.healthBufferPct ?? settings.healthBufferPct ?? 0.05`).
+   * Surfaced on the read shape so consumers don't have to mirror the
+   * resolution rule themselves.
+   */
+  healthBufferPct: number
   /** Total assets currently borrowed from the market (wei) */
   totalBorrowed: bigint
   /** Total collateral supplied to the market (wei) */
@@ -242,6 +249,19 @@ export type BorrowAction =
   | 'repay'
 
 /**
+ * Discriminated union of all params accepted by `actions.borrow.getQuote`
+ * and `actions.borrow.getPrice`. The leading `action` field selects which
+ * variant applies; the rest of the shape matches the corresponding
+ * wallet method's params.
+ */
+export type BorrowQuoteParams =
+  | ({ action: 'open' } & BorrowOpenPositionParams)
+  | ({ action: 'close' } & BorrowClosePositionParams)
+  | ({ action: 'depositCollateral' } & BorrowDepositCollateralParams)
+  | ({ action: 'withdrawCollateral' } & BorrowWithdrawCollateralParams)
+  | ({ action: 'repay' } & BorrowRepayParams)
+
+/**
  * Fee context for a borrow action.
  * @description Required fields apply to every protocol PR #3 ships. The
  * forward-looking `originationFee` slot has been dropped per YAGNI; it
@@ -361,6 +381,10 @@ export interface GetBorrowPositionParams {
 
 /**
  * Receipt returned after dispatching a borrow action.
+ * @description Denormalizes the underlying receipt's identifying hash(es)
+ * onto the envelope so consumers can build block-explorer URLs without
+ * downcasting the `receipt` union: `transactionHash` for single EOA tx,
+ * `transactionHashes` for batched EOA, `userOpHash` for ERC-4337.
  */
 export interface BorrowReceipt {
   /** Underlying transaction receipt(s) */
@@ -375,6 +399,12 @@ export interface BorrowReceipt {
   marketId: BorrowMarketId
   /** Position snapshot taken after the action lands, when available */
   positionAfter?: BorrowMarketPosition
+  /** Single EOA transaction hash (set when dispatch ran one tx) */
+  transactionHash?: Hex
+  /** Batched EOA transaction hashes (set when dispatch ran multiple txs) */
+  transactionHashes?: Hex[]
+  /** UserOperation hash (set when dispatch ran through ERC-4337) */
+  userOpHash?: Hex
 }
 
 /**
