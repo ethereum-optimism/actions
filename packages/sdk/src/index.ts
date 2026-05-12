@@ -99,6 +99,7 @@ export type {
   BorrowProviderName,
   BorrowQuote,
   BorrowQuoteExecution,
+  BorrowQuoteParams,
   BorrowReceipt,
   BorrowRepayParams,
   BorrowSettings,
