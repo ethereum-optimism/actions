@@ -1,15 +1,27 @@
-import type { ActionModule } from '@/actions/shared/ActionModule.js'
+import type {
+  ActionModule,
+  ActionModuleDeps,
+} from '@/actions/shared/ActionModule.js'
 import {
   UniswapSwapProvider,
   VelodromeSwapProvider,
 } from '@/actions/swap/index.js'
 import { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
 import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
-import {
-  passthroughResolver,
-  type RecipientResolver,
-} from '@/services/nameservices/ens/utils.js'
+import { EnsNamespace } from '@/services/nameservices/ens/index.js'
+import type { RecipientResolver } from '@/services/nameservices/ens/utils.js'
 import type { SwapProviders } from '@/types/providers.js'
+
+/**
+ * Resolve the recipient resolver for swap namespaces. Prefers a caller-
+ * supplied ENS namespace (used by `Actions` which already owns one);
+ * otherwise builds a fresh one from the chain manager, mirroring the
+ * legacy in-`Wallet` construction.
+ */
+function buildResolveRecipient(deps: ActionModuleDeps): RecipientResolver {
+  const ens = deps.ens ?? new EnsNamespace(deps.chainManager)
+  return (r) => (r ? ens.getAddress(r) : Promise.resolve(undefined))
+}
 
 /**
  * Swap action module — wraps the existing swap class graph for the
@@ -43,21 +55,17 @@ export const swapModule: ActionModule<'swap'> = {
     return Object.values(providers).some(Boolean)
   },
   buildActionsNamespace(providers, deps, settings) {
-    const ens = deps.ens
-    const resolveRecipient: RecipientResolver = ens
-      ? (r) => (r ? ens.getAddress(r) : Promise.resolve(undefined))
-      : passthroughResolver
-    return new ActionsSwapNamespace(providers, resolveRecipient, settings)
+    return new ActionsSwapNamespace(
+      providers,
+      buildResolveRecipient(deps),
+      settings,
+    )
   },
   buildWalletNamespace(providers, wallet, settings, deps) {
-    const ens = deps.ens
-    const resolveRecipient: RecipientResolver = ens
-      ? (r) => (r ? ens.getAddress(r) : Promise.resolve(undefined))
-      : passthroughResolver
     return new WalletSwapNamespace(
       providers,
       wallet,
-      resolveRecipient,
+      buildResolveRecipient(deps),
       settings,
     )
   },
