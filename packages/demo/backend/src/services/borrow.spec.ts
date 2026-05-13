@@ -1,3 +1,4 @@
+import type { BorrowReceipt } from '@eth-optimism/actions-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as borrowService from './borrow.js'
@@ -130,7 +131,7 @@ describe('Borrow Service', () => {
     })
 
     it('resolves the market config and calls wallet.borrow.openPosition', async () => {
-      const receipt = { tag: 'open-receipt' } as never
+      const receipt = { tag: 'open-receipt' } as unknown as BorrowReceipt
       mockWalletBorrow.openPosition.mockResolvedValue(receipt)
 
       const result = await borrowService.openPosition(fullParams)
@@ -151,7 +152,7 @@ describe('Borrow Service', () => {
         marketId: baseMarketId,
         tag: 'q',
       } as never
-      const receipt = { tag: 'q-receipt' } as never
+      const receipt = { tag: 'q-receipt' } as unknown as BorrowReceipt
       mockWalletBorrow.openPosition.mockResolvedValue(receipt)
 
       const result = await borrowService.openPosition({
@@ -189,7 +190,7 @@ describe('Borrow Service', () => {
     })
 
     it('calls wallet.borrow.closePosition with resolved market', async () => {
-      const receipt = { tag: 'close' } as never
+      const receipt = { tag: 'close' } as unknown as BorrowReceipt
       mockWalletBorrow.closePosition.mockResolvedValue(receipt)
       const result = await borrowService.closePosition({
         idToken: 'idtok',
@@ -213,7 +214,7 @@ describe('Borrow Service', () => {
         marketId: baseMarketId,
         tag: 'q',
       } as never
-      const receipt = { tag: 'r' } as never
+      const receipt = { tag: 'r' } as unknown as BorrowReceipt
       mockWalletBorrow.closePosition.mockResolvedValue(receipt)
       const result = await borrowService.closePosition({
         idToken: 'idtok',
@@ -231,7 +232,7 @@ describe('Borrow Service', () => {
     })
 
     it('calls wallet.borrow.depositCollateral with resolved market', async () => {
-      const receipt = { tag: 'dep' } as never
+      const receipt = { tag: 'dep' } as unknown as BorrowReceipt
       mockWalletBorrow.depositCollateral.mockResolvedValue(receipt)
       const result = await borrowService.depositCollateral({
         idToken: 'idtok',
@@ -252,7 +253,7 @@ describe('Borrow Service', () => {
         action: 'depositCollateral',
         marketId: baseMarketId,
       } as never
-      const receipt = { tag: 'r' } as never
+      const receipt = { tag: 'r' } as unknown as BorrowReceipt
       mockWalletBorrow.depositCollateral.mockResolvedValue(receipt)
       await borrowService.depositCollateral({ idToken: 'idtok', quote })
       expect(mockWalletBorrow.depositCollateral).toHaveBeenCalledWith(quote)
@@ -266,7 +267,7 @@ describe('Borrow Service', () => {
     })
 
     it('calls wallet.borrow.withdrawCollateral with resolved market', async () => {
-      const receipt = { tag: 'w' } as never
+      const receipt = { tag: 'w' } as unknown as BorrowReceipt
       mockWalletBorrow.withdrawCollateral.mockResolvedValue(receipt)
       await borrowService.withdrawCollateral({
         idToken: 'idtok',
@@ -299,7 +300,7 @@ describe('Borrow Service', () => {
     })
 
     it('calls wallet.borrow.repay with resolved market', async () => {
-      const receipt = { tag: 'rep' } as never
+      const receipt = { tag: 'rep' } as unknown as BorrowReceipt
       mockWalletBorrow.repay.mockResolvedValue(receipt)
       await borrowService.repay({
         idToken: 'idtok',
