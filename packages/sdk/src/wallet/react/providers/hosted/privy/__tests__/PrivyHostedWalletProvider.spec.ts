@@ -39,12 +39,12 @@ describe('PrivyHostedWalletProvider (React)', () => {
       expect(PrivyWallet.create).toHaveBeenCalledWith({
         chainManager: mockChainManager,
         connectedWallet: mockConnectedWallet,
-        lendProviders: {},
-        swapProviders: {},
-        borrowProviders: {},
+        actionProviders: {
+          lend: undefined,
+          swap: undefined,
+        },
+        actionSettings: {},
         supportedAssets: undefined,
-        swapSettings: undefined,
-        borrowSettings: undefined,
       })
       expect(result).toBe(mockActionsWallet)
     })
@@ -71,7 +71,9 @@ describe('PrivyHostedWalletProvider (React)', () => {
 
       expect(PrivyWallet.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          lendProviders: { morpho: mockLendProvider },
+          actionProviders: expect.objectContaining({
+            lend: { morpho: mockLendProvider },
+          }),
         }),
       )
     })

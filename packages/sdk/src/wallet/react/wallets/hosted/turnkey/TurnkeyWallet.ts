@@ -2,15 +2,24 @@ import type { TurnkeySDKClientBase } from '@turnkey/react-wallet-kit'
 import type { Address, LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
-import type { Asset } from '@/types/asset.js'
 import type {
-  BorrowProviders,
-  LendProviders,
-  SwapProviders,
-} from '@/types/providers.js'
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
+import type { Asset } from '@/types/asset.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/turnkey/utils/createSigner.js'
+
+interface TurnkeyWalletCreateOptions {
+  chainManager: ChainManager
+  client: TurnkeySDKClientBase
+  organizationId: string
+  signWith: string
+  ethereumAddress?: string
+  actionProviders?: ActionProvidersMap
+  actionSettings?: ActionSettingsMap
+  supportedAssets?: Asset[]
+}
 
 /**
  * Turnkey wallet implementation
@@ -19,50 +28,16 @@ import { createSigner } from '@/wallet/react/wallets/hosted/turnkey/utils/create
 export class TurnkeyWallet extends EOAWallet {
   public address!: Address
   public signer!: LocalAccount
-  /**
-   * Turnkey client instance
-   */
   private readonly client: TurnkeySDKClientBase
-  /**
-   * Turnkey organization ID that owns the signing key
-   */
   private readonly organizationId: string
-  /**
-   * This can be a wallet account address, private key address, or private key ID.
-   */
   private readonly signWith: string
-  /**
-   * Ethereum address to use for this account, in the case that a private key ID is used to sign.
-   * If left undefined, `createSigner` will fetch it from the Turnkey API.
-   * We recommend setting this if you're using a passkey client, so that your users are not prompted for a passkey signature just to fetch their address.
-   * You may leave this undefined if using an API key client.
-   */
   private readonly ethereumAddress?: string
 
-  private constructor(params: {
-    chainManager: ChainManager
-    client: TurnkeySDKClientBase
-    organizationId: string
-    signWith: string
-    ethereumAddress?: string
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
-    borrowProviders?: BorrowProviders
-    supportedAssets?: Asset[]
-    swapSettings?: SwapSettings
-    borrowSettings?: BorrowSettings
-  }) {
+  private constructor(params: TurnkeyWalletCreateOptions) {
     super({
       chainManager: params.chainManager,
-      actionProviders: {
-        lend: params.lendProviders,
-        swap: params.swapProviders,
-        borrow: params.borrowProviders,
-      },
-      actionSettings: {
-        swap: params.swapSettings,
-        borrow: params.borrowSettings,
-      },
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
       supportedAssets: params.supportedAssets,
     })
     this.client = params.client
@@ -71,19 +46,9 @@ export class TurnkeyWallet extends EOAWallet {
     this.ethereumAddress = params.ethereumAddress
   }
 
-  static async create(params: {
-    chainManager: ChainManager
-    client: TurnkeySDKClientBase
-    organizationId: string
-    signWith: string
-    ethereumAddress?: string
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
-    borrowProviders?: BorrowProviders
-    supportedAssets?: Asset[]
-    swapSettings?: SwapSettings
-    borrowSettings?: BorrowSettings
-  }): Promise<TurnkeyWallet> {
+  static async create(
+    params: TurnkeyWalletCreateOptions,
+  ): Promise<TurnkeyWallet> {
     const wallet = new TurnkeyWallet(params)
     await wallet.initialize()
     return wallet

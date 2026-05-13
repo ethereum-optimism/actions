@@ -55,12 +55,12 @@ describe('DynamicHostedWalletProvider', () => {
       expect(DynamicWallet.create).toHaveBeenCalledWith({
         dynamicWallet: mockDynamicWallet,
         chainManager: mockChainManager,
-        lendProviders: {},
-        swapProviders: {},
-        borrowProviders: {},
+        actionProviders: {
+          lend: undefined,
+          swap: undefined,
+        },
+        actionSettings: {},
         supportedAssets: undefined,
-        swapSettings: undefined,
-        borrowSettings: undefined,
       })
       expect(result).toBe(mockResult)
     })
@@ -88,7 +88,9 @@ describe('DynamicHostedWalletProvider', () => {
 
       expect(DynamicWallet.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          lendProviders: { morpho: mockLendProvider },
+          actionProviders: expect.objectContaining({
+            lend: { morpho: mockLendProvider },
+          }),
         }),
       )
     })

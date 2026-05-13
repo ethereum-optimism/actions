@@ -2,15 +2,21 @@ import type { ConnectedWallet } from '@privy-io/react-auth'
 import type { Address, LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
-import type { Asset } from '@/types/asset.js'
 import type {
-  BorrowProviders,
-  LendProviders,
-  SwapProviders,
-} from '@/types/providers.js'
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
+import type { Asset } from '@/types/asset.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
+
+interface PrivyWalletCreateOptions {
+  chainManager: ChainManager
+  connectedWallet: ConnectedWallet
+  actionProviders?: ActionProvidersMap
+  actionSettings?: ActionSettingsMap
+  supportedAssets?: Asset[]
+}
 
 /**
  * Privy wallet implementation
@@ -22,52 +28,18 @@ export class PrivyWallet extends EOAWallet {
 
   private readonly connectedWallet: ConnectedWallet
 
-  private constructor(
-    chainManager: ChainManager,
-    connectedWallet: ConnectedWallet,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    borrowProviders?: BorrowProviders,
-    borrowSettings?: BorrowSettings,
-    swapSettings?: SwapSettings,
-  ) {
+  private constructor(params: PrivyWalletCreateOptions) {
     super({
-      chainManager,
-      actionProviders: {
-        lend: lendProviders,
-        swap: swapProviders,
-        borrow: borrowProviders,
-      },
-      actionSettings: {
-        swap: swapSettings,
-        borrow: borrowSettings,
-      },
-      supportedAssets,
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
     })
-    this.connectedWallet = connectedWallet
+    this.connectedWallet = params.connectedWallet
   }
 
-  static async create(params: {
-    chainManager: ChainManager
-    connectedWallet: ConnectedWallet
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
-    supportedAssets?: Asset[]
-    borrowProviders?: BorrowProviders
-    borrowSettings?: BorrowSettings
-    swapSettings?: SwapSettings
-  }): Promise<PrivyWallet> {
-    const wallet = new PrivyWallet(
-      params.chainManager,
-      params.connectedWallet,
-      params.lendProviders,
-      params.swapProviders,
-      params.supportedAssets,
-      params.borrowProviders,
-      params.borrowSettings,
-      params.swapSettings,
-    )
+  static async create(params: PrivyWalletCreateOptions): Promise<PrivyWallet> {
+    const wallet = new PrivyWallet(params)
     await wallet.initialize()
     return wallet
   }

@@ -70,12 +70,9 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       signWith,
       ethereumAddress,
       chainManager: this.chainManager,
-      lendProviders: this.lendProviders,
-      swapProviders: this.swapProviders,
-      borrowProviders: this.borrowProviders,
+      actionProviders: this.actionProviders,
+      actionSettings: this.actionSettings,
       supportedAssets: this.supportedAssets,
-      swapSettings: this.actionSettings.swap,
-      borrowSettings: this.actionSettings.borrow,
     })
   }
 

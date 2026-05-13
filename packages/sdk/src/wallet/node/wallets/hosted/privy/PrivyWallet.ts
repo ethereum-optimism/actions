@@ -2,15 +2,24 @@ import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import { type Address, type LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
-import type { Asset } from '@/types/asset.js'
 import type {
-  BorrowProviders,
-  LendProviders,
-  SwapProviders,
-} from '@/types/providers.js'
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
+import type { Asset } from '@/types/asset.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
+
+interface PrivyWalletCreateOptions {
+  privyClient: PrivyClient
+  authorizationContext?: AuthorizationContext
+  walletId: string
+  address: Address
+  chainManager: ChainManager
+  actionProviders?: ActionProvidersMap
+  actionSettings?: ActionSettingsMap
+  supportedAssets?: Asset[]
+}
 
 /**
  * Privy wallet implementation
@@ -22,75 +31,22 @@ export class PrivyWallet extends EOAWallet {
   public readonly address: Address
   private privyClient: PrivyClient
   private authorizationContext?: AuthorizationContext
-  /**
-   * Create a new Privy wallet instance
-   * @param privyClient - Privy client instance for wallet operations
-   * @param authorizationContext - Authorization context for signing requests
-   * @param walletId - Privy wallet identifier
-   * @param address - Ethereum address of the wallet
-   * @param chainManager - Chain manager for multi-chain operations
-   * @param lendProviders - Optional lend providers for DeFi operations
-   * @param swapProviders - Optional swap providers for trading operations
-   * @param supportedAssets - Optional list of supported assets
-   */
-  private constructor(
-    privyClient: PrivyClient,
-    walletId: string,
-    address: Address,
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    authorizationContext?: AuthorizationContext,
-    borrowProviders?: BorrowProviders,
-    borrowSettings?: BorrowSettings,
-    swapSettings?: SwapSettings,
-  ) {
+
+  private constructor(params: PrivyWalletCreateOptions) {
     super({
-      chainManager,
-      actionProviders: {
-        lend: lendProviders,
-        swap: swapProviders,
-        borrow: borrowProviders,
-      },
-      actionSettings: {
-        swap: swapSettings,
-        borrow: borrowSettings,
-      },
-      supportedAssets,
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
     })
-    this.privyClient = privyClient
-    this.authorizationContext = authorizationContext
-    this.walletId = walletId
-    this.address = address
+    this.privyClient = params.privyClient
+    this.authorizationContext = params.authorizationContext
+    this.walletId = params.walletId
+    this.address = params.address
   }
 
-  static async create(params: {
-    privyClient: PrivyClient
-    authorizationContext?: AuthorizationContext
-    walletId: string
-    address: Address
-    chainManager: ChainManager
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
-    supportedAssets?: Asset[]
-    borrowProviders?: BorrowProviders
-    borrowSettings?: BorrowSettings
-    swapSettings?: SwapSettings
-  }): Promise<PrivyWallet> {
-    const wallet = new PrivyWallet(
-      params.privyClient,
-      params.walletId,
-      params.address,
-      params.chainManager,
-      params.lendProviders,
-      params.swapProviders,
-      params.supportedAssets,
-      params.authorizationContext,
-      params.borrowProviders,
-      params.borrowSettings,
-      params.swapSettings,
-    )
+  static async create(params: PrivyWalletCreateOptions): Promise<PrivyWallet> {
+    const wallet = new PrivyWallet(params)
     await wallet.initialize()
     return wallet
   }
