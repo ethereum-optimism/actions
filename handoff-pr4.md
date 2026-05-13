@@ -3,6 +3,8 @@
 > **What this file is.** PR #4 (demo backend `/borrow` endpoints) is feature-complete and pushed as draft PR [#465](https://github.com/ethereum-optimism/actions/pull/465). This document captures the asks and known gaps that fall on PR #3 (SDK) or PR #5 (Frontend) so those agents can address them in their own scope.
 >
 > **Update 2026-05-12:** PR #3 shipped ASK-A1, ASK-A2, ASK-A3 and the `BorrowMarket.healthBufferPct` surface. PR #4 wired all of them in (see "Resolved" markers below). PR #5's two blockers (501 stubs on price/quote; explorer URL decoration) are also resolved. **Answers to PR #5's confirmation questions are in §"Confirmations for PR #5" below.**
+>
+> **Update 2026-05-13:** PR #3 landed an action-module registry refactor (`6d41a296`..`6f85e8eb`). Public `ActionsConfig` / `NodeActionsConfig` shape is unchanged; `lend` / `swap` / `borrow` / `assets` / `chains` / `wallet` keys all stay. PR #4 needed **no code changes** — clean rebase, build + 102 tests + lint all green. **Bonus side effect**: `wallet.borrow` is now exposed on hosted wallets (Privy / Turnkey / Dynamic), which closes the previously-flagged gap that would have made `resolveWalletOrThrow`'s `wallet.borrow` null-check throw on every Privy-authenticated mutation. PR #4 mutations are now end-to-end executable as soon as a real signer + deployed market are wired (already true on baseSepolia chain 84532).
 
 ## Confirmations for PR #5
 
