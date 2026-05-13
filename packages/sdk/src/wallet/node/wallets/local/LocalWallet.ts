@@ -6,11 +6,6 @@ import type {
   ActionSettingsMap,
 } from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type {
-  BorrowProviders,
-  LendProviders,
-  SwapProviders,
-} from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 
 interface LocalWalletCreateOptions {
@@ -18,9 +13,6 @@ interface LocalWalletCreateOptions {
   chainManager: ChainManager
   actionProviders?: ActionProvidersMap
   actionSettings?: ActionSettingsMap
-  lendProviders?: LendProviders
-  swapProviders?: SwapProviders
-  borrowProviders?: BorrowProviders
   supportedAssets?: Asset[]
 }
 
@@ -40,18 +32,11 @@ export class LocalWallet extends EOAWallet {
       chainManager,
       actionProviders,
       actionSettings,
-      lendProviders,
-      swapProviders,
-      borrowProviders,
       supportedAssets,
     } = params
     super({
       chainManager,
-      actionProviders: actionProviders ?? {
-        lend: lendProviders,
-        swap: swapProviders,
-        borrow: borrowProviders,
-      },
+      actionProviders,
       actionSettings,
       supportedAssets,
     })
