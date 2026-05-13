@@ -1,13 +1,12 @@
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { ActionsContext, SwapSettings } from '@/types/actions.js'
-import type { Asset } from '@/types/asset.js'
 import type {
-  BorrowProviders,
-  LendProviders,
-  SwapProviders,
-} from '@/types/providers.js'
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
+import type { ActionsContext } from '@/types/actions.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   CreateSmartWalletOptions,
   GetSmartWalletOptions,
@@ -87,11 +86,9 @@ export class WalletNamespace<
     WalletProvider<THostedProviderType, TToActionsMap, H, S>
   > | null = null
   private readonly chainManager: ChainManager
-  private readonly lendProviders: LendProviders
-  private readonly swapProviders: SwapProviders
-  private readonly borrowProviders: BorrowProviders
+  private readonly actionProviders: ActionProvidersMap
+  private readonly actionSettings: ActionSettingsMap
   private readonly supportedAssets: Asset[]
-  private readonly swapSettings?: SwapSettings
 
   constructor(
     providerOrFactory:
@@ -106,11 +103,15 @@ export class WalletNamespace<
       this._providerFactory = () => Promise.resolve(providerOrFactory)
     }
     this.chainManager = context.chainManager
-    this.lendProviders = context.lendProviders
-    this.swapProviders = context.swapProviders
-    this.borrowProviders = context.borrowProviders ?? {}
+    this.actionProviders = context.actionProviders ?? {
+      lend: context.lendProviders,
+      swap: context.swapProviders,
+      borrow: context.borrowProviders,
+    }
+    this.actionSettings = context.actionSettings ?? {
+      swap: context.swapSettings,
+    }
     this.supportedAssets = context.supportedAssets
-    this.swapSettings = context.swapSettings
   }
 
   /**
@@ -199,9 +200,8 @@ export class WalletNamespace<
       return LocalWallet.create({
         account: params,
         chainManager: this.chainManager,
-        lendProviders: this.lendProviders,
-        swapProviders: this.swapProviders,
-        borrowProviders: this.borrowProviders,
+        actionProviders: this.actionProviders,
+        actionSettings: this.actionSettings,
         supportedAssets: this.supportedAssets,
       })
     }

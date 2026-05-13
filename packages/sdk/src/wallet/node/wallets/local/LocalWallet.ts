@@ -1,6 +1,10 @@
 import type { Address, LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
 import type {
   BorrowProviders,
@@ -8,6 +12,17 @@ import type {
   SwapProviders,
 } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
+
+interface LocalWalletCreateOptions {
+  account: LocalAccount
+  chainManager: ChainManager
+  actionProviders?: ActionProvidersMap
+  actionSettings?: ActionSettingsMap
+  lendProviders?: LendProviders
+  swapProviders?: SwapProviders
+  borrowProviders?: BorrowProviders
+  supportedAssets?: Asset[]
+}
 
 /**
  * Local wallet implementation
@@ -19,42 +34,32 @@ export class LocalWallet extends EOAWallet {
   public readonly address: Address
   public readonly signer: LocalAccount
 
-  private constructor(params: {
-    account: LocalAccount
-    chainManager: ChainManager
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
-    borrowProviders?: BorrowProviders
-    supportedAssets?: Asset[]
-  }) {
+  private constructor(params: LocalWalletCreateOptions) {
     const {
       account,
       chainManager,
+      actionProviders,
+      actionSettings,
       lendProviders,
       swapProviders,
       borrowProviders,
       supportedAssets,
     } = params
-    super(
+    super({
       chainManager,
-      lendProviders,
-      swapProviders,
+      actionProviders: actionProviders ?? {
+        lend: lendProviders,
+        swap: swapProviders,
+        borrow: borrowProviders,
+      },
+      actionSettings,
       supportedAssets,
-      undefined,
-      borrowProviders,
-    )
+    })
     this.signer = account
     this.address = account.address
   }
 
-  static async create(params: {
-    account: LocalAccount
-    chainManager: ChainManager
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
-    borrowProviders?: BorrowProviders
-    supportedAssets?: Asset[]
-  }): Promise<LocalWallet> {
+  static async create(params: LocalWalletCreateOptions): Promise<LocalWallet> {
     const wallet = new LocalWallet(params)
     await wallet.initialize()
     return wallet
