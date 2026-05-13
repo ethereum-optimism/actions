@@ -1,4 +1,8 @@
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
@@ -12,6 +16,17 @@ import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstra
  */
 export interface HostedProviderDeps {
   chainManager: ChainManager
+  /**
+   * Provider instances keyed by action name. Preferred shape; the
+   * per-action fields below are derived mirrors kept during the registry
+   * migration and will be removed once every hosted-wallet factory reads
+   * from this map.
+   */
+  actionProviders?: ActionProvidersMap
+  /**
+   * Settings keyed by action name. Parallel to `actionProviders`.
+   */
+  actionSettings?: ActionSettingsMap
   lendProviders?: LendProviders
   swapProviders?: SwapProviders
   supportedAssets?: Asset[]

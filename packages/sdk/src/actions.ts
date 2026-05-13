@@ -312,6 +312,8 @@ export class Actions<
     return factory.create(
       {
         chainManager: this.chainManager,
+        actionProviders: this._actionProviders,
+        actionSettings: this._actionSettings,
         lendProviders: this.lendProviders,
         swapProviders: this.swapProviders,
         supportedAssets: this.getSupportedAssets(),
@@ -342,6 +344,8 @@ export class Actions<
       SmartWalletProvider
     >(providerFactory, {
       chainManager: this.chainManager,
+      actionProviders: this._actionProviders,
+      actionSettings: this._actionSettings,
       lendProviders: this.lendProviders,
       swapProviders: this.swapProviders,
       borrowProviders: this.borrowProviders,

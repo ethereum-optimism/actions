@@ -1,6 +1,10 @@
 import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap/types.js'
 import type { VelodromeSwapProviderConfig } from '@/actions/swap/providers/velodrome/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
 import type { BorrowProviderConfig } from '@/types/borrow/index.js'
 import type { ChainConfig } from '@/types/chain.js'
@@ -176,6 +180,20 @@ export interface AssetsConfig {
 export interface ActionsContext {
   /** Chain manager wrapping the configured chains */
   chainManager: ChainManager
+  /**
+   * Provider instances keyed by action name. The canonical place for
+   * downstream wiring (`Wallet`, `WalletNamespace`, hosted-wallet
+   * providers) to read per-action providers. The per-action fields
+   * (`lendProviders`, `swapProviders`, `borrowProviders`) are derived
+   * mirrors kept during the registry migration and will be removed once
+   * every consumer reads from this map.
+   */
+  actionProviders?: ActionProvidersMap
+  /**
+   * Settings keyed by action name. Parallel to `actionProviders`; once
+   * consumers migrate, `swapSettings` / `borrowSettings` are removed.
+   */
+  actionSettings?: ActionSettingsMap
   /** Configured lend provider instances (each holds its own config) */
   lendProviders: LendProviders
   /**
