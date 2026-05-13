@@ -4,6 +4,20 @@
 > reviewing `packages/sdk/src` at HEAD of that branch — types, namespace
 > methods, and `BorrowReceipt` envelope all moved between the original
 > hand-off docs and what's actually shipped now.
+>
+> **2026-05-13 update:** PR #3 also shipped an action-module registry
+> refactor (commits `6d41a296`..`9c08af72`) that collapses internal SDK
+> construction. The public `ActionsConfig` / `NodeActionsConfig` /
+> `ReactActionsConfig` shapes are unchanged — `lend`, `swap`, `borrow`,
+> `assets`, `chains`, `wallet` keys all stay. The breakage was internal
+> only (e.g., `LocalWallet.create({ lendProviders, swapProviders,
+> borrowProviders })` is now `LocalWallet.create({ actionProviders,
+> actionSettings })`). PR #4 and PR #5 do not consume those internal
+> APIs, so neither needs a code change beyond a clean rebase.
+>
+> **Side effect of the refactor:** `wallet.borrow` is now exposed on
+> hosted wallets (Privy / Turnkey / Dynamic, node + react). The previous
+> hosted-wallet gap is closed.
 
 ## What PR #3 just shipped to unblock you
 
@@ -59,7 +73,10 @@ PR #4's `MorphoBorrowDemo` config (`packages/demo/backend/src/config/markets.ts`
 - **`actions.borrow.getMarketConfig(marketId)`** so direct-SDK callers can resolve a `BorrowMarketConfig` from a `BorrowMarketId`. Not blocking for PR #4/#5 since they go through the backend, but PR #6 (Aave direct-SDK) might want it.
 - **USD price oracle.** PR #5 documents the stub (`USDC = $1`, `OP = $0.10`). Out of scope for PR #3.
 - **Wallet-namespace max-path re-encoding at dispatch time.** Deferred in the PR #3 handoff; quotes still encode the borrowShares snapshot taken at quote time. Re-quoting via raw params re-fetches; the optimization only matters for accepted-quote dispatch.
-- **`HostedProviderDeps.borrowProviders`.** Hosted wallets (Privy / Turnkey / Dynamic) don't yet expose `wallet.borrow`. Blocked on a TS declaration-emit inference depth issue (see PR #3 handoff). Workaround: local wallets / default smart wallets already work.
+
+## Resolved since prior handoff
+
+- ~~**`HostedProviderDeps.borrowProviders`.**~~ Closed by the action-module registry refactor. Hosted wallets (Privy / Turnkey / Dynamic, node + react) now expose `wallet.borrow` when `borrow:` is configured in `ActionsConfig`. The TS inference-depth issue did not recur under the mapped-type collapse.
 
 ## Sync protocol
 

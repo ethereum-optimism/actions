@@ -1,8 +1,10 @@
 # Handoff: Borrow PR #3 (SDK BorrowProvider)
 
-> **Status: Phases 1-8 landed.** PR is shape-complete for the SDK side. Only
-> the fork test (Phase 7.2) is deferred, blocked on the demo deploy actually
-> running on baseSepolia to populate `deployments.json`.
+> **Status (2026-05-13): Phases 1-8 plus action-module registry refactor
+> landed.** PR is shape-complete for the SDK side. Hosted wallets
+> (Privy / Turnkey / Dynamic, node + react) now expose `wallet.borrow`
+> via the refactor — the prior `HostedProviderDeps` TS inference-depth
+> gap is closed. No blockers on PR #4 or PR #5.
 
 ## Where we are
 
@@ -17,6 +19,7 @@
 | **7.1.** `MockBorrowProvider` | ✅ | Mirrors `MockLendProvider`; every public method is a `vi.fn()` over a default impl so tests can override with `mockResolvedValue`/`mockRejectedValue`. |
 | **7.2.** Fork test | ✅ | `MorphoBorrowProvider.network.test.ts` forks baseSepolia via anvil. 4 tests pass against the live deploy (`marketId: 0x7dc8...d12f`, oracle `0xB31E...e86`). Read side covers `getMarket` + `getPosition`; write side asserts the `[approve, supplyCollateral, borrow]` bundle shape. |
 | **8.** Changeset + docs | ✅ | `.changeset/borrow-provider-sdk.md` minor bump; `llms-full.txt` has the new borrow section + key types. |
+| **9.** Action-module registry refactor | ✅ | Collapsed per-action positional plumbing into a single `actionProviders: ActionProvidersMap` / `actionSettings: ActionSettingsMap` bundle. `Actions` and `Wallet` iterate `ACTION_MODULES` instead of running per-action blocks. Hosted wallets and providers are now action-agnostic. Side effect: `wallet.borrow` works on hosted wallets. Commits `6d41a296`..`9c08af72`. Smoke test at `packages/sdk/src/actions/__tests__/registry-smoke.spec.ts`. |
 
 ## Significant deviations from the plan
 
@@ -40,16 +43,17 @@ These differ from the plan/brainstorm and matter to readers downstream:
    field, and `deploy-demo.sh` parses them into
    `morpho.borrow.marketParams.{loanToken,collateralToken,oracle,irm,lltv}`.
    No deploy has run yet; values are still `null` in JSON.
-4. **`ActionsContext.borrowProviders` stays optional.** The
-   non-hosted-wallet path (Actions → WalletNamespace → LocalWallet → Wallet)
-   passes it through. Hosted-wallet factories ignore it for now —
-   `HostedProviderDeps` did not get the new field because adding it tripped
-   TypeScript's declaration-emit inference depth (saw `SUPPORTED_CHAINS`
-   + `createSignerMock` flagged as non-portable). Workaround: I added an
-   explicit `readonly Chain[]` annotation to `SUPPORTED_CHAINS` and cast
-   the privy mock's `createSignerMock` shape, but kept hosted deps
-   conservative. A future PR can extend `HostedProviderDeps` once we have
-   a clearer fix.
+4. **`ActionsContext.borrowProviders` was a transient gap.** Initially
+   the non-hosted-wallet path (Actions → WalletNamespace → LocalWallet →
+   Wallet) carried it while hosted-wallet factories did not, because adding
+   `borrowProviders` to `HostedProviderDeps` tripped TypeScript's
+   declaration-emit inference depth. **Resolved on 2026-05-13** by the
+   action-module registry refactor (Phase 9 above): the three per-action
+   fields collapse into a single `ActionProvidersMap` mapped type, which
+   instantiates flatter than three optional positional types and avoids the
+   inference blow-up. The `readonly Chain[]` annotation on
+   `SUPPORTED_CHAINS` and the cast on `createSignerMock` stay in place as
+   backstops.
 5. **Wallet-namespace max-path re-encoding (Phase 5.3 in plan) is
    deferred.** Quotes encode the `borrowShares` snapshot taken at quote
    time. The wallet namespace re-quotes via `provider.openPosition` / etc.
@@ -59,10 +63,11 @@ These differ from the plan/brainstorm and matter to readers downstream:
 
 ## Outstanding follow-ups
 
+- **Resolved 2026-05-13:** ~~Extend `HostedProviderDeps` with
+  `borrowProviders`~~ — closed by Phase 9 (action-module registry refactor).
+  Hosted wallets now thread `actionProviders.borrow` through the standard
+  map shape and expose `wallet.borrow`.
 - **Optional follow-ups not in scope:**
-  - Extend `HostedProviderDeps` with `borrowProviders` (and update Privy /
-    Turnkey / Dynamic wallet factories to thread it). Blocked on resolving
-    the TS inference-depth issue noted above.
   - Max-path re-encoding in `WalletBorrowNamespace.dispatch` to absorb
     interest accrual between quote and dispatch.
 
