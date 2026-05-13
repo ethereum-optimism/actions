@@ -1,0 +1,276 @@
+import { serializeBigInt } from '@eth-optimism/actions-sdk'
+import type { Context } from 'hono'
+import type { Address } from 'viem'
+import { z } from 'zod'
+
+import { requireAuth } from '@/helpers/errors.js'
+import {
+  AddressSchema,
+  AmountExactSchema,
+  AmountWithMaxSchema,
+  BorrowMarketIdSchema,
+  ChainIdStringSchema,
+} from '@/helpers/schemas.js'
+import { validateRequest } from '@/helpers/validation.js'
+import * as borrowService from '@/services/borrow.js'
+import * as walletService from '@/services/wallet.js'
+
+/**
+ * Quote bodies are passed opaquely to the SDK; we only enforce that the
+ * action discriminator matches the route. Deep validation of the quote
+ * shape is the SDK's responsibility at execute time.
+ */
+function quoteBodySchema(action: string) {
+  return z.strictObject({
+    quote: z
+      .object({
+        action: z.literal(action),
+      })
+      .passthrough(),
+  })
+}
+
+const GetMarketsRequestSchema = z.object({
+  query: z.object({
+    chainId: ChainIdStringSchema.optional(),
+  }),
+})
+
+/**
+ * Body shape for `/borrow/price` and `/borrow/quote`. Discriminated by
+ * `action`; each variant carries the per-action amount fields. Backend
+ * resolves `marketId` to a full `BorrowMarketConfig` server-side.
+ *
+ * `walletAddress` is optional in the body — `/borrow/quote` injects it
+ * from the authenticated idToken (so recipient is auth-bound, not
+ * caller-supplied); `/borrow/price` accepts it from the body since the
+ * price preview doesn't bake calldata.
+ */
+const PriceQuoteBodySchema = z.discriminatedUnion('action', [
+  z.strictObject({
+    action: z.literal('open'),
+    marketId: BorrowMarketIdSchema,
+    borrowAmount: AmountExactSchema,
+    collateralAmount: AmountExactSchema.optional(),
+    walletAddress: AddressSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('close'),
+    marketId: BorrowMarketIdSchema,
+    borrowAmount: AmountWithMaxSchema,
+    collateralAmount: AmountWithMaxSchema.optional(),
+    walletAddress: AddressSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('depositCollateral'),
+    marketId: BorrowMarketIdSchema,
+    amount: AmountExactSchema,
+    walletAddress: AddressSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('withdrawCollateral'),
+    marketId: BorrowMarketIdSchema,
+    amount: AmountWithMaxSchema,
+    walletAddress: AddressSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('repay'),
+    marketId: BorrowMarketIdSchema,
+    amount: AmountWithMaxSchema,
+    walletAddress: AddressSchema.optional(),
+  }),
+])
+
+const PriceRequestSchema = z.object({ body: PriceQuoteBodySchema })
+const QuoteRequestSchema = z.object({ body: PriceQuoteBodySchema })
+
+/**
+ * GET - Retrieve borrow markets, optionally filtered by chain.
+ * Errors propagate to the borrow-scoped `app.onError` handler.
+ */
+export async function getMarkets(c: Context) {
+  const validation = await validateRequest(c, GetMarketsRequestSchema)
+  if (!validation.success) return validation.response
+
+  const { chainId } = validation.data.query
+  const markets = await borrowService.getMarkets(chainId ? { chainId } : {})
+  return c.json({ result: serializeBigInt(markets) })
+}
+
+/**
+ * POST - Lightweight borrow price preview: positionAfter + fees +
+ * safeCeilingLtv, no calldata bundle. Public route; the body supplies
+ * the `walletAddress` whose hypothetical position is being previewed.
+ */
+export async function getPrice(c: Context) {
+  const validation = await validateRequest(c, PriceRequestSchema)
+  if (!validation.success) return validation.response
+
+  const price = await borrowService.getPrice(validation.data.body)
+  return c.json({ result: serializeBigInt(price) })
+}
+
+/**
+ * POST - Recipient-bound borrow quote with pre-built calldata. Auth
+ * required; `walletAddress` is derived from the authenticated idToken
+ * so quote calldata can't be bound to a third party. The strict body
+ * schema rejects a caller-supplied `walletAddress` (400) to make the
+ * derivation unambiguous.
+ */
+export async function getQuote(c: Context) {
+  const validation = await validateRequest(c, QuoteRequestSchema)
+  if (!validation.success) return validation.response
+
+  if (validation.data.body.walletAddress) {
+    return c.json(
+      {
+        error:
+          'walletAddress is derived from auth; do not include it in the body.',
+      },
+      400,
+    )
+  }
+
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
+
+  const wallet = await walletService.getWallet(authResult.auth.idToken)
+  if (!wallet) {
+    return c.json({ error: 'Wallet not found' }, 404)
+  }
+
+  const quote = await borrowService.getQuote({
+    ...validation.data.body,
+    walletAddress: wallet.address as Address,
+  })
+  return c.json({ result: serializeBigInt(quote) })
+}
+
+// ---------- Mutations ----------
+
+const OpenParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  borrowAmount: AmountExactSchema,
+  collateralAmount: AmountExactSchema.optional(),
+})
+
+const OpenRequestSchema = z.object({
+  body: z.union([OpenParamsBody, quoteBodySchema('open')]),
+})
+
+/**
+ * POST - Open a borrow position (Morpho variant). Body is either fresh
+ * params or a pre-built quote with action='open'.
+ */
+export async function openPosition(c: Context) {
+  const validation = await validateRequest(c, OpenRequestSchema)
+  if (!validation.success) return validation.response
+
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
+
+  const result = await borrowService.openPosition({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.openPosition>[0])
+  return c.json({ result: serializeBigInt(result) })
+}
+
+const CloseParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  borrowAmount: AmountWithMaxSchema,
+  collateralAmount: AmountWithMaxSchema.optional(),
+})
+
+const CloseRequestSchema = z.object({
+  body: z.union([CloseParamsBody, quoteBodySchema('close')]),
+})
+
+export async function closePosition(c: Context) {
+  const validation = await validateRequest(c, CloseRequestSchema)
+  if (!validation.success) return validation.response
+
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
+
+  const result = await borrowService.closePosition({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.closePosition>[0])
+  return c.json({ result: serializeBigInt(result) })
+}
+
+const DepositCollateralParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  amount: AmountExactSchema,
+})
+
+const DepositCollateralRequestSchema = z.object({
+  body: z.union([
+    DepositCollateralParamsBody,
+    quoteBodySchema('depositCollateral'),
+  ]),
+})
+
+export async function depositCollateral(c: Context) {
+  const validation = await validateRequest(c, DepositCollateralRequestSchema)
+  if (!validation.success) return validation.response
+
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
+
+  const result = await borrowService.depositCollateral({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.depositCollateral>[0])
+  return c.json({ result: serializeBigInt(result) })
+}
+
+const WithdrawCollateralParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  amount: AmountWithMaxSchema,
+})
+
+const WithdrawCollateralRequestSchema = z.object({
+  body: z.union([
+    WithdrawCollateralParamsBody,
+    quoteBodySchema('withdrawCollateral'),
+  ]),
+})
+
+export async function withdrawCollateral(c: Context) {
+  const validation = await validateRequest(c, WithdrawCollateralRequestSchema)
+  if (!validation.success) return validation.response
+
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
+
+  const result = await borrowService.withdrawCollateral({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.withdrawCollateral>[0])
+  return c.json({ result: serializeBigInt(result) })
+}
+
+const RepayParamsBody = z.strictObject({
+  marketId: BorrowMarketIdSchema,
+  amount: AmountWithMaxSchema,
+})
+
+const RepayRequestSchema = z.object({
+  body: z.union([RepayParamsBody, quoteBodySchema('repay')]),
+})
+
+export async function repay(c: Context) {
+  const validation = await validateRequest(c, RepayRequestSchema)
+  if (!validation.success) return validation.response
+
+  const authResult = requireAuth(c)
+  if ('error' in authResult) return authResult.error
+
+  const result = await borrowService.repay({
+    idToken: authResult.auth.idToken,
+    ...validation.data.body,
+  } as Parameters<typeof borrowService.repay>[0])
+  return c.json({ result: serializeBigInt(result) })
+}

@@ -6,6 +6,7 @@ import { cors } from 'hono/cors'
 
 import { initializeActions } from '@/config/actions.js'
 import { env } from '@/config/env.js'
+import { errorResponse, mapSdkError } from '@/helpers/errors.js'
 import { actionsMiddleware } from '@/middleware/actions.js'
 import { router } from '@/router.js'
 
@@ -68,6 +69,23 @@ class ActionsApp extends App {
     // Apply Actions middleware (initialization already happened at startup)
     app.use('*', actionsMiddleware)
     app.route('/', router)
+
+    // Borrow-only global error handler. Lend / swap still use per-route
+    // try/catch; this handler is scoped to the borrow route prefixes so
+    // their thrown SDK errors get translated to structured status codes
+    // via `mapSdkError`. Non-borrow paths fall through unchanged.
+    app.onError((err, c) => {
+      const path = c.req.path
+      const isBorrow =
+        path.startsWith('/borrow') || path.startsWith('/wallet/borrow')
+      if (!isBorrow) {
+        return c.json({ error: 'Internal server error' }, 500)
+      }
+      const mapped = mapSdkError(err)
+      return mapped
+        ? errorResponse(c, mapped.message, mapped.status, err)
+        : errorResponse(c, 'Internal server error', 500, err)
+    })
 
     this.logger.info('starting actions service on port %s', this.options.port)
 

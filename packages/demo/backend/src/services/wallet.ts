@@ -1,4 +1,5 @@
 import type {
+  BorrowMarketId,
   EOATransactionReceipt,
   LendMarketId,
   SmartWallet,
@@ -93,6 +94,24 @@ export async function getLendPosition({
   wallet: Wallet
 }) {
   const position = await wallet.lend!.getPosition({ marketId })
+  return serializeBigInt(position)
+}
+
+export async function getBorrowPosition({
+  marketId,
+  walletAddress,
+}: {
+  marketId: BorrowMarketId
+  walletAddress: Address
+}) {
+  const actions = getActions()
+  if (!actions.borrow) {
+    throw new Error('Borrow not configured')
+  }
+  const position = await actions.borrow.getPosition({
+    marketId,
+    walletAddress,
+  })
   return serializeBigInt(position)
 }
 

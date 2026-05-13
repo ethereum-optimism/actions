@@ -4,6 +4,7 @@ import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
 import * as assetsController from './controllers/assets.js'
+import * as borrowController from './controllers/borrow.js'
 import * as lendController from './controllers/lend.js'
 import * as swapController from './controllers/swap.js'
 import { WalletController } from './controllers/wallet.js'
@@ -46,6 +47,11 @@ router.get(
   authMiddleware,
   walletController.getLendPosition,
 )
+router.get(
+  '/wallet/borrow/:chainId/:marketId/position',
+  authMiddleware,
+  walletController.getBorrowPosition,
+)
 // Parameterized routes
 router.get('/wallet', authMiddleware, walletController.getWallet)
 router.post(
@@ -63,6 +69,32 @@ router.post(
   authMiddleware,
   lendController.closePosition,
 )
+
+// Borrow endpoints
+router.get('/borrow/markets', borrowController.getMarkets)
+router.post('/borrow/price', borrowController.getPrice)
+router.post('/borrow/quote', authMiddleware, borrowController.getQuote)
+router.post(
+  '/borrow/position/open',
+  authMiddleware,
+  borrowController.openPosition,
+)
+router.post(
+  '/borrow/position/close',
+  authMiddleware,
+  borrowController.closePosition,
+)
+router.post(
+  '/borrow/position/deposit-collateral',
+  authMiddleware,
+  borrowController.depositCollateral,
+)
+router.post(
+  '/borrow/position/withdraw-collateral',
+  authMiddleware,
+  borrowController.withdrawCollateral,
+)
+router.post('/borrow/position/repay', authMiddleware, borrowController.repay)
 
 // Assets endpoints
 router.get('/assets', assetsController.getAssets)

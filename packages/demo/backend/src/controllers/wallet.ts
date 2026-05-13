@@ -1,9 +1,10 @@
 import type { SupportedChainId } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
-import { type Address } from 'viem'
+import { type Address, type Hex } from 'viem'
 import { z } from 'zod'
 
 import { errorResponse, requireAuth } from '@/helpers/errors.js'
+import { Bytes32Schema, ChainIdStringSchema } from '@/helpers/schemas.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as faucetService from '@/services/faucet.js'
 import * as walletService from '@/services/wallet.js'
@@ -15,6 +16,13 @@ const LendPositionRequestSchema = z.object({
     marketAddress: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid market address format'),
+  }),
+})
+
+const BorrowPositionRequestSchema = z.object({
+  params: z.object({
+    chainId: ChainIdStringSchema,
+    marketId: Bytes32Schema,
   }),
 })
 
@@ -90,6 +98,37 @@ export class WalletController {
       throw new Error('Wallet not found')
     }
     const position = await walletService.getLendPosition({ marketId, wallet })
+    return c.json({ result: position })
+  }
+
+  /**
+   * GET - Borrow position for a wallet (Morpho variant). SDK errors
+   * propagate to the borrow-scoped `app.onError` handler.
+   */
+  async getBorrowPosition(c: Context) {
+    const validation = await validateRequest(c, BorrowPositionRequestSchema)
+    if (!validation.success) return validation.response
+    const {
+      params: { chainId, marketId: marketIdHex },
+    } = validation.data
+    const marketId = {
+      kind: 'morpho-blue' as const,
+      marketId: marketIdHex as Hex,
+      chainId,
+    }
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const wallet = await walletService.getWallet(authResult.auth.idToken)
+    if (!wallet) {
+      return errorResponse(c, 'Wallet not found', 404)
+    }
+
+    const position = await walletService.getBorrowPosition({
+      marketId,
+      walletAddress: wallet.address as Address,
+    })
     return c.json({ result: position })
   }
 
