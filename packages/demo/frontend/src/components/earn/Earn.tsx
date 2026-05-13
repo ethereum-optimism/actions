@@ -378,6 +378,12 @@ export interface EarnProps {
   walletAddress: string | null
   providerConfig: WalletProviderConfig
   logPrefix?: string
+  /**
+   * Auth headers resolver for backend-routed flows (Borrow tab today).
+   * Frontend-wallet providers (Dynamic / Turnkey) don't have a
+   * server-wallet auth path, so they pass `undefined`.
+   */
+  getAuthHeaders?: () => Promise<HeadersInit | undefined>
 }
 
 function Earn({
@@ -387,6 +393,7 @@ function Earn({
   walletAddress,
   providerConfig,
   logPrefix,
+  getAuthHeaders,
 }: EarnProps) {
   const queryClient = useQueryClient()
   const prevWalletRef = useRef(walletAddress)
@@ -421,7 +428,10 @@ function Earn({
         ready={ready}
         logPrefix={logPrefix}
       >
-        <BorrowProviderContextProvider walletAddress={walletAddress}>
+        <BorrowProviderContextProvider
+          walletAddress={walletAddress}
+          getAuthHeaders={getAuthHeaders}
+        >
           <ActivityHighlightProvider>
             <EarnContent
               logout={logout}

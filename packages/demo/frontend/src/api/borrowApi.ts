@@ -1,17 +1,23 @@
 /**
- * Mock borrow API client.
+ * Borrow API client.
  *
- * Mirrors the shape of `ActionsApiClient` (api/actionsApi.ts) but resolves
- * promises against in-memory state instead of fetching the backend. When
- * PR #4 is wired into the frontend, swap the body of each method for a
- * `request<T>` against the real `/borrow/*` endpoints. The exported
- * `borrowApi` singleton import-site stays identical.
+ * Thin HTTP layer over the demo backend's `/borrow/*` and
+ * `/wallet/borrow/*` routes. Shape mirrors `ActionsApiClient`
+ * (api/actionsApi.ts): a class with a `request<T>` helper, per-method
+ * `headers?: HeadersInit` for auth, and bigint deserialization at the
+ * response boundary.
  *
- * Pricing is hardcoded (USDC = $1, OP = $0.10) so the mock can compute
- * `healthFactor`, `ltv`, and `safeCeilingLtv` for `BorrowMarketPosition` /
- * `BorrowQuote` / `BorrowPrice` without an oracle. PR #3's SDK types are
- * used directly here so the in-memory mock and the eventual real backend
- * round-trip the same shapes.
+ * Outbound bigints (e.g. `Amount.amountRaw`) ship as decimal strings;
+ * the backend's `AmountExactSchema` / `AmountWithMaxSchema` accept the
+ * string form. Inbound bigints (`collateralAmount`, `borrowAmount`,
+ * `liquidationPrice`, `totalBorrowed`, `totalCollateral`,
+ * `borrowAmountRaw`, `collateralAmountRaw`, `gasEstimate`) are parsed
+ * back to `bigint` here so the rest of the frontend never deals with
+ * the wire shape.
+ *
+ * `stubPriceUsd` is still exported as a temporary helper for the
+ * frontend's projection math; it will go away when the Borrow tab
+ * switches its preview to `borrowApi.getPrice()` (Task #3).
  */
 
 import type { Address, Hex } from 'viem'
@@ -19,7 +25,6 @@ import type {
   Amount,
   AmountOrMax,
   BorrowAction,
-  BorrowFees,
   BorrowMarket,
   BorrowMarketId,
   BorrowMarketPosition,
@@ -27,15 +32,12 @@ import type {
   BorrowQuote,
   BorrowReceipt,
 } from '@eth-optimism/actions-sdk'
-import { ALL_BORROW_MARKETS } from '@/constants/borrowMarkets'
-import { computeSafeCeilingLtv } from '@/utils/borrowMath'
+import { env } from '../envVars.js'
+import type { Serialized } from '../util/serialize.js'
 
-// Stub demo prices. Real backend gets these from on-chain oracles.
-// Exported so the frontend's projection math (in BorrowAction) can read
-// the same numbers the stub computes against without duplication.
-// TODO(PR #4): replace consumer reads of stubPriceUsd with
-// borrowProviderContext.getPrice() responses that carry positionAfter
-// from the real backend.
+// Stub demo prices, retained until the projection math in
+// `BorrowAction` is swapped over to `borrowApi.getPrice()` (Task #3).
+// USDC = $1, OP = $0.10 mirrors the backend's demo oracle.
 const STUB_PRICES_USD: Readonly<Record<string, number>> = {
   USDC: 1.0,
   USDC_DEMO: 1.0,
@@ -45,138 +47,27 @@ const STUB_PRICES_USD: Readonly<Record<string, number>> = {
   WETH: 3000,
 }
 
-const STUB_LATENCY_MS = 600
-const STUB_QUOTE_TTL_MS = 30_000
-
 export function stubPriceUsd(symbol: string): number {
   return (
     STUB_PRICES_USD[symbol] ?? STUB_PRICES_USD[symbol.replace('_DEMO', '')] ?? 0
   )
 }
 
-function priceForSymbol(symbol: string): number {
-  return stubPriceUsd(symbol)
-}
+class BorrowApiError extends Error {
+  status?: number
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-function rawToHuman(raw: bigint, decimals: number): number {
-  // Lossy by design: USD aggregates and display values are always lossy.
-  const divisor = 10 ** decimals
-  return Number(raw) / divisor
-}
-
-function humanToRaw(human: number, decimals: number): bigint {
-  if (!Number.isFinite(human) || human <= 0) return 0n
-  return BigInt(Math.floor(human * 10 ** decimals))
-}
-
-function resolveAmount(amount: Amount, decimals: number): bigint {
-  if ('amountRaw' in amount) return amount.amountRaw
-  return humanToRaw(amount.amount, decimals)
-}
-
-function resolveAmountOrMax(
-  amount: AmountOrMax,
-  decimals: number,
-  maxFallback: bigint,
-): bigint {
-  if ('max' in amount) return maxFallback
-  return resolveAmount(amount, decimals)
-}
-
-function sameMarketId(a: BorrowMarketId, b: BorrowMarketId): boolean {
-  if (a.kind !== b.kind) return false
-  if (a.chainId !== b.chainId) return false
-  if (a.kind === 'morpho-blue' && b.kind === 'morpho-blue') {
-    return a.marketId === b.marketId
-  }
-  return false
-}
-
-function findMarket(id: BorrowMarketId): BorrowMarket | undefined {
-  return ALL_BORROW_MARKETS.find((m) => sameMarketId(m.marketId, id))
-}
-
-function walletKey(address: Address): string {
-  return address.toLowerCase()
-}
-
-function buildPosition(
-  market: BorrowMarket,
-  collateralAmount: bigint,
-  borrowAmount: bigint,
-): BorrowMarketPosition {
-  const collDec = market.collateralAsset.metadata.decimals
-  const borrDec = market.borrowAsset.metadata.decimals
-
-  const collHuman = rawToHuman(collateralAmount, collDec)
-  const borrHuman = rawToHuman(borrowAmount, borrDec)
-  const collPrice = priceForSymbol(market.collateralAsset.metadata.symbol)
-  const borrPrice = priceForSymbol(market.borrowAsset.metadata.symbol)
-
-  const collateralValueUsd = collHuman * collPrice
-  const borrowValueUsd = borrHuman * borrPrice
-
-  // SDK contract: healthFactor and ltv are `null` when no debt is open
-  // (JSON-serializable; replaces the Infinity sentinel used in earlier
-  // PR #5 drafts).
-  const currentLtv =
-    borrowAmount > 0n && collateralValueUsd > 0
-      ? borrowValueUsd / collateralValueUsd
-      : null
-  const healthFactor =
-    borrowAmount > 0n && borrowValueUsd > 0
-      ? (collateralValueUsd * market.maxLtv) / borrowValueUsd
-      : null
-
-  // Liquidation price: borrow-asset price at which the position would
-  // liquidate, holding collateral constant.
-  const liqPriceHuman =
-    borrHuman > 0
-      ? (collateralValueUsd * market.maxLtv) / borrHuman
-      : Number.POSITIVE_INFINITY
-  // PR #3 specifies `liquidationPrice: bigint` (loan-asset units).
-  // Stub standardizes on 6 decimals.
-  const liquidationPrice = Number.isFinite(liqPriceHuman)
-    ? BigInt(Math.round(liqPriceHuman * 1e6))
-    : 0n
-
-  return {
-    marketId: market.marketId,
-    collateralAsset: market.collateralAsset,
-    collateralAmount,
-    collateralAmountFormatted: collHuman.toString(),
-    borrowAsset: market.borrowAsset,
-    borrowAmount,
-    borrowAmountFormatted: borrHuman.toString(),
-    healthFactor,
-    liquidationPrice,
-    liquidationPriceFormatted: Number.isFinite(liqPriceHuman)
-      ? liqPriceHuman.toFixed(4)
-      : 'never',
-    borrowApy: market.borrowApy,
-    liquidationBonus: market.liquidationBonus,
-    ltv: currentLtv,
-    maxLtv: market.maxLtv,
+  constructor(message: string, status?: number) {
+    super(message)
+    this.name = 'BorrowApiError'
+    this.status = status
   }
 }
 
-function placeholderTxHash(): Hex {
-  const rand = Math.floor(Math.random() * 0xffffffff)
-    .toString(16)
-    .padStart(8, '0')
-  return `0x${rand.padStart(64, '0')}` as Hex
-}
-
-// ---------- Internal stub-only param shapes ----------
-// These mirror PR #3's `BorrowOpenPositionParams` etc., but use
-// `marketId: BorrowMarketId` instead of the full `BorrowMarketConfig`
-// object so the stub doesn't need to round-trip a config. The eventual
-// HTTP swap maps these straight to the backend's `/borrow/position/*`
-// request bodies.
+// ---------- Param shapes ----------
+// These mirror PR #3's `BorrowOpenPositionParams` etc., but reference
+// the market via `BorrowMarketId` (the backend resolves the full
+// `BorrowMarketConfig` server-side) so the frontend doesn't need to
+// round-trip the market config.
 
 export interface StubOpenParams {
   marketId: BorrowMarketId
@@ -200,355 +91,305 @@ export interface StubRepayParams {
   amount: AmountOrMax
 }
 
-// ---------- Mock client ----------
+// ---------- Serialization helpers ----------
+
+function serializeBigInts<T>(value: T): unknown {
+  if (typeof value === 'bigint') return value.toString()
+  if (Array.isArray(value)) return value.map((v) => serializeBigInts(v))
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = serializeBigInts(v)
+    }
+    return out
+  }
+  return value
+}
+
+function deserializeMarket(m: Serialized<BorrowMarket>): BorrowMarket {
+  return {
+    ...m,
+    totalBorrowed: BigInt(m.totalBorrowed as unknown as string),
+    totalCollateral: BigInt(m.totalCollateral as unknown as string),
+  } as BorrowMarket
+}
+
+function deserializePosition(
+  p: Serialized<BorrowMarketPosition>,
+): BorrowMarketPosition {
+  return {
+    ...p,
+    collateralAmount: BigInt(p.collateralAmount as unknown as string),
+    borrowAmount: BigInt(p.borrowAmount as unknown as string),
+    liquidationPrice: BigInt(p.liquidationPrice as unknown as string),
+  } as BorrowMarketPosition
+}
+
+function deserializePrice(p: Serialized<BorrowPrice>): BorrowPrice {
+  return {
+    ...p,
+    positionAfter: deserializePosition(
+      p.positionAfter as unknown as Serialized<BorrowMarketPosition>,
+    ),
+  } as BorrowPrice
+}
+
+function deserializeQuote(q: Serialized<BorrowQuote>): BorrowQuote {
+  const positionBefore = q.positionBefore
+    ? deserializePosition(
+        q.positionBefore as unknown as Serialized<BorrowMarketPosition>,
+      )
+    : null
+  const positionAfter = deserializePosition(
+    q.positionAfter as unknown as Serialized<BorrowMarketPosition>,
+  )
+  return {
+    ...q,
+    positionBefore,
+    positionAfter,
+    borrowAmountRaw:
+      q.borrowAmountRaw !== undefined && q.borrowAmountRaw !== null
+        ? BigInt(q.borrowAmountRaw as unknown as string)
+        : undefined,
+    collateralAmountRaw:
+      q.collateralAmountRaw !== undefined && q.collateralAmountRaw !== null
+        ? BigInt(q.collateralAmountRaw as unknown as string)
+        : undefined,
+    gasEstimate:
+      q.gasEstimate !== undefined && q.gasEstimate !== null
+        ? BigInt(q.gasEstimate as unknown as string)
+        : undefined,
+  } as BorrowQuote
+}
+
+function deserializeReceipt(r: Serialized<BorrowReceipt>): BorrowReceipt {
+  return {
+    ...r,
+    borrowAmount:
+      r.borrowAmount !== undefined && r.borrowAmount !== null
+        ? BigInt(r.borrowAmount as unknown as string)
+        : undefined,
+    collateralAmount:
+      r.collateralAmount !== undefined && r.collateralAmount !== null
+        ? BigInt(r.collateralAmount as unknown as string)
+        : undefined,
+    positionAfter: r.positionAfter
+      ? deserializePosition(
+          r.positionAfter as unknown as Serialized<BorrowMarketPosition>,
+        )
+      : undefined,
+  } as BorrowReceipt
+}
+
+function marketIdPath(marketId: BorrowMarketId): string {
+  if (marketId.kind === 'morpho-blue') {
+    return `${marketId.chainId}/${encodeURIComponent(marketId.marketId)}`
+  }
+  throw new Error(`Unsupported borrow marketId.kind: ${marketId.kind}`)
+}
+
+// A position with zero collateral and zero debt is the backend's
+// "no position" sentinel (the route always responds 200). The frontend
+// expects `null` for that case so empty positions don't render as
+// dust-y zero rows.
+function isEmptyPosition(p: BorrowMarketPosition): boolean {
+  return p.collateralAmount === 0n && p.borrowAmount === 0n
+}
+
+// ---------- Client ----------
 
 export class BorrowApiClient {
-  // walletKey -> positions
-  private readonly positionsByWallet = new Map<string, BorrowMarketPosition[]>()
+  private baseUrl = env.VITE_ACTIONS_API_URL
 
-  async getMarkets(): Promise<readonly BorrowMarket[]> {
-    await delay(STUB_LATENCY_MS)
-    return ALL_BORROW_MARKETS
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`
+    const { headers, ...rest } = options
+
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      ...rest,
+    })
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorMessage
+      } catch {
+        // body wasn't JSON; keep the status-line message
+      }
+      throw new BorrowApiError(errorMessage, response.status)
+    }
+
+    return (await response.json()) as T
+  }
+
+  async getMarkets(
+    headers: HeadersInit = {},
+  ): Promise<readonly BorrowMarket[]> {
+    const { result } = await this.request<{
+      result: Serialized<BorrowMarket>[]
+    }>('/borrow/markets', { method: 'GET', headers })
+    return result.map(deserializeMarket)
+  }
+
+  async getPosition(
+    _walletAddress: Address,
+    marketId: BorrowMarketId,
+    headers: HeadersInit = {},
+  ): Promise<BorrowMarketPosition | null> {
+    const { result } = await this.request<{
+      result: Serialized<BorrowMarketPosition>
+    }>(`/wallet/borrow/${marketIdPath(marketId)}/position`, {
+      method: 'GET',
+      headers,
+    })
+    const position = deserializePosition(result)
+    return isEmptyPosition(position) ? null : position
   }
 
   async getPositions(
     walletAddress: Address,
+    headers: HeadersInit = {},
   ): Promise<readonly BorrowMarketPosition[]> {
-    await delay(STUB_LATENCY_MS)
-    return this.positionsByWallet.get(walletKey(walletAddress)) ?? []
+    // Backend has no list endpoint; fan out across known markets and
+    // drop the zero-position responses.
+    const markets = await this.getMarkets(headers)
+    const positions = await Promise.all(
+      markets.map((m) => this.getPosition(walletAddress, m.marketId, headers)),
+    )
+    return positions.filter((p): p is BorrowMarketPosition => p !== null)
   }
 
-  async getPosition(
-    walletAddress: Address,
-    marketId: BorrowMarketId,
-  ): Promise<BorrowMarketPosition | null> {
-    const positions = await this.getPositions(walletAddress)
-    return positions.find((p) => sameMarketId(p.marketId, marketId)) ?? null
-  }
-
-  /**
-   * Reset all in-memory state for a wallet. Called by the provider
-   * context on wallet switch to mirror queryClient.clear() behavior.
-   */
-  resetWallet(walletAddress: Address): void {
-    this.positionsByWallet.delete(walletKey(walletAddress))
-  }
-
-  // ---------- Read: price + quote ----------
-
-  async getPrice(params: {
-    action: BorrowAction
-    marketId: BorrowMarketId
-    walletAddress: Address
-    borrowAmount?: AmountOrMax
-    collateralAmount?: AmountOrMax
-  }): Promise<BorrowPrice> {
-    const market = findMarket(params.marketId)
-    if (!market) throw new Error('Market not found')
-    const before = await this.getPosition(params.walletAddress, params.marketId)
-    const after = this.simulate(market, before, params)
-    return {
-      marketId: market.marketId,
+  // `/borrow/price` is a public route; auth headers are not required
+  // but are forwarded when provided for parity with `actionsApi`.
+  async getPrice(
+    params: {
+      action: BorrowAction
+      marketId: BorrowMarketId
+      walletAddress: Address
+      borrowAmount?: AmountOrMax
+      collateralAmount?: AmountOrMax
+    },
+    headers: HeadersInit = {},
+  ): Promise<BorrowPrice> {
+    const body = serializeBigInts({
       action: params.action,
-      positionAfter: after,
-      fees: {
-        borrowApy: market.borrowApy,
-        liquidationBonus: market.liquidationBonus,
-      },
-      safeCeilingLtv: computeSafeCeilingLtv(
-        market.maxLtv,
-        market.healthBufferPct,
-      ),
-    }
+      marketId: params.marketId,
+      walletAddress: params.walletAddress,
+      ...(params.borrowAmount ? { borrowAmount: params.borrowAmount } : {}),
+      ...(params.collateralAmount
+        ? { collateralAmount: params.collateralAmount }
+        : {}),
+    })
+    const { result } = await this.request<{ result: Serialized<BorrowPrice> }>(
+      '/borrow/price',
+      { method: 'POST', body: JSON.stringify(body), headers },
+    )
+    return deserializePrice(result)
   }
 
-  async getQuote(params: {
-    action: BorrowAction
-    marketId: BorrowMarketId
-    walletAddress: Address
-    recipient: Address
-    borrowAmount?: AmountOrMax
-    collateralAmount?: AmountOrMax
-  }): Promise<BorrowQuote> {
-    const market = findMarket(params.marketId)
-    if (!market) throw new Error('Market not found')
-    const before = await this.getPosition(params.walletAddress, params.marketId)
-    const after = this.simulate(market, before, params)
-    const fees: BorrowFees = {
-      borrowApy: market.borrowApy,
-      liquidationBonus: market.liquidationBonus,
-    }
-    const now = Date.now()
-    return {
-      marketId: market.marketId,
+  // `walletAddress` is rejected by the backend; derived from auth.
+  async getQuote(
+    params: {
+      action: BorrowAction
+      marketId: BorrowMarketId
+      borrowAmount?: AmountOrMax
+      collateralAmount?: AmountOrMax
+    },
+    headers: HeadersInit = {},
+  ): Promise<BorrowQuote> {
+    const body = serializeBigInts({
       action: params.action,
-      borrowAmount:
-        params.borrowAmount &&
-        !('max' in params.borrowAmount) &&
-        'amount' in params.borrowAmount
-          ? params.borrowAmount.amount
-          : undefined,
-      borrowAmountRaw:
-        params.borrowAmount &&
-        !('max' in params.borrowAmount) &&
-        'amountRaw' in params.borrowAmount
-          ? params.borrowAmount.amountRaw
-          : undefined,
-      collateralAmount:
-        params.collateralAmount &&
-        !('max' in params.collateralAmount) &&
-        'amount' in params.collateralAmount
-          ? params.collateralAmount.amount
-          : undefined,
-      collateralAmountRaw:
-        params.collateralAmount &&
-        !('max' in params.collateralAmount) &&
-        'amountRaw' in params.collateralAmount
-          ? params.collateralAmount.amountRaw
-          : undefined,
-      positionBefore: before,
-      positionAfter: after,
-      fees,
-      safeCeilingLtv: computeSafeCeilingLtv(
-        market.maxLtv,
-        market.healthBufferPct,
-      ),
-      execution: { transactions: [], approvalsSkipped: true },
-      provider: 'morpho',
-      recipient: params.recipient,
-      quotedAt: now,
-      expiresAt: now + STUB_QUOTE_TTL_MS,
-    }
+      marketId: params.marketId,
+      ...(params.borrowAmount ? { borrowAmount: params.borrowAmount } : {}),
+      ...(params.collateralAmount
+        ? { collateralAmount: params.collateralAmount }
+        : {}),
+    })
+    const { result } = await this.request<{ result: Serialized<BorrowQuote> }>(
+      '/borrow/quote',
+      { method: 'POST', body: JSON.stringify(body), headers },
+    )
+    return deserializeQuote(result)
   }
 
   // ---------- Mutations ----------
 
   async openPosition(
-    walletAddress: Address,
+    _walletAddress: Address,
     params: StubOpenParams,
+    headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    const market = findMarket(params.marketId)
-    if (!market) throw new Error('Market not found')
-    const before = await this.getPosition(walletAddress, params.marketId)
-
-    const collateralDelta = params.collateralAmount
-      ? resolveAmount(
-          params.collateralAmount,
-          market.collateralAsset.metadata.decimals,
-        )
-      : 0n
-    const borrowDelta = resolveAmount(
-      params.borrowAmount,
-      market.borrowAsset.metadata.decimals,
-    )
-
-    const nextCollateral = (before?.collateralAmount ?? 0n) + collateralDelta
-    const nextBorrow = (before?.borrowAmount ?? 0n) + borrowDelta
-
-    const next = buildPosition(market, nextCollateral, nextBorrow)
-    this.upsertPosition(walletAddress, next)
-    return this.successReceipt('open', params.marketId)
+    return this.postMutation('/borrow/position/open', params, headers)
   }
 
   async closePosition(
-    walletAddress: Address,
+    _walletAddress: Address,
     params: StubCloseParams,
+    headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    const market = findMarket(params.marketId)
-    if (!market) throw new Error('Market not found')
-    const before = await this.getPosition(walletAddress, params.marketId)
-    if (!before) throw new Error('No position to close')
-
-    const repayRaw = resolveAmountOrMax(
-      params.borrowAmount,
-      market.borrowAsset.metadata.decimals,
-      before.borrowAmount,
-    )
-    const withdrawRaw = params.collateralAmount
-      ? resolveAmountOrMax(
-          params.collateralAmount,
-          market.collateralAsset.metadata.decimals,
-          before.collateralAmount,
-        )
-      : 0n
-
-    const nextBorrow =
-      repayRaw >= before.borrowAmount ? 0n : before.borrowAmount - repayRaw
-    const nextCollateral =
-      withdrawRaw >= before.collateralAmount
-        ? 0n
-        : before.collateralAmount - withdrawRaw
-
-    if (nextBorrow === 0n && nextCollateral === 0n) {
-      this.deletePosition(walletAddress, params.marketId)
-    } else {
-      const next = buildPosition(market, nextCollateral, nextBorrow)
-      this.upsertPosition(walletAddress, next)
-    }
-    return this.successReceipt('close', params.marketId)
+    return this.postMutation('/borrow/position/close', params, headers)
   }
 
   async depositCollateral(
-    walletAddress: Address,
+    _walletAddress: Address,
     params: StubCollateralParams,
+    headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    const market = findMarket(params.marketId)
-    if (!market) throw new Error('Market not found')
-    const before = await this.getPosition(walletAddress, params.marketId)
-    const baseCollateral = before?.collateralAmount ?? 0n
-    const delta = resolveAmountOrMax(
-      params.amount,
-      market.collateralAsset.metadata.decimals,
-      baseCollateral,
+    return this.postMutation(
+      '/borrow/position/deposit-collateral',
+      params,
+      headers,
     )
-    const next = buildPosition(
-      market,
-      baseCollateral + delta,
-      before?.borrowAmount ?? 0n,
-    )
-    this.upsertPosition(walletAddress, next)
-    return this.successReceipt('depositCollateral', params.marketId)
   }
 
   async withdrawCollateral(
-    walletAddress: Address,
+    _walletAddress: Address,
     params: StubCollateralParams,
+    headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    const market = findMarket(params.marketId)
-    if (!market) throw new Error('Market not found')
-    const before = await this.getPosition(walletAddress, params.marketId)
-    if (!before) throw new Error('No position to withdraw from')
-    const delta = resolveAmountOrMax(
-      params.amount,
-      market.collateralAsset.metadata.decimals,
-      before.collateralAmount,
+    return this.postMutation(
+      '/borrow/position/withdraw-collateral',
+      params,
+      headers,
     )
-    const nextCollateral =
-      delta >= before.collateralAmount ? 0n : before.collateralAmount - delta
-    if (nextCollateral === 0n && before.borrowAmount === 0n) {
-      this.deletePosition(walletAddress, params.marketId)
-    } else {
-      const next = buildPosition(market, nextCollateral, before.borrowAmount)
-      this.upsertPosition(walletAddress, next)
-    }
-    return this.successReceipt('withdrawCollateral', params.marketId)
   }
 
   async repay(
-    walletAddress: Address,
+    _walletAddress: Address,
     params: StubRepayParams,
+    headers: HeadersInit = {},
   ): Promise<BorrowReceipt> {
-    const market = findMarket(params.marketId)
-    if (!market) throw new Error('Market not found')
-    const before = await this.getPosition(walletAddress, params.marketId)
-    if (!before) throw new Error('No position to repay')
-    const delta = resolveAmountOrMax(
-      params.amount,
-      market.borrowAsset.metadata.decimals,
-      before.borrowAmount,
-    )
-    const nextBorrow =
-      delta >= before.borrowAmount ? 0n : before.borrowAmount - delta
-    if (nextBorrow === 0n && before.collateralAmount === 0n) {
-      this.deletePosition(walletAddress, params.marketId)
-    } else {
-      const next = buildPosition(market, before.collateralAmount, nextBorrow)
-      this.upsertPosition(walletAddress, next)
-    }
-    return this.successReceipt('repay', params.marketId)
+    return this.postMutation('/borrow/position/repay', params, headers)
   }
 
-  // ---------- Internal ----------
-
-  private simulate(
-    market: BorrowMarket,
-    before: BorrowMarketPosition | null,
-    params: {
-      action: BorrowAction
-      borrowAmount?: AmountOrMax
-      collateralAmount?: AmountOrMax
-    },
-  ): BorrowMarketPosition {
-    const collDec = market.collateralAsset.metadata.decimals
-    const borrDec = market.borrowAsset.metadata.decimals
-    let coll = before?.collateralAmount ?? 0n
-    let borr = before?.borrowAmount ?? 0n
-
-    const collDelta = params.collateralAmount
-      ? resolveAmountOrMax(params.collateralAmount, collDec, coll)
-      : 0n
-    const borrDelta = params.borrowAmount
-      ? resolveAmountOrMax(params.borrowAmount, borrDec, borr)
-      : 0n
-
-    switch (params.action) {
-      case 'open':
-        coll += collDelta
-        borr += borrDelta
-        break
-      case 'close':
-        coll = collDelta >= coll ? 0n : coll - collDelta
-        borr = borrDelta >= borr ? 0n : borr - borrDelta
-        break
-      case 'depositCollateral':
-        coll += collDelta
-        break
-      case 'withdrawCollateral':
-        coll = collDelta >= coll ? 0n : coll - collDelta
-        break
-      case 'repay':
-        borr = borrDelta >= borr ? 0n : borr - borrDelta
-        break
-    }
-    return buildPosition(market, coll, borr)
-  }
-
-  private upsertPosition(
-    walletAddress: Address,
-    position: BorrowMarketPosition,
-  ): void {
-    const key = walletKey(walletAddress)
-    const list = this.positionsByWallet.get(key) ?? []
-    const idx = list.findIndex((p) =>
-      sameMarketId(p.marketId, position.marketId),
-    )
-    const next =
-      idx >= 0
-        ? list.map((p, i) => (i === idx ? position : p))
-        : [...list, position]
-    this.positionsByWallet.set(key, next)
-  }
-
-  private deletePosition(
-    walletAddress: Address,
-    marketId: BorrowMarketId,
-  ): void {
-    const key = walletKey(walletAddress)
-    const list = this.positionsByWallet.get(key) ?? []
-    this.positionsByWallet.set(
-      key,
-      list.filter((p) => !sameMarketId(p.marketId, marketId)),
-    )
-  }
-
-  private async successReceipt(
-    action: BorrowAction,
-    marketId: BorrowMarketId,
+  private async postMutation(
+    endpoint: string,
+    params: object,
+    headers: HeadersInit,
   ): Promise<BorrowReceipt> {
-    await delay(STUB_LATENCY_MS)
-    const transactionHash = placeholderTxHash()
-    return {
-      action,
-      marketId,
-      transactionHash,
-      // PR #3 denormalizes `transactionHash` onto the envelope; the
-      // underlying `receipt` is the raw EOA / batched / userOp shape. For
-      // the stub we mirror the EOA single-tx shape minimally.
-      receipt: {
-        transactionHash,
-      } as unknown as BorrowReceipt['receipt'],
-    }
+    const body = serializeBigInts(params)
+    const { result } = await this.request<{
+      result: Serialized<BorrowReceipt>
+    }>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers,
+    })
+    return deserializeReceipt(result)
   }
 }
 
 export const borrowApi = new BorrowApiClient()
+export { BorrowApiError }
+
+// Re-export Hex for callers building tx-hash placeholders elsewhere
+// (kept for backwards source compatibility with the prior mock).
+export type { Hex }

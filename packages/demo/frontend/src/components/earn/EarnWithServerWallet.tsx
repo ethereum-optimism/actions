@@ -126,6 +126,7 @@ export function EarnWithServerWallet({
       walletAddress={walletAddress}
       providerConfig={selectedProvider}
       logPrefix="[EarnWithServerWallet]"
+      getAuthHeaders={getAuthHeaders}
     />
   )
 }

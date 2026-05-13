@@ -1,17 +1,19 @@
 /**
  * Borrow provider hook.
  *
- * Owns the lifecycle of the demo's in-memory borrow positions + market
- * list against the `borrowApi` stub. Mirrors `useLendProvider`'s shape:
- * a single hook returning the read state + transaction handlers, intended
- * to be wrapped by a context provider so the rest of the tree consumes
+ * Owns market + position loading and the five borrow mutations against
+ * the demo backend's `/borrow/*` HTTP routes. Mirrors `useLendProvider`'s
+ * shape: a single hook returning read state + transaction handlers, wrapped
+ * by `BorrowProviderContextProvider` so the rest of the tree consumes
  * via `useBorrowProviderContext()`.
  *
- * When PR #4 lands, the underlying `borrowApi` swaps to a real HTTP
- * client with no consumer changes.
+ * Auth headers are injected via `getAuthHeaders`. Pass `null` for paths
+ * that don't have a server-wallet wired (Dynamic / Turnkey today) — the
+ * public `/borrow/markets` and `/borrow/price` routes still resolve, but
+ * `/borrow/quote` and mutations will fail without auth.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
 import type {
   BorrowAction,
@@ -83,9 +85,16 @@ export interface UseBorrowProviderReturn {
   }) => Promise<BorrowQuote>
 }
 
+export type GetAuthHeaders = () => Promise<HeadersInit | undefined>
+
 export function useBorrowProvider(
   walletAddress: Address | null,
+  getAuthHeaders?: GetAuthHeaders,
 ): UseBorrowProviderReturn {
+  const resolveHeaders = useCallback(async (): Promise<HeadersInit> => {
+    if (!getAuthHeaders) return {}
+    return (await getAuthHeaders()) ?? {}
+  }, [getAuthHeaders])
   const { logActivity } = useActivityLogger()
   const [markets, setMarkets] = useState<readonly BorrowMarket[]>([])
   const [selectedMarket, setSelectedMarket] = useState<BorrowMarket | null>(
@@ -98,16 +107,13 @@ export function useBorrowProvider(
   const [isLoadingPositions, setIsLoadingPositions] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  // Track wallet across renders so we can reset stub state on switch.
-  const prevWalletRef = useRef<Address | null>(walletAddress)
-
   // Load markets once at mount.
   useEffect(() => {
     let cancelled = false
     const activity = logActivity('getBorrowMarkets')
     setIsLoadingMarkets(true)
-    borrowApi
-      .getMarkets()
+    resolveHeaders()
+      .then((headers) => borrowApi.getMarkets(headers))
       .then((m) => {
         if (cancelled) return
         setMarkets(m)
@@ -124,7 +130,7 @@ export function useBorrowProvider(
     // selectedMarket intentionally omitted from deps: we only default-pick
     // on first load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [resolveHeaders])
 
   const fetchPositions = useCallback(
     async (address: Address | null) => {
@@ -136,7 +142,8 @@ export function useBorrowProvider(
       const activity = logActivity('getBorrowPosition')
       setIsLoadingPositions(true)
       try {
-        const positions = await borrowApi.getPositions(address)
+        const headers = await resolveHeaders()
+        const positions = await borrowApi.getPositions(address, headers)
         setBorrowPositions(positions)
         activity?.confirm()
       } catch (e) {
@@ -147,18 +154,11 @@ export function useBorrowProvider(
         setIsInitialLoad(false)
       }
     },
-    [logActivity],
+    [logActivity, resolveHeaders],
   )
 
-  // Refresh positions when wallet changes. Wipe stub state on switch so
-  // the new wallet sees its own positions (or none), not the previous
-  // wallet's residual.
+  // Refetch positions whenever the active wallet changes.
   useEffect(() => {
-    const prev = prevWalletRef.current
-    if (prev && prev !== walletAddress) {
-      borrowApi.resetWallet(prev)
-    }
-    prevWalletRef.current = walletAddress
     setIsInitialLoad(true)
     void fetchPositions(walletAddress)
   }, [walletAddress, fetchPositions])
@@ -178,63 +178,68 @@ export function useBorrowProvider(
       params: BorrowOperationParams[A],
     ): Promise<BorrowReceipt> => {
       if (!walletAddress) throw new Error('Wallet not connected')
+      const headers = await resolveHeaders()
       let receipt: BorrowReceipt
       switch (action) {
         case 'open':
           receipt = await borrowApi.openPosition(
             walletAddress,
             params as StubOpenParams,
+            headers,
           )
           break
         case 'close':
           receipt = await borrowApi.closePosition(
             walletAddress,
             params as StubCloseParams,
+            headers,
           )
           break
         case 'depositCollateral':
           receipt = await borrowApi.depositCollateral(
             walletAddress,
             params as StubCollateralParams,
+            headers,
           )
           break
         case 'withdrawCollateral':
           receipt = await borrowApi.withdrawCollateral(
             walletAddress,
             params as StubCollateralParams,
+            headers,
           )
           break
         case 'repay':
           receipt = await borrowApi.repay(
             walletAddress,
             params as StubRepayParams,
+            headers,
           )
           break
       }
       await fetchPositions(walletAddress)
       return receipt
     },
-    [walletAddress, fetchPositions],
+    [walletAddress, fetchPositions, resolveHeaders],
   )
 
   const getPrice = useCallback<UseBorrowProviderReturn['getPrice']>(
     async (params) => {
       if (!walletAddress) throw new Error('Wallet not connected')
-      return borrowApi.getPrice({ ...params, walletAddress })
+      const headers = await resolveHeaders()
+      return borrowApi.getPrice({ ...params, walletAddress }, headers)
     },
-    [walletAddress],
+    [walletAddress, resolveHeaders],
   )
 
   const getQuote = useCallback<UseBorrowProviderReturn['getQuote']>(
     async (params) => {
       if (!walletAddress) throw new Error('Wallet not connected')
-      return borrowApi.getQuote({
-        ...params,
-        walletAddress,
-        recipient: walletAddress,
-      })
+      const headers = await resolveHeaders()
+      // walletAddress is derived from auth server-side; do not forward.
+      return borrowApi.getQuote(params, headers)
     },
-    [walletAddress],
+    [walletAddress, resolveHeaders],
   )
 
   const selectedMarketPosition =
