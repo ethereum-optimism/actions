@@ -220,8 +220,20 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     setAssetModalOpen(false)
   }
 
+  // Disable the CTA if the projected position enters the buffer zone
+  // (past safe ceiling, before liquidation). Users can lower the amount
+  // or use Max (which prefills to the safe ceiling) to re-enable. Repay
+  // mode is exempt since it only reduces LTV.
+  const inBufferZone =
+    mode === 'borrow' &&
+    projection?.kind === 'projected' &&
+    projection.ltv > safeCeilingLtv
   const canOpenReview =
-    !!activeMarket && !!activeAsset && amountNum > 0 && !wouldLiquidate
+    !!activeMarket &&
+    !!activeAsset &&
+    amountNum > 0 &&
+    !wouldLiquidate &&
+    !inBufferZone
 
   const handleCtaClick = () => {
     if (!canOpenReview) return
