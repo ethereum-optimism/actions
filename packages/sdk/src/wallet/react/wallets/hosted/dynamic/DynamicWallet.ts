@@ -1,8 +1,13 @@
 import { type Address, type LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
@@ -29,8 +34,23 @@ export class DynamicWallet extends EOAWallet {
     lendProviders?: LendProviders,
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
+    borrowProviders?: BorrowProviders,
+    borrowSettings?: BorrowSettings,
+    swapSettings?: SwapSettings,
   ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
+    super({
+      chainManager,
+      actionProviders: {
+        lend: lendProviders,
+        swap: swapProviders,
+        borrow: borrowProviders,
+      },
+      actionSettings: {
+        swap: swapSettings,
+        borrow: borrowSettings,
+      },
+      supportedAssets,
+    })
     this.dynamicWallet = dynamicWallet
   }
 
@@ -40,6 +60,9 @@ export class DynamicWallet extends EOAWallet {
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
     supportedAssets?: Asset[]
+    borrowProviders?: BorrowProviders
+    borrowSettings?: BorrowSettings
+    swapSettings?: SwapSettings
   }): Promise<DynamicWallet> {
     const wallet = new DynamicWallet(
       params.chainManager,
@@ -47,6 +70,9 @@ export class DynamicWallet extends EOAWallet {
       params.lendProviders,
       params.swapProviders,
       params.supportedAssets,
+      params.borrowProviders,
+      params.borrowSettings,
+      params.swapSettings,
     )
     await wallet.initialize()
     return wallet

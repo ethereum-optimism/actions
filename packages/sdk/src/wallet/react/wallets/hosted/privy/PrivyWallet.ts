@@ -2,8 +2,13 @@ import type { ConnectedWallet } from '@privy-io/react-auth'
 import type { Address, LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
 
@@ -23,8 +28,23 @@ export class PrivyWallet extends EOAWallet {
     lendProviders?: LendProviders,
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
+    borrowProviders?: BorrowProviders,
+    borrowSettings?: BorrowSettings,
+    swapSettings?: SwapSettings,
   ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
+    super({
+      chainManager,
+      actionProviders: {
+        lend: lendProviders,
+        swap: swapProviders,
+        borrow: borrowProviders,
+      },
+      actionSettings: {
+        swap: swapSettings,
+        borrow: borrowSettings,
+      },
+      supportedAssets,
+    })
     this.connectedWallet = connectedWallet
   }
 
@@ -34,6 +54,9 @@ export class PrivyWallet extends EOAWallet {
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
     supportedAssets?: Asset[]
+    borrowProviders?: BorrowProviders
+    borrowSettings?: BorrowSettings
+    swapSettings?: SwapSettings
   }): Promise<PrivyWallet> {
     const wallet = new PrivyWallet(
       params.chainManager,
@@ -41,6 +64,9 @@ export class PrivyWallet extends EOAWallet {
       params.lendProviders,
       params.swapProviders,
       params.supportedAssets,
+      params.borrowProviders,
+      params.borrowSettings,
+      params.swapSettings,
     )
     await wallet.initialize()
     return wallet

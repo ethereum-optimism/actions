@@ -2,8 +2,13 @@ import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import { type Address, type LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
 
@@ -37,8 +42,23 @@ export class PrivyWallet extends EOAWallet {
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
     authorizationContext?: AuthorizationContext,
+    borrowProviders?: BorrowProviders,
+    borrowSettings?: BorrowSettings,
+    swapSettings?: SwapSettings,
   ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
+    super({
+      chainManager,
+      actionProviders: {
+        lend: lendProviders,
+        swap: swapProviders,
+        borrow: borrowProviders,
+      },
+      actionSettings: {
+        swap: swapSettings,
+        borrow: borrowSettings,
+      },
+      supportedAssets,
+    })
     this.privyClient = privyClient
     this.authorizationContext = authorizationContext
     this.walletId = walletId
@@ -54,6 +74,9 @@ export class PrivyWallet extends EOAWallet {
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
     supportedAssets?: Asset[]
+    borrowProviders?: BorrowProviders
+    borrowSettings?: BorrowSettings
+    swapSettings?: SwapSettings
   }): Promise<PrivyWallet> {
     const wallet = new PrivyWallet(
       params.privyClient,
@@ -64,6 +87,9 @@ export class PrivyWallet extends EOAWallet {
       params.swapProviders,
       params.supportedAssets,
       params.authorizationContext,
+      params.borrowProviders,
+      params.borrowSettings,
+      params.swapSettings,
     )
     await wallet.initialize()
     return wallet

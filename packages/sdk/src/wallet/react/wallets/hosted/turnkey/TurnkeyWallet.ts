@@ -2,8 +2,13 @@ import type { TurnkeySDKClientBase } from '@turnkey/react-wallet-kit'
 import type { Address, LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/turnkey/utils/createSigner.js'
 
@@ -42,23 +47,28 @@ export class TurnkeyWallet extends EOAWallet {
     ethereumAddress?: string
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
+    borrowProviders?: BorrowProviders
     supportedAssets?: Asset[]
+    swapSettings?: SwapSettings
+    borrowSettings?: BorrowSettings
   }) {
-    const {
-      chainManager,
-      client,
-      organizationId,
-      signWith,
-      ethereumAddress,
-      lendProviders,
-      swapProviders,
-      supportedAssets,
-    } = params
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
-    this.client = client
-    this.organizationId = organizationId
-    this.signWith = signWith
-    this.ethereumAddress = ethereumAddress
+    super({
+      chainManager: params.chainManager,
+      actionProviders: {
+        lend: params.lendProviders,
+        swap: params.swapProviders,
+        borrow: params.borrowProviders,
+      },
+      actionSettings: {
+        swap: params.swapSettings,
+        borrow: params.borrowSettings,
+      },
+      supportedAssets: params.supportedAssets,
+    })
+    this.client = params.client
+    this.organizationId = params.organizationId
+    this.signWith = params.signWith
+    this.ethereumAddress = params.ethereumAddress
   }
 
   static async create(params: {
@@ -69,7 +79,10 @@ export class TurnkeyWallet extends EOAWallet {
     ethereumAddress?: string
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
+    borrowProviders?: BorrowProviders
     supportedAssets?: Asset[]
+    swapSettings?: SwapSettings
+    borrowSettings?: BorrowSettings
   }): Promise<TurnkeyWallet> {
     const wallet = new TurnkeyWallet(params)
     await wallet.initialize()
