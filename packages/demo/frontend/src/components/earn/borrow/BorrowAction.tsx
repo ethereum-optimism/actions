@@ -18,6 +18,7 @@ import type {
   BorrowMarketPosition,
 } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/api/borrowApi'
+import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import {
@@ -242,8 +243,9 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     setTxStatus('loading')
     setTxError(undefined)
     try {
+      let receipt
       if (mode === 'borrow') {
-        await handleTransaction('open', {
+        receipt = await handleTransaction('open', {
           marketId: activeMarket.marketId,
           borrowAmount: { amount: amountNum },
           collateralAmount: {
@@ -252,12 +254,16 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
           collateralAsset: undefined,
         })
       } else {
-        await handleTransaction('repay', {
+        receipt = await handleTransaction('repay', {
           marketId: activeMarket.marketId,
           amount: { amount: amountNum },
         })
       }
-      activity?.confirm()
+      const blockExplorerUrl = getBlockExplorerUrl(
+        activeMarket.marketId.chainId,
+        receipt,
+      )
+      activity?.confirm({ blockExplorerUrl })
       setTxModalOpen(false)
       setAmount('')
       setToast({

@@ -10,6 +10,10 @@ interface DropdownProps<T> {
   placeholder?: string
   isLoading?: boolean
   loadingContent?: React.ReactNode
+  /** Message shown (disabled, centered, light gray) when the only option
+   * is already selected, so the user understands why there's nothing
+   * else to pick. */
+  singleOptionMessage?: string
 }
 
 export function Dropdown<T>({
@@ -22,6 +26,7 @@ export function Dropdown<T>({
   placeholder = 'Select an option',
   isLoading = false,
   loadingContent,
+  singleOptionMessage,
 }: DropdownProps<T>) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -105,9 +110,27 @@ export function Dropdown<T>({
           }}
         >
           <div className="py-2">
-            {options
-              .filter((o) => !isSelected(o, selected))
-              .map((option, index) => (
+            {(() => {
+              const remaining = options.filter((o) => !isSelected(o, selected))
+              if (remaining.length === 0 && singleOptionMessage) {
+                return (
+                  <div
+                    aria-disabled="true"
+                    style={{
+                      padding: '12px 16px',
+                      textAlign: 'center',
+                      color: '#9195A6',
+                      fontSize: '14px',
+                      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                      cursor: 'default',
+                      userSelect: 'none',
+                    }}
+                  >
+                    {singleOptionMessage}
+                  </div>
+                )
+              }
+              return remaining.map((option, index) => (
                 <button
                   key={keyOf(option)}
                   onClick={() => handleClick(option)}
@@ -118,7 +141,8 @@ export function Dropdown<T>({
                 >
                   {renderOption(option)}
                 </button>
-              ))}
+              ))
+            })()}
           </div>
         </div>
       )}

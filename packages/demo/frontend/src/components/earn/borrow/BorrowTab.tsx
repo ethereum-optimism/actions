@@ -114,6 +114,7 @@ function LendPositionSelector({
         a.marketId.chainId === b.marketId.chainId
       }
       placeholder="Select a lend position"
+      singleOptionMessage="This is your only position."
       renderOption={(position) => <LendPositionRow position={position} />}
     />
   )
