@@ -8,13 +8,8 @@
  * matching log entry is hovered.
  */
 
-import { useMemo } from 'react'
-import type {
-  BorrowMarket,
-  BorrowMarketPosition,
-} from '@eth-optimism/actions-sdk'
+import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
-import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { colors } from '@/constants/colors'
 import {
   computeHealthBarValue,
@@ -27,7 +22,6 @@ const TIER_TEXT: Record<HealthTier, string> = {
   safe: '#22C55E',
   caution: '#F59E0B',
   danger: '#EF4444',
-  buffer: '#B91C1C',
 }
 
 export interface BorrowPositionsProps {
@@ -36,20 +30,9 @@ export interface BorrowPositionsProps {
 
 export function BorrowPositions({ positions }: BorrowPositionsProps) {
   const { hoveredAction } = useActivityHighlight()
-  const { markets } = useBorrowProviderContext()
   const isCardHighlighted =
     hoveredAction === 'getBorrowPosition' ||
     hoveredAction === 'getBorrowMarkets'
-
-  // Per-position buffer lookup via the matching BorrowMarket. The SDK
-  // doesn't denormalize `healthBufferPct` onto the position shape, so we
-  // pair each position with its market once and reuse.
-  const bufferByPosition = useMemo(() => {
-    const byKey = new Map<string, BorrowMarket>()
-    for (const m of markets) byKey.set(marketIdKey(m.marketId), m)
-    return (p: BorrowMarketPosition): number =>
-      byKey.get(marketIdKey(p.marketId))?.healthBufferPct ?? 0
-  }, [markets])
 
   if (positions.length === 0) return null
 
@@ -58,38 +41,21 @@ export function BorrowPositions({ positions }: BorrowPositionsProps) {
       title="Active Positions"
       isCardHighlighted={isCardHighlighted}
       desktopTable={
-        <DesktopTable
-          positions={positions}
-          hoveredAction={hoveredAction}
-          bufferPctFor={bufferByPosition}
-        />
+        <DesktopTable positions={positions} hoveredAction={hoveredAction} />
       }
       mobileLayout={
-        <MobileCards
-          positions={positions}
-          hoveredAction={hoveredAction}
-          bufferPctFor={bufferByPosition}
-        />
+        <MobileCards positions={positions} hoveredAction={hoveredAction} />
       }
     />
   )
 }
 
-function marketIdKey(id: BorrowMarketPosition['marketId']): string {
-  if (id.kind === 'morpho-blue') {
-    return `${id.kind}:${id.marketId}:${id.chainId}`
-  }
-  return `${(id as { kind: string }).kind}:${id.chainId}`
-}
-
 function DesktopTable({
   positions,
   hoveredAction,
-  bufferPctFor,
 }: {
   positions: readonly BorrowMarketPosition[]
   hoveredAction: string | null
-  bufferPctFor: (p: BorrowMarketPosition) => number
 }) {
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -108,7 +74,6 @@ function DesktopTable({
             key={positionKey(p)}
             position={p}
             hoveredAction={hoveredAction}
-            bufferPct={bufferPctFor(p)}
           />
         ))}
       </tbody>
@@ -119,11 +84,9 @@ function DesktopTable({
 function BorrowRow({
   position,
   hoveredAction,
-  bufferPct,
 }: {
   position: BorrowMarketPosition
   hoveredAction: string | null
-  bufferPct: number
 }) {
   const collSymbol = position.collateralAsset.metadata.symbol.replace(
     '_DEMO',
@@ -134,7 +97,7 @@ function BorrowRow({
     hoveredAction === 'getBorrowPosition'
       ? colors.highlight.background
       : 'transparent'
-  const tier = healthTierForPosition(position, bufferPct)
+  const tier = healthTierForPosition(position)
   return (
     <tr>
       <Td bg={positionRowBg}>
@@ -182,7 +145,7 @@ function BorrowRow({
             fontFamily: 'Inter',
           }}
         >
-          {healthBarReading(position, bufferPct)}
+          {healthBarReading(position)}
         </span>
       </Td>
     </tr>
@@ -192,16 +155,13 @@ function BorrowRow({
 function MobileCards({
   positions,
   hoveredAction,
-  bufferPctFor,
 }: {
   positions: readonly BorrowMarketPosition[]
   hoveredAction: string | null
-  bufferPctFor: (p: BorrowMarketPosition) => number
 }) {
   return (
     <>
       {positions.map((p, idx) => {
-        const bufferPct = bufferPctFor(p)
         return (
           <div
             key={`mobile-${positionKey(p)}`}
@@ -234,13 +194,13 @@ function MobileCards({
               </span>
               <span
                 style={{
-                  color: TIER_TEXT[healthTierForPosition(p, bufferPct)],
+                  color: TIER_TEXT[healthTierForPosition(p)],
                   fontSize: '14px',
                   fontWeight: 600,
                   fontFamily: 'Inter',
                 }}
               >
-                {healthBarReading(p, bufferPct)}
+                {healthBarReading(p)}
               </span>
             </div>
             <div
@@ -328,22 +288,18 @@ function DotIcon() {
   )
 }
 
-function healthTierForPosition(
-  p: BorrowMarketPosition,
-  bufferPct: number,
-): HealthTier {
+function healthTierForPosition(p: BorrowMarketPosition): HealthTier {
   const maxLtv = p.maxLtv ?? 0
-  const safeCeiling = maxLtv * (1 - bufferPct)
   const ltv = p.ltv ?? 0
-  return computeHealthTier(computeHealthBarValue(ltv, safeCeiling))
+  return computeHealthTier(computeHealthBarValue(ltv, maxLtv))
 }
 
-function healthBarReading(p: BorrowMarketPosition, bufferPct: number): string {
+function healthBarReading(p: BorrowMarketPosition): string {
+  // Numeric reading is the raw LTV %, matching <BorrowHealthCard>'s
+  // header semantics (bar=100% maps to maxLtv * 100%).
   const maxLtv = p.maxLtv ?? 0
-  const safeCeiling = maxLtv * (1 - bufferPct)
-  const ltv = p.ltv ?? 0
-  const bar = computeHealthBarValue(ltv, safeCeiling)
-  return `${Math.min(100, bar * 100).toFixed(1)}%`
+  const ltv = Math.min(p.ltv ?? 0, maxLtv)
+  return `${(ltv * 100).toFixed(1)}%`
 }
 
 function positionKey(p: BorrowMarketPosition): string {

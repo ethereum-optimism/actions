@@ -6,33 +6,39 @@
  * values; on-chain amounts (the source-of-truth) live on
  * `BorrowMarketPosition` as `bigint`.
  *
- * "Bar value" = `currentLtv / safeCeilingLtv`. Bar 100% = at the safe
- * ceiling (NOT at liquidation). Bar > 100% means the position is in the
- * buffer zone, between `safeCeilingLtv` and `maxLtv`.
+ * Bar fill = `currentLtv / maxLtv`, clamped to 1. At bar = 1, the
+ * numeric reading shown by the consumer equals `maxLtv * 100` (the
+ * liquidation LTV). The Max button still prefills to a safe-ceiling
+ * value (`maxLtv * (1 - bufferPct)`) so users don't accidentally land
+ * at liquidation; the bar's visual just indicates "fraction of the way
+ * to liquidation" rather than the previous safe-ceiling-as-100% framing.
  *
  * Aave-style `healthFactor` (1.0 = liquidation, Infinity = no debt) is
  * surfaced unchanged from `BorrowMarketPosition.healthFactor` so DeFi-savvy
- * users see the canonical number; the bar's safe-ceiling-as-100% framing
- * is the demo UX innovation, the HF decimal is the industry reference.
+ * users see the canonical number.
  */
 
-export type HealthTier = 'safe' | 'caution' | 'danger' | 'buffer'
+export type HealthTier = 'safe' | 'caution' | 'danger'
 
 export const computeSafeCeilingLtv = (
   maxLtv: number,
   bufferPct: number,
 ): number => maxLtv * (1 - bufferPct)
 
+/**
+ * Bar fill in [0, 1]. Past `maxLtv` is liquidated, so the value pins
+ * at 1 there; callers should also handle `wouldLiquidate` separately
+ * for the projection case.
+ */
 export const computeHealthBarValue = (
   currentLtv: number,
-  safeCeilingLtv: number,
+  maxLtv: number,
 ): number => {
-  if (safeCeilingLtv <= 0) return 0
-  return currentLtv / safeCeilingLtv
+  if (maxLtv <= 0) return 0
+  return Math.min(1, currentLtv / maxLtv)
 }
 
 export const computeHealthTier = (barValue: number): HealthTier => {
-  if (barValue > 1) return 'buffer'
   if (barValue >= 0.8) return 'danger'
   if (barValue >= 0.6) return 'caution'
   return 'safe'
@@ -78,7 +84,6 @@ export const computeProjection = (
   current: { borrowValueUsd: number; collateralValueUsd: number },
   action: ProjectionAction,
   maxLtv: number,
-  safeCeilingLtv: number,
 ): Projection => {
   let nextBorrow = current.borrowValueUsd
   let nextCollateral = current.collateralValueUsd
@@ -99,7 +104,10 @@ export const computeProjection = (
   }
 
   const ltv = nextCollateral > 0 ? nextBorrow / nextCollateral : 0
-  const barValue = computeHealthBarValue(ltv, safeCeilingLtv)
+  if (ltv > maxLtv) {
+    return { kind: 'wouldLiquidate' }
+  }
+  const barValue = computeHealthBarValue(ltv, maxLtv)
   return {
     kind: 'projected',
     ltv,
@@ -113,8 +121,10 @@ export const computeProjection = (
 
 /**
  * Returns the USD amount of additional borrow that would land the
- * position at exactly the safe ceiling (bar = 100%). Clamps to zero if
- * the user is already past the ceiling.
+ * position at exactly the safe ceiling. Clamps to zero if the user is
+ * already past the ceiling. The safe ceiling is the recommended Max
+ * prefill; the bar's 100% mark is at the liquidation threshold (one
+ * step further past the ceiling).
  */
 export const computeMaxBorrowSafeUsd = (
   collateralValueUsd: number,

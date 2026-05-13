@@ -22,31 +22,34 @@ describe('computeSafeCeilingLtv', () => {
 
 describe('computeHealthBarValue', () => {
   it('returns 0 when there is no debt', () => {
-    expect(computeHealthBarValue(0, 0.79135)).toBe(0)
+    expect(computeHealthBarValue(0, 0.86)).toBe(0)
   })
 
-  it('returns 1 when at the safe ceiling', () => {
-    expect(computeHealthBarValue(0.79135, 0.79135)).toBe(1)
+  it('returns 1 when at the liquidation threshold (LTV == maxLtv)', () => {
+    expect(computeHealthBarValue(0.86, 0.86)).toBe(1)
   })
 
-  it('exceeds 1 in the buffer zone (between safe ceiling and maxLtv)', () => {
-    expect(computeHealthBarValue(0.82, 0.79135)).toBeGreaterThan(1)
+  it('returns 0.5 when half-way to liquidation', () => {
+    expect(computeHealthBarValue(0.43, 0.86)).toBeCloseTo(0.5, 5)
   })
 
-  it('returns 0 when safeCeilingLtv is 0 (degenerate)', () => {
+  it('clamps to 1 past the liquidation threshold', () => {
+    expect(computeHealthBarValue(0.9, 0.86)).toBe(1)
+  })
+
+  it('returns 0 when maxLtv is 0 (degenerate)', () => {
     expect(computeHealthBarValue(0.5, 0)).toBe(0)
   })
 })
 
 describe('computeHealthTier', () => {
-  it('maps thresholds to safe / caution / danger / buffer', () => {
+  it('maps thresholds to safe / caution / danger', () => {
     expect(computeHealthTier(0)).toBe('safe')
     expect(computeHealthTier(0.5)).toBe('safe')
     expect(computeHealthTier(0.6)).toBe('caution')
     expect(computeHealthTier(0.79)).toBe('caution')
     expect(computeHealthTier(0.8)).toBe('danger')
     expect(computeHealthTier(1.0)).toBe('danger')
-    expect(computeHealthTier(1.01)).toBe('buffer')
   })
 })
 
@@ -56,7 +59,6 @@ describe('computeHealthFactor', () => {
   })
 
   it('returns 1.0 when at the liquidation threshold', () => {
-    // collateral * maxLtv = borrow => HF = 1
     const collateral = 1000
     const maxLtv = 0.833
     const borrow = collateral * maxLtv
@@ -86,20 +88,17 @@ describe('computeMaxBorrowSafeUsd', () => {
 describe('computeProjection', () => {
   const current = { borrowValueUsd: 0, collateralValueUsd: 1000 }
   const maxLtv = 0.833
-  const safeCeilingLtv = 0.79135 // 0.833 * 0.95
 
   it('borrow action: bar value rises as user borrows more', () => {
     const small = computeProjection(
       current,
       { kind: 'borrow', deltaValueUsd: 100 },
       maxLtv,
-      safeCeilingLtv,
     )
     const large = computeProjection(
       current,
       { kind: 'borrow', deltaValueUsd: 500 },
       maxLtv,
-      safeCeilingLtv,
     )
     if (small.kind === 'wouldLiquidate' || large.kind === 'wouldLiquidate') {
       throw new Error('expected projected, not wouldLiquidate')
@@ -108,18 +107,29 @@ describe('computeProjection', () => {
     expect(small.tier).toBe('safe')
   })
 
-  it('borrow into buffer zone returns tier=buffer', () => {
+  it('borrow that lands at liquidation returns wouldLiquidate', () => {
+    // collateral=1000, maxLtv=0.833 → liquidation at borrow 833+
     const projection = computeProjection(
       current,
-      { kind: 'borrow', deltaValueUsd: 820 },
+      { kind: 'borrow', deltaValueUsd: 900 },
       maxLtv,
-      safeCeilingLtv,
+    )
+    expect(projection.kind).toBe('wouldLiquidate')
+  })
+
+  it('borrow into danger tier (>= 0.8 bar): tier=danger', () => {
+    // bar = 0.7/0.833 ≈ 0.84 (danger)
+    const projection = computeProjection(
+      current,
+      { kind: 'borrow', deltaValueUsd: 700 },
+      maxLtv,
     )
     if (projection.kind === 'wouldLiquidate') {
       throw new Error('expected projected')
     }
-    expect(projection.barValue).toBeGreaterThan(1)
-    expect(projection.tier).toBe('buffer')
+    expect(projection.tier).toBe('danger')
+    expect(projection.barValue).toBeGreaterThanOrEqual(0.8)
+    expect(projection.barValue).toBeLessThanOrEqual(1)
   })
 
   it('repay action: bar value falls as user repays', () => {
@@ -128,13 +138,11 @@ describe('computeProjection', () => {
       startedWith500,
       { kind: 'repay', deltaValueUsd: 0 },
       maxLtv,
-      safeCeilingLtv,
     )
     const afterRepay = computeProjection(
       startedWith500,
       { kind: 'repay', deltaValueUsd: 200 },
       maxLtv,
-      safeCeilingLtv,
     )
     if (
       beforeRepay.kind === 'wouldLiquidate' ||
@@ -151,7 +159,6 @@ describe('computeProjection', () => {
       startedWith500,
       { kind: 'repay', deltaValueUsd: 500 },
       maxLtv,
-      safeCeilingLtv,
     )
     if (projection.kind === 'wouldLiquidate') {
       throw new Error('expected projected')
@@ -166,7 +173,6 @@ describe('computeProjection', () => {
       startedWith500,
       { kind: 'withdrawCollateral', deltaValueUsd: 1000 },
       maxLtv,
-      safeCeilingLtv,
     )
     expect(projection.kind).toBe('wouldLiquidate')
   })
@@ -177,13 +183,11 @@ describe('computeProjection', () => {
       startedWith500,
       { kind: 'withdrawCollateral', deltaValueUsd: 0 },
       maxLtv,
-      safeCeilingLtv,
     )
     const after = computeProjection(
       startedWith500,
       { kind: 'withdrawCollateral', deltaValueUsd: 300 },
       maxLtv,
-      safeCeilingLtv,
     )
     if (before.kind === 'wouldLiquidate' || after.kind === 'wouldLiquidate') {
       throw new Error('expected projected')

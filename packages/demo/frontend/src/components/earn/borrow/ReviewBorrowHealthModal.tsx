@@ -35,7 +35,6 @@ export interface ReviewBorrowHealthModalProps {
   /** Projection state passed to the embedded <BorrowHealthCard>. */
   currentLtv: number
   projectedLtv: number
-  safeCeilingLtv: number
   maxLtv: number
   bufferPct: number
   borrowApy: number
@@ -78,7 +77,6 @@ export function ReviewBorrowHealthModal({
   assetLogo,
   currentLtv,
   projectedLtv,
-  safeCeilingLtv,
   maxLtv,
   bufferPct,
   borrowApy,
@@ -117,7 +115,6 @@ export function ReviewBorrowHealthModal({
       <BorrowHealthCard
         currentLtv={currentLtv}
         projectedLtv={projectedLtv}
-        safeCeilingLtv={safeCeilingLtv}
         maxLtv={maxLtv}
         bufferPct={bufferPct}
         borrowApy={borrowApy}

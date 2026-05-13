@@ -9,7 +9,6 @@ const baseProps = {
   borrowApy: 0.058,
   collateralValueUsd: 1000,
   maxLtv: 0.86,
-  safeCeilingLtv: 0.817, // 0.86 * 0.95
 }
 
 describe('BorrowHealthCard', () => {
@@ -41,7 +40,7 @@ describe('BorrowHealthCard', () => {
     expect(screen.getByText(/Health Factor: 2\.15/)).toBeInTheDocument()
   })
 
-  it('renders projection arrow when projected differs from current', () => {
+  it('renders projection arrow with raw LTV percentages', () => {
     render(
       <BorrowHealthCard
         {...baseProps}
@@ -50,23 +49,24 @@ describe('BorrowHealthCard', () => {
         projectedHealthFactor={1.7}
       />,
     )
-    // Both numeric values appear in the projection reading.
-    expect(screen.getByText(/36\.7%/)).toBeInTheDocument() // 0.3/0.817 ~= 36.7%
-    expect(screen.getByText(/61\.2%/)).toBeInTheDocument() // 0.5/0.817 ~= 61.2%
+    // Numeric reading shows raw LTV (not the bar fill).
+    // 0.3 = 30.0%, 0.5 = 50.0%
+    expect(screen.getByText(/30\.0%/)).toBeInTheDocument()
+    expect(screen.getByText(/50\.0%/)).toBeInTheDocument()
   })
 
-  it('surfaces buffer-zone warning when projected exceeds safe ceiling', () => {
+  it('shows projection at maxLtv when at liquidation threshold', () => {
+    // currentLtv 0.4 → 40%; projectedLtv at maxLtv = 86%
     render(
       <BorrowHealthCard
         {...baseProps}
-        currentLtv={0.3}
-        projectedLtv={0.85} // > safe ceiling 0.817 but < maxLtv 0.86
-        projectedHealthFactor={1.01}
+        currentLtv={0.4}
+        projectedLtv={0.86}
+        projectedHealthFactor={1.0}
       />,
     )
-    expect(
-      screen.getByText(/Position is in the buffer zone/i),
-    ).toBeInTheDocument()
+    // 0.86 = 86.0% — same value as "Liquidation at 86.0%" stat row
+    expect(screen.getAllByText(/86\.0%/).length).toBeGreaterThan(0)
   })
 
   it('renders "Would liquidate" state when wouldLiquidate=true', () => {

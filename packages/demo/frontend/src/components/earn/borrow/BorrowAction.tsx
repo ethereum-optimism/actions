@@ -163,7 +163,6 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
         deltaValueUsd: amountUsd,
       },
       maxLtv,
-      safeCeilingLtv,
     )
   }, [
     activeMarket,
@@ -174,7 +173,6 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     projectionCollateralUsd,
     mode,
     maxLtv,
-    safeCeilingLtv,
   ])
 
   const currentLtv =
@@ -325,7 +323,6 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
           <BorrowHealthCard
             currentLtv={currentLtv}
             projectedLtv={projectedLtv}
-            safeCeilingLtv={safeCeilingLtv}
             maxLtv={maxLtv}
             bufferPct={bufferPct}
             borrowApy={borrowApy}
@@ -361,7 +358,6 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
           assetLogo={''}
           currentLtv={currentLtv}
           projectedLtv={projectedLtv}
-          safeCeilingLtv={safeCeilingLtv}
           maxLtv={maxLtv}
           bufferPct={bufferPct}
           borrowApy={borrowApy}

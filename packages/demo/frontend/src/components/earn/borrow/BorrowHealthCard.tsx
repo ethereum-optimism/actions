@@ -2,15 +2,18 @@
  * Borrow Health card.
  *
  * Renders the two-tone health bar (current solid + projected lighter
- * overlay), an info-icon tooltip explaining the safe-ceiling model,
- * and the Liquidation / Borrow APY / Collateral / Buffer rows beneath.
+ * overlay), an info-icon tooltip, and the Liquidation / Borrow APY /
+ * Buffer / Collateral rows beneath.
+ *
+ * Bar fill is `currentLtv / maxLtv` clamped to 1, so bar = 100%
+ * coincides with the liquidation LTV (e.g. 86%). The numeric reading
+ * shows the raw LTV % so users see the actual loan-to-value rather
+ * than a normalized scale. Color tiers stay at 60/80% of bar fill
+ * (proportional to liquidation).
  *
  * Used in three flows: Borrow input, Repay input, and Lend-tab withdraw
- * (when collateral is pledged). All three pass `current`, `projected`,
- * `liquidationLtv`, and `borrowApy` from their respective contexts.
- * The component never recomputes `healthFactor` from a backend value;
- * it always derives the bar from `currentLtv` and `safeCeilingLtv`
- * (PR #3 single-source-of-truth guarantee).
+ * (when collateral is pledged). `healthFactor` is the SDK-canonical
+ * Aave-style decimal (1.0 = liquidation, Infinity = no debt).
  */
 
 import { memo, useEffect, useRef, useState } from 'react'
@@ -24,8 +27,7 @@ import type { Asset } from '@eth-optimism/actions-sdk'
 export interface BorrowHealthCardProps {
   currentLtv: number
   projectedLtv: number
-  safeCeilingLtv: number
-  /** LLTV (the actual liquidation threshold) for the "Liquidation at" row. */
+  /** LLTV (liquidation threshold) — bar max = 1 maps to this LTV. */
   maxLtv: number
   bufferPct: number
   borrowApy: number
@@ -41,13 +43,11 @@ const TIER_COLORS: Record<HealthTier, { fill: string; track: string }> = {
   safe: { fill: '#22C55E', track: '#DCFCE7' },
   caution: { fill: '#F59E0B', track: '#FEF3C7' },
   danger: { fill: '#EF4444', track: '#FEE2E2' },
-  buffer: { fill: '#B91C1C', track: '#FEE2E2' },
 }
 
 export const BorrowHealthCard = memo(function BorrowHealthCard({
   currentLtv,
   projectedLtv,
-  safeCeilingLtv,
   maxLtv,
   bufferPct,
   borrowApy,
@@ -56,16 +56,21 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
   projectedHealthFactor,
   wouldLiquidate = false,
 }: BorrowHealthCardProps) {
-  const currentBarValue = computeHealthBarValue(currentLtv, safeCeilingLtv)
-  const projectedBarValue = computeHealthBarValue(projectedLtv, safeCeilingLtv)
+  const currentBarValue = computeHealthBarValue(currentLtv, maxLtv)
+  const projectedBarValue = computeHealthBarValue(projectedLtv, maxLtv)
   const projectionTier = computeHealthTier(projectedBarValue)
 
   const tierColors = TIER_COLORS[projectionTier]
 
-  // Visual: clamp bar fill to 100% so the "buffer zone" reads as bar=full
-  // plus warning copy, not as a >100% overflow.
-  const currentPct = Math.min(100, currentBarValue * 100)
-  const projectedPct = Math.min(100, projectedBarValue * 100)
+  // Bar fill in [0, 100] %
+  const currentBarPct = currentBarValue * 100
+  const projectedBarPct = projectedBarValue * 100
+
+  // Numeric readings show RAW LTV % (not the normalized bar fill), so
+  // users see their actual loan-to-value. At bar=100% the reading
+  // equals `maxLtv * 100` (e.g. 86%).
+  const currentLtvPct = currentLtv * 100
+  const projectedLtvPct = Math.min(projectedLtv, maxLtv) * 100
 
   return (
     <div
@@ -90,8 +95,8 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
       >
         <HealthLabelWithTooltip />
         <HealthReading
-          currentPct={currentPct}
-          projectedPct={projectedPct}
+          currentLtvPct={currentLtvPct}
+          projectedLtvPct={projectedLtvPct}
           showProjection={projectedLtv !== currentLtv}
           wouldLiquidate={wouldLiquidate}
         />
@@ -115,21 +120,21 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
             top: 0,
             left: 0,
             height: '100%',
-            width: `${currentPct}%`,
+            width: `${currentBarPct}%`,
             backgroundColor:
               TIER_COLORS[computeHealthTier(currentBarValue)].fill,
             transition: 'width 200ms ease-in-out',
           }}
         />
         {/* Projected overlay (lighter, between current and projected) */}
-        {projectedPct > currentPct && (
+        {projectedBarPct > currentBarPct && (
           <div
             style={{
               position: 'absolute',
               top: 0,
-              left: `${currentPct}%`,
+              left: `${currentBarPct}%`,
               height: '100%',
-              width: `${projectedPct - currentPct}%`,
+              width: `${projectedBarPct - currentBarPct}%`,
               backgroundColor: tierColors.fill,
               opacity: 0.4,
               transition: 'all 200ms ease-in-out',
@@ -138,18 +143,7 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
         )}
       </div>
 
-      {/* Buffer-zone warning + canonical HF */}
-      {projectionTier === 'buffer' && (
-        <div
-          style={{
-            color: '#B91C1C',
-            fontSize: '13px',
-            fontFamily: 'Inter',
-          }}
-        >
-          Position is in the buffer zone (past the safe ceiling).
-        </div>
-      )}
+      {/* Canonical Aave-style HF (secondary label) */}
       {!wouldLiquidate && Number.isFinite(projectedHealthFactor) && (
         <div
           style={{
@@ -196,13 +190,13 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
 })
 
 function HealthReading({
-  currentPct,
-  projectedPct,
+  currentLtvPct,
+  projectedLtvPct,
   showProjection,
   wouldLiquidate,
 }: {
-  currentPct: number
-  projectedPct: number
+  currentLtvPct: number
+  projectedLtvPct: number
   showProjection: boolean
   wouldLiquidate: boolean
 }) {
@@ -216,14 +210,14 @@ function HealthReading({
   if (!showProjection) {
     return (
       <span style={{ fontSize: '14px', color: '#1a1b1e', fontWeight: 600 }}>
-        {currentPct.toFixed(1)}%
+        {currentLtvPct.toFixed(1)}%
       </span>
     )
   }
   return (
     <span style={{ fontSize: '14px', color: '#1a1b1e', fontWeight: 600 }}>
-      {currentPct.toFixed(1)}% <span style={{ color: '#9195A6' }}>→</span>{' '}
-      {projectedPct.toFixed(1)}%
+      {currentLtvPct.toFixed(1)}% <span style={{ color: '#9195A6' }}>→</span>{' '}
+      {projectedLtvPct.toFixed(1)}%
     </span>
   )
 }
@@ -294,10 +288,10 @@ function HealthLabelWithTooltip() {
             fontFamily: 'Inter',
           }}
         >
-          The bar fills to 100% at the safe ceiling (LLTV minus the buffer), not
-          at liquidation. A position past 100% is in the buffer zone between
-          safe and liquidation. Interest accrues continuously; your Health
-          drifts even without action.
+          Bar fills as your loan-to-value approaches liquidation. The numeric
+          reading shows your current LTV; at 100% bar fill you would be
+          liquidated. The Max button leaves a safety buffer before that point.
+          Interest accrues continuously; your Health drifts even without action.
           <div
             style={{
               position: 'absolute',

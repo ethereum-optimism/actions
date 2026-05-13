@@ -10,7 +10,7 @@ import { isEthSymbol } from '@/utils/assetUtils'
 import { stubPriceUsd } from '@/api/borrowApi'
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useCollateralStatus } from '@/hooks/useCollateralStatus'
-import { computeProjection, computeSafeCeilingLtv } from '@/utils/borrowMath'
+import { computeProjection } from '@/utils/borrowMath'
 import { BorrowHealthCard } from './borrow/BorrowHealthCard'
 import { ReviewBorrowHealthModal } from './borrow/ReviewBorrowHealthModal'
 import { CtaButton } from './CtaButton'
@@ -177,19 +177,16 @@ export function Action({
     const withdrawValueUsd = (parseFloat(amount) || 0) * collPrice
     const maxLtv = pledgedPosition.maxLtv ?? 0
     const bufferPct = pledgedMarket?.healthBufferPct ?? 0
-    const safeCeilingLtv = computeSafeCeilingLtv(maxLtv, bufferPct)
     const currentLtv = collValueUsd > 0 ? borrValueUsd / collValueUsd : 0
     const projection = computeProjection(
       { borrowValueUsd: borrValueUsd, collateralValueUsd: collValueUsd },
       { kind: 'withdrawCollateral', deltaValueUsd: withdrawValueUsd },
       maxLtv,
-      safeCeilingLtv,
     )
     return {
       currentLtv,
       maxLtv,
       bufferPct,
-      safeCeilingLtv,
       borrowApy: pledgedPosition.borrowApy,
       collValueUsd,
       projection,
@@ -349,7 +346,6 @@ export function Action({
             <BorrowHealthCard
               currentLtv={collateralProjection.currentLtv}
               projectedLtv={projectedLtv}
-              safeCeilingLtv={collateralProjection.safeCeilingLtv}
               maxLtv={collateralProjection.maxLtv}
               bufferPct={collateralProjection.bufferPct}
               borrowApy={collateralProjection.borrowApy}
@@ -387,7 +383,6 @@ export function Action({
           assetLogo={''}
           currentLtv={collateralProjection.currentLtv}
           projectedLtv={projectedLtv}
-          safeCeilingLtv={collateralProjection.safeCeilingLtv}
           maxLtv={collateralProjection.maxLtv}
           bufferPct={collateralProjection.bufferPct}
           borrowApy={collateralProjection.borrowApy}
