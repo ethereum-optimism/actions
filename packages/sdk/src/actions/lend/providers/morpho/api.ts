@@ -9,6 +9,48 @@ export interface RewardsBreakdown {
   totalRewards: number
 }
 
+export interface MorphoRewardAsset {
+  address?: string
+  name?: string
+  symbol?: string
+  chain?: { id: number }
+}
+
+export interface MorphoReward {
+  asset?: MorphoRewardAsset
+  amountPerSuppliedToken?: string
+  supplyApr?: number
+}
+
+export interface MorphoMarketState {
+  rewards?: MorphoReward[]
+}
+
+export interface MorphoAllocation {
+  market?: {
+    id?: string
+    uniqueKey?: string
+    state?: MorphoMarketState
+  }
+  supplyAssetsUsd?: number
+}
+
+export interface MorphoVaultState {
+  rewards?: MorphoReward[]
+  allocation?: MorphoAllocation[]
+}
+
+export interface MorphoApiVault {
+  address: string
+  id: string
+  state?: MorphoVaultState
+  chain?: { id: number }
+}
+
+interface MorphoVaultApiResponse {
+  data?: { vaultByAddress?: MorphoApiVault | null }
+}
+
 /**
  * Fetch raw vault rewards data from Morpho GraphQL API
  * @param vaultAddress - Vault address
@@ -17,7 +59,7 @@ export interface RewardsBreakdown {
 export async function fetchRewards(
   vaultAddress: Address,
   chainId: number,
-): Promise<any | null> {
+): Promise<MorphoApiVault | null> {
   const vaultQuery = {
     query: `
       query VaultByAddress($address: String!, $chainId: Int) {
@@ -79,7 +121,7 @@ export async function fetchRewards(
       body: JSON.stringify(vaultQuery),
     })
 
-    const vaultData = (await response.json()) as any
+    const vaultData = (await response.json()) as MorphoVaultApiResponse
     return vaultData.data?.vaultByAddress || null
   } catch (apiError) {
     // eslint-disable-next-line no-console
