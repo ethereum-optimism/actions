@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useLendProviderContext } from '@/contexts/LendProviderContext'
 import type { MarketPosition } from '@/types/market'
+import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
 import { Dropdown } from '../Dropdown'
 import { BorrowAction } from './BorrowAction'
 import { BorrowPositions } from './BorrowPositions'
@@ -102,6 +103,7 @@ function LendPositionSelector({
   selected: MarketPosition | null
   onSelect: (position: MarketPosition) => void
 }) {
+  const { setActiveTab } = useTabSwitcher()
   return (
     <Dropdown<MarketPosition>
       options={positions}
@@ -114,7 +116,29 @@ function LendPositionSelector({
         a.marketId.chainId === b.marketId.chainId
       }
       placeholder="Select a lend position"
-      singleOptionMessage="This is your only position."
+      singleOptionMessage={
+        <>
+          Add another{' '}
+          <button
+            type="button"
+            onClick={() => setActiveTab('lend')}
+            style={{
+              color: '#3374DB',
+              fontWeight: 500,
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
+            }}
+          >
+            Lend
+          </button>{' '}
+          position
+        </>
+      }
       renderOption={(position) => <LendPositionRow position={position} />}
     />
   )

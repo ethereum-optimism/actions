@@ -10,10 +10,10 @@ interface DropdownProps<T> {
   placeholder?: string
   isLoading?: boolean
   loadingContent?: React.ReactNode
-  /** Message shown (disabled, centered, light gray) when the only option
-   * is already selected, so the user understands why there's nothing
-   * else to pick. */
-  singleOptionMessage?: string
+  /** Content shown (centered, light gray) when the only option is already
+   * selected, so the user understands why there's nothing else to pick.
+   * Accepts `ReactNode` so callers can embed inline links / buttons. */
+  singleOptionMessage?: React.ReactNode
 }
 
 export function Dropdown<T>({
@@ -115,15 +115,12 @@ export function Dropdown<T>({
               if (remaining.length === 0 && singleOptionMessage) {
                 return (
                   <div
-                    aria-disabled="true"
                     style={{
                       padding: '12px 16px',
                       textAlign: 'center',
                       color: '#9195A6',
                       fontSize: '14px',
                       fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-                      cursor: 'default',
-                      userSelect: 'none',
                     }}
                   >
                     {singleOptionMessage}

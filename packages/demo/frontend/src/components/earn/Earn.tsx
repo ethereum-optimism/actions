@@ -12,6 +12,7 @@ import {
   useLendProviderContext,
 } from '@/contexts/LendProviderContext'
 import { BorrowProviderContextProvider } from '@/contexts/BorrowProviderContext'
+import { TabSwitcherProvider } from '@/contexts/TabSwitcherContext'
 import { BorrowTab } from './borrow/BorrowTab'
 import { MarketSelector } from './MarketSelector'
 import type { EarnOperations } from '@/hooks/useLendProvider'
@@ -534,50 +535,54 @@ function EarnContent({
       />
 
       <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)] overflow-x-hidden">
-        <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
-          <div className="w-full max-w-2xl">
-            <div className="space-y-6">
-              {activeTab === 'lend' && (
-                <LendTab
-                  handleTransactionWithTracking={handleTransactionWithTracking}
-                  getInterest={getInterest}
-                />
-              )}
+        <TabSwitcherProvider setActiveTab={setActiveTab}>
+          <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
+            <div className="w-full max-w-2xl">
+              <div className="space-y-6">
+                {activeTab === 'lend' && (
+                  <LendTab
+                    handleTransactionWithTracking={
+                      handleTransactionWithTracking
+                    }
+                    getInterest={getInterest}
+                  />
+                )}
 
-              {activeTab === 'swap' && (
-                <SwapAction
-                  assets={swapAssets}
-                  isLoadingBalances={isLoadingSwapAssets}
-                  onSwap={handleSwap}
-                  onGetQuote={handleGetQuote}
-                  isExecuting={isSwapping}
-                  selectedProvider={selectedProvider}
-                  swapMarkets={swapMarkets}
-                  isLoadingMarkets={isLoadingMarkets}
-                  onSelectProvider={setSelectedProvider}
-                  onLogActivity={logActivity}
-                />
-              )}
+                {activeTab === 'swap' && (
+                  <SwapAction
+                    assets={swapAssets}
+                    isLoadingBalances={isLoadingSwapAssets}
+                    onSwap={handleSwap}
+                    onGetQuote={handleGetQuote}
+                    isExecuting={isSwapping}
+                    selectedProvider={selectedProvider}
+                    swapMarkets={swapMarkets}
+                    isLoadingMarkets={isLoadingMarkets}
+                    onSelectProvider={setSelectedProvider}
+                    onLogActivity={logActivity}
+                  />
+                )}
 
-              {activeTab === 'borrow' && <BorrowTab />}
+                {activeTab === 'borrow' && <BorrowTab />}
 
-              <div className="lg:hidden">
-                <ActivityLog />
+                <div className="lg:hidden">
+                  <ActivityLog />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div
-          className="hidden lg:h-[calc(100vh-65px)] lg:block"
-          style={{
-            width: isSidebarCollapsed ? '0px' : '436px',
-            transition: 'width 300ms ease-in-out',
-            overflow: 'hidden',
-          }}
-        >
-          <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
-        </div>
+          <div
+            className="hidden lg:h-[calc(100vh-65px)] lg:block"
+            style={{
+              width: isSidebarCollapsed ? '0px' : '436px',
+              transition: 'width 300ms ease-in-out',
+              overflow: 'hidden',
+            }}
+          >
+            <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
+          </div>
+        </TabSwitcherProvider>
       </main>
     </div>
   )
