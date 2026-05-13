@@ -1,16 +1,27 @@
-import type { UniswapSwapProviderConfig } from '@/swap/providers/uniswap/types.js'
-import type { VelodromeSwapProviderConfig } from '@/swap/providers/velodrome/types.js'
+import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap/types.js'
+import type { VelodromeSwapProviderConfig } from '@/actions/swap/providers/velodrome/types.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  LendProviders,
+  SwapProviderName,
+  SwapProviders,
+} from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
 export type { LendProviderConfig, SwapProviderConfig }
-// Re-export centralized provider maps
-export type { LendProviders, SwapProviders } from '@/types/providers.js'
+// Re-export centralized provider maps and constants
+export type {
+  LendProviderName,
+  LendProviders,
+  SwapProviderName,
+  SwapProviders,
+} from '@/types/providers.js'
+export { LEND_PROVIDER_NAMES, SWAP_PROVIDER_NAMES } from '@/types/providers.js'
 
 /** Require at least one property to be defined */
 type RequireAtLeastOne<T> = {
@@ -18,17 +29,28 @@ type RequireAtLeastOne<T> = {
 }[keyof T]
 
 /**
- * Lending configuration — at least one provider must be configured
+ * Shared lend settings applied across all providers.
+ * Provider-level values override these when set.
+ */
+export interface LendSettings {
+  /**
+   * Default approval-amount strategy for ERC-20 → market approvals on supply.
+   * Per-call params override this; provider-level config overrides it for a
+   * single provider.
+   */
+  approvalMode?: ApprovalMode
+}
+
+/**
+ * Lending configuration — at least one provider must be configured.
+ * Shared settings go in `settings`; per-provider settings go under the provider key.
  */
 export type LendConfig = RequireAtLeastOne<{
   [K in keyof LendProviders]: LendProviderConfig
-}>
-
-/** Names of available swap providers — derived from SwapProviders registry */
-export type SwapProviderName = keyof SwapProviders
-
-/** Names of available lend providers — derived from LendProviders registry */
-export type LendProviderName = keyof LendProviders
+}> & {
+  /** Shared settings applied across all lend providers */
+  settings?: LendSettings
+}
 
 /** Routing strategy for selecting a provider when multiple are configured. */
 export type SwapRoutingStrategy = 'price'
@@ -54,6 +76,12 @@ export interface SwapSettings {
   routing?: SwapRoutingStrategy
   /** Provider to prefer when routing produces a tie, or to always use when no routing strategy is set. */
   defaultProvider?: SwapProviderName
+  /**
+   * Default approval-amount strategy for swap approvals (Permit2 outer +
+   * inner). Per-call params override this; provider-level config overrides it
+   * for a single provider.
+   */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -92,6 +120,55 @@ export interface AssetsConfig {
 }
 
 /**
+ * Shared dependencies derived from `ActionsConfig` at SDK construction time.
+ * @description Immutable bundle of resolved providers and services that the
+ * Actions SDK threads through its internal namespaces. Consumers that need
+ * provider references should receive an `ActionsContext` rather than a raw
+ * `ActionsConfig` — the providers in the context are already constructed and
+ * hold their own per-provider configuration (market allowlists, slippage
+ * defaults, etc.).
+ */
+export interface ActionsContext {
+  /** Chain manager wrapping the configured chains */
+  chainManager: ChainManager
+  /** Configured lend provider instances (each holds its own config) */
+  lendProviders: LendProviders
+  /** Configured swap provider instances (each holds its own config) */
+  swapProviders: SwapProviders
+  /** Resolved supported asset list (allowlist minus blocklist) */
+  supportedAssets: Asset[]
+  /** Shared swap settings applied across swap providers */
+  swapSettings?: SwapSettings
+}
+
+/**
+ * Approval amount strategy used when the SDK needs to grant a contract
+ * permission to spend the user's tokens (Permit2, Aave Pool, Morpho vault, ...).
+ *
+ * `"exact"` approves exactly the amount required for the current operation.
+ * Each subsequent operation needs its own approval transaction.
+ *
+ * `"max"` approves `maxUint256` for ERC-20 spenders / `maxUint160` for
+ * Permit2's inner allowance. Subsequent operations skip the re-approval
+ * round trip until the underlying allowance is consumed or expires.
+ *
+ * Default is `"exact"` for safety. Demo / dogfood configs typically opt into
+ * `"max"` to avoid an extra approval tx per swap or supply.
+ */
+export const APPROVAL_MODES = ['exact', 'max'] as const
+
+export type ApprovalMode = (typeof APPROVAL_MODES)[number]
+
+/**
+ * The lend write actions exposed by the SDK's wallet namespace
+ * (`openPosition` / `closePosition`). Useful for callers that emit
+ * action-tagged output envelopes or branch on the action being performed.
+ */
+export const LEND_ACTIONS = ['open', 'close'] as const
+
+export type LendAction = (typeof LEND_ACTIONS)[number]
+
+/**
  * Actions SDK configuration
  * @description Configuration object for initializing the Actions SDK
  */
@@ -113,14 +190,17 @@ export interface ActionsConfig<
 
 /**
  * Wallet configuration
- * @description Configuration for wallet providers
+ * @description Configuration for wallet providers. `hostedWalletConfig` is
+ * optional; when omitted, `wallet.toActionsWallet` accepts only a viem
+ * `LocalAccount` and `wallet.createSigner` / `wallet.hostedWalletProvider`
+ * are not available.
  */
 export type WalletConfig<
   THostedProviderType extends string,
   TConfigMap extends { [K in THostedProviderType]: unknown },
 > = {
-  /** Hosted wallet configuration */
-  hostedWalletConfig: HostedWalletConfig<THostedProviderType, TConfigMap>
+  /** Hosted wallet configuration (optional) */
+  hostedWalletConfig?: HostedWalletConfig<THostedProviderType, TConfigMap>
   /** Smart wallet configuration for ERC-4337 infrastructure */
   smartWalletConfig: SmartWalletConfig
 }

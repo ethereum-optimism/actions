@@ -22,9 +22,18 @@ export class WalletProvider<
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   constructor(
-    public readonly hostedWalletProvider: H,
+    public readonly hostedWalletProvider: H | undefined,
     public readonly smartWalletProvider: S,
   ) {}
+
+  private requireHostedWalletProvider(): H {
+    if (!this.hostedWalletProvider) {
+      throw new Error(
+        'Hosted wallet provider not configured. Please add hostedWalletConfig to ActionsConfig.wallet.',
+      )
+    }
+    return this.hostedWalletProvider
+  }
 
   /**
    * Create a new smart wallet
@@ -52,7 +61,7 @@ export class WalletProvider<
   async hostedWalletToActionsWallet(
     params: TToActionsMap[THostedProviderType],
   ): Promise<Wallet> {
-    return this.hostedWalletProvider.toActionsWallet(params)
+    return this.requireHostedWalletProvider().toActionsWallet(params)
   }
 
   /**
@@ -67,7 +76,7 @@ export class WalletProvider<
   async createSigner(
     params: TToActionsMap[THostedProviderType],
   ): Promise<LocalAccount> {
-    return this.hostedWalletProvider.createSigner(params)
+    return this.requireHostedWalletProvider().createSigner(params)
   }
 
   /**

@@ -1,7 +1,20 @@
 import type { Address } from 'viem'
+import { isAddress } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { Asset } from '@/types/asset.js'
+import {
+  AmountRequiredError,
+  AssetNotSupportedOnChainError,
+  ChainNotSupportedError,
+  ConflictingAmountsError,
+  InvalidAmountError,
+  InvalidParamsError,
+  SameAssetError,
+  SlippageOutOfRangeError,
+  ZeroAddressError,
+} from '@/core/error/errors.js'
+import type { ChainManager } from '@/services/ChainManager.js'
+import type { Asset, BalanceFetchOptions } from '@/types/asset.js'
 import { isAssetSupportedOnChain } from '@/utils/assets.js'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -11,13 +24,13 @@ export function validateAmountProvided(
   amountOut?: number,
 ): void {
   if (amountIn === undefined && amountOut === undefined) {
-    throw new Error('Either amountIn or amountOut must be provided')
+    throw new AmountRequiredError()
   }
 }
 
 export function validateAmountPositiveIfExists(amount?: number): void {
   if (amount !== undefined && amount <= 0) {
-    throw new Error('Amount must be positive')
+    throw new InvalidAmountError(amount)
   }
 }
 
@@ -26,7 +39,7 @@ export function validateNotBothAmounts(
   amountOut?: number,
 ): void {
   if (amountIn !== undefined && amountOut !== undefined) {
-    throw new Error('Provide either amountIn or amountOut, not both')
+    throw new ConflictingAmountsError()
   }
 }
 
@@ -35,21 +48,19 @@ export function validateNotSameAsset(assetIn: Asset, assetOut: Asset): void {
     assetIn.metadata.symbol.toLowerCase() ===
     assetOut.metadata.symbol.toLowerCase()
   ) {
-    throw new Error('Cannot swap an asset for itself')
+    throw new SameAssetError(assetIn.metadata.symbol)
   }
 }
 
 export function validateNotZeroAddress(address: Address, label: string): void {
   if (address === ZERO_ADDRESS) {
-    throw new Error(`${label} cannot be the zero address`)
+    throw new ZeroAddressError(label, address)
   }
 }
 
 export function validateSlippage(slippage: number, maxSlippage: number): void {
   if (slippage < 0 || slippage > maxSlippage) {
-    throw new Error(
-      `Slippage ${slippage} exceeds allowed range [0, ${maxSlippage * 100}%]`,
-    )
+    throw new SlippageOutOfRangeError(slippage, maxSlippage)
   }
 }
 
@@ -58,10 +69,29 @@ export function validateChainSupported(
   supportedChainIds: readonly number[],
 ): void {
   if (!supportedChainIds.includes(chainId)) {
-    throw new Error(
-      `Chain ${chainId} is not supported. Supported chains: ${supportedChainIds.join(', ')}`,
-    )
+    throw new ChainNotSupportedError({ chainId, supportedChainIds })
   }
+}
+
+/**
+ * Guard for `BalanceFetchOptions` — verifies a caller-supplied `chainIds` filter is non-empty and each id is a member of `chainManager.getSupportedChains()`. No-op when `chainIds` is omitted.
+ * @throws InvalidParamsError when `chainIds` is `[]`.
+ * @throws ChainNotSupportedError when any id is not configured on the manager.
+ */
+export function validateBalanceFetchOptions(
+  options: BalanceFetchOptions | undefined,
+  chainManager: ChainManager,
+): void {
+  if (options?.chainIds === undefined) return
+  if (options.chainIds.length === 0) {
+    throw new InvalidParamsError({
+      param: 'chainIds',
+      expected: 'SupportedChainId[] (non-empty)',
+      received: '[]',
+    })
+  }
+  const supported = chainManager.getSupportedChains()
+  for (const id of options.chainIds) validateChainSupported(id, supported)
 }
 
 export function validateAssetOnChain(
@@ -69,8 +99,16 @@ export function validateAssetOnChain(
   chainId: SupportedChainId,
 ): void {
   if (!isAssetSupportedOnChain(asset, chainId)) {
-    throw new Error(
-      `Asset ${asset.metadata.symbol} not supported on chain ${chainId}`,
-    )
+    throw new AssetNotSupportedOnChainError(asset.metadata.symbol, chainId)
+  }
+}
+
+/**
+ * Validate that a resolved recipient address is not the zero address.
+ * ENS names are skipped — only resolved `Address` values are checked.
+ */
+export function validateRecipient(recipient: string | undefined): void {
+  if (recipient && isAddress(recipient)) {
+    validateNotZeroAddress(recipient, 'recipient')
   }
 }

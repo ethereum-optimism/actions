@@ -1,7 +1,7 @@
 {
   "name": "actions-ui",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.3",
   "type": "module",
   "repository": {
     "type": "git",
@@ -9,7 +9,7 @@
     "directory": "packages/demo/frontend"
   },
   "scripts": {
-    "build": "vite build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "dev": "vite",
     "preview": "vite preview",

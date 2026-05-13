@@ -51,6 +51,7 @@ function buildSwapOperations(
           tokenInAddress: tokenInAddress as Address,
           tokenOutAddress: tokenOutAddress as Address,
           chainId: quote.chainId,
+          provider: quote.provider,
         },
         await getAuthHeaders(),
       )

@@ -22,7 +22,7 @@ vi.mock('@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js')
 /* eslint-disable import/first */
 import type { LocalAccount } from 'viem'
 
-import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { DynamicHostedWalletProvider } from '@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js'

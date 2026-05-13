@@ -1,14 +1,16 @@
 import type { Address, LocalAccount } from 'viem'
 
+import { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
+import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { WalletLendNamespace } from '@/lend/namespaces/WalletLendNamespace.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
 import type { SwapSettings } from '@/types/actions.js'
-import type { Asset, TokenBalance } from '@/types/asset.js'
+import type { Asset, BalanceFetchOptions, TokenBalance } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
+import { validateBalanceFetchOptions } from '@/utils/validation.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
@@ -72,27 +74,42 @@ export abstract class Wallet {
       this.lend = new WalletLendNamespace(this.lendProviders, this)
     }
     if (Object.values(this.swapProviders).some(Boolean)) {
+      const ens = new EnsNamespace(this.chainManager)
       this.swap = new WalletSwapNamespace(
         this.swapProviders,
         this,
+        (r) => (r ? ens.getAddress(r) : Promise.resolve(undefined)),
         swapSettings,
       )
     }
   }
 
   /**
-   * Get asset balances across all supported chains
-   * @description Fetches ETH and ERC20 token balances for this wallet across all supported networks.
-   * Uses the configured supported assets from ActionsConfig.assets if provided.
+   * Check whether a wallet namespace (`lend`, `swap`) is configured on this
+   * wallet. Useful for callers that branch on capability instead of catching
+   * a `TypeError` from `wallet.lend!.openPosition(...)` later. Returns `false`
+   * when the namespace is undefined (no providers were registered for it).
+   * @param namespace - Wallet namespace name to probe.
+   * @returns `true` when the namespace is configured.
+   */
+  has(namespace: 'lend' | 'swap'): boolean {
+    return this[namespace] !== undefined
+  }
+
+  /**
+   * Get asset balances across the requested chains (or all supported chains).
+   * @description Fetches ETH and ERC20 token balances for this wallet. By default queries every chain returned by the SDK's `ChainManager`. Pass `options.chainIds` to restrict the query to a subset of those chains; each id is validated against the configured chains and an `InvalidParamsError` / `ChainNotSupportedError` is thrown for unusable input. Uses the configured supported assets from `ActionsConfig.assets` if provided.
+   * @param options - Optional `chainIds` filter
    * @returns Promise resolving to array of token balances with chain breakdown
    */
-  async getBalance(): Promise<TokenBalance[]> {
-    const tokenBalancePromises = this.supportedAssets.map(async (asset) => {
-      return fetchERC20Balance(this.chainManager, this.address, asset)
-    })
-    const ethBalancePromise = fetchETHBalance(this.chainManager, this.address)
-
-    return Promise.all([ethBalancePromise, ...tokenBalancePromises])
+  async getBalance(options?: BalanceFetchOptions): Promise<TokenBalance[]> {
+    validateBalanceFetchOptions(options, this.chainManager)
+    return Promise.all([
+      fetchETHBalance(this.chainManager, this.address, options),
+      ...this.supportedAssets.map((asset) =>
+        fetchERC20Balance(this.chainManager, this.address, asset, options),
+      ),
+    ])
   }
 
   /**
@@ -160,7 +177,7 @@ export abstract class Wallet {
    * @returns Promise resolving to the transaction hash
    */
   abstract sendBatch(
-    transactionData: TransactionData[],
+    transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<BatchTransactionReturnType>
 }

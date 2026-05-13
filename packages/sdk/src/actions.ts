@@ -1,8 +1,13 @@
-import { AaveLendProvider, MorphoLendProvider } from '@/lend/index.js'
-import { ActionsLendNamespace } from '@/lend/namespaces/ActionsLendNamespace.js'
+import { AaveLendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
+import { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
+import {
+  UniswapSwapProvider,
+  VelodromeSwapProvider,
+} from '@/actions/swap/index.js'
+import { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
+import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
-import { UniswapSwapProvider, VelodromeSwapProvider } from '@/swap/index.js'
-import { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
+import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import type {
   ActionsConfig,
   AssetsConfig,
@@ -47,6 +52,7 @@ export class Actions<
     SmartWalletProvider
   >
   private chainManager: ChainManager
+  private _ens: EnsNamespace
   private _lend?: ActionsLendNamespace
   private _lendProviders: LendProviders = {}
   private _swap?: ActionsSwapNamespace
@@ -76,16 +82,21 @@ export class Actions<
     this._assetsConfig = config.assets
     validateConfigAddresses(config)
 
+    this._ens = new EnsNamespace(this.chainManager)
+
+    const lendSettings = config.lend?.settings
     if (config.lend?.morpho) {
       this._lendProviders.morpho = new MorphoLendProvider(
         config.lend.morpho,
         this.chainManager,
+        lendSettings,
       )
     }
     if (config.lend?.aave) {
       this._lendProviders.aave = new AaveLendProvider(
         config.lend.aave,
         this.chainManager,
+        lendSettings,
       )
     }
     if (this._lendProviders.morpho || this._lendProviders.aave) {
@@ -111,6 +122,7 @@ export class Actions<
     if (Object.values(this._swapProviders).some(Boolean)) {
       this._swap = new ActionsSwapNamespace(
         this._swapProviders,
+        (r) => (r ? this._ens.getAddress(r) : Promise.resolve(undefined)),
         this._swapSettings,
       )
     }
@@ -127,9 +139,10 @@ export class Actions<
    */
   get lend(): ActionsLendNamespace {
     if (!this._lend) {
-      throw new Error(
-        'Lend provider not configured. Please add lend configuration to ActionsConfig.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'lend',
+        details: 'Please add lend configuration to ActionsConfig.',
+      })
     }
     return this._lend
   }
@@ -143,6 +156,16 @@ export class Actions<
   }
 
   /**
+   * Get ENS operations interface
+   * @description Access to Ethereum Name Service operations: resolve, reverseResolve, lookupText.
+   * Requires Ethereum mainnet (chain ID 1) to be included in your chain configuration.
+   * @returns EnsNamespace for ENS operations
+   */
+  get ens(): EnsNamespace {
+    return this._ens
+  }
+
+  /**
    * Get swap operations interface
    * @description Access to swap operations like price quotes and markets.
    * Throws an error if no swap provider is configured in ActionsConfig.
@@ -151,9 +174,10 @@ export class Actions<
    */
   get swap(): ActionsSwapNamespace {
     if (!this._swap) {
-      throw new Error(
-        'Swap provider not configured. Please add swap configuration to ActionsConfig.',
-      )
+      throw new ProviderNotConfiguredError({
+        provider: 'swap',
+        details: 'Please add swap configuration to ActionsConfig.',
+      })
     }
     return this._swap
   }
@@ -211,7 +235,42 @@ export class Actions<
       SmartWalletProvider
     >
   > {
-    const hostedWalletProviderConfig = config.hostedWalletConfig.provider
+    const hostedWalletProvider = config.hostedWalletConfig
+      ? await this.createHostedWalletProvider(config.hostedWalletConfig)
+      : undefined
+
+    const smartWalletProvider: SmartWalletProvider = (() => {
+      if (
+        !config.smartWalletConfig ||
+        config.smartWalletConfig.provider.type === 'default'
+      ) {
+        return new DefaultSmartWalletProvider(
+          this.chainManager,
+          this._lendProviders,
+          this._swapProviders,
+          this.getSupportedAssets(),
+          config.smartWalletConfig.provider.attributionSuffix,
+        )
+      }
+      throw new ProviderNotConfiguredError({
+        provider: config.smartWalletConfig.provider.type,
+      })
+    })()
+
+    return new WalletProvider(hostedWalletProvider, smartWalletProvider)
+  }
+
+  private async createHostedWalletProvider(
+    hostedWalletConfig: NonNullable<
+      ActionsConfig<
+        THostedWalletProviderType,
+        THostedWalletProvidersSchema['providerConfigs']
+      >['wallet']['hostedWalletConfig']
+    >,
+  ): Promise<
+    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
+  > {
+    const hostedWalletProviderConfig = hostedWalletConfig.provider
     const factory = this.hostedWalletProviderRegistry.getFactory(
       hostedWalletProviderConfig.type,
     )
@@ -221,11 +280,12 @@ export class Actions<
         : undefined
     ) as unknown
     if (!factory.validateOptions(options)) {
-      throw new Error(
-        `Invalid options for hosted wallet provider: ${hostedWalletProviderConfig.type}`,
-      )
+      throw new ProviderNotConfiguredError({
+        provider: hostedWalletProviderConfig.type,
+        details: 'Invalid options',
+      })
     }
-    const hostedWalletProvider = await factory.create(
+    return factory.create(
       {
         chainManager: this.chainManager,
         lendProviders: this._lendProviders,
@@ -235,26 +295,6 @@ export class Actions<
       },
       options,
     )
-
-    let smartWalletProvider: SmartWalletProvider
-    if (
-      !config.smartWalletConfig ||
-      config.smartWalletConfig.provider.type === 'default'
-    ) {
-      smartWalletProvider = new DefaultSmartWalletProvider(
-        this.chainManager,
-        this._lendProviders,
-        this._swapProviders,
-        this.getSupportedAssets(),
-        config.smartWalletConfig.provider.attributionSuffix,
-      )
-    } else {
-      throw new Error(
-        `Unsupported smart wallet provider: ${config.smartWalletConfig.provider.type}`,
-      )
-    }
-
-    return new WalletProvider(hostedWalletProvider, smartWalletProvider)
   }
 
   /**
@@ -276,6 +316,12 @@ export class Actions<
       THostedWalletProvidersSchema['providerToActionsOptions'],
       THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
       SmartWalletProvider
-    >(providerFactory)
+    >(providerFactory, {
+      chainManager: this.chainManager,
+      lendProviders: this._lendProviders,
+      swapProviders: this._swapProviders,
+      supportedAssets: this.getSupportedAssets(),
+      swapSettings: this._swapSettings,
+    })
   }
 }

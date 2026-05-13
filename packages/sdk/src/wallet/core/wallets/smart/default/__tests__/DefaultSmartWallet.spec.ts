@@ -9,7 +9,7 @@ import { baseSepolia, unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getRandomAddress } from '@/__mocks__/utils.js'
-import { createMockLendProvider } from '@/lend/__mocks__/MockLendProvider.js'
+import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig } from '@/types/actions.js'

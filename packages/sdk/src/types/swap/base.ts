@@ -1,7 +1,8 @@
 import type { Address, Hex } from 'viem'
 
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { SwapProviderName } from '@/types/actions.js'
+import type { EnsName } from '@/services/nameservices/ens/types.js'
+import type { ApprovalMode, SwapProviderName } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import type { TransactionData } from '@/types/transaction.js'
 import type {
@@ -9,9 +10,9 @@ import type {
   TransactionReturnType,
 } from '@/wallet/core/wallets/abstract/types/index.js'
 
-export { SwapProvider } from '@/swap/core/SwapProvider.js'
-export { ActionsSwapNamespace } from '@/swap/namespaces/ActionsSwapNamespace.js'
-export { WalletSwapNamespace } from '@/swap/namespaces/WalletSwapNamespace.js'
+export { SwapProvider } from '@/actions/swap/core/SwapProvider.js'
+export { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
+export { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 export type { SwapProviders } from '@/types/providers.js'
 
 /**
@@ -29,6 +30,8 @@ export interface SwapProviderConfig {
   marketAllowlist?: SwapMarketConfig[]
   /** Blocklist of swap markets to exclude */
   marketBlocklist?: SwapMarketConfig[]
+  /** Approval-amount strategy override for this provider. Overrides `SwapSettings.approvalMode`. */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -88,10 +91,15 @@ export interface WalletSwapParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp. Defaults to now + 1 minute. */
   deadline?: number
-  /** Recipient address. Defaults to wallet address. */
-  recipient?: Address
+  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  recipient?: Address | EnsName
   /** Explicitly select a swap provider. Overrides routing config. */
   provider?: SwapProviderName
+  /**
+   * Override the wallet-level approval-amount strategy for this single swap.
+   * Falls back to `ActionsConfig.wallet.approvalMode` and finally to `"exact"`.
+   */
+  approvalMode?: ApprovalMode
 }
 
 /**
@@ -116,6 +124,8 @@ export interface ResolvedSwapParams {
   recipient: Address
   walletAddress: Address
   chainId: SupportedChainId
+  /** Resolved approval-amount strategy (per-call → wallet config → "exact"). */
+  approvalMode: ApprovalMode
 }
 
 /**
@@ -156,8 +166,8 @@ export interface SwapQuoteParams {
   slippage?: number
   /** Transaction deadline as Unix timestamp */
   deadline?: number
-  /** Recipient address */
-  recipient?: Address
+  /** Recipient address or ENS name (e.g. "vitalik.eth"). Defaults to wallet address. */
+  recipient?: Address | EnsName
   /** Explicitly select a swap provider */
   provider?: SwapProviderName
 }
@@ -238,17 +248,20 @@ export interface SwapQuote {
   /** Estimated gas cost as raw bigint (native decimals) */
   gasEstimate?: bigint
   /**
-   * Wallet address that will execute this quote.
-   * Set by WalletSwapNamespace before execution — not available on price-only quotes.
-   * Used to check existing on-chain allowances and skip redundant approvals.
+   * Recipient address baked into execution.swapCalldata at quote time.
+   * Required. To execute a quote on a wallet, the quote must have been
+   * generated for that wallet (recipient === wallet.address); otherwise
+   * WalletSwapNamespace.execute throws. Re-quote via wallet.swap.getQuote
+   * when the executor differs from the quote's recipient.
    */
-  recipient?: Address
+  recipient: Address
   /**
-   * The recipient address baked into execution.swapCalldata at quote time.
-   * If recipient differs from quotedRecipient at execute time, calldata is re-encoded
-   * with the correct recipient to prevent tokens from being sent to the wrong address.
+   * Per-call override for the approval-amount strategy. When set, the provider
+   * uses this for the swap's approvals instead of the wallet-level config
+   * default. When unset, the provider falls back to the wallet's
+   * `approvalMode` config and finally to `"exact"`.
    */
-  quotedRecipient: Address
+  approvalMode?: ApprovalMode
 }
 
 /**

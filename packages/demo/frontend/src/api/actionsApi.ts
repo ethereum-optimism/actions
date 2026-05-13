@@ -101,7 +101,9 @@ class ActionsApiClient {
       chains: Object.fromEntries(
         Object.entries(balance.chains).map(([chainId, chainBalance]) => [
           chainId,
-          chainBalance ? { ...chainBalance, balanceRaw: BigInt(chainBalance.balanceRaw) } : chainBalance,
+          chainBalance
+            ? { ...chainBalance, balanceRaw: BigInt(chainBalance.balanceRaw) }
+            : chainBalance,
         ]),
       ),
     })) as TokenBalance[]

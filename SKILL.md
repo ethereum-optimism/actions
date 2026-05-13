@@ -5,4 +5,4 @@ description: Integrate the Optimism Actions SDK into a TypeScript application. H
 
 # Actions SDK Integration
 
-See [AGENTS.md](AGENTS.md) for the full step-by-step integration guide.
+See [llms-full.txt](llms-full.txt) for the full step-by-step integration guide.

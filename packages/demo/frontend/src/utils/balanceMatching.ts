@@ -34,7 +34,9 @@ export function matchAssetBalance({
     // For ETH markets, match by asset type (native token has no address)
     // For ERC20 tokens, match by address on the target chain
     if (isEthSymbol(selectedAssetSymbol)) {
-      assetToken = allTokenBalances.find((token) => isEthSymbol(token.asset.metadata.symbol))
+      assetToken = allTokenBalances.find((token) =>
+        isEthSymbol(token.asset.metadata.symbol),
+      )
     } else {
       const targetAddress = marketData.assetAddress.toLowerCase()
       for (const token of allTokenBalances) {
@@ -65,12 +67,14 @@ export function matchAssetBalance({
   if (assetToken && chainBalance && chainBalance.balanceRaw > 0n) {
     // Use the specific chain balance (already human-readable)
     const flooredBalance =
-      Math.floor(chainBalance.balance * precisionMultiplier) / precisionMultiplier
+      Math.floor(chainBalance.balance * precisionMultiplier) /
+      precisionMultiplier
     return flooredBalance.toFixed(displayPrecision)
   } else if (assetToken && assetToken.totalBalanceRaw > 0n) {
     // Fallback to total balance (already human-readable)
     const flooredBalance =
-      Math.floor(assetToken.totalBalance * precisionMultiplier) / precisionMultiplier
+      Math.floor(assetToken.totalBalance * precisionMultiplier) /
+      precisionMultiplier
     return flooredBalance.toFixed(displayPrecision)
   } else {
     return isEth ? '0.0000' : '0.00'

@@ -1,43 +1,12 @@
 import type { Address, PublicClient } from 'viem'
-import { encodeFunctionData, erc20Abi, maxUint256 } from 'viem'
+import { encodeFunctionData, erc20Abi, maxUint160, maxUint256 } from 'viem'
 
+import type { ApprovalMode } from '@/types/actions.js'
 import type { TransactionData } from '@/types/transaction.js'
+import { PERMIT2_ABI } from '@/utils/abi/permit2.js'
 
 /** Default Permit2 approval expiry: 30 days in seconds */
 export const DEFAULT_PERMIT2_EXPIRY_SECONDS = 30 * 24 * 60 * 60
-
-/**
- * Permit2 ABI (subset for approvals)
- */
-const PERMIT2_ABI = [
-  {
-    name: 'allowance',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'token', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    outputs: [
-      { name: 'amount', type: 'uint160' },
-      { name: 'expiration', type: 'uint48' },
-      { name: 'nonce', type: 'uint48' },
-    ],
-  },
-  {
-    name: 'approve',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'token', type: 'address' },
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint160' },
-      { name: 'expiration', type: 'uint48' },
-    ],
-    outputs: [],
-  },
-] as const
 
 /**
  * Permit2 allowance info
@@ -76,14 +45,56 @@ export async function checkPermit2Allowance(params: {
 
 /**
  * Build ERC20 token approval transaction to Permit2.
- * Uses maxUint256 — the Uniswap-canonical pattern.
- * Permit2 is immutable with no owner; spending is scoped by its own allowance system.
+ *
+ * Permit2 is immutable with no owner; in the canonical Uniswap pattern this
+ * approval is granted as `maxUint256` once and reused across many swaps.
+ * Callers can opt back into exact-amount approvals by passing the explicit
+ * `requiredAmount`, which trades the round-trip cost on every swap for a
+ * tighter on-chain allowance.
  */
 export function buildTokenApprovalTx(
   token: Address,
   permit2Address: Address,
+  amount: bigint,
 ): TransactionData {
-  return buildErc20ApprovalTx(token, permit2Address, maxUint256)
+  return buildErc20ApprovalTx(token, permit2Address, amount)
+}
+
+/**
+ * Resolve the effective {@link ApprovalMode} from the per-call → per-provider
+ * → shared-settings precedence chain, defaulting to `"exact"`. Mirrors how
+ * `defaultSlippage` resolves across the same layers.
+ */
+export function resolveApprovalMode(
+  perCall: ApprovalMode | undefined,
+  providerDefault: ApprovalMode | undefined,
+  globalDefault: ApprovalMode | undefined,
+): ApprovalMode {
+  return perCall ?? providerDefault ?? globalDefault ?? 'exact'
+}
+
+/**
+ * Pick an approval amount for an ERC-20 → spender allowance based on the
+ * caller's chosen {@link ApprovalMode}.
+ * @param mode `"exact"` returns `requiredAmount`; `"max"` returns `maxUint256`.
+ */
+export function resolveErc20ApprovalAmount(
+  mode: ApprovalMode,
+  requiredAmount: bigint,
+): bigint {
+  return mode === 'max' ? maxUint256 : requiredAmount
+}
+
+/**
+ * Pick an approval amount for Permit2's inner (token, spender) allowance —
+ * which is uint160-typed, not uint256.
+ * @param mode `"exact"` returns `requiredAmount`; `"max"` returns `maxUint160`.
+ */
+export function resolvePermit2ApprovalAmount(
+  mode: ApprovalMode,
+  requiredAmount: bigint,
+): bigint {
+  return mode === 'max' ? maxUint160 : requiredAmount
 }
 
 /**
