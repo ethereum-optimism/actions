@@ -25,6 +25,8 @@ import type {
 } from '@eth-optimism/actions-sdk'
 import {
   borrowApi,
+  type BorrowPriceParams,
+  type BorrowQuoteParams,
   type StubCloseParams,
   type StubCollateralParams,
   type StubOpenParams,
@@ -64,25 +66,16 @@ export interface UseBorrowProviderReturn {
     params: BorrowOperationParams[A],
   ) => Promise<BorrowReceipt>
 
-  getPrice: (params: {
-    action: BorrowAction
-    marketId: BorrowMarket['marketId']
-    borrowAmount?: { amount: number } | { amountRaw: bigint } | { max: true }
-    collateralAmount?:
-      | { amount: number }
-      | { amountRaw: bigint }
-      | { max: true }
-  }) => Promise<BorrowPrice>
+  /**
+   * Caller-side params omit `walletAddress` (provider injects it).
+   */
+  getPrice: (
+    params: Omit<BorrowPriceParams, 'walletAddress'>,
+  ) => Promise<BorrowPrice>
 
-  getQuote: (params: {
-    action: BorrowAction
-    marketId: BorrowMarket['marketId']
-    borrowAmount?: { amount: number } | { amountRaw: bigint } | { max: true }
-    collateralAmount?:
-      | { amount: number }
-      | { amountRaw: bigint }
-      | { max: true }
-  }) => Promise<BorrowQuote>
+  getQuote: (
+    params: Omit<BorrowQuoteParams, 'walletAddress'>,
+  ) => Promise<BorrowQuote>
 }
 
 export type GetAuthHeaders = () => Promise<HeadersInit | undefined>
@@ -227,7 +220,10 @@ export function useBorrowProvider(
     async (params) => {
       if (!walletAddress) throw new Error('Wallet not connected')
       const headers = await resolveHeaders()
-      return borrowApi.getPrice({ ...params, walletAddress }, headers)
+      return borrowApi.getPrice(
+        { ...params, walletAddress } as BorrowPriceParams,
+        headers,
+      )
     },
     [walletAddress, resolveHeaders],
   )
@@ -237,7 +233,7 @@ export function useBorrowProvider(
       if (!walletAddress) throw new Error('Wallet not connected')
       const headers = await resolveHeaders()
       // walletAddress is derived from auth server-side; do not forward.
-      return borrowApi.getQuote(params, headers)
+      return borrowApi.getQuote(params as BorrowQuoteParams, headers)
     },
     [walletAddress, resolveHeaders],
   )

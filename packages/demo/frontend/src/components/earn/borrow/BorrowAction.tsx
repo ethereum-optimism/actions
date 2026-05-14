@@ -5,17 +5,18 @@
  * token-chip selector) + BorrowHealthCard (with live projection) +
  * CtaButton + Asset modal + Review modal + TransactionModal + Toast.
  *
- * Projection math runs client-side from `borrowMath` utilities + stub
- * prices from `borrowApi`. When PR #4 lands, swap the local projection
- * for `borrowProviderContext.getPrice()` returning a `BorrowPrice` with
- * a backend-authoritative `positionAfter`.
+ * The projection (LTV, HF, would-liquidate) is sourced from
+ * `borrowApi.getPrice` with a 250 ms debounce on amount/mode/market
+ * changes. Local stub-price math is kept only for the synchronous Max
+ * button prefill and for current-position USD display.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
   BorrowMarket,
   BorrowMarketPosition,
+  BorrowPrice,
 } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/api/borrowApi'
 import { getBlockExplorerUrl } from '@/utils/blockExplorer'
@@ -74,6 +75,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     selectedMarketPosition,
     handleMarketSelect,
     handleTransaction,
+    getPrice,
   } = useBorrowProviderContext()
   const { logActivity } = useActivityLogger()
 
@@ -151,7 +153,9 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : 0
   const amountUsd = amountNum * amountAssetPriceUsd
 
-  const projection = useMemo(() => {
+  // Local fallback projection: used while the debounced backend
+  // preview is in flight, and for instant feedback as the user types.
+  const localProjection = useMemo(() => {
     if (!activeMarket || !activeAsset || amountNum <= 0) return null
     return computeProjection(
       {
@@ -175,15 +179,81 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     maxLtv,
   ])
 
+  // Backend-driven preview from `/borrow/price`. Debounced and
+  // race-safe — outdated responses are discarded on cancel.
+  const [livePreview, setLivePreview] = useState<BorrowPrice | null>(null)
+  useEffect(() => {
+    if (!activeMarket || amountNum <= 0) {
+      setLivePreview(null)
+      return
+    }
+    let cancelled = false
+    const handle = setTimeout(async () => {
+      try {
+        const lendDepositedNum = parseFloat(
+          selectedLendPosition.depositedAmount || '0',
+        )
+        const params =
+          mode === 'borrow'
+            ? ({
+                action: 'open' as const,
+                marketId: activeMarket.marketId,
+                borrowAmount: { amount: amountNum },
+                // Fresh-open: pledge the lend balance as collateral so
+                // the backend simulates a fully collateralized open.
+                // Existing position: omit (borrow against pledged coll).
+                ...(currentCollUsd === 0 && lendDepositedNum > 0
+                  ? { collateralAmount: { amount: lendDepositedNum } }
+                  : {}),
+              } as const)
+            : ({
+                action: 'repay' as const,
+                marketId: activeMarket.marketId,
+                amount: { amount: amountNum },
+              } as const)
+        const price = await getPrice(params)
+        if (!cancelled) setLivePreview(price)
+      } catch {
+        // Network / 4xx — fall back to the local projection.
+        if (!cancelled) setLivePreview(null)
+      }
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(handle)
+    }
+  }, [
+    activeMarket,
+    amountNum,
+    currentCollUsd,
+    mode,
+    selectedLendPosition,
+    getPrice,
+  ])
+
+  const backendLtv = livePreview?.positionAfter.ltv ?? null
+  const backendHf = livePreview?.positionAfter.healthFactor ?? null
+
   const currentLtv =
     projectionCollateralUsd > 0 ? currentBorrUsd / projectionCollateralUsd : 0
   const projectedLtv =
-    projection && projection.kind === 'projected' ? projection.ltv : currentLtv
-  const wouldLiquidate = projection?.kind === 'wouldLiquidate'
+    backendLtv !== null
+      ? backendLtv
+      : localProjection && localProjection.kind === 'projected'
+        ? localProjection.ltv
+        : currentLtv
+  // Backend doesn't surface a discrete "would liquidate" flag — treat a
+  // projected LTV at or above maxLtv as the sentinel.
+  const wouldLiquidate =
+    backendLtv !== null
+      ? backendLtv >= maxLtv
+      : localProjection?.kind === 'wouldLiquidate'
   const projectedHealthFactor =
-    projection && projection.kind === 'projected'
-      ? projection.healthFactor
-      : Number.POSITIVE_INFINITY
+    backendHf !== null
+      ? backendHf
+      : localProjection && localProjection.kind === 'projected'
+        ? localProjection.healthFactor
+        : Number.POSITIVE_INFINITY
 
   // Max button: in borrow mode, prefill to the safe ceiling;
   // in repay mode, prefill the current borrowed amount.
@@ -225,9 +295,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   // or use Max (which prefills to the safe ceiling) to re-enable. Repay
   // mode is exempt since it only reduces LTV.
   const inBufferZone =
-    mode === 'borrow' &&
-    projection?.kind === 'projected' &&
-    projection.ltv > safeCeilingLtv
+    mode === 'borrow' && projectedLtv > safeCeilingLtv && !wouldLiquidate
   const canOpenReview =
     !!activeMarket &&
     !!activeAsset &&

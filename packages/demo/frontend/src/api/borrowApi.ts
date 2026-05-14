@@ -24,7 +24,6 @@ import type { Address, Hex } from 'viem'
 import type {
   Amount,
   AmountOrMax,
-  BorrowAction,
   BorrowMarket,
   BorrowMarketId,
   BorrowMarketPosition,
@@ -89,6 +88,68 @@ export interface StubCollateralParams {
 export interface StubRepayParams {
   marketId: BorrowMarketId
   amount: AmountOrMax
+}
+
+// Discriminated price/quote params matching the backend's
+// `PriceQuoteBodySchema`. `walletAddress` is honored on `/borrow/price`
+// only; `/borrow/quote` rejects it (derived from auth).
+export type BorrowPriceParams =
+  | {
+      action: 'open'
+      marketId: BorrowMarketId
+      walletAddress?: Address
+      borrowAmount: Amount
+      collateralAmount?: Amount
+    }
+  | {
+      action: 'close'
+      marketId: BorrowMarketId
+      walletAddress?: Address
+      borrowAmount: AmountOrMax
+      collateralAmount?: AmountOrMax
+    }
+  | {
+      action: 'depositCollateral'
+      marketId: BorrowMarketId
+      walletAddress?: Address
+      amount: Amount
+    }
+  | {
+      action: 'withdrawCollateral'
+      marketId: BorrowMarketId
+      walletAddress?: Address
+      amount: AmountOrMax
+    }
+  | {
+      action: 'repay'
+      marketId: BorrowMarketId
+      walletAddress?: Address
+      amount: AmountOrMax
+    }
+
+export type BorrowQuoteParams = BorrowPriceParams
+
+function buildPriceBody(params: BorrowPriceParams): Record<string, unknown> {
+  const base = {
+    action: params.action,
+    marketId: params.marketId,
+    ...(params.walletAddress ? { walletAddress: params.walletAddress } : {}),
+  }
+  switch (params.action) {
+    case 'open':
+    case 'close':
+      return {
+        ...base,
+        borrowAmount: params.borrowAmount,
+        ...(params.collateralAmount
+          ? { collateralAmount: params.collateralAmount }
+          : {}),
+      }
+    case 'depositCollateral':
+    case 'withdrawCollateral':
+    case 'repay':
+      return { ...base, amount: params.amount }
+  }
 }
 
 // ---------- Serialization helpers ----------
@@ -268,26 +329,14 @@ export class BorrowApiClient {
   }
 
   // `/borrow/price` is a public route; auth headers are not required
-  // but are forwarded when provided for parity with `actionsApi`.
+  // but are forwarded when provided for parity with `actionsApi`. The
+  // backend's body schema is a strict discriminated union keyed on
+  // `action`, so the shape we ship must match the variant exactly.
   async getPrice(
-    params: {
-      action: BorrowAction
-      marketId: BorrowMarketId
-      walletAddress: Address
-      borrowAmount?: AmountOrMax
-      collateralAmount?: AmountOrMax
-    },
+    params: BorrowPriceParams,
     headers: HeadersInit = {},
   ): Promise<BorrowPrice> {
-    const body = serializeBigInts({
-      action: params.action,
-      marketId: params.marketId,
-      walletAddress: params.walletAddress,
-      ...(params.borrowAmount ? { borrowAmount: params.borrowAmount } : {}),
-      ...(params.collateralAmount
-        ? { collateralAmount: params.collateralAmount }
-        : {}),
-    })
+    const body = serializeBigInts(buildPriceBody(params))
     const { result } = await this.request<{ result: Serialized<BorrowPrice> }>(
       '/borrow/price',
       { method: 'POST', body: JSON.stringify(body), headers },
@@ -297,22 +346,10 @@ export class BorrowApiClient {
 
   // `walletAddress` is rejected by the backend; derived from auth.
   async getQuote(
-    params: {
-      action: BorrowAction
-      marketId: BorrowMarketId
-      borrowAmount?: AmountOrMax
-      collateralAmount?: AmountOrMax
-    },
+    params: BorrowQuoteParams,
     headers: HeadersInit = {},
   ): Promise<BorrowQuote> {
-    const body = serializeBigInts({
-      action: params.action,
-      marketId: params.marketId,
-      ...(params.borrowAmount ? { borrowAmount: params.borrowAmount } : {}),
-      ...(params.collateralAmount
-        ? { collateralAmount: params.collateralAmount }
-        : {}),
-    })
+    const body = serializeBigInts(buildPriceBody(params))
     const { result } = await this.request<{ result: Serialized<BorrowQuote> }>(
       '/borrow/quote',
       { method: 'POST', body: JSON.stringify(body), headers },
