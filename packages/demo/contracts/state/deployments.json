@@ -6,7 +6,12 @@
     },
     "morpho": {
       "vault": "0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1",
-      "oracle": null
+      "oracle": null,
+      "borrow": {
+        "mockFeed": null,
+        "oracle": null,
+        "marketId": null
+      }
     },
     "uniswap": {
       "poolId": "0xf55820a35859dec5c7cf136d711b0ec06e381edcd1f1a5343b2dac0af7ba3df3"

@@ -1,0 +1,17 @@
+{
+  "lib/forge-std": {
+    "rev": "60acb7aaadcce2d68e52986a0a66fe79f07d138f"
+  },
+  "lib/morpho-blue-oracles": {
+    "tag": {
+      "name": "v2.0.0",
+      "rev": "07a9a6988b0e1b316ac2fa97ec62ad485fbd0041"
+    }
+  },
+  "lib/solady": {
+    "rev": "acd959aa4bd04720d640bf4e6a5c71037510cc4b"
+  },
+  "lib/v4-periphery": {
+    "rev": "3779387e5d296f39df543d23524b050f89a62917"
+  }
+}
