@@ -1,6 +1,7 @@
 import { ActionsError, type Asset } from '@eth-optimism/actions-sdk'
 import { useContext, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { parseUnits } from 'viem'
 import TransactionModal from './TransactionModal'
 import { Toast } from './Toast'
 import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
@@ -29,6 +30,7 @@ interface ActionProps {
   isLoadingBalance: boolean
   isMintingAsset: boolean
   depositedAmount: string | null
+  directDepositedAmount?: string | null
   assetSymbol: string
   /** Full Asset object (when available). Required for the collateral-aware
    * withdraw flow that shows a Health card when this asset is securing a
@@ -38,6 +40,16 @@ interface ActionProps {
   onTransaction: (
     mode: 'lend' | 'withdraw',
     amount: number,
+    options?: {
+      releaseCollateral?: {
+        marketId: {
+          kind: 'morpho-blue'
+          marketId: string
+          chainId: number
+        }
+        amountRaw: bigint
+      }
+    },
   ) => Promise<{
     transactionHash?: string
     blockExplorerUrl?: string
@@ -82,6 +94,7 @@ export function Action({
   isLoadingBalance,
   isMintingAsset,
   depositedAmount,
+  directDepositedAmount,
   assetSymbol,
   asset,
   onMintAsset,
@@ -135,21 +148,8 @@ export function Action({
   const balanceValue = parseFloat(assetBalance || '0')
   const needsMint = balanceValue <= 0 && mode === 'lend'
   const amountValue = parseFloat(effectiveAmount) || 0
-  // Per PR #4's ASK-B1: when the lent asset is securing a borrow, Max
-  // must subtract the pledged collateral so users can't queue a withdraw
-  // that would liquidate. SDK has not yet enforced this server-side; the
-  // frontend is the only guard.
-  const pledgedCollateralAmount = pledgedPosition
-    ? parseFloat(pledgedPosition.collateralAmountFormatted || '0')
-    : 0
   const rawMaxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
-  const maxAmount =
-    mode === 'withdraw' && pledgedCollateralAmount > 0
-      ? Math.max(
-          0,
-          parseFloat(rawMaxAmount) - pledgedCollateralAmount,
-        ).toString()
-      : rawMaxAmount
+  const maxAmount = rawMaxAmount
   const hasDeposit = parseFloat(depositedAmount || '0') > 0
 
   // Disable the withdraw CTA if the projected position enters the
@@ -229,6 +229,32 @@ export function Action({
       : Number.POSITIVE_INFINITY
   const withdrawWouldLiquidate =
     collateralProjection?.projection.kind === 'wouldLiquidate'
+  const directDepositedValue = parseFloat(directDepositedAmount || '0')
+
+  const releaseCollateralAmountRaw = useMemo(() => {
+    if (
+      mode !== 'withdraw' ||
+      !pledgedPosition ||
+      !asset ||
+      amountValue <= directDepositedValue
+    ) {
+      return null
+    }
+
+    const collateralAmountRaw = parseUnits(
+      (amountValue - directDepositedValue).toFixed(asset.metadata.decimals),
+      asset.metadata.decimals,
+    )
+    if (collateralAmountRaw <= 0n || pledgedPosition.collateralAmount <= 0n) {
+      return null
+    }
+
+    const numerator =
+      collateralAmountRaw * pledgedPosition.collateralShares +
+      pledgedPosition.collateralAmount -
+      1n
+    return numerator / pledgedPosition.collateralAmount
+  }, [amountValue, asset, directDepositedValue, mode, pledgedPosition])
 
   const handleMaxClick = () => {
     let value = parseFloat(maxAmount)
@@ -259,7 +285,16 @@ export function Action({
     setModalStatus('loading')
 
     try {
-      await onTransaction(mode, amountValue)
+      await onTransaction(mode, amountValue, {
+        ...(mode === 'withdraw' && releaseCollateralAmountRaw && pledgedPosition
+          ? {
+              releaseCollateral: {
+                marketId: pledgedPosition.marketId,
+                amountRaw: releaseCollateralAmountRaw,
+              },
+            }
+          : {}),
+      })
       setModalOpen(false)
       setToast({
         visible: true,

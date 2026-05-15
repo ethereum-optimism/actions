@@ -24,6 +24,12 @@ function buildPosition(
     assetLogo: 'https://example.test/usdc.svg',
     apy: 0.045,
     depositedAmount: '100.00',
+    directDepositedAmount: '100.00',
+    depositedShares: '100.00',
+    depositedSharesRaw: 100000000n,
+    directDepositedShares: '100.00',
+    directDepositedSharesRaw: 100000000n,
+    pledgedCollateralAmount: null,
     isLoadingApy: false,
     isLoadingPosition: false,
     marketId: {

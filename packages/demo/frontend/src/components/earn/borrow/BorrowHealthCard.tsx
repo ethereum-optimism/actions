@@ -61,10 +61,13 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
   const projectionTier = computeHealthTier(projectedBarValue)
 
   const tierColors = TIER_COLORS[projectionTier]
+  const currentTierColors = TIER_COLORS[computeHealthTier(currentBarValue)]
 
   // Bar fill in [0, 100] %
   const currentBarPct = currentBarValue * 100
-  const projectedBarPct = projectedBarValue * 100
+  const projectedBarPct = wouldLiquidate ? 100 : projectedBarValue * 100
+  const showProjection = projectedLtv !== currentLtv
+  const isImproving = projectedBarPct < currentBarPct
 
   // Numeric readings show RAW LTV % (not the normalized bar fill), so
   // users see their actual loan-to-value. At bar=100% the reading
@@ -76,7 +79,7 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
     <div
       style={{
         backgroundColor: '#FFFFFF',
-        border: '1px solid #E0E2EB',
+        border: `1px solid ${wouldLiquidate ? '#FCA5A5' : '#E0E2EB'}`,
         borderRadius: '16px',
         padding: '20px',
         display: 'flex',
@@ -97,64 +100,86 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
         <HealthReading
           currentLtvPct={currentLtvPct}
           projectedLtvPct={projectedLtvPct}
-          showProjection={projectedLtv !== currentLtv}
+          showProjection={showProjection}
           wouldLiquidate={wouldLiquidate}
         />
       </div>
 
       {/* Bar */}
       <div
+        data-testid="borrow-health-bar-shell"
         style={{
-          height: '6px',
           width: '100%',
-          backgroundColor: '#E0E2EB',
           borderRadius: '999px',
-          overflow: 'hidden',
-          position: 'relative',
+          padding: 0,
+          boxShadow: wouldLiquidate
+            ? '0 0 10px rgba(239, 68, 68, 0.3)'
+            : 'none',
+          animation: wouldLiquidate
+            ? 'borrowHealthLiquidationGlow 2.4s ease-in-out infinite'
+            : 'none',
         }}
       >
-        {/* Current fill */}
         <div
+          data-testid="borrow-health-bar-track"
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            height: '100%',
-            width: `${currentBarPct}%`,
-            backgroundColor:
-              TIER_COLORS[computeHealthTier(currentBarValue)].fill,
-            transition: 'width 200ms ease-in-out',
+            height: '6px',
+            width: '100%',
+            backgroundColor: wouldLiquidate ? '#FEE2E2' : '#E0E2EB',
+            borderRadius: '999px',
+            overflow: 'hidden',
+            position: 'relative',
           }}
-        />
-        {/* Projected overlay (lighter, between current and projected) */}
-        {projectedBarPct > currentBarPct && (
+        >
+          {/* Current fill */}
           <div
+            data-testid="borrow-health-bar-current"
             style={{
               position: 'absolute',
               top: 0,
-              left: `${currentBarPct}%`,
+              left: 0,
               height: '100%',
-              width: `${projectedBarPct - currentBarPct}%`,
-              backgroundColor: tierColors.fill,
-              opacity: 0.4,
-              transition: 'all 200ms ease-in-out',
+              width: `${wouldLiquidate ? 100 : showProjection ? projectedBarPct : currentBarPct}%`,
+              backgroundColor: wouldLiquidate ? '#EF4444' : tierColors.fill,
+              transition: 'width 200ms ease-in-out',
             }}
           />
-        )}
+          {/* Delta segment: shows how far the bar is moving in either direction. */}
+          {!wouldLiquidate &&
+            showProjection &&
+            projectedBarPct !== currentBarPct && (
+              <div
+                data-testid="borrow-health-bar-projection"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: `${Math.min(currentBarPct, projectedBarPct)}%`,
+                  height: '100%',
+                  width: `${Math.abs(projectedBarPct - currentBarPct)}%`,
+                  backgroundColor: isImproving
+                    ? currentTierColors.fill
+                    : tierColors.fill,
+                  opacity: isImproving ? 0.22 : 0.4,
+                  transition: 'all 200ms ease-in-out',
+                }}
+              />
+            )}
+        </div>
       </div>
 
       {/* Canonical Aave-style HF (secondary label) */}
-      {!wouldLiquidate && Number.isFinite(projectedHealthFactor) && (
-        <div
-          style={{
-            color: '#9195A6',
-            fontSize: '12px',
-            fontFamily: 'Inter',
-          }}
-        >
-          Health Factor: {projectedHealthFactor.toFixed(2)}
-        </div>
-      )}
+      <div
+        style={{
+          color: '#9195A6',
+          fontSize: '12px',
+          fontFamily: 'Inter',
+        }}
+      >
+        Health Factor:{' '}
+        {Number.isFinite(projectedHealthFactor)
+          ? projectedHealthFactor.toFixed(2)
+          : '0.00'}
+      </div>
 
       {/* Stats rows */}
       <DetailRow
@@ -185,6 +210,18 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
           </span>
         }
       />
+      <style>
+        {`
+          @keyframes borrowHealthLiquidationGlow {
+            0%, 100% {
+              box-shadow: 0 0 10px rgba(239, 68, 68, 0.28);
+            }
+            50% {
+              box-shadow: 0 0 18px rgba(239, 68, 68, 0.48);
+            }
+          }
+        `}
+      </style>
     </div>
   )
 })

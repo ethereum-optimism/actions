@@ -21,7 +21,7 @@ describe('BorrowHealthCard', () => {
         projectedHealthFactor={Number.POSITIVE_INFINITY}
       />,
     )
-    expect(screen.getByText(/Health/i)).toBeInTheDocument()
+    expect(screen.getByText(/^Health$/i)).toBeInTheDocument()
     expect(screen.getByText('Liquidation at')).toBeInTheDocument()
     expect(screen.getByText('86.0%')).toBeInTheDocument()
     expect(screen.getByText('Buffer')).toBeInTheDocument()
@@ -75,10 +75,32 @@ describe('BorrowHealthCard', () => {
         {...baseProps}
         currentLtv={0.3}
         projectedLtv={0.3}
-        projectedHealthFactor={Number.POSITIVE_INFINITY}
+        projectedHealthFactor={0.91}
         wouldLiquidate
       />,
     )
     expect(screen.getByText(/Would liquidate/i)).toBeInTheDocument()
+    expect(screen.getByText(/Health Factor: 0\.91/)).toBeInTheDocument()
+    expect(screen.getByTestId('borrow-health-bar-current')).toHaveStyle({
+      width: '100%',
+      backgroundColor: 'rgb(239, 68, 68)',
+    })
+  })
+
+  it('shrinks the visible bar on repay-style improvement', () => {
+    render(
+      <BorrowHealthCard
+        {...baseProps}
+        currentLtv={0.447}
+        projectedLtv={0.045}
+        projectedHealthFactor={19.11}
+      />,
+    )
+    expect(screen.getByTestId('borrow-health-bar-current')).toHaveStyle({
+      width: '5.232558139534883%',
+    })
+    expect(screen.getByTestId('borrow-health-bar-projection')).toHaveStyle({
+      width: '46.74418604651163%',
+    })
   })
 })

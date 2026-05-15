@@ -9,6 +9,7 @@ import {
   type Address,
   encodeFunctionData,
   erc20Abi,
+  erc4626Abi,
   formatUnits,
   type Hex,
 } from 'viem'
@@ -18,6 +19,7 @@ import {
   getMorphoContracts,
   getSupportedChainIds as getMorphoSupportedChainIds,
 } from '@/actions/shared/morpho/contracts.js'
+import { resolveUnderlyingDecimals } from '@/actions/shared/morpho/decimals.js'
 import {
   computeMorphoMarketId,
   verifyMorphoMarketId,
@@ -53,6 +55,12 @@ import {
 
 /** Wad denominator for converting Morpho's 1e18-scaled values to fractions. */
 const WAD = 10n ** 18n
+
+interface VaultSnapshot {
+  totalAssets: bigint
+  totalShares: bigint
+  underlyingDecimals: number
+}
 
 /**
  * Morpho Blue borrow provider.
@@ -101,17 +109,17 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
     const config = this.requireAllowlistMarket(params.marketId)
-    const accrualPosition = await this.fetchPosition(
+    const { position, vault } = await this.fetchPosition(
       config,
       params.walletAddress,
     )
-    return this.adaptPosition(config, accrualPosition)
+    return this.adaptPosition(config, position, vault)
   }
 
   protected async _openPosition(
     params: BorrowOpenPositionInternalParams,
   ): Promise<BorrowQuote> {
-    const { current, allowance } = await this.fetchStateWithAllowance(
+    const { current, allowance, vault } = await this.fetchStateWithAllowance(
       params.market,
       params.walletAddress,
       params.market.marketParams.collateralToken,
@@ -164,13 +172,14 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         collateralAmountRaw: params.collateralAmountWei,
       },
       approvalsSkipped: approvalTx === undefined,
+      vault,
     })
   }
 
   protected async _closePosition(
     params: BorrowClosePositionInternalParams,
   ): Promise<BorrowQuote> {
-    const { current, allowance } = await this.fetchStateWithAllowance(
+    const { current, allowance, vault } = await this.fetchStateWithAllowance(
       params.market,
       params.walletAddress,
       params.market.marketParams.loanToken,
@@ -244,13 +253,14 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
           withdrawCollateralWei > 0n ? withdrawCollateralWei : undefined,
       },
       approvalsSkipped: approvalTx === undefined,
+      vault,
     })
   }
 
   protected async _depositCollateral(
     params: BorrowDepositCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const { current, allowance } = await this.fetchStateWithAllowance(
+    const { current, allowance, vault } = await this.fetchStateWithAllowance(
       params.market,
       params.walletAddress,
       params.market.marketParams.collateralToken,
@@ -281,13 +291,14 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       transactions: txs,
       echoAmounts: { collateralAmountRaw: params.amountWei },
       approvalsSkipped: approvalTx === undefined,
+      vault,
     })
   }
 
   protected async _withdrawCollateral(
     params: BorrowWithdrawCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const current = await this.fetchPosition(
+    const { position: current, vault } = await this.fetchPosition(
       params.market,
       params.walletAddress,
     )
@@ -311,13 +322,14 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       echoAmounts: { collateralAmountRaw: amountWei },
       // No approval ever required for withdrawals.
       approvalsSkipped: true,
+      vault,
     })
   }
 
   protected async _repay(
     params: BorrowRepayInternalParams,
   ): Promise<BorrowQuote> {
-    const { current, allowance } = await this.fetchStateWithAllowance(
+    const { current, allowance, vault } = await this.fetchStateWithAllowance(
       params.market,
       params.walletAddress,
       params.market.marketParams.loanToken,
@@ -366,6 +378,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
           repaySharesWei > 0n ? current.borrowAssets : repayAssetsWei,
       },
       approvalsSkipped: approvalTx === undefined,
+      vault,
     })
   }
 
@@ -458,61 +471,19 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   private async fetchPosition(
     config: BorrowMarketConfig,
     user: Address,
-  ): Promise<AccrualPosition> {
+  ): Promise<{ position: AccrualPosition; vault: VaultSnapshot }> {
     const client = this.chainManager.getPublicClient(config.chainId)
     const morphoBlue = requireMorphoBlueAddress(config.chainId)
     const id = config.marketId as Hex
-    const [positionTuple, marketTuple, price] = await client.multicall({
-      allowFailure: false,
-      contracts: [
-        {
-          address: morphoBlue,
-          abi: blueAbi,
-          functionName: 'position',
-          args: [id, user],
-        },
-        {
-          address: morphoBlue,
-          abi: blueAbi,
-          functionName: 'market',
-          args: [id],
-        },
-        {
-          address: config.marketParams.oracle,
-          abi: blueOracleAbi,
-          functionName: 'price',
-          args: [],
-        },
-      ],
+    const underlyingDecimals = await resolveUnderlyingDecimals({
+      publicClient: client,
+      vaultAddress: config.marketParams.collateralToken,
+      allowlistDecimals:
+        config.collateralAsset.metadata.decimals === 18
+          ? config.collateralAsset.metadata.decimals
+          : undefined,
     })
-
-    const market = buildMarket(config, marketTuple, price)
-    const [supplyShares, borrowShares, collateral] = positionTuple
-    return new AccrualPosition(
-      {
-        user,
-        supplyShares,
-        borrowShares,
-        collateral,
-      },
-      market,
-    )
-  }
-
-  /**
-   * Fetch `AccrualPosition` + the user's ERC-20 allowance for the supplied
-   * token spender (Morpho Blue) in a single multicall. Used by every
-   * write-side hook that needs an approval-check pre-flight.
-   */
-  private async fetchStateWithAllowance(
-    config: BorrowMarketConfig,
-    user: Address,
-    token: Address,
-  ): Promise<{ current: AccrualPosition; allowance: bigint }> {
-    const client = this.chainManager.getPublicClient(config.chainId)
-    const morphoBlue = requireMorphoBlueAddress(config.chainId)
-    const id = config.marketId as Hex
-    const [positionTuple, marketTuple, price, allowance] =
+    const [positionTuple, marketTuple, price, totalAssets, totalShares] =
       await client.multicall({
         allowFailure: false,
         contracts: [
@@ -535,13 +506,113 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
             args: [],
           },
           {
-            address: token,
+            address: config.marketParams.collateralToken,
+            abi: erc4626Abi,
+            functionName: 'totalAssets',
+            args: [],
+          },
+          {
+            address: config.marketParams.collateralToken,
             abi: erc20Abi,
-            functionName: 'allowance',
-            args: [user, morphoBlue],
+            functionName: 'totalSupply',
+            args: [],
           },
         ],
       })
+
+    const market = buildMarket(config, marketTuple, price)
+    const [supplyShares, borrowShares, collateral] = positionTuple
+    return {
+      position: new AccrualPosition(
+        {
+          user,
+          supplyShares,
+          borrowShares,
+          collateral,
+        },
+        market,
+      ),
+      vault: {
+        totalAssets: totalAssets ?? market.totalSupplyAssets,
+        totalShares: totalShares ?? market.totalSupplyShares,
+        underlyingDecimals,
+      },
+    }
+  }
+
+  /**
+   * Fetch `AccrualPosition` + the user's ERC-20 allowance for the supplied
+   * token spender (Morpho Blue) in a single multicall. Used by every
+   * write-side hook that needs an approval-check pre-flight.
+   */
+  private async fetchStateWithAllowance(
+    config: BorrowMarketConfig,
+    user: Address,
+    token: Address,
+  ): Promise<{
+    current: AccrualPosition
+    allowance: bigint
+    vault: VaultSnapshot
+  }> {
+    const client = this.chainManager.getPublicClient(config.chainId)
+    const morphoBlue = requireMorphoBlueAddress(config.chainId)
+    const id = config.marketId as Hex
+    const underlyingDecimals = await resolveUnderlyingDecimals({
+      publicClient: client,
+      vaultAddress: config.marketParams.collateralToken,
+      allowlistDecimals:
+        config.collateralAsset.metadata.decimals === 18
+          ? config.collateralAsset.metadata.decimals
+          : undefined,
+    })
+    const [
+      positionTuple,
+      marketTuple,
+      price,
+      allowance,
+      totalAssets,
+      totalShares,
+    ] = await client.multicall({
+      allowFailure: false,
+      contracts: [
+        {
+          address: morphoBlue,
+          abi: blueAbi,
+          functionName: 'position',
+          args: [id, user],
+        },
+        {
+          address: morphoBlue,
+          abi: blueAbi,
+          functionName: 'market',
+          args: [id],
+        },
+        {
+          address: config.marketParams.oracle,
+          abi: blueOracleAbi,
+          functionName: 'price',
+          args: [],
+        },
+        {
+          address: token,
+          abi: erc20Abi,
+          functionName: 'allowance',
+          args: [user, morphoBlue],
+        },
+        {
+          address: config.marketParams.collateralToken,
+          abi: erc4626Abi,
+          functionName: 'totalAssets',
+          args: [],
+        },
+        {
+          address: config.marketParams.collateralToken,
+          abi: erc20Abi,
+          functionName: 'totalSupply',
+          args: [],
+        },
+      ],
+    })
 
     const market = buildMarket(config, marketTuple, price)
     const [supplyShares, borrowShares, collateral] = positionTuple
@@ -554,7 +625,15 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       },
       market,
     )
-    return { current, allowance }
+    return {
+      current,
+      allowance,
+      vault: {
+        totalAssets: totalAssets ?? market.totalSupplyAssets,
+        totalShares: totalShares ?? market.totalSupplyShares,
+        underlyingDecimals,
+      },
+    }
   }
 
   private buildCollateralApproval(
@@ -680,6 +759,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       collateralAmountRaw?: bigint
     }
     approvalsSkipped: boolean
+    vault: VaultSnapshot
   }): BorrowQuote {
     const { action, params, transactions } = args
     const config = params.market
@@ -697,9 +777,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       borrowAmountRaw: args.echoAmounts.borrowAmountRaw,
       collateralAmountRaw: args.echoAmounts.collateralAmountRaw,
       positionBefore: hasBefore
-        ? this.adaptPosition(config, args.positionBefore)
+        ? this.adaptPosition(config, args.positionBefore, args.vault)
         : null,
-      positionAfter: this.adaptPosition(config, args.positionAfter),
+      positionAfter: this.adaptPosition(config, args.positionAfter, args.vault),
       fees: {
         borrowApy: wadToNumber(args.positionAfter.market.borrowApy),
         liquidationBonus: liquidationBonusFromIncentive(
@@ -751,11 +831,17 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   private adaptPosition(
     config: BorrowMarketConfig,
     position: AccrualPosition,
+    vault: VaultSnapshot,
   ): BorrowMarketPosition {
     const hasDebt = position.borrowAssets > 0n
     const ltvFraction = hasDebt ? toFractionOrNull(position.ltv) : null
     const hfFraction = hasDebt ? toFractionOrNull(position.healthFactor) : null
     const liquidationPrice = position.liquidationPrice ?? 0n
+    const collateralAssets = sharesToAssetsDown(
+      position.collateral,
+      vault.totalAssets,
+      vault.totalShares,
+    )
     return {
       marketId: {
         kind: config.kind,
@@ -763,10 +849,12 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         chainId: config.chainId,
       },
       collateralAsset: config.collateralAsset,
-      collateralAmount: position.collateral,
+      collateralShares: position.collateral,
+      collateralSharesFormatted: formatUnits(position.collateral, 18),
+      collateralAmount: collateralAssets,
       collateralAmountFormatted: formatUnits(
-        position.collateral,
-        config.collateralAsset.metadata.decimals,
+        collateralAssets,
+        vault.underlyingDecimals,
       ),
       borrowAsset: config.borrowAsset,
       borrowAmount: position.borrowAssets,
@@ -874,6 +962,15 @@ function buildMarket(
     fee,
     price,
   })
+}
+
+function sharesToAssetsDown(
+  shares: bigint,
+  totalAssets: bigint,
+  totalShares: bigint,
+): bigint {
+  if (shares === 0n || totalAssets === 0n || totalShares === 0n) return 0n
+  return (shares * totalAssets) / totalShares
 }
 
 export type { MarketId, MorphoMarketParams }

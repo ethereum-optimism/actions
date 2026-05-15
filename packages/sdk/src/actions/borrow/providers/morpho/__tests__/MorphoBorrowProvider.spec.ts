@@ -161,6 +161,7 @@ describe('MorphoBorrowProvider — _getPosition', () => {
       marketId: market,
       walletAddress: '0x000000000000000000000000000000000000beef',
     })
+    expect(position.collateralShares).toBe(collateralWad)
     expect(position.collateralAmount).toBe(collateralWad)
     expect(position.borrowAmount).toBe(0n)
     expect(position.healthFactor).toBeNull()
@@ -179,6 +180,7 @@ describe('MorphoBorrowProvider — _getPosition', () => {
       marketId: market,
       walletAddress: '0x000000000000000000000000000000000000beef',
     })
+    expect(position.collateralShares).toBe(collateralWad)
     expect(position.collateralAmount).toBe(collateralWad)
     expect(position.borrowAmount).toBeGreaterThan(0n)
     expect(position.healthFactor).not.toBeNull()

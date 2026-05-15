@@ -68,6 +68,11 @@ function lendPositionUsd(position: MarketPosition): number {
   return parseFloat(position.depositedAmount || '0') * price
 }
 
+function directLendPositionUsd(position: MarketPosition): number {
+  const price = stubPriceUsd(position.asset.metadata.symbol)
+  return parseFloat(position.directDepositedAmount || '0') * price
+}
+
 export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const {
     markets,
@@ -139,13 +144,17 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const { collateralValueUsd: currentCollUsd, borrowValueUsd: currentBorrUsd } =
     positionUsd(selectedMarketPosition)
   const lendCollateralUsd = lendPositionUsd(selectedLendPosition)
+  const additionalLendCollateralUsd =
+    directLendPositionUsd(selectedLendPosition)
 
   // For a fresh open (no existing position), collateral value is the
   // lend-position balance. After open, the user's dUSDC moves into the
   // borrow market; the lend balance shrinks accordingly. The demo treats
   // the full lend balance as the available collateral.
   const projectionCollateralUsd =
-    currentCollUsd > 0 ? currentCollUsd : lendCollateralUsd
+    currentCollUsd > 0
+      ? currentCollUsd + additionalLendCollateralUsd
+      : lendCollateralUsd
 
   const amountNum = parseFloat(amount) || 0
   const amountAssetPriceUsd = activeAsset
@@ -190,20 +199,31 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     let cancelled = false
     const handle = setTimeout(async () => {
       try {
-        const lendDepositedNum = parseFloat(
-          selectedLendPosition.depositedAmount || '0',
-        )
+        const lendCollateralSharesRaw = selectedLendPosition.depositedSharesRaw
+        const directCollateralSharesRaw =
+          selectedLendPosition.directDepositedSharesRaw
         const params =
           mode === 'borrow'
             ? ({
                 action: 'open' as const,
                 marketId: activeMarket.marketId,
                 borrowAmount: { amount: amountNum },
-                // Fresh-open: pledge the lend balance as collateral so
-                // the backend simulates a fully collateralized open.
-                // Existing position: omit (borrow against pledged coll).
-                ...(currentCollUsd === 0 && lendDepositedNum > 0
-                  ? { collateralAmount: { amount: lendDepositedNum } }
+                // Fresh-open: pledge the user's full vault-share balance.
+                // Existing position: pledge only newly added direct lend shares.
+                ...((currentCollUsd === 0 &&
+                  lendCollateralSharesRaw !== null &&
+                  lendCollateralSharesRaw > 0n) ||
+                (currentCollUsd > 0 &&
+                  directCollateralSharesRaw !== null &&
+                  directCollateralSharesRaw > 0n)
+                  ? {
+                      collateralAmount: {
+                        amountRaw:
+                          currentCollUsd === 0
+                            ? lendCollateralSharesRaw!
+                            : directCollateralSharesRaw!,
+                      },
+                    }
                   : {}),
               } as const)
             : ({
@@ -323,12 +343,29 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     try {
       let receipt
       if (mode === 'borrow') {
+        const collateralSharesRaw = selectedLendPosition.depositedSharesRaw
+        const topUpCollateralSharesRaw =
+          currentCollUsd > 0
+            ? selectedLendPosition.directDepositedSharesRaw
+            : collateralSharesRaw
+        if (
+          currentCollUsd === 0 &&
+          (collateralSharesRaw === null || collateralSharesRaw <= 0n)
+        ) {
+          throw new Error(
+            'No collateral shares available for this lend position',
+          )
+        }
         receipt = await handleTransaction('open', {
           marketId: activeMarket.marketId,
           borrowAmount: { amount: amountNum },
-          collateralAmount: {
-            amount: parseFloat(selectedLendPosition.depositedAmount || '0'),
-          },
+          ...(topUpCollateralSharesRaw !== null && topUpCollateralSharesRaw > 0n
+            ? {
+                collateralAmount: {
+                  amountRaw: topUpCollateralSharesRaw,
+                },
+              }
+            : {}),
           collateralAsset: undefined,
         })
       } else {

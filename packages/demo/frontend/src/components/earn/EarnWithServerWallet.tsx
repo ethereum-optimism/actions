@@ -5,6 +5,8 @@ import Earn from './Earn'
 import type { WalletProviderConfig } from '@/constants/walletProviders'
 import { actionsApi } from '@/api/actionsApi'
 import type { EarnOperations } from '@/hooks/useLendProvider'
+import type { BorrowOperations } from '@/hooks/useBorrowProvider'
+import { borrowApi } from '@/api/borrowApi'
 
 type AuthHeaders = { Authorization: string } | undefined
 
@@ -85,6 +87,51 @@ function buildMintOperation(
   }
 }
 
+function buildBorrowOperations(
+  getAuthHeaders: () => Promise<AuthHeaders>,
+): BorrowOperations {
+  return {
+    getMarkets: async () =>
+      borrowApi.getMarkets((await getAuthHeaders()) ?? {}),
+    getPosition: async (walletAddress, marketId) =>
+      borrowApi.getPosition(
+        walletAddress,
+        marketId,
+        (await getAuthHeaders()) ?? {},
+      ),
+    getPrice: async (params) =>
+      borrowApi.getPrice(params, (await getAuthHeaders()) ?? {}),
+    getQuote: async (params) =>
+      borrowApi.getQuote(params, (await getAuthHeaders()) ?? {}),
+    openPosition: async (walletAddress, params) =>
+      borrowApi.openPosition(
+        walletAddress,
+        params,
+        (await getAuthHeaders()) ?? {},
+      ),
+    closePosition: async (walletAddress, params) =>
+      borrowApi.closePosition(
+        walletAddress,
+        params,
+        (await getAuthHeaders()) ?? {},
+      ),
+    depositCollateral: async (walletAddress, params) =>
+      borrowApi.depositCollateral(
+        walletAddress,
+        params,
+        (await getAuthHeaders()) ?? {},
+      ),
+    withdrawCollateral: async (walletAddress, params) =>
+      borrowApi.withdrawCollateral(
+        walletAddress,
+        params,
+        (await getAuthHeaders()) ?? {},
+      ),
+    repay: async (walletAddress, params) =>
+      borrowApi.repay(walletAddress, params, (await getAuthHeaders()) ?? {}),
+  }
+}
+
 interface EarnWithServerWalletProps {
   ready: boolean
   logout: () => Promise<void>
@@ -108,6 +155,10 @@ export function EarnWithServerWallet({
     }),
     [getAuthHeaders, walletAddress],
   )
+  const borrowOperations = useMemo(
+    () => buildBorrowOperations(getAuthHeaders),
+    [getAuthHeaders],
+  )
 
   const fetchWalletAddress = useCallback(async () => {
     const { address } = await actionsApi.getWallet(await getAuthHeaders())
@@ -126,7 +177,7 @@ export function EarnWithServerWallet({
       walletAddress={walletAddress}
       providerConfig={selectedProvider}
       logPrefix="[EarnWithServerWallet]"
-      getAuthHeaders={getAuthHeaders}
+      borrowOperations={borrowOperations}
     />
   )
 }

@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import type { Address } from 'viem'
 import {
   useBorrowProvider,
-  type GetAuthHeaders,
+  type BorrowOperations,
   type UseBorrowProviderReturn,
 } from '@/hooks/useBorrowProvider'
 
@@ -19,14 +19,14 @@ export const BorrowProviderContext =
 
 export function BorrowProviderContextProvider({
   walletAddress,
-  getAuthHeaders,
+  operations,
   children,
 }: {
   walletAddress: Address | null
-  getAuthHeaders?: GetAuthHeaders
+  operations: BorrowOperations
   children: ReactNode
 }) {
-  const value = useBorrowProvider(walletAddress, getAuthHeaders)
+  const value = useBorrowProvider(walletAddress, operations)
   const memoized = useMemo(() => value, [value])
   return (
     <BorrowProviderContext.Provider value={memoized}>

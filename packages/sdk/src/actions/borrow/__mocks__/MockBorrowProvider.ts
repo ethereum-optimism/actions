@@ -268,6 +268,8 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         chainId: config.chainId,
       },
       collateralAsset: config.collateralAsset,
+      collateralShares: 0n,
+      collateralSharesFormatted: '0',
       collateralAmount: 0n,
       collateralAmountFormatted: '0',
       borrowAsset: config.borrowAsset,

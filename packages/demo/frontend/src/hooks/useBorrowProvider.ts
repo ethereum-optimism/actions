@@ -14,25 +14,30 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Address } from 'viem'
 import type {
   BorrowAction,
   BorrowMarket,
+  BorrowMarketId,
   BorrowMarketPosition,
   BorrowPrice,
   BorrowQuote,
   BorrowReceipt,
 } from '@eth-optimism/actions-sdk'
-import {
-  borrowApi,
-  type BorrowPriceParams,
-  type BorrowQuoteParams,
-  type StubCloseParams,
-  type StubCollateralParams,
-  type StubOpenParams,
-  type StubRepayParams,
+import type {
+  BorrowPriceParams,
+  BorrowQuoteParams,
+  StubCloseParams,
+  StubCollateralParams,
+  StubOpenParams,
+  StubRepayParams,
 } from '@/api/borrowApi'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
+import {
+  dispatchEarnPositionsChanged,
+  EARN_POSITIONS_CHANGED_EVENT,
+} from '@/utils/earnSync'
 
 export type BorrowMode = 'borrow' | 'repay'
 
@@ -42,6 +47,36 @@ export interface BorrowOperationParams {
   depositCollateral: StubCollateralParams
   withdrawCollateral: StubCollateralParams
   repay: StubRepayParams
+}
+
+export interface BorrowOperations {
+  getMarkets: () => Promise<readonly BorrowMarket[]>
+  getPosition: (
+    walletAddress: Address,
+    marketId: BorrowMarketId,
+  ) => Promise<BorrowMarketPosition | null>
+  getPrice: (params: BorrowPriceParams) => Promise<BorrowPrice>
+  getQuote: (params: BorrowQuoteParams) => Promise<BorrowQuote>
+  openPosition: (
+    walletAddress: Address,
+    params: StubOpenParams,
+  ) => Promise<BorrowReceipt>
+  closePosition: (
+    walletAddress: Address,
+    params: StubCloseParams,
+  ) => Promise<BorrowReceipt>
+  depositCollateral: (
+    walletAddress: Address,
+    params: StubCollateralParams,
+  ) => Promise<BorrowReceipt>
+  withdrawCollateral: (
+    walletAddress: Address,
+    params: StubCollateralParams,
+  ) => Promise<BorrowReceipt>
+  repay: (
+    walletAddress: Address,
+    params: StubRepayParams,
+  ) => Promise<BorrowReceipt>
 }
 
 export interface UseBorrowProviderReturn {
@@ -78,16 +113,11 @@ export interface UseBorrowProviderReturn {
   ) => Promise<BorrowQuote>
 }
 
-export type GetAuthHeaders = () => Promise<HeadersInit | undefined>
-
 export function useBorrowProvider(
   walletAddress: Address | null,
-  getAuthHeaders?: GetAuthHeaders,
+  operations: BorrowOperations,
 ): UseBorrowProviderReturn {
-  const resolveHeaders = useCallback(async (): Promise<HeadersInit> => {
-    if (!getAuthHeaders) return {}
-    return (await getAuthHeaders()) ?? {}
-  }, [getAuthHeaders])
+  const queryClient = useQueryClient()
   const { logActivity } = useActivityLogger()
   const [markets, setMarkets] = useState<readonly BorrowMarket[]>([])
   const [selectedMarket, setSelectedMarket] = useState<BorrowMarket | null>(
@@ -105,8 +135,8 @@ export function useBorrowProvider(
     let cancelled = false
     const activity = logActivity('getBorrowMarkets')
     setIsLoadingMarkets(true)
-    resolveHeaders()
-      .then((headers) => borrowApi.getMarkets(headers))
+    operations
+      .getMarkets()
       .then((m) => {
         if (cancelled) return
         setMarkets(m)
@@ -123,7 +153,7 @@ export function useBorrowProvider(
     // selectedMarket intentionally omitted from deps: we only default-pick
     // on first load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolveHeaders])
+  }, [operations, logActivity])
 
   const fetchPositions = useCallback(
     async (address: Address | null) => {
@@ -135,9 +165,15 @@ export function useBorrowProvider(
       const activity = logActivity('getBorrowPosition')
       setIsLoadingPositions(true)
       try {
-        const headers = await resolveHeaders()
-        const positions = await borrowApi.getPositions(address, headers)
-        setBorrowPositions(positions)
+        const positions = await Promise.all(
+          markets.map((market) =>
+            operations.getPosition(address, market.marketId),
+          ),
+        )
+        const nonEmptyPositions = positions.filter(
+          (position): position is BorrowMarketPosition => position !== null,
+        )
+        setBorrowPositions(nonEmptyPositions)
         activity?.confirm()
       } catch (e) {
         activity?.error()
@@ -147,7 +183,7 @@ export function useBorrowProvider(
         setIsInitialLoad(false)
       }
     },
-    [logActivity, resolveHeaders],
+    [logActivity, markets, operations],
   )
 
   // Refetch positions whenever the active wallet changes.
@@ -171,71 +207,67 @@ export function useBorrowProvider(
       params: BorrowOperationParams[A],
     ): Promise<BorrowReceipt> => {
       if (!walletAddress) throw new Error('Wallet not connected')
-      const headers = await resolveHeaders()
       let receipt: BorrowReceipt
       switch (action) {
         case 'open':
-          receipt = await borrowApi.openPosition(
+          receipt = await operations.openPosition(
             walletAddress,
             params as StubOpenParams,
-            headers,
           )
           break
         case 'close':
-          receipt = await borrowApi.closePosition(
+          receipt = await operations.closePosition(
             walletAddress,
             params as StubCloseParams,
-            headers,
           )
           break
         case 'depositCollateral':
-          receipt = await borrowApi.depositCollateral(
+          receipt = await operations.depositCollateral(
             walletAddress,
             params as StubCollateralParams,
-            headers,
           )
           break
         case 'withdrawCollateral':
-          receipt = await borrowApi.withdrawCollateral(
+          receipt = await operations.withdrawCollateral(
             walletAddress,
             params as StubCollateralParams,
-            headers,
           )
           break
         case 'repay':
-          receipt = await borrowApi.repay(
+          receipt = await operations.repay(
             walletAddress,
             params as StubRepayParams,
-            headers,
           )
           break
       }
       await fetchPositions(walletAddress)
+      await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
+      dispatchEarnPositionsChanged()
       return receipt
     },
-    [walletAddress, fetchPositions, resolveHeaders],
+    [walletAddress, fetchPositions, operations, queryClient],
   )
 
   const getPrice = useCallback<UseBorrowProviderReturn['getPrice']>(
     async (params) => {
       if (!walletAddress) throw new Error('Wallet not connected')
-      const headers = await resolveHeaders()
-      return borrowApi.getPrice(
-        { ...params, walletAddress } as BorrowPriceParams,
-        headers,
-      )
+      return operations.getPrice({
+        ...params,
+        walletAddress,
+      } as BorrowPriceParams)
     },
-    [walletAddress, resolveHeaders],
+    [walletAddress, operations],
   )
 
   const getQuote = useCallback<UseBorrowProviderReturn['getQuote']>(
     async (params) => {
       if (!walletAddress) throw new Error('Wallet not connected')
-      const headers = await resolveHeaders()
-      // walletAddress is derived from auth server-side; do not forward.
-      return borrowApi.getQuote(params as BorrowQuoteParams, headers)
+      return operations.getQuote({
+        ...params,
+        walletAddress,
+      } as BorrowQuoteParams)
     },
-    [walletAddress, resolveHeaders],
+    [walletAddress, operations],
   )
 
   const selectedMarketPosition =
@@ -250,6 +282,22 @@ export function useBorrowProvider(
               : false),
         ) ?? null)
       : null
+
+  useEffect(() => {
+    const handlePositionsChanged = () => {
+      void fetchPositions(walletAddress)
+    }
+    window.addEventListener(
+      EARN_POSITIONS_CHANGED_EVENT,
+      handlePositionsChanged,
+    )
+    return () => {
+      window.removeEventListener(
+        EARN_POSITIONS_CHANGED_EVENT,
+        handlePositionsChanged,
+      )
+    }
+  }, [fetchPositions, walletAddress])
 
   return {
     markets,

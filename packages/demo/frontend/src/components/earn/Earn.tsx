@@ -12,10 +12,12 @@ import {
   useLendProviderContext,
 } from '@/contexts/LendProviderContext'
 import { BorrowProviderContextProvider } from '@/contexts/BorrowProviderContext'
+import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { TabSwitcherProvider } from '@/contexts/TabSwitcherContext'
 import { BorrowTab } from './borrow/BorrowTab'
 import { MarketSelector } from './MarketSelector'
 import type { EarnOperations } from '@/hooks/useLendProvider'
+import type { BorrowOperations } from '@/hooks/useBorrowProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
 import { useLendBalance } from '@/hooks/useLendBalance'
@@ -23,6 +25,7 @@ import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { useSwap } from '@/hooks/useSwap'
 import { TotalBalanceDropdown } from './TotalBalanceDropdown'
 import type { TokenBalanceRow } from '@/hooks/useTotalBalance'
+import { buildEffectiveLendPositions } from '@/utils/effectiveLendPositions'
 
 // --- Icons ---
 
@@ -291,6 +294,16 @@ function LendTab({
   handleTransactionWithTracking: (
     mode: 'lend' | 'withdraw',
     amount: number,
+    options?: {
+      releaseCollateral?: {
+        marketId: {
+          kind: 'morpho-blue'
+          marketId: string
+          chainId: number
+        }
+        amountRaw: bigint
+      }
+    },
   ) => Promise<{ transactionHash?: string; blockExplorerUrl?: string }>
   getInterest?: (
     marketId: { address: string; chainId: number },
@@ -299,7 +312,7 @@ function LendTab({
 }) {
   const {
     markets,
-    selectedMarket,
+    selectedMarket: rawSelectedMarket,
     handleMarketSelect,
     isLoadingMarkets,
     marketPositions,
@@ -311,6 +324,20 @@ function LendTab({
     isLoadingPosition,
     handleMintAsset,
   } = useLendProviderContext()
+  const { borrowPositions } = useBorrowProviderContext()
+
+  const effectiveMarketPositions = buildEffectiveLendPositions(
+    markets,
+    marketPositions,
+    borrowPositions,
+  )
+  const selectedMarket =
+    effectiveMarketPositions.find(
+      (position) =>
+        position.marketId.address.toLowerCase() ===
+          rawSelectedMarket?.marketId.address.toLowerCase() &&
+        position.marketId.chainId === rawSelectedMarket?.marketId.chainId,
+    ) ?? rawSelectedMarket
 
   return (
     <>
@@ -348,7 +375,8 @@ function LendTab({
         assetBalance={assetBalance}
         isLoadingBalance={isLoadingBalance}
         isMintingAsset={isMintingAsset}
-        depositedAmount={depositedAmount}
+        depositedAmount={selectedMarket?.depositedAmount ?? depositedAmount}
+        directDepositedAmount={selectedMarket?.directDepositedAmount ?? null}
         assetSymbol={selectedMarket?.asset.metadata.symbol || 'USDC'}
         asset={selectedMarket?.asset}
         onMintAsset={handleMintAsset}
@@ -358,10 +386,12 @@ function LendTab({
       />
 
       <LentBalance
-        marketPositions={marketPositions}
+        marketPositions={effectiveMarketPositions}
         isInitialLoad={isInitialLoad}
         isLoadingPosition={isLoadingPosition}
-        currentDepositedAmount={depositedAmount}
+        currentDepositedAmount={
+          selectedMarket?.depositedAmount ?? depositedAmount
+        }
         selectedMarketId={selectedMarket?.marketId}
         getInterest={getInterest}
       />
@@ -378,12 +408,7 @@ export interface EarnProps {
   walletAddress: string | null
   providerConfig: WalletProviderConfig
   logPrefix?: string
-  /**
-   * Auth headers resolver for backend-routed flows (Borrow tab today).
-   * Frontend-wallet providers (Dynamic / Turnkey) don't have a
-   * server-wallet auth path, so they pass `undefined`.
-   */
-  getAuthHeaders?: () => Promise<HeadersInit | undefined>
+  borrowOperations: BorrowOperations
 }
 
 function Earn({
@@ -393,7 +418,7 @@ function Earn({
   walletAddress,
   providerConfig,
   logPrefix,
-  getAuthHeaders,
+  borrowOperations,
 }: EarnProps) {
   const queryClient = useQueryClient()
   const prevWalletRef = useRef(walletAddress)
@@ -426,11 +451,13 @@ function Earn({
       <LendProviderContextProvider
         operations={operations}
         ready={ready}
+        borrowOperations={borrowOperations}
+        walletAddress={walletAddress as `0x${string}` | null}
         logPrefix={logPrefix}
       >
         <BorrowProviderContextProvider
           walletAddress={walletAddress}
-          getAuthHeaders={getAuthHeaders}
+          operations={borrowOperations}
         >
           <ActivityHighlightProvider>
             <EarnContent
@@ -492,8 +519,21 @@ function EarnContent({
   }, [marketPositions, seedMarkets])
 
   const handleTransactionWithTracking = useCallback(
-    async (mode: 'lend' | 'withdraw', amount: number) => {
-      const result = await handleTransaction(mode, amount)
+    async (
+      mode: 'lend' | 'withdraw',
+      amount: number,
+      options?: {
+        releaseCollateral?: {
+          marketId: {
+            kind: 'morpho-blue'
+            marketId: string
+            chainId: number
+          }
+          amountRaw: bigint
+        }
+      },
+    ) => {
+      const result = await handleTransaction(mode, amount, options)
       if (selectedMarket?.marketId) {
         recordTransaction(
           selectedMarket.marketId,

@@ -180,6 +180,7 @@ function deserializePosition(
 ): BorrowMarketPosition {
   return {
     ...p,
+    collateralShares: BigInt(p.collateralShares as unknown as string),
     collateralAmount: BigInt(p.collateralAmount as unknown as string),
     borrowAmount: BigInt(p.borrowAmount as unknown as string),
     liquidationPrice: BigInt(p.liquidationPrice as unknown as string),

@@ -16,25 +16,40 @@ import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useLendProviderContext } from '@/contexts/LendProviderContext'
 import type { MarketPosition } from '@/types/market'
 import { useTabSwitcher } from '@/contexts/TabSwitcherContext'
+import { buildEffectiveLendPositions } from '@/utils/effectiveLendPositions'
 import { Dropdown } from '../Dropdown'
 import { BorrowAction } from './BorrowAction'
 import { BorrowPositions } from './BorrowPositions'
 
 export function BorrowTab() {
-  const { marketPositions, isInitialLoad } = useLendProviderContext()
+  const {
+    markets: lendMarkets,
+    marketPositions,
+    isInitialLoad,
+  } = useLendProviderContext()
   const { markets, handleMarketSelect, borrowPositions } =
     useBorrowProviderContext()
 
+  const effectiveLendPositions = useMemo(
+    () =>
+      buildEffectiveLendPositions(
+        lendMarkets,
+        marketPositions,
+        borrowPositions,
+      ),
+    [borrowPositions, lendMarkets, marketPositions],
+  )
+
   const positionsWithDeposits = useMemo(
     () =>
-      marketPositions.filter(
+      effectiveLendPositions.filter(
         (p) =>
           p.depositedAmount &&
           parseFloat(p.depositedAmount) > 0 &&
           p.depositedAmount !== '0' &&
           p.depositedAmount !== '0.00',
       ),
-    [marketPositions],
+    [effectiveLendPositions],
   )
 
   const [selectedLendPosition, setSelectedLendPosition] =

@@ -94,6 +94,8 @@ function makeQuote(overrides: Partial<BorrowQuote> = {}): BorrowQuote {
         chainId: market.chainId,
       },
       collateralAsset,
+      collateralShares: 0n,
+      collateralSharesFormatted: '0',
       collateralAmount: 0n,
       collateralAmountFormatted: '0',
       borrowAsset,
@@ -220,6 +222,27 @@ describe('WalletBorrowNamespace — quote validation', () => {
 })
 
 describe('WalletBorrowNamespace — re-quote', () => {
+  it('injects walletAddress for getPosition reads', async () => {
+    const { wallet } = makeWallet()
+    const provider = makeProvider()
+    const namespace = new WalletBorrowNamespace({ morpho: provider }, wallet)
+    await namespace.getPosition({
+      marketId: {
+        kind: market.kind,
+        marketId: market.marketId,
+        chainId: market.chainId,
+      },
+    })
+    expect(provider.getPosition).toHaveBeenCalledWith({
+      marketId: {
+        kind: market.kind,
+        marketId: market.marketId,
+        chainId: market.chainId,
+      },
+      walletAddress,
+    })
+  })
+
   it('re-quotes raw params through the underlying provider', async () => {
     const { wallet } = makeWallet()
     const provider = makeProvider()
