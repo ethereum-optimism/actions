@@ -64,6 +64,8 @@ function makeQuote(action: BorrowQuote['action'] = 'open'): BorrowQuote {
         chainId: market.chainId,
       },
       collateralAsset,
+      collateralShares: 0n,
+      collateralSharesFormatted: '0',
       collateralAmount: 0n,
       collateralAmountFormatted: '0',
       borrowAsset,

@@ -1,7 +1,9 @@
 import { createContext, useContext, type ReactNode } from 'react'
+import type { Address } from 'viem'
 import type { MarketInfo } from '@/components/earn/MarketSelector'
 import type { MarketPosition } from '@/types/market'
 import { useLendProvider, type EarnOperations } from '@/hooks/useLendProvider'
+import type { BorrowOperations } from '@/hooks/useBorrowProvider'
 
 interface LendProviderContextValue {
   // Market data
@@ -23,6 +25,16 @@ interface LendProviderContextValue {
   handleTransaction: (
     mode: 'lend' | 'withdraw',
     amount: number,
+    options?: {
+      releaseCollateral?: {
+        marketId: {
+          kind: 'morpho-blue'
+          marketId: string
+          chainId: number
+        }
+        amountRaw: bigint
+      }
+    },
   ) => Promise<{ transactionHash?: string; blockExplorerUrl?: string }>
 }
 
@@ -32,6 +44,8 @@ interface LendProviderContextProviderProps {
   children: ReactNode
   operations: EarnOperations
   ready: boolean
+  borrowOperations?: BorrowOperations
+  walletAddress?: Address | null
   logPrefix?: string
 }
 
@@ -39,9 +53,17 @@ export function LendProviderContextProvider({
   children,
   operations,
   ready,
+  borrowOperations,
+  walletAddress,
   logPrefix,
 }: LendProviderContextProviderProps) {
-  const lendData = useLendProvider({ operations, ready, logPrefix })
+  const lendData = useLendProvider({
+    operations,
+    ready,
+    borrowOperations,
+    walletAddress,
+    logPrefix,
+  })
 
   const value: LendProviderContextValue = {
     markets: lendData.markets,

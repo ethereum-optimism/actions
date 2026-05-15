@@ -133,6 +133,10 @@ export interface BorrowMarketPosition {
   marketId: BorrowMarketId
   /** Collateral asset metadata */
   collateralAsset: Asset
+  /** Raw collateral share balance held inside the borrow market */
+  collateralShares: bigint
+  /** Pre-formatted collateral share balance */
+  collateralSharesFormatted: string
   /** Collateral balance in wei */
   collateralAmount: bigint
   /** Pre-formatted collateral balance */

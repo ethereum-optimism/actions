@@ -12,11 +12,13 @@ import type {
   BorrowClosePositionParams,
   BorrowDepositCollateralParams,
   BorrowMarketId,
+  BorrowMarketPosition,
   BorrowOpenPositionParams,
   BorrowQuote,
   BorrowReceipt,
   BorrowRepayParams,
   BorrowWithdrawCollateralParams,
+  GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
 import type { BorrowProviders } from '@/types/providers.js'
 import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
@@ -41,6 +43,15 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     // level concerns (telemetry, default health buffer overrides) and kept
     // intentionally unused for now.
     void settings
+  }
+
+  async getPosition(
+    params: Omit<GetBorrowPositionParams, 'walletAddress'>,
+  ): Promise<BorrowMarketPosition> {
+    return this.getProviderForMarket(params.marketId).getPosition({
+      ...params,
+      walletAddress: this.wallet.address,
+    })
   }
 
   async openPosition(

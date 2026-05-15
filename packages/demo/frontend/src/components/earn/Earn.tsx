@@ -11,8 +11,13 @@ import {
   LendProviderContextProvider,
   useLendProviderContext,
 } from '@/contexts/LendProviderContext'
+import { BorrowProviderContextProvider } from '@/contexts/BorrowProviderContext'
+import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
+import { TabSwitcherProvider } from '@/contexts/TabSwitcherContext'
+import { BorrowTab } from './borrow/BorrowTab'
 import { MarketSelector } from './MarketSelector'
 import type { EarnOperations } from '@/hooks/useLendProvider'
+import type { BorrowOperations } from '@/hooks/useBorrowProvider'
 import { ActionTabs, type ActionType } from './ActionTabs'
 import { SwapAction } from './SwapAction'
 import { useLendBalance } from '@/hooks/useLendBalance'
@@ -20,6 +25,7 @@ import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { useSwap } from '@/hooks/useSwap'
 import { TotalBalanceDropdown } from './TotalBalanceDropdown'
 import type { TokenBalanceRow } from '@/hooks/useTotalBalance'
+import { buildEffectiveLendPositions } from '@/utils/effectiveLendPositions'
 
 // --- Icons ---
 
@@ -128,7 +134,7 @@ function MobileMenu({
         </div>
 
         <div style={{ padding: '8px 0' }}>
-          {(['lend', 'swap'] as const).map((tab) => (
+          {(['lend', 'swap', 'borrow'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -149,7 +155,7 @@ function MobileMenu({
                 fontFamily: 'Inter',
               }}
             >
-              {tab === 'lend' ? 'Lend' : 'Swap'}
+              {tab === 'lend' ? 'Lend' : tab === 'swap' ? 'Swap' : 'Borrow'}
             </button>
           ))}
         </div>
@@ -288,6 +294,16 @@ function LendTab({
   handleTransactionWithTracking: (
     mode: 'lend' | 'withdraw',
     amount: number,
+    options?: {
+      releaseCollateral?: {
+        marketId: {
+          kind: 'morpho-blue'
+          marketId: string
+          chainId: number
+        }
+        amountRaw: bigint
+      }
+    },
   ) => Promise<{ transactionHash?: string; blockExplorerUrl?: string }>
   getInterest?: (
     marketId: { address: string; chainId: number },
@@ -296,7 +312,7 @@ function LendTab({
 }) {
   const {
     markets,
-    selectedMarket,
+    selectedMarket: rawSelectedMarket,
     handleMarketSelect,
     isLoadingMarkets,
     marketPositions,
@@ -308,6 +324,20 @@ function LendTab({
     isLoadingPosition,
     handleMintAsset,
   } = useLendProviderContext()
+  const { borrowPositions } = useBorrowProviderContext()
+
+  const effectiveMarketPositions = buildEffectiveLendPositions(
+    markets,
+    marketPositions,
+    borrowPositions,
+  )
+  const selectedMarket =
+    effectiveMarketPositions.find(
+      (position) =>
+        position.marketId.address.toLowerCase() ===
+          rawSelectedMarket?.marketId.address.toLowerCase() &&
+        position.marketId.chainId === rawSelectedMarket?.marketId.chainId,
+    ) ?? rawSelectedMarket
 
   return (
     <>
@@ -345,8 +375,10 @@ function LendTab({
         assetBalance={assetBalance}
         isLoadingBalance={isLoadingBalance}
         isMintingAsset={isMintingAsset}
-        depositedAmount={depositedAmount}
+        depositedAmount={selectedMarket?.depositedAmount ?? depositedAmount}
+        directDepositedAmount={selectedMarket?.directDepositedAmount ?? null}
         assetSymbol={selectedMarket?.asset.metadata.symbol || 'USDC'}
+        asset={selectedMarket?.asset}
         onMintAsset={handleMintAsset}
         onTransaction={handleTransactionWithTracking}
         marketId={selectedMarket?.marketId}
@@ -354,10 +386,12 @@ function LendTab({
       />
 
       <LentBalance
-        marketPositions={marketPositions}
+        marketPositions={effectiveMarketPositions}
         isInitialLoad={isInitialLoad}
         isLoadingPosition={isLoadingPosition}
-        currentDepositedAmount={depositedAmount}
+        currentDepositedAmount={
+          selectedMarket?.depositedAmount ?? depositedAmount
+        }
         selectedMarketId={selectedMarket?.marketId}
         getInterest={getInterest}
       />
@@ -374,6 +408,7 @@ export interface EarnProps {
   walletAddress: string | null
   providerConfig: WalletProviderConfig
   logPrefix?: string
+  borrowOperations: BorrowOperations
 }
 
 function Earn({
@@ -383,6 +418,7 @@ function Earn({
   walletAddress,
   providerConfig,
   logPrefix,
+  borrowOperations,
 }: EarnProps) {
   const queryClient = useQueryClient()
   const prevWalletRef = useRef(walletAddress)
@@ -415,16 +451,23 @@ function Earn({
       <LendProviderContextProvider
         operations={operations}
         ready={ready}
+        borrowOperations={borrowOperations}
+        walletAddress={walletAddress as `0x${string}` | null}
         logPrefix={logPrefix}
       >
-        <ActivityHighlightProvider>
-          <EarnContent
-            logout={logout}
-            walletAddress={walletAddress}
-            providerConfig={providerConfig}
-            operations={operations}
-          />
-        </ActivityHighlightProvider>
+        <BorrowProviderContextProvider
+          walletAddress={walletAddress}
+          operations={borrowOperations}
+        >
+          <ActivityHighlightProvider>
+            <EarnContent
+              logout={logout}
+              walletAddress={walletAddress}
+              providerConfig={providerConfig}
+              operations={operations}
+            />
+          </ActivityHighlightProvider>
+        </BorrowProviderContextProvider>
       </LendProviderContextProvider>
     </ActivityLogProvider>
   )
@@ -476,8 +519,21 @@ function EarnContent({
   }, [marketPositions, seedMarkets])
 
   const handleTransactionWithTracking = useCallback(
-    async (mode: 'lend' | 'withdraw', amount: number) => {
-      const result = await handleTransaction(mode, amount)
+    async (
+      mode: 'lend' | 'withdraw',
+      amount: number,
+      options?: {
+        releaseCollateral?: {
+          marketId: {
+            kind: 'morpho-blue'
+            marketId: string
+            chainId: number
+          }
+          amountRaw: bigint
+        }
+      },
+    ) => {
+      const result = await handleTransaction(mode, amount, options)
       if (selectedMarket?.marketId) {
         recordTransaction(
           selectedMarket.marketId,
@@ -529,48 +585,54 @@ function EarnContent({
       />
 
       <main className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)] overflow-x-hidden">
-        <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
-          <div className="w-full max-w-2xl">
-            <div className="space-y-6">
-              {activeTab === 'lend' && (
-                <LendTab
-                  handleTransactionWithTracking={handleTransactionWithTracking}
-                  getInterest={getInterest}
-                />
-              )}
+        <TabSwitcherProvider setActiveTab={setActiveTab}>
+          <div className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
+            <div className="w-full max-w-2xl">
+              <div className="space-y-6">
+                {activeTab === 'lend' && (
+                  <LendTab
+                    handleTransactionWithTracking={
+                      handleTransactionWithTracking
+                    }
+                    getInterest={getInterest}
+                  />
+                )}
 
-              {activeTab === 'swap' && (
-                <SwapAction
-                  assets={swapAssets}
-                  isLoadingBalances={isLoadingSwapAssets}
-                  onSwap={handleSwap}
-                  onGetQuote={handleGetQuote}
-                  isExecuting={isSwapping}
-                  selectedProvider={selectedProvider}
-                  swapMarkets={swapMarkets}
-                  isLoadingMarkets={isLoadingMarkets}
-                  onSelectProvider={setSelectedProvider}
-                  onLogActivity={logActivity}
-                />
-              )}
+                {activeTab === 'swap' && (
+                  <SwapAction
+                    assets={swapAssets}
+                    isLoadingBalances={isLoadingSwapAssets}
+                    onSwap={handleSwap}
+                    onGetQuote={handleGetQuote}
+                    isExecuting={isSwapping}
+                    selectedProvider={selectedProvider}
+                    swapMarkets={swapMarkets}
+                    isLoadingMarkets={isLoadingMarkets}
+                    onSelectProvider={setSelectedProvider}
+                    onLogActivity={logActivity}
+                  />
+                )}
 
-              <div className="lg:hidden">
-                <ActivityLog />
+                {activeTab === 'borrow' && <BorrowTab />}
+
+                <div className="lg:hidden">
+                  <ActivityLog />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div
-          className="hidden lg:h-[calc(100vh-65px)] lg:block"
-          style={{
-            width: isSidebarCollapsed ? '0px' : '436px',
-            transition: 'width 300ms ease-in-out',
-            overflow: 'hidden',
-          }}
-        >
-          <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
-        </div>
+          <div
+            className="hidden lg:h-[calc(100vh-65px)] lg:block"
+            style={{
+              width: isSidebarCollapsed ? '0px' : '436px',
+              transition: 'width 300ms ease-in-out',
+              overflow: 'hidden',
+            }}
+          >
+            <ActivityLog onCollapsedChange={setIsSidebarCollapsed} />
+          </div>
+        </TabSwitcherProvider>
       </main>
     </div>
   )

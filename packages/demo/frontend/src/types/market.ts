@@ -9,6 +9,12 @@ export interface MarketPosition {
   assetLogo: string
   apy: number | null
   depositedAmount: string | null
+  directDepositedAmount: string | null
+  depositedShares: string | null
+  depositedSharesRaw: bigint | null
+  directDepositedShares: string | null
+  directDepositedSharesRaw: bigint | null
+  pledgedCollateralAmount: string | null
   isLoadingApy: boolean
   isLoadingPosition: boolean
   marketId: {
