@@ -19,9 +19,9 @@ import type { Asset } from '@/types/asset.js'
 import { getAllAssetAddresses } from '@/utils/assets.js'
 import { validateConfigAddresses } from '@/utils/validateAddresses.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
-import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
-import type { HostedWalletProviderRegistry } from '@/wallet/core/providers/hosted/registry/HostedWalletProviderRegistry.js'
-import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted/types/index.js'
+import type { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
+import type { EmbeddedWalletProviderRegistry } from '@/wallet/core/providers/embedded/registry/EmbeddedWalletProviderRegistry.js'
+import type { EmbeddedWalletProvidersSchema } from '@/wallet/core/providers/embedded/types/index.js'
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
 import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
@@ -31,24 +31,24 @@ import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
  * @description Core implementation of the Actions SDK
  */
 export class Actions<
-  THostedWalletProviderConfigKeys extends string,
-  THostedWalletProvidersSchema extends HostedWalletProvidersSchema<
-    THostedWalletProviderConfigKeys,
+  TEmbeddedWalletProviderConfigKeys extends string,
+  TEmbeddedWalletProvidersSchema extends EmbeddedWalletProvidersSchema<
+    TEmbeddedWalletProviderConfigKeys,
     {
-      [K in THostedWalletProviderConfigKeys]: HostedWalletProvider<
+      [K in TEmbeddedWalletProviderConfigKeys]: EmbeddedWalletProvider<
         K,
-        { [K in THostedWalletProviderConfigKeys]: unknown }
+        { [K in TEmbeddedWalletProviderConfigKeys]: unknown }
       >
     },
-    { [K in THostedWalletProviderConfigKeys]: unknown },
-    { [K in THostedWalletProviderConfigKeys]: unknown }
+    { [K in TEmbeddedWalletProviderConfigKeys]: unknown },
+    { [K in TEmbeddedWalletProviderConfigKeys]: unknown }
   >,
-  THostedWalletProviderType extends THostedWalletProviderConfigKeys,
+  TEmbeddedWalletProviderType extends TEmbeddedWalletProviderConfigKeys,
 > {
   public readonly wallet: WalletNamespace<
-    THostedWalletProviderType,
-    THostedWalletProvidersSchema['providerToActionsOptions'],
-    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
+    TEmbeddedWalletProviderType,
+    TEmbeddedWalletProvidersSchema['providerToActionsOptions'],
+    TEmbeddedWalletProvidersSchema['providerInstances'][TEmbeddedWalletProviderType],
     SmartWalletProvider
   >
   private chainManager: ChainManager
@@ -59,26 +59,28 @@ export class Actions<
   private _swapProviders: SwapProviders = {}
   private _swapSettings?: SwapSettings
   private _assetsConfig?: AssetsConfig
-  private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
-    THostedWalletProvidersSchema['providerInstances'],
-    THostedWalletProvidersSchema['providerConfigs'],
-    THostedWalletProvidersSchema['providerTypes']
+  private embeddedWalletProvider!: TEmbeddedWalletProvidersSchema['providerInstances'][TEmbeddedWalletProviderType]
+  private smartWalletProvider!: SmartWalletProvider
+  private embeddedWalletProviderRegistry: EmbeddedWalletProviderRegistry<
+    TEmbeddedWalletProvidersSchema['providerInstances'],
+    TEmbeddedWalletProvidersSchema['providerConfigs'],
+    TEmbeddedWalletProvidersSchema['providerTypes']
   >
   constructor(
     config: ActionsConfig<
-      THostedWalletProviderType,
-      THostedWalletProvidersSchema['providerConfigs']
+      TEmbeddedWalletProviderType,
+      TEmbeddedWalletProvidersSchema['providerConfigs']
     >,
     deps: {
-      hostedWalletProviderRegistry: HostedWalletProviderRegistry<
-        THostedWalletProvidersSchema['providerInstances'],
-        THostedWalletProvidersSchema['providerConfigs'],
-        THostedWalletProvidersSchema['providerTypes']
+      embeddedWalletProviderRegistry: EmbeddedWalletProviderRegistry<
+        TEmbeddedWalletProvidersSchema['providerInstances'],
+        TEmbeddedWalletProvidersSchema['providerConfigs'],
+        TEmbeddedWalletProvidersSchema['providerTypes']
       >
     },
   ) {
     this.chainManager = new ChainManager(config.chains)
-    this.hostedWalletProviderRegistry = deps.hostedWalletProviderRegistry
+    this.embeddedWalletProviderRegistry = deps.embeddedWalletProviderRegistry
     this._assetsConfig = config.assets
     validateConfigAddresses(config)
 
@@ -224,68 +226,30 @@ export class Actions<
    */
   private async createWalletProvider(
     config: ActionsConfig<
-      THostedWalletProviderType,
-      THostedWalletProvidersSchema['providerConfigs']
+      TEmbeddedWalletProviderType,
+      TEmbeddedWalletProvidersSchema['providerConfigs']
     >['wallet'],
-  ): Promise<
-    WalletProvider<
-      THostedWalletProviderType,
-      THostedWalletProvidersSchema['providerToActionsOptions'],
-      THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
-      SmartWalletProvider
-    >
+  ): WalletProvider<
+    TEmbeddedWalletProviderType,
+    TEmbeddedWalletProvidersSchema['providerToActionsOptions'],
+    TEmbeddedWalletProvidersSchema['providerInstances'][TEmbeddedWalletProviderType],
+    SmartWalletProvider
   > {
-    const hostedWalletProvider = config.hostedWalletConfig
-      ? await this.createHostedWalletProvider(config.hostedWalletConfig)
-      : undefined
-
-    const smartWalletProvider: SmartWalletProvider = (() => {
-      if (
-        !config.smartWalletConfig ||
-        config.smartWalletConfig.provider.type === 'default'
-      ) {
-        return new DefaultSmartWalletProvider(
-          this.chainManager,
-          this._lendProviders,
-          this._swapProviders,
-          this.getSupportedAssets(),
-          config.smartWalletConfig.provider.attributionSuffix,
-        )
-      }
-      throw new ProviderNotConfiguredError({
-        provider: config.smartWalletConfig.provider.type,
-      })
-    })()
-
-    return new WalletProvider(hostedWalletProvider, smartWalletProvider)
-  }
-
-  private async createHostedWalletProvider(
-    hostedWalletConfig: NonNullable<
-      ActionsConfig<
-        THostedWalletProviderType,
-        THostedWalletProvidersSchema['providerConfigs']
-      >['wallet']['hostedWalletConfig']
-    >,
-  ): Promise<
-    THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType]
-  > {
-    const hostedWalletProviderConfig = hostedWalletConfig.provider
-    const factory = this.hostedWalletProviderRegistry.getFactory(
-      hostedWalletProviderConfig.type,
+    const embeddedWalletProviderConfig = config.embeddedWalletConfig.provider
+    const factory = this.embeddedWalletProviderRegistry.getFactory(
+      embeddedWalletProviderConfig.type,
     )
     const options = (
-      'config' in hostedWalletProviderConfig
-        ? hostedWalletProviderConfig.config
+      'config' in embeddedWalletProviderConfig
+        ? embeddedWalletProviderConfig.config
         : undefined
     ) as unknown
     if (!factory.validateOptions(options)) {
-      throw new ProviderNotConfiguredError({
-        provider: hostedWalletProviderConfig.type,
-        details: 'Invalid options',
-      })
+      throw new Error(
+        `Invalid options for hosted wallet provider: ${embeddedWalletProviderConfig.type}`,
+      )
     }
-    return factory.create(
+    this.embeddedWalletProvider = factory.create(
       {
         chainManager: this.chainManager,
         lendProviders: this._lendProviders,
@@ -295,6 +259,30 @@ export class Actions<
       },
       options,
     )
+
+    if (
+      !config.smartWalletConfig ||
+      config.smartWalletConfig.provider.type === 'default'
+    ) {
+      this.smartWalletProvider = new DefaultSmartWalletProvider(
+        this.chainManager,
+        this._lendProviders,
+        this._swapProviders,
+        this.getSupportedAssets(),
+        config.smartWalletConfig.provider.attributionSuffix,
+      )
+    } else {
+      throw new Error(
+        `Unsupported smart wallet provider: ${config.smartWalletConfig.provider.type}`,
+      )
+    }
+
+    const walletProvider = new WalletProvider(
+      this.embeddedWalletProvider,
+      this.smartWalletProvider,
+    )
+
+    return walletProvider
   }
 
   /**
@@ -306,15 +294,15 @@ export class Actions<
    */
   private createWalletNamespace(
     config: ActionsConfig<
-      THostedWalletProviderType,
-      THostedWalletProvidersSchema['providerConfigs']
+      TEmbeddedWalletProviderType,
+      TEmbeddedWalletProvidersSchema['providerConfigs']
     >['wallet'],
   ) {
     const providerFactory = () => this.createWalletProvider(config)
     return new WalletNamespace<
-      THostedWalletProviderType,
-      THostedWalletProvidersSchema['providerToActionsOptions'],
-      THostedWalletProvidersSchema['providerInstances'][THostedWalletProviderType],
+      TEmbeddedWalletProviderType,
+      TEmbeddedWalletProvidersSchema['providerToActionsOptions'],
+      TEmbeddedWalletProvidersSchema['providerInstances'][TEmbeddedWalletProviderType],
       SmartWalletProvider
     >(providerFactory, {
       chainManager: this.chainManager,

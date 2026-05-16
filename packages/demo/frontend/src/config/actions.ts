@@ -14,13 +14,13 @@ import {
 
 // Helper to create Actions config matching backend structure
 export function createActionsConfig<T extends ReactProviderTypes>(
-  hostedWalletProviderType: T,
+  embeddedWalletProviderType: T,
 ): ReactActionsConfig<T> {
   return {
     wallet: {
-      hostedWalletConfig: {
+      embeddedWalletConfig: {
         provider: {
-          type: hostedWalletProviderType,
+          type: embeddedWalletProviderType,
         },
       },
       smartWalletConfig: {

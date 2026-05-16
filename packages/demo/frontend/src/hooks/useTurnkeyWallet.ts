@@ -25,7 +25,7 @@ export function useTurnkeyWallet() {
     httpClient,
     session,
   } = useTurnkey()
-  const { actions } = useActions({ hostedWalletProviderType: 'turnkey' })
+  const { actions } = useActions({ embeddedWalletProviderType: 'turnkey' })
   const embeddedWallet = wallets.find(
     (wallet) =>
       wallet.accounts.some(

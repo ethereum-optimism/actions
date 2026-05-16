@@ -4,7 +4,7 @@ import type {
   CreateSmartWalletOptions,
   GetSmartWalletOptions,
 } from '@/types/wallet.js'
-import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
+import type { EmbeddedWalletProvider } from '@/wallet/core/providers/embedded/abstract/EmbeddedWalletProvider.js'
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import type { SmartWalletCreationResult } from '@/wallet/core/providers/smart/abstract/types/index.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
@@ -18,22 +18,13 @@ import type { SmartWallet } from '@/wallet/core/wallets/smart/abstract/SmartWall
 export class WalletProvider<
   THostedProviderType extends string,
   TToActionsMap extends Record<THostedProviderType, unknown>,
-  H extends HostedWalletProvider<THostedProviderType, TToActionsMap>,
+  H extends EmbeddedWalletProvider<THostedProviderType, TToActionsMap>,
   S extends SmartWalletProvider = SmartWalletProvider,
 > {
   constructor(
-    public readonly hostedWalletProvider: H | undefined,
+    public readonly embeddedWalletProvider: H | undefined,
     public readonly smartWalletProvider: S,
   ) {}
-
-  private requireHostedWalletProvider(): H {
-    if (!this.hostedWalletProvider) {
-      throw new Error(
-        'Hosted wallet provider not configured. Please add hostedWalletConfig to ActionsConfig.wallet.',
-      )
-    }
-    return this.hostedWalletProvider
-  }
 
   /**
    * Create a new smart wallet
@@ -61,7 +52,12 @@ export class WalletProvider<
   async hostedWalletToActionsWallet(
     params: TToActionsMap[THostedProviderType],
   ): Promise<Wallet> {
-    return this.requireHostedWalletProvider().toActionsWallet(params)
+    if (!this.embeddedWalletProvider) {
+      throw new Error(
+        'Embedded wallet provider not configured. Please add embeddedWalletConfig to ActionsConfig.wallet.',
+      )
+    }
+    return this.embeddedWalletProvider.toActionsWallet(params)
   }
 
   /**
@@ -76,7 +72,12 @@ export class WalletProvider<
   async createSigner(
     params: TToActionsMap[THostedProviderType],
   ): Promise<LocalAccount> {
-    return this.requireHostedWalletProvider().createSigner(params)
+    if (!this.embeddedWalletProvider) {
+      throw new Error(
+        'Embedded wallet provider not configured. Please add embeddedWalletConfig to ActionsConfig.wallet.',
+      )
+    }
+    return this.embeddedWalletProvider.createSigner(params)
   }
 
   /**
