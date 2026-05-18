@@ -1,7 +1,10 @@
 import { vi } from 'vitest'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { LendProviders } from '@/types/providers.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 
@@ -16,7 +19,8 @@ export class DynamicWalletMock {
     async (_params: {
       chainManager: ChainManager
       dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
-      lendProviders?: LendProviders
+      actionProviders?: ActionProvidersMap
+      actionSettings?: ActionSettingsMap
     }): Promise<Wallet> => {
       return {} as unknown as Wallet
     },

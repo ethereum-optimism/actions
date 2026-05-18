@@ -113,7 +113,9 @@ describe('TurnkeyHostedWalletProvider', () => {
 
       expect(spyTurnkeyWalletCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          lendProviders: { morpho: mockLendProvider },
+          actionProviders: expect.objectContaining({
+            lend: { morpho: mockLendProvider },
+          }),
         }),
       )
     })

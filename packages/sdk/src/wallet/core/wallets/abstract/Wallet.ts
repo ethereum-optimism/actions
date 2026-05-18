@@ -1,20 +1,47 @@
 import type { Address, LocalAccount } from 'viem'
 
-import { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
-import { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
+import type { WalletBorrowNamespace } from '@/actions/borrow/namespaces/WalletBorrowNamespace.js'
+import type { WalletLendNamespace } from '@/actions/lend/namespaces/WalletLendNamespace.js'
+import { ACTION_MODULES, ACTION_NAMES } from '@/actions/registry.js'
+import type {
+  ActionModule,
+  ActionModuleDeps,
+} from '@/actions/shared/ActionModule.js'
+import type { WalletSwapNamespace } from '@/actions/swap/namespaces/WalletSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
-import type { SwapSettings } from '@/types/actions.js'
+import type {
+  ActionName,
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
+import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
 import type { Asset, BalanceFetchOptions, TokenBalance } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import { validateBalanceFetchOptions } from '@/utils/validation.js'
 import type {
   BatchTransactionReturnType,
   TransactionReturnType,
 } from '@/wallet/core/wallets/abstract/types/index.js'
+
+/**
+ * Options handed to the `Wallet` super constructor.
+ * @description Replaces the legacy positional argument list. The action
+ * map shapes are derived from `ActionModules`, so adding a new action
+ * does not require new constructor params.
+ */
+export interface WalletConstructorOptions {
+  chainManager: ChainManager
+  actionProviders?: ActionProvidersMap
+  actionSettings?: ActionSettingsMap
+  supportedAssets?: Asset[]
+}
 
 /**
  * Base actions wallet class
@@ -24,18 +51,33 @@ import type {
 export abstract class Wallet {
   /** Lend namespace with all lending operations */
   lend?: WalletLendNamespace
-  /** Providers for lending market operations */
-  protected lendProviders: LendProviders
+  /** Borrow namespace with all borrow operations */
+  borrow?: WalletBorrowNamespace
   /** Swap namespace with all swap operations */
   swap?: WalletSwapNamespace
-  /** Providers for swap operations */
-  protected swapProviders: SwapProviders
+  /** Provider instances keyed by action name. */
+  protected actionProviders: ActionProvidersMap
+  /** Shared settings keyed by action name. */
+  protected actionSettings: ActionSettingsMap
   /** Manages supported blockchain networks and RPC clients */
   protected chainManager: ChainManager
   /** List of supported assets for this wallet */
   protected supportedAssets: Asset[]
   /** Promise to initialize the wallet */
   private initPromise?: Promise<void>
+
+  /** Legacy mirror: lend providers from the action map. */
+  protected get lendProviders(): LendProviders {
+    return (this.actionProviders.lend ?? {}) as LendProviders
+  }
+  /** Legacy mirror: swap providers from the action map. */
+  protected get swapProviders(): SwapProviders {
+    return (this.actionProviders.swap ?? {}) as SwapProviders
+  }
+  /** Legacy mirror: borrow providers from the action map. */
+  protected get borrowProviders(): BorrowProviders {
+    return (this.actionProviders.borrow ?? {}) as BorrowProviders
+  }
 
   /**
    * Get the address of this actions wallet
@@ -53,46 +95,98 @@ export abstract class Wallet {
   public abstract readonly signer: LocalAccount
 
   /**
-   * Create a new wallet
-   * @param chainManager - Chain manager for the wallet
-   * @param lendProviders - Lend providers for the wallet
-   * @param swapProviders - Swap providers for the wallet
-   * @param supportedAssets - List of supported assets (defaults to empty)
+   * Create a new wallet (options form — preferred).
+   *
+   * Subclasses still on the legacy positional argument list keep working
+   * via the second overload below; the legacy form is removed once every
+   * concrete wallet migrates.
    */
+  protected constructor(options: WalletConstructorOptions)
   protected constructor(
     chainManager: ChainManager,
     lendProviders?: LendProviders,
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
     swapSettings?: SwapSettings,
+    borrowProviders?: BorrowProviders,
+    borrowSettings?: BorrowSettings,
+  )
+  protected constructor(
+    arg1: ChainManager | WalletConstructorOptions,
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
+    supportedAssets?: Asset[],
+    swapSettings?: SwapSettings,
+    borrowProviders?: BorrowProviders,
+    borrowSettings?: BorrowSettings,
   ) {
-    this.chainManager = chainManager
-    this.lendProviders = lendProviders || {}
-    this.swapProviders = swapProviders || {}
-    this.supportedAssets = supportedAssets || []
-    if (this.lendProviders.morpho || this.lendProviders.aave) {
-      this.lend = new WalletLendNamespace(this.lendProviders, this)
+    // Discriminate options-object from positional-chainManager by shape so
+    // structural-equivalent test doubles (`MockChainManager`) still match
+    // the positional path even though they don't extend `ChainManager`.
+    const isOptions =
+      typeof arg1 === 'object' &&
+      arg1 !== null &&
+      'chainManager' in (arg1 as object)
+    const options: WalletConstructorOptions = isOptions
+      ? (arg1 as WalletConstructorOptions)
+      : {
+          chainManager: arg1 as ChainManager,
+          actionProviders: {
+            lend: lendProviders,
+            swap: swapProviders,
+            borrow: borrowProviders,
+          },
+          actionSettings: {
+            swap: swapSettings,
+            borrow: borrowSettings,
+          },
+          supportedAssets,
+        }
+
+    this.chainManager = options.chainManager
+    this.actionProviders = options.actionProviders ?? {}
+    this.actionSettings = options.actionSettings ?? {}
+    this.supportedAssets = options.supportedAssets ?? []
+
+    const moduleDeps: ActionModuleDeps = {
+      chainManager: this.chainManager,
+      supportedAssets: this.supportedAssets,
     }
-    if (Object.values(this.swapProviders).some(Boolean)) {
-      const ens = new EnsNamespace(this.chainManager)
-      this.swap = new WalletSwapNamespace(
-        this.swapProviders,
-        this,
-        (r) => (r ? ens.getAddress(r) : Promise.resolve(undefined)),
-        swapSettings,
-      )
+
+    for (const name of ACTION_NAMES) {
+      // Generic narrowing across the loop requires per-step casting — the
+      // discrimination over `ActionModules[K]` happens correctly inside each
+      // module's own type. Confining the casts here keeps the wallet body
+      // clean.
+      const module = ACTION_MODULES[name] as unknown as ActionModule<ActionName>
+      const providers = this.actionProviders[name]
+      if (
+        !providers ||
+        !module.isConfigured(providers as never) ||
+        !module.buildWalletNamespace
+      ) {
+        continue
+      }
+      const ns = (
+        module.buildWalletNamespace as (
+          p: unknown,
+          w: Wallet,
+          s: unknown,
+          d: ActionModuleDeps,
+        ) => unknown
+      )(providers, this, this.actionSettings[name], moduleDeps)
+      assignWalletNamespace(this, name, ns)
     }
   }
 
   /**
-   * Check whether a wallet namespace (`lend`, `swap`) is configured on this
-   * wallet. Useful for callers that branch on capability instead of catching
-   * a `TypeError` from `wallet.lend!.openPosition(...)` later. Returns `false`
-   * when the namespace is undefined (no providers were registered for it).
+   * Check whether a wallet namespace (`lend`, `swap`, `borrow`) is
+   * configured on this wallet. Useful for callers that branch on
+   * capability instead of catching a `TypeError` later.
    * @param namespace - Wallet namespace name to probe.
    * @returns `true` when the namespace is configured.
    */
-  has(namespace: 'lend' | 'swap'): boolean {
+  has(namespace: ActionName): boolean {
     return this[namespace] !== undefined
   }
 
@@ -180,4 +274,20 @@ export abstract class Wallet {
     transactionData: readonly TransactionData[],
     chainId: SupportedChainId,
   ): Promise<BatchTransactionReturnType>
+}
+
+/**
+ * Assign a `WalletXNamespace` to its slot on a `Wallet` instance keyed by
+ * the action name. TypeScript can't prove that `wallet[name]` accepts the
+ * namespace type produced by `ACTION_MODULES[name].buildWalletNamespace`,
+ * so this helper holds the one necessary cast. Adding a new action to
+ * `ActionModules` only requires declaring the corresponding `name?: T`
+ * field on `Wallet` — the assignment site stays generic.
+ */
+function assignWalletNamespace(
+  wallet: Wallet,
+  name: ActionName,
+  ns: unknown,
+): void {
+  ;(wallet as unknown as Record<ActionName, unknown>)[name] = ns
 }

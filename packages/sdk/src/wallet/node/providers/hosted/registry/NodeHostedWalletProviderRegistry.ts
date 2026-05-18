@@ -24,19 +24,18 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
       validateOptions(options): options is NodeOptionsMap['privy'] {
         return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
       },
-      async create(
-        { chainManager, lendProviders, swapProviders, supportedAssets },
-        options,
-      ) {
+      async create(deps, options) {
         const { PrivyHostedWalletProvider } =
           await import('@/wallet/node/providers/hosted/privy/PrivyHostedWalletProvider.js')
         return new PrivyHostedWalletProvider({
           privyClient: options.privyClient,
-          chainManager,
-          lendProviders,
-          swapProviders,
-          supportedAssets,
+          chainManager: deps.chainManager,
+          lendProviders: deps.lendProviders,
+          swapProviders: deps.swapProviders,
+          supportedAssets: deps.supportedAssets,
           authorizationContext: options.authorizationContext,
+          actionProviders: deps.actionProviders,
+          actionSettings: deps.actionSettings,
         })
       },
     })
@@ -47,18 +46,17 @@ export class NodeHostedWalletProviderRegistry extends HostedWalletProviderRegist
         const o = options as NodeOptionsMap['turnkey']
         return Boolean(o?.client)
       },
-      async create(
-        { chainManager, lendProviders, swapProviders, supportedAssets },
-        options,
-      ) {
+      async create(deps, options) {
         const { TurnkeyHostedWalletProvider } =
           await import('@/wallet/node/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js')
         return new TurnkeyHostedWalletProvider(
           options.client,
-          chainManager,
-          lendProviders,
-          swapProviders,
-          supportedAssets,
+          deps.chainManager,
+          deps.lendProviders,
+          deps.swapProviders,
+          deps.supportedAssets,
+          deps.actionProviders,
+          deps.actionSettings,
         )
       },
     })

@@ -1,6 +1,10 @@
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
@@ -31,8 +35,18 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
     lendProviders?: LendProviders,
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
+    actionProviders?: ActionProvidersMap,
+    actionSettings?: ActionSettingsMap,
   ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
+    super({
+      chainManager,
+      actionProviders: actionProviders ?? {
+        lend: lendProviders,
+        swap: swapProviders,
+      },
+      actionSettings,
+      supportedAssets,
+    })
   }
 
   /**
@@ -56,8 +70,8 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
       signWith,
       ethereumAddress,
       chainManager: this.chainManager,
-      lendProviders: this.lendProviders,
-      swapProviders: this.swapProviders,
+      actionProviders: this.actionProviders,
+      actionSettings: this.actionSettings,
       supportedAssets: this.supportedAssets,
     })
   }

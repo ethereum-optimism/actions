@@ -3,6 +3,10 @@ import type { LocalAccount } from 'viem'
 import { getAddress } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
 import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
@@ -45,13 +49,18 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
     swapProviders?: SwapProviders
     supportedAssets?: Asset[]
     authorizationContext?: AuthorizationContext
+    actionProviders?: ActionProvidersMap
+    actionSettings?: ActionSettingsMap
   }) {
-    super(
-      params.chainManager,
-      params.lendProviders,
-      params.swapProviders,
-      params.supportedAssets,
-    )
+    super({
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders ?? {
+        lend: params.lendProviders,
+        swap: params.swapProviders,
+      },
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
+    })
     this.privyClient = params.privyClient
     this.authorizationContext = params.authorizationContext
   }
@@ -65,8 +74,8 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
       walletId: params.walletId,
       address: getAddress(params.address),
       chainManager: this.chainManager,
-      lendProviders: this.lendProviders,
-      swapProviders: this.swapProviders,
+      actionProviders: this.actionProviders,
+      actionSettings: this.actionSettings,
       supportedAssets: this.supportedAssets,
     })
   }

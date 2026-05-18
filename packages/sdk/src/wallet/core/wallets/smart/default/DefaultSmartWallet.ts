@@ -13,7 +13,11 @@ import { toCoinbaseSmartAccount } from 'viem/account-abstraction'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import { parseAssetAmount } from '@/utils/assets.js'
 import { TransactionConfirmedButRevertedError } from '@/wallet/core/error/errors.js'
@@ -73,8 +77,16 @@ export class DefaultSmartWallet extends SmartWallet {
     deploymentAddress?: Address,
     nonce?: bigint,
     attributionSuffix?: Hex,
+    borrowProviders?: BorrowProviders,
   ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
+    super(
+      chainManager,
+      lendProviders,
+      swapProviders,
+      supportedAssets,
+      undefined,
+      borrowProviders,
+    )
 
     const { signersWithLocalAccount, signerIndex } =
       DefaultSmartWallet.ensureLocalAccountSigner(signers, signer)
@@ -117,6 +129,7 @@ export class DefaultSmartWallet extends SmartWallet {
     signers?: Signer[]
     lendProviders?: LendProviders
     swapProviders?: SwapProviders
+    borrowProviders?: BorrowProviders
     supportedAssets?: Asset[]
     deploymentAddress?: Address
     nonce?: bigint
@@ -133,6 +146,7 @@ export class DefaultSmartWallet extends SmartWallet {
       params.deploymentAddress,
       params.nonce,
       params.attributionSuffix,
+      params.borrowProviders,
     )
     await wallet.initialize()
     return wallet

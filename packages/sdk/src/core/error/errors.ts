@@ -162,6 +162,29 @@ export class QuoteExpiredError extends ActionsError {
   }
 }
 
+/**
+ * Thrown when a borrow market's configured `marketId` does not match the
+ * keccak256 of its configured `MarketParams`.
+ * @description Surfaced at provider construction so misconfigured deployments
+ * fail fast instead of producing silently incorrect calldata.
+ */
+export class BorrowMarketParamsMismatchError extends ActionsError {
+  override name = 'BorrowMarketParamsMismatchError' as const
+  marketId: string
+  computedMarketId: string
+
+  constructor(params: { marketId: string; computedMarketId: string }) {
+    super('Borrow market params do not match the configured marketId', {
+      metaMessages: [
+        `Configured marketId: ${params.marketId}`,
+        `Computed from params: ${params.computedMarketId}`,
+      ],
+    })
+    this.marketId = params.marketId
+    this.computedMarketId = params.computedMarketId
+  }
+}
+
 export class ExactOutputNotSupportedError extends ActionsError {
   override name = 'ExactOutputNotSupportedError' as const
   provider: string

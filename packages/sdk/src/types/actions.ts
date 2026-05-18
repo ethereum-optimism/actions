@@ -1,10 +1,16 @@
 import type { UniswapSwapProviderConfig } from '@/actions/swap/providers/uniswap/types.js'
 import type { VelodromeSwapProviderConfig } from '@/actions/swap/providers/velodrome/types.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
+import type { BorrowProviderConfig } from '@/types/borrow/index.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
 import type {
+  BorrowProviders,
   LendProviders,
   SwapProviderName,
   SwapProviders,
@@ -13,15 +19,21 @@ import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
 // Re-export provider configs for convenience
-export type { LendProviderConfig, SwapProviderConfig }
+export type { BorrowProviderConfig, LendProviderConfig, SwapProviderConfig }
 // Re-export centralized provider maps and constants
 export type {
+  BorrowProviderName,
+  BorrowProviders,
   LendProviderName,
   LendProviders,
   SwapProviderName,
   SwapProviders,
 } from '@/types/providers.js'
-export { LEND_PROVIDER_NAMES, SWAP_PROVIDER_NAMES } from '@/types/providers.js'
+export {
+  BORROW_PROVIDER_NAMES,
+  LEND_PROVIDER_NAMES,
+  SWAP_PROVIDER_NAMES,
+} from '@/types/providers.js'
 
 /** Require at least one property to be defined */
 type RequireAtLeastOne<T> = {
@@ -50,6 +62,43 @@ export type LendConfig = RequireAtLeastOne<{
 }> & {
   /** Shared settings applied across all lend providers */
   settings?: LendSettings
+}
+
+/**
+ * Shared borrow settings applied across all providers.
+ * Provider-level values override these when set.
+ */
+export interface BorrowSettings {
+  /**
+   * Default approval-amount strategy for ERC-20 → market approvals.
+   * Per-call params override this; provider-level config overrides it for a
+   * single provider. Defaults to `"exact"` because borrow flows are high-stakes
+   * and infinite allowance should be an explicit opt-in.
+   */
+  approvalMode?: ApprovalMode
+  /**
+   * Quote expiration in seconds from now. Defaults to 30 — tighter than swap
+   * because borrow quotes depend on two oracle prices and can drift faster.
+   */
+  quoteExpirationSeconds?: number
+  /**
+   * Default safety buffer applied to a market's liquidation LTV when computing
+   * `safeCeilingLtv`. Defaults to `0.05`. UX recommendation only; the SDK
+   * does not enforce the buffer.
+   */
+  healthBufferPct?: number
+}
+
+/**
+ * Borrow configuration — at least one provider must be configured.
+ * Shared settings go in `settings`; per-provider settings go under the provider key.
+ */
+export type BorrowConfig = RequireAtLeastOne<{
+  /** Morpho Blue borrow provider configuration */
+  morpho?: BorrowProviderConfig
+}> & {
+  /** Shared settings applied across all borrow providers */
+  settings?: BorrowSettings
 }
 
 /** Routing strategy for selecting a provider when multiple are configured. */
@@ -131,14 +180,36 @@ export interface AssetsConfig {
 export interface ActionsContext {
   /** Chain manager wrapping the configured chains */
   chainManager: ChainManager
+  /**
+   * Provider instances keyed by action name. The canonical place for
+   * downstream wiring (`Wallet`, `WalletNamespace`, hosted-wallet
+   * providers) to read per-action providers. The per-action fields
+   * (`lendProviders`, `swapProviders`, `borrowProviders`) are derived
+   * mirrors kept during the registry migration and will be removed once
+   * every consumer reads from this map.
+   */
+  actionProviders?: ActionProvidersMap
+  /**
+   * Settings keyed by action name. Parallel to `actionProviders`; once
+   * consumers migrate, `swapSettings` / `borrowSettings` are removed.
+   */
+  actionSettings?: ActionSettingsMap
   /** Configured lend provider instances (each holds its own config) */
   lendProviders: LendProviders
+  /**
+   * Configured borrow provider instances (each holds its own config).
+   * Optional during the borrow rollout; required wiring lands alongside
+   * `Actions.ts` borrow provider construction.
+   */
+  borrowProviders?: BorrowProviders
   /** Configured swap provider instances (each holds its own config) */
   swapProviders: SwapProviders
   /** Resolved supported asset list (allowlist minus blocklist) */
   supportedAssets: Asset[]
   /** Shared swap settings applied across swap providers */
   swapSettings?: SwapSettings
+  /** Shared borrow settings applied across borrow providers */
+  borrowSettings?: BorrowSettings
 }
 
 /**
@@ -180,6 +251,8 @@ export interface ActionsConfig<
   wallet: WalletConfig<THostedWalletProviderType, TConfigMap>
   /** Lending providers configuration (optional) */
   lend?: LendConfig
+  /** Borrow providers configuration (optional) */
+  borrow?: BorrowConfig
   /** Swap providers configuration (optional) */
   swap?: SwapConfig
   /** Assets configuration (optional) */

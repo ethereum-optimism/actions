@@ -102,7 +102,9 @@ describe('PrivyHostedWalletProvider', () => {
 
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({
-          lendProviders: { morpho: mockLendProvider },
+          actionProviders: expect.objectContaining({
+            lend: { morpho: mockLendProvider },
+          }),
         }),
       )
     })

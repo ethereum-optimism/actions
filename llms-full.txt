@@ -307,9 +307,35 @@ const closeReceipt = await wallet.lend.closePosition({
 
 // Browse available markets
 const markets = await actions.lend.getMarkets()
+
+// ── Borrow (Morpho Blue today; Aave / Comet / Liquity follow) ──
+
+// Quote a borrow open: positionAfter + fees + safeCeilingLtv + pre-built txs.
+const quote = await wallet.borrow.openPosition({
+  market, // BorrowMarketConfig — { kind: 'morpho-blue', marketId, marketParams, ... }
+  borrowAmount: { amount: 100 }, // or { amountRaw: 100_000_000n } per #379
+  collateralAmount: { amount: 250 }, // optional; omit when collateral is already supplied
+})
+
+// Get the current position
+const borrowPosition = await wallet.borrow.getPosition({
+  marketId: market,
+  walletAddress: wallet.address,
+})
+
+// Close with `{ max: true }` to use Morpho's dust-safe shares path
+const closeReceipt = await wallet.borrow.closePosition({
+  market,
+  borrowAmount: { max: true },
+  collateralAmount: { max: true },
+})
+
+// Hand a pre-built quote back to wallet.borrow.* to dispatch without re-quoting
+// (recipient is validated against wallet.address; quote expiration enforced).
+await wallet.borrow.openPosition(quote)
 ```
 
-> **Source of truth for available actions**: The wallet instance exposes namespaces for each action type. Check which namespaces exist on the `Wallet` and `SmartWallet` classes in `src/wallet/core/wallets/`. The `actions` instance also exposes top-level namespaces for read-only operations (e.g. `actions.lend.getMarkets()`).
+> **Source of truth for available actions**: The wallet instance exposes namespaces for each action type. Check which namespaces exist on the `Wallet` and `SmartWallet` classes in `src/wallet/core/wallets/`. The `actions` instance also exposes top-level namespaces for read-only operations (e.g. `actions.lend.getMarkets()`, `actions.borrow.getMarket(marketId)`).
 
 ## Reference
 
@@ -326,6 +352,13 @@ import type {
   LendMarket, // Market data (name, asset, supply, APY)
   LendMarketPosition, // User position in a market
   LendTransaction, // Transaction result from lend operations
+  BorrowConfig, // Borrow provider configuration
+  BorrowMarketConfig, // Borrow market definition (tagged union; Morpho Blue today)
+  BorrowMarketId, // Borrow market identifier ({ kind, marketId, chainId })
+  BorrowMarket, // Borrow market data (APY, LLTV, totals)
+  BorrowMarketPosition, // User position (collateral, debt, HF, LTV)
+  BorrowQuote, // Pre-built borrow action with calldata + position transition
+  BorrowReceipt, // Receipt returned from wallet.borrow.* actions
   WalletConfig, // Wallet provider configuration
   SupportedChainId, // Union of supported chain IDs
 } from '@eth-optimism/actions-sdk'

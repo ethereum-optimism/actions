@@ -1,6 +1,6 @@
 import { isAddressEqual } from 'viem'
 
-import { QUOTE_DISCRIMINATOR } from '@/actions/swap/core/SwapProvider.js'
+import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { BaseSwapNamespace } from '@/actions/swap/namespaces/BaseSwapNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { QuoteRecipientMismatchError } from '@/core/error/errors.js'

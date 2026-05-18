@@ -1,9 +1,30 @@
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type {
+  BorrowProviders,
+  LendProviders,
+  SwapProviders,
+} from '@/types/providers.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+
+/**
+ * Options handed to `HostedWalletProvider` subclasses.
+ * @description Action-keyed `actionProviders` / `actionSettings` are the
+ * preferred shape; the legacy positional/named per-action params are kept
+ * during the registry migration so existing subclasses still compile.
+ */
+export interface HostedWalletProviderOptions {
+  chainManager: ChainManager
+  actionProviders?: ActionProvidersMap
+  actionSettings?: ActionSettingsMap
+  supportedAssets?: Asset[]
+}
 
 /**
  * Base hosted wallet provider class
@@ -16,20 +37,54 @@ export abstract class HostedWalletProvider<
   TOptionsMap extends Record<TType, unknown>,
 > {
   protected chainManager: ChainManager
-  protected lendProviders: LendProviders
-  protected swapProviders: SwapProviders
+  protected actionProviders: ActionProvidersMap
+  protected actionSettings: ActionSettingsMap
   protected supportedAssets?: Asset[]
 
+  /** Legacy mirror — derived from `actionProviders.lend`. */
+  protected get lendProviders(): LendProviders {
+    return (this.actionProviders.lend ?? {}) as LendProviders
+  }
+  /** Legacy mirror — derived from `actionProviders.swap`. */
+  protected get swapProviders(): SwapProviders {
+    return (this.actionProviders.swap ?? {}) as SwapProviders
+  }
+  /** Legacy mirror — derived from `actionProviders.borrow`. */
+  protected get borrowProviders(): BorrowProviders {
+    return (this.actionProviders.borrow ?? {}) as BorrowProviders
+  }
+
+  protected constructor(options: HostedWalletProviderOptions)
   protected constructor(
     chainManager: ChainManager,
     lendProviders?: LendProviders,
     swapProviders?: SwapProviders,
     supportedAssets?: Asset[],
+  )
+  protected constructor(
+    arg1: ChainManager | HostedWalletProviderOptions,
+    lendProviders?: LendProviders,
+    swapProviders?: SwapProviders,
+    supportedAssets?: Asset[],
   ) {
-    this.chainManager = chainManager
-    this.lendProviders = lendProviders || {}
-    this.swapProviders = swapProviders || {}
-    this.supportedAssets = supportedAssets
+    const isOptions =
+      typeof arg1 === 'object' &&
+      arg1 !== null &&
+      'chainManager' in (arg1 as object)
+    const options: HostedWalletProviderOptions = isOptions
+      ? (arg1 as HostedWalletProviderOptions)
+      : {
+          chainManager: arg1 as ChainManager,
+          actionProviders: {
+            lend: lendProviders,
+            swap: swapProviders,
+          },
+          supportedAssets,
+        }
+    this.chainManager = options.chainManager
+    this.actionProviders = options.actionProviders ?? {}
+    this.actionSettings = options.actionSettings ?? {}
+    this.supportedAssets = options.supportedAssets
   }
   /**
    * Convert a hosted wallet to an Actions wallet

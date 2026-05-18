@@ -9,33 +9,66 @@ set -euo pipefail
 #   5. Deploy Morpho borrow market (dUSDC collateral / OP loan)
 #
 # Usage:
-#   ./script/deploy-demo.sh --rpc-url <url> --private-key <key>
+#   ./script/deploy-demo.sh [--skip-velodrome]
 #
-# State is tracked in state/deployments.json to avoid redeployment.
+# Reads BASE_SEPOLIA_RPC_URL and DEMO_MARKET_SETUP_PRIVATE_KEY from
+# packages/demo/backend/.env. State is tracked in state/deployments.json
+# to avoid redeployment.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTRACTS_DIR="$(dirname "$SCRIPT_DIR")"
 STATE_FILE="$CONTRACTS_DIR/state/deployments.json"
 CHAIN_ID="84532" # Base Sepolia
 
-# Parse arguments (pass through to forge)
-FORGE_ARGS=()
+# Mirror stdout/stderr to a log file so it can be inspected after the run.
+# Override with `DEPLOY_DEMO_LOG=/some/path pnpm deploy:demo`. The default
+# lives at the repo root (gitignored as *.log) so contributors don't need
+# to write outside the worktree.
+DEPLOY_DEMO_LOG="${DEPLOY_DEMO_LOG:-$CONTRACTS_DIR/../../../deploy-demo.log}"
+exec > >(tee "$DEPLOY_DEMO_LOG") 2>&1
+
+# Parse arguments
+SKIP_VELODROME=0
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --rpc-url) RPC_URL="$2"; FORGE_ARGS+=("$1" "$2"); shift 2 ;;
-        --private-key) PRIVATE_KEY="$2"; FORGE_ARGS+=("$1" "$2"); shift 2 ;;
-        *) FORGE_ARGS+=("$1"); shift ;;
+        --skip-velodrome) SKIP_VELODROME=1; shift ;;
+        *) echo "Unknown argument: $1"; exit 1 ;;
     esac
 done
 
-if [[ -z "${RPC_URL:-}" || -z "${PRIVATE_KEY:-}" ]]; then
-    echo "Usage: $0 --rpc-url <url> --private-key <key>"
+# Read RPC URL and deployer key from packages/demo/backend/.env. Only
+# BASE_SEPOLIA_RPC_URL and DEMO_MARKET_SETUP_PRIVATE_KEY are honored;
+# the generic RPC_URL from .env (typically supersim's localhost) is
+# intentionally ignored.
+BACKEND_ENV="$CONTRACTS_DIR/../backend/.env"
+if [[ ! -f "$BACKEND_ENV" ]]; then
+    echo "ERROR: missing $BACKEND_ENV"
+    echo "Populate BASE_SEPOLIA_RPC_URL and DEMO_MARKET_SETUP_PRIVATE_KEY there."
+    exit 1
+fi
+# shellcheck disable=SC1090
+set -a; source "$BACKEND_ENV"; set +a
+
+if [[ -z "${BASE_SEPOLIA_RPC_URL:-}" || -z "${DEMO_MARKET_SETUP_PRIVATE_KEY:-}" ]]; then
+    echo "ERROR: $BACKEND_ENV must define BASE_SEPOLIA_RPC_URL and DEMO_MARKET_SETUP_PRIVATE_KEY"
     exit 1
 fi
 
-# Read a value from state file
+FORGE_ARGS=(
+    --rpc-url "$BASE_SEPOLIA_RPC_URL"
+    --private-key "$DEMO_MARKET_SETUP_PRIVATE_KEY"
+)
+
+echo ">>> RPC: $BASE_SEPOLIA_RPC_URL"
+
+# Read a value from state file.
+# Converts dotted keys (e.g. `velodrome.pool` or
+# `morpho.borrow.marketParams.loanToken`) into a fully optional chain
+# (`velodrome?.pool`, etc.) so a missing intermediate node returns the
+# empty string instead of throwing `Cannot read properties of undefined`.
 read_state() {
-    node -e "const s=require('$STATE_FILE'); console.log(s['$CHAIN_ID']?.${1} ?? '')"
+    local key="${1//./?.}"
+    node -e "const s=require('$STATE_FILE'); console.log(s['$CHAIN_ID']?.${key} ?? '')"
 }
 
 # Write a value to state file
@@ -65,6 +98,13 @@ parse_address() {
 parse_bytes32() {
     local output="$1"
     echo "$output" | grep -oE '0x[0-9a-fA-F]{64}' | head -1
+}
+
+# Extract a decimal integer following a labeled line from forge output:
+# "  BorrowMarketParamsLltv: 860000000000000000"
+parse_uint() {
+    local label="$1" output="$2"
+    echo "$output" | grep "$label" | grep -oE '[0-9]+' | tail -1
 }
 
 echo "=== Demo Infrastructure Deployment ==="
@@ -149,7 +189,9 @@ fi
 # --- Step 4: Deploy Velodrome Pool ---
 VELO_POOL=$(read_state "velodrome.pool")
 
-if [[ -z "$VELO_POOL" ]]; then
+if [[ "$SKIP_VELODROME" == "1" ]]; then
+    echo ">>> Skipping Velodrome pool (--skip-velodrome)"
+elif [[ -z "$VELO_POOL" ]]; then
     echo ">>> Deploying Velodrome pool..."
     OUTPUT=$(DEMO_USDC_ADDRESS="$USDC_ADDR" DEMO_OP_ADDRESS="$OP_ADDR" \
         forge script script/DeployVelodromeMarket.s.sol:DeployVelodromeMarket \
@@ -206,8 +248,22 @@ if [[ -z "$BORROW_MARKET_ID" ]]; then
     # console.logBytes32 prints the value on the line after the label.
     BORROW_MARKET_ID=$(echo "$OUTPUT" | grep -A1 "BorrowMarketId:" | grep -oE '0x[0-9a-fA-F]{64}' | head -1)
 
+    # MarketParams fields, emitted by the deploy script so the SDK and demo
+    # backend can encode write-side calldata without re-deriving constants.
+    BORROW_PARAMS_LOAN_TOKEN=$(parse_address "BorrowMarketParamsLoanToken:" "$OUTPUT")
+    BORROW_PARAMS_COLLATERAL_TOKEN=$(parse_address "BorrowMarketParamsCollateralToken:" "$OUTPUT")
+    BORROW_PARAMS_ORACLE=$(parse_address "BorrowMarketParamsOracle:" "$OUTPUT")
+    BORROW_PARAMS_IRM=$(parse_address "BorrowMarketParamsIrm:" "$OUTPUT")
+    BORROW_PARAMS_LLTV=$(parse_uint "BorrowMarketParamsLltv:" "$OUTPUT")
+
     if [[ -z "$BORROW_MARKET_ID" || -z "$BORROW_ORACLE" || -z "$BORROW_MOCK_FEED" ]]; then
         echo "ERROR: Failed to parse borrow market addresses/id from forge output"
+        exit 1
+    fi
+    if [[ -z "$BORROW_PARAMS_LOAN_TOKEN" || -z "$BORROW_PARAMS_COLLATERAL_TOKEN" \
+        || -z "$BORROW_PARAMS_ORACLE" || -z "$BORROW_PARAMS_IRM" \
+        || -z "$BORROW_PARAMS_LLTV" ]]; then
+        echo "ERROR: Failed to parse borrow market params from forge output"
         exit 1
     fi
 
@@ -218,6 +274,11 @@ if [[ -z "$BORROW_MARKET_ID" ]]; then
     write_state "morpho.borrow.marketId" "$BORROW_MARKET_ID"
     write_state "morpho.borrow.mockFeed" "$BORROW_MOCK_FEED"
     write_state "morpho.borrow.oracle" "$BORROW_ORACLE"
+    write_state "morpho.borrow.marketParams.loanToken" "$BORROW_PARAMS_LOAN_TOKEN"
+    write_state "morpho.borrow.marketParams.collateralToken" "$BORROW_PARAMS_COLLATERAL_TOKEN"
+    write_state "morpho.borrow.marketParams.oracle" "$BORROW_PARAMS_ORACLE"
+    write_state "morpho.borrow.marketParams.irm" "$BORROW_PARAMS_IRM"
+    write_state "morpho.borrow.marketParams.lltv" "$BORROW_PARAMS_LLTV"
     echo "Morpho borrow market deployed: marketId=$BORROW_MARKET_ID"
 else
     echo ">>> Morpho borrow market already deployed: marketId=$BORROW_MARKET_ID"
