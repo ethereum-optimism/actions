@@ -336,12 +336,17 @@ export class BorrowApiClient {
     return deserializePrice(result)
   }
 
-  // `walletAddress` is rejected by the backend; derived from auth.
+  // `walletAddress` is rejected by the backend on /borrow/quote (derived
+  // from auth), so strip it from the body before sending.
   async getQuote(
     params: BorrowQuoteParams,
     headers: HeadersInit = {},
   ): Promise<BorrowQuote> {
-    const body = serializeBigInts(buildPriceBody(params))
+    const { walletAddress, ...rest } = params as BorrowPriceParams & {
+      walletAddress?: Address
+    }
+    void walletAddress
+    const body = serializeBigInts(buildPriceBody(rest as BorrowPriceParams))
     const { result } = await this.request<{ result: Serialized<BorrowQuote> }>(
       '/borrow/quote',
       { method: 'POST', body: JSON.stringify(body), headers },
