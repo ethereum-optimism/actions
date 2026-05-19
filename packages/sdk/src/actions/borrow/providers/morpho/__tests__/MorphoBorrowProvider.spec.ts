@@ -1,5 +1,10 @@
 import { blueAbi } from '@morpho-org/blue-sdk-viem'
-import { decodeFunctionData, erc20Abi, maxUint256, type PublicClient } from 'viem'
+import {
+  decodeFunctionData,
+  erc20Abi,
+  maxUint256,
+  type PublicClient,
+} from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -560,5 +565,79 @@ describe('MorphoBorrowProvider — closePosition', () => {
     })
     expect(decoded.functionName).toBe('approve')
     expect(decoded.args?.[1]).toBe(maxUint256)
+  })
+
+  it('supports max borrow with an exact collateral withdrawal', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        collateral: oneEth * 4n,
+        borrowShares: oneEth,
+      }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.closePosition({
+      market,
+      walletAddress,
+      borrowAmount: { max: true },
+      collateralAmount: { amountRaw: oneEth },
+    })
+
+    expect(quote.execution.transactions).toHaveLength(3)
+    expect(quote.collateralAmountRaw).toBe(oneEth)
+  })
+
+  it('rejects exact borrow with max collateral withdrawal when debt remains', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        collateral: oneEth * 3n,
+        borrowShares: oneEth * 2n,
+      }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    await expect(
+      provider.closePosition({
+        market,
+        walletAddress,
+        borrowAmount: { amountRaw: oneEth },
+        collateralAmount: { max: true },
+      }),
+    ).rejects.toThrow('insufficient collateral')
+  })
+
+  it('supports exact borrow with an exact collateral withdrawal', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        collateral: oneEth * 3n,
+        borrowShares: oneEth * 2n,
+      }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.closePosition({
+      market,
+      walletAddress,
+      borrowAmount: { amountRaw: oneEth },
+      collateralAmount: { amountRaw: oneEth },
+    })
+
+    expect(quote.execution.transactions).toHaveLength(3)
+    expect(quote.collateralAmountRaw).toBe(oneEth)
+  })
+
+  it('supports max borrow without withdrawing collateral', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        collateral: oneEth * 3n,
+        borrowShares: oneEth,
+      }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.closePosition({
+      market,
+      walletAddress,
+      borrowAmount: { max: true },
+    })
+
+    expect(quote.execution.transactions).toHaveLength(2)
+    expect(quote.collateralAmountRaw).toBeUndefined()
   })
 })
