@@ -33,10 +33,12 @@ export abstract class BaseBorrowNamespace extends BaseNamespace<
   async getMarkets(
     params: GetBorrowMarketsParams = {},
   ): Promise<BorrowMarket[]> {
-    const results = await Promise.all(
+    const results = await Promise.allSettled(
       this.getAllProviders().map((p) => p.getMarkets(params)),
     )
-    return results.flat()
+    return results.flatMap((result) =>
+      result.status === 'fulfilled' ? result.value : [],
+    )
   }
 
   async getMarket(params: GetBorrowMarketParams): Promise<BorrowMarket> {

@@ -144,3 +144,41 @@ describe('BaseBorrowNamespace.getQuote', () => {
     expect(provider.closePosition).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('BaseBorrowNamespace.getMarkets', () => {
+  it('keeps fulfilled provider results when one provider fails', async () => {
+    const okProvider = makeProvider()
+    const failingProvider = makeProvider()
+    ;(okProvider.getMarkets as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        marketId: {
+          kind: market.kind,
+          marketId: market.marketId,
+          chainId: market.chainId,
+        },
+        name: market.name,
+        collateralAsset,
+        borrowAsset,
+        borrowApy: 0.05,
+        liquidationBonus: 0.05,
+        maxLtv: 0.86,
+        healthBufferPct: 0.05,
+        totalBorrowed: 0n,
+        totalCollateral: 0n,
+      },
+    ])
+    ;(failingProvider.getMarkets as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('rpc failed'),
+    )
+
+    const ns = new ActionsBorrowNamespace({
+      morpho: okProvider,
+      spark: failingProvider,
+    } as never)
+
+    const markets = await ns.getMarkets()
+
+    expect(markets).toHaveLength(1)
+    expect(markets[0].name).toBe(market.name)
+  })
+})

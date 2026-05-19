@@ -96,11 +96,14 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     params: GetBorrowMarketsParams,
   ): Promise<BorrowMarket[]> {
     const configs = params.markets ?? this._config.marketAllowlist ?? []
-    return Promise.all(
+    const results = await Promise.allSettled(
       configs.map(async (config) => {
         const market = await this.fetchMarket(config)
         return this.adaptMarket(config, market)
       }),
+    )
+    return results.flatMap((result) =>
+      result.status === 'fulfilled' ? result.value : [],
     )
   }
 

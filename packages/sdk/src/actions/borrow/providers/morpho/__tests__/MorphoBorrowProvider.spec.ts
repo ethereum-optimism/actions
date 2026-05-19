@@ -50,6 +50,18 @@ const market: BorrowMarketConfig = {
   marketParams,
 }
 
+const secondMarketParams: MorphoMarketParams = {
+  ...marketParams,
+  oracle: '0x0000000000000000000000000000000000000bbb',
+}
+
+const secondMarket: BorrowMarketConfig = {
+  ...market,
+  marketId: computeMorphoMarketId(secondMarketParams),
+  name: 'Second test market',
+  marketParams: secondMarketParams,
+}
+
 // Helper to build a tuple-shaped market() return value.
 function marketTuple(
   overrides: Partial<{
@@ -159,6 +171,26 @@ describe('MorphoBorrowProvider — _getMarket', () => {
     expect(result.totalBorrowed).toBe(1234n)
     expect(result.collateralAsset).toBe(collateralAsset)
     expect(result.borrowAsset).toBe(borrowAsset)
+  })
+
+  it('keeps healthy markets when one allowlisted market read fails', async () => {
+    let callCount = 0
+    const cm = makeChainManagerWithMulticall(async () => {
+      callCount += 1
+      if (callCount === 2) {
+        throw new Error('oracle reverted')
+      }
+      return [marketTuple(), 500_000_000_000_000_000_000_000_000_000_000_000n]
+    })
+    const provider = new MorphoBorrowProvider(
+      { marketAllowlist: [market, secondMarket] },
+      cm,
+    )
+
+    const results = await provider.getMarkets()
+
+    expect(results).toHaveLength(1)
+    expect(results[0].name).toBe(market.name)
   })
 })
 
