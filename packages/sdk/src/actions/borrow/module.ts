@@ -29,7 +29,7 @@ export const borrowModule: ActionModule<'borrow'> = {
   buildActionsNamespace(providers) {
     return new ActionsBorrowNamespace(providers)
   },
-  buildWalletNamespace(providers, wallet, settings) {
-    return new WalletBorrowNamespace(providers, wallet, settings)
+  buildWalletNamespace(providers, wallet) {
+    return new WalletBorrowNamespace(providers, wallet)
   },
 }

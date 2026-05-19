@@ -7,7 +7,6 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
 } from '@/core/error/errors.js'
-import type { BorrowSettings } from '@/types/actions.js'
 import type {
   BorrowClosePositionParams,
   BorrowDepositCollateralParams,
@@ -33,14 +32,8 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   constructor(
     providers: BorrowProviders,
     private readonly wallet: Wallet,
-    settings?: BorrowSettings,
   ) {
     super(providers)
-    // Settings are forwarded into providers at construction time elsewhere
-    // (Actions wiring). Holding a copy here is reserved for future namespace-
-    // level concerns (telemetry, default health buffer overrides) and kept
-    // intentionally unused for now.
-    void settings
   }
 
   async openPosition(
