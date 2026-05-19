@@ -1,3 +1,4 @@
+import { blueAbi } from '@morpho-org/blue-sdk-viem'
 import { decodeFunctionData, erc20Abi, maxUint256, type PublicClient } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -491,6 +492,12 @@ describe('MorphoBorrowProvider — openPosition', () => {
       borrowAmount: { amountRaw: oneEth },
     })
     expect(quote.execution.transactions).toHaveLength(1)
+    expect(quote.execution.approvalsSkipped).toBe(true)
+    const decoded = decodeFunctionData({
+      abi: blueAbi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(decoded.functionName).toBe('borrow')
   })
 })
 
