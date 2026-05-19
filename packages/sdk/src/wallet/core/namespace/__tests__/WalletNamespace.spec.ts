@@ -10,6 +10,7 @@ import {
   getMockAuthorizationContext,
 } from '@/__mocks__/MockPrivyClient.js'
 import { getRandomAddress } from '@/__mocks__/utils.js'
+import { MockBorrowProvider } from '@/actions/borrow/__mocks__/MockBorrowProvider.js'
 import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
@@ -445,6 +446,30 @@ describe('WalletNamespace', () => {
 
       expect(wallet.address).toBe(account.address)
       expect(wallet.signer).toBe(account)
+    })
+
+    it('should expose borrow namespace from legacy borrowProviders', async () => {
+      const mockBorrowProvider = new MockBorrowProvider()
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        { morpho: mockLendProvider },
+      )
+      const walletProvider = new WalletProvider(undefined, smartWalletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        borrowProviders: { morpho: mockBorrowProvider },
+        supportedAssets: [],
+      })
+
+      const account = privateKeyToAccount(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      )
+
+      const wallet = await walletNamespace.toActionsWallet(account)
+
+      expect(wallet.borrow).toBeDefined()
     })
   })
 
