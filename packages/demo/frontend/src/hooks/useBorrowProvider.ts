@@ -8,7 +8,7 @@
  * via `useBorrowProviderContext()`.
  *
  * Auth headers are injected via `getAuthHeaders`. Pass `null` for paths
- * that don't have a server-wallet wired (Dynamic / Turnkey today) — the
+ * that don't have a server-wallet wired (Dynamic / Turnkey today); the
  * public `/borrow/markets` and `/borrow/price` routes still resolve, but
  * `/borrow/quote` and mutations will fail without auth.
  */

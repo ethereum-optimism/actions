@@ -65,7 +65,7 @@ describe('BorrowHealthCard', () => {
         projectedHealthFactor={1.0}
       />,
     )
-    // 0.86 = 86.0% — same value as "Liquidation at 86.0%" stat row
+    // 0.86 = 86.0%, same value as "Liquidation at 86.0%" stat row
     expect(screen.getAllByText(/86\.0%/).length).toBeGreaterThan(0)
   })
 

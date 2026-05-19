@@ -189,7 +189,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   ])
 
   // Backend-driven preview from `/borrow/price`. Debounced and
-  // race-safe — outdated responses are discarded on cancel.
+  // race-safe: outdated responses are discarded on cancel.
   const [livePreview, setLivePreview] = useState<BorrowPrice | null>(null)
   useEffect(() => {
     if (!activeMarket || amountNum <= 0) {
@@ -234,7 +234,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
         const price = await getPrice(params)
         if (!cancelled) setLivePreview(price)
       } catch {
-        // Network / 4xx — fall back to the local projection.
+        // Network / 4xx: fall back to the local projection.
         if (!cancelled) setLivePreview(null)
       }
     }, 250)
@@ -262,7 +262,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
       : localProjection && localProjection.kind === 'projected'
         ? localProjection.ltv
         : currentLtv
-  // Backend doesn't surface a discrete "would liquidate" flag — treat a
+  // Backend doesn't surface a discrete "would liquidate" flag; treat a
   // projected LTV at or above maxLtv as the sentinel.
   const wouldLiquidate =
     backendLtv !== null

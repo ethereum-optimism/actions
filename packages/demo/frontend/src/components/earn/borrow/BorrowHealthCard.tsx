@@ -27,7 +27,7 @@ import type { Asset } from '@eth-optimism/actions-sdk'
 export interface BorrowHealthCardProps {
   currentLtv: number
   projectedLtv: number
-  /** LLTV (liquidation threshold) — bar max = 1 maps to this LTV. */
+  /** LLTV (liquidation threshold); bar max = 1 maps to this LTV. */
   maxLtv: number
   bufferPct: number
   borrowApy: number
