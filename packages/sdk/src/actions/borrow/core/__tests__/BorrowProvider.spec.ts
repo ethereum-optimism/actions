@@ -128,9 +128,9 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
   }
 
   protected async _getMarket(
-    marketId: BorrowMarketConfig,
+    _marketId: GetBorrowPositionParams['marketId'],
   ): Promise<BorrowMarket> {
-    return makeStubMarket(marketId)
+    return makeStubMarket(market)
   }
 
   protected async _getMarkets(
