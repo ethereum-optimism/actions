@@ -11,8 +11,10 @@ import {
   LendProviderContextProvider,
   useLendProviderContext,
 } from '@/contexts/LendProviderContext'
-import { BorrowProviderContextProvider } from '@/contexts/BorrowProviderContext'
-import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
+import {
+  BorrowProviderContextProvider,
+  useBorrowProviderContext,
+} from '@/contexts/BorrowProviderContext'
 import { TabSwitcherProvider } from '@/contexts/TabSwitcherContext'
 import { BorrowTab } from './borrow/BorrowTab'
 import { MarketSelector } from './MarketSelector'
