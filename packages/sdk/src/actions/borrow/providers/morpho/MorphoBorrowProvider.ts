@@ -27,6 +27,7 @@ import {
   BorrowMarketParamsMismatchError,
   EmptyPositionError,
   MarketNotAllowedError,
+  ProtocolContractsNotConfiguredError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
@@ -846,9 +847,10 @@ function morphoMarketParamsTuple(params: MorphoMarketParams): {
 function requireMorphoBlueAddress(chainId: number): Address {
   const contracts = getMorphoContracts(chainId)
   if (!contracts) {
-    throw new Error(
-      `Morpho Blue contracts not configured for chain id ${chainId}`,
-    )
+    throw new ProtocolContractsNotConfiguredError({
+      protocol: 'Morpho Blue',
+      chainId,
+    })
   }
   return contracts.morphoBlue
 }

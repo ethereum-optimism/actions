@@ -91,6 +91,20 @@ export class ProviderNotConfiguredError extends ActionsError {
   }
 }
 
+export class ProtocolContractsNotConfiguredError extends ActionsError {
+  override name = 'ProtocolContractsNotConfiguredError' as const
+  protocol: string
+  chainId: number
+
+  constructor(params: { protocol: string; chainId: number }) {
+    super(
+      `${params.protocol} contracts are not configured for chain ${params.chainId}`,
+    )
+    this.protocol = params.protocol
+    this.chainId = params.chainId
+  }
+}
+
 export class MarketIdRequiredError extends ActionsError {
   override name = 'MarketIdRequiredError' as const
 
