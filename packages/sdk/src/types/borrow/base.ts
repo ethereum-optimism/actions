@@ -342,22 +342,6 @@ export interface BorrowQuote {
   gasEstimate?: bigint
 }
 
-/**
- * Lightweight quote alternative for previews that don't need calldata.
- */
-export interface BorrowPrice {
-  /** Market the preview targets */
-  marketId: BorrowMarketId
-  /** Action the preview represents */
-  action: BorrowAction
-  /** Hypothetical post-action position state */
-  positionAfter: BorrowMarketPosition
-  /** Fee context at preview time */
-  fees: BorrowFees
-  /** Buffer-aware safe ceiling */
-  safeCeilingLtv: number
-}
-
 /** Filter parameters for `actions.borrow.getMarkets`. */
 export interface GetBorrowMarketsParams {
   /** Filter to markets whose `collateralAsset` matches */

@@ -7,7 +7,6 @@ import type {
   BorrowMarketConfig,
   BorrowMarketId,
   BorrowMarketPosition,
-  BorrowPrice,
   BorrowQuote,
   BorrowQuoteParams,
   GetBorrowMarketParams,
@@ -72,23 +71,6 @@ export abstract class BaseBorrowNamespace extends BaseNamespace<
         return provider.withdrawCollateral(params)
       case 'repay':
         return provider.repay(params)
-    }
-  }
-
-  /**
-   * Lighter alternative to `getQuote` for preview UIs: returns just the
-   * position transition + fees + safe-ceiling LTV, without the
-   * pre-built transaction bundle. Internally builds a full quote and
-   * strips the execution data.
-   */
-  async getPrice(params: BorrowQuoteParams): Promise<BorrowPrice> {
-    const quote = await this.getQuote(params)
-    return {
-      marketId: quote.marketId,
-      action: quote.action,
-      positionAfter: quote.positionAfter,
-      fees: quote.fees,
-      safeCeilingLtv: quote.safeCeilingLtv,
     }
   }
 

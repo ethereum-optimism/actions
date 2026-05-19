@@ -144,25 +144,3 @@ describe('BaseBorrowNamespace.getQuote', () => {
     expect(provider.closePosition).toHaveBeenCalledTimes(1)
   })
 })
-
-describe('BaseBorrowNamespace.getPrice', () => {
-  it('returns a BorrowPrice (no execution bundle, no expiration)', async () => {
-    const provider = makeProvider()
-    const ns = new ActionsBorrowNamespace({ morpho: provider })
-    const price = await ns.getPrice({
-      action: 'open',
-      market,
-      walletAddress,
-      borrowAmount: { amountRaw: 1n },
-    })
-    expect(price.action).toBe('open')
-    expect(price.positionAfter).toBeDefined()
-    expect(price.fees).toBeDefined()
-    expect(price.safeCeilingLtv).toBeCloseTo(0.86 * 0.95)
-    // BorrowPrice is structurally narrower than BorrowQuote — should not
-    // carry execution / quotedAt / expiresAt / recipient.
-    expect('execution' in price).toBe(false)
-    expect('quotedAt' in price).toBe(false)
-    expect('expiresAt' in price).toBe(false)
-  })
-})

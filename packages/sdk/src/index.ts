@@ -94,7 +94,6 @@ export type {
   BorrowMarketId,
   BorrowMarketPosition,
   BorrowOpenPositionParams,
-  BorrowPrice,
   BorrowProviderConfig,
   BorrowProviderName,
   BorrowQuote,
