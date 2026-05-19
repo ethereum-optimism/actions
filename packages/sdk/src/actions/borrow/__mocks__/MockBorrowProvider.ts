@@ -76,10 +76,6 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   private readonly mockConfig: MockBorrowProviderConfig
 
-  protocolSupportedChainIds(): number[] {
-    return this.mockConfig.supportedChains
-  }
-
   constructor(
     config?: BorrowProviderConfig,
     mockConfig?: Partial<MockBorrowProviderConfig>,
@@ -125,6 +121,10 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     this.getPosition = vi
       .fn()
       .mockImplementation(this.defaultGetPosition.bind(this))
+  }
+
+  protocolSupportedChainIds(): number[] {
+    return this.mockConfig.supportedChains
   }
 
   // Concrete `_*` hooks are unused in mocks (public methods are overridden
