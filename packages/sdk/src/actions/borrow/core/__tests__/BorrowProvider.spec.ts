@@ -1,3 +1,4 @@
+import { zeroAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,6 +8,7 @@ import {
   AddressRequiredError,
   ChainNotSupportedError,
   MarketNotAllowedError,
+  ZeroAddressError,
 } from '@/core/error/errors.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -284,6 +286,17 @@ describe('BorrowProvider — openPosition', () => {
     expect(call.recipient).toBe(walletAddress)
   })
 
+  it('rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.openPosition({
+        market,
+        walletAddress: zeroAddress,
+        borrowAmount: { amount: 1 },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
+
   it('passes amountRaw straight through', async () => {
     const provider = makeProvider()
     await provider.openPosition({
@@ -322,6 +335,17 @@ describe('BorrowProvider — openPosition', () => {
 })
 
 describe('BorrowProvider — closePosition', () => {
+  it('rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.closePosition({
+        market,
+        walletAddress: zeroAddress,
+        borrowAmount: { max: true },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
+
   it('passes { max: true } through to the concrete hook', async () => {
     const provider = makeProvider()
     await provider.closePosition({
@@ -352,6 +376,17 @@ describe('BorrowProvider — closePosition', () => {
 })
 
 describe('BorrowProvider — single-amount actions', () => {
+  it('depositCollateral rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.depositCollateral({
+        market,
+        walletAddress: zeroAddress,
+        amount: { amount: 250 },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
+
   it('depositCollateral normalizes using collateralAsset decimals', async () => {
     const provider = makeProvider()
     await provider.depositCollateral({
@@ -374,6 +409,17 @@ describe('BorrowProvider — single-amount actions', () => {
     expect(provider.withdrawCalls[0].amount).toEqual({ max: true })
   })
 
+  it('withdrawCollateral rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.withdrawCollateral({
+        market,
+        walletAddress: zeroAddress,
+        amount: { max: true },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
+
   it('repay normalizes using borrowAsset decimals', async () => {
     const provider = makeProvider()
     await provider.repay({
@@ -384,6 +430,17 @@ describe('BorrowProvider — single-amount actions', () => {
     expect(provider.repayCalls[0].amount).toEqual({
       amountWei: 500_000_000_000_000_000n,
     })
+  })
+
+  it('repay rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.repay({
+        market,
+        walletAddress: zeroAddress,
+        amount: { amount: 0.5 },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
   })
 })
 

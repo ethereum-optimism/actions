@@ -37,7 +37,10 @@ import type {
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
 import { resolveApprovalMode } from '@/utils/approve.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import {
+  validateChainSupported,
+  validateNotZeroAddress,
+} from '@/utils/validation.js'
 
 /** Hardcoded fallbacks when neither provider config nor shared settings set a value. */
 const DEFAULTS = {
@@ -252,6 +255,7 @@ export abstract class BorrowProvider<
     if (!params.walletAddress) {
       throw new AddressRequiredError('walletAddress')
     }
+    validateNotZeroAddress(params.walletAddress, 'walletAddress')
     validateChainSupported(params.marketId.chainId, this.supportedChainIds())
     this.validateMarketIdAllowed(params.marketId)
     return this._getPosition(params)
@@ -388,6 +392,7 @@ export abstract class BorrowProvider<
     if (!params.walletAddress) {
       throw new AddressRequiredError('walletAddress')
     }
+    validateNotZeroAddress(params.walletAddress, 'walletAddress')
     this.validateConfigSupported(params.market)
     return {
       walletAddress: params.walletAddress,
