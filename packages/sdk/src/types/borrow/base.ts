@@ -453,24 +453,3 @@ export interface BorrowProviderConfig {
   /** Quote expiration in seconds (overrides `BorrowSettings.quoteExpirationSeconds`) */
   quoteExpirationSeconds?: number
 }
-
-/**
- * Abstract method signatures every borrow provider implementation must
- * supply. Mirrors the `LendProviderMethods` pattern.
- */
-export interface BorrowProviderMethods {
-  _openPosition(params: BorrowOpenPositionInternalParams): Promise<BorrowQuote>
-  _closePosition(
-    params: BorrowClosePositionInternalParams,
-  ): Promise<BorrowQuote>
-  _depositCollateral(
-    params: BorrowDepositCollateralInternalParams,
-  ): Promise<BorrowQuote>
-  _withdrawCollateral(
-    params: BorrowWithdrawCollateralInternalParams,
-  ): Promise<BorrowQuote>
-  _repay(params: BorrowRepayInternalParams): Promise<BorrowQuote>
-  _getPosition(params: GetBorrowPositionParams): Promise<BorrowMarketPosition>
-  _getMarket(marketId: BorrowMarketId): Promise<BorrowMarket>
-  _getMarkets(params: GetBorrowMarketsParams): Promise<BorrowMarket[]>
-}
