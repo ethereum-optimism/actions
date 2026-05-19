@@ -17,47 +17,47 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
  * needed to add an action.
  *
  * The test mirrors the loop body in `actions.ts` and `Wallet.ts` against a
- * throwaway `restake` module, proving the dispatch shape works generically.
+ * throwaway `exampleNewModule`, proving the dispatch shape works generically.
  */
 
-interface RestakeConfig {
+interface ExampleNewModuleConfig {
   providerA?: { boost: number }
 }
-interface RestakeProviders {
+interface ExampleNewModuleProviders {
   providerA?: { boost: number }
 }
-interface RestakeSettings {
+interface ExampleNewModuleSettings {
   defaultBoost: number
 }
-interface RestakeActionsNamespace {
+interface ExampleNewModuleActionsNamespace {
   fetchAPR: () => number
 }
-interface RestakeWalletNamespace {
-  restake: (amount: bigint) => Promise<bigint>
+interface ExampleNewModuleWalletNamespace {
+  execute: (amount: bigint) => Promise<bigint>
 }
 
-interface RestakeModule {
-  readonly name: 'restake'
+interface ExampleNewModule {
+  readonly name: 'exampleNewModule'
   buildProviders(
-    config: RestakeConfig | undefined,
+    config: ExampleNewModuleConfig | undefined,
     deps: ActionModuleDeps,
-  ): RestakeProviders
-  isConfigured(providers: RestakeProviders): boolean
+  ): ExampleNewModuleProviders
+  isConfigured(providers: ExampleNewModuleProviders): boolean
   buildActionsNamespace(
-    providers: RestakeProviders,
+    providers: ExampleNewModuleProviders,
     deps: ActionModuleDeps,
-    settings: RestakeSettings | undefined,
-  ): RestakeActionsNamespace
+    settings: ExampleNewModuleSettings | undefined,
+  ): ExampleNewModuleActionsNamespace
   buildWalletNamespace(
-    providers: RestakeProviders,
+    providers: ExampleNewModuleProviders,
     wallet: Wallet,
-    settings: RestakeSettings | undefined,
+    settings: ExampleNewModuleSettings | undefined,
     deps: ActionModuleDeps,
-  ): RestakeWalletNamespace
+  ): ExampleNewModuleWalletNamespace
 }
 
-const restakeModule: RestakeModule = {
-  name: 'restake',
+const exampleNewModule: ExampleNewModule = {
+  name: 'exampleNewModule',
   buildProviders: (config) => {
     if (!config?.providerA) return {}
     return { providerA: { boost: config.providerA.boost } }
@@ -67,7 +67,7 @@ const restakeModule: RestakeModule = {
     fetchAPR: () => providers.providerA?.boost ?? 0,
   }),
   buildWalletNamespace: (providers, _wallet, settings) => ({
-    restake: async (amount: bigint) => {
+    execute: async (amount: bigint) => {
       const boost = providers.providerA?.boost ?? settings?.defaultBoost ?? 1
       return amount * BigInt(boost)
     },
@@ -83,21 +83,21 @@ function makeDeps(): ActionModuleDeps {
 
 describe('action-module registry smoke', () => {
   it('an inline module satisfies the contract shape', () => {
-    expect(restakeModule.name).toBe('restake')
-    const providers = restakeModule.buildProviders(
+    expect(exampleNewModule.name).toBe('exampleNewModule')
+    const providers = exampleNewModule.buildProviders(
       { providerA: { boost: 5 } },
       makeDeps(),
     )
-    expect(restakeModule.isConfigured(providers)).toBe(true)
-    expect(restakeModule.isConfigured({})).toBe(false)
+    expect(exampleNewModule.isConfigured(providers)).toBe(true)
+    expect(exampleNewModule.isConfigured({})).toBe(false)
   })
 
   it('buildActionsNamespace dispatches without touching real wiring', () => {
-    const providers = restakeModule.buildProviders(
+    const providers = exampleNewModule.buildProviders(
       { providerA: { boost: 7 } },
       makeDeps(),
     )
-    const ns = restakeModule.buildActionsNamespace(
+    const ns = exampleNewModule.buildActionsNamespace(
       providers,
       makeDeps(),
       undefined,
@@ -106,22 +106,22 @@ describe('action-module registry smoke', () => {
   })
 
   it('buildWalletNamespace dispatches through the contract', async () => {
-    const providers = restakeModule.buildProviders(
+    const providers = exampleNewModule.buildProviders(
       { providerA: { boost: 3 } },
       makeDeps(),
     )
     const fakeWallet = {} as Wallet
-    const ns = restakeModule.buildWalletNamespace(
+    const ns = exampleNewModule.buildWalletNamespace(
       providers,
       fakeWallet,
       { defaultBoost: 1 },
       makeDeps(),
     )
-    expect(await ns.restake(10n)).toBe(30n)
+    expect(await ns.execute(10n)).toBe(30n)
   })
 
   it('Actions/Wallet loop pattern works with arbitrary modules', () => {
-    const modules = { restake: restakeModule } as const
+    const modules = { exampleNewModule } as const
     const namespaces: Record<string, unknown> = {}
     for (const name of Object.keys(modules) as Array<keyof typeof modules>) {
       const m = modules[name]
@@ -136,6 +136,10 @@ describe('action-module registry smoke', () => {
         undefined,
       )
     }
-    expect((namespaces.restake as RestakeActionsNamespace).fetchAPR()).toBe(2)
+    expect(
+      (
+        namespaces.exampleNewModule as ExampleNewModuleActionsNamespace
+      ).fetchAPR(),
+    ).toBe(2)
   })
 })
