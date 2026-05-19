@@ -22,6 +22,12 @@ const actions = initActions({
 
 ## Usage
 
+### Supported Providers
+
+- Lend: `AaveLendProvider`, `MorphoLendProvider`
+- Borrow: `MorphoBorrowProvider`
+- Swap: `UniswapSwapProvider`, `VelodromeSwapProvider`
+
 ### Creating a Wallet
 
 ```typescript
