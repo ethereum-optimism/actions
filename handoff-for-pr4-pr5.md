@@ -25,7 +25,7 @@
 
 | Original ask | What landed in PR #3 |
 |---|---|
-| **ASK-A1** — `getPrice` / `getQuote` on `actions.borrow` (the read-only namespace) | `BaseBorrowNamespace.getQuote(BorrowQuoteParams)` and `.getPrice(BorrowQuoteParams)`. Discriminated by `action: 'open' \| 'close' \| 'depositCollateral' \| 'withdrawCollateral' \| 'repay'`; dispatch to the matching provider verb. `getPrice` returns the lighter shape (no execution bundle / no expiration). Both inherited by `ActionsBorrowNamespace` and `WalletBorrowNamespace`. |
+| **ASK-A1** — `getQuote` on `actions.borrow` (the read-only namespace) | `BaseBorrowNamespace.getQuote(BorrowQuoteParams)`, discriminated by `action: 'open' \| 'close' \| 'depositCollateral' \| 'withdrawCollateral' \| 'repay'`; dispatch to the matching provider verb. Inherited by `ActionsBorrowNamespace` and `WalletBorrowNamespace`. The original ask included a separate `getPrice` lightweight variant; that was dropped in commit `77c93dac` (call `getQuote` and ignore the `execution` field if the preview-only shape is all you need). |
 | **ASK-A2** — tx hashes on `BorrowReceipt` for explorer URLs | `BorrowReceipt` now denormalizes `transactionHash?: Hex`, `transactionHashes?: Hex[]`, `userOpHash?: Hex` on the envelope. The wallet namespace pulls them off the underlying union in `dispatch`. Backend can spread `{ chainId, ...receipt }` straight into `getBlockExplorerUrls` like it does for lend. |
 | **ASK-A3** — drop `as unknown as NodeActionsConfig<'privy'>` cast | `BorrowConfig` was added to `ActionsConfig` in the original Phase 1; `NodeActionsConfig` is a generic re-parameterization of `ActionsConfig` so it already accepts `borrow?: BorrowConfig`. The cast is redundant. Drop it. |
 
@@ -53,7 +53,7 @@ PR #4's `MorphoBorrowDemo` config (`packages/demo/backend/src/config/markets.ts`
 
 ## What PR #4 can do now without waiting on us
 
-1. **Swap the 501 stubs.** `controllers/borrow.ts:56-77` (`getPrice` and `getQuote`) — replace `errorResponse(501, ...)` with calls to `actions.borrow.getQuote(params)` and `actions.borrow.getPrice(params)`. The `params` body shape on the wire needs an `action` field plus the matching per-action params. Same auth split that's already coded in the routes (price public, quote auth).
+1. **Swap the 501 stubs.** `controllers/borrow.ts:56-77` — replace `errorResponse(501, ...)` with calls to `actions.borrow.getQuote(params)`. The `params` body shape on the wire needs an `action` field plus the matching per-action params. Same auth split that's already coded in the routes (price/preview public, quote auth). The price route can call `getQuote` and strip `execution` server-side; `getPrice` is no longer a separate SDK method.
 2. **Decorate mutation responses with `blockExplorerUrls`.** Now that `transactionHash` / `transactionHashes` / `userOpHash` live on the `BorrowReceipt` envelope, the borrow services can spread `{ chainId, ...receipt }` into `getBlockExplorerUrls` exactly like lend does.
 3. **Drop `as unknown as NodeActionsConfig<'privy'>`** in `config/actions.ts:66`.
 4. **Replace placeholder `MorphoBorrowDemo` config values** with the live deployed addresses.
@@ -82,5 +82,5 @@ PR #4's `MorphoBorrowDemo` config (`packages/demo/backend/src/config/markets.ts`
 
 When you rebase onto the merged PR #3:
 
-- PR #4: drop your local `packages/sdk/src/index.ts` patch (commit `a362f8d9`). Update `services/borrow.ts` to also expose `actions.borrow.getQuote / getPrice` from the controller. Replace placeholder config values.
+- PR #4: drop your local `packages/sdk/src/index.ts` patch (commit `a362f8d9`). Update `services/borrow.ts` to expose `actions.borrow.getQuote` from the controller (the preview route can strip `execution` server-side). Replace placeholder config values.
 - PR #5: replace `BORROW_HEALTH_BUFFER_PCT` reads with `market.healthBufferPct`. Everything else is purely frontend wire-up.

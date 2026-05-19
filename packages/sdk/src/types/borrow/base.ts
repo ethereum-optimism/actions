@@ -249,10 +249,9 @@ export type BorrowAction =
   | 'repay'
 
 /**
- * Discriminated union of all params accepted by `actions.borrow.getQuote`
- * and `actions.borrow.getPrice`. The leading `action` field selects which
- * variant applies; the rest of the shape matches the corresponding
- * wallet method's params.
+ * Discriminated union of all params accepted by `actions.borrow.getQuote`.
+ * The leading `action` field selects which variant applies; the rest of the
+ * shape matches the corresponding wallet method's params.
  */
 export type BorrowQuoteParams =
   | ({ action: 'open' } & BorrowOpenPositionParams)
