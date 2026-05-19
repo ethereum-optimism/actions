@@ -187,9 +187,8 @@ const deployed = readDeployedBorrowMarket()
 const describeOrSkip = deployed ? describe : describe.skip
 
 if (!deployed) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    'MorphoBorrowProvider.network.test.ts: skipping — deployments.json has not been populated. Run packages/demo/contracts/script/deploy-demo.sh first.',
+  process.stderr.write(
+    'MorphoBorrowProvider.network.test.ts: skipping - deployments.json has not been populated. Run packages/demo/contracts/script/deploy-demo.sh first.\n',
   )
 }
 
