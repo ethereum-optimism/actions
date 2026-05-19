@@ -117,10 +117,12 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _openPosition(
     params: BorrowOpenPositionInternalParams,
   ): Promise<BorrowQuote> {
+    const market = this.requireAllowlistMarket(params.market)
+    const resolvedParams = { ...params, market }
     const { current, allowance } = await this.fetchStateWithAllowance(
-      params.market,
+      market,
       params.walletAddress,
-      params.market.marketParams.collateralToken,
+      market.marketParams.collateralToken,
     )
     let after = current
     if (params.collateralAmountWei !== undefined) {
@@ -131,7 +133,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     const txs: TransactionData[] = []
     const approvalTx = this.buildCollateralApproval(
-      params.market,
+      market,
       params.collateralAmountWei,
       allowance,
       params.approvalMode,
@@ -143,7 +145,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     ) {
       txs.push(
         this.encodeSupplyCollateral(
-          params.market,
+          market,
           params.collateralAmountWei,
           params.walletAddress,
         ),
@@ -151,7 +153,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     }
     txs.push(
       this.encodeBorrow(
-        params.market,
+        market,
         params.borrowAmountWei,
         0n,
         params.walletAddress,
@@ -161,7 +163,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'open',
-      params,
+      params: resolvedParams,
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
@@ -176,10 +178,12 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _closePosition(
     params: BorrowClosePositionInternalParams,
   ): Promise<BorrowQuote> {
+    const market = this.requireAllowlistMarket(params.market)
+    const resolvedParams = { ...params, market }
     const { current, allowance } = await this.fetchStateWithAllowance(
-      params.market,
+      market,
       params.walletAddress,
-      params.market.marketParams.loanToken,
+      market.marketParams.loanToken,
     )
     let after = current
 
@@ -216,7 +220,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const approvalAmount =
       repayAssetsWei > 0n ? repayAssetsWei : current.borrowAssets
     const approvalTx = this.buildLoanApproval(
-      params.market,
+      market,
       approvalAmount,
       allowance,
       params.approvalMode,
@@ -224,7 +228,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     if (approvalTx) txs.push(approvalTx)
     txs.push(
       this.encodeRepay(
-        params.market,
+        market,
         repayAssetsWei,
         repaySharesWei,
         params.walletAddress,
@@ -233,7 +237,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     if (withdrawCollateralWei > 0n) {
       txs.push(
         this.encodeWithdrawCollateral(
-          params.market,
+          market,
           withdrawCollateralWei,
           params.walletAddress,
           params.recipient,
@@ -243,7 +247,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'close',
-      params,
+      params: resolvedParams,
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
@@ -260,16 +264,18 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _depositCollateral(
     params: BorrowDepositCollateralInternalParams,
   ): Promise<BorrowQuote> {
+    const market = this.requireAllowlistMarket(params.market)
+    const resolvedParams = { ...params, market }
     const { current, allowance } = await this.fetchStateWithAllowance(
-      params.market,
+      market,
       params.walletAddress,
-      params.market.marketParams.collateralToken,
+      market.marketParams.collateralToken,
     )
     const after = current.supplyCollateral(params.amountWei)
 
     const txs: TransactionData[] = []
     const approvalTx = this.buildCollateralApproval(
-      params.market,
+      market,
       params.amountWei,
       allowance,
       params.approvalMode,
@@ -277,7 +283,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     if (approvalTx) txs.push(approvalTx)
     txs.push(
       this.encodeSupplyCollateral(
-        params.market,
+        market,
         params.amountWei,
         params.walletAddress,
       ),
@@ -285,7 +291,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'depositCollateral',
-      params,
+      params: resolvedParams,
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
@@ -297,10 +303,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _withdrawCollateral(
     params: BorrowWithdrawCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const current = await this.fetchPosition(
-      params.market,
-      params.walletAddress,
-    )
+    const market = this.requireAllowlistMarket(params.market)
+    const resolvedParams = { ...params, market }
+    const current = await this.fetchPosition(market, params.walletAddress)
     let amountWei: bigint
     if ('max' in params.amount) {
       if (current.collateral === 0n) {
@@ -313,7 +318,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const after = current.withdrawCollateral(amountWei)
 
     const tx = this.encodeWithdrawCollateral(
-      params.market,
+      market,
       amountWei,
       params.walletAddress,
       params.recipient,
@@ -321,7 +326,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'withdrawCollateral',
-      params,
+      params: resolvedParams,
       positionBefore: current,
       positionAfter: after,
       transactions: [tx],
@@ -334,10 +339,12 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _repay(
     params: BorrowRepayInternalParams,
   ): Promise<BorrowQuote> {
+    const market = this.requireAllowlistMarket(params.market)
+    const resolvedParams = { ...params, market }
     const { current, allowance } = await this.fetchStateWithAllowance(
-      params.market,
+      market,
       params.walletAddress,
-      params.market.marketParams.loanToken,
+      market.marketParams.loanToken,
     )
 
     let repayAssetsWei = 0n
@@ -360,7 +367,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const approvalAmount =
       repayAssetsWei > 0n ? repayAssetsWei : current.borrowAssets
     const approvalTx = this.buildLoanApproval(
-      params.market,
+      market,
       approvalAmount,
       allowance,
       params.approvalMode,
@@ -368,7 +375,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     if (approvalTx) txs.push(approvalTx)
     txs.push(
       this.encodeRepay(
-        params.market,
+        market,
         repayAssetsWei,
         repaySharesWei,
         params.walletAddress,
@@ -377,7 +384,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'repay',
-      params,
+      params: resolvedParams,
       positionBefore: current,
       positionAfter: after,
       transactions: txs,

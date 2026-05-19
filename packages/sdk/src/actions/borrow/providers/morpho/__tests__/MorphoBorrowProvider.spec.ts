@@ -253,6 +253,36 @@ describe('MorphoBorrowProvider — depositCollateral', () => {
     expect(quote.execution.transactions).toHaveLength(1)
     expect(quote.execution.approvalsSkipped).toBe(true)
   })
+
+  it('uses the allowlisted market params for allowance checks and approvals', async () => {
+    const calls: Array<{ contracts: Array<{ address: string }> }> = []
+    const cm = makeChainManagerWithMulticall(async (args) => {
+      calls.push(args as { contracts: Array<{ address: string }> })
+      return stateMulticallResult()
+    })
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const tamperedMarket: BorrowMarketConfig = {
+      ...market,
+      marketParams: {
+        ...market.marketParams,
+        collateralToken: '0x0000000000000000000000000000000000000bbb',
+      },
+    }
+
+    const quote = await provider.depositCollateral({
+      market: tamperedMarket,
+      walletAddress,
+      amount: { amountRaw: oneEth },
+    })
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0].contracts[3].address).toBe(
+      market.marketParams.collateralToken,
+    )
+    expect(quote.execution.transactions[0].to).toBe(
+      market.marketParams.collateralToken,
+    )
+  })
 })
 
 describe('MorphoBorrowProvider — withdrawCollateral', () => {
