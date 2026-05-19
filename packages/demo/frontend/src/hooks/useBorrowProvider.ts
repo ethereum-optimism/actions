@@ -156,8 +156,12 @@ export function useBorrowProvider(
   }, [operations, logActivity])
 
   const fetchPositions = useCallback(
-    async (address: Address | null) => {
+    async (
+      address: Address | null,
+      isCancelled: () => boolean = () => false,
+    ) => {
       if (!address) {
+        if (isCancelled()) return
         setBorrowPositions([])
         setIsInitialLoad(false)
         return
@@ -165,31 +169,51 @@ export function useBorrowProvider(
       const activity = logActivity('getBorrowPosition')
       setIsLoadingPositions(true)
       try {
-        const positions = await Promise.all(
+        // allSettled so one failing market doesn't blank out everything;
+        // partial outage is better surfaced as a missing entry than as a
+        // collapsed "no borrow" state in the Lend collateral check.
+        const settled = await Promise.allSettled(
           markets.map((market) =>
             operations.getPosition(address, market.marketId),
           ),
         )
-        const nonEmptyPositions = positions.filter(
-          (position): position is BorrowMarketPosition => position !== null,
-        )
-        setBorrowPositions(nonEmptyPositions)
-        activity?.confirm()
+        if (isCancelled()) return
+        const positions: BorrowMarketPosition[] = []
+        let hadFailure = false
+        for (const result of settled) {
+          if (result.status === 'fulfilled') {
+            if (result.value !== null) positions.push(result.value)
+          } else {
+            hadFailure = true
+          }
+        }
+        setBorrowPositions(positions)
+        if (hadFailure) activity?.error()
+        else activity?.confirm()
       } catch (e) {
+        if (isCancelled()) return
         activity?.error()
         throw e
       } finally {
-        setIsLoadingPositions(false)
-        setIsInitialLoad(false)
+        if (!isCancelled()) {
+          setIsLoadingPositions(false)
+          setIsInitialLoad(false)
+        }
       }
     },
     [logActivity, markets, operations],
   )
 
-  // Refetch positions whenever the active wallet changes.
+  // Refetch positions whenever the active wallet changes. The cancelled
+  // closure guards against late-resolving fetches from a previous wallet
+  // overwriting the current wallet's state.
   useEffect(() => {
     setIsInitialLoad(true)
-    void fetchPositions(walletAddress)
+    let cancelled = false
+    void fetchPositions(walletAddress, () => cancelled)
+    return () => {
+      cancelled = true
+    }
   }, [walletAddress, fetchPositions])
 
   const handleMarketSelect = useCallback((market: BorrowMarket) => {

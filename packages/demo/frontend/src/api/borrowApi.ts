@@ -251,15 +251,27 @@ function isEmptyPosition(p: BorrowMarketPosition): boolean {
 
 // ---------- Client ----------
 
+// Bound how long a request can stall before we give up. Read paths
+// (markets, price, quote, position) use a short timeout so the UI never
+// shows a stuck preview; mutations get a longer ceiling because they
+// wait on the backend's transaction settlement.
+const READ_TIMEOUT_MS = 8_000
+const MUTATION_TIMEOUT_MS = 30_000
+
 export class BorrowApiClient {
   private baseUrl = env.VITE_ACTIONS_API_URL
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {},
+    options: RequestInit & { timeoutMs?: number } = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
-    const { headers, ...rest } = options
+    const { headers, timeoutMs = READ_TIMEOUT_MS, signal, ...rest } = options
+
+    const timeoutSignal = AbortSignal.timeout(timeoutMs)
+    const combinedSignal = signal
+      ? AbortSignal.any([signal, timeoutSignal])
+      : timeoutSignal
 
     const response = await fetch(url, {
       headers: {
@@ -267,6 +279,7 @@ export class BorrowApiClient {
         ...headers,
       },
       ...rest,
+      signal: combinedSignal,
     })
 
     if (!response.ok) {
@@ -416,6 +429,7 @@ export class BorrowApiClient {
       method: 'POST',
       body: JSON.stringify(body),
       headers,
+      timeoutMs: MUTATION_TIMEOUT_MS,
     })
     return deserializeReceipt(result)
   }
