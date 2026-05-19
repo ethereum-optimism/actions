@@ -5,7 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
 import { computeMorphoMarketId } from '@/actions/shared/morpho/marketParams.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { BorrowMarketParamsMismatchError } from '@/core/error/errors.js'
+import {
+  BorrowMarketParamsMismatchError,
+  EmptyPositionError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   BorrowMarketConfig,
@@ -271,6 +274,22 @@ describe('MorphoBorrowProvider — withdrawCollateral', () => {
     })
     expect(quote.collateralAmountRaw).toBe(oneEth * 7n)
   })
+
+  it('throws EmptyPositionError when `{ max: true }` and collateral is 0', async () => {
+    const cm = makeChainManagerWithMulticall(async () => [
+      positionTuple({ collateral: 0n }),
+      marketTuple(),
+      1n,
+    ])
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    await expect(
+      provider.withdrawCollateral({
+        market,
+        walletAddress,
+        amount: { max: true },
+      }),
+    ).rejects.toBeInstanceOf(EmptyPositionError)
+  })
 })
 
 describe('MorphoBorrowProvider — repay', () => {
@@ -291,6 +310,16 @@ describe('MorphoBorrowProvider — repay', () => {
     // Allowance covers, so no approval tx prepended.
     expect(quote.execution.transactions).toHaveLength(1)
     expect(quote.execution.approvalsSkipped).toBe(true)
+  })
+
+  it('throws EmptyPositionError when `{ max: true }` and debt is 0', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({ borrowShares: 0n }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    await expect(
+      provider.repay({ market, walletAddress, amount: { max: true } }),
+    ).rejects.toBeInstanceOf(EmptyPositionError)
   })
 })
 
@@ -345,5 +374,20 @@ describe('MorphoBorrowProvider — closePosition', () => {
     // repay + withdrawCollateral.
     expect(quote.execution.transactions.length).toBeGreaterThanOrEqual(2)
     expect(quote.collateralAmountRaw).toBe(oneEth * 2n)
+  })
+
+  it('throws EmptyPositionError when `borrowAmount: { max: true }` and debt is 0', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({ collateral: oneEth * 2n, borrowShares: 0n }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    await expect(
+      provider.closePosition({
+        market,
+        walletAddress,
+        borrowAmount: { max: true },
+        collateralAmount: { max: true },
+      }),
+    ).rejects.toBeInstanceOf(EmptyPositionError)
   })
 })

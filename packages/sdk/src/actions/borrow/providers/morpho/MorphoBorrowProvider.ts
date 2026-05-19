@@ -22,7 +22,10 @@ import {
   computeMorphoMarketId,
   verifyMorphoMarketId,
 } from '@/actions/shared/morpho/marketParams.js'
-import { BorrowMarketParamsMismatchError } from '@/core/error/errors.js'
+import {
+  BorrowMarketParamsMismatchError,
+  EmptyPositionError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   ApprovalMode,
@@ -178,11 +181,15 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     let after = current
 
     // Repay leg. `{ max: true }` uses Morpho's shares-based path to avoid the
-    // toAssetsUp 1-wei dust bug. The wallet namespace re-fetches shares
-    // at dispatch time (Phase 5) to absorb additional accrual.
+    // toAssetsUp 1-wei dust bug. Morpho's `_accrueInterest` runs on-chain
+    // before the share→asset conversion, so the actual transferred amount
+    // tracks live state without an SDK-side re-fetch.
     let repayAssetsWei = 0n
     let repaySharesWei = 0n
     if ('max' in params.borrowAmount) {
+      if (current.borrowShares === 0n) {
+        throw new EmptyPositionError({ operation: 'closePosition' })
+      }
       repaySharesWei = current.borrowShares
       const result = after.repay(0n, repaySharesWei)
       after = result.position
@@ -291,8 +298,15 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       params.market,
       params.walletAddress,
     )
-    const amountWei =
-      'max' in params.amount ? current.collateral : params.amount.amountWei
+    let amountWei: bigint
+    if ('max' in params.amount) {
+      if (current.collateral === 0n) {
+        throw new EmptyPositionError({ operation: 'withdrawCollateral' })
+      }
+      amountWei = current.collateral
+    } else {
+      amountWei = params.amount.amountWei
+    }
     const after = current.withdrawCollateral(amountWei)
 
     const tx = this.encodeWithdrawCollateral(
@@ -327,6 +341,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     let repaySharesWei = 0n
     let after: AccrualPosition
     if ('max' in params.amount) {
+      if (current.borrowShares === 0n) {
+        throw new EmptyPositionError({ operation: 'repay' })
+      }
       repaySharesWei = current.borrowShares
       const result = current.repay(0n, repaySharesWei)
       after = result.position

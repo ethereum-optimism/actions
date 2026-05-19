@@ -347,3 +347,25 @@ export class QuoteRecipientMissingError extends ActionsError {
     super('Quote.recipient missing — _getQuote must populate it')
   }
 }
+
+/**
+ * Thrown when a `{ max: true }` repay / close / withdraw is requested against
+ * a position that has no debt (for repay/close) or no collateral (for
+ * withdraw). Without this guard the SDK would emit a 0-amount on-chain call
+ * that protocols like Morpho revert as `InconsistentInput`.
+ */
+export class EmptyPositionError extends ActionsError {
+  override name = 'EmptyPositionError' as const
+  operation: 'repay' | 'closePosition' | 'withdrawCollateral'
+
+  constructor(params: {
+    operation: 'repay' | 'closePosition' | 'withdrawCollateral'
+  }) {
+    const subject =
+      params.operation === 'withdrawCollateral' ? 'collateral' : 'debt'
+    super(
+      `Cannot ${params.operation} with max amount: position has no ${subject}`,
+    )
+    this.operation = params.operation
+  }
+}
