@@ -285,6 +285,42 @@ describe('WalletBorrowNamespace — re-quote', () => {
     )
   })
 
+  it('injects walletAddress across every raw-params action path', async () => {
+    const { wallet } = makeWallet()
+    const provider = makeProvider()
+    const namespace = new WalletBorrowNamespace({ morpho: provider }, wallet)
+
+    await namespace.closePosition({
+      market,
+      borrowAmount: { max: true },
+    })
+    await namespace.depositCollateral({
+      market,
+      amount: { amountRaw: 1n },
+    })
+    await namespace.withdrawCollateral({
+      market,
+      amount: { max: true },
+    })
+    await namespace.repay({
+      market,
+      amount: { amountRaw: 1n },
+    })
+
+    expect(provider.closePosition).toHaveBeenCalledWith(
+      expect.objectContaining({ walletAddress }),
+    )
+    expect(provider.depositCollateral).toHaveBeenCalledWith(
+      expect.objectContaining({ walletAddress }),
+    )
+    expect(provider.withdrawCollateral).toHaveBeenCalledWith(
+      expect.objectContaining({ walletAddress }),
+    )
+    expect(provider.repay).toHaveBeenCalledWith(
+      expect.objectContaining({ walletAddress }),
+    )
+  })
+
   it('routes by marketId when no provider configures the market in its allowlist', async () => {
     const { wallet } = makeWallet()
     const provider = makeProvider()
