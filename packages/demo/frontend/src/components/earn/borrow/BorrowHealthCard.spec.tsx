@@ -26,6 +26,9 @@ describe('BorrowHealthCard', () => {
     expect(screen.getByText('86.0%')).toBeInTheDocument()
     expect(screen.getByText('Buffer')).toBeInTheDocument()
     expect(screen.getByText('5%')).toBeInTheDocument()
+    // No debt: Aave-style HF is Infinity; render as the infinity glyph
+    // rather than '0.00' (which inverts the semantic).
+    expect(screen.getByText(/Health Factor: ∞/)).toBeInTheDocument()
   })
 
   it('shows the canonical Aave-style HF when projected health is finite', () => {

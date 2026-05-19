@@ -178,7 +178,7 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
         Health Factor:{' '}
         {Number.isFinite(projectedHealthFactor)
           ? projectedHealthFactor.toFixed(2)
-          : '0.00'}
+          : '∞'}
       </div>
 
       {/* Stats rows */}
