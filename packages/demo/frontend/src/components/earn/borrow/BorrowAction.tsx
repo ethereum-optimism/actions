@@ -254,8 +254,11 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   const backendLtv = livePreview?.positionAfter.ltv ?? null
   const backendHf = livePreview?.positionAfter.healthFactor ?? null
 
-  const currentLtv =
-    projectionCollateralUsd > 0 ? currentBorrUsd / projectionCollateralUsd : 0
+  // Baseline LTV reflects the user's *current* on-chain position, not
+  // the post-projection collateral aggregate, so the "before" reading
+  // in the review modal matches reality (and the projected delta starts
+  // from the right baseline).
+  const currentLtv = currentCollUsd > 0 ? currentBorrUsd / currentCollUsd : 0
   const projectedLtv =
     backendLtv !== null
       ? backendLtv
