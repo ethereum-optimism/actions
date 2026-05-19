@@ -97,32 +97,67 @@ export class Actions<
       supportedAssets: this.getSupportedAssets(),
     }
     for (const name of ACTION_NAMES) {
-      // The cast is necessary because TS can't narrow the discriminated
-      // tuple `(name, config[name], module)` automatically across the loop.
-      // The narrowing happens correctly inside each module per K.
-      const module = ACTION_MODULES[name] as ReturnType<
-        () => (typeof ACTION_MODULES)[typeof name]
-      >
-      const actionConfig = config[name]
-      const providers = module.buildProviders(
-        actionConfig as never,
-        moduleDeps,
-      ) as never
-      ;(this._actionProviders as Record<string, unknown>)[name] = providers
-      ;(this._actionSettings as Record<string, unknown>)[name] =
-        actionConfig?.settings
-      if (
-        (module.isConfigured as (p: unknown) => boolean)(providers) &&
-        module.buildActionsNamespace
-      ) {
-        const ns = (
-          module.buildActionsNamespace as (
-            p: unknown,
-            d: typeof moduleDeps,
-            s: unknown,
-          ) => unknown
-        )(providers, moduleDeps, actionConfig?.settings)
-        ;(this._actionsNamespaces as Record<string, unknown>)[name] = ns
+      switch (name) {
+        case 'lend': {
+          const providers = ACTION_MODULES.lend.buildProviders(
+            config.lend,
+            moduleDeps,
+          )
+          this._actionProviders.lend = providers
+          this._actionSettings.lend = config.lend?.settings
+          if (
+            ACTION_MODULES.lend.isConfigured(providers) &&
+            ACTION_MODULES.lend.buildActionsNamespace
+          ) {
+            this._actionsNamespaces.lend =
+              ACTION_MODULES.lend.buildActionsNamespace(
+                providers,
+                moduleDeps,
+                config.lend?.settings,
+              )
+          }
+          break
+        }
+        case 'swap': {
+          const providers = ACTION_MODULES.swap.buildProviders(
+            config.swap,
+            moduleDeps,
+          )
+          this._actionProviders.swap = providers
+          this._actionSettings.swap = config.swap?.settings
+          if (
+            ACTION_MODULES.swap.isConfigured(providers) &&
+            ACTION_MODULES.swap.buildActionsNamespace
+          ) {
+            this._actionsNamespaces.swap =
+              ACTION_MODULES.swap.buildActionsNamespace(
+                providers,
+                moduleDeps,
+                config.swap?.settings,
+              )
+          }
+          break
+        }
+        case 'borrow': {
+          const providers = ACTION_MODULES.borrow.buildProviders(
+            config.borrow,
+            moduleDeps,
+          )
+          this._actionProviders.borrow = providers
+          this._actionSettings.borrow = config.borrow?.settings
+          if (
+            ACTION_MODULES.borrow.isConfigured(providers) &&
+            ACTION_MODULES.borrow.buildActionsNamespace
+          ) {
+            this._actionsNamespaces.borrow =
+              ACTION_MODULES.borrow.buildActionsNamespace(
+                providers,
+                moduleDeps,
+                config.borrow?.settings,
+              )
+          }
+          break
+        }
       }
     }
 
@@ -222,7 +257,6 @@ export class Actions<
       return !addresses.some((addr) => blockedAddresses.has(addr))
     })
   }
-
   /**
    * Narrow + return the read-only namespace for an action, throwing when
    * not configured. Single helper backs every typed accessor.
