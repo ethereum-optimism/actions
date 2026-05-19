@@ -36,7 +36,7 @@ export function useCollateralStatus(asset: Asset | null): CollateralStatus {
     const positions = borrowPositions.filter(
       (p) =>
         p.collateralAsset.metadata.symbol === asset.metadata.symbol &&
-        p.marketId.chainId in (asset.address ?? {}),
+        asset.address?.[p.marketId.chainId] !== undefined,
     )
     if (positions.length === 0) return EMPTY
     return { positions, isPledged: true }
