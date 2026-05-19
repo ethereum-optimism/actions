@@ -1,8 +1,15 @@
+import { zeroAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { describe, expect, it } from 'vitest'
 
 import { MockBorrowProvider } from '@/actions/borrow/__mocks__/MockBorrowProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  AddressRequiredError,
+  ChainNotSupportedError,
+  MarketNotAllowedError,
+  ZeroAddressError,
+} from '@/core/error/errors.js'
 import type {
   BorrowMarketConfig,
   MorphoMarketParams,
@@ -87,5 +94,56 @@ describe('MockBorrowProvider', () => {
         amount: { amountRaw: 1n },
       }),
     ).rejects.toThrow('boom')
+  })
+
+  it('rejects markets outside the allowlist on write paths', async () => {
+    const provider = new MockBorrowProvider({ marketAllowlist: [market] })
+    expect(() =>
+      provider.openPosition({
+        market: {
+          ...market,
+          marketId:
+            '0x9999999999999999999999999999999999999999999999999999999999999999',
+        },
+        walletAddress: '0x000000000000000000000000000000000000beef',
+        borrowAmount: { amountRaw: 1n },
+      }),
+    ).toThrow(MarketNotAllowedError)
+  })
+
+  it('rejects unsupported market chains on write paths', async () => {
+    const provider = new MockBorrowProvider({ marketAllowlist: [market] })
+    expect(() =>
+      provider.openPosition({
+        market: {
+          ...market,
+          chainId: 1 as SupportedChainId,
+        },
+        walletAddress: '0x000000000000000000000000000000000000beef',
+        borrowAmount: { amountRaw: 1n },
+      }),
+    ).toThrow(ChainNotSupportedError)
+  })
+
+  it('rejects missing wallet addresses on write paths', async () => {
+    const provider = new MockBorrowProvider({ marketAllowlist: [market] })
+    expect(() =>
+      provider.openPosition({
+        market,
+        walletAddress: undefined as unknown as `0x${string}`,
+        borrowAmount: { amountRaw: 1n },
+      }),
+    ).toThrow(AddressRequiredError)
+  })
+
+  it('rejects the zero wallet address on write paths', async () => {
+    const provider = new MockBorrowProvider({ marketAllowlist: [market] })
+    expect(() =>
+      provider.openPosition({
+        market,
+        walletAddress: zeroAddress,
+        borrowAmount: { amountRaw: 1n },
+      }),
+    ).toThrow(ZeroAddressError)
   })
 })
