@@ -33,6 +33,7 @@ import type {
 } from '@eth-optimism/actions-sdk'
 import { env } from '../envVars.js'
 import type { Serialized } from '../util/serialize.js'
+import { ActionsApiError } from './actionsApi.js'
 
 // Stub demo prices, retained until the projection math in
 // `BorrowAction` is swapped over to `borrowApi.getPrice()` (Task #3).
@@ -50,16 +51,6 @@ export function stubPriceUsd(symbol: string): number {
   return (
     STUB_PRICES_USD[symbol] ?? STUB_PRICES_USD[symbol.replace('_DEMO', '')] ?? 0
   )
-}
-
-class BorrowApiError extends Error {
-  status?: number
-
-  constructor(message: string, status?: number) {
-    super(message)
-    this.name = 'BorrowApiError'
-    this.status = status
-  }
 }
 
 // ---------- Param shapes ----------
@@ -286,7 +277,7 @@ export class BorrowApiClient {
       } catch {
         // body wasn't JSON; keep the status-line message
       }
-      throw new BorrowApiError(errorMessage, response.status)
+      throw new ActionsApiError(errorMessage, response.status)
     }
 
     return (await response.json()) as T
@@ -426,7 +417,6 @@ export class BorrowApiClient {
 }
 
 export const borrowApi = new BorrowApiClient()
-export { BorrowApiError }
 
 // Re-export Hex for callers building tx-hash placeholders elsewhere
 // (kept for backwards source compatibility with the prior mock).
