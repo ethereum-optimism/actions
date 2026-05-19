@@ -8,6 +8,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   BorrowMarketParamsMismatchError,
   EmptyPositionError,
+  MarketNotAllowedError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
@@ -124,6 +125,19 @@ describe('MorphoBorrowProvider — constructor', () => {
 })
 
 describe('MorphoBorrowProvider — _getMarket', () => {
+  it('throws MarketNotAllowedError when marketId is not in the allowlist', async () => {
+    const cm = makeChainManagerWithMulticall(async () => [])
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    await expect(
+      provider.getMarket({
+        kind: 'morpho-blue',
+        marketId:
+          '0x1111111111111111111111111111111111111111111111111111111111111111',
+        chainId: BASE_SEPOLIA_ID,
+      }),
+    ).rejects.toBeInstanceOf(MarketNotAllowedError)
+  })
+
   it('reads market+oracle in one multicall and returns BorrowMarket', async () => {
     const calls: unknown[][] = []
     const cm = makeChainManagerWithMulticall(async (args) => {

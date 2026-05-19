@@ -26,6 +26,7 @@ import {
 import {
   BorrowMarketParamsMismatchError,
   EmptyPositionError,
+  MarketNotAllowedError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
@@ -422,10 +423,10 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const allowlist = this._config.marketAllowlist ?? []
     const match = allowlist.find((m) => marketIdMatches(m, marketId))
     if (!match) {
-      throw new BorrowMarketParamsMismatchError({
-        marketId: marketId.marketId,
-        computedMarketId:
-          'No matching market in allowlist; supply marketParams via config',
+      throw new MarketNotAllowedError({
+        chainId: marketId.chainId,
+        address: marketId.marketId,
+        reason: 'Market not in MorphoBorrowProvider allowlist',
       })
     }
     return match
