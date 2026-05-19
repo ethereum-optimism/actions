@@ -490,6 +490,18 @@ describe('BorrowProvider — getMarket / getMarkets / getPosition', () => {
     expect(noMatch).toHaveLength(0)
   })
 
+  it('getMarkets filters by borrowAsset', async () => {
+    provider = makeProvider({ marketAllowlist: [market, otherMarket] })
+    const markets = await provider.getMarkets({
+      borrowAsset,
+    })
+    expect(markets).toHaveLength(2)
+    const noMatch = await provider.getMarkets({
+      borrowAsset: collateralAsset,
+    })
+    expect(noMatch).toHaveLength(0)
+  })
+
   it('getPosition throws when walletAddress is missing', async () => {
     await expect(
       provider.getPosition({
