@@ -315,6 +315,26 @@ describe('MorphoBorrowProvider — depositCollateral', () => {
       market.marketParams.collateralToken,
     )
   })
+
+  it('encodes maxUint256 collateral approval when approvalMode is max', async () => {
+    const cm = makeChainManagerWithMulticall(async () => stateMulticallResult())
+    const provider = new MorphoBorrowProvider(
+      { marketAllowlist: [market], approvalMode: 'max' },
+      cm,
+    )
+    const quote = await provider.depositCollateral({
+      market,
+      walletAddress,
+      amount: { amountRaw: oneEth },
+    })
+
+    const decoded = decodeFunctionData({
+      abi: erc20Abi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(decoded.functionName).toBe('approve')
+    expect(decoded.args?.[1]).toBe(maxUint256)
+  })
 })
 
 describe('MorphoBorrowProvider — withdrawCollateral', () => {
@@ -402,6 +422,28 @@ describe('MorphoBorrowProvider — repay', () => {
     })
 
     expect(quote.execution.transactions).toHaveLength(2)
+    const decoded = decodeFunctionData({
+      abi: erc20Abi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(decoded.functionName).toBe('approve')
+    expect(decoded.args?.[1]).toBe(maxUint256)
+  })
+
+  it('encodes maxUint256 loan approval when approvalMode is max', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({ borrowShares: oneEth * 3n }),
+    )
+    const provider = new MorphoBorrowProvider(
+      { marketAllowlist: [market], approvalMode: 'max' },
+      cm,
+    )
+    const quote = await provider.repay({
+      market,
+      walletAddress,
+      amount: { amountRaw: oneEth },
+    })
+
     const decoded = decodeFunctionData({
       abi: erc20Abi,
       data: quote.execution.transactions[0].data,
