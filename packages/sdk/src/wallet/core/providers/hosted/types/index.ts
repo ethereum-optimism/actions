@@ -20,11 +20,13 @@ export interface HostedProviderDeps {
    * Provider instances keyed by action name. Preferred shape; the
    * per-action fields below are derived mirrors kept during the registry
    * migration and will be removed once every hosted-wallet factory reads
-   * from this map.
+   * from this map. New actions must wire through this map only; do not add
+   * more per-action legacy fields here.
    */
   actionProviders?: ActionProvidersMap
   /**
-   * Settings keyed by action name. Parallel to `actionProviders`.
+   * Settings keyed by action name. Parallel to `actionProviders`; new
+   * actions must use this map rather than introducing more legacy fields.
    */
   actionSettings?: ActionSettingsMap
   lendProviders?: LendProviders
