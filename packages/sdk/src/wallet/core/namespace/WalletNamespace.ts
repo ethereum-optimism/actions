@@ -110,6 +110,7 @@ export class WalletNamespace<
     }
     this.actionSettings = context.actionSettings ?? {
       swap: context.swapSettings,
+      borrow: context.borrowSettings,
     }
     this.supportedAssets = context.supportedAssets
   }

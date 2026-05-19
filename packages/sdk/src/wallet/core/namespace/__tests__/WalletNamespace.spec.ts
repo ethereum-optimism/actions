@@ -15,6 +15,8 @@ import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvide
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { ActionSettingsMap } from '@/types/actionRegistry.js'
+import type { BorrowSettings } from '@/types/actions.js'
 import { WalletNamespace } from '@/wallet/core/namespace/WalletNamespace.js'
 import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
 import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
@@ -470,6 +472,38 @@ describe('WalletNamespace', () => {
       const wallet = await walletNamespace.toActionsWallet(account)
 
       expect(wallet.borrow).toBeDefined()
+    })
+
+    it('should preserve legacy borrow settings on LocalWallet creation', async () => {
+      const borrowSettings: BorrowSettings = {
+        quoteExpirationSeconds: 90,
+        healthBufferPct: 0.02,
+      }
+      const mockBorrowProvider = new MockBorrowProvider()
+      const smartWalletProvider = new DefaultSmartWalletProvider(
+        mockChainManager,
+        { morpho: mockLendProvider },
+      )
+      const walletProvider = new WalletProvider(undefined, smartWalletProvider)
+      const walletNamespace = new WalletNamespace(walletProvider, {
+        chainManager: mockChainManager,
+        lendProviders: {},
+        swapProviders: {},
+        borrowProviders: { morpho: mockBorrowProvider },
+        borrowSettings,
+        supportedAssets: [],
+      })
+
+      const account = privateKeyToAccount(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      )
+
+      const wallet = await walletNamespace.toActionsWallet(account)
+      const actionSettings = (
+        wallet as Wallet & { actionSettings: ActionSettingsMap }
+      ).actionSettings
+
+      expect(actionSettings.borrow).toEqual(borrowSettings)
     })
   })
 
