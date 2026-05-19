@@ -1,6 +1,7 @@
 import { type MockedFunction, vi } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
+import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
@@ -226,12 +227,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   private findConfig(marketId: BorrowMarketId): BorrowMarketConfig {
     const allowlist = this._config.marketAllowlist ?? []
-    const hit = allowlist.find(
-      (m) =>
-        m.kind === marketId.kind &&
-        m.chainId === marketId.chainId &&
-        m.marketId.toLowerCase() === marketId.marketId.toLowerCase(),
-    )
+    const hit = allowlist.find((m) => marketIdMatches(m, marketId))
     if (hit) return hit
     throw new Error(
       `MockBorrowProvider: market ${marketId.marketId} not configured in allowlist`,

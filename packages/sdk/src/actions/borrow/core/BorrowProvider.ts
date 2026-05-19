@@ -1,5 +1,6 @@
 import { type Address, parseUnits } from 'viem'
 
+import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
@@ -445,12 +446,4 @@ export abstract class BorrowProvider<
 
 function marketsMatch(a: BorrowMarketConfig, b: BorrowMarketConfig): boolean {
   return marketIdMatches(a, b)
-}
-
-function marketIdMatches(a: BorrowMarketId, b: BorrowMarketId): boolean {
-  return (
-    a.kind === b.kind &&
-    a.chainId === b.chainId &&
-    a.marketId.toLowerCase() === b.marketId.toLowerCase()
-  )
 }

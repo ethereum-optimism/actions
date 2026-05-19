@@ -14,6 +14,7 @@ import {
 } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
+import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import {
   getMorphoContracts,
   getSupportedChainIds as getMorphoSupportedChainIds,
@@ -419,12 +420,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
    */
   private requireAllowlistMarket(marketId: BorrowMarketId): BorrowMarketConfig {
     const allowlist = this._config.marketAllowlist ?? []
-    const match = allowlist.find(
-      (m) =>
-        m.kind === marketId.kind &&
-        m.chainId === marketId.chainId &&
-        m.marketId.toLowerCase() === marketId.marketId.toLowerCase(),
-    )
+    const match = allowlist.find((m) => marketIdMatches(m, marketId))
     if (!match) {
       throw new BorrowMarketParamsMismatchError({
         marketId: marketId.marketId,

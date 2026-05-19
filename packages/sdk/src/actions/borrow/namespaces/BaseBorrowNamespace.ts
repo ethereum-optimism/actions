@@ -1,4 +1,5 @@
 import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
+import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import { BaseNamespace } from '@/actions/shared/BaseNamespace.js'
 import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
@@ -87,12 +88,7 @@ export abstract class BaseBorrowNamespace extends BaseNamespace<
     for (const provider of this.getAllProviders()) {
       const allowlist = provider.config.marketAllowlist
       if (
-        allowlist?.some(
-          (m: BorrowMarketConfig) =>
-            m.kind === marketId.kind &&
-            m.chainId === marketId.chainId &&
-            m.marketId.toLowerCase() === marketId.marketId.toLowerCase(),
-        )
+        allowlist?.some((m: BorrowMarketConfig) => marketIdMatches(m, marketId))
       ) {
         return provider
       }
