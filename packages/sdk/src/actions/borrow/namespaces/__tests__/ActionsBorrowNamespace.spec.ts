@@ -115,6 +115,12 @@ describe('BaseBorrowNamespace.getQuote', () => {
     })
     expect(quote.action).toBe('depositCollateral')
     expect(provider.depositCollateral).toHaveBeenCalledTimes(1)
+    expect(provider.depositCollateral).toHaveBeenCalledWith({
+      action: 'depositCollateral',
+      market,
+      walletAddress,
+      amount: { amountRaw: 1n },
+    })
     expect(provider.openPosition).not.toHaveBeenCalled()
   })
 
@@ -129,6 +135,13 @@ describe('BaseBorrowNamespace.getQuote', () => {
       collateralAmount: { amountRaw: 5n },
     })
     expect(provider.openPosition).toHaveBeenCalledTimes(1)
+    expect(provider.openPosition).toHaveBeenCalledWith({
+      action: 'open',
+      market,
+      walletAddress,
+      borrowAmount: { amountRaw: 1n },
+      collateralAmount: { amountRaw: 5n },
+    })
   })
 
   it('supports max-amount close', async () => {
@@ -142,6 +155,13 @@ describe('BaseBorrowNamespace.getQuote', () => {
       collateralAmount: { max: true },
     })
     expect(provider.closePosition).toHaveBeenCalledTimes(1)
+    expect(provider.closePosition).toHaveBeenCalledWith({
+      action: 'close',
+      market,
+      walletAddress,
+      borrowAmount: { max: true },
+      collateralAmount: { max: true },
+    })
   })
 })
 
