@@ -40,4 +40,34 @@ describe('resolveUnderlyingDecimals', () => {
       functionName: 'decimals',
     })
   })
+
+  it('surfaces vault.asset() RPC errors', async () => {
+    const publicClient = {
+      readContract: vi.fn().mockRejectedValue(new Error('asset failed')),
+    } as unknown as PublicClient
+
+    await expect(
+      resolveUnderlyingDecimals({
+        publicClient,
+        vaultAddress: '0x000000000000000000000000000000000000cafe',
+      }),
+    ).rejects.toThrow('asset failed')
+  })
+
+  it('surfaces underlying.decimals() RPC errors', async () => {
+    const underlying = '0x000000000000000000000000000000000000beef'
+    const publicClient = {
+      readContract: vi
+        .fn()
+        .mockResolvedValueOnce(underlying)
+        .mockRejectedValueOnce(new Error('decimals failed')),
+    } as unknown as PublicClient
+
+    await expect(
+      resolveUnderlyingDecimals({
+        publicClient,
+        vaultAddress: '0x000000000000000000000000000000000000cafe',
+      }),
+    ).rejects.toThrow('decimals failed')
+  })
 })
