@@ -1,4 +1,4 @@
-import type { PublicClient } from 'viem'
+import { decodeFunctionData, erc20Abi, maxUint256, type PublicClient } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -351,9 +351,31 @@ describe('MorphoBorrowProvider — repay', () => {
       amount: { max: true },
     })
     expect(quote.action).toBe('repay')
-    // Allowance covers, so no approval tx prepended.
-    expect(quote.execution.transactions).toHaveLength(1)
-    expect(quote.execution.approvalsSkipped).toBe(true)
+    expect(quote.execution.transactions).toHaveLength(2)
+    expect(quote.execution.approvalsSkipped).toBe(false)
+  })
+
+  it('prepends a max approval for shares-based repay when allowance is finite', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        borrowShares: oneEth * 3n,
+        allowance: oneEth * 3n,
+      }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.repay({
+      market,
+      walletAddress,
+      amount: { max: true },
+    })
+
+    expect(quote.execution.transactions).toHaveLength(2)
+    const decoded = decodeFunctionData({
+      abi: erc20Abi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(decoded.functionName).toBe('approve')
+    expect(decoded.args?.[1]).toBe(maxUint256)
   })
 
   it('throws EmptyPositionError when `{ max: true }` and debt is 0', async () => {
@@ -433,5 +455,29 @@ describe('MorphoBorrowProvider — closePosition', () => {
         collateralAmount: { max: true },
       }),
     ).rejects.toBeInstanceOf(EmptyPositionError)
+  })
+
+  it('uses a max approval for shares-based close when allowance is finite', async () => {
+    const cm = makeChainManagerWithMulticall(async () =>
+      stateMulticallResult({
+        collateral: oneEth * 2n,
+        borrowShares: oneEth,
+        allowance: oneEth,
+      }),
+    )
+    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
+    const quote = await provider.closePosition({
+      market,
+      walletAddress,
+      borrowAmount: { max: true },
+      collateralAmount: { max: true },
+    })
+
+    const decoded = decodeFunctionData({
+      abi: erc20Abi,
+      data: quote.execution.transactions[0].data,
+    })
+    expect(decoded.functionName).toBe('approve')
+    expect(decoded.args?.[1]).toBe(maxUint256)
   })
 })

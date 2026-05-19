@@ -11,6 +11,7 @@ import {
   erc20Abi,
   formatUnits,
   type Hex,
+  maxUint256,
 } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
@@ -217,14 +218,15 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     }
 
     const txs: TransactionData[] = []
-    const approvalAmount =
-      repayAssetsWei > 0n ? repayAssetsWei : current.borrowAssets
-    const approvalTx = this.buildLoanApproval(
-      market,
-      approvalAmount,
-      allowance,
-      params.approvalMode,
-    )
+    const approvalTx =
+      repaySharesWei > 0n
+        ? this.buildMaxLoanApproval(market, allowance)
+        : this.buildLoanApproval(
+            market,
+            repayAssetsWei,
+            allowance,
+            params.approvalMode,
+          )
     if (approvalTx) txs.push(approvalTx)
     txs.push(
       this.encodeRepay(
@@ -364,14 +366,15 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     }
 
     const txs: TransactionData[] = []
-    const approvalAmount =
-      repayAssetsWei > 0n ? repayAssetsWei : current.borrowAssets
-    const approvalTx = this.buildLoanApproval(
-      market,
-      approvalAmount,
-      allowance,
-      params.approvalMode,
-    )
+    const approvalTx =
+      repaySharesWei > 0n
+        ? this.buildMaxLoanApproval(market, allowance)
+        : this.buildLoanApproval(
+            market,
+            repayAssetsWei,
+            allowance,
+            params.approvalMode,
+          )
     if (approvalTx) txs.push(approvalTx)
     txs.push(
       this.encodeRepay(
@@ -608,6 +611,19 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       config.marketParams.loanToken,
       spender,
       resolveErc20ApprovalAmount(mode, amountWei),
+    )
+  }
+
+  private buildMaxLoanApproval(
+    config: BorrowMarketConfig,
+    currentAllowance: bigint,
+  ): TransactionData | undefined {
+    if (currentAllowance === maxUint256) return undefined
+    const spender = requireMorphoBlueAddress(config.chainId)
+    return buildErc20ApprovalTx(
+      config.marketParams.loanToken,
+      spender,
+      maxUint256,
     )
   }
 
