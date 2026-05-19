@@ -16,9 +16,12 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import { blueAbi } from '@morpho-org/blue-sdk-viem'
 import {
   type Address,
   createPublicClient,
+  decodeFunctionData,
+  erc20Abi,
   type Hex,
   http,
   type PublicClient,
@@ -279,5 +282,24 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
     expect(quote.execution.transactions).toHaveLength(3)
     expect(quote.execution.approvalsSkipped).toBe(false)
     expect(quote.expiresAt).toBeGreaterThan(quote.quotedAt)
+
+    const [approvalTx, supplyTx, borrowTx] = quote.execution.transactions
+    const approvalCall = decodeFunctionData({
+      abi: erc20Abi,
+      data: approvalTx.data,
+    })
+    const supplyCall = decodeFunctionData({
+      abi: blueAbi,
+      data: supplyTx.data,
+    })
+    const borrowCall = decodeFunctionData({
+      abi: blueAbi,
+      data: borrowTx.data,
+    })
+
+    expect(approvalTx.to).toBe(market.marketParams.collateralToken)
+    expect(approvalCall.functionName).toBe('approve')
+    expect(supplyCall.functionName).toBe('supplyCollateral')
+    expect(borrowCall.functionName).toBe('borrow')
   })
 })
