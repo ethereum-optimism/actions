@@ -66,7 +66,7 @@ export interface BorrowMarketConfigMetadata {
    * yield-bearing receipt (e.g. a Morpho vault share). Informational; lets
    * frontends coordinate cross-namespace flows.
    */
-  lendProvider: LendProviderName
+  lendProvider?: LendProviderName
   /**
    * Optional per-market override for `BorrowSettings.healthBufferPct`
    * (Decision 7). Frontends use the resolved value to compute the
