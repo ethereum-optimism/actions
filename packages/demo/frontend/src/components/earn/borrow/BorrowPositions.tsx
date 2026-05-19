@@ -2,30 +2,33 @@
  * Active Positions table for the Borrow tab.
  *
  * Thin wrapper around the extracted `<PositionsTable>` chrome. Renders
- * Asset / Amount / Borrow APY / Collateral / Health columns on desktop;
+ * Asset / Amount / Borrow APY / Collateral / Value columns on desktop;
  * mobile uses a stacked-card layout. Active highlight is wired to the
  * `getBorrowPosition` activity action so the card lights up when a
  * matching log entry is hovered.
  */
 
 import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
+import { stubPriceUsd } from '@/api/borrowApi'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
-import {
-  computeHealthBarValue,
-  computeHealthTier,
-  type HealthTier,
-} from '@/utils/borrowMath'
 import { PositionsTable } from '../PositionsTable'
-
-const TIER_TEXT: Record<HealthTier, string> = {
-  safe: '#22C55E',
-  caution: '#F59E0B',
-  danger: '#EF4444',
-}
 
 export interface BorrowPositionsProps {
   positions: readonly BorrowMarketPosition[]
+}
+
+function formatDisplayAmount(amount: string) {
+  const num = parseFloat(amount)
+  if (Number.isNaN(num)) return { main: '0.00', secondary: '00' }
+
+  const formatted = num.toFixed(4)
+  const [wholePart, decimalPart = '0000'] = formatted.split('.')
+
+  return {
+    main: `${wholePart}.${decimalPart.substring(0, 2)}`,
+    secondary: decimalPart.substring(2, 4),
+  }
 }
 
 export function BorrowPositions({ positions }: BorrowPositionsProps) {
@@ -61,11 +64,21 @@ function DesktopTable({
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
         <tr style={{ borderBottom: '1px solid #E0E2EB' }}>
-          <Th align="left">Asset</Th>
-          <Th align="right">Amount</Th>
-          <Th align="right">Borrow APY</Th>
-          <Th align="right">Collateral</Th>
-          <Th align="right">Health Factor</Th>
+          <Th align="left" minWidth="120px">
+            Asset
+          </Th>
+          <Th align="right" minWidth="130px">
+            Amount
+          </Th>
+          <Th align="right" minWidth="90px">
+            Borrow APY
+          </Th>
+          <Th align="right" minWidth="120px">
+            Collateral
+          </Th>
+          <Th align="right" minWidth="100px">
+            Value
+          </Th>
         </tr>
       </thead>
       <tbody>
@@ -97,12 +110,20 @@ function BorrowRow({
     hoveredAction === 'getBorrowPosition'
       ? colors.highlight.background
       : 'transparent'
-  const tier = healthTierForPosition(position)
+  const borrowAmount = formatDisplayAmount(position.borrowAmountFormatted)
+  const collateralAmount = formatDisplayAmount(
+    position.collateralAmountFormatted,
+  )
+  const borrowValue = formatDisplayAmount(
+    (
+      (parseFloat(position.borrowAmountFormatted) || 0) *
+      stubPriceUsd(position.borrowAsset.metadata.symbol)
+    ).toFixed(4),
+  )
   return (
     <tr>
       <Td bg={positionRowBg}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <DotIcon />
           <span
             style={{
               color: '#1a1b1e',
@@ -114,8 +135,12 @@ function BorrowRow({
           </span>
         </span>
       </Td>
-      <Td bg={positionRowBg} align="right">
-        {position.borrowAmountFormatted} {borrSymbol}
+      <Td bg={positionRowBg} align="right" fontWeight={500}>
+        {borrowAmount.main}
+        <span style={{ color: '#9195A6', fontSize: '12px' }}>
+          {borrowAmount.secondary}
+        </span>{' '}
+        {borrSymbol}
       </Td>
       <Td bg={positionRowBg} align="right">
         {(position.borrowApy * 100).toFixed(2)}%
@@ -125,27 +150,29 @@ function BorrowRow({
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
             color: '#1a1b1e',
             fontSize: '14px',
             fontFamily: 'Inter',
           }}
         >
-          <DotIcon />
-          {collSymbol} $
-          {(parseFloat(position.collateralAmountFormatted) || 0).toFixed(2)}
+          {collSymbol} ${collateralAmount.main}
+          <span style={{ color: '#9195A6', fontSize: '12px' }}>
+            {collateralAmount.secondary}
+          </span>
         </span>
       </Td>
-      <Td bg={positionRowBg} align="right">
+      <Td bg={positionRowBg} align="right" fontWeight={500}>
         <span
           style={{
-            color: TIER_TEXT[tier],
-            fontWeight: 600,
+            color: '#1a1b1e',
             fontSize: '14px',
             fontFamily: 'Inter',
           }}
         >
-          {healthBarReading(position)}
+          ${borrowValue.main}
+          <span style={{ color: '#9195A6', fontSize: '12px' }}>
+            {borrowValue.secondary}
+          </span>
         </span>
       </Td>
     </tr>
@@ -194,13 +221,31 @@ function MobileCards({
               </span>
               <span
                 style={{
-                  color: TIER_TEXT[healthTierForPosition(p)],
+                  color: '#1a1b1e',
                   fontSize: '14px',
                   fontWeight: 600,
                   fontFamily: 'Inter',
                 }}
               >
-                {healthBarReading(p)}
+                $
+                {
+                  formatDisplayAmount(
+                    (
+                      (parseFloat(p.borrowAmountFormatted) || 0) *
+                      stubPriceUsd(p.borrowAsset.metadata.symbol)
+                    ).toFixed(4),
+                  ).main
+                }
+                <span style={{ color: '#C2C5D0' }}>
+                  {
+                    formatDisplayAmount(
+                      (
+                        (parseFloat(p.borrowAmountFormatted) || 0) *
+                        stubPriceUsd(p.borrowAsset.metadata.symbol)
+                      ).toFixed(4),
+                    ).secondary
+                  }
+                </span>
               </span>
             </div>
             <div
@@ -210,11 +255,17 @@ function MobileCards({
                 fontFamily: 'Inter',
               }}
             >
-              {p.borrowAmountFormatted}{' '}
+              {formatDisplayAmount(p.borrowAmountFormatted).main}
+              <span style={{ color: '#C2C5D0' }}>
+                {formatDisplayAmount(p.borrowAmountFormatted).secondary}
+              </span>{' '}
               {p.borrowAsset.metadata.symbol.replace('_DEMO', '')} ·{' '}
               {(p.borrowApy * 100).toFixed(2)}% APY · Coll{' '}
               {p.collateralAsset.metadata.symbol.replace('_DEMO', '')} $
-              {(parseFloat(p.collateralAmountFormatted) || 0).toFixed(2)}
+              {formatDisplayAmount(p.collateralAmountFormatted).main}
+              <span style={{ color: '#C2C5D0' }}>
+                {formatDisplayAmount(p.collateralAmountFormatted).secondary}
+              </span>
             </div>
           </div>
         )
@@ -225,9 +276,11 @@ function MobileCards({
 
 function Th({
   align = 'left',
+  minWidth,
   children,
 }: {
   align?: 'left' | 'right'
+  minWidth?: string
   children: React.ReactNode
 }) {
   return (
@@ -239,6 +292,7 @@ function Th({
         fontSize: '12px',
         fontWeight: 500,
         fontFamily: 'Inter',
+        minWidth,
       }}
     >
       {children}
@@ -249,10 +303,12 @@ function Th({
 function Td({
   bg,
   align = 'left',
+  fontWeight = 400,
   children,
 }: {
   bg: string
   align?: 'left' | 'right'
+  fontWeight?: number
   children: React.ReactNode
 }) {
   return (
@@ -264,42 +320,13 @@ function Td({
         backgroundColor: bg,
         color: '#1a1b1e',
         fontSize: '14px',
-        fontWeight: 400,
+        fontWeight,
         fontFamily: 'Inter',
       }}
     >
       {children}
     </td>
   )
-}
-
-function DotIcon() {
-  return (
-    <span
-      style={{
-        width: '18px',
-        height: '18px',
-        borderRadius: '50%',
-        backgroundColor: '#F5F5F7',
-        display: 'inline-block',
-        flexShrink: 0,
-      }}
-    />
-  )
-}
-
-function healthTierForPosition(p: BorrowMarketPosition): HealthTier {
-  const maxLtv = p.maxLtv ?? 0
-  const ltv = p.ltv ?? 0
-  return computeHealthTier(computeHealthBarValue(ltv, maxLtv))
-}
-
-function healthBarReading(p: BorrowMarketPosition): string {
-  // Numeric reading is the raw LTV %, matching <BorrowHealthCard>'s
-  // header semantics (bar=100% maps to maxLtv * 100%).
-  const maxLtv = p.maxLtv ?? 0
-  const ltv = Math.min(p.ltv ?? 0, maxLtv)
-  return `${(ltv * 100).toFixed(1)}%`
 }
 
 function positionKey(p: BorrowMarketPosition): string {
