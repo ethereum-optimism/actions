@@ -5,6 +5,8 @@ import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import { WalletBorrowNamespace } from '@/actions/borrow/namespaces/WalletBorrowNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
+  ChainNotSupportedError,
+  InvalidParamsError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
   QuoteRecipientMismatchError,
@@ -216,6 +218,56 @@ describe('WalletBorrowNamespace — quote validation', () => {
         makeQuote({ quotedAt: now - 60, expiresAt: now - 1 }),
       ),
     ).rejects.toBeInstanceOf(QuoteExpiredError)
+  })
+
+  it('throws ChainNotSupportedError for a quote on an unsupported chain', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    await expect(
+      namespace.openPosition(
+        makeQuote({
+          marketId: {
+            kind: 'morpho-blue',
+            marketId: market.marketId,
+            chainId: 1 as SupportedChainId,
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(ChainNotSupportedError)
+  })
+
+  it('throws ProviderNotConfiguredError for a quote outside the configured market allowlist', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    await expect(
+      namespace.openPosition(
+        makeQuote({
+          marketId: {
+            kind: 'morpho-blue',
+            marketId:
+              '0x9999999999999999999999999999999999999999999999999999999999999999',
+            chainId: BASE_SEPOLIA_ID,
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(ProviderNotConfiguredError)
+  })
+
+  it('throws InvalidParamsError when quote.action does not match the called method', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    await expect(
+      namespace.openPosition(makeQuote({ action: 'repay' })),
+    ).rejects.toBeInstanceOf(InvalidParamsError)
   })
 })
 

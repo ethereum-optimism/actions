@@ -1,9 +1,12 @@
 import { isAddressEqual } from 'viem'
 
+import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
+  InvalidParamsError,
+  ProviderNotConfiguredError,
   QuoteExpiredError,
   QuoteRecipientMismatchError,
 } from '@/core/error/errors.js'
@@ -18,6 +21,7 @@ import type {
   BorrowWithdrawCollateralParams,
 } from '@/types/borrow/index.js'
 import type { BorrowProviders } from '@/types/providers.js'
+import { validateChainSupported } from '@/utils/validation.js'
 import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
@@ -39,7 +43,7 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   async openPosition(
     params: BorrowOpenPositionParams | BorrowQuote,
   ): Promise<BorrowReceipt> {
-    const quote = await this.resolveQuote(params, (raw) =>
+    const quote = await this.resolveQuote(params, 'open', (raw) =>
       this.getProviderForMarket(raw.market).openPosition({
         ...raw,
         walletAddress: this.wallet.address,
@@ -51,7 +55,7 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   async closePosition(
     params: BorrowClosePositionParams | BorrowQuote,
   ): Promise<BorrowReceipt> {
-    const quote = await this.resolveQuote(params, (raw) =>
+    const quote = await this.resolveQuote(params, 'close', (raw) =>
       this.getProviderForMarket(raw.market).closePosition({
         ...raw,
         walletAddress: this.wallet.address,
@@ -63,7 +67,7 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   async depositCollateral(
     params: BorrowDepositCollateralParams | BorrowQuote,
   ): Promise<BorrowReceipt> {
-    const quote = await this.resolveQuote(params, (raw) =>
+    const quote = await this.resolveQuote(params, 'depositCollateral', (raw) =>
       this.getProviderForMarket(raw.market).depositCollateral({
         ...raw,
         walletAddress: this.wallet.address,
@@ -75,7 +79,7 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   async withdrawCollateral(
     params: BorrowWithdrawCollateralParams | BorrowQuote,
   ): Promise<BorrowReceipt> {
-    const quote = await this.resolveQuote(params, (raw) =>
+    const quote = await this.resolveQuote(params, 'withdrawCollateral', (raw) =>
       this.getProviderForMarket(raw.market).withdrawCollateral({
         ...raw,
         walletAddress: this.wallet.address,
@@ -85,7 +89,7 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   }
 
   async repay(params: BorrowRepayParams | BorrowQuote): Promise<BorrowReceipt> {
-    const quote = await this.resolveQuote(params, (raw) =>
+    const quote = await this.resolveQuote(params, 'repay', (raw) =>
       this.getProviderForMarket(raw.market).repay({
         ...raw,
         walletAddress: this.wallet.address,
@@ -96,9 +100,10 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
 
   /**
    * Resolve the input union to a `BorrowQuote`. Pre-built quotes are
-   * validated for recipient + market + expiration before being returned;
-   * raw params are re-quoted via the supplied builder.
-   */
+ * validated for recipient + action + chain + allowlisted market +
+ * expiration before being returned;
+ * raw params are re-quoted via the supplied builder.
+ */
   private async resolveQuote<
     TParams extends {
       market: {
@@ -109,11 +114,12 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     },
   >(
     params: TParams | BorrowQuote,
+    expectedAction: BorrowQuote['action'],
     requote: (raw: TParams) => Promise<BorrowQuote>,
   ): Promise<BorrowQuote> {
     if (QUOTE_DISCRIMINATOR in params) {
       const quote = params as BorrowQuote
-      return this.validateQuoteForThisWallet(quote)
+      return this.validateQuoteForThisWallet(quote, expectedAction)
     }
     return requote(params as TParams)
   }
@@ -121,11 +127,20 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   /**
    * Defensive checks before dispatching a pre-built quote: recipient is
    * bound to this wallet (calldata routes here), the quote has not expired,
-   * and the marketid the quote targets matches what the wallet thinks it
-   * is acting on — guards against backend-issued quotes being dispatched
-   * against a different market by accident.
+   * the chain is supported by this wallet namespace, and the market id is
+   * present in a configured provider allowlist.
    */
-  private validateQuoteForThisWallet(quote: BorrowQuote): BorrowQuote {
+  private validateQuoteForThisWallet(
+    quote: BorrowQuote,
+    expectedAction: BorrowQuote['action'],
+  ): BorrowQuote {
+    if (quote.action !== expectedAction) {
+      throw new InvalidParamsError({
+        param: 'quote.action',
+        expected: expectedAction,
+        received: quote.action,
+      })
+    }
     if (!isAddressEqual(quote.recipient, this.wallet.address)) {
       throw new QuoteRecipientMismatchError({
         quoteRecipient: quote.recipient,
@@ -139,7 +154,23 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
         currentTime: now,
       })
     }
+    validateChainSupported(quote.marketId.chainId, this.supportedChainIds())
+    this.requireAllowlistedQuoteMarket(quote.marketId)
     return quote
+  }
+
+  private requireAllowlistedQuoteMarket(marketId: BorrowQuote['marketId']): void {
+    const hit = this.getAllProviders().some((provider) =>
+      provider.config.marketAllowlist?.some((market) =>
+        marketIdMatches(market, marketId),
+      ),
+    )
+    if (!hit) {
+      throw new ProviderNotConfiguredError({
+        provider: marketId.marketId,
+        details: `No borrow provider configured for market on chain ${marketId.chainId}`,
+      })
+    }
   }
 
   /**
