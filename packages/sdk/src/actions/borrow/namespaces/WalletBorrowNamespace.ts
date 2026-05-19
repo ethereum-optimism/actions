@@ -100,10 +100,10 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
 
   /**
    * Resolve the input union to a `BorrowQuote`. Pre-built quotes are
- * validated for recipient + action + chain + allowlisted market +
- * expiration before being returned;
- * raw params are re-quoted via the supplied builder.
- */
+   * validated for recipient + action + chain + allowlisted market +
+   * expiration before being returned;
+   * raw params are re-quoted via the supplied builder.
+   */
   private async resolveQuote<
     TParams extends {
       market: {
@@ -117,11 +117,10 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     expectedAction: BorrowQuote['action'],
     requote: (raw: TParams) => Promise<BorrowQuote>,
   ): Promise<BorrowQuote> {
-    if (QUOTE_DISCRIMINATOR in params) {
-      const quote = params as BorrowQuote
-      return this.validateQuoteForThisWallet(quote, expectedAction)
+    if (isBorrowQuote(params)) {
+      return this.validateQuoteForThisWallet(params, expectedAction)
     }
-    return requote(params as TParams)
+    return requote(params)
   }
 
   /**
@@ -159,7 +158,9 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     return quote
   }
 
-  private requireAllowlistedQuoteMarket(marketId: BorrowQuote['marketId']): void {
+  private requireAllowlistedQuoteMarket(
+    marketId: BorrowQuote['marketId'],
+  ): void {
     const hit = this.getAllProviders().some((provider) =>
       provider.config.marketAllowlist?.some((market) =>
         marketIdMatches(market, marketId),
@@ -197,6 +198,12 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
       ...extractReceiptHashes(receipt),
     }
   }
+}
+
+function isBorrowQuote<TParams extends { market: unknown }>(
+  params: TParams | BorrowQuote,
+): params is BorrowQuote {
+  return QUOTE_DISCRIMINATOR in params
 }
 
 /**
