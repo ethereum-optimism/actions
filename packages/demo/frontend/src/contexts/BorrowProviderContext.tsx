@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import type { Address } from 'viem'
 import {
   useBorrowProvider,
@@ -6,12 +6,6 @@ import {
   type UseBorrowProviderReturn,
 } from '@/hooks/useBorrowProvider'
 
-/**
- * Context value mirrors the hook's return shape. Memoized inside the
- * provider so identity is stable across re-renders that don't change
- * the underlying state (avoids cascading re-renders of consumers like
- * `<BorrowHealthCard>` that don't subscribe to all fields).
- */
 export type BorrowProviderContextValue = UseBorrowProviderReturn
 
 export const BorrowProviderContext =
@@ -27,9 +21,8 @@ export function BorrowProviderContextProvider({
   children: ReactNode
 }) {
   const value = useBorrowProvider(walletAddress, operations)
-  const memoized = useMemo(() => value, [value])
   return (
-    <BorrowProviderContext.Provider value={memoized}>
+    <BorrowProviderContext.Provider value={value}>
       {children}
     </BorrowProviderContext.Provider>
   )
