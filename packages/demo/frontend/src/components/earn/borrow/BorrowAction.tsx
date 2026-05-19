@@ -11,7 +11,7 @@
  * button prefill and for current-position USD display.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
   BorrowMarket,
@@ -191,12 +191,15 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   // Backend-driven preview from `/borrow/price`. Debounced and
   // race-safe: outdated responses are discarded on cancel.
   const [livePreview, setLivePreview] = useState<BorrowPrice | null>(null)
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   useEffect(() => {
     if (!activeMarket || amountNum <= 0) {
       setLivePreview(null)
+      setIsPreviewLoading(false)
       return
     }
     let cancelled = false
+    setIsPreviewLoading(true)
     const handle = setTimeout(async () => {
       try {
         const lendCollateralSharesRaw = selectedLendPosition.depositedSharesRaw
@@ -236,6 +239,8 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
       } catch {
         // Network / 4xx: fall back to the local projection.
         if (!cancelled) setLivePreview(null)
+      } finally {
+        if (!cancelled) setIsPreviewLoading(false)
       }
     }, 250)
     return () => {
@@ -319,12 +324,22 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   // mode is exempt since it only reduces LTV.
   const inBufferZone =
     mode === 'borrow' && projectedLtv > safeCeilingLtv && !wouldLiquidate
+  // Gate the CTA on having a settled preview so the review modal never
+  // shows a stale local projection while a /borrow/price call is in
+  // flight. The local fallback covers the synchronous typing window and
+  // network-error fallback only, not user-initiated submit.
   const canOpenReview =
     !!activeMarket &&
     !!activeAsset &&
     amountNum > 0 &&
     !wouldLiquidate &&
-    !inBufferZone
+    !inBufferZone &&
+    !isPreviewLoading
+
+  // useRef-based reentry guard so a rapid double-tap of the Confirm
+  // button can't dispatch the same transaction twice before
+  // isExecuting state commits.
+  const executingRef = useRef(false)
 
   const handleCtaClick = () => {
     if (!canOpenReview) return
@@ -332,7 +347,9 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   }
 
   const handleReviewConfirm = async () => {
+    if (executingRef.current) return
     if (!activeMarket || !activeAsset) return
+    executingRef.current = true
     const symbol = activeAsset.metadata.symbol.replace('_DEMO', '')
     const activity = logActivity(mode, {
       amount: amountNum.toString(),
@@ -396,6 +413,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
       setTxError(msg)
     } finally {
       setIsExecuting(false)
+      executingRef.current = false
     }
   }
 
