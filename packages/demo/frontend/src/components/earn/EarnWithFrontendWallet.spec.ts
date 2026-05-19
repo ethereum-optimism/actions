@@ -128,6 +128,8 @@ describe('buildFrontendWalletOperations', () => {
         collateralAsset: assetIn,
         collateralAmount: 10_000_000n,
         collateralAmountFormatted: '10',
+        collateralShares: 10_000_000n,
+        collateralSharesFormatted: '10',
         borrowAsset: assetOut,
         borrowAmount: 5_000_000_000_000_000_000n,
         borrowAmountFormatted: '5',
@@ -139,7 +141,7 @@ describe('buildFrontendWalletOperations', () => {
         ltv: 0.5,
         maxLtv: 0.86,
       },
-      fees: [],
+      fees: { borrowApy: 0.05, liquidationBonus: 0.05 },
       safeCeilingLtv: 0.81,
     } satisfies BorrowPrice
     const receipt = {
