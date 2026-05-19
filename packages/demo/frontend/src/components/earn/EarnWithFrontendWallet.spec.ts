@@ -224,4 +224,67 @@ describe('buildFrontendWalletOperations', () => {
       walletAddress: wallet.address,
     })
   })
+
+  it('routes repay through wallet.borrow.repay with the wallet-bound address', async () => {
+    const receipt = {
+      action: 'repay',
+      marketId: borrowMarketId,
+      receipt: {
+        transactionHash:
+          '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+      },
+      transactionHash:
+        '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+    } satisfies BorrowReceipt
+    const repay = vi.fn().mockResolvedValue(receipt)
+    const wallet = {
+      address: '0x515f8fC39dD14AD674AdB305C51559b3d4fFc85a' as Address,
+      getBalance: vi.fn(),
+      sendBatch: vi.fn<() => Promise<TransactionReturnType>>(),
+      lend: {
+        getPosition: vi.fn(),
+        openPosition: vi.fn(),
+        closePosition: vi.fn(),
+      },
+      borrow: {
+        getPosition: vi.fn(),
+        openPosition: vi.fn(),
+        closePosition: vi.fn(),
+        depositCollateral: vi.fn(),
+        withdrawCollateral: vi.fn(),
+        repay,
+      },
+      swap: {
+        execute: vi.fn(),
+        getQuote: vi.fn(),
+      },
+    }
+    const actions = {
+      lend: { getMarkets: vi.fn() },
+      borrow: {
+        getMarkets: vi.fn().mockResolvedValue([]),
+        getPrice: vi.fn(),
+        getQuote: vi.fn(),
+      },
+      swap: {
+        getMarkets: vi.fn(),
+        getQuote: vi.fn(),
+      },
+      getSupportedAssets: vi.fn().mockReturnValue([assetIn, assetOut]),
+    }
+
+    const operations = buildFrontendBorrowOperations(wallet, actions)
+    const result = await operations.repay(wallet.address, {
+      marketId: borrowMarketId,
+      amount: { amount: 3 },
+    })
+
+    expect(repay).toHaveBeenCalledWith({
+      marketId: borrowMarketId,
+      amount: { amount: 3 },
+      market: MorphoBorrowDemo,
+      walletAddress: wallet.address,
+    })
+    expect(result).toBe(receipt)
+  })
 })
