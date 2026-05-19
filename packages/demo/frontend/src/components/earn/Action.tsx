@@ -152,39 +152,6 @@ export function Action({
   const maxAmount = rawMaxAmount
   const hasDeposit = parseFloat(depositedAmount || '0') > 0
 
-  // Disable the withdraw CTA if the projected position enters the
-  // buffer zone (past safe ceiling, before liquidation). The user must
-  // lower the amount or use Max to re-enable.
-  const withdrawIntoBuffer =
-    mode === 'withdraw' &&
-    !!pledgedPosition &&
-    !!pledgedMarket &&
-    (() => {
-      const collPrice = asset ? stubPriceUsd(asset.metadata.symbol) : 0
-      const collValueUsd =
-        parseFloat(pledgedPosition.collateralAmountFormatted || '0') * collPrice
-      const borrowValueUsd =
-        parseFloat(pledgedPosition.borrowAmountFormatted || '0') *
-        stubPriceUsd(pledgedPosition.borrowAsset.metadata.symbol)
-      const withdrawValueUsd = amountValue * collPrice
-      const nextColl = collValueUsd - withdrawValueUsd
-      if (nextColl <= 0) return false // wouldLiquidate handled elsewhere
-      const projectedLtv = borrowValueUsd / nextColl
-      const maxLtv = pledgedPosition.maxLtv ?? 0
-      const bufferPct = pledgedMarket.healthBufferPct ?? 0
-      const safeCeilingLtv = maxLtv * (1 - bufferPct)
-      return projectedLtv > safeCeilingLtv && projectedLtv <= maxLtv
-    })()
-
-  const isActionDisabled = needsMint
-    ? false
-    : isLoading ||
-      !effectiveAmount ||
-      amountValue <= 0 ||
-      amountValue > parseFloat(maxAmount) ||
-      (isLockedWithdrawAmount && !hasDeposit) ||
-      withdrawIntoBuffer
-
   const isHighlighted =
     (hoveredAction === 'deposit' && mode === 'lend') ||
     (hoveredAction === 'withdraw' && mode === 'withdraw')
@@ -229,6 +196,26 @@ export function Action({
       : Number.POSITIVE_INFINITY
   const withdrawWouldLiquidate =
     collateralProjection?.projection.kind === 'wouldLiquidate'
+
+  // Disable the withdraw CTA if the projected position enters the
+  // buffer zone (past safe ceiling, before liquidation), or would
+  // liquidate outright. Derived from collateralProjection so the
+  // gating math has one source of truth.
+  const withdrawIntoBuffer =
+    collateralProjection?.projection.kind === 'projected' &&
+    collateralProjection.projection.ltv >
+      collateralProjection.maxLtv * (1 - collateralProjection.bufferPct)
+
+  const isActionDisabled = needsMint
+    ? false
+    : isLoading ||
+      !effectiveAmount ||
+      amountValue <= 0 ||
+      amountValue > parseFloat(maxAmount) ||
+      (isLockedWithdrawAmount && !hasDeposit) ||
+      withdrawIntoBuffer ||
+      withdrawWouldLiquidate
+
   const directDepositedValue = parseFloat(directDepositedAmount || '0')
 
   const releaseCollateralAmountRaw = useMemo(() => {
