@@ -192,6 +192,25 @@ describe('WalletBorrowNamespace — quote dispatch', () => {
     expect(mocks.sendBatch).toHaveBeenCalledTimes(1)
     expect(mocks.send).not.toHaveBeenCalled()
   })
+
+  it('re-quotes raw params that happen to include quotedAt', async () => {
+    const { wallet, mocks } = makeWallet()
+    const provider = makeProvider()
+    const namespace = new WalletBorrowNamespace({ morpho: provider }, wallet)
+
+    await namespace.openPosition({
+      market,
+      borrowAmount: { amountRaw: 1n },
+      quotedAt: Math.floor(Date.now() / 1000),
+    } as {
+      market: BorrowMarketConfig
+      borrowAmount: { amountRaw: bigint }
+      quotedAt: number
+    })
+
+    expect(provider.openPosition).toHaveBeenCalledTimes(1)
+    expect(mocks.send).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('WalletBorrowNamespace — quote validation', () => {

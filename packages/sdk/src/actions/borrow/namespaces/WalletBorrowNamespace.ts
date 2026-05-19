@@ -203,7 +203,14 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
 function isBorrowQuote<TParams extends { market: unknown }>(
   params: TParams | BorrowQuote,
 ): params is BorrowQuote {
-  return QUOTE_DISCRIMINATOR in params
+  return (
+    QUOTE_DISCRIMINATOR in params &&
+    'action' in params &&
+    'execution' in params &&
+    'recipient' in params &&
+    'expiresAt' in params &&
+    'positionAfter' in params
+  )
 }
 
 /**
