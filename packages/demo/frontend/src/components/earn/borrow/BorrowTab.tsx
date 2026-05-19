@@ -62,6 +62,23 @@ export function BorrowTab() {
     }
   }, [positionsWithDeposits, selectedLendPosition])
 
+  // Refresh the snapshot to the latest entry in positionsWithDeposits when
+  // upstream data (depositedSharesRaw, pledged amounts, etc.) changes, so
+  // downstream /borrow/price calls pledge the current share count, not the
+  // snapshot captured at default-selection time.
+  useEffect(() => {
+    if (!selectedLendPosition) return
+    const fresh = positionsWithDeposits.find(
+      (p) =>
+        p.marketId.address.toLowerCase() ===
+          selectedLendPosition.marketId.address.toLowerCase() &&
+        p.marketId.chainId === selectedLendPosition.marketId.chainId,
+    )
+    if (fresh && fresh !== selectedLendPosition) {
+      setSelectedLendPosition(fresh)
+    }
+  }, [positionsWithDeposits, selectedLendPosition])
+
   // Sync the borrow context's selected market to whatever borrow market
   // accepts the chosen lend asset as collateral.
   useEffect(() => {
