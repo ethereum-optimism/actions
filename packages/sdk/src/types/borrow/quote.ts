@@ -1,4 +1,4 @@
-import type { Address, Hex } from 'viem'
+import type { Hex } from 'viem'
 
 import type { BorrowProviderName } from '@/types/actions.js'
 import type {
@@ -80,11 +80,6 @@ export interface BorrowQuote {
   execution: BorrowQuoteExecution
   /** Provider that produced the quote */
   provider: BorrowProviderName
-  /**
-   * Recipient baked into the quote's calldata. `WalletBorrowNamespace`
-   * binds this to `wallet.address`; mismatched executors must re-quote.
-   */
-  recipient: Address
   /** Unix seconds when the quote was generated */
   quotedAt: number
   /** Unix seconds when the quote expires */

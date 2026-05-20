@@ -13,13 +13,13 @@ export type AmountWeiOrMax = { amountWei: bigint } | { max: true }
 
 /**
  * Base shape for internal params handed to provider `_*` hooks.
- * @description Recipient is resolved by the namespace (defaults to
- * `walletAddress`); approval mode is resolved by the abstract base.
+ * @description Approval mode is resolved by the abstract base; concrete
+ * providers route any on-chain receiver argument to `walletAddress` until
+ * borrow-on-behalf-of is supported.
  */
 export interface BorrowInternalBaseParams {
   market: BorrowMarketConfig
   walletAddress: Address
-  recipient: Address
   options?: TransactionOptions
   /** Resolved approval-amount strategy (per-call → provider → settings → `"exact"`). */
   approvalMode: ApprovalMode

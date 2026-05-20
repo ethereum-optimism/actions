@@ -275,7 +275,6 @@ describe('MorphoBorrowProvider — depositCollateral', () => {
     expect(quote.execution.transactions).toHaveLength(2)
     expect(quote.execution.approvalsSkipped).toBe(false)
     expect(quote.collateralAmountRaw).toBe(oneEth)
-    expect(quote.recipient).toBe(walletAddress)
   })
 
   it('omits the approval tx when allowance already covers the amount', async () => {

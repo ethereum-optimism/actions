@@ -81,7 +81,6 @@ function makeQuote(action: BorrowQuote['action'] = 'open'): BorrowQuote {
     safeCeilingLtv: 0.86 * 0.95,
     execution: { transactions: [] },
     provider: 'morpho',
-    recipient: walletAddress,
     quotedAt: now,
     expiresAt: now + 30,
   }

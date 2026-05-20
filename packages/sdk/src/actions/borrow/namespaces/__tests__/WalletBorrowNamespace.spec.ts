@@ -9,7 +9,6 @@ import {
   InvalidParamsError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
-  QuoteRecipientMismatchError,
 } from '@/core/error/errors.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
 import type {
@@ -21,7 +20,6 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
 const walletAddress = '0x000000000000000000000000000000000000beef' as const
-const otherWalletAddress = '0x000000000000000000000000000000000000c0ff' as const
 
 const collateralAsset = {
   type: 'erc20',
@@ -121,7 +119,6 @@ function makeQuote(overrides: Partial<BorrowQuote> = {}): BorrowQuote {
       ],
     },
     provider: 'morpho',
-    recipient: walletAddress,
     quotedAt: now,
     expiresAt: now + 30,
     ...overrides,
@@ -214,17 +211,6 @@ describe('WalletBorrowNamespace — quote dispatch', () => {
 })
 
 describe('WalletBorrowNamespace — quote validation', () => {
-  it('throws QuoteRecipientMismatchError when recipient differs', async () => {
-    const { wallet } = makeWallet()
-    const namespace = new WalletBorrowNamespace(
-      { morpho: makeProvider() },
-      wallet,
-    )
-    await expect(
-      namespace.openPosition(makeQuote({ recipient: otherWalletAddress })),
-    ).rejects.toBeInstanceOf(QuoteRecipientMismatchError)
-  })
-
   it('throws QuoteExpiredError when the quote has expired', async () => {
     const { wallet } = makeWallet()
     const namespace = new WalletBorrowNamespace(

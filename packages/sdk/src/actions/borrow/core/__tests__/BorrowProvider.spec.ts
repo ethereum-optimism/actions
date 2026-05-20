@@ -204,7 +204,6 @@ function makeStubQuote(
     safeCeilingLtv: 0.86 * 0.95,
     execution: { transactions: [] },
     provider: 'morpho',
-    recipient: '0x000000000000000000000000000000000000bEEF',
     quotedAt: 0,
     expiresAt: 0,
   }
@@ -283,7 +282,6 @@ describe('BorrowProvider — openPosition', () => {
     expect(call.borrowAmountWei).toBe(1_500_000_000_000_000_000n)
     expect(call.collateralAmountWei).toBe(100_000_000_000_000_000_000n)
     expect(call.walletAddress).toBe(walletAddress)
-    expect(call.recipient).toBe(walletAddress)
   })
 
   it('rejects the zero walletAddress', async () => {

@@ -20,7 +20,6 @@ import { parseDecimalAmount } from '@/utils/assets.js'
 
 export interface ResolvedBorrowBaseParams {
   walletAddress: Address
-  recipient: Address
   approvalMode: ApprovalMode
 }
 
@@ -42,7 +41,6 @@ export function buildOpenPositionInternalParams(
   return {
     market: params.market,
     walletAddress: base.walletAddress,
-    recipient: base.recipient,
     options: params.options,
     approvalMode: base.approvalMode,
     borrowAmountWei,
@@ -68,7 +66,6 @@ export function buildClosePositionInternalParams(
   return {
     market: params.market,
     walletAddress: base.walletAddress,
-    recipient: base.recipient,
     options: params.options,
     approvalMode: base.approvalMode,
     borrowAmount,
@@ -83,7 +80,6 @@ export function buildDepositCollateralInternalParams(
   return {
     market: params.market,
     walletAddress: base.walletAddress,
-    recipient: base.recipient,
     options: params.options,
     approvalMode: base.approvalMode,
     amountWei: toAmountWei(
@@ -100,7 +96,6 @@ export function buildWithdrawCollateralInternalParams(
   return {
     market: params.market,
     walletAddress: base.walletAddress,
-    recipient: base.recipient,
     options: params.options,
     approvalMode: base.approvalMode,
     amount: toAmountWeiOrMax(
@@ -117,7 +112,6 @@ export function buildRepayInternalParams(
   return {
     market: params.market,
     walletAddress: base.walletAddress,
-    recipient: base.recipient,
     options: params.options,
     approvalMode: base.approvalMode,
     amount: toAmountWeiOrMax(
@@ -133,7 +127,6 @@ export function buildResolvedBorrowBaseParams(
 ): ResolvedBorrowBaseParams {
   return {
     walletAddress,
-    recipient: walletAddress,
     approvalMode,
   }
 }

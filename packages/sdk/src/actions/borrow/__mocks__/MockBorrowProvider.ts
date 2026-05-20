@@ -213,7 +213,6 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     this.validateWalletAddress(params.walletAddress)
     const config = this.findConfig(params.market)
     const now = Math.floor(Date.now() / 1000)
-    const recipient = params.walletAddress
     const position = this.emptyPosition(config)
     return Promise.resolve({
       marketId: {
@@ -231,7 +230,6 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       safeCeilingLtv: this.mockConfig.defaultMaxLtv * 0.95,
       execution: { transactions: [] },
       provider: 'morpho',
-      recipient,
       quotedAt: now,
       expiresAt: now + this.quoteExpirationSeconds,
     })

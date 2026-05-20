@@ -1,5 +1,3 @@
-import { isAddressEqual } from 'viem'
-
 import { findBorrowMarketInAllowlist } from '@/actions/borrow/core/markets.js'
 import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
@@ -8,7 +6,6 @@ import {
   InvalidParamsError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
-  QuoteRecipientMismatchError,
 } from '@/core/error/errors.js'
 import type {
   BorrowClosePositionParams,
@@ -124,10 +121,12 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   }
 
   /**
-   * Defensive checks before dispatching a pre-built quote: recipient is
-   * bound to this wallet (calldata routes here), the quote has not expired,
-   * the chain is supported by this wallet namespace, and the market id is
-   * present in a configured provider allowlist.
+   * Defensive checks before dispatching a pre-built quote: the action
+   * matches the dispatch method, the quote has not expired, the chain is
+   * supported by this wallet namespace, and the market id is present in a
+   * configured provider allowlist. Borrow quotes don't carry a per-call
+   * recipient — the underlying calldata always routes to the borrowing
+   * wallet — so no recipient binding check is needed.
    */
   private validateQuoteForThisWallet(
     quote: BorrowQuote,
@@ -138,12 +137,6 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
         param: 'quote.action',
         expected: expectedAction,
         received: quote.action,
-      })
-    }
-    if (!isAddressEqual(quote.recipient, this.wallet.address)) {
-      throw new QuoteRecipientMismatchError({
-        quoteRecipient: quote.recipient,
-        walletAddress: this.wallet.address,
       })
     }
     const now = Math.floor(Date.now() / 1000)
@@ -209,7 +202,6 @@ function isBorrowQuote<TParams extends { market: unknown }>(
     QUOTE_DISCRIMINATOR in params &&
     'action' in params &&
     'execution' in params &&
-    'recipient' in params &&
     'expiresAt' in params &&
     'positionAfter' in params
   )

@@ -147,7 +147,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         params.borrowAmountWei,
         0n,
         params.walletAddress,
-        params.recipient,
+        params.walletAddress,
       ),
     )
 
@@ -231,7 +231,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
           market,
           withdrawCollateralWei,
           params.walletAddress,
-          params.recipient,
+          params.walletAddress,
         ),
       )
     }
@@ -312,7 +312,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market,
       amountWei,
       params.walletAddress,
-      params.recipient,
+      params.walletAddress,
     )
 
     return this.assembleQuote({
@@ -443,7 +443,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   private assembleQuote(args: {
     action: BorrowAction
-    params: { market: BorrowMarketConfig; recipient: Address }
+    params: { market: BorrowMarketConfig }
     positionBefore: AccrualPosition
     positionAfter: AccrualPosition
     transactions: TransactionData[]
@@ -456,7 +456,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     return assembleMorphoBorrowQuote({
       action: args.action,
       config: args.params.market,
-      recipient: args.params.recipient,
       positionBefore: args.positionBefore,
       positionAfter: args.positionAfter,
       transactions: args.transactions,

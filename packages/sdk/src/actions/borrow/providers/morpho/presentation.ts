@@ -1,5 +1,5 @@
 import type { AccrualPosition, Market } from '@morpho-org/blue-sdk'
-import { type Address, formatUnits } from 'viem'
+import { formatUnits } from 'viem'
 
 import {
   liquidationBonusFromIncentive,
@@ -86,7 +86,6 @@ export function adaptMorphoBorrowPosition(
 export function assembleMorphoBorrowQuote(args: {
   action: BorrowAction
   config: BorrowMarketConfig
-  recipient: Address
   positionBefore: AccrualPosition
   positionAfter: AccrualPosition
   transactions: TransactionData[]
@@ -128,7 +127,6 @@ export function assembleMorphoBorrowQuote(args: {
       approvalsSkipped: args.approvalsSkipped,
     },
     provider: 'morpho',
-    recipient: args.recipient,
     quotedAt: now,
     expiresAt: now + args.quoteExpirationSeconds,
   }
