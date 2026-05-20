@@ -19,6 +19,7 @@ import type {
   BorrowDepositCollateralInternalParams,
   BorrowMarket,
   BorrowMarketConfig,
+  BorrowMarketId,
   BorrowMarketPosition,
   BorrowOpenPositionInternalParams,
   BorrowQuote,
@@ -127,9 +128,7 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
     return makeStubQuote('repay', params.market)
   }
 
-  protected async _getMarket(
-    _marketId: GetBorrowPositionParams['marketId'],
-  ): Promise<BorrowMarket> {
+  protected async _getMarket(_marketId: BorrowMarketId): Promise<BorrowMarket> {
     return makeStubMarket(market)
   }
 
