@@ -1,12 +1,15 @@
-import { type Address, parseUnits } from 'viem'
+import type { Address } from 'viem'
 
-import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
+import {
+  filterBorrowMarketConfigs,
+  resolveBorrowAmountWei,
+  resolveBorrowAmountWeiOrMax,
+  validateBorrowMarketAllowed,
+  validateBorrowMarketIdAllowed,
+} from '@/actions/borrow/core/helpers.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
-import {
-  AddressRequiredError,
-  MarketNotAllowedError,
-} from '@/core/error/errors.js'
+import { AddressRequiredError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   ApprovalMode,
@@ -292,8 +295,7 @@ export abstract class BorrowProvider<
    * `viem.parseUnits` using the asset's decimals.
    */
   protected resolveAmountWei(amount: Amount, decimals: number): bigint {
-    if ('amountRaw' in amount) return amount.amountRaw
-    return parseUnits(amount.amount.toString(), decimals)
+    return resolveBorrowAmountWei(amount, decimals)
   }
 
   /**
@@ -306,8 +308,7 @@ export abstract class BorrowProvider<
     amount: AmountOrMax,
     decimals: number,
   ): AmountWeiOrMax {
-    if ('max' in amount) return { max: true }
-    return { amountWei: this.resolveAmountWei(amount, decimals) }
+    return resolveBorrowAmountWeiOrMax(amount, decimals)
   }
 
   /**
@@ -320,43 +321,11 @@ export abstract class BorrowProvider<
   }
 
   protected validateMarketAllowed(market: BorrowMarketConfig): void {
-    const allowlist = this._config.marketAllowlist
-    if (allowlist && allowlist.length > 0) {
-      const hit = allowlist.find((m) => marketsMatch(m, market))
-      if (!hit) {
-        throw new MarketNotAllowedError({
-          address: market.marketId,
-          chainId: market.chainId,
-          reason: 'Market is not in the marketAllowlist',
-        })
-      }
-    }
-
-    const blocklist = this._config.marketBlocklist
-    if (blocklist?.length) {
-      const blocked = blocklist.find((m) => marketsMatch(m, market))
-      if (blocked) {
-        throw new MarketNotAllowedError({
-          address: market.marketId,
-          chainId: market.chainId,
-          reason: 'Market is on the marketBlocklist',
-        })
-      }
-    }
+    validateBorrowMarketAllowed(market, this._config)
   }
 
   protected validateMarketIdAllowed(marketId: BorrowMarketId): void {
-    const allowlist = this._config.marketAllowlist
-    if (allowlist && allowlist.length > 0) {
-      const hit = allowlist.find((m) => marketIdMatches(m, marketId))
-      if (!hit) {
-        throw new MarketNotAllowedError({
-          address: marketId.marketId,
-          chainId: marketId.chainId,
-          reason: 'Market is not in the marketAllowlist',
-        })
-      }
-    }
+    validateBorrowMarketIdAllowed(marketId, this._config)
   }
 
   /**
@@ -365,19 +334,7 @@ export abstract class BorrowProvider<
   protected filterMarketConfigs(
     params: GetBorrowMarketsParams,
   ): BorrowMarketConfig[] {
-    let configs = this._config.marketAllowlist ?? []
-    if (params.chainId !== undefined) {
-      configs = configs.filter((m) => m.chainId === params.chainId)
-    }
-    if (params.collateralAsset !== undefined) {
-      configs = configs.filter(
-        (m) => m.collateralAsset === params.collateralAsset,
-      )
-    }
-    if (params.borrowAsset !== undefined) {
-      configs = configs.filter((m) => m.borrowAsset === params.borrowAsset)
-    }
-    return configs
+    return filterBorrowMarketConfigs(this._config, params)
   }
 
   /**
@@ -447,8 +404,4 @@ export abstract class BorrowProvider<
   protected abstract _getPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition>
-}
-
-function marketsMatch(a: BorrowMarketConfig, b: BorrowMarketConfig): boolean {
-  return marketIdMatches(a, b)
 }
