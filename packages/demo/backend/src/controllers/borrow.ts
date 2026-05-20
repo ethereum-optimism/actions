@@ -37,52 +37,67 @@ const GetMarketsRequestSchema = z.object({
 })
 
 /**
- * Body shape for `/borrow/price` and `/borrow/quote`. Discriminated by
- * `action`; each variant carries the per-action amount fields. Backend
- * resolves `marketId` to a full `BorrowMarketConfig` server-side.
+ * Per-action base shape shared by `/borrow/price` and `/borrow/quote`.
+ * Discriminated by `action`; each variant carries the per-action amount
+ * fields. Backend resolves `marketId` to a full `BorrowMarketConfig`
+ * server-side.
  *
- * `walletAddress` is optional in the body — `/borrow/quote` injects it
- * from the authenticated idToken (so recipient is auth-bound, not
- * caller-supplied); `/borrow/price` accepts it from the body since the
- * price preview doesn't bake calldata.
+ * `/borrow/price` extends each variant with an optional `walletAddress`
+ * for previewing a hypothetical position. `/borrow/quote` rejects
+ * `walletAddress` at the schema boundary: the recipient is auth-bound
+ * and derived from the idToken, so a body-supplied value is meaningless
+ * and confuses the trust model.
  */
-const PriceQuoteBodySchema = z.discriminatedUnion('action', [
-  z.strictObject({
-    action: z.literal('open'),
-    marketId: BorrowMarketIdSchema,
-    borrowAmount: AmountExactSchema,
-    collateralAmount: AmountExactSchema.optional(),
-    walletAddress: AddressSchema.optional(),
-  }),
-  z.strictObject({
-    action: z.literal('close'),
-    marketId: BorrowMarketIdSchema,
-    borrowAmount: AmountWithMaxSchema,
-    collateralAmount: AmountWithMaxSchema.optional(),
-    walletAddress: AddressSchema.optional(),
-  }),
-  z.strictObject({
-    action: z.literal('depositCollateral'),
-    marketId: BorrowMarketIdSchema,
-    amount: AmountExactSchema,
-    walletAddress: AddressSchema.optional(),
-  }),
-  z.strictObject({
-    action: z.literal('withdrawCollateral'),
-    marketId: BorrowMarketIdSchema,
-    amount: AmountWithMaxSchema,
-    walletAddress: AddressSchema.optional(),
-  }),
-  z.strictObject({
-    action: z.literal('repay'),
-    marketId: BorrowMarketIdSchema,
-    amount: AmountWithMaxSchema,
-    walletAddress: AddressSchema.optional(),
-  }),
+const OpenActionBase = z.object({
+  action: z.literal('open'),
+  marketId: BorrowMarketIdSchema,
+  borrowAmount: AmountExactSchema,
+  collateralAmount: AmountExactSchema.optional(),
+})
+const CloseActionBase = z.object({
+  action: z.literal('close'),
+  marketId: BorrowMarketIdSchema,
+  borrowAmount: AmountWithMaxSchema,
+  collateralAmount: AmountWithMaxSchema.optional(),
+})
+const DepositCollateralActionBase = z.object({
+  action: z.literal('depositCollateral'),
+  marketId: BorrowMarketIdSchema,
+  amount: AmountExactSchema,
+})
+const WithdrawCollateralActionBase = z.object({
+  action: z.literal('withdrawCollateral'),
+  marketId: BorrowMarketIdSchema,
+  amount: AmountWithMaxSchema,
+})
+const RepayActionBase = z.object({
+  action: z.literal('repay'),
+  marketId: BorrowMarketIdSchema,
+  amount: AmountWithMaxSchema,
+})
+
+const withOptionalWalletAddress = <T extends z.ZodRawShape>(
+  base: z.ZodObject<T>,
+) => base.extend({ walletAddress: AddressSchema.optional() }).strict()
+
+export const PriceBodySchema = z.discriminatedUnion('action', [
+  withOptionalWalletAddress(OpenActionBase),
+  withOptionalWalletAddress(CloseActionBase),
+  withOptionalWalletAddress(DepositCollateralActionBase),
+  withOptionalWalletAddress(WithdrawCollateralActionBase),
+  withOptionalWalletAddress(RepayActionBase),
 ])
 
-const PriceRequestSchema = z.object({ body: PriceQuoteBodySchema })
-const QuoteRequestSchema = z.object({ body: PriceQuoteBodySchema })
+export const QuoteBodySchema = z.discriminatedUnion('action', [
+  OpenActionBase.strict(),
+  CloseActionBase.strict(),
+  DepositCollateralActionBase.strict(),
+  WithdrawCollateralActionBase.strict(),
+  RepayActionBase.strict(),
+])
+
+const PriceRequestSchema = z.object({ body: PriceBodySchema })
+const QuoteRequestSchema = z.object({ body: QuoteBodySchema })
 
 /**
  * GET - Retrieve borrow markets, optionally filtered by chain.
@@ -113,26 +128,16 @@ export async function getPrice(c: Context) {
 /**
  * POST - Recipient-bound borrow quote with pre-built calldata. Auth
  * required; `walletAddress` is derived from the authenticated idToken
- * so quote calldata can't be bound to a third party. The strict body
- * schema rejects a caller-supplied `walletAddress` (400) to make the
- * derivation unambiguous.
+ * so quote calldata can't be bound to a third party. `QuoteBodySchema`
+ * is strict and omits `walletAddress`, so a body-supplied value is
+ * rejected at the schema boundary with 400.
  */
 export async function getQuote(c: Context) {
-  const validation = await validateRequest(c, QuoteRequestSchema)
-  if (!validation.success) return validation.response
-
-  if (validation.data.body.walletAddress) {
-    return c.json(
-      {
-        error:
-          'walletAddress is derived from auth; do not include it in the body.',
-      },
-      400,
-    )
-  }
-
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
+
+  const validation = await validateRequest(c, QuoteRequestSchema)
+  if (!validation.success) return validation.response
 
   const wallet = await walletService.getWallet(authResult.auth.idToken)
   if (!wallet) {
