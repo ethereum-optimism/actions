@@ -71,6 +71,11 @@ export function resolveMarketConfig(
   return config
 }
 
+/**
+ * List borrow markets known to the SDK, optionally filtered by chain.
+ * Thin SDK passthrough; errors propagate to the caller (borrow controllers
+ * defer to `app.onError` + `mapSdkError`).
+ */
 export async function getMarkets(
   params: GetBorrowMarketsParams = {},
 ): Promise<BorrowMarket[]> {
@@ -139,6 +144,12 @@ function quoteParamsFromInput(
   }
 }
 
+/**
+ * Price preview for a borrow action: positionAfter + fees + safe ceiling LTV,
+ * no calldata. Resolves `marketId` to a `BorrowMarketConfig` server-side.
+ * Throws `MarketNotAllowedError` when the market is not in the backend
+ * allowlist; SDK errors propagate.
+ */
 export async function getPrice(
   input: BorrowQuoteServiceInput,
 ): Promise<BorrowPrice> {
@@ -146,6 +157,12 @@ export async function getPrice(
   return await actions.borrow.getPrice(quoteParamsFromInput(input))
 }
 
+/**
+ * Recipient-bound quote for a borrow action with pre-built calldata.
+ * `walletAddress` must be the authenticated wallet (set by the controller).
+ * Throws `MarketNotAllowedError` for disallowed markets; SDK errors
+ * propagate via the borrow-scoped `app.onError` + `mapSdkError`.
+ */
 export async function getQuote(
   input: BorrowQuoteServiceInput,
 ): Promise<BorrowQuote> {
@@ -177,6 +194,12 @@ export type BorrowOpenServiceInput =
       })
   | { idToken: string; quote: BorrowQuote }
 
+/**
+ * Open a borrow position. Body is either fresh params (resolved here to a
+ * `BorrowMarketConfig`) or a pre-built `BorrowQuote` forwarded verbatim.
+ * Throws `WalletNotFoundError` / `ProviderNotConfiguredError` for wallet
+ * state, `MarketNotAllowedError` for allowlist misses; SDK errors propagate.
+ */
 export async function openPosition(
   input: BorrowOpenServiceInput,
 ): Promise<BorrowReceiptWithUrls> {
@@ -197,6 +220,11 @@ export type BorrowCloseServiceInput =
       })
   | { idToken: string; quote: BorrowQuote }
 
+/**
+ * Close a borrow position (or a portion of it). Mirrors `openPosition`'s
+ * params-or-quote body shape; `AmountWithMax` allows `{ max: true }` to
+ * settle the full balance. See `openPosition` for thrown error classes.
+ */
 export async function closePosition(
   input: BorrowCloseServiceInput,
 ): Promise<BorrowReceiptWithUrls> {
@@ -217,6 +245,10 @@ export type BorrowDepositCollateralServiceInput =
       })
   | { idToken: string; quote: BorrowQuote }
 
+/**
+ * Add collateral to an existing borrow position. AmountExact only — no
+ * `{ max: true }` sentinel. See `openPosition` for thrown error classes.
+ */
 export async function depositCollateral(
   input: BorrowDepositCollateralServiceInput,
 ): Promise<BorrowReceiptWithUrls> {
@@ -237,6 +269,10 @@ export type BorrowWithdrawCollateralServiceInput =
       })
   | { idToken: string; quote: BorrowQuote }
 
+/**
+ * Withdraw collateral from an existing borrow position. AmountWithMax allows
+ * `{ max: true }` to drain the safe ceiling. See `openPosition` for errors.
+ */
 export async function withdrawCollateral(
   input: BorrowWithdrawCollateralServiceInput,
 ): Promise<BorrowReceiptWithUrls> {
@@ -257,6 +293,10 @@ export type BorrowRepayServiceInput =
       })
   | { idToken: string; quote: BorrowQuote }
 
+/**
+ * Repay borrowed amount. AmountWithMax allows `{ max: true }` to settle the
+ * full debt. See `openPosition` for thrown error classes.
+ */
 export async function repay(
   input: BorrowRepayServiceInput,
 ): Promise<BorrowReceiptWithUrls> {

@@ -207,6 +207,11 @@ const CloseRequestSchema = z.object({
   body: z.union([CloseParamsBody, quoteBodySchema('close')]),
 })
 
+/**
+ * POST - Close (or partially close) a borrow position. Body is either
+ * fresh params (with `AmountWithMax` accepting `{ max: true }`) or a
+ * pre-built quote with `action='close'`.
+ */
 export async function closePosition(c: Context) {
   const validation = await validateRequest(c, CloseRequestSchema)
   if (!validation.success) return validation.response
@@ -234,6 +239,11 @@ const DepositCollateralRequestSchema = z.object({
   ]),
 })
 
+/**
+ * POST - Add collateral to an existing borrow position. AmountExact only;
+ * no `{ max: true }` sentinel. Body is fresh params or a pre-built quote
+ * with `action='depositCollateral'`.
+ */
 export async function depositCollateral(c: Context) {
   const validation = await validateRequest(c, DepositCollateralRequestSchema)
   if (!validation.success) return validation.response
@@ -261,6 +271,11 @@ const WithdrawCollateralRequestSchema = z.object({
   ]),
 })
 
+/**
+ * POST - Withdraw collateral from an existing borrow position.
+ * AmountWithMax allows `{ max: true }` to drain to the safe ceiling.
+ * Body is fresh params or a quote with `action='withdrawCollateral'`.
+ */
 export async function withdrawCollateral(c: Context) {
   const validation = await validateRequest(c, WithdrawCollateralRequestSchema)
   if (!validation.success) return validation.response
@@ -285,6 +300,11 @@ const RepayRequestSchema = z.object({
   body: z.union([RepayParamsBody, quoteBodySchema('repay')]),
 })
 
+/**
+ * POST - Repay borrowed debt. AmountWithMax allows `{ max: true }` to
+ * settle the full balance. Body is fresh params or a pre-built quote
+ * with `action='repay'`.
+ */
 export async function repay(c: Context) {
   const validation = await validateRequest(c, RepayRequestSchema)
   if (!validation.success) return validation.response
