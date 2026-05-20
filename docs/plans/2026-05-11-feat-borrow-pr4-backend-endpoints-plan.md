@@ -43,7 +43,7 @@ deepened: 2026-05-11
 - **R1: ADOPTED.** Auth-gate `/borrow/quote`; recipient derived from authenticated idToken. Overrides brainstorm Key Decision 7 for `/borrow/quote` specifically; `/borrow/markets` and `/borrow/price` stay public.
 - **R2: REJECTED.** Keep all 5 mutation routes (`open`, `close`, `depositCollateral`, `withdrawCollateral`, `repay`) per brainstorm.
 - **R3: ADOPTED.** Register Hono `app.onError()` global handler scoped to SDK errors for **borrow routes only** (lend / swap keep their per-route try/catch). Eliminates borrow controllers' try/catch boilerplate.
-- **R4: ADOPTED.** Add in-process LRU cache to `/borrow/price` only (1-2s TTL keyed by action + marketId + amounts + recipient). `/borrow/quote` stays uncached (recipient-bound calldata).
+- **R4: DEFERRED.** No cache on `/borrow/price` in this PR. Swap and lend ship as direct SDK passthroughs with no cache; introducing one only on borrow creates a bespoke pattern that diverges. If keystroke load from PR #5 becomes a real RPC-budget concern, revisit as a cross-cutting follow-up that adds caching to all three providers together. `/borrow/quote` stays uncached regardless (recipient-bound calldata).
 
 ### New considerations discovered
 
@@ -73,7 +73,7 @@ Mirror the SDK's locked surface (PR #3 Decisions 1, 2, 3, 4, 6) 1:1 at the HTTP 
 
 ```
 GET   /borrow/markets                                       public
-POST  /borrow/price                                         public  (LRU cached, R4)
+POST  /borrow/price                                         public
 POST  /borrow/quote                                         auth    (R1: recipient = auth idToken)
 GET   /wallet/borrow/:chainId/:marketId/position            auth
 
@@ -488,7 +488,7 @@ Added in deepening to remove the hard PR #3 blocker on Phase 1. Lets PR #4 progr
 ### Phase 2 — Read endpoints (simplest, no auth)
 
 - **Commit 3**: `services/borrow.ts` with `getMarkets({ chainId? })` passthrough. `controllers/borrow.ts` with `getMarkets` handler (zod schema for optional `?chainId=`). Register `GET /borrow/markets`. Add `borrow.spec.ts` covering happy path + optional chain filter.
-- **Commit 4a (`/borrow/price`)**: Service `getPrice(params)` with **LRU cache (R4 adopted)** — wrap the SDK call in a 1-2s TTL LRU keyed by `JSON.stringify({ action, marketId, collateralAmount, borrowAmount, recipient ?? null })`. Use `lru-cache` (verify it's already a backend dep; otherwise add). Controller with zod `BorrowPriceRequestSchema` (discriminated on `action`). Register `POST /borrow/price`. Tests: valid action, invalid action, cache hit returns cached value within TTL, cache miss after TTL.
+- **Commit 4a (`/borrow/price`)**: Service `getPrice(params)` as direct SDK passthrough, matching swap/lend posture (R4 deferred). Controller with zod `BorrowPriceRequestSchema` (discriminated on `action`). Register `POST /borrow/price`. Tests: valid action, invalid action.
 
 - **Commit 4b (`/borrow/quote`)**: Service `getQuote(params)` passthrough — **no cache** (recipient-bound calldata + `expiresAt` make staleness a footgun). Controller with `BorrowQuoteRequestSchema`. **Per R1 adopted**: controller is `authMiddleware`-gated; recipient derived from `authResult.auth` (the idToken's wallet address — exact accessor lookup during `/ce-work`). Reject body-supplied `recipient` field with 400. Register `POST /borrow/quote`. Tests: valid auth + valid action, missing auth → 401, body recipient present → 400, invalid action → 400.
 
@@ -584,13 +584,13 @@ The four deepening recommendations were resolved during plan finalization:
 | **R1** Auth-gate `/borrow/quote`, recipient from idToken | **ADOPTED** | Route table; Acceptance Criteria → POST /borrow/quote; Phase 2 Commit 4b |
 | **R2** Defer `depositCollateral` + `withdrawCollateral` | **REJECTED** | Phase 5 commits 8 / 9 / 10 all ship in PR #4 per brainstorm |
 | **R3** Hono `app.onError()` (borrow-only) | **ADOPTED** | Phase 6 Commit 12 |
-| **R4** LRU cache on `/borrow/price` | **ADOPTED** | Phase 2 Commit 4a; route table notes "LRU cached" |
+| **R4** LRU cache on `/borrow/price` | **DEFERRED** | Swap/lend ship uncached; revisit as cross-cutting follow-up if PR #5 keystroke load proves real |
 
 Originating findings (for traceability):
 - R1 — sharp-edges concern #2 + security-sentinel finding #1 (phishing-vector via unauthenticated pre-built quote bound to victim address).
 - R2 — SpecFlow §5 + code-simplicity §1 (PR #5 handoff lists open/close/repay only; deposit/withdraw not explicitly in v1).
 - R3 — best-practices research §2 (Hono 2026 idiom; deletes ~5 try/catch blocks in borrow).
-- R4 — performance-oracle §1 (Alchemy free tier ~25-50 RPS; keystroke-driven slider in PR #5).
+- R4 — performance-oracle §1 (Alchemy free tier ~25-50 RPS; keystroke-driven slider in PR #5). Deferred as a cross-cutting follow-up so any cache lands consistently across borrow/lend/swap.
 
 ## Sources & References
 
