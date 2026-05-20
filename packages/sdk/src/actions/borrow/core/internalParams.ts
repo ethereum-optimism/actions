@@ -16,6 +16,7 @@ import type {
   BorrowWithdrawCollateralInternalParams,
   BorrowWithdrawCollateralParams,
 } from '@/types/borrow/index.js'
+import { parseDecimalAmount } from '@/utils/assets.js'
 
 export interface ResolvedBorrowBaseParams {
   walletAddress: Address
@@ -26,16 +27,15 @@ export interface ResolvedBorrowBaseParams {
 export function buildOpenPositionInternalParams(
   params: BorrowOpenPositionParams,
   base: ResolvedBorrowBaseParams,
-  resolveAmountWei: (amount: Amount, decimals: number) => bigint,
 ): BorrowOpenPositionInternalParams {
-  const borrowAmountWei = resolveAmountWei(
+  const borrowAmountWei = toAmountWei(
     params.borrowAmount,
     params.market.borrowAsset.metadata.decimals,
   )
   const collateralAmountWei =
     params.collateralAmount === undefined
       ? undefined
-      : resolveAmountWei(
+      : toAmountWei(
           params.collateralAmount,
           params.market.collateralAsset.metadata.decimals,
         )
@@ -53,19 +53,15 @@ export function buildOpenPositionInternalParams(
 export function buildClosePositionInternalParams(
   params: BorrowClosePositionParams,
   base: ResolvedBorrowBaseParams,
-  resolveAmountWeiOrMax: (
-    amount: AmountOrMax,
-    decimals: number,
-  ) => AmountWeiOrMax,
 ): BorrowClosePositionInternalParams {
-  const borrowAmount = resolveAmountWeiOrMax(
+  const borrowAmount = toAmountWeiOrMax(
     params.borrowAmount,
     params.market.borrowAsset.metadata.decimals,
   )
   const collateralAmount =
     params.collateralAmount === undefined
       ? undefined
-      : resolveAmountWeiOrMax(
+      : toAmountWeiOrMax(
           params.collateralAmount,
           params.market.collateralAsset.metadata.decimals,
         )
@@ -83,7 +79,6 @@ export function buildClosePositionInternalParams(
 export function buildDepositCollateralInternalParams(
   params: BorrowDepositCollateralParams,
   base: ResolvedBorrowBaseParams,
-  resolveAmountWei: (amount: Amount, decimals: number) => bigint,
 ): BorrowDepositCollateralInternalParams {
   return {
     market: params.market,
@@ -91,7 +86,7 @@ export function buildDepositCollateralInternalParams(
     recipient: base.recipient,
     options: params.options,
     approvalMode: base.approvalMode,
-    amountWei: resolveAmountWei(
+    amountWei: toAmountWei(
       params.amount,
       params.market.collateralAsset.metadata.decimals,
     ),
@@ -101,10 +96,6 @@ export function buildDepositCollateralInternalParams(
 export function buildWithdrawCollateralInternalParams(
   params: BorrowWithdrawCollateralParams,
   base: ResolvedBorrowBaseParams,
-  resolveAmountWeiOrMax: (
-    amount: AmountOrMax,
-    decimals: number,
-  ) => AmountWeiOrMax,
 ): BorrowWithdrawCollateralInternalParams {
   return {
     market: params.market,
@@ -112,7 +103,7 @@ export function buildWithdrawCollateralInternalParams(
     recipient: base.recipient,
     options: params.options,
     approvalMode: base.approvalMode,
-    amount: resolveAmountWeiOrMax(
+    amount: toAmountWeiOrMax(
       params.amount,
       params.market.collateralAsset.metadata.decimals,
     ),
@@ -122,10 +113,6 @@ export function buildWithdrawCollateralInternalParams(
 export function buildRepayInternalParams(
   params: BorrowRepayParams,
   base: ResolvedBorrowBaseParams,
-  resolveAmountWeiOrMax: (
-    amount: AmountOrMax,
-    decimals: number,
-  ) => AmountWeiOrMax,
 ): BorrowRepayInternalParams {
   return {
     market: params.market,
@@ -133,7 +120,7 @@ export function buildRepayInternalParams(
     recipient: base.recipient,
     options: params.options,
     approvalMode: base.approvalMode,
-    amount: resolveAmountWeiOrMax(
+    amount: toAmountWeiOrMax(
       params.amount,
       params.market.borrowAsset.metadata.decimals,
     ),
@@ -149,4 +136,17 @@ export function buildResolvedBorrowBaseParams(
     recipient: walletAddress,
     approvalMode,
   }
+}
+
+function toAmountWei(amount: Amount, decimals: number): bigint {
+  if ('amountRaw' in amount) return amount.amountRaw
+  return parseDecimalAmount(amount.amount, decimals)
+}
+
+function toAmountWeiOrMax(
+  amount: AmountOrMax,
+  decimals: number,
+): AmountWeiOrMax {
+  if ('max' in amount) return { max: true }
+  return { amountWei: toAmountWei(amount, decimals) }
 }

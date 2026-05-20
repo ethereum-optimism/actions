@@ -1,11 +1,8 @@
 import {
   filterBorrowMarketConfigs,
-  resolveBorrowAmountWei,
-  resolveBorrowAmountWeiOrMax,
   validateBorrowMarketAllowed,
   validateBorrowMarketIdAllowed,
 } from '@/actions/borrow/core/helpers.js'
-import type { ResolvedBorrowBaseParams } from '@/actions/borrow/core/internalParams.js'
 import {
   buildClosePositionInternalParams,
   buildDepositCollateralInternalParams,
@@ -14,18 +11,11 @@ import {
   buildResolvedBorrowBaseParams,
   buildWithdrawCollateralInternalParams,
 } from '@/actions/borrow/core/internalParams.js'
-import type { SupportedChainId } from '@/constants/supportedChains.js'
+import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import { AddressRequiredError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
 import type {
-  ApprovalMode,
-  BorrowProviderConfig,
-  BorrowSettings,
-} from '@/types/actions.js'
-import type {
-  Amount,
-  AmountOrMax,
-  AmountWeiOrMax,
   BorrowClosePositionInternalParams,
   BorrowClosePositionParams,
   BorrowDepositCollateralInternalParams,
@@ -45,9 +35,7 @@ import type {
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
-import { resolveApprovalMode } from '@/utils/approve.js'
 import {
-  resolveSupportedChainIds,
   validateChainSupported,
   validateNotZeroAddress,
 } from '@/utils/validation.js'
@@ -56,39 +44,28 @@ import {
 const DEFAULTS = {
   quoteExpirationSeconds: 30,
   healthBufferPct: 0.05,
-  approvalMode: 'exact' as ApprovalMode,
 } as const
 
 /**
  * Abstract base class for borrow providers.
- * @description Owns approval-mode cascading, amount normalization, market
- * allowlist enforcement, chain validation, and the public API surface that
- * `WalletBorrowNamespace` and `ActionsBorrowNamespace` consume. Concrete
- * providers (e.g. `MorphoBorrowProvider`) implement the protected `_*`
- * hooks that produce protocol-specific calldata and read on-chain state.
+ * @description Owns amount normalization, market allowlist enforcement, and
+ * the public API surface that `WalletBorrowNamespace` and
+ * `ActionsBorrowNamespace` consume. Concrete providers (e.g.
+ * `MorphoBorrowProvider`) implement the protected `_*` hooks that produce
+ * protocol-specific calldata and read on-chain state.
  *
  * Settings resolve via precedence: per-call → provider → shared settings →
  * hardcoded default.
  */
 export abstract class BorrowProvider<
   TConfig extends BorrowProviderConfig = BorrowProviderConfig,
-> {
-  protected readonly _config: TConfig
-  protected readonly _settings: BorrowSettings
-  protected readonly chainManager: ChainManager
-
+> extends BaseActionProvider<TConfig, BorrowSettings> {
   protected constructor(
     config: TConfig,
     chainManager: ChainManager,
     settings?: BorrowSettings,
   ) {
-    this._config = config
-    this._settings = settings ?? {}
-    this.chainManager = chainManager
-  }
-
-  public get config(): TConfig {
-    return this._config
+    super(config, chainManager, settings)
   }
 
   /** Resolved quote expiration in seconds: provider → settings → 30. */
@@ -105,22 +82,6 @@ export abstract class BorrowProvider<
     return this._settings.healthBufferPct ?? DEFAULTS.healthBufferPct
   }
 
-  /**
-   * Effective supported chain IDs.
-   * @description Intersection of the protocol's supported chains, the SDK's
-   * supported chains, and the developer's configured chains.
-   */
-  public supportedChainIds(): SupportedChainId[] {
-    return resolveSupportedChainIds(
-      this.protocolSupportedChainIds(),
-      this.chainManager.getSupportedChains(),
-    )
-  }
-
-  public isChainSupported(chainId: number): boolean {
-    return (this.supportedChainIds() as readonly number[]).includes(chainId)
-  }
-
   // ─────────────────────────────────────────────────────────────────────────
   // Public action methods
   // ─────────────────────────────────────────────────────────────────────────
@@ -129,11 +90,7 @@ export abstract class BorrowProvider<
     params: BorrowOpenPositionParams,
   ): Promise<BorrowQuote> {
     return this._openPosition(
-      buildOpenPositionInternalParams(
-        params,
-        this.normalizeBaseParams(params),
-        this.resolveAmountWei.bind(this),
-      ),
+      buildOpenPositionInternalParams(params, this.normalizeBaseParams(params)),
     )
   }
 
@@ -144,7 +101,6 @@ export abstract class BorrowProvider<
       buildClosePositionInternalParams(
         params,
         this.normalizeBaseParams(params),
-        this.resolveAmountWeiOrMax.bind(this),
       ),
     )
   }
@@ -156,7 +112,6 @@ export abstract class BorrowProvider<
       buildDepositCollateralInternalParams(
         params,
         this.normalizeBaseParams(params),
-        this.resolveAmountWei.bind(this),
       ),
     )
   }
@@ -168,18 +123,13 @@ export abstract class BorrowProvider<
       buildWithdrawCollateralInternalParams(
         params,
         this.normalizeBaseParams(params),
-        this.resolveAmountWeiOrMax.bind(this),
       ),
     )
   }
 
   public async repay(params: BorrowRepayParams): Promise<BorrowQuote> {
     return this._repay(
-      buildRepayInternalParams(
-        params,
-        this.normalizeBaseParams(params),
-        this.resolveAmountWeiOrMax.bind(this),
-      ),
+      buildRepayInternalParams(params, this.normalizeBaseParams(params)),
     )
   }
 
@@ -223,46 +173,11 @@ export abstract class BorrowProvider<
   // ─────────────────────────────────────────────────────────────────────────
 
   /**
-   * Resolve the effective approval mode for a call.
-   * @description Precedence: per-call → provider config → shared settings →
-   * `"exact"`. Mirrors the lend and swap providers' cascading.
-   */
-  protected resolveApprovalMode(perCall?: ApprovalMode): ApprovalMode {
-    return resolveApprovalMode(
-      perCall,
-      this._config.approvalMode,
-      this._settings.approvalMode,
-    )
-  }
-
-  /**
    * Resolve the health-buffer percentage for a market.
    * @description Precedence: per-market override → shared settings → `0.05`.
    */
   protected resolveHealthBufferPct(market: BorrowMarketConfig): number {
     return market.healthBufferPct ?? this.defaultHealthBufferPct
-  }
-
-  /**
-   * Convert a public `Amount` to a wei `bigint`.
-   * @description `{ amountRaw }` passes through; `{ amount }` is parsed via
-   * `viem.parseUnits` using the asset's decimals.
-   */
-  protected resolveAmountWei(amount: Amount, decimals: number): bigint {
-    return resolveBorrowAmountWei(amount, decimals)
-  }
-
-  /**
-   * Convert a public `AmountOrMax` to its internal wire shape.
-   * @description `{ max: true }` passes through unchanged so the concrete
-   * provider can re-fetch on-chain balance at bundle-build time. Other
-   * variants normalize to `{ amountWei }`.
-   */
-  protected resolveAmountWeiOrMax(
-    amount: AmountOrMax,
-    decimals: number,
-  ): AmountWeiOrMax {
-    return resolveBorrowAmountWeiOrMax(amount, decimals)
   }
 
   /**
@@ -295,9 +210,7 @@ export abstract class BorrowProvider<
    * Validate + resolve the cross-cutting fields every action shares
    * (walletAddress, recipient, approvalMode, market support).
    */
-  private normalizeBaseParams(
-    params: BorrowOpenPositionBaseParams,
-  ): ResolvedBorrowBaseParams {
+  private normalizeBaseParams(params: BorrowOpenPositionBaseParams) {
     if (!params.walletAddress) {
       throw new AddressRequiredError('walletAddress')
     }
@@ -308,12 +221,6 @@ export abstract class BorrowProvider<
       this.resolveApprovalMode(params.approvalMode),
     )
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Abstract protocol-supported chain hook
-  // ─────────────────────────────────────────────────────────────────────────
-
-  public abstract protocolSupportedChainIds(): number[]
 
   // ─────────────────────────────────────────────────────────────────────────
   // Abstract action hooks — implemented per protocol

@@ -5,41 +5,10 @@ import {
 } from '@/actions/shared/marketConfigs.js'
 import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type {
-  Amount,
-  AmountOrMax,
-  AmountWeiOrMax,
   BorrowMarketConfig,
   BorrowMarketId,
   GetBorrowMarketsParams,
 } from '@/types/borrow/index.js'
-import { parseDecimalAmount } from '@/utils/assets.js'
-
-/**
- * Convert a public `Amount` to a wei `bigint`.
- * @description `{ amountRaw }` passes through; `{ amount }` is parsed via
- * `viem.parseUnits` using the asset's decimals.
- */
-export function resolveBorrowAmountWei(
-  amount: Amount,
-  decimals: number,
-): bigint {
-  if ('amountRaw' in amount) return amount.amountRaw
-  return parseDecimalAmount(amount.amount, decimals)
-}
-
-/**
- * Convert a public `AmountOrMax` to its internal wire shape.
- * @description `{ max: true }` passes through unchanged so the concrete
- * provider can re-fetch on-chain balance at bundle-build time. Other
- * variants normalize to `{ amountWei }`.
- */
-export function resolveBorrowAmountWeiOrMax(
-  amount: AmountOrMax,
-  decimals: number,
-): AmountWeiOrMax {
-  if ('max' in amount) return { max: true }
-  return { amountWei: resolveBorrowAmountWei(amount, decimals) }
-}
 
 /**
  * Validate that a market is allowed by the provider allowlist and absent

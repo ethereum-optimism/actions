@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
+import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
@@ -36,7 +37,6 @@ import {
   buildTokenApprovalTx,
   checkPermit2Allowance,
   checkTokenAllowance,
-  resolveApprovalMode,
   resolveErc20ApprovalAmount,
   resolvePermit2ApprovalAmount,
 } from '@/utils/approve.js'
@@ -46,7 +46,6 @@ import {
   parseAssetAmount,
 } from '@/utils/assets.js'
 import {
-  resolveSupportedChainIds,
   validateAmountPositiveIfExists,
   validateAmountProvided,
   validateAssetOnChain,
@@ -78,23 +77,13 @@ const BPS_DENOMINATOR = 10000n
  */
 export abstract class SwapProvider<
   TConfig extends SwapProviderConfig = SwapProviderConfig,
-> {
-  protected readonly _config: TConfig
-  protected readonly _settings: SwapSettings
-  protected readonly chainManager: ChainManager
-
+> extends BaseActionProvider<TConfig, SwapSettings> {
   protected constructor(
     config: TConfig,
     chainManager: ChainManager,
     settings?: SwapSettings,
   ) {
-    this._config = config
-    this._settings = settings ?? {}
-    this.chainManager = chainManager
-  }
-
-  get config(): TConfig {
-    return this._config
+    super(config, chainManager, settings)
   }
 
   /** Resolved default slippage: provider → global → 0.005 */
@@ -145,11 +134,7 @@ export abstract class SwapProvider<
   ): Promise<SwapTransaction> {
     // Resolve approval mode once at entry; the resolved value is set back on
     // the params object so all downstream methods read a single populated field.
-    const resolvedApprovalMode = resolveApprovalMode(
-      params.approvalMode,
-      this._config.approvalMode,
-      this._settings.approvalMode,
-    )
+    const resolvedApprovalMode = this.resolveApprovalMode(params.approvalMode)
 
     if (QUOTE_DISCRIMINATOR in params) {
       this.validateSwapExecute(params)
@@ -210,22 +195,6 @@ export abstract class SwapProvider<
     }
     const markets = await this._getMarkets(params)
     return this.filterBlockedMarkets(markets)
-  }
-
-  /**
-   * Effective supported chain IDs.
-   * @description Intersection of the protocol's supported chains,
-   * the Actions SDK's known chains, and the developer's ActionsConfig.chains.
-   */
-  supportedChainIds(): SupportedChainId[] {
-    return resolveSupportedChainIds(
-      this.protocolSupportedChainIds(),
-      this.chainManager.getSupportedChains(),
-    )
-  }
-
-  isChainSupported(chainId: SupportedChainId): boolean {
-    return this.supportedChainIds().includes(chainId)
   }
 
   /**
@@ -570,13 +539,6 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Abstract methods (implement in provider)
   // ─────────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Chain IDs supported by the underlying protocol.
-   * Each provider declares the chains its protocol is deployed on,
-   * without any SDK-level or developer-config filtering.
-   */
-  abstract protocolSupportedChainIds(): SupportedChainId[]
 
   protected abstract _execute(
     params: ResolvedSwapParams,

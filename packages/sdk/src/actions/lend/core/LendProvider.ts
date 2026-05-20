@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 
 import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
+import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import {
   filterMatchingConfigs,
   findMatchingConfig,
@@ -37,14 +38,10 @@ import type {
 } from '@/types/lend/index.js'
 import {
   buildErc20ApprovalTx,
-  resolveApprovalMode,
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
-import {
-  resolveSupportedChainIds,
-  validateChainSupported,
-} from '@/utils/validation.js'
+import { validateChainSupported } from '@/utils/validation.js'
 
 /** Inputs for the base class's ERC-20 lend approval helper. */
 interface BuildLendApprovalParams {
@@ -59,16 +56,7 @@ interface BuildLendApprovalParams {
  */
 export abstract class LendProvider<
   TConfig extends LendProviderConfig = LendProviderConfig,
-> {
-  /** Lending provider configuration */
-  protected readonly _config: TConfig
-
-  /** Shared lend settings (defaults applied across all lend providers) */
-  protected readonly _settings: LendSettings
-
-  /** Chain manager for blockchain interactions */
-  protected readonly chainManager: ChainManager
-
+> extends BaseActionProvider<TConfig, LendSettings> {
   /**
    * Create a new lending provider
    * @param config - Provider-specific lending configuration
@@ -80,27 +68,7 @@ export abstract class LendProvider<
     chainManager: ChainManager,
     settings?: LendSettings,
   ) {
-    this._config = config
-    this._settings = settings ?? {}
-    this.chainManager = chainManager
-  }
-
-  public get config(): TConfig {
-    return this._config
-  }
-
-  /**
-   * Effective supported chain IDs.
-   * @description Intersection of the protocol's supported chains,
-   * the Actions SDK's known chains, and the developer's ActionsConfig.chains.
-   * All validation in public methods uses this set.
-   * @returns Array of chain IDs usable through this provider instance
-   */
-  supportedChainIds(): SupportedChainId[] {
-    return resolveSupportedChainIds(
-      this.protocolSupportedChainIds(),
-      this.chainManager.getSupportedChains(),
-    )
+    super(config, chainManager, settings)
   }
 
   /**
@@ -133,11 +101,7 @@ export abstract class LendProvider<
       ? undefined
       : this.buildLendApproval({
           position,
-          approvalMode: resolveApprovalMode(
-            params.approvalMode,
-            this._config.approvalMode,
-            this._settings.approvalMode,
-          ),
+          approvalMode: this.resolveApprovalMode(params.approvalMode),
           amountWei,
         })
 
@@ -266,15 +230,6 @@ export abstract class LendProvider<
   }
 
   /**
-   * Check if a chain is supported by this lending provider
-   * @param chainId - Chain ID to check
-   * @returns true if chain is supported, false otherwise
-   */
-  protected isChainSupported(chainId: number): boolean {
-    return (this.supportedChainIds() as readonly number[]).includes(chainId)
-  }
-
-  /**
    * Validate that a market is in the config's market allowlist
    * @param marketId - Market identifier containing address and chainId
    * @throws Error if market allowlist is configured but market is not in it
@@ -360,18 +315,6 @@ export abstract class LendProvider<
         : (market: LendMarketConfig) => market.asset === asset,
     ])
   }
-
-  /**
-   * Abstract methods that must be implemented by providers
-   */
-
-  /**
-   * Chain IDs supported by the underlying protocol.
-   * @description Each provider implements this to declare the chains its protocol
-   * is deployed on, without any SDK-level or developer-config filtering.
-   * @returns Array of chain IDs the protocol natively supports
-   */
-  abstract protocolSupportedChainIds(): number[]
 
   /**
    * Describe a deposit for opening a lending position. Providers describe
