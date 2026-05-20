@@ -4,7 +4,6 @@ import {
   serializeBigInt,
 } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
-import type { Address } from 'viem'
 import { z } from 'zod'
 
 import { requireAuth } from '@/helpers/errors.js'
@@ -162,7 +161,7 @@ export async function getQuote(c: Context) {
 
   const quote = await borrowService.getQuote({
     ...validation.data.body,
-    walletAddress: wallet.address as Address,
+    walletAddress: wallet.address,
   })
   return c.json({ result: serializeBigInt(quote) })
 }

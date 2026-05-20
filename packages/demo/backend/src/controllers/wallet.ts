@@ -1,6 +1,6 @@
 import type { SupportedChainId } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
-import { type Address, type Hex } from 'viem'
+import { type Address } from 'viem'
 import { z } from 'zod'
 
 import { errorResponse, requireAuth } from '@/helpers/errors.js'
@@ -113,7 +113,7 @@ export class WalletController {
     } = validation.data
     const marketId = {
       kind: 'morpho-blue' as const,
-      marketId: marketIdHex as Hex,
+      marketId: marketIdHex,
       chainId,
     }
 
