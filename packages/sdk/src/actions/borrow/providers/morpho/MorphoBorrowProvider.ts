@@ -1,10 +1,7 @@
-import type {
-  AccrualPosition,
-  Market,
-  type MarketId,
-} from '@morpho-org/blue-sdk'
+import type { Market, MarketId } from '@morpho-org/blue-sdk'
+import { AccrualPosition } from '@morpho-org/blue-sdk'
 import { blueAbi, blueOracleAbi } from '@morpho-org/blue-sdk-viem'
-import { type Address, erc20Abi, formatUnits, type Hex, maxUint256 } from 'viem'
+import { type Address, erc20Abi, type Hex, maxUint256 } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
@@ -14,11 +11,13 @@ import {
   encodeMorphoRepay,
   encodeMorphoSupplyCollateral,
   encodeMorphoWithdrawCollateral,
-  liquidationBonusFromIncentive,
-  morphoFractionOrNull,
-  morphoWadToNumber,
   requireMorphoBlueAddress,
 } from '@/actions/borrow/providers/morpho/helpers.js'
+import {
+  adaptMorphoBorrowMarket,
+  adaptMorphoBorrowPosition,
+  assembleMorphoBorrowQuote,
+} from '@/actions/borrow/providers/morpho/presentation.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
 import {
   computeMorphoMarketId,
@@ -674,114 +673,36 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     }
     approvalsSkipped: boolean
   }): BorrowQuote {
-    const { action, params, transactions } = args
-    const config = params.market
-    const now = Math.floor(Date.now() / 1000)
-    const hasBefore =
-      args.positionBefore.collateral > 0n ||
-      args.positionBefore.borrowShares > 0n
-    return {
-      marketId: {
-        kind: config.kind,
-        marketId: config.marketId,
-        chainId: config.chainId,
-      },
-      action,
-      borrowAmountRaw: args.echoAmounts.borrowAmountRaw,
-      collateralAmountRaw: args.echoAmounts.collateralAmountRaw,
-      positionBefore: hasBefore
-        ? this.adaptPosition(config, args.positionBefore)
-        : null,
-      positionAfter: this.adaptPosition(config, args.positionAfter),
-      fees: {
-        borrowApy: morphoWadToNumber(args.positionAfter.market.borrowApy),
-        liquidationBonus: liquidationBonusFromIncentive(
-          args.positionAfter.market.params.liquidationIncentiveFactor,
-        ),
-      },
-      safeCeilingLtv:
-        morphoWadToNumber(config.marketParams.lltv) *
-        (1 - this.resolveHealthBufferPct(config)),
-      execution: {
-        transactions,
-        approvalsSkipped: args.approvalsSkipped,
-      },
-      provider: 'morpho',
-      recipient: params.recipient,
-      quotedAt: now,
-      expiresAt: now + this.quoteExpirationSeconds,
-    }
+    return assembleMorphoBorrowQuote({
+      action: args.action,
+      config: args.params.market,
+      recipient: args.params.recipient,
+      positionBefore: args.positionBefore,
+      positionAfter: args.positionAfter,
+      transactions: args.transactions,
+      echoAmounts: args.echoAmounts,
+      approvalsSkipped: args.approvalsSkipped,
+      quoteExpirationSeconds: this.quoteExpirationSeconds,
+      healthBufferPct: this.resolveHealthBufferPct(args.params.market),
+    })
   }
 
   private adaptMarket(
     config: BorrowMarketConfig,
     market: Market,
   ): BorrowMarket {
-    return {
-      marketId: {
-        kind: config.kind,
-        marketId: config.marketId,
-        chainId: config.chainId,
-      },
-      name: config.name,
-      collateralAsset: config.collateralAsset,
-      borrowAsset: config.borrowAsset,
-      borrowApy: morphoWadToNumber(market.borrowApy),
-      liquidationBonus: liquidationBonusFromIncentive(
-        market.params.liquidationIncentiveFactor,
-      ),
-      maxLtv: morphoWadToNumber(config.marketParams.lltv),
-      healthBufferPct: this.resolveHealthBufferPct(config),
-      totalBorrowed: market.totalBorrowAssets,
-      // Morpho doesn't expose aggregate collateral as a single accumulator,
-      // it would require summing per-user balances. Frontends that need the
-      // figure can derive it from indexer data; we surface `0n` rather than
-      // a misleading number.
-      totalCollateral: 0n,
-    }
+    return adaptMorphoBorrowMarket(
+      config,
+      market,
+      this.resolveHealthBufferPct(config),
+    )
   }
 
   private adaptPosition(
     config: BorrowMarketConfig,
     position: AccrualPosition,
   ): BorrowMarketPosition {
-    const hasDebt = position.borrowAssets > 0n
-    const ltvFraction = hasDebt ? morphoFractionOrNull(position.ltv) : null
-    const hfFraction = hasDebt
-      ? morphoFractionOrNull(position.healthFactor)
-      : null
-    const liquidationPrice = position.liquidationPrice ?? 0n
-    return {
-      marketId: {
-        kind: config.kind,
-        marketId: config.marketId,
-        chainId: config.chainId,
-      },
-      collateralAsset: config.collateralAsset,
-      collateralAmount: position.collateral,
-      collateralAmountFormatted: formatUnits(
-        position.collateral,
-        config.collateralAsset.metadata.decimals,
-      ),
-      borrowAsset: config.borrowAsset,
-      borrowAmount: position.borrowAssets,
-      borrowAmountFormatted: formatUnits(
-        position.borrowAssets,
-        config.borrowAsset.metadata.decimals,
-      ),
-      healthFactor: hfFraction,
-      liquidationPrice,
-      liquidationPriceFormatted: formatUnits(
-        liquidationPrice,
-        config.borrowAsset.metadata.decimals,
-      ),
-      borrowApy: morphoWadToNumber(position.market.borrowApy),
-      liquidationBonus: liquidationBonusFromIncentive(
-        position.market.params.liquidationIncentiveFactor,
-      ),
-      ltv: ltvFraction,
-      maxLtv: morphoWadToNumber(config.marketParams.lltv),
-    }
+    return adaptMorphoBorrowPosition(config, position)
   }
 }
 
