@@ -84,35 +84,25 @@ export function morphoMarketParamsTuple(params: MorphoMarketParams): {
   }
 }
 
-export function buildMorphoTx(
-  config: BorrowMarketConfig,
-  functionName: 'supplyCollateral' | 'borrow' | 'repay' | 'withdrawCollateral',
-  args: readonly unknown[],
-): TransactionData {
-  return {
-    to: requireMorphoBlueAddress(config.chainId),
-    data: encodeFunctionData({
-      abi: blueAbi,
-      functionName,
-      // viem's typings tighten args based on functionName; cast at the
-      // call site rather than threading per-method generics through.
-      args: args as never,
-    }),
-    value: 0n,
-  }
-}
-
 export function encodeMorphoSupplyCollateral(
   config: BorrowMarketConfig,
   assets: bigint,
   onBehalf: Address,
 ): TransactionData {
-  return buildMorphoTx(config, 'supplyCollateral', [
-    morphoMarketParamsTuple(config.marketParams),
-    assets,
-    onBehalf,
-    '0x',
-  ])
+  return {
+    to: requireMorphoBlueAddress(config.chainId),
+    data: encodeFunctionData({
+      abi: blueAbi,
+      functionName: 'supplyCollateral',
+      args: [
+        morphoMarketParamsTuple(config.marketParams),
+        assets,
+        onBehalf,
+        '0x',
+      ],
+    }),
+    value: 0n,
+  }
 }
 
 export function encodeMorphoBorrow(
@@ -122,13 +112,21 @@ export function encodeMorphoBorrow(
   onBehalf: Address,
   receiver: Address,
 ): TransactionData {
-  return buildMorphoTx(config, 'borrow', [
-    morphoMarketParamsTuple(config.marketParams),
-    assets,
-    shares,
-    onBehalf,
-    receiver,
-  ])
+  return {
+    to: requireMorphoBlueAddress(config.chainId),
+    data: encodeFunctionData({
+      abi: blueAbi,
+      functionName: 'borrow',
+      args: [
+        morphoMarketParamsTuple(config.marketParams),
+        assets,
+        shares,
+        onBehalf,
+        receiver,
+      ],
+    }),
+    value: 0n,
+  }
 }
 
 export function encodeMorphoRepay(
@@ -137,13 +135,21 @@ export function encodeMorphoRepay(
   shares: bigint,
   onBehalf: Address,
 ): TransactionData {
-  return buildMorphoTx(config, 'repay', [
-    morphoMarketParamsTuple(config.marketParams),
-    assets,
-    shares,
-    onBehalf,
-    '0x',
-  ])
+  return {
+    to: requireMorphoBlueAddress(config.chainId),
+    data: encodeFunctionData({
+      abi: blueAbi,
+      functionName: 'repay',
+      args: [
+        morphoMarketParamsTuple(config.marketParams),
+        assets,
+        shares,
+        onBehalf,
+        '0x',
+      ],
+    }),
+    value: 0n,
+  }
 }
 
 export function encodeMorphoWithdrawCollateral(
@@ -152,12 +158,20 @@ export function encodeMorphoWithdrawCollateral(
   onBehalf: Address,
   receiver: Address,
 ): TransactionData {
-  return buildMorphoTx(config, 'withdrawCollateral', [
-    morphoMarketParamsTuple(config.marketParams),
-    assets,
-    onBehalf,
-    receiver,
-  ])
+  return {
+    to: requireMorphoBlueAddress(config.chainId),
+    data: encodeFunctionData({
+      abi: blueAbi,
+      functionName: 'withdrawCollateral',
+      args: [
+        morphoMarketParamsTuple(config.marketParams),
+        assets,
+        onBehalf,
+        receiver,
+      ],
+    }),
+    value: 0n,
+  }
 }
 
 export function buildMorphoCollateralApproval(
