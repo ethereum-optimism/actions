@@ -7,6 +7,37 @@ type RequestData = {
   body?: unknown
 }
 
+/**
+ * Compact issue summary surfaced in 400 responses. Drops zod-internal
+ * fields (`code`, `expected`, `received`, `unionErrors`, ...) so the
+ * public 400 shape is just `{ path, message }` per issue. Keeps the
+ * response useful for debugging without exposing zod's AST.
+ */
+export interface ValidationIssue {
+  path: string
+  message: string
+}
+
+function summarizeIssues(issues: z.ZodIssue[]): ValidationIssue[] {
+  return issues.map((issue) => ({
+    path: issue.path.join('.'),
+    message: issue.message,
+  }))
+}
+
+/**
+ * Validate request inputs (params/query/body) against a zod schema.
+ *
+ * Error envelope (4xx): `{ error: string, details?: ValidationIssue[] }`.
+ * The shared `{ error: string }` shape matches what `mapSdkError` returns
+ * for borrow routes; `details` is only present on schema-validation 400s.
+ *
+ * Body parsing: callers that declare a `body` field in their schema get
+ * the parsed JSON when the request advertises `Content-Type: application/json`;
+ * a malformed body returns a structured 400 instead of being silently
+ * coerced to `{}`. Requests without a JSON content type are treated as
+ * body-less and validated against `body: {}` (preserves GET-style flow).
+ */
 export async function validateRequest<T>(
   c: Context,
   schema: z.ZodSchema<T>,
@@ -16,13 +47,19 @@ export async function validateRequest<T>(
   try {
     const params = c.req.param()
     const query = c.req.query()
-    let body = {}
+    let body: unknown = {}
 
-    // This will throw if empty
-    try {
-      body = await c.req.json()
-    } catch {
-      // Empty object if no body
+    const contentType = c.req.header('content-type') ?? ''
+    const looksLikeJson = /^application\/json\b/i.test(contentType)
+    if (looksLikeJson) {
+      try {
+        body = await c.req.json()
+      } catch {
+        return {
+          success: false,
+          response: c.json({ error: 'Invalid JSON body' }, 400),
+        }
+      }
     }
 
     const requestData: RequestData = {}
@@ -44,7 +81,7 @@ export async function validateRequest<T>(
         response: c.json(
           {
             error: 'Invalid request',
-            details: validation.error.issues,
+            details: summarizeIssues(validation.error.issues),
           },
           400,
         ),
@@ -52,16 +89,11 @@ export async function validateRequest<T>(
     }
 
     return { success: true, data: validation.data }
-  } catch (error) {
+  } catch {
+    // Defensive fallback: never leak inner error messages on 500.
     return {
       success: false,
-      response: c.json(
-        {
-          error: 'Failed to validate request',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        500,
-      ),
+      response: c.json({ error: 'Failed to validate request' }, 500),
     }
   }
 }
