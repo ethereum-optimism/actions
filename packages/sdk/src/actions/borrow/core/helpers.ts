@@ -1,5 +1,3 @@
-import { parseUnits } from 'viem'
-
 import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type {
@@ -10,6 +8,7 @@ import type {
   BorrowMarketId,
   GetBorrowMarketsParams,
 } from '@/types/borrow/index.js'
+import { parseDecimalAmount } from '@/utils/assets.js'
 
 /**
  * Convert a public `Amount` to a wei `bigint`.
@@ -21,7 +20,7 @@ export function resolveBorrowAmountWei(
   decimals: number,
 ): bigint {
   if ('amountRaw' in amount) return amount.amountRaw
-  return parseUnits(amount.amount.toString(), decimals)
+  return parseDecimalAmount(amount.amount, decimals)
 }
 
 /**
