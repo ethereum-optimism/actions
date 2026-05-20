@@ -4,7 +4,6 @@ import { formatUnits } from 'viem'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
   MarketNotAllowedError,
   ProviderNotConfiguredError,
@@ -46,6 +45,7 @@ import {
   parseAssetAmount,
 } from '@/utils/assets.js'
 import {
+  resolveSupportedChainIds,
   validateAmountPositiveIfExists,
   validateAmountProvided,
   validateAssetOnChain,
@@ -217,11 +217,9 @@ export abstract class SwapProvider<
    * the Actions SDK's known chains, and the developer's ActionsConfig.chains.
    */
   supportedChainIds(): SupportedChainId[] {
-    const configuredChains = this.chainManager.getSupportedChains()
-    return this.protocolSupportedChainIds().filter(
-      (id) =>
-        (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
-        configuredChains.includes(id),
+    return resolveSupportedChainIds(
+      this.protocolSupportedChainIds(),
+      this.chainManager.getSupportedChains(),
     )
   }
 

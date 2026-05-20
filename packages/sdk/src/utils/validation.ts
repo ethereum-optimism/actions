@@ -1,7 +1,10 @@
 import type { Address } from 'viem'
 import { isAddress } from 'viem'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  SUPPORTED_CHAIN_IDS,
+  type SupportedChainId,
+} from '@/constants/supportedChains.js'
 import {
   AmountRequiredError,
   AssetNotSupportedOnChainError,
@@ -71,6 +74,22 @@ export function validateChainSupported(
   if (!supportedChainIds.includes(chainId)) {
     throw new ChainNotSupportedError({ chainId, supportedChainIds })
   }
+}
+
+/**
+ * Resolve the effective chain set for a provider instance.
+ * @description Intersects protocol-native chains, SDK-supported chains, and
+ * developer-configured chains while preserving the protocol's declared order.
+ */
+export function resolveSupportedChainIds(
+  protocolSupportedChainIds: readonly number[],
+  configuredChainIds: readonly number[],
+): SupportedChainId[] {
+  return protocolSupportedChainIds.filter(
+    (chainId): chainId is SupportedChainId =>
+      (SUPPORTED_CHAIN_IDS as readonly number[]).includes(chainId) &&
+      configuredChainIds.includes(chainId),
+  )
 }
 
 /**

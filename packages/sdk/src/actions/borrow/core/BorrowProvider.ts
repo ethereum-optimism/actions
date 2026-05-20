@@ -15,7 +15,6 @@ import {
   buildWithdrawCollateralInternalParams,
 } from '@/actions/borrow/core/internalParams.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import { AddressRequiredError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
@@ -48,6 +47,7 @@ import type {
 } from '@/types/borrow/index.js'
 import { resolveApprovalMode } from '@/utils/approve.js'
 import {
+  resolveSupportedChainIds,
   validateChainSupported,
   validateNotZeroAddress,
 } from '@/utils/validation.js'
@@ -111,11 +111,9 @@ export abstract class BorrowProvider<
    * supported chains, and the developer's configured chains.
    */
   public supportedChainIds(): SupportedChainId[] {
-    const configured = this.chainManager.getSupportedChains()
-    return this.protocolSupportedChainIds().filter(
-      (id): id is SupportedChainId =>
-        (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
-        (configured as readonly number[]).includes(id),
+    return resolveSupportedChainIds(
+      this.protocolSupportedChainIds(),
+      this.chainManager.getSupportedChains(),
     )
   }
 

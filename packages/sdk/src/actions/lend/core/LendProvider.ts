@@ -6,7 +6,6 @@ import {
   findMatchingConfig,
 } from '@/actions/shared/marketConfigs.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
   AddressRequiredError,
   AssetMetadataRequiredError,
@@ -42,7 +41,10 @@ import {
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
 import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
-import { validateChainSupported } from '@/utils/validation.js'
+import {
+  resolveSupportedChainIds,
+  validateChainSupported,
+} from '@/utils/validation.js'
 
 /** Inputs for the base class's ERC-20 lend approval helper. */
 interface BuildLendApprovalParams {
@@ -95,11 +97,9 @@ export abstract class LendProvider<
    * @returns Array of chain IDs usable through this provider instance
    */
   supportedChainIds(): SupportedChainId[] {
-    const configuredChains = this.chainManager.getSupportedChains()
-    return this.protocolSupportedChainIds().filter(
-      (id): id is SupportedChainId =>
-        (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
-        (configuredChains as readonly number[]).includes(id),
+    return resolveSupportedChainIds(
+      this.protocolSupportedChainIds(),
+      this.chainManager.getSupportedChains(),
     )
   }
 
