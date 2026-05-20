@@ -1,6 +1,9 @@
 import type { Address } from 'viem'
 
-import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
+import {
+  lendMarketIdMatches,
+  validateMarketAsset,
+} from '@/actions/lend/utils/markets.js'
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import {
   filterMatchingConfigs,
@@ -247,10 +250,7 @@ export abstract class LendProvider<
     const foundMarket = findMatchingConfig(
       this._config.marketAllowlist,
       marketId,
-      (allowedMarket: LendMarketConfig) =>
-        allowedMarket.address.toLowerCase() ===
-          marketId.address.toLowerCase() &&
-        allowedMarket.chainId === marketId.chainId,
+      lendMarketIdMatches,
     )
 
     if (!foundMarket) {

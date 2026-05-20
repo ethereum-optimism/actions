@@ -9,6 +9,20 @@ import type {
 } from '@/types/lend/index.js'
 
 /**
+ * Structural equality for two `LendMarketId` values.
+ * @description Compares `chainId` and a case-insensitive `address`. Shared
+ * by `findMarketInAllowlist` (namespace routing) and
+ * `LendProvider.validateConfigSupported` (per-call allowlist check) so the
+ * two-field comparison lives in one place.
+ */
+export function lendMarketIdMatches(a: LendMarketId, b: LendMarketId): boolean {
+  return (
+    a.address.toLowerCase() === b.address.toLowerCase() &&
+    a.chainId === b.chainId
+  )
+}
+
+/**
  * Find a market config in an allowlist by address + chainId (case-insensitive on address).
  * @description Shared between `BaseLendNamespace.getProviderForMarket` and
  * `MorphoLendProvider._getPosition` to avoid duplicate match logic.
@@ -20,13 +34,7 @@ export function findMarketInAllowlist(
   allowlist: readonly LendMarketConfig[] | undefined,
   marketId: LendMarketId,
 ): LendMarketConfig | undefined {
-  return findMatchingConfig(
-    allowlist,
-    marketId,
-    (m, candidate) =>
-      m.address.toLowerCase() === candidate.address.toLowerCase() &&
-      m.chainId === candidate.chainId,
-  )
+  return findMatchingConfig(allowlist, marketId, lendMarketIdMatches)
 }
 
 /**
