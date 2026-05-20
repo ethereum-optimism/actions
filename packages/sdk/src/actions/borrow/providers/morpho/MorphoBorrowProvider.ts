@@ -1,25 +1,25 @@
-import {
+import type {
   AccrualPosition,
   Market,
   type MarketId,
-  MarketParams,
 } from '@morpho-org/blue-sdk'
 import { blueAbi, blueOracleAbi } from '@morpho-org/blue-sdk-viem'
-import {
-  type Address,
-  encodeFunctionData,
-  erc20Abi,
-  formatUnits,
-  type Hex,
-  maxUint256,
-} from 'viem'
+import { type Address, erc20Abi, formatUnits, type Hex, maxUint256 } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import {
-  getMorphoContracts,
-  getSupportedChainIds as getMorphoSupportedChainIds,
-} from '@/actions/shared/morpho/contracts.js'
+  buildMorphoMarket,
+  encodeMorphoBorrow,
+  encodeMorphoRepay,
+  encodeMorphoSupplyCollateral,
+  encodeMorphoWithdrawCollateral,
+  liquidationBonusFromIncentive,
+  morphoFractionOrNull,
+  morphoWadToNumber,
+  requireMorphoBlueAddress,
+} from '@/actions/borrow/providers/morpho/helpers.js'
+import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
 import {
   computeMorphoMarketId,
   verifyMorphoMarketId,
@@ -28,7 +28,6 @@ import {
   BorrowMarketParamsMismatchError,
   EmptyPositionError,
   MarketNotAllowedError,
-  ProtocolContractsNotConfiguredError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
@@ -57,9 +56,6 @@ import {
   buildErc20ApprovalTx,
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
-
-/** Wad denominator for converting Morpho's 1e18-scaled values to fractions. */
-const WAD = 10n ** 18n
 
 /**
  * Morpho Blue borrow provider.
@@ -474,7 +470,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       ],
     })
 
-    return buildMarket(config, marketTuple, price)
+    return buildMorphoMarket(config, marketTuple, price)
   }
 
   /**
@@ -514,7 +510,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       ],
     })
 
-    const market = buildMarket(config, marketTuple, price)
+    const market = buildMorphoMarket(config, marketTuple, price)
     const [supplyShares, borrowShares, collateral] = positionTuple
     return new AccrualPosition(
       {
@@ -571,7 +567,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         ],
       })
 
-    const market = buildMarket(config, marketTuple, price)
+    const market = buildMorphoMarket(config, marketTuple, price)
     const [supplyShares, borrowShares, collateral] = positionTuple
     const current = new AccrualPosition(
       {
@@ -630,39 +626,12 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     )
   }
 
-  private morphoTx(
-    config: BorrowMarketConfig,
-    functionName:
-      | 'supplyCollateral'
-      | 'borrow'
-      | 'repay'
-      | 'withdrawCollateral',
-    args: readonly unknown[],
-  ): TransactionData {
-    return {
-      to: requireMorphoBlueAddress(config.chainId),
-      data: encodeFunctionData({
-        abi: blueAbi,
-        functionName,
-        // viem's typings tighten args based on functionName; cast at the
-        // call site rather than threading per-method generics through.
-        args: args as never,
-      }),
-      value: 0n,
-    }
-  }
-
   private encodeSupplyCollateral(
     config: BorrowMarketConfig,
     assets: bigint,
     onBehalf: Address,
   ): TransactionData {
-    return this.morphoTx(config, 'supplyCollateral', [
-      morphoMarketParamsTuple(config.marketParams),
-      assets,
-      onBehalf,
-      '0x',
-    ])
+    return encodeMorphoSupplyCollateral(config, assets, onBehalf)
   }
 
   private encodeBorrow(
@@ -672,13 +641,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     onBehalf: Address,
     receiver: Address,
   ): TransactionData {
-    return this.morphoTx(config, 'borrow', [
-      morphoMarketParamsTuple(config.marketParams),
-      assets,
-      shares,
-      onBehalf,
-      receiver,
-    ])
+    return encodeMorphoBorrow(config, assets, shares, onBehalf, receiver)
   }
 
   private encodeRepay(
@@ -687,13 +650,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     shares: bigint,
     onBehalf: Address,
   ): TransactionData {
-    return this.morphoTx(config, 'repay', [
-      morphoMarketParamsTuple(config.marketParams),
-      assets,
-      shares,
-      onBehalf,
-      '0x',
-    ])
+    return encodeMorphoRepay(config, assets, shares, onBehalf)
   }
 
   private encodeWithdrawCollateral(
@@ -702,12 +659,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     onBehalf: Address,
     receiver: Address,
   ): TransactionData {
-    return this.morphoTx(config, 'withdrawCollateral', [
-      morphoMarketParamsTuple(config.marketParams),
-      assets,
-      onBehalf,
-      receiver,
-    ])
+    return encodeMorphoWithdrawCollateral(config, assets, onBehalf, receiver)
   }
 
   private assembleQuote(args: {
@@ -742,13 +694,13 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         : null,
       positionAfter: this.adaptPosition(config, args.positionAfter),
       fees: {
-        borrowApy: wadToNumber(args.positionAfter.market.borrowApy),
+        borrowApy: morphoWadToNumber(args.positionAfter.market.borrowApy),
         liquidationBonus: liquidationBonusFromIncentive(
           args.positionAfter.market.params.liquidationIncentiveFactor,
         ),
       },
       safeCeilingLtv:
-        wadToNumber(config.marketParams.lltv) *
+        morphoWadToNumber(config.marketParams.lltv) *
         (1 - this.resolveHealthBufferPct(config)),
       execution: {
         transactions,
@@ -774,11 +726,11 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       name: config.name,
       collateralAsset: config.collateralAsset,
       borrowAsset: config.borrowAsset,
-      borrowApy: wadToNumber(market.borrowApy),
+      borrowApy: morphoWadToNumber(market.borrowApy),
       liquidationBonus: liquidationBonusFromIncentive(
         market.params.liquidationIncentiveFactor,
       ),
-      maxLtv: wadToNumber(config.marketParams.lltv),
+      maxLtv: morphoWadToNumber(config.marketParams.lltv),
       healthBufferPct: this.resolveHealthBufferPct(config),
       totalBorrowed: market.totalBorrowAssets,
       // Morpho doesn't expose aggregate collateral as a single accumulator,
@@ -794,8 +746,10 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     position: AccrualPosition,
   ): BorrowMarketPosition {
     const hasDebt = position.borrowAssets > 0n
-    const ltvFraction = hasDebt ? toFractionOrNull(position.ltv) : null
-    const hfFraction = hasDebt ? toFractionOrNull(position.healthFactor) : null
+    const ltvFraction = hasDebt ? morphoFractionOrNull(position.ltv) : null
+    const hfFraction = hasDebt
+      ? morphoFractionOrNull(position.healthFactor)
+      : null
     const liquidationPrice = position.liquidationPrice ?? 0n
     return {
       marketId: {
@@ -821,101 +775,14 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         liquidationPrice,
         config.borrowAsset.metadata.decimals,
       ),
-      borrowApy: wadToNumber(position.market.borrowApy),
+      borrowApy: morphoWadToNumber(position.market.borrowApy),
       liquidationBonus: liquidationBonusFromIncentive(
         position.market.params.liquidationIncentiveFactor,
       ),
       ltv: ltvFraction,
-      maxLtv: wadToNumber(config.marketParams.lltv),
+      maxLtv: morphoWadToNumber(config.marketParams.lltv),
     }
   }
-}
-
-function wadToNumber(value: bigint): number {
-  return Number(value) / Number(WAD)
-}
-
-function toFractionOrNull(value: bigint | null | undefined): number | null {
-  if (value === null || value === undefined) return null
-  return wadToNumber(value)
-}
-
-/**
- * Morpho's `liquidationIncentiveFactor` is `WAD + bonus`. Subtract WAD to
- * recover the bonus fraction (e.g., `1.05e18 → 0.05`).
- */
-function liquidationBonusFromIncentive(factor: bigint): number {
-  if (factor <= WAD) return 0
-  return wadToNumber(factor - WAD)
-}
-
-/**
- * Convert a `MorphoMarketParams` object to the tuple shape `blueAbi` expects.
- * Destructured by name so a future ABI re-ordering surfaces as a TypeScript
- * error rather than a silent calldata bug.
- */
-function morphoMarketParamsTuple(params: MorphoMarketParams): {
-  loanToken: Address
-  collateralToken: Address
-  oracle: Address
-  irm: Address
-  lltv: bigint
-} {
-  return {
-    loanToken: params.loanToken,
-    collateralToken: params.collateralToken,
-    oracle: params.oracle,
-    irm: params.irm,
-    lltv: params.lltv,
-  }
-}
-
-function requireMorphoBlueAddress(chainId: number): Address {
-  const contracts = getMorphoContracts(chainId)
-  if (!contracts) {
-    throw new ProtocolContractsNotConfiguredError({
-      protocol: 'Morpho Blue',
-      chainId,
-    })
-  }
-  return contracts.morphoBlue
-}
-
-/**
- * Compose Morpho's `Market` from the raw `market()` tuple plus oracle price.
- * @description `blueAbi.market(id)` returns
- * `[totalSupplyAssets, totalSupplyShares, totalBorrowAssets, totalBorrowShares, lastUpdate, fee]`
- * as uint128/uint128/uint128/uint128/uint128/uint128.
- */
-function buildMarket(
-  config: BorrowMarketConfig,
-  marketTuple: readonly [bigint, bigint, bigint, bigint, bigint, bigint],
-  price: bigint,
-): Market {
-  const [
-    totalSupplyAssets,
-    totalSupplyShares,
-    totalBorrowAssets,
-    totalBorrowShares,
-    lastUpdate,
-    fee,
-  ] = marketTuple
-  return new Market({
-    params: new MarketParams({
-      loanToken: config.marketParams.loanToken,
-      collateralToken: config.marketParams.collateralToken,
-      oracle: config.marketParams.oracle,
-      irm: config.marketParams.irm,
-      lltv: config.marketParams.lltv,
-    }),
-    totalSupplyAssets,
-    totalSupplyShares,
-    totalBorrowAssets,
-    totalBorrowShares,
-    lastUpdate,
-    fee,
-    price,
-  })
 }
 
 export type { MarketId, MorphoMarketParams }
