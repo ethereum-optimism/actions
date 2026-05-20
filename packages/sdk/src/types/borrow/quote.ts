@@ -45,8 +45,8 @@ export interface BorrowQuoteExecution {
 /**
  * A complete borrow quote: position transitions, fees, safe-ceiling LTV,
  * and a pre-built transaction bundle ready to submit on-chain.
- * @description Mirrors swap's `SwapQuote` shape. Pass the quote back into
- * the matching `wallet.borrow.*` method to dispatch without re-quoting.
+ * @description Pass the quote back into the matching `wallet.borrow.*`
+ * method to dispatch without re-quoting.
  */
 export interface BorrowQuote {
   /** Market the quote targets */

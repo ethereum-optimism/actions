@@ -57,8 +57,8 @@ import {
  * official `Market` / `AccrualPosition` classes so we reuse the SDK's
  * accrual / health-factor / liquidation-price math without depending on
  * `@morpho-org/blue-sdk`'s per-chain registry (which does not yet include
- * the demo's `baseSepolia` deployment). The write side ships in a
- * follow-up commit.
+ * the demo's `baseSepolia` deployment). Write paths build calldata
+ * directly from the verified allowlist config.
  */
 export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   constructor(
