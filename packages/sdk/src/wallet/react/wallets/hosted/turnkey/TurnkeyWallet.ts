@@ -19,9 +19,24 @@ interface TurnkeyWalletCreateOptions extends BaseWalletCreateOptions {
 export class TurnkeyWallet extends EOAWallet {
   public address!: Address
   public signer!: LocalAccount
+  /**
+   * Turnkey client instance
+   */
   private readonly client: TurnkeySDKClientBase
+  /**
+   * Turnkey organization ID that owns the signing key
+   */
   private readonly organizationId: string
+  /**
+   * This can be a wallet account address, private key address, or private key ID.
+   */
   private readonly signWith: string
+  /**
+   * Ethereum address to use for this account, in the case that a private key ID is used to sign.
+   * If left undefined, `createSigner` will fetch it from the Turnkey API.
+   * We recommend setting this if you're using a passkey client, so that your users are not prompted for a passkey signature just to fetch their address.
+   * You may leave this undefined if using an API key client.
+   */
   private readonly ethereumAddress?: string
 
   private constructor(params: TurnkeyWalletCreateOptions) {
