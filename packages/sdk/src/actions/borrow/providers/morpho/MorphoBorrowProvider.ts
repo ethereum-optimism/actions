@@ -132,7 +132,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       params.collateralAmountWei > 0n
     ) {
       txs.push(
-        this.encodeSupplyCollateral(
+        encodeMorphoSupplyCollateral(
           market,
           params.collateralAmountWei,
           params.walletAddress,
@@ -140,7 +140,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       )
     }
     txs.push(
-      this.encodeBorrow(
+      encodeMorphoBorrow(
         market,
         params.borrowAmountWei,
         0n,
@@ -216,7 +216,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
           )
     if (approvalTx) txs.push(approvalTx)
     txs.push(
-      this.encodeRepay(
+      encodeMorphoRepay(
         market,
         repayAssetsWei,
         repaySharesWei,
@@ -225,7 +225,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     )
     if (withdrawCollateralWei > 0n) {
       txs.push(
-        this.encodeWithdrawCollateral(
+        encodeMorphoWithdrawCollateral(
           market,
           withdrawCollateralWei,
           params.walletAddress,
@@ -271,7 +271,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     )
     if (approvalTx) txs.push(approvalTx)
     txs.push(
-      this.encodeSupplyCollateral(
+      encodeMorphoSupplyCollateral(
         market,
         params.amountWei,
         params.walletAddress,
@@ -306,7 +306,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     }
     const after = current.withdrawCollateral(amountWei)
 
-    const tx = this.encodeWithdrawCollateral(
+    const tx = encodeMorphoWithdrawCollateral(
       market,
       amountWei,
       params.walletAddress,
@@ -364,7 +364,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
           )
     if (approvalTx) txs.push(approvalTx)
     txs.push(
-      this.encodeRepay(
+      encodeMorphoRepay(
         market,
         repayAssetsWei,
         repaySharesWei,
@@ -437,42 +437,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<{ current: AccrualPosition; allowance: bigint }> {
     const client = this.chainManager.getPublicClient(config.chainId)
     return fetchMorphoStateWithAllowance(client, config, user, token)
-  }
-
-  private encodeSupplyCollateral(
-    config: BorrowMarketConfig,
-    assets: bigint,
-    onBehalf: Address,
-  ): TransactionData {
-    return encodeMorphoSupplyCollateral(config, assets, onBehalf)
-  }
-
-  private encodeBorrow(
-    config: BorrowMarketConfig,
-    assets: bigint,
-    shares: bigint,
-    onBehalf: Address,
-    receiver: Address,
-  ): TransactionData {
-    return encodeMorphoBorrow(config, assets, shares, onBehalf, receiver)
-  }
-
-  private encodeRepay(
-    config: BorrowMarketConfig,
-    assets: bigint,
-    shares: bigint,
-    onBehalf: Address,
-  ): TransactionData {
-    return encodeMorphoRepay(config, assets, shares, onBehalf)
-  }
-
-  private encodeWithdrawCollateral(
-    config: BorrowMarketConfig,
-    assets: bigint,
-    onBehalf: Address,
-    receiver: Address,
-  ): TransactionData {
-    return encodeMorphoWithdrawCollateral(config, assets, onBehalf, receiver)
   }
 
   private assembleQuote(args: {
