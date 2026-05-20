@@ -1,20 +1,16 @@
-import type { Market, MarketId } from '@morpho-org/blue-sdk'
-import { AccrualPosition } from '@morpho-org/blue-sdk'
-import { blueAbi, blueOracleAbi } from '@morpho-org/blue-sdk-viem'
-import { type Address, erc20Abi, type Hex } from 'viem'
+import type { AccrualPosition, Market, MarketId } from '@morpho-org/blue-sdk'
+import { type Address } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import {
   buildMorphoCollateralApproval,
   buildMorphoLoanApproval,
-  buildMorphoMarket,
   buildMorphoMaxLoanApproval,
   encodeMorphoBorrow,
   encodeMorphoRepay,
   encodeMorphoSupplyCollateral,
   encodeMorphoWithdrawCollateral,
   requireMorphoAllowlistMarket,
-  requireMorphoBlueAddress,
   verifyMorphoAllowlistMarketIds,
 } from '@/actions/borrow/providers/morpho/helpers.js'
 import {
@@ -22,6 +18,11 @@ import {
   adaptMorphoBorrowPosition,
   assembleMorphoBorrowQuote,
 } from '@/actions/borrow/providers/morpho/presentation.js'
+import {
+  fetchMorphoMarket,
+  fetchMorphoPosition,
+  fetchMorphoStateWithAllowance,
+} from '@/actions/borrow/providers/morpho/state.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
 import { EmptyPositionError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -407,27 +408,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
    */
   private async fetchMarket(config: BorrowMarketConfig): Promise<Market> {
     const client = this.chainManager.getPublicClient(config.chainId)
-    const morphoBlue = requireMorphoBlueAddress(config.chainId)
-    const id = config.marketId as Hex
-    const [marketTuple, price] = await client.multicall({
-      allowFailure: false,
-      contracts: [
-        {
-          address: morphoBlue,
-          abi: blueAbi,
-          functionName: 'market',
-          args: [id],
-        },
-        {
-          address: config.marketParams.oracle,
-          abi: blueOracleAbi,
-          functionName: 'price',
-          args: [],
-        },
-      ],
-    })
-
-    return buildMorphoMarket(config, marketTuple, price)
+    return fetchMorphoMarket(client, config)
   }
 
   /**
@@ -441,43 +422,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     user: Address,
   ): Promise<AccrualPosition> {
     const client = this.chainManager.getPublicClient(config.chainId)
-    const morphoBlue = requireMorphoBlueAddress(config.chainId)
-    const id = config.marketId as Hex
-    const [positionTuple, marketTuple, price] = await client.multicall({
-      allowFailure: false,
-      contracts: [
-        {
-          address: morphoBlue,
-          abi: blueAbi,
-          functionName: 'position',
-          args: [id, user],
-        },
-        {
-          address: morphoBlue,
-          abi: blueAbi,
-          functionName: 'market',
-          args: [id],
-        },
-        {
-          address: config.marketParams.oracle,
-          abi: blueOracleAbi,
-          functionName: 'price',
-          args: [],
-        },
-      ],
-    })
-
-    const market = buildMorphoMarket(config, marketTuple, price)
-    const [supplyShares, borrowShares, collateral] = positionTuple
-    return new AccrualPosition(
-      {
-        user,
-        supplyShares,
-        borrowShares,
-        collateral,
-      },
-      market,
-    )
+    return fetchMorphoPosition(client, config, user)
   }
 
   /**
@@ -491,51 +436,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     token: Address,
   ): Promise<{ current: AccrualPosition; allowance: bigint }> {
     const client = this.chainManager.getPublicClient(config.chainId)
-    const morphoBlue = requireMorphoBlueAddress(config.chainId)
-    const id = config.marketId as Hex
-    const [positionTuple, marketTuple, price, allowance] =
-      await client.multicall({
-        allowFailure: false,
-        contracts: [
-          {
-            address: morphoBlue,
-            abi: blueAbi,
-            functionName: 'position',
-            args: [id, user],
-          },
-          {
-            address: morphoBlue,
-            abi: blueAbi,
-            functionName: 'market',
-            args: [id],
-          },
-          {
-            address: config.marketParams.oracle,
-            abi: blueOracleAbi,
-            functionName: 'price',
-            args: [],
-          },
-          {
-            address: token,
-            abi: erc20Abi,
-            functionName: 'allowance',
-            args: [user, morphoBlue],
-          },
-        ],
-      })
-
-    const market = buildMorphoMarket(config, marketTuple, price)
-    const [supplyShares, borrowShares, collateral] = positionTuple
-    const current = new AccrualPosition(
-      {
-        user,
-        supplyShares,
-        borrowShares,
-        collateral,
-      },
-      market,
-    )
-    return { current, allowance }
+    return fetchMorphoStateWithAllowance(client, config, user, token)
   }
 
   private encodeSupplyCollateral(
