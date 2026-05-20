@@ -1,5 +1,3 @@
-import type { Address } from 'viem'
-
 import {
   filterBorrowMarketConfigs,
   resolveBorrowAmountWei,
@@ -7,6 +5,15 @@ import {
   validateBorrowMarketAllowed,
   validateBorrowMarketIdAllowed,
 } from '@/actions/borrow/core/helpers.js'
+import type { ResolvedBorrowBaseParams } from '@/actions/borrow/core/internalParams.js'
+import {
+  buildClosePositionInternalParams,
+  buildDepositCollateralInternalParams,
+  buildOpenPositionInternalParams,
+  buildRepayInternalParams,
+  buildResolvedBorrowBaseParams,
+  buildWithdrawCollateralInternalParams,
+} from '@/actions/borrow/core/internalParams.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import { AddressRequiredError } from '@/core/error/errors.js'
@@ -123,110 +130,59 @@ export abstract class BorrowProvider<
   public async openPosition(
     params: BorrowOpenPositionParams,
   ): Promise<BorrowQuote> {
-    const base = this.normalizeBaseParams(params)
-    const borrowAmountWei = this.resolveAmountWei(
-      params.borrowAmount,
-      params.market.borrowAsset.metadata.decimals,
+    return this._openPosition(
+      buildOpenPositionInternalParams(
+        params,
+        this.normalizeBaseParams(params),
+        this.resolveAmountWei.bind(this),
+      ),
     )
-    const collateralAmountWei =
-      params.collateralAmount === undefined
-        ? undefined
-        : this.resolveAmountWei(
-            params.collateralAmount,
-            params.market.collateralAsset.metadata.decimals,
-          )
-    const internal: BorrowOpenPositionInternalParams = {
-      market: params.market,
-      walletAddress: base.walletAddress,
-      recipient: base.recipient,
-      options: params.options,
-      approvalMode: base.approvalMode,
-      borrowAmountWei,
-      collateralAmountWei,
-    }
-    return this._openPosition(internal)
   }
 
   public async closePosition(
     params: BorrowClosePositionParams,
   ): Promise<BorrowQuote> {
-    const base = this.normalizeBaseParams(params)
-    const borrowAmount = this.resolveAmountWeiOrMax(
-      params.borrowAmount,
-      params.market.borrowAsset.metadata.decimals,
+    return this._closePosition(
+      buildClosePositionInternalParams(
+        params,
+        this.normalizeBaseParams(params),
+        this.resolveAmountWeiOrMax.bind(this),
+      ),
     )
-    const collateralAmount =
-      params.collateralAmount === undefined
-        ? undefined
-        : this.resolveAmountWeiOrMax(
-            params.collateralAmount,
-            params.market.collateralAsset.metadata.decimals,
-          )
-    const internal: BorrowClosePositionInternalParams = {
-      market: params.market,
-      walletAddress: base.walletAddress,
-      recipient: base.recipient,
-      options: params.options,
-      approvalMode: base.approvalMode,
-      borrowAmount,
-      collateralAmount,
-    }
-    return this._closePosition(internal)
   }
 
   public async depositCollateral(
     params: BorrowDepositCollateralParams,
   ): Promise<BorrowQuote> {
-    const base = this.normalizeBaseParams(params)
-    const amountWei = this.resolveAmountWei(
-      params.amount,
-      params.market.collateralAsset.metadata.decimals,
+    return this._depositCollateral(
+      buildDepositCollateralInternalParams(
+        params,
+        this.normalizeBaseParams(params),
+        this.resolveAmountWei.bind(this),
+      ),
     )
-    const internal: BorrowDepositCollateralInternalParams = {
-      market: params.market,
-      walletAddress: base.walletAddress,
-      recipient: base.recipient,
-      options: params.options,
-      approvalMode: base.approvalMode,
-      amountWei,
-    }
-    return this._depositCollateral(internal)
   }
 
   public async withdrawCollateral(
     params: BorrowWithdrawCollateralParams,
   ): Promise<BorrowQuote> {
-    const base = this.normalizeBaseParams(params)
-    const amount = this.resolveAmountWeiOrMax(
-      params.amount,
-      params.market.collateralAsset.metadata.decimals,
+    return this._withdrawCollateral(
+      buildWithdrawCollateralInternalParams(
+        params,
+        this.normalizeBaseParams(params),
+        this.resolveAmountWeiOrMax.bind(this),
+      ),
     )
-    const internal: BorrowWithdrawCollateralInternalParams = {
-      market: params.market,
-      walletAddress: base.walletAddress,
-      recipient: base.recipient,
-      options: params.options,
-      approvalMode: base.approvalMode,
-      amount,
-    }
-    return this._withdrawCollateral(internal)
   }
 
   public async repay(params: BorrowRepayParams): Promise<BorrowQuote> {
-    const base = this.normalizeBaseParams(params)
-    const amount = this.resolveAmountWeiOrMax(
-      params.amount,
-      params.market.borrowAsset.metadata.decimals,
+    return this._repay(
+      buildRepayInternalParams(
+        params,
+        this.normalizeBaseParams(params),
+        this.resolveAmountWeiOrMax.bind(this),
+      ),
     )
-    const internal: BorrowRepayInternalParams = {
-      market: params.market,
-      walletAddress: base.walletAddress,
-      recipient: base.recipient,
-      options: params.options,
-      approvalMode: base.approvalMode,
-      amount,
-    }
-    return this._repay(internal)
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -341,24 +297,18 @@ export abstract class BorrowProvider<
    * Validate + resolve the cross-cutting fields every action shares
    * (walletAddress, recipient, approvalMode, market support).
    */
-  private normalizeBaseParams(params: BorrowOpenPositionBaseParams): {
-    walletAddress: Address
-    recipient: Address
-    approvalMode: ApprovalMode
-  } {
+  private normalizeBaseParams(
+    params: BorrowOpenPositionBaseParams,
+  ): ResolvedBorrowBaseParams {
     if (!params.walletAddress) {
       throw new AddressRequiredError('walletAddress')
     }
     validateNotZeroAddress(params.walletAddress, 'walletAddress')
     this.validateConfigSupported(params.market)
-    return {
-      walletAddress: params.walletAddress,
-      // Recipient defaults to the wallet. WalletBorrowNamespace binds this
-      // explicitly via the wallet's address; direct callers can supply
-      // `walletAddress` and receive funds at the same address.
-      recipient: params.walletAddress,
-      approvalMode: this.resolveApprovalMode(params.approvalMode),
-    }
+    return buildResolvedBorrowBaseParams(
+      params.walletAddress,
+      this.resolveApprovalMode(params.approvalMode),
+    )
   }
 
   // ─────────────────────────────────────────────────────────────────────────
