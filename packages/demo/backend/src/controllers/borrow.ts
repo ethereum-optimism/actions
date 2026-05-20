@@ -1,4 +1,4 @@
-import { serializeBigInt } from '@eth-optimism/actions-sdk'
+import { type BorrowAction, serializeBigInt } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
@@ -16,15 +16,26 @@ import * as borrowService from '@/services/borrow.js'
 import * as walletService from '@/services/wallet.js'
 
 /**
- * Quote bodies are passed opaquely to the SDK; we only enforce that the
- * action discriminator matches the route. Deep validation of the quote
- * shape is the SDK's responsibility at execute time.
+ * Mutation bodies that carry a pre-built quote. The backend enforces
+ * the action discriminator (so a quote can't be replayed against the
+ * wrong route) and the `marketId` tagged union (so `decorateReceipt`
+ * can read `chainId` without a TypeError when the SDK's quote shape
+ * drifts). Other quote fields (`execution`, `recipient`, `expiresAt`,
+ * `safeCeilingLtv`, fee detail) are passed opaquely to the SDK, which
+ * owns recipient binding and expiry validation.
+ *
+ * Trust boundary: the auth token authorizes execution against the
+ * user's own session wallet. A caller swapping `execution.transactions`
+ * for arbitrary calldata is exercising authority they already have over
+ * their own wallet; the backend does not claim to enforce "only borrow
+ * calldata" beyond what the SDK validates.
  */
-function quoteBodySchema(action: string) {
+export function quoteBodySchema(action: BorrowAction) {
   return z.strictObject({
     quote: z
       .object({
         action: z.literal(action),
+        marketId: BorrowMarketIdSchema,
       })
       .passthrough(),
   })
