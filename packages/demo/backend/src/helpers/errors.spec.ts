@@ -1,19 +1,26 @@
 import {
+  AddressRequiredError,
   AmountRequiredError,
+  AssetMetadataRequiredError,
+  AssetNotSupportedOnChainError,
   BorrowMarketParamsMismatchError,
   ChainNotSupportedError,
   ConflictingAmountsError,
   InvalidAmountError,
+  InvalidParamsError,
   MarketIdRequiredError,
   MarketNotAllowedError,
   MarketNotFoundError,
+  NativeAssetAddressError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
   QuoteRecipientMismatchError,
+  QuoteRecipientMissingError,
+  ZeroAddressError,
 } from '@eth-optimism/actions-sdk'
 import { describe, expect, it } from 'vitest'
 
-import { mapSdkError } from './errors.js'
+import { mapSdkError, WalletNotFoundError } from './errors.js'
 
 describe('mapSdkError', () => {
   it('maps MarketNotAllowedError to 403 with a static message', () => {
@@ -125,6 +132,68 @@ describe('mapSdkError', () => {
     ).toEqual({
       status: 503,
       message: 'Provider not configured for this market.',
+    })
+  })
+
+  it('maps WalletNotFoundError to 404', () => {
+    expect(mapSdkError(new WalletNotFoundError())).toEqual({
+      status: 404,
+      message: 'Wallet not found.',
+    })
+  })
+
+  it('maps AddressRequiredError to 400', () => {
+    expect(mapSdkError(new AddressRequiredError('recipient'))).toEqual({
+      status: 400,
+      message: 'Address is required.',
+    })
+  })
+
+  it('maps ZeroAddressError to 400', () => {
+    expect(mapSdkError(new ZeroAddressError('recipient'))).toEqual({
+      status: 400,
+      message: 'Address must not be the zero address.',
+    })
+  })
+
+  it('maps InvalidParamsError to 400', () => {
+    expect(
+      mapSdkError(
+        new InvalidParamsError({ param: 'borrowAmount', expected: 'positive' }),
+      ),
+    ).toEqual({
+      status: 400,
+      message: 'Invalid parameters.',
+    })
+  })
+
+  it('maps QuoteRecipientMissingError to 400', () => {
+    expect(mapSdkError(new QuoteRecipientMissingError())).toEqual({
+      status: 400,
+      message: 'Quote recipient is required.',
+    })
+  })
+
+  it('maps AssetNotSupportedOnChainError to 400', () => {
+    expect(
+      mapSdkError(new AssetNotSupportedOnChainError('XYZ', 84532)),
+    ).toEqual({
+      status: 400,
+      message: 'Asset is not supported on this chain.',
+    })
+  })
+
+  it('maps NativeAssetAddressError to 400', () => {
+    expect(mapSdkError(new NativeAssetAddressError('ETH'))).toEqual({
+      status: 400,
+      message: 'Native asset cannot be referenced by address.',
+    })
+  })
+
+  it('maps AssetMetadataRequiredError to 400', () => {
+    expect(mapSdkError(new AssetMetadataRequiredError())).toEqual({
+      status: 400,
+      message: 'Asset metadata is required.',
     })
   })
 

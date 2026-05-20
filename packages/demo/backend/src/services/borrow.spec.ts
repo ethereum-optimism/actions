@@ -1,5 +1,8 @@
 import type { BorrowReceipt } from '@eth-optimism/actions-sdk'
+import { ProviderNotConfiguredError } from '@eth-optimism/actions-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { WalletNotFoundError } from '@/helpers/errors.js'
 
 import * as borrowService from './borrow.js'
 
@@ -164,13 +167,24 @@ describe('Borrow Service', () => {
       expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
 
-    it('throws when the wallet cannot be resolved', async () => {
+    it('throws WalletNotFoundError when the wallet cannot be resolved', async () => {
       const { getWallet } = await import('./wallet.js')
       vi.mocked(getWallet).mockResolvedValue(null)
-      await expect(borrowService.openPosition(fullParams)).rejects.toThrow(
-        'Wallet not found',
-      )
+      await expect(
+        borrowService.openPosition(fullParams),
+      ).rejects.toBeInstanceOf(WalletNotFoundError)
       expect(mockWalletBorrow.openPosition).not.toHaveBeenCalled()
+    })
+
+    it('throws ProviderNotConfiguredError when wallet.borrow is undefined', async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue({
+        ...mockWallet,
+        borrow: undefined,
+      } as never)
+      await expect(
+        borrowService.openPosition(fullParams),
+      ).rejects.toBeInstanceOf(ProviderNotConfiguredError)
     })
 
     it('propagates SDK errors', async () => {
