@@ -1,4 +1,4 @@
-import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
+import { marketIdMatches } from '@/actions/borrow/core/markets.js'
 import {
   filterMatchingConfigs,
   findMatchingConfig,
