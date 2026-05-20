@@ -42,14 +42,16 @@ original single-file layout:
   now owns shared base-class borrow utilities.
 - `packages/sdk/src/actions/borrow/core/internalParams.ts`
   now owns public-param to internal-param normalization.
-- `packages/sdk/src/actions/borrow/providers/morpho/helpers.ts`
-  now owns Morpho calldata construction, approvals, market-id allowlist
-  validation, and small numeric helpers.
-- `packages/sdk/src/actions/borrow/providers/morpho/presentation.ts`
-  now owns market / position / quote adaptation.
-- `packages/sdk/src/actions/borrow/providers/morpho/state.ts`
+- `packages/sdk/src/actions/shared/morpho/blue.ts`
+  now owns Morpho protocol calldata construction, approvals, market
+  construction, and protocol numeric helpers.
+- `packages/sdk/src/actions/shared/morpho/state.ts`
   now owns Morpho read multicalls for market, position, and
   position-plus-allowance state.
+- `packages/sdk/src/actions/borrow/providers/morpho/helpers.ts`
+  now owns only borrow-specific Morpho allowlist validation and lookup.
+- `packages/sdk/src/actions/borrow/providers/morpho/presentation.ts`
+  now owns market / position / quote adaptation.
 
 ## Current File Shape
 
@@ -73,10 +75,12 @@ If PR-4 touches borrow quoting or execution:
 - Update `packages/sdk/src/actions/borrow/core/internalParams.ts`
   if public borrow params gain new fields that must flow into internal
   provider hooks.
-- Update `packages/sdk/src/actions/borrow/providers/morpho/helpers.ts`
-  for Morpho calldata or approval policy changes.
-- Update `packages/sdk/src/actions/borrow/providers/morpho/state.ts`
+- Update `packages/sdk/src/actions/shared/morpho/blue.ts`
+  for Morpho calldata, approval policy, or market-construction changes.
+- Update `packages/sdk/src/actions/shared/morpho/state.ts`
   if Morpho read batching or error handling changes.
+- Update `packages/sdk/src/actions/borrow/providers/morpho/helpers.ts`
+  only when the borrow-specific Morpho allowlist behavior changes.
 
 If PR-4 adds a second borrow provider:
 
@@ -87,6 +91,13 @@ If PR-4 adds a second borrow provider:
   subclass-to-expose-protected for base tests, provider-specific unit
   tests, wallet namespace quote-validation tests, and index export smoke
   tests.
+
+If PR-4 adds more Morpho work in another action domain:
+
+- Reuse `packages/sdk/src/actions/shared/morpho/blue.ts`
+  and `packages/sdk/src/actions/shared/morpho/state.ts` first.
+- Do not copy Morpho protocol code back down into a domain folder unless
+  the code is truly domain-specific.
 
 If PR-4 changes public SDK exports:
 
