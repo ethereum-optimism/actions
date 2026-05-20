@@ -509,6 +509,15 @@ describe('BorrowProvider — getMarket / getMarkets / getPosition', () => {
     ).rejects.toBeInstanceOf(AddressRequiredError)
   })
 
+  it('getPosition rejects the zero walletAddress', async () => {
+    await expect(
+      provider.getPosition({
+        marketId: market,
+        walletAddress: zeroAddress,
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
+
   it('getPosition returns the concrete provider result', async () => {
     const position = await provider.getPosition({
       marketId: market,
