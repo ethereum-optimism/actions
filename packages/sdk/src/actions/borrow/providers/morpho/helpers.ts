@@ -1,6 +1,6 @@
 import { Market, MarketParams } from '@morpho-org/blue-sdk'
 import { blueAbi } from '@morpho-org/blue-sdk-viem'
-import { type Address, encodeFunctionData, type Hex } from 'viem'
+import { type Address, encodeFunctionData, type Hex, maxUint256 } from 'viem'
 
 import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import { getMorphoContracts } from '@/actions/shared/morpho/contracts.js'
@@ -13,12 +13,17 @@ import {
   MarketNotAllowedError,
   ProtocolContractsNotConfiguredError,
 } from '@/core/error/errors.js'
+import type { ApprovalMode } from '@/types/actions.js'
 import type {
   BorrowMarketConfig,
   BorrowMarketId,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
+import {
+  buildErc20ApprovalTx,
+  resolveErc20ApprovalAmount,
+} from '@/utils/approve.js'
 
 export function requireMorphoBlueAddress(chainId: number): Address {
   const contracts = getMorphoContracts(chainId)
@@ -163,6 +168,51 @@ export function encodeMorphoWithdrawCollateral(
     onBehalf,
     receiver,
   ])
+}
+
+export function buildMorphoCollateralApproval(
+  config: BorrowMarketConfig,
+  amountWei: bigint | undefined,
+  currentAllowance: bigint,
+  mode: ApprovalMode,
+): TransactionData | undefined {
+  if (amountWei === undefined || amountWei === 0n) return undefined
+  if (currentAllowance >= amountWei) return undefined
+  const spender = requireMorphoBlueAddress(config.chainId)
+  return buildErc20ApprovalTx(
+    config.marketParams.collateralToken,
+    spender,
+    resolveErc20ApprovalAmount(mode, amountWei),
+  )
+}
+
+export function buildMorphoLoanApproval(
+  config: BorrowMarketConfig,
+  amountWei: bigint,
+  currentAllowance: bigint,
+  mode: ApprovalMode,
+): TransactionData | undefined {
+  if (amountWei === 0n) return undefined
+  if (currentAllowance >= amountWei) return undefined
+  const spender = requireMorphoBlueAddress(config.chainId)
+  return buildErc20ApprovalTx(
+    config.marketParams.loanToken,
+    spender,
+    resolveErc20ApprovalAmount(mode, amountWei),
+  )
+}
+
+export function buildMorphoMaxLoanApproval(
+  config: BorrowMarketConfig,
+  currentAllowance: bigint,
+): TransactionData | undefined {
+  if (currentAllowance === maxUint256) return undefined
+  const spender = requireMorphoBlueAddress(config.chainId)
+  return buildErc20ApprovalTx(
+    config.marketParams.loanToken,
+    spender,
+    maxUint256,
+  )
 }
 
 export function morphoWadToNumber(value: bigint): number {

@@ -1,11 +1,14 @@
 import type { Market, MarketId } from '@morpho-org/blue-sdk'
 import { AccrualPosition } from '@morpho-org/blue-sdk'
 import { blueAbi, blueOracleAbi } from '@morpho-org/blue-sdk-viem'
-import { type Address, erc20Abi, type Hex, maxUint256 } from 'viem'
+import { type Address, erc20Abi, type Hex } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import {
+  buildMorphoCollateralApproval,
+  buildMorphoLoanApproval,
   buildMorphoMarket,
+  buildMorphoMaxLoanApproval,
   encodeMorphoBorrow,
   encodeMorphoRepay,
   encodeMorphoSupplyCollateral,
@@ -22,11 +25,7 @@ import {
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
 import { EmptyPositionError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  ApprovalMode,
-  BorrowProviderConfig,
-  BorrowSettings,
-} from '@/types/actions.js'
+import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
 import type {
   BorrowAction,
   BorrowClosePositionInternalParams,
@@ -44,10 +43,6 @@ import type {
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
-import {
-  buildErc20ApprovalTx,
-  resolveErc20ApprovalAmount,
-} from '@/utils/approve.js'
 
 /**
  * Morpho Blue borrow provider.
@@ -124,7 +119,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     after = borrowed.position
 
     const txs: TransactionData[] = []
-    const approvalTx = this.buildCollateralApproval(
+    const approvalTx = buildMorphoCollateralApproval(
       market,
       params.collateralAmountWei,
       allowance,
@@ -211,8 +206,8 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const txs: TransactionData[] = []
     const approvalTx =
       repaySharesWei > 0n
-        ? this.buildMaxLoanApproval(market, allowance)
-        : this.buildLoanApproval(
+        ? buildMorphoMaxLoanApproval(market, allowance)
+        : buildMorphoLoanApproval(
             market,
             repayAssetsWei,
             allowance,
@@ -267,7 +262,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const after = current.supplyCollateral(params.amountWei)
 
     const txs: TransactionData[] = []
-    const approvalTx = this.buildCollateralApproval(
+    const approvalTx = buildMorphoCollateralApproval(
       market,
       params.amountWei,
       allowance,
@@ -359,8 +354,8 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const txs: TransactionData[] = []
     const approvalTx =
       repaySharesWei > 0n
-        ? this.buildMaxLoanApproval(market, allowance)
-        : this.buildLoanApproval(
+        ? buildMorphoMaxLoanApproval(market, allowance)
+        : buildMorphoLoanApproval(
             market,
             repayAssetsWei,
             allowance,
@@ -541,51 +536,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market,
     )
     return { current, allowance }
-  }
-
-  private buildCollateralApproval(
-    config: BorrowMarketConfig,
-    amountWei: bigint | undefined,
-    currentAllowance: bigint,
-    mode: ApprovalMode,
-  ): TransactionData | undefined {
-    if (amountWei === undefined || amountWei === 0n) return undefined
-    if (currentAllowance >= amountWei) return undefined
-    const spender = requireMorphoBlueAddress(config.chainId)
-    return buildErc20ApprovalTx(
-      config.marketParams.collateralToken,
-      spender,
-      resolveErc20ApprovalAmount(mode, amountWei),
-    )
-  }
-
-  private buildLoanApproval(
-    config: BorrowMarketConfig,
-    amountWei: bigint,
-    currentAllowance: bigint,
-    mode: ApprovalMode,
-  ): TransactionData | undefined {
-    if (amountWei === 0n) return undefined
-    if (currentAllowance >= amountWei) return undefined
-    const spender = requireMorphoBlueAddress(config.chainId)
-    return buildErc20ApprovalTx(
-      config.marketParams.loanToken,
-      spender,
-      resolveErc20ApprovalAmount(mode, amountWei),
-    )
-  }
-
-  private buildMaxLoanApproval(
-    config: BorrowMarketConfig,
-    currentAllowance: bigint,
-  ): TransactionData | undefined {
-    if (currentAllowance === maxUint256) return undefined
-    const spender = requireMorphoBlueAddress(config.chainId)
-    return buildErc20ApprovalTx(
-      config.marketParams.loanToken,
-      spender,
-      maxUint256,
-    )
   }
 
   private encodeSupplyCollateral(
