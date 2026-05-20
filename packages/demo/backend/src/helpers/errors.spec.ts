@@ -231,3 +231,60 @@ describe('mapSdkError', () => {
     expect(result?.message).not.toContain('http')
   })
 })
+
+// Regression guard: every exported SDK ActionsError subclass is either
+// covered by `mapSdkError` or explicitly listed below as intentionally
+// unmapped (swap-specific surface that borrow routes never raise). When
+// the SDK adds a new error class, this test fails until it's mapped or
+// added to the allowlist with a justification.
+describe('mapSdkError coverage', () => {
+  const INTENTIONALLY_UNMAPPED = new Set([
+    'SameAssetError',
+    'ExactOutputNotSupportedError',
+    'SlippageOutOfRangeError',
+  ])
+
+  it('maps every exported ActionsError subclass or allowlists it', async () => {
+    const sdk = (await import('@eth-optimism/actions-sdk')) as Record<
+      string,
+      unknown
+    >
+    const actionsErrorCtor = sdk.ActionsError as
+      | (new (...args: unknown[]) => Error)
+      | undefined
+    expect(actionsErrorCtor, 'SDK does not export ActionsError').toBeDefined()
+
+    const errorClasses = Object.entries(sdk)
+      .filter(([name, value]) => {
+        if (typeof value !== 'function') return false
+        if (!name.endsWith('Error')) return false
+        if (value === actionsErrorCtor) return false
+        return (
+          (value as { prototype?: unknown }).prototype instanceof
+          (actionsErrorCtor as new () => Error)
+        )
+      })
+      .map(([name, value]) => ({
+        name,
+        ctor: value as new () => Error,
+      }))
+
+    expect(
+      errorClasses.length,
+      'should find SDK error classes',
+    ).toBeGreaterThan(0)
+
+    const unmapped: string[] = []
+    for (const { name, ctor } of errorClasses) {
+      if (INTENTIONALLY_UNMAPPED.has(name)) continue
+      const stub = Object.create(ctor.prototype)
+      const mapped = mapSdkError(stub)
+      if (!mapped) unmapped.push(name)
+    }
+
+    expect(
+      unmapped,
+      `Unmapped SDK error classes: ${unmapped.join(', ')}. Either add a branch in mapSdkError or list them in INTENTIONALLY_UNMAPPED.`,
+    ).toEqual([])
+  })
+})

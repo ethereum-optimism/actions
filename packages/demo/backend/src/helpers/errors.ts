@@ -16,6 +16,7 @@ import {
   QuoteExpiredError,
   QuoteRecipientMismatchError,
   QuoteRecipientMissingError,
+  TransactionConfirmedButRevertedError,
   ZeroAddressError,
 } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
@@ -158,6 +159,12 @@ export function mapSdkError(error: unknown): MappedSdkError | undefined {
     }
     if (error instanceof AssetMetadataRequiredError) {
       return { status: 400, message: 'Asset metadata is required.' }
+    }
+    if (error instanceof TransactionConfirmedButRevertedError) {
+      return {
+        status: 422,
+        message: 'Transaction confirmed but reverted on-chain.',
+      }
     }
     return undefined
   } catch {
