@@ -1,3 +1,4 @@
+import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
@@ -19,11 +20,12 @@ export function findMarketInAllowlist(
   allowlist: readonly LendMarketConfig[] | undefined,
   marketId: LendMarketId,
 ): LendMarketConfig | undefined {
-  if (!allowlist || allowlist.length === 0) return undefined
-  return allowlist.find(
-    (m) =>
-      m.address.toLowerCase() === marketId.address.toLowerCase() &&
-      m.chainId === marketId.chainId,
+  return findMatchingConfig(
+    allowlist,
+    marketId,
+    (m, candidate) =>
+      m.address.toLowerCase() === candidate.address.toLowerCase() &&
+      m.chainId === candidate.chainId,
   )
 }
 

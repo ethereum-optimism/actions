@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
+import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -538,9 +539,10 @@ export abstract class SwapProvider<
     const addressOut = assetOut.address[chainId]
     if (!addressIn || !addressOut) return undefined
 
-    return list.find((config) => {
-      if (config.chainId !== undefined && config.chainId !== chainId)
+    return findMatchingConfig(list, undefined, (config) => {
+      if (config.chainId !== undefined && config.chainId !== chainId) {
         return false
+      }
       return this.containsPairByAddress(
         addressIn,
         addressOut,

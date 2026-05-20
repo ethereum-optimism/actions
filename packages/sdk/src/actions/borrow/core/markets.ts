@@ -1,4 +1,5 @@
 import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
+import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import type {
   BorrowMarketConfig,
   BorrowMarketId,
@@ -14,5 +15,5 @@ export function findBorrowMarketInAllowlist(
   allowlist: readonly BorrowMarketConfig[] | undefined,
   marketId: BorrowMarketId,
 ): BorrowMarketConfig | undefined {
-  return allowlist?.find((market) => marketIdMatches(market, marketId))
+  return findMatchingConfig(allowlist, marketId, marketIdMatches)
 }
