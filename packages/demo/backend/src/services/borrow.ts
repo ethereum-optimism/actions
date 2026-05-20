@@ -14,10 +14,14 @@ import type {
   GetBorrowMarketsParams,
   SupportedChainId,
 } from '@eth-optimism/actions-sdk'
-import { MarketNotAllowedError } from '@eth-optimism/actions-sdk'
+import {
+  MarketNotAllowedError,
+  ProviderNotConfiguredError,
+} from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
 import { ALL_BORROW_MARKETS } from '@/config/markets.js'
+import { WalletNotFoundError } from '@/helpers/errors.js'
 import { getWallet } from '@/services/wallet.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
 
@@ -105,10 +109,13 @@ export async function getQuote(
 async function resolveWalletOrThrow(idToken: string) {
   const wallet = await getWallet(idToken)
   if (!wallet) {
-    throw new Error('Wallet not found')
+    throw new WalletNotFoundError()
   }
   if (!wallet.borrow) {
-    throw new Error('Borrow functionality not configured for this wallet')
+    throw new ProviderNotConfiguredError({
+      provider: 'borrow',
+      details: 'Borrow namespace is not enabled on this wallet.',
+    })
   }
   return wallet
 }
