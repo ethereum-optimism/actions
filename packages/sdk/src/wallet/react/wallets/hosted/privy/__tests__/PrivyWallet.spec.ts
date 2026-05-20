@@ -6,6 +6,7 @@ import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getRandomAddress } from '@/__mocks__/utils.js'
+import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { PrivyWallet } from '@/wallet/react/wallets/hosted/privy/PrivyWallet.js'
@@ -106,5 +107,29 @@ describe('PrivyWallet (React)', () => {
     expect(args.account).toHaveProperty('nonceManager')
     expect(args.chain).toBe(mockChainManager.getChain(unichain.id))
     expect(walletClient).toBe(mockWalletClient)
+  })
+
+  it('preserves legacy lendProviders in create()', async () => {
+    vi.mocked(toAccount).mockReturnValue(mockLocalAccount)
+    const mockViemAccount = {
+      address: mockAddress,
+      sign: vi.fn(),
+      signMessage: vi.fn(),
+      signTransaction: vi.fn(),
+      signTypedData: vi.fn(),
+    } as unknown as LocalAccount
+    vi.mocked(toViemAccount).mockResolvedValue(mockViemAccount)
+    const connectedWallet = {
+      __brand: 'privy-connected-wallet',
+    } as unknown as ConnectedWallet
+    const mockLendProvider = createMockLendProvider()
+
+    const wallet = await PrivyWallet.create({
+      connectedWallet,
+      chainManager: mockChainManager,
+      lendProviders: { morpho: mockLendProvider },
+    })
+
+    expect(wallet.lend).toBeDefined()
   })
 })

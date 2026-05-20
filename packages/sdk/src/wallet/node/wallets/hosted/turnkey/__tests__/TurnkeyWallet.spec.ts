@@ -8,6 +8,7 @@ import { unichain } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getRandomAddress } from '@/__mocks__/utils.js'
+import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { TurnkeyWallet } from '@/wallet/node/wallets/hosted/turnkey/TurnkeyWallet.js'
@@ -101,5 +102,21 @@ describe('TurnkeyWallet', () => {
     expect(args.account).toHaveProperty('nonceManager')
     expect(args.chain).toBe(mockChainManager.getChain(unichain.id))
     expect(walletClient).toBe(mockWalletClient)
+  })
+
+  it('preserves legacy lendProviders in create()', async () => {
+    const mockLocalAccount = { address: mockAddress } as unknown as LocalAccount
+    vi.mocked(createAccount).mockResolvedValue(mockLocalAccount)
+    const mockLendProvider = createMockLendProvider()
+
+    const wallet = await TurnkeyWallet.create({
+      client: createMockTurnkeyClient(),
+      organizationId: 'org_123',
+      signWith: 'key_abc',
+      chainManager: mockChainManager,
+      lendProviders: { morpho: mockLendProvider },
+    })
+
+    expect(wallet.lend).toBeDefined()
   })
 })

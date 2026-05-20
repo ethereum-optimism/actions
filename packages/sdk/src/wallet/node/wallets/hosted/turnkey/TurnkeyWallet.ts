@@ -9,6 +9,7 @@ import type {
   ActionSettingsMap,
 } from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
 
@@ -20,6 +21,8 @@ interface TurnkeyWalletCreateOptions {
   ethereumAddress?: string
   actionProviders?: ActionProvidersMap
   actionSettings?: ActionSettingsMap
+  lendProviders?: LendProviders
+  swapProviders?: SwapProviders
   supportedAssets?: Asset[]
 }
 
@@ -41,7 +44,10 @@ export class TurnkeyWallet extends EOAWallet {
   private constructor(params: TurnkeyWalletCreateOptions) {
     super({
       chainManager: params.chainManager,
-      actionProviders: params.actionProviders,
+      actionProviders: params.actionProviders ?? {
+        lend: params.lendProviders,
+        swap: params.swapProviders,
+      },
       actionSettings: params.actionSettings,
       supportedAssets: params.supportedAssets,
     })
