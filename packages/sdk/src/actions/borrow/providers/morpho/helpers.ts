@@ -2,10 +2,20 @@ import { Market, MarketParams } from '@morpho-org/blue-sdk'
 import { blueAbi } from '@morpho-org/blue-sdk-viem'
 import { type Address, encodeFunctionData, type Hex } from 'viem'
 
+import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import { getMorphoContracts } from '@/actions/shared/morpho/contracts.js'
-import { ProtocolContractsNotConfiguredError } from '@/core/error/errors.js'
+import {
+  computeMorphoMarketId,
+  verifyMorphoMarketId,
+} from '@/actions/shared/morpho/marketParams.js'
+import {
+  BorrowMarketParamsMismatchError,
+  MarketNotAllowedError,
+  ProtocolContractsNotConfiguredError,
+} from '@/core/error/errors.js'
 import type {
   BorrowMarketConfig,
+  BorrowMarketId,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -173,6 +183,38 @@ export function morphoFractionOrNull(
 export function liquidationBonusFromIncentive(factor: bigint): number {
   if (factor <= 10n ** 18n) return 0
   return morphoWadToNumber(factor - 10n ** 18n)
+}
+
+export function verifyMorphoAllowlistMarketIds(
+  allowlist: BorrowMarketConfig[] | undefined,
+): void {
+  if (!allowlist?.length) return
+  for (const market of allowlist) {
+    if (market.kind !== 'morpho-blue') continue
+    if (!verifyMorphoMarketId(market.marketId, market.marketParams)) {
+      throw new BorrowMarketParamsMismatchError({
+        marketId: market.marketId,
+        computedMarketId: computeMorphoMarketId(market.marketParams),
+      })
+    }
+  }
+}
+
+export function requireMorphoAllowlistMarket(
+  allowlist: BorrowMarketConfig[] | undefined,
+  marketId: BorrowMarketId,
+): BorrowMarketConfig {
+  const match = (allowlist ?? []).find((market) =>
+    marketIdMatches(market, marketId),
+  )
+  if (!match) {
+    throw new MarketNotAllowedError({
+      chainId: marketId.chainId,
+      address: marketId.marketId,
+      reason: 'Market not in MorphoBorrowProvider allowlist',
+    })
+  }
+  return match
 }
 
 export type { Hex }

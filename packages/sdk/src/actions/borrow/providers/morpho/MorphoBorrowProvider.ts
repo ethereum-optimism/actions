@@ -4,14 +4,15 @@ import { blueAbi, blueOracleAbi } from '@morpho-org/blue-sdk-viem'
 import { type Address, erc20Abi, type Hex, maxUint256 } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
 import {
   buildMorphoMarket,
   encodeMorphoBorrow,
   encodeMorphoRepay,
   encodeMorphoSupplyCollateral,
   encodeMorphoWithdrawCollateral,
+  requireMorphoAllowlistMarket,
   requireMorphoBlueAddress,
+  verifyMorphoAllowlistMarketIds,
 } from '@/actions/borrow/providers/morpho/helpers.js'
 import {
   adaptMorphoBorrowMarket,
@@ -19,15 +20,7 @@ import {
   assembleMorphoBorrowQuote,
 } from '@/actions/borrow/providers/morpho/presentation.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
-import {
-  computeMorphoMarketId,
-  verifyMorphoMarketId,
-} from '@/actions/shared/morpho/marketParams.js'
-import {
-  BorrowMarketParamsMismatchError,
-  EmptyPositionError,
-  MarketNotAllowedError,
-} from '@/core/error/errors.js'
+import { EmptyPositionError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type {
   ApprovalMode,
@@ -74,7 +67,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     settings?: BorrowSettings,
   ) {
     super(config, chainManager, settings)
-    this.verifyAllowlistMarketIds(config.marketAllowlist)
+    verifyMorphoAllowlistMarketIds(config.marketAllowlist)
   }
 
   protocolSupportedChainIds(): number[] {
@@ -402,43 +395,13 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   // ─────────────────────────────────────────────────────────────────────────
 
   /**
-   * Synchronously verify that every allowlisted market's `marketId` matches
-   * `keccak256(abi.encode(marketParams))`. Misconfigured deployments fail
-   * fast at SDK construction rather than producing silently incorrect
-   * calldata at first use.
-   */
-  private verifyAllowlistMarketIds(
-    allowlist: BorrowMarketConfig[] | undefined,
-  ): void {
-    if (!allowlist?.length) return
-    for (const market of allowlist) {
-      if (market.kind !== 'morpho-blue') continue
-      if (!verifyMorphoMarketId(market.marketId, market.marketParams)) {
-        throw new BorrowMarketParamsMismatchError({
-          marketId: market.marketId,
-          computedMarketId: computeMorphoMarketId(market.marketParams),
-        })
-      }
-    }
-  }
-
-  /**
    * Look up a `BorrowMarketConfig` from the allowlist by id.
    * @description Decoupling the read methods from the allowlist would force
    * an extra `idToMarketParams` RPC. Locking it instead keeps `_getMarket`
    * and `_getPosition` at one round-trip.
    */
   private requireAllowlistMarket(marketId: BorrowMarketId): BorrowMarketConfig {
-    const allowlist = this._config.marketAllowlist ?? []
-    const match = allowlist.find((m) => marketIdMatches(m, marketId))
-    if (!match) {
-      throw new MarketNotAllowedError({
-        chainId: marketId.chainId,
-        address: marketId.marketId,
-        reason: 'Market not in MorphoBorrowProvider allowlist',
-      })
-    }
-    return match
+    return requireMorphoAllowlistMarket(this._config.marketAllowlist, marketId)
   }
 
   /**
