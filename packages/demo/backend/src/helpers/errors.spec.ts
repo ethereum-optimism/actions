@@ -1,19 +1,26 @@
 import {
+  AddressRequiredError,
   AmountRequiredError,
+  AssetMetadataRequiredError,
+  AssetNotSupportedOnChainError,
   BorrowMarketParamsMismatchError,
   ChainNotSupportedError,
   ConflictingAmountsError,
   InvalidAmountError,
+  InvalidParamsError,
   MarketIdRequiredError,
   MarketNotAllowedError,
   MarketNotFoundError,
+  NativeAssetAddressError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
   QuoteRecipientMismatchError,
+  QuoteRecipientMissingError,
+  ZeroAddressError,
 } from '@eth-optimism/actions-sdk'
 import { describe, expect, it } from 'vitest'
 
-import { mapSdkError } from './errors.js'
+import { mapSdkError, WalletNotFoundError } from './errors.js'
 
 describe('mapSdkError', () => {
   it('maps MarketNotAllowedError to 403 with a static message', () => {
@@ -128,6 +135,68 @@ describe('mapSdkError', () => {
     })
   })
 
+  it('maps WalletNotFoundError to 404', () => {
+    expect(mapSdkError(new WalletNotFoundError())).toEqual({
+      status: 404,
+      message: 'Wallet not found.',
+    })
+  })
+
+  it('maps AddressRequiredError to 400', () => {
+    expect(mapSdkError(new AddressRequiredError('recipient'))).toEqual({
+      status: 400,
+      message: 'Address is required.',
+    })
+  })
+
+  it('maps ZeroAddressError to 400', () => {
+    expect(mapSdkError(new ZeroAddressError('recipient'))).toEqual({
+      status: 400,
+      message: 'Address must not be the zero address.',
+    })
+  })
+
+  it('maps InvalidParamsError to 400', () => {
+    expect(
+      mapSdkError(
+        new InvalidParamsError({ param: 'borrowAmount', expected: 'positive' }),
+      ),
+    ).toEqual({
+      status: 400,
+      message: 'Invalid parameters.',
+    })
+  })
+
+  it('maps QuoteRecipientMissingError to 400', () => {
+    expect(mapSdkError(new QuoteRecipientMissingError())).toEqual({
+      status: 400,
+      message: 'Quote recipient is required.',
+    })
+  })
+
+  it('maps AssetNotSupportedOnChainError to 400', () => {
+    expect(
+      mapSdkError(new AssetNotSupportedOnChainError('XYZ', 84532)),
+    ).toEqual({
+      status: 400,
+      message: 'Asset is not supported on this chain.',
+    })
+  })
+
+  it('maps NativeAssetAddressError to 400', () => {
+    expect(mapSdkError(new NativeAssetAddressError('ETH'))).toEqual({
+      status: 400,
+      message: 'Native asset cannot be referenced by address.',
+    })
+  })
+
+  it('maps AssetMetadataRequiredError to 400', () => {
+    expect(mapSdkError(new AssetMetadataRequiredError())).toEqual({
+      status: 400,
+      message: 'Asset metadata is required.',
+    })
+  })
+
   it('returns undefined for a generic Error', () => {
     expect(mapSdkError(new Error('something else'))).toBeUndefined()
   })
@@ -160,5 +229,62 @@ describe('mapSdkError', () => {
     expect(result?.message).toBe('Market is not in the allowlist.')
     expect(result?.message).not.toContain('sensitive')
     expect(result?.message).not.toContain('http')
+  })
+})
+
+// Regression guard: every exported SDK ActionsError subclass is either
+// covered by `mapSdkError` or explicitly listed below as intentionally
+// unmapped (swap-specific surface that borrow routes never raise). When
+// the SDK adds a new error class, this test fails until it's mapped or
+// added to the allowlist with a justification.
+describe('mapSdkError coverage', () => {
+  const INTENTIONALLY_UNMAPPED = new Set([
+    'SameAssetError',
+    'ExactOutputNotSupportedError',
+    'SlippageOutOfRangeError',
+  ])
+
+  it('maps every exported ActionsError subclass or allowlists it', async () => {
+    const sdk = (await import('@eth-optimism/actions-sdk')) as Record<
+      string,
+      unknown
+    >
+    const actionsErrorCtor = sdk.ActionsError as
+      | (new (...args: unknown[]) => Error)
+      | undefined
+    expect(actionsErrorCtor, 'SDK does not export ActionsError').toBeDefined()
+
+    const errorClasses = Object.entries(sdk)
+      .filter(([name, value]) => {
+        if (typeof value !== 'function') return false
+        if (!name.endsWith('Error')) return false
+        if (value === actionsErrorCtor) return false
+        return (
+          (value as { prototype?: unknown }).prototype instanceof
+          (actionsErrorCtor as new () => Error)
+        )
+      })
+      .map(([name, value]) => ({
+        name,
+        ctor: value as new () => Error,
+      }))
+
+    expect(
+      errorClasses.length,
+      'should find SDK error classes',
+    ).toBeGreaterThan(0)
+
+    const unmapped: string[] = []
+    for (const { name, ctor } of errorClasses) {
+      if (INTENTIONALLY_UNMAPPED.has(name)) continue
+      const stub = Object.create(ctor.prototype)
+      const mapped = mapSdkError(stub)
+      if (!mapped) unmapped.push(name)
+    }
+
+    expect(
+      unmapped,
+      `Unmapped SDK error classes: ${unmapped.join(', ')}. Either add a branch in mapSdkError or list them in INTENTIONALLY_UNMAPPED.`,
+    ).toEqual([])
   })
 })

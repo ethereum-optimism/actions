@@ -1,5 +1,8 @@
 import type { BorrowReceipt } from '@eth-optimism/actions-sdk'
+import { ProviderNotConfiguredError } from '@eth-optimism/actions-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { WalletNotFoundError } from '@/helpers/errors.js'
 
 import * as borrowService from './borrow.js'
 
@@ -9,6 +12,10 @@ vi.mock('../config/actions.js', () => ({
 
 vi.mock('./wallet.js', () => ({
   getWallet: vi.fn(),
+}))
+
+vi.mock('../utils/explorers.js', () => ({
+  getBlockExplorerUrls: vi.fn(() => []),
 }))
 
 vi.mock('../config/markets.js', async () => {
@@ -42,6 +49,8 @@ const mockBorrowProvider = {
   getMarket: vi.fn(),
   getMarkets: vi.fn(),
   getPosition: vi.fn(),
+  getPrice: vi.fn(),
+  getQuote: vi.fn(),
 }
 
 const mockWalletBorrow = {
@@ -74,6 +83,8 @@ describe('Borrow Service', () => {
     vi.resetAllMocks()
     const { getActions } = await import('../config/actions.js')
     vi.mocked(getActions).mockReturnValue(mockActions as never)
+    const { getBlockExplorerUrls } = await import('../utils/explorers.js')
+    vi.mocked(getBlockExplorerUrls).mockReturnValue([])
   })
 
   describe('getMarkets', () => {
@@ -95,6 +106,75 @@ describe('Borrow Service', () => {
     it('propagates errors from the SDK', async () => {
       mockBorrowProvider.getMarkets.mockRejectedValue(new Error('rpc down'))
       await expect(borrowService.getMarkets()).rejects.toThrow('rpc down')
+    })
+  })
+
+  describe('getPrice', () => {
+    it('resolves marketId to a config and forwards to actions.borrow.getPrice', async () => {
+      const price = { positionAfter: {}, safeCeilingLtv: 0n } as never
+      mockBorrowProvider.getPrice.mockResolvedValue(price)
+      const result = await borrowService.getPrice({
+        action: 'open',
+        marketId: baseMarketId,
+        borrowAmount: { amount: 5 },
+      })
+      expect(mockBorrowProvider.getPrice).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'open',
+          market: expect.objectContaining({ kind: 'morpho-blue' }),
+          borrowAmount: { amount: 5 },
+        }),
+      )
+      expect(result).toBe(price)
+    })
+
+    it('throws MarketNotAllowedError when marketId is not in the allowlist', async () => {
+      await expect(
+        borrowService.getPrice({
+          action: 'open',
+          marketId: {
+            ...baseMarketId,
+            marketId: ('0x' + 'b'.repeat(64)) as `0x${string}`,
+          },
+          borrowAmount: { amount: 5 },
+        }),
+      ).rejects.toThrow(/Market.*not in/i)
+      expect(mockBorrowProvider.getPrice).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getQuote', () => {
+    it('resolves marketId to a config and forwards to actions.borrow.getQuote', async () => {
+      const quote = { execution: { transactions: [] } } as never
+      mockBorrowProvider.getQuote.mockResolvedValue(quote)
+      const result = await borrowService.getQuote({
+        action: 'open',
+        marketId: baseMarketId,
+        borrowAmount: { amount: 5 },
+        walletAddress: '0xaabbccddeeff00112233445566778899aabbccdd' as never,
+      })
+      expect(mockBorrowProvider.getQuote).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'open',
+          market: expect.objectContaining({ kind: 'morpho-blue' }),
+          walletAddress: '0xaabbccddeeff00112233445566778899aabbccdd',
+        }),
+      )
+      expect(result).toBe(quote)
+    })
+
+    it('throws MarketNotAllowedError when marketId is not in the allowlist', async () => {
+      await expect(
+        borrowService.getQuote({
+          action: 'open',
+          marketId: {
+            ...baseMarketId,
+            marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
+          },
+          borrowAmount: { amount: 5 },
+        }),
+      ).rejects.toThrow(/Market.*not in/i)
+      expect(mockBorrowProvider.getQuote).not.toHaveBeenCalled()
     })
   })
 
@@ -164,13 +244,24 @@ describe('Borrow Service', () => {
       expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
 
-    it('throws when the wallet cannot be resolved', async () => {
+    it('throws WalletNotFoundError when the wallet cannot be resolved', async () => {
       const { getWallet } = await import('./wallet.js')
       vi.mocked(getWallet).mockResolvedValue(null)
-      await expect(borrowService.openPosition(fullParams)).rejects.toThrow(
-        'Wallet not found',
-      )
+      await expect(
+        borrowService.openPosition(fullParams),
+      ).rejects.toBeInstanceOf(WalletNotFoundError)
       expect(mockWalletBorrow.openPosition).not.toHaveBeenCalled()
+    })
+
+    it('throws ProviderNotConfiguredError when wallet.borrow is undefined', async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue({
+        ...mockWallet,
+        borrow: undefined,
+      } as never)
+      await expect(
+        borrowService.openPosition(fullParams),
+      ).rejects.toBeInstanceOf(ProviderNotConfiguredError)
     })
 
     it('propagates SDK errors', async () => {
@@ -179,6 +270,49 @@ describe('Borrow Service', () => {
       )
       await expect(borrowService.openPosition(fullParams)).rejects.toThrow(
         'insufficient liquidity',
+      )
+    })
+
+    it('decorates the receipt with block-explorer URLs from the chain', async () => {
+      const { getBlockExplorerUrls } = await import('../utils/explorers.js')
+      vi.mocked(getBlockExplorerUrls).mockReturnValue([
+        'https://sepolia.basescan.org/tx/0xabc',
+      ])
+      const receipt = {
+        userOpHash: '0xuserop',
+        transactionHash: '0xtx',
+      } as unknown as BorrowReceipt
+      mockWalletBorrow.openPosition.mockResolvedValue(receipt)
+
+      const result = await borrowService.openPosition(fullParams)
+
+      expect(getBlockExplorerUrls).toHaveBeenCalledWith(
+        expect.objectContaining({
+          chainId: 84532,
+          userOpHash: '0xuserop',
+          transactionHash: '0xtx',
+        }),
+      )
+      expect(result.blockExplorerUrls).toEqual([
+        'https://sepolia.basescan.org/tx/0xabc',
+      ])
+    })
+
+    it('reads chainId from quote.marketId on the quote branch', async () => {
+      const { getBlockExplorerUrls } = await import('../utils/explorers.js')
+      vi.mocked(getBlockExplorerUrls).mockReturnValue([])
+      const quote = {
+        action: 'open',
+        marketId: { ...baseMarketId, chainId: 11155420 as never },
+      } as never
+      mockWalletBorrow.openPosition.mockResolvedValue({
+        userOpHash: '0xq',
+      } as unknown as BorrowReceipt)
+
+      await borrowService.openPosition({ idToken: 'idtok', quote })
+
+      expect(getBlockExplorerUrls).toHaveBeenCalledWith(
+        expect.objectContaining({ chainId: 11155420 }),
       )
     })
   })

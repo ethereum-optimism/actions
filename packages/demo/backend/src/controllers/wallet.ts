@@ -1,10 +1,14 @@
 import type { SupportedChainId } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
-import { type Address, type Hex } from 'viem'
+import { type Address } from 'viem'
 import { z } from 'zod'
 
 import { errorResponse, requireAuth } from '@/helpers/errors.js'
-import { Bytes32Schema, ChainIdStringSchema } from '@/helpers/schemas.js'
+import {
+  AddressSchema,
+  Bytes32Schema,
+  ChainIdStringSchema,
+} from '@/helpers/schemas.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as faucetService from '@/services/faucet.js'
 import * as walletService from '@/services/wallet.js'
@@ -28,9 +32,7 @@ const BorrowPositionRequestSchema = z.object({
 
 const DripEthToWalletRequestSchema = z.object({
   body: z.object({
-    walletAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address format'),
+    walletAddress: AddressSchema,
   }),
 })
 
@@ -113,7 +115,7 @@ export class WalletController {
     } = validation.data
     const marketId = {
       kind: 'morpho-blue' as const,
-      marketId: marketIdHex as Hex,
+      marketId: marketIdHex,
       chainId,
     }
 
@@ -163,14 +165,12 @@ export class WalletController {
     } = validation.data
     try {
       const isWalletEligibleForFaucet =
-        await faucetService.isWalletEligibleForFaucet(walletAddress as Address)
+        await faucetService.isWalletEligibleForFaucet(walletAddress)
       if (!isWalletEligibleForFaucet) {
         return errorResponse(c, 'Wallet is not eligible for the faucet', 400)
       }
 
-      const result = await faucetService.dripEthToWallet(
-        walletAddress as Address,
-      )
+      const result = await faucetService.dripEthToWallet(walletAddress)
       if (!result.success) {
         return errorResponse(c, 'Failed to drip ETH to wallet', 500)
       }

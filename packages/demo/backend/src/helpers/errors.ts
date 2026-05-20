@@ -1,20 +1,40 @@
 import {
+  AddressRequiredError,
   AmountRequiredError,
+  AssetMetadataRequiredError,
+  AssetNotSupportedOnChainError,
   BorrowMarketParamsMismatchError,
   ChainNotSupportedError,
   ConflictingAmountsError,
   InvalidAmountError,
+  InvalidParamsError,
   MarketIdRequiredError,
   MarketNotAllowedError,
   MarketNotFoundError,
+  NativeAssetAddressError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
   QuoteRecipientMismatchError,
+  QuoteRecipientMissingError,
+  TransactionConfirmedButRevertedError,
+  ZeroAddressError,
 } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 import type { AuthContext } from '@/middleware/auth.js'
+
+/**
+ * Thrown by borrow services when an authenticated request resolves to
+ * no Privy wallet. Mapped to 404 by `mapSdkError`. Local to the backend
+ * because the SDK doesn't model the wallet-lookup layer.
+ */
+export class WalletNotFoundError extends Error {
+  override name = 'WalletNotFoundError' as const
+  constructor() {
+    super('Wallet not found')
+  }
+}
 
 /**
  * Return a consistent JSON error response.
@@ -111,6 +131,39 @@ export function mapSdkError(error: unknown): MappedSdkError | undefined {
       return {
         status: 503,
         message: 'Provider not configured for this market.',
+      }
+    }
+    if (error instanceof WalletNotFoundError) {
+      return { status: 404, message: 'Wallet not found.' }
+    }
+    if (error instanceof AddressRequiredError) {
+      return { status: 400, message: 'Address is required.' }
+    }
+    if (error instanceof ZeroAddressError) {
+      return { status: 400, message: 'Address must not be the zero address.' }
+    }
+    if (error instanceof InvalidParamsError) {
+      return { status: 400, message: 'Invalid parameters.' }
+    }
+    if (error instanceof QuoteRecipientMissingError) {
+      return { status: 400, message: 'Quote recipient is required.' }
+    }
+    if (error instanceof AssetNotSupportedOnChainError) {
+      return { status: 400, message: 'Asset is not supported on this chain.' }
+    }
+    if (error instanceof NativeAssetAddressError) {
+      return {
+        status: 400,
+        message: 'Native asset cannot be referenced by address.',
+      }
+    }
+    if (error instanceof AssetMetadataRequiredError) {
+      return { status: 400, message: 'Asset metadata is required.' }
+    }
+    if (error instanceof TransactionConfirmedButRevertedError) {
+      return {
+        status: 422,
+        message: 'Transaction confirmed but reverted on-chain.',
       }
     }
     return undefined
