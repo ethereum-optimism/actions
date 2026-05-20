@@ -26,7 +26,7 @@ module layout as the new baseline.
   - action mismatch checks on pre-built quotes
   - all raw-params wallet action paths injecting `walletAddress`
   - argument forwarding through `ActionsBorrowNamespace`
-  - quote recipient / expiry / allowlist / unsupported-chain checks
+  - quote expiry / allowlist / unsupported-chain checks
 
 ### Structural cleanup completed
 
