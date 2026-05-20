@@ -472,6 +472,7 @@ describe('WalletNamespace', () => {
       const wallet = await walletNamespace.toActionsWallet(account)
 
       expect(wallet.borrow).toBeDefined()
+      expect(wallet.has('borrow')).toBe(true)
     })
 
     it('should preserve legacy borrow settings on LocalWallet creation', async () => {
