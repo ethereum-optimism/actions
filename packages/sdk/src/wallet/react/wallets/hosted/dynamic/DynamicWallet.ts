@@ -6,6 +6,7 @@ import type {
   ActionSettingsMap,
 } from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
+import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
@@ -15,6 +16,8 @@ interface DynamicWalletCreateOptions {
   dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
   actionProviders?: ActionProvidersMap
   actionSettings?: ActionSettingsMap
+  lendProviders?: LendProviders
+  swapProviders?: SwapProviders
   supportedAssets?: Asset[]
 }
 
@@ -30,7 +33,10 @@ export class DynamicWallet extends EOAWallet {
   private constructor(params: DynamicWalletCreateOptions) {
     super({
       chainManager: params.chainManager,
-      actionProviders: params.actionProviders,
+      actionProviders: params.actionProviders ?? {
+        lend: params.lendProviders,
+        swap: params.swapProviders,
+      },
       actionSettings: params.actionSettings,
       supportedAssets: params.supportedAssets,
     })
