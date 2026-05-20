@@ -16,7 +16,6 @@ import {
   getMockAuthorizationContext,
 } from '@/__mocks__/MockPrivyClient.js'
 import { getRandomAddress } from '@/__mocks__/utils.js'
-import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { PrivyWallet } from '@/wallet/node/wallets/hosted/privy/PrivyWallet.js'
@@ -122,23 +121,6 @@ describe('PrivyWallet', () => {
     expect(callArgs.account).toHaveProperty('nonceManager')
     expect(callArgs.chain).toBe(mockChainManager.getChain(unichain.id))
     expect(walletClient).toBe(mockWalletClient)
-  })
-
-  it('preserves legacy lendProviders in create()', async () => {
-    const createdWallet = createMockPrivyWallet()
-    vi.mocked(createViemAccount).mockResolvedValue(mockLocalAccount)
-    const mockLendProvider = createMockLendProvider()
-
-    const wallet = await PrivyWallet.create({
-      privyClient: mockPrivyClient,
-      authorizationContext: getMockAuthorizationContext(),
-      walletId: createdWallet.id,
-      address: getAddress(createdWallet.address),
-      chainManager: mockChainManager,
-      lendProviders: { morpho: mockLendProvider },
-    })
-
-    expect(wallet.lend).toBeDefined()
   })
 })
 

@@ -44,6 +44,15 @@ export interface WalletConstructorOptions {
 }
 
 /**
+ * Shared shape for every concrete wallet's `*WalletCreateOptions`.
+ * @description Same fields as `WalletConstructorOptions` (chainManager +
+ * action-keyed providers/settings + supportedAssets); concrete wallets
+ * extend this with their provider-specific construction fields
+ * (connectedWallet, client + organizationId + signWith, walletId, etc.).
+ */
+export type BaseWalletCreateOptions = WalletConstructorOptions
+
+/**
  * Base actions wallet class
  * @description Abstract base class for actions wallet implementations.
  * Provides a standard interface for actions wallets.

@@ -3,27 +3,15 @@ import type { TurnkeyClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
 import type { Address, LocalAccount } from 'viem'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  ActionProvidersMap,
-  ActionSettingsMap,
-} from '@/types/actionRegistry.js'
-import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type { BaseWalletCreateOptions } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
 
-interface TurnkeyWalletCreateOptions {
-  chainManager: ChainManager
+interface TurnkeyWalletCreateOptions extends BaseWalletCreateOptions {
   client: TurnkeyClient | TurnkeyServerClient | TurnkeySDKClientBase
   organizationId: string
   signWith: string
   ethereumAddress?: string
-  actionProviders?: ActionProvidersMap
-  actionSettings?: ActionSettingsMap
-  lendProviders?: LendProviders
-  swapProviders?: SwapProviders
-  supportedAssets?: Asset[]
 }
 
 /**
@@ -44,10 +32,7 @@ export class TurnkeyWallet extends EOAWallet {
   private constructor(params: TurnkeyWalletCreateOptions) {
     super({
       chainManager: params.chainManager,
-      actionProviders: params.actionProviders ?? {
-        lend: params.lendProviders,
-        swap: params.swapProviders,
-      },
+      actionProviders: params.actionProviders,
       actionSettings: params.actionSettings,
       supportedAssets: params.supportedAssets,
     })

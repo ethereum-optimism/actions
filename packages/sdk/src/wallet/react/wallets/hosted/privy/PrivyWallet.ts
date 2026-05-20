@@ -1,24 +1,12 @@
 import type { ConnectedWallet } from '@privy-io/react-auth'
 import type { Address, LocalAccount } from 'viem'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  ActionProvidersMap,
-  ActionSettingsMap,
-} from '@/types/actionRegistry.js'
-import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type { BaseWalletCreateOptions } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/privy/utils/createSigner.js'
 
-interface PrivyWalletCreateOptions {
-  chainManager: ChainManager
+interface PrivyWalletCreateOptions extends BaseWalletCreateOptions {
   connectedWallet: ConnectedWallet
-  actionProviders?: ActionProvidersMap
-  actionSettings?: ActionSettingsMap
-  lendProviders?: LendProviders
-  swapProviders?: SwapProviders
-  supportedAssets?: Asset[]
 }
 
 /**
@@ -34,10 +22,7 @@ export class PrivyWallet extends EOAWallet {
   private constructor(params: PrivyWalletCreateOptions) {
     super({
       chainManager: params.chainManager,
-      actionProviders: params.actionProviders ?? {
-        lend: params.lendProviders,
-        swap: params.swapProviders,
-      },
+      actionProviders: params.actionProviders,
       actionSettings: params.actionSettings,
       supportedAssets: params.supportedAssets,
     })

@@ -12,7 +12,6 @@ import { unichain } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import { getRandomAddress } from '@/__mocks__/utils.js'
-import { createMockLendProvider } from '@/actions/lend/__mocks__/MockLendProvider.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
@@ -146,19 +145,5 @@ describe('DynamicWallet', () => {
         'Wallet not connected or not EVM compatible',
       )
     }
-  })
-
-  it('preserves legacy lendProviders in create()', async () => {
-    const dynamic = createMockDynamicWallet()
-    vi.mocked(toAccount).mockReturnValue(mockLocalAccount)
-    const mockLendProvider = createMockLendProvider()
-
-    const wallet = await DynamicWallet.create({
-      dynamicWallet: dynamic,
-      chainManager: mockChainManager,
-      lendProviders: { morpho: mockLendProvider },
-    })
-
-    expect(wallet.lend).toBeDefined()
   })
 })

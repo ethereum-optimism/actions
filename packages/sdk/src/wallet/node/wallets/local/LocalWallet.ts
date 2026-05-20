@@ -1,22 +1,10 @@
 import type { Address, LocalAccount } from 'viem'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  ActionProvidersMap,
-  ActionSettingsMap,
-} from '@/types/actionRegistry.js'
-import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
+import type { BaseWalletCreateOptions } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 
-interface LocalWalletCreateOptions {
+interface LocalWalletCreateOptions extends BaseWalletCreateOptions {
   account: LocalAccount
-  chainManager: ChainManager
-  actionProviders?: ActionProvidersMap
-  actionSettings?: ActionSettingsMap
-  lendProviders?: LendProviders
-  swapProviders?: SwapProviders
-  supportedAssets?: Asset[]
 }
 
 /**
@@ -37,15 +25,7 @@ export class LocalWallet extends EOAWallet {
       actionSettings,
       supportedAssets,
     } = params
-    super({
-      chainManager,
-      actionProviders: actionProviders ?? {
-        lend: params.lendProviders,
-        swap: params.swapProviders,
-      },
-      actionSettings,
-      supportedAssets,
-    })
+    super({ chainManager, actionProviders, actionSettings, supportedAssets })
     this.signer = account
     this.address = account.address
   }
