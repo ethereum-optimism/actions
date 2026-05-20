@@ -3,13 +3,6 @@ import { type Address } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import {
-  buildMorphoCollateralApproval,
-  buildMorphoLoanApproval,
-  buildMorphoMaxLoanApproval,
-  encodeMorphoBorrow,
-  encodeMorphoRepay,
-  encodeMorphoSupplyCollateral,
-  encodeMorphoWithdrawCollateral,
   requireMorphoAllowlistMarket,
   verifyMorphoAllowlistMarketIds,
 } from '@/actions/borrow/providers/morpho/helpers.js'
@@ -19,11 +12,20 @@ import {
   assembleMorphoBorrowQuote,
 } from '@/actions/borrow/providers/morpho/presentation.js'
 import {
+  buildMorphoCollateralApproval,
+  buildMorphoLoanApproval,
+  buildMorphoMaxLoanApproval,
+  encodeMorphoBorrow,
+  encodeMorphoRepay,
+  encodeMorphoSupplyCollateral,
+  encodeMorphoWithdrawCollateral,
+} from '@/actions/shared/morpho/blue.js'
+import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
+import {
   fetchMorphoMarket,
   fetchMorphoPosition,
   fetchMorphoStateWithAllowance,
-} from '@/actions/borrow/providers/morpho/state.js'
-import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
+} from '@/actions/shared/morpho/state.js'
 import { EmptyPositionError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
