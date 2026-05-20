@@ -1,4 +1,4 @@
-import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
+import { findBorrowMarketInAllowlist } from '@/actions/borrow/core/markets.js'
 import {
   computeMorphoMarketId,
   verifyMorphoMarketId,
@@ -31,9 +31,7 @@ export function requireMorphoAllowlistMarket(
   allowlist: BorrowMarketConfig[] | undefined,
   marketId: BorrowMarketId,
 ): BorrowMarketConfig {
-  const match = (allowlist ?? []).find((market) =>
-    marketIdMatches(market, marketId),
-  )
+  const match = findBorrowMarketInAllowlist(allowlist, marketId)
   if (!match) {
     throw new MarketNotAllowedError({
       chainId: marketId.chainId,

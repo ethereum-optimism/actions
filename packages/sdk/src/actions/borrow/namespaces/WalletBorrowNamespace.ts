@@ -1,6 +1,6 @@
 import { isAddressEqual } from 'viem'
 
-import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
+import { findBorrowMarketInAllowlist } from '@/actions/borrow/core/markets.js'
 import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -161,10 +161,12 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
   private requireAllowlistedQuoteMarket(
     marketId: BorrowQuote['marketId'],
   ): void {
-    const hit = this.getAllProviders().some((provider) =>
-      provider.config.marketAllowlist?.some((market) =>
-        marketIdMatches(market, marketId),
-      ),
+    const hit = this.getAllProviders().some(
+      (provider) =>
+        !!findBorrowMarketInAllowlist(
+          provider.config.marketAllowlist,
+          marketId,
+        ),
     )
     if (!hit) {
       throw new ProviderNotConfiguredError({

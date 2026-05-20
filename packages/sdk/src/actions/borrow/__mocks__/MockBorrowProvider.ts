@@ -1,7 +1,7 @@
 import { type MockedFunction, vi } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
+import { findBorrowMarketInAllowlist } from '@/actions/borrow/core/markets.js'
 import {
   AddressRequiredError,
   MarketNotAllowedError,
@@ -239,8 +239,10 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   private findConfig(marketId: BorrowMarketId): BorrowMarketConfig {
     validateChainSupported(marketId.chainId, this.supportedChainIds())
-    const allowlist = this._config.marketAllowlist ?? []
-    const hit = allowlist.find((m) => marketIdMatches(m, marketId))
+    const hit = findBorrowMarketInAllowlist(
+      this._config.marketAllowlist,
+      marketId,
+    )
     if (hit) return hit
     throw new MarketNotAllowedError({
       chainId: marketId.chainId,
