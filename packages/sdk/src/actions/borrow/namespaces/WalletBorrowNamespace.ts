@@ -97,9 +97,8 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
 
   /**
    * Resolve the input union to a `BorrowQuote`. Pre-built quotes are
-   * validated for recipient + action + chain + allowlisted market +
-   * expiration before being returned;
-   * raw params are re-quoted via the supplied builder.
+   * validated for action + chain + allowlisted market + expiration before
+   * being returned; raw params are re-quoted via the supplied builder.
    */
   private async resolveQuote<
     TParams extends {
