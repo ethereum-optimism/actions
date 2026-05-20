@@ -1,4 +1,8 @@
-import { type BorrowAction, serializeBigInt } from '@eth-optimism/actions-sdk'
+import {
+  type BorrowAction,
+  type BorrowQuote,
+  serializeBigInt,
+} from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import type { Address } from 'viem'
 import { z } from 'zod'
@@ -37,7 +41,8 @@ export function quoteBodySchema(action: BorrowAction) {
         action: z.literal(action),
         marketId: BorrowMarketIdSchema,
       })
-      .passthrough(),
+      .passthrough()
+      .transform((q) => q as unknown as BorrowQuote),
   })
 }
 
@@ -185,10 +190,11 @@ export async function openPosition(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const result = await borrowService.openPosition({
-    idToken: authResult.auth.idToken,
-    ...validation.data.body,
-  } as Parameters<typeof borrowService.openPosition>[0])
+  const idToken = authResult.auth.idToken
+  const body = validation.data.body
+  const input =
+    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const result = await borrowService.openPosition(input)
   return c.json({ result: serializeBigInt(result) })
 }
 
@@ -209,10 +215,11 @@ export async function closePosition(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const result = await borrowService.closePosition({
-    idToken: authResult.auth.idToken,
-    ...validation.data.body,
-  } as Parameters<typeof borrowService.closePosition>[0])
+  const idToken = authResult.auth.idToken
+  const body = validation.data.body
+  const input =
+    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const result = await borrowService.closePosition(input)
   return c.json({ result: serializeBigInt(result) })
 }
 
@@ -235,10 +242,11 @@ export async function depositCollateral(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const result = await borrowService.depositCollateral({
-    idToken: authResult.auth.idToken,
-    ...validation.data.body,
-  } as Parameters<typeof borrowService.depositCollateral>[0])
+  const idToken = authResult.auth.idToken
+  const body = validation.data.body
+  const input =
+    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const result = await borrowService.depositCollateral(input)
   return c.json({ result: serializeBigInt(result) })
 }
 
@@ -261,10 +269,11 @@ export async function withdrawCollateral(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const result = await borrowService.withdrawCollateral({
-    idToken: authResult.auth.idToken,
-    ...validation.data.body,
-  } as Parameters<typeof borrowService.withdrawCollateral>[0])
+  const idToken = authResult.auth.idToken
+  const body = validation.data.body
+  const input =
+    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const result = await borrowService.withdrawCollateral(input)
   return c.json({ result: serializeBigInt(result) })
 }
 
@@ -284,9 +293,10 @@ export async function repay(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const result = await borrowService.repay({
-    idToken: authResult.auth.idToken,
-    ...validation.data.body,
-  } as Parameters<typeof borrowService.repay>[0])
+  const idToken = authResult.auth.idToken
+  const body = validation.data.body
+  const input =
+    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const result = await borrowService.repay(input)
   return c.json({ result: serializeBigInt(result) })
 }
