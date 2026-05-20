@@ -1,6 +1,10 @@
 import type { ActionsBorrowNamespace } from '@/actions/borrow/namespaces/ActionsBorrowNamespace.js'
 import type { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
 import { ACTION_MODULES, ACTION_NAMES } from '@/actions/registry.js'
+import type {
+  ActionModule,
+  ActionModuleDeps,
+} from '@/actions/shared/ActionModule.js'
 import type { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
 import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
@@ -97,71 +101,41 @@ export class Actions<
       supportedAssets: this.getSupportedAssets(),
     }
     for (const name of ACTION_NAMES) {
-      switch (name) {
-        case 'lend': {
-          const providers = ACTION_MODULES.lend.buildProviders(
-            config.lend,
-            moduleDeps,
-          )
-          this._actionProviders.lend = providers
-          this._actionSettings.lend = config.lend?.settings
-          if (
-            ACTION_MODULES.lend.isConfigured(providers) &&
-            ACTION_MODULES.lend.buildActionsNamespace
-          ) {
-            this._actionsNamespaces.lend =
-              ACTION_MODULES.lend.buildActionsNamespace(
-                providers,
-                moduleDeps,
-                config.lend?.settings,
-              )
-          }
-          break
-        }
-        case 'swap': {
-          const providers = ACTION_MODULES.swap.buildProviders(
-            config.swap,
-            moduleDeps,
-          )
-          this._actionProviders.swap = providers
-          this._actionSettings.swap = config.swap?.settings
-          if (
-            ACTION_MODULES.swap.isConfigured(providers) &&
-            ACTION_MODULES.swap.buildActionsNamespace
-          ) {
-            this._actionsNamespaces.swap =
-              ACTION_MODULES.swap.buildActionsNamespace(
-                providers,
-                moduleDeps,
-                config.swap?.settings,
-              )
-          }
-          break
-        }
-        case 'borrow': {
-          const providers = ACTION_MODULES.borrow.buildProviders(
-            config.borrow,
-            moduleDeps,
-          )
-          this._actionProviders.borrow = providers
-          this._actionSettings.borrow = config.borrow?.settings
-          if (
-            ACTION_MODULES.borrow.isConfigured(providers) &&
-            ACTION_MODULES.borrow.buildActionsNamespace
-          ) {
-            this._actionsNamespaces.borrow =
-              ACTION_MODULES.borrow.buildActionsNamespace(
-                providers,
-                moduleDeps,
-                config.borrow?.settings,
-              )
-          }
-          break
-        }
-      }
+      this.setupAction(name, config, moduleDeps)
     }
 
     this.wallet = this.createWalletNamespace(config.wallet)
+  }
+
+  /**
+   * Build providers and (optionally) the read-only namespace for a single
+   * action module. Indexing `ACTION_MODULES`, `config`, and the SDK state
+   * maps in lockstep relies on a runtime invariant TypeScript can't verify
+   * across the union of action names, so the casts confine the
+   * discrimination to this one site (same pattern as `Wallet.attachActionNamespaces`).
+   */
+  private setupAction(
+    name: ActionName,
+    config: ActionsConfig<
+      THostedWalletProviderType,
+      THostedWalletProvidersSchema['providerConfigs']
+    >,
+    moduleDeps: ActionModuleDeps,
+  ): void {
+    const module = ACTION_MODULES[name] as unknown as ActionModule<ActionName>
+    const actionConfig = config[name]
+    const providers = module.buildProviders(actionConfig as never, moduleDeps)
+    ;(this._actionProviders as Record<ActionName, unknown>)[name] = providers
+    ;(this._actionSettings as Record<ActionName, unknown>)[name] =
+      actionConfig?.settings
+    if (module.isConfigured(providers) && module.buildActionsNamespace) {
+      const ns = module.buildActionsNamespace(
+        providers,
+        moduleDeps,
+        actionConfig?.settings as never,
+      )
+      ;(this._actionsNamespaces as Record<ActionName, unknown>)[name] = ns
+    }
   }
 
   /**
