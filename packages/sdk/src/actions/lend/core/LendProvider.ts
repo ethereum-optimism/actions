@@ -1,5 +1,4 @@
 import type { Address } from 'viem'
-import { parseUnits } from 'viem'
 
 import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -38,7 +37,7 @@ import {
   resolveApprovalMode,
   resolveErc20ApprovalAmount,
 } from '@/utils/approve.js'
-import { isNativeAsset } from '@/utils/assets.js'
+import { isNativeAsset, parseAssetAmount } from '@/utils/assets.js'
 import { validateChainSupported } from '@/utils/validation.js'
 
 /** Inputs for the base class's ERC-20 lend approval helper. */
@@ -116,10 +115,7 @@ export abstract class LendProvider<
     this.validateConfigSupported(params.marketId)
 
     // Convert human-readable amount to wei using the asset's decimals
-    const amountWei = parseUnits(
-      params.amount.toString(),
-      params.asset.metadata.decimals,
-    )
+    const amountWei = parseAssetAmount(params.asset, params.amount)
 
     const position = await this._openPosition({
       ...params,
@@ -251,9 +247,9 @@ export abstract class LendProvider<
     }
 
     // Convert human-readable amount to wei using the asset's decimals
-    const amountWei = parseUnits(
-      params.amount.toString(),
-      assetMetadata.decimals,
+    const amountWei = parseAssetAmount(
+      params.asset ?? market.asset,
+      params.amount,
     )
 
     return this._closePosition({
