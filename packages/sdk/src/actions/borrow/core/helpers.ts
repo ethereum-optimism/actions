@@ -1,4 +1,8 @@
 import { marketIdMatches } from '@/actions/borrow/core/marketId.js'
+import {
+  filterMatchingConfigs,
+  findMatchingConfig,
+} from '@/actions/shared/marketConfigs.js'
 import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type {
   Amount,
@@ -50,7 +54,7 @@ export function validateBorrowMarketAllowed(
 ): void {
   const allowlist = config.marketAllowlist
   if (allowlist && allowlist.length > 0) {
-    const hit = allowlist.find((candidate) => marketsMatch(candidate, market))
+    const hit = findMatchingConfig(allowlist, market, marketsMatch)
     if (!hit) {
       throw new MarketNotAllowedError({
         address: market.marketId,
@@ -62,7 +66,7 @@ export function validateBorrowMarketAllowed(
 
   const blocklist = config.marketBlocklist
   if (!blocklist?.length) return
-  const blocked = blocklist.find((candidate) => marketsMatch(candidate, market))
+  const blocked = findMatchingConfig(blocklist, market, marketsMatch)
   if (!blocked) return
   throw new MarketNotAllowedError({
     address: market.marketId,
@@ -77,7 +81,7 @@ export function validateBorrowMarketIdAllowed(
 ): void {
   const allowlist = config.marketAllowlist
   if (!allowlist || allowlist.length === 0) return
-  const hit = allowlist.find((market) => marketIdMatches(market, marketId))
+  const hit = findMatchingConfig(allowlist, marketId, marketIdMatches)
   if (hit) return
   throw new MarketNotAllowedError({
     address: marketId.marketId,
@@ -93,21 +97,17 @@ export function filterBorrowMarketConfigs(
   config: { marketAllowlist?: BorrowMarketConfig[] },
   params: GetBorrowMarketsParams,
 ): BorrowMarketConfig[] {
-  let markets = config.marketAllowlist ?? []
-  if (params.chainId !== undefined) {
-    markets = markets.filter((market) => market.chainId === params.chainId)
-  }
-  if (params.collateralAsset !== undefined) {
-    markets = markets.filter(
-      (market) => market.collateralAsset === params.collateralAsset,
-    )
-  }
-  if (params.borrowAsset !== undefined) {
-    markets = markets.filter(
-      (market) => market.borrowAsset === params.borrowAsset,
-    )
-  }
-  return markets
+  return filterMatchingConfigs(config.marketAllowlist, [
+    params.chainId === undefined
+      ? undefined
+      : (market) => market.chainId === params.chainId,
+    params.collateralAsset === undefined
+      ? undefined
+      : (market) => market.collateralAsset === params.collateralAsset,
+    params.borrowAsset === undefined
+      ? undefined
+      : (market) => market.borrowAsset === params.borrowAsset,
+  ])
 }
 
 function marketsMatch(a: BorrowMarketConfig, b: BorrowMarketConfig): boolean {

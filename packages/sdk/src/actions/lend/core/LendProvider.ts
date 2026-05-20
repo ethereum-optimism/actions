@@ -1,6 +1,10 @@
 import type { Address } from 'viem'
 
 import { validateMarketAsset } from '@/actions/lend/utils/markets.js'
+import {
+  filterMatchingConfigs,
+  findMatchingConfig,
+} from '@/actions/shared/marketConfigs.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
@@ -285,7 +289,9 @@ export abstract class LendProvider<
       return
     }
 
-    const foundMarket = this._config.marketAllowlist.find(
+    const foundMarket = findMatchingConfig(
+      this._config.marketAllowlist,
+      marketId,
       (allowedMarket: LendMarketConfig) =>
         allowedMarket.address.toLowerCase() ===
           marketId.address.toLowerCase() &&
@@ -345,12 +351,14 @@ export abstract class LendProvider<
     chainId?: SupportedChainId,
     asset?: Asset,
   ): LendMarketConfig[] {
-    let configs = this._config.marketAllowlist || []
-    if (chainId !== undefined)
-      configs = configs.filter((m: LendMarketConfig) => m.chainId === chainId)
-    if (asset !== undefined)
-      configs = configs.filter((m: LendMarketConfig) => m.asset === asset)
-    return configs
+    return filterMatchingConfigs(this._config.marketAllowlist, [
+      chainId === undefined
+        ? undefined
+        : (market: LendMarketConfig) => market.chainId === chainId,
+      asset === undefined
+        ? undefined
+        : (market: LendMarketConfig) => market.asset === asset,
+    ])
   }
 
   /**
