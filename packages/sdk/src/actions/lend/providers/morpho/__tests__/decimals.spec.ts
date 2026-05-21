@@ -1,7 +1,7 @@
 import type { PublicClient } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
-import { resolveUnderlyingDecimals } from '@/actions/shared/morpho/decimals.js'
+import { resolveUnderlyingDecimals } from '@/actions/lend/providers/morpho/decimals.js'
 
 describe('resolveUnderlyingDecimals', () => {
   it('returns allowlist decimals without touching the RPC', async () => {
