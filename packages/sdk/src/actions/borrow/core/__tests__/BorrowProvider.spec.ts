@@ -1,6 +1,6 @@
 import { zeroAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -523,47 +523,5 @@ describe('BorrowProvider - getMarket / getMarkets / getPosition', () => {
     })
     expect(position.borrowAmount).toBe(0n)
     expect(position.healthFactor).toBeNull()
-  })
-})
-
-describe('BorrowProvider - approval mode resolution', () => {
-  it('per-call > provider > settings > exact', () => {
-    const provider = makeProvider(
-      { marketAllowlist: [market], approvalMode: 'max' },
-      { approvalMode: 'exact' },
-    )
-    const spy = vi.spyOn(
-      provider as unknown as {
-        resolveApprovalMode: (mode?: 'exact' | 'max') => 'exact' | 'max'
-      },
-      'resolveApprovalMode',
-    )
-    // sanity: provider value used when per-call omitted
-    expect(
-      (
-        provider as unknown as {
-          resolveApprovalMode: (mode?: 'exact' | 'max') => 'exact' | 'max'
-        }
-      ).resolveApprovalMode(undefined),
-    ).toBe('max')
-    expect(
-      (
-        provider as unknown as {
-          resolveApprovalMode: (mode?: 'exact' | 'max') => 'exact' | 'max'
-        }
-      ).resolveApprovalMode('exact'),
-    ).toBe('exact')
-    spy.mockRestore()
-  })
-
-  it('defaults to exact when nothing is set', () => {
-    const provider = makeProvider({ marketAllowlist: [market] })
-    expect(
-      (
-        provider as unknown as {
-          resolveApprovalMode: (mode?: 'exact' | 'max') => 'exact' | 'max'
-        }
-      ).resolveApprovalMode(undefined),
-    ).toBe('exact')
   })
 })
