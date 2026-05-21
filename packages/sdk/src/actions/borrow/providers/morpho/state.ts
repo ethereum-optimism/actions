@@ -1,6 +1,6 @@
 import { AccrualPosition, type Market } from '@morpho-org/blue-sdk'
 import { blueAbi, blueOracleAbi } from '@morpho-org/blue-sdk-viem'
-import { type Address, erc20Abi, type Hex, type PublicClient } from 'viem'
+import { type Address, erc20Abi, type PublicClient } from 'viem'
 
 import {
   buildMorphoMarket,
@@ -13,7 +13,7 @@ export async function fetchMorphoMarket(
   config: BorrowMarketConfig,
 ): Promise<Market> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
-  const id = config.marketId as Hex
+  const id = config.marketId
   const [marketTuple, price] = await client.multicall({
     allowFailure: false,
     contracts: [
@@ -41,7 +41,7 @@ export async function fetchMorphoPosition(
   user: Address,
 ): Promise<AccrualPosition> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
-  const id = config.marketId as Hex
+  const id = config.marketId
   const [positionTuple, marketTuple, price] = await client.multicall({
     allowFailure: false,
     contracts: [
@@ -76,7 +76,7 @@ export async function fetchMorphoStateWithAllowance(
   token: Address,
 ): Promise<{ current: AccrualPosition; allowance: bigint }> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
-  const id = config.marketId as Hex
+  const id = config.marketId
   const [positionTuple, marketTuple, price, allowance] = await client.multicall(
     {
       allowFailure: false,

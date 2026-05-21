@@ -111,6 +111,10 @@ export abstract class Wallet {
    * concrete wallet migrates.
    */
   protected constructor(options: WalletConstructorOptions)
+  /**
+   * @deprecated Use the options form. Removed once every concrete wallet
+   * migrates off positional providers/settings.
+   */
   protected constructor(
     chainManager: ChainManager,
     lendProviders?: LendProviders,
