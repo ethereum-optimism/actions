@@ -9,12 +9,7 @@ import type { Asset } from '@/types/asset.js'
 import type { BorrowProviderConfig } from '@/types/borrow/index.js'
 import type { ChainConfig } from '@/types/chain.js'
 import type { LendProviderConfig } from '@/types/lend/index.js'
-import type {
-  BorrowProviders,
-  LendProviders,
-  SwapProviderName,
-  SwapProviders,
-} from '@/types/providers.js'
+import type { LendProviders, SwapProviderName } from '@/types/providers.js'
 import type { SwapProviderConfig } from '@/types/swap/index.js'
 import type { ProviderSpec } from '@/wallet/core/providers/hosted/types/index.js'
 
@@ -181,36 +176,12 @@ export interface AssetsConfig {
 export interface ActionsContext {
   /** Chain manager wrapping the configured chains */
   chainManager: ChainManager
-  /**
-   * Provider instances keyed by action name. The canonical place for
-   * downstream wiring (`Wallet`, `WalletNamespace`, hosted-wallet
-   * providers) to read per-action providers. The per-action fields
-   * (`lendProviders`, `swapProviders`, `borrowProviders`) are derived
-   * mirrors kept during the registry migration and will be removed once
-   * every consumer reads from this map.
-   */
-  actionProviders?: ActionProvidersMap
-  /**
-   * Settings keyed by action name. Parallel to `actionProviders`; once
-   * consumers migrate, `swapSettings` / `borrowSettings` are removed.
-   */
-  actionSettings?: ActionSettingsMap
-  /** Configured lend provider instances (each holds its own config) */
-  lendProviders: LendProviders
-  /**
-   * Configured borrow provider instances (each holds its own config).
-   * Optional during the borrow rollout; required wiring lands alongside
-   * `Actions.ts` borrow provider construction.
-   */
-  borrowProviders?: BorrowProviders
-  /** Configured swap provider instances (each holds its own config) */
-  swapProviders: SwapProviders
+  /** Provider instances keyed by action name. */
+  actionProviders: ActionProvidersMap
+  /** Shared settings keyed by action name. */
+  actionSettings: ActionSettingsMap
   /** Resolved supported asset list (allowlist minus blocklist) */
   supportedAssets: Asset[]
-  /** Shared swap settings applied across swap providers */
-  swapSettings?: SwapSettings
-  /** Shared borrow settings applied across borrow providers */
-  borrowSettings?: BorrowSettings
 }
 
 /**

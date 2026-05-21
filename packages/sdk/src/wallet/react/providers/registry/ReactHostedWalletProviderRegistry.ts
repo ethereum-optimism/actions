@@ -27,14 +27,12 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       async create(deps, _options) {
         const { DynamicHostedWalletProvider } =
           await import('@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js')
-        return new DynamicHostedWalletProvider(
-          deps.chainManager,
-          deps.lendProviders,
-          deps.swapProviders,
-          deps.supportedAssets,
-          deps.actionProviders,
-          deps.actionSettings,
-        )
+        return new DynamicHostedWalletProvider({
+          chainManager: deps.chainManager,
+          actionProviders: deps.actionProviders,
+          actionSettings: deps.actionSettings,
+          supportedAssets: deps.supportedAssets,
+        })
       },
     })
 
@@ -46,14 +44,12 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       async create(deps, _options) {
         const { PrivyHostedWalletProvider } =
           await import('@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js')
-        return new PrivyHostedWalletProvider(
-          deps.chainManager,
-          deps.lendProviders,
-          deps.swapProviders,
-          deps.supportedAssets,
-          deps.actionProviders,
-          deps.actionSettings,
-        )
+        return new PrivyHostedWalletProvider({
+          chainManager: deps.chainManager,
+          actionProviders: deps.actionProviders,
+          actionSettings: deps.actionSettings,
+          supportedAssets: deps.supportedAssets,
+        })
       },
     })
 
@@ -65,14 +61,12 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       async create(deps, _options) {
         const { TurnkeyHostedWalletProvider } =
           await import('@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js')
-        return new TurnkeyHostedWalletProvider(
-          deps.chainManager,
-          deps.lendProviders,
-          deps.swapProviders,
-          deps.supportedAssets,
-          deps.actionProviders,
-          deps.actionSettings,
-        )
+        return new TurnkeyHostedWalletProvider({
+          chainManager: deps.chainManager,
+          actionProviders: deps.actionProviders,
+          actionSettings: deps.actionSettings,
+          supportedAssets: deps.supportedAssets,
+        })
       },
     })
   }

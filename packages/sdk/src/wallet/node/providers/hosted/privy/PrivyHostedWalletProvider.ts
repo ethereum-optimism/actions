@@ -8,7 +8,6 @@ import type {
   ActionSettingsMap,
 } from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type {
@@ -34,8 +33,6 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
    * @param params - Configuration parameters
    * @param params.privyClient - Privy client instance
    * @param params.chainManager - Chain manager for multi-chain operations
-   * @param params.lendProviders - Optional lend providers for DeFi operations
-   * @param params.swapProviders - Optional swap providers for trading operations
    * @param params.supportedAssets - Optional list of supported assets
    * @param params.authorizationContext - Optional authorization context for the Privy client.
    * Used when Privy needs to sign requests.
@@ -45,19 +42,14 @@ export class PrivyHostedWalletProvider extends HostedWalletProvider<
   constructor(params: {
     privyClient: PrivyClient
     chainManager: ChainManager
-    lendProviders?: LendProviders
-    swapProviders?: SwapProviders
+    actionProviders: ActionProvidersMap
+    actionSettings: ActionSettingsMap
     supportedAssets?: Asset[]
     authorizationContext?: AuthorizationContext
-    actionProviders?: ActionProvidersMap
-    actionSettings?: ActionSettingsMap
   }) {
     super({
       chainManager: params.chainManager,
-      actionProviders: params.actionProviders ?? {
-        lend: params.lendProviders,
-        swap: params.swapProviders,
-      },
+      actionProviders: params.actionProviders,
       actionSettings: params.actionSettings,
       supportedAssets: params.supportedAssets,
     })

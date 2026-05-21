@@ -76,8 +76,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should create a wallet and return deployment results', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
@@ -117,8 +119,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should report deployment successes across multiple chains', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
@@ -158,8 +162,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should report deployment failures', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
@@ -202,8 +208,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should handle mixed deployment successes and failures', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
@@ -250,8 +258,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should respect deploymentChainIds parameter', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
@@ -280,8 +290,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should throw error for non-SmartWalletDeploymentError failures', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(123)
@@ -299,8 +311,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should get wallet address with correct contract call', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const signers = [mockSigner.address, getRandomAddress()]
     const nonce = BigInt(456)
@@ -321,8 +335,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should get wallet address with default nonce', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const signers = [getRandomAddress()]
     const mockAddress = getRandomAddress()
@@ -342,8 +358,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should handle WebAuthn accounts in wallet address calculation', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const webAuthnAccount: WebAuthnAccount = {
       type: 'webAuthn',
@@ -370,8 +388,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should throw error for invalid signer type', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const invalidSigner = { type: 'invalid' } as unknown as Address
     const signers = [invalidSigner]
@@ -382,8 +402,10 @@ describe('DefaultSmartWalletProvider', () => {
   })
 
   it('should get existing wallet', async () => {
-    const provider = new DefaultSmartWalletProvider(mockChainManager, {
-      morpho: mockLendProvider,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
     })
     const walletAddress = getRandomAddress()
 
@@ -410,13 +432,13 @@ describe('DefaultSmartWalletProvider', () => {
     const attributionSeed = 'https://my.app'
     const expectedSuffix =
       DefaultSmartWalletProvider.computeAttributionSuffix(attributionSeed)
-    const provider = new DefaultSmartWalletProvider(
-      mockChainManager,
-      { morpho: mockLendProvider },
-      undefined,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
       supportedAssets,
-      attributionSeed,
-    )
+      attributionSuffix: attributionSeed,
+    })
 
     vi.mocked(mockWallet.deploy).mockResolvedValue({
       chainId: 1,
@@ -438,13 +460,13 @@ describe('DefaultSmartWalletProvider', () => {
     const attributionSeed = 'campaign-123'
     const expectedSuffix =
       DefaultSmartWalletProvider.computeAttributionSuffix(attributionSeed)
-    const provider = new DefaultSmartWalletProvider(
-      mockChainManager,
-      { morpho: mockLendProvider },
-      undefined,
+    const provider = new DefaultSmartWalletProvider({
+      chainManager: mockChainManager,
+      actionProviders: { lend: { morpho: mockLendProvider } },
+      actionSettings: {},
       supportedAssets,
-      attributionSeed,
-    )
+      attributionSuffix: attributionSeed,
+    })
 
     await provider.getWallet({
       walletAddress: getRandomAddress(),

@@ -28,6 +28,8 @@ describe('PrivyHostedWalletProvider', () => {
         privyClient: privy,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
       })
 
       const hostedWallet = createMockPrivyWallet()
@@ -49,6 +51,8 @@ describe('PrivyHostedWalletProvider', () => {
         privyClient: privy,
         authorizationContext,
         chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
       })
       const spy = vi.spyOn(PrivyWallet, 'create')
 
@@ -74,6 +78,8 @@ describe('PrivyHostedWalletProvider', () => {
         privyClient: privy,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
       })
 
       await expect(
@@ -88,7 +94,8 @@ describe('PrivyHostedWalletProvider', () => {
         privyClient: privy,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
-        lendProviders: { morpho: mockLendProvider },
+        actionProviders: { lend: { morpho: mockLendProvider } },
+        actionSettings: {},
       })
       const spy = vi.spyOn(PrivyWallet, 'create')
 
@@ -117,6 +124,8 @@ describe('PrivyHostedWalletProvider', () => {
         privyClient: privy,
         authorizationContext: getMockAuthorizationContext(),
         chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
       })
 
       const hostedWallet = createMockPrivyWallet()

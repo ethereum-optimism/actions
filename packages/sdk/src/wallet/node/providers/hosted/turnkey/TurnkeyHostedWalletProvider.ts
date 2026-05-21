@@ -9,7 +9,6 @@ import type {
   ActionSettingsMap,
 } from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { NodeToActionsOptionsMap } from '@/wallet/node/providers/hosted/types/index.js'
@@ -29,33 +28,31 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
 > {
   /**
    * Create a new Turnkey wallet provider
-   * @param client - Turnkey client instance (HTTP, server, or core SDK base)
-   * @param chainManager - Chain manager used to resolve chains and RPC transports
-   * @param lendProviders - Optional lend providers for DeFi operations
-   * @param swapProviders - Optional swap providers for trading operations
-   * @param supportedAssets - Optional list of supported assets
+   * @param params.client - Turnkey client instance (HTTP, server, or core SDK base)
+   * @param params.chainManager - Chain manager used to resolve chains and RPC transports
+   * @param params.actionProviders - Provider instances keyed by action name
+   * @param params.actionSettings - Shared settings keyed by action name
+   * @param params.supportedAssets - Optional list of supported assets
    */
-  constructor(
-    private readonly client:
-      | TurnkeyHttpClient
-      | TurnkeyServerClient
-      | TurnkeySDKClientBase,
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    actionProviders?: ActionProvidersMap,
-    actionSettings?: ActionSettingsMap,
-  ) {
+  private readonly client:
+    | TurnkeyHttpClient
+    | TurnkeyServerClient
+    | TurnkeySDKClientBase
+
+  constructor(params: {
+    client: TurnkeyHttpClient | TurnkeyServerClient | TurnkeySDKClientBase
+    chainManager: ChainManager
+    actionProviders: ActionProvidersMap
+    actionSettings: ActionSettingsMap
+    supportedAssets?: Asset[]
+  }) {
     super({
-      chainManager,
-      actionProviders: actionProviders ?? {
-        lend: lendProviders,
-        swap: swapProviders,
-      },
-      actionSettings,
-      supportedAssets,
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
     })
+    this.client = params.client
   }
 
   /**

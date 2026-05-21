@@ -103,15 +103,8 @@ export class WalletNamespace<
       this._providerFactory = () => Promise.resolve(providerOrFactory)
     }
     this.chainManager = context.chainManager
-    this.actionProviders = context.actionProviders ?? {
-      lend: context.lendProviders,
-      swap: context.swapProviders,
-      borrow: context.borrowProviders,
-    }
-    this.actionSettings = context.actionSettings ?? {
-      swap: context.swapSettings,
-      borrow: context.borrowSettings,
-    }
+    this.actionProviders = context.actionProviders
+    this.actionSettings = context.actionSettings
     this.supportedAssets = context.supportedAssets
   }
 

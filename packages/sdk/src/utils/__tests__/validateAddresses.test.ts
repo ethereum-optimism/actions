@@ -339,10 +339,12 @@ describe('Actions constructor address validation', () => {
         validateOptions(options): options is NodeOptionsMap['privy'] {
           return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
         },
-        create({ chainManager }, options) {
+        create({ chainManager, actionProviders, actionSettings }, options) {
           return new PrivyHostedWalletProvider({
             privyClient: options.privyClient,
             chainManager,
+            actionProviders,
+            actionSettings,
             authorizationContext: options.authorizationContext,
           })
         },

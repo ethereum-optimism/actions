@@ -18,10 +18,12 @@ describe('TurnkeyHostedWalletProvider', () => {
   describe('toActionsWallet', () => {
     it('forwards params to TurnkeyWallet.create', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
-        turnkeyClient,
-        mockChainManager,
-      )
+      const provider = new TurnkeyHostedWalletProvider({
+        client: turnkeyClient,
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      })
       const spyTurnkeyWalletCreate = vi
         .spyOn(TurnkeyWallet, 'create')
         .mockResolvedValueOnce({
@@ -46,10 +48,12 @@ describe('TurnkeyHostedWalletProvider', () => {
 
     it('forwards ethereumAddress when provided', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
-        turnkeyClient,
-        mockChainManager,
-      )
+      const provider = new TurnkeyHostedWalletProvider({
+        client: turnkeyClient,
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      })
       const spyTurnkeyWalletCreate = vi
         .spyOn(TurnkeyWallet, 'create')
         .mockResolvedValueOnce({
@@ -75,10 +79,12 @@ describe('TurnkeyHostedWalletProvider', () => {
 
     it('returns the created TurnkeyWallet instance', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
-        turnkeyClient,
-        mockChainManager,
-      )
+      const provider = new TurnkeyHostedWalletProvider({
+        client: turnkeyClient,
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      })
       const fakeWallet = {
         address: '0xabc',
       } as unknown as TurnkeyWallet
@@ -95,11 +101,12 @@ describe('TurnkeyHostedWalletProvider', () => {
     it('forwards lendProvider when provided to constructor', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
       const mockLendProvider = createMockLendProvider()
-      const provider = new TurnkeyHostedWalletProvider(
-        turnkeyClient,
-        mockChainManager,
-        { morpho: mockLendProvider },
-      )
+      const provider = new TurnkeyHostedWalletProvider({
+        client: turnkeyClient,
+        chainManager: mockChainManager,
+        actionProviders: { lend: { morpho: mockLendProvider } },
+        actionSettings: {},
+      })
       const spyTurnkeyWalletCreate = vi
         .spyOn(TurnkeyWallet, 'create')
         .mockResolvedValueOnce({
@@ -124,10 +131,12 @@ describe('TurnkeyHostedWalletProvider', () => {
   describe('createSigner', () => {
     it('should delegate to createSigner utility with correct params', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
-        turnkeyClient,
-        mockChainManager,
-      )
+      const provider = new TurnkeyHostedWalletProvider({
+        client: turnkeyClient,
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      })
       const mockSigner = {
         address: '0xabc',
         type: 'local',
@@ -153,10 +162,12 @@ describe('TurnkeyHostedWalletProvider', () => {
 
     it('should forward ethereumAddress when provided', async () => {
       const turnkeyClient = {} as unknown as TurnkeyClient
-      const provider = new TurnkeyHostedWalletProvider(
-        turnkeyClient,
-        mockChainManager,
-      )
+      const provider = new TurnkeyHostedWalletProvider({
+        client: turnkeyClient,
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      })
       const mockSigner = {
         address: '0x123',
         type: 'local',

@@ -3,36 +3,17 @@ import type {
   ActionProvidersMap,
   ActionSettingsMap,
 } from '@/types/actionRegistry.js'
-import type { SwapSettings } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 
 /**
- * Common dependencies provided to hosted provider factories
- * @description
- * Environment-agnostic services that providers require at creation time.
- * Currently limited to `ChainManager`, but can be extended as needed.
+ * Common dependencies provided to hosted provider factories.
  */
 export interface HostedProviderDeps {
   chainManager: ChainManager
-  /**
-   * Provider instances keyed by action name. Preferred shape; the
-   * per-action fields below are derived mirrors kept during the registry
-   * migration and will be removed once every hosted-wallet factory reads
-   * from this map. New actions must wire through this map only; do not add
-   * more per-action legacy fields here.
-   */
-  actionProviders?: ActionProvidersMap
-  /**
-   * Settings keyed by action name. Parallel to `actionProviders`; new
-   * actions must use this map rather than introducing more legacy fields.
-   */
-  actionSettings?: ActionSettingsMap
-  lendProviders?: LendProviders
-  swapProviders?: SwapProviders
+  actionProviders: ActionProvidersMap
+  actionSettings: ActionSettingsMap
   supportedAssets?: Asset[]
-  swapSettings?: SwapSettings
 }
 
 /**
