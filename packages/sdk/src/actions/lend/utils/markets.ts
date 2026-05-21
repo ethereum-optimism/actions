@@ -34,7 +34,11 @@ export function findMarketInAllowlist(
   allowlist: readonly LendMarketConfig[] | undefined,
   marketId: LendMarketId,
 ): LendMarketConfig | undefined {
-  return findMatchingConfig(allowlist, marketId, lendMarketIdMatches)
+  return findMatchingConfig({
+    configs: allowlist,
+    target: marketId,
+    matches: lendMarketIdMatches,
+  })
 }
 
 /**

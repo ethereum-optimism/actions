@@ -1,16 +1,12 @@
 /**
  * Find the first config that matches a target value.
- * @param configs - Candidate configs
- * @param target - Value to match against
- * @param matches - Domain-specific matcher
- * @returns First matching config, if any
  */
-export function findMatchingConfig<TConfig, TTarget>(
-  configs: readonly TConfig[] | undefined,
-  target: TTarget,
-  matches: (config: TConfig, target: TTarget) => boolean,
-): TConfig | undefined {
-  return configs?.find((config) => matches(config, target))
+export function findMatchingConfig<TConfig, TTarget>(params: {
+  configs: readonly TConfig[] | undefined
+  target: TTarget
+  matches: (config: TConfig, target: TTarget) => boolean
+}): TConfig | undefined {
+  return params.configs?.find((config) => params.matches(config, params.target))
 }
 
 /**

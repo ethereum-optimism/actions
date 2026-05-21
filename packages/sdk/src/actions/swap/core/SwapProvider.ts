@@ -509,16 +509,20 @@ export abstract class SwapProvider<
     const addressOut = assetOut.address[chainId]
     if (!addressIn || !addressOut) return undefined
 
-    return findMatchingConfig(list, undefined, (config) => {
-      if (config.chainId !== undefined && config.chainId !== chainId) {
-        return false
-      }
-      return this.containsPairByAddress(
-        addressIn,
-        addressOut,
-        chainId,
-        config.assets,
-      )
+    return findMatchingConfig({
+      configs: list,
+      target: undefined,
+      matches: (config) => {
+        if (config.chainId !== undefined && config.chainId !== chainId) {
+          return false
+        }
+        return this.containsPairByAddress(
+          addressIn,
+          addressOut,
+          chainId,
+          config.assets,
+        )
+      },
     })
   }
 

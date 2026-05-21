@@ -247,11 +247,11 @@ export abstract class LendProvider<
       return
     }
 
-    const foundMarket = findMatchingConfig(
-      this._config.marketAllowlist,
-      marketId,
-      lendMarketIdMatches,
-    )
+    const foundMarket = findMatchingConfig({
+      configs: this._config.marketAllowlist,
+      target: marketId,
+      matches: lendMarketIdMatches,
+    })
 
     if (!foundMarket) {
       throw new MarketNotAllowedError({

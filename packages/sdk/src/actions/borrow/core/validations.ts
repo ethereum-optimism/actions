@@ -77,11 +77,11 @@ export function requireAllowlistedBorrowMarketConfig(
     marketBlocklist?: readonly BorrowMarketConfig[]
   },
 ): BorrowMarketConfig {
-  const match = findMatchingConfig(
-    config.marketAllowlist,
-    marketId,
-    marketIdMatches,
-  )
+  const match = findMatchingConfig({
+    configs: config.marketAllowlist,
+    target: marketId,
+    matches: marketIdMatches,
+  })
   if (!match) {
     throw new MarketNotAllowedError({
       address: marketId.marketId,
@@ -90,11 +90,11 @@ export function requireAllowlistedBorrowMarketConfig(
     })
   }
   if (config.marketBlocklist?.length) {
-    const blocked = findMatchingConfig(
-      config.marketBlocklist,
-      marketId,
-      marketIdMatches,
-    )
+    const blocked = findMatchingConfig({
+      configs: config.marketBlocklist,
+      target: marketId,
+      matches: marketIdMatches,
+    })
     if (blocked) {
       throw new MarketNotAllowedError({
         address: marketId.marketId,
@@ -117,11 +117,11 @@ export function validateBorrowMarketIdInAnyAllowlist(
 ): void {
   const hit = providers.some(
     (provider) =>
-      !!findMatchingConfig(
-        provider.config.marketAllowlist,
-        marketId,
-        marketIdMatches,
-      ),
+      !!findMatchingConfig({
+        configs: provider.config.marketAllowlist,
+        target: marketId,
+        matches: marketIdMatches,
+      }),
   )
   if (hit) return
   throw new ProviderNotConfiguredError({

@@ -88,11 +88,11 @@ export class BaseBorrowNamespace extends BaseNamespace<
   ): ConfiguredBorrowProvider {
     for (const provider of this.getAllProviders()) {
       if (
-        findMatchingConfig(
-          provider.config.marketAllowlist,
-          marketId,
-          marketIdMatches,
-        )
+        findMatchingConfig({
+          configs: provider.config.marketAllowlist,
+          target: marketId,
+          matches: marketIdMatches,
+        })
       ) {
         return provider
       }

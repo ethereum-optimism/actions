@@ -14,23 +14,23 @@ describe('marketConfigs', () => {
 
   describe('findMatchingConfig', () => {
     it('returns the first config matching the target', () => {
-      const match = findMatchingConfig(
+      const match = findMatchingConfig({
         configs,
-        { chainId: 8453, symbol: 'USDC' },
-        (config, target) =>
+        target: { chainId: 8453, symbol: 'USDC' },
+        matches: (config, target) =>
           config.chainId === target.chainId && config.symbol === target.symbol,
-      )
+      })
 
       expect(match).toEqual(configs[2])
     })
 
     it('returns undefined when nothing matches', () => {
-      const match = findMatchingConfig(
+      const match = findMatchingConfig({
         configs,
-        { chainId: 1, symbol: 'DAI' },
-        (config, target) =>
+        target: { chainId: 1, symbol: 'DAI' },
+        matches: (config, target) =>
           config.chainId === target.chainId && config.symbol === target.symbol,
-      )
+      })
 
       expect(match).toBeUndefined()
     })
