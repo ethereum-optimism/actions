@@ -1,10 +1,10 @@
 export type { Actions } from '@/actions.js'
 export { BorrowProvider, MorphoBorrowProvider } from '@/actions/borrow/index.js'
-export { LendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
 export {
   computeMorphoMarketId,
   verifyMorphoMarketId,
-} from '@/actions/shared/morpho/marketParams.js'
+} from '@/actions/borrow/providers/morpho/marketParams.js'
+export { LendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
 export {
   SwapProvider,
   type UniswapMarketConfig,

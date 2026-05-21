@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
 import {
   computeMorphoMarketId,
   verifyMorphoMarketId,
-} from '@/actions/shared/morpho/marketParams.js'
+} from '@/actions/borrow/providers/morpho/marketParams.js'
+import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
 import {
   BorrowProvider as PublicBorrowProvider,
   computeMorphoMarketId as publicComputeMorphoMarketId,

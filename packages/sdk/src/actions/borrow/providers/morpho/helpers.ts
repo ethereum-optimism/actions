@@ -1,7 +1,7 @@
 import {
   computeMorphoMarketId,
   verifyMorphoMarketId,
-} from '@/actions/shared/morpho/marketParams.js'
+} from '@/actions/borrow/providers/morpho/marketParams.js'
 import { BorrowMarketParamsMismatchError } from '@/core/error/errors.js'
 import type { BorrowMarketConfig } from '@/types/borrow/index.js'
 

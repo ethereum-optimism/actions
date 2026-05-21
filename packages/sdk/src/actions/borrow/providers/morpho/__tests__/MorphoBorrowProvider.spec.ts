@@ -8,8 +8,8 @@ import {
 import { baseSepolia } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { computeMorphoMarketId } from '@/actions/borrow/providers/morpho/marketParams.js'
 import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
-import { computeMorphoMarketId } from '@/actions/shared/morpho/marketParams.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   BorrowMarketParamsMismatchError,
