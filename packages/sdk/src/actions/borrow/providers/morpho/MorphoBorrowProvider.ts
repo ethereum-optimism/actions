@@ -9,9 +9,11 @@ import {
   assembleMorphoBorrowQuote,
 } from '@/actions/borrow/providers/morpho/presentation.js'
 import {
+  buildRepayApproval,
+  prepareRepayLeg,
+} from '@/actions/borrow/providers/morpho/repay.js'
+import {
   buildMorphoCollateralApproval,
-  buildMorphoLoanApproval,
-  buildMorphoMaxLoanApproval,
   encodeMorphoBorrow,
   encodeMorphoRepay,
   encodeMorphoSupplyCollateral,
@@ -169,28 +171,10 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       params.walletAddress,
       market.marketParams.loanToken,
     )
-    let after = current
 
-    // Repay leg. `{ max: true }` uses Morpho's shares-based path to avoid the
-    // toAssetsUp 1-wei dust bug. Morpho's `_accrueInterest` runs on-chain
-    // before the share→asset conversion, so the actual transferred amount
-    // tracks live state without an SDK-side re-fetch.
-    let repayAssetsWei = 0n
-    let repaySharesWei = 0n
-    if ('max' in params.borrowAmount) {
-      if (current.borrowShares === 0n) {
-        throw new EmptyPositionError({ operation: 'closePosition' })
-      }
-      repaySharesWei = current.borrowShares
-      const result = after.repay(0n, repaySharesWei)
-      after = result.position
-    } else {
-      repayAssetsWei = params.borrowAmount.amountWei
-      const result = after.repay(repayAssetsWei, 0n)
-      after = result.position
-    }
+    const repay = prepareRepayLeg(params.borrowAmount, current, 'closePosition')
+    let after = repay.after
 
-    // Withdraw leg, optional.
     let withdrawCollateralWei = 0n
     if (params.collateralAmount !== undefined) {
       withdrawCollateralWei =
@@ -200,22 +184,19 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       after = after.withdrawCollateral(withdrawCollateralWei)
     }
 
+    const approvalTx = buildRepayApproval(
+      market,
+      repay,
+      allowance,
+      params.approvalMode,
+    )
     const txs: TransactionData[] = []
-    const approvalTx =
-      repaySharesWei > 0n
-        ? buildMorphoMaxLoanApproval(market, allowance)
-        : buildMorphoLoanApproval(
-            market,
-            repayAssetsWei,
-            allowance,
-            params.approvalMode,
-          )
     if (approvalTx) txs.push(approvalTx)
     txs.push(
       encodeMorphoRepay(
         market,
-        repayAssetsWei,
-        repaySharesWei,
+        repay.repayAssetsWei,
+        repay.repaySharesWei,
         params.walletAddress,
       ),
     )
@@ -238,7 +219,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       transactions: txs,
       echoAmounts: {
         borrowAmountRaw:
-          repaySharesWei > 0n ? current.borrowAssets : repayAssetsWei,
+          repay.repaySharesWei > 0n
+            ? current.borrowAssets
+            : repay.repayAssetsWei,
         collateralAmountRaw:
           withdrawCollateralWei > 0n ? withdrawCollateralWei : undefined,
       },
@@ -329,38 +312,20 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market.marketParams.loanToken,
     )
 
-    let repayAssetsWei = 0n
-    let repaySharesWei = 0n
-    let after: AccrualPosition
-    if ('max' in params.amount) {
-      if (current.borrowShares === 0n) {
-        throw new EmptyPositionError({ operation: 'repay' })
-      }
-      repaySharesWei = current.borrowShares
-      const result = current.repay(0n, repaySharesWei)
-      after = result.position
-    } else {
-      repayAssetsWei = params.amount.amountWei
-      const result = current.repay(repayAssetsWei, 0n)
-      after = result.position
-    }
-
+    const repay = prepareRepayLeg(params.amount, current, 'repay')
+    const approvalTx = buildRepayApproval(
+      market,
+      repay,
+      allowance,
+      params.approvalMode,
+    )
     const txs: TransactionData[] = []
-    const approvalTx =
-      repaySharesWei > 0n
-        ? buildMorphoMaxLoanApproval(market, allowance)
-        : buildMorphoLoanApproval(
-            market,
-            repayAssetsWei,
-            allowance,
-            params.approvalMode,
-          )
     if (approvalTx) txs.push(approvalTx)
     txs.push(
       encodeMorphoRepay(
         market,
-        repayAssetsWei,
-        repaySharesWei,
+        repay.repayAssetsWei,
+        repay.repaySharesWei,
         params.walletAddress,
       ),
     )
@@ -369,79 +334,55 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       action: 'repay',
       market,
       positionBefore: current,
-      positionAfter: after,
+      positionAfter: repay.after,
       transactions: txs,
       echoAmounts: {
         borrowAmountRaw:
-          repaySharesWei > 0n ? current.borrowAssets : repayAssetsWei,
+          repay.repaySharesWei > 0n
+            ? current.borrowAssets
+            : repay.repayAssetsWei,
       },
       approvalsSkipped: approvalTx === undefined,
     })
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Internal helpers
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Read market state + oracle price in one multicall. Constructs a
-   * `Market` instance locally so we reuse Morpho's math (accrual rate,
-   * APY, liquidation incentive) without depending on
-   * `@morpho-org/blue-sdk`'s per-chain registry.
-   */
-  private async fetchMarket(config: BorrowMarketConfig): Promise<Market> {
-    const client = this.chainManager.getPublicClient(config.chainId)
-    return fetchMorphoMarket(client, config)
+  // Each `fetchX` wraps the corresponding `fetchMorphoX` in `state.ts` so
+  // call sites read tersely; the multicall composition lives next to the
+  // ABI plumbing.
+  private fetchMarket(config: BorrowMarketConfig): Promise<Market> {
+    return fetchMorphoMarket(
+      this.chainManager.getPublicClient(config.chainId),
+      config,
+    )
   }
 
-  /**
-   * Read the user's position alongside market + oracle in one multicall.
-   * Builds an `AccrualPosition` locally so the SDK's getters
-   * (`healthFactor`, `ltv`, `liquidationPrice`, `borrowAssets`) compute on
-   * up-to-date state regardless of which chain the market lives on.
-   */
-  private async fetchPosition(
+  private fetchPosition(
     config: BorrowMarketConfig,
     user: Address,
   ): Promise<AccrualPosition> {
-    const client = this.chainManager.getPublicClient(config.chainId)
-    return fetchMorphoPosition(client, config, user)
+    return fetchMorphoPosition(
+      this.chainManager.getPublicClient(config.chainId),
+      config,
+      user,
+    )
   }
 
-  /**
-   * Fetch `AccrualPosition` + the user's ERC-20 allowance for the supplied
-   * token spender (Morpho Blue) in a single multicall. Used by every
-   * write-side hook that needs an approval-check pre-flight.
-   */
-  private async fetchStateWithAllowance(
+  private fetchStateWithAllowance(
     config: BorrowMarketConfig,
     user: Address,
     token: Address,
   ): Promise<{ current: AccrualPosition; allowance: bigint }> {
-    const client = this.chainManager.getPublicClient(config.chainId)
-    return fetchMorphoStateWithAllowance(client, config, user, token)
+    return fetchMorphoStateWithAllowance(
+      this.chainManager.getPublicClient(config.chainId),
+      config,
+      user,
+      token,
+    )
   }
 
-  private assembleQuote(args: {
-    action: BorrowAction
-    market: BorrowMarketConfig
-    positionBefore: AccrualPosition
-    positionAfter: AccrualPosition
-    transactions: TransactionData[]
-    echoAmounts: {
-      borrowAmountRaw?: bigint
-      collateralAmountRaw?: bigint
-    }
-    approvalsSkipped: boolean
-  }): BorrowQuote {
+  private assembleQuote(args: AssembleMorphoQuoteArgs): BorrowQuote {
     return assembleMorphoBorrowQuote({
-      action: args.action,
-      config: args.market,
-      positionBefore: args.positionBefore,
-      positionAfter: args.positionAfter,
-      transactions: args.transactions,
-      echoAmounts: args.echoAmounts,
-      approvalsSkipped: args.approvalsSkipped,
+      ...args,
       quoteExpirationSeconds: this.quoteExpirationSeconds,
       healthBufferPct: this.resolveHealthBufferPct(args.market),
     })
@@ -464,6 +405,16 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): BorrowMarketPosition {
     return adaptMorphoBorrowPosition(config, position)
   }
+}
+
+interface AssembleMorphoQuoteArgs {
+  action: BorrowAction
+  market: BorrowMarketConfig
+  positionBefore: AccrualPosition
+  positionAfter: AccrualPosition
+  transactions: TransactionData[]
+  echoAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
+  approvalsSkipped: boolean
 }
 
 export type { MarketId, MorphoMarketParams }

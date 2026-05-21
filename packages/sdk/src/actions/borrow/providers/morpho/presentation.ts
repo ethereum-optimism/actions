@@ -85,7 +85,7 @@ export function adaptMorphoBorrowPosition(
 
 export function assembleMorphoBorrowQuote(args: {
   action: BorrowAction
-  config: BorrowMarketConfig
+  market: BorrowMarketConfig
   positionBefore: AccrualPosition
   positionAfter: AccrualPosition
   transactions: TransactionData[]
@@ -102,17 +102,17 @@ export function assembleMorphoBorrowQuote(args: {
     args.positionBefore.collateral > 0n || args.positionBefore.borrowShares > 0n
   return {
     marketId: {
-      kind: args.config.kind,
-      marketId: args.config.marketId,
-      chainId: args.config.chainId,
+      kind: args.market.kind,
+      marketId: args.market.marketId,
+      chainId: args.market.chainId,
     },
     action: args.action,
     borrowAmountRaw: args.echoAmounts.borrowAmountRaw,
     collateralAmountRaw: args.echoAmounts.collateralAmountRaw,
     positionBefore: hasBefore
-      ? adaptMorphoBorrowPosition(args.config, args.positionBefore)
+      ? adaptMorphoBorrowPosition(args.market, args.positionBefore)
       : null,
-    positionAfter: adaptMorphoBorrowPosition(args.config, args.positionAfter),
+    positionAfter: adaptMorphoBorrowPosition(args.market, args.positionAfter),
     fees: {
       borrowApy: morphoWadToNumber(args.positionAfter.market.borrowApy),
       liquidationBonus: liquidationBonusFromIncentive(
@@ -120,7 +120,7 @@ export function assembleMorphoBorrowQuote(args: {
       ),
     },
     safeCeilingLtv:
-      morphoWadToNumber(args.config.marketParams.lltv) *
+      morphoWadToNumber(args.market.marketParams.lltv) *
       (1 - args.healthBufferPct),
     execution: {
       transactions: args.transactions,
