@@ -77,8 +77,9 @@ export interface BorrowSettings {
    */
   approvalMode?: ApprovalMode
   /**
-   * Quote expiration in seconds from now. Defaults to 30 — tighter than swap
-   * because borrow quotes depend on two oracle prices and can drift faster.
+   * Quote expiration in seconds from now. Defaults to
+   * `DEFAULT_QUOTE_EXPIRATION_SECONDS`. Conservative window because borrow
+   * quotes depend on two oracle prices and can drift quickly.
    */
   quoteExpirationSeconds?: number
   /**
@@ -113,7 +114,7 @@ export interface SwapSettings {
   defaultSlippage?: number
   /** Maximum allowed slippage (e.g., 0.5 for 50%). Defaults to 0.5. */
   maxSlippage?: number
-  /** Quote expiration in seconds from now. Defaults to 60. */
+  /** Quote expiration in seconds from now. Defaults to `DEFAULT_QUOTE_EXPIRATION_SECONDS`. */
   quoteExpirationSeconds?: number
   /** Permit2 sub-approval expiration in seconds from now. Defaults to 2592000 (30 days). */
   permit2ExpirationSeconds?: number

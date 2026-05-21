@@ -16,6 +16,7 @@ import {
   validateBorrowWalletAddress,
 } from '@/actions/borrow/core/validations.js'
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
+import { DEFAULT_QUOTE_EXPIRATION_SECONDS } from '@/actions/shared/defaults.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
 import type {
@@ -42,7 +43,7 @@ import { validateChainSupported } from '@/utils/validation.js'
 
 /** Hardcoded fallbacks when neither provider config nor shared settings set a value. */
 const DEFAULTS = {
-  quoteExpirationSeconds: 30,
+  quoteExpirationSeconds: DEFAULT_QUOTE_EXPIRATION_SECONDS,
   healthBufferPct: 0.05,
 } as const
 
@@ -68,7 +69,7 @@ export abstract class BorrowProvider<
     super(config, chainManager, settings)
   }
 
-  /** Resolved quote expiration in seconds: provider → settings → 30. */
+  /** Resolved quote expiration in seconds: provider → settings → `DEFAULT_QUOTE_EXPIRATION_SECONDS`. */
   public get quoteExpirationSeconds(): number {
     return (
       this._config.quoteExpirationSeconds ??

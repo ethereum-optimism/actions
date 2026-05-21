@@ -2,6 +2,7 @@ import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
+import { DEFAULT_QUOTE_EXPIRATION_SECONDS } from '@/actions/shared/defaults.js'
 import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
@@ -61,7 +62,7 @@ import {
 const DEFAULTS = {
   slippage: 0.005,
   maxSlippage: 0.5,
-  quoteExpirationSeconds: 60,
+  quoteExpirationSeconds: DEFAULT_QUOTE_EXPIRATION_SECONDS,
   permit2ExpirationSeconds: 2_592_000, // 30 days
 } as const
 
@@ -104,7 +105,7 @@ export abstract class SwapProvider<
     )
   }
 
-  /** Resolved quote expiration in seconds: provider → global → 60 */
+  /** Resolved quote expiration in seconds: provider → global → `DEFAULT_QUOTE_EXPIRATION_SECONDS`. */
   get quoteExpirationSeconds(): number {
     return (
       this._config.quoteExpirationSeconds ??

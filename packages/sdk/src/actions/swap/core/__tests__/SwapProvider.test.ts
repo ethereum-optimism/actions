@@ -74,7 +74,7 @@ describe('SwapProvider', () => {
     })
 
     it('should resolve quoteExpirationSeconds: provider → settings → default', () => {
-      expect(new MockSwapProvider().quoteExpirationSeconds).toBe(60)
+      expect(new MockSwapProvider().quoteExpirationSeconds).toBe(30)
       expect(
         new MockSwapProvider({}, undefined, undefined, {
           quoteExpirationSeconds: 120,
@@ -180,7 +180,7 @@ describe('SwapProvider', () => {
         chainId: 84532 as SupportedChainId,
         walletAddress: '0x1234' as Address,
       })
-      const afterTime = Math.floor(Date.now() / 1000) + 60
+      const afterTime = Math.floor(Date.now() / 1000) + 30
 
       expect(provider.mockExecute).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -188,7 +188,7 @@ describe('SwapProvider', () => {
         }),
       )
       const call = provider.mockExecute.mock.calls[0][0]
-      expect(call.deadline).toBeGreaterThanOrEqual(beforeTime + 60)
+      expect(call.deadline).toBeGreaterThanOrEqual(beforeTime + 30)
       expect(call.deadline).toBeLessThanOrEqual(afterTime)
     })
 
