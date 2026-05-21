@@ -5,7 +5,7 @@ import {
   liquidationBonusFromIncentive,
   morphoFractionOrNull,
   morphoWadToNumber,
-} from '@/actions/shared/morpho/blue.js'
+} from '@/actions/borrow/providers/morpho/blue.js'
 import type {
   BorrowAction,
   BorrowMarket,

@@ -3,7 +3,7 @@ import type { AccrualPosition } from '@morpho-org/blue-sdk'
 import {
   buildMorphoLoanApproval,
   buildMorphoMaxLoanApproval,
-} from '@/actions/shared/morpho/blue.js'
+} from '@/actions/borrow/providers/morpho/blue.js'
 import { EmptyPositionError } from '@/core/error/errors.js'
 import type { ApprovalMode } from '@/types/actions.js'
 import type {

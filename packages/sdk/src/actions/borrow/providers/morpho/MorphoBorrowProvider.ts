@@ -2,6 +2,13 @@ import type { AccrualPosition, Market, MarketId } from '@morpho-org/blue-sdk'
 import { type Address } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
+import {
+  buildMorphoCollateralApproval,
+  encodeMorphoBorrow,
+  encodeMorphoRepay,
+  encodeMorphoSupplyCollateral,
+  encodeMorphoWithdrawCollateral,
+} from '@/actions/borrow/providers/morpho/blue.js'
 import { verifyMorphoAllowlistMarketIds } from '@/actions/borrow/providers/morpho/helpers.js'
 import {
   adaptMorphoBorrowMarket,
@@ -12,13 +19,6 @@ import {
   buildRepayApproval,
   prepareRepayLeg,
 } from '@/actions/borrow/providers/morpho/repay.js'
-import {
-  buildMorphoCollateralApproval,
-  encodeMorphoBorrow,
-  encodeMorphoRepay,
-  encodeMorphoSupplyCollateral,
-  encodeMorphoWithdrawCollateral,
-} from '@/actions/shared/morpho/blue.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
 import {
   fetchMorphoMarket,

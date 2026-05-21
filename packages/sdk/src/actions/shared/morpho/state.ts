@@ -5,7 +5,7 @@ import { type Address, erc20Abi, type Hex, type PublicClient } from 'viem'
 import {
   buildMorphoMarket,
   requireMorphoBlueAddress,
-} from '@/actions/shared/morpho/blue.js'
+} from '@/actions/borrow/providers/morpho/blue.js'
 import type { BorrowMarketConfig } from '@/types/borrow/index.js'
 
 export async function fetchMorphoMarket(
