@@ -6,12 +6,14 @@ import {
   BorrowMarketParamsMismatchError,
   ChainNotSupportedError,
   ConflictingAmountsError,
+  EmptyPositionError,
   InvalidAmountError,
   InvalidParamsError,
   MarketIdRequiredError,
   MarketNotAllowedError,
   MarketNotFoundError,
   NativeAssetAddressError,
+  ProtocolContractsNotConfiguredError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
   QuoteRecipientMismatchError,
@@ -164,6 +166,15 @@ export function mapSdkError(error: unknown): MappedSdkError | undefined {
       return {
         status: 422,
         message: 'Transaction confirmed but reverted on-chain.',
+      }
+    }
+    if (error instanceof EmptyPositionError) {
+      return { status: 422, message: 'No position to operate on.' }
+    }
+    if (error instanceof ProtocolContractsNotConfiguredError) {
+      return {
+        status: 503,
+        message: 'Protocol contracts are not configured for this chain.',
       }
     }
     return undefined

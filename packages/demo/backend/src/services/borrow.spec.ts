@@ -49,7 +49,6 @@ const mockBorrowProvider = {
   getMarket: vi.fn(),
   getMarkets: vi.fn(),
   getPosition: vi.fn(),
-  getPrice: vi.fn(),
   getQuote: vi.fn(),
 }
 
@@ -110,22 +109,26 @@ describe('Borrow Service', () => {
   })
 
   describe('getPrice', () => {
-    it('resolves marketId to a config and forwards to actions.borrow.getPrice', async () => {
-      const price = { positionAfter: {}, safeCeilingLtv: 0n } as never
-      mockBorrowProvider.getPrice.mockResolvedValue(price)
+    // SDK collapsed getPrice into getQuote in PR #3 commit 0c2b42f8; the
+    // backend service exposes `getPrice` as an alias so the controller's
+    // public /borrow/price route keeps its name, but both go through the
+    // same SDK namespace method.
+    it('forwards through actions.borrow.getQuote (price aliases quote)', async () => {
+      const quote = { positionAfter: {}, safeCeilingLtv: 0n } as never
+      mockBorrowProvider.getQuote.mockResolvedValue(quote)
       const result = await borrowService.getPrice({
         action: 'open',
         marketId: baseMarketId,
         borrowAmount: { amount: 5 },
       })
-      expect(mockBorrowProvider.getPrice).toHaveBeenCalledWith(
+      expect(mockBorrowProvider.getQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'open',
           market: expect.objectContaining({ kind: 'morpho-blue' }),
           borrowAmount: { amount: 5 },
         }),
       )
-      expect(result).toBe(price)
+      expect(result).toBe(quote)
     })
 
     it('throws MarketNotAllowedError when marketId is not in the allowlist', async () => {
@@ -139,7 +142,7 @@ describe('Borrow Service', () => {
           borrowAmount: { amount: 5 },
         }),
       ).rejects.toThrow(/Market.*not in/i)
-      expect(mockBorrowProvider.getPrice).not.toHaveBeenCalled()
+      expect(mockBorrowProvider.getQuote).not.toHaveBeenCalled()
     })
   })
 

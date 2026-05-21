@@ -6,12 +6,14 @@ import {
   BorrowMarketParamsMismatchError,
   ChainNotSupportedError,
   ConflictingAmountsError,
+  EmptyPositionError,
   InvalidAmountError,
   InvalidParamsError,
   MarketIdRequiredError,
   MarketNotAllowedError,
   MarketNotFoundError,
   NativeAssetAddressError,
+  ProtocolContractsNotConfiguredError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
   QuoteRecipientMismatchError,
@@ -194,6 +196,29 @@ describe('mapSdkError', () => {
     expect(mapSdkError(new AssetMetadataRequiredError())).toEqual({
       status: 400,
       message: 'Asset metadata is required.',
+    })
+  })
+
+  it('maps EmptyPositionError to 422', () => {
+    expect(mapSdkError(new EmptyPositionError({ operation: 'repay' }))).toEqual(
+      {
+        status: 422,
+        message: 'No position to operate on.',
+      },
+    )
+  })
+
+  it('maps ProtocolContractsNotConfiguredError to 503', () => {
+    expect(
+      mapSdkError(
+        new ProtocolContractsNotConfiguredError({
+          protocol: 'morpho',
+          chainId: 84532,
+        }),
+      ),
+    ).toEqual({
+      status: 503,
+      message: 'Protocol contracts are not configured for this chain.',
     })
   })
 

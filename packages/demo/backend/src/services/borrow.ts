@@ -5,7 +5,6 @@ import type {
   BorrowMarketConfig,
   BorrowMarketId,
   BorrowOpenPositionParams,
-  BorrowPrice,
   BorrowQuote,
   BorrowQuoteParams,
   BorrowReceipt,
@@ -145,23 +144,17 @@ function quoteParamsFromInput(
 }
 
 /**
- * Price preview for a borrow action: positionAfter + fees + safe ceiling LTV,
- * no calldata. Resolves `marketId` to a `BorrowMarketConfig` server-side.
+ * Build a `BorrowQuote` (positionAfter + fees + safeCeilingLtv + execution)
+ * for any of the five borrow actions. Resolves `marketId` to a
+ * `BorrowMarketConfig` server-side and forwards to `actions.borrow.getQuote`.
+ *
+ * Used by both `/borrow/price` (public preview path) and `/borrow/quote`
+ * (auth-gated, recipient-bound path). The SDK collapsed the earlier
+ * `getPrice` / `getQuote` split into a single namespace method in PR #3
+ * (commit `0c2b42f8`); price preview just ignores the `execution` bundle.
+ *
  * Throws `MarketNotAllowedError` when the market is not in the backend
- * allowlist; SDK errors propagate.
- */
-export async function getPrice(
-  input: BorrowQuoteServiceInput,
-): Promise<BorrowPrice> {
-  const actions = getActions()
-  return await actions.borrow.getPrice(quoteParamsFromInput(input))
-}
-
-/**
- * Recipient-bound quote for a borrow action with pre-built calldata.
- * `walletAddress` must be the authenticated wallet (set by the controller).
- * Throws `MarketNotAllowedError` for disallowed markets; SDK errors
- * propagate via the borrow-scoped `app.onError` + `mapSdkError`.
+ * allowlist; SDK errors propagate via `app.onError` + `mapSdkError`.
  */
 export async function getQuote(
   input: BorrowQuoteServiceInput,
@@ -169,6 +162,13 @@ export async function getQuote(
   const actions = getActions()
   return await actions.borrow.getQuote(quoteParamsFromInput(input))
 }
+
+/**
+ * @deprecated Use `getQuote`. The SDK consolidated the price / quote
+ * surface into a single namespace method. Kept as a name-equivalent
+ * alias so the controller's `/borrow/price` handler reads cleanly.
+ */
+export const getPrice = getQuote
 
 // ---------- Mutations ----------
 
