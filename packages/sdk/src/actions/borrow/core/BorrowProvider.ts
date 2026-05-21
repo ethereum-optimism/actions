@@ -1,8 +1,4 @@
-import {
-  filterBorrowMarketConfigs,
-  validateBorrowMarketAllowed,
-  validateBorrowMarketIdAllowed,
-} from '@/actions/borrow/core/helpers.js'
+import { filterBorrowMarketConfigs } from '@/actions/borrow/core/helpers.js'
 import {
   buildClosePositionInternalParams,
   buildDepositCollateralInternalParams,
@@ -11,8 +7,12 @@ import {
   buildResolvedBorrowBaseParams,
   buildWithdrawCollateralInternalParams,
 } from '@/actions/borrow/core/internalParams.js'
+import {
+  validateBorrowMarketAllowed,
+  validateBorrowMarketIdAllowed,
+  validateBorrowWalletAddress,
+} from '@/actions/borrow/core/validations.js'
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
-import { AddressRequiredError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
 import type {
@@ -35,10 +35,7 @@ import type {
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
-import {
-  validateChainSupported,
-  validateNotZeroAddress,
-} from '@/utils/validation.js'
+import { validateChainSupported } from '@/utils/validation.js'
 
 /** Hardcoded fallbacks when neither provider config nor shared settings set a value. */
 const DEFAULTS = {
@@ -159,10 +156,7 @@ export abstract class BorrowProvider<
   public async getPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
-    if (!params.walletAddress) {
-      throw new AddressRequiredError('walletAddress')
-    }
-    validateNotZeroAddress(params.walletAddress, 'walletAddress')
+    validateBorrowWalletAddress(params.walletAddress)
     validateChainSupported(params.marketId.chainId, this.supportedChainIds())
     this.validateMarketIdAllowed(params.marketId)
     return this._getPosition(params)
@@ -211,10 +205,7 @@ export abstract class BorrowProvider<
    * (walletAddress, recipient, approvalMode, market support).
    */
   private normalizeBaseParams(params: BorrowOpenPositionBaseParams) {
-    if (!params.walletAddress) {
-      throw new AddressRequiredError('walletAddress')
-    }
-    validateNotZeroAddress(params.walletAddress, 'walletAddress')
+    validateBorrowWalletAddress(params.walletAddress)
     this.validateConfigSupported(params.market)
     return buildResolvedBorrowBaseParams(
       params.walletAddress,

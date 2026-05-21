@@ -1,12 +1,11 @@
-import { findBorrowMarketInAllowlist } from '@/actions/borrow/core/markets.js'
+import {
+  validateBorrowMarketIdInAnyAllowlist,
+  validateQuoteAction,
+  validateQuoteNotExpired,
+} from '@/actions/borrow/core/validations.js'
 import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
 import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import {
-  InvalidParamsError,
-  ProviderNotConfiguredError,
-  QuoteExpiredError,
-} from '@/core/error/errors.js'
 import type {
   BorrowClosePositionParams,
   BorrowDepositCollateralParams,
@@ -131,41 +130,11 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     quote: BorrowQuote,
     expectedAction: BorrowQuote['action'],
   ): BorrowQuote {
-    if (quote.action !== expectedAction) {
-      throw new InvalidParamsError({
-        param: 'quote.action',
-        expected: expectedAction,
-        received: quote.action,
-      })
-    }
-    const now = Math.floor(Date.now() / 1000)
-    if (now >= quote.expiresAt) {
-      throw new QuoteExpiredError({
-        expiresAt: quote.expiresAt,
-        currentTime: now,
-      })
-    }
+    validateQuoteAction(quote, expectedAction)
+    validateQuoteNotExpired(quote)
     validateChainSupported(quote.marketId.chainId, this.supportedChainIds())
-    this.requireAllowlistedQuoteMarket(quote.marketId)
+    validateBorrowMarketIdInAnyAllowlist(quote.marketId, this.getAllProviders())
     return quote
-  }
-
-  private requireAllowlistedQuoteMarket(
-    marketId: BorrowQuote['marketId'],
-  ): void {
-    const hit = this.getAllProviders().some(
-      (provider) =>
-        !!findBorrowMarketInAllowlist(
-          provider.config.marketAllowlist,
-          marketId,
-        ),
-    )
-    if (!hit) {
-      throw new ProviderNotConfiguredError({
-        provider: marketId.marketId,
-        details: `No borrow provider configured for market on chain ${marketId.chainId}`,
-      })
-    }
   }
 
   /**
