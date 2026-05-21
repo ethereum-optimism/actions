@@ -121,7 +121,7 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('MorphoBorrowProvider — constructor', () => {
+describe('MorphoBorrowProvider - constructor', () => {
   it('accepts a consistent (marketId, marketParams) pair', () => {
     const cm = makeChainManagerWithMulticall(async () => [])
     expect(
@@ -142,7 +142,7 @@ describe('MorphoBorrowProvider — constructor', () => {
   })
 })
 
-describe('MorphoBorrowProvider — _getMarket', () => {
+describe('MorphoBorrowProvider. _getMarket', () => {
   it('throws MarketNotAllowedError when marketId is not in the allowlist', async () => {
     const cm = makeChainManagerWithMulticall(async () => [])
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
@@ -200,7 +200,7 @@ describe('MorphoBorrowProvider — _getMarket', () => {
   })
 })
 
-describe('MorphoBorrowProvider — _getPosition', () => {
+describe('MorphoBorrowProvider. _getPosition', () => {
   const collateralWad = 100_000_000_000_000_000_000n // 100 dUSDC
   // borrowShares are virtually equal to assets when no interest has accrued.
   const borrowShares = 50_000_000_000_000_000_000n
@@ -262,7 +262,7 @@ function stateMulticallResult(
   ]
 }
 
-describe('MorphoBorrowProvider — depositCollateral', () => {
+describe('MorphoBorrowProvider - depositCollateral', () => {
   it('builds [approve, supplyCollateral] when no allowance is set', async () => {
     const cm = makeChainManagerWithMulticall(async () => stateMulticallResult())
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
@@ -342,7 +342,7 @@ describe('MorphoBorrowProvider — depositCollateral', () => {
   })
 })
 
-describe('MorphoBorrowProvider — withdrawCollateral', () => {
+describe('MorphoBorrowProvider - withdrawCollateral', () => {
   it('encodes a single tx with the requested amount', async () => {
     const cm = makeChainManagerWithMulticall(async () => [
       positionTuple({ collateral: oneEth * 5n }),
@@ -393,7 +393,7 @@ describe('MorphoBorrowProvider — withdrawCollateral', () => {
   })
 })
 
-describe('MorphoBorrowProvider — repay', () => {
+describe('MorphoBorrowProvider - repay', () => {
   it('switches to shares-based repay when amount is `{ max: true }`', async () => {
     const cm = makeChainManagerWithMulticall(async () =>
       stateMulticallResult({
@@ -468,7 +468,7 @@ describe('MorphoBorrowProvider — repay', () => {
   })
 })
 
-describe('MorphoBorrowProvider — openPosition', () => {
+describe('MorphoBorrowProvider - openPosition', () => {
   it('emits [approve, supplyCollateral, borrow] for a fresh position', async () => {
     const cm = makeChainManagerWithMulticall(async () => stateMulticallResult())
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
@@ -505,7 +505,7 @@ describe('MorphoBorrowProvider — openPosition', () => {
   })
 })
 
-describe('MorphoBorrowProvider — closePosition', () => {
+describe('MorphoBorrowProvider - closePosition', () => {
   it('builds [approve?, repay(max), withdrawCollateral(max)] when both are max', async () => {
     const cm = makeChainManagerWithMulticall(async () =>
       stateMulticallResult({

@@ -9,7 +9,7 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
  * Smoke test for the action-module registry pattern.
  *
  * Validates that the `ActionModule` contract is sufficient for a brand-new
- * action — a contributor only needs to define a module object with
+ * action. A contributor only needs to define a module object with
  * `buildProviders` / `isConfigured` / `buildActionsNamespace` /
  * `buildWalletNamespace`. The host classes (`Actions`, `Wallet`) iterate the
  * registry and dispatch through these hooks; no edits to hosted wallets,

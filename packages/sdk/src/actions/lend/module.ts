@@ -5,7 +5,7 @@ import type { ActionModule } from '@/actions/shared/ActionModule.js'
 import type { LendProviders } from '@/types/providers.js'
 
 /**
- * Lend action module — bridges the existing lend class graph to the
+ * Lend action module: bridges the existing lend class graph to the
  * generic `ActionModule` contract so `Actions` and `Wallet` can iterate
  * actions uniformly.
  */

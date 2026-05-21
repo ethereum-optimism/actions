@@ -358,7 +358,7 @@ export class QuoteRecipientMissingError extends ActionsError {
   override name = 'QuoteRecipientMissingError' as const
 
   constructor() {
-    super('Quote.recipient missing — _getQuote must populate it')
+    super('Quote.recipient missing. _getQuote must populate it')
   }
 }
 

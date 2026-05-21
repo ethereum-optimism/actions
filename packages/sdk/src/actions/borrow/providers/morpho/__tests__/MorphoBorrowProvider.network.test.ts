@@ -249,7 +249,7 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
       { marketAllowlist: [market] },
       chainManager,
     )
-    // Anvil's first prefunded account — guaranteed to have no Morpho position
+    // Anvil's first prefunded account, guaranteed to have no Morpho position
     // on a fresh fork.
     const freshWallet =
       '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as const satisfies Address

@@ -94,7 +94,7 @@ export class Actions<
 
     // Iterate the action-module registry: each module builds its own
     // providers + namespace from its config block. Adding a new action is
-    // a new entry in `ACTION_MODULES` — this loop doesn't change.
+    // a new entry in `ACTION_MODULES`; this loop doesn't change.
     const moduleDeps = {
       chainManager: this.chainManager,
       ens: this._ens,

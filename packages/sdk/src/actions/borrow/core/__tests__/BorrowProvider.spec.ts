@@ -219,7 +219,7 @@ function makeProvider(
   return new TestProvider(config, chainManager, settings)
 }
 
-describe('BorrowProvider — settings resolution', () => {
+describe('BorrowProvider - settings resolution', () => {
   it('defaults quoteExpirationSeconds to 30', () => {
     const provider = makeProvider()
     expect(provider.quoteExpirationSeconds).toBe(30)
@@ -247,7 +247,7 @@ describe('BorrowProvider — settings resolution', () => {
   })
 })
 
-describe('BorrowProvider — chain support', () => {
+describe('BorrowProvider - chain support', () => {
   it('intersects protocol chains with configured chains', () => {
     const provider = makeProvider()
     expect(provider.supportedChainIds()).toEqual([BASE_SEPOLIA_ID])
@@ -256,7 +256,7 @@ describe('BorrowProvider — chain support', () => {
   })
 })
 
-describe('BorrowProvider — openPosition', () => {
+describe('BorrowProvider - openPosition', () => {
   it('throws when walletAddress is missing', async () => {
     const provider = makeProvider()
     await expect(
@@ -330,7 +330,7 @@ describe('BorrowProvider — openPosition', () => {
   })
 })
 
-describe('BorrowProvider — closePosition', () => {
+describe('BorrowProvider - closePosition', () => {
   it('rejects the zero walletAddress', async () => {
     const provider = makeProvider()
     await expect(
@@ -371,7 +371,7 @@ describe('BorrowProvider — closePosition', () => {
   })
 })
 
-describe('BorrowProvider — single-amount actions', () => {
+describe('BorrowProvider - single-amount actions', () => {
   it('depositCollateral rejects the zero walletAddress', async () => {
     const provider = makeProvider()
     await expect(
@@ -440,7 +440,7 @@ describe('BorrowProvider — single-amount actions', () => {
   })
 })
 
-describe('BorrowProvider — getMarket / getMarkets / getPosition', () => {
+describe('BorrowProvider - getMarket / getMarkets / getPosition', () => {
   let provider: TestProvider
 
   beforeEach(() => {
@@ -526,7 +526,7 @@ describe('BorrowProvider — getMarket / getMarkets / getPosition', () => {
   })
 })
 
-describe('BorrowProvider — approval mode resolution', () => {
+describe('BorrowProvider - approval mode resolution', () => {
   it('per-call > provider > settings > exact', () => {
     const provider = makeProvider(
       { marketAllowlist: [market], approvalMode: 'max' },

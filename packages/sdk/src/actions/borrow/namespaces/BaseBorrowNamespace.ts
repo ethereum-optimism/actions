@@ -79,8 +79,8 @@ export abstract class BaseBorrowNamespace extends BaseNamespace<
   /**
    * Pick the provider whose allowlist contains this market.
    * @description Falls back to discriminator routing (Morpho-Blue → morpho)
-   * when no allowlist hit is found — useful in tests where providers were
-   * spun up without explicit allowlists. Throws if no provider is registered
+   * when no allowlist hit is found (useful in tests where providers were
+   * spun up without explicit allowlists). Throws if no provider is registered
    * for the market's protocol.
    */
   protected getProviderForMarket(

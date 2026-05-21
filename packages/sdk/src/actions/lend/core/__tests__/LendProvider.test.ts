@@ -211,7 +211,7 @@ describe('LendProvider', () => {
     const EXACT_AMOUNT_HEX = '3b9aca00'
     const MAX_UINT256_HEX = 'f'.repeat(64)
 
-    it('defaults to "exact" — approval encodes the required amount', async () => {
+    it('defaults to "exact". approval encodes the required amount', async () => {
       const provider = new MockLendProvider()
       const result = await callBaseOpenPosition(provider, baseParams)
       expect(approvalAmountHex(result).replace(/^0+/, '')).toBe(
@@ -219,7 +219,7 @@ describe('LendProvider', () => {
       )
     })
 
-    it('honours per-call "max" override — approval uses maxUint256', async () => {
+    it('honours per-call "max" override. approval uses maxUint256', async () => {
       const provider = new MockLendProvider()
       const result = await callBaseOpenPosition(provider, {
         ...baseParams,

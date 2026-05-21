@@ -104,7 +104,7 @@ export abstract class Wallet {
   public abstract readonly signer: LocalAccount
 
   /**
-   * Create a new wallet (options form — preferred).
+   * Create a new wallet (options form, preferred).
    *
    * Subclasses still on the legacy positional argument list keep working
    * via the second overload below; the legacy form is removed once every
@@ -163,7 +163,7 @@ export abstract class Wallet {
     }
 
     for (const name of ACTION_NAMES) {
-      // Generic narrowing across the loop requires per-step casting — the
+      // Generic narrowing across the loop requires per-step casting; the
       // discrimination over `ActionModules[K]` happens correctly inside each
       // module's own type. Confining the casts here keeps the wallet body
       // clean.
@@ -291,7 +291,7 @@ export abstract class Wallet {
  * namespace type produced by `ACTION_MODULES[name].buildWalletNamespace`,
  * so this helper holds the one necessary cast. Adding a new action to
  * `ActionModules` only requires declaring the corresponding `name?: T`
- * field on `Wallet` — the assignment site stays generic.
+ * field on `Wallet`; the assignment site stays generic.
  */
 function assignWalletNamespace(
   wallet: Wallet,

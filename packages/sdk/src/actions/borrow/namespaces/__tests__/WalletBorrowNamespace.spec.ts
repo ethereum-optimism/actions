@@ -149,7 +149,7 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('WalletBorrowNamespace — quote dispatch', () => {
+describe('WalletBorrowNamespace - quote dispatch', () => {
   it('dispatches a valid pre-built quote via wallet.send', async () => {
     const { wallet, mocks } = makeWallet()
     const namespace = new WalletBorrowNamespace(
@@ -210,7 +210,7 @@ describe('WalletBorrowNamespace — quote dispatch', () => {
   })
 })
 
-describe('WalletBorrowNamespace — quote validation', () => {
+describe('WalletBorrowNamespace - quote validation', () => {
   it('throws QuoteExpiredError when the quote has expired', async () => {
     const { wallet } = makeWallet()
     const namespace = new WalletBorrowNamespace(
@@ -276,7 +276,7 @@ describe('WalletBorrowNamespace — quote validation', () => {
   })
 })
 
-describe('WalletBorrowNamespace — re-quote', () => {
+describe('WalletBorrowNamespace - re-quote', () => {
   it('re-quotes raw params through the underlying provider', async () => {
     const { wallet } = makeWallet()
     const provider = makeProvider()
@@ -339,7 +339,7 @@ describe('WalletBorrowNamespace — re-quote', () => {
   })
 })
 
-describe('WalletBorrowNamespace — receipt envelope hashes', () => {
+describe('WalletBorrowNamespace - receipt envelope hashes', () => {
   it('surfaces transactionHash for a single EOA tx', async () => {
     const { wallet } = makeWallet()
     const namespace = new WalletBorrowNamespace(
@@ -381,7 +381,7 @@ describe('WalletBorrowNamespace — receipt envelope hashes', () => {
   })
 })
 
-describe('WalletBorrowNamespace — provider resolution failure', () => {
+describe('WalletBorrowNamespace - provider resolution failure', () => {
   it('throws when no borrow provider is configured', async () => {
     const { wallet } = makeWallet()
     const namespace = new WalletBorrowNamespace({}, wallet)

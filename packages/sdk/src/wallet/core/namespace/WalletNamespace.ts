@@ -60,7 +60,7 @@ type ToActionsWalletParam<
 /**
  * Wallet namespace that provides unified wallet operations
  * @description Provides access to wallet functionality through a single provider interface.
- * Supports lazy initialization — the wallet provider is created on first method call,
+ * Supports lazy initialization: the wallet provider is created on first method call,
  * enabling tree-shaking of unused wallet provider dependencies.
  */
 export class WalletNamespace<

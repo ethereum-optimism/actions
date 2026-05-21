@@ -19,7 +19,7 @@ const MARKET_PARAMS_ABI = [
 /**
  * Compute the canonical Morpho Blue market id for a set of `MarketParams`.
  * @description Equivalent to `keccak256(abi.encode(MarketParams))` from
- * Morpho Blue's Solidity code. Pure function — safe to call at config time,
+ * Morpho Blue's Solidity code. Pure function, safe to call at config time,
  * during tests, or as a sanity check at provider construction.
  * @param params - Morpho Blue market parameters
  * @returns The market id as a `0x`-prefixed 32-byte hex string

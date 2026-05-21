@@ -123,8 +123,8 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
    * matches the dispatch method, the quote has not expired, the chain is
    * supported by this wallet namespace, and the market id is present in a
    * configured provider allowlist. Borrow quotes don't carry a per-call
-   * recipient — the underlying calldata always routes to the borrowing
-   * wallet — so no recipient binding check is needed.
+   * recipient (the underlying calldata always routes to the borrowing
+   * wallet), so no recipient binding check is needed.
    */
   private validateQuoteForThisWallet(
     quote: BorrowQuote,

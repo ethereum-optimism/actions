@@ -219,6 +219,14 @@ export function buildMorphoMaxLoanApproval(
   )
 }
 
+/**
+ * Convert a WAD-scaled bigint to a JS number.
+ * @description WAD = `1e18`, the DeFi convention (originated at MakerDAO)
+ * for fixed-point math at 18 decimals. Morpho stores percentages, rates,
+ * and prices as WAD-scaled bigints: `1e18` = `1.0`, `5e16` = `0.05` (5%),
+ * `8.6e17` = `0.86` (86% LTV). This helper divides by `1e18` to recover
+ * the JS-number representation.
+ */
 export function morphoWadToNumber(value: bigint): number {
   return Number(value) / Number(10n ** 18n)
 }

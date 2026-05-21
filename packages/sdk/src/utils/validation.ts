@@ -93,7 +93,7 @@ export function resolveSupportedChainIds(
 }
 
 /**
- * Guard for `BalanceFetchOptions` — verifies a caller-supplied `chainIds` filter is non-empty and each id is a member of `chainManager.getSupportedChains()`. No-op when `chainIds` is omitted.
+ * Guard for `BalanceFetchOptions`. Verifies a caller-supplied `chainIds` filter is non-empty and each id is a member of `chainManager.getSupportedChains()`. No-op when `chainIds` is omitted.
  * @throws InvalidParamsError when `chainIds` is `[]`.
  * @throws ChainNotSupportedError when any id is not configured on the manager.
  */
@@ -124,7 +124,7 @@ export function validateAssetOnChain(
 
 /**
  * Validate that a resolved recipient address is not the zero address.
- * ENS names are skipped — only resolved `Address` values are checked.
+ * ENS names are skipped; only resolved `Address` values are checked.
  */
 export function validateRecipient(recipient: string | undefined): void {
   if (recipient && isAddress(recipient)) {

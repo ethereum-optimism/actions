@@ -41,15 +41,15 @@ export abstract class HostedWalletProvider<
   protected actionSettings: ActionSettingsMap
   protected supportedAssets?: Asset[]
 
-  /** Legacy mirror — derived from `actionProviders.lend`. */
+  /** Legacy mirror. derived from `actionProviders.lend`. */
   protected get lendProviders(): LendProviders {
     return (this.actionProviders.lend ?? {}) as LendProviders
   }
-  /** Legacy mirror — derived from `actionProviders.swap`. */
+  /** Legacy mirror. derived from `actionProviders.swap`. */
   protected get swapProviders(): SwapProviders {
     return (this.actionProviders.swap ?? {}) as SwapProviders
   }
-  /** Legacy mirror — derived from `actionProviders.borrow`. */
+  /** Legacy mirror. derived from `actionProviders.borrow`. */
   protected get borrowProviders(): BorrowProviders {
     return (this.actionProviders.borrow ?? {}) as BorrowProviders
   }

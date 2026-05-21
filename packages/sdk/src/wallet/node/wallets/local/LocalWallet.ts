@@ -10,7 +10,7 @@ interface LocalWalletCreateOptions extends BaseWalletCreateOptions {
 /**
  * Local wallet implementation
  * @description Wallet backed by a viem LocalAccount provided by the developer.
- * The SDK never handles raw private key material — the developer creates the
+ * The SDK never handles raw private key material; the developer creates the
  * LocalAccount themselves (e.g. via privateKeyToAccount) and passes it in.
  */
 export class LocalWallet extends EOAWallet {

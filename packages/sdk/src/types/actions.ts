@@ -54,7 +54,7 @@ export interface LendSettings {
 }
 
 /**
- * Lending configuration — at least one provider must be configured.
+ * Lending configuration: at least one provider must be configured.
  * Shared settings go in `settings`; per-provider settings go under the provider key.
  */
 export type LendConfig = RequireAtLeastOne<{
@@ -91,7 +91,7 @@ export interface BorrowSettings {
 }
 
 /**
- * Borrow configuration — at least one provider must be configured.
+ * Borrow configuration: at least one provider must be configured.
  * Shared settings go in `settings`; per-provider settings go under the provider key.
  */
 export type BorrowConfig = RequireAtLeastOne<{
@@ -135,7 +135,7 @@ export interface SwapSettings {
 }
 
 /**
- * Swap configuration — at least one provider must be configured.
+ * Swap configuration: at least one provider must be configured.
  * Shared settings go in `config`; per-provider settings go under the provider key.
  */
 export type SwapConfig = RequireAtLeastOne<{
@@ -163,7 +163,7 @@ export interface LendNetworkConfig {
  * or define your own Asset objects.
  */
 export interface AssetsConfig {
-  /** Allowlist of assets to support. No default — developers must explicitly configure. */
+  /** Allowlist of assets to support. No default. developers must explicitly configure. */
   allow?: Asset[]
   /** Blocklist of assets to exclude from the allow list. Only effective when allow is also set. For future use with runtime asset fetching. */
   block?: Asset[]
@@ -174,7 +174,7 @@ export interface AssetsConfig {
  * @description Immutable bundle of resolved providers and services that the
  * Actions SDK threads through its internal namespaces. Consumers that need
  * provider references should receive an `ActionsContext` rather than a raw
- * `ActionsConfig` — the providers in the context are already constructed and
+ * `ActionsConfig`. The providers in the context are already constructed and
  * hold their own per-provider configuration (market allowlists, slippage
  * defaults, etc.).
  */

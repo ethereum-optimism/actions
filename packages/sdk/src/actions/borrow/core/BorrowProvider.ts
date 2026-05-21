@@ -203,8 +203,8 @@ export abstract class BorrowProvider<
   /**
    * Validate the cross-cutting fields every write action shares and
    * resolve a *trusted* `BorrowMarketConfig` from the allowlist by
-   * `marketId`. Returning the allowlisted config — rather than trusting
-   * `params.market.marketParams` — prevents a caller from tampering with
+   * `marketId`. Returning the allowlisted config (rather than trusting
+   * `params.market.marketParams`) prevents a caller from tampering with
    * the on-chain market identity (e.g. swapping `marketParams.loanToken`
    * for an attacker token while keeping a legitimate `marketId`).
    */
@@ -226,7 +226,7 @@ export abstract class BorrowProvider<
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Abstract action hooks — implemented per protocol
+  // Abstract action hooks (implemented per protocol)
   // ─────────────────────────────────────────────────────────────────────────
 
   protected abstract _openPosition(
