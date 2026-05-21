@@ -180,7 +180,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
-      echoAmounts: {
+      quoteAmounts: {
         borrowAmountRaw: params.borrowAmountWei,
         collateralAmountRaw: params.collateralAmountWei,
       },
@@ -243,7 +243,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
-      echoAmounts: {
+      quoteAmounts: {
         borrowAmountRaw:
           repay.repaySharesWei > 0n
             ? current.borrowAssets
@@ -288,7 +288,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
-      echoAmounts: { collateralAmountRaw: params.amountWei },
+      quoteAmounts: { collateralAmountRaw: params.amountWei },
       approvalsSkipped: approvalTx === undefined,
     })
   }
@@ -322,7 +322,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       positionBefore: current,
       positionAfter: after,
       transactions: [tx],
-      echoAmounts: { collateralAmountRaw: amountWei },
+      quoteAmounts: { collateralAmountRaw: amountWei },
       // No approval ever required for withdrawals.
       approvalsSkipped: true,
     })
@@ -362,7 +362,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       positionBefore: current,
       positionAfter: repay.after,
       transactions: txs,
-      echoAmounts: {
+      quoteAmounts: {
         borrowAmountRaw:
           repay.repaySharesWei > 0n
             ? current.borrowAssets
@@ -421,7 +421,7 @@ interface AssembleMorphoQuoteArgs {
   positionBefore: AccrualPosition
   positionAfter: AccrualPosition
   transactions: TransactionData[]
-  echoAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
+  quoteAmounts: { borrowAmountRaw?: bigint; collateralAmountRaw?: bigint }
   approvalsSkipped: boolean
 }
 

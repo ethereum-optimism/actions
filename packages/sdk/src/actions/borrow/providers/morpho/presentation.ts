@@ -89,7 +89,7 @@ export function assembleMorphoBorrowQuote(args: {
   positionBefore: AccrualPosition
   positionAfter: AccrualPosition
   transactions: TransactionData[]
-  echoAmounts: {
+  quoteAmounts: {
     borrowAmountRaw?: bigint
     collateralAmountRaw?: bigint
   }
@@ -107,8 +107,8 @@ export function assembleMorphoBorrowQuote(args: {
       chainId: args.market.chainId,
     },
     action: args.action,
-    borrowAmountRaw: args.echoAmounts.borrowAmountRaw,
-    collateralAmountRaw: args.echoAmounts.collateralAmountRaw,
+    borrowAmountRaw: args.quoteAmounts.borrowAmountRaw,
+    collateralAmountRaw: args.quoteAmounts.collateralAmountRaw,
     positionBefore: hasBefore
       ? adaptMorphoBorrowPosition(args.market, args.positionBefore)
       : null,
