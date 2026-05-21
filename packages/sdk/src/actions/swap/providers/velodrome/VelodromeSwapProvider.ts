@@ -226,10 +226,10 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
       return { tokenApproval: undefined }
     }
 
-    const tokenApproval = buildErc20ApprovalTx(
+    const tokenApproval = buildErc20ApprovalTx({
       token,
       spender,
-      resolveErc20ApprovalAmount(
+      amount: resolveErc20ApprovalAmount(
         resolveApprovalMode(
           quote.approvalMode,
           this._config.approvalMode,
@@ -237,7 +237,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
         ),
         required,
       ),
-    )
+    })
     return { tokenApproval }
   }
 

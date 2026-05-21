@@ -274,7 +274,7 @@ export abstract class LendProvider<
     spender: Address,
     amount: bigint,
   ): TransactionData {
-    return buildErc20ApprovalTx(tokenAddress, spender, amount)
+    return buildErc20ApprovalTx({ token: tokenAddress, spender, amount })
   }
 
   /**
@@ -289,11 +289,11 @@ export abstract class LendProvider<
         `LendOpenPosition.spender is required for ERC-20 deposits (assetAddress: ${position.assetAddress})`,
       )
     }
-    return buildErc20ApprovalTx(
-      position.assetAddress,
-      position.spender,
-      resolveErc20ApprovalAmount(approvalMode, amountWei),
-    )
+    return buildErc20ApprovalTx({
+      token: position.assetAddress,
+      spender: position.spender,
+      amount: resolveErc20ApprovalAmount(approvalMode, amountWei),
+    })
   }
 
   /**

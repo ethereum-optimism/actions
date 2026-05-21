@@ -57,7 +57,7 @@ export function buildTokenApprovalTx(
   permit2Address: Address,
   amount: bigint,
 ): TransactionData {
-  return buildErc20ApprovalTx(token, permit2Address, amount)
+  return buildErc20ApprovalTx({ token, spender: permit2Address, amount })
 }
 
 /**
@@ -155,17 +155,17 @@ export async function checkTokenAllowance(params: {
  * @param amount - Amount to approve
  * @returns Transaction data for the approval
  */
-export function buildErc20ApprovalTx(
-  token: Address,
-  spender: Address,
-  amount: bigint,
-): TransactionData {
+export function buildErc20ApprovalTx(params: {
+  token: Address
+  spender: Address
+  amount: bigint
+}): TransactionData {
   return {
-    to: token,
+    to: params.token,
     data: encodeFunctionData({
       abi: erc20Abi,
       functionName: 'approve',
-      args: [spender, amount],
+      args: [params.spender, params.amount],
     }),
     value: 0n,
   }
@@ -203,6 +203,10 @@ export async function buildApprovalTxIfNeeded(params: {
 }): Promise<TransactionData | undefined> {
   const deficit = await getApprovalDeficit(params)
   return deficit > 0n
-    ? buildErc20ApprovalTx(params.token, params.spender, deficit)
+    ? buildErc20ApprovalTx({
+        token: params.token,
+        spender: params.spender,
+        amount: deficit,
+      })
     : undefined
 }

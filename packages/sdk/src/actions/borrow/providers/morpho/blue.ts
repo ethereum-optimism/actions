@@ -137,11 +137,11 @@ export function buildMorphoCollateralApproval(
   if (amountWei === undefined || amountWei === 0n) return undefined
   if (currentAllowance >= amountWei) return undefined
   const spender = requireMorphoBlueAddress(config.chainId)
-  return buildErc20ApprovalTx(
-    config.marketParams.collateralToken,
+  return buildErc20ApprovalTx({
+    token: config.marketParams.collateralToken,
     spender,
-    resolveErc20ApprovalAmount(mode, amountWei),
-  )
+    amount: resolveErc20ApprovalAmount(mode, amountWei),
+  })
 }
 
 export function buildMorphoLoanApproval(
@@ -153,11 +153,11 @@ export function buildMorphoLoanApproval(
   if (amountWei === 0n) return undefined
   if (currentAllowance >= amountWei) return undefined
   const spender = requireMorphoBlueAddress(config.chainId)
-  return buildErc20ApprovalTx(
-    config.marketParams.loanToken,
+  return buildErc20ApprovalTx({
+    token: config.marketParams.loanToken,
     spender,
-    resolveErc20ApprovalAmount(mode, amountWei),
-  )
+    amount: resolveErc20ApprovalAmount(mode, amountWei),
+  })
 }
 
 export function buildMorphoMaxLoanApproval(
@@ -166,11 +166,11 @@ export function buildMorphoMaxLoanApproval(
 ): TransactionData | undefined {
   if (currentAllowance === maxUint256) return undefined
   const spender = requireMorphoBlueAddress(config.chainId)
-  return buildErc20ApprovalTx(
-    config.marketParams.loanToken,
+  return buildErc20ApprovalTx({
+    token: config.marketParams.loanToken,
     spender,
-    maxUint256,
-  )
+    amount: maxUint256,
+  })
 }
 
 /**

@@ -179,7 +179,11 @@ describe('buildPermit2ApprovalTx', () => {
 
 describe('buildErc20ApprovalTx', () => {
   it('builds approval for exact amount', () => {
-    const tx = buildErc20ApprovalTx(TOKEN, SPENDER, 500000n)
+    const tx = buildErc20ApprovalTx({
+      token: TOKEN,
+      spender: SPENDER,
+      amount: 500000n,
+    })
 
     expect(tx.to).toBe(TOKEN)
     expect(tx.value).toBe(0n)
