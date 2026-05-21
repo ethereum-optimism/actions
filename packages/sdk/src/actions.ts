@@ -103,11 +103,11 @@ export class Actions<
   }
 
   /**
-   * Build providers and (optionally) the read-only namespace for a single
-   * action module. Indexing `ACTION_MODULES`, `config`, and the SDK state
-   * maps in lockstep relies on a runtime invariant TypeScript can't verify
-   * across the union of action names, so the casts confine the
-   * discrimination to this one site (same pattern as `Wallet.attachActionNamespaces`).
+   * Build providers and (optionally) the read-only namespace for one action
+   * module. Generic over `K` so the per-action types unify; the slot-write
+   * casts are the one place TS can't follow the registry indirection.
+   * Adding a future action is purely a new entry in `ACTION_MODULES` plus
+   * any user-facing config field — this helper handles the rest.
    */
   private setupAction<K extends ActionName>(
     name: K,

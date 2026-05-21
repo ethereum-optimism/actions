@@ -91,6 +91,10 @@ export abstract class Wallet {
       supportedAssets: this.supportedAssets,
     }
 
+    // One pass over the action registry attaches every configured
+    // `wallet.<name>` namespace. Adding a future action (e.g. stake,
+    // bridge, perp) is purely a registry entry — this loop, `Wallet`'s
+    // shape, and every consumer of it stay unchanged.
     for (const name of ACTION_NAMES) {
       attachWalletNamespace(this, name, moduleDeps)
     }
@@ -195,10 +199,10 @@ export abstract class Wallet {
 
 /**
  * Build and attach the `wallet.<name>` namespace for one action. Generic
- * over `K` so the module's per-action types unify internally; the single
- * cast at the call site is unavoidable when iterating a union of
- * `ActionModule<K>` keyed by a `K`-valued variable. Adding a new action
- * only requires declaring the corresponding `name?: T` field on `Wallet`.
+ * over `K` so each module's per-action types unify internally; the lone
+ * cast at the slot write is the one place TS can't follow the registry
+ * indirection. Adding a future action only requires declaring its
+ * `name?: T` field on `Wallet` — this helper handles the rest.
  */
 function attachWalletNamespace<K extends ActionName>(
   wallet: Wallet,
