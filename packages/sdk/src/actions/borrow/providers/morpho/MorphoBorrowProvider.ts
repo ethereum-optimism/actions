@@ -19,12 +19,12 @@ import {
   buildRepayApproval,
   prepareRepayLeg,
 } from '@/actions/borrow/providers/morpho/repay.js'
-import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
 import {
   fetchMorphoMarket,
   fetchMorphoPosition,
   fetchMorphoStateWithAllowance,
-} from '@/actions/shared/morpho/state.js'
+} from '@/actions/borrow/providers/morpho/state.js'
+import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
 import { EmptyPositionError } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
