@@ -227,7 +227,7 @@ export class VelodromeSwapProvider extends SwapProvider<VelodromeSwapProviderCon
     }
 
     const tokenApproval = buildErc20ApprovalTx({
-      token,
+      assetAddress: token,
       spender,
       amount: resolveErc20ApprovalAmount(
         resolveApprovalMode(

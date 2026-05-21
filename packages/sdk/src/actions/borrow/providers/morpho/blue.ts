@@ -138,7 +138,7 @@ export function buildMorphoCollateralApproval(
   if (currentAllowance >= amountWei) return undefined
   const spender = requireMorphoBlueAddress(config.chainId)
   return buildErc20ApprovalTx({
-    token: config.marketParams.collateralToken,
+    assetAddress: config.marketParams.collateralToken,
     spender,
     amount: resolveErc20ApprovalAmount(mode, amountWei),
   })
@@ -154,7 +154,7 @@ export function buildMorphoLoanApproval(
   if (currentAllowance >= amountWei) return undefined
   const spender = requireMorphoBlueAddress(config.chainId)
   return buildErc20ApprovalTx({
-    token: config.marketParams.loanToken,
+    assetAddress: config.marketParams.loanToken,
     spender,
     amount: resolveErc20ApprovalAmount(mode, amountWei),
   })
@@ -167,7 +167,7 @@ export function buildMorphoMaxLoanApproval(
   if (currentAllowance === maxUint256) return undefined
   const spender = requireMorphoBlueAddress(config.chainId)
   return buildErc20ApprovalTx({
-    token: config.marketParams.loanToken,
+    assetAddress: config.marketParams.loanToken,
     spender,
     amount: maxUint256,
   })

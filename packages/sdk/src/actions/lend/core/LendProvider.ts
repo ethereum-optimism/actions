@@ -274,7 +274,7 @@ export abstract class LendProvider<
     spender: Address,
     amount: bigint,
   ): TransactionData {
-    return buildErc20ApprovalTx({ token: tokenAddress, spender, amount })
+    return buildErc20ApprovalTx({ assetAddress: tokenAddress, spender, amount })
   }
 
   /**
@@ -290,7 +290,7 @@ export abstract class LendProvider<
       )
     }
     return buildErc20ApprovalTx({
-      token: position.assetAddress,
+      assetAddress: position.assetAddress,
       spender: position.spender,
       amount: resolveErc20ApprovalAmount(approvalMode, amountWei),
     })

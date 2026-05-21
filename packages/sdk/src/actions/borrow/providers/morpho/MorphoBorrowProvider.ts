@@ -20,7 +20,7 @@ import {
 } from '@/actions/borrow/providers/morpho/presentation.js'
 import {
   buildRepayApproval,
-  prepareRepayLeg,
+  planRepay,
 } from '@/actions/borrow/providers/morpho/repay.js'
 import {
   fetchMorphoMarket,
@@ -198,7 +198,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market.marketParams.loanToken,
     )
 
-    const repay = prepareRepayLeg(params.borrowAmount, current, 'closePosition')
+    const repay = planRepay(params.borrowAmount, current, 'closePosition')
     let after = repay.after
 
     let withdrawCollateralWei = 0n
@@ -338,7 +338,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market.marketParams.loanToken,
     )
 
-    const repay = prepareRepayLeg(params.amount, current, 'repay')
+    const repay = planRepay(params.amount, current, 'repay')
     const approvalTx = buildRepayApproval(
       market,
       repay,

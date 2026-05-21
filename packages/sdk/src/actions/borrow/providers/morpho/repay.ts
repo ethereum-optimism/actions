@@ -12,36 +12,38 @@ import type {
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
-export type RepayLeg = {
+export type RepayPlan = {
   repayAssetsWei: bigint
   repaySharesWei: bigint
   after: AccrualPosition
 }
 
 /**
- * Shared repay-leg accounting for `MorphoBorrowProvider._closePosition`
- * and `_repay`.
+ * Resolve the assets/shares split for a repay and project the resulting
+ * `AccrualPosition`. Shared by `MorphoBorrowProvider._closePosition` and
+ * `_repay`.
  * @description `{ max: true }` uses Morpho's shares-based path to avoid
  * the `toAssetsUp` 1-wei dust bug. Morpho's `_accrueInterest` runs
  * on-chain before the share→asset conversion, so the actual transferred
  * amount tracks live state without an SDK-side re-fetch.
  */
-export function prepareRepayLeg(
+export function planRepay(
   amount: AmountWeiOrMax,
   current: AccrualPosition,
   operation: 'closePosition' | 'repay',
-): RepayLeg {
+): RepayPlan {
+  let repayAssetsWei = 0n
+  let repaySharesWei = 0n
   if ('max' in amount) {
     if (current.borrowShares === 0n) {
       throw new EmptyPositionError({ operation })
     }
-    const repaySharesWei = current.borrowShares
-    const { position } = current.repay(0n, repaySharesWei)
-    return { repayAssetsWei: 0n, repaySharesWei, after: position }
+    repaySharesWei = current.borrowShares
+  } else {
+    repayAssetsWei = amount.amountWei
   }
-  const repayAssetsWei = amount.amountWei
-  const { position } = current.repay(repayAssetsWei, 0n)
-  return { repayAssetsWei, repaySharesWei: 0n, after: position }
+  const { position: after } = current.repay(repayAssetsWei, repaySharesWei)
+  return { repayAssetsWei, repaySharesWei, after }
 }
 
 /**
@@ -52,7 +54,7 @@ export function prepareRepayLeg(
  */
 export function buildRepayApproval(
   market: BorrowMarketConfig,
-  repay: RepayLeg,
+  repay: RepayPlan,
   allowance: bigint,
   approvalMode: ApprovalMode,
 ): TransactionData | undefined {
