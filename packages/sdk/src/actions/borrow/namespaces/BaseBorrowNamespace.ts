@@ -10,7 +10,6 @@ import type {
   BorrowMarketPosition,
   BorrowQuote,
   BorrowQuoteParams,
-  GetBorrowMarketParams,
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
@@ -41,8 +40,8 @@ export class BaseBorrowNamespace extends BaseNamespace<
     )
   }
 
-  async getMarket(params: GetBorrowMarketParams): Promise<BorrowMarket> {
-    return this.getProviderForMarket(params).getMarket(params)
+  async getMarket(marketId: BorrowMarketId): Promise<BorrowMarket> {
+    return this.getProviderForMarket(marketId).getMarket(marketId)
   }
 
   async getPosition(

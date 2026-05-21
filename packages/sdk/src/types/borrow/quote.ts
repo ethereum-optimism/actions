@@ -53,12 +53,8 @@ export interface BorrowQuote {
   marketId: BorrowMarketId
   /** Action the quote represents */
   action: BorrowAction
-  /** Echo of the borrow-side input amount (display) */
-  borrowAmount?: number
   /** Echo of the borrow-side input amount (raw) */
   borrowAmountRaw?: bigint
-  /** Echo of the collateral-side input amount (display) */
-  collateralAmount?: number
   /** Echo of the collateral-side input amount (raw) */
   collateralAmountRaw?: bigint
   /**

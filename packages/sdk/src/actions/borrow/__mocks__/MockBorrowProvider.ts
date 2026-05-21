@@ -24,7 +24,6 @@ import type {
   BorrowRepayParams,
   BorrowWithdrawCollateralInternalParams,
   BorrowWithdrawCollateralParams,
-  GetBorrowMarketParams,
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
@@ -61,7 +60,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     (params: BorrowRepayParams) => Promise<BorrowQuote>
   >
   public getMarket: MockedFunction<
-    (params: GetBorrowMarketParams) => Promise<BorrowMarket>
+    (params: BorrowMarketId) => Promise<BorrowMarket>
   >
   public getMarkets: MockedFunction<
     (params?: GetBorrowMarketsParams) => Promise<BorrowMarket[]>
@@ -167,9 +166,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     throw new Error('MockBorrowProvider._getPosition should not be called')
   }
 
-  private defaultGetMarket(
-    params: GetBorrowMarketParams,
-  ): Promise<BorrowMarket> {
+  private defaultGetMarket(params: BorrowMarketId): Promise<BorrowMarket> {
     const config = this.findConfig(params)
     return Promise.resolve(this.buildMarket(config, params))
   }

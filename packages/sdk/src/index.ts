@@ -109,7 +109,6 @@ export type {
   BorrowSettings,
   BorrowWithdrawCollateralParams,
   EOATransactionReceipt,
-  GetBorrowMarketParams,
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
   LendAction,

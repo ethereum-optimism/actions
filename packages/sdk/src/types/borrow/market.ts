@@ -164,9 +164,6 @@ export interface GetBorrowMarketsParams {
   markets?: BorrowMarketConfig[]
 }
 
-/** Identifier params for `actions.borrow.getMarket`. */
-export type GetBorrowMarketParams = BorrowMarketId
-
 /** Params for `actions.borrow.getPosition`. */
 export interface GetBorrowPositionParams {
   marketId: BorrowMarketId
