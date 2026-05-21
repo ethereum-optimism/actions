@@ -14,8 +14,8 @@ import { validateChainSupported } from '@/utils/validation.js'
 
 // Test helper class that exposes protected validation methods as public
 class TestLendProvider extends MockLendProvider {
-  public validateConfigSupported(marketId: LendMarketId): void {
-    return super.validateConfigSupported(marketId)
+  public validateMarketAllowed(marketId: LendMarketId): void {
+    return super.validateMarketAllowed(marketId)
   }
 
   public isChainSupported(chainId: number): boolean {
@@ -284,14 +284,14 @@ describe('LendProvider', () => {
       })
 
       expect(() => {
-        provider.validateConfigSupported({
+        provider.validateMarketAllowed({
           address: '0x1234' as Address,
           chainId: 84532,
         })
       }).not.toThrow()
 
       expect(() => {
-        provider.validateConfigSupported({
+        provider.validateMarketAllowed({
           address: '0x9999' as Address,
           chainId: 84532,
         })

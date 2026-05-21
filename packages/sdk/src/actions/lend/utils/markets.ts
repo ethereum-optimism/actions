@@ -12,7 +12,7 @@ import type {
  * Structural equality for two `LendMarketId` values.
  * @description Compares `chainId` and a case-insensitive `address`. Shared
  * by `findMarketInAllowlist` (namespace routing) and
- * `LendProvider.validateConfigSupported` (per-call allowlist check) so the
+ * `LendProvider.validateMarketAllowed` (per-call allowlist check) so the
  * two-field comparison lives in one place.
  */
 export function lendMarketIdMatches(a: LendMarketId, b: LendMarketId): boolean {

@@ -87,7 +87,7 @@ export abstract class LendProvider<
       throw new AddressRequiredError('walletAddress')
     }
 
-    this.validateConfigSupported(params.marketId)
+    this.validateMarketAllowed(params.marketId)
 
     // Convert human-readable amount to wei using the asset's decimals
     const amountWei = parseAssetAmount(params.asset, params.amount)
@@ -132,7 +132,7 @@ export abstract class LendProvider<
       chainId: params.chainId,
     }
 
-    this.validateConfigSupported(marketId)
+    this.validateMarketAllowed(marketId)
     return this._getMarket(marketId)
   }
 
@@ -182,7 +182,7 @@ export abstract class LendProvider<
       )
     }
 
-    this.validateConfigSupported(marketId)
+    this.validateMarketAllowed(marketId)
 
     return this._getPosition({ marketId, walletAddress })
   }
@@ -201,7 +201,7 @@ export abstract class LendProvider<
       throw new AddressRequiredError('walletAddress')
     }
 
-    this.validateConfigSupported(params.marketId)
+    this.validateMarketAllowed(params.marketId)
 
     const market = await this.getMarket({
       address: params.marketId.address,
@@ -237,7 +237,7 @@ export abstract class LendProvider<
    * @param marketId - Market identifier containing address and chainId
    * @throws Error if market allowlist is configured but market is not in it
    */
-  protected validateConfigSupported(marketId: LendMarketId): void {
+  protected validateMarketAllowed(marketId: LendMarketId): void {
     validateChainSupported(marketId.chainId, this.supportedChainIds())
 
     if (
