@@ -1,11 +1,10 @@
 import { type MockedFunction, vi } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import { findBorrowMarketInAllowlist } from '@/actions/borrow/core/markets.js'
 import {
-  AddressRequiredError,
-  MarketNotAllowedError,
-} from '@/core/error/errors.js'
+  requireAllowlistedBorrowMarketConfig,
+  validateBorrowWalletAddress,
+} from '@/actions/borrow/core/validations.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
@@ -29,10 +28,7 @@ import type {
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
-import {
-  validateChainSupported,
-  validateNotZeroAddress,
-} from '@/utils/validation.js'
+import { validateChainSupported } from '@/utils/validation.js'
 
 export interface MockBorrowProviderConfig {
   supportedChains: number[]
@@ -196,7 +192,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   private defaultGetPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
-    this.validateWalletAddress(params.walletAddress)
+    validateBorrowWalletAddress(params.walletAddress)
     const config = this.findConfig(params.marketId)
     return Promise.resolve(this.emptyPosition(config))
   }
@@ -208,10 +204,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       walletAddress?: `0x${string}`
     },
   ): Promise<BorrowQuote> {
-    if (!params.walletAddress) {
-      throw new AddressRequiredError('walletAddress')
-    }
-    this.validateWalletAddress(params.walletAddress)
+    validateBorrowWalletAddress(params.walletAddress)
     const config = this.findConfig(params.market)
     const now = Math.floor(Date.now() / 1000)
     const position = this.emptyPosition(config)
@@ -238,20 +231,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   private findConfig(marketId: BorrowMarketId): BorrowMarketConfig {
     validateChainSupported(marketId.chainId, this.supportedChainIds())
-    const hit = findBorrowMarketInAllowlist(
-      this._config.marketAllowlist,
-      marketId,
-    )
-    if (hit) return hit
-    throw new MarketNotAllowedError({
-      chainId: marketId.chainId,
-      address: marketId.marketId,
-      reason: 'Market not in MockBorrowProvider allowlist',
-    })
-  }
-
-  private validateWalletAddress(walletAddress: `0x${string}`): void {
-    validateNotZeroAddress(walletAddress, 'walletAddress')
+    return requireAllowlistedBorrowMarketConfig(marketId, this._config)
   }
 
   private buildMarket(

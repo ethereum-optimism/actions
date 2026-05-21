@@ -1,6 +1,7 @@
 import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import { findBorrowMarketInAllowlist } from '@/actions/borrow/core/markets.js'
+import { marketIdMatches } from '@/actions/borrow/core/markets.js'
 import { BaseNamespace } from '@/actions/shared/BaseNamespace.js'
+import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
 import type {
@@ -25,7 +26,7 @@ type ConfiguredBorrowProvider = BorrowProvider<BorrowProviderConfig>
  * providers ship (Aave, Comet, …) the routing layer here is what picks
  * the right concrete provider for a given market.
  */
-export abstract class BaseBorrowNamespace extends BaseNamespace<
+export class BaseBorrowNamespace extends BaseNamespace<
   ConfiguredBorrowProvider,
   BorrowProviders
 > {
@@ -88,7 +89,11 @@ export abstract class BaseBorrowNamespace extends BaseNamespace<
   ): ConfiguredBorrowProvider {
     for (const provider of this.getAllProviders()) {
       if (
-        findBorrowMarketInAllowlist(provider.config.marketAllowlist, marketId)
+        findMatchingConfig(
+          provider.config.marketAllowlist,
+          marketId,
+          marketIdMatches,
+        )
       ) {
         return provider
       }

@@ -10,7 +10,6 @@ import {
 } from '@/actions/borrow/core/internalParams.js'
 import {
   requireAllowlistedBorrowMarketConfig,
-  validateBorrowMarketAllowed,
   validateBorrowWalletAddress,
 } from '@/actions/borrow/core/validations.js'
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
@@ -181,23 +180,17 @@ export abstract class BorrowProvider<
     return market.healthBufferPct ?? this.defaultHealthBufferPct
   }
 
-  private validateMarketAllowed(market: BorrowMarketConfig): void {
-    validateBorrowMarketAllowed(market, this._config)
-  }
-
   /**
-   * Resolve a `BorrowMarketId` to its full `BorrowMarketConfig` from the
-   * provider allowlist; throws `MarketNotAllowedError` when missing.
+   * Resolve a `BorrowMarketId` to its trusted `BorrowMarketConfig` from
+   * the provider allowlist; throws `MarketNotAllowedError` when missing
+   * or when the marketId is on the blocklist.
    * @description Subclasses receive the resolved config via the `_*`
    * hooks, so concrete providers don't repeat the lookup.
    */
   private requireAllowlistedMarketConfig(
     marketId: BorrowMarketId,
   ): BorrowMarketConfig {
-    return requireAllowlistedBorrowMarketConfig(
-      marketId,
-      this._config.marketAllowlist,
-    )
+    return requireAllowlistedBorrowMarketConfig(marketId, this._config)
   }
 
   /**
@@ -214,9 +207,6 @@ export abstract class BorrowProvider<
   } {
     validateBorrowWalletAddress(params.walletAddress)
     validateChainSupported(params.market.chainId, this.supportedChainIds())
-    // `validateMarketAllowed` also enforces the blocklist; the allowlist
-    // lookup below returns the trusted config used for the rest of the call.
-    this.validateMarketAllowed(params.market)
     const market = this.requireAllowlistedMarketConfig(params.market)
     const base: ResolvedBorrowBaseParams = {
       walletAddress: params.walletAddress,

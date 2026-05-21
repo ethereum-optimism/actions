@@ -1,7 +1,4 @@
-import {
-  findBorrowMarketInAllowlist,
-  marketIdMatches,
-} from '@/actions/borrow/core/markets.js'
+import { marketIdMatches } from '@/actions/borrow/core/markets.js'
 import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import {
   AddressRequiredError,
@@ -65,57 +62,46 @@ export function validateQuoteNotExpired(quote: BorrowQuote): void {
 }
 
 /**
- * Validate that a market is allowed by the provider allowlist and absent
- * from the provider blocklist.
- */
-export function validateBorrowMarketAllowed(
-  market: BorrowMarketConfig,
-  config: {
-    marketAllowlist?: BorrowMarketConfig[]
-    marketBlocklist?: BorrowMarketConfig[]
-  },
-): void {
-  const allowlist = config.marketAllowlist
-  if (allowlist && allowlist.length > 0) {
-    const hit = findBorrowMarketInAllowlist(allowlist, market)
-    if (!hit) {
-      throw new MarketNotAllowedError({
-        address: market.marketId,
-        chainId: market.chainId,
-        reason: 'Market is not in the marketAllowlist',
-      })
-    }
-  }
-
-  const blocklist = config.marketBlocklist
-  if (!blocklist?.length) return
-  const blocked = findMatchingConfig(blocklist, market, marketIdMatches)
-  if (!blocked) return
-  throw new MarketNotAllowedError({
-    address: market.marketId,
-    chainId: market.chainId,
-    reason: 'Market is on the marketBlocklist',
-  })
-}
-
-/**
- * Strict allowlist lookup: returns the matched `BorrowMarketConfig` or
- * throws `MarketNotAllowedError`. Empty/undefined allowlists fail. Used
- * by `BorrowProvider` to resolve marketId → full config once before
- * dispatching to subclass `_*` hooks, so concrete providers don't have
- * to repeat the lookup.
+ * Strict allowlist lookup with blocklist enforcement: returns the matched
+ * trusted `BorrowMarketConfig` or throws `MarketNotAllowedError`.
+ * @description Empty/undefined allowlists fail closed. Blocklist matches
+ * are rejected with a distinct reason. Used by `BorrowProvider` to
+ * resolve marketId → full config once on both read and write paths so
+ * concrete providers don't repeat the lookup and so blocklist semantics
+ * apply uniformly.
  */
 export function requireAllowlistedBorrowMarketConfig(
   marketId: BorrowMarketId,
-  allowlist: readonly BorrowMarketConfig[] | undefined,
+  config: {
+    marketAllowlist?: readonly BorrowMarketConfig[]
+    marketBlocklist?: readonly BorrowMarketConfig[]
+  },
 ): BorrowMarketConfig {
-  const match = findBorrowMarketInAllowlist(allowlist, marketId)
+  const match = findMatchingConfig(
+    config.marketAllowlist,
+    marketId,
+    marketIdMatches,
+  )
   if (!match) {
     throw new MarketNotAllowedError({
       address: marketId.marketId,
       chainId: marketId.chainId,
       reason: 'Market not in borrow provider allowlist',
     })
+  }
+  if (config.marketBlocklist?.length) {
+    const blocked = findMatchingConfig(
+      config.marketBlocklist,
+      marketId,
+      marketIdMatches,
+    )
+    if (blocked) {
+      throw new MarketNotAllowedError({
+        address: marketId.marketId,
+        chainId: marketId.chainId,
+        reason: 'Market is on the marketBlocklist',
+      })
+    }
   }
   return match
 }
@@ -131,7 +117,11 @@ export function validateBorrowMarketIdInAnyAllowlist(
 ): void {
   const hit = providers.some(
     (provider) =>
-      !!findBorrowMarketInAllowlist(provider.config.marketAllowlist, marketId),
+      !!findMatchingConfig(
+        provider.config.marketAllowlist,
+        marketId,
+        marketIdMatches,
+      ),
   )
   if (hit) return
   throw new ProviderNotConfiguredError({

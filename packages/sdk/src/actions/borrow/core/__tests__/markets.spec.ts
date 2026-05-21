@@ -1,55 +1,41 @@
 import { describe, expect, it } from 'vitest'
 
-import { findBorrowMarketInAllowlist } from '@/actions/borrow/core/markets.js'
-import type { BorrowMarketConfig } from '@/types/borrow/index.js'
+import { marketIdMatches } from '@/actions/borrow/core/markets.js'
+import type { BorrowMarketId } from '@/types/borrow/index.js'
 
 const chainId = 84532 as const
-
-const baseMarket: BorrowMarketConfig = {
+const a: BorrowMarketId = {
   kind: 'morpho-blue',
   marketId:
     '0x1111111111111111111111111111111111111111111111111111111111111111',
   chainId,
-  name: 'Market One',
-  collateralAsset: {
-    type: 'erc20',
-    address: { [chainId]: '0x1111111111111111111111111111111111111111' },
-    metadata: { symbol: 'COL', name: 'Collateral', decimals: 18 },
-  },
-  borrowAsset: {
-    type: 'erc20',
-    address: { [chainId]: '0x2222222222222222222222222222222222222222' },
-    metadata: { symbol: 'BRW', name: 'Borrow', decimals: 18 },
-  },
-  borrowProvider: 'morpho',
-  marketParams: {
-    loanToken: '0x2222222222222222222222222222222222222222',
-    collateralToken: '0x1111111111111111111111111111111111111111',
-    oracle: '0x3333333333333333333333333333333333333333',
-    irm: '0x4444444444444444444444444444444444444444',
-    lltv: 860000000000000000n,
-  },
 }
 
-describe('findBorrowMarketInAllowlist', () => {
-  it('returns the matching config', () => {
-    expect(
-      findBorrowMarketInAllowlist([baseMarket], {
-        kind: 'morpho-blue',
-        marketId: baseMarket.marketId,
-        chainId,
-      }),
-    ).toEqual(baseMarket)
+describe('marketIdMatches', () => {
+  it('returns true for identical ids', () => {
+    expect(marketIdMatches(a, { ...a })).toBe(true)
   })
 
-  it('returns undefined when the market is absent', () => {
+  it('returns true when marketId case differs', () => {
     expect(
-      findBorrowMarketInAllowlist([baseMarket], {
-        kind: 'morpho-blue',
+      marketIdMatches(a, {
+        ...a,
+        marketId: a.marketId.toUpperCase() as `0x${string}`,
+      }),
+    ).toBe(true)
+  })
+
+  it('returns false when chainId differs', () => {
+    expect(marketIdMatches(a, { ...a, chainId: 1 as never })).toBe(false)
+  })
+
+  it('returns false when marketId differs', () => {
+    expect(
+      marketIdMatches(a, {
+        ...a,
         marketId:
           '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        chainId,
       }),
-    ).toBeUndefined()
+    ).toBe(false)
   })
 })

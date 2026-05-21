@@ -2,7 +2,7 @@ import { baseSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import { ActionsBorrowNamespace } from '@/actions/borrow/namespaces/ActionsBorrowNamespace.js'
+import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
 import type {
@@ -105,7 +105,7 @@ function makeProvider() {
 describe('BaseBorrowNamespace.getQuote', () => {
   it('dispatches to the provider verb that matches the action discriminator', async () => {
     const provider = makeProvider()
-    const ns = new ActionsBorrowNamespace({ morpho: provider })
+    const ns = new BaseBorrowNamespace({ morpho: provider })
     const quote = await ns.getQuote({
       action: 'depositCollateral',
       market,
@@ -125,7 +125,7 @@ describe('BaseBorrowNamespace.getQuote', () => {
 
   it('supports the open action with collateral', async () => {
     const provider = makeProvider()
-    const ns = new ActionsBorrowNamespace({ morpho: provider })
+    const ns = new BaseBorrowNamespace({ morpho: provider })
     await ns.getQuote({
       action: 'open',
       market,
@@ -145,7 +145,7 @@ describe('BaseBorrowNamespace.getQuote', () => {
 
   it('supports max-amount close', async () => {
     const provider = makeProvider()
-    const ns = new ActionsBorrowNamespace({ morpho: provider })
+    const ns = new BaseBorrowNamespace({ morpho: provider })
     await ns.getQuote({
       action: 'close',
       market,
@@ -190,7 +190,7 @@ describe('BaseBorrowNamespace.getMarkets', () => {
       new Error('rpc failed'),
     )
 
-    const ns = new ActionsBorrowNamespace({
+    const ns = new BaseBorrowNamespace({
       morpho: okProvider,
       spark: failingProvider,
     } as never)
