@@ -12,7 +12,7 @@ import type {
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
-export type RepayPlan = {
+export type RepayResult = {
   repayAssetsWei: bigint
   repaySharesWei: bigint
   after: AccrualPosition
@@ -27,11 +27,11 @@ export type RepayPlan = {
  * on-chain before the share→asset conversion, so the actual transferred
  * amount tracks live state without an SDK-side re-fetch.
  */
-export function planRepay(
+export function computeRepay(
   amount: AmountWeiOrMax,
   current: AccrualPosition,
   operation: 'closePosition' | 'repay',
-): RepayPlan {
+): RepayResult {
   let repayAssetsWei = 0n
   let repaySharesWei = 0n
   if ('max' in amount) {
@@ -54,7 +54,7 @@ export function planRepay(
  */
 export function buildRepayApproval(
   market: BorrowMarketConfig,
-  repay: RepayPlan,
+  repay: RepayResult,
   allowance: bigint,
   approvalMode: ApprovalMode,
 ): TransactionData | undefined {

@@ -4,15 +4,22 @@ import { type Address } from 'viem'
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import {
   buildMorphoCollateralApproval,
-  encodeMorphoBorrow,
   encodeMorphoRepay,
   encodeMorphoSupplyCollateral,
   encodeMorphoWithdrawCollateral,
 } from '@/actions/borrow/providers/morpho/blue.js'
 import {
+  buildCloseTransactions,
+  computeClose,
+} from '@/actions/borrow/providers/morpho/close.js'
+import {
   computeMorphoMarketId,
   verifyMorphoMarketId,
 } from '@/actions/borrow/providers/morpho/marketParams.js'
+import {
+  buildOpenTransactions,
+  computeOpen,
+} from '@/actions/borrow/providers/morpho/open.js'
 import {
   adaptMorphoBorrowMarket,
   adaptMorphoBorrowPosition,
@@ -20,7 +27,7 @@ import {
 } from '@/actions/borrow/providers/morpho/presentation.js'
 import {
   buildRepayApproval,
-  planRepay,
+  computeRepay,
 } from '@/actions/borrow/providers/morpho/repay.js'
 import {
   fetchMorphoMarket,
@@ -137,43 +144,8 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       params.walletAddress,
       market.marketParams.collateralToken,
     )
-    let after = current
-    if (params.collateralAmountWei !== undefined) {
-      after = after.supplyCollateral(params.collateralAmountWei)
-    }
-    const borrowed = after.borrow(params.borrowAmountWei, 0n)
-    after = borrowed.position
-
-    const txs: TransactionData[] = []
-    const approvalTx = buildMorphoCollateralApproval(
-      market,
-      params.collateralAmountWei,
-      allowance,
-      params.approvalMode,
-    )
-    if (approvalTx) txs.push(approvalTx)
-    if (
-      params.collateralAmountWei !== undefined &&
-      params.collateralAmountWei > 0n
-    ) {
-      txs.push(
-        encodeMorphoSupplyCollateral(
-          market,
-          params.collateralAmountWei,
-          params.walletAddress,
-        ),
-      )
-    }
-    txs.push(
-      encodeMorphoBorrow(
-        market,
-        params.borrowAmountWei,
-        0n,
-        params.walletAddress,
-        params.walletAddress,
-      ),
-    )
-
+    const after = computeOpen(params, current)
+    const { txs, approvalTx } = buildOpenTransactions(params, allowance)
     return this.assembleQuote({
       action: 'open',
       market,
@@ -197,59 +169,23 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       params.walletAddress,
       market.marketParams.loanToken,
     )
-
-    const repay = planRepay(params.borrowAmount, current, 'closePosition')
-    let after = repay.after
-
-    let withdrawCollateralWei = 0n
-    if (params.collateralAmount !== undefined) {
-      withdrawCollateralWei =
-        'max' in params.collateralAmount
-          ? after.collateral
-          : params.collateralAmount.amountWei
-      after = after.withdrawCollateral(withdrawCollateralWei)
-    }
-
-    const approvalTx = buildRepayApproval(
-      market,
-      repay,
-      allowance,
-      params.approvalMode,
-    )
-    const txs: TransactionData[] = []
-    if (approvalTx) txs.push(approvalTx)
-    txs.push(
-      encodeMorphoRepay(
-        market,
-        repay.repayAssetsWei,
-        repay.repaySharesWei,
-        params.walletAddress,
-      ),
-    )
-    if (withdrawCollateralWei > 0n) {
-      txs.push(
-        encodeMorphoWithdrawCollateral(
-          market,
-          withdrawCollateralWei,
-          params.walletAddress,
-          params.walletAddress,
-        ),
-      )
-    }
-
+    const plan = computeClose(params, current)
+    const { txs, approvalTx } = buildCloseTransactions(params, plan, allowance)
     return this.assembleQuote({
       action: 'close',
       market,
       positionBefore: current,
-      positionAfter: after,
+      positionAfter: plan.after,
       transactions: txs,
       quoteAmounts: {
         borrowAmountRaw:
-          repay.repaySharesWei > 0n
+          plan.repay.repaySharesWei > 0n
             ? current.borrowAssets
-            : repay.repayAssetsWei,
+            : plan.repay.repayAssetsWei,
         collateralAmountRaw:
-          withdrawCollateralWei > 0n ? withdrawCollateralWei : undefined,
+          plan.withdrawCollateralWei > 0n
+            ? plan.withdrawCollateralWei
+            : undefined,
       },
       approvalsSkipped: approvalTx === undefined,
     })
@@ -338,7 +274,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       market.marketParams.loanToken,
     )
 
-    const repay = planRepay(params.amount, current, 'repay')
+    const repay = computeRepay(params.amount, current, 'repay')
     const approvalTx = buildRepayApproval(
       market,
       repay,
