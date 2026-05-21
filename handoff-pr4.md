@@ -7,6 +7,8 @@
 > **Update 2026-05-13:** PR #3 landed an action-module registry refactor (`6d41a296`..`6f85e8eb`). Public `ActionsConfig` / `NodeActionsConfig` shape is unchanged; `lend` / `swap` / `borrow` / `assets` / `chains` / `wallet` keys all stay. PR #4 needed **no code changes** — clean rebase, build + 102 tests + lint all green. **Bonus side effect**: `wallet.borrow` is now exposed on hosted wallets (Privy / Turnkey / Dynamic), which closes the previously-flagged gap that would have made `resolveWalletOrThrow`'s `wallet.borrow` null-check throw on every Privy-authenticated mutation. PR #4 mutations are now end-to-end executable as soon as a real signer + deployed market are wired (already true on baseSepolia chain 84532).
 >
 > **Update 2026-05-20: review pass landed.** 15 commits responding to a multi-agent code review against the PR #4 backend. 144 tests pass (was 102), build + lint clean. **Several wire contracts changed; PR #5 must skim §"Post-review contract changes for PR #5" below before its next merge from this branch.** Most changes are tightening / clarification, not new breakage. Three cross-cutting follow-ups filed as issues [#474](https://github.com/ethereum-optimism/actions/issues/474), [#475](https://github.com/ethereum-optimism/actions/issues/475), [#476](https://github.com/ethereum-optimism/actions/issues/476) covering the lend / swap retrofit to the new borrow conventions (out of PR #4 scope).
+>
+> **Update 2026-05-21: rebased onto refreshed PR #3 base.** PR #3 advanced significantly (44 commits since the prior rebase — SDK internal refactors, namespace consolidations, and `Remove handoff docs` from `kevin/borrow-pr3`). PR #4 rebased clean (no conflicts). **One public SDK contract did change:** `actions.borrow.getPrice` and the `BorrowPrice` type were collapsed into the unified `actions.borrow.getQuote` / `BorrowQuote` surface. PR #4 keeps `/borrow/price` as a public route name, but the response shape is now the full `BorrowQuote` (positionAfter + fees + safeCeilingLtv + execution bundle) — frontend just ignores the execution field on the preview path. Two new SDK error classes (`EmptyPositionError` → 422, `ProtocolContractsNotConfiguredError` → 503) now have mappings in `mapSdkError`. Also CI fix: new `packages/demo/backend/vitest.setup.ts` sets `SESSION_SIGNER_PK` to a test default before module load so route specs that import `@/app.js` don't trip the env-validation `process.exit(1)` in CI.
 
 ## Post-review contract changes for PR #5
 
@@ -90,6 +92,17 @@ Minor — `POST /wallet/eth` previously validated `walletAddress` with a raw reg
 ### 9. PR description / plan unclaim LRU
 
 If PR #5 surfaces "10s LRU cache" anywhere in copy, drop it — that claim is gone from PR #4's description and plan doc. R4 is deferred (see §7).
+
+### 10. SDK collapsed `getPrice` into `getQuote` (2026-05-21 rebase)
+
+PR #3 commit `0c2b42f8` (and surrounding refactors) removed the standalone `actions.borrow.getPrice` namespace method and the lighter `BorrowPrice` type. The SDK now exposes a single `actions.borrow.getQuote(params) → BorrowQuote` for both preview and execution.
+
+PR #4's `/borrow/price` HTTP route still exists with the same body schema as before, but its response is now a full `BorrowQuote` (includes the `execution: { transactions[] }` bundle that the preview UX doesn't need). Net effect for PR #5: nothing breaks if the frontend was already destructuring `positionAfter` / `safeCeilingLtv` from the response — those fields are still there. The extra `execution` field on the response wire is wasted bandwidth on preview calls; if that matters, file a follow-up to either (a) strip `execution` server-side on `/borrow/price` or (b) restore a lighter SDK preview shape.
+
+Two new SDK error classes shipped alongside the namespace consolidation, both already wired into `mapSdkError`:
+
+- `EmptyPositionError` → 422 — thrown by `repay` / `closePosition` / `withdrawCollateral` against a position with no debt or no collateral to act on.
+- `ProtocolContractsNotConfiguredError` → 503 — thrown when an SDK protocol (e.g. Morpho) is missing required contract addresses for the requested chain.
 
 ## Confirmations for PR #5
 
@@ -260,8 +273,8 @@ HTTP status + freeform message (no code field). Mapped from SDK error classes vi
 | 403 | `MarketNotAllowedError`, `QuoteRecipientMismatchError` |
 | 404 | `MarketNotFoundError`, `WalletNotFoundError` (backend-local) |
 | 410 | `QuoteExpiredError` |
-| 422 | `BorrowMarketParamsMismatchError`, `TransactionConfirmedButRevertedError` |
-| 503 | `ProviderNotConfiguredError` |
+| 422 | `BorrowMarketParamsMismatchError`, `TransactionConfirmedButRevertedError`, `EmptyPositionError` |
+| 503 | `ProviderNotConfiguredError`, `ProtocolContractsNotConfiguredError` |
 | 500 | unmapped / generic Error fallback |
 
 Message strings are static literals per class (no SDK message passthrough; prevents leakage of internal addresses / RPC URLs). PR #5 can prefix-match on these messages for localization, or branch on status. A meta-coverage test fails CI when the SDK adds a new `ActionsError` subclass that isn't mapped or allowlisted.
