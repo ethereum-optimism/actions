@@ -5,10 +5,7 @@ import { type Address, encodeFunctionData, type Hex, maxUint256 } from 'viem'
 import { getMorphoContracts } from '@/actions/shared/morpho/contracts.js'
 import { ProtocolContractsNotConfiguredError } from '@/core/error/errors.js'
 import type { ApprovalMode } from '@/types/actions.js'
-import type {
-  BorrowMarketConfig,
-  MorphoMarketParams,
-} from '@/types/borrow/index.js'
+import type { BorrowMarketConfig } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 import {
   buildErc20ApprovalTx,
@@ -63,27 +60,6 @@ export function buildMorphoMarket(
   })
 }
 
-/**
- * Convert a `MorphoMarketParams` object to the tuple shape `blueAbi` expects.
- * Destructured by name so a future ABI re-ordering surfaces as a TypeScript
- * error rather than a silent calldata bug.
- */
-export function morphoMarketParamsTuple(params: MorphoMarketParams): {
-  loanToken: Address
-  collateralToken: Address
-  oracle: Address
-  irm: Address
-  lltv: bigint
-} {
-  return {
-    loanToken: params.loanToken,
-    collateralToken: params.collateralToken,
-    oracle: params.oracle,
-    irm: params.irm,
-    lltv: params.lltv,
-  }
-}
-
 export function encodeMorphoSupplyCollateral(
   config: BorrowMarketConfig,
   assets: bigint,
@@ -94,12 +70,7 @@ export function encodeMorphoSupplyCollateral(
     data: encodeFunctionData({
       abi: blueAbi,
       functionName: 'supplyCollateral',
-      args: [
-        morphoMarketParamsTuple(config.marketParams),
-        assets,
-        onBehalf,
-        '0x',
-      ],
+      args: [config.marketParams, assets, onBehalf, '0x'],
     }),
     value: 0n,
   }
@@ -117,13 +88,7 @@ export function encodeMorphoBorrow(
     data: encodeFunctionData({
       abi: blueAbi,
       functionName: 'borrow',
-      args: [
-        morphoMarketParamsTuple(config.marketParams),
-        assets,
-        shares,
-        onBehalf,
-        receiver,
-      ],
+      args: [config.marketParams, assets, shares, onBehalf, receiver],
     }),
     value: 0n,
   }
@@ -140,13 +105,7 @@ export function encodeMorphoRepay(
     data: encodeFunctionData({
       abi: blueAbi,
       functionName: 'repay',
-      args: [
-        morphoMarketParamsTuple(config.marketParams),
-        assets,
-        shares,
-        onBehalf,
-        '0x',
-      ],
+      args: [config.marketParams, assets, shares, onBehalf, '0x'],
     }),
     value: 0n,
   }
@@ -163,12 +122,7 @@ export function encodeMorphoWithdrawCollateral(
     data: encodeFunctionData({
       abi: blueAbi,
       functionName: 'withdrawCollateral',
-      args: [
-        morphoMarketParamsTuple(config.marketParams),
-        assets,
-        onBehalf,
-        receiver,
-      ],
+      args: [config.marketParams, assets, onBehalf, receiver],
     }),
     value: 0n,
   }

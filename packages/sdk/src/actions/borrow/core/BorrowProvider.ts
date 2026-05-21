@@ -1,13 +1,11 @@
 import type { Address } from 'viem'
 
-import { filterBorrowMarketConfigs } from '@/actions/borrow/core/helpers.js'
 import type { ResolvedBorrowBaseParams } from '@/actions/borrow/core/internalParams.js'
 import {
   buildClosePositionInternalParams,
   buildDepositCollateralInternalParams,
   buildOpenPositionInternalParams,
   buildRepayInternalParams,
-  buildResolvedBorrowBaseParams,
   buildWithdrawCollateralInternalParams,
 } from '@/actions/borrow/core/internalParams.js'
 import {
@@ -17,6 +15,7 @@ import {
 } from '@/actions/borrow/core/validations.js'
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
 import { DEFAULT_QUOTE_EXPIRATION_SECONDS } from '@/actions/shared/defaults.js'
+import { filterMatchingConfigs } from '@/actions/shared/marketConfigs.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
 import type {
@@ -144,7 +143,17 @@ export abstract class BorrowProvider<
     if (params.chainId !== undefined) {
       validateChainSupported(params.chainId, this.supportedChainIds())
     }
-    const filtered = this.filterMarketConfigs(params)
+    const filtered = filterMatchingConfigs(this._config.marketAllowlist, [
+      params.chainId === undefined
+        ? undefined
+        : (market) => market.chainId === params.chainId,
+      params.collateralAsset === undefined
+        ? undefined
+        : (market) => market.collateralAsset === params.collateralAsset,
+      params.borrowAsset === undefined
+        ? undefined
+        : (market) => market.borrowAsset === params.borrowAsset,
+    ])
     return this._getMarkets({
       ...params,
       markets: params.markets ?? filtered,
@@ -172,7 +181,7 @@ export abstract class BorrowProvider<
     return market.healthBufferPct ?? this.defaultHealthBufferPct
   }
 
-  protected validateMarketAllowed(market: BorrowMarketConfig): void {
+  private validateMarketAllowed(market: BorrowMarketConfig): void {
     validateBorrowMarketAllowed(market, this._config)
   }
 
@@ -182,22 +191,13 @@ export abstract class BorrowProvider<
    * @description Subclasses receive the resolved config via the `_*`
    * hooks, so concrete providers don't repeat the lookup.
    */
-  protected requireAllowlistedMarketConfig(
+  private requireAllowlistedMarketConfig(
     marketId: BorrowMarketId,
   ): BorrowMarketConfig {
     return requireAllowlistedBorrowMarketConfig(
       marketId,
       this._config.marketAllowlist,
     )
-  }
-
-  /**
-   * Filter the configured allowlist by `getMarkets` query parameters.
-   */
-  protected filterMarketConfigs(
-    params: GetBorrowMarketsParams,
-  ): BorrowMarketConfig[] {
-    return filterBorrowMarketConfigs(this._config, params)
   }
 
   /**
@@ -218,10 +218,10 @@ export abstract class BorrowProvider<
     // lookup below returns the trusted config used for the rest of the call.
     this.validateMarketAllowed(params.market)
     const market = this.requireAllowlistedMarketConfig(params.market)
-    const base = buildResolvedBorrowBaseParams(
-      params.walletAddress,
-      this.resolveApprovalMode(params.approvalMode),
-    )
+    const base: ResolvedBorrowBaseParams = {
+      walletAddress: params.walletAddress,
+      approvalMode: this.resolveApprovalMode(params.approvalMode),
+    }
     return { market, base }
   }
 

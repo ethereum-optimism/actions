@@ -9,7 +9,10 @@ import {
   encodeMorphoSupplyCollateral,
   encodeMorphoWithdrawCollateral,
 } from '@/actions/borrow/providers/morpho/blue.js'
-import { verifyMorphoAllowlistMarketIds } from '@/actions/borrow/providers/morpho/helpers.js'
+import {
+  computeMorphoMarketId,
+  verifyMorphoMarketId,
+} from '@/actions/borrow/providers/morpho/marketParams.js'
 import {
   adaptMorphoBorrowMarket,
   adaptMorphoBorrowPosition,
@@ -25,7 +28,10 @@ import {
   fetchMorphoStateWithAllowance,
 } from '@/actions/borrow/providers/morpho/state.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
-import { EmptyPositionError } from '@/core/error/errors.js'
+import {
+  BorrowMarketParamsMismatchError,
+  EmptyPositionError,
+} from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
 import type {
@@ -62,7 +68,19 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     settings?: BorrowSettings,
   ) {
     super(config, chainManager, settings)
-    verifyMorphoAllowlistMarketIds(config.marketAllowlist)
+    // Verify each allowlist entry's marketId matches the keccak256 of its
+    // marketParams; rejects a config where the two were spliced from
+    // different markets (which would silently route calldata to a market
+    // whose params don't match the on-chain identity).
+    for (const market of config.marketAllowlist ?? []) {
+      if (market.kind !== 'morpho-blue') continue
+      if (!verifyMorphoMarketId(market.marketId, market.marketParams)) {
+        throw new BorrowMarketParamsMismatchError({
+          marketId: market.marketId,
+          computedMarketId: computeMorphoMarketId(market.marketParams),
+        })
+      }
+    }
   }
 
   protocolSupportedChainIds(): number[] {
@@ -73,7 +91,11 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     config: BorrowMarketConfig,
   ): Promise<BorrowMarket> {
     const market = await this.fetchMarket(config)
-    return this.adaptMarket(config, market)
+    return adaptMorphoBorrowMarket(
+      config,
+      market,
+      this.resolveHealthBufferPct(config),
+    )
   }
 
   protected async _getMarkets(
@@ -83,7 +105,11 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     const results = await Promise.allSettled(
       configs.map(async (config) => {
         const market = await this.fetchMarket(config)
-        return this.adaptMarket(config, market)
+        return adaptMorphoBorrowMarket(
+          config,
+          market,
+          this.resolveHealthBufferPct(config),
+        )
       }),
     )
     return results.flatMap((result) =>
@@ -99,7 +125,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       params.market,
       params.walletAddress,
     )
-    return this.adaptPosition(params.market, accrualPosition)
+    return adaptMorphoBorrowPosition(params.market, accrualPosition)
   }
 
   protected async _openPosition(
@@ -386,24 +412,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       quoteExpirationSeconds: this.quoteExpirationSeconds,
       healthBufferPct: this.resolveHealthBufferPct(args.market),
     })
-  }
-
-  private adaptMarket(
-    config: BorrowMarketConfig,
-    market: Market,
-  ): BorrowMarket {
-    return adaptMorphoBorrowMarket(
-      config,
-      market,
-      this.resolveHealthBufferPct(config),
-    )
-  }
-
-  private adaptPosition(
-    config: BorrowMarketConfig,
-    position: AccrualPosition,
-  ): BorrowMarketPosition {
-    return adaptMorphoBorrowPosition(config, position)
   }
 }
 

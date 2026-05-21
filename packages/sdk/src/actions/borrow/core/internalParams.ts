@@ -121,16 +121,6 @@ export function buildRepayInternalParams(
   }
 }
 
-export function buildResolvedBorrowBaseParams(
-  walletAddress: Address,
-  approvalMode: ApprovalMode,
-): ResolvedBorrowBaseParams {
-  return {
-    walletAddress,
-    approvalMode,
-  }
-}
-
 function toAmountWei(amount: Amount, decimals: number): bigint {
   if ('amountRaw' in amount) return amount.amountRaw
   return parseDecimalAmount(amount.amount, decimals)
