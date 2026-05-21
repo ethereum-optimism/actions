@@ -115,15 +115,17 @@ export function validateBorrowMarketIdInAnyAllowlist(
   marketId: BorrowMarketId,
   providers: ReadonlyArray<{ config: BorrowProviderConfig }>,
 ): void {
-  const hit = providers.some(
-    (provider) =>
-      !!findMatchingConfig({
+  for (const provider of providers) {
+    if (
+      findMatchingConfig({
         configs: provider.config.marketAllowlist,
         target: marketId,
         matches: marketIdMatches,
-      }),
-  )
-  if (hit) return
+      })
+    ) {
+      return
+    }
+  }
   throw new ProviderNotConfiguredError({
     provider: marketId.marketId,
     details: `No borrow provider configured for market on chain ${marketId.chainId}`,
