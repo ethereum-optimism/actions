@@ -19,14 +19,12 @@ import type {
   BorrowDepositCollateralInternalParams,
   BorrowMarket,
   BorrowMarketConfig,
-  BorrowMarketId,
   BorrowMarketPosition,
   BorrowOpenPositionInternalParams,
   BorrowQuote,
   BorrowRepayInternalParams,
   BorrowWithdrawCollateralInternalParams,
   GetBorrowMarketsParams,
-  GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
 
 const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
@@ -128,7 +126,7 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
     return makeStubQuote('repay', params.market)
   }
 
-  protected async _getMarket(_marketId: BorrowMarketId): Promise<BorrowMarket> {
+  protected async _getMarket(_: BorrowMarketConfig): Promise<BorrowMarket> {
     return makeStubMarket(market)
   }
 
@@ -138,11 +136,12 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
     return (params.markets ?? []).map((m) => makeStubMarket(m))
   }
 
-  protected async _getPosition(
-    params: GetBorrowPositionParams,
-  ): Promise<BorrowMarketPosition> {
+  protected async _getPosition(params: {
+    market: BorrowMarketConfig
+    walletAddress: `0x${string}`
+  }): Promise<BorrowMarketPosition> {
     return {
-      marketId: params.marketId,
+      marketId: params.market,
       collateralAsset,
       collateralAmount: 0n,
       collateralAmountFormatted: '0',

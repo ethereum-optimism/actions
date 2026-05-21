@@ -2,10 +2,7 @@ import type { AccrualPosition, Market, MarketId } from '@morpho-org/blue-sdk'
 import { type Address } from 'viem'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import {
-  requireMorphoAllowlistMarket,
-  verifyMorphoAllowlistMarketIds,
-} from '@/actions/borrow/providers/morpho/helpers.js'
+import { verifyMorphoAllowlistMarketIds } from '@/actions/borrow/providers/morpho/helpers.js'
 import {
   adaptMorphoBorrowMarket,
   adaptMorphoBorrowPosition,
@@ -35,14 +32,12 @@ import type {
   BorrowDepositCollateralInternalParams,
   BorrowMarket,
   BorrowMarketConfig,
-  BorrowMarketId,
   BorrowMarketPosition,
   BorrowOpenPositionInternalParams,
   BorrowQuote,
   BorrowRepayInternalParams,
   BorrowWithdrawCollateralInternalParams,
   GetBorrowMarketsParams,
-  GetBorrowPositionParams,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -72,8 +67,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     return getMorphoSupportedChainIds()
   }
 
-  protected async _getMarket(marketId: BorrowMarketId): Promise<BorrowMarket> {
-    const config = this.requireAllowlistMarket(marketId)
+  protected async _getMarket(
+    config: BorrowMarketConfig,
+  ): Promise<BorrowMarket> {
     const market = await this.fetchMarket(config)
     return this.adaptMarket(config, market)
   }
@@ -93,22 +89,21 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     )
   }
 
-  protected async _getPosition(
-    params: GetBorrowPositionParams,
-  ): Promise<BorrowMarketPosition> {
-    const config = this.requireAllowlistMarket(params.marketId)
+  protected async _getPosition(params: {
+    market: BorrowMarketConfig
+    walletAddress: Address
+  }): Promise<BorrowMarketPosition> {
     const accrualPosition = await this.fetchPosition(
-      config,
+      params.market,
       params.walletAddress,
     )
-    return this.adaptPosition(config, accrualPosition)
+    return this.adaptPosition(params.market, accrualPosition)
   }
 
   protected async _openPosition(
     params: BorrowOpenPositionInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAllowlistMarket(params.market)
-    const resolvedParams = { ...params, market }
+    const market = params.market
     const { current, allowance } = await this.fetchStateWithAllowance(
       market,
       params.walletAddress,
@@ -153,7 +148,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'open',
-      params: resolvedParams,
+      market,
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
@@ -168,8 +163,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _closePosition(
     params: BorrowClosePositionInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAllowlistMarket(params.market)
-    const resolvedParams = { ...params, market }
+    const market = params.market
     const { current, allowance } = await this.fetchStateWithAllowance(
       market,
       params.walletAddress,
@@ -238,7 +232,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'close',
-      params: resolvedParams,
+      market,
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
@@ -255,8 +249,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _depositCollateral(
     params: BorrowDepositCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAllowlistMarket(params.market)
-    const resolvedParams = { ...params, market }
+    const market = params.market
     const { current, allowance } = await this.fetchStateWithAllowance(
       market,
       params.walletAddress,
@@ -282,7 +275,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'depositCollateral',
-      params: resolvedParams,
+      market,
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
@@ -294,8 +287,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _withdrawCollateral(
     params: BorrowWithdrawCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAllowlistMarket(params.market)
-    const resolvedParams = { ...params, market }
+    const market = params.market
     const current = await this.fetchPosition(market, params.walletAddress)
     let amountWei: bigint
     if ('max' in params.amount) {
@@ -317,7 +309,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'withdrawCollateral',
-      params: resolvedParams,
+      market,
       positionBefore: current,
       positionAfter: after,
       transactions: [tx],
@@ -330,8 +322,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _repay(
     params: BorrowRepayInternalParams,
   ): Promise<BorrowQuote> {
-    const market = this.requireAllowlistMarket(params.market)
-    const resolvedParams = { ...params, market }
+    const market = params.market
     const { current, allowance } = await this.fetchStateWithAllowance(
       market,
       params.walletAddress,
@@ -376,7 +367,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
     return this.assembleQuote({
       action: 'repay',
-      params: resolvedParams,
+      market,
       positionBefore: current,
       positionAfter: after,
       transactions: txs,
@@ -391,16 +382,6 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   // ─────────────────────────────────────────────────────────────────────────
   // Internal helpers
   // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Look up a `BorrowMarketConfig` from the allowlist by id.
-   * @description Decoupling the read methods from the allowlist would force
-   * an extra `idToMarketParams` RPC. Locking it instead keeps `_getMarket`
-   * and `_getPosition` at one round-trip.
-   */
-  private requireAllowlistMarket(marketId: BorrowMarketId): BorrowMarketConfig {
-    return requireMorphoAllowlistMarket(this._config.marketAllowlist, marketId)
-  }
 
   /**
    * Read market state + oracle price in one multicall. Constructs a
@@ -443,7 +424,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
   private assembleQuote(args: {
     action: BorrowAction
-    params: { market: BorrowMarketConfig }
+    market: BorrowMarketConfig
     positionBefore: AccrualPosition
     positionAfter: AccrualPosition
     transactions: TransactionData[]
@@ -455,14 +436,14 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   }): BorrowQuote {
     return assembleMorphoBorrowQuote({
       action: args.action,
-      config: args.params.market,
+      config: args.market,
       positionBefore: args.positionBefore,
       positionAfter: args.positionAfter,
       transactions: args.transactions,
       echoAmounts: args.echoAmounts,
       approvalsSkipped: args.approvalsSkipped,
       quoteExpirationSeconds: this.quoteExpirationSeconds,
-      healthBufferPct: this.resolveHealthBufferPct(args.params.market),
+      healthBufferPct: this.resolveHealthBufferPct(args.market),
     })
   }
 

@@ -1,4 +1,7 @@
+import type { Address } from 'viem'
+
 import { filterBorrowMarketConfigs } from '@/actions/borrow/core/helpers.js'
+import type { ResolvedBorrowBaseParams } from '@/actions/borrow/core/internalParams.js'
 import {
   buildClosePositionInternalParams,
   buildDepositCollateralInternalParams,
@@ -8,6 +11,7 @@ import {
   buildWithdrawCollateralInternalParams,
 } from '@/actions/borrow/core/internalParams.js'
 import {
+  requireAllowlistedBorrowMarketConfig,
   validateBorrowMarketAllowed,
   validateBorrowMarketIdAllowed,
   validateBorrowWalletAddress,
@@ -86,48 +90,42 @@ export abstract class BorrowProvider<
   public async openPosition(
     params: BorrowOpenPositionParams,
   ): Promise<BorrowQuote> {
+    const { market, base } = this.resolveTrustedBaseParams(params)
     return this._openPosition(
-      buildOpenPositionInternalParams(params, this.normalizeBaseParams(params)),
+      buildOpenPositionInternalParams({ ...params, market }, base),
     )
   }
 
   public async closePosition(
     params: BorrowClosePositionParams,
   ): Promise<BorrowQuote> {
+    const { market, base } = this.resolveTrustedBaseParams(params)
     return this._closePosition(
-      buildClosePositionInternalParams(
-        params,
-        this.normalizeBaseParams(params),
-      ),
+      buildClosePositionInternalParams({ ...params, market }, base),
     )
   }
 
   public async depositCollateral(
     params: BorrowDepositCollateralParams,
   ): Promise<BorrowQuote> {
+    const { market, base } = this.resolveTrustedBaseParams(params)
     return this._depositCollateral(
-      buildDepositCollateralInternalParams(
-        params,
-        this.normalizeBaseParams(params),
-      ),
+      buildDepositCollateralInternalParams({ ...params, market }, base),
     )
   }
 
   public async withdrawCollateral(
     params: BorrowWithdrawCollateralParams,
   ): Promise<BorrowQuote> {
+    const { market, base } = this.resolveTrustedBaseParams(params)
     return this._withdrawCollateral(
-      buildWithdrawCollateralInternalParams(
-        params,
-        this.normalizeBaseParams(params),
-      ),
+      buildWithdrawCollateralInternalParams({ ...params, market }, base),
     )
   }
 
   public async repay(params: BorrowRepayParams): Promise<BorrowQuote> {
-    return this._repay(
-      buildRepayInternalParams(params, this.normalizeBaseParams(params)),
-    )
+    const { market, base } = this.resolveTrustedBaseParams(params)
+    return this._repay(buildRepayInternalParams({ ...params, market }, base))
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -136,8 +134,8 @@ export abstract class BorrowProvider<
 
   public async getMarket(marketId: BorrowMarketId): Promise<BorrowMarket> {
     validateChainSupported(marketId.chainId, this.supportedChainIds())
-    this.validateMarketIdAllowed(marketId)
-    return this._getMarket(marketId)
+    const market = this.requireAllowlistedMarketConfig(marketId)
+    return this._getMarket(market)
   }
 
   public async getMarkets(
@@ -158,8 +156,8 @@ export abstract class BorrowProvider<
   ): Promise<BorrowMarketPosition> {
     validateBorrowWalletAddress(params.walletAddress)
     validateChainSupported(params.marketId.chainId, this.supportedChainIds())
-    this.validateMarketIdAllowed(params.marketId)
-    return this._getPosition(params)
+    const market = this.requireAllowlistedMarketConfig(params.marketId)
+    return this._getPosition({ market, walletAddress: params.walletAddress })
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -174,21 +172,27 @@ export abstract class BorrowProvider<
     return market.healthBufferPct ?? this.defaultHealthBufferPct
   }
 
-  /**
-   * Validate that a market is allowed by this provider's allowlist and
-   * neither chain- nor block-listed.
-   */
-  protected validateConfigSupported(market: BorrowMarketConfig): void {
-    validateChainSupported(market.chainId, this.supportedChainIds())
-    this.validateMarketAllowed(market)
-  }
-
   protected validateMarketAllowed(market: BorrowMarketConfig): void {
     validateBorrowMarketAllowed(market, this._config)
   }
 
   protected validateMarketIdAllowed(marketId: BorrowMarketId): void {
     validateBorrowMarketIdAllowed(marketId, this._config)
+  }
+
+  /**
+   * Resolve a `BorrowMarketId` to its full `BorrowMarketConfig` from the
+   * provider allowlist; throws `MarketNotAllowedError` when missing.
+   * @description Subclasses receive the resolved config via the `_*`
+   * hooks, so concrete providers don't repeat the lookup.
+   */
+  protected requireAllowlistedMarketConfig(
+    marketId: BorrowMarketId,
+  ): BorrowMarketConfig {
+    return requireAllowlistedBorrowMarketConfig(
+      marketId,
+      this._config.marketAllowlist,
+    )
   }
 
   /**
@@ -201,16 +205,28 @@ export abstract class BorrowProvider<
   }
 
   /**
-   * Validate + resolve the cross-cutting fields every action shares
-   * (walletAddress, recipient, approvalMode, market support).
+   * Validate the cross-cutting fields every write action shares and
+   * resolve a *trusted* `BorrowMarketConfig` from the allowlist by
+   * `marketId`. Returning the allowlisted config — rather than trusting
+   * `params.market.marketParams` — prevents a caller from tampering with
+   * the on-chain market identity (e.g. swapping `marketParams.loanToken`
+   * for an attacker token while keeping a legitimate `marketId`).
    */
-  private normalizeBaseParams(params: BorrowOpenPositionBaseParams) {
+  private resolveTrustedBaseParams(params: BorrowOpenPositionBaseParams): {
+    market: BorrowMarketConfig
+    base: ResolvedBorrowBaseParams
+  } {
     validateBorrowWalletAddress(params.walletAddress)
-    this.validateConfigSupported(params.market)
-    return buildResolvedBorrowBaseParams(
+    validateChainSupported(params.market.chainId, this.supportedChainIds())
+    // `validateMarketAllowed` also enforces the blocklist; the allowlist
+    // lookup below returns the trusted config used for the rest of the call.
+    this.validateMarketAllowed(params.market)
+    const market = this.requireAllowlistedMarketConfig(params.market)
+    const base = buildResolvedBorrowBaseParams(
       params.walletAddress,
       this.resolveApprovalMode(params.approvalMode),
     )
+    return { market, base }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -241,13 +257,16 @@ export abstract class BorrowProvider<
   // Abstract read hooks
   // ─────────────────────────────────────────────────────────────────────────
 
-  protected abstract _getMarket(marketId: BorrowMarketId): Promise<BorrowMarket>
+  protected abstract _getMarket(
+    market: BorrowMarketConfig,
+  ): Promise<BorrowMarket>
 
   protected abstract _getMarkets(
     params: GetBorrowMarketsParams,
   ): Promise<BorrowMarket[]>
 
-  protected abstract _getPosition(
-    params: GetBorrowPositionParams,
-  ): Promise<BorrowMarketPosition>
+  protected abstract _getPosition(params: {
+    market: BorrowMarketConfig
+    walletAddress: Address
+  }): Promise<BorrowMarketPosition>
 }

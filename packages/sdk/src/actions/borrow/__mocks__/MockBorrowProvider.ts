@@ -156,7 +156,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _repay(_: BorrowRepayInternalParams): Promise<BorrowQuote> {
     throw new Error('MockBorrowProvider._repay should not be called')
   }
-  protected async _getMarket(_: BorrowMarketId): Promise<BorrowMarket> {
+  protected async _getMarket(_: BorrowMarketConfig): Promise<BorrowMarket> {
     throw new Error('MockBorrowProvider._getMarket should not be called')
   }
   protected async _getMarkets(
@@ -164,9 +164,10 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<BorrowMarket[]> {
     throw new Error('MockBorrowProvider._getMarkets should not be called')
   }
-  protected async _getPosition(
-    _: GetBorrowPositionParams,
-  ): Promise<BorrowMarketPosition> {
+  protected async _getPosition(_: {
+    market: BorrowMarketConfig
+    walletAddress: `0x${string}`
+  }): Promise<BorrowMarketPosition> {
     throw new Error('MockBorrowProvider._getPosition should not be called')
   }
 

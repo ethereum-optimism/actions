@@ -102,7 +102,8 @@ export function validateBorrowMarketAllowed(
  * Validate that a `BorrowMarketId` is present in the provider's allowlist.
  * @description Treats an undefined/empty allowlist as "all allowed" —
  * matches the relaxed read-side behavior expected by callers that haven't
- * configured an allowlist (the strict variant lives in morpho/helpers).
+ * configured an allowlist (use `requireAllowlistedBorrowMarketConfig` for
+ * the strict variant that also returns the matched config).
  */
 export function validateBorrowMarketIdAllowed(
   marketId: BorrowMarketId,
@@ -117,6 +118,28 @@ export function validateBorrowMarketIdAllowed(
     chainId: marketId.chainId,
     reason: 'Market is not in the marketAllowlist',
   })
+}
+
+/**
+ * Strict allowlist lookup: returns the matched `BorrowMarketConfig` or
+ * throws `MarketNotAllowedError`. Empty/undefined allowlists fail. Used
+ * by `BorrowProvider` to resolve marketId → full config once before
+ * dispatching to subclass `_*` hooks, so concrete providers don't have
+ * to repeat the lookup.
+ */
+export function requireAllowlistedBorrowMarketConfig(
+  marketId: BorrowMarketId,
+  allowlist: readonly BorrowMarketConfig[] | undefined,
+): BorrowMarketConfig {
+  const match = findBorrowMarketInAllowlist(allowlist, marketId)
+  if (!match) {
+    throw new MarketNotAllowedError({
+      address: marketId.marketId,
+      chainId: marketId.chainId,
+      reason: 'Market not in borrow provider allowlist',
+    })
+  }
+  return match
 }
 
 /**
