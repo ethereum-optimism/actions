@@ -99,28 +99,6 @@ export function validateBorrowMarketAllowed(
 }
 
 /**
- * Validate that a `BorrowMarketId` is present in the provider's allowlist.
- * @description Treats an undefined/empty allowlist as "all allowed" —
- * matches the relaxed read-side behavior expected by callers that haven't
- * configured an allowlist (use `requireAllowlistedBorrowMarketConfig` for
- * the strict variant that also returns the matched config).
- */
-export function validateBorrowMarketIdAllowed(
-  marketId: BorrowMarketId,
-  config: { marketAllowlist?: BorrowMarketConfig[] },
-): void {
-  const allowlist = config.marketAllowlist
-  if (!allowlist || allowlist.length === 0) return
-  const hit = findBorrowMarketInAllowlist(allowlist, marketId)
-  if (hit) return
-  throw new MarketNotAllowedError({
-    address: marketId.marketId,
-    chainId: marketId.chainId,
-    reason: 'Market is not in the marketAllowlist',
-  })
-}
-
-/**
  * Strict allowlist lookup: returns the matched `BorrowMarketConfig` or
  * throws `MarketNotAllowedError`. Empty/undefined allowlists fail. Used
  * by `BorrowProvider` to resolve marketId → full config once before
@@ -144,10 +122,8 @@ export function requireAllowlistedBorrowMarketConfig(
 
 /**
  * Validate that at least one configured borrow provider's allowlist
- * contains the supplied `marketId`. Stricter than
- * `validateBorrowMarketIdAllowed` because it requires an explicit
- * allowlist hit — used to gate dispatch of pre-built quotes that arrive
- * from untrusted (or stale) callers.
+ * contains the supplied `marketId`. Used to gate dispatch of pre-built
+ * quotes that arrive from untrusted (or stale) callers.
  */
 export function validateBorrowMarketIdInAnyAllowlist(
   marketId: BorrowMarketId,

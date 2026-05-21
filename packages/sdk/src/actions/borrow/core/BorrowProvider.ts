@@ -13,7 +13,6 @@ import {
 import {
   requireAllowlistedBorrowMarketConfig,
   validateBorrowMarketAllowed,
-  validateBorrowMarketIdAllowed,
   validateBorrowWalletAddress,
 } from '@/actions/borrow/core/validations.js'
 import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
@@ -174,10 +173,6 @@ export abstract class BorrowProvider<
 
   protected validateMarketAllowed(market: BorrowMarketConfig): void {
     validateBorrowMarketAllowed(market, this._config)
-  }
-
-  protected validateMarketIdAllowed(marketId: BorrowMarketId): void {
-    validateBorrowMarketIdAllowed(marketId, this._config)
   }
 
   /**
