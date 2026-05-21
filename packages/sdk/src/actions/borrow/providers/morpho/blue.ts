@@ -1,6 +1,6 @@
 import { Market, MarketParams } from '@morpho-org/blue-sdk'
 import { blueAbi } from '@morpho-org/blue-sdk-viem'
-import { type Address, encodeFunctionData, type Hex, maxUint256 } from 'viem'
+import { type Address, encodeFunctionData, maxUint256 } from 'viem'
 
 import { getMorphoContracts } from '@/actions/shared/morpho/contracts.js'
 import { ProtocolContractsNotConfiguredError } from '@/core/error/errors.js'
@@ -29,7 +29,7 @@ export function requireMorphoBlueAddress(chainId: number): Address {
  * `[totalSupplyAssets, totalSupplyShares, totalBorrowAssets, totalBorrowShares, lastUpdate, fee]`
  * as uint128/uint128/uint128/uint128/uint128/uint128.
  */
-export function buildMorphoMarket(
+export function buildMorphoBlueMarket(
   config: BorrowMarketConfig,
   marketTuple: readonly [bigint, bigint, bigint, bigint, bigint, bigint],
   price: bigint,
@@ -200,5 +200,3 @@ export function liquidationBonusFromIncentive(factor: bigint): number {
   if (factor <= 10n ** 18n) return 0
   return morphoWadToNumber(factor - 10n ** 18n)
 }
-
-export type { Hex }

@@ -3,7 +3,7 @@ import { blueAbi, blueOracleAbi } from '@morpho-org/blue-sdk-viem'
 import { type Address, erc20Abi, type PublicClient } from 'viem'
 
 import {
-  buildMorphoMarket,
+  buildMorphoBlueMarket,
   requireMorphoBlueAddress,
 } from '@/actions/borrow/providers/morpho/blue.js'
 import type { BorrowMarketConfig } from '@/types/borrow/index.js'
@@ -32,7 +32,7 @@ export async function fetchMorphoMarket(
     ],
   })
 
-  return buildMorphoMarket(config, marketTuple, price)
+  return buildMorphoBlueMarket(config, marketTuple, price)
 }
 
 export async function fetchMorphoPosition(
@@ -126,7 +126,7 @@ function buildAccrualPosition(
   marketTuple: readonly [bigint, bigint, bigint, bigint, bigint, bigint],
   price: bigint,
 ): AccrualPosition {
-  const market = buildMorphoMarket(config, marketTuple, price)
+  const market = buildMorphoBlueMarket(config, marketTuple, price)
   const [supplyShares, borrowShares, collateral] = positionTuple
   return new AccrualPosition(
     {
