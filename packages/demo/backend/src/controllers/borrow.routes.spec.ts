@@ -92,8 +92,7 @@ describe('borrow routes', () => {
   })
 
   describe('POST /borrow/price', () => {
-    it('returns 200 without auth and forwards the parsed body', async () => {
-      vi.mocked(borrowService.getPrice).mockResolvedValue({} as never)
+    it('returns 401 without auth headers', async () => {
       const res = await createApp().request('/borrow/price', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,19 +100,35 @@ describe('borrow routes', () => {
           action: 'open',
           marketId: MARKET_ID,
           borrowAmount: { amountRaw: '1' },
+        }),
+      })
+      expect(res.status).toBe(401)
+    })
+
+    it('returns 400 when the body includes walletAddress (strict schema)', async () => {
+      vi.mocked(walletService.getWallet).mockResolvedValue({
+        address: WALLET,
+      } as never)
+      const res = await createApp().request('/borrow/price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          action: 'open',
+          marketId: MARKET_ID,
+          borrowAmount: { amountRaw: '1' },
           walletAddress: WALLET,
         }),
       })
-      expect(res.status).toBe(200)
-      expect(borrowService.getPrice).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'open', walletAddress: WALLET }),
-      )
+      expect(res.status).toBe(400)
     })
 
     it('returns 400 with a clean envelope on invalid body', async () => {
+      vi.mocked(walletService.getWallet).mockResolvedValue({
+        address: WALLET,
+      } as never)
       const res = await createApp().request('/borrow/price', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ action: 'open' }),
       })
       expect(res.status).toBe(400)

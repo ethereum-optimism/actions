@@ -4,7 +4,6 @@ import { z } from 'zod'
 
 import { requireAuth } from '@/helpers/errors.js'
 import {
-  AddressSchema,
   AmountExactSchema,
   AmountWithMaxSchema,
   BorrowMarketIdSchema,
@@ -20,57 +19,38 @@ const GetMarketsRequestSchema = z.object({
   }),
 })
 
-// Per-action base. `/borrow/price` extends each with an optional
-// `walletAddress`; `/borrow/quote` is strict (recipient is auth-bound).
-const OpenActionBase = z.object({
-  action: z.literal('open'),
-  marketId: BorrowMarketIdSchema,
-  borrowAmount: AmountExactSchema,
-  collateralAmount: AmountExactSchema.optional(),
-})
-const CloseActionBase = z.object({
-  action: z.literal('close'),
-  marketId: BorrowMarketIdSchema,
-  borrowAmount: AmountWithMaxSchema,
-  collateralAmount: AmountWithMaxSchema.optional(),
-})
-const DepositCollateralActionBase = z.object({
-  action: z.literal('depositCollateral'),
-  marketId: BorrowMarketIdSchema,
-  amount: AmountExactSchema,
-})
-const WithdrawCollateralActionBase = z.object({
-  action: z.literal('withdrawCollateral'),
-  marketId: BorrowMarketIdSchema,
-  amount: AmountWithMaxSchema,
-})
-const RepayActionBase = z.object({
-  action: z.literal('repay'),
-  marketId: BorrowMarketIdSchema,
-  amount: AmountWithMaxSchema,
-})
-
-const withOptionalWalletAddress = <T extends z.ZodRawShape>(
-  base: z.ZodObject<T>,
-) => base.extend({ walletAddress: AddressSchema.optional() }).strict()
-
-export const PriceBodySchema = z.discriminatedUnion('action', [
-  withOptionalWalletAddress(OpenActionBase),
-  withOptionalWalletAddress(CloseActionBase),
-  withOptionalWalletAddress(DepositCollateralActionBase),
-  withOptionalWalletAddress(WithdrawCollateralActionBase),
-  withOptionalWalletAddress(RepayActionBase),
-])
-
+// Both `/borrow/price` and `/borrow/quote` are auth-gated and derive
+// `walletAddress` from the idToken, so neither accepts it in the body.
 export const QuoteBodySchema = z.discriminatedUnion('action', [
-  OpenActionBase.strict(),
-  CloseActionBase.strict(),
-  DepositCollateralActionBase.strict(),
-  WithdrawCollateralActionBase.strict(),
-  RepayActionBase.strict(),
+  z.strictObject({
+    action: z.literal('open'),
+    marketId: BorrowMarketIdSchema,
+    borrowAmount: AmountExactSchema,
+    collateralAmount: AmountExactSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('close'),
+    marketId: BorrowMarketIdSchema,
+    borrowAmount: AmountWithMaxSchema,
+    collateralAmount: AmountWithMaxSchema.optional(),
+  }),
+  z.strictObject({
+    action: z.literal('depositCollateral'),
+    marketId: BorrowMarketIdSchema,
+    amount: AmountExactSchema,
+  }),
+  z.strictObject({
+    action: z.literal('withdrawCollateral'),
+    marketId: BorrowMarketIdSchema,
+    amount: AmountWithMaxSchema,
+  }),
+  z.strictObject({
+    action: z.literal('repay'),
+    marketId: BorrowMarketIdSchema,
+    amount: AmountWithMaxSchema,
+  }),
 ])
 
-const PriceRequestSchema = z.object({ body: PriceBodySchema })
 const QuoteRequestSchema = z.object({ body: QuoteBodySchema })
 
 export async function getMarkets(c: Context) {
@@ -82,18 +62,10 @@ export async function getMarkets(c: Context) {
   return c.json({ result: serializeBigInt(markets) })
 }
 
-export async function getPrice(c: Context) {
-  const validation = await validateRequest(c, PriceRequestSchema)
-  if (!validation.success) return validation.response
-
-  const price = await borrowService.getPrice(validation.data.body)
-  return c.json({ result: serializeBigInt(price) })
-}
-
 // Auth runs before schema so unauthenticated calls always 401.
 // `walletAddress` is derived from the idToken; the schema rejects any
 // caller-supplied value.
-export async function getQuote(c: Context) {
+async function buildQuote(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
@@ -111,6 +83,9 @@ export async function getQuote(c: Context) {
   })
   return c.json({ result: serializeBigInt(quote) })
 }
+
+export const getPrice = buildQuote
+export const getQuote = buildQuote
 
 // ---------- Mutations ----------
 

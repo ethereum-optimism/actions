@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { PriceBodySchema, QuoteBodySchema } from '@/controllers/borrow.js'
+import { QuoteBodySchema } from '@/controllers/borrow.js'
 
 const MARKET_ID = {
   kind: 'morpho-blue',
@@ -9,37 +9,6 @@ const MARKET_ID = {
     '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
 }
 const WALLET = '0xCccCccCccCccCccCccCccCccCccCccCccCccCccc'
-
-describe('PriceBodySchema', () => {
-  it('accepts an open action with optional walletAddress', () => {
-    const result = PriceBodySchema.safeParse({
-      action: 'open',
-      marketId: MARKET_ID,
-      borrowAmount: { amountRaw: '1000000' },
-      walletAddress: WALLET,
-    })
-    expect(result.success).toBe(true)
-  })
-
-  it('accepts an open action without walletAddress', () => {
-    const result = PriceBodySchema.safeParse({
-      action: 'open',
-      marketId: MARKET_ID,
-      borrowAmount: { amountRaw: '1000000' },
-    })
-    expect(result.success).toBe(true)
-  })
-
-  it('rejects unknown keys (strict)', () => {
-    const result = PriceBodySchema.safeParse({
-      action: 'open',
-      marketId: MARKET_ID,
-      borrowAmount: { amountRaw: '1000000' },
-      extraneous: 'nope',
-    })
-    expect(result.success).toBe(false)
-  })
-})
 
 describe('QuoteBodySchema', () => {
   it('accepts an open action without walletAddress', () => {
