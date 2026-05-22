@@ -1,3 +1,5 @@
+import { Server as HttpServer } from 'node:http'
+
 import { App } from '@eth-optimism/utils-app'
 import { serve } from '@hono/node-server'
 import { Option } from 'commander'
@@ -45,18 +47,13 @@ class ActionsApp extends App {
     })
 
     // Bound request lifetime so a hung upstream RPC can't pin a request
-    // indefinitely. `/borrow/price` is public, so unbounded latency turns
-    // into an external amplifier on Alchemy/Morpho RPC budget. Cast to
-    // the http.Server shape; the http2 variant @hono/node-server unions
-    // in lacks these but we never start the server in http2 mode here.
-    const httpServer = this.server as unknown as {
-      requestTimeout: number
-      headersTimeout: number
-      keepAliveTimeout: number
+    // indefinitely. `@hono/node-server`'s `ServerType` is a union with
+    // `Http2Server`, which lacks these timeout primitives; narrow first.
+    if (this.server instanceof HttpServer) {
+      this.server.requestTimeout = 60_000
+      this.server.headersTimeout = 65_000
+      this.server.keepAliveTimeout = 5_000
     }
-    httpServer.requestTimeout = 60_000
-    httpServer.headersTimeout = 65_000
-    httpServer.keepAliveTimeout = 5_000
 
     while (!this.isShuttingDown) {
       await new Promise((resolve) => setTimeout(resolve, 1000))
