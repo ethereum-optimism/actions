@@ -35,10 +35,6 @@ export const AaveETH: LendMarketConfig = {
 }
 
 // ---------- Borrow markets ----------
-
-// Mirrors `morpho.borrow` in packages/demo/contracts/state/deployments.json
-// for chain 84532. Refresh these literals if the demo deploy is re-run
-// (DeployMorphoBorrowMarket.s.sol writes new addresses into deployments.json).
 export const MorphoUSDCBorrowDemo: BorrowMarketConfig = {
   kind: 'morpho-blue',
   marketId:
