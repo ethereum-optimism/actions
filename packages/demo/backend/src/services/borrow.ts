@@ -246,7 +246,7 @@ export type BorrowDepositCollateralServiceInput =
   | { idToken: string; quote: BorrowQuote }
 
 /**
- * Add collateral to an existing borrow position. AmountExact only — no
+ * Add collateral to an existing borrow position. AmountExact only; no
  * `{ max: true }` sentinel. See `openPosition` for thrown error classes.
  */
 export async function depositCollateral(
