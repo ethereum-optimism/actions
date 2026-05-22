@@ -39,23 +39,6 @@ class ActionsApp extends App {
   protected async main(): Promise<void> {
     const app = createApp()
 
-    // Borrow-only global error handler. Lend / swap still use per-route
-    // try/catch; this handler is scoped to the borrow route prefixes so
-    // their thrown SDK errors get translated to structured status codes
-    // via `mapSdkError`. Non-borrow paths fall through unchanged.
-    app.onError((err, c) => {
-      const path = c.req.path
-      const isBorrow =
-        path.startsWith('/borrow') || path.startsWith('/wallet/borrow')
-      if (!isBorrow) {
-        return c.json({ error: 'Internal server error' }, 500)
-      }
-      const mapped = mapSdkError(err)
-      return mapped
-        ? errorResponse(c, mapped.message, mapped.status, err)
-        : errorResponse(c, 'Internal server error', 500, err)
-    })
-
     this.logger.info('starting actions service on port %s', this.options.port)
 
     this.server = serve({
@@ -95,13 +78,13 @@ class ActionsApp extends App {
 }
 
 /**
- * Build a fully-wired Hono app: CORS, actions middleware, router, and
- * the borrow-scoped global error handler. Extracted so route tests can
- * exercise the real onError + middleware stack against the actual router.
+ * Build a fully-wired Hono app: CORS, actions middleware, router, and a
+ * global error handler. Extracted so route tests can exercise the real
+ * onError + middleware stack against the actual router.
  *
- * Lend / swap still own their per-route try/catch; the onError handler
- * is intentionally scoped to borrow path prefixes so non-borrow routes
- * fall through to a generic 500 unchanged.
+ * The error handler runs `mapSdkError` against every thrown SDK error so
+ * lend, swap, and borrow all surface the same structured status codes.
+ * Unmapped errors fall through to a generic 500.
  */
 export function createApp(): Hono {
   const app = new Hono()
@@ -140,12 +123,6 @@ export function createApp(): Hono {
   app.route('/', router)
 
   app.onError((err, c) => {
-    const path = c.req.path
-    const isBorrow =
-      path.startsWith('/borrow') || path.startsWith('/wallet/borrow')
-    if (!isBorrow) {
-      return c.json({ error: 'Internal server error' }, 500)
-    }
     const mapped = mapSdkError(err)
     return mapped
       ? errorResponse(c, mapped.message, mapped.status, err)
