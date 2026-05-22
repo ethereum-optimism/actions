@@ -16,7 +16,6 @@ import { createActionsConfig } from '@/config/actions'
 import type { EarnOperations } from '@/hooks/useLendProvider'
 import type { BorrowOperations } from '@/hooks/useBorrowProvider'
 import type {
-  BorrowPriceParams,
   BorrowQuoteParams,
   StubCloseParams,
   StubCollateralParams,
@@ -53,7 +52,7 @@ type FrontendWalletOperationsActions = Pick<
 >
 
 function resolveBorrowMarketConfig(
-  marketId: BorrowPriceParams['marketId'],
+  marketId: BorrowQuoteParams['marketId'],
 ): BorrowMarketConfig {
   const marketConfigs = ALL_BORROW_MARKETS?.length
     ? ALL_BORROW_MARKETS
@@ -72,7 +71,6 @@ function resolveBorrowMarketConfig(
 
 function buildWalletBorrowParams(
   params:
-    | BorrowPriceParams
     | BorrowQuoteParams
     | StubOpenParams
     | StubCloseParams
@@ -157,8 +155,6 @@ export function buildFrontendBorrowOperations(
       })
       return isEmptyBorrowPosition(position) ? null : position
     },
-    getPrice: async (params) =>
-      actions.borrow.getPrice(buildWalletBorrowParams(params, wallet.address)),
     getQuote: async (params) =>
       actions.borrow.getQuote(buildWalletBorrowParams(params, wallet.address)),
     openPosition: async (_walletAddress, params) =>

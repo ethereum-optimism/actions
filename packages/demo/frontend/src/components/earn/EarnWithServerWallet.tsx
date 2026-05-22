@@ -99,8 +99,6 @@ function buildBorrowOperations(
         marketId,
         (await getAuthHeaders()) ?? {},
       ),
-    getPrice: async (params) =>
-      borrowApi.getPrice(params, (await getAuthHeaders()) ?? {}),
     getQuote: async (params) =>
       borrowApi.getQuote(params, (await getAuthHeaders()) ?? {}),
     openPosition: async (walletAddress, params) =>

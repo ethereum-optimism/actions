@@ -6,7 +6,7 @@
  * CtaButton + Asset modal + Review modal + TransactionModal + Toast.
  *
  * The projection (LTV, HF, would-liquidate) is sourced from
- * `borrowApi.getPrice` with a 250 ms debounce on amount/mode/market
+ * `borrowApi.getQuote` with a 250 ms debounce on amount/mode/market
  * changes. Local stub-price math is kept only for the synchronous Max
  * button prefill and for current-position USD display.
  */
@@ -16,7 +16,7 @@ import { createPortal } from 'react-dom'
 import type {
   BorrowMarket,
   BorrowMarketPosition,
-  BorrowPrice,
+  BorrowQuote,
 } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/api/borrowApi'
 import { getBlockExplorerUrl } from '@/utils/blockExplorer'
@@ -80,7 +80,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     selectedMarketPosition,
     handleMarketSelect,
     handleTransaction,
-    getPrice,
+    getQuote,
   } = useBorrowProviderContext()
   const { logActivity } = useActivityLogger()
 
@@ -190,7 +190,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
 
   // Backend-driven preview from `/borrow/price`. Debounced and
   // race-safe: outdated responses are discarded on cancel.
-  const [livePreview, setLivePreview] = useState<BorrowPrice | null>(null)
+  const [livePreview, setLivePreview] = useState<BorrowQuote | null>(null)
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   useEffect(() => {
     if (!activeMarket || amountNum <= 0) {
@@ -234,8 +234,8 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
                 marketId: activeMarket.marketId,
                 amount: { amount: amountNum },
               } as const)
-        const price = await getPrice(params)
-        if (!cancelled) setLivePreview(price)
+        const quote = await getQuote(params)
+        if (!cancelled) setLivePreview(quote)
       } catch {
         // Network / 4xx: fall back to the local projection.
         if (!cancelled) setLivePreview(null)
@@ -253,7 +253,7 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     currentCollUsd,
     mode,
     selectedLendPosition,
-    getPrice,
+    getQuote,
   ])
 
   const backendLtv = livePreview?.positionAfter.ltv ?? null

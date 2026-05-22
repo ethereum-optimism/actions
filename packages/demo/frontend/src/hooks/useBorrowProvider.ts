@@ -9,8 +9,8 @@
  *
  * Auth headers are injected via `getAuthHeaders`. Pass `null` for paths
  * that don't have a server-wallet wired (Dynamic / Turnkey today); the
- * public `/borrow/markets` and `/borrow/price` routes still resolve, but
- * `/borrow/quote` and mutations will fail without auth.
+ * public `/borrow/markets` route still resolves, but `/borrow/quote`
+ * and mutations will fail without auth.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -21,12 +21,10 @@ import type {
   BorrowMarket,
   BorrowMarketId,
   BorrowMarketPosition,
-  BorrowPrice,
   BorrowQuote,
   BorrowReceipt,
 } from '@eth-optimism/actions-sdk'
 import type {
-  BorrowPriceParams,
   BorrowQuoteParams,
   StubCloseParams,
   StubCollateralParams,
@@ -55,7 +53,6 @@ export interface BorrowOperations {
     walletAddress: Address,
     marketId: BorrowMarketId,
   ) => Promise<BorrowMarketPosition | null>
-  getPrice: (params: BorrowPriceParams) => Promise<BorrowPrice>
   getQuote: (params: BorrowQuoteParams) => Promise<BorrowQuote>
   openPosition: (
     walletAddress: Address,
@@ -104,10 +101,6 @@ export interface UseBorrowProviderReturn {
   /**
    * Caller-side params omit `walletAddress` (provider injects it).
    */
-  getPrice: (
-    params: Omit<BorrowPriceParams, 'walletAddress'>,
-  ) => Promise<BorrowPrice>
-
   getQuote: (
     params: Omit<BorrowQuoteParams, 'walletAddress'>,
   ) => Promise<BorrowQuote>
@@ -272,24 +265,10 @@ export function useBorrowProvider(
     [walletAddress, fetchPositions, operations, queryClient],
   )
 
-  const getPrice = useCallback<UseBorrowProviderReturn['getPrice']>(
-    async (params) => {
-      if (!walletAddress) throw new Error('Wallet not connected')
-      return operations.getPrice({
-        ...params,
-        walletAddress,
-      } as BorrowPriceParams)
-    },
-    [walletAddress, operations],
-  )
-
   const getQuote = useCallback<UseBorrowProviderReturn['getQuote']>(
     async (params) => {
       if (!walletAddress) throw new Error('Wallet not connected')
-      return operations.getQuote({
-        ...params,
-        walletAddress,
-      } as BorrowQuoteParams)
+      return operations.getQuote(params as BorrowQuoteParams)
     },
     [walletAddress, operations],
   )
@@ -334,7 +313,6 @@ export function useBorrowProvider(
     isInitialLoad,
     refreshPositions,
     handleTransaction,
-    getPrice,
     getQuote,
   }
 }

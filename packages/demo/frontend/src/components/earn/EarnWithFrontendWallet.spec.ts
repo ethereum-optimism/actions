@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type {
   Asset,
-  BorrowPrice,
+  BorrowQuote,
   BorrowReceipt,
   SupportedChainId,
   SwapQuote,
@@ -120,9 +120,10 @@ describe('buildFrontendWalletOperations', () => {
   })
 
   it('routes borrow pricing and execution through the SDK namespaces for frontend wallets', async () => {
-    const price = {
+    const quote = {
       marketId: borrowMarketId,
       action: 'open',
+      positionBefore: null,
       positionAfter: {
         marketId: borrowMarketId,
         collateralAsset: assetIn,
@@ -143,7 +144,11 @@ describe('buildFrontendWalletOperations', () => {
       },
       fees: { borrowApy: 0.05, liquidationBonus: 0.05 },
       safeCeilingLtv: 0.81,
-    } satisfies BorrowPrice
+      execution: { transactions: [] },
+      provider: 'morpho',
+      quotedAt: 1_700_000_000,
+      expiresAt: 1_700_000_060,
+    } satisfies BorrowQuote
     const receipt = {
       action: 'open',
       marketId: borrowMarketId,
@@ -155,7 +160,7 @@ describe('buildFrontendWalletOperations', () => {
         '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
     } satisfies BorrowReceipt
 
-    const getPrice = vi.fn().mockResolvedValue(price)
+    const getQuote = vi.fn().mockResolvedValue(quote)
     const openPosition = vi.fn().mockResolvedValue(receipt)
     const wallet = {
       address: '0x515f8fC39dD14AD674AdB305C51559b3d4fFc85a' as Address,
@@ -183,8 +188,7 @@ describe('buildFrontendWalletOperations', () => {
       lend: { getMarkets: vi.fn() },
       borrow: {
         getMarkets: vi.fn().mockResolvedValue([]),
-        getPrice,
-        getQuote: vi.fn(),
+        getQuote,
       },
       swap: {
         getMarkets: vi.fn(),
@@ -195,10 +199,9 @@ describe('buildFrontendWalletOperations', () => {
 
     const operations = buildFrontendBorrowOperations(wallet, actions)
 
-    await operations.getPrice({
+    await operations.getQuote({
       action: 'open',
       marketId: borrowMarketId,
-      walletAddress: wallet.address,
       borrowAmount: { amount: 5 },
       collateralAmount: { amount: 10 },
     })
@@ -208,13 +211,13 @@ describe('buildFrontendWalletOperations', () => {
       collateralAmount: { amount: 10 },
     })
 
-    expect(getPrice).toHaveBeenCalledWith({
+    expect(getQuote).toHaveBeenCalledWith({
       action: 'open',
       marketId: borrowMarketId,
-      walletAddress: wallet.address,
       borrowAmount: { amount: 5 },
       collateralAmount: { amount: 10 },
       market: MorphoBorrowDemo,
+      walletAddress: wallet.address,
     })
     expect(openPosition).toHaveBeenCalledWith({
       marketId: borrowMarketId,
@@ -263,7 +266,6 @@ describe('buildFrontendWalletOperations', () => {
       lend: { getMarkets: vi.fn() },
       borrow: {
         getMarkets: vi.fn().mockResolvedValue([]),
-        getPrice: vi.fn(),
         getQuote: vi.fn(),
       },
       swap: {

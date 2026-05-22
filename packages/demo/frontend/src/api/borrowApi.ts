@@ -27,7 +27,6 @@ import type {
   BorrowMarket,
   BorrowMarketId,
   BorrowMarketPosition,
-  BorrowPrice,
   BorrowQuote,
   BorrowReceipt,
 } from '@eth-optimism/actions-sdk'
@@ -81,50 +80,41 @@ export interface StubRepayParams {
   amount: AmountOrMax
 }
 
-// Discriminated price/quote params matching the backend's
-// `PriceQuoteBodySchema`. `walletAddress` is honored on `/borrow/price`
-// only; `/borrow/quote` rejects it (derived from auth).
-export type BorrowPriceParams =
+// Discriminated quote params matching the backend's `QuoteBodySchema`.
+// `walletAddress` is rejected by /borrow/quote (derived from auth).
+export type BorrowQuoteParams =
   | {
       action: 'open'
       marketId: BorrowMarketId
-      walletAddress?: Address
       borrowAmount: Amount
       collateralAmount?: Amount
     }
   | {
       action: 'close'
       marketId: BorrowMarketId
-      walletAddress?: Address
       borrowAmount: AmountOrMax
       collateralAmount?: AmountOrMax
     }
   | {
       action: 'depositCollateral'
       marketId: BorrowMarketId
-      walletAddress?: Address
       amount: Amount
     }
   | {
       action: 'withdrawCollateral'
       marketId: BorrowMarketId
-      walletAddress?: Address
       amount: AmountOrMax
     }
   | {
       action: 'repay'
       marketId: BorrowMarketId
-      walletAddress?: Address
       amount: AmountOrMax
     }
 
-export type BorrowQuoteParams = BorrowPriceParams
-
-function buildPriceBody(params: BorrowPriceParams): Record<string, unknown> {
+function buildQuoteBody(params: BorrowQuoteParams): Record<string, unknown> {
   const base = {
     action: params.action,
     marketId: params.marketId,
-    ...(params.walletAddress ? { walletAddress: params.walletAddress } : {}),
   }
   switch (params.action) {
     case 'open':
@@ -176,15 +166,6 @@ function deserializePosition(
     borrowAmount: BigInt(p.borrowAmount as unknown as string),
     liquidationPrice: BigInt(p.liquidationPrice as unknown as string),
   } as BorrowMarketPosition
-}
-
-function deserializePrice(p: Serialized<BorrowPrice>): BorrowPrice {
-  return {
-    ...p,
-    positionAfter: deserializePosition(
-      p.positionAfter as unknown as Serialized<BorrowMarketPosition>,
-    ),
-  } as BorrowPrice
 }
 
 function deserializeQuote(q: Serialized<BorrowQuote>): BorrowQuote {
@@ -333,33 +314,15 @@ export class BorrowApiClient {
     return positions.filter((p): p is BorrowMarketPosition => p !== null)
   }
 
-  // `/borrow/price` is a public route; auth headers are not required
-  // but are forwarded when provided for parity with `actionsApi`. The
-  // backend's body schema is a strict discriminated union keyed on
+  // `/borrow/quote` requires auth; recipient is derived from the
+  // idToken server-side, so `walletAddress` must not appear in the body.
+  // The backend's body schema is a strict discriminated union keyed on
   // `action`, so the shape we ship must match the variant exactly.
-  async getPrice(
-    params: BorrowPriceParams,
-    headers: HeadersInit = {},
-  ): Promise<BorrowPrice> {
-    const body = serializeBigInts(buildPriceBody(params))
-    const { result } = await this.request<{ result: Serialized<BorrowPrice> }>(
-      '/borrow/price',
-      { method: 'POST', body: JSON.stringify(body), headers },
-    )
-    return deserializePrice(result)
-  }
-
-  // `walletAddress` is rejected by the backend on /borrow/quote (derived
-  // from auth), so strip it from the body before sending.
   async getQuote(
     params: BorrowQuoteParams,
     headers: HeadersInit = {},
   ): Promise<BorrowQuote> {
-    const { walletAddress, ...rest } = params as BorrowPriceParams & {
-      walletAddress?: Address
-    }
-    void walletAddress
-    const body = serializeBigInts(buildPriceBody(rest as BorrowPriceParams))
+    const body = serializeBigInts(buildQuoteBody(params))
     const { result } = await this.request<{ result: Serialized<BorrowQuote> }>(
       '/borrow/quote',
       { method: 'POST', body: JSON.stringify(body), headers },
