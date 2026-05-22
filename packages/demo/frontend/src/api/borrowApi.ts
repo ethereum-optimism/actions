@@ -15,9 +15,9 @@
  * back to `bigint` here so the rest of the frontend never deals with
  * the wire shape.
  *
- * `stubPriceUsd` is still exported as a temporary helper for the
- * frontend's projection math; it will go away when the Borrow tab
- * switches its preview to `borrowApi.getPrice()` (Task #3).
+ * `stubPriceUsd` provides USD denomination for display amounts. The
+ * backend has no spot-price endpoint, so the stub stays until one is
+ * added; `borrowApi.getQuote` returns token-denominated values only.
  */
 
 import type { Address, Hex } from 'viem'
@@ -34,8 +34,7 @@ import { env } from '../envVars.js'
 import type { Serialized } from '../util/serialize.js'
 import { ActionsApiError } from './actionsApi.js'
 
-// Stub demo prices, retained until the projection math in
-// `BorrowAction` is swapped over to `borrowApi.getPrice()` (Task #3).
+// Stub demo prices for USD denomination of display amounts.
 // USDC = $1, OP = $0.10 mirrors the backend's demo oracle.
 const STUB_PRICES_USD: Readonly<Record<string, number>> = {
   USDC: 1.0,
