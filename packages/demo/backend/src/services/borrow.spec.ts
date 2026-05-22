@@ -25,23 +25,21 @@ vi.mock('../config/markets.js', async () => {
     chainId: 84532 as never,
   }
   return {
-    ALL_BORROW_MARKETS: [
-      {
-        ...baseMarketId,
-        name: 'Demo dUSDC / OP',
-        collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
-        borrowAsset: { metadata: { symbol: 'OP_DEMO' } },
-        borrowProvider: 'morpho',
-        lendProvider: 'morpho',
-        marketParams: {
-          loanToken: '0x0',
-          collateralToken: '0x0',
-          oracle: '0x0',
-          irm: '0x0',
-          lltv: 0n,
-        },
+    MorphoUSDCBorrowDemo: {
+      ...baseMarketId,
+      name: 'Demo dUSDC / OP',
+      collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
+      borrowAsset: { metadata: { symbol: 'OP_DEMO' } },
+      borrowProvider: 'morpho',
+      lendProvider: 'morpho',
+      marketParams: {
+        loanToken: '0x0',
+        collateralToken: '0x0',
+        oracle: '0x0',
+        irm: '0x0',
+        lltv: 0n,
       },
-    ],
+    },
   }
 })
 

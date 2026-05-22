@@ -20,10 +20,12 @@ import {
 } from '@eth-optimism/actions-sdk'
 
 import { getActions } from '@/config/actions.js'
-import { ALL_BORROW_MARKETS } from '@/config/markets.js'
+import { MorphoUSDCBorrowDemo } from '@/config/markets.js'
 import { WalletNotFoundError } from '@/helpers/errors.js'
 import { getWallet } from '@/services/wallet.js'
 import { getBlockExplorerUrls } from '@/utils/explorers.js'
+
+const BORROW_MARKETS: BorrowMarketConfig[] = [MorphoUSDCBorrowDemo]
 
 export type BorrowReceiptWithUrls = BorrowReceipt & {
   blockExplorerUrls: string[]
@@ -54,7 +56,7 @@ function decorateReceipt(
 export function resolveMarketConfig(
   marketId: BorrowMarketId,
 ): BorrowMarketConfig {
-  const config = ALL_BORROW_MARKETS.find(
+  const config = BORROW_MARKETS.find(
     (m) =>
       m.kind === marketId.kind &&
       m.chainId === marketId.chainId &&

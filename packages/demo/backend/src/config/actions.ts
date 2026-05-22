@@ -5,7 +5,7 @@ import { type AuthorizationContext, PrivyClient } from '@privy-io/node'
 import { OP_DEMO, USDC_DEMO } from './assets.js'
 import { BASE_SEPOLIA, OPTIMISM_SEPOLIA, UNICHAIN } from './chains.js'
 import { env } from './env.js'
-import { AaveETH, ALL_BORROW_MARKETS, GauntletUSDCDemo } from './markets.js'
+import { AaveETH, MorphoUSDCBorrowDemo, MorphoUSDCLendDemo } from './markets.js'
 
 let actionsInstance: ReturnType<typeof createActions<'privy'>>
 
@@ -31,20 +31,15 @@ export function createActionsConfig(): NodeActionsConfig<'privy'> {
     },
     lend: {
       morpho: {
-        marketAllowlist: [GauntletUSDCDemo],
+        marketAllowlist: [MorphoUSDCLendDemo],
       },
       aave: {
         marketAllowlist: [AaveETH],
       },
     },
-    // Borrow config carries the allowlist for downstream wiring.
-    // `NodeActionsConfig<'privy'>` does not yet include a `borrow` key; it
-    // lands when PR #3 (kevin/borrow-pr3) ships SDK borrow support. The
-    // assertion at the return statement preserves the data through the
-    // current type.
     borrow: {
       morpho: {
-        marketAllowlist: ALL_BORROW_MARKETS,
+        marketAllowlist: [MorphoUSDCBorrowDemo],
       },
     },
     swap: {
