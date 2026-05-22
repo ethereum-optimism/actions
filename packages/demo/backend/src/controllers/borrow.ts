@@ -1,8 +1,4 @@
-import {
-  type BorrowAction,
-  type BorrowQuote,
-  serializeBigInt,
-} from '@eth-optimism/actions-sdk'
+import { serializeBigInt } from '@eth-optimism/actions-sdk'
 import type { Context } from 'hono'
 import { z } from 'zod'
 
@@ -17,21 +13,6 @@ import {
 import { validateRequest } from '@/helpers/validation.js'
 import * as borrowService from '@/services/borrow.js'
 import * as walletService from '@/services/wallet.js'
-
-// Validate only the action discriminator and `marketId` (so
-// decorateReceipt can read chainId); the rest of the quote passes
-// through opaquely. Recipient binding and expiry are the SDK's job.
-export function quoteBodySchema(action: BorrowAction) {
-  return z.strictObject({
-    quote: z
-      .object({
-        action: z.literal(action),
-        marketId: BorrowMarketIdSchema,
-      })
-      .passthrough()
-      .transform((q) => q as unknown as BorrowQuote),
-  })
-}
 
 const GetMarketsRequestSchema = z.object({
   query: z.object({
@@ -139,9 +120,7 @@ const OpenParamsBody = z.strictObject({
   collateralAmount: AmountExactSchema.optional(),
 })
 
-const OpenRequestSchema = z.object({
-  body: z.union([OpenParamsBody, quoteBodySchema('open')]),
-})
+const OpenRequestSchema = z.object({ body: OpenParamsBody })
 
 export async function openPosition(c: Context) {
   const validation = await validateRequest(c, OpenRequestSchema)
@@ -150,10 +129,7 @@ export async function openPosition(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const idToken = authResult.auth.idToken
-  const body = validation.data.body
-  const input =
-    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const input = { idToken: authResult.auth.idToken, ...validation.data.body }
   const result = await borrowService.openPosition(input)
   return c.json({ result: serializeBigInt(result) })
 }
@@ -164,9 +140,7 @@ const CloseParamsBody = z.strictObject({
   collateralAmount: AmountWithMaxSchema.optional(),
 })
 
-const CloseRequestSchema = z.object({
-  body: z.union([CloseParamsBody, quoteBodySchema('close')]),
-})
+const CloseRequestSchema = z.object({ body: CloseParamsBody })
 
 export async function closePosition(c: Context) {
   const validation = await validateRequest(c, CloseRequestSchema)
@@ -175,10 +149,7 @@ export async function closePosition(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const idToken = authResult.auth.idToken
-  const body = validation.data.body
-  const input =
-    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const input = { idToken: authResult.auth.idToken, ...validation.data.body }
   const result = await borrowService.closePosition(input)
   return c.json({ result: serializeBigInt(result) })
 }
@@ -189,10 +160,7 @@ const DepositCollateralParamsBody = z.strictObject({
 })
 
 const DepositCollateralRequestSchema = z.object({
-  body: z.union([
-    DepositCollateralParamsBody,
-    quoteBodySchema('depositCollateral'),
-  ]),
+  body: DepositCollateralParamsBody,
 })
 
 export async function depositCollateral(c: Context) {
@@ -202,10 +170,7 @@ export async function depositCollateral(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const idToken = authResult.auth.idToken
-  const body = validation.data.body
-  const input =
-    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const input = { idToken: authResult.auth.idToken, ...validation.data.body }
   const result = await borrowService.depositCollateral(input)
   return c.json({ result: serializeBigInt(result) })
 }
@@ -216,10 +181,7 @@ const WithdrawCollateralParamsBody = z.strictObject({
 })
 
 const WithdrawCollateralRequestSchema = z.object({
-  body: z.union([
-    WithdrawCollateralParamsBody,
-    quoteBodySchema('withdrawCollateral'),
-  ]),
+  body: WithdrawCollateralParamsBody,
 })
 
 export async function withdrawCollateral(c: Context) {
@@ -229,10 +191,7 @@ export async function withdrawCollateral(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const idToken = authResult.auth.idToken
-  const body = validation.data.body
-  const input =
-    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const input = { idToken: authResult.auth.idToken, ...validation.data.body }
   const result = await borrowService.withdrawCollateral(input)
   return c.json({ result: serializeBigInt(result) })
 }
@@ -242,9 +201,7 @@ const RepayParamsBody = z.strictObject({
   amount: AmountWithMaxSchema,
 })
 
-const RepayRequestSchema = z.object({
-  body: z.union([RepayParamsBody, quoteBodySchema('repay')]),
-})
+const RepayRequestSchema = z.object({ body: RepayParamsBody })
 
 export async function repay(c: Context) {
   const validation = await validateRequest(c, RepayRequestSchema)
@@ -253,10 +210,7 @@ export async function repay(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
-  const idToken = authResult.auth.idToken
-  const body = validation.data.body
-  const input =
-    'quote' in body ? { idToken, quote: body.quote } : { idToken, ...body }
+  const input = { idToken: authResult.auth.idToken, ...validation.data.body }
   const result = await borrowService.repay(input)
   return c.json({ result: serializeBigInt(result) })
 }

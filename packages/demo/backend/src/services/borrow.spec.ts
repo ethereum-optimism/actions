@@ -227,24 +227,6 @@ describe('Borrow Service', () => {
       expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
 
-    it('forwards a pre-built quote unchanged to the SDK', async () => {
-      const quote = {
-        action: 'open',
-        marketId: baseMarketId,
-        tag: 'q',
-      } as never
-      const receipt = { tag: 'q-receipt' } as unknown as BorrowReceipt
-      mockWalletBorrow.openPosition.mockResolvedValue(receipt)
-
-      const result = await borrowService.openPosition({
-        idToken: 'idtok',
-        quote,
-      })
-
-      expect(mockWalletBorrow.openPosition).toHaveBeenCalledWith(quote)
-      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
-    })
-
     it('throws WalletNotFoundError when the wallet cannot be resolved', async () => {
       const { getWallet } = await import('./wallet.js')
       vi.mocked(getWallet).mockResolvedValue(null)
@@ -298,24 +280,6 @@ describe('Borrow Service', () => {
         'https://sepolia.basescan.org/tx/0xabc',
       ])
     })
-
-    it('reads chainId from quote.marketId on the quote branch', async () => {
-      const { getBlockExplorerUrls } = await import('../utils/explorers.js')
-      vi.mocked(getBlockExplorerUrls).mockReturnValue([])
-      const quote = {
-        action: 'open',
-        marketId: { ...baseMarketId, chainId: 11155420 as never },
-      } as never
-      mockWalletBorrow.openPosition.mockResolvedValue({
-        userOpHash: '0xq',
-      } as unknown as BorrowReceipt)
-
-      await borrowService.openPosition({ idToken: 'idtok', quote })
-
-      expect(getBlockExplorerUrls).toHaveBeenCalledWith(
-        expect.objectContaining({ chainId: 11155420 }),
-      )
-    })
   })
 
   describe('closePosition', () => {
@@ -342,22 +306,6 @@ describe('Borrow Service', () => {
       )
       expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
-
-    it('forwards a pre-built quote unchanged', async () => {
-      const quote = {
-        action: 'close',
-        marketId: baseMarketId,
-        tag: 'q',
-      } as never
-      const receipt = { tag: 'r' } as unknown as BorrowReceipt
-      mockWalletBorrow.closePosition.mockResolvedValue(receipt)
-      const result = await borrowService.closePosition({
-        idToken: 'idtok',
-        quote,
-      })
-      expect(mockWalletBorrow.closePosition).toHaveBeenCalledWith(quote)
-      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
-    })
   })
 
   describe('depositCollateral', () => {
@@ -382,17 +330,6 @@ describe('Borrow Service', () => {
       )
       expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
-
-    it('forwards a pre-built quote unchanged', async () => {
-      const quote = {
-        action: 'depositCollateral',
-        marketId: baseMarketId,
-      } as never
-      const receipt = { tag: 'r' } as unknown as BorrowReceipt
-      mockWalletBorrow.depositCollateral.mockResolvedValue(receipt)
-      await borrowService.depositCollateral({ idToken: 'idtok', quote })
-      expect(mockWalletBorrow.depositCollateral).toHaveBeenCalledWith(quote)
-    })
   })
 
   describe('withdrawCollateral', () => {
@@ -416,16 +353,6 @@ describe('Borrow Service', () => {
         }),
       )
     })
-
-    it('forwards a pre-built quote unchanged', async () => {
-      const quote = {
-        action: 'withdrawCollateral',
-        marketId: baseMarketId,
-      } as never
-      mockWalletBorrow.withdrawCollateral.mockResolvedValue({} as never)
-      await borrowService.withdrawCollateral({ idToken: 'idtok', quote })
-      expect(mockWalletBorrow.withdrawCollateral).toHaveBeenCalledWith(quote)
-    })
   })
 
   describe('repay', () => {
@@ -448,13 +375,6 @@ describe('Borrow Service', () => {
           amount: { amount: 1 },
         }),
       )
-    })
-
-    it('forwards a pre-built quote unchanged', async () => {
-      const quote = { action: 'repay', marketId: baseMarketId } as never
-      mockWalletBorrow.repay.mockResolvedValue({} as never)
-      await borrowService.repay({ idToken: 'idtok', quote })
-      expect(mockWalletBorrow.repay).toHaveBeenCalledWith(quote)
     })
   })
 })
