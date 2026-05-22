@@ -19,8 +19,8 @@ const GetMarketsRequestSchema = z.object({
   }),
 })
 
-// Both `/borrow/price` and `/borrow/quote` are auth-gated and derive
-// `walletAddress` from the idToken, so neither accepts it in the body.
+// `/borrow/quote` is auth-gated and derives `walletAddress` from the
+// idToken, so the body schema does not accept it.
 export const QuoteBodySchema = z.discriminatedUnion('action', [
   z.strictObject({
     action: z.literal('open'),
@@ -65,7 +65,7 @@ export async function getMarkets(c: Context) {
 // Auth runs before schema so unauthenticated calls always 401.
 // `walletAddress` is derived from the idToken; the schema rejects any
 // caller-supplied value.
-async function buildQuote(c: Context) {
+export async function getQuote(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
 
@@ -83,9 +83,6 @@ async function buildQuote(c: Context) {
   })
   return c.json({ result: serializeBigInt(quote) })
 }
-
-export const getPrice = buildQuote
-export const getQuote = buildQuote
 
 // ---------- Mutations ----------
 

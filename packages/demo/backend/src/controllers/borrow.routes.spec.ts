@@ -7,7 +7,6 @@ import * as walletService from '@/services/wallet.js'
 
 vi.mock('@/services/borrow.js', () => ({
   getMarkets: vi.fn(),
-  getPrice: vi.fn(),
   getQuote: vi.fn(),
   openPosition: vi.fn(),
   closePosition: vi.fn(),
@@ -88,53 +87,6 @@ describe('borrow routes', () => {
       vi.mocked(borrowService.getMarkets).mockResolvedValue([])
       const res = await createApp().request('/borrow/markets')
       expect(res.status).toBe(200)
-    })
-  })
-
-  describe('POST /borrow/price', () => {
-    it('returns 401 without auth headers', async () => {
-      const res = await createApp().request('/borrow/price', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'open',
-          marketId: MARKET_ID,
-          borrowAmount: { amountRaw: '1' },
-        }),
-      })
-      expect(res.status).toBe(401)
-    })
-
-    it('returns 400 when the body includes walletAddress (strict schema)', async () => {
-      vi.mocked(walletService.getWallet).mockResolvedValue({
-        address: WALLET,
-      } as never)
-      const res = await createApp().request('/borrow/price', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({
-          action: 'open',
-          marketId: MARKET_ID,
-          borrowAmount: { amountRaw: '1' },
-          walletAddress: WALLET,
-        }),
-      })
-      expect(res.status).toBe(400)
-    })
-
-    it('returns 400 with a clean envelope on invalid body', async () => {
-      vi.mocked(walletService.getWallet).mockResolvedValue({
-        address: WALLET,
-      } as never)
-      const res = await createApp().request('/borrow/price', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ action: 'open' }),
-      })
-      expect(res.status).toBe(400)
-      const json = (await res.json()) as { error: string; details: unknown[] }
-      expect(json.error).toBe('Invalid request')
-      expect(Array.isArray(json.details)).toBe(true)
     })
   })
 

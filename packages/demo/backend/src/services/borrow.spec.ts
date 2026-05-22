@@ -106,44 +106,6 @@ describe('Borrow Service', () => {
     })
   })
 
-  describe('getPrice', () => {
-    // SDK collapsed getPrice into getQuote in PR #3 commit 0c2b42f8; the
-    // backend service exposes `getPrice` as an alias so the controller's
-    // public /borrow/price route keeps its name, but both go through the
-    // same SDK namespace method.
-    it('forwards through actions.borrow.getQuote (price aliases quote)', async () => {
-      const quote = { positionAfter: {}, safeCeilingLtv: 0n } as never
-      mockBorrowProvider.getQuote.mockResolvedValue(quote)
-      const result = await borrowService.getPrice({
-        action: 'open',
-        marketId: baseMarketId,
-        borrowAmount: { amount: 5 },
-      })
-      expect(mockBorrowProvider.getQuote).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: 'open',
-          market: expect.objectContaining({ kind: 'morpho-blue' }),
-          borrowAmount: { amount: 5 },
-        }),
-      )
-      expect(result).toBe(quote)
-    })
-
-    it('throws MarketNotAllowedError when marketId is not in the allowlist', async () => {
-      await expect(
-        borrowService.getPrice({
-          action: 'open',
-          marketId: {
-            ...baseMarketId,
-            marketId: ('0x' + 'b'.repeat(64)) as `0x${string}`,
-          },
-          borrowAmount: { amount: 5 },
-        }),
-      ).rejects.toThrow(/Market.*not in/i)
-      expect(mockBorrowProvider.getQuote).not.toHaveBeenCalled()
-    })
-  })
-
   describe('getQuote', () => {
     it('resolves marketId to a config and forwards to actions.borrow.getQuote', async () => {
       const quote = { execution: { transactions: [] } } as never
