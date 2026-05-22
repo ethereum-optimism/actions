@@ -18,21 +18,9 @@ import { validateRequest } from '@/helpers/validation.js'
 import * as borrowService from '@/services/borrow.js'
 import * as walletService from '@/services/wallet.js'
 
-/**
- * Mutation bodies that carry a pre-built quote. The backend enforces
- * the action discriminator (so a quote can't be replayed against the
- * wrong route) and the `marketId` tagged union (so `decorateReceipt`
- * can read `chainId` without a TypeError when the SDK's quote shape
- * drifts). Other quote fields (`execution`, `recipient`, `expiresAt`,
- * `safeCeilingLtv`, fee detail) are passed opaquely to the SDK, which
- * owns recipient binding and expiry validation.
- *
- * Trust boundary: the auth token authorizes execution against the
- * user's own session wallet. A caller swapping `execution.transactions`
- * for arbitrary calldata is exercising authority they already have over
- * their own wallet; the backend does not claim to enforce "only borrow
- * calldata" beyond what the SDK validates.
- */
+// Validate only the action discriminator and `marketId` (so
+// decorateReceipt can read chainId); the rest of the quote passes
+// through opaquely. Recipient binding and expiry are the SDK's job.
 export function quoteBodySchema(action: BorrowAction) {
   return z.strictObject({
     quote: z
@@ -51,18 +39,8 @@ const GetMarketsRequestSchema = z.object({
   }),
 })
 
-/**
- * Per-action base shape shared by `/borrow/price` and `/borrow/quote`.
- * Discriminated by `action`; each variant carries the per-action amount
- * fields. Backend resolves `marketId` to a full `BorrowMarketConfig`
- * server-side.
- *
- * `/borrow/price` extends each variant with an optional `walletAddress`
- * for previewing a hypothetical position. `/borrow/quote` rejects
- * `walletAddress` at the schema boundary: the recipient is auth-bound
- * and derived from the idToken, so a body-supplied value is meaningless
- * and confuses the trust model.
- */
+// Per-action base. `/borrow/price` extends each with an optional
+// `walletAddress`; `/borrow/quote` is strict (recipient is auth-bound).
 const OpenActionBase = z.object({
   action: z.literal('open'),
   marketId: BorrowMarketIdSchema,
@@ -114,10 +92,6 @@ export const QuoteBodySchema = z.discriminatedUnion('action', [
 const PriceRequestSchema = z.object({ body: PriceBodySchema })
 const QuoteRequestSchema = z.object({ body: QuoteBodySchema })
 
-/**
- * GET - Retrieve borrow markets, optionally filtered by chain.
- * Errors propagate to the borrow-scoped `app.onError` handler.
- */
 export async function getMarkets(c: Context) {
   const validation = await validateRequest(c, GetMarketsRequestSchema)
   if (!validation.success) return validation.response
@@ -127,11 +101,6 @@ export async function getMarkets(c: Context) {
   return c.json({ result: serializeBigInt(markets) })
 }
 
-/**
- * POST - Lightweight borrow price preview: positionAfter + fees +
- * safeCeilingLtv, no calldata bundle. Public route; the body supplies
- * the `walletAddress` whose hypothetical position is being previewed.
- */
 export async function getPrice(c: Context) {
   const validation = await validateRequest(c, PriceRequestSchema)
   if (!validation.success) return validation.response
@@ -140,13 +109,9 @@ export async function getPrice(c: Context) {
   return c.json({ result: serializeBigInt(price) })
 }
 
-/**
- * POST - Recipient-bound borrow quote with pre-built calldata. Auth
- * required; `walletAddress` is derived from the authenticated idToken
- * so quote calldata can't be bound to a third party. `QuoteBodySchema`
- * is strict and omits `walletAddress`, so a body-supplied value is
- * rejected at the schema boundary with 400.
- */
+// Auth runs before schema so unauthenticated calls always 401.
+// `walletAddress` is derived from the idToken; the schema rejects any
+// caller-supplied value.
 export async function getQuote(c: Context) {
   const authResult = requireAuth(c)
   if ('error' in authResult) return authResult.error
@@ -178,10 +143,6 @@ const OpenRequestSchema = z.object({
   body: z.union([OpenParamsBody, quoteBodySchema('open')]),
 })
 
-/**
- * POST - Open a borrow position (Morpho variant). Body is either fresh
- * params or a pre-built quote with action='open'.
- */
 export async function openPosition(c: Context) {
   const validation = await validateRequest(c, OpenRequestSchema)
   if (!validation.success) return validation.response
@@ -207,11 +168,6 @@ const CloseRequestSchema = z.object({
   body: z.union([CloseParamsBody, quoteBodySchema('close')]),
 })
 
-/**
- * POST - Close (or partially close) a borrow position. Body is either
- * fresh params (with `AmountWithMax` accepting `{ max: true }`) or a
- * pre-built quote with `action='close'`.
- */
 export async function closePosition(c: Context) {
   const validation = await validateRequest(c, CloseRequestSchema)
   if (!validation.success) return validation.response
@@ -239,11 +195,6 @@ const DepositCollateralRequestSchema = z.object({
   ]),
 })
 
-/**
- * POST - Add collateral to an existing borrow position. AmountExact only;
- * no `{ max: true }` sentinel. Body is fresh params or a pre-built quote
- * with `action='depositCollateral'`.
- */
 export async function depositCollateral(c: Context) {
   const validation = await validateRequest(c, DepositCollateralRequestSchema)
   if (!validation.success) return validation.response
@@ -271,11 +222,6 @@ const WithdrawCollateralRequestSchema = z.object({
   ]),
 })
 
-/**
- * POST - Withdraw collateral from an existing borrow position.
- * AmountWithMax allows `{ max: true }` to drain to the safe ceiling.
- * Body is fresh params or a quote with `action='withdrawCollateral'`.
- */
 export async function withdrawCollateral(c: Context) {
   const validation = await validateRequest(c, WithdrawCollateralRequestSchema)
   if (!validation.success) return validation.response
@@ -300,11 +246,6 @@ const RepayRequestSchema = z.object({
   body: z.union([RepayParamsBody, quoteBodySchema('repay')]),
 })
 
-/**
- * POST - Repay borrowed debt. AmountWithMax allows `{ max: true }` to
- * settle the full balance. Body is fresh params or a pre-built quote
- * with `action='repay'`.
- */
 export async function repay(c: Context) {
   const validation = await validateRequest(c, RepayRequestSchema)
   if (!validation.success) return validation.response
