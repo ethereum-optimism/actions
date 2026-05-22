@@ -16,13 +16,7 @@ import type {
   ActionProvidersMap,
   ActionSettingsMap,
 } from '@/types/actionRegistry.js'
-import type { BorrowSettings, SwapSettings } from '@/types/actions.js'
 import type { Asset, BalanceFetchOptions, TokenBalance } from '@/types/asset.js'
-import type {
-  BorrowProviders,
-  LendProviders,
-  SwapProviders,
-} from '@/types/providers.js'
 import type { TransactionData } from '@/types/transaction.js'
 import { validateBalanceFetchOptions } from '@/utils/validation.js'
 import type {
@@ -32,16 +26,21 @@ import type {
 
 /**
  * Options handed to the `Wallet` super constructor.
- * @description Replaces the legacy positional argument list. The action
- * map shapes are derived from `ActionModules`, so adding a new action
- * does not require new constructor params.
+ * @description Action-keyed maps; adding a new action does not require new
+ * constructor params.
  */
 export interface WalletConstructorOptions {
   chainManager: ChainManager
-  actionProviders?: ActionProvidersMap
-  actionSettings?: ActionSettingsMap
+  actionProviders: ActionProvidersMap
+  actionSettings: ActionSettingsMap
   supportedAssets?: Asset[]
 }
+
+/**
+ * Shared shape for every concrete wallet's `*WalletCreateOptions`. Concrete
+ * wallets extend this with their provider-specific construction fields.
+ */
+export type BaseWalletCreateOptions = WalletConstructorOptions
 
 /**
  * Base actions wallet class
@@ -66,19 +65,6 @@ export abstract class Wallet {
   /** Promise to initialize the wallet */
   private initPromise?: Promise<void>
 
-  /** Legacy mirror: lend providers from the action map. */
-  protected get lendProviders(): LendProviders {
-    return (this.actionProviders.lend ?? {}) as LendProviders
-  }
-  /** Legacy mirror: swap providers from the action map. */
-  protected get swapProviders(): SwapProviders {
-    return (this.actionProviders.swap ?? {}) as SwapProviders
-  }
-  /** Legacy mirror: borrow providers from the action map. */
-  protected get borrowProviders(): BorrowProviders {
-    return (this.actionProviders.borrow ?? {}) as BorrowProviders
-  }
-
   /**
    * Get the address of this actions wallet
    * @description Returns the address of the actions wallet.
@@ -94,58 +80,10 @@ export abstract class Wallet {
    */
   public abstract readonly signer: LocalAccount
 
-  /**
-   * Create a new wallet (options form — preferred).
-   *
-   * Subclasses still on the legacy positional argument list keep working
-   * via the second overload below; the legacy form is removed once every
-   * concrete wallet migrates.
-   */
-  protected constructor(options: WalletConstructorOptions)
-  protected constructor(
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    swapSettings?: SwapSettings,
-    borrowProviders?: BorrowProviders,
-    borrowSettings?: BorrowSettings,
-  )
-  protected constructor(
-    arg1: ChainManager | WalletConstructorOptions,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    swapSettings?: SwapSettings,
-    borrowProviders?: BorrowProviders,
-    borrowSettings?: BorrowSettings,
-  ) {
-    // Discriminate options-object from positional-chainManager by shape so
-    // structural-equivalent test doubles (`MockChainManager`) still match
-    // the positional path even though they don't extend `ChainManager`.
-    const isOptions =
-      typeof arg1 === 'object' &&
-      arg1 !== null &&
-      'chainManager' in (arg1 as object)
-    const options: WalletConstructorOptions = isOptions
-      ? (arg1 as WalletConstructorOptions)
-      : {
-          chainManager: arg1 as ChainManager,
-          actionProviders: {
-            lend: lendProviders,
-            swap: swapProviders,
-            borrow: borrowProviders,
-          },
-          actionSettings: {
-            swap: swapSettings,
-            borrow: borrowSettings,
-          },
-          supportedAssets,
-        }
-
+  protected constructor(options: WalletConstructorOptions) {
     this.chainManager = options.chainManager
-    this.actionProviders = options.actionProviders ?? {}
-    this.actionSettings = options.actionSettings ?? {}
+    this.actionProviders = options.actionProviders
+    this.actionSettings = options.actionSettings
     this.supportedAssets = options.supportedAssets ?? []
 
     const moduleDeps: ActionModuleDeps = {
@@ -153,29 +91,12 @@ export abstract class Wallet {
       supportedAssets: this.supportedAssets,
     }
 
+    // One pass over the action registry attaches every configured
+    // `wallet.<name>` namespace. Adding a future action (e.g. stake,
+    // bridge, perp) is purely a registry entry — this loop, `Wallet`'s
+    // shape, and every consumer of it stay unchanged.
     for (const name of ACTION_NAMES) {
-      // Generic narrowing across the loop requires per-step casting — the
-      // discrimination over `ActionModules[K]` happens correctly inside each
-      // module's own type. Confining the casts here keeps the wallet body
-      // clean.
-      const module = ACTION_MODULES[name] as unknown as ActionModule<ActionName>
-      const providers = this.actionProviders[name]
-      if (
-        !providers ||
-        !module.isConfigured(providers as never) ||
-        !module.buildWalletNamespace
-      ) {
-        continue
-      }
-      const ns = (
-        module.buildWalletNamespace as (
-          p: unknown,
-          w: Wallet,
-          s: unknown,
-          d: ActionModuleDeps,
-        ) => unknown
-      )(providers, this, this.actionSettings[name], moduleDeps)
-      assignWalletNamespace(this, name, ns)
+      attachWalletNamespace(this, name, moduleDeps)
     }
   }
 
@@ -277,17 +198,31 @@ export abstract class Wallet {
 }
 
 /**
- * Assign a `WalletXNamespace` to its slot on a `Wallet` instance keyed by
- * the action name. TypeScript can't prove that `wallet[name]` accepts the
- * namespace type produced by `ACTION_MODULES[name].buildWalletNamespace`,
- * so this helper holds the one necessary cast. Adding a new action to
- * `ActionModules` only requires declaring the corresponding `name?: T`
- * field on `Wallet` — the assignment site stays generic.
+ * Build and attach the `wallet.<name>` namespace for one action. Generic
+ * over `K` so each module's per-action types unify internally; the lone
+ * cast at the slot write is the one place TS can't follow the registry
+ * indirection. Adding a future action only requires declaring its
+ * `name?: T` field on `Wallet` — this helper handles the rest.
  */
-function assignWalletNamespace(
+function attachWalletNamespace<K extends ActionName>(
   wallet: Wallet,
-  name: ActionName,
-  ns: unknown,
+  name: K,
+  moduleDeps: ActionModuleDeps,
 ): void {
-  ;(wallet as unknown as Record<ActionName, unknown>)[name] = ns
+  const module = ACTION_MODULES[name] as ActionModule<K>
+  const providers = wallet['actionProviders'][name]
+  if (
+    !providers ||
+    !module.isConfigured(providers) ||
+    !module.buildWalletNamespace
+  ) {
+    return
+  }
+  const ns = module.buildWalletNamespace(
+    providers,
+    wallet,
+    wallet['actionSettings'][name],
+    moduleDeps,
+  )
+  ;(wallet as unknown as Record<K, unknown>)[name] = ns
 }

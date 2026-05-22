@@ -6,7 +6,6 @@ import type {
   ActionSettingsMap,
 } from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
@@ -24,28 +23,17 @@ export class TurnkeyHostedWalletProvider extends HostedWalletProvider<
   'turnkey',
   ReactToActionsOptionsMap
 > {
-  /**
-   * Create a new Turnkey wallet provider
-   * @param chainManager - Chain manager used to resolve chains and RPC transports
-   * @param lendProviders - Optional lend providers for DeFi operations
-   * @param swapProviders - Optional swap providers for trading operations
-   */
-  constructor(
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-    actionProviders?: ActionProvidersMap,
-    actionSettings?: ActionSettingsMap,
-  ) {
+  constructor(params: {
+    chainManager: ChainManager
+    actionProviders: ActionProvidersMap
+    actionSettings: ActionSettingsMap
+    supportedAssets?: Asset[]
+  }) {
     super({
-      chainManager,
-      actionProviders: actionProviders ?? {
-        lend: lendProviders,
-        swap: swapProviders,
-      },
-      actionSettings,
-      supportedAssets,
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
     })
   }
 

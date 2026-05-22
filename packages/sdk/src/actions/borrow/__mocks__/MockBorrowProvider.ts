@@ -1,6 +1,10 @@
 import { type MockedFunction, vi } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
+import {
+  requireAllowlistedBorrowMarketConfig,
+  validateBorrowWalletAddress,
+} from '@/actions/borrow/core/validations.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
@@ -20,10 +24,10 @@ import type {
   BorrowRepayParams,
   BorrowWithdrawCollateralInternalParams,
   BorrowWithdrawCollateralParams,
-  GetBorrowMarketParams,
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
+import { validateChainSupported } from '@/utils/validation.js'
 
 export interface MockBorrowProviderConfig {
   supportedChains: number[]
@@ -56,7 +60,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     (params: BorrowRepayParams) => Promise<BorrowQuote>
   >
   public getMarket: MockedFunction<
-    (params: GetBorrowMarketParams) => Promise<BorrowMarket>
+    (params: BorrowMarketId) => Promise<BorrowMarket>
   >
   public getMarkets: MockedFunction<
     (params?: GetBorrowMarketsParams) => Promise<BorrowMarket[]>
@@ -66,10 +70,6 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   >
 
   private readonly mockConfig: MockBorrowProviderConfig
-
-  protocolSupportedChainIds(): number[] {
-    return this.mockConfig.supportedChains
-  }
 
   constructor(
     config?: BorrowProviderConfig,
@@ -118,6 +118,10 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       .mockImplementation(this.defaultGetPosition.bind(this))
   }
 
+  protocolSupportedChainIds(): number[] {
+    return this.mockConfig.supportedChains
+  }
+
   // Concrete `_*` hooks are unused in mocks (public methods are overridden
   // above), but the abstract base demands them.
   protected async _openPosition(
@@ -147,7 +151,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _repay(_: BorrowRepayInternalParams): Promise<BorrowQuote> {
     throw new Error('MockBorrowProvider._repay should not be called')
   }
-  protected async _getMarket(_: BorrowMarketId): Promise<BorrowMarket> {
+  protected async _getMarket(_: BorrowMarketConfig): Promise<BorrowMarket> {
     throw new Error('MockBorrowProvider._getMarket should not be called')
   }
   protected async _getMarkets(
@@ -155,15 +159,14 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<BorrowMarket[]> {
     throw new Error('MockBorrowProvider._getMarkets should not be called')
   }
-  protected async _getPosition(
-    _: GetBorrowPositionParams,
-  ): Promise<BorrowMarketPosition> {
+  protected async _getPosition(_: {
+    market: BorrowMarketConfig
+    walletAddress: `0x${string}`
+  }): Promise<BorrowMarketPosition> {
     throw new Error('MockBorrowProvider._getPosition should not be called')
   }
 
-  private defaultGetMarket(
-    params: GetBorrowMarketParams,
-  ): Promise<BorrowMarket> {
+  private defaultGetMarket(params: BorrowMarketId): Promise<BorrowMarket> {
     const config = this.findConfig(params)
     return Promise.resolve(this.buildMarket(config, params))
   }
@@ -186,6 +189,7 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   private defaultGetPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
+    validateBorrowWalletAddress(params.walletAddress)
     const config = this.findConfig(params.marketId)
     return Promise.resolve(this.emptyPosition(config))
   }
@@ -197,16 +201,15 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       walletAddress?: `0x${string}`
     },
   ): Promise<BorrowQuote> {
+    validateBorrowWalletAddress(params.walletAddress)
+    const config = this.findConfig(params.market)
     const now = Math.floor(Date.now() / 1000)
-    const recipient =
-      params.walletAddress ??
-      ('0x0000000000000000000000000000000000000000' as const)
-    const position = this.emptyPosition(params.market)
+    const position = this.emptyPosition(config)
     return Promise.resolve({
       marketId: {
-        kind: params.market.kind,
-        marketId: params.market.marketId,
-        chainId: params.market.chainId,
+        kind: config.kind,
+        marketId: config.marketId,
+        chainId: config.chainId,
       },
       action,
       positionBefore: null,
@@ -218,24 +221,14 @@ export class MockBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
       safeCeilingLtv: this.mockConfig.defaultMaxLtv * 0.95,
       execution: { transactions: [] },
       provider: 'morpho',
-      recipient,
       quotedAt: now,
       expiresAt: now + this.quoteExpirationSeconds,
     })
   }
 
   private findConfig(marketId: BorrowMarketId): BorrowMarketConfig {
-    const allowlist = this._config.marketAllowlist ?? []
-    const hit = allowlist.find(
-      (m) =>
-        m.kind === marketId.kind &&
-        m.chainId === marketId.chainId &&
-        m.marketId.toLowerCase() === marketId.marketId.toLowerCase(),
-    )
-    if (hit) return hit
-    throw new Error(
-      `MockBorrowProvider: market ${marketId.marketId} not configured in allowlist`,
-    )
+    validateChainSupported(marketId.chainId, this.supportedChainIds())
+    return requireAllowlistedBorrowMarketConfig(marketId, this._config)
   }
 
   private buildMarket(

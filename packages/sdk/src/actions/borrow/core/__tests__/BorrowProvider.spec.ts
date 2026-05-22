@@ -1,5 +1,6 @@
+import { zeroAddress } from 'viem'
 import { baseSepolia } from 'viem/chains'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
@@ -7,6 +8,7 @@ import {
   AddressRequiredError,
   ChainNotSupportedError,
   MarketNotAllowedError,
+  ZeroAddressError,
 } from '@/core/error/errors.js'
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
@@ -23,7 +25,6 @@ import type {
   BorrowRepayInternalParams,
   BorrowWithdrawCollateralInternalParams,
   GetBorrowMarketsParams,
-  GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
 
 const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
@@ -125,10 +126,8 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
     return makeStubQuote('repay', params.market)
   }
 
-  protected async _getMarket(
-    marketId: BorrowMarketConfig,
-  ): Promise<BorrowMarket> {
-    return makeStubMarket(marketId)
+  protected async _getMarket(_: BorrowMarketConfig): Promise<BorrowMarket> {
+    return makeStubMarket(market)
   }
 
   protected async _getMarkets(
@@ -137,11 +136,12 @@ class TestProvider extends BorrowProvider<BorrowProviderConfig> {
     return (params.markets ?? []).map((m) => makeStubMarket(m))
   }
 
-  protected async _getPosition(
-    params: GetBorrowPositionParams,
-  ): Promise<BorrowMarketPosition> {
+  protected async _getPosition(params: {
+    market: BorrowMarketConfig
+    walletAddress: `0x${string}`
+  }): Promise<BorrowMarketPosition> {
     return {
-      marketId: params.marketId,
+      marketId: params.market,
       collateralAsset,
       collateralShares: 0n,
       collateralSharesFormatted: '0',
@@ -206,7 +206,6 @@ function makeStubQuote(
     safeCeilingLtv: 0.86 * 0.95,
     execution: { transactions: [] },
     provider: 'morpho',
-    recipient: '0x000000000000000000000000000000000000bEEF',
     quotedAt: 0,
     expiresAt: 0,
   }
@@ -224,7 +223,7 @@ function makeProvider(
   return new TestProvider(config, chainManager, settings)
 }
 
-describe('BorrowProvider — settings resolution', () => {
+describe('BorrowProvider - settings resolution', () => {
   it('defaults quoteExpirationSeconds to 30', () => {
     const provider = makeProvider()
     expect(provider.quoteExpirationSeconds).toBe(30)
@@ -252,7 +251,7 @@ describe('BorrowProvider — settings resolution', () => {
   })
 })
 
-describe('BorrowProvider — chain support', () => {
+describe('BorrowProvider - chain support', () => {
   it('intersects protocol chains with configured chains', () => {
     const provider = makeProvider()
     expect(provider.supportedChainIds()).toEqual([BASE_SEPOLIA_ID])
@@ -261,7 +260,7 @@ describe('BorrowProvider — chain support', () => {
   })
 })
 
-describe('BorrowProvider — openPosition', () => {
+describe('BorrowProvider - openPosition', () => {
   it('throws when walletAddress is missing', async () => {
     const provider = makeProvider()
     await expect(
@@ -285,7 +284,17 @@ describe('BorrowProvider — openPosition', () => {
     expect(call.borrowAmountWei).toBe(1_500_000_000_000_000_000n)
     expect(call.collateralAmountWei).toBe(100_000_000_000_000_000_000n)
     expect(call.walletAddress).toBe(walletAddress)
-    expect(call.recipient).toBe(walletAddress)
+  })
+
+  it('rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.openPosition({
+        market,
+        walletAddress: zeroAddress,
+        borrowAmount: { amount: 1 },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
   })
 
   it('passes amountRaw straight through', async () => {
@@ -325,7 +334,18 @@ describe('BorrowProvider — openPosition', () => {
   })
 })
 
-describe('BorrowProvider — closePosition', () => {
+describe('BorrowProvider - closePosition', () => {
+  it('rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.closePosition({
+        market,
+        walletAddress: zeroAddress,
+        borrowAmount: { max: true },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
+
   it('passes { max: true } through to the concrete hook', async () => {
     const provider = makeProvider()
     await provider.closePosition({
@@ -355,7 +375,18 @@ describe('BorrowProvider — closePosition', () => {
   })
 })
 
-describe('BorrowProvider — single-amount actions', () => {
+describe('BorrowProvider - single-amount actions', () => {
+  it('depositCollateral rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.depositCollateral({
+        market,
+        walletAddress: zeroAddress,
+        amount: { amount: 250 },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
+
   it('depositCollateral normalizes using collateralAsset decimals', async () => {
     const provider = makeProvider()
     await provider.depositCollateral({
@@ -378,6 +409,17 @@ describe('BorrowProvider — single-amount actions', () => {
     expect(provider.withdrawCalls[0].amount).toEqual({ max: true })
   })
 
+  it('withdrawCollateral rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.withdrawCollateral({
+        market,
+        walletAddress: zeroAddress,
+        amount: { max: true },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
+
   it('repay normalizes using borrowAsset decimals', async () => {
     const provider = makeProvider()
     await provider.repay({
@@ -389,9 +431,20 @@ describe('BorrowProvider — single-amount actions', () => {
       amountWei: 500_000_000_000_000_000n,
     })
   })
+
+  it('repay rejects the zero walletAddress', async () => {
+    const provider = makeProvider()
+    await expect(
+      provider.repay({
+        market,
+        walletAddress: zeroAddress,
+        amount: { amount: 0.5 },
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
 })
 
-describe('BorrowProvider — getMarket / getMarkets / getPosition', () => {
+describe('BorrowProvider - getMarket / getMarkets / getPosition', () => {
   let provider: TestProvider
 
   beforeEach(() => {
@@ -437,6 +490,18 @@ describe('BorrowProvider — getMarket / getMarkets / getPosition', () => {
     expect(noMatch).toHaveLength(0)
   })
 
+  it('getMarkets filters by borrowAsset', async () => {
+    provider = makeProvider({ marketAllowlist: [market, otherMarket] })
+    const markets = await provider.getMarkets({
+      borrowAsset,
+    })
+    expect(markets).toHaveLength(2)
+    const noMatch = await provider.getMarkets({
+      borrowAsset: collateralAsset,
+    })
+    expect(noMatch).toHaveLength(0)
+  })
+
   it('getPosition throws when walletAddress is missing', async () => {
     await expect(
       provider.getPosition({
@@ -446,6 +511,15 @@ describe('BorrowProvider — getMarket / getMarkets / getPosition', () => {
     ).rejects.toBeInstanceOf(AddressRequiredError)
   })
 
+  it('getPosition rejects the zero walletAddress', async () => {
+    await expect(
+      provider.getPosition({
+        marketId: market,
+        walletAddress: zeroAddress,
+      }),
+    ).rejects.toBeInstanceOf(ZeroAddressError)
+  })
+
   it('getPosition returns the concrete provider result', async () => {
     const position = await provider.getPosition({
       marketId: market,
@@ -453,47 +527,5 @@ describe('BorrowProvider — getMarket / getMarkets / getPosition', () => {
     })
     expect(position.borrowAmount).toBe(0n)
     expect(position.healthFactor).toBeNull()
-  })
-})
-
-describe('BorrowProvider — approval mode resolution', () => {
-  it('per-call > provider > settings > exact', () => {
-    const provider = makeProvider(
-      { marketAllowlist: [market], approvalMode: 'max' },
-      { approvalMode: 'exact' },
-    )
-    const spy = vi.spyOn(
-      provider as unknown as {
-        resolveApprovalMode: (mode?: 'exact' | 'max') => 'exact' | 'max'
-      },
-      'resolveApprovalMode',
-    )
-    // sanity: provider value used when per-call omitted
-    expect(
-      (
-        provider as unknown as {
-          resolveApprovalMode: (mode?: 'exact' | 'max') => 'exact' | 'max'
-        }
-      ).resolveApprovalMode(undefined),
-    ).toBe('max')
-    expect(
-      (
-        provider as unknown as {
-          resolveApprovalMode: (mode?: 'exact' | 'max') => 'exact' | 'max'
-        }
-      ).resolveApprovalMode('exact'),
-    ).toBe('exact')
-    spy.mockRestore()
-  })
-
-  it('defaults to exact when nothing is set', () => {
-    const provider = makeProvider({ marketAllowlist: [market] })
-    expect(
-      (
-        provider as unknown as {
-          resolveApprovalMode: (mode?: 'exact' | 'max') => 'exact' | 'max'
-        }
-      ).resolveApprovalMode(undefined),
-    ).toBe('exact')
   })
 })

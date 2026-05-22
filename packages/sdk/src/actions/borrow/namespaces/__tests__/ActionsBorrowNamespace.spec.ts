@@ -2,7 +2,7 @@ import { baseSepolia } from 'viem/chains'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import { ActionsBorrowNamespace } from '@/actions/borrow/namespaces/ActionsBorrowNamespace.js'
+import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
 import type {
@@ -83,7 +83,6 @@ function makeQuote(action: BorrowQuote['action'] = 'open'): BorrowQuote {
     safeCeilingLtv: 0.86 * 0.95,
     execution: { transactions: [] },
     provider: 'morpho',
-    recipient: walletAddress,
     quotedAt: now,
     expiresAt: now + 30,
   }
@@ -108,7 +107,7 @@ function makeProvider() {
 describe('BaseBorrowNamespace.getQuote', () => {
   it('dispatches to the provider verb that matches the action discriminator', async () => {
     const provider = makeProvider()
-    const ns = new ActionsBorrowNamespace({ morpho: provider })
+    const ns = new BaseBorrowNamespace({ morpho: provider })
     const quote = await ns.getQuote({
       action: 'depositCollateral',
       market,
@@ -117,12 +116,18 @@ describe('BaseBorrowNamespace.getQuote', () => {
     })
     expect(quote.action).toBe('depositCollateral')
     expect(provider.depositCollateral).toHaveBeenCalledTimes(1)
+    expect(provider.depositCollateral).toHaveBeenCalledWith({
+      action: 'depositCollateral',
+      market,
+      walletAddress,
+      amount: { amountRaw: 1n },
+    })
     expect(provider.openPosition).not.toHaveBeenCalled()
   })
 
   it('supports the open action with collateral', async () => {
     const provider = makeProvider()
-    const ns = new ActionsBorrowNamespace({ morpho: provider })
+    const ns = new BaseBorrowNamespace({ morpho: provider })
     await ns.getQuote({
       action: 'open',
       market,
@@ -131,11 +136,18 @@ describe('BaseBorrowNamespace.getQuote', () => {
       collateralAmount: { amountRaw: 5n },
     })
     expect(provider.openPosition).toHaveBeenCalledTimes(1)
+    expect(provider.openPosition).toHaveBeenCalledWith({
+      action: 'open',
+      market,
+      walletAddress,
+      borrowAmount: { amountRaw: 1n },
+      collateralAmount: { amountRaw: 5n },
+    })
   })
 
   it('supports max-amount close', async () => {
     const provider = makeProvider()
-    const ns = new ActionsBorrowNamespace({ morpho: provider })
+    const ns = new BaseBorrowNamespace({ morpho: provider })
     await ns.getQuote({
       action: 'close',
       market,
@@ -144,27 +156,50 @@ describe('BaseBorrowNamespace.getQuote', () => {
       collateralAmount: { max: true },
     })
     expect(provider.closePosition).toHaveBeenCalledTimes(1)
+    expect(provider.closePosition).toHaveBeenCalledWith({
+      action: 'close',
+      market,
+      walletAddress,
+      borrowAmount: { max: true },
+      collateralAmount: { max: true },
+    })
   })
 })
 
-describe('BaseBorrowNamespace.getPrice', () => {
-  it('returns a BorrowPrice (no execution bundle, no expiration)', async () => {
-    const provider = makeProvider()
-    const ns = new ActionsBorrowNamespace({ morpho: provider })
-    const price = await ns.getPrice({
-      action: 'open',
-      market,
-      walletAddress,
-      borrowAmount: { amountRaw: 1n },
-    })
-    expect(price.action).toBe('open')
-    expect(price.positionAfter).toBeDefined()
-    expect(price.fees).toBeDefined()
-    expect(price.safeCeilingLtv).toBeCloseTo(0.86 * 0.95)
-    // BorrowPrice is structurally narrower than BorrowQuote — should not
-    // carry execution / quotedAt / expiresAt / recipient.
-    expect('execution' in price).toBe(false)
-    expect('quotedAt' in price).toBe(false)
-    expect('expiresAt' in price).toBe(false)
+describe('BaseBorrowNamespace.getMarkets', () => {
+  it('keeps fulfilled provider results when one provider fails', async () => {
+    const okProvider = makeProvider()
+    const failingProvider = makeProvider()
+    ;(okProvider.getMarkets as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        marketId: {
+          kind: market.kind,
+          marketId: market.marketId,
+          chainId: market.chainId,
+        },
+        name: market.name,
+        collateralAsset,
+        borrowAsset,
+        borrowApy: 0.05,
+        liquidationBonus: 0.05,
+        maxLtv: 0.86,
+        healthBufferPct: 0.05,
+        totalBorrowed: 0n,
+        totalCollateral: 0n,
+      },
+    ])
+    ;(failingProvider.getMarkets as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('rpc failed'),
+    )
+
+    const ns = new BaseBorrowNamespace({
+      morpho: okProvider,
+      spark: failingProvider,
+    } as never)
+
+    const markets = await ns.getMarkets()
+
+    expect(markets).toHaveLength(1)
+    expect(markets[0].name).toBe(market.name)
   })
 })

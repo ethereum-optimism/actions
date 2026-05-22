@@ -10,7 +10,7 @@ export interface ResolveUnderlyingDecimalsParams {
   vaultAddress: Address
   /**
    * Decimals from an allowlisted config (free, no RPC). Pass `undefined`
-   * when no allowlist entry exists — the helper will fall back to two
+   * when no allowlist entry exists; the helper will fall back to two
    * on-chain reads (`vault.asset()` → `underlying.decimals()`).
    */
   allowlistDecimals?: number

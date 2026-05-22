@@ -9,6 +9,7 @@ import type {
 } from '@eth-optimism/actions-sdk'
 import {
   getAssetAddress,
+  ProviderNotConfiguredError,
   serializeBigInt,
   USDC_DEMO,
 } from '@eth-optimism/actions-sdk'
@@ -106,7 +107,7 @@ export async function getBorrowPosition({
 }) {
   const actions = getActions()
   if (!actions.borrow) {
-    throw new Error('Borrow not configured')
+    throw new ProviderNotConfiguredError({ provider: 'borrow' })
   }
   const position = await actions.borrow.getPosition({
     marketId,

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   computeMorphoMarketId,
   verifyMorphoMarketId,
-} from '@/actions/shared/morpho/marketParams.js'
+} from '@/actions/borrow/providers/morpho/marketParams.js'
 import type { MorphoMarketParams } from '@/types/borrow/index.js'
 
 const baseParams: MorphoMarketParams = {

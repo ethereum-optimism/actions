@@ -1,5 +1,8 @@
 import type { BorrowReceipt } from '@eth-optimism/actions-sdk'
+import { ProviderNotConfiguredError } from '@eth-optimism/actions-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { WalletNotFoundError } from '@/helpers/errors.js'
 
 import * as borrowService from './borrow.js'
 
@@ -11,6 +14,10 @@ vi.mock('./wallet.js', () => ({
   getWallet: vi.fn(),
 }))
 
+vi.mock('../utils/explorers.js', () => ({
+  getBlockExplorerUrls: vi.fn(() => []),
+}))
+
 vi.mock('../config/markets.js', async () => {
   const baseMarketId = {
     kind: 'morpho-blue' as const,
@@ -18,23 +25,21 @@ vi.mock('../config/markets.js', async () => {
     chainId: 84532 as never,
   }
   return {
-    ALL_BORROW_MARKETS: [
-      {
-        ...baseMarketId,
-        name: 'Demo dUSDC / OP',
-        collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
-        borrowAsset: { metadata: { symbol: 'OP_DEMO' } },
-        borrowProvider: 'morpho',
-        lendProvider: 'morpho',
-        marketParams: {
-          loanToken: '0x0',
-          collateralToken: '0x0',
-          oracle: '0x0',
-          irm: '0x0',
-          lltv: 0n,
-        },
+    MorphoUSDCBorrowDemo: {
+      ...baseMarketId,
+      name: 'Demo dUSDC / OP',
+      collateralAsset: { metadata: { symbol: 'USDC_DEMO' } },
+      borrowAsset: { metadata: { symbol: 'OP_DEMO' } },
+      borrowProvider: 'morpho',
+      lendProvider: 'morpho',
+      marketParams: {
+        loanToken: '0x0',
+        collateralToken: '0x0',
+        oracle: '0x0',
+        irm: '0x0',
+        lltv: 0n,
       },
-    ],
+    },
   }
 })
 
@@ -42,6 +47,7 @@ const mockBorrowProvider = {
   getMarket: vi.fn(),
   getMarkets: vi.fn(),
   getPosition: vi.fn(),
+  getQuote: vi.fn(),
 }
 
 const mockWalletBorrow = {
@@ -74,6 +80,8 @@ describe('Borrow Service', () => {
     vi.resetAllMocks()
     const { getActions } = await import('../config/actions.js')
     vi.mocked(getActions).mockReturnValue(mockActions as never)
+    const { getBlockExplorerUrls } = await import('../utils/explorers.js')
+    vi.mocked(getBlockExplorerUrls).mockReturnValue([])
   })
 
   describe('getMarkets', () => {
@@ -95,6 +103,79 @@ describe('Borrow Service', () => {
     it('propagates errors from the SDK', async () => {
       mockBorrowProvider.getMarkets.mockRejectedValue(new Error('rpc down'))
       await expect(borrowService.getMarkets()).rejects.toThrow('rpc down')
+    })
+  })
+
+  describe('getPrice', () => {
+    // SDK collapsed getPrice into getQuote in PR #3 commit 0c2b42f8; the
+    // backend service exposes `getPrice` as an alias so the controller's
+    // public /borrow/price route keeps its name, but both go through the
+    // same SDK namespace method.
+    it('forwards through actions.borrow.getQuote (price aliases quote)', async () => {
+      const quote = { positionAfter: {}, safeCeilingLtv: 0n } as never
+      mockBorrowProvider.getQuote.mockResolvedValue(quote)
+      const result = await borrowService.getPrice({
+        action: 'open',
+        marketId: baseMarketId,
+        borrowAmount: { amount: 5 },
+      })
+      expect(mockBorrowProvider.getQuote).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'open',
+          market: expect.objectContaining({ kind: 'morpho-blue' }),
+          borrowAmount: { amount: 5 },
+        }),
+      )
+      expect(result).toBe(quote)
+    })
+
+    it('throws MarketNotAllowedError when marketId is not in the allowlist', async () => {
+      await expect(
+        borrowService.getPrice({
+          action: 'open',
+          marketId: {
+            ...baseMarketId,
+            marketId: ('0x' + 'b'.repeat(64)) as `0x${string}`,
+          },
+          borrowAmount: { amount: 5 },
+        }),
+      ).rejects.toThrow(/Market.*not in/i)
+      expect(mockBorrowProvider.getQuote).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getQuote', () => {
+    it('resolves marketId to a config and forwards to actions.borrow.getQuote', async () => {
+      const quote = { execution: { transactions: [] } } as never
+      mockBorrowProvider.getQuote.mockResolvedValue(quote)
+      const result = await borrowService.getQuote({
+        action: 'open',
+        marketId: baseMarketId,
+        borrowAmount: { amount: 5 },
+        walletAddress: '0xaabbccddeeff00112233445566778899aabbccdd' as never,
+      })
+      expect(mockBorrowProvider.getQuote).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'open',
+          market: expect.objectContaining({ kind: 'morpho-blue' }),
+          walletAddress: '0xaabbccddeeff00112233445566778899aabbccdd',
+        }),
+      )
+      expect(result).toBe(quote)
+    })
+
+    it('throws MarketNotAllowedError when marketId is not in the allowlist', async () => {
+      await expect(
+        borrowService.getQuote({
+          action: 'open',
+          marketId: {
+            ...baseMarketId,
+            marketId: ('0x' + 'c'.repeat(64)) as `0x${string}`,
+          },
+          borrowAmount: { amount: 5 },
+        }),
+      ).rejects.toThrow(/Market.*not in/i)
+      expect(mockBorrowProvider.getQuote).not.toHaveBeenCalled()
     })
   })
 
@@ -146,31 +227,24 @@ describe('Borrow Service', () => {
       expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
 
-    it('forwards a pre-built quote unchanged to the SDK', async () => {
-      const quote = {
-        action: 'open',
-        marketId: baseMarketId,
-        tag: 'q',
-      } as never
-      const receipt = { tag: 'q-receipt' } as unknown as BorrowReceipt
-      mockWalletBorrow.openPosition.mockResolvedValue(receipt)
-
-      const result = await borrowService.openPosition({
-        idToken: 'idtok',
-        quote,
-      })
-
-      expect(mockWalletBorrow.openPosition).toHaveBeenCalledWith(quote)
-      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
-    })
-
-    it('throws when the wallet cannot be resolved', async () => {
+    it('throws WalletNotFoundError when the wallet cannot be resolved', async () => {
       const { getWallet } = await import('./wallet.js')
       vi.mocked(getWallet).mockResolvedValue(null)
-      await expect(borrowService.openPosition(fullParams)).rejects.toThrow(
-        'Wallet not found',
-      )
+      await expect(
+        borrowService.openPosition(fullParams),
+      ).rejects.toBeInstanceOf(WalletNotFoundError)
       expect(mockWalletBorrow.openPosition).not.toHaveBeenCalled()
+    })
+
+    it('throws ProviderNotConfiguredError when wallet.borrow is undefined', async () => {
+      const { getWallet } = await import('./wallet.js')
+      vi.mocked(getWallet).mockResolvedValue({
+        ...mockWallet,
+        borrow: undefined,
+      } as never)
+      await expect(
+        borrowService.openPosition(fullParams),
+      ).rejects.toBeInstanceOf(ProviderNotConfiguredError)
     })
 
     it('propagates SDK errors', async () => {
@@ -180,6 +254,31 @@ describe('Borrow Service', () => {
       await expect(borrowService.openPosition(fullParams)).rejects.toThrow(
         'insufficient liquidity',
       )
+    })
+
+    it('decorates the receipt with block-explorer URLs from the chain', async () => {
+      const { getBlockExplorerUrls } = await import('../utils/explorers.js')
+      vi.mocked(getBlockExplorerUrls).mockReturnValue([
+        'https://sepolia.basescan.org/tx/0xabc',
+      ])
+      const receipt = {
+        userOpHash: '0xuserop',
+        transactionHash: '0xtx',
+      } as unknown as BorrowReceipt
+      mockWalletBorrow.openPosition.mockResolvedValue(receipt)
+
+      const result = await borrowService.openPosition(fullParams)
+
+      expect(getBlockExplorerUrls).toHaveBeenCalledWith(
+        expect.objectContaining({
+          chainId: 84532,
+          userOpHash: '0xuserop',
+          transactionHash: '0xtx',
+        }),
+      )
+      expect(result.blockExplorerUrls).toEqual([
+        'https://sepolia.basescan.org/tx/0xabc',
+      ])
     })
   })
 
@@ -207,22 +306,6 @@ describe('Borrow Service', () => {
       )
       expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
-
-    it('forwards a pre-built quote unchanged', async () => {
-      const quote = {
-        action: 'close',
-        marketId: baseMarketId,
-        tag: 'q',
-      } as never
-      const receipt = { tag: 'r' } as unknown as BorrowReceipt
-      mockWalletBorrow.closePosition.mockResolvedValue(receipt)
-      const result = await borrowService.closePosition({
-        idToken: 'idtok',
-        quote,
-      })
-      expect(mockWalletBorrow.closePosition).toHaveBeenCalledWith(quote)
-      expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
-    })
   })
 
   describe('depositCollateral', () => {
@@ -247,17 +330,6 @@ describe('Borrow Service', () => {
       )
       expect(result).toEqual({ ...receipt, blockExplorerUrls: [] })
     })
-
-    it('forwards a pre-built quote unchanged', async () => {
-      const quote = {
-        action: 'depositCollateral',
-        marketId: baseMarketId,
-      } as never
-      const receipt = { tag: 'r' } as unknown as BorrowReceipt
-      mockWalletBorrow.depositCollateral.mockResolvedValue(receipt)
-      await borrowService.depositCollateral({ idToken: 'idtok', quote })
-      expect(mockWalletBorrow.depositCollateral).toHaveBeenCalledWith(quote)
-    })
   })
 
   describe('withdrawCollateral', () => {
@@ -281,16 +353,6 @@ describe('Borrow Service', () => {
         }),
       )
     })
-
-    it('forwards a pre-built quote unchanged', async () => {
-      const quote = {
-        action: 'withdrawCollateral',
-        marketId: baseMarketId,
-      } as never
-      mockWalletBorrow.withdrawCollateral.mockResolvedValue({} as never)
-      await borrowService.withdrawCollateral({ idToken: 'idtok', quote })
-      expect(mockWalletBorrow.withdrawCollateral).toHaveBeenCalledWith(quote)
-    })
   })
 
   describe('repay', () => {
@@ -313,13 +375,6 @@ describe('Borrow Service', () => {
           amount: { amount: 1 },
         }),
       )
-    })
-
-    it('forwards a pre-built quote unchanged', async () => {
-      const quote = { action: 'repay', marketId: baseMarketId } as never
-      mockWalletBorrow.repay.mockResolvedValue({} as never)
-      await borrowService.repay({ idToken: 'idtok', quote })
-      expect(mockWalletBorrow.repay).toHaveBeenCalledWith(quote)
     })
   })
 })

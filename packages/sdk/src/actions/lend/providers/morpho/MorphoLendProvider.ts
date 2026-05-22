@@ -5,7 +5,6 @@ import { LendProvider } from '@/actions/lend/core/LendProvider.js'
 import { getVault, getVaults } from '@/actions/lend/providers/morpho/sdk.js'
 import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
 import { getSupportedChainIds as getMorphoSupportedChainIds } from '@/actions/shared/morpho/contracts.js'
-import { resolveUnderlyingDecimals } from '@/actions/shared/morpho/decimals.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { LendProviderConfig, LendSettings } from '@/types/actions.js'
 import type {
@@ -20,6 +19,7 @@ import type {
   LendTransaction,
 } from '@/types/lend/index.js'
 import { getAssetAddress } from '@/utils/assets.js'
+import { resolveUnderlyingDecimals } from '@/utils/erc4626.js'
 
 /**
  * Morpho lending provider implementation

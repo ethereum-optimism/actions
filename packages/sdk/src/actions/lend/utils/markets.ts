@@ -1,3 +1,4 @@
+import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import { MarketNotAllowedError } from '@/core/error/errors.js'
 import type { Asset } from '@/types/asset.js'
@@ -6,6 +7,20 @@ import type {
   LendMarketConfig,
   LendMarketId,
 } from '@/types/lend/index.js'
+
+/**
+ * Structural equality for two `LendMarketId` values.
+ * @description Compares `chainId` and a case-insensitive `address`. Shared
+ * by `findMarketInAllowlist` (namespace routing) and
+ * `LendProvider.validateMarketAllowed` (per-call allowlist check) so the
+ * two-field comparison lives in one place.
+ */
+export function lendMarketIdMatches(a: LendMarketId, b: LendMarketId): boolean {
+  return (
+    a.address.toLowerCase() === b.address.toLowerCase() &&
+    a.chainId === b.chainId
+  )
+}
 
 /**
  * Find a market config in an allowlist by address + chainId (case-insensitive on address).
@@ -19,12 +34,11 @@ export function findMarketInAllowlist(
   allowlist: readonly LendMarketConfig[] | undefined,
   marketId: LendMarketId,
 ): LendMarketConfig | undefined {
-  if (!allowlist || allowlist.length === 0) return undefined
-  return allowlist.find(
-    (m) =>
-      m.address.toLowerCase() === marketId.address.toLowerCase() &&
-      m.chainId === marketId.chainId,
-  )
+  return findMatchingConfig({
+    configs: allowlist,
+    target: marketId,
+    matches: lendMarketIdMatches,
+  })
 }
 
 /**

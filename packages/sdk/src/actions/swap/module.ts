@@ -24,7 +24,7 @@ function buildResolveRecipient(deps: ActionModuleDeps): RecipientResolver {
 }
 
 /**
- * Swap action module — wraps the existing swap class graph for the
+ * Swap action module: wraps the existing swap class graph for the
  * generic `ActionModule` registry. Reads the ENS resolver from
  * `deps.ens`; falls back to a pass-through resolver when ENS is not
  * configured (which is also what `BaseSwapNamespace` does internally).

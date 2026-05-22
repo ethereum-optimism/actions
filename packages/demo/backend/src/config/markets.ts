@@ -18,7 +18,7 @@ export const GauntletUSDC: LendMarketConfig = {
   lendProvider: 'morpho',
 }
 
-export const GauntletUSDCDemo: LendMarketConfig = {
+export const MorphoUSDCLendDemo: LendMarketConfig = {
   address: '0x018e22BBC6eB3daCfd151d1Cc4Dc72f6337B3eA1' as const,
   chainId: baseSepolia.id,
   name: 'Gauntlet USDC',
@@ -34,15 +34,8 @@ export const AaveETH: LendMarketConfig = {
   lendProvider: 'aave',
 }
 
-// Export all markets for easy consumption
-export const ALL_MARKETS = [GauntletUSDCDemo, AaveETH]
-
 // ---------- Borrow markets ----------
-
-// Mirrors `morpho.borrow` in packages/demo/contracts/state/deployments.json
-// for chain 84532. Refresh these literals if the demo deploy is re-run
-// (DeployMorphoBorrowMarket.s.sol writes new addresses into deployments.json).
-export const MorphoBorrowDemo: BorrowMarketConfig = {
+export const MorphoUSDCBorrowDemo: BorrowMarketConfig = {
   kind: 'morpho-blue',
   marketId:
     '0x7dc82421423b50debf8c1f9f967f34367e0fb7bcdb1bda0cef27c319d89cd12f',
@@ -60,5 +53,3 @@ export const MorphoBorrowDemo: BorrowMarketConfig = {
     lltv: 860000000000000000n,
   },
 }
-
-export const ALL_BORROW_MARKETS: BorrowMarketConfig[] = [MorphoBorrowDemo]

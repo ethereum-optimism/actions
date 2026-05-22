@@ -91,6 +91,20 @@ export class ProviderNotConfiguredError extends ActionsError {
   }
 }
 
+export class ProtocolContractsNotConfiguredError extends ActionsError {
+  override name = 'ProtocolContractsNotConfiguredError' as const
+  protocol: string
+  chainId: number
+
+  constructor(params: { protocol: string; chainId: number }) {
+    super(
+      `${params.protocol} contracts are not configured for chain ${params.chainId}`,
+    )
+    this.protocol = params.protocol
+    this.chainId = params.chainId
+  }
+}
+
 export class MarketIdRequiredError extends ActionsError {
   override name = 'MarketIdRequiredError' as const
 
@@ -310,14 +324,16 @@ export class InvalidParamsError extends ActionsError {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Swap Quote
+// Quote
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Thrown when a pre-built `SwapQuote` is dispatched against a wallet whose
- * address differs from the quote's `recipient`. Some routers (Velodrome
- * v2/leaf) encode the recipient directly into calldata, so silently swapping
- * recipients would route output tokens to the wrong address.
+ * Thrown when a pre-built quote (swap, borrow, …) is dispatched against a
+ * wallet whose address differs from the quote's `recipient`. Some routers
+ * (Velodrome v2/leaf) and protocols (Morpho `supplyCollateral` / `borrow` /
+ * `repay` / `withdrawCollateral`) encode the recipient or `onBehalf` address
+ * directly into calldata, so silently swapping recipients would route assets
+ * or position changes to the wrong account.
  */
 export class QuoteRecipientMismatchError extends ActionsError {
   override name = 'QuoteRecipientMismatchError' as const
@@ -326,7 +342,7 @@ export class QuoteRecipientMismatchError extends ActionsError {
 
   constructor(params: { quoteRecipient: string; walletAddress: string }) {
     super(
-      `SwapQuote was generated for a different recipient (${params.quoteRecipient}); re-quote via wallet.swap.getQuote(...) so calldata is bound to this wallet (${params.walletAddress})`,
+      `Quote was generated for a different recipient (${params.quoteRecipient}); re-quote so calldata is bound to this wallet (${params.walletAddress})`,
     )
     this.quoteRecipient = params.quoteRecipient
     this.walletAddress = params.walletAddress
@@ -334,14 +350,36 @@ export class QuoteRecipientMismatchError extends ActionsError {
 }
 
 /**
- * Thrown when a provider's `_getQuote` returns a `SwapQuote` without a
- * `recipient`. The base namespace requires every quote to be wallet-bound
- * before approvals or calldata are built.
+ * Thrown when a provider's `_getQuote` returns a quote without a `recipient`.
+ * The base namespace requires every quote to be wallet-bound before approvals
+ * or calldata are built.
  */
 export class QuoteRecipientMissingError extends ActionsError {
   override name = 'QuoteRecipientMissingError' as const
 
   constructor() {
-    super('SwapQuote.recipient missing — _getQuote must populate it')
+    super('Quote.recipient missing. _getQuote must populate it')
+  }
+}
+
+/**
+ * Thrown when a `{ max: true }` repay / close / withdraw is requested against
+ * a position that has no debt (for repay/close) or no collateral (for
+ * withdraw). Without this guard the SDK would emit a 0-amount on-chain call
+ * that protocols like Morpho revert as `InconsistentInput`.
+ */
+export class EmptyPositionError extends ActionsError {
+  override name = 'EmptyPositionError' as const
+  operation: 'repay' | 'closePosition' | 'withdrawCollateral'
+
+  constructor(params: {
+    operation: 'repay' | 'closePosition' | 'withdrawCollateral'
+  }) {
+    const subject =
+      params.operation === 'withdrawCollateral' ? 'collateral' : 'debt'
+    super(
+      `Cannot ${params.operation} with max amount: position has no ${subject}`,
+    )
+    this.operation = params.operation
   }
 }

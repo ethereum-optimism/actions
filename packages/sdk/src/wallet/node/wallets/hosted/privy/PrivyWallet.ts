@@ -1,24 +1,15 @@
 import type { AuthorizationContext, PrivyClient } from '@privy-io/node'
 import { type Address, type LocalAccount } from 'viem'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  ActionProvidersMap,
-  ActionSettingsMap,
-} from '@/types/actionRegistry.js'
-import type { Asset } from '@/types/asset.js'
+import type { BaseWalletCreateOptions } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/privy/utils/createSigner.js'
 
-interface PrivyWalletCreateOptions {
+interface PrivyWalletCreateOptions extends BaseWalletCreateOptions {
   privyClient: PrivyClient
   authorizationContext?: AuthorizationContext
   walletId: string
   address: Address
-  chainManager: ChainManager
-  actionProviders?: ActionProvidersMap
-  actionSettings?: ActionSettingsMap
-  supportedAssets?: Asset[]
 }
 
 /**

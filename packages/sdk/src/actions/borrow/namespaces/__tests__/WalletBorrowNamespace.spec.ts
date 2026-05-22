@@ -5,9 +5,10 @@ import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import { WalletBorrowNamespace } from '@/actions/borrow/namespaces/WalletBorrowNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
+  ChainNotSupportedError,
+  InvalidParamsError,
   ProviderNotConfiguredError,
   QuoteExpiredError,
-  QuoteRecipientMismatchError,
 } from '@/core/error/errors.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
 import type {
@@ -19,7 +20,6 @@ import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
 const walletAddress = '0x000000000000000000000000000000000000beef' as const
-const otherWalletAddress = '0x000000000000000000000000000000000000c0ff' as const
 
 const collateralAsset = {
   type: 'erc20',
@@ -121,7 +121,6 @@ function makeQuote(overrides: Partial<BorrowQuote> = {}): BorrowQuote {
       ],
     },
     provider: 'morpho',
-    recipient: walletAddress,
     quotedAt: now,
     expiresAt: now + 30,
     ...overrides,
@@ -152,7 +151,7 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('WalletBorrowNamespace — quote dispatch', () => {
+describe('WalletBorrowNamespace - quote dispatch', () => {
   it('dispatches a valid pre-built quote via wallet.send', async () => {
     const { wallet, mocks } = makeWallet()
     const namespace = new WalletBorrowNamespace(
@@ -192,20 +191,28 @@ describe('WalletBorrowNamespace — quote dispatch', () => {
     expect(mocks.sendBatch).toHaveBeenCalledTimes(1)
     expect(mocks.send).not.toHaveBeenCalled()
   })
+
+  it('re-quotes raw params that happen to include quotedAt', async () => {
+    const { wallet, mocks } = makeWallet()
+    const provider = makeProvider()
+    const namespace = new WalletBorrowNamespace({ morpho: provider }, wallet)
+
+    await namespace.openPosition({
+      market,
+      borrowAmount: { amountRaw: 1n },
+      quotedAt: Math.floor(Date.now() / 1000),
+    } as {
+      market: BorrowMarketConfig
+      borrowAmount: { amountRaw: bigint }
+      quotedAt: number
+    })
+
+    expect(provider.openPosition).toHaveBeenCalledTimes(1)
+    expect(mocks.send).toHaveBeenCalledTimes(1)
+  })
 })
 
-describe('WalletBorrowNamespace — quote validation', () => {
-  it('throws QuoteRecipientMismatchError when recipient differs', async () => {
-    const { wallet } = makeWallet()
-    const namespace = new WalletBorrowNamespace(
-      { morpho: makeProvider() },
-      wallet,
-    )
-    await expect(
-      namespace.openPosition(makeQuote({ recipient: otherWalletAddress })),
-    ).rejects.toBeInstanceOf(QuoteRecipientMismatchError)
-  })
-
+describe('WalletBorrowNamespace - quote validation', () => {
   it('throws QuoteExpiredError when the quote has expired', async () => {
     const { wallet } = makeWallet()
     const namespace = new WalletBorrowNamespace(
@@ -219,9 +226,59 @@ describe('WalletBorrowNamespace — quote validation', () => {
       ),
     ).rejects.toBeInstanceOf(QuoteExpiredError)
   })
+
+  it('throws ChainNotSupportedError for a quote on an unsupported chain', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    await expect(
+      namespace.openPosition(
+        makeQuote({
+          marketId: {
+            kind: 'morpho-blue',
+            marketId: market.marketId,
+            chainId: 1 as SupportedChainId,
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(ChainNotSupportedError)
+  })
+
+  it('throws ProviderNotConfiguredError for a quote outside the configured market allowlist', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    await expect(
+      namespace.openPosition(
+        makeQuote({
+          marketId: {
+            kind: 'morpho-blue',
+            marketId:
+              '0x9999999999999999999999999999999999999999999999999999999999999999',
+            chainId: BASE_SEPOLIA_ID,
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(ProviderNotConfiguredError)
+  })
+
+  it('throws InvalidParamsError when quote.action does not match the called method', async () => {
+    const { wallet } = makeWallet()
+    const namespace = new WalletBorrowNamespace(
+      { morpho: makeProvider() },
+      wallet,
+    )
+    await expect(
+      namespace.openPosition(makeQuote({ action: 'repay' })),
+    ).rejects.toBeInstanceOf(InvalidParamsError)
+  })
 })
 
-describe('WalletBorrowNamespace — re-quote', () => {
+describe('WalletBorrowNamespace - re-quote', () => {
   it('injects walletAddress for getPosition reads', async () => {
     const { wallet } = makeWallet()
     const provider = makeProvider()
@@ -256,6 +313,42 @@ describe('WalletBorrowNamespace — re-quote', () => {
     )
   })
 
+  it('injects walletAddress across every raw-params action path', async () => {
+    const { wallet } = makeWallet()
+    const provider = makeProvider()
+    const namespace = new WalletBorrowNamespace({ morpho: provider }, wallet)
+
+    await namespace.closePosition({
+      market,
+      borrowAmount: { max: true },
+    })
+    await namespace.depositCollateral({
+      market,
+      amount: { amountRaw: 1n },
+    })
+    await namespace.withdrawCollateral({
+      market,
+      amount: { max: true },
+    })
+    await namespace.repay({
+      market,
+      amount: { amountRaw: 1n },
+    })
+
+    expect(provider.closePosition).toHaveBeenCalledWith(
+      expect.objectContaining({ walletAddress }),
+    )
+    expect(provider.depositCollateral).toHaveBeenCalledWith(
+      expect.objectContaining({ walletAddress }),
+    )
+    expect(provider.withdrawCollateral).toHaveBeenCalledWith(
+      expect.objectContaining({ walletAddress }),
+    )
+    expect(provider.repay).toHaveBeenCalledWith(
+      expect.objectContaining({ walletAddress }),
+    )
+  })
+
   it('routes by marketId when no provider configures the market in its allowlist', async () => {
     const { wallet } = makeWallet()
     const provider = makeProvider()
@@ -269,7 +362,7 @@ describe('WalletBorrowNamespace — re-quote', () => {
   })
 })
 
-describe('WalletBorrowNamespace — receipt envelope hashes', () => {
+describe('WalletBorrowNamespace - receipt envelope hashes', () => {
   it('surfaces transactionHash for a single EOA tx', async () => {
     const { wallet } = makeWallet()
     const namespace = new WalletBorrowNamespace(
@@ -311,7 +404,7 @@ describe('WalletBorrowNamespace — receipt envelope hashes', () => {
   })
 })
 
-describe('WalletBorrowNamespace — provider resolution failure', () => {
+describe('WalletBorrowNamespace - provider resolution failure', () => {
   it('throws when no borrow provider is configured', async () => {
     const { wallet } = makeWallet()
     const namespace = new WalletBorrowNamespace({}, wallet)

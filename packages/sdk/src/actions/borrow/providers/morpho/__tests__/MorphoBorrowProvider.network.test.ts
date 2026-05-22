@@ -16,9 +16,12 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import { blueAbi } from '@morpho-org/blue-sdk-viem'
 import {
   type Address,
   createPublicClient,
+  decodeFunctionData,
+  erc20Abi,
   type Hex,
   http,
   type PublicClient,
@@ -187,9 +190,8 @@ const deployed = readDeployedBorrowMarket()
 const describeOrSkip = deployed ? describe : describe.skip
 
 if (!deployed) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    'MorphoBorrowProvider.network.test.ts: skipping — deployments.json has not been populated. Run packages/demo/contracts/script/deploy-demo.sh first.',
+  process.stderr.write(
+    'MorphoBorrowProvider.network.test.ts: skipping - deployments.json has not been populated. Run packages/demo/contracts/script/deploy-demo.sh first.\n',
   )
 }
 
@@ -247,7 +249,7 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
       { marketAllowlist: [market] },
       chainManager,
     )
-    // Anvil's first prefunded account — guaranteed to have no Morpho position
+    // Anvil's first prefunded account, guaranteed to have no Morpho position
     // on a fresh fork.
     const freshWallet =
       '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as const satisfies Address
@@ -280,5 +282,24 @@ describeOrSkip('MorphoBorrowProvider network fork tests', () => {
     expect(quote.execution.transactions).toHaveLength(3)
     expect(quote.execution.approvalsSkipped).toBe(false)
     expect(quote.expiresAt).toBeGreaterThan(quote.quotedAt)
+
+    const [approvalTx, supplyTx, borrowTx] = quote.execution.transactions
+    const approvalCall = decodeFunctionData({
+      abi: erc20Abi,
+      data: approvalTx.data,
+    })
+    const supplyCall = decodeFunctionData({
+      abi: blueAbi,
+      data: supplyTx.data,
+    })
+    const borrowCall = decodeFunctionData({
+      abi: blueAbi,
+      data: borrowTx.data,
+    })
+
+    expect(approvalTx.to).toBe(market.marketParams.collateralToken)
+    expect(approvalCall.functionName).toBe('approve')
+    expect(supplyCall.functionName).toBe('supplyCollateral')
+    expect(borrowCall.functionName).toBe('borrow')
   })
 })

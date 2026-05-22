@@ -1,7 +1,10 @@
 import type { Address } from 'viem'
 import { isAddress } from 'viem'
 
-import type { SupportedChainId } from '@/constants/supportedChains.js'
+import {
+  SUPPORTED_CHAIN_IDS,
+  type SupportedChainId,
+} from '@/constants/supportedChains.js'
 import {
   AmountRequiredError,
   AssetNotSupportedOnChainError,
@@ -74,7 +77,23 @@ export function validateChainSupported(
 }
 
 /**
- * Guard for `BalanceFetchOptions` — verifies a caller-supplied `chainIds` filter is non-empty and each id is a member of `chainManager.getSupportedChains()`. No-op when `chainIds` is omitted.
+ * Resolve the effective chain set for a provider instance.
+ * @description Intersects protocol-native chains, SDK-supported chains, and
+ * developer-configured chains while preserving the protocol's declared order.
+ */
+export function resolveSupportedChainIds(
+  protocolSupportedChainIds: readonly number[],
+  configuredChainIds: readonly number[],
+): SupportedChainId[] {
+  return protocolSupportedChainIds.filter(
+    (chainId): chainId is SupportedChainId =>
+      (SUPPORTED_CHAIN_IDS as readonly number[]).includes(chainId) &&
+      configuredChainIds.includes(chainId),
+  )
+}
+
+/**
+ * Guard for `BalanceFetchOptions`. Verifies a caller-supplied `chainIds` filter is non-empty and each id is a member of `chainManager.getSupportedChains()`. No-op when `chainIds` is omitted.
  * @throws InvalidParamsError when `chainIds` is `[]`.
  * @throws ChainNotSupportedError when any id is not configured on the manager.
  */
@@ -105,7 +124,7 @@ export function validateAssetOnChain(
 
 /**
  * Validate that a resolved recipient address is not the zero address.
- * ENS names are skipped — only resolved `Address` values are checked.
+ * ENS names are skipped; only resolved `Address` values are checked.
  */
 export function validateRecipient(recipient: string | undefined): void {
   if (recipient && isAddress(recipient)) {

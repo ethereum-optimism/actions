@@ -1,21 +1,12 @@
 import { type Address, type LocalAccount } from 'viem'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  ActionProvidersMap,
-  ActionSettingsMap,
-} from '@/types/actionRegistry.js'
-import type { Asset } from '@/types/asset.js'
+import type { BaseWalletCreateOptions } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import type { DynamicHostedWalletToActionsWalletOptions } from '@/wallet/react/providers/hosted/types/index.js'
 import { createSigner } from '@/wallet/react/wallets/hosted/dynamic/utils/createSigner.js'
 
-interface DynamicWalletCreateOptions {
-  chainManager: ChainManager
+interface DynamicWalletCreateOptions extends BaseWalletCreateOptions {
   dynamicWallet: DynamicHostedWalletToActionsWalletOptions['wallet']
-  actionProviders?: ActionProvidersMap
-  actionSettings?: ActionSettingsMap
-  supportedAssets?: Asset[]
 }
 
 /**

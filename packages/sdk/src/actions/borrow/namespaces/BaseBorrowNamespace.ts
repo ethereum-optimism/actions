@@ -1,16 +1,15 @@
 import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
+import { marketIdMatches } from '@/actions/borrow/core/markets.js'
 import { BaseNamespace } from '@/actions/shared/BaseNamespace.js'
+import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
 import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
 import type {
   BorrowMarket,
-  BorrowMarketConfig,
   BorrowMarketId,
   BorrowMarketPosition,
-  BorrowPrice,
   BorrowQuote,
   BorrowQuoteParams,
-  GetBorrowMarketParams,
   GetBorrowMarketsParams,
   GetBorrowPositionParams,
 } from '@/types/borrow/index.js'
@@ -26,21 +25,23 @@ type ConfiguredBorrowProvider = BorrowProvider<BorrowProviderConfig>
  * providers ship (Aave, Comet, …) the routing layer here is what picks
  * the right concrete provider for a given market.
  */
-export abstract class BaseBorrowNamespace extends BaseNamespace<
+export class BaseBorrowNamespace extends BaseNamespace<
   ConfiguredBorrowProvider,
   BorrowProviders
 > {
   async getMarkets(
     params: GetBorrowMarketsParams = {},
   ): Promise<BorrowMarket[]> {
-    const results = await Promise.all(
+    const results = await Promise.allSettled(
       this.getAllProviders().map((p) => p.getMarkets(params)),
     )
-    return results.flat()
+    return results.flatMap((result) =>
+      result.status === 'fulfilled' ? result.value : [],
+    )
   }
 
-  async getMarket(params: GetBorrowMarketParams): Promise<BorrowMarket> {
-    return this.getProviderForMarket(params).getMarket(params)
+  async getMarket(marketId: BorrowMarketId): Promise<BorrowMarket> {
+    return this.getProviderForMarket(marketId).getMarket(marketId)
   }
 
   async getPosition(
@@ -76,41 +77,22 @@ export abstract class BaseBorrowNamespace extends BaseNamespace<
   }
 
   /**
-   * Lighter alternative to `getQuote` for preview UIs: returns just the
-   * position transition + fees + safe-ceiling LTV, without the
-   * pre-built transaction bundle. Internally builds a full quote and
-   * strips the execution data.
-   */
-  async getPrice(params: BorrowQuoteParams): Promise<BorrowPrice> {
-    const quote = await this.getQuote(params)
-    return {
-      marketId: quote.marketId,
-      action: quote.action,
-      positionAfter: quote.positionAfter,
-      fees: quote.fees,
-      safeCeilingLtv: quote.safeCeilingLtv,
-    }
-  }
-
-  /**
    * Pick the provider whose allowlist contains this market.
    * @description Falls back to discriminator routing (Morpho-Blue → morpho)
-   * when no allowlist hit is found — useful in tests where providers were
-   * spun up without explicit allowlists. Throws if no provider is registered
+   * when no allowlist hit is found (useful in tests where providers were
+   * spun up without explicit allowlists). Throws if no provider is registered
    * for the market's protocol.
    */
   protected getProviderForMarket(
     marketId: BorrowMarketId,
   ): ConfiguredBorrowProvider {
     for (const provider of this.getAllProviders()) {
-      const allowlist = provider.config.marketAllowlist
       if (
-        allowlist?.some(
-          (m: BorrowMarketConfig) =>
-            m.kind === marketId.kind &&
-            m.chainId === marketId.chainId &&
-            m.marketId.toLowerCase() === marketId.marketId.toLowerCase(),
-        )
+        findMatchingConfig({
+          configs: provider.config.marketAllowlist,
+          target: marketId,
+          matches: marketIdMatches,
+        })
       ) {
         return provider
       }

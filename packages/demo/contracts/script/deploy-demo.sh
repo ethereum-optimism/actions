@@ -9,7 +9,7 @@ set -euo pipefail
 #   5. Deploy Morpho borrow market (dUSDC collateral / OP loan)
 #
 # Usage:
-#   ./script/deploy-demo.sh [--skip-velodrome]
+#   ./script/deploy-demo.sh [--skip-velodrome] [--skip-morpho]
 #
 # Reads BASE_SEPOLIA_RPC_URL and DEMO_MARKET_SETUP_PRIVATE_KEY from
 # packages/demo/backend/.env. State is tracked in state/deployments.json
@@ -29,9 +29,11 @@ exec > >(tee "$DEPLOY_DEMO_LOG") 2>&1
 
 # Parse arguments
 SKIP_VELODROME=0
+SKIP_MORPHO=0
 while [[ $# -gt 0 ]]; do
     case $1 in
         --skip-velodrome) SKIP_VELODROME=1; shift ;;
+        --skip-morpho) SKIP_MORPHO=1; shift ;;
         *) echo "Unknown argument: $1"; exit 1 ;;
     esac
 done
@@ -220,7 +222,10 @@ echo ""
 # key triggers a re-deploy of the oracle and a fresh market.
 BORROW_MARKET_ID=$(read_state "morpho.borrow.marketId")
 
-if [[ -z "$BORROW_MARKET_ID" ]]; then
+if [[ "$SKIP_MORPHO" == "1" ]]; then
+    echo ">>> Skipping Morpho borrow market (--skip-morpho)"
+    echo ">>> No borrow providers to deploy because Morpho was skipped"
+elif [[ -z "$BORROW_MARKET_ID" ]]; then
     # Pass any partial state through so the script reuses prior contracts
     # rather than orphaning them on rerun. address(0) sentinel (rather than
     # an unset env var) keeps vm.envOr's parse path simple.

@@ -1,39 +1,19 @@
-import { encodeAbiParameters, type Hex, keccak256 } from 'viem'
+import { MarketUtils } from '@morpho-org/blue-sdk'
+import type { Hex } from 'viem'
 
 import type { MorphoMarketParams } from '@/types/borrow/index.js'
 
 /**
- * ABI parameter shape for Morpho Blue's `MarketParams` struct.
- * @description Mirrors the struct declared at
- * `packages/demo/contracts/src/interfaces/IMorpho.sol` so the keccak256 of
- * `abi.encode(MarketParams)` produces Morpho's canonical market id.
- */
-const MARKET_PARAMS_ABI = [
-  { type: 'address' },
-  { type: 'address' },
-  { type: 'address' },
-  { type: 'address' },
-  { type: 'uint256' },
-] as const
-
-/**
  * Compute the canonical Morpho Blue market id for a set of `MarketParams`.
- * @description Equivalent to `keccak256(abi.encode(MarketParams))` from
- * Morpho Blue's Solidity code. Pure function — safe to call at config time,
- * during tests, or as a sanity check at provider construction.
+ * @description Delegates to `@morpho-org/blue-sdk`'s `MarketUtils.getMarketId`,
+ * which computes `keccak256(abi.encode(MarketParams))` per Morpho's
+ * Solidity. Pure function, safe to call at config time, during tests, or
+ * as a sanity check at provider construction.
  * @param params - Morpho Blue market parameters
  * @returns The market id as a `0x`-prefixed 32-byte hex string
  */
 export function computeMorphoMarketId(params: MorphoMarketParams): Hex {
-  return keccak256(
-    encodeAbiParameters(MARKET_PARAMS_ABI, [
-      params.loanToken,
-      params.collateralToken,
-      params.oracle,
-      params.irm,
-      params.lltv,
-    ]),
-  )
+  return MarketUtils.getMarketId(params)
 }
 
 /**

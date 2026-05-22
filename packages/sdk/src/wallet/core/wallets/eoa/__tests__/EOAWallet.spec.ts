@@ -33,7 +33,11 @@ class TestEOAWallet extends EOAWallet {
     signer: LocalAccount,
     chainManager: ChainManager,
   ) {
-    super(chainManager)
+    super({
+      chainManager,
+      actionProviders: {},
+      actionSettings: {},
+    })
     this.address = address
     this.signer = signer
   }

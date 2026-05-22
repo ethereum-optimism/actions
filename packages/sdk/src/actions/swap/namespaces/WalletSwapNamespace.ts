@@ -58,7 +58,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
    * Execute a token swap.
    * Accepts either raw params (re-quotes internally) or a pre-built SwapQuote
    * (skips re-quoting). When a pre-built quote is passed, its recipient must
-   * equal this wallet's address — otherwise the calldata would route output
+   * equal this wallet's address; otherwise the calldata would route output
    * tokens to a different address (a real risk on Velodrome v2/leaf paths
    * where the recipient is encoded directly into the swap call). Re-quote via
    * `wallet.swap.getQuote(...)` to bind the quote to this wallet.
@@ -86,7 +86,7 @@ export class WalletSwapNamespace extends BaseSwapNamespace {
 
   /**
    * Validate that a pre-built quote is bound to this wallet. Throws when the
-   * quote's recipient differs from `wallet.address` — silently swapping
+   * quote's recipient differs from `wallet.address`; silently swapping
    * recipients would route output tokens to the wrong address on routers that
    * encode the recipient directly into calldata (e.g. Velodrome v2/leaf).
    */

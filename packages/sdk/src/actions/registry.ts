@@ -8,7 +8,7 @@ import type { ActionName } from '@/types/actionRegistry.js'
  * Central registry of every action the SDK ships.
  * @description `Actions` and `Wallet` iterate this map to construct
  * providers and namespaces. Add a new action by importing its module
- * here — no edits to wallet/provider plumbing required.
+ * here; no edits to wallet/provider plumbing required.
  */
 export const ACTION_MODULES = {
   lend: lendModule,

@@ -11,6 +11,7 @@ import {
   fetchRewards,
   type RewardsBreakdown,
 } from '@/actions/lend/providers/morpho/api.js'
+import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
 import { getMorphoContracts } from '@/actions/shared/morpho/contracts.js'
 import type { MorphoContracts } from '@/actions/shared/morpho/types.js'
 import { NATIVELY_SUPPORTED_ASSETS } from '@/constants/assets.js'
@@ -304,23 +305,6 @@ interface GetVaultParams {
   chainManager: ChainManager
   /** Lend configuration containing market allowlist */
   lendConfig?: LendProviderConfig
-}
-
-/**
- * Find market configuration in allowlist
- * @param marketAllowlist - Array of allowed market configurations
- * @param marketId - Market identifier to find
- * @returns Market configuration if found, undefined otherwise
- */
-function findMarketInAllowlist(
-  marketAllowlist: LendMarketConfig[],
-  marketId: LendMarketId,
-): LendMarketConfig | undefined {
-  return marketAllowlist.find(
-    (config) =>
-      config.address.toLowerCase() === marketId.address.toLowerCase() &&
-      config.chainId === marketId.chainId,
-  )
 }
 
 /**

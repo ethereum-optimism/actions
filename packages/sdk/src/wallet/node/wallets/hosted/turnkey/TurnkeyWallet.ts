@@ -3,24 +3,15 @@ import type { TurnkeyClient } from '@turnkey/http'
 import type { TurnkeyServerClient } from '@turnkey/sdk-server'
 import type { Address, LocalAccount } from 'viem'
 
-import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  ActionProvidersMap,
-  ActionSettingsMap,
-} from '@/types/actionRegistry.js'
-import type { Asset } from '@/types/asset.js'
+import type { BaseWalletCreateOptions } from '@/wallet/core/wallets/abstract/Wallet.js'
 import { EOAWallet } from '@/wallet/core/wallets/eoa/EOAWallet.js'
 import { createSigner } from '@/wallet/node/wallets/hosted/turnkey/utils/createSigner.js'
 
-interface TurnkeyWalletCreateOptions {
-  chainManager: ChainManager
+interface TurnkeyWalletCreateOptions extends BaseWalletCreateOptions {
   client: TurnkeyClient | TurnkeyServerClient | TurnkeySDKClientBase
   organizationId: string
   signWith: string
   ethereumAddress?: string
-  actionProviders?: ActionProvidersMap
-  actionSettings?: ActionSettingsMap
-  supportedAssets?: Asset[]
 }
 
 /**
@@ -30,12 +21,27 @@ interface TurnkeyWalletCreateOptions {
 export class TurnkeyWallet extends EOAWallet {
   public address!: Address
   public signer!: LocalAccount
+  /**
+   * Turnkey client instance (HTTP, server, or core SDK base)
+   */
   private readonly client:
     | TurnkeyClient
     | TurnkeyServerClient
     | TurnkeySDKClientBase
+  /**
+   * Turnkey organization ID that owns the signing key
+   */
   private readonly organizationId: string
+  /**
+   * This can be a wallet account address, private key address, or private key ID.
+   */
   private readonly signWith: string
+  /**
+   * Ethereum address to use for this account, in the case that a private key ID is used to sign.
+   * If left undefined, `createAccount` will fetch it from the Turnkey API.
+   * We recommend setting this if you're using a passkey client, so that your users are not prompted for a passkey signature just to fetch their address.
+   * You may leave this undefined if using an API key client.
+   */
   private readonly ethereumAddress?: string
 
   private constructor(params: TurnkeyWalletCreateOptions) {

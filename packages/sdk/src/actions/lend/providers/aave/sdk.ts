@@ -8,6 +8,7 @@ import {
   getAaveAddresses,
   getPoolAddress,
 } from '@/actions/lend/providers/aave/addresses.js'
+import { findMarketInAllowlist } from '@/actions/lend/utils/markets.js'
 import { WETH } from '@/constants/assets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
@@ -43,23 +44,6 @@ interface GetReservesParams {
   chainManager: ChainManager
   lendConfig: LendProviderConfig
   markets: LendMarketConfig[]
-}
-
-/**
- * Find market configuration in allowlist
- * @param marketAllowlist - Array of allowed market configurations
- * @param marketId - Market identifier to find
- * @returns Market configuration if found, undefined otherwise
- */
-function findMarketInAllowlist(
-  marketAllowlist: LendMarketConfig[],
-  marketId: LendMarketId,
-): LendMarketConfig | undefined {
-  return marketAllowlist.find(
-    (config) =>
-      config.address.toLowerCase() === marketId.address.toLowerCase() &&
-      config.chainId === marketId.chainId,
-  )
 }
 
 /**

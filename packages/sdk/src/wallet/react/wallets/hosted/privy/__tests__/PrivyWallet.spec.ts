@@ -59,6 +59,8 @@ describe('PrivyWallet (React)', () => {
     const wallet = await PrivyWallet.create({
       connectedWallet: connectedWallet,
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
 
     expect(wallet.address).toBe(mockViemAccount.address)
@@ -89,6 +91,8 @@ describe('PrivyWallet (React)', () => {
     const wallet = await PrivyWallet.create({
       connectedWallet: connectedWallet,
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
 
     const mockWalletClient = {

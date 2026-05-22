@@ -54,7 +54,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
     const factory = registry.getFactory('dynamic')
 
     const provider = await factory.create(
-      { chainManager: mockChainManager },
+      {
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      },
       undefined as ReactOptionsMap['dynamic'],
     )
 
@@ -76,7 +80,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
     const factory = registry.getFactory('privy')
 
     const provider = await factory.create(
-      { chainManager: mockChainManager },
+      {
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      },
       undefined as ReactOptionsMap['privy'],
     )
 
@@ -98,7 +106,11 @@ describe('ReactHostedWalletProviderRegistry', () => {
     const factory = registry.getFactory('turnkey')
 
     const provider = await factory.create(
-      { chainManager: mockChainManager },
+      {
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      },
       undefined as ReactOptionsMap['turnkey'],
     )
 

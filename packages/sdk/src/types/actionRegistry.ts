@@ -23,7 +23,7 @@ import type {
  * @description Single source of truth for which actions exist and the types
  * each one contributes. Adding a new action (stake, bridge, restake, …) means
  * adding a new entry here and a matching `ActionModule` runtime object. The
- * rest of the codebase narrows against this interface — `Actions`, `Wallet`,
+ * rest of the codebase narrows against this interface. `Actions`, `Wallet`,
  * hosted-wallet providers, and registries all iterate the keys generically
  * rather than referencing each action by name.
  */
