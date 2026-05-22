@@ -9,10 +9,7 @@
 //
 // We do not overwrite values the developer already exported locally.
 const TEST_ENV_DEFAULTS = {
-  // Safe to check in. Anvil/Foundry's first well-known dev account key;
-  // used only to satisfy `cleanEnv()` during test module load. The
-  // tests that exercise auth-gated routes mock the Privy client, so
-  // this key is never used to sign anything.
+  // Safe to check in: well-known Anvil dev key, only satisfies cleanEnv at import.
   SESSION_SIGNER_PK:
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
 } as const
