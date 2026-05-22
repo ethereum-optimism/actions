@@ -41,20 +41,21 @@ export const ChainIdStringSchema = z
   .regex(/^\d+$/, 'chainId must be a positive integer string')
   .transform((s) => Number(s) as SupportedChainId)
 
+// Shared amount branches. `.max(78)` on `amountRaw` caps the BigInt()
+// input at the width of `2^256` to prevent DoS via large digit strings.
+const AmountByHuman = z.strictObject({ amount: z.number().positive() })
+const AmountByRaw = z.strictObject({
+  amountRaw: z.string().regex(/^\d+$/).max(78),
+})
+const AmountByMax = z.strictObject({ max: z.literal(true) })
+
 /**
  * AmountExact: exactly one of `amount` (human number) or `amountRaw`
- * (decimal-string base units). `.max(78)` on `amountRaw` caps the
- * BigInt() input at the width of `2^256` to prevent DoS via large
- * digit strings. Emits the SDK-shaped value with `amountRaw` already
- * converted to `bigint`.
+ * (decimal-string base units). Emits the SDK-shaped value with
+ * `amountRaw` already converted to `bigint`.
  */
 export const AmountExactSchema = z
-  .union([
-    z.strictObject({ amount: z.number().positive() }),
-    z.strictObject({
-      amountRaw: z.string().regex(/^\d+$/).max(78),
-    }),
-  ])
+  .union([AmountByHuman, AmountByRaw])
   .transform((v) =>
     'amount' in v ? { amount: v.amount } : { amountRaw: BigInt(v.amountRaw) },
   )
@@ -64,13 +65,7 @@ export const AmountExactSchema = z
  * operations targeting an existing balance (close / withdraw / repay).
  */
 export const AmountWithMaxSchema = z
-  .union([
-    z.strictObject({ amount: z.number().positive() }),
-    z.strictObject({
-      amountRaw: z.string().regex(/^\d+$/).max(78),
-    }),
-    z.strictObject({ max: z.literal(true) }),
-  ])
+  .union([AmountByHuman, AmountByRaw, AmountByMax])
   .transform((v) =>
     'amount' in v
       ? { amount: v.amount }
