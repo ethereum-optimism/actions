@@ -47,11 +47,6 @@ router.get(
   authMiddleware,
   walletController.getLendPosition,
 )
-router.get(
-  '/wallet/borrow/:chainId/:marketId/position',
-  authMiddleware,
-  walletController.getBorrowPosition,
-)
 // Parameterized routes
 router.get('/wallet', authMiddleware, walletController.getWallet)
 router.post(
@@ -74,6 +69,11 @@ router.post(
 router.get('/borrow/markets', borrowController.getMarkets)
 router.post('/borrow/price', authMiddleware, borrowController.getPrice)
 router.post('/borrow/quote', authMiddleware, borrowController.getQuote)
+router.get(
+  '/wallet/borrow/:chainId/:marketId/position',
+  authMiddleware,
+  walletController.getBorrowPosition,
+)
 router.post(
   '/borrow/position/open',
   authMiddleware,
