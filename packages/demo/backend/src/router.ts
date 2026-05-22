@@ -67,7 +67,6 @@ router.post(
 
 // Borrow endpoints
 router.get('/borrow/markets', borrowController.getMarkets)
-router.post('/borrow/price', authMiddleware, borrowController.getPrice)
 router.post('/borrow/quote', authMiddleware, borrowController.getQuote)
 router.get(
   '/wallet/borrow/:chainId/:marketId/position',

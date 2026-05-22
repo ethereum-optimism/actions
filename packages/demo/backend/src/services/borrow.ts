@@ -136,10 +136,6 @@ export async function getQuote(
   return await actions.borrow.getQuote(quoteParamsFromInput(input))
 }
 
-// `/borrow/price` and `/borrow/quote` route through the same SDK method;
-// keep the name distinction so the controller reads cleanly.
-export const getPrice = getQuote
-
 // ---------- Mutations ----------
 
 async function resolveWalletOrThrow(
