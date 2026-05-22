@@ -57,6 +57,11 @@ export function adaptMorphoBorrowPosition(
       chainId: config.chainId,
     },
     collateralAsset: config.collateralAsset,
+    collateralShares: position.collateral,
+    collateralSharesFormatted: formatUnits(
+      position.collateral,
+      config.collateralAsset.metadata.decimals,
+    ),
     collateralAmount: position.collateral,
     collateralAmountFormatted: formatUnits(
       position.collateral,

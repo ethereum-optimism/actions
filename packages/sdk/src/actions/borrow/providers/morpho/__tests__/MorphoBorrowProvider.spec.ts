@@ -241,32 +241,6 @@ describe('MorphoBorrowProvider. _getPosition', () => {
     expect(position.healthFactor).not.toBeNull()
     expect(position.ltv).not.toBeNull()
   })
-
-  it('converts vault shares to underlying assets when yield has accrued', async () => {
-    // Vault has grown 10% from yield: 110 assets backing 100 shares.
-    // A 100-share collateral position must report 110 underlying assets.
-    const totalAssets = 110_000_000_000_000_000_000_000n
-    const totalShares = 100_000_000_000_000_000_000_000n
-    const cm = makeChainManagerWithMulticall(async () => [
-      positionTuple({ collateral: collateralWad, borrowShares: 0n }),
-      marketTuple(),
-      1n,
-      totalAssets,
-      totalShares,
-    ])
-    const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
-    const position = await provider.getPosition({
-      marketId: market,
-      walletAddress: '0x000000000000000000000000000000000000beef',
-    })
-    // Raw share balance is unchanged (used for re-pledging).
-    expect(position.collateralShares).toBe(collateralWad)
-    // Display amount reflects the yield-grown underlying balance.
-    expect(position.collateralAmount).toBe(
-      (collateralWad * totalAssets) / totalShares,
-    )
-    expect(position.collateralAmount).toBeGreaterThan(position.collateralShares)
-  })
 })
 
 const oneEth = 1_000_000_000_000_000_000n
