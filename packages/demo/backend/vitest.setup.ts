@@ -1,13 +1,5 @@
-// Sets minimum-viable env vars before any test module loads.
-//
-// `src/config/env.ts` runs `cleanEnv()` at import time and calls
-// `process.exit(1)` when a non-`devDefault` var is missing. CI does not
-// inject these, so any test that imports `@/app.js` (or transitively
-// reaches `@/config/env.js`) crashes the entire spec file before tests
-// can run. Vitest config wires this file via `setupFiles` so the env is
-// populated before module evaluation starts.
-//
-// We do not overwrite values the developer already exported locally.
+// Populate env vars before module load so `cleanEnv()` in src/config/env.ts
+// doesn't exit when CI runs specs that import @/app.js. Locally-set values win.
 const TEST_ENV_DEFAULTS = {
   // Safe to check in: well-known Anvil dev key, only satisfies cleanEnv at import.
   SESSION_SIGNER_PK:
