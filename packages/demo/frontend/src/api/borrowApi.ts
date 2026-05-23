@@ -15,9 +15,9 @@
  * back to `bigint` here so the rest of the frontend never deals with
  * the wire shape.
  *
- * `stubPriceUsd` provides USD denomination for display amounts until
- * the SDK ships a `PriceProvider` and the borrow read shapes carry
- * real spot prices. Tracked in #479.
+ * `stubPriceUsd` provides USD denomination for display amounts. The
+ * backend has no spot-price endpoint, so the stub stays until one is
+ * added; `borrowApi.getQuote` returns token-denominated values only.
  */
 
 import type { Address, Hex } from 'viem'
@@ -36,8 +36,6 @@ import { ActionsApiError } from './actionsApi.js'
 
 // Stub demo prices for USD denomination of display amounts.
 // USDC = $1, OP = $0.10 mirrors the backend's demo oracle.
-// Replaced by SDK `PriceProvider` + per-shape `collateralPrice` /
-// `borrowPrice`; see #479.
 const STUB_PRICES_USD: Readonly<Record<string, number>> = {
   USDC: 1.0,
   USDC_DEMO: 1.0,
