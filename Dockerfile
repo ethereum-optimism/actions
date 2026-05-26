@@ -24,7 +24,8 @@ COPY ../pnpm-lock.yaml ./
 RUN pnpm fetch
 
 COPY . ./
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prefer-offline
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
+RUN pnpm --config.ignore-scripts=false rebuild resolve-tspaths
 
 # provide the ability to build a single projects
 ARG DOCKER_TARGET

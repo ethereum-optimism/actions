@@ -25,7 +25,7 @@
     }
   },
   "scripts": {
-    "build": "pnpm clean && tsc && resolve-tspaths",
+    "build": "pnpm clean && tsc && node ../../../node_modules/resolve-tspaths/dist/main.js",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix && prettier \"**/*.{ts,tsx}\" --write --log-level=warn",
