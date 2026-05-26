@@ -1,7 +1,14 @@
-import { baseSepolia } from 'viem/chains'
+import { privateKeyToAccount } from 'viem/accounts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
+import { MockBorrowProvider } from '@/actions/borrow/__mocks__/MockBorrowProvider.js'
+import {
+  BASE_SEPOLIA_ID,
+  borrowAsset,
+  collateralAsset,
+  market,
+  walletAddress,
+} from '@/actions/borrow/__tests__/fixtures.js'
 import { WalletBorrowNamespace } from '@/actions/borrow/namespaces/WalletBorrowNamespace.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
@@ -10,71 +17,60 @@ import {
   ProviderNotConfiguredError,
   QuoteExpiredError,
 } from '@/core/error/errors.js'
+import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
+import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig } from '@/types/actions.js'
-import type {
-  BorrowMarketConfig,
-  BorrowQuote,
-  MorphoMarketParams,
-} from '@/types/borrow/index.js'
-import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
+import type { BorrowMarketConfig, BorrowQuote } from '@/types/borrow/index.js'
+import { TestWallet } from '@/wallet/core/wallets/abstract/__mocks__/TestWallet.js'
+import type { EOATransactionReceipt } from '@/wallet/core/wallets/abstract/types/index.js'
 
-const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
-const walletAddress = '0x000000000000000000000000000000000000beef' as const
+const singleTransactionHash =
+  '0xe0a0000000000000000000000000000000000000000000000000000000000001'
+const batchTransactionHashes = [
+  '0xe0a0000000000000000000000000000000000000000000000000000000000002',
+  '0xe0a0000000000000000000000000000000000000000000000000000000000003',
+] as const
 
-const collateralAsset = {
-  type: 'erc20',
-  address: { [BASE_SEPOLIA_ID]: '0xb1b0fe886ce376f28987ad24b1759a8f0a7dd839' },
-  metadata: { symbol: 'dUSDC', name: 'dUSDC', decimals: 18 },
-} as never
-
-const borrowAsset = {
-  type: 'erc20',
-  address: { [BASE_SEPOLIA_ID]: '0xd6169405013e92387b78457fa77d377ce8cd3ee8' },
-  metadata: { symbol: 'OP', name: 'OP', decimals: 18 },
-} as never
-
-const marketParams: MorphoMarketParams = {
-  loanToken: '0xd6169405013e92387b78457fa77d377ce8cd3ee8',
-  collateralToken: '0xb1b0fe886ce376f28987ad24b1759a8f0a7dd839',
-  oracle: '0x0000000000000000000000000000000000000aaa',
-  irm: '0x46415998764c29ab2a25cbea6254146d50d22687',
-  lltv: 860000000000000000n,
-}
-
-const market: BorrowMarketConfig = {
-  kind: 'morpho-blue',
-  marketId:
-    '0x1111111111111111111111111111111111111111111111111111111111111111',
-  chainId: BASE_SEPOLIA_ID,
-  name: 'Test market',
-  collateralAsset,
-  borrowAsset,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
-  marketParams,
-}
-
-type WalletMocks = {
-  send: ReturnType<typeof vi.fn>
-  sendBatch: ReturnType<typeof vi.fn>
-}
-
-function makeWallet(): { wallet: Wallet; mocks: WalletMocks } {
-  const send = vi.fn().mockResolvedValue({
-    transactionHash: '0xeoatxhash',
-  })
-  const sendBatch = vi
-    .fn()
-    .mockResolvedValue([
-      { transactionHash: '0xeoabatch0' },
-      { transactionHash: '0xeoabatch1' },
-    ])
-  const wallet = {
+function makeWallet() {
+  const chainManager = new MockChainManager({
+    supportedChains: [BASE_SEPOLIA_ID],
+  }) as unknown as ChainManager
+  const wallet = new TestWallet({
+    chainManager,
     address: walletAddress,
-    send,
-    sendBatch,
-  } as unknown as Wallet
+    signer: privateKeyToAccount(
+      '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+    ),
+  })
+  const send = vi
+    .spyOn(wallet, 'send')
+    .mockResolvedValue(makeEoaReceipt(singleTransactionHash))
+  const sendBatch = vi
+    .spyOn(wallet, 'sendBatch')
+    .mockResolvedValue(batchTransactionHashes.map(makeEoaReceipt))
   return { wallet, mocks: { send, sendBatch } }
+}
+
+function makeEoaReceipt(
+  transactionHash: EOATransactionReceipt['transactionHash'],
+): EOATransactionReceipt {
+  return {
+    blockHash:
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+    blockNumber: 1n,
+    contractAddress: null,
+    cumulativeGasUsed: 0n,
+    effectiveGasPrice: 0n,
+    from: walletAddress,
+    gasUsed: 0n,
+    logs: [],
+    logsBloom: `0x${'0'.repeat(512)}` as EOATransactionReceipt['logsBloom'],
+    status: 'success',
+    to: '0x0000000000000000000000000000000000000001',
+    transactionHash,
+    transactionIndex: 0,
+    type: 'eip1559',
+  }
 }
 
 function makeQuote(overrides: Partial<BorrowQuote> = {}): BorrowQuote {
@@ -125,24 +121,18 @@ function makeQuote(overrides: Partial<BorrowQuote> = {}): BorrowQuote {
   }
 }
 
-function makeProvider(): BorrowProvider<BorrowProviderConfig> {
-  return {
-    config: { marketAllowlist: [market] },
-    supportedChainIds: () => [BASE_SEPOLIA_ID],
-    isChainSupported: () => true,
-    openPosition: vi.fn(async () => makeQuote()),
-    closePosition: vi.fn(async () => makeQuote({ action: 'close' })),
-    depositCollateral: vi.fn(async () =>
-      makeQuote({ action: 'depositCollateral' }),
-    ),
-    withdrawCollateral: vi.fn(async () =>
-      makeQuote({ action: 'withdrawCollateral' }),
-    ),
-    repay: vi.fn(async () => makeQuote({ action: 'repay' })),
-    getMarket: vi.fn(),
-    getMarkets: vi.fn(),
-    getPosition: vi.fn(),
-  } as unknown as BorrowProvider<BorrowProviderConfig>
+function makeProvider(): MockBorrowProvider {
+  const provider = new MockBorrowProvider({ marketAllowlist: [market] })
+  provider.openPosition.mockResolvedValue(makeQuote())
+  provider.closePosition.mockResolvedValue(makeQuote({ action: 'close' }))
+  provider.depositCollateral.mockResolvedValue(
+    makeQuote({ action: 'depositCollateral' }),
+  )
+  provider.withdrawCollateral.mockResolvedValue(
+    makeQuote({ action: 'withdrawCollateral' }),
+  )
+  provider.repay.mockResolvedValue(makeQuote({ action: 'repay' }))
+  return provider
 }
 
 beforeEach(() => {
@@ -347,7 +337,7 @@ describe('WalletBorrowNamespace - receipt envelope hashes', () => {
       wallet,
     )
     const receipt = await namespace.openPosition(makeQuote())
-    expect(receipt.transactionHash).toBe('0xeoatxhash')
+    expect(receipt.transactionHash).toBe(singleTransactionHash)
     expect(receipt.transactionHashes).toBeUndefined()
     expect(receipt.userOpHash).toBeUndefined()
   })
@@ -375,7 +365,7 @@ describe('WalletBorrowNamespace - receipt envelope hashes', () => {
       },
     })
     const receipt = await namespace.openPosition(quote)
-    expect(receipt.transactionHashes).toEqual(['0xeoabatch0', '0xeoabatch1'])
+    expect(receipt.transactionHashes).toEqual(batchTransactionHashes)
     expect(receipt.transactionHash).toBeUndefined()
     expect(receipt.userOpHash).toBeUndefined()
   })
