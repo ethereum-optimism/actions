@@ -1,6 +1,6 @@
 # Docker Node install scripts policy
 
-Dependency installs in `Dockerfile` use `--ignore-scripts` by default (see `.npmrc`).
+Dependency installs in `Dockerfile` use `--ignore-scripts` on the install line (repo `.npmrc` is gitignored; use the same flag locally if desired).
 
 ## Allowlist
 
