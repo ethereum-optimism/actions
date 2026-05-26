@@ -22,7 +22,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "pnpm clean && tsc && node ../../node_modules/resolve-tspaths/dist/main.js && chmod +x dist/index.js",
+    "build": "pnpm clean && tsc && resolve-tspaths && chmod +x dist/index.js",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "dev": "tsx src/index.ts",
     "lint": "eslint \"**/*.{ts,tsx}\" && prettier --check \"**/*.{ts,tsx}\"",
