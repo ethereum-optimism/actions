@@ -29,6 +29,14 @@ export class BaseBorrowNamespace extends BaseNamespace<
   ConfiguredBorrowProvider,
   BorrowProviders
 > {
+  /**
+   * List borrow markets across configured providers.
+   * @description Returns successful provider results and ignores provider
+   * read failures so one unavailable protocol does not hide healthy markets.
+   * @param params - Optional chain and asset filters.
+   * @returns Borrow markets from all providers that fulfilled the read.
+   * @throws ChainNotSupportedError when a provider rejects an unsupported chain.
+   */
   async getMarkets(
     params: GetBorrowMarketsParams = {},
   ): Promise<BorrowMarket[]> {
@@ -40,10 +48,26 @@ export class BaseBorrowNamespace extends BaseNamespace<
     )
   }
 
+  /**
+   * Read a single borrow market.
+   * @description Selects the provider whose allowlist contains the market,
+   * then delegates the protocol read.
+   * @param marketId - Market identifier to read.
+   * @returns Borrow market data for the selected market.
+   * @throws ProviderNotConfiguredError when no provider can service the market.
+   */
   async getMarket(marketId: BorrowMarketId): Promise<BorrowMarket> {
     return this.getProviderForMarket(marketId).getMarket(marketId)
   }
 
+  /**
+   * Read a wallet position in a borrow market.
+   * @description Selects the provider whose allowlist contains the market,
+   * then delegates the wallet-position read.
+   * @param params - Market identifier and wallet address to inspect.
+   * @returns Wallet position data for the selected market.
+   * @throws ProviderNotConfiguredError when no provider can service the market.
+   */
   async getPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {
@@ -51,14 +75,14 @@ export class BaseBorrowNamespace extends BaseNamespace<
   }
 
   /**
-   * Build a `BorrowQuote` for any of the five borrow actions without
-   * dispatching it. The `action` discriminator selects which provider verb
-   * runs; the rest of the params match that verb's normal input.
-   *
-   * Useful for backend preview / confirmation endpoints that need
-   * recipient-bound, expiring calldata. Callers must supply
-   * `walletAddress` directly on read-only namespaces; the wallet
-   * namespace's overrides inject it from the connected wallet.
+   * Build a borrow quote without dispatching it.
+   * @description The `action` discriminator selects which provider verb runs.
+   * Useful for backend preview endpoints that need wallet-bound, expiring
+   * calldata. Read-only callers must supply `walletAddress`; wallet
+   * namespaces inject it from the connected wallet.
+   * @param params - Discriminated borrow quote parameters.
+   * @returns Borrow quote with projected position changes and execution data.
+   * @throws ProviderNotConfiguredError when no provider can service the market.
    */
   async getQuote(params: BorrowQuoteParams): Promise<BorrowQuote> {
     const provider = this.getProviderForMarket(params.market)
