@@ -94,8 +94,10 @@ export function createApp(): Hono {
     '*',
     cors({
       origin: (origin) => {
-        // Allow localhost for development
-        if (origin.startsWith('http://localhost:')) return origin
+        // Allow localhost only for local development
+        if (env.LOCAL_DEV && origin.startsWith('http://localhost:')) {
+          return origin
+        }
 
         // Allow production domains
         if (origin === 'https://actions-ui.netlify.app') return origin
