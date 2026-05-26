@@ -130,6 +130,10 @@ function toAmountWeiOrMax(
   amount: AmountOrMax,
   decimals: number,
 ): AmountWeiOrMax {
-  if ('max' in amount) return { max: true }
+  if (isMaxAmount(amount)) return { max: true }
   return { amountWei: toAmountWei(amount, decimals) }
+}
+
+function isMaxAmount(amount: AmountOrMax): amount is { max: true } {
+  return 'max' in amount
 }
