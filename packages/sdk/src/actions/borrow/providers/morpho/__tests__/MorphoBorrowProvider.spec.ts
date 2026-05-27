@@ -217,6 +217,10 @@ function stateMulticallResult(
     allowance?: bigint
   } = {},
 ) {
+  // Test fixture's collateralAsset address matches marketParams.collateralToken,
+  // so the non-vault branch is exercised: state.ts skips the convertToAssets
+  // read and the multicall returns 5 entries (position, market, price,
+  // rateAtTarget, allowance) — no sharePrice slot.
   return [
     positionTuple({
       collateral: opts.collateral ?? 0n,
@@ -225,7 +229,6 @@ function stateMulticallResult(
     marketTuple(),
     1_000_000_000_000_000_000_000_000_000_000_000_000n,
     0n, // rateAtTarget
-    10n ** 18n, // sharePrice — 1:1 conversion for test fixture (no vault)
     opts.allowance ?? 0n,
   ]
 }
@@ -281,7 +284,7 @@ describe('MorphoBorrowProvider - depositCollateral', () => {
     })
 
     expect(calls).toHaveLength(1)
-    expect(calls[0].contracts[5].address).toBe(
+    expect(calls[0].contracts[4].address).toBe(
       market.marketParams.collateralToken,
     )
     expect(quote.execution.transactions[0].to).toBe(
