@@ -131,7 +131,10 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
             position: 'relative',
           }}
         >
-          {/* Current fill */}
+          {/* Current fill — always reflects the live LTV. While a user is
+              typing a hypothetical action, this stays put and the delta
+              section to its right (or its trim, when the action shrinks
+              the position) shows the projected change. */}
           <div
             data-testid="borrow-health-bar-current"
             style={{
@@ -139,12 +142,17 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
               top: 0,
               left: 0,
               height: '100%',
-              width: `${wouldLiquidate ? 100 : showProjection ? projectedBarPct : currentBarPct}%`,
-              backgroundColor: wouldLiquidate ? '#EF4444' : tierColors.fill,
+              width: `${wouldLiquidate ? 100 : currentBarPct}%`,
+              backgroundColor: wouldLiquidate
+                ? '#EF4444'
+                : currentTierColors.fill,
               transition: 'width 200ms ease-in-out',
             }}
           />
-          {/* Delta segment: shows how far the bar is moving in either direction. */}
+          {/* Delta segment with barbershop-pole stripes — animated to read
+              as "tentative". Positioned at min(current, projected) so it
+              extends the bar when the action increases LTV, and dims the
+              tail when it decreases. */}
           {!wouldLiquidate &&
             showProjection &&
             projectedBarPct !== currentBarPct && (
@@ -156,11 +164,17 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
                   left: `${Math.min(currentBarPct, projectedBarPct)}%`,
                   height: '100%',
                   width: `${Math.abs(projectedBarPct - currentBarPct)}%`,
-                  backgroundColor: isImproving
-                    ? currentTierColors.fill
-                    : tierColors.fill,
-                  opacity: isImproving ? 0.22 : 0.4,
-                  transition: 'all 200ms ease-in-out',
+                  backgroundImage: `repeating-linear-gradient(
+                    -45deg,
+                    ${isImproving ? currentTierColors.fill : tierColors.fill} 0px,
+                    ${isImproving ? currentTierColors.fill : tierColors.fill} 4px,
+                    rgba(255, 255, 255, 0.55) 4px,
+                    rgba(255, 255, 255, 0.55) 8px
+                  )`,
+                  backgroundSize: '200% 100%',
+                  animation: 'borrowHealthBarbershop 6s linear infinite',
+                  opacity: 0.65,
+                  transition: 'left 200ms ease-in-out, width 200ms ease-in-out',
                 }}
               />
             )}
@@ -219,6 +233,10 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
             50% {
               box-shadow: 0 0 18px rgba(239, 68, 68, 0.48);
             }
+          }
+          @keyframes borrowHealthBarbershop {
+            from { background-position: 0 0; }
+            to { background-position: 200% 0; }
           }
         `}
       </style>

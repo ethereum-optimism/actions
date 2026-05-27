@@ -90,7 +90,7 @@ describe('BorrowHealthCard', () => {
     })
   })
 
-  it('shrinks the visible bar on repay-style improvement', () => {
+  it('keeps the current bar fill stable and surfaces the delta as overlay', () => {
     render(
       <BorrowHealthCard
         {...baseProps}
@@ -99,9 +99,11 @@ describe('BorrowHealthCard', () => {
         projectedHealthFactor={19.11}
       />,
     )
+    // Current bar reflects the live position (currentLtv / maxLtv).
     expect(screen.getByTestId('borrow-health-bar-current')).toHaveStyle({
-      width: '5.232558139534883%',
+      width: '51.97674418604651%',
     })
+    // Delta overlay covers the gap between current and projected fills.
     expect(screen.getByTestId('borrow-health-bar-projection')).toHaveStyle({
       width: '46.74418604651163%',
     })
