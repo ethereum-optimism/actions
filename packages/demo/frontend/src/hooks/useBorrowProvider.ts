@@ -257,6 +257,19 @@ export function useBorrowProvider(
           )
           break
       }
+      // Optimistic local update from the receipt so the table reflects the
+      // new position before the backend refetch completes. Without this, RPC
+      // propagation lag or a stale `markets` closure can leave the Active
+      // Positions section empty until the user refreshes.
+      if (receipt.positionAfter) {
+        const next = receipt.positionAfter
+        setBorrowPositions((current) => {
+          const filtered = current.filter(
+            (p) => !sameMarketId(p.marketId, next.marketId),
+          )
+          return isEmptyBorrowPosition(next) ? filtered : [...filtered, next]
+        })
+      }
       await fetchPositions(walletAddress)
       await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
       dispatchEarnPositionsChanged()
@@ -315,4 +328,16 @@ export function useBorrowProvider(
     handleTransaction,
     getQuote,
   }
+}
+
+function sameMarketId(a: BorrowMarketId, b: BorrowMarketId): boolean {
+  if (a.kind !== b.kind || a.chainId !== b.chainId) return false
+  if (a.kind === 'morpho-blue' && b.kind === 'morpho-blue') {
+    return a.marketId === b.marketId
+  }
+  return false
+}
+
+function isEmptyBorrowPosition(p: BorrowMarketPosition): boolean {
+  return p.collateralAmount === 0n && p.borrowAmount === 0n
 }
