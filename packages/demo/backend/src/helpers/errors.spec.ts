@@ -123,7 +123,7 @@ describe('mapSdkError', () => {
     })
   })
 
-  it('maps ProviderNotConfiguredError to 503', () => {
+  it('maps ProviderNotConfiguredError to 500', () => {
     expect(
       mapSdkError(
         new ProviderNotConfiguredError({
@@ -132,7 +132,7 @@ describe('mapSdkError', () => {
         }),
       ),
     ).toEqual({
-      status: 503,
+      status: 500,
       message: 'Provider not configured for this market.',
     })
   })

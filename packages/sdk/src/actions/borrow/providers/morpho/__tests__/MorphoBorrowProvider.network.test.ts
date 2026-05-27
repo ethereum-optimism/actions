@@ -12,7 +12,6 @@
  * The suite skips itself with a clear console.warn when the deploy hasn't
  * run yet (deployments.json fields are still null).
  */
-import { type ChildProcess, spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -32,10 +31,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
+import type { Asset } from '@/types/asset.js'
 import type {
   BorrowMarketConfig,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
+import { type AnvilFork, startAnvilFork, stopAnvilFork } from '@/utils/test.js'
 
 const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
 
@@ -100,51 +101,6 @@ function readDeployedBorrowMarket(): DeployedBorrowMarket | null {
   }
 }
 
-// ── Anvil fork helpers (mirror VelodromeSwapProvider.network.test.ts) ──
-
-interface AnvilFork {
-  port: number
-  process: ChildProcess
-  rpcUrl: string
-}
-
-async function startAnvilFork(
-  forkUrl: string,
-  port: number,
-): Promise<AnvilFork> {
-  const proc = spawn(
-    'anvil',
-    ['--fork-url', forkUrl, '--port', String(port), '--silent'],
-    { stdio: 'ignore' },
-  )
-
-  const rpcUrl = `http://127.0.0.1:${port}`
-  for (let i = 0; i < 30; i++) {
-    try {
-      const res = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_blockNumber',
-          params: [],
-          id: 1,
-        }),
-      })
-      if (res.ok) return { port, process: proc, rpcUrl }
-    } catch {
-      // not ready yet
-    }
-    await new Promise((r) => setTimeout(r, 500))
-  }
-  proc.kill()
-  throw new Error(`Anvil fork on port ${port} did not start in time`)
-}
-
-function stopAnvilFork(fork: AnvilFork) {
-  fork.process.kill()
-}
-
 function createForkChainManager(rpcUrl: string): {
   chainManager: ChainManager
   client: PublicClient
@@ -167,12 +123,12 @@ function buildMarketConfig(deploy: DeployedBorrowMarket): BorrowMarketConfig {
     type: 'erc20',
     address: { [BASE_SEPOLIA_ID]: deploy.collateralTokenAddress },
     metadata: { name: 'Demo USDC', symbol: 'dUSDC', decimals: 18 },
-  } as never
+  } satisfies Asset
   const borrowAsset = {
     type: 'erc20',
     address: { [BASE_SEPOLIA_ID]: deploy.loanTokenAddress },
     metadata: { name: 'Demo OP', symbol: 'OP', decimals: 18 },
-  } as never
+  } satisfies Asset
   return {
     kind: 'morpho-blue',
     marketId: deploy.marketId,

@@ -85,6 +85,17 @@ export abstract class BorrowProvider<
   // Public action methods
   // ─────────────────────────────────────────────────────────────────────────
 
+  /**
+   * Open or increase a borrow position.
+   * @description Validates wallet and market boundaries, normalizes amounts,
+   * then delegates protocol-specific quote construction to the provider hook.
+   * @param params - Borrow market, wallet, amount, and optional collateral.
+   * @returns Quote containing projected position changes and execution data.
+   * @throws AddressRequiredError when `walletAddress` is missing.
+   * @throws ZeroAddressError when `walletAddress` is the zero address.
+   * @throws ChainNotSupportedError when the market chain is unsupported.
+   * @throws MarketNotAllowedError when the market is not allowlisted.
+   */
   public async openPosition(
     params: BorrowOpenPositionParams,
   ): Promise<BorrowQuote> {
@@ -94,6 +105,17 @@ export abstract class BorrowProvider<
     )
   }
 
+  /**
+   * Close or reduce a borrow position.
+   * @description Validates wallet and market boundaries, converts exact
+   * amounts to wei, and preserves `{ max: true }` for protocol dust handling.
+   * @param params - Borrow market, wallet, debt amount, and collateral amount.
+   * @returns Quote containing projected position changes and execution data.
+   * @throws AddressRequiredError when `walletAddress` is missing.
+   * @throws ZeroAddressError when `walletAddress` is the zero address.
+   * @throws ChainNotSupportedError when the market chain is unsupported.
+   * @throws MarketNotAllowedError when the market is not allowlisted.
+   */
   public async closePosition(
     params: BorrowClosePositionParams,
   ): Promise<BorrowQuote> {
@@ -103,6 +125,17 @@ export abstract class BorrowProvider<
     )
   }
 
+  /**
+   * Add collateral to an existing or future borrow position.
+   * @description Validates wallet and market boundaries, normalizes the
+   * collateral amount using collateral asset decimals, and builds a quote.
+   * @param params - Borrow market, wallet, and collateral amount to deposit.
+   * @returns Quote containing projected position changes and execution data.
+   * @throws AddressRequiredError when `walletAddress` is missing.
+   * @throws ZeroAddressError when `walletAddress` is the zero address.
+   * @throws ChainNotSupportedError when the market chain is unsupported.
+   * @throws MarketNotAllowedError when the market is not allowlisted.
+   */
   public async depositCollateral(
     params: BorrowDepositCollateralParams,
   ): Promise<BorrowQuote> {
@@ -112,6 +145,17 @@ export abstract class BorrowProvider<
     )
   }
 
+  /**
+   * Withdraw collateral from a borrow position.
+   * @description Validates wallet and market boundaries, converts exact
+   * amounts to wei, and preserves `{ max: true }` for full withdrawals.
+   * @param params - Borrow market, wallet, and collateral amount to withdraw.
+   * @returns Quote containing projected position changes and execution data.
+   * @throws AddressRequiredError when `walletAddress` is missing.
+   * @throws ZeroAddressError when `walletAddress` is the zero address.
+   * @throws ChainNotSupportedError when the market chain is unsupported.
+   * @throws MarketNotAllowedError when the market is not allowlisted.
+   */
   public async withdrawCollateral(
     params: BorrowWithdrawCollateralParams,
   ): Promise<BorrowQuote> {
@@ -121,6 +165,17 @@ export abstract class BorrowProvider<
     )
   }
 
+  /**
+   * Repay debt on a borrow position.
+   * @description Validates wallet and market boundaries, converts exact
+   * amounts to wei, and preserves `{ max: true }` for full repayments.
+   * @param params - Borrow market, wallet, and repayment amount.
+   * @returns Quote containing projected position changes and execution data.
+   * @throws AddressRequiredError when `walletAddress` is missing.
+   * @throws ZeroAddressError when `walletAddress` is the zero address.
+   * @throws ChainNotSupportedError when the market chain is unsupported.
+   * @throws MarketNotAllowedError when the market is not allowlisted.
+   */
   public async repay(params: BorrowRepayParams): Promise<BorrowQuote> {
     const { market, base } = this.resolveTrustedBaseParams(params)
     return this._repay(buildRepayInternalParams({ ...params, market }, base))
@@ -130,12 +185,29 @@ export abstract class BorrowProvider<
   // Public read methods
   // ─────────────────────────────────────────────────────────────────────────
 
+  /**
+   * Read one configured borrow market.
+   * @description Resolves the market from the provider allowlist before
+   * delegating to the concrete protocol reader.
+   * @param marketId - Market identifier to read.
+   * @returns Borrow market data for the requested market.
+   * @throws ChainNotSupportedError when the market chain is unsupported.
+   * @throws MarketNotAllowedError when the market is not allowlisted.
+   */
   public async getMarket(marketId: BorrowMarketId): Promise<BorrowMarket> {
     validateChainSupported(marketId.chainId, this.supportedChainIds())
     const market = this.requireAllowlistedMarketConfig(marketId)
     return this._getMarket(market)
   }
 
+  /**
+   * List configured borrow markets.
+   * @description Applies optional client-side filters against the provider
+   * allowlist before delegating protocol reads to the concrete provider.
+   * @param params - Optional chain and asset filters.
+   * @returns Borrow markets matching the supplied filters.
+   * @throws ChainNotSupportedError when a requested chain is unsupported.
+   */
   public async getMarkets(
     params: GetBorrowMarketsParams = {},
   ): Promise<BorrowMarket[]> {
@@ -159,6 +231,17 @@ export abstract class BorrowProvider<
     })
   }
 
+  /**
+   * Read a wallet position in a configured borrow market.
+   * @description Validates wallet, chain, and allowlist boundaries before
+   * delegating to the concrete protocol reader.
+   * @param params - Market identifier and wallet address to inspect.
+   * @returns Wallet position data for the requested market.
+   * @throws AddressRequiredError when `walletAddress` is missing.
+   * @throws ZeroAddressError when `walletAddress` is the zero address.
+   * @throws ChainNotSupportedError when the market chain is unsupported.
+   * @throws MarketNotAllowedError when the market is not allowlisted.
+   */
   public async getPosition(
     params: GetBorrowPositionParams,
   ): Promise<BorrowMarketPosition> {

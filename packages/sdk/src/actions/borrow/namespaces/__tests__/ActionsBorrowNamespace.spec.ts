@@ -1,51 +1,14 @@
-import { baseSepolia } from 'viem/chains'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import type { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
-import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
-import type { SupportedChainId } from '@/constants/supportedChains.js'
-import type { BorrowProviderConfig } from '@/types/actions.js'
-import type {
-  BorrowMarketConfig,
-  BorrowQuote,
-  MorphoMarketParams,
-} from '@/types/borrow/index.js'
-
-const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
-const walletAddress = '0x000000000000000000000000000000000000beef' as const
-
-const collateralAsset = {
-  type: 'erc20',
-  address: { [BASE_SEPOLIA_ID]: '0xb1b0fe886ce376f28987ad24b1759a8f0a7dd839' },
-  metadata: { symbol: 'dUSDC', name: 'dUSDC', decimals: 18 },
-} as never
-
-const borrowAsset = {
-  type: 'erc20',
-  address: { [BASE_SEPOLIA_ID]: '0xd6169405013e92387b78457fa77d377ce8cd3ee8' },
-  metadata: { symbol: 'OP', name: 'OP', decimals: 18 },
-} as never
-
-const marketParams: MorphoMarketParams = {
-  loanToken: '0xd6169405013e92387b78457fa77d377ce8cd3ee8',
-  collateralToken: '0xb1b0fe886ce376f28987ad24b1759a8f0a7dd839',
-  oracle: '0x0000000000000000000000000000000000000aaa',
-  irm: '0x46415998764c29ab2a25cbea6254146d50d22687',
-  lltv: 860000000000000000n,
-}
-
-const market: BorrowMarketConfig = {
-  kind: 'morpho-blue',
-  marketId:
-    '0x1111111111111111111111111111111111111111111111111111111111111111',
-  chainId: BASE_SEPOLIA_ID,
-  name: 'Test market',
-  collateralAsset,
+import { MockBorrowProvider } from '@/actions/borrow/__mocks__/MockBorrowProvider.js'
+import {
   borrowAsset,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
-  marketParams,
-}
+  collateralAsset,
+  market,
+  walletAddress,
+} from '@/actions/borrow/__tests__/fixtures.js'
+import { BaseBorrowNamespace } from '@/actions/borrow/namespaces/BaseBorrowNamespace.js'
+import type { BorrowQuote } from '@/types/borrow/index.js'
 
 function makeQuote(action: BorrowQuote['action'] = 'open'): BorrowQuote {
   const now = Math.floor(Date.now() / 1000)
@@ -88,20 +51,14 @@ function makeQuote(action: BorrowQuote['action'] = 'open'): BorrowQuote {
   }
 }
 
-function makeProvider() {
-  return {
-    config: { marketAllowlist: [market] },
-    supportedChainIds: () => [BASE_SEPOLIA_ID],
-    isChainSupported: () => true,
-    openPosition: vi.fn(async () => makeQuote('open')),
-    closePosition: vi.fn(async () => makeQuote('close')),
-    depositCollateral: vi.fn(async () => makeQuote('depositCollateral')),
-    withdrawCollateral: vi.fn(async () => makeQuote('withdrawCollateral')),
-    repay: vi.fn(async () => makeQuote('repay')),
-    getMarket: vi.fn(),
-    getMarkets: vi.fn(),
-    getPosition: vi.fn(),
-  } as unknown as BorrowProvider<BorrowProviderConfig>
+function makeProvider(): MockBorrowProvider {
+  const provider = new MockBorrowProvider({ marketAllowlist: [market] })
+  provider.openPosition.mockResolvedValue(makeQuote('open'))
+  provider.closePosition.mockResolvedValue(makeQuote('close'))
+  provider.depositCollateral.mockResolvedValue(makeQuote('depositCollateral'))
+  provider.withdrawCollateral.mockResolvedValue(makeQuote('withdrawCollateral'))
+  provider.repay.mockResolvedValue(makeQuote('repay'))
+  return provider
 }
 
 describe('BaseBorrowNamespace.getQuote', () => {
@@ -170,7 +127,7 @@ describe('BaseBorrowNamespace.getMarkets', () => {
   it('keeps fulfilled provider results when one provider fails', async () => {
     const okProvider = makeProvider()
     const failingProvider = makeProvider()
-    ;(okProvider.getMarkets as ReturnType<typeof vi.fn>).mockResolvedValue([
+    okProvider.getMarkets.mockResolvedValue([
       {
         marketId: {
           kind: market.kind,
@@ -188,9 +145,7 @@ describe('BaseBorrowNamespace.getMarkets', () => {
         totalCollateral: 0n,
       },
     ])
-    ;(failingProvider.getMarkets as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('rpc failed'),
-    )
+    failingProvider.getMarkets.mockRejectedValue(new Error('rpc failed'))
 
     const ns = new BaseBorrowNamespace({
       morpho: okProvider,

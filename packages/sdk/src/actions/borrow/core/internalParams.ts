@@ -122,7 +122,7 @@ export function buildRepayInternalParams(
 }
 
 function toAmountWei(amount: Amount, decimals: number): bigint {
-  if ('amountRaw' in amount) return amount.amountRaw
+  if (isRawAmount(amount)) return amount.amountRaw
   return parseDecimalAmount(amount.amount, decimals)
 }
 
@@ -130,6 +130,14 @@ function toAmountWeiOrMax(
   amount: AmountOrMax,
   decimals: number,
 ): AmountWeiOrMax {
-  if ('max' in amount) return { max: true }
+  if (isMaxAmount(amount)) return { max: true }
   return { amountWei: toAmountWei(amount, decimals) }
+}
+
+function isMaxAmount(amount: AmountOrMax): amount is { max: true } {
+  return 'max' in amount
+}
+
+function isRawAmount(amount: Amount): amount is { amountRaw: bigint } {
+  return 'amountRaw' in amount
 }

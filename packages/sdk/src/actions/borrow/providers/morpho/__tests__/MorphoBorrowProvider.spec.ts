@@ -5,68 +5,23 @@ import {
   maxUint256,
   type PublicClient,
 } from 'viem'
-import { baseSepolia } from 'viem/chains'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { computeMorphoMarketId } from '@/actions/borrow/providers/morpho/marketParams.js'
+import {
+  BASE_SEPOLIA_ID,
+  borrowAsset,
+  collateralAsset,
+  market,
+  otherMarket,
+} from '@/actions/borrow/__tests__/fixtures.js'
 import { MorphoBorrowProvider } from '@/actions/borrow/providers/morpho/MorphoBorrowProvider.js'
-import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
   BorrowMarketParamsMismatchError,
   EmptyPositionError,
   MarketNotAllowedError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type {
-  BorrowMarketConfig,
-  MorphoMarketParams,
-} from '@/types/borrow/index.js'
-
-const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
-
-const collateralAsset = {
-  type: 'erc20',
-  address: { [BASE_SEPOLIA_ID]: '0xb1b0fe886ce376f28987ad24b1759a8f0a7dd839' },
-  metadata: { symbol: 'dUSDC', name: 'dUSDC', decimals: 18 },
-} as never
-
-const borrowAsset = {
-  type: 'erc20',
-  address: { [BASE_SEPOLIA_ID]: '0xd6169405013e92387b78457fa77d377ce8cd3ee8' },
-  metadata: { symbol: 'OP', name: 'OP', decimals: 18 },
-} as never
-
-const marketParams: MorphoMarketParams = {
-  loanToken: '0xd6169405013e92387b78457fa77d377ce8cd3ee8',
-  collateralToken: '0xb1b0fe886ce376f28987ad24b1759a8f0a7dd839',
-  oracle: '0x0000000000000000000000000000000000000aaa',
-  irm: '0x46415998764c29ab2a25cbea6254146d50d22687',
-  lltv: 860000000000000000n,
-}
-
-const market: BorrowMarketConfig = {
-  kind: 'morpho-blue',
-  marketId: computeMorphoMarketId(marketParams),
-  chainId: BASE_SEPOLIA_ID,
-  name: 'Test market',
-  collateralAsset,
-  borrowAsset,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
-  marketParams,
-}
-
-const secondMarketParams: MorphoMarketParams = {
-  ...marketParams,
-  oracle: '0x0000000000000000000000000000000000000bbb',
-}
-
-const secondMarket: BorrowMarketConfig = {
-  ...market,
-  marketId: computeMorphoMarketId(secondMarketParams),
-  name: 'Second test market',
-  marketParams: secondMarketParams,
-}
+import type { BorrowMarketConfig } from '@/types/borrow/index.js'
 
 // Helper to build a tuple-shaped market() return value.
 function marketTuple(
@@ -189,7 +144,7 @@ describe('MorphoBorrowProvider. _getMarket', () => {
       return [marketTuple(), 500_000_000_000_000_000_000_000_000_000_000_000n]
     })
     const provider = new MorphoBorrowProvider(
-      { marketAllowlist: [market, secondMarket] },
+      { marketAllowlist: [market, otherMarket] },
       cm,
     )
 

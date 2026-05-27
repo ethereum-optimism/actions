@@ -21,6 +21,7 @@ import type {
 import type { BorrowProviders } from '@/types/providers.js'
 import { validateChainSupported } from '@/utils/validation.js'
 import { executeTransactionBatch } from '@/wallet/core/utils/executeTransactionBatch.js'
+import { extractReceiptHashes } from '@/wallet/core/utils/extractReceiptHashes.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 
 /**
@@ -56,6 +57,16 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     })
   }
 
+  /**
+   * Open or increase a borrow position from this wallet.
+   * @description Accepts raw params that are re-quoted with this wallet's
+   * address, or a pre-built quote that is validated before dispatch.
+   * @param params - Raw open-position params or a pre-built borrow quote.
+   * @returns Receipt envelope with position data and wallet receipt hash.
+   * @throws QuoteExpiredError when a supplied quote is expired.
+   * @throws InvalidParamsError when quote action does not match this method.
+   * @throws ProviderNotConfiguredError when no provider can service the market.
+   */
   async openPosition(
     params: BorrowOpenPositionParams | BorrowQuote,
   ): Promise<BorrowReceipt> {
@@ -68,6 +79,16 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     return this.dispatch(quote)
   }
 
+  /**
+   * Close or reduce a borrow position from this wallet.
+   * @description Accepts raw params that are re-quoted with this wallet's
+   * address, or a pre-built quote that is validated before dispatch.
+   * @param params - Raw close-position params or a pre-built borrow quote.
+   * @returns Receipt envelope with position data and wallet receipt hash.
+   * @throws QuoteExpiredError when a supplied quote is expired.
+   * @throws InvalidParamsError when quote action does not match this method.
+   * @throws ProviderNotConfiguredError when no provider can service the market.
+   */
   async closePosition(
     params: BorrowClosePositionParams | BorrowQuote,
   ): Promise<BorrowReceipt> {
@@ -80,6 +101,16 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     return this.dispatch(quote)
   }
 
+  /**
+   * Deposit collateral from this wallet.
+   * @description Accepts raw params that are re-quoted with this wallet's
+   * address, or a pre-built quote that is validated before dispatch.
+   * @param params - Raw deposit-collateral params or a pre-built borrow quote.
+   * @returns Receipt envelope with position data and wallet receipt hash.
+   * @throws QuoteExpiredError when a supplied quote is expired.
+   * @throws InvalidParamsError when quote action does not match this method.
+   * @throws ProviderNotConfiguredError when no provider can service the market.
+   */
   async depositCollateral(
     params: BorrowDepositCollateralParams | BorrowQuote,
   ): Promise<BorrowReceipt> {
@@ -92,6 +123,16 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     return this.dispatch(quote)
   }
 
+  /**
+   * Withdraw collateral to this wallet.
+   * @description Accepts raw params that are re-quoted with this wallet's
+   * address, or a pre-built quote that is validated before dispatch.
+   * @param params - Raw withdraw-collateral params or a pre-built borrow quote.
+   * @returns Receipt envelope with position data and wallet receipt hash.
+   * @throws QuoteExpiredError when a supplied quote is expired.
+   * @throws InvalidParamsError when quote action does not match this method.
+   * @throws ProviderNotConfiguredError when no provider can service the market.
+   */
   async withdrawCollateral(
     params: BorrowWithdrawCollateralParams | BorrowQuote,
   ): Promise<BorrowReceipt> {
@@ -104,6 +145,16 @@ export class WalletBorrowNamespace extends BaseBorrowNamespace {
     return this.dispatch(quote)
   }
 
+  /**
+   * Repay borrowed assets from this wallet.
+   * @description Accepts raw params that are re-quoted with this wallet's
+   * address, or a pre-built quote that is validated before dispatch.
+   * @param params - Raw repay params or a pre-built borrow quote.
+   * @returns Receipt envelope with position data and wallet receipt hash.
+   * @throws QuoteExpiredError when a supplied quote is expired.
+   * @throws InvalidParamsError when quote action does not match this method.
+   * @throws ProviderNotConfiguredError when no provider can service the market.
+   */
   async repay(params: BorrowRepayParams | BorrowQuote): Promise<BorrowReceipt> {
     const quote = await this.resolveQuote(params, 'repay', (raw) =>
       this.getProviderForMarket(raw.market).repay({
@@ -195,24 +246,4 @@ function isBorrowQuote<TParams extends { market: unknown }>(
     'execution' in params &&
     'expiresAt' in params
   )
-}
-
-/**
- * Pull the user-facing identifier hash(es) out of the underlying receipt
- * union so they can be set on the `BorrowReceipt` envelope. Batched EOA
- * receipts surface as `transactionHashes`, single EOA receipts as
- * `transactionHash`, and ERC-4337 receipts as `userOpHash` (the inner
- * `receipt.transactionHash` is also present, but the userOp hash is the
- * right identifier for explorers that index UserOperations).
- */
-function extractReceiptHashes(
-  receipt: BorrowReceipt['receipt'],
-): Pick<BorrowReceipt, 'transactionHash' | 'transactionHashes' | 'userOpHash'> {
-  if (Array.isArray(receipt)) {
-    return { transactionHashes: receipt.map((r) => r.transactionHash) }
-  }
-  if ('userOpHash' in receipt) {
-    return { userOpHash: receipt.userOpHash }
-  }
-  return { transactionHash: receipt.transactionHash }
 }

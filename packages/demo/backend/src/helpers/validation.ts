@@ -50,8 +50,8 @@ export async function validateRequest<T>(
     let body: unknown = {}
 
     const contentType = c.req.header('content-type') ?? ''
-    const looksLikeJson = /^application\/json\b/i.test(contentType)
-    if (looksLikeJson) {
+    const isJson = contentType.toLowerCase().startsWith('application/json')
+    if (isJson) {
       try {
         body = await c.req.json()
       } catch {

@@ -125,7 +125,7 @@ const SDK_ERROR_MAPPINGS: ReadonlyArray<readonly [ErrorCtor, MappedSdkError]> =
     ],
     [
       ProviderNotConfiguredError,
-      { status: 503, message: 'Provider not configured for this market.' },
+      { status: 500, message: 'Provider not configured for this market.' },
     ],
     [WalletNotFoundError, { status: 404, message: 'Wallet not found.' }],
     [AddressRequiredError, { status: 400, message: 'Address is required.' }],
