@@ -19,6 +19,7 @@ import { ModeToggle } from './ModeToggle'
 import { AmountLabel } from './AmountLabel'
 import { AmountInput } from './AmountInput'
 import { IlliquidMarketNotice } from './IlliquidMarketNotice'
+import Shimmer from './Shimmer'
 
 function floorToFixed(value: number, decimals: number): string {
   const factor = 10 ** decimals
@@ -403,9 +404,15 @@ export function Action({
             />
           )}
 
-          <CtaButton onClick={handleCtaClick} disabled={ctaDisabled}>
-            {ctaText}
-          </CtaButton>
+          {isLoadingBalance && !isMintingAsset ? (
+            <div data-testid="shimmer">
+              <Shimmer width="100%" height="48px" variant="rectangle" />
+            </div>
+          ) : (
+            <CtaButton onClick={handleCtaClick} disabled={ctaDisabled}>
+              {ctaText}
+            </CtaButton>
+          )}
 
           {isLockedWithdrawAmount && (
             <IlliquidMarketNotice maxWithdraw={AAVE_MAX_WITHDRAW} />

@@ -136,6 +136,14 @@ describe('Action', () => {
     expect(screen.queryByTestId('shimmer')).not.toBeInTheDocument()
   })
 
+  it('shows shimmer instead of Get button while balance is loading', () => {
+    render(<Action {...defaultProps} isLoadingBalance={true} />)
+    expect(screen.getByTestId('shimmer')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Get USDC' }),
+    ).not.toBeInTheDocument()
+  })
+
   it('shows balance and Lend button when balance is non-zero', () => {
     render(<Action {...defaultProps} assetBalance="100.00" />)
     expect(screen.getByText('100.00 USDC')).toBeInTheDocument()
