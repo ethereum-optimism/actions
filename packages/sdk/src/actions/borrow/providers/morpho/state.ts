@@ -175,7 +175,11 @@ export async function fetchMorphoStateWithAllowance(
   config: BorrowMarketConfig,
   user: Address,
   token: Address,
-): Promise<{ current: AccrualPosition; sharePrice: bigint; allowance: bigint }> {
+): Promise<{
+  current: AccrualPosition
+  sharePrice: bigint
+  allowance: bigint
+}> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
   const isVaultWrapped = hasVaultCollateral(config)
   const allowanceContract = {
