@@ -427,7 +427,6 @@ export function Action({
               : null
           }
           asset={asset}
-          assetLogo={''}
           currentLtv={collateralProjection.currentLtv}
           projectedLtv={projectedLtv}
           maxLtv={collateralProjection.maxLtv}

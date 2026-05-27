@@ -15,7 +15,6 @@ function baseProps(
     amount: { main: '100', secondary: '00' },
     amountUsd: '$10.00',
     asset: OP_DEMO,
-    assetLogo: 'op.svg',
     currentLtv: 0,
     projectedLtv: 0,
     maxLtv: 0.86,

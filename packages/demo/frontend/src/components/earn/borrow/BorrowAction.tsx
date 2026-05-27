@@ -493,7 +493,6 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
           amount={{ main: amount || '0' }}
           amountUsd={amountUsd > 0 ? `$${amountUsd.toFixed(2)}` : null}
           asset={activeAsset}
-          assetLogo={''}
           currentLtv={currentLtv}
           projectedLtv={projectedLtv}
           maxLtv={maxLtv}

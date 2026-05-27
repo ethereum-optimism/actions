@@ -15,6 +15,7 @@ import { Modal, ModalHeader } from '../../Modal'
 import { CtaButton } from '../CtaButton'
 import { BorrowHealthCard } from './BorrowHealthCard'
 import { AmountRow, DetailRow, FormattedAmount } from '../reviewModalParts'
+import { getAssetLogo } from '@/constants/logos'
 import type { Asset } from '@eth-optimism/actions-sdk'
 
 export type BorrowFlow = 'borrow' | 'repay' | 'withdraw'
@@ -30,7 +31,6 @@ export interface ReviewBorrowHealthModalProps {
   amount: { main: string; secondary?: string }
   amountUsd: string | null
   asset: Asset
-  assetLogo: string
 
   /** Projection state passed to the embedded <BorrowHealthCard>. */
   currentLtv: number
@@ -74,7 +74,6 @@ export function ReviewBorrowHealthModal({
   amount,
   amountUsd,
   asset,
-  assetLogo,
   currentLtv,
   projectedLtv,
   maxLtv,
@@ -86,6 +85,7 @@ export function ReviewBorrowHealthModal({
   wouldLiquidate = false,
 }: ReviewBorrowHealthModalProps) {
   const symbol = asset.metadata.symbol.replace('_DEMO', '')
+  const assetLogo = getAssetLogo(asset.metadata.symbol)
 
   const isDanger =
     !wouldLiquidate &&
