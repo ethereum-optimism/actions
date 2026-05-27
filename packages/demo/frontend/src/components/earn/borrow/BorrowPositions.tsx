@@ -12,6 +12,7 @@ import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/api/borrowApi'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
 import { colors } from '@/constants/colors'
+import { getAssetLogo } from '@/constants/logos'
 import { PositionsTable } from '../PositionsTable'
 
 export interface BorrowPositionsProps {
@@ -67,14 +68,14 @@ function DesktopTable({
           <Th align="left" minWidth="120px">
             Asset
           </Th>
-          <Th align="right" minWidth="130px">
-            Amount
-          </Th>
           <Th align="right" minWidth="90px">
             Borrow APY
           </Th>
           <Th align="right" minWidth="120px">
             Collateral
+          </Th>
+          <Th align="right" minWidth="130px">
+            Amount
           </Th>
           <Th align="right" minWidth="100px">
             Value
@@ -124,6 +125,11 @@ function BorrowRow({
     <tr>
       <Td bg={positionRowBg}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img
+            src={getAssetLogo(position.borrowAsset.metadata.symbol)}
+            alt={borrSymbol}
+            style={{ width: '24px', height: '24px', borderRadius: '50%' }}
+          />
           <span
             style={{
               color: '#1a1b1e',
@@ -135,13 +141,6 @@ function BorrowRow({
           </span>
         </span>
       </Td>
-      <Td bg={positionRowBg} align="right" fontWeight={500}>
-        {borrowAmount.main}
-        <span style={{ color: '#9195A6', fontSize: '12px' }}>
-          {borrowAmount.secondary}
-        </span>{' '}
-        {borrSymbol}
-      </Td>
       <Td bg={positionRowBg} align="right">
         {(position.borrowApy * 100).toFixed(2)}%
       </Td>
@@ -150,16 +149,31 @@ function BorrowRow({
           style={{
             display: 'inline-flex',
             alignItems: 'center',
+            gap: '6px',
+            justifyContent: 'flex-end',
             color: '#1a1b1e',
             fontSize: '14px',
             fontFamily: 'Inter',
           }}
         >
-          {collSymbol} ${collateralAmount.main}
+          <img
+            src={getAssetLogo(position.collateralAsset.metadata.symbol)}
+            alt={collSymbol}
+            style={{ width: '20px', height: '20px', borderRadius: '50%' }}
+          />
+          {collateralAmount.main}
           <span style={{ color: '#9195A6', fontSize: '12px' }}>
             {collateralAmount.secondary}
-          </span>
+          </span>{' '}
+          {collSymbol}
         </span>
+      </Td>
+      <Td bg={positionRowBg} align="right" fontWeight={500}>
+        {borrowAmount.main}
+        <span style={{ color: '#9195A6', fontSize: '12px' }}>
+          {borrowAmount.secondary}
+        </span>{' '}
+        {borrSymbol}
       </Td>
       <Td bg={positionRowBg} align="right" fontWeight={500}>
         <span
