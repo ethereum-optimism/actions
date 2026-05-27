@@ -59,8 +59,8 @@ export interface BorrowMarketConfigMetadata {
   lendProvider?: LendProviderName
   /**
    * Optional per-market override for `BorrowSettings.healthBufferPct`
-   * (Decision 7). Frontends use the resolved value to compute the
-   * safe-ceiling LTV; not enforced by the SDK.
+   * Frontends use the resolved value to compute the safe-ceiling LTV;
+   * not enforced by the SDK.
    */
   healthBufferPct?: number
 }

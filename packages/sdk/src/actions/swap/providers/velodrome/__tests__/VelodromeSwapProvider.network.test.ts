@@ -7,8 +7,6 @@
  * Run: pnpm test:network
  * Requires: anvil (from foundry) and network access
  */
-import { type ChildProcess, spawn } from 'node:child_process'
-
 import type { Address } from 'viem'
 import { createPublicClient, http } from 'viem'
 import { base, optimism } from 'viem/chains'
@@ -19,6 +17,7 @@ import { VelodromeSwapProvider } from '@/actions/swap/providers/velodrome/Velodr
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { Asset } from '@/types/asset.js'
+import { type AnvilFork, startAnvilFork, stopAnvilFork } from '@/utils/test.js'
 
 // ── Real mainnet assets ──
 
@@ -60,53 +59,6 @@ const BASE_WETH: Asset = {
     [base.id]: '0x4200000000000000000000000000000000000006' as Address,
   },
   metadata: { name: 'Wrapped Ether', symbol: 'WETH', decimals: 18 },
-}
-
-// ── Anvil fork helpers ──
-
-interface AnvilFork {
-  port: number
-  process: ChildProcess
-  rpcUrl: string
-}
-
-async function startAnvilFork(
-  forkUrl: string,
-  port: number,
-): Promise<AnvilFork> {
-  const proc = spawn(
-    'anvil',
-    ['--fork-url', forkUrl, '--port', String(port), '--silent'],
-    {
-      stdio: 'ignore',
-    },
-  )
-
-  const rpcUrl = `http://127.0.0.1:${port}`
-  for (let i = 0; i < 30; i++) {
-    try {
-      const res = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_blockNumber',
-          params: [],
-          id: 1,
-        }),
-      })
-      if (res.ok) return { port, process: proc, rpcUrl }
-    } catch {
-      // not ready yet
-    }
-    await new Promise((r) => setTimeout(r, 500))
-  }
-  proc.kill()
-  throw new Error(`Anvil fork on port ${port} did not start in time`)
-}
-
-function stopAnvilFork(fork: AnvilFork) {
-  fork.process.kill()
 }
 
 function createForkChainManager(

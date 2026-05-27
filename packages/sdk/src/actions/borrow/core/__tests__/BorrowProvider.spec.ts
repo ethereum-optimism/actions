@@ -1,7 +1,14 @@
 import { zeroAddress } from 'viem'
-import { baseSepolia } from 'viem/chains'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import {
+  BASE_SEPOLIA_ID,
+  borrowAsset,
+  collateralAsset,
+  market,
+  otherMarket,
+  walletAddress,
+} from '@/actions/borrow/__tests__/fixtures.js'
 import { BorrowProvider } from '@/actions/borrow/core/BorrowProvider.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import {
@@ -13,7 +20,6 @@ import {
 import { MockChainManager } from '@/services/__mocks__/MockChainManager.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import type { BorrowProviderConfig, BorrowSettings } from '@/types/actions.js'
-import type { Asset } from '@/types/asset.js'
 import type {
   BorrowClosePositionInternalParams,
   BorrowDepositCollateralInternalParams,
@@ -26,50 +32,6 @@ import type {
   BorrowWithdrawCollateralInternalParams,
   GetBorrowMarketsParams,
 } from '@/types/borrow/index.js'
-
-const BASE_SEPOLIA_ID = baseSepolia.id as SupportedChainId
-
-const usdcMockAddress = '0xb1b0fe886ce376f28987ad24b1759a8f0a7dd839'
-const opMockAddress = '0xd6169405013e92387b78457fa77d377ce8cd3ee8'
-
-const collateralAsset: Asset = {
-  type: 'erc20',
-  address: { [BASE_SEPOLIA_ID]: usdcMockAddress },
-  metadata: { symbol: 'dUSDC', name: 'Mock dUSDC', decimals: 18 },
-} as unknown as Asset
-
-const borrowAsset: Asset = {
-  type: 'erc20',
-  address: { [BASE_SEPOLIA_ID]: opMockAddress },
-  metadata: { symbol: 'OP', name: 'Mock OP', decimals: 18 },
-} as unknown as Asset
-
-const marketHexId =
-  '0x1111111111111111111111111111111111111111111111111111111111111111'
-
-const market: BorrowMarketConfig = {
-  kind: 'morpho-blue',
-  marketId: marketHexId,
-  chainId: BASE_SEPOLIA_ID,
-  name: 'Test market',
-  collateralAsset,
-  borrowAsset,
-  borrowProvider: 'morpho',
-  lendProvider: 'morpho',
-  marketParams: {
-    loanToken: opMockAddress,
-    collateralToken: usdcMockAddress,
-    oracle: '0x0000000000000000000000000000000000000001',
-    irm: '0x0000000000000000000000000000000000000002',
-    lltv: 860000000000000000n,
-  },
-}
-
-const otherMarket: BorrowMarketConfig = {
-  ...market,
-  marketId:
-    '0x2222222222222222222222222222222222222222222222222222222222222222',
-}
 
 class TestProvider extends BorrowProvider<BorrowProviderConfig> {
   public openCalls: BorrowOpenPositionInternalParams[] = []
@@ -206,8 +168,6 @@ function makeStubQuote(
     expiresAt: 0,
   }
 }
-
-const walletAddress = '0x000000000000000000000000000000000000bEEF' as const
 
 function makeProvider(
   config: BorrowProviderConfig = { marketAllowlist: [market] },
@@ -451,7 +411,7 @@ describe('BorrowProvider - getMarket / getMarkets / getPosition', () => {
     await expect(
       provider.getMarket({
         kind: 'morpho-blue',
-        marketId: marketHexId,
+        marketId: market.marketId,
         chainId: 1 as SupportedChainId,
       }),
     ).rejects.toBeInstanceOf(ChainNotSupportedError)
