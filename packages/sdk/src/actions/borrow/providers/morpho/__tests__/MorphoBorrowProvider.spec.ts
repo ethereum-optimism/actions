@@ -171,6 +171,7 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       marketTuple(),
       1n, // any non-zero price
       0n, // rateAtTarget
+      10n ** 18n, // sharePrice — 1:1 conversion for test fixture (no vault)
     ])
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
     const position = await provider.getPosition({
@@ -191,6 +192,7 @@ describe('MorphoBorrowProvider. _getPosition', () => {
       marketTuple(),
       1_000_000_000_000_000_000_000_000_000_000_000_000n, // mid price
       0n, // rateAtTarget
+      10n ** 18n, // sharePrice — 1:1 conversion for test fixture (no vault)
     ])
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
     const position = await provider.getPosition({
@@ -223,6 +225,7 @@ function stateMulticallResult(
     marketTuple(),
     1_000_000_000_000_000_000_000_000_000_000_000_000n,
     0n, // rateAtTarget
+    10n ** 18n, // sharePrice — 1:1 conversion for test fixture (no vault)
     opts.allowance ?? 0n,
   ]
 }
@@ -278,7 +281,7 @@ describe('MorphoBorrowProvider - depositCollateral', () => {
     })
 
     expect(calls).toHaveLength(1)
-    expect(calls[0].contracts[4].address).toBe(
+    expect(calls[0].contracts[5].address).toBe(
       market.marketParams.collateralToken,
     )
     expect(quote.execution.transactions[0].to).toBe(

@@ -40,9 +40,34 @@ export function adaptMorphoBorrowMarket(
   }
 }
 
+/**
+ * Convert raw vault shares to underlying asset units given a share price
+ * (the underlying-asset value of `1e18` shares, fetched once via
+ * `convertToAssets(1e18)` in the same multicall as the position read).
+ *
+ * Returns shares unchanged when the collateral token is the underlying
+ * asset itself (no vault wrapping). This keeps the unit tests' mocked
+ * "asset == collateral token" fixtures behaving as before while letting
+ * the demo's dUSDC vault collateral resolve to USDC value.
+ */
+function sharesToUnderlying(
+  config: BorrowMarketConfig,
+  shares: bigint,
+  sharePrice: bigint,
+): bigint {
+  const assetAddress = config.collateralAsset.address[config.chainId]
+  const isVaultWrapped =
+    assetAddress !== undefined &&
+    assetAddress.toLowerCase() !==
+      config.marketParams.collateralToken.toLowerCase()
+  if (!isVaultWrapped) return shares
+  return (shares * sharePrice) / 10n ** 18n
+}
+
 export function adaptMorphoBorrowPosition(
   config: BorrowMarketConfig,
   position: AccrualPosition,
+  sharePrice: bigint,
 ): BorrowMarketPosition {
   const hasDebt = position.borrowAssets > 0n
   const ltvFraction = hasDebt ? morphoFractionOrNull(position.ltv) : null
@@ -50,6 +75,11 @@ export function adaptMorphoBorrowPosition(
     ? morphoFractionOrNull(position.healthFactor)
     : null
   const liquidationPrice = position.liquidationPrice ?? 0n
+  const collateralAmount = sharesToUnderlying(
+    config,
+    position.collateral,
+    sharePrice,
+  )
   return {
     marketId: {
       kind: config.kind,
@@ -58,13 +88,14 @@ export function adaptMorphoBorrowPosition(
     },
     collateralAsset: config.collateralAsset,
     collateralShares: position.collateral,
-    collateralSharesFormatted: formatUnits(
-      position.collateral,
-      config.collateralAsset.metadata.decimals,
-    ),
-    collateralAmount: position.collateral,
+    // Vault shares are 18 decimals by MetaMorpho convention. When the
+    // collateral is the asset itself (no wrapping) this still works
+    // because `collateralShares === collateralAmount` in that case and
+    // the asset decimals are used below for the user-facing format.
+    collateralSharesFormatted: formatUnits(position.collateral, 18),
+    collateralAmount,
     collateralAmountFormatted: formatUnits(
-      position.collateral,
+      collateralAmount,
       config.collateralAsset.metadata.decimals,
     ),
     borrowAsset: config.borrowAsset,
@@ -93,6 +124,7 @@ export function assembleMorphoBorrowQuote(args: {
   market: BorrowMarketConfig
   positionBefore: AccrualPosition
   positionAfter: AccrualPosition
+  sharePrice: bigint
   transactions: TransactionData[]
   quoteAmounts: {
     borrowAmountRaw?: bigint
@@ -115,9 +147,17 @@ export function assembleMorphoBorrowQuote(args: {
     borrowAmountRaw: args.quoteAmounts.borrowAmountRaw,
     collateralAmountRaw: args.quoteAmounts.collateralAmountRaw,
     positionBefore: hasBefore
-      ? adaptMorphoBorrowPosition(args.market, args.positionBefore)
+      ? adaptMorphoBorrowPosition(
+          args.market,
+          args.positionBefore,
+          args.sharePrice,
+        )
       : null,
-    positionAfter: adaptMorphoBorrowPosition(args.market, args.positionAfter),
+    positionAfter: adaptMorphoBorrowPosition(
+      args.market,
+      args.positionAfter,
+      args.sharePrice,
+    ),
     fees: {
       borrowApy: morphoWadToNumber(args.positionAfter.market.borrowApy),
       liquidationBonus: liquidationBonusFromIncentive(

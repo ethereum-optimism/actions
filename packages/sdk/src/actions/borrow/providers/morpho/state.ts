@@ -4,7 +4,7 @@ import {
   blueAbi,
   blueOracleAbi,
 } from '@morpho-org/blue-sdk-viem'
-import { type Address, erc20Abi, type PublicClient } from 'viem'
+import { type Address, erc20Abi, erc4626Abi, type PublicClient } from 'viem'
 
 import {
   buildMorphoBlueMarket,
@@ -52,10 +52,15 @@ export async function fetchMorphoPosition(
   client: PublicClient,
   config: BorrowMarketConfig,
   user: Address,
-): Promise<AccrualPosition> {
+): Promise<{ position: AccrualPosition; sharePrice: bigint }> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
   const id = config.marketId
-  const [positionTuple, marketTuple, price, rateAtTarget] =
+  // `sharePrice` is the underlying-asset value of 1 whole vault share
+  // (`convertToAssets(1e18)`). Folding it into the multicall avoids a
+  // serial round-trip when the position is read. The result is used to
+  // present `collateralAmount` in the user-facing underlying asset units,
+  // not raw vault shares (which would be off by ~5-12 decimal orders).
+  const [positionTuple, marketTuple, price, rateAtTarget, sharePrice] =
     await client.multicall({
       allowFailure: false,
       contracts: [
@@ -83,10 +88,16 @@ export async function fetchMorphoPosition(
           functionName: 'rateAtTarget',
           args: [id],
         },
+        {
+          address: config.marketParams.collateralToken,
+          abi: erc4626Abi,
+          functionName: 'convertToAssets',
+          args: [10n ** 18n],
+        },
       ],
     })
 
-  return buildAccrualPosition(
+  const position = buildAccrualPosition(
     config,
     user,
     positionTuple,
@@ -94,6 +105,7 @@ export async function fetchMorphoPosition(
     price,
     rateAtTarget,
   )
+  return { position, sharePrice }
 }
 
 export async function fetchMorphoStateWithAllowance(
@@ -101,45 +113,57 @@ export async function fetchMorphoStateWithAllowance(
   config: BorrowMarketConfig,
   user: Address,
   token: Address,
-): Promise<{ current: AccrualPosition; allowance: bigint }> {
+): Promise<{ current: AccrualPosition; sharePrice: bigint; allowance: bigint }> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
   const id = config.marketId
-  const [positionTuple, marketTuple, price, rateAtTarget, allowance] =
-    await client.multicall({
-      allowFailure: false,
-      contracts: [
-        {
-          address: morphoBlue,
-          abi: blueAbi,
-          functionName: 'position',
-          args: [id, user],
-        },
-        {
-          address: morphoBlue,
-          abi: blueAbi,
-          functionName: 'market',
-          args: [id],
-        },
-        {
-          address: config.marketParams.oracle,
-          abi: blueOracleAbi,
-          functionName: 'price',
-          args: [],
-        },
-        {
-          address: config.marketParams.irm,
-          abi: adaptiveCurveIrmAbi,
-          functionName: 'rateAtTarget',
-          args: [id],
-        },
-        {
-          address: token,
-          abi: erc20Abi,
-          functionName: 'allowance',
-          args: [user, morphoBlue],
-        },
-      ],
-    })
+  const [
+    positionTuple,
+    marketTuple,
+    price,
+    rateAtTarget,
+    sharePrice,
+    allowance,
+  ] = await client.multicall({
+    allowFailure: false,
+    contracts: [
+      {
+        address: morphoBlue,
+        abi: blueAbi,
+        functionName: 'position',
+        args: [id, user],
+      },
+      {
+        address: morphoBlue,
+        abi: blueAbi,
+        functionName: 'market',
+        args: [id],
+      },
+      {
+        address: config.marketParams.oracle,
+        abi: blueOracleAbi,
+        functionName: 'price',
+        args: [],
+      },
+      {
+        address: config.marketParams.irm,
+        abi: adaptiveCurveIrmAbi,
+        functionName: 'rateAtTarget',
+        args: [id],
+      },
+      {
+        address: config.marketParams.collateralToken,
+        abi: erc4626Abi,
+        functionName: 'convertToAssets',
+        args: [10n ** 18n],
+      },
+      {
+        address: token,
+        abi: erc20Abi,
+        functionName: 'allowance',
+        args: [user, morphoBlue],
+      },
+    ],
+  })
 
   const current = buildAccrualPosition(
     config,
@@ -149,7 +173,7 @@ export async function fetchMorphoStateWithAllowance(
     price,
     rateAtTarget,
   )
-  return { current, allowance }
+  return { current, sharePrice, allowance }
 }
 
 function buildAccrualPosition(
