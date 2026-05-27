@@ -52,6 +52,12 @@ interface IMorpho {
             uint128 lastUpdate,
             uint128 fee
         );
+
+    /// @notice Returns a user's position on a market
+    function position(bytes32 id, address user)
+        external
+        view
+        returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
 }
 
 /// @notice Minimal interface for MetaMorpho vault

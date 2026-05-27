@@ -3,17 +3,18 @@ pragma solidity ^0.8.21;
 
 import {Script, console} from "forge-std/Script.sol";
 import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
-import {IMorpho, MarketParams} from "../src/interfaces/IMorpho.sol";
+import {IMorpho, IMetaMorpho, MarketParams} from "../src/interfaces/IMorpho.sol";
 import {MorphoConstants} from "../src/MorphoConstants.sol";
 import {MorphoChainlinkOracleV2} from "morpho-blue-oracles/morpho-chainlink/MorphoChainlinkOracleV2.sol";
 import {IERC4626} from "morpho-blue-oracles/morpho-chainlink/interfaces/IERC4626.sol";
 import {AggregatorV3Interface} from "morpho-blue-oracles/morpho-chainlink/interfaces/AggregatorV3Interface.sol";
 
-/// @dev Minimal interface for the local DemoOP token. We avoid importing the
-///      DemoOP contract directly so this script can compile under solc 0.8.21
-///      (Morpho's pinned version) without requiring the rest of the package to
-///      do the same.
-interface IDemoOP {
+/// @dev Minimal interface for the local DemoOP / DemoUSDC tokens. We avoid
+///      importing the concrete contracts so this script can compile under
+///      solc 0.8.21 (Morpho's pinned version) without requiring the rest of
+///      the package to do the same. Also covers the dUSDC vault's
+///      ERC20 approve() needed for supplyCollateral.
+interface IMintableToken {
     function mint(address to, uint256 amount) external;
     function approve(address spender, uint256 amount) external returns (bool);
 }
@@ -58,6 +59,14 @@ contract DeployMorphoBorrowMarket is Script {
     uint256 constant QUOTE_TOKEN_DECIMALS = 18;
 
     uint256 constant BORROWABLE_OP = 100_000e18;
+
+    /// @dev Seed amounts to push utilization off 0% so AdaptiveCurveIrm reports
+    ///      a non-zero borrow rate. ~$20k dUSDC collateral against an $8k OP
+    ///      debt (OP @ $0.10) lands at ~40% LTV (well under LLTV 86%) and 80%
+    ///      utilization of the 100k OP pool — near AdaptiveCurveIrm's 90%
+    ///      target, so the visible rate stays put rather than decaying.
+    uint256 constant SEED_USDC_DEPOSIT = 20_000e6;
+    uint256 constant SEED_OP_BORROW = 80_000e18;
 
     function run() public returns (bytes32 marketId, address oracleAddr, address mockFeedAddr) {
         address vaultAddr = vm.envAddress("DEMO_VAULT_ADDRESS");
@@ -140,9 +149,24 @@ contract DeployMorphoBorrowMarket is Script {
         console.log("BorrowMarketParamsLltv:", marketParams.lltv);
 
         // Seed borrowable OP liquidity.
-        IDemoOP(opAddr).mint(msg.sender, BORROWABLE_OP);
-        IDemoOP(opAddr).approve(MorphoConstants.MORPHO, BORROWABLE_OP);
+        IMintableToken(opAddr).mint(msg.sender, BORROWABLE_OP);
+        IMintableToken(opAddr).approve(MorphoConstants.MORPHO, BORROWABLE_OP);
         IMorpho(MorphoConstants.MORPHO).supply(marketParams, BORROWABLE_OP, 0, msg.sender, "");
+
+        // Seed utilization. AdaptiveCurveIrm returns 0 at 0% utilization, so
+        // without this the frontend would show 0% APY indefinitely. Mint
+        // USDC, deposit to the vault for dUSDC shares, supply as collateral,
+        // borrow OP back to the deployer. Deploy-demo.sh's idempotency gate
+        // ensures this runs at most once per fresh borrow-market deploy.
+        address usdcAddr = IVaultAsset(vaultAddr).asset();
+        IMintableToken(usdcAddr).mint(msg.sender, SEED_USDC_DEPOSIT);
+        IMintableToken(usdcAddr).approve(vaultAddr, SEED_USDC_DEPOSIT);
+        uint256 seedShares = IMetaMorpho(vaultAddr).deposit(SEED_USDC_DEPOSIT, msg.sender);
+        IMintableToken(vaultAddr).approve(MorphoConstants.MORPHO, seedShares);
+        IMorpho(MorphoConstants.MORPHO).supplyCollateral(marketParams, seedShares, msg.sender, "");
+        IMorpho(MorphoConstants.MORPHO).borrow(marketParams, SEED_OP_BORROW, 0, msg.sender, msg.sender);
+        console.log("BorrowMarketSeededWith dUSDC shares:", seedShares);
+        console.log("BorrowMarketSeededWith OP debt:", SEED_OP_BORROW);
 
         vm.stopBroadcast();
 
