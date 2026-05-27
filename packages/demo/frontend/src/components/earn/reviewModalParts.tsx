@@ -74,7 +74,15 @@ export function DetailRow({
 }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span style={{ color: '#666666' }}>{label}</span>
+      <span
+        style={{
+          color: '#666666',
+          fontSize: '14px',
+          fontFamily: 'Inter',
+        }}
+      >
+        {label}
+      </span>
       <span style={{ color: valueColor || '#1a1b1e' }}>{value}</span>
     </div>
   )
