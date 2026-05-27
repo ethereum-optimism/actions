@@ -12,6 +12,7 @@ import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { ChainManager } from '@/services/ChainManager.js'
 import { fetchERC20Balance, fetchETHBalance } from '@/services/tokenBalance.js'
 import type {
+  ActionModules,
   ActionName,
   ActionProvidersMap,
   ActionSettingsMap,
@@ -199,10 +200,10 @@ export abstract class Wallet {
 
 /**
  * Build and attach the `wallet.<name>` namespace for one action. Generic
- * over `K` so each module's per-action types unify internally; the lone
- * cast at the slot write is the one place TS can't follow the registry
- * indirection. Adding a future action only requires declaring its
- * `name?: T` field on `Wallet` — this helper handles the rest.
+ * over `K` so each module's per-action types unify internally. The typed
+ * setter map keeps the dynamic write tied to each action's concrete
+ * namespace. Adding a future action requires declaring its `name?: T` field
+ * on `Wallet` and adding the matching setter below.
  */
 function attachWalletNamespace<K extends ActionName>(
   wallet: Wallet,
@@ -224,5 +225,27 @@ function attachWalletNamespace<K extends ActionName>(
     wallet['actionSettings'][name],
     moduleDeps,
   )
-  ;(wallet as unknown as Record<K, unknown>)[name] = ns
+  setWalletNamespace(wallet, name, ns)
+}
+
+function setWalletNamespace<K extends ActionName>(
+  wallet: Wallet,
+  name: K,
+  namespace: ActionModules[K]['walletNamespace'],
+): void {
+  const setters: {
+    [P in ActionName]: (namespace: ActionModules[P]['walletNamespace']) => void
+  } = {
+    lend: (namespace) => {
+      wallet.lend = namespace
+    },
+    swap: (namespace) => {
+      wallet.swap = namespace
+    },
+    borrow: (namespace) => {
+      wallet.borrow = namespace
+    },
+  }
+
+  setters[name](namespace)
 }

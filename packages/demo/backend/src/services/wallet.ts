@@ -1,4 +1,5 @@
 import type {
+  BorrowMarketId,
   EOATransactionReceipt,
   LendMarketId,
   SmartWallet,
@@ -8,6 +9,7 @@ import type {
 } from '@eth-optimism/actions-sdk'
 import {
   getAssetAddress,
+  ProviderNotConfiguredError,
   serializeBigInt,
   USDC_DEMO,
 } from '@eth-optimism/actions-sdk'
@@ -93,6 +95,24 @@ export async function getLendPosition({
   wallet: Wallet
 }) {
   const position = await wallet.lend!.getPosition({ marketId })
+  return serializeBigInt(position)
+}
+
+export async function getBorrowPosition({
+  marketId,
+  walletAddress,
+}: {
+  marketId: BorrowMarketId
+  walletAddress: Address
+}) {
+  const actions = getActions()
+  if (!actions.borrow) {
+    throw new ProviderNotConfiguredError({ provider: 'borrow' })
+  }
+  const position = await actions.borrow.getPosition({
+    marketId,
+    walletAddress,
+  })
   return serializeBigInt(position)
 }
 

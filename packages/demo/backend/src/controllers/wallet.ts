@@ -4,6 +4,11 @@ import { type Address } from 'viem'
 import { z } from 'zod'
 
 import { errorResponse, requireAuth } from '@/helpers/errors.js'
+import {
+  AddressSchema,
+  Bytes32Schema,
+  ChainIdStringSchema,
+} from '@/helpers/schemas.js'
 import { validateRequest } from '@/helpers/validation.js'
 import * as faucetService from '@/services/faucet.js'
 import * as walletService from '@/services/wallet.js'
@@ -18,11 +23,16 @@ const LendPositionRequestSchema = z.object({
   }),
 })
 
+const BorrowPositionRequestSchema = z.object({
+  params: z.object({
+    chainId: ChainIdStringSchema,
+    marketId: Bytes32Schema,
+  }),
+})
+
 const DripEthToWalletRequestSchema = z.object({
   body: z.object({
-    walletAddress: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address format'),
+    walletAddress: AddressSchema,
   }),
 })
 
@@ -94,6 +104,37 @@ export class WalletController {
   }
 
   /**
+   * GET - Borrow position for a wallet (Morpho variant). SDK errors
+   * propagate to the borrow-scoped `app.onError` handler.
+   */
+  async getBorrowPosition(c: Context) {
+    const validation = await validateRequest(c, BorrowPositionRequestSchema)
+    if (!validation.success) return validation.response
+    const {
+      params: { chainId, marketId: marketIdHex },
+    } = validation.data
+    const marketId = {
+      kind: 'morpho-blue' as const,
+      marketId: marketIdHex,
+      chainId,
+    }
+
+    const authResult = requireAuth(c)
+    if ('error' in authResult) return authResult.error
+
+    const wallet = await walletService.getWallet(authResult.auth.idToken)
+    if (!wallet) {
+      return errorResponse(c, 'Wallet not found', 404)
+    }
+
+    const position = await walletService.getBorrowPosition({
+      marketId,
+      walletAddress: wallet.address as Address,
+    })
+    return c.json({ result: position })
+  }
+
+  /**
    * POST - Fund a wallet with test tokens (ETH or USDC)
    */
   async mintDemoUsdcToWallet(c: Context) {
@@ -124,14 +165,12 @@ export class WalletController {
     } = validation.data
     try {
       const isWalletEligibleForFaucet =
-        await faucetService.isWalletEligibleForFaucet(walletAddress as Address)
+        await faucetService.isWalletEligibleForFaucet(walletAddress)
       if (!isWalletEligibleForFaucet) {
         return errorResponse(c, 'Wallet is not eligible for the faucet', 400)
       }
 
-      const result = await faucetService.dripEthToWallet(
-        walletAddress as Address,
-      )
+      const result = await faucetService.dripEthToWallet(walletAddress)
       if (!result.success) {
         return errorResponse(c, 'Failed to drip ETH to wallet', 500)
       }

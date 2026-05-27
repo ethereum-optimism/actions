@@ -11,6 +11,7 @@ export default defineConfig({
   test: {
     testTimeout: 60_000,
     fileParallelism: false,
+    setupFiles: ['./vitest.setup.ts'],
     // Run integration tests sequentially to avoid port conflicts
     poolOptions: {
       threads: {
