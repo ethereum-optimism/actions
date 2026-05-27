@@ -37,7 +37,11 @@ describe('DynamicHostedWalletProvider', () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const provider = new DynamicHostedWalletProvider(mockChainManager)
+      const provider = new DynamicHostedWalletProvider({
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      })
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',
@@ -55,8 +59,9 @@ describe('DynamicHostedWalletProvider', () => {
       expect(DynamicWallet.create).toHaveBeenCalledWith({
         dynamicWallet: mockDynamicWallet,
         chainManager: mockChainManager,
-        lendProviders: {},
-        swapProviders: {},
+        actionProviders: {},
+        actionSettings: {},
+        supportedAssets: undefined,
       })
       expect(result).toBe(mockResult)
     })
@@ -66,8 +71,10 @@ describe('DynamicHostedWalletProvider', () => {
         supportedChains: [1],
       }) as unknown as ChainManager
       const mockLendProvider = createMockLendProvider()
-      const provider = new DynamicHostedWalletProvider(mockChainManager, {
-        morpho: mockLendProvider,
+      const provider = new DynamicHostedWalletProvider({
+        chainManager: mockChainManager,
+        actionProviders: { lend: { morpho: mockLendProvider } },
+        actionSettings: {},
       })
 
       const mockDynamicWallet = {
@@ -84,7 +91,9 @@ describe('DynamicHostedWalletProvider', () => {
 
       expect(DynamicWallet.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          lendProviders: { morpho: mockLendProvider },
+          actionProviders: expect.objectContaining({
+            lend: { morpho: mockLendProvider },
+          }),
         }),
       )
     })
@@ -95,7 +104,11 @@ describe('DynamicHostedWalletProvider', () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const provider = new DynamicHostedWalletProvider(mockChainManager)
+      const provider = new DynamicHostedWalletProvider({
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      })
 
       const mockDynamicWallet = {
         __brand: 'dynamic-wallet',

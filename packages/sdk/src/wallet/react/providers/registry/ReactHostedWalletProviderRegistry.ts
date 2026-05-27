@@ -24,18 +24,15 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       validateOptions(_options): _options is ReactOptionsMap['dynamic'] {
         return true
       },
-      async create(
-        { chainManager, lendProviders, swapProviders, supportedAssets },
-        _options,
-      ) {
+      async create(deps, _options) {
         const { DynamicHostedWalletProvider } =
           await import('@/wallet/react/providers/hosted/dynamic/DynamicHostedWalletProvider.js')
-        return new DynamicHostedWalletProvider(
-          chainManager,
-          lendProviders,
-          swapProviders,
-          supportedAssets,
-        )
+        return new DynamicHostedWalletProvider({
+          chainManager: deps.chainManager,
+          actionProviders: deps.actionProviders,
+          actionSettings: deps.actionSettings,
+          supportedAssets: deps.supportedAssets,
+        })
       },
     })
 
@@ -44,18 +41,15 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       validateOptions(_options): _options is ReactOptionsMap['privy'] {
         return true
       },
-      async create(
-        { chainManager, lendProviders, swapProviders, supportedAssets },
-        _options,
-      ) {
+      async create(deps, _options) {
         const { PrivyHostedWalletProvider } =
           await import('@/wallet/react/providers/hosted/privy/PrivyHostedWalletProvider.js')
-        return new PrivyHostedWalletProvider(
-          chainManager,
-          lendProviders,
-          swapProviders,
-          supportedAssets,
-        )
+        return new PrivyHostedWalletProvider({
+          chainManager: deps.chainManager,
+          actionProviders: deps.actionProviders,
+          actionSettings: deps.actionSettings,
+          supportedAssets: deps.supportedAssets,
+        })
       },
     })
 
@@ -64,18 +58,15 @@ export class ReactHostedWalletProviderRegistry extends HostedWalletProviderRegis
       validateOptions(_options): _options is ReactOptionsMap['turnkey'] {
         return true
       },
-      async create(
-        { chainManager, lendProviders, swapProviders, supportedAssets },
-        _options,
-      ) {
+      async create(deps, _options) {
         const { TurnkeyHostedWalletProvider } =
           await import('@/wallet/react/providers/hosted/turnkey/TurnkeyHostedWalletProvider.js')
-        return new TurnkeyHostedWalletProvider(
-          chainManager,
-          lendProviders,
-          swapProviders,
-          supportedAssets,
-        )
+        return new TurnkeyHostedWalletProvider({
+          chainManager: deps.chainManager,
+          actionProviders: deps.actionProviders,
+          actionSettings: deps.actionSettings,
+          supportedAssets: deps.supportedAssets,
+        })
       },
     })
   }

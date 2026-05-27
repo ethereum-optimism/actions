@@ -58,10 +58,17 @@ describe('NodeHostedWalletProviderRegistry', () => {
     const registry = new NodeHostedWalletProviderRegistry()
     const factory = registry.getFactory('privy')
 
-    const provider = await factory.create({ chainManager: mockChainManager }, {
-      privyClient: mockPrivyClient,
-      authorizationContext: getMockAuthorizationContext(),
-    } as NodeOptionsMap['privy'])
+    const provider = await factory.create(
+      {
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      },
+      {
+        privyClient: mockPrivyClient,
+        authorizationContext: getMockAuthorizationContext(),
+      } as NodeOptionsMap['privy'],
+    )
 
     expect(provider).toBeInstanceOf(PrivyHostedWalletProvider)
   })
@@ -85,7 +92,11 @@ describe('NodeHostedWalletProviderRegistry', () => {
     const factory = registry.getFactory('turnkey')
 
     const provider = await factory.create(
-      { chainManager: mockChainManager },
+      {
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      },
       {
         client: mockTurnkeyClient,
       },

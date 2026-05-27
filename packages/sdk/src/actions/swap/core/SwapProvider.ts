@@ -1,9 +1,12 @@
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 
+import { BaseActionProvider } from '@/actions/shared/BaseActionProvider.js'
+import { DEFAULT_QUOTE_EXPIRATION_SECONDS } from '@/actions/shared/defaults.js'
+import { findMatchingConfig } from '@/actions/shared/marketConfigs.js'
+import { QUOTE_DISCRIMINATOR } from '@/actions/shared/quoteDiscriminator.js'
 import { UNIVERSAL_ROUTER_MSG_SENDER } from '@/actions/swap/core/markets.js'
 import type { SupportedChainId } from '@/constants/supportedChains.js'
-import { SUPPORTED_CHAIN_IDS } from '@/constants/supportedChains.js'
 import {
   MarketNotAllowedError,
   ProviderNotConfiguredError,
@@ -35,7 +38,6 @@ import {
   buildTokenApprovalTx,
   checkPermit2Allowance,
   checkTokenAllowance,
-  resolveApprovalMode,
   resolveErc20ApprovalAmount,
   resolvePermit2ApprovalAmount,
 } from '@/utils/approve.js'
@@ -60,15 +62,12 @@ import {
 const DEFAULTS = {
   slippage: 0.005,
   maxSlippage: 0.5,
-  quoteExpirationSeconds: 60,
+  quoteExpirationSeconds: DEFAULT_QUOTE_EXPIRATION_SECONDS,
   permit2ExpirationSeconds: 2_592_000, // 30 days
 } as const
 
 /** Basis points denominator for slippage calculations (1 bp = 0.01%) */
 const BPS_DENOMINATOR = 10000n
-
-/** Field used to distinguish a SwapQuote from raw SwapExecuteParams */
-export const QUOTE_DISCRIMINATOR = 'quotedAt' as const
 
 /**
  * Abstract base class for swap providers.
@@ -79,23 +78,13 @@ export const QUOTE_DISCRIMINATOR = 'quotedAt' as const
  */
 export abstract class SwapProvider<
   TConfig extends SwapProviderConfig = SwapProviderConfig,
-> {
-  protected readonly _config: TConfig
-  protected readonly _settings: SwapSettings
-  protected readonly chainManager: ChainManager
-
+> extends BaseActionProvider<TConfig, SwapSettings> {
   protected constructor(
     config: TConfig,
     chainManager: ChainManager,
     settings?: SwapSettings,
   ) {
-    this._config = config
-    this._settings = settings ?? {}
-    this.chainManager = chainManager
-  }
-
-  get config(): TConfig {
-    return this._config
+    super(config, chainManager, settings)
   }
 
   /** Resolved default slippage: provider → global → 0.005 */
@@ -116,7 +105,7 @@ export abstract class SwapProvider<
     )
   }
 
-  /** Resolved quote expiration in seconds: provider → global → 60 */
+  /** Resolved quote expiration in seconds: provider → global → `DEFAULT_QUOTE_EXPIRATION_SECONDS`. */
   get quoteExpirationSeconds(): number {
     return (
       this._config.quoteExpirationSeconds ??
@@ -146,11 +135,7 @@ export abstract class SwapProvider<
   ): Promise<SwapTransaction> {
     // Resolve approval mode once at entry; the resolved value is set back on
     // the params object so all downstream methods read a single populated field.
-    const resolvedApprovalMode = resolveApprovalMode(
-      params.approvalMode,
-      this._config.approvalMode,
-      this._settings.approvalMode,
-    )
+    const resolvedApprovalMode = this.resolveApprovalMode(params.approvalMode)
 
     if (QUOTE_DISCRIMINATOR in params) {
       this.validateSwapExecute(params)
@@ -211,24 +196,6 @@ export abstract class SwapProvider<
     }
     const markets = await this._getMarkets(params)
     return this.filterBlockedMarkets(markets)
-  }
-
-  /**
-   * Effective supported chain IDs.
-   * @description Intersection of the protocol's supported chains,
-   * the Actions SDK's known chains, and the developer's ActionsConfig.chains.
-   */
-  supportedChainIds(): SupportedChainId[] {
-    const configuredChains = this.chainManager.getSupportedChains()
-    return this.protocolSupportedChainIds().filter(
-      (id) =>
-        (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id) &&
-        configuredChains.includes(id),
-    )
-  }
-
-  isChainSupported(chainId: SupportedChainId): boolean {
-    return this.supportedChainIds().includes(chainId)
   }
 
   /**
@@ -542,15 +509,20 @@ export abstract class SwapProvider<
     const addressOut = assetOut.address[chainId]
     if (!addressIn || !addressOut) return undefined
 
-    return list.find((config) => {
-      if (config.chainId !== undefined && config.chainId !== chainId)
-        return false
-      return this.containsPairByAddress(
-        addressIn,
-        addressOut,
-        chainId,
-        config.assets,
-      )
+    return findMatchingConfig({
+      configs: list,
+      target: undefined,
+      matches: (config) => {
+        if (config.chainId !== undefined && config.chainId !== chainId) {
+          return false
+        }
+        return this.containsPairByAddress(
+          addressIn,
+          addressOut,
+          chainId,
+          config.assets,
+        )
+      },
     })
   }
 
@@ -572,13 +544,6 @@ export abstract class SwapProvider<
   // ─────────────────────────────────────────────────────────────────────────────
   // Abstract methods (implement in provider)
   // ─────────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Chain IDs supported by the underlying protocol.
-   * Each provider declares the chains its protocol is deployed on,
-   * without any SDK-level or developer-config filtering.
-   */
-  abstract protocolSupportedChainIds(): SupportedChainId[]
 
   protected abstract _execute(
     params: ResolvedSwapParams,

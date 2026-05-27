@@ -1,21 +1,19 @@
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { SwapSettings } from '@/types/actions.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 
 /**
- * Common dependencies provided to hosted provider factories
- * @description
- * Environment-agnostic services that providers require at creation time.
- * Currently limited to `ChainManager`, but can be extended as needed.
+ * Common dependencies provided to hosted provider factories.
  */
 export interface HostedProviderDeps {
   chainManager: ChainManager
-  lendProviders?: LendProviders
-  swapProviders?: SwapProviders
+  actionProviders: ActionProvidersMap
+  actionSettings: ActionSettingsMap
   supportedAssets?: Asset[]
-  swapSettings?: SwapSettings
 }
 
 /**

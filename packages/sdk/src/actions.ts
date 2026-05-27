@@ -1,20 +1,21 @@
-import { AaveLendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
-import { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
-import {
-  UniswapSwapProvider,
-  VelodromeSwapProvider,
-} from '@/actions/swap/index.js'
-import { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
+import type { ActionsBorrowNamespace } from '@/actions/borrow/namespaces/ActionsBorrowNamespace.js'
+import type { ActionsLendNamespace } from '@/actions/lend/namespaces/ActionsLendNamespace.js'
+import { ACTION_MODULES, ACTION_NAMES } from '@/actions/registry.js'
+import type {
+  ActionModule,
+  ActionModuleDeps,
+} from '@/actions/shared/ActionModule.js'
+import type { ActionsSwapNamespace } from '@/actions/swap/namespaces/ActionsSwapNamespace.js'
 import { ProviderNotConfiguredError } from '@/core/error/errors.js'
 import { ChainManager } from '@/services/ChainManager.js'
 import { EnsNamespace } from '@/services/nameservices/ens/index.js'
 import type {
-  ActionsConfig,
-  AssetsConfig,
-  LendProviders,
-  SwapProviders,
-  SwapSettings,
-} from '@/types/actions.js'
+  ActionModules,
+  ActionName,
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
+import type { ActionsConfig, AssetsConfig } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
 import { getAllAssetAddresses } from '@/utils/assets.js'
 import { validateConfigAddresses } from '@/utils/validateAddresses.js'
@@ -25,6 +26,10 @@ import type { HostedWalletProvidersSchema } from '@/wallet/core/providers/hosted
 import type { SmartWalletProvider } from '@/wallet/core/providers/smart/abstract/SmartWalletProvider.js'
 import { DefaultSmartWalletProvider } from '@/wallet/core/providers/smart/default/DefaultSmartWalletProvider.js'
 import { WalletProvider } from '@/wallet/core/providers/WalletProvider.js'
+
+type ActionsNamespacesMap = {
+  [K in ActionName]?: ActionModules[K]['actionsNamespace']
+}
 
 /**
  * Main Actions SDK class
@@ -53,11 +58,9 @@ export class Actions<
   >
   private chainManager: ChainManager
   private _ens: EnsNamespace
-  private _lend?: ActionsLendNamespace
-  private _lendProviders: LendProviders = {}
-  private _swap?: ActionsSwapNamespace
-  private _swapProviders: SwapProviders = {}
-  private _swapSettings?: SwapSettings
+  private _actionProviders: ActionProvidersMap = {}
+  private _actionSettings: ActionSettingsMap = {}
+  private _actionsNamespaces: ActionsNamespacesMap = {}
   private _assetsConfig?: AssetsConfig
   private hostedWalletProviderRegistry: HostedWalletProviderRegistry<
     THostedWalletProvidersSchema['providerInstances'],
@@ -84,50 +87,48 @@ export class Actions<
 
     this._ens = new EnsNamespace(this.chainManager)
 
-    const lendSettings = config.lend?.settings
-    if (config.lend?.morpho) {
-      this._lendProviders.morpho = new MorphoLendProvider(
-        config.lend.morpho,
-        this.chainManager,
-        lendSettings,
-      )
+    // Iterate the action-module registry: each module builds its own
+    // providers + namespace from its config block. Adding a new action is
+    // a new entry in `ACTION_MODULES`; this loop doesn't change.
+    const moduleDeps = {
+      chainManager: this.chainManager,
+      ens: this._ens,
+      supportedAssets: this.getSupportedAssets(),
     }
-    if (config.lend?.aave) {
-      this._lendProviders.aave = new AaveLendProvider(
-        config.lend.aave,
-        this.chainManager,
-        lendSettings,
-      )
-    }
-    if (this._lendProviders.morpho || this._lendProviders.aave) {
-      this._lend = new ActionsLendNamespace(this._lendProviders)
-    }
-
-    const swapSettings = config.swap?.settings
-    if (config.swap?.uniswap) {
-      this._swapProviders.uniswap = new UniswapSwapProvider(
-        config.swap.uniswap,
-        this.chainManager,
-        swapSettings,
-      )
-    }
-    if (config.swap?.velodrome) {
-      this._swapProviders.velodrome = new VelodromeSwapProvider(
-        config.swap.velodrome,
-        this.chainManager,
-        swapSettings,
-      )
-    }
-    this._swapSettings = swapSettings
-    if (Object.values(this._swapProviders).some(Boolean)) {
-      this._swap = new ActionsSwapNamespace(
-        this._swapProviders,
-        (r) => (r ? this._ens.getAddress(r) : Promise.resolve(undefined)),
-        this._swapSettings,
-      )
+    for (const name of ACTION_NAMES) {
+      this.setupAction(name, config, moduleDeps)
     }
 
     this.wallet = this.createWalletNamespace(config.wallet)
+  }
+
+  /**
+   * Build providers and (optionally) the read-only namespace for one action
+   * module. Generic over `K` so the per-action types unify; the slot-write
+   * casts are the one place TS can't follow the registry indirection.
+   * Adding a future action is purely a new entry in `ACTION_MODULES` plus
+   * any user-facing config field — this helper handles the rest.
+   */
+  private setupAction<K extends ActionName>(
+    name: K,
+    config: ActionsConfig<
+      THostedWalletProviderType,
+      THostedWalletProvidersSchema['providerConfigs']
+    >,
+    moduleDeps: ActionModuleDeps,
+  ): void {
+    const module = ACTION_MODULES[name] as ActionModule<K>
+    const actionConfig = config[name]
+    const providers = module.buildProviders(actionConfig, moduleDeps)
+    this._actionProviders[name] = providers as ActionProvidersMap[K]
+    this._actionSettings[name] = actionConfig?.settings
+    if (module.isConfigured(providers) && module.buildActionsNamespace) {
+      this._actionsNamespaces[name] = module.buildActionsNamespace(
+        providers,
+        moduleDeps,
+        actionConfig?.settings,
+      ) as ActionsNamespacesMap[K]
+    }
   }
 
   /**
@@ -138,21 +139,7 @@ export class Actions<
    * @throws Error if lend provider not configured
    */
   get lend(): ActionsLendNamespace {
-    if (!this._lend) {
-      throw new ProviderNotConfiguredError({
-        provider: 'lend',
-        details: 'Please add lend configuration to ActionsConfig.',
-      })
-    }
-    return this._lend
-  }
-
-  /**
-   * Get the lend provider instances
-   * @returns Object containing configured lend providers
-   */
-  get lendProviders(): LendProviders {
-    return this._lendProviders
+    return this.requireNamespace('lend')
   }
 
   /**
@@ -173,21 +160,26 @@ export class Actions<
    * @throws Error if swap provider not configured
    */
   get swap(): ActionsSwapNamespace {
-    if (!this._swap) {
-      throw new ProviderNotConfiguredError({
-        provider: 'swap',
-        details: 'Please add swap configuration to ActionsConfig.',
-      })
-    }
-    return this._swap
+    return this.requireNamespace('swap')
   }
 
   /**
-   * Get the swap provider instances
-   * @returns Object containing configured swap providers
+   * Get borrow operations interface
+   * @description Access to borrow operations like markets, position queries, and quotes.
+   * Throws an error if no borrow provider is configured in ActionsConfig.
+   * @returns ActionsBorrowNamespace for borrow operations
+   * @throws Error if borrow provider not configured
    */
-  get swapProviders(): SwapProviders {
-    return this._swapProviders
+  get borrow(): ActionsBorrowNamespace {
+    return this.requireNamespace('borrow')
+  }
+
+  /**
+   * Get all configured provider instances keyed by action name.
+   * @returns Action-keyed map of per-action provider maps
+   */
+  get actionProviders(): ActionProvidersMap {
+    return this._actionProviders
   }
 
   /**
@@ -215,6 +207,22 @@ export class Actions<
       const addresses = getAllAssetAddresses(asset)
       return !addresses.some((addr) => blockedAddresses.has(addr))
     })
+  }
+  /**
+   * Narrow + return the read-only namespace for an action, throwing when
+   * not configured. Single helper backs every typed accessor.
+   */
+  private requireNamespace<K extends ActionName>(
+    name: K,
+  ): ActionModules[K]['actionsNamespace'] {
+    const ns = this._actionsNamespaces[name]
+    if (!ns) {
+      throw new ProviderNotConfiguredError({
+        provider: name,
+        details: `Please add ${name} configuration to ActionsConfig.`,
+      })
+    }
+    return ns
   }
 
   /**
@@ -244,13 +252,14 @@ export class Actions<
         !config.smartWalletConfig ||
         config.smartWalletConfig.provider.type === 'default'
       ) {
-        return new DefaultSmartWalletProvider(
-          this.chainManager,
-          this._lendProviders,
-          this._swapProviders,
-          this.getSupportedAssets(),
-          config.smartWalletConfig.provider.attributionSuffix,
-        )
+        return new DefaultSmartWalletProvider({
+          chainManager: this.chainManager,
+          actionProviders: this._actionProviders,
+          actionSettings: this._actionSettings,
+          supportedAssets: this.getSupportedAssets(),
+          attributionSuffix:
+            config.smartWalletConfig.provider.attributionSuffix,
+        })
       }
       throw new ProviderNotConfiguredError({
         provider: config.smartWalletConfig.provider.type,
@@ -288,10 +297,9 @@ export class Actions<
     return factory.create(
       {
         chainManager: this.chainManager,
-        lendProviders: this._lendProviders,
-        swapProviders: this._swapProviders,
+        actionProviders: this._actionProviders,
+        actionSettings: this._actionSettings,
         supportedAssets: this.getSupportedAssets(),
-        swapSettings: this._swapSettings,
       },
       options,
     )
@@ -318,10 +326,9 @@ export class Actions<
       SmartWalletProvider
     >(providerFactory, {
       chainManager: this.chainManager,
-      lendProviders: this._lendProviders,
-      swapProviders: this._swapProviders,
+      actionProviders: this._actionProviders,
+      actionSettings: this._actionSettings,
       supportedAssets: this.getSupportedAssets(),
-      swapSettings: this._swapSettings,
     })
   }
 }

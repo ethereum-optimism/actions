@@ -14,8 +14,8 @@ import { validateChainSupported } from '@/utils/validation.js'
 
 // Test helper class that exposes protected validation methods as public
 class TestLendProvider extends MockLendProvider {
-  public validateConfigSupported(marketId: LendMarketId): void {
-    return super.validateConfigSupported(marketId)
+  public validateMarketAllowed(marketId: LendMarketId): void {
+    return super.validateMarketAllowed(marketId)
   }
 
   public isChainSupported(chainId: number): boolean {
@@ -211,7 +211,7 @@ describe('LendProvider', () => {
     const EXACT_AMOUNT_HEX = '3b9aca00'
     const MAX_UINT256_HEX = 'f'.repeat(64)
 
-    it('defaults to "exact" — approval encodes the required amount', async () => {
+    it('defaults to "exact". approval encodes the required amount', async () => {
       const provider = new MockLendProvider()
       const result = await callBaseOpenPosition(provider, baseParams)
       expect(approvalAmountHex(result).replace(/^0+/, '')).toBe(
@@ -219,7 +219,7 @@ describe('LendProvider', () => {
       )
     })
 
-    it('honours per-call "max" override — approval uses maxUint256', async () => {
+    it('honours per-call "max" override. approval uses maxUint256', async () => {
       const provider = new MockLendProvider()
       const result = await callBaseOpenPosition(provider, {
         ...baseParams,
@@ -284,14 +284,14 @@ describe('LendProvider', () => {
       })
 
       expect(() => {
-        provider.validateConfigSupported({
+        provider.validateMarketAllowed({
           address: '0x1234' as Address,
           chainId: 84532,
         })
       }).not.toThrow()
 
       expect(() => {
-        provider.validateConfigSupported({
+        provider.validateMarketAllowed({
           address: '0x9999' as Address,
           chainId: 84532,
         })

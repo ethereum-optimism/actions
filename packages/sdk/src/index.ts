@@ -1,4 +1,9 @@
 export type { Actions } from '@/actions.js'
+export { BorrowProvider, MorphoBorrowProvider } from '@/actions/borrow/index.js'
+export {
+  computeMorphoMarketId,
+  verifyMorphoMarketId,
+} from '@/actions/borrow/providers/morpho/marketParams.js'
 export { LendProvider, MorphoLendProvider } from '@/actions/lend/index.js'
 export {
   SwapProvider,
@@ -79,10 +84,33 @@ export {
 } from '@/services/nameservices/ens/utils.js'
 export type {
   ActionsConfig,
+  Amount,
+  AmountOrMax,
   ApprovalMode,
   ApyBreakdown,
   Asset,
+  BorrowAction,
+  BorrowClosePositionParams,
+  BorrowConfig,
+  BorrowDepositCollateralParams,
+  BorrowFees,
+  BorrowMarket,
+  BorrowMarketConfig,
+  BorrowMarketId,
+  BorrowMarketPosition,
+  BorrowOpenPositionParams,
+  BorrowProviderConfig,
+  BorrowProviderName,
+  BorrowQuote,
+  BorrowQuoteExecution,
+  BorrowQuoteParams,
+  BorrowReceipt,
+  BorrowRepayParams,
+  BorrowSettings,
+  BorrowWithdrawCollateralParams,
   EOATransactionReceipt,
+  GetBorrowMarketsParams,
+  GetBorrowPositionParams,
   LendAction,
   LendConfig,
   LendMarket,
@@ -95,6 +123,7 @@ export type {
   LendProviderName,
   LendTransaction,
   LendTransactionReceipt,
+  MorphoMarketParams,
   SwapConfig,
   SwapExecuteParams,
   SwapMarket,
@@ -119,6 +148,7 @@ export type {
 } from '@/types/index.js'
 export {
   APPROVAL_MODES,
+  BORROW_PROVIDER_NAMES,
   LEND_ACTIONS,
   LEND_PROVIDER_NAMES,
   SWAP_PROVIDER_NAMES,

@@ -22,7 +22,11 @@ describe('PrivyHostedWalletProvider (React)', () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const provider = new PrivyHostedWalletProvider(mockChainManager)
+      const provider = new PrivyHostedWalletProvider({
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      })
       const mockActionsWallet = {
         __brand: 'actions-wallet',
       } as unknown as PrivyWallet
@@ -39,8 +43,9 @@ describe('PrivyHostedWalletProvider (React)', () => {
       expect(PrivyWallet.create).toHaveBeenCalledWith({
         chainManager: mockChainManager,
         connectedWallet: mockConnectedWallet,
-        lendProviders: {},
-        swapProviders: {},
+        actionProviders: {},
+        actionSettings: {},
+        supportedAssets: undefined,
       })
       expect(result).toBe(mockActionsWallet)
     })
@@ -50,8 +55,10 @@ describe('PrivyHostedWalletProvider (React)', () => {
         supportedChains: [1],
       }) as unknown as ChainManager
       const mockLendProvider = createMockLendProvider()
-      const provider = new PrivyHostedWalletProvider(mockChainManager, {
-        morpho: mockLendProvider,
+      const provider = new PrivyHostedWalletProvider({
+        chainManager: mockChainManager,
+        actionProviders: { lend: { morpho: mockLendProvider } },
+        actionSettings: {},
       })
       const mockActionsWallet = {
         __brand: 'actions-wallet',
@@ -67,7 +74,9 @@ describe('PrivyHostedWalletProvider (React)', () => {
 
       expect(PrivyWallet.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          lendProviders: { morpho: mockLendProvider },
+          actionProviders: expect.objectContaining({
+            lend: { morpho: mockLendProvider },
+          }),
         }),
       )
     })
@@ -78,7 +87,11 @@ describe('PrivyHostedWalletProvider (React)', () => {
       const mockChainManager = new MockChainManager({
         supportedChains: [1],
       }) as unknown as ChainManager
-      const provider = new PrivyHostedWalletProvider(mockChainManager)
+      const provider = new PrivyHostedWalletProvider({
+        chainManager: mockChainManager,
+        actionProviders: {},
+        actionSettings: {},
+      })
 
       const mockConnectedWallet = {
         __brand: 'privy-connected-wallet',

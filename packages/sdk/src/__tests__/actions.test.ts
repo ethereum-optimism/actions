@@ -39,10 +39,12 @@ describe('Actions SDK', () => {
         validateOptions(options): options is NodeOptionsMap['privy'] {
           return Boolean((options as NodeOptionsMap['privy'])?.privyClient)
         },
-        create({ chainManager }, options) {
+        create({ chainManager, actionProviders, actionSettings }, options) {
           return new PrivyHostedWalletProvider({
             privyClient: options.privyClient,
             chainManager,
+            actionProviders,
+            actionSettings,
             authorizationContext: options.authorizationContext,
           })
         },
@@ -188,7 +190,7 @@ describe('Actions SDK', () => {
 
         expect(actions.lend).toBeDefined()
         // Verify Morpho provider is created with market allowlist
-        const morphoProvider = actions['lendProviders']['morpho']
+        const morphoProvider = (actions.actionProviders.lend ?? {})['morpho']
         expect(morphoProvider).toBeDefined()
       })
 
@@ -270,7 +272,7 @@ describe('Actions SDK', () => {
 
         expect(actions.lend).toBeDefined()
         // Verify Morpho provider is created with multiple markets
-        const morphoProvider = actions['lendProviders']['morpho']
+        const morphoProvider = (actions.actionProviders.lend ?? {})['morpho']
         expect(morphoProvider).toBeDefined()
       })
 
@@ -306,7 +308,7 @@ describe('Actions SDK', () => {
           },
         )
 
-        expect(actions['lendProviders']).toEqual({})
+        expect(actions.actionProviders.lend ?? {}).toEqual({})
         expect(() => actions.lend).toThrow(
           "A 'lend' provider is not configured",
         )

@@ -1,8 +1,11 @@
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import { HostedWalletProvider } from '@/wallet/core/providers/hosted/abstract/HostedWalletProvider.js'
 import type { Wallet } from '@/wallet/core/wallets/abstract/Wallet.js'
 import type { ReactToActionsOptionsMap } from '@/wallet/react/providers/hosted/types/index.js'
@@ -17,19 +20,18 @@ export class DynamicHostedWalletProvider extends HostedWalletProvider<
   'dynamic',
   ReactToActionsOptionsMap
 > {
-  /**
-   * Create a new Dynamic wallet provider
-   * @param chainManager Chain manager for RPC, chain info, and transports
-   * @param lendProviders Optional lend providers for DeFi operations
-   * @param swapProviders Optional swap providers for trading operations
-   */
-  constructor(
-    chainManager: ChainManager,
-    lendProviders?: LendProviders,
-    swapProviders?: SwapProviders,
-    supportedAssets?: Asset[],
-  ) {
-    super(chainManager, lendProviders, swapProviders, supportedAssets)
+  constructor(params: {
+    chainManager: ChainManager
+    actionProviders: ActionProvidersMap
+    actionSettings: ActionSettingsMap
+    supportedAssets?: Asset[]
+  }) {
+    super({
+      chainManager: params.chainManager,
+      actionProviders: params.actionProviders,
+      actionSettings: params.actionSettings,
+      supportedAssets: params.supportedAssets,
+    })
   }
 
   async toActionsWallet(
@@ -38,8 +40,8 @@ export class DynamicHostedWalletProvider extends HostedWalletProvider<
     return DynamicWallet.create({
       dynamicWallet: params.wallet,
       chainManager: this.chainManager,
-      lendProviders: this.lendProviders,
-      swapProviders: this.swapProviders,
+      actionProviders: this.actionProviders,
+      actionSettings: this.actionSettings,
       supportedAssets: this.supportedAssets,
     })
   }

@@ -34,6 +34,8 @@ describe('LocalWallet', () => {
     const wallet = await LocalWallet.create({
       account: mockAccount,
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
 
     expect(wallet.address).toBe(mockAddress)
@@ -45,6 +47,8 @@ describe('LocalWallet', () => {
     const wallet = await LocalWallet.create({
       account: mockAccount,
       chainManager: mockChainManager,
+      actionProviders: {},
+      actionSettings: {},
     })
 
     const mockWalletClient = {

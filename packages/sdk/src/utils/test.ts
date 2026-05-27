@@ -55,6 +55,65 @@ export const externalTest = () => process.env.EXTERNAL_TEST === 'true'
 export const supersimTest = () => process.env.SUPERSIM_TEST === 'true'
 
 /**
+ * Running Anvil fork process.
+ * @description Used by network tests that need a local fork of a public RPC.
+ */
+export interface AnvilFork {
+  port: number
+  process: ChildProcess
+  rpcUrl: string
+}
+
+/**
+ * Start an Anvil fork and wait until it accepts JSON-RPC requests.
+ * @param forkUrl - Upstream RPC URL to fork.
+ * @param port - Local port for the Anvil JSON-RPC server.
+ * @returns Fork metadata including process handle and local RPC URL.
+ * @throws Error when the fork does not become ready in time.
+ */
+export async function startAnvilFork(
+  forkUrl: string,
+  port: number,
+): Promise<AnvilFork> {
+  const proc = spawn(
+    'anvil',
+    ['--fork-url', forkUrl, '--port', String(port), '--silent'],
+    { stdio: 'ignore' },
+  )
+
+  const rpcUrl = `http://127.0.0.1:${port}`
+  for (let i = 0; i < 30; i++) {
+    try {
+      const res = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_blockNumber',
+          params: [],
+          id: 1,
+        }),
+      })
+      if (res.ok) return { port, process: proc, rpcUrl }
+    } catch {
+      // Anvil is still starting.
+    }
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  proc.kill()
+  throw new Error(`Anvil fork on port ${port} did not start in time`)
+}
+
+/**
+ * Stop a running Anvil fork process.
+ * @param fork - Fork process returned by `startAnvilFork`.
+ * @returns Nothing.
+ */
+export function stopAnvilFork(fork: AnvilFork): void {
+  fork.process.kill()
+}
+
+/**
  * Configuration for supersim test setup
  */
 export interface SupersimConfig {

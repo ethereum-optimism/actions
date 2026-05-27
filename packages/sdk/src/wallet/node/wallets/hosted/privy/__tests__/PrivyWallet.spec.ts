@@ -136,5 +136,7 @@ async function createAndInitPrivyWallet(params: {
     walletId,
     address,
     chainManager: mockChainManager,
+    actionProviders: {},
+    actionSettings: {},
   })
 }

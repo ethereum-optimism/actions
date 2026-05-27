@@ -1,9 +1,12 @@
 import type { LocalAccount } from 'viem'
 
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { ActionsContext, SwapSettings } from '@/types/actions.js'
+import type {
+  ActionProvidersMap,
+  ActionSettingsMap,
+} from '@/types/actionRegistry.js'
+import type { ActionsContext } from '@/types/actions.js'
 import type { Asset } from '@/types/asset.js'
-import type { LendProviders, SwapProviders } from '@/types/providers.js'
 import type {
   CreateSmartWalletOptions,
   GetSmartWalletOptions,
@@ -57,7 +60,7 @@ type ToActionsWalletParam<
 /**
  * Wallet namespace that provides unified wallet operations
  * @description Provides access to wallet functionality through a single provider interface.
- * Supports lazy initialization — the wallet provider is created on first method call,
+ * Supports lazy initialization: the wallet provider is created on first method call,
  * enabling tree-shaking of unused wallet provider dependencies.
  */
 export class WalletNamespace<
@@ -83,10 +86,9 @@ export class WalletNamespace<
     WalletProvider<THostedProviderType, TToActionsMap, H, S>
   > | null = null
   private readonly chainManager: ChainManager
-  private readonly lendProviders: LendProviders
-  private readonly swapProviders: SwapProviders
+  private readonly actionProviders: ActionProvidersMap
+  private readonly actionSettings: ActionSettingsMap
   private readonly supportedAssets: Asset[]
-  private readonly swapSettings?: SwapSettings
 
   constructor(
     providerOrFactory:
@@ -101,10 +103,9 @@ export class WalletNamespace<
       this._providerFactory = () => Promise.resolve(providerOrFactory)
     }
     this.chainManager = context.chainManager
-    this.lendProviders = context.lendProviders
-    this.swapProviders = context.swapProviders
+    this.actionProviders = context.actionProviders
+    this.actionSettings = context.actionSettings
     this.supportedAssets = context.supportedAssets
-    this.swapSettings = context.swapSettings
   }
 
   /**
@@ -193,8 +194,8 @@ export class WalletNamespace<
       return LocalWallet.create({
         account: params,
         chainManager: this.chainManager,
-        lendProviders: this.lendProviders,
-        swapProviders: this.swapProviders,
+        actionProviders: this.actionProviders,
+        actionSettings: this.actionSettings,
         supportedAssets: this.supportedAssets,
       })
     }
