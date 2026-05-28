@@ -63,7 +63,7 @@ const WARNING_COPY: Record<BorrowFlow, string> = {
   repay:
     'Position remains close to liquidation after this repay. Consider repaying more.',
   withdraw:
-    'Withdrawing this amount moves your position into the buffer zone. If collateral price drops, you may be liquidated.',
+    'Withdrawing this much leaves your position vulnerable to liquidation if collateral price drops.',
 }
 
 export function ReviewBorrowHealthModal({
