@@ -340,6 +340,7 @@ function LentBalance({
                   style={{ width: '20px', height: '20px' }}
                 />
                 <span
+                  className="positions-table-market-label"
                   style={{
                     color: '#1a1b1e',
                     fontSize: '14px',
@@ -368,6 +369,7 @@ function LentBalance({
                   style={{ width: '20px', height: '20px' }}
                 />
                 <span
+                  className="positions-table-network-label"
                   style={{
                     color: '#1a1b1e',
                     fontSize: '14px',
@@ -396,6 +398,7 @@ function LentBalance({
                   style={{ width: '20px', height: '20px' }}
                 />
                 <span
+                  className="positions-table-asset-label"
                   style={{
                     color: '#1a1b1e',
                     fontSize: '14px',

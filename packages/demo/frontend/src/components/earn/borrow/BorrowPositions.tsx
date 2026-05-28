@@ -131,6 +131,7 @@ function BorrowRow({
             style={{ width: '24px', height: '24px', borderRadius: '50%' }}
           />
           <span
+            className="positions-table-asset-label"
             style={{
               color: '#1a1b1e',
               fontSize: '14px',

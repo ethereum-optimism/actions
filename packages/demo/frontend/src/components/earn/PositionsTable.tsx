@@ -67,11 +67,28 @@ export function PositionsTable({
           <>
             <div className="md:hidden flex flex-col gap-3">{mobileLayout}</div>
             <div
-              className="hidden md:block"
-              style={{ overflowX: 'auto', overflowY: 'visible' }}
+              className="hidden md:block positions-table-container"
+              style={{
+                overflowX: 'auto',
+                overflowY: 'visible',
+                containerType: 'inline-size',
+                containerName: 'positions-table',
+              }}
             >
               {desktopTable}
             </div>
+            {/* Container queries collapse the per-row text labels when the
+                table container itself narrows (e.g. when the activity sidebar
+                is open). Logos stay so rows remain identifiable. */}
+            <style>{`
+              @container positions-table (max-width: 700px) {
+                .positions-table-asset-label { display: none; }
+              }
+              @container positions-table (max-width: 580px) {
+                .positions-table-market-label,
+                .positions-table-network-label { display: none; }
+              }
+            `}</style>
           </>
         )}
       </div>
