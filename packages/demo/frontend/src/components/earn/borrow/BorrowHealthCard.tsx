@@ -75,7 +75,6 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
   const currentBarPct = currentBarValue * 100
   const projectedBarPct = wouldLiquidate ? 100 : projectedBarValue * 100
   const showProjection = projectedLtv !== currentLtv
-  const isImproving = projectedBarPct < currentBarPct
 
   // Numeric readings show RAW LTV % (not the normalized bar fill), so
   // users see their actual loan-to-value. At bar=100% the reading
@@ -161,7 +160,9 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
           {/* Delta segment with barbershop-pole stripes — animated to read
               as "tentative". Positioned at min(current, projected) so it
               extends the bar when the action increases LTV, and dims the
-              tail when it decreases. */}
+              tail when it decreases. Stripes always take the projected
+              (post-action) tier color so the user can read where the bar
+              is heading at a glance. */}
           {!wouldLiquidate &&
             showProjection &&
             projectedBarPct !== currentBarPct && (
@@ -175,8 +176,8 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
                   width: `${Math.abs(projectedBarPct - currentBarPct)}%`,
                   backgroundImage: `repeating-linear-gradient(
                     -45deg,
-                    ${isImproving ? currentTierColors.fill : tierColors.fill} 0px,
-                    ${isImproving ? currentTierColors.fill : tierColors.fill} 4px,
+                    ${tierColors.fill} 0px,
+                    ${tierColors.fill} 4px,
                     rgba(255, 255, 255, 0.55) 4px,
                     rgba(255, 255, 255, 0.55) 8px
                   )`,
@@ -245,7 +246,7 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
           }
           @keyframes borrowHealthBarbershop {
             from { background-position: 0 0; }
-            to { background-position: 200% 0; }
+            to { background-position: -200% 0; }
           }
         `}
       </style>

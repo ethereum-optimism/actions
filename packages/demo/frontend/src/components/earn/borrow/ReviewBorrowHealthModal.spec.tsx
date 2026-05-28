@@ -54,7 +54,7 @@ describe('ReviewBorrowHealthModal', () => {
       />,
     )
     expect(
-      screen.getByText(/Withdrawing this amount moves your position/i),
+      screen.getByText(/leaves your position vulnerable to liquidation/i),
     ).toBeInTheDocument()
   })
 
