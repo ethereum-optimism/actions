@@ -59,7 +59,7 @@ const CTA_LABELS: Record<BorrowFlow, string> = {
 
 const WARNING_COPY: Record<BorrowFlow, string> = {
   borrow:
-    'This borrow moves your position into the buffer zone. If collateral price drops, you may be liquidated.',
+    'Borrowing this much leaves your position vulnerable to liquidation if collateral price drops.',
   repay:
     'Position remains close to liquidation after this repay. Consider repaying more.',
   withdraw:
