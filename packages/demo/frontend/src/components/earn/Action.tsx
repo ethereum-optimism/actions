@@ -197,6 +197,12 @@ export function Action({
       : Number.POSITIVE_INFINITY
   const withdrawWouldLiquidate =
     collateralProjection?.projection.kind === 'wouldLiquidate'
+  // The "would liquidate" sentinel also fires when the user types more than
+  // their available deposit (negative projected collateral). Surface that
+  // case separately so the Health card can label it as a data-entry issue
+  // ("Exceeds deposit") instead of a liquidation risk.
+  const exceedsDeposit =
+    mode === 'withdraw' && amountValue > parseFloat(maxAmount)
 
   // Disable the withdraw CTA if the projected position enters the
   // buffer zone (past safe ceiling, before liquidation), or would
@@ -400,7 +406,8 @@ export function Action({
               collateralAsset={pledgedPosition.collateralAsset}
               collateralValueUsd={collateralProjection.collValueUsd}
               projectedHealthFactor={projectedHealthFactor}
-              wouldLiquidate={withdrawWouldLiquidate}
+              wouldLiquidate={withdrawWouldLiquidate || exceedsDeposit}
+              exceedsDeposit={exceedsDeposit}
             />
           )}
 
@@ -442,7 +449,8 @@ export function Action({
           collateralAsset={pledgedPosition.collateralAsset}
           collateralValueUsd={collateralProjection.collValueUsd}
           projectedHealthFactor={projectedHealthFactor}
-          wouldLiquidate={withdrawWouldLiquidate}
+          wouldLiquidate={withdrawWouldLiquidate || exceedsDeposit}
+          exceedsDeposit={exceedsDeposit}
         />
       )}
 

@@ -37,6 +37,13 @@ export interface BorrowHealthCardProps {
   projectedHealthFactor: number
   /** When true, the projection is in the "would liquidate" sentinel state. */
   wouldLiquidate?: boolean
+  /**
+   * When true, the user typed an amount larger than what they have available
+   * (lend deposit + pledged collateral). Same red visual as `wouldLiquidate`,
+   * but the label reads "Exceeds deposit" since this is a data-entry issue
+   * rather than a real liquidation risk.
+   */
+  exceedsDeposit?: boolean
 }
 
 const TIER_COLORS: Record<HealthTier, { fill: string; track: string }> = {
@@ -55,6 +62,7 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
   collateralValueUsd,
   projectedHealthFactor,
   wouldLiquidate = false,
+  exceedsDeposit = false,
 }: BorrowHealthCardProps) {
   const currentBarValue = computeHealthBarValue(currentLtv, maxLtv)
   const projectedBarValue = computeHealthBarValue(projectedLtv, maxLtv)
@@ -102,6 +110,7 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
           projectedLtvPct={projectedLtvPct}
           showProjection={showProjection}
           wouldLiquidate={wouldLiquidate}
+          exceedsDeposit={exceedsDeposit}
         />
       </div>
 
@@ -249,16 +258,18 @@ function HealthReading({
   projectedLtvPct,
   showProjection,
   wouldLiquidate,
+  exceedsDeposit,
 }: {
   currentLtvPct: number
   projectedLtvPct: number
   showProjection: boolean
   wouldLiquidate: boolean
+  exceedsDeposit: boolean
 }) {
   if (wouldLiquidate) {
     return (
       <span style={{ fontSize: '14px', color: '#B91C1C', fontWeight: 600 }}>
-        Would liquidate
+        {exceedsDeposit ? 'Exceeds deposit' : 'Would liquidate'}
       </span>
     )
   }

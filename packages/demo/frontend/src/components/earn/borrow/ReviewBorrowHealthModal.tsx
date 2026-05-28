@@ -42,6 +42,7 @@ export interface ReviewBorrowHealthModalProps {
   collateralValueUsd: number
   projectedHealthFactor: number
   wouldLiquidate?: boolean
+  exceedsDeposit?: boolean
 }
 
 const TITLES: Record<BorrowFlow, string> = {
@@ -83,6 +84,7 @@ export function ReviewBorrowHealthModal({
   collateralValueUsd,
   projectedHealthFactor,
   wouldLiquidate = false,
+  exceedsDeposit = false,
 }: ReviewBorrowHealthModalProps) {
   const symbol = asset.metadata.symbol.replace('_DEMO', '')
   const assetLogo = getAssetLogo(asset.metadata.symbol)
@@ -122,6 +124,7 @@ export function ReviewBorrowHealthModal({
         collateralValueUsd={collateralValueUsd}
         projectedHealthFactor={projectedHealthFactor}
         wouldLiquidate={wouldLiquidate}
+        exceedsDeposit={exceedsDeposit}
       />
 
       {(wouldLiquidate || isDanger) && (
