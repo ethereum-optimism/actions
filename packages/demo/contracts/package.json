@@ -21,9 +21,9 @@
     "includedScripts": []
   },
   "devDependencies": {
-    "solhint": "^4.1.1"
+    "solhint": "4.5.4"
   },
   "dependencies": {
-    "solc": "^0.8.26"
+    "solc": "0.8.31"
   }
 }

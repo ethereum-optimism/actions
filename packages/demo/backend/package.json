@@ -40,22 +40,22 @@
   },
   "dependencies": {
     "@eth-optimism/actions-sdk": "workspace:*",
-    "@eth-optimism/utils-app": "^0.0.6",
-    "@eth-optimism/viem": "^0.4.13",
-    "@hono/node-server": "^1.19.13",
-    "@privy-io/node": "^0.3.0",
-    "commander": "^13.1.0",
-    "dotenv": "^16.4.5",
-    "envalid": "^8.1.0",
-    "hono": "^4.12.18",
-    "viem": "^2.24.1",
-    "zod": "^4.0.5"
+    "@eth-optimism/utils-app": "0.0.6",
+    "@eth-optimism/viem": "0.4.14",
+    "@hono/node-server": "1.19.13",
+    "@privy-io/node": "0.3.0",
+    "commander": "13.1.0",
+    "dotenv": "16.6.1",
+    "envalid": "8.1.1",
+    "hono": "4.12.18",
+    "viem": "2.33.0",
+    "zod": "4.1.13"
   },
   "devDependencies": {
     "@types/node": "22.14.0",
-    "typescript": "^5.2.2",
-    "undici": "^6.24.0",
-    "vitest": "^1.6.1"
+    "typescript": "5.9.3",
+    "undici": "6.24.0",
+    "vitest": "1.6.1"
   },
   "peerDependencies": {
     "pino": "^9.6.0",

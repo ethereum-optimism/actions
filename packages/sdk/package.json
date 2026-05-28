@@ -56,15 +56,15 @@
   "author": "Optimism PBC",
   "license": "MIT",
   "dependencies": {
-    "@aave/contract-helpers": "^1.30.0",
-    "@aave/math-utils": "^1.30.0",
-    "@eth-optimism/viem": "^0.4.13",
-    "@morpho-org/blue-sdk": "^4.5.1",
-    "@morpho-org/blue-sdk-viem": "^3.1.1",
-    "@morpho-org/morpho-ts": "^2.4.1",
-    "ethers": "^5.7.2",
-    "permissionless": "^0.2.54",
-    "viem": "^2.24.1"
+    "@aave/contract-helpers": "1.36.2",
+    "@aave/math-utils": "1.36.2",
+    "@eth-optimism/viem": "0.4.14",
+    "@morpho-org/blue-sdk": "4.13.1",
+    "@morpho-org/blue-sdk-viem": "3.2.0",
+    "@morpho-org/morpho-ts": "2.4.6",
+    "ethers": "5.8.0",
+    "permissionless": "0.2.57",
+    "viem": "2.33.0"
   },
   "peerDependencies": {
     "@dynamic-labs/ethereum": ">=4.31.4",
@@ -80,11 +80,11 @@
   },
   "devDependencies": {
     "@types/node": "22.14.0",
-    "dotenv": "^16.4.5",
-    "eslint": "^9.31.0",
-    "prettier": "^3.0.0",
-    "tsx": "^4.7.1",
-    "typescript": "^5.2.2",
-    "vitest": "^1.6.1"
+    "dotenv": "16.6.1",
+    "eslint": "9.39.1",
+    "prettier": "3.7.4",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "vitest": "1.6.1"
   }
 }
