@@ -65,21 +65,11 @@ function DesktopTable({
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
         <tr style={{ borderBottom: '1px solid #E0E2EB' }}>
-          <Th align="left" minWidth="120px">
-            Asset
-          </Th>
-          <Th align="right" minWidth="90px">
-            Borrow APY
-          </Th>
-          <Th align="right" minWidth="120px">
-            Collateral
-          </Th>
-          <Th align="right" minWidth="130px">
-            Amount
-          </Th>
-          <Th align="right" minWidth="100px">
-            Value
-          </Th>
+          <Th align="left">Asset</Th>
+          <Th align="right">Borrow APY</Th>
+          <Th align="right">Collateral</Th>
+          <Th align="right">Amount</Th>
+          <Th align="right">Value</Th>
         </tr>
       </thead>
       <tbody>
