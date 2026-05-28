@@ -41,7 +41,9 @@ describe('ReviewBorrowHealthModal', () => {
         {...baseProps({ projectedHealthFactor: 1.1, flow: 'borrow' })}
       />,
     )
-    expect(screen.getByText(/buffer zone/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/leaves your position vulnerable to liquidation/i),
+    ).toBeInTheDocument()
     // CTA must remain enabled for buffer-zone (informational gate).
     const cta = screen.getByRole('button', { name: /^Borrow$/i })
     expect(cta).not.toBeDisabled()
