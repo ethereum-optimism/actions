@@ -178,13 +178,34 @@ function LendPositionSelector({
 
 function LendPositionRow({ position }: { position: MarketPosition }) {
   const formattedUsd = formatUsd(position.depositedAmount)
+  const symbol = position.asset.metadata.symbol.replace('_DEMO', '')
   return (
     <div className="flex items-center gap-2 w-full" style={{ minWidth: 0 }}>
-      <img
-        src={position.marketLogo}
-        alt={position.marketName}
-        style={{ width: '20px', height: '20px', flexShrink: 0 }}
-      />
+      {/* Asset logo with market logo as a small overlay badge — same
+          presentation as `MarketOption` so the borrow tab's lend-position
+          selector matches the lend tab's market selector visually. */}
+      <div className="relative flex items-center" style={{ flexShrink: 0 }}>
+        <img
+          src={position.assetLogo}
+          alt={symbol}
+          style={{ width: '24px', height: '24px' }}
+        />
+        <div
+          className="absolute -right-1 -bottom-1 bg-white rounded-full flex items-center justify-center"
+          style={{ width: '18px', height: '18px', padding: '2px' }}
+        >
+          <img
+            src={position.marketLogo}
+            alt={position.marketName}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+            }}
+          />
+        </div>
+      </div>
       <span
         style={{
           color: '#1a1b1e',
@@ -193,7 +214,7 @@ function LendPositionRow({ position }: { position: MarketPosition }) {
           fontFamily: 'Inter',
         }}
       >
-        {position.marketName}
+        {position.marketName} {symbol}
       </span>
       <span style={{ color: '#9195A6', fontSize: '14px' }}>on</span>
       <img
