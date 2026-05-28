@@ -258,9 +258,7 @@ export function useBorrowProvider(
           break
       }
       // Optimistic local update from the receipt so the table reflects the
-      // new position before the backend refetch completes. Without this, RPC
-      // propagation lag or a stale `markets` closure can leave the Active
-      // Positions section empty until the user refreshes.
+      // new position before the backend refetch completes.
       if (receipt.positionAfter) {
         const next = receipt.positionAfter
         setBorrowPositions((current) => {
@@ -270,12 +268,20 @@ export function useBorrowProvider(
           return isEmptyBorrowPosition(next) ? filtered : [...filtered, next]
         })
       }
-      await fetchPositions(walletAddress)
+      // Don't reconcile against the chain immediately. RPC propagation on
+      // Base Sepolia commonly takes 1-3s after tx confirmation, so an
+      // eager `fetchPositions` returns pre-tx state and clobbers the
+      // optimistic update — the user sees the position revert until a
+      // manual page refresh. Delay the reconciliation (and the cross-tab
+      // event that the lend hook listens for) so both reads happen after
+      // the new state has settled.
+      window.setTimeout(() => {
+        dispatchEarnPositionsChanged()
+      }, 3000)
       await queryClient.invalidateQueries({ queryKey: ['tokenBalances'] })
-      dispatchEarnPositionsChanged()
       return receipt
     },
-    [walletAddress, fetchPositions, operations, queryClient],
+    [walletAddress, operations, queryClient],
   )
 
   const getQuote = useCallback<UseBorrowProviderReturn['getQuote']>(
