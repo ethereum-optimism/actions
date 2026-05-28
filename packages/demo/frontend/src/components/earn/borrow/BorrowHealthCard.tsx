@@ -181,7 +181,7 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
                     rgba(255, 255, 255, 0.55) 8px
                   )`,
                   backgroundSize: '200% 100%',
-                  animation: 'borrowHealthBarbershop 6s linear infinite',
+                  animation: 'borrowHealthBarbershop 20s linear infinite',
                   opacity: 0.65,
                   transition: 'left 200ms ease-in-out, width 200ms ease-in-out',
                 }}
