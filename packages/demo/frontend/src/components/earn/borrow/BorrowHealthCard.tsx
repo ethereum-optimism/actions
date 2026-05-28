@@ -75,6 +75,7 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
   const currentBarPct = currentBarValue * 100
   const projectedBarPct = wouldLiquidate ? 100 : projectedBarValue * 100
   const showProjection = projectedLtv !== currentLtv
+  const isImproving = projectedBarPct < currentBarPct
 
   // Numeric readings show RAW LTV % (not the normalized bar fill), so
   // users see their actual loan-to-value. At bar=100% the reading
@@ -160,9 +161,10 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
           {/* Delta segment with barbershop-pole stripes — animated to read
               as "tentative". Positioned at min(current, projected) so it
               extends the bar when the action increases LTV, and dims the
-              tail when it decreases. Stripes always take the projected
-              (post-action) tier color so the user can read where the bar
-              is heading at a glance. */}
+              tail when it decreases. Stripe flow direction follows the
+              direction the bar's edge is moving: leftward when improving
+              (repay / position shrinking), rightward when worsening
+              (borrow / position growing). */}
           {!wouldLiquidate &&
             showProjection &&
             projectedBarPct !== currentBarPct && (
@@ -176,13 +178,17 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
                   width: `${Math.abs(projectedBarPct - currentBarPct)}%`,
                   backgroundImage: `repeating-linear-gradient(
                     -45deg,
-                    ${tierColors.fill} 0px,
-                    ${tierColors.fill} 4px,
+                    ${isImproving ? currentTierColors.fill : tierColors.fill} 0px,
+                    ${isImproving ? currentTierColors.fill : tierColors.fill} 4px,
                     rgba(255, 255, 255, 0.55) 4px,
                     rgba(255, 255, 255, 0.55) 8px
                   )`,
                   backgroundSize: '200% 100%',
-                  animation: 'borrowHealthBarbershop 20s linear infinite',
+                  animation: `${
+                    isImproving
+                      ? 'borrowHealthBarbershopLeft'
+                      : 'borrowHealthBarbershopRight'
+                  } 20s linear infinite`,
                   opacity: 0.65,
                   transition: 'left 200ms ease-in-out, width 200ms ease-in-out',
                 }}
@@ -244,7 +250,11 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
               box-shadow: 0 0 18px rgba(239, 68, 68, 0.48);
             }
           }
-          @keyframes borrowHealthBarbershop {
+          @keyframes borrowHealthBarbershopLeft {
+            from { background-position: 0 0; }
+            to { background-position: 200% 0; }
+          }
+          @keyframes borrowHealthBarbershopRight {
             from { background-position: 0 0; }
             to { background-position: -200% 0; }
           }
