@@ -292,7 +292,7 @@ function Th({
     <th
       style={{
         textAlign: align,
-        padding: '12px 8px',
+        padding: '12px 6px',
         color: '#9195A6',
         fontSize: '12px',
         fontWeight: 500,
@@ -320,7 +320,7 @@ function Td({
     <td
       className="transition-all"
       style={{
-        padding: '16px 8px',
+        padding: '16px 6px',
         textAlign: align,
         backgroundColor: bg,
         color: '#1a1b1e',

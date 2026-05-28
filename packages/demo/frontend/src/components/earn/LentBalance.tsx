@@ -233,7 +233,7 @@ function LentBalance({
           <th
             style={{
               textAlign: 'left',
-              padding: '12px 8px',
+              padding: '12px 6px',
               color: '#9195A6',
               fontSize: '12px',
               fontWeight: 500,
@@ -245,7 +245,7 @@ function LentBalance({
           <th
             style={{
               textAlign: 'left',
-              padding: '12px 8px',
+              padding: '12px 6px',
               color: '#9195A6',
               fontSize: '12px',
               fontWeight: 500,
@@ -257,7 +257,7 @@ function LentBalance({
           <th
             style={{
               textAlign: 'left',
-              padding: '12px 8px',
+              padding: '12px 6px',
               color: '#9195A6',
               fontSize: '12px',
               fontWeight: 500,
@@ -269,7 +269,7 @@ function LentBalance({
           <th
             style={{
               textAlign: 'right',
-              padding: '12px 8px',
+              padding: '12px 6px',
               color: '#9195A6',
               fontSize: '12px',
               fontWeight: 500,
@@ -289,7 +289,7 @@ function LentBalance({
           <th
             style={{
               textAlign: 'right',
-              padding: '12px 8px',
+              padding: '12px 6px',
               color: '#9195A6',
               fontSize: '12px',
               fontWeight: 500,
@@ -301,7 +301,7 @@ function LentBalance({
           <th
             style={{
               textAlign: 'right',
-              padding: '12px 8px',
+              padding: '12px 6px',
               color: '#9195A6',
               fontSize: '12px',
               fontWeight: 500,
@@ -320,7 +320,7 @@ function LentBalance({
             <td
               className="transition-all"
               style={{
-                padding: '16px 8px',
+                padding: '16px 6px',
                 backgroundColor:
                   hoveredAction === 'getMarket'
                     ? colors.highlight.background
@@ -349,7 +349,7 @@ function LentBalance({
             <td
               className="transition-all"
               style={{
-                padding: '16px 8px',
+                padding: '16px 6px',
                 backgroundColor:
                   hoveredAction === 'getMarket'
                     ? colors.highlight.background
@@ -378,7 +378,7 @@ function LentBalance({
             <td
               className="transition-all"
               style={{
-                padding: '16px 8px',
+                padding: '16px 6px',
                 backgroundColor:
                   hoveredAction === 'getMarket'
                     ? colors.highlight.background
@@ -407,7 +407,7 @@ function LentBalance({
             <td
               className="transition-all"
               style={{
-                padding: '16px 8px',
+                padding: '16px 6px',
                 textAlign: 'right',
                 backgroundColor:
                   hoveredAction === 'getMarket'
@@ -431,7 +431,7 @@ function LentBalance({
             <td
               className="transition-all"
               style={{
-                padding: '16px 8px',
+                padding: '16px 6px',
                 textAlign: 'right',
                 backgroundColor:
                   hoveredAction === 'getPosition'
@@ -460,7 +460,7 @@ function LentBalance({
             <td
               className="transition-all"
               style={{
-                padding: '16px 8px',
+                padding: '16px 6px',
                 textAlign: 'right',
                 backgroundColor:
                   hoveredAction === 'getPosition'

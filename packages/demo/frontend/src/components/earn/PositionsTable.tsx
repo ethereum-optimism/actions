@@ -77,14 +77,15 @@ export function PositionsTable({
             >
               {desktopTable}
             </div>
-            {/* Container queries collapse the per-row text labels when the
-                table container itself narrows (e.g. when the activity sidebar
-                is open). Logos stay so rows remain identifiable. */}
+            {/* Container queries collapse the per-row text labels only when
+                the table container itself becomes very narrow. Logos stay so
+                rows remain identifiable. Thresholds are intentionally low so
+                that the typical sidebar-open layout still shows full labels. */}
             <style>{`
-              @container positions-table (max-width: 700px) {
+              @container positions-table (max-width: 480px) {
                 .positions-table-asset-label { display: none; }
               }
-              @container positions-table (max-width: 580px) {
+              @container positions-table (max-width: 380px) {
                 .positions-table-market-label,
                 .positions-table-network-label { display: none; }
               }
