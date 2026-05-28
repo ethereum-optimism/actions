@@ -183,7 +183,14 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
                     rgba(255, 255, 255, 0.55) 4px,
                     rgba(255, 255, 255, 0.55) 8px
                   )`,
-                  backgroundSize: '200% 100%',
+                  // -45deg stripes with an 8px gradient cycle have a
+                  // horizontal natural period of 8/√2 ≈ 11.3137px. The
+                  // tile width must be an exact multiple of that period
+                  // (and the animation distance must match the tile
+                  // width) or the loop shows a visible seam where the
+                  // pattern wraps. 20 cycles = 226.274px is a round
+                  // enough chunk that the animation reads smoothly.
+                  backgroundSize: '226.274px 100%',
                   animation: `${
                     isImproving
                       ? 'borrowHealthBarbershopLeft'
@@ -252,11 +259,11 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
           }
           @keyframes borrowHealthBarbershopLeft {
             from { background-position: 0 0; }
-            to { background-position: 200% 0; }
+            to { background-position: 226.274px 0; }
           }
           @keyframes borrowHealthBarbershopRight {
             from { background-position: 0 0; }
-            to { background-position: -200% 0; }
+            to { background-position: -226.274px 0; }
           }
         `}
       </style>
