@@ -8,7 +8,7 @@ import { useActivityHighlight } from '../../contexts/ActivityHighlightContext'
 import { colors } from '../../constants/colors'
 import { trackEvent } from '@/utils/analytics'
 import { isEthSymbol } from '@/utils/assetUtils'
-import { stubPriceUsd } from '@/api/borrowApi'
+import { stubPriceUsd } from '@/api/borrowApi' // retired by #482
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useCollateralStatus } from '@/hooks/useCollateralStatus'
 import { computeProjection } from '@/utils/borrowMath'
