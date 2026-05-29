@@ -155,8 +155,11 @@ export function useBorrowProvider(
     ) => {
       if (!address) {
         if (isCancelled()) return
+        // A null address means the wallet is still resolving (server-wallet
+        // path fetches it async), not that there are no positions. Leave
+        // isInitialLoad true so useCollateralStatus keeps failing safe until
+        // the real address arrives and positions load.
         setBorrowPositions([])
-        setIsInitialLoad(false)
         return
       }
       const activity = logActivity('getBorrowPosition')
