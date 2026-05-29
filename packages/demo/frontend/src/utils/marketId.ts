@@ -8,3 +8,11 @@ export function sameMarketId(a: BorrowMarketId, b: BorrowMarketId): boolean {
   }
   return false
 }
+
+/** Stable React key for a borrow market id. */
+export function marketIdKey(id: BorrowMarketId): string {
+  if (id.kind === 'morpho-blue') {
+    return `${id.kind}-${id.marketId}-${id.chainId}`
+  }
+  return `unknown-${id.chainId}`
+}
