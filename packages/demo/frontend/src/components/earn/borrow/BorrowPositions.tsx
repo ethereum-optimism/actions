@@ -94,7 +94,9 @@ function DesktopTable({
         <span
           style={{
             borderBottom: '1px solid #E0E2EB',
-            paddingBottom: '6px',
+            // Match the side tables: header text sits 12px above its
+            // underline (their HeaderCell has `padding: 12px 6px`).
+            paddingBottom: '12px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '4px',
