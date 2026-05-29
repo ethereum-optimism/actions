@@ -83,11 +83,17 @@ function DesktopTable({
         alignItems: 'stretch',
       }}
     >
-      <HeaderCell align="left">Collateral</HeaderCell>
-      <HeaderCell align="center">
+      <HeaderCell layout="space-between">
+        <span>Collateral</span>
+        <span>Value</span>
+      </HeaderCell>
+      <HeaderCell layout="center">
         <BorrowApyHeaderLabel />
       </HeaderCell>
-      <HeaderCell align="right">Borrowed</HeaderCell>
+      <HeaderCell layout="space-between">
+        <span>Borrowed</span>
+        <span>Value</span>
+      </HeaderCell>
 
       {positions.map((p) => (
         <Fragment key={positionKey(p)}>
@@ -158,22 +164,25 @@ function BorrowRowCells({
 }
 
 function HeaderCell({
-  align,
+  layout,
   children,
 }: {
-  align: 'left' | 'center' | 'right'
+  layout: 'center' | 'space-between'
   children: React.ReactNode
 }) {
   return (
     <div
       style={{
-        textAlign: align,
         padding: '12px 6px',
         color: '#9195A6',
         fontSize: '12px',
         fontWeight: 500,
         fontFamily: 'Inter',
         borderBottom: '1px solid #E0E2EB',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: layout,
+        gap: '12px',
       }}
     >
       {children}
