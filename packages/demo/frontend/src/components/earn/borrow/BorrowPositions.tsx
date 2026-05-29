@@ -1,17 +1,23 @@
 /**
  * Active Positions table for the Borrow tab.
  *
- * Three-column desktop layout: Collateral | Borrow APY | Borrowed.
- * Each side cell uses `space-between` so the amount-and-asset cluster sits
- * on the inner edge and the USD value sits on the outer edge; this gives
- * a symmetric "value at the edges, units toward the centered APY" rhythm.
- * Mobile uses a stacked-card layout.
+ * Desktop layout splits into three visually independent sub-tables:
+ * Collateral | Borrow APY | Borrowed. Each column has its own header
+ * with its own underline, so the eye doesn't try to merge the inner
+ * content cells across the divides. Implemented with CSS grid (three
+ * columns, N+1 rows) so each "sub-table" stays vertically aligned with
+ * the others without a shared <table> element.
  *
- * Active highlight is wired to the `getBorrowPosition` activity action so
- * the card lights up when a matching log entry is hovered.
+ * Each side cell uses `space-between` so the amount-and-asset cluster
+ * sits on the inner edge (near the centered APY) and the USD value sits
+ * on the outer edge, mirroring the lend-table rhythm.
+ *
+ * Mobile uses a stacked-card layout. Active highlight is wired to the
+ * `getBorrowPosition` activity action so the row lights up when a
+ * matching log entry is hovered.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { BorrowMarketPosition } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/api/borrowApi'
 import { useActivityHighlight } from '@/contexts/ActivityHighlightContext'
@@ -66,30 +72,33 @@ function DesktopTable({
   hoveredAction: string | null
 }) {
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-      <thead>
-        <tr style={{ borderBottom: '1px solid #E0E2EB' }}>
-          <Th align="left">Collateral</Th>
-          <Th align="center">
-            <BorrowApyHeaderLabel />
-          </Th>
-          <Th align="right">Borrowed</Th>
-        </tr>
-      </thead>
-      <tbody>
-        {positions.map((p) => (
-          <BorrowRow
-            key={positionKey(p)}
-            position={p}
-            hoveredAction={hoveredAction}
-          />
-        ))}
-      </tbody>
-    </table>
+    <div
+      style={{
+        display: 'grid',
+        // Side columns take equal share of the remaining width; the
+        // center column shrinks to fit the APY value. `column-gap` is
+        // the visual divider between the three sub-tables.
+        gridTemplateColumns: '1fr auto 1fr',
+        columnGap: '24px',
+        alignItems: 'stretch',
+      }}
+    >
+      <HeaderCell align="left">Collateral</HeaderCell>
+      <HeaderCell align="center">
+        <BorrowApyHeaderLabel />
+      </HeaderCell>
+      <HeaderCell align="right">Borrowed</HeaderCell>
+
+      {positions.map((p) => (
+        <Fragment key={positionKey(p)}>
+          <BorrowRowCells position={p} hoveredAction={hoveredAction} />
+        </Fragment>
+      ))}
+    </div>
   )
 }
 
-function BorrowRow({
+function BorrowRowCells({
   position,
   hoveredAction,
 }: {
@@ -101,7 +110,7 @@ function BorrowRow({
     '',
   )
   const borrSymbol = position.borrowAsset.metadata.symbol.replace('_DEMO', '')
-  const positionRowBg =
+  const rowBg =
     hoveredAction === 'getBorrowPosition'
       ? colors.highlight.background
       : 'transparent'
@@ -122,51 +131,82 @@ function BorrowRow({
     ).toFixed(4),
   )
   return (
-    <tr>
-      {/* Collateral cell: amount + logo + symbol on the left, USD on the
-          right (inner edge, near the centered APY). */}
-      <Td bg={positionRowBg}>
-        <span
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-          }}
-        >
-          <AssetAmount
-            amount={collateralAmount}
-            logo={getAssetLogo(position.collateralAsset.metadata.symbol)}
-            symbol={collSymbol}
-            fontWeight={500}
-          />
-          <UsdValue value={collateralValue} />
-        </span>
-      </Td>
-      <Td bg={positionRowBg} align="center">
+    <>
+      <BodyCell bg={rowBg} layout="space-between">
+        <AssetAmount
+          amount={collateralAmount}
+          logo={getAssetLogo(position.collateralAsset.metadata.symbol)}
+          symbol={collSymbol}
+          fontWeight={500}
+        />
+        <UsdValue value={collateralValue} />
+      </BodyCell>
+      <BodyCell bg={rowBg} layout="center">
         {(position.borrowApy * 100).toFixed(2)}%
-      </Td>
-      {/* Borrowed cell: amount + logo + symbol on the left (inner edge,
-          near APY), USD on the right (outer edge). */}
-      <Td bg={positionRowBg}>
-        <span
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-          }}
-        >
-          <AssetAmount
-            amount={borrowAmount}
-            logo={getAssetLogo(position.borrowAsset.metadata.symbol)}
-            symbol={borrSymbol}
-            fontWeight={500}
-          />
-          <UsdValue value={borrowValue} fontWeight={500} />
-        </span>
-      </Td>
-    </tr>
+      </BodyCell>
+      <BodyCell bg={rowBg} layout="space-between">
+        <AssetAmount
+          amount={borrowAmount}
+          logo={getAssetLogo(position.borrowAsset.metadata.symbol)}
+          symbol={borrSymbol}
+          fontWeight={500}
+        />
+        <UsdValue value={borrowValue} fontWeight={500} />
+      </BodyCell>
+    </>
+  )
+}
+
+function HeaderCell({
+  align,
+  children,
+}: {
+  align: 'left' | 'center' | 'right'
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      style={{
+        textAlign: align,
+        padding: '12px 6px',
+        color: '#9195A6',
+        fontSize: '12px',
+        fontWeight: 500,
+        fontFamily: 'Inter',
+        borderBottom: '1px solid #E0E2EB',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function BodyCell({
+  bg,
+  layout,
+  children,
+}: {
+  bg: string
+  layout: 'center' | 'space-between'
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className="transition-all"
+      style={{
+        padding: '16px 6px',
+        backgroundColor: bg,
+        color: '#1a1b1e',
+        fontSize: '14px',
+        fontFamily: 'Inter',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: layout,
+        gap: '12px',
+      }}
+    >
+      {children}
+    </div>
   )
 }
 
@@ -427,61 +467,6 @@ function MobileCards({
         )
       })}
     </>
-  )
-}
-
-function Th({
-  align = 'left',
-  minWidth,
-  children,
-}: {
-  align?: 'left' | 'center' | 'right'
-  minWidth?: string
-  children: React.ReactNode
-}) {
-  return (
-    <th
-      style={{
-        textAlign: align,
-        padding: '12px 6px',
-        color: '#9195A6',
-        fontSize: '12px',
-        fontWeight: 500,
-        fontFamily: 'Inter',
-        minWidth,
-      }}
-    >
-      {children}
-    </th>
-  )
-}
-
-function Td({
-  bg,
-  align = 'left',
-  fontWeight = 400,
-  children,
-}: {
-  bg: string
-  align?: 'left' | 'center' | 'right'
-  fontWeight?: number
-  children: React.ReactNode
-}) {
-  return (
-    <td
-      className="transition-all"
-      style={{
-        padding: '16px 6px',
-        textAlign: align,
-        backgroundColor: bg,
-        color: '#1a1b1e',
-        fontSize: '14px',
-        fontWeight,
-        fontFamily: 'Inter',
-      }}
-    >
-      {children}
-    </td>
   )
 }
 
