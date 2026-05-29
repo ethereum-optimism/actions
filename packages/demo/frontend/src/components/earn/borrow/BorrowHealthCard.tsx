@@ -23,6 +23,8 @@ import {
   type HealthTier,
 } from '@/utils/borrowMath'
 import { InfoTooltip } from '../InfoTooltip'
+import { BorrowHealthBar } from './BorrowHealthBar'
+import { BorrowHealthStats } from './BorrowHealthStats'
 import type { Asset } from '@eth-optimism/actions-sdk'
 
 export interface BorrowHealthCardProps {
@@ -115,179 +117,24 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
         />
       </div>
 
-      {/* Bar */}
-      <div
-        data-testid="borrow-health-bar-shell"
-        style={{
-          width: '100%',
-          borderRadius: '999px',
-          padding: 0,
-          boxShadow: wouldLiquidate
-            ? '0 0 10px rgba(239, 68, 68, 0.3)'
-            : 'none',
-          animation: wouldLiquidate
-            ? 'borrowHealthLiquidationGlow 2.4s ease-in-out infinite'
-            : 'none',
-        }}
-      >
-        <div
-          data-testid="borrow-health-bar-track"
-          style={{
-            height: '6px',
-            width: '100%',
-            backgroundColor: wouldLiquidate ? '#FEE2E2' : '#E0E2EB',
-            borderRadius: '999px',
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          {/* Solid fill — represents what the bar will look like *after*
-              the typed action lands. When the action shrinks the bar
-              (improving / repay / deposit-collateral), the solid stops
-              at the projected width so the gap between solid and current
-              reads as "this slice will be released", with the gray track
-              showing through under the stripes. When the action grows
-              the bar (borrow / withdraw-collateral), the solid stays at
-              the current width and the stripes extend it to projected. */}
-          <div
-            data-testid="borrow-health-bar-current"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              height: '100%',
-              width: `${
-                wouldLiquidate
-                  ? 100
-                  : isImproving
-                    ? projectedBarPct
-                    : currentBarPct
-              }%`,
-              backgroundColor: wouldLiquidate
-                ? '#EF4444'
-                : isImproving
-                  ? tierColors.fill
-                  : currentTierColors.fill,
-              transition: 'width 200ms ease-in-out',
-            }}
-          />
-          {/* Delta segment with barbershop-pole stripes — animated to read
-              as "tentative". Positioned at min(current, projected) so it
-              extends the bar when the action increases LTV, and dims the
-              tail when it decreases. Stripe flow direction follows the
-              direction the bar's edge is moving: leftward when improving
-              (repay / position shrinking), rightward when worsening
-              (borrow / position growing). */}
-          {!wouldLiquidate &&
-            showProjection &&
-            projectedBarPct !== currentBarPct && (
-              <div
-                data-testid="borrow-health-bar-projection"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: `${Math.min(currentBarPct, projectedBarPct)}%`,
-                  height: '100%',
-                  width: `${Math.abs(projectedBarPct - currentBarPct)}%`,
-                  backgroundImage: `repeating-linear-gradient(
-                    -45deg,
-                    ${isImproving ? currentTierColors.fill : tierColors.fill} 0px,
-                    ${isImproving ? currentTierColors.fill : tierColors.fill} 4px,
-                    rgba(255, 255, 255, 0.55) 4px,
-                    rgba(255, 255, 255, 0.55) 8px
-                  )`,
-                  // -45deg stripes with an 8px gradient cycle have a
-                  // horizontal natural period of 8/√2 ≈ 11.3137px. The
-                  // tile width must be an exact multiple of that period
-                  // (and the animation distance must match the tile
-                  // width) or the loop shows a visible seam where the
-                  // pattern wraps. 20 cycles = 226.274px is a round
-                  // enough chunk that the animation reads smoothly.
-                  backgroundSize: '226.274px 100%',
-                  animation: `${
-                    isImproving
-                      ? 'borrowHealthBarbershopFlowLeft'
-                      : 'borrowHealthBarbershopFlowRight'
-                  } 20s linear infinite`,
-                  opacity: 0.65,
-                  transition: 'left 200ms ease-in-out, width 200ms ease-in-out',
-                }}
-              />
-            )}
-        </div>
-      </div>
+      <BorrowHealthBar
+        wouldLiquidate={wouldLiquidate}
+        currentBarPct={currentBarPct}
+        projectedBarPct={projectedBarPct}
+        isImproving={isImproving}
+        showProjection={showProjection}
+        currentFill={currentTierColors.fill}
+        projectedFill={tierColors.fill}
+      />
 
-      {/* Canonical Aave-style HF (secondary label) */}
-      <div
-        style={{
-          color: '#9195A6',
-          fontSize: '12px',
-          fontFamily: 'Inter',
-        }}
-      >
-        Health Factor:{' '}
-        {Number.isFinite(projectedHealthFactor)
-          ? projectedHealthFactor.toFixed(2)
-          : '∞'}
-      </div>
-
-      {/* Stats rows */}
-      <DetailRow
-        label="Liquidation at"
-        value={`${(maxLtv * 100).toFixed(1)}%`}
+      <BorrowHealthStats
+        maxLtv={maxLtv}
+        bufferPct={bufferPct}
+        borrowApy={borrowApy}
+        collateralAsset={collateralAsset}
+        collateralValueUsd={collateralValueUsd}
+        projectedHealthFactor={projectedHealthFactor}
       />
-      <DetailRow
-        label="Buffer"
-        value={`${(bufferPct * 100).toFixed(0)}%`}
-        info="Safety margin below liquidation. Max borrow stops here, not at the limit, to leave room for price moves and interest."
-      />
-      <DetailRow
-        label="Borrow APY"
-        value={`${(borrowApy * 100).toFixed(2)}%`}
-      />
-      <DetailRow
-        label="Collateral"
-        value={
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <span style={{ color: '#9195A6', fontSize: '13px' }}>
-              {collateralAsset.metadata.symbol.replace('_DEMO', '')}
-            </span>
-            <span style={{ color: '#1a1b1e' }}>
-              ${collateralValueUsd.toFixed(2)}
-            </span>
-          </span>
-        }
-      />
-      <style>
-        {`
-          @keyframes borrowHealthLiquidationGlow {
-            0%, 100% {
-              box-shadow: 0 0 10px rgba(239, 68, 68, 0.28);
-            }
-            50% {
-              box-shadow: 0 0 18px rgba(239, 68, 68, 0.48);
-            }
-          }
-          /* Increasing background-position shifts the gradient rightward
-             (stripes move right); decreasing it shifts left. Match the
-             keyframe's visible motion to its name so the consumer
-             (Improving → FlowLeft, Worsening → FlowRight) is obvious. */
-          @keyframes borrowHealthBarbershopFlowLeft {
-            from { background-position: 0 0; }
-            to { background-position: -226.274px 0; }
-          }
-          @keyframes borrowHealthBarbershopFlowRight {
-            from { background-position: 0 0; }
-            to { background-position: 226.274px 0; }
-          }
-        `}
-      </style>
     </div>
   )
 })
@@ -324,34 +171,6 @@ function HealthReading({
       {currentLtvPct.toFixed(1)}% <span style={{ color: '#9195A6' }}>→</span>{' '}
       {projectedLtvPct.toFixed(1)}%
     </span>
-  )
-}
-
-function DetailRow({
-  label,
-  value,
-  info,
-}: {
-  label: string
-  value: React.ReactNode
-  info?: string
-}) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span
-        style={{
-          color: '#666666',
-          fontSize: '13px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-        }}
-      >
-        {label}
-        {info && <InfoTooltip text={info} />}
-      </span>
-      <span style={{ color: '#1a1b1e', fontSize: '13px' }}>{value}</span>
-    </div>
   )
 }
 
