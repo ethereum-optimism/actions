@@ -12,6 +12,7 @@ import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
 import { BorrowProviderContext } from '@/contexts/BorrowProviderContext'
 import { useCollateralStatus } from '@/hooks/useCollateralStatus'
 import { computeProjection } from '@/utils/borrowMath'
+import { sameMarketId } from '@/utils/marketId'
 import { BorrowHealthCard } from './borrow/BorrowHealthCard'
 import { ReviewBorrowHealthModal } from './borrow/ReviewBorrowHealthModal'
 import { CtaButton } from './CtaButton'
@@ -123,13 +124,8 @@ export function Action({
   const borrowCtx = useContext(BorrowProviderContext)
   const borrowMarkets = borrowCtx?.markets ?? []
   const pledgedMarket = pledgedPosition
-    ? (borrowMarkets.find(
-        (m) =>
-          m.marketId.kind === pledgedPosition.marketId.kind &&
-          m.marketId.chainId === pledgedPosition.marketId.chainId &&
-          pledgedPosition.marketId.kind === 'morpho-blue' &&
-          m.marketId.kind === 'morpho-blue' &&
-          m.marketId.marketId === pledgedPosition.marketId.marketId,
+    ? (borrowMarkets.find((m) =>
+        sameMarketId(m.marketId, pledgedPosition.marketId),
       ) ?? null)
     : null
   const [toast, setToast] = useState<{

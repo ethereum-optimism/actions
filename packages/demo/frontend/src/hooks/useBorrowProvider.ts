@@ -32,6 +32,7 @@ import type {
   StubRepayParams,
 } from '@/api/borrowApi'
 import { isEmptyPosition } from '@/api/borrowApi.serializers'
+import { sameMarketId } from '@/utils/marketId'
 import { useActivityLogger } from '@/hooks/useActivityLogger'
 import {
   dispatchEarnPositionsChanged,
@@ -295,14 +296,8 @@ export function useBorrowProvider(
 
   const selectedMarketPosition =
     selectedMarket && borrowPositions.length > 0
-      ? (borrowPositions.find(
-          (p) =>
-            p.marketId.kind === selectedMarket.marketId.kind &&
-            p.marketId.chainId === selectedMarket.marketId.chainId &&
-            (selectedMarket.marketId.kind === 'morpho-blue' &&
-            p.marketId.kind === 'morpho-blue'
-              ? p.marketId.marketId === selectedMarket.marketId.marketId
-              : false),
+      ? (borrowPositions.find((p) =>
+          sameMarketId(p.marketId, selectedMarket.marketId),
         ) ?? null)
       : null
 
@@ -335,12 +330,4 @@ export function useBorrowProvider(
     handleTransaction,
     getQuote,
   }
-}
-
-function sameMarketId(a: BorrowMarketId, b: BorrowMarketId): boolean {
-  if (a.kind !== b.kind || a.chainId !== b.chainId) return false
-  if (a.kind === 'morpho-blue' && b.kind === 'morpho-blue') {
-    return a.marketId === b.marketId
-  }
-  return false
 }

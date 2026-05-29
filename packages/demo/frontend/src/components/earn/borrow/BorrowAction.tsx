@@ -28,6 +28,7 @@ import {
   lendPositionUsd,
   positionUsd,
 } from '@/utils/borrowValuation'
+import { sameMarketId } from '@/utils/marketId'
 import type { MarketPosition } from '@/types/market'
 import { AmountInput } from '../AmountInput'
 import { CtaButton, MaxButton } from '../CtaButton'
@@ -103,13 +104,8 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
   // existing borrow).
   const activeMarket: BorrowMarket | null =
     mode === 'repay' && selectedMarketPosition
-      ? (markets.find(
-          (m) =>
-            m.marketId.kind === selectedMarketPosition.marketId.kind &&
-            m.marketId.chainId === selectedMarketPosition.marketId.chainId &&
-            selectedMarketPosition.marketId.kind === 'morpho-blue' &&
-            m.marketId.kind === 'morpho-blue' &&
-            m.marketId.marketId === selectedMarketPosition.marketId.marketId,
+      ? (markets.find((m) =>
+          sameMarketId(m.marketId, selectedMarketPosition.marketId),
         ) ?? null)
       : selectedMarket
 
