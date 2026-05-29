@@ -90,43 +90,24 @@ function buildMintOperation(
 function buildBorrowOperations(
   getAuthHeaders: () => Promise<AuthHeaders>,
 ): BorrowOperations {
+  // Borrow routes accept empty headers on public reads and require auth on
+  // the rest; fall back to {} so every call sends a valid HeadersInit.
+  const headers = async () => (await getAuthHeaders()) ?? {}
   return {
-    getMarkets: async () =>
-      borrowApi.getMarkets((await getAuthHeaders()) ?? {}),
+    getMarkets: async () => borrowApi.getMarkets(await headers()),
     getPosition: async (walletAddress, marketId) =>
-      borrowApi.getPosition(
-        walletAddress,
-        marketId,
-        (await getAuthHeaders()) ?? {},
-      ),
-    getQuote: async (params) =>
-      borrowApi.getQuote(params, (await getAuthHeaders()) ?? {}),
+      borrowApi.getPosition(walletAddress, marketId, await headers()),
+    getQuote: async (params) => borrowApi.getQuote(params, await headers()),
     openPosition: async (walletAddress, params) =>
-      borrowApi.openPosition(
-        walletAddress,
-        params,
-        (await getAuthHeaders()) ?? {},
-      ),
+      borrowApi.openPosition(walletAddress, params, await headers()),
     closePosition: async (walletAddress, params) =>
-      borrowApi.closePosition(
-        walletAddress,
-        params,
-        (await getAuthHeaders()) ?? {},
-      ),
+      borrowApi.closePosition(walletAddress, params, await headers()),
     depositCollateral: async (walletAddress, params) =>
-      borrowApi.depositCollateral(
-        walletAddress,
-        params,
-        (await getAuthHeaders()) ?? {},
-      ),
+      borrowApi.depositCollateral(walletAddress, params, await headers()),
     withdrawCollateral: async (walletAddress, params) =>
-      borrowApi.withdrawCollateral(
-        walletAddress,
-        params,
-        (await getAuthHeaders()) ?? {},
-      ),
+      borrowApi.withdrawCollateral(walletAddress, params, await headers()),
     repay: async (walletAddress, params) =>
-      borrowApi.repay(walletAddress, params, (await getAuthHeaders()) ?? {}),
+      borrowApi.repay(walletAddress, params, await headers()),
   }
 }
 
