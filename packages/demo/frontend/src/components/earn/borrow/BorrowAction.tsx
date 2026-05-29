@@ -11,15 +11,13 @@
  * also kept for the synchronous Max button prefill.
  */
 
-import { useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useMemo, useState } from 'react'
 import type { BorrowMarket } from '@eth-optimism/actions-sdk'
 import { stubPriceUsd } from '@/utils/stubPrices' // retired by #482
-import { getBlockExplorerUrl } from '@/utils/blockExplorer'
 import { useBorrowProviderContext } from '@/contexts/BorrowProviderContext'
-import { useActivityLogger } from '@/hooks/useActivityLogger'
 import { useBorrowQuotePreview } from '@/hooks/useBorrowQuotePreview'
 import { useBorrowProjection } from '@/hooks/useBorrowProjection'
+import { useBorrowTransaction } from '@/hooks/useBorrowTransaction'
 import {
   computeMaxBorrowSafeUsd,
   computeSafeCeilingLtv,
@@ -33,12 +31,12 @@ import { sameMarketId } from '@/utils/marketId'
 import type { MarketPosition } from '@/types/market'
 import { CtaButton } from '../CtaButton'
 import { ModeToggle } from '../ModeToggle'
-import TransactionModal from '../TransactionModal'
-import { Toast } from '../Toast'
-import { BorrowAssetModal } from './BorrowAssetModal'
 import { BorrowHealthCard } from './BorrowHealthCard'
-import { ReviewBorrowHealthModal } from './ReviewBorrowHealthModal'
 import { AmountSection, SectionHeader } from './BorrowAmountSection'
+import {
+  BorrowActionModals,
+  type BorrowHealthProps,
+} from './BorrowActionModals'
 
 const MODE_OPTIONS = [
   { value: 'borrow' as const, label: 'Borrow' },
@@ -47,13 +45,6 @@ const MODE_OPTIONS = [
 
 export interface BorrowActionProps {
   selectedLendPosition: MarketPosition
-}
-
-function marketProviderDisplayName(kind: string): string {
-  if (kind === 'morpho-blue') return 'Morpho'
-  // Fallback: capitalize the provider prefix (e.g. `aave-v3` -> `Aave`).
-  const head = kind.split('-')[0] ?? kind
-  return head.charAt(0).toUpperCase() + head.slice(1)
 }
 
 export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
@@ -65,21 +56,12 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     handleTransaction,
     getQuote,
   } = useBorrowProviderContext()
-  const { logActivity } = useActivityLogger()
+  const { isExecuting, runTransaction, txModal, toast } = useBorrowTransaction()
 
   const [mode, setMode] = useState<'borrow' | 'repay'>('borrow')
   const [amount, setAmount] = useState('')
   const [assetModalOpen, setAssetModalOpen] = useState(false)
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
-  const [txModalOpen, setTxModalOpen] = useState(false)
-  const [txStatus, setTxStatus] = useState<'loading' | 'error'>('loading')
-  const [txError, setTxError] = useState<string | undefined>()
-  const [isExecuting, setIsExecuting] = useState(false)
-  const [toast, setToast] = useState<{
-    visible: boolean
-    title: string
-    description: string
-  }>({ visible: false, title: '', description: '' })
 
   // Markets the user can pick from in borrow mode: those whose collateral
   // matches the chosen lend asset.
@@ -213,84 +195,24 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     !inBufferZone &&
     !isPreviewLoading
 
-  // useRef-based reentry guard so a rapid double-tap of the Confirm button
-  // can't dispatch the same transaction twice before isExecuting commits.
-  const executingRef = useRef(false)
-
   const handleCtaClick = () => {
     if (!canOpenReview) return
     setReviewModalOpen(true)
   }
 
-  const handleReviewConfirm = async () => {
-    if (executingRef.current) return
+  const handleReviewConfirm = () => {
     if (!activeMarket || !activeAsset) return
-    executingRef.current = true
-    const symbol = activeAsset.metadata.symbol.replace('_DEMO', '')
-    const activity = logActivity(mode, {
-      amount: amountNum.toString(),
-      assetSymbol: symbol,
-      // Provider display name (e.g. "Morpho"), derived from the market's
-      // discriminator, so the activity summary reads "Borrowed X OP from
-      // Morpho" instead of "Wallet: borrow".
-      marketName: marketProviderDisplayName(activeMarket.marketId.kind),
+    runTransaction({
+      mode,
+      activeMarket,
+      activeAsset,
+      amountNum,
+      selectedLendPosition,
+      currentCollUsd,
+      handleTransaction,
+      onReviewClose: () => setReviewModalOpen(false),
+      onSuccess: () => setAmount(''),
     })
-    setIsExecuting(true)
-    setReviewModalOpen(false)
-    setTxModalOpen(true)
-    setTxStatus('loading')
-    setTxError(undefined)
-    try {
-      let receipt
-      if (mode === 'borrow') {
-        const collateralSharesRaw = selectedLendPosition.depositedSharesRaw
-        const topUpCollateralSharesRaw =
-          currentCollUsd > 0
-            ? selectedLendPosition.directDepositedSharesRaw
-            : collateralSharesRaw
-        if (
-          currentCollUsd === 0 &&
-          (collateralSharesRaw === null || collateralSharesRaw <= 0n)
-        ) {
-          throw new Error(
-            'No collateral shares available for this lend position',
-          )
-        }
-        receipt = await handleTransaction('open', {
-          marketId: activeMarket.marketId,
-          borrowAmount: { amount: amountNum },
-          ...(topUpCollateralSharesRaw !== null && topUpCollateralSharesRaw > 0n
-            ? { collateralAmount: { amountRaw: topUpCollateralSharesRaw } }
-            : {}),
-          collateralAsset: undefined,
-        })
-      } else {
-        receipt = await handleTransaction('repay', {
-          marketId: activeMarket.marketId,
-          amount: { amount: amountNum },
-        })
-      }
-      const blockExplorerUrl = getBlockExplorerUrl(
-        activeMarket.marketId.chainId,
-        receipt,
-      )
-      activity?.confirm({ blockExplorerUrl })
-      setTxModalOpen(false)
-      setAmount('')
-      setToast({
-        visible: true,
-        title: mode === 'borrow' ? 'Borrowed' : 'Repaid',
-        description: `${amountNum} ${symbol}`,
-      })
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Transaction failed'
-      activity?.error()
-      setTxStatus('error')
-      setTxError(msg)
-    } finally {
-      setIsExecuting(false)
-      executingRef.current = false
-    }
   }
 
   const ctaDisabled = !canOpenReview || isExecuting
@@ -299,6 +221,22 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
     : mode === 'borrow'
       ? 'Borrow'
       : 'Repay'
+
+  // Health readings shared by the inline card and the review modal.
+  const health: BorrowHealthProps | null =
+    activeMarket && activeAsset
+      ? {
+          currentLtv,
+          projectedLtv,
+          maxLtv,
+          bufferPct,
+          borrowApy,
+          collateralAsset: activeMarket.collateralAsset,
+          collateralValueUsd: projectionCollateralUsd,
+          projectedHealthFactor,
+          wouldLiquidate,
+        }
+      : null
 
   return (
     <div
@@ -333,74 +271,30 @@ export function BorrowAction({ selectedLendPosition }: BorrowActionProps) {
           }
         />
 
-        {activeMarket && activeAsset && (
-          <BorrowHealthCard
-            currentLtv={currentLtv}
-            projectedLtv={projectedLtv}
-            maxLtv={maxLtv}
-            bufferPct={bufferPct}
-            borrowApy={borrowApy}
-            collateralAsset={activeMarket.collateralAsset}
-            collateralValueUsd={projectionCollateralUsd}
-            projectedHealthFactor={projectedHealthFactor}
-            wouldLiquidate={wouldLiquidate}
-          />
-        )}
+        {health && <BorrowHealthCard {...health} />}
 
         <CtaButton onClick={handleCtaClick} disabled={ctaDisabled}>
           {ctaText}
         </CtaButton>
       </div>
 
-      <BorrowAssetModal
-        isOpen={assetModalOpen}
-        onClose={() => setAssetModalOpen(false)}
-        markets={eligibleMarkets}
-        onSelect={handleAssetSelect}
+      <BorrowActionModals
+        assetModalOpen={assetModalOpen}
+        onAssetModalClose={() => setAssetModalOpen(false)}
+        eligibleMarkets={eligibleMarkets}
+        onAssetSelect={handleAssetSelect}
+        reviewOpen={reviewModalOpen}
+        onReviewClose={() => setReviewModalOpen(false)}
+        onReviewConfirm={handleReviewConfirm}
+        isExecuting={isExecuting}
+        mode={mode}
+        amount={amount}
+        amountUsd={amountUsd}
+        activeAsset={activeAsset}
+        health={health}
+        txModal={txModal}
+        toast={toast}
       />
-
-      {activeMarket && activeAsset && (
-        <ReviewBorrowHealthModal
-          isOpen={reviewModalOpen}
-          onClose={() => setReviewModalOpen(false)}
-          onConfirm={handleReviewConfirm}
-          isExecuting={isExecuting}
-          flow={mode === 'borrow' ? 'borrow' : 'repay'}
-          amount={{ main: amount || '0' }}
-          amountUsd={amountUsd > 0 ? `$${amountUsd.toFixed(2)}` : null}
-          asset={activeAsset}
-          currentLtv={currentLtv}
-          projectedLtv={projectedLtv}
-          maxLtv={maxLtv}
-          bufferPct={bufferPct}
-          borrowApy={borrowApy}
-          collateralAsset={activeMarket.collateralAsset}
-          collateralValueUsd={projectionCollateralUsd}
-          projectedHealthFactor={projectedHealthFactor}
-          wouldLiquidate={wouldLiquidate}
-        />
-      )}
-
-      <TransactionModal
-        isOpen={txModalOpen}
-        status={txStatus}
-        errorMessage={txError}
-        onClose={() => {
-          setTxModalOpen(false)
-          setTxStatus('loading')
-          setTxError(undefined)
-        }}
-      />
-
-      {createPortal(
-        <Toast
-          isVisible={toast.visible}
-          onClose={() => setToast((t) => ({ ...t, visible: false }))}
-          title={toast.title}
-          description={toast.description}
-        />,
-        document.body,
-      )}
     </div>
   )
 }
