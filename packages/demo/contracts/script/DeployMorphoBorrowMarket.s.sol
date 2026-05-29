@@ -60,11 +60,9 @@ contract DeployMorphoBorrowMarket is Script {
 
     uint256 constant BORROWABLE_OP = 100_000e18;
 
-    /// @dev Seed amounts to push utilization off 0% so AdaptiveCurveIrm reports
-    ///      a non-zero borrow rate. ~$20k dUSDC collateral against an $8k OP
-    ///      debt (OP @ $0.10) lands at ~40% LTV (well under LLTV 86%) and 80%
-    ///      utilization of the 100k OP pool — near AdaptiveCurveIrm's 90%
-    ///      target, so the visible rate stays put rather than decaying.
+    /// @dev Seed amounts for the self-collateralized opening borrow.
+    ///      20k USDC of collateral at ~40% LTV, 80k OP borrowed = 80%
+    ///      utilization of the 100k OP pool.
     uint256 constant SEED_USDC_DEPOSIT = 20_000e6;
     uint256 constant SEED_OP_BORROW = 80_000e18;
 
@@ -153,11 +151,9 @@ contract DeployMorphoBorrowMarket is Script {
         IMintableToken(opAddr).approve(MorphoConstants.MORPHO, BORROWABLE_OP);
         IMorpho(MorphoConstants.MORPHO).supply(marketParams, BORROWABLE_OP, 0, msg.sender, "");
 
-        // Seed utilization. AdaptiveCurveIrm returns 0 at 0% utilization, so
-        // without this the frontend would show 0% APY indefinitely. Mint
-        // USDC, deposit to the vault for dUSDC shares, supply as collateral,
-        // borrow OP back to the deployer. Deploy-demo.sh's idempotency gate
-        // ensures this runs at most once per fresh borrow-market deploy.
+        // Open a self-collateralized borrow so the market starts at
+        // non-zero utilization: mint USDC, deposit to the vault for
+        // dUSDC shares, supply as collateral, borrow OP.
         address usdcAddr = IVaultAsset(vaultAddr).asset();
         IMintableToken(usdcAddr).mint(msg.sender, SEED_USDC_DEPOSIT);
         IMintableToken(usdcAddr).approve(vaultAddr, SEED_USDC_DEPOSIT);
