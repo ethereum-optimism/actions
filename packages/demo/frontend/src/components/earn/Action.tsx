@@ -145,8 +145,7 @@ export function Action({
   const balanceValue = parseFloat(assetBalance || '0')
   const needsMint = balanceValue <= 0 && mode === 'lend'
   const amountValue = parseFloat(effectiveAmount) || 0
-  const rawMaxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
-  const maxAmount = rawMaxAmount
+  const maxAmount = mode === 'lend' ? assetBalance : depositedAmount || '0'
   const hasDeposit = parseFloat(depositedAmount || '0') > 0
 
   const isHighlighted =
@@ -179,7 +178,6 @@ export function Action({
       borrowApy: pledgedPosition.borrowApy,
       collValueUsd,
       projection,
-      borrSymbol: pledgedPosition.borrowAsset.metadata.symbol,
     }
   }, [amount, asset, pledgedPosition, pledgedMarket, showHealthCard])
 

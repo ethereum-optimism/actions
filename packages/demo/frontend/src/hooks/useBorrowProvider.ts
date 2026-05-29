@@ -39,9 +39,7 @@ import {
   EARN_POSITIONS_CHANGED_EVENT,
 } from '@/utils/earnSync'
 
-export type BorrowMode = 'borrow' | 'repay'
-
-export interface BorrowOperationParams {
+interface BorrowOperationParams {
   open: StubOpenParams
   close: StubCloseParams
   depositCollateral: StubCollateralParams

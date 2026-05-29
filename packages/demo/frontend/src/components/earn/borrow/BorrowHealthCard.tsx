@@ -47,10 +47,10 @@ export interface BorrowHealthCardProps {
   exceedsDeposit?: boolean
 }
 
-const TIER_COLORS: Record<HealthTier, { fill: string; track: string }> = {
-  safe: { fill: '#22C55E', track: '#DCFCE7' },
-  caution: { fill: '#F59E0B', track: '#FEF3C7' },
-  danger: { fill: '#EF4444', track: '#FEE2E2' },
+const TIER_COLORS: Record<HealthTier, { fill: string }> = {
+  safe: { fill: '#22C55E' },
+  caution: { fill: '#F59E0B' },
+  danger: { fill: '#EF4444' },
 }
 
 export const BorrowHealthCard = memo(function BorrowHealthCard({
