@@ -67,11 +67,10 @@ export function AssetAmount({
         color: '#1a1b1e',
         fontSize: '14px',
         fontFamily: 'Inter',
-        fontWeight,
         whiteSpace: 'nowrap',
       }}
     >
-      <span>
+      <span style={{ fontWeight }}>
         {amount.main}
         <span
           className="positions-table-secondary-digits"

@@ -85,7 +85,7 @@ function BorrowRowCells({
           symbol={d.collSymbol}
           fontWeight={500}
         />
-        <UsdValue value={d.collateralValue} />
+        <UsdValue value={d.collateralValue} fontWeight={500} />
       </BodyCell>
       <BodyCell bg={rowBg} layout="center">
         {d.apy}

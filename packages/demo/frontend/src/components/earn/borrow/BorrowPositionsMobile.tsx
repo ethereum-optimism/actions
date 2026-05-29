@@ -55,7 +55,7 @@ export function MobileCards({
                 symbol={d.collSymbol}
                 fontWeight={500}
               />
-              <UsdValue value={d.collateralValue} />
+              <UsdValue value={d.collateralValue} fontWeight={500} />
             </BodyCell>
             <BodyCell bg={bg} align="center" first={idx === 0}>
               <span style={{ fontSize: '14px', color: '#1a1b1e' }}>
