@@ -87,7 +87,7 @@ function DesktopTable({
         <span>Collateral</span>
         <span>Value</span>
       </HeaderCell>
-      <HeaderCell layout="center">
+      <HeaderCell layout="center" underline={false}>
         <BorrowApyHeaderLabel />
       </HeaderCell>
       <HeaderCell layout="space-between">
@@ -165,9 +165,11 @@ function BorrowRowCells({
 
 function HeaderCell({
   layout,
+  underline = true,
   children,
 }: {
   layout: 'center' | 'space-between'
+  underline?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -178,7 +180,7 @@ function HeaderCell({
         fontSize: '12px',
         fontWeight: 500,
         fontFamily: 'Inter',
-        borderBottom: '1px solid #E0E2EB',
+        borderBottom: underline ? '1px solid #E0E2EB' : 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: layout,
@@ -317,7 +319,7 @@ function BorrowApyHeaderLabel() {
           cursor: 'help',
         }}
       >
-        Borrow APY
+        APY
         <InfoIcon />
       </span>
       {show && (
