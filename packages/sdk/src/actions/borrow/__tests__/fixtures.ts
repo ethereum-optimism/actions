@@ -4,7 +4,7 @@ import { computeMorphoMarketId } from '@/actions/borrow/providers/morpho/marketP
 import type { SupportedChainId } from '@/constants/supportedChains.js'
 import type { Asset } from '@/types/asset.js'
 import type {
-  BorrowMarketConfig,
+  MorphoBorrowMarketConfig,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
 
@@ -32,7 +32,7 @@ export const marketParams: MorphoMarketParams = {
   lltv: 860000000000000000n,
 }
 
-export const market: BorrowMarketConfig = {
+export const market: MorphoBorrowMarketConfig = {
   kind: 'morpho-blue',
   marketId: computeMorphoMarketId(marketParams),
   chainId: BASE_SEPOLIA_ID,
@@ -49,7 +49,7 @@ export const otherMarketParams: MorphoMarketParams = {
   oracle: '0x0000000000000000000000000000000000000bbb',
 }
 
-export const otherMarket: BorrowMarketConfig = {
+export const otherMarket: MorphoBorrowMarketConfig = {
   ...market,
   marketId: computeMorphoMarketId(otherMarketParams),
   name: 'Second test market',

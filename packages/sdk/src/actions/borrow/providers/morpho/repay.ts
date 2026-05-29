@@ -8,7 +8,7 @@ import { EmptyPositionError } from '@/core/error/errors.js'
 import type { ApprovalMode } from '@/types/actions.js'
 import type {
   AmountWeiOrMax,
-  BorrowMarketConfig,
+  MorphoBorrowMarketConfig,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
@@ -53,7 +53,7 @@ export function computeRepay(
  * exact-assets repays use the precise amount.
  */
 export function buildRepayApproval(
-  market: BorrowMarketConfig,
+  market: MorphoBorrowMarketConfig,
   repay: RepayResult,
   allowance: bigint,
   approvalMode: ApprovalMode,

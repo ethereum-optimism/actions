@@ -10,11 +10,11 @@ import {
   buildMorphoBlueMarket,
   requireMorphoBlueAddress,
 } from '@/actions/borrow/providers/morpho/blue.js'
-import type { BorrowMarketConfig } from '@/types/borrow/index.js'
+import type { MorphoBorrowMarketConfig } from '@/types/borrow/index.js'
 
 export async function fetchMorphoMarket(
   client: PublicClient,
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
 ): Promise<Market> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
   const id = config.marketId
@@ -63,7 +63,7 @@ const SHARE_PRICE_IDENTITY = 10n ** 18n
  * so we gate that call on this check; calling it against a plain ERC-20
  * collateral would revert the entire multicall.
  */
-function hasVaultCollateral(config: BorrowMarketConfig): boolean {
+function hasVaultCollateral(config: MorphoBorrowMarketConfig): boolean {
   const assetAddress = config.collateralAsset.address[config.chainId]
   if (assetAddress === undefined) return false
   return (
@@ -79,7 +79,7 @@ function hasVaultCollateral(config: BorrowMarketConfig): boolean {
  */
 function corePositionContracts(
   morphoBlue: Address,
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   user: Address,
 ) {
   const id = config.marketId
@@ -111,7 +111,7 @@ function corePositionContracts(
   ] as const
 }
 
-function convertToAssetsContract(config: BorrowMarketConfig) {
+function convertToAssetsContract(config: MorphoBorrowMarketConfig) {
   return {
     address: config.marketParams.collateralToken,
     abi: erc4626Abi,
@@ -122,7 +122,7 @@ function convertToAssetsContract(config: BorrowMarketConfig) {
 
 export async function fetchMorphoPosition(
   client: PublicClient,
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   user: Address,
 ): Promise<{ position: AccrualPosition; sharePrice: bigint }> {
   const morphoBlue = requireMorphoBlueAddress(config.chainId)
@@ -172,7 +172,7 @@ export async function fetchMorphoPosition(
 
 export async function fetchMorphoStateWithAllowance(
   client: PublicClient,
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   user: Address,
   token: Address,
 ): Promise<{
@@ -236,7 +236,7 @@ export async function fetchMorphoStateWithAllowance(
 }
 
 function buildAccrualPosition(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   user: Address,
   positionTuple: readonly [bigint, bigint, bigint],
   marketTuple: readonly [bigint, bigint, bigint, bigint, bigint, bigint],

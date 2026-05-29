@@ -53,6 +53,7 @@ import type {
   BorrowRepayInternalParams,
   BorrowWithdrawCollateralInternalParams,
   GetBorrowMarketsParams,
+  MorphoBorrowMarketConfig,
   MorphoMarketParams,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
@@ -95,8 +96,9 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   }
 
   protected async _getMarket(
-    config: BorrowMarketConfig,
+    rawConfig: BorrowMarketConfig,
   ): Promise<BorrowMarket> {
+    const config = this.requireMorphoConfig(rawConfig)
     const market = await this.fetchMarket(config)
     return adaptMorphoBorrowMarket(
       config,
@@ -110,7 +112,8 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   ): Promise<BorrowMarket[]> {
     const configs = params.markets ?? []
     const results = await Promise.allSettled(
-      configs.map(async (config) => {
+      configs.map(async (rawConfig) => {
+        const config = this.requireMorphoConfig(rawConfig)
         const market = await this.fetchMarket(config)
         return adaptMorphoBorrowMarket(
           config,
@@ -128,17 +131,18 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     market: BorrowMarketConfig
     walletAddress: Address
   }): Promise<BorrowMarketPosition> {
+    const market = this.requireMorphoConfig(params.market)
     const { position, sharePrice } = await this.fetchPosition(
-      params.market,
+      market,
       params.walletAddress,
     )
-    return adaptMorphoBorrowPosition(params.market, position, sharePrice)
+    return adaptMorphoBorrowPosition(market, position, sharePrice)
   }
 
   protected async _openPosition(
     params: BorrowOpenPositionInternalParams,
   ): Promise<BorrowQuote> {
-    const market = params.market
+    const market = this.requireMorphoConfig(params.market)
     const { current, sharePrice, allowance } =
       await this.fetchStateWithAllowance(
         market,
@@ -146,7 +150,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         market.marketParams.collateralToken,
       )
     const after = computeOpen(params, current)
-    const { txs, approvalTx } = buildOpenTransactions(params, allowance)
+    const { txs, approvalTx } = buildOpenTransactions(params, market, allowance)
     return this.assembleQuote({
       action: 'open',
       market,
@@ -165,7 +169,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _closePosition(
     params: BorrowClosePositionInternalParams,
   ): Promise<BorrowQuote> {
-    const market = params.market
+    const market = this.requireMorphoConfig(params.market)
     const { current, sharePrice, allowance } =
       await this.fetchStateWithAllowance(
         market,
@@ -173,7 +177,12 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
         market.marketParams.loanToken,
       )
     const plan = computeClose(params, current)
-    const { txs, approvalTx } = buildCloseTransactions(params, plan, allowance)
+    const { txs, approvalTx } = buildCloseTransactions(
+      params,
+      market,
+      plan,
+      allowance,
+    )
     return this.assembleQuote({
       action: 'close',
       market,
@@ -198,7 +207,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _depositCollateral(
     params: BorrowDepositCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const market = params.market
+    const market = this.requireMorphoConfig(params.market)
     const { current, sharePrice, allowance } =
       await this.fetchStateWithAllowance(
         market,
@@ -238,7 +247,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _withdrawCollateral(
     params: BorrowWithdrawCollateralInternalParams,
   ): Promise<BorrowQuote> {
-    const market = params.market
+    const market = this.requireMorphoConfig(params.market)
     const { position: current, sharePrice } = await this.fetchPosition(
       market,
       params.walletAddress,
@@ -277,7 +286,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   protected async _repay(
     params: BorrowRepayInternalParams,
   ): Promise<BorrowQuote> {
-    const market = params.market
+    const market = this.requireMorphoConfig(params.market)
     const { current, sharePrice, allowance } =
       await this.fetchStateWithAllowance(
         market,
@@ -320,10 +329,27 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
     })
   }
 
+  /**
+   * Narrow a trusted `BorrowMarketConfig` to the Morpho Blue variant. The
+   * base class resolves configs from this provider's own allowlist, which
+   * only holds `morpho-blue` markets, so a non-morpho kind here is a
+   * misconfiguration rather than a routing path.
+   */
+  private requireMorphoConfig(
+    config: BorrowMarketConfig,
+  ): MorphoBorrowMarketConfig {
+    if (config.kind !== 'morpho-blue') {
+      throw new Error(
+        `MorphoBorrowProvider received a ${config.kind} market config`,
+      )
+    }
+    return config
+  }
+
   // Each `fetchX` wraps the corresponding `fetchMorphoX` in `state.ts` so
   // call sites read tersely; the multicall composition lives next to the
   // ABI plumbing.
-  private fetchMarket(config: BorrowMarketConfig): Promise<Market> {
+  private fetchMarket(config: MorphoBorrowMarketConfig): Promise<Market> {
     return fetchMorphoMarket(
       this.chainManager.getPublicClient(config.chainId),
       config,
@@ -331,7 +357,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   }
 
   private fetchPosition(
-    config: BorrowMarketConfig,
+    config: MorphoBorrowMarketConfig,
     user: Address,
   ): Promise<{ position: AccrualPosition; sharePrice: bigint }> {
     return fetchMorphoPosition(
@@ -342,7 +368,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
   }
 
   private fetchStateWithAllowance(
-    config: BorrowMarketConfig,
+    config: MorphoBorrowMarketConfig,
     user: Address,
     token: Address,
   ): Promise<{
@@ -369,7 +395,7 @@ export class MorphoBorrowProvider extends BorrowProvider<BorrowProviderConfig> {
 
 interface AssembleMorphoQuoteArgs {
   action: BorrowAction
-  market: BorrowMarketConfig
+  market: MorphoBorrowMarketConfig
   positionBefore: AccrualPosition
   positionAfter: AccrualPosition
   sharePrice: bigint

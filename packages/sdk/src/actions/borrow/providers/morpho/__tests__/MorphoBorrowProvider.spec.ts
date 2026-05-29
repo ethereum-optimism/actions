@@ -21,7 +21,7 @@ import {
   MarketNotAllowedError,
 } from '@/core/error/errors.js'
 import type { ChainManager } from '@/services/ChainManager.js'
-import type { BorrowMarketConfig } from '@/types/borrow/index.js'
+import type { MorphoBorrowMarketConfig } from '@/types/borrow/index.js'
 
 // Helper to build a tuple-shaped market() return value.
 function marketTuple(
@@ -86,7 +86,7 @@ describe('MorphoBorrowProvider - constructor', () => {
 
   it('throws BorrowMarketParamsMismatchError on inconsistent pair', () => {
     const cm = makeChainManagerWithMulticall(async () => [])
-    const bad: BorrowMarketConfig = {
+    const bad: MorphoBorrowMarketConfig = {
       ...market,
       marketId:
         '0x9999999999999999999999999999999999999999999999999999999999999999',
@@ -269,7 +269,7 @@ describe('MorphoBorrowProvider - depositCollateral', () => {
       return stateMulticallResult()
     })
     const provider = new MorphoBorrowProvider({ marketAllowlist: [market] }, cm)
-    const tamperedMarket: BorrowMarketConfig = {
+    const tamperedMarket: MorphoBorrowMarketConfig = {
       ...market,
       marketParams: {
         ...market.marketParams,

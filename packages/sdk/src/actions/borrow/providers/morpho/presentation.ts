@@ -9,14 +9,14 @@ import {
 import type {
   BorrowAction,
   BorrowMarket,
-  BorrowMarketConfig,
   BorrowMarketPosition,
   BorrowQuote,
+  MorphoBorrowMarketConfig,
 } from '@/types/borrow/index.js'
 import type { TransactionData } from '@/types/transaction.js'
 
 export function adaptMorphoBorrowMarket(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   market: Market,
   healthBufferPct: number,
 ): BorrowMarket {
@@ -51,7 +51,7 @@ export function adaptMorphoBorrowMarket(
  * the demo's dUSDC vault collateral resolve to USDC value.
  */
 function sharesToUnderlying(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   shares: bigint,
   sharePrice: bigint,
 ): bigint {
@@ -65,7 +65,7 @@ function sharesToUnderlying(
 }
 
 export function adaptMorphoBorrowPosition(
-  config: BorrowMarketConfig,
+  config: MorphoBorrowMarketConfig,
   position: AccrualPosition,
   sharePrice: bigint,
 ): BorrowMarketPosition {
@@ -121,7 +121,7 @@ export function adaptMorphoBorrowPosition(
 
 export function assembleMorphoBorrowQuote(args: {
   action: BorrowAction
-  market: BorrowMarketConfig
+  market: MorphoBorrowMarketConfig
   positionBefore: AccrualPosition
   positionAfter: AccrualPosition
   sharePrice: bigint
