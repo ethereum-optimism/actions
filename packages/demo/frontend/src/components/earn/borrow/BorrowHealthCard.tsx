@@ -193,8 +193,8 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
                   backgroundSize: '226.274px 100%',
                   animation: `${
                     isImproving
-                      ? 'borrowHealthBarbershopLeft'
-                      : 'borrowHealthBarbershopRight'
+                      ? 'borrowHealthBarbershopFlowLeft'
+                      : 'borrowHealthBarbershopFlowRight'
                   } 20s linear infinite`,
                   opacity: 0.65,
                   transition: 'left 200ms ease-in-out, width 200ms ease-in-out',
@@ -257,13 +257,17 @@ export const BorrowHealthCard = memo(function BorrowHealthCard({
               box-shadow: 0 0 18px rgba(239, 68, 68, 0.48);
             }
           }
-          @keyframes borrowHealthBarbershopLeft {
-            from { background-position: 0 0; }
-            to { background-position: 226.274px 0; }
-          }
-          @keyframes borrowHealthBarbershopRight {
+          /* Increasing background-position shifts the gradient rightward
+             (stripes move right); decreasing it shifts left. Match the
+             keyframe's visible motion to its name so the consumer
+             (Improving → FlowLeft, Worsening → FlowRight) is obvious. */
+          @keyframes borrowHealthBarbershopFlowLeft {
             from { background-position: 0 0; }
             to { background-position: -226.274px 0; }
+          }
+          @keyframes borrowHealthBarbershopFlowRight {
+            from { background-position: 0 0; }
+            to { background-position: 226.274px 0; }
           }
         `}
       </style>
